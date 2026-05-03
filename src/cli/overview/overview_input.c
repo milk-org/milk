@@ -3,6 +3,7 @@
  * @brief Keyboard input handler for milkCTRL
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "overview_defs.h"
@@ -34,7 +35,7 @@ int ov_handle_key(
     }
 
     /* Quit */
-    if (key == 'q' || key == 'x')
+    if (key == 'q')
     {
         return 1;
     }
@@ -458,6 +459,54 @@ int ov_handle_key(
         return 0;
     }
 
+    /* Write snapshot — 'W' */
+    if (key == 'W')
+    {
+        ov_model_export_snapshot(m);
+        return 0;
+    }
+
+    /* ENTER — launch milk-fpsCTRL for selected FPS */
+    if ((key == 10 || key == 13)
+        && lay->focus == OV_FOCUS_FPS
+        && m != NULL)
+    {
+        /* Resolve filtered selection to FPS name */
+        const char *names[OV_MAX_FPS];
+        for (int i = 0; i < m->nb_fps; i++)
+        {
+            names[i] = m->fps[i].name;
+        }
+        int fidx[OV_MAX_FPS];
+        int fn = ov_filter_build(
+            lay->filter_fps, names,
+            m->nb_fps, fidx, OV_MAX_FPS);
+        if (lay->sel_fps >= 0
+            && lay->sel_fps < fn)
+        {
+            int fi = fidx[lay->sel_fps];
+            const char *fname = m->fps[fi].name;
+            char cmd[512];
+
+            if (getenv("TMUX") != NULL)
+            {
+                snprintf(cmd, sizeof(cmd),
+                    "tmux new-window -n '%s'"
+                    " 'milk-fpsCTRL %s'",
+                    fname, fname);
+            }
+            else
+            {
+                snprintf(cmd, sizeof(cmd),
+                    "milk-fpsCTRL %s &",
+                    fname);
+            }
+            /* Suppress unused-result warning */
+            if (system(cmd) < 0) {}
+        }
+        return 0;
+    }
+
     /* Freeze selection — SPACE toggle */
     if (key == ' ')
     {
@@ -566,29 +615,44 @@ int ov_handle_key(
         return 0;
     }
 
-    /* Cycle sort column forward — ']' */
-    if (key == ']')
+    /* Cycle sort column forward — '>' or ']' */
+    if (key == '>' || key == ']')
     {
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            /* 0:NAME 1:TYP 2:SIZE 3:Hz
-             * 4:INODE 5:COUNT */
-            lay->sort_key_stream =
-                (lay->sort_key_stream + 1) % 6;
+            /* 0:NAME 1:TYP 2:SIZE 3:Hz 4:MB/s 5:INODE 6:COUNT */
+            lay->sort_key_stream = (lay->sort_key_stream + 1) % 7;
             break;
         case OV_FOCUS_PROCS:
-            /* 0:NAME 1:PID 2:STAT 3:Hz */
-            lay->sort_key_proc =
-                (lay->sort_key_proc + 1) % 4;
+            /* 0:NAME 1:PID 2:STAT 3:Hz 4:MEM */
+            lay->sort_key_proc = (lay->sort_key_proc + 1) % 5;
             break;
         case OV_FOCUS_FPS:
-            /* 0:NAME 1:C(alive) */
-            lay->sort_key_fps =
-                (lay->sort_key_fps + 1) % 2;
+            /* 0:NAME 1:C(alive) 2:MEM */
+            lay->sort_key_fps = (lay->sort_key_fps + 1) % 3;
             break;
-        default:
+        default: break;
+        }
+        lay->sort_pending = 1;
+        return 0;
+    }
+
+    /* Cycle sort column backward — '<' */
+    if (key == '<')
+    {
+        switch (lay->focus)
+        {
+        case OV_FOCUS_STREAMS:
+            lay->sort_key_stream = (lay->sort_key_stream + 6) % 7;
             break;
+        case OV_FOCUS_PROCS:
+            lay->sort_key_proc = (lay->sort_key_proc + 4) % 5;
+            break;
+        case OV_FOCUS_FPS:
+            lay->sort_key_fps = (lay->sort_key_fps + 2) % 3;
+            break;
+        default: break;
         }
         lay->sort_pending = 1;
         return 0;
@@ -599,23 +663,36 @@ int ov_handle_key(
     {
         switch (lay->focus)
         {
-        case OV_FOCUS_STREAMS:
-            lay->sort_dir_stream =
-                !lay->sort_dir_stream;
-            break;
-        case OV_FOCUS_PROCS:
-            lay->sort_dir_proc =
-                !lay->sort_dir_proc;
-            break;
-        case OV_FOCUS_FPS:
-            lay->sort_dir_fps =
-                !lay->sort_dir_fps;
-            break;
-        default:
-            break;
+        case OV_FOCUS_STREAMS: lay->sort_dir_stream = !lay->sort_dir_stream; break;
+        case OV_FOCUS_PROCS:   lay->sort_dir_proc = !lay->sort_dir_proc; break;
+        case OV_FOCUS_FPS:     lay->sort_dir_fps = !lay->sort_dir_fps; break;
+        default: break;
         }
         lay->sort_pending = 1;
         return 0;
+    }
+
+    /* -------------------------------------------------------
+     * Global Control Actions (Process / FPS)
+     * ------------------------------------------------------- */
+    if (key == 'k' || key == 'K' || key == 'x')
+    {
+        if (lay->focus == OV_FOCUS_PROCS && lay->sel_proc >= 0 && lay->sel_proc < m->nb_procs)
+        {
+            const OV_PROC *p = &m->procs[lay->sel_proc];
+            if (key == 'k') ov_ctrl_proc_kill(p);
+            else if (key == 'K') ov_ctrl_proc_sigkill(p);
+            else if (key == 'x') ov_ctrl_proc_pause_toggle(p);
+            return 0;
+        }
+        else if (lay->focus == OV_FOCUS_FPS && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
+        {
+            const OV_FPS *f = &m->fps[lay->sel_fps];
+            if (key == 'k') ov_ctrl_fps_signal_pid(f, SIGTERM);
+            else if (key == 'K') ov_ctrl_fps_signal_pid(f, SIGKILL);
+            else if (key == 'x') ov_ctrl_fps_pause_toggle(f);
+            return 0;
+        }
     }
 
     /* -------------------------------------------------------
@@ -656,19 +733,6 @@ int ov_handle_key(
             }
         } /* OV_FOCUS_STREAMS */
 
-        /* Procs panel actions */
-        if (lay->focus == OV_FOCUS_PROCS
-            && lay->sel_proc >= 0
-            && lay->sel_proc < m->nb_procs)
-        {
-            const OV_PROC *p = &m->procs[lay->sel_proc];
-
-            if (key == 'k')
-            {
-                ov_ctrl_proc_kill(p);
-                return 0;
-            }
-        } /* OV_FOCUS_PROCS */
     } /* ctrl_mode */
 
     /* Navigation: UP/DOWN/PGUP/PGDN */

@@ -211,7 +211,7 @@ static inline void ov_buf_gradient_bar(
                       : 0.0f;
             ov_rgb_t c = ov_rgb_lerp(lo, hi, t);
             ov_theme_bg(c);
-            ov_buf_append(" ", 1);
+            ov_buf_printf(" ");
         }
         else
         {

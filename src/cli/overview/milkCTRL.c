@@ -44,6 +44,14 @@ int ov_mouse_btn = 0;
 char ov__screenbuf[OV_SCREENBUF_SIZE];
 int  ov__screenbuf_len = 0;
 
+OV_CELL  ov__shadow[OV_MAX_ROWS][OV_MAX_COLS];
+OV_CELL  ov__front[OV_MAX_ROWS][OV_MAX_COLS];
+int      ov__cursor_row = 1;
+int      ov__cursor_col = 1;
+uint32_t ov__current_fg = OV_COLOR_NONE;
+uint32_t ov__current_bg = OV_COLOR_NONE;
+uint8_t  ov__current_attr = 0;
+
 /* =========================================================
  * Signal handlers
  * ========================================================= */
@@ -99,7 +107,7 @@ extern int ov_handle_key(
     const OV_MODEL  *m);
 
 
-#define MILKCTRL_VERSION "1.0.1"
+#define MILKCTRL_VERSION "2.0.0"
 
 /* =========================================================
  * Usage / help
@@ -110,23 +118,50 @@ static void print_usage(const char *prog)
     printf("milkCTRL version %s\n\n", MILKCTRL_VERSION);
     printf("Usage: %s [options]\n", prog);
     printf("\n");
-    printf("  milkCTRL: unified system dashboard\n");
+    printf("  Unified system dashboard TUI.\n");
     printf("  Shows streams, FPS entries, processes,\n");
-    printf("  and their connections in a single TUI.\n");
-    printf("\n");
-    printf("Options:\n");
+    printf("  and their connections in a single view.\n");
+    printf("\nOptions:\n");
     printf("  -h, --help     Show this help\n");
     printf("  -h1            One-line description\n");
     printf("  -d DIR         Override SHM directory\n");
-    printf("\n");
-    printf("Keys:\n");
-    printf("  F2-F6, ^Left/^Right Switch views\n"
-           "         (dashboard/graph/streams/procs/fps)\n");
-    printf("  TAB    Cycle panel focus\n");
-    printf("  UP/DN  Navigate\n");
-    printf("  +/-    Adjust scan rate\n");
-    printf("  h      Help overlay\n");
-    printf("  q/x    Exit\n");
+    printf("\nNavigation:\n");
+    printf("  F2-F6, ^Left/^Right  Switch views\n");
+    printf("  TAB        Cycle panel focus\n");
+    printf("  UP/DN      Navigate list\n");
+    printf("  Left/Right Panel focus / scroll\n");
+    printf("  PgUp/Dn    Scroll page\n");
+    printf("  Home/End   Jump to top/bottom\n");
+    printf("\nSorting:\n");
+    printf("  </>, S/s   Change sort column / mode\n");
+    printf("  [          Toggle sort direction\n");
+    printf("\nDisplay:\n");
+    printf("  +/-        Adjust scan rate\n");
+    printf("  D          Toggle detail pane\n");
+    printf("  p          Pause/resume display\n");
+    printf("  SPACE      Freeze selection highlight\n");
+    printf("  /          Filter (regex search)\n");
+    printf("  W          Export snapshot to file\n");
+    printf("  h          Help overlay\n");
+    printf("\nControl mode (c to toggle):\n");
+    printf("  FPS:  r=run  s=conf\n");
+    printf("  STRM: d=delete stream\n");
+    printf("\nProcess signals (PROCS & FPS panels):\n");
+    printf("  k    Graceful kill (SIGTERM)\n");
+    printf("  K    Immediate kill (SIGKILL)\n");
+    printf("  x    Pause/resume (SIGSTOP/SIGCONT)\n");
+    printf("\nFPS panel:\n");
+    printf("  ENTER  Open milk-fpsCTRL for selection\n");
+    printf("\nColumns:\n");
+    printf("  STREAMS: MB/s throughput,"
+           " total in panel footer\n");
+    printf("  PROCS:   DUTY%% (exec/iter),"
+           " CPU%%, MEM (RSS)\n");
+    printf("  FPS:     MEM (RSS)\n");
+    printf("\nMouse:\n");
+    printf("  Click=select  DblClick=detail\n");
+    printf("  Scroll wheel=navigate list\n");
+    printf("\n  q    Quit\n");
 }
 
 
@@ -239,6 +274,7 @@ int main(int argc, char *argv[])
             const char cls[] = "\033[2J\033[H";
             if (write(STDOUT_FILENO,
                       cls, sizeof(cls) - 1) < 0) {}
+            ov_buf_force_clear();
             last_rows = lay.term_rows;
             last_cols = lay.term_cols;
             need_render = 1;
@@ -297,8 +333,7 @@ int main(int argc, char *argv[])
                     if (pfd.revents & POLLIN)
                     {
                         int pk = ov_get_key();
-                        if (pk == 'q'
-                            || pk == 'x')
+                        if (pk == 'q')
                         {
                             quit_now = 1;
                         }
