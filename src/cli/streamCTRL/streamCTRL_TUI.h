@@ -43,6 +43,17 @@
 #define nameNBchar          100
 #define PIDnameStringLen    12
 
+/* Sort column identifiers for streamCTRL */
+#define STREAM_SORT_NONE  0
+#define STREAM_SORT_NAME  1
+#define STREAM_SORT_TYPE  2
+#define STREAM_SORT_SIZE  3
+#define STREAM_SORT_CNT0  4
+#define STREAM_SORT_CPID  5
+#define STREAM_SORT_OPID  6
+#define STREAM_SORT_FREQ  7
+#define STREAM_NB_SORT_COLS 7
+
 #define DISPLAY_MODE_HELP     1
 #define DISPLAY_MODE_SUMMARY  2
 #define DISPLAY_MODE_WRITE    3
