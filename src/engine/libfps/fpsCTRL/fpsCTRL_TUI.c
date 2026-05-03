@@ -93,7 +93,12 @@ fpsCTRLscreen_print_footer_status(
     else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER) SC_APPEND("SEQ] ");
     
     if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL) {
-        SC_APPEND("[SORT: %s] ", fpsCTRLvar->sort_mode ? "A-Z" : "Default");
+        static const char *smode[] = {
+            "Default", "A-Z", "Status"
+        };
+        int sm = fpsCTRLvar->sort_mode;
+        if (sm < 0 || sm > 2) sm = 0;
+        SC_APPEND("[SORT: %s] ", smode[sm]);
     }
 
     SC_APPEND("[PID %d] [%d FPS] ", (int)getpid(), NBfps);
@@ -141,6 +146,7 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "LEFT / RIGHT", "Collapse/expand tree depth");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "/", "Fuzzy search parameter tree");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "S", "Toggle alphabetical sorting");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "]", "Cycle sort: Default -> A-Z -> Status");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "y", "Yank parameter value to tmux buffer");
 
     ADD_LINE("");

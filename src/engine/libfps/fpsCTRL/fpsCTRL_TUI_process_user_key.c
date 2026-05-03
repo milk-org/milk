@@ -353,8 +353,17 @@ int fpsCTRL_TUI_process_user_key(
             fpsCTRLvar->search_string[0] = '\0';
             break;
 
-        case 'S':     // Toggle sort mode
-            fpsCTRLvar->sort_mode = (fpsCTRLvar->sort_mode + 1) % 2;
+        case 'S':     // Toggle sort mode (legacy)
+            fpsCTRLvar->sort_mode =
+                (fpsCTRLvar->sort_mode + 1) % 2;
+            break;
+
+        case ']':     // Next sort column
+            fpsCTRLvar->sort_mode =
+                (fpsCTRLvar->sort_mode + 1) % 3;
+            break;
+
+        case '[':     // Toggle sort direction (future)
             break;
 
         case 'y':     // Yank to tmux buffer
@@ -612,14 +621,8 @@ int fpsCTRL_TUI_process_user_key(
         case ANSI_KEY_RIGHT :
             if(keywnode[fpsCTRLvar->nodeSelected].leaf == 0)   // this is a directory
             {
-                if(keywnode[keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]]].leaf
-                        == 0)
-                {
-                    fpsCTRLvar->directorynodeSelected =
-                        keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]];
-                    fpsCTRLvar->nodeSelected = fpsCTRLvar->directorynodeSelected;
-                    fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
-                }
+                fpsCTRLvar->directorynodeSelected = fpsCTRLvar->nodeSelected;
+                fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
             }
             break;
 
