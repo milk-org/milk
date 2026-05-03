@@ -155,3 +155,108 @@ void ov_ctrl_proc_kill(const OV_PROC *p)
 
     kill(p->PID, SIGTERM);
 }
+
+/**
+ * ov_ctrl_proc_sigkill - send SIGKILL to a process.
+ * @p: process model entry
+ */
+void ov_ctrl_proc_sigkill(const OV_PROC *p)
+{
+    if (p == NULL || p->PID <= 0) return;
+    kill(p->PID, SIGKILL);
+}
+
+/**
+ * pid_is_stopped - check if a process is in 'T' state.
+ * @pid: process PID
+ *
+ * Reads /proc/[pid]/stat and returns 1 if the state
+ * character is 'T' (stopped), 0 otherwise.
+ */
+static int pid_is_stopped(pid_t pid)
+{
+    if (pid <= 0)
+    {
+        return 0;
+    }
+    char path[64];
+    snprintf(path, sizeof(path), "/proc/%d/stat", pid);
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        return 0;
+    }
+    int p;
+    char comm[256];
+    char state = '?';
+    if (fscanf(fp, "%d %s %c", &p, comm, &state) != 3)
+    {
+        state = '?';
+    }
+    fclose(fp);
+    return (state == 'T');
+}
+
+/**
+ * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT
+ * for a process.
+ * @p: process model entry
+ */
+void ov_ctrl_proc_pause_toggle(const OV_PROC *p)
+{
+    if (p == NULL || p->PID <= 0)
+    {
+        return;
+    }
+    kill(p->PID, pid_is_stopped(p->PID)
+                 ? SIGCONT : SIGSTOP);
+}
+
+/**
+ * ov_ctrl_fps_signal_pid - send signal to FPS PIDs.
+ * @f:   FPS model entry
+ * @sig: signal number
+ */
+void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig)
+{
+    if (f == NULL)
+    {
+        return;
+    }
+    if (f->run_alive && f->runpid > 0)
+    {
+        kill(f->runpid, sig);
+    }
+    if (f->conf_alive && f->confpid > 0)
+    {
+        kill(f->confpid, sig);
+    }
+}
+
+/**
+ * ov_ctrl_fps_pause_toggle - toggle SIGSTOP/SIGCONT
+ * for FPS run and conf processes.
+ * @f: FPS model entry
+ */
+void ov_ctrl_fps_pause_toggle(const OV_FPS *f)
+{
+    if (f == NULL)
+    {
+        return;
+    }
+    /* Use runpid state to decide direction */
+    int stopped = 0;
+    if (f->run_alive && f->runpid > 0)
+    {
+        stopped = pid_is_stopped(f->runpid);
+    }
+    int sig = stopped ? SIGCONT : SIGSTOP;
+    if (f->run_alive && f->runpid > 0)
+    {
+        kill(f->runpid, sig);
+    }
+    if (f->conf_alive && f->confpid > 0)
+    {
+        kill(f->confpid, sig);
+    }
+}
