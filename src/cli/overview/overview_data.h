@@ -32,6 +32,22 @@
 #define OV_SPARKLINE_LEN     40
 
 /* =========================================================
+ * PID status (used for uniform PID coloring)
+ * ========================================================= */
+
+typedef enum
+{
+    OV_PID_DEAD   = 0,
+    OV_PID_ALIVE  = 1,
+    OV_PID_ZOMBIE = 2,
+} ov_pid_status_t;
+
+/**
+ * pid_get_status - check PID liveness and zombie state.
+ */
+ov_pid_status_t pid_get_status(pid_t pid);
+
+/* =========================================================
  * Node types
  * ========================================================= */
 
@@ -81,6 +97,15 @@ typedef struct
     pid_t    creatorPID;
     pid_t    ownerPID;
     ino_t    inode;
+
+    /* semaphores */
+    int      nb_sem;
+    int      semval[10];
+
+    /* Write / read PIDs */
+    pid_t    write_pid;       /**< writer PID (from proc trace) */
+    int      nb_read_pids;
+    pid_t    read_pids[IMAGE_NB_SEMAPHORE];
 
     /* process trace (from STREAM_PROC_TRACE) */
     int      nb_proctrace;
@@ -285,6 +310,15 @@ void ov_model_full_scan(OV_MODEL *model);
  */
 int ov_scan_has_new_data(void);
 
+/**
+ * ov_scan_cache_cleanup - release all persistent
+ * SHM mappings held by the scan caches.
+ *
+ * Must be called when the scan thread stops to
+ * avoid leaking file descriptors and mappings.
+ */
+void ov_scan_cache_cleanup(void);
+
 
 
 /* =========================================================
@@ -346,22 +380,45 @@ void ov_add_edge(
 /**
  * ov_sort_streams - sort streams array in-place.
  * @model: model whose streams to sort
- * @key:   0=name, 1=Hz, 2=type
+ * @key:   0=name, 1=type, 2=size, 3=Hz, 4=inode, 5=count
+ * @dir:   0=ascending, 1=descending
  */
-void ov_sort_streams(OV_MODEL *model, int key);
+void ov_sort_streams(
+    OV_MODEL *model, int key, int dir);
 
 /**
  * ov_sort_procs - sort procs array in-place.
  * @model: model whose procs to sort
- * @key:   0=name, 1=PID, 2=Hz, 3=status
+ * @key:   0=name, 1=PID, 2=status, 3=Hz
+ * @dir:   0=ascending, 1=descending
  */
-void ov_sort_procs(OV_MODEL *model, int key);
+void ov_sort_procs(
+    OV_MODEL *model, int key, int dir);
 
 /**
  * ov_sort_fps - sort FPS array in-place.
  * @model: model whose FPS entries to sort
  * @key:   0=name, 1=conf+run alive status
+ * @dir:   0=ascending, 1=descending
  */
-void ov_sort_fps(OV_MODEL *model, int key);
+void ov_sort_fps(
+    OV_MODEL *model, int key, int dir);
+
+/**
+ * ov_filter_build - build filtered index array.
+ * @pattern:  regex pattern string (empty = match all)
+ * @names:    array of name pointers
+ * @count:    total item count
+ * @out:      output index array (caller-allocated)
+ * @max_out:  capacity of @out
+ *
+ * Return: number of matching indices written to @out.
+ */
+int ov_filter_build(
+    const char  *pattern,
+    const char **names,
+    int          count,
+    int         *out,
+    int          max_out);
 
 #endif /* OVERVIEW_DATA_H */

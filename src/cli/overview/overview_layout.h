@@ -73,8 +73,18 @@ typedef struct {
     int          sort_key_stream;
     int          sort_key_proc;
     int          sort_key_fps;
-    int          sort_dir;
+    /* Sort direction per panel: 0=ascending, 1=descending */
+    int          sort_dir_stream;
+    int          sort_dir_proc;
+    int          sort_dir_fps;
     int          sort_pending;
+    /* Freeze selection: preview + cross-highlights
+     * stay locked while navigation continues */
+    int          freeze;
+    ov_focus_t   freeze_focus;
+    int          freeze_sel_stream;
+    int          freeze_sel_proc;
+    int          freeze_sel_fps;
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);

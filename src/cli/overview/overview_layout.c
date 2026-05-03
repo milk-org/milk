@@ -21,11 +21,14 @@ void ov_layout_compute(OV_LAYOUT *lay)
     /* Status: 1 row at bottom */
     lay->r_status = (OV_RECT){H, 1, 1, W};
 
-    int body_top = 2;
-    int body_h   = H - 2;
+    int body_top;
+    int body_h;
 
     if (lay->view == OV_VIEW_DASHBOARD)
     {
+        /* Row 2 = preview bar for selected item */
+        body_top = 3;
+        body_h   = H - 3;
         /* 2x2 grid layout */
         int half_w = W / 2;
         int half_h = body_h / 2;
@@ -49,6 +52,8 @@ void ov_layout_compute(OV_LAYOUT *lay)
     }
     else
     {
+        body_top = 2;
+        body_h   = H - 2;
         /* Full-screen for single-view modes */
         lay->r_streams = (OV_RECT){
             body_top, 1, body_h, W

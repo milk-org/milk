@@ -16,6 +16,45 @@
 #include <time.h>
 #include <math.h>
 #include <regex.h>
+#include <sys/resource.h>
+#include <sys/time.h>
+
+static double get_cpu_usage(void)
+{
+    static struct rusage last_usage;
+    static struct timespec last_time;
+    static int initialized = 0;
+    static double smoothed_cpu = 0.0;
+    
+    struct rusage current_usage;
+    struct timespec current_time;
+    
+    getrusage(RUSAGE_SELF, &current_usage);
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    
+    if (!initialized) {
+        last_usage = current_usage;
+        last_time = current_time;
+        initialized = 1;
+        return 0.0;
+    }
+    
+    double dt = (current_time.tv_sec - last_time.tv_sec) +
+                (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
+                
+    if (dt >= 0.5) { /* update every 0.5s */
+        double d_utime = (current_usage.ru_utime.tv_sec - last_usage.ru_utime.tv_sec) +
+                         (current_usage.ru_utime.tv_usec - last_usage.ru_utime.tv_usec) / 1e6;
+        double d_stime = (current_usage.ru_stime.tv_sec - last_usage.ru_stime.tv_sec) +
+                         (current_usage.ru_stime.tv_usec - last_usage.ru_stime.tv_usec) / 1e6;
+                         
+        double inst_cpu = 100.0 * (d_utime + d_stime) / dt;
+        smoothed_cpu = inst_cpu;
+        last_usage = current_usage;
+        last_time = current_time;
+    }
+    return smoothed_cpu;
+}
 
 #include "overview_defs.h"
 #include "overview_ansi.h"
@@ -192,7 +231,7 @@ static void render_highlighted_name(
  *
  * Return: number of matching indices written to @out.
  */
-static int ov_filter_build(
+int ov_filter_build(
     const char  *pattern,
     const char **names,
     int          count,
@@ -265,6 +304,11 @@ typedef struct
      * Supports up to OV_FPS_MAX_STREAM_PARAMS (24) params per FPS.
      */
     uint32_t fps_param_mask[OV_MAX_FPS];
+    /**
+     * PID of the currently selected process (or 0).
+     * Other panels highlight matching PID fields.
+     */
+    pid_t sel_pid;
 } OV_RELATED;
 
 static void bset(uint64_t *words, int idx)
@@ -294,22 +338,37 @@ static void ov_compute_related(
     memset(out, 0, sizeof(*out));
     /* fps_param_mask initialised to 0 by memset — no matches yet */
 
+    /* Use frozen selection when freeze is active */
+    ov_focus_t focus   = lay->freeze
+                         ? lay->freeze_focus
+                         : lay->focus;
+    int sel_stream_idx = lay->freeze
+                         ? lay->freeze_sel_stream
+                         : lay->sel_stream;
+    int sel_proc_idx   = lay->freeze
+                         ? lay->freeze_sel_proc
+                         : lay->sel_proc;
+    int sel_fps_idx    = lay->freeze
+                         ? lay->freeze_sel_fps
+                         : lay->sel_fps;
+
     /* Determine the graph node index of the selected item */
     int sel_node = -1;
-    if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0
-        && lay->sel_stream < m->nb_streams)
+    if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0
+        && sel_stream_idx < m->nb_streams)
     {
-        sel_node = m->streams[lay->sel_stream].node_idx;
+        sel_node = m->streams[sel_stream_idx].node_idx;
     }
-    else if (lay->focus == OV_FOCUS_FPS && lay->sel_fps >= 0
-             && lay->sel_fps < m->nb_fps)
+    else if (focus == OV_FOCUS_FPS && sel_fps_idx >= 0
+             && sel_fps_idx < m->nb_fps)
     {
-        sel_node = m->fps[lay->sel_fps].node_idx;
+        sel_node = m->fps[sel_fps_idx].node_idx;
     }
-    else if (lay->focus == OV_FOCUS_PROCS && lay->sel_proc >= 0
-             && lay->sel_proc < m->nb_procs)
+    else if (focus == OV_FOCUS_PROCS && sel_proc_idx >= 0
+             && sel_proc_idx < m->nb_procs)
     {
-        sel_node = m->procs[lay->sel_proc].node_idx;
+        sel_node = m->procs[sel_proc_idx].node_idx;
+        out->sel_pid = m->procs[sel_proc_idx].PID;
     }
 
     if (sel_node < 0)
@@ -359,12 +418,12 @@ static void ov_compute_related(
             /* Find all stream params of this FPS that match sel_node.
              * Only meaningful when the selection is a stream.
              * OR all matching indices into the bitmask. */
-            if (lay->focus == OV_FOCUS_STREAMS
-                && lay->sel_stream >= 0
-                && lay->sel_stream < m->nb_streams)
+            if (focus == OV_FOCUS_STREAMS
+                && sel_stream_idx >= 0
+                && sel_stream_idx < m->nb_streams)
             {
                 const char *sname =
-                    m->streams[lay->sel_stream].name;
+                    m->streams[sel_stream_idx].name;
                 const OV_FPS *f = &m->fps[fi];
                 for (int sp = 0; sp < f->nb_stream_params; sp++)
                 {
@@ -573,8 +632,13 @@ void ov_render_header(
     int c5 = snprintf(NULL, 0, " %d edg", m->nb_edges);
     ov_buf_printf(" %d edg", m->nb_edges);
 
+    ov_theme_fg(OV_FG_DIM);
+    double cpu_pct = get_cpu_usage();
+    int c6 = snprintf(NULL, 0, "  CPU: %4.1f%%", cpu_pct);
+    ov_buf_printf("  CPU: %4.1f%%", cpu_pct);
+
     /* c1 visual length: 17 chars for " ● milkCTRL " */
-    int chars_left = 17 + ctrl_w + c2 + c3 + c4 + c5;
+    int chars_left = 17 + ctrl_w + c2 + c3 + c4 + c5 + c6;
 
     int tabs_width = 0;
     for (int v = 0; v < OV_VIEW_COUNT; v++)
@@ -608,6 +672,233 @@ void ov_render_header(
     }
 
     ov_theme_bg(OV_BG_HEADER);
+}
+
+/**
+ * ov_render_preview_line - full-width preview of
+ *     the currently selected item (dashboard only).
+ *
+ * Renders on row 2, between header and panels.
+ * Shows untruncated fields for the focused panel's
+ * selected item.
+ */
+static void ov_render_preview_line(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
+{
+    int W = lay->term_cols;
+
+    ov_buf_pos(2, 1);
+    ov_theme_bg(OV_BG_PANEL);
+    ov_buf_hline(' ', W);
+    ov_buf_pos(2, 1);
+
+    /* Use frozen selection when freeze is active */
+    ov_focus_t focus = lay->freeze
+                       ? lay->freeze_focus
+                       : lay->focus;
+    int ssel = lay->freeze
+               ? lay->freeze_sel_stream
+               : lay->sel_stream;
+    int psel = lay->freeze
+               ? lay->freeze_sel_proc
+               : lay->sel_proc;
+    int fsel = lay->freeze
+               ? lay->freeze_sel_fps
+               : lay->sel_fps;
+
+    char line[512];
+    int  len = 0;
+    ov_rgb_t label_color = OV_FG_DIM;
+
+    switch (focus)
+    {
+    case OV_FOCUS_STREAMS:
+    {
+        label_color = OV_FG_STREAM;
+        if (ssel < 0 || ssel >= m->nb_streams)
+        {
+            break;
+        }
+        const OV_STREAM *s = &m->streams[ssel];
+        char szb[32];
+        if (s->naxis == 1)
+        {
+            snprintf(szb, sizeof(szb), "%u",
+                (unsigned) s->size[0]);
+        }
+        else if (s->naxis == 2)
+        {
+            snprintf(szb, sizeof(szb), "%ux%u",
+                (unsigned) s->size[0],
+                (unsigned) s->size[1]);
+        }
+        else
+        {
+            snprintf(szb, sizeof(szb),
+                "%ux%ux%u",
+                (unsigned) s->size[0],
+                (unsigned) s->size[1],
+                (unsigned) s->size[2]);
+        }
+        len = snprintf(line, sizeof(line),
+            " STM  %s  %s %s"
+            "  Hz:%.1f  ino:%lu"
+            "  own:%d  cnt:%lu"
+            "  wpid:%d  sem:%d",
+            s->name,
+            render_dtype(s->datatype),
+            szb,
+            s->update_hz,
+            (unsigned long) s->inode,
+            (int) s->ownerPID,
+            (unsigned long) s->cnt0,
+            (int) s->write_pid,
+            s->nb_sem);
+        break;
+    }
+    case OV_FOCUS_PROCS:
+    {
+        label_color = OV_FG_PROC;
+        if (psel < 0 || psel >= m->nb_procs)
+        {
+            break;
+        }
+        const OV_PROC *p = &m->procs[psel];
+        const char *sl;
+        switch (p->loopstat)
+        {
+        case 0:  sl = "IDLE"; break;
+        case 1:  sl = "RUN";  break;
+        case 2:  sl = "PAUS"; break;
+        case 3:  sl = "TERM"; break;
+        case 4:  sl = "ERR";  break;
+        default: sl = "??";   break;
+        }
+        len = snprintf(line, sizeof(line),
+            " PRC  %s  PID:%d  %s"
+            "  Hz:%.1f  trig:%s"
+            "  sem:%d  loop:%ld"
+            "  miss:%d  prio:%d",
+            p->name, (int) p->PID, sl,
+            p->loop_hz,
+            p->trigstreamname[0]
+                ? p->trigstreamname : "-",
+            p->triggersem,
+            (long) p->loopcnt,
+            p->triggermissed,
+            p->rt_priority);
+        break;
+    }
+    case OV_FOCUS_FPS:
+    {
+        label_color = OV_FG_FPS;
+        if (fsel < 0 || fsel >= m->nb_fps)
+        {
+            break;
+        }
+        const OV_FPS *f = &m->fps[fsel];
+        len = snprintf(line, sizeof(line),
+            " FPS  %s  C:%s R:%s"
+            "  st:%08X  cpid:%d  rpid:%d"
+            "  %s",
+            f->name,
+            f->conf_alive ? "Y" : "-",
+            f->run_alive  ? "Y" : "-",
+            f->md_status,
+            (int) f->confpid,
+            (int) f->runpid,
+            f->description);
+        break;
+    }
+    default:
+        break;
+    }
+
+    if (len > 0)
+    {
+        /* Label badge */
+        ov_theme_bg(label_color);
+        ov_buf_fg(0, 0, 0);
+        ov_buf_bold();
+        ov_buf_printf("%.*s", 5, line);
+        ov_buf_reset_attr();
+
+        /* Remaining content */
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_TEXT);
+        int rem = len - 5;
+        if (rem > W - 5)
+        {
+            rem = W - 5;
+        }
+        if (rem > 0)
+        {
+            ov_buf_printf("%.*s", rem, line + 5);
+        }
+    }
+
+    /* [FREEZE] badge on right edge when frozen */
+    if (lay->freeze)
+    {
+        const char *badge = " FREEZE ";
+        int bw = 8;
+        int col = W - bw + 1;
+        if (col > 1)
+        {
+            ov_buf_pos(2, col);
+            ov_buf_bg(60, 130, 200);
+            ov_buf_fg(255, 255, 255);
+            ov_buf_bold();
+            ov_buf_printf("%s", badge);
+        }
+    }
+
+    ov_buf_reset_attr();
+}
+
+static inline ov_rgb_t ov_get_sem_color(int val) {
+    if (val == 0) return (ov_rgb_t){0, 150, 0}; // subtle green
+    if (val >= 10) return (ov_rgb_t){160, 90, 30}; // brown
+    int r = 100 + (val - 1) * (180 - 100) / 9;
+    int g = 120 - (val - 1) * (120 - 40) / 9;
+    int b = 30;
+    return (ov_rgb_t){r, g, b};
+}
+
+/**
+ * sort_col_label - build a column label with
+ * an arrow when this column is the sort key.
+ * @buf:      output buffer
+ * @bufsz:    buffer size
+ * @label:    plain column label (e.g. "NAME")
+ * @col_key:  sort key for this column
+ * @cur_key:  currently active sort key
+ * @desc:     1 if this column's comparator is
+ *            descending, 0 if ascending
+ *
+ * When col_key == cur_key the label gets a
+ * trailing arrow (▲ asc, ▼ desc).
+ */
+static inline void sort_col_label(
+    char *buf,
+    int   bufsz,
+    const char *label,
+    int   col_key,
+    int   cur_key,
+    int   desc)
+{
+    if (col_key == cur_key)
+    {
+        snprintf(buf, bufsz, "%s%s",
+                 label,
+                 desc ? "\xe2\x96\xbc"   /* ▼ */
+                      : "\xe2\x96\xb2"); /* ▲ */
+    }
+    else
+    {
+        snprintf(buf, bufsz, "%s", label);
+    }
 }
 
 void ov_render_streams_panel(
@@ -655,17 +946,50 @@ void ov_render_streams_panel(
         lay->focus == OV_FOCUS_STREAMS);
 
     int hrow = r.row + 1;
+    int hs   = lay->hscroll_stream;
+
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf(" ");
     ov_theme_fg(OV_FG_DIM);
-    char htext[128];
-    int hlen = snprintf(
-        htext, sizeof(htext),
-        "%-14s %3s %11s %6s",
-        "NAME", "TYP", "SIZE", "Hz");
-    ov_buf_printf("%s", htext);
-    render_pad_spaces(1 + hlen, r.width);
+    
+    char htext[256];
+    int hlen;
+    {
+        int sk = lay->sort_key_stream;
+        int sd = lay->sort_dir_stream;
+        char c_name[20], c_typ[10], c_size[16];
+        char c_hz[10], c_ino[16], c_cnt[16];
+        sort_col_label(c_name, sizeof(c_name),
+                       "NAME", 0, sk, sd);
+        sort_col_label(c_typ, sizeof(c_typ),
+                       "TYP", 1, sk, sd);
+        sort_col_label(c_size, sizeof(c_size),
+                       "SIZE", 2, sk, sd);
+        sort_col_label(c_hz, sizeof(c_hz),
+                       "Hz", 3, sk, sd);
+        sort_col_label(c_ino, sizeof(c_ino),
+                       "INODE", 4, sk, sd);
+        sort_col_label(c_cnt, sizeof(c_cnt),
+                       "COUNT", 5, sk, sd);
+        hlen = snprintf(
+            htext, sizeof(htext),
+            "%-14s %3s %11s %6s"
+            " %10s %7s %10s %10s"
+            " %7s %s",
+            c_name, c_typ, c_size, c_hz,
+            c_ino, "OWNER", c_cnt, "SEMS",
+            "WPID", "RPID");
+    }
+    
+    {
+        int vis = hlen - hs;
+        if (vis < 0) vis = 0;
+        const char *start_str = htext + hs;
+        if (hs >= hlen) { start_str = ""; vis = 0; }
+        ov_buf_printf("%.*s", vis, start_str);
+        render_pad_spaces(1 + vis, r.width);
+    }
 
     int max_rows = r.height - 3;
     int start = lay->scroll_stream;
@@ -681,90 +1005,157 @@ void ov_render_streams_panel(
             int is_sel =
                 (fi == lay->sel_stream
                  && lay->focus == OV_FOCUS_STREAMS);
+            int is_frozen = (lay->freeze
+                && lay->freeze_focus
+                   == OV_FOCUS_STREAMS
+                && fi == lay->freeze_sel_stream);
+            ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int is_rel =
-                (!is_sel
-                 && lay->focus != OV_FOCUS_STREAMS
+                (!is_sel && !is_frozen
+                 && eff_focus != OV_FOCUS_STREAMS
                  && rel != NULL
                  && bget(rel->streams, si));
             ov_rgb_t row_bg = is_sel
                 ? OV_BG_SELECTED
+                : is_frozen ? OV_BG_FROZEN
                 : is_rel ? OV_BG_RELATED
                          : OV_BG_PANEL;
+
+            int hs_rem = hs;
+            int printed = 1;
+            int avail = r.width - 2;
+
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
-            ov_buf_printf(" ");
-
-            int n1 = 15;
-            render_highlighted_name(
-                s->name, 14, &re, has_re,
-                s->active ? OV_FG_STREAM : OV_FG_DIM,
-                row_bg);
-            ov_buf_printf(" ");
-
-            ov_theme_fg(OV_FG_TEXT);
-            int n2 = snprintf(
-                NULL, 0, "%3s ",
-                render_dtype(s->datatype));
-            ov_buf_printf(
-                "%3s ", render_dtype(s->datatype));
-
-            char sizebuf[16];
-            if (s->naxis == 1)
-            {
-                snprintf(sizebuf, sizeof(sizebuf),
-                         "%u",
-                         (unsigned) s->size[0]);
-            }
-            else if (s->naxis == 2)
-            {
-                snprintf(sizebuf, sizeof(sizebuf),
-                         "%ux%u",
-                         (unsigned) s->size[0],
-                         (unsigned) s->size[1]);
-            }
-            else
-            {
-                snprintf(sizebuf, sizeof(sizebuf),
-                         "%ux%ux%u",
-                         (unsigned) s->size[0],
-                         (unsigned) s->size[1],
-                         (unsigned) s->size[2]);
-            }
-
-            int n3 = snprintf(
-                NULL, 0, "%11s ", sizebuf);
-            ov_buf_printf("%11s ", sizebuf);
-
-            int n4 = 0;
-            if (s->update_hz > 0.1)
-            {
-                ov_rgb_t hzc = ov_rgb_lerp(
-                    OV_FG_DIM, OV_FG_ACTIVE,
-                    (float)(s->update_hz / 5000.0));
-                ov_theme_fg(hzc);
-                n4 = snprintf(
-                    NULL, 0, "%6.1f",
-                    s->update_hz);
-                ov_buf_printf(
-                    "%6.1f", s->update_hz);
-            }
-            else
-            {
-                ov_theme_fg(OV_FG_DIM);
-                n4 = snprintf(NULL, 0, "     -");
-                ov_buf_printf("     -");
-            }
-
-            int n5 = 0;
-            if (s->update_hz > 0.1)
-            {
+            if (s->update_hz > 0.1) {
                 ov_theme_fg(OV_FG_ACTIVE);
-                ov_buf_printf(" ●");
-                n5 = 2;
+                ov_buf_printf("●");
+            } else {
+                ov_buf_printf(" ");
             }
-            render_pad_spaces(
-                1 + n1 + n2 + n3 + n4 + n5,
-                r.width);
+
+            #define STRM_FIELD(color, fmt, ...)        \
+            do {                                       \
+                char _fb[80];                          \
+                int _fl = snprintf(                    \
+                    _fb, sizeof(_fb), fmt,              \
+                    ##__VA_ARGS__);                     \
+                int _skip = 0;                         \
+                if (hs_rem > 0) {                      \
+                    _skip = (hs_rem < _fl) ? hs_rem : _fl; \
+                    hs_rem -= _skip;                   \
+                }                                      \
+                int _vis = _fl - _skip;                \
+                int _max = avail - printed;            \
+                if (_vis > _max) _vis = _max;          \
+                if (_vis > 0) {                        \
+                    ov_theme_fg(color);                \
+                    ov_buf_printf("%.*s", _vis, _fb + _skip); \
+                    printed += _vis;                   \
+                }                                      \
+            } while(0)
+
+            /* PID field with inverted highlight when it
+             * matches the selected process PID:
+             * green background + bold black text */
+            #define STRM_PID_FIELD(pid_val, fmt, ...)  \
+            do {                                       \
+                int _match = (_spid > 0                \
+                    && (pid_t)(pid_val) == _spid);     \
+                if (_match) {                          \
+                    ov_theme_bg(OV_BG_PID_MATCH);      \
+                    ov_buf_bold();                      \
+                }                                      \
+                STRM_FIELD(                            \
+                    _match                             \
+                    ? ((ov_rgb_t){0,0,0})              \
+                    : ov_pid_color((pid_val)),          \
+                    fmt, ##__VA_ARGS__);                \
+                if (_match) {                          \
+                    ov_buf_reset_attr();                \
+                    ov_theme_bg(row_bg);                \
+                }                                      \
+            } while(0)
+
+            pid_t _spid = (rel != NULL)
+                        ? rel->sel_pid : 0;
+
+            ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
+            
+            STRM_FIELD(base_color, "%-14.14s ", s->name);
+            STRM_FIELD(OV_FG_MUTED, "%3s ", render_dtype(s->datatype));
+            
+            char sizebuf[32];
+            if (s->naxis == 1) {
+                snprintf(sizebuf, sizeof(sizebuf), "%u", (unsigned) s->size[0]);
+            } else if (s->naxis == 2) {
+                snprintf(sizebuf, sizeof(sizebuf), "%ux%u", (unsigned) s->size[0], (unsigned) s->size[1]);
+            } else {
+                snprintf(sizebuf, sizeof(sizebuf), "%ux%ux%u", (unsigned) s->size[0], (unsigned) s->size[1], (unsigned) s->size[2]);
+            }
+            STRM_FIELD(OV_FG_TEXT, "%11s ", sizebuf);
+            
+            if (s->update_hz > 0.1) {
+                STRM_FIELD(OV_FG_ACTIVE, "%6.1f ", s->update_hz);
+            } else {
+                STRM_FIELD(OV_FG_DIM, "     - ");
+            }
+
+            STRM_FIELD(OV_FG_DIM, "%10lu ", (unsigned long) s->inode);
+            
+            STRM_PID_FIELD(
+                s->ownerPID,
+                "%7d ", (int) s->ownerPID);
+            STRM_FIELD(OV_FG_CONN, "%10lu ", (unsigned long) s->cnt0);
+            
+            for (int sm = 0; sm < 10; sm++) {
+                if (sm < s->nb_sem) {
+                    int val = s->semval[sm];
+                    char c;
+                    if (val < 0) c = '-';
+                    else if (val > 9) c = '+';
+                    else c = '0' + val;
+                    STRM_FIELD(ov_get_sem_color(val), "%c", c);
+                } else {
+                    STRM_FIELD(OV_FG_DIM, ".");
+                }
+            }
+            STRM_FIELD(OV_FG_DIM, " ");
+
+            /* Write PID */
+            if (s->write_pid > 0) {
+                STRM_PID_FIELD(
+                    s->write_pid,
+                    "%7d ",
+                    (int) s->write_pid);
+            } else {
+                STRM_FIELD(OV_FG_DIM, "      - ");
+            }
+
+            /* Read PIDs (compact list) */
+            if (s->nb_read_pids > 0) {
+                for (int rp = 0;
+                     rp < s->nb_read_pids; rp++)
+                {
+                    if (rp > 0) {
+                        STRM_FIELD(OV_FG_DIM, ":");
+                    }
+                    STRM_PID_FIELD(
+                        s->read_pids[rp],
+                        "%d",
+                        (int) s->read_pids[rp]);
+                }
+                STRM_FIELD(OV_FG_DIM, " ");
+            } else {
+                STRM_FIELD(OV_FG_DIM, "- ");
+            }
+
+            #undef STRM_PID_FIELD
+            #undef STRM_FIELD
+            
+            // The active dot is now printed at the start of the line
+            
+            render_pad_spaces(printed, r.width);
         }
         else
         {
@@ -855,13 +1246,30 @@ void ov_render_procs_panel(
 
     /* Full header text (wider than panel) */
     char htext[256];
-    int hlen = snprintf(
-        htext, sizeof(htext),
-        "%-14s %6s %4s %6s %3s %-10s"
-        " %7s %2s",
-        "NAME", "PID", "STAT", "Hz",
-        "TRG", "trig-strm",
-        "exec", "");
+    int hlen;
+    {
+        int sk = lay->sort_key_proc;
+        int sd = lay->sort_dir_proc;
+        char c_name[20], c_pid[12];
+        char c_stat[10], c_hz[10];
+        sort_col_label(c_name, sizeof(c_name),
+                       "NAME", 0, sk, sd);
+        sort_col_label(c_pid, sizeof(c_pid),
+                       "PID", 1, sk, sd);
+        sort_col_label(c_stat, sizeof(c_stat),
+                       "STAT", 2, sk, sd);
+        sort_col_label(c_hz, sizeof(c_hz),
+                       "Hz", 3, sk, sd);
+        hlen = snprintf(
+            htext, sizeof(htext),
+            "%-14s %7s %4s %6s"
+            " %3s %-10s"
+            " %7s %2s %6s %10s %10s %4s",
+            c_name, c_pid, c_stat, c_hz,
+            "TRG", "trig-strm",
+            "exec", "", "CPU%",
+            "LOOPCNT", "MISSED", "PRIO");
+    }
     /* Apply hscroll: skip first hs chars */
     {
         int vis = hlen - hs;
@@ -892,13 +1300,19 @@ void ov_render_procs_panel(
             const OV_PROC *p = &m->procs[pi];
             int is_sel = (fi == lay->sel_proc
                           && lay->focus == OV_FOCUS_PROCS);
-            int is_rel = (!is_sel
-                          && lay->focus != OV_FOCUS_PROCS
-                          && rel != NULL
-                          && bget(rel->procs, pi));
-            int is_write = (is_rel && rel != NULL
+            int is_frozen = (lay->freeze
+                && lay->freeze_focus
+                   == OV_FOCUS_PROCS
+                && fi == lay->freeze_sel_proc);
+            ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+            int has_rel = (rel != NULL && bget(rel->procs, pi));
+            int is_rel = (!is_sel && !is_frozen
+                          && eff_focus != OV_FOCUS_PROCS
+                          && has_rel);
+            int is_write = (has_rel && rel != NULL
                             && bget(rel->proc_writes, pi));
             ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED
+                            : is_frozen ? OV_BG_FROZEN
                             : is_rel ? OV_BG_RELATED
                                      : OV_BG_PANEL;
 
@@ -917,7 +1331,7 @@ void ov_render_procs_panel(
             rlen += snprintf(
                 rbuf + rlen,
                 sizeof(rbuf) - (size_t) rlen,
-                "%6d ", (int) p->PID);
+                "%7d ", (int) p->PID);
 
             /* Status label */
             const char *sl;
@@ -997,7 +1411,7 @@ void ov_render_procs_panel(
             }
 
             /* Direction arrow */
-            if (is_rel)
+            if (has_rel)
             {
                 const char *arr =
                     is_write ? " W" : " R";
@@ -1149,11 +1563,22 @@ void ov_render_procs_panel(
                     printed += vv;
                 }
             }
+            /* Calculate Status Color First */
+            ov_rgb_t sc;
+            switch (p->loopstat)
+            {
+            case 0:  sc = OV_FG_DIM;    break;
+            case 1:  sc = OV_FG_ACTIVE;  break;
+            case 2:  sc = OV_FG_WARN;    break;
+            case 3:  sc = OV_FG_ERROR;   break;
+            case 4:  sc = OV_FG_ERROR;   break;
+            default: sc = OV_FG_DIM;     break;
+            }
             /* PID */
             {
                 char fb[80];
                 int fl = snprintf(fb, sizeof(fb),
-                    "%6d ", (int) p->PID);
+                    "%7d ", (int) p->PID);
                 int skip = 0;
                 if (hs_rem > 0)
                 {
@@ -1166,7 +1591,8 @@ void ov_render_procs_panel(
                 if (vv > mx) { vv = mx; }
                 if (vv > 0)
                 {
-                    ov_theme_fg(OV_FG_TEXT);
+                    ov_theme_fg(
+                        ov_pid_color(p->PID));
                     ov_buf_printf(
                         "%.*s", vv, fb + skip);
                     printed += vv;
@@ -1174,16 +1600,6 @@ void ov_render_procs_panel(
             }
             /* Status */
             {
-                ov_rgb_t sc;
-                switch (p->loopstat)
-                {
-                case 0:  sc = OV_FG_DIM;    break;
-                case 1:  sc = OV_FG_ACTIVE;  break;
-                case 2:  sc = OV_FG_WARN;    break;
-                case 3:  sc = OV_FG_ERROR;   break;
-                case 4:  sc = OV_FG_ERROR;   break;
-                default: sc = OV_FG_DIM;     break;
-                }
                 char fb[80];
                 int fl = snprintf(fb, sizeof(fb),
                     "%4s ", sl);
@@ -1353,19 +1769,14 @@ void ov_render_procs_panel(
                     printed += vv;
                 }
             }
-            /* Direction arrow */
-            if (is_rel)
+            /* CPU% */
             {
                 char fb[80];
-                const char *arr =
-                    is_write ? " ▶" : " ◀";
-                int fl = snprintf(fb, sizeof(fb),
-                    "%s", arr);
+                int fl = snprintf(fb, sizeof(fb), " %5.1f%% ", p->cpu_used);
                 int skip = 0;
                 if (hs_rem > 0)
                 {
-                    skip = (hs_rem < fl)
-                         ? hs_rem : fl;
+                    skip = (hs_rem < fl) ? hs_rem : fl;
                     hs_rem -= skip;
                 }
                 int vv = fl - skip;
@@ -1373,23 +1784,19 @@ void ov_render_procs_panel(
                 if (vv > mx) { vv = mx; }
                 if (vv > 0)
                 {
-                    ov_theme_fg(OV_FG_CONN);
-                    ov_buf_printf(
-                        "%.*s", vv, fb + skip);
+                    ov_theme_fg(OV_FG_TEXT);
+                    ov_buf_printf("%.*s", vv, fb + skip);
                     printed += vv;
                 }
             }
-            /* Missed frame badge */
-            if (p->triggermissed > 0)
+            /* LOOPCNT */
             {
                 char fb[80];
-                int fl = snprintf(fb, sizeof(fb),
-                    " M:%d", p->triggermissed);
+                int fl = snprintf(fb, sizeof(fb), "%10lld ", (long long) p->loopcnt);
                 int skip = 0;
                 if (hs_rem > 0)
                 {
-                    skip = (hs_rem < fl)
-                         ? hs_rem : fl;
+                    skip = (hs_rem < fl) ? hs_rem : fl;
                     hs_rem -= skip;
                 }
                 int vv = fl - skip;
@@ -1397,9 +1804,48 @@ void ov_render_procs_panel(
                 if (vv > mx) { vv = mx; }
                 if (vv > 0)
                 {
-                    ov_theme_fg(OV_FG_WARN);
-                    ov_buf_printf(
-                        "%.*s", vv, fb + skip);
+                    ov_theme_fg(OV_FG_DIM);
+                    ov_buf_printf("%.*s", vv, fb + skip);
+                    printed += vv;
+                }
+            }
+            /* MISSED */
+            {
+                char fb[80];
+                int fl = snprintf(fb, sizeof(fb), "%10llu ", (unsigned long long) p->triggermissed_cumul);
+                int skip = 0;
+                if (hs_rem > 0)
+                {
+                    skip = (hs_rem < fl) ? hs_rem : fl;
+                    hs_rem -= skip;
+                }
+                int vv = fl - skip;
+                int mx = avail - printed;
+                if (vv > mx) { vv = mx; }
+                if (vv > 0)
+                {
+                    ov_theme_fg(p->triggermissed_cumul > 0 ? OV_FG_WARN : OV_FG_DIM);
+                    ov_buf_printf("%.*s", vv, fb + skip);
+                    printed += vv;
+                }
+            }
+            /* PRIO */
+            {
+                char fb[80];
+                int fl = snprintf(fb, sizeof(fb), "%4d", p->rt_priority);
+                int skip = 0;
+                if (hs_rem > 0)
+                {
+                    skip = (hs_rem < fl) ? hs_rem : fl;
+                    hs_rem -= skip;
+                }
+                int vv = fl - skip;
+                int mx = avail - printed;
+                if (vv > mx) { vv = mx; }
+                if (vv > 0)
+                {
+                    ov_theme_fg(p->rt_priority > 0 ? OV_FG_ACTIVE : OV_FG_DIM);
+                    ov_buf_printf("%.*s", vv, fb + skip);
                     printed += vv;
                 }
             }
@@ -1477,14 +1923,42 @@ void ov_render_fps_panel(
         lay->focus == OV_FOCUS_FPS);
 
     int hrow = r.row + 1;
+    int hs   = lay->hscroll_fps;
+
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf(" ");
     ov_theme_fg(OV_FG_DIM);
-    char htext[128];
-    int hlen = snprintf(htext, sizeof(htext), "%-18s %1s %1s %3s", "NAME", "C", "R", "STR");
-    ov_buf_printf("%s", htext);
-    render_pad_spaces(1 + hlen, r.width);
+    char htext[256];
+    int hlen;
+    {
+        int sk = lay->sort_key_fps;
+        int sd = lay->sort_dir_fps;
+        char c_name[24], c_c[8];
+        sort_col_label(c_name, sizeof(c_name),
+                       "NAME", 0, sk, sd);
+        sort_col_label(c_c, sizeof(c_c),
+                       "C", 1, sk, sd);
+        int desc_w =
+            (lay->view == OV_VIEW_FPS)
+            ? 30 : 20;
+        hlen = snprintf(
+            htext, sizeof(htext),
+            "%-18s %1s %1s %3s"
+            " %-*s %8s %7s %7s",
+            c_name, c_c, "R", "STR",
+            desc_w, "DESCRIPTION",
+            "STATUS", "CPID", "RPID");
+    }
+    
+    {
+        int vis = hlen - hs;
+        if (vis < 0) vis = 0;
+        const char *start_str = htext + hs;
+        if (hs >= hlen) { start_str = ""; vis = 0; }
+        ov_buf_printf("%.*s", vis, start_str);
+        render_pad_spaces(1 + vis, r.width);
+    }
 
     int max_rows = r.height - 3;
     int start = lay->scroll_fps;
@@ -1500,61 +1974,116 @@ void ov_render_fps_panel(
             int is_sel = (ffi == lay->sel_fps
                           && lay->focus
                              == OV_FOCUS_FPS);
-            int is_rel = (!is_sel
-                && lay->focus != OV_FOCUS_FPS
-                && rel != NULL
-                && bget(rel->fps, fi));
+            int is_frozen = (lay->freeze
+                && lay->freeze_focus
+                   == OV_FOCUS_FPS
+                && ffi == lay->freeze_sel_fps);
+            ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+            int has_rel = (rel != NULL && bget(rel->fps, fi));
+            int is_rel = (!is_sel && !is_frozen
+                && eff_focus != OV_FOCUS_FPS
+                && has_rel);
             ov_rgb_t row_bg = is_sel
                 ? OV_BG_SELECTED
+                : is_frozen ? OV_BG_FROZEN
                 : is_rel ? OV_BG_RELATED
                          : OV_BG_PANEL;
+
+            int hs_rem = hs;
+            int printed = 1;
+            int avail = r.width - 2;
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
             ov_buf_printf(" ");
 
-            int n1 = 19;
-            render_highlighted_name(
-                f->name, 18, &re, has_re,
-                OV_FG_FPS, row_bg);
-            ov_buf_printf(" ");
+            #define FPS_FIELD(color, fmt, ...)         \
+            do {                                       \
+                char _fb[128];                         \
+                int _fl = snprintf(                    \
+                    _fb, sizeof(_fb), fmt,              \
+                    ##__VA_ARGS__);                     \
+                int _skip = 0;                         \
+                if (hs_rem > 0) {                      \
+                    _skip = (hs_rem < _fl) ? hs_rem : _fl; \
+                    hs_rem -= _skip;                   \
+                }                                      \
+                int _vis = _fl - _skip;                \
+                int _max = avail - printed;            \
+                if (_vis > _max) _vis = _max;          \
+                if (_vis > 0) {                        \
+                    ov_theme_fg(color);                \
+                    ov_buf_printf("%.*s", _vis, _fb + _skip); \
+                    printed += _vis;                   \
+                }                                      \
+            } while(0)
 
-            ov_theme_fg(f->conf_alive ? OV_FG_ACTIVE : OV_FG_DIM);
-            int n2 = snprintf(NULL, 0, "%s ", f->conf_alive ? "C" : "-");
-            ov_buf_printf("%s ", f->conf_alive ? "C" : "-");
+            /* PID field with inverted highlight when it
+             * matches the selected process PID:
+             * green background + bold black text */
+            #define FPS_PID_FIELD(pid_val, fmt, ...)    \
+            do {                                       \
+                int _match = (_spid > 0                \
+                    && (pid_t)(pid_val) == _spid);     \
+                if (_match) {                          \
+                    ov_theme_bg(OV_BG_PID_MATCH);      \
+                    ov_buf_bold();                      \
+                }                                      \
+                FPS_FIELD(                             \
+                    _match                             \
+                    ? ((ov_rgb_t){0,0,0})              \
+                    : ov_pid_color((pid_val)),          \
+                    fmt, ##__VA_ARGS__);                \
+                if (_match) {                          \
+                    ov_buf_reset_attr();                \
+                    ov_theme_bg(row_bg);                \
+                }                                      \
+            } while(0)
 
-            ov_theme_fg(f->run_alive ? OV_FG_ACTIVE : OV_FG_DIM);
-            int n3 = snprintf(NULL, 0, "%s ", f->run_alive ? "R" : "-");
-            ov_buf_printf("%s ", f->run_alive ? "R" : "-");
+            pid_t _spid = (rel != NULL)
+                        ? rel->sel_pid : 0;
 
-            ov_theme_fg(OV_FG_TEXT);
-            int n4 = snprintf(NULL, 0, "%3d", f->nb_stream_params);
-            ov_buf_printf("%3d", f->nb_stream_params);
+            FPS_FIELD(OV_FG_FPS, "%-18.18s ", f->name);
+            FPS_PID_FIELD(f->confpid, "%s ", f->conf_alive ? "C" : "-");
+            FPS_PID_FIELD(f->runpid, "%s ", f->run_alive ? "R" : "-");
+            FPS_FIELD(OV_FG_TEXT, "%3d ", f->nb_stream_params);
+            
+            /* Detailed columns */
+            if (lay->view == OV_VIEW_FPS)
+            {
+                FPS_FIELD(OV_FG_DIM,
+                    "%-30.30s ",
+                    f->description);
+            }
+            else
+            {
+                FPS_FIELD(OV_FG_DIM,
+                    "%-20.20s ",
+                    f->description);
+            }
+            FPS_FIELD(OV_FG_MUTED, "%08X ", f->md_status);
+            FPS_PID_FIELD(f->confpid, "%7d ", (int) f->confpid);
+            FPS_PID_FIELD(f->runpid, "%7d", (int) f->runpid);
+            
+            #undef FPS_PID_FIELD
+            #undef FPS_FIELD
 
             /* When cross-highlighted by a stream selection, iterate all
-             * stream params of this FPS that match the selected stream
-             * (fp_param_mask has one bit per matching param index). */
+             * stream params of this FPS that match the selected stream */
             int n5 = 0;
-            if (is_rel && rel != NULL
-                && lay->focus == OV_FOCUS_STREAMS)
+            if (has_rel && eff_focus == OV_FOCUS_STREAMS)
             {
                 uint32_t mask = rel->fps_param_mask[fi];
-                for (int sp = 0;
-                     mask != 0 && sp < f->nb_stream_params;
-                     sp++, mask >>= 1)
+                for (int sp = 0; mask != 0 && sp < f->nb_stream_params; sp++, mask >>= 1)
                 {
-                    if (!(mask & 1))
-                    {
-                        continue;
-                    }
+                    if (!(mask & 1)) continue;
 
                     const char *kname = f->stream_param_name[sp];
 
-                    /* Special label for the trigger-stream parameter */
                     if (strcmp(kname, "procinfo.triggersname") == 0)
                     {
-                        ov_buf_bg(120, 80, 10);  /* amber bg */
-                        ov_buf_fg(255, 210, 80); /* gold text */
+                        ov_buf_bg(120, 80, 10);
+                        ov_buf_fg(255, 210, 80);
                         ov_buf_bold();
                         int w = snprintf(NULL, 0, " [TRIG]");
                         ov_buf_printf(" [TRIG]");
@@ -1569,10 +2098,10 @@ void ov_render_fps_panel(
                         ov_buf_printf(" :%s", kname);
                         n5 += w;
                     }
-                } /* for sp */
-            } /* if is_rel stream */
+                }
+            }
 
-            render_pad_spaces(1 + n1 + n2 + n3 + n4 + n5, r.width);
+            render_pad_spaces(printed + n5, r.width);
         }
         else
         {
@@ -1611,13 +2140,27 @@ static int ov_render_detail_panel(
     int max_rows = r.height - 2;
     int row = r.row + 1;
 
+    /* Use frozen selection when freeze is active */
+    ov_focus_t focus = lay->freeze
+                       ? lay->freeze_focus
+                       : lay->focus;
+    int ssel = lay->freeze
+               ? lay->freeze_sel_stream
+               : lay->sel_stream;
+    int psel = lay->freeze
+               ? lay->freeze_sel_proc
+               : lay->sel_proc;
+    int fsel = lay->freeze
+               ? lay->freeze_sel_fps
+               : lay->sel_fps;
+
     /* ---- Stream detail ---- */
-    if (lay->focus == OV_FOCUS_STREAMS
-        && lay->sel_stream >= 0
-        && lay->sel_stream < m->nb_streams)
+    if (focus == OV_FOCUS_STREAMS
+        && ssel >= 0
+        && ssel < m->nb_streams)
     {
         const OV_STREAM *s =
-            &m->streams[lay->sel_stream];
+            &m->streams[ssel];
 
         ov_draw_panel_border(
             r.row, r.col, r.height, r.width,
@@ -1755,7 +2298,9 @@ static int ov_render_detail_panel(
                 ov_buf_pos(
                     row + ri, r.col + 1);
                 ov_theme_bg(OV_BG_PANEL);
-                ov_theme_fg(OV_FG_PROC);
+                ov_theme_fg(
+                    ov_pid_color(
+                        s->proctrace_pid[t]));
                 int n2 = snprintf(NULL, 0,
                     "  PID %d (%s)"
                     "  mode:%s",
@@ -1787,12 +2332,12 @@ static int ov_render_detail_panel(
     } /* STREAM detail */
 
     /* ---- Process detail ---- */
-    if (lay->focus == OV_FOCUS_PROCS
-        && lay->sel_proc >= 0
-        && lay->sel_proc < m->nb_procs)
+    if (focus == OV_FOCUS_PROCS
+        && psel >= 0
+        && psel < m->nb_procs)
     {
         const OV_PROC *p =
-            &m->procs[lay->sel_proc];
+            &m->procs[psel];
 
         ov_draw_panel_border(
             r.row, r.col, r.height, r.width,
@@ -1951,12 +2496,12 @@ static int ov_render_detail_panel(
     } /* PROCESS detail */
 
     /* ---- FPS detail ---- */
-    if (lay->focus == OV_FOCUS_FPS
-        && lay->sel_fps >= 0
-        && lay->sel_fps < m->nb_fps)
+    if (focus == OV_FOCUS_FPS
+        && fsel >= 0
+        && fsel < m->nb_fps)
     {
         const OV_FPS *f =
-            &m->fps[lay->sel_fps];
+            &m->fps[fsel];
 
         ov_draw_panel_border(
             r.row, r.col, r.height, r.width,
@@ -1998,20 +2543,28 @@ static int ov_render_detail_panel(
             ov_buf_pos(row + ri, r.col + 1);
             ov_theme_bg(OV_BG_PANEL);
             ov_theme_fg(OV_FG_DIM);
+            /* PID status labels */
+            const char *cst, *rst;
+            ov_pid_status_t cs =
+                pid_get_status(f->confpid);
+            ov_pid_status_t rs =
+                pid_get_status(f->runpid);
+            cst = (cs == OV_PID_ALIVE) ? "ALIVE"
+                : (cs == OV_PID_ZOMBIE) ? "ZOMB"
+                : "dead";
+            rst = (rs == OV_PID_ALIVE) ? "ALIVE"
+                : (rs == OV_PID_ZOMBIE) ? "ZOMB"
+                : "dead";
             int n = snprintf(NULL, 0,
                 " Conf: %s (PID %d)"
                 "  Run: %s (PID %d)",
-                f->conf_alive ? "ALIVE" : "dead",
-                (int) f->confpid,
-                f->run_alive ? "ALIVE" : "dead",
-                (int) f->runpid);
+                cst, (int) f->confpid,
+                rst, (int) f->runpid);
             ov_buf_printf(
                 " Conf: %s (PID %d)"
                 "  Run: %s (PID %d)",
-                f->conf_alive ? "ALIVE" : "dead",
-                (int) f->confpid,
-                f->run_alive ? "ALIVE" : "dead",
-                (int) f->runpid);
+                cst, (int) f->confpid,
+                rst, (int) f->runpid);
             render_pad_spaces(n, r.width);
             ri++;
         }
@@ -2079,8 +2632,19 @@ void ov_render_graph_panel(
     OV_RECT r = lay->r_graph;
     ov_draw_panel_border(r.row, r.col, r.height, r.width, "CONNECTIONS", OV_FG_CONN, lay->focus == OV_FOCUS_GRAPH);
 
-    int max_rows = r.height - 2;
+    int max_rows = r.height - 3;
     int row = r.row + 1;
+
+    /* Render Header */
+    ov_buf_pos(row, r.col + 1);
+    ov_theme_bg(OV_BG_HEADER);
+    ov_theme_fg(OV_FG_DIM);
+    char htext[256];
+    int hlen = snprintf(htext, sizeof(htext), " %-12s %-4s %-12s %-6s %-16s %-4s %-4s", 
+                        "SRC", "CONN", "TGT", "LABEL", "EDGE TYPE", "STYP", "TTYP");
+    ov_buf_printf("%s", htext);
+    render_pad_spaces(hlen, r.width);
+    row++;
 
     if (m->nb_edges == 0)
     {
@@ -2108,44 +2672,76 @@ void ov_render_graph_panel(
         const OV_NODE *tgt = &m->nodes[e->tgt_node];
 
         ov_buf_pos(row, r.col + 1);
-        ov_theme_bg(OV_BG_PANEL);
-        ov_buf_printf(" ");
-
-        ov_rgb_t sc;
-        switch (src->type) {
-        case OV_NODE_STREAM: sc = OV_FG_STREAM; break;
-        case OV_NODE_FPS:    sc = OV_FG_FPS;    break;
-        case OV_NODE_PROC:   sc = OV_FG_PROC;   break;
-        }
-
+        
         int is_sel = (ei == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
         ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : OV_BG_PANEL;
         ov_theme_bg(row_bg);
+        ov_buf_printf(" ");
 
-        ov_theme_fg(sc);
-        int n1 = snprintf(NULL, 0, "%-12.12s", src->name);
-        ov_buf_printf("%-12.12s", src->name);
-
-        ov_theme_fg(OV_FG_CONN);
-        int n2 = snprintf(NULL, 0, " %s%s ", OV_BOX_H, OV_TRI_R);
-        ov_buf_printf(" %s%s ", OV_BOX_H, OV_TRI_R);
-        int vis_n2 = 4; 
+        /* Detailed rendering with color */
+        ov_rgb_t sc;
+        const char *styp = "UNK";
+        switch (src->type) {
+        case OV_NODE_STREAM: sc = OV_FG_STREAM; styp = "STRM"; break;
+        case OV_NODE_FPS:    sc = OV_FG_FPS;    styp = "FPS "; break;
+        case OV_NODE_PROC:   sc = OV_FG_PROC;   styp = "PROC"; break;
+        }
 
         ov_rgb_t tc;
+        const char *ttyp = "UNK";
         switch (tgt->type) {
-        case OV_NODE_STREAM: tc = OV_FG_STREAM; break;
-        case OV_NODE_FPS:    tc = OV_FG_FPS;    break;
-        case OV_NODE_PROC:   tc = OV_FG_PROC;   break;
+        case OV_NODE_STREAM: tc = OV_FG_STREAM; ttyp = "STRM"; break;
+        case OV_NODE_FPS:    tc = OV_FG_FPS;    ttyp = "FPS "; break;
+        case OV_NODE_PROC:   tc = OV_FG_PROC;   ttyp = "PROC"; break;
         }
-        ov_theme_fg(tc);
-        int n3 = snprintf(NULL, 0, "%-12.12s", tgt->name);
-        ov_buf_printf("%-12.12s", tgt->name);
 
-        ov_theme_fg(OV_FG_DIM);
-        int n4 = snprintf(NULL, 0, " [%.6s]", e->label);
-        ov_buf_printf(" [%.6s]", e->label);
+        const char *etype = "UNKNOWN";
+        switch (e->type) {
+        case OV_EDGE_PROC_WRITES_STREAM:   etype = "PROC_WRITES_STRM"; break;
+        case OV_EDGE_STREAM_TRIGGERS_PROC: etype = "STRM_TRIGS_PROC "; break;
+        case OV_EDGE_FPS_RUNS_PROC:        etype = "FPS_RUNS_PROC   "; break;
+        case OV_EDGE_FPS_INPUT_STREAM:     etype = "FPS_INPUT_STRM  "; break;
+        case OV_EDGE_FPS_OUTPUT_STREAM:    etype = "FPS_OUTPUT_STRM "; break;
+        case OV_EDGE_PROC_TRIGGER_STREAM:  etype = "PROC_TRIGS_STRM "; break;
+        }
 
-        render_pad_spaces(1 + n1 + vis_n2 + n3 + n4, r.width);
+        int printed = 1;
+        int avail = r.width - 2;
+
+        #define GRAPH_FIELD(color, fmt, ...)         \
+        do {                                         \
+            char _fb[128];                           \
+            int _fl = snprintf(                      \
+                _fb, sizeof(_fb), fmt,               \
+                ##__VA_ARGS__);                      \
+            int _vis = _fl;                          \
+            int _max = avail - printed;              \
+            if (_vis > _max) _vis = _max;            \
+            if (_vis > 0) {                          \
+                ov_theme_fg(color);                  \
+                ov_buf_printf("%.*s", _vis, _fb);    \
+                printed += _vis;                     \
+            }                                        \
+        } while(0)
+
+        GRAPH_FIELD(sc, "%-12.12s", src->name);
+        
+        /* Box drawing character length workaround */
+        if (avail - printed >= 4) {
+            ov_theme_fg(OV_FG_CONN);
+            ov_buf_printf(" %s%s ", OV_BOX_H, OV_TRI_R);
+            printed += 4;
+        }
+
+        GRAPH_FIELD(tc, "%-12.12s", tgt->name);
+        GRAPH_FIELD(OV_FG_DIM, " [%.6s]", e->label);
+        GRAPH_FIELD(OV_FG_TEXT, " %-16.16s ", etype);
+        GRAPH_FIELD(sc, "%-4s ", styp);
+        GRAPH_FIELD(tc, "%-4s", ttyp);
+
+        #undef GRAPH_FIELD
+
+        render_pad_spaces(printed, r.width);
         row++;
         rendered_rows++;
     }
@@ -2336,6 +2932,8 @@ void ov_render_help(const OV_LAYOUT *lay)
         { "  p        Freeze/Pause display",         0 },
         { "  S        Sort by Hz/activity",            0 },
         { "  s        Sort alphabetical",              0 },
+        { "  ]        Cycle sort column",              0 },
+        { "  [        Toggle sort direction",          0 },
         { "  /        Filter (regex), ESC=clear",      0 },
         { "  q / x   Exit",                          0 },
         { "",                                        0 },
@@ -2452,9 +3050,15 @@ void ov_render_frame(
     if (lay->sort_pending)
     {
         OV_MODEL *mm = (OV_MODEL *)(uintptr_t) m;
-        ov_sort_streams(mm, lay->sort_key_stream);
-        ov_sort_procs(mm, lay->sort_key_proc);
-        ov_sort_fps(mm, lay->sort_key_fps);
+        ov_sort_streams(mm,
+                        lay->sort_key_stream,
+                        lay->sort_dir_stream);
+        ov_sort_procs(mm,
+                      lay->sort_key_proc,
+                      lay->sort_dir_proc);
+        ov_sort_fps(mm,
+                    lay->sort_key_fps,
+                    lay->sort_dir_fps);
         
         g_nb_stream_order = mm->nb_streams;
         for (int i = 0; i < mm->nb_streams; i++)
@@ -2539,6 +3143,7 @@ void ov_render_frame(
         switch (lay->view)
         {
         case OV_VIEW_DASHBOARD:
+            ov_render_preview_line(lay, m);
             ov_render_streams_panel(lay, m, &rel);
             ov_render_procs_panel(lay, m, &rel);
             ov_render_fps_panel(lay, m, &rel);
