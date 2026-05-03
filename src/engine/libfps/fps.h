@@ -1739,55 +1739,8 @@ int main(int argc, char *argv[]) { \
         if (functionparameter_FPS_tmux_send_dispatch( \
                 fps_name, command, path, \
                 name_arg) == 0) { \
-            if (strcmp(command, "fpsinit") == 0) { \
-                fps_generic_init(fps_name, \
-                    (FPS_APP_INFO *)&(APP_INFO), \
-                    my_bindings_, nb_bindings_, \
-                    use_procinfo); \
-                if (use_loop == 1 \
-                    && !fps_check_has_trigger_binding(\
-                        my_bindings_, \
-                        nb_bindings_)) { \
-                    fprintf(stderr, \
-                        "\033[1;33mWARNING" \
-                        "\033[0m [-loops] No" \
-                        " trigger stream" \
-                        " binding found \xe2\x80\x94" \
-                        " semaphore trigger" \
-                        " will not be" \
-                        " configured.\n" \
-                        "  Flag a stream" \
-                        " parameter with" \
-                        " FPFLAG_TRIGGER" \
-                        "_STREAM.\n"); \
-                } \
-                /* Sync CLI args + apply overrides */\
-                if (use_loop) { \
-                    FUNCTION_PARAMETER_STRUCT fp_; \
-                    if (function_parameter_struct_connect(\
-                            fps_name, &fp_, \
-                            FPSCONNECT_SIMPLE) != -1)\
-                    { \
-                        fps_process_cli_and_sync( \
-                            &fp_, farg_, \
-                            my_bindings_, \
-                            nb_bindings_); \
-                        if (use_loop == 1) { \
-                            fps_loop_override_trigger(\
-                                &fp_, my_bindings_,\
-                                nb_bindings_); \
-                        } else if (use_loop == 2) {\
-                            fps_loop_override_delay(\
-                                &fp_, loop_delay);\
-                        } \
-                        function_parameter_struct_disconnect(\
-                            &fp_); \
-                    } \
-                } \
-            } \
             return 0; \
         } \
-        return 0; \
     } \
     if (strcmp(command, "fpsinit") == 0) { \
         int rc_ = fps_generic_init(fps_name, \
