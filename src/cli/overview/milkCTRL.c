@@ -215,10 +215,6 @@ int main(int argc, char *argv[])
     lay.focus = OV_FOCUS_STREAMS;
 
     /* --- Main TUI loop (~10 fps) --- */
-    struct timespec frame_ts;
-    frame_ts.tv_sec  = 0;
-    frame_ts.tv_nsec = 100000000L; /* 100 ms */
-
     /* Clear screen once on startup */
     {
         const char cls[] = "\033[2J\033[H";
@@ -228,36 +224,45 @@ int main(int argc, char *argv[])
 
     int last_rows = -1;
     int last_cols = -1;
+    const OV_MODEL *m = NULL;
+    int need_render = 1; /* force first frame */
 
     while (!OV_SIG_ANY_SET())
     {
         /* Recompute layout (handles resize) */
         ov_layout_compute(&lay);
 
-        if (lay.term_rows != last_rows || lay.term_cols != last_cols)
+        if (lay.term_rows != last_rows
+            || lay.term_cols != last_cols)
         {
-            /* Size changed, force clear to remove layout ghosts */
+            /* Size changed, force clear */
             const char cls[] = "\033[2J\033[H";
-            if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0) {}
+            if (write(STDOUT_FILENO,
+                      cls, sizeof(cls) - 1) < 0) {}
             last_rows = lay.term_rows;
             last_cols = lay.term_cols;
+            need_render = 1;
         }
 
-        /* Get current model snapshot */
-        static const OV_MODEL *last_m = NULL;
-        const OV_MODEL *m = last_m;
+        /* Pick up new model if available */
         if (!lay.paused || m == NULL)
         {
+            const OV_MODEL *prev = m;
             m = ov_scan_get_model();
-            last_m = m;
+            if (m != prev)
+            {
+                need_render = 1;
+            }
         }
-        /* Drain all pending input for snappy response */
+
+        /* Drain all pending input */
         {
             int quit = 0;
             int key;
-            while ((key = ov_get_key()) != OV_KEY_NONE)
+            while ((key = ov_get_key())
+                   != OV_KEY_NONE)
             {
-
+                need_render = 1;
                 if (ov_handle_key(key, &lay, m))
                 {
                     quit = 1;
@@ -270,40 +275,46 @@ int main(int argc, char *argv[])
             }
         }
 
-        /* Render */
-        ov_render_frame(&lay, m);
+        /* Render only when something changed */
+        if (need_render)
+        {
+            ov_render_frame(&lay, m);
+            need_render = 0;
+        }
 
-        /* Frame delay: poll stdin for fast response or wait for scan */
+        /* Frame delay: poll stdin, wake on
+         * new data or keypress */
         {
             struct pollfd pfd;
             pfd.fd = STDIN_FILENO;
             pfd.events = POLLIN;
             int quit_now = 0;
 
-            /* Check up to 10 times with 10ms timeout = 100ms max */
             for (int i = 0; i < 10; i++)
             {
                 if (poll(&pfd, 1, 10) > 0)
                 {
                     if (pfd.revents & POLLIN)
                     {
-                        /* Read key and handle it now to
-                         * avoid losing the keypress. */
                         int pk = ov_get_key();
-                        if (pk == 'q' || pk == 'x')
+                        if (pk == 'q'
+                            || pk == 'x')
                         {
                             quit_now = 1;
                         }
-                        else if (pk != OV_KEY_NONE)
+                        else if (pk
+                                 != OV_KEY_NONE)
                         {
-                            ov_handle_key(pk, &lay, m);
+                            ov_handle_key(
+                                pk, &lay, m);
+                            need_render = 1;
                         }
                         break;
                     }
                 }
                 if (ov_scan_has_new_data())
                 {
-                    /* New background scan arrived, wake up */
+                    need_render = 1;
                     break;
                 }
             }

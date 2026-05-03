@@ -325,6 +325,11 @@ static inline void ov_buf_reverse(void)
     ov_buf_append("\033[7m", 4);
 }
 
+static inline void ov_buf_blink(void)
+{
+    ov_buf_append("\033[5m", 4);
+}
+
 static inline void ov_buf_cls(void)
 {
     ov_buf_append("\033[2J\033[H", 7);
