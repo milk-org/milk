@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.17)
 cmake_policy(SET CMP0069 NEW)
 
 set(SRCNAME "CommandLineInterface")
@@ -70,15 +70,15 @@ if(TREESITTER_FOUND)
   list(APPEND CORE_FILES
     treesitter/milkcli_parser.c)
 endif()
-    
+
     link_directories(${NCURSES_LIBRARY_DIRS})
-    
+
         # main
-    
+
         add_library(CLIcore
-    
+
                     SHARED
-    
+
         ${CORE_FILES})
 
 # Add milk-help executable
@@ -186,7 +186,7 @@ install(FILES ../libmilkscript/CLIcore_UI_execute.h
 
 
 
-add_executable(milk-streamCTRL 
+add_executable(milk-streamCTRL
     ../streamCTRL/milk-streamCTRL.c
     ../streamCTRL/streamCTRL_TUI.c
     ../streamCTRL/streamCTRL_TUI_render.c

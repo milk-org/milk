@@ -106,7 +106,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         cudaGetDeviceProperties(&deviceProp, k);
 
         int clockRate;
-	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
+        cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
 
         printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
                k,
@@ -339,7 +339,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         exit(EXIT_FAILURE);
     }
 
-    snprintf(fname, sizeof(fname),\n             "eigenv.dat.gsl");
+    snprintf(fname, sizeof(fname), "eigenv.dat.gsl");
     if((fp = fopen(fname, "w")) == NULL)
     {
         printf("ERROR: cannot create file \"%s\"\n", fname);
@@ -473,7 +473,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         imgcm.mdt->naxis =
             dcimg[ID_Rmatrix].md[0].naxis;
         for(int a = 0;
-            a < imgcm.mdt->naxis; a++)
+                a < imgcm.mdt->naxis; a++)
         {
             imgcm.mdt->size[a] =
                 arraysizetmp[a];

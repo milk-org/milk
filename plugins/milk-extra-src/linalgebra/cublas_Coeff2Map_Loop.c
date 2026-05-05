@@ -56,7 +56,8 @@ static char cm_c[FUNCTION_PARAMETER_STRMAXLEN]
 static int64_t cm_gpu = 4;
 static char cm_o[FUNCTION_PARAMETER_STRMAXLEN]
     = "outmap";
-static FPS_APP_INFO FPS_app_info_cm = {
+static FPS_APP_INFO FPS_app_info_cm =
+{
     .fps_name = "cudacoeff2map",
     .cmdkey   = "cudacoeff2map",
     .description =
@@ -78,40 +79,51 @@ static FPS_APP_INFO FPS_app_info_cm = {
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "output map")
 #include "fps.h"
-static FPS_CLI_BINDING cm_b[] = {
-    FPS_PARAMS_CM(FPS_X_BINDING) };
+static FPS_CLI_BINDING cm_b[] =
+{
+    FPS_PARAMS_CM(FPS_X_BINDING)
+};
 static const int cm_nb =
-    sizeof(cm_b)/sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF cm_farg[] = {
-    FPS_PARAMS_CM(FPS_X_FARG) };
-static CLICMDDATA cm_d = {
-    "", "", CLICMD_FIELDS_DEFAULTS };
+    sizeof(cm_b) / sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] =
+{
+    FPS_PARAMS_CM(FPS_X_FARG)
+};
+static CLICMDDATA cm_d =
+{
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
 static CMDSETTINGS cm_cms = {0};
 static __attribute__((constructor))
-void init_cm(void) {
+void init_cm(void)
+{
     strncpy(cm_d.key,
-        FPS_app_info_cm.cmdkey,
-        sizeof(cm_d.key)-1);
+            FPS_app_info_cm.cmdkey,
+            sizeof(cm_d.key) - 1);
     strncpy(cm_d.description,
-        FPS_app_info_cm.description,
-        sizeof(cm_d.description)-1);
+            FPS_app_info_cm.description,
+            sizeof(cm_d.description) - 1);
     cm_d.nbarg =
-        sizeof(cm_farg)/sizeof(CLICMDARGDEF);
-    cm_d.funcfpscliarg = cm_farg;
+        sizeof(farg) / sizeof(CLICMDARGDEF);
+    cm_d.funcfpscliarg = farg;
     cm_d.flags = CLICMDFLAG_FPS;
     if(!cm_d.cmdsettings)
+    {
         cm_d.cmdsettings = &cm_cms;
+    }
 }
-static errno_t cm_compute(void) {
+static errno_t cm_compute(void)
+{
     LINALGEBRA_Coeff2Map_Loop(
         cm_m, cm_c, (int)cm_gpu,
         cm_o, 0, " ");
     return RETURN_SUCCESS;
 }
-static errno_t cm_CLIfunc(void) {
+static errno_t cm_CLIfunc(void)
+{
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_cm, cm_farg, &cm_d,
-        cm_b, cm_nb, cm_compute);
+               &FPS_app_info_cm, farg, &cm_d,
+               cm_b, cm_nb, cm_compute);
 }
 
 /* ===== Command: cudacoeffo2map ===== */
@@ -124,7 +136,8 @@ static char co_o[FUNCTION_PARAMETER_STRMAXLEN]
     = "outmap";
 static char co_off[FUNCTION_PARAMETER_STRMAXLEN]
     = "offsetim";
-static FPS_APP_INFO FPS_app_info_co = {
+static FPS_APP_INFO FPS_app_info_co =
+{
     .fps_name = "cudacoeffo2map",
     .cmdkey   = "cudacoeffo2map",
     .description =
@@ -148,49 +161,60 @@ static FPS_APP_INFO FPS_app_info_co = {
     X(".offset", co_off, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "offset")
-static FPS_CLI_BINDING co_b[] = {
-    FPS_PARAMS_CO(FPS_X_BINDING) };
+static FPS_CLI_BINDING co_b[] =
+{
+    FPS_PARAMS_CO(FPS_X_BINDING)
+};
 static const int co_nb =
-    sizeof(co_b)/sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF co_farg[] = {
-    FPS_PARAMS_CO(FPS_X_FARG) };
-static CLICMDDATA co_d = {
-    "", "", CLICMD_FIELDS_DEFAULTS };
+    sizeof(co_b) / sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF co_farg[] =
+{
+    FPS_PARAMS_CO(FPS_X_FARG)
+};
+static CLICMDDATA co_d =
+{
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
 static CMDSETTINGS co_cms = {0};
 static __attribute__((constructor))
-void init_co(void) {
+void init_co(void)
+{
     strncpy(co_d.key,
-        FPS_app_info_co.cmdkey,
-        sizeof(co_d.key)-1);
+            FPS_app_info_co.cmdkey,
+            sizeof(co_d.key) - 1);
     strncpy(co_d.description,
-        FPS_app_info_co.description,
-        sizeof(co_d.description)-1);
+            FPS_app_info_co.description,
+            sizeof(co_d.description) - 1);
     co_d.nbarg =
-        sizeof(co_farg)/sizeof(CLICMDARGDEF);
+        sizeof(co_farg) / sizeof(CLICMDARGDEF);
     co_d.funcfpscliarg = co_farg;
     co_d.flags = CLICMDFLAG_FPS;
     if(!co_d.cmdsettings)
+    {
         co_d.cmdsettings = &co_cms;
+    }
 }
-static errno_t co_compute(void) {
+static errno_t co_compute(void)
+{
     LINALGEBRA_Coeff2Map_Loop(
         co_m, co_c, (int)co_gpu,
         co_o, 1, co_off);
     return RETURN_SUCCESS;
 }
-static errno_t co_CLIfunc(void) {
+static errno_t co_CLIfunc(void)
+{
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_co, co_farg, &co_d,
-        co_b, co_nb, co_compute);
+               &FPS_app_info_co, co_farg, &co_d,
+               co_b, co_nb, co_compute);
 }
 
 errno_t Coeff2Map_Loop_addCLIcmd()
 {
     {
         safe_fps_fill_farg_examples(
-            cm_farg, cm_b, cm_nb);
+            farg, cm_b, cm_nb);
         int cmdi = RegisterCLIcmd(
-            cm_d, cm_CLIfunc);
+                       cm_d, cm_CLIfunc);
         cm_d.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -198,7 +222,7 @@ errno_t Coeff2Map_Loop_addCLIcmd()
         safe_fps_fill_farg_examples(
             co_farg, co_b, co_nb);
         int cmdi = RegisterCLIcmd(
-            co_d, co_CLIfunc);
+                       co_d, co_CLIfunc);
         co_d.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
