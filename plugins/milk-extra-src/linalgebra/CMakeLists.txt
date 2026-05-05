@@ -267,13 +267,19 @@ install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
 
 add_milk_standalone(linalg-gramschmidt GramSchmidt.c)
 add_milk_standalone(linalg-MVMextract MVMextractModes.c)
+if(USE_CUDA)
+    target_link_libraries(milk-fpsexec-linalg-MVMextract PRIVATE CUDA::cudart CUDA::cublas)
+endif()
 add_milk_standalone(linalg-PCAmatch PCAmatch.c)
 target_link_libraries(milk-fpsexec-linalg-PCAmatch
     PUBLIC ${LIBNAME_COMPUTE})
 add_milk_standalone(linalg-Qexpand Qexpand.c)
 add_milk_standalone(linalg-SGEMM SGEMM.c)
-target_link_libraries(milk-fpsexec-linalg-SGEMM
-    PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-SGEMM PUBLIC ${LIBNAME_COMPUTE})
+if(USE_CUDA)
+    target_link_libraries(milk-fpsexec-linalg-SGEMM PRIVATE CUDA::cudart CUDA::cublas)
+endif()
+
 add_milk_standalone(linalg-SVD SingularValueDecomp.c)
 target_link_libraries(milk-fpsexec-linalg-SVD
     PUBLIC ${LIBNAME_COMPUTE})
@@ -293,6 +299,10 @@ add_milk_standalone(linalg-basisrotmatch basis_rotate_match.c)
 target_link_libraries(milk-fpsexec-linalg-basisrotmatch
     PUBLIC ${LIBNAME_COMPUTE})
 add_milk_standalone(linalg-cublasPCA cublas_PCA.c)
+if(USE_CUDA)
+    target_link_libraries(milk-fpsexec-linalg-cublasPCA PRIVATE CUDA::cudart CUDA::cublas CUDA::cusolver)
+endif()
+
 target_link_libraries(milk-fpsexec-linalg-cublasPCA
     PUBLIC ${LIBNAME_COMPUTE})
 add_milk_standalone(linalg-modalremap modalremap.c)
