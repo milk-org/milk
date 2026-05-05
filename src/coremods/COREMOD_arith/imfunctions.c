@@ -643,9 +643,12 @@ errno_t arith_image_function_2_1_IMGID(
 #endif
             if (datatype == _DATATYPE_FLOAT && datatype1 == _DATATYPE_FLOAT && datatype2 == _DATATYPE_FLOAT)
             {
-                float *outptr = outimg->im->array.F;
-                float *in1ptr = inimg1->im->array.F;
-                float *in2ptr = inimg2->im->array.F;
+                float * MILK_RESTRICT outptr =
+                    MILK_ASSUME_ALIGNED(outimg->im->array.F);
+                const float * MILK_RESTRICT in1ptr =
+                    MILK_ASSUME_ALIGNED(inimg1->im->array.F);
+                const float * MILK_RESTRICT in2ptr =
+                    MILK_ASSUME_ALIGNED(inimg2->im->array.F);
 #ifdef _OPENMP
                 #pragma omp for simd
 #endif
@@ -656,9 +659,12 @@ errno_t arith_image_function_2_1_IMGID(
             }
             else if (datatype == _DATATYPE_DOUBLE && datatype1 == _DATATYPE_DOUBLE && datatype2 == _DATATYPE_DOUBLE)
             {
-                double *outptr = outimg->im->array.D;
-                double *in1ptr = inimg1->im->array.D;
-                double *in2ptr = inimg2->im->array.D;
+                double * MILK_RESTRICT outptr =
+                    MILK_ASSUME_ALIGNED(outimg->im->array.D);
+                const double * MILK_RESTRICT in1ptr =
+                    MILK_ASSUME_ALIGNED(inimg1->im->array.D);
+                const double * MILK_RESTRICT in2ptr =
+                    MILK_ASSUME_ALIGNED(inimg2->im->array.D);
 #ifdef _OPENMP
                 #pragma omp for simd
 #endif
@@ -669,7 +675,8 @@ errno_t arith_image_function_2_1_IMGID(
             }
             else if (datatype == _DATATYPE_FLOAT)
             {
-                float *outptr = outimg->im->array.F;
+                float * MILK_RESTRICT outptr =
+                    MILK_ASSUME_ALIGNED(outimg->im->array.F);
 #ifdef _OPENMP
                 #pragma omp for simd
 #endif
@@ -686,7 +693,8 @@ errno_t arith_image_function_2_1_IMGID(
             }
             else if (datatype == _DATATYPE_DOUBLE)
             {
-                double *outptr = outimg->im->array.D;
+                double * MILK_RESTRICT outptr =
+                    MILK_ASSUME_ALIGNED(outimg->im->array.D);
 #ifdef _OPENMP
                 #pragma omp for simd
 #endif
