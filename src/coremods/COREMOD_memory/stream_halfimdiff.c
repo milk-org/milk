@@ -82,7 +82,7 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
 
     uint32_t xsize  = xsizein;
     uint32_t ysize  = ysizein / 2;
-    uint64_t xysize = xsize * ysize;
+    uint64_t xysize = (uint64_t)xsize * ysize;
 
     uint8_t datatype    = img0.md->datatype;
     uint8_t datatypeout = _DATATYPE_FLOAT;

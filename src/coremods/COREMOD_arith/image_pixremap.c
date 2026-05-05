@@ -95,8 +95,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     // build mapping table
     //
     uint64_t nbpix = 0;
-        MILK_IVDEP
-    for(uint64_t ii = 0; ii < xsize*ysize; ii++)
+    for(uint64_t ii = 0; ii < (uint64_t)xsize*ysize; ii++)
     {
         int64_t pixindex = imgmap.im->array.SI32[ii];
         if ( ( pixindex > -1 )
@@ -108,12 +107,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     printf("mapping table has %lu elements\n", nbpix);
 
-    uint64_t * __restrict map_outpixindex = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
-    uint64_t * __restrict map_inpixindex  = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t * MILK_RESTRICT map_outpixindex =
+        (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t * MILK_RESTRICT map_inpixindex =
+        (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
 
     nbpix = 0;
-        MILK_IVDEP
-    for(uint64_t ii = 0; ii < xsize*ysize; ii++)
+    for(uint64_t ii = 0; ii < (uint64_t)xsize*ysize; ii++)
     {
         int64_t pixindex = imgmap.im->array.SI32[ii];
         if ( ( pixindex > -1 )
