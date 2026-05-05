@@ -109,6 +109,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             const float *__restrict imgmask_row = &imgmask.im->array.F[jj * crop_xsize];
             float *__restrict imgout_row        = &imgout.im->array.F[jj * crop_xsize];
 
+            MILK_IVDEP
             for(uint32_t ii = 0; ii < crop_xsize; ii++)
             {
                 imgout_row[ii] = imgmask_row[ii] * imgin_row[ii];
