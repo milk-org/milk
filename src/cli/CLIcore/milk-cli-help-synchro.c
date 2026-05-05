@@ -72,8 +72,8 @@ void print_milk_synchro_help(void)
     printf("  - " C_NOTE "DELAY (4):" C_RST "     Executes on a fixed timer.\n");
     printf("  - " C_NOTE "CNT2 (5):" C_RST "      Reserved trigger mode.\n");
     printf("\n");
-    printf("  You define " C_CMD "triggerstreamname" C_RST " to select the stream, and\n");
-    printf("  " C_CMD "semindexrequested" C_RST " (typically 0) to bind the process.\n");
+    printf("  You define " C_CMD "procinfo.triggersname" C_RST " to select the stream, and\n");
+    printf("  " C_CMD "procinfo.semindexrequested" C_RST " (typically 0) to bind the process.\n");
     printf("\n");
 
     printf(C_TITLE "========================================================\n" C_RST);

@@ -43,7 +43,6 @@ available:
 | `-e`, `--errorexit` | Exit on command error |
 | `-Z`, `--idle` | Only run process when X is idle |
 | `--listimf` | Write image list to `imlist.txt` |
-| `-m`, `--mmon=TTY` | Open memory monitor on tty device |
 | `-n`, `--pname=NAME` | Rename process |
 | `-p`, `--priority=PR` | Set RT priority (0–99, higher = higher) |
 | `-f`, `--fifoflag` | Enable fifo input; auto-generate fifo path |
