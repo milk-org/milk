@@ -104,7 +104,7 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
 
     uint32_t xsize = img0.md->size[0];
     uint32_t ysize = img0.md->size[1];
-    uint64_t xysize = xsize * ysize;
+    uint64_t xysize = (uint64_t)xsize * ysize;
 
     IMGID imgout =
         imgid_make_from_name(IDstreamout_name);
@@ -150,6 +150,7 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
         imgout.md->write = 1;
         if(ptrm == NULL)
         {
+            MILK_IVDEP
             for(uint64_t ii = 0;
                     ii < xysize; ii++)
             {
@@ -158,6 +159,7 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
         }
         else
         {
+            MILK_IVDEP
             for(uint64_t ii = 0;
                     ii < xysize; ii++)
             {
