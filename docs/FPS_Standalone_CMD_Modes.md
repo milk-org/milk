@@ -118,6 +118,10 @@ segment.
   - `confstart`, `confstep`, `confstop`: Manage the
     configuration loop.
   - `runstart`, `runstop`: Manage the execution loop.
+  - `fps`: Print content of the FPS.
+  - `fpslist`: List all FPS instances matching this
+    executable.
+  - `exec`: Auto-init + set args + run (one-shot).
 
 </details>
 

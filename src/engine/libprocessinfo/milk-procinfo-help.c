@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     printf("                          0: IMMEDIATE (Continuous loop)\n");
     printf("                          3: SEMAPHORE (Stream semWait trigger)\n");
     printf("                          4: DELAY (Throttle with timer delay)\n");
-    printf("  " C_BOLD "procinfo.timersname" C_RST "   (Alias triggersname) The stream to wait on.\n");
+    printf("  " C_BOLD "procinfo.triggersname" C_RST " The stream to wait on.\n");
     printf("\n");
 
     printf(C_HDR "Example:\n" C_RST);

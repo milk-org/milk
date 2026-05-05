@@ -38,10 +38,6 @@ COMMAND LINE OPTIONS
   -s, --startup=STARTUPFILE
 	execute specified script on startup
 	requires the -f or -F option, as the script is loaded into fifo
-  -m, --mmon=STREAM
-	Set memory monitor stream
-  -E, --echo-input
-	Echo each input line (colored)
   -A, --autocomplete
 	Enable autocomplete preview
   --no-autocomplete
