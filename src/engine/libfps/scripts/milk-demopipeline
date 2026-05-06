@@ -1,0 +1,65 @@
+#!/bin/bash
+# milk-demopipeline
+# Start a simple 4-node FPS pipeline for demonstration.
+
+FRAMERATE=100
+
+# Parse arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h1|--help-oneline)
+            echo "start a simple 4-node FPS pipeline for demonstration"
+            exit 0
+            ;;
+        -h|--help)
+            cat <<'EOF'
+Usage: milk-demopipeline [OPTIONS]
+
+Start a simple 4-node FPS pipeline for demonstration.
+This script sets up a basic image processing chain inside tmux:
+1. Random image generation
+2. Gaussian filtering
+3. Image truncation
+4. Stream monitoring
+
+Options:
+  -f, --framerate HZ   Set the framerate of the pipeline in Hz (default: 100).
+  -h, --help           Print this help message.
+  -h1, --help-oneline  Print one-line description and exit.
+EOF
+            exit 0
+            ;;
+        -f|--framerate)
+            FRAMERATE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h for help."
+            exit 1
+            ;;
+    esac
+done
+
+# Calculate delay in seconds
+DELAY=$(awk "BEGIN {print 1.0 / $FRAMERATE}")
+
+echo "Starting milk framework demo pipeline at $FRAMERATE Hz (delay: $DELAY s)..."
+
+# 1. Generate a 512x512 random image (uniform distribution)
+milk-fpsexec-imggen-mkrandom -tmux -procinfo -loopd "$DELAY" exec random_in 512 512 0
+sleep 0.5
+
+# 2. Apply a Gaussian filter (sigma 5.0, size 15).
+milk-fpsexec-imgfilt-gaussfilt -tmux -procinfo -loopd "$DELAY" exec random_in blurred_out 5.0 15
+sleep 0.5
+
+# 3. Truncate pixel values between 0.2 and 0.8.
+milk-fpsexec-arith-imtrunc -tmux -procinfo -loopd "$DELAY" exec blurred_out 0.2 0.8 truncated_out
+sleep 0.5
+
+# 4. Stream monitor to collect stats. Triggered by 'truncated_out' semaphore
+milk-fpsexec-info-strmonproc -tmux -procinfo -loops exec truncated_out 1 100
+
+echo "Pipeline successfully started in tmux sessions."
+echo "You can now open 'milkCTRL' to view the running processes, FPS parameters, and streaming data."
