@@ -85,13 +85,13 @@ static FPS_CLI_BINDING cm_b[] =
 };
 static const int cm_nb =
     sizeof(cm_b) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg[] =
+static CLICMDARGDEF cm_farg[] =
 {
     FPS_PARAMS_CM(FPS_X_FARG)
 };
 static CLICMDDATA cm_d =
 {
-    "", "", CLICMD_FIELDS_DEFAULTS
+    "", "", CLICMD_FIELDS_DEFAULTS_W_ARG(cm_farg)
 };
 static CMDSETTINGS cm_cms = {0};
 static __attribute__((constructor))
@@ -104,8 +104,8 @@ void init_cm(void)
             FPS_app_info_cm.description,
             sizeof(cm_d.description) - 1);
     cm_d.nbarg =
-        sizeof(farg) / sizeof(CLICMDARGDEF);
-    cm_d.funcfpscliarg = farg;
+        sizeof(cm_farg) / sizeof(CLICMDARGDEF);
+    cm_d.funcfpscliarg = cm_farg;
     cm_d.flags = CLICMDFLAG_FPS;
     if(!cm_d.cmdsettings)
     {
@@ -122,7 +122,7 @@ static errno_t cm_compute(void)
 static errno_t cm_CLIfunc(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info_cm, farg, &cm_d,
+               &FPS_app_info_cm, cm_farg, &cm_d,
                cm_b, cm_nb, cm_compute);
 }
 
@@ -173,7 +173,7 @@ static CLICMDARGDEF co_farg[] =
 };
 static CLICMDDATA co_d =
 {
-    "", "", CLICMD_FIELDS_DEFAULTS
+    "", "", CLICMD_FIELDS_DEFAULTS_W_ARG(co_farg)
 };
 static CMDSETTINGS co_cms = {0};
 static __attribute__((constructor))
@@ -212,7 +212,7 @@ errno_t Coeff2Map_Loop_addCLIcmd()
 {
     {
         safe_fps_fill_farg_examples(
-            farg, cm_b, cm_nb);
+            cm_farg, cm_b, cm_nb);
         int cmdi = RegisterCLIcmd(
                        cm_d, cm_CLIfunc);
         cm_d.cmdsettings =

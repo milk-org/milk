@@ -29,6 +29,15 @@ typedef const char *__restrict CONST_WORD;
 #define CLICMD_FIELDS_NOFPS                                                    \
     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, 0, NULL, NULL, NULL
 
+#define CLICMD_FIELDS_FPSPROC_W_ARG(farg)                                                     \
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO, \
+        NULL, NULL, NULL
+#define CLICMD_FIELDS_DEFAULTS_W_ARG(farg) \
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS, NULL, NULL, NULL
+#define CLICMD_FIELDS_NOFPS_W_ARG(farg) \
+     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, 0, NULL, NULL, NULL
+
+
 #define CLICMD_FIELDS_NOPARAM                                                  \
     __FILE__, 0, NULL, CLICMDFLAG_FPS, NULL, NULL, NULL
 
