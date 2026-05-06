@@ -39,10 +39,10 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char   *inimname;
-static double *valmin;
-static double *valmax;
-static char   *outimname;
+static char   inimname[FUNCTION_PARAMETER_STRMAXLEN];
+static double valmin;
+static double valmax;
+static char   outimname[FUNCTION_PARAMETER_STRMAXLEN];
 
 
 /* ================================================================
@@ -50,7 +50,7 @@ static char   *outimname;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &inimname, \
+    X(".in_name", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
@@ -62,9 +62,9 @@ static char   *outimname;
       FPTYPE_FLOAT64, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "max value") \
-    X(".out_name", &outimname, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+    X(".out_name", outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
       "output image")
 
 
@@ -117,9 +117,63 @@ FPS_V2_SECTION5(FPS_PARAMS)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     IMGID imgin  = imgid_make_from_name(inimname);
-    IMGID imgout = imgid_make_from_name(outimname);
+    resolveIMGID(&imgin, ERRMODE_NULL, dcimg, dcnimg);
 
-    arith_image_trunc_IMGID(&imgin, *valmin, *valmax, &imgout);
+    if (imgin.im == NULL) {
+        return RETURN_FAILURE;
+    }
+
+    IMGID imgout = imgid_make_from_name(outimname);
+    imgid_copy(&imgin, &imgout);
+    imcreateIMGID(&imgout);
+
+    uint64_t nelement = imgin.md->nelement;
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    {
+        if (imgin.md->datatype == _DATATYPE_FLOAT && imgout.mdt->datatype == _DATATYPE_FLOAT)
+        {
+            float * MILK_RESTRICT pin = MILK_ASSUME_ALIGNED(imgin.im->array.F);
+            float * MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.F);
+            float f_min = (float)valmin;
+            float f_max = (float)valmax;
+
+            #pragma omp simd
+            for (uint64_t ii = 0; ii < nelement; ii++) {
+                float v = pin[ii];
+                if (v < f_min) v = f_min;
+                else if (v > f_max) v = f_max;
+                pout[ii] = v;
+            }
+        }
+        else if (imgin.md->datatype == _DATATYPE_DOUBLE && imgout.mdt->datatype == _DATATYPE_DOUBLE)
+        {
+            double * MILK_RESTRICT pin = MILK_ASSUME_ALIGNED(imgin.im->array.D);
+            double * MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.D);
+            double d_min = valmin;
+            double d_max = valmax;
+
+            #pragma omp simd
+            for (uint64_t ii = 0; ii < nelement; ii++) {
+                double v = pin[ii];
+                if (v < d_min) v = d_min;
+                else if (v > d_max) v = d_max;
+                pout[ii] = v;
+            }
+        }
+        else
+        {
+            arith_image_trunc_IMGID(&imgin, valmin, valmax, &imgout);
+        }
+
+        processinfo_update_output_stream(processinfo, imgout.im, imgin.im);
+    }
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imgin);
+    imgid_free(&imgout);
 
     return RETURN_SUCCESS;
 }
