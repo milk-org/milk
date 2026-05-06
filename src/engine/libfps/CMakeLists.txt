@@ -219,6 +219,7 @@ add_executable(milk-fpsexec-help milk-fpsexec-help.c)
 install(TARGETS milk-fpsexec-help DESTINATION bin)
 
 install(PROGRAMS scripts/milk-fpsexec-list DESTINATION bin)
+install(PROGRAMS scripts/milk-demopipeline DESTINATION bin)
 install(PROGRAMS scripts/milk-latency-audit DESTINATION bin)
 
 add_executable(milk-fps-help milk-fps-help.c)
