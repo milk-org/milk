@@ -70,12 +70,13 @@ errno_t load_sharedobj(
         return RETURN_FAILURE;
     }
 
-    DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-    if(!DLib_handle[DLib_index])
+    void *handle = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
+    if(!handle)
     {
         printf(KRED "FAILED TO LOAD : %s\n" KRES, libname);
-        fprintf(stderr, KRED "%s\n" KRES, dlerror());
-        fprintf(stderr, KRED "%s\n" KRES, dlerror());
+        const char *errstr = dlerror();
+        if(errstr)
+            fprintf(stderr, KRED "%s\n" KRES, errstr);
         //exit(EXIT_FAILURE);
     }
     else
@@ -83,8 +84,9 @@ errno_t load_sharedobj(
         dlerror();
         if(!getenv("MILK_QUIET") && dcquiet == 0)
         {
-            printf(KGRN "   LOADED : %s\n" KRES, libnameloaded);
+            printf(KGRN "   LOADED : %s\n" KRES, libname);
         }
+        DLib_handle[DLib_index] = handle;
         // increment number of libs dynamically loaded
         DLib_index++;
     }
@@ -311,10 +313,10 @@ errno_t load_module_shared_local()
                         "\"%s\"\n",
                         DLib_index,
                         libname);
-                    DLib_handle[DLib_index] =
-                        dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-                    if(!DLib_handle[DLib_index])
+                    void *handle = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
+                    if(!handle)
                     {
+                        const char *errstr = dlerror();
                         fprintf(stderr,
                                 KMAG
                                 "        WARNING: linker "
@@ -322,7 +324,7 @@ errno_t load_module_shared_local()
                                 "        %s\n" KRES,
                                 iter,
                                 DLib_index,
-                                dlerror());
+                                errstr ? errstr : "Unknown error");
                         fflush(stderr);
                         //exit(EXIT_FAILURE);
                         loopOK = 0;
@@ -330,6 +332,7 @@ errno_t load_module_shared_local()
                     else
                     {
                         dlerror();
+                        DLib_handle[DLib_index] = handle;
                         // increment number of libs dynamically loaded
                         DLib_index++;
                     }
