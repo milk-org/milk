@@ -145,6 +145,11 @@ int permut(const char *ID_name)
     // fflush(stdout);
 
     ID    = image_ID(ID_name, dcimg, dcnimg);
+    if(ID == -1)
+    {
+        PRINT_ERROR("Image \"%s\" not found", ID_name);
+        return RETURN_FAILURE;
+    }
     naxis = dcimg[ID].md[0].naxis;
 
     naxes0 = dcimg[ID].md[0].size[0];

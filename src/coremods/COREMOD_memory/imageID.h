@@ -121,7 +121,10 @@ static inline imageID _resolveIMGID_impl(
             img->createcnt = imagearray[img->ID].createcnt;
 
             // Populate the IMGID from the imageID metadata
-            imgid_update_creationparams(img);
+            if(img->mdt != NULL)
+            {
+                imgid_update_creationparams(img);
+            }
         }
     }
 
@@ -206,7 +209,7 @@ static inline int imgid_exists(const char *name)
         return 0;
     }
 
-    IMGID img;
+    IMGID img = {0}; // Zero-initialize so img.mdt is NULL
     img.ID        = -1;
     img.im        = NULL;
     img.md        = NULL;
