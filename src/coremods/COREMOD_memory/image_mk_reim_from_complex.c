@@ -191,7 +191,7 @@ errno_t mk_reim_from_complex_IMGID(
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");
-        abort();
+        return RETURN_FAILURE;
     }
 
     DEBUG_TRACE_FEXIT();

@@ -375,9 +375,7 @@ imageID FFT_do1dfft(
 
     IMGID imgin =
         imgid_make_from_name(in_name);
-    resolveIMGID(&imgin,
-                 ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    if(resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS) { return -1; }
 
     long naxis = imgin.md->naxis;
     uint8_t datatype =
@@ -389,7 +387,7 @@ imageID FFT_do1dfft(
     {
         PRINT_ERROR(
             "malloc returns NULL pointer");
-        abort();
+        return -1;
     }
 
     IMGID imgout =
@@ -539,7 +537,7 @@ imageID FFT_do1dfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 outptr =
@@ -553,7 +551,7 @@ imageID FFT_do1dfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 plan =
@@ -605,7 +603,7 @@ imageID FFT_do1dfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 outptr_double =
@@ -618,7 +616,7 @@ imageID FFT_do1dfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 plan_double =
@@ -691,9 +689,7 @@ imageID do1drfft(
 
     IMGID imgin =
         imgid_make_from_name(in_name);
-    resolveIMGID(&imgin,
-                 ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    if(resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS) { return -1; }
 
     long naxis = imgin.md->naxis;
     uint8_t datatype =
@@ -705,7 +701,7 @@ imageID do1drfft(
     {
         PRINT_ERROR(
             "malloc returns NULL pointer");
-        abort();
+        return -1;
     }
 
     int fftaxis = 0;
@@ -806,7 +802,7 @@ imageID do1drfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 outptr =
@@ -820,7 +816,7 @@ imageID do1drfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 plan =
@@ -870,7 +866,7 @@ imageID do1drfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 outptr_double =
@@ -883,7 +879,7 @@ imageID do1drfft(
                     PRINT_ERROR(
                         "malloc returns"
                         " NULL pointer");
-                    abort();
+                    return -1;
                 }
 
                 plan_double =
@@ -1175,9 +1171,7 @@ imageID FFT_do2dfft(
 
     IMGID imgin =
         imgid_make_from_name(in_name);
-    resolveIMGID(&imgin,
-                 ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    if(resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS) { return -1; }
 
     long naxis = imgin.md->naxis;
     uint8_t datatype =
@@ -1189,7 +1183,7 @@ imageID FFT_do2dfft(
     {
         PRINT_ERROR(
             "malloc returns NULL pointer");
-        abort();
+        return -1;
     }
 
     IMGID imgout =
@@ -1519,9 +1513,7 @@ imageID FFT_do2drfft(
 
     IMGID imgin =
         imgid_make_from_name(in_name);
-    resolveIMGID(&imgin,
-                 ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    if(resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS) { return -1; }
 
     uint8_t datatype =
         imgin.md->datatype;
@@ -1533,7 +1525,7 @@ imageID FFT_do2drfft(
     {
         PRINT_ERROR(
             "malloc returns NULL pointer");
-        abort();
+        return -1;
     }
 
     uint32_t naxestmp[3];
