@@ -218,16 +218,25 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginM0 = imgid_make_from_name(inM);
-    resolveIMGID(&imginM0, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginM0, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginU0 = imgid_make_from_name(inU0);
-    resolveIMGID(&imginU0, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imginM0.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imginU0, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginU1 = imgid_make_from_name(inU1);
-    resolveIMGID(&imginU1, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imginU0.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imginU1, ERRMODE_WARN, dcimg, dcnimg);
 
 
     IMGID imgoutM1  = imgid_make_from_name(outM);
+    if (imginU1.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

@@ -85,10 +85,13 @@ image_gen_make_voronoi_map(
 )
 {
     // resolve imgpos
-    resolveIMGID(imgpos, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgpos, ERRMODE_WARN, dcimg, dcnimg);
 
     // Create output image if needed
     imcreateIMGID(imgout);
+    if (imgpos->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     uint32_t xsize = imgout->md->size[0];
@@ -255,10 +258,13 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgpos = imgid_make_from_name(inpos);
-    resolveIMGID(&imgpos, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgpos, ERRMODE_WARN, dcimg, dcnimg);
 
     // link/create output image/stream
     FARG_OUTIM2DCREATE(outim, imgout, _DATATYPE_INT32);
+    if (imgpos.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

@@ -122,8 +122,11 @@ imageID IMAGE_BASIC_get_circsym_component(
 
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0] = imgin.md->size[0];

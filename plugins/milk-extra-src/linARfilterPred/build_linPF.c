@@ -103,7 +103,7 @@ static MILK_HOT errno_t compute_function()
     // connect to input telemetry
     //
     IMGID imgin = imgid_make_from_name(inname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
 
 
     /// ## Selecting input values
@@ -116,6 +116,9 @@ static MILK_HOT errno_t compute_function()
     /// subset of the telemetry variables to be considered.
 
     uint32_t nbspl    = 0;
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t xsize    = 0;
     uint32_t ysize    = 0;
     uint32_t inNBelem = 0;
@@ -559,10 +562,13 @@ static MILK_HOT errno_t compute_function()
         // input PFmatD is stored as 2D array
         //
         IMGID imgin = imgid_make_from_name("PFmatD");
-        resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
 
 
         printf("Number of samples         : %d\n", imgin.md->size[0]);
+        if (imgin.ID == -1) {
+            return RETURN_FAILURE;
+        }
         printf("Dimension of each sample  : %d\n", imgin.md->size[1]);
 
         //int nbsample = imgin.md->size[0];

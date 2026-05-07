@@ -84,18 +84,27 @@ errno_t linopt_imtools_vec_to_2DImage(
 
     IMGID imgvec =
         imgid_make_from_name(IDvec_name);
-    resolveIMGID(&imgvec, ERRMODE_ABORT,
+    resolveIMGID(&imgvec, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgvec.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgpixi =
         imgid_make_from_name(IDpixindex_name);
-    resolveIMGID(&imgpixi, ERRMODE_ABORT,
+    resolveIMGID(&imgpixi, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgpixi.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgpixm =
         imgid_make_from_name(IDpixmult_name);
-    resolveIMGID(&imgpixm, ERRMODE_ABORT,
+    resolveIMGID(&imgpixm, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgpixm.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long NBpix = imgpixi.md->nelement;
 
