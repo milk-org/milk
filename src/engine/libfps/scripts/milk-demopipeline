@@ -4,16 +4,67 @@
 
 FRAMERATE=100
 
+# Names of the four pipeline nodes (tmux session == FPS name)
+PIPELINE_NODES=(mkrnd gaussfilt imtrunc streammon)
+
+# SHM streams created by the pipeline
+PIPELINE_STREAMS=(random_in blurred_out truncated_out)
+
+# ----------------------------------------------------------------
+# cleanup: kill tmux sessions and remove FPS/stream SHM files
+# ----------------------------------------------------------------
+do_cleanup()
+{
+    echo "Stopping milk-demopipeline processes..."
+
+    for node in "${PIPELINE_NODES[@]}"; do
+        if tmux has-session -t "$node" 2>/dev/null; then
+            echo "  Killing tmux session: $node"
+            tmux kill-session -t "$node"
+        fi
+    done
+
+    echo "Removing FPS shared-memory files..."
+    for node in "${PIPELINE_NODES[@]}"; do
+        fps_glob="/dev/shm/fps.${node}*"
+        # shellcheck disable=SC2086
+        files=$(ls ${fps_glob} 2>/dev/null)
+        if [ -n "$files" ]; then
+            echo "  Removing: $files"
+            rm -f $files
+        fi
+    done
+
+    echo "Removing stream shared-memory files..."
+    for stream in "${PIPELINE_STREAMS[@]}"; do
+        stream_glob="/dev/shm/${stream}*"
+        # shellcheck disable=SC2086
+        files=$(ls ${stream_glob} 2>/dev/null)
+        if [ -n "$files" ]; then
+            echo "  Removing: $files"
+            rm -f $files
+        fi
+    done
+
+    echo "Cleanup complete."
+}
+
+# ----------------------------------------------------------------
 # Parse arguments
+# ----------------------------------------------------------------
 while [ $# -gt 0 ]; do
     case "$1" in
+        cleanup)
+            do_cleanup
+            exit 0
+            ;;
         -h1|--help-oneline)
             echo "start a simple 4-node FPS pipeline for demonstration"
             exit 0
             ;;
         -h|--help)
             cat <<'EOF'
-Usage: milk-demopipeline [OPTIONS]
+Usage: milk-demopipeline [OPTIONS] [COMMAND]
 
 Start a simple 4-node FPS pipeline for demonstration.
 This script sets up a basic image processing chain inside tmux:
@@ -21,6 +72,9 @@ This script sets up a basic image processing chain inside tmux:
 2. Gaussian filtering
 3. Image truncation
 4. Stream monitoring
+
+Commands:
+  cleanup              Stop all pipeline processes and remove FPS/stream SHM files.
 
 Options:
   -f, --framerate HZ   Set the framerate of the pipeline in Hz (default: 100).
@@ -40,6 +94,10 @@ EOF
             ;;
     esac
 done
+
+# ----------------------------------------------------------------
+# Start pipeline
+# ----------------------------------------------------------------
 
 # Calculate delay in seconds
 DELAY=$(awk "BEGIN {print 1.0 / $FRAMERATE}")
@@ -63,3 +121,4 @@ milk-fpsexec-info-strmonproc -tmux -procinfo -loops exec truncated_out 1 100
 
 echo "Pipeline successfully started in tmux sessions."
 echo "You can now open 'milkCTRL' to view the running processes, FPS parameters, and streaming data."
+echo "Run 'milk-demopipeline cleanup' to stop all processes and clean up shared memory."
