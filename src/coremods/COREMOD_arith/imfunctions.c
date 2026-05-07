@@ -69,8 +69,11 @@
 do { \
     IMGID _in  = imgid_make_from_name(ID_in); \
     IMGID _out = imgid_make_from_name(ID_out); \
-    resolveIMGID(&_in, ERRMODE_ABORT, dcimg, dcnimg); \
+    resolveIMGID(&_in, ERRMODE_WARN, dcimg, dcnimg); \
     resolveIMGID(&_out, ERRMODE_NULL, dcimg, dcnimg); \
+    if (_in.ID == -1) { \
+        return RETURN_FAILURE; \
+    } \
     if (_out.ID == -1) { \
         _out.mdt->shared = dcshareddft; \
         _out.mdt->NBkw = NB_KEYWNODE_MAX; \
@@ -497,8 +500,11 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         double (*pt2function)(double))
 {
     IMGID img = imgid_make_from_name(ID_name);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     errno_t ret = arith_image_function_1_1_inplace_IMGID(&img, pt2function);
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     imgid_free(&img);
     return ret;
 }
@@ -814,8 +820,14 @@ errno_t arith_image_function_2_1(
     IMGID inimg2 = imgid_make_from_name(ID_name2);
     IMGID outimg = imgid_make_from_name(ID_out);
 
-    resolveIMGID(&inimg1, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&inimg2, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg1, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(&inimg2, ERRMODE_WARN, dcimg, dcnimg);
+    if (inimg1.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (inimg2.ID == -1) {
+        return RETURN_FAILURE;
+    }
     resolveIMGID(&outimg, ERRMODE_NULL, dcimg, dcnimg);
 
     if (outimg.ID == -1) {
@@ -1119,8 +1131,11 @@ int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt
 int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*pt2function)(double, double))
 {
     IMGID img = imgid_make_from_name(ID_name);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     int ret = arith_image_function_1f_1_inplace_IMGID(&img, f1, pt2function);
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     imgid_free(&img);
     return ret;
 }
@@ -1180,8 +1195,11 @@ int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2,
 int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2, double (*pt2function)(double, double, double))
 {
     IMGID img = imgid_make_from_name(ID_name);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     int ret = arith_image_function_1ff_1_inplace_IMGID(&img, f1, f2, pt2function);
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     imgid_free(&img);
     return ret;
 }

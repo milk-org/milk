@@ -26,8 +26,11 @@ double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
     uint64_t    nelement;
     uint8_t     datatype;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     nelement = imgin->md[0].nelement;
 
@@ -186,8 +189,11 @@ double MILK_HOT arith_image_sumsquare_IMGID(IMGID *imgin)
     uint64_t    nelement;
     uint8_t     datatype;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     nelement = imgin->md[0].nelement;
 

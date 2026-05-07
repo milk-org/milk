@@ -641,15 +641,21 @@ static MILK_HOT errno_t compute_function()
     // input
 
     IMGID imginA = imgid_make_from_name(inmatA);
-    resolveIMGID(&imginA, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginA, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginB = imgid_make_from_name(inmatB);
-    resolveIMGID(&imginB, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imginA.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imginB, ERRMODE_WARN, dcimg, dcnimg);
 
 
     // output
 
     IMGID imgM  = imgid_make_from_name(outM);
+    if (imginB.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

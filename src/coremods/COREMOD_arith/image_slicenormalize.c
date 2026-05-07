@@ -69,8 +69,14 @@ static errno_t image_slicenormalize_core(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&maskimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(&maskimg, ERRMODE_WARN, dcimg, dcnimg);
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (maskimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     resolveIMGID(&imgaux, ERRMODE_NULL, dcimg, dcnimg);
 
@@ -286,8 +292,11 @@ errno_t image_slicenormalize(
     int modeRMS
 )
 {
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
     if(inimg.ID == -1) return RETURN_FAILURE;
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t size = inimg.md->size[sliceaxis];
 
     double *__restrict normarray = (double *) malloc(sizeof(double) * size);
@@ -315,12 +324,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = imgid_make_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID maskimg = imgid_make_from_name(maskimname);
-    resolveIMGID(&maskimg, ERRMODE_ABORT, dcimg, dcnimg);
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&maskimg, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgaux = imgid_make_from_name(auxin);
+    if (maskimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
     resolveIMGID(&imgaux, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID outimg = imgid_make_from_name(outimname);
@@ -334,10 +349,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
         if(inimg.ID != -1)
         {
             uint32_t current_sliceaxis_size = inimg.md->size[sliceaxis];
+        if (inimg.ID == -1) {
+            return RETURN_FAILURE;
+        }
             if (alloc_sliceaxis_size < current_sliceaxis_size || normarray == NULL) {
                 normarray = (double *) realloc(normarray, sizeof(double) * current_sliceaxis_size);
                 avarray = (double *) realloc(avarray, sizeof(double) * current_sliceaxis_size);

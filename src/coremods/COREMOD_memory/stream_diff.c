@@ -90,12 +90,18 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
     long        semtrig)
 {
     IMGID img0 = imgid_make_from_name(IDstream0_name);
-    resolveIMGID(&img0, ERRMODE_ABORT,
+    resolveIMGID(&img0, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (img0.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID img1 = imgid_make_from_name(IDstream1_name);
-    resolveIMGID(&img1, ERRMODE_ABORT,
+    resolveIMGID(&img1, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (img1.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgmask =
         imgid_make_from_name(IDstreammask_name);

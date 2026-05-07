@@ -164,12 +164,18 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     PROCESSINFO *processinfo;
 
     IMGID img_in = imgid_make_from_name(inputstream_name);
-    resolveIMGID(&img_in, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img_in, ERRMODE_WARN, dcimg, dcnimg);
     IDin = img_in.ID;
+    if (img_in.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID img_map = imgid_make_from_name(IDmap_name);
-    resolveIMGID(&img_map, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img_map, ERRMODE_WARN, dcimg, dcnimg);
     IDmap = img_map.ID;
+    if (img_map.ID == -1) {
+        return RETURN_FAILURE;
+    }
     // Size of IDmap is different depending if forward or reverse lookup !
     // Reverse = 0: same size as IDin
     // Reverse = 1: same size as IDout

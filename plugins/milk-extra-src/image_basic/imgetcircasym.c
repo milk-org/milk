@@ -322,8 +322,11 @@ IMAGE_BASIC_get_circasym_component(
 
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     return
         IMAGE_BASIC_get_circasym_component_byID(

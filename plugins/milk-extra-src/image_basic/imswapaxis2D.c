@@ -135,8 +135,11 @@ imageID image_basic_SwapAxis2D(
 {
     IMGID imgin =
         imgid_make_from_name(IDin_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     return image_basic_SwapAxis2D_byID(
         imgin.ID, IDout_name);

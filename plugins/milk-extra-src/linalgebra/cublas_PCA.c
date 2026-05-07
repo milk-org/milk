@@ -471,9 +471,12 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACEPOINT("PCA of %s", inimname);
 
     IMGID img = imgid_make_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     printf("PCA of %s\n", inimname);
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

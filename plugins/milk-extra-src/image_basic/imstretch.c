@@ -30,8 +30,11 @@ imageID basic_stretch(
 {
     IMGID imgin =
         imgid_make_from_name(name_in);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0] = imgin.md->size[0];
@@ -105,8 +108,11 @@ imageID basic_stretch_range(
 
     IMGID imgin =
         imgid_make_from_name(name_in);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0] = imgin.md->size[0];
@@ -250,8 +256,11 @@ imageID basic_stretchc(
 
     IMGID imgin =
         imgid_make_from_name(name_in);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0] = imgin.md->size[0];

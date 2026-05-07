@@ -78,8 +78,14 @@ errno_t image_vect_multiply(
 
     // check if images already exist
     //
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgvec, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(&imgvec, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (imgvec.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     resolveIMGID(imgout, ERRMODE_NULL, dcimg, dcnimg);
 
@@ -111,31 +117,63 @@ errno_t image_vect_multiply(
         size2 = 1;
     }
 
-    printf("size : %u %u %u\n", size0, size1, size2);
 
-    double multfact = 1.0;
-    for(uint32_t ii=0; ii<size0; ii++)
+    float * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin.im->array.F);
+    float * MILK_RESTRICT ptr_v  = MILK_ASSUME_ALIGNED(imgvec.im->array.F);
+    float * MILK_RESTRICT ptr_out= MILK_ASSUME_ALIGNED(imgout->im->array.F);
+
+    uint64_t xsize = size0;
+    uint64_t ysize = size1;
+    uint64_t zsize = size2;
+    uint64_t xysize = xsize * ysize;
+
+    if (multaxis == 0)
     {
-        if(multaxis==0)
+        _Pragma("omp parallel for")
+        for (uint64_t kk = 0; kk < zsize; kk++)
         {
-            multfact = imgvec.im->array.F[ii];
-        }
-        for(uint32_t jj=0; jj<size1; jj++)
-        {
-            if(multaxis==1)
+            for (uint64_t jj = 0; jj < ysize; jj++)
             {
-                multfact = imgvec.im->array.F[jj];
-            }
-            for(uint32_t kk=0; kk<size2; kk++)
-            {
-                if(multaxis==2)
+                uint64_t offset = kk * xysize + jj * xsize;
+                _Pragma("omp simd")
+                for (uint64_t ii = 0; ii < xsize; ii++)
                 {
-                    multfact = imgvec.im->array.F[kk];
+                    ptr_out[offset + ii] = ptr_in[offset + ii] * ptr_v[ii];
                 }
-                uint64_t pixi = ii;
-                pixi += jj*size0;
-                pixi += kk*size0*size1;
-                imgout->im->array.F[pixi] = multfact * imgin.im->array.F[pixi];
+            }
+        }
+    }
+    else if (multaxis == 1)
+    {
+        _Pragma("omp parallel for")
+        for (uint64_t kk = 0; kk < zsize; kk++)
+        {
+            for (uint64_t jj = 0; jj < ysize; jj++)
+            {
+                uint64_t offset = kk * xysize + jj * xsize;
+                float v = ptr_v[jj];
+                _Pragma("omp simd")
+                for (uint64_t ii = 0; ii < xsize; ii++)
+                {
+                    ptr_out[offset + ii] = ptr_in[offset + ii] * v;
+                }
+            }
+        }
+    }
+    else if (multaxis == 2)
+    {
+        _Pragma("omp parallel for")
+        for (uint64_t kk = 0; kk < zsize; kk++)
+        {
+            float v = ptr_v[kk];
+            for (uint64_t jj = 0; jj < ysize; jj++)
+            {
+                uint64_t offset = kk * xysize + jj * xsize;
+                _Pragma("omp simd")
+                for (uint64_t ii = 0; ii < xsize; ii++)
+                {
+                    ptr_out[offset + ii] = ptr_in[offset + ii] * v;
+                }
             }
         }
     }
@@ -151,14 +189,20 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     // input
 
     IMGID imgimin = imgid_make_from_name(iminname);
-    resolveIMGID(&imgimin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgimin, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgvec = imgid_make_from_name(vecname);
-    resolveIMGID(&imgvec, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imgimin.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imgvec, ERRMODE_WARN, dcimg, dcnimg);
 
     // output
 
     IMGID imgout  = imgid_make_from_name(imoutname);
+    if (imgvec.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

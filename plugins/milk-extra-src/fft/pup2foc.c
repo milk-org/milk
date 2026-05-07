@@ -154,12 +154,18 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgamp = imgid_make_from_name(inamp);
-    resolveIMGID(&imgamp, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgamp, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgpha = imgid_make_from_name(inpha);
-    resolveIMGID(&imgpha, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imgamp.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imgpha, ERRMODE_WARN, dcimg, dcnimg);
 
 //    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
+    if (imgpha.ID == -1) {
+        return RETURN_FAILURE;
+    }
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization

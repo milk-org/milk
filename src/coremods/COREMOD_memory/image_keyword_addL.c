@@ -60,9 +60,12 @@ static CLICMDDATA CLIcmddata =
 
 errno_t image_keyword_addL(IMGID img, char *kwname, long kwval, char *comment)
 {
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     int NBkw = img.md->NBkw; // max nb kw
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     int kw = 0;
     while((img.im->kw[kw].type != 'N') && (kw < NBkw))
