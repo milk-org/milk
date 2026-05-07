@@ -123,7 +123,7 @@ errno_t export_wisdom()
     if((fp = fopen(wisdom_file_single, "w")) == NULL)
     {
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_single);
-        abort();
+        return RETURN_FAILURE;
     }
 #ifdef MILK_MODULE
     fftwf_export_wisdom_to_file(fp);
@@ -133,7 +133,7 @@ errno_t export_wisdom()
     if((fp = fopen(wisdom_file_double, "w")) == NULL)
     {
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_double);
-        abort();
+        return RETURN_FAILURE;
     }
 #ifdef MILK_MODULE
     fftw_export_wisdom_to_file(fp);
