@@ -127,6 +127,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imgid_copy(&imgin, &imgout);
     imcreateIMGID(&imgout);
 
+    if (imgout.im == NULL) {
+        imgid_free(&imgin);
+        return RETURN_FAILURE;
+    }
+
     uint64_t nelement = imgin.md->nelement;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
