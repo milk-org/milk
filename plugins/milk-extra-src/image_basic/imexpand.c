@@ -232,8 +232,11 @@ imageID basic_expand(
 
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long naxes[2];
     naxes[0] = imgin.md->size[0];
@@ -292,8 +295,11 @@ imageID basic_expand3D(
 {
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long naxes[3];
     naxes[0] = imgin.md->size[0];

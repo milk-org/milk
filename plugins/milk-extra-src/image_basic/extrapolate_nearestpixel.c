@@ -29,13 +29,19 @@ imageID basic_2Dextrapolate_nearestpixel(
 
     IMGID imgin =
         imgid_make_from_name(IDin_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgmask =
         imgid_make_from_name(IDmask_name);
-    resolveIMGID(&imgmask, ERRMODE_ABORT,
+    resolveIMGID(&imgmask, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgmask.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     list_image_ID();
     IMGID imgmask1 =

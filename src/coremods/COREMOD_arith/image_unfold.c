@@ -56,9 +56,12 @@ errno_t image_unfold(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     resolveIMGID(outimg, ERRMODE_NULL, dcimg, dcnimg);
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
     if( outimg->ID == -1)
     {
         imgid_copy(&inimg, outimg);
@@ -192,9 +195,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = imgid_make_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID outimg = imgid_make_from_name(outimname);
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

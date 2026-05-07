@@ -73,12 +73,21 @@ errno_t SVDmkM(
 
     list_image_ID();
 
-    resolveIMGID(&imgU, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgS, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgV, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgU, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(&imgS, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgU.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (imgS.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imgV, ERRMODE_WARN, dcimg, dcnimg);
 
     // un-normalized modes
     //printf("Creating image from %s\n", imgU.md->name);
+    if (imgV.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgunmodes = imgid_make_from_name("XXSVDunmodes");
     imgunmodes.mdt->naxis = imgU.md->naxis;
@@ -125,16 +134,25 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginU = imgid_make_from_name(inmatU);
-    resolveIMGID(&imginU, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginU, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginS = imgid_make_from_name(invecS);
-    resolveIMGID(&imginS, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imginU.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imginS, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginV = imgid_make_from_name(inmatV);
-    resolveIMGID(&imginV, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imginS.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imginV, ERRMODE_WARN, dcimg, dcnimg);
 
 
     IMGID imgoutM  = imgid_make_from_name(outmatM);
+    if (imginV.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

@@ -30,9 +30,12 @@ static CLICMDDATA CLIcmddata =
 
 errno_t image_keywords_list(IMGID img)
 {
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     int NBkw  = img.md->NBkw;
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     int kwcnt = 0;
     for(int kw = 0; kw < NBkw; kw++)
     {

@@ -111,8 +111,11 @@ imageID IMAGE_BASIC_streamrecord(
 {
     IMGID imgin =
         imgid_make_from_name(streamname);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long xsize  = imgin.md->size[0];
     long ysize  = imgin.md->size[1];

@@ -80,8 +80,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     // CONNECT TO INPUT STREAM
     IMGID imgin = imgid_make_from_name(cminsname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
     //long m = imgin.md->size[0] * imgin.md->size[1];
 
     // CONNNECT TO OR CREATE MASK STREAM
