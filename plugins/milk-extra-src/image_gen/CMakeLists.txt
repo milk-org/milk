@@ -14,6 +14,7 @@ set(SOURCEFILES
 	image_gen_basic_shapes.c
 	image_gen_polygons.c
 	image_gen_profiles.c
+	image_gen_complex.c
 )
 
 
