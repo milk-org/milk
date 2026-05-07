@@ -71,11 +71,19 @@ errno_t mk_complex_from_amph_IMGID(
     DEBUG_TRACE_FSTART();
 
     resolveIMGID(
-        imginamp, ERRMODE_ABORT,
+        imginamp, ERRMODE_WARN,
         dcimg, dcnimg);
+    if(imginamp->ID == -1) {
+        return RETURN_FAILURE;
+    }
+
     resolveIMGID(
-        imginpha, ERRMODE_ABORT,
+        imginpha, ERRMODE_WARN,
         dcimg, dcnimg);
+    if(imginpha->ID == -1) {
+        return RETURN_FAILURE;
+    }
+
 
     uint8_t datatype_am = imginamp->md->datatype;
     uint8_t datatype_ph = imginpha->md->datatype;
@@ -299,7 +307,7 @@ errno_t mk_complex_from_amph_IMGID(
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");
-        abort();
+        return RETURN_FAILURE;
     }
 
     DEBUG_TRACE_FEXIT();

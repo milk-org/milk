@@ -283,14 +283,19 @@ imageID COREMOD_IOFITS_LoadMemStream(
  * When linking statically (USE_STATIC_LTO), the
  * real implementations in COREMOD_iofits_compute
  * override these weak versions.
+ *
+ * visibility("hidden") prevents these stubs from
+ * being exported by the shared library, avoiding
+ * shadowing of the real symbols from
+ * libmilkCOREMODiofits.so at runtime.
  */
-__attribute__((weak))
+__attribute__((weak, visibility("hidden")))
 int file_exists(const char *filename)
 {
     return access(filename, F_OK) != -1;
 }
 
-__attribute__((weak))
+__attribute__((weak, visibility("hidden")))
 int is_fits_file(const char *filename)
 {
     const char *ext = strrchr(filename, '.');
@@ -301,7 +306,7 @@ int is_fits_file(const char *filename)
     return 0;
 }
 
-__attribute__((weak))
+__attribute__((weak, visibility("hidden")))
 int save_fits(
     const char *imname,
     const char *filename
@@ -312,7 +317,7 @@ int save_fits(
     return -1;
 }
 
-__attribute__((weak))
+__attribute__((weak, visibility("hidden")))
 int load_fits(
     const char *filename,
     const char *imname,
@@ -327,7 +332,7 @@ int load_fits(
     return -1;
 }
 
-__attribute__((weak))
+__attribute__((weak, visibility("hidden")))
 int copy_image_ID(
     const char *name1,
     const char *name2,

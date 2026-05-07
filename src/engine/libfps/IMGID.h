@@ -693,6 +693,7 @@ static inline uint64_t imgid_compare_md(
 static inline void imgid_mkimage(IMGID * img)
 {
     ImageStreamIO_createIm(img->im, img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype, img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
+    img->md = img->im->md;
     img->createcnt++;
 }
 
