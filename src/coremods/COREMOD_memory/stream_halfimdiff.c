@@ -74,8 +74,11 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
     long        semtrig)
 {
     IMGID img0 = imgid_make_from_name(IDstream_name);
-    resolveIMGID(&img0, ERRMODE_ABORT,
+    resolveIMGID(&img0, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (img0.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t xsizein = img0.md->size[0];
     uint32_t ysizein = img0.md->size[1];

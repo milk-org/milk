@@ -102,8 +102,11 @@ errno_t images_to_cube(
 
     IMGID img1 =
         imgid_make_from_name(imname);
-    resolveIMGID(&img1, ERRMODE_ABORT,
+    resolveIMGID(&img1, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (img1.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t xsize = img1.md->size[0];
     uint32_t ysize = img1.md->size[1];

@@ -187,10 +187,13 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgincoeffM = imgid_make_from_name(incoeffM);
-    resolveIMGID(&imgincoeffM, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgincoeffM, ERRMODE_WARN, dcimg, dcnimg);
 
 
     fflush(stdout);
+    if (imgincoeffM.ID == -1) {
+        return RETURN_FAILURE;
+    }
     IMGID imgoutcoeffM  = imgid_make_from_name(outcoeffM);
 
 

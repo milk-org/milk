@@ -57,16 +57,22 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     // connect to input
     //
     IMGID imgin = imgid_make_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
     int64_t insize = imgin.md->size[0]*imgin.md->size[1];
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgmap = imgid_make_from_name(mapsname);
-    resolveIMGID(&imgmap, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgmap, ERRMODE_WARN, dcimg, dcnimg);
 
     // read map size
     // Note: currently assumes 2D ... to be updated
     //
     uint32_t xsize = imgmap.md->size[0];
+    if (imgmap.ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t ysize = imgmap.md->size[1];
 
     // link/create output image/stream

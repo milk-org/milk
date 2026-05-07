@@ -273,12 +273,15 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID in_img = imgid_make_from_name(in_name);
-    resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&in_img, ERRMODE_WARN, dcimg, dcnimg);
 
     // Set in_img to be the trigger
     snprintf(CLIcmddata.cmdsettings->triggerstreamname,
              sizeof(CLIcmddata.cmdsettings->triggerstreamname),
              "%s", in_name);
+    if (in_img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     // for FPS mode:
     if(dcfpsptr != NULL)
     {
@@ -309,7 +312,7 @@ static MILK_HOT errno_t compute_function()
         in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
         imcreatelikewiseIMGID(&out_ave_img, &in_img);
         in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_ave_img, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&out_ave_img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
     IMGID out_std_img = imgid_make_from_name(out_std_name);
@@ -319,12 +322,15 @@ static MILK_HOT errno_t compute_function()
         in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
         imcreatelikewiseIMGID(&out_std_img, &in_img);
         in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_std_img, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&out_std_img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
-    /*
-     Keyword setup - initialization
-    */
+    if (out_ave_img.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (out_std_img.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     for(int kw = 0; kw < in_img.md->NBkw; ++kw)
     {

@@ -138,8 +138,11 @@ static MILK_HOT errno_t compute_function()
 
     // CONNECT TO INPUT STREAM
     IMGID imgin = imgid_make_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
     long m = imgin.md->size[0] * imgin.md->size[1];
 
     // CONNECT TO MASK STREAM
@@ -253,12 +256,15 @@ static MILK_HOT errno_t compute_function()
 
     // CONNECT TO MODES STREAM
     IMGID imgmodes = imgid_make_from_name(immodes);
-    resolveIMGID(&imgmodes, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgmodes, ERRMODE_WARN, dcimg, dcnimg);
 
     // Could this be imgid_compare?
     if(imgmodes.md->datatype != _DATATYPE_FLOAT)
     {
         PRINT_ERROR("Cannot operate with modes other than FP32!!!s");
+    if (imgmodes.ID == -1) {
+        return RETURN_FAILURE;
+    }
         abort();
     }
 

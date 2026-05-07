@@ -236,9 +236,12 @@ imageID copy_image_ID_IMGID(
     int shared
 )
 {
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t naxis = imgin->md[0].naxis;
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t size[3];
     for(uint32_t i = 0; i < naxis; i++)
     {
@@ -349,13 +352,16 @@ imageID chname_image_ID_IMGID(
     const char *new_name
 )
 {
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     if((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
     {
         snprintf(imgin->im->name,
                  STRINGMAXLEN_IMAGE_NAME,
                  "%s", new_name);
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
         snprintf(imgin->name,
                  STRINGMAXLEN_IMAGE_NAME,
                  "%s", new_name);
@@ -399,9 +405,12 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
     IMGID *imgout
 )
 {
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t naxis = imgin->md[0].naxis;
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t size[3];
     for(uint32_t k = 0; k < naxis; k++)
     {

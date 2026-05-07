@@ -55,8 +55,11 @@ imageID break_cube(
 {
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t xsize = imgin.md->size[0];
     uint32_t ysize = imgin.md->size[1];

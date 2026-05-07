@@ -29,10 +29,13 @@ double arith_image_mean_IMGID(IMGID *imgin)
 {
     double  value;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     value =
         (double)(arith_image_total_IMGID(imgin) / imgin->md[0].nelement);
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     return (value);
 }
@@ -49,8 +52,11 @@ double MILK_HOT arith_image_min_IMGID(IMGID *imgin)
     uint8_t  datatype;
     int      OK = 0;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     nelement = imgin->md[0].nelement;
 
@@ -264,8 +270,11 @@ double MILK_HOT arith_image_max_IMGID(IMGID *imgin)
     uint8_t datatype;
     int     OK = 0;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     nelement = imgin->md[0].nelement;
 
@@ -485,8 +494,11 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
     uint8_t         datatype;
     int             atypeOK = 1;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     nelement = imgin->md[0].nelement;
 
@@ -687,8 +699,14 @@ double MILK_HOT arith_image_dot_IMGID(IMGID *imgin1, IMGID *imgin2)
     double   value = 0.0;
     int      OK = 0;
 
-    resolveIMGID(imgin1, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(imgin2, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin1, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(imgin2, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin1->ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (imgin2->ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     datatype1 = imgin1->md[0].datatype;
     datatype2 = imgin2->md[0].datatype;

@@ -225,8 +225,11 @@ long image_write_keyword_L(
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     long ID = img.ID;
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     long    kw, NBkw, kw0;
 
     NBkw = dcimg[ID].md[0].NBkw;
@@ -276,8 +279,11 @@ long image_write_keyword_D(
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     long ID = img.ID;
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     long    kw;
     long    NBkw;
     long    kw0;
@@ -329,8 +335,11 @@ long image_write_keyword_S(
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     long ID = img.ID;
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     long    kw;
     long    NBkw;
     long    kw0;
@@ -382,8 +391,11 @@ imageID image_list_keywords(
     const char *restrict IDname)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     long ID = img.ID;
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     long    kw;
 
     int kwcnt = 0;
