@@ -70,6 +70,7 @@ typedef enum
     OV_EDGE_FPS_INPUT_STREAM,
     OV_EDGE_FPS_OUTPUT_STREAM,
     OV_EDGE_PROC_TRIGGER_STREAM,
+    OV_EDGE_STREAM_READ_BY_PROC,
 } ov_edge_type_t;
 
 /* =========================================================
@@ -154,6 +155,14 @@ typedef struct
     char     stream_param_value[OV_FPS_MAX_STREAM_PARAMS]
              [FUNCTION_PARAMETER_STRMAXLEN];
     uint64_t stream_param_flags[OV_FPS_MAX_STREAM_PARAMS];
+
+#define OV_FPS_MAX_DISP_PARAMS 100
+    /* display parameters (read-only list) */
+    int      nb_disp_params;
+    char     disp_param_name[OV_FPS_MAX_DISP_PARAMS]
+             [FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_value[OV_FPS_MAX_DISP_PARAMS]
+             [FUNCTION_PARAMETER_STRMAXLEN];
 
     /* graph node index */
     int      node_idx;

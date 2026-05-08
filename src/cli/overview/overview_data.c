@@ -319,6 +319,13 @@ typedef struct
     char sparam_key[OV_FPS_MAX_STREAM_PARAMS]
                    [FUNCTION_PARAMETER_STRMAXLEN];
     int  sparam_nb;
+    
+    /* Cached display parameter indices. */
+    int  dparam_idx[OV_FPS_MAX_DISP_PARAMS];
+    char dparam_key[OV_FPS_MAX_DISP_PARAMS]
+                   [FUNCTION_PARAMETER_STRMAXLEN];
+    int  dparam_nb;
+    
     int  sparam_cached; /**< 1 once index scan done */
 } ov_fps_cache_t;
 
@@ -762,19 +769,21 @@ void ov_scan_streams(OV_MODEL *model)
 static struct timespec s_fps_mtime = {0, 0};
 
 /**
- * fcache_build_sparam - discover stream-type param
- *     indices and cache them. Called once per FPS.
+ * fcache_build_params - discover param indices and cache them. 
+ * Called once per FPS.
  * @ce: FPS cache entry
  */
-static void fcache_build_sparam(
+static void fcache_build_params(
     ov_fps_cache_t *ce)
 {
     FUNCTION_PARAMETER_STRUCT *fpsp = &ce->fps;
     int sp = 0;
+    int dp = 0;
 
     if (fpsp->md == NULL)
     {
         ce->sparam_nb     = 0;
+        ce->dparam_nb     = 0;
         ce->sparam_cached = 1;
         return;
     }
@@ -785,10 +794,7 @@ static void fcache_build_sparam(
         nb_params = 10000;
     }
 
-    for (int p = 0;
-         p < nb_params
-         && sp < OV_FPS_MAX_STREAM_PARAMS;
-         p++)
+    for (int p = 0; p < nb_params && (sp < OV_FPS_MAX_STREAM_PARAMS || dp < OV_FPS_MAX_DISP_PARAMS); p++)
     {
         FUNCTION_PARAMETER *fp =
             &fpsp->parray[p];
@@ -796,55 +802,50 @@ static void fcache_build_sparam(
         {
             continue;
         }
-        if (fp->type != FPTYPE_STREAMNAME)
-        {
-            continue;
-        }
-
-        ce->sparam_idx[sp] = p;
-
-        /* Build and cache keyword string */
-        char *kbuf = ce->sparam_key[sp];
+        char kbuf[FUNCTION_PARAMETER_STRMAXLEN];
         kbuf[0] = '\0';
+        int klen = 0;
+        for (int kl = 1; kl < FUNCTION_PARAMETER_KEYWORD_MAXLEVEL; kl++)
         {
-            int klen = 0;
-            for (int kl = 1;
-                 kl < FUNCTION_PARAMETER_KEYWORD_MAXLEVEL;
-                 kl++)
+            if (fp->keyword[kl][0] == '\0')
             {
-                if (fp->keyword[kl][0] == '\0')
-                {
-                    break;
-                }
-                if (klen > 0
-                    && klen < FUNCTION_PARAMETER_STRMAXLEN - 1)
-                {
-                    kbuf[klen++] = '.';
-                    kbuf[klen]   = '\0';
-                }
-                int rem =
-                    FUNCTION_PARAMETER_STRMAXLEN
-                    - klen - 1;
-                if (rem > 0)
-                {
-                    strncat(kbuf + klen,
-                            fp->keyword[kl],
-                            (size_t) rem);
-                    klen = (int) strlen(kbuf);
-                }
+                break;
             }
-            if (kbuf[0] == '\0')
+            if (klen > 0 && klen < FUNCTION_PARAMETER_STRMAXLEN - 1)
             {
-                strncpy(kbuf,
-                        fp->keyword[0],
-                        FUNCTION_PARAMETER_STRMAXLEN
-                        - 1);
+                kbuf[klen++] = '.';
+                kbuf[klen]   = '\0';
+            }
+            int rem = FUNCTION_PARAMETER_STRMAXLEN - klen - 1;
+            if (rem > 0)
+            {
+                strncat(kbuf + klen, fp->keyword[kl], (size_t) rem);
+                klen = (int) strlen(kbuf);
             }
         }
-        sp++;
+        if (kbuf[0] == '\0')
+        {
+            strncpy(kbuf, fp->keyword[0], FUNCTION_PARAMETER_STRMAXLEN - 1);
+        }
+
+        /* If there's room in dparam cache, add it */
+        if (dp < OV_FPS_MAX_DISP_PARAMS)
+        {
+            ce->dparam_idx[dp] = p;
+            strncpy(ce->dparam_key[dp], kbuf, FUNCTION_PARAMETER_STRMAXLEN - 1);
+            dp++;
+        }
+
+        if (fp->type == FPTYPE_STREAMNAME && sp < OV_FPS_MAX_STREAM_PARAMS)
+        {
+            ce->sparam_idx[sp] = p;
+            strncpy(ce->sparam_key[sp], kbuf, FUNCTION_PARAMETER_STRMAXLEN - 1);
+            sp++;
+        }
     }
 
     ce->sparam_nb     = sp;
+    ce->dparam_nb     = dp;
     ce->sparam_cached = 1;
 }
 
@@ -878,10 +879,9 @@ static void fill_fps_from_struct(
     f->conf_alive = (pid_get_status(f->confpid) == OV_PID_ALIVE);
     f->run_alive  = pid_is_alive(f->runpid);
 
-    /* Build param index cache on first use */
     if (!ce->sparam_cached)
     {
-        fcache_build_sparam(ce);
+        fcache_build_params(ce);
     }
 
     /* Read only the cached stream-type params */
@@ -900,6 +900,47 @@ static void fill_fps_from_struct(
         f->stream_param_flags[sp] = fp->fpflag;
     }
     f->nb_stream_params = ce->sparam_nb;
+
+    /* Read the cached display params */
+    for (int dp = 0; dp < ce->dparam_nb; dp++)
+    {
+        FUNCTION_PARAMETER *fp = &fpsp->parray[ce->dparam_idx[dp]];
+        strncpy(f->disp_param_name[dp], ce->dparam_key[dp], FUNCTION_PARAMETER_STRMAXLEN - 1);
+        
+        /* Format value to string based on type */
+        char valstr[FUNCTION_PARAMETER_STRMAXLEN] = {0};
+        switch (fp->type)
+        {
+        case FPTYPE_INT64:
+            snprintf(valstr, sizeof(valstr), "%ld", (long)fp->val.i64[0]);
+            break;
+        case FPTYPE_FLOAT64:
+            snprintf(valstr, sizeof(valstr), "%g", fp->val.f64[0]);
+            break;
+        case FPTYPE_FLOAT32:
+            snprintf(valstr, sizeof(valstr), "%g", fp->val.f32[0]);
+            break;
+        case FPTYPE_PID:
+            snprintf(valstr, sizeof(valstr), "%d", (int)fp->val.pid[0]);
+            break;
+        case FPTYPE_ONOFF:
+            snprintf(valstr, sizeof(valstr), "%s", fp->val.i64[0] ? "ON" : "OFF");
+            break;
+        case FPTYPE_FPSNAME:
+        case FPTYPE_STREAMNAME:
+        case FPTYPE_STRING:
+        case FPTYPE_DIRNAME:
+        case FPTYPE_FILENAME:
+        case FPTYPE_EXECFILENAME:
+            strncpy(valstr, fp->val.string[0], sizeof(valstr) - 1);
+            break;
+        default:
+            snprintf(valstr, sizeof(valstr), "[Type %d]", fp->type);
+            break;
+        }
+        strncpy(f->disp_param_value[dp], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
+    }
+    f->nb_disp_params = ce->dparam_nb;
 
     /* Read description from md */
     if (fpsp->md->description[0] != '\0')
@@ -1571,6 +1612,26 @@ void ov_build_graph(OV_MODEL *model)
                         model->procs[pi].node_idx,
                         OV_EDGE_STREAM_TRIGGERS_PROC,
                         "triggers");
+                }
+            }
+        }
+
+        /* Create edges for input-based reading (via read_pids) */
+        for (int r = 0; r < s->nb_read_pids; r++)
+        {
+            pid_t rpid = s->read_pids[r];
+            if (rpid > 0)
+            {
+                int rpi = ov_find_proc_by_pid(model, rpid);
+                if (rpi >= 0 && model->procs[rpi].node_idx >= 0)
+                {
+                    /* stream → proc (reads/inputs) */
+                    ov_add_edge(
+                        model,
+                        s->node_idx,
+                        model->procs[rpi].node_idx,
+                        OV_EDGE_STREAM_READ_BY_PROC,
+                        "reads");
                 }
             }
         }
