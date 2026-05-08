@@ -85,6 +85,8 @@ typedef struct {
     int          freeze_sel_stream;
     int          freeze_sel_proc;
     int          freeze_sel_fps;
+    /* Lineage tracking mode: 0 = Trigger, 1 = Input */
+    int          lineage_mode;
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);

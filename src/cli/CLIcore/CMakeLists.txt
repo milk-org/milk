@@ -217,6 +217,7 @@ add_executable(milkCTRL
     ../overview/overview_render.c
     ../overview/overview_input.c
     ../overview/overview_ctrl.c
+    ../overview/stream_graph.c
 )
 target_include_directories(milkCTRL PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
@@ -227,6 +228,24 @@ target_include_directories(milkCTRL PRIVATE
 target_link_libraries(milkCTRL PUBLIC
     ImageStreamIO milkprocessinfo milkfps m rt pthread)
 install(TARGETS milkCTRL DESTINATION bin)
+
+# milk-stream-graph: stream dependency graph tool
+add_executable(milk-stream-graph
+    ../overview/milk-stream-graph.c
+    ../overview/stream_graph.c
+    ../overview/overview_data.c
+    ../overview/overview_scan.c
+    ../overview/overview_layout.c
+)
+target_include_directories(milk-stream-graph PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+    ${CMAKE_SOURCE_DIR}/src/cli/overview
+)
+target_link_libraries(milk-stream-graph PUBLIC
+    ImageStreamIO milkprocessinfo milkfps m rt pthread)
+install(TARGETS milk-stream-graph DESTINATION bin)
 
 # TESTING
 

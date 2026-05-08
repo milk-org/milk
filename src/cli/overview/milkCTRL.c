@@ -138,6 +138,7 @@ static void print_usage(const char *prog)
     printf("\nDisplay:\n");
     printf("  +/-        Adjust scan rate\n");
     printf("  D          Toggle detail pane\n");
+    printf("  L          Toggle lineage mode\n");
     printf("  p          Pause/resume display\n");
     printf("  SPACE      Freeze selection highlight\n");
     printf("  /          Filter (regex search)\n");
@@ -150,8 +151,8 @@ static void print_usage(const char *prog)
     printf("  k    Graceful kill (SIGTERM)\n");
     printf("  K    Immediate kill (SIGKILL)\n");
     printf("  x    Pause/resume (SIGSTOP/SIGCONT)\n");
-    printf("\nFPS panel:\n");
-    printf("  ENTER  Open milk-fpsCTRL for selection\n");
+    printf("\nDetail View (ENTER or D):\n");
+    printf("  Toggles detail pane for selected item\n");
     printf("\nColumns:\n");
     printf("  STREAMS: MB/s throughput,"
            " total in panel footer\n");
