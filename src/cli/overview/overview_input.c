@@ -452,6 +452,16 @@ int ov_handle_key(
         return 0;
     }
 
+    /* Lineage mode toggle — 'L' */
+    if (key == 'L')
+    {
+        /* Cycle: Trigger(0) -> Input(1) -> Full(2) */
+        lay->lineage_mode =
+            (lay->lineage_mode + 1) % 3;
+        return 0;
+    }
+
+
     /* Freeze / Pause display — 'p' or 'P' */
     if (key == 'p' || key == 'P')
     {
@@ -466,44 +476,10 @@ int ov_handle_key(
         return 0;
     }
 
-    /* ENTER — launch milk-fpsCTRL for selected FPS */
-    if ((key == 10 || key == 13)
-        && lay->focus == OV_FOCUS_FPS
-        && m != NULL)
+    /* ENTER — toggle detail mode */
+    if ((key == 10 || key == 13) && m != NULL)
     {
-        /* Resolve filtered selection to FPS name */
-        const char *names[OV_MAX_FPS];
-        for (int i = 0; i < m->nb_fps; i++)
-        {
-            names[i] = m->fps[i].name;
-        }
-        int fidx[OV_MAX_FPS];
-        int fn = ov_filter_build(
-            lay->filter_fps, names,
-            m->nb_fps, fidx, OV_MAX_FPS);
-        if (lay->sel_fps >= 0
-            && lay->sel_fps < fn)
-        {
-            int fi = fidx[lay->sel_fps];
-            const char *fname = m->fps[fi].name;
-            char cmd[512];
-
-            if (getenv("TMUX") != NULL)
-            {
-                snprintf(cmd, sizeof(cmd),
-                    "tmux new-window -n '%s'"
-                    " 'milk-fpsCTRL %s'",
-                    fname, fname);
-            }
-            else
-            {
-                snprintf(cmd, sizeof(cmd),
-                    "milk-fpsCTRL %s &",
-                    fname);
-            }
-            /* Suppress unused-result warning */
-            if (system(cmd) < 0) {}
-        }
+        lay->detail_mode = !lay->detail_mode;
         return 0;
     }
 

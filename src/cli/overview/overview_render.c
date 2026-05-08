@@ -16,6 +16,7 @@
 #include <time.h>
 #include <math.h>
 #include <regex.h>
+#include "stream_graph.h"
 #include <sys/resource.h>
 #include <sys/time.h>
 
@@ -320,6 +321,12 @@ static int bget(const uint64_t *words, int idx)
 {
     return (words[idx / BITS_PER_WORD] >> (idx % BITS_PER_WORD)) & 1;
 }
+
+/* =========================================================
+ * Stream lineage (ancestors / descendants)
+ * ========================================================= */
+
+/* Lineage types and BFS now in stream_graph.{h,c} */
 
 /**
  * ov_compute_related - find items in other panels related to the selection.
@@ -2433,6 +2440,52 @@ static int ov_render_detail_panel(
             render_pad_spaces(n, r.width);
             ri++;
         }
+        /* Semaphores */
+        if (s->nb_sem > 0)
+        {
+            if (ri < max_rows)
+            {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_theme_fg(OV_FG_TITLE);
+                ov_buf_bold();
+                int n = snprintf(NULL, 0, " Semaphores (%d):", s->nb_sem);
+                ov_buf_printf(" Semaphores (%d):", s->nb_sem);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_PANEL);
+                render_pad_spaces(n, r.width);
+                ri++;
+            }
+            for (int i = 0; i < s->nb_sem && ri < max_rows; i++)
+            {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_bg(OV_BG_PANEL);
+                
+                int val = s->semval[i];
+                if (val > 0)
+                {
+                    ov_theme_fg(OV_FG_WARN);
+                }
+                else
+                {
+                    ov_theme_fg(OV_FG_TEXT);
+                }
+                
+                char rpid_str[32] = "";
+                if (s->read_pids[i] > 0) {
+                    snprintf(rpid_str, sizeof(rpid_str), "reader:%d", (int)s->read_pids[i]);
+                }
+                
+                int n = snprintf(NULL, 0,
+                    "  [%d] val:%d  %s",
+                    i, val, rpid_str);
+                ov_buf_printf(
+                    "  [%d] val:%d  %s",
+                    i, val, rpid_str);
+                render_pad_spaces(n, r.width);
+                ri++;
+            }
+        }
         /* Proctrace entries */
         if (ri < max_rows && s->nb_proctrace > 0)
         {
@@ -2492,6 +2545,169 @@ static int ov_render_detail_panel(
                 ri++;
             }
         }
+        /* ---- Stream lineage ---- */
+        {
+            SG_LINEAGE lin;
+            sg_compute_lineage(
+                m, ssel,
+                (sg_mode_t) lay->lineage_mode,
+                &lin);
+
+            int has_lineage =
+                (lin.nb_ancestors > 0
+                 || lin.nb_descendants > 0);
+
+            if (has_lineage && ri < max_rows)
+            {
+                /* blank separator line */
+                clear_row(
+                    row + ri, r.col + 1,
+                    r.width - 2, OV_BG_PANEL);
+                ri++;
+            }
+
+            /* Ancestors (upstream) */
+            if (lin.nb_ancestors > 0
+                && ri < max_rows)
+            {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_theme_fg(OV_FG_TITLE);
+                ov_buf_bold();
+                const char *ml = sg_mode_label(
+                    (sg_mode_t) lay->lineage_mode);
+                int printed = snprintf(
+                    NULL, 0,
+                    " Ancestors [%s] (%d):",
+                    ml, lin.nb_ancestors);
+                ov_buf_printf(
+                    " Ancestors [%s] (%d):",
+                    ml, lin.nb_ancestors);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_PANEL);
+
+                for (int a = 0; a < lin.nb_ancestors && ri < max_rows; a++)
+                {
+                    const SG_LINEAGE_ENTRY *le = &lin.ancestors[a];
+                    const char *sn = m->streams[le->stream_idx].name;
+
+                    int item_len = snprintf(NULL, 0, "  -%d %s", le->depth, sn);
+                    if (le->via_name[0] != '\0')
+                    {
+                        item_len += snprintf(NULL, 0, "(%s)", le->via_name);
+                    }
+
+                    if (printed + item_len >= r.width - 2)
+                    {
+                        render_pad_spaces(printed, r.width);
+                        ri++;
+                        if (ri >= max_rows) break;
+                        ov_buf_pos(row + ri, r.col + 1);
+                        ov_theme_bg(OV_BG_PANEL);
+                        printed = 0;
+                        item_len = snprintf(NULL, 0, " -%d %s", le->depth, sn);
+                        if (le->via_name[0] != '\0') {
+                            item_len += snprintf(NULL, 0, "(%s)", le->via_name);
+                        }
+                    }
+
+                    if (le->depth == 1)
+                        ov_theme_fg(OV_FG_STREAM);
+                    else
+                        ov_theme_fg(OV_FG_DIM);
+
+                    int p1 = snprintf(NULL, 0, "  -%d %s", le->depth, sn);
+                    if (printed == 0) p1 = snprintf(NULL, 0, " -%d %s", le->depth, sn);
+                    
+                    if (printed == 0) ov_buf_printf(" -%d %s", le->depth, sn);
+                    else ov_buf_printf("  -%d %s", le->depth, sn);
+                    printed += p1;
+
+                    if (le->via_name[0] != '\0')
+                    {
+                        ov_theme_fg(OV_FG_PROC);
+                        ov_buf_printf("(%s)", le->via_name);
+                        printed += snprintf(NULL, 0, "(%s)", le->via_name);
+                    }
+                }
+                if (ri < max_rows)
+                {
+                    render_pad_spaces(printed, r.width);
+                    ri++;
+                }
+            } /* ancestors */
+
+            /* Descendants (downstream) */
+            if (lin.nb_descendants > 0
+                && ri < max_rows)
+            {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_theme_fg(OV_FG_TITLE);
+                ov_buf_bold();
+                const char *mld = sg_mode_label(
+                    (sg_mode_t) lay->lineage_mode);
+                int printed = snprintf(
+                    NULL, 0,
+                    " Descendants [%s] (%d):",
+                    mld, lin.nb_descendants);
+                ov_buf_printf(
+                    " Descendants [%s] (%d):",
+                    mld, lin.nb_descendants);
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_PANEL);
+
+                for (int d = 0; d < lin.nb_descendants && ri < max_rows; d++)
+                {
+                    const SG_LINEAGE_ENTRY *le = &lin.descendants[d];
+                    const char *sn = m->streams[le->stream_idx].name;
+
+                    int item_len = snprintf(NULL, 0, "  +%d %s", le->depth, sn);
+                    if (le->via_name[0] != '\0')
+                    {
+                        item_len += snprintf(NULL, 0, "(%s)", le->via_name);
+                    }
+
+                    if (printed + item_len >= r.width - 2)
+                    {
+                        render_pad_spaces(printed, r.width);
+                        ri++;
+                        if (ri >= max_rows) break;
+                        ov_buf_pos(row + ri, r.col + 1);
+                        ov_theme_bg(OV_BG_PANEL);
+                        printed = 0;
+                        item_len = snprintf(NULL, 0, " +%d %s", le->depth, sn);
+                        if (le->via_name[0] != '\0') {
+                            item_len += snprintf(NULL, 0, "(%s)", le->via_name);
+                        }
+                    }
+
+                    if (le->depth == 1)
+                        ov_theme_fg(OV_FG_STREAM);
+                    else
+                        ov_theme_fg(OV_FG_DIM);
+
+                    int p1 = snprintf(NULL, 0, "  +%d %s", le->depth, sn);
+                    if (printed == 0) p1 = snprintf(NULL, 0, " +%d %s", le->depth, sn);
+                    
+                    if (printed == 0) ov_buf_printf(" +%d %s", le->depth, sn);
+                    else ov_buf_printf("  +%d %s", le->depth, sn);
+                    printed += p1;
+
+                    if (le->via_name[0] != '\0')
+                    {
+                        ov_theme_fg(OV_FG_PROC);
+                        ov_buf_printf("(%s)", le->via_name);
+                        printed += snprintf(NULL, 0, "(%s)", le->via_name);
+                    }
+                }
+                if (ri < max_rows)
+                {
+                    render_pad_spaces(printed, r.width);
+                    ri++;
+                }
+            } /* descendants */
+        } /* lineage */
         /* Clear remaining rows */
         for (; ri < max_rows; ri++)
         {
@@ -2560,6 +2776,21 @@ static int ov_render_detail_panel(
                 "  Hz: %.1f",
                 sl, (long) p->loopcnt,
                 p->loop_hz);
+            render_pad_spaces(n, r.width);
+            ri++;
+        }
+        /* CPU and Mem */
+        if (ri < max_rows)
+        {
+            ov_buf_pos(row + ri, r.col + 1);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_TEXT);
+            int n = snprintf(NULL, 0,
+                " CPU: %5.1f%%  Mem: %ld KB",
+                p->cpu_used, p->mem_rss_kb);
+            ov_buf_printf(
+                " CPU: %5.1f%%  Mem: %ld KB",
+                p->cpu_used, p->mem_rss_kb);
             render_pad_spaces(n, r.width);
             ri++;
         }
@@ -2740,47 +2971,36 @@ static int ov_render_detail_panel(
             render_pad_spaces(n, r.width);
             ri++;
         }
-        /* Stream params */
-        if (ri < max_rows
-            && f->nb_stream_params > 0)
+        /* Parameters */
+        if (ri < max_rows && f->nb_disp_params > 0)
         {
             ov_buf_pos(row + ri, r.col + 1);
             ov_theme_bg(OV_BG_PANEL);
             ov_theme_fg(OV_FG_TITLE);
             ov_buf_bold();
             int n = snprintf(NULL, 0,
-                " Stream params (%d):",
-                f->nb_stream_params);
+                " Parameters (%d):",
+                f->nb_disp_params);
             ov_buf_printf(
-                " Stream params (%d):",
-                f->nb_stream_params);
+                " Parameters (%d):",
+                f->nb_disp_params);
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_PANEL);
             render_pad_spaces(n, r.width);
             ri++;
 
-            for (int sp = 0;
-                 sp < f->nb_stream_params
-                 && ri < max_rows; sp++)
+            for (int dp = 0; dp < f->nb_disp_params && ri < max_rows; dp++)
             {
-                ov_buf_pos(
-                    row + ri, r.col + 1);
+                ov_buf_pos(row + ri, r.col + 1);
                 ov_theme_bg(OV_BG_PANEL);
                 ov_theme_fg(OV_FG_DIM);
                 ov_buf_printf("  ");
                 ov_theme_fg(OV_FG_CONN);
-                ov_buf_printf(
-                    "%-24.24s",
-                    f->stream_param_name[sp]);
-                ov_theme_fg(OV_FG_STREAM);
-                int n2 = snprintf(NULL, 0,
-                    " = %s",
-                    f->stream_param_value[sp]);
-                ov_buf_printf(
-                    " = %s",
-                    f->stream_param_value[sp]);
-                render_pad_spaces(
-                    2 + 24 + n2, r.width);
+                ov_buf_printf("%-24.24s", f->disp_param_name[dp]);
+                ov_theme_fg(OV_FG_TEXT);
+                int n2 = snprintf(NULL, 0, " = %s", f->disp_param_value[dp]);
+                ov_buf_printf(" = %s", f->disp_param_value[dp]);
+                render_pad_spaces(2 + 24 + n2, r.width);
                 ri++;
             }
         }
@@ -3113,6 +3333,7 @@ void ov_render_help(const OV_LAYOUT *lay)
         { "Display",                                 0 },
         { "  +/-      Adjust scan rate",             0 },
         { "  D        Toggle detail pane",           0 },
+        { "  L        Toggle lineage mode",          0 },
         { "  p        Pause/resume display",         0 },
         { "  SPACE    Freeze selection highlight",   0 },
         { "  /        Filter (regex search)",        0 },
@@ -3126,12 +3347,12 @@ void ov_render_help(const OV_LAYOUT *lay)
         { "  k  graceful kill (SIGTERM)",            0 },
         { "  K  immediate kill (SIGKILL)",           0 },
         { "  x  pause/resume (SIGSTOP/SIGCONT)",     0 },
-        { "FPS panel",                                0 },
-        { "  ENTER  Open milk-fpsCTRL for selection", 0 },
-        { "Columns",                                   0 },
-        { "  STRM: MB/s throughput, total in footer",  0 },
-        { "  PROC: DUTY% (exec/iter), CPU%, MEM",      0 },
-        { "  FPS:  MEM (RSS)",                         0 },
+        { "Detail View (ENTER or D)",                0 },
+        { "  Toggles detail pane for selected item", 0 },
+        { "Columns",                                 0 },
+        { "  STRM: MB/s throughput, total in footer",0 },
+        { "  PROC: DUTY% (exec/iter), CPU%, MEM",    0 },
+        { "  FPS:  MEM (RSS)",                       0 },
         { "Mouse",                                     0 },
         { "  Click=select  DblClick=detail",           0 },
         { "  Scroll wheel=navigate list",              0 },
