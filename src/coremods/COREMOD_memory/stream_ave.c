@@ -205,33 +205,78 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t __attribute__((unused))
+compute_function()
 {
     IMGID in =
         imgid_make_from_name(
             streamave_inimname);
     resolveIMGID(
-        &in, ERRMODE_ABORT,
+        &in, ERRMODE_NULL,
         dcimg, dcnimg);
 
+    if (in.im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
+
     uint64_t xys =
-        in.md[0].size[0]
-        * in.md[0].size[1];
+        (uint64_t) in.md->size[0]
+        * in.md->size[1];
+
+    /* Create output streams */
+    IMGID outave = stream_connect_create_2Df32(
+        streamave_outimave,
+        in.md->size[0], in.md->size[1]);
+    IMAGE *imgoutave = NULL;
+    if (outave.im != NULL && streamave_compave)
+    {
+        imgoutave = outave.im;
+    }
+
+    IMAGE *imgoutrms = NULL;
+    if (streamave_comprms
+        && strlen(streamave_outimrms) > 0)
+    {
+        IMGID outrms =
+            stream_connect_create_2Df32(
+                streamave_outimrms,
+                in.md->size[0],
+                in.md->size[1]);
+        if (outrms.im != NULL)
+        {
+            imgoutrms = outrms.im;
+        }
+    }
+
+    /* Allocate accumulation buffers */
     double *d1 =
-        (double *) malloc(
-            sizeof(double) * xys);
-    double *d2 =
-        (double *) malloc(
-            sizeof(double) * xys);
+        (double *) calloc(xys, sizeof(double));
+    double *d2 = NULL;
+    if (streamave_comprms)
+    {
+        d2 = (double *) calloc(
+            xys, sizeof(double));
+    }
+
+    if (d1 == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    fpsexec(in.im, NULL, NULL, d1, d2);
+    fpsexec(
+        in.im, imgoutave, imgoutrms,
+        d1, d2);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     free(d1);
-    free(d2);
+    if (d2 != NULL)
+    {
+        free(d2);
+    }
     return RETURN_SUCCESS;
 }
 
