@@ -11,4 +11,13 @@
 int function_parameter_struct_disconnect(
     FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
+/**
+ * @brief Short alias for function_parameter_struct_disconnect
+ */
+static inline int fps_disconnect(FPS *fps)
+{
+    return function_parameter_struct_disconnect(fps);
+}
+
 #endif
+

@@ -78,7 +78,7 @@ static errno_t compute_function() {
 }
 
 // Generate standard FPS integration functions
-INSERT_STD_FPSCLIfunctions
+INSERT_STD_CLIfunction
 
 /**
  * @brief Registers the 'writer03' command with the Milk framework.

@@ -102,7 +102,7 @@ static errno_t compute_function() {
  * - FPSRUNfunction:  Handles the main compute loop.
  * - CLIfunction:     The entry point called by the milk shell.
  */
-INSERT_STD_FPSCLIfunctions
+INSERT_STD_CLIfunction
 
 /**
  * @brief Registers the 'processor03' command with the Milk framework.
