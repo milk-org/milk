@@ -7,7 +7,7 @@
 #include "fps_internal.h"
 #include "fps_globals.h"
 
-uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps)
+uint16_t function_parameter_FPCONFloopstep(FPS *fps)
 {
     static int loopINIT   = 0;
     uint16_t   updateFLAG = 0;

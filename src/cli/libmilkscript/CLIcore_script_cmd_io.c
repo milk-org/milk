@@ -61,9 +61,9 @@ int cli_fps_set_param(
     const char *valstr
 )
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     int fpsconn =
-        function_parameter_struct_connect(
+        fps_connect(
             fpsname, &fps,
             FPSCONNECT_SIMPLE);
 
@@ -94,7 +94,7 @@ int cli_fps_set_param(
         printf("Error: parameter '%s' not "
                "found in FPS '%s'\n",
                pname, fpsname);
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
         return -1;
     }
@@ -185,12 +185,12 @@ int cli_fps_set_param(
                "type 0x%x for '%s' in "
                "FPS '%s'\n",
                ptype, pname, fpsname);
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
         return -1;
     }
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return 0;
 }
 

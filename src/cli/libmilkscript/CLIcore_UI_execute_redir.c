@@ -693,8 +693,8 @@ static void cli_redir_fps_writeback(
         valbuf[--rn] = '\0';
     }
 
-    FUNCTION_PARAMETER_STRUCT fps_s;
-    if (function_parameter_struct_connect(
+    FPS fps_s;
+    if (fps_connect(
             fpsname, &fps_s,
             FPSCONNECT_SIMPLE) == -1
         || fps_s.parray == NULL)
@@ -733,7 +733,7 @@ static void cli_redir_fps_writeback(
             " in %s\n",
             param, fpsname);
     }
-    function_parameter_struct_disconnect(
+    fps_disconnect(
         &fps_s);
     unlink(tempname);
 }

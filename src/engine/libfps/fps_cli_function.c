@@ -35,7 +35,7 @@ errno_t fps_generic_CLIfunction(
     fps_compute_fn   compute_fn
 )
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
 
     /*
      * Default FPS is local (underscore prefix).
@@ -81,11 +81,11 @@ errno_t fps_generic_CLIfunction(
 
     /* Connect to existing FPS or use local */
     memset(&fps, 0,
-           sizeof(FUNCTION_PARAMETER_STRUCT));
+           sizeof(FPS));
     fps.SMfd = -1;
 
     if (dcfpsname[0] == '_') {
-        FUNCTION_PARAMETER_STRUCT *lfps =
+        FPS *lfps =
             fps_local_get_or_create(
                 dcfpsname,
                 FUNCTION_PARAMETER_NBPARAM_DEFAULT);
@@ -100,14 +100,14 @@ errno_t fps_generic_CLIfunction(
         fps = *lfps;
     }
     else {
-        if (function_parameter_struct_connect(
+        if (fps_connect(
                 dcfpsname, &fps,
                 FPSCONNECT_SIMPLE) == -1)
         {
             fps_generic_init(
                 dcfpsname, app_info,
                 bindings, nb_b, 0);
-            if (function_parameter_struct_connect(
+            if (fps_connect(
                     dcfpsname, &fps,
                     FPSCONNECT_SIMPLE) == -1)
             {
@@ -213,7 +213,7 @@ errno_t fps_generic_CLIfunction(
 
     dcfpsptr = NULL;
     if (dcfpsname[0] != '_') {
-        function_parameter_struct_disconnect(&fps);
+        fps_disconnect(&fps);
     }
     return retval;
 }

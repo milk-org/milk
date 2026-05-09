@@ -8,6 +8,6 @@
 
 #include "fps.h"
 
-errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps);
+errno_t functionparameter_RUNstop(FPS *fps);
 
 #endif

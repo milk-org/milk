@@ -53,7 +53,7 @@
  * @param nb_b      Number of bindings
  */
 static void fps_autopopulate_trigger_stream(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     FPS_CLI_BINDING           *bindings,
     int                        nb_b
 )
@@ -118,7 +118,7 @@ int fps_generic_init(
 {
     if (fps_name[0] == '_') {
         /* Local mode: in-process memory only */
-        FUNCTION_PARAMETER_STRUCT *lfps =
+        FPS *lfps =
             fps_local_get_or_create(
                 fps_name,
                 FUNCTION_PARAMETER_NBPARAM_DEFAULT);
@@ -150,7 +150,7 @@ int fps_generic_init(
     }
 
     /* Shared-memory mode */
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     FPS_INIT_STD_PREAMBLE(
         fps, fps_name, "", app_info->description,
         app_info->description);
@@ -178,7 +178,7 @@ int fps_generic_init(
     fps_autopopulate_trigger_stream(
         &fps, bindings, nb_b);
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return 0;
 }
 
@@ -209,7 +209,7 @@ int fps_check_has_trigger_binding(
 
 
 void fps_loop_override_trigger(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     FPS_CLI_BINDING           *bindings,
     int                        nb_b
 )
@@ -362,7 +362,7 @@ void fps_loop_override_trigger(
  * @param delay_sec Delay between iterations (seconds)
  */
 void fps_loop_override_delay(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     double                     delay_sec
 )
 {
@@ -444,11 +444,11 @@ int fps_generic_run(
     fps_compute_fn   compute_fn
 )
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     long loopcnt = 0;
 
     if (fps_name[0] == '_') {
-        FUNCTION_PARAMETER_STRUCT *lfps =
+        FPS *lfps =
             fps_local_get_or_create(
                 fps_name,
                 FUNCTION_PARAMETER_NBPARAM_DEFAULT);
@@ -467,7 +467,7 @@ int fps_generic_run(
     else {
         /* Phase 1: connect SIMPLE to apply CLI
          * args before streams are loaded. */
-        if (function_parameter_struct_connect(
+        if (fps_connect(
                 fps_name, &fps,
                 FPSCONNECT_SIMPLE) == -1)
         {
@@ -479,7 +479,7 @@ int fps_generic_run(
         }
         fps_process_cli_and_sync(
             &fps, farg, bindings, nb_b);
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
 
         /* Phase 2: reconnect as RUN — streams
@@ -521,7 +521,7 @@ int fps_generic_run(
 
     dcfpsptr = NULL;
     if (fps_name[0] != '_') {
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
     }
 
@@ -536,7 +536,7 @@ int fps_generic_run(
 
 int fps_generic_runstop(const char *fps_name)
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
 
     printf("Stopping run process for '%s'\n",
            fps_name);
@@ -549,7 +549,7 @@ int fps_generic_runstop(const char *fps_name)
         return 0;
     }
 
-    if (function_parameter_struct_connect(
+    if (fps_connect(
             fps_name, &fps,
             FPSCONNECT_SIMPLE) == -1)
     {
@@ -582,7 +582,7 @@ int fps_generic_runstop(const char *fps_name)
     fps.md->signal |=
         FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     functionparameter_FPS_processinfo_signal(
         fps_name, 3);
     return 0;
@@ -591,7 +591,7 @@ int fps_generic_runstop(const char *fps_name)
 
 int fps_generic_confstop(const char *fps_name)
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
 
     printf("Stopping configuration process "
            "for '%s'\n",
@@ -605,7 +605,7 @@ int fps_generic_confstop(const char *fps_name)
         return 0;
     }
 
-    if (function_parameter_struct_connect(
+    if (fps_connect(
             fps_name, &fps,
             FPSCONNECT_SIMPLE) == -1)
     {
@@ -615,6 +615,6 @@ int fps_generic_confstop(const char *fps_name)
         return 1;
     }
     functionparameter_CONFstop(&fps);
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return 0;
 }

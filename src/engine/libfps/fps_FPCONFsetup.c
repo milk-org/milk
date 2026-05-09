@@ -17,7 +17,7 @@
  * called by conf and run functions
  *
  */
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
+FPS function_parameter_FPCONFsetup_sized(
     const char *fpsname,
     uint32_t    CMDmode,
     long        NBparamMAX
@@ -25,7 +25,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 {
     uint32_t FPSCONNECTFLAG;
 
-    FUNCTION_PARAMETER_STRUCT fps = {0};
+    FPS fps = {0};
 
     fps.CMDmode = CMDmode;
     fps.SMfd    = -1;
@@ -47,7 +47,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
                    "NBparamMAX = %ld\n",
                    NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
-        function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
+        fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     }
     else // load existing fps if exists
     {
@@ -59,7 +59,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
             FPSCONNECTFLAG = FPSCONNECT_CONF;
         }
 
-        if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) ==
+        if(fps_connect(fpsname, &fps, FPSCONNECTFLAG) ==
                 -1)
         {
             if (getenv("FPS_DEBUG"))
@@ -72,7 +72,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
                 printf("DEBUG: [%s:%d] "
                        "CREATE RETURNED %d\n",
                        __FILE__, __LINE__, ret);
-            function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
+            fps_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
         else
         {
@@ -84,7 +84,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
     if(CMDmode & FPSCMDCODE_CONFSTOP)  // stop conf
     {
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
-        function_parameter_struct_disconnect(&fps);
+        fps_disconnect(&fps);
         fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP; // stop loop
     }
     else
@@ -107,7 +107,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 }
 
 
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
+FPS function_parameter_FPCONFsetup(
     const char *fpsname,
     uint32_t    CMDmode
 )

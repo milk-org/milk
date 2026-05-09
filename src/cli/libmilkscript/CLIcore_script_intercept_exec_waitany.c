@@ -57,7 +57,7 @@ struct wa_event
     IMAGE img;
     uint64_t start_cnt0;
     int img_open;
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     int fps_pindex;
     int fps_open;
 };
@@ -220,7 +220,7 @@ static int open_waitany_handles(struct wa_event *events, int nevents)
         }
         else if(ev->type == WA_FPS_PARAM)
         {
-            if(function_parameter_struct_connect(ev->name, &ev->fps, FPSCONNECT_SIMPLE) != -1 && ev->fps.parray != NULL)
+            if(fps_connect(ev->name, &ev->fps, FPSCONNECT_SIMPLE) != -1 && ev->fps.parray != NULL)
             {
                 ev->fps_pindex = functionparameter_GetParamIndex(&ev->fps, ev->param);
                 if(ev->fps_pindex < 0)
@@ -236,7 +236,7 @@ static int open_waitany_handles(struct wa_event *events, int nevents)
                 }
                 else
                 {
-                    function_parameter_struct_disconnect(&ev->fps);
+                    fps_disconnect(&ev->fps);
                 }
             }
         }
@@ -258,7 +258,7 @@ static void close_waitany_handles(struct wa_event *events, int nevents)
         }
         if(events[i].fps_open)
         {
-            function_parameter_struct_disconnect(&events[i].fps);
+            fps_disconnect(&events[i].fps);
         }
     }
 }

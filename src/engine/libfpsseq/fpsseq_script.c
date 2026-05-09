@@ -143,7 +143,7 @@ static int load_and_preprocess(SCRIPT_CTX *ctx, const char *filename, int depth)
 errno_t milkseq_load_script(
     MILKSEQ_STATE             *state,
     const char                *filename,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE         *keywnode)
 {
     SCRIPT_CTX ctx = {0};

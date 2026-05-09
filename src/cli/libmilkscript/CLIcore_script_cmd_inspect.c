@@ -179,10 +179,10 @@ static int emit_fps_json_body(
             continue;
         }
 
-        FUNCTION_PARAMETER_STRUCT fps;
+        FPS fps;
         fps.SMfd = -1;
         int rc =
-            function_parameter_struct_connect(
+            fps_connect(
                 fpsname, &fps,
                 FPSCONNECT_SIMPLE);
         if(rc == -1 || fps.md == NULL)
@@ -226,7 +226,7 @@ static int emit_fps_json_body(
         printf("%s}", pad);
 
         count++;
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
     }
     closedir(d);
@@ -320,10 +320,10 @@ errno_t cli_cmd_fpslist(void)
             continue;
         }
 
-        FUNCTION_PARAMETER_STRUCT fps;
+        FPS fps;
         fps.SMfd = -1;
         int rc =
-            function_parameter_struct_connect(
+            fps_connect(
                 fpsname, &fps,
                 FPSCONNECT_SIMPLE);
         if(rc == -1 || fps.md == NULL)
@@ -358,7 +358,7 @@ errno_t cli_cmd_fpslist(void)
                fpsname, ststr,
                fps.md->description);
 
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
     }
     closedir(d);
@@ -432,10 +432,10 @@ errno_t cli_cmd_fpsdump(void)
         data.cmdargtoken[arg_fpsname]
             .val.string;
 
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     fps.SMfd = -1;
     int rc =
-        function_parameter_struct_connect(
+        fps_connect(
             fpsname, &fps,
             FPSCONNECT_SIMPLE);
     if(rc == -1 || fps.md == NULL
@@ -576,7 +576,7 @@ errno_t cli_cmd_fpsdump(void)
 
     if(jsonmode) { printf("\n}\n"); }
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return RETURN_SUCCESS;
 }
 

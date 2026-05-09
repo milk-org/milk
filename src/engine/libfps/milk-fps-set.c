@@ -57,7 +57,7 @@ void do_completion_scan(const char *word) {
     
     if (dot == NULL) {
         // No dot, scan for FPS names
-        FUNCTION_PARAMETER_STRUCT *fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));
+        FPS *fpsarray = (FPS *) calloc(NB_FPS_MAX, sizeof(FPS));
         KEYWORD_TREE_NODE *keywnode = (KEYWORD_TREE_NODE *) calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE));
         int NBkwn = 0;
         int NBfps = 0;
@@ -69,7 +69,7 @@ void do_completion_scan(const char *word) {
             if(starts_with(word, fpsarray[i].md->name)) {
                 printf("%s.\n", fpsarray[i].md->name);
             }
-            function_parameter_struct_disconnect(&fpsarray[i]);
+            fps_disconnect(&fpsarray[i]);
         }
         free(fpsarray);
         free(keywnode);
@@ -83,8 +83,8 @@ void do_completion_scan(const char *word) {
         
         char *param_prefix = dot + 1;
 
-        FUNCTION_PARAMETER_STRUCT fps;
-        long NBparam = function_parameter_struct_connect(fpsname,
+        FPS fps;
+        long NBparam = fps_connect(fpsname,
             &fps,
             FPSCONNECT_SIMPLE);
         if(NBparam != -1) {
@@ -113,7 +113,7 @@ void do_completion_scan(const char *word) {
                     }
                 }
             }
-            function_parameter_struct_disconnect(&fps);
+            fps_disconnect(&fps);
         }
     }
 }
@@ -187,8 +187,8 @@ int main(int argc, char *argv[])
     
     char *keyword = dot; // Includes the dot
 
-    FUNCTION_PARAMETER_STRUCT fps;
-    long NBparam = function_parameter_struct_connect(fpsname,
+    FPS fps;
+    long NBparam = fps_connect(fpsname,
         &fps,
         FPSCONNECT_SIMPLE);
     if(NBparam == -1) {
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
         pindex = functionparameter_GetParamIndex(&fps, dot+1);
         if(pindex == -1) {
              fprintf(stderr, "Error: Parameter '%s' not found in FPS '%s'\n", keyword, fpsname);
-             function_parameter_struct_disconnect(&fps);
+             fps_disconnect(&fps);
              return 1;
         }
     }
@@ -218,6 +218,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "       Input Value:    '%s'\n", value_str);
     }
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return vOK ? 0 : 1;
 }

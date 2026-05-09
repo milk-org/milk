@@ -64,7 +64,7 @@ static void fps_cmd_handle_sys(
     const char                *FPSarg0,
     const char                *FPSarg1,
     FPSCTRL_PROCESS_VARS      *fpsCTRLvar,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE         *keywnode,
     FPSCTRL_TASK_QUEUE        *fpsctrlqueuelist,
     int                       *cmdFOUND,
@@ -204,7 +204,7 @@ static void fps_cmd_handle_sys(
 static void fps_cmd_handle_tmux(
     const char                *FPScommand,
     int                        nbword,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsindex,
     int                       *cmdFOUND,
     int                       *cmdOK,
@@ -267,7 +267,7 @@ static void fps_cmd_handle_tmux(
 static void fps_cmd_handle_conf(
     const char                *FPScommand,
     int                        nbword,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsindex,
     int                       *cmdFOUND,
     int                       *cmdOK,
@@ -420,7 +420,7 @@ static void fps_cmd_handle_conf(
 static void fps_cmd_handle_run(
     const char                *FPScommand,
     int                        nbword,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsindex,
     int                       *cmdFOUND,
     int                       *cmdOK,
@@ -517,7 +517,7 @@ int functionparameter_FPSprocess_cmdline(
     FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
     KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     uint64_t                  *taskstatus
 )
 {

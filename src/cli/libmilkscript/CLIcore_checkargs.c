@@ -285,7 +285,7 @@ int CLI_checkarg_noerrmsg(int CLIargnum, uint32_t funcargtype)
  */
 static void sync_fps_to_argdata(
     uint32_t ptype,
-    FUNCTION_PARAMETER *fp,
+    FPS_PARAM *fp,
     CLICMDARGDATA      *ad
 )
 {
@@ -356,7 +356,7 @@ static void sync_fps_to_argdata(
  * @param str     String value from CLI token
  */
 static void set_fps_from_clitoken(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     const char *fpstag,
     uint32_t    ptype,
     long        numl,

@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Allocate global fpsarray
-    fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));
+    fpsarray = (FPS *) calloc(NB_FPS_MAX, sizeof(FPS));
     if(fpsarray == NULL) {
         fprintf(stderr, "Error: cannot allocate fpsarray\n");
         return 1;

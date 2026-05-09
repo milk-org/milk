@@ -787,9 +787,9 @@ int cli_handle_shell_builtins(void)
                 }
             }
             /* Connect to FPS */
-            FUNCTION_PARAMETER_STRUCT fps;
+            FPS fps;
             if(
-                function_parameter_struct_connect(
+                fps_connect(
                     fpsn, &fps,
                     FPSCONNECT_SIMPLE)
                 != EXIT_SUCCESS)
@@ -945,7 +945,7 @@ int cli_handle_shell_builtins(void)
                             procinfo);
                     }
                 }
-                function_parameter_struct_disconnect(
+                fps_disconnect(
                     &fps);
             }
             data.CMDexecuted = 1;

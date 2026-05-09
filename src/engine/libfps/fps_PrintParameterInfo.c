@@ -19,7 +19,7 @@
 
 errno_t
 functionparameter_PrintParameterInfo(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    FPS *fpsentry,
     int                        pindex
 )
 {

@@ -77,17 +77,17 @@ int main(int argc, char *argv[])
 
     const char *fpsname = argv[optind];
 
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     fps.SMfd = -1;
 
-    if (function_parameter_struct_connect(fpsname, &fps, 0) == -1) {
+    if (fps_connect(fpsname, &fps, 0) == -1) {
         fprintf(stderr, "Error: cannot connect to FPS '%s'.\n", fpsname);
         return 1;
     }
 
     function_parameter_print_info(&fps, verbose, show_info);
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
 
     return 0;
 }

@@ -8,6 +8,6 @@
 
 #include "fps.h"
 
-uint16_t function_parameter_FPCONFexit(FUNCTION_PARAMETER_STRUCT *fps);
+uint16_t function_parameter_FPCONFexit(FPS *fps);
 
 #endif

@@ -15,7 +15,7 @@
 #include "level0node_summary.h"
 
 void fpsCTRLscreen_level0node_summary(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int fpsindex)
 {
     pid_t pid;

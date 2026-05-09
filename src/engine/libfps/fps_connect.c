@@ -44,13 +44,13 @@
  *     up standard processinfo-related parameters (e.g., ".procinfo.enabled", 
  *     ".procinfo.RTprio", etc.).
  */
-long function_parameter_struct_connect(
+long fps_connect(
     const char                *name,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int fpsconnectmode
 )
 {
-    DEBUG_TRACEPOINT("Launching function_parameter_struct_connect for %s", name);
+    DEBUG_TRACEPOINT("Launching fps_connect for %s", name);
 
     int  stringmaxlen = 500;
     char SM_fname[stringmaxlen];
@@ -161,9 +161,9 @@ long function_parameter_struct_connect(
 
     mapv = (char *) fps->md;
     mapv += sizeof(FUNCTION_PARAMETER_STRUCT_MD);
-    fps->parray = (FUNCTION_PARAMETER *) mapv;
+    fps->parray = (FPS_PARAM *) mapv;
 
-    //	NBparam = (int) (file_stat.st_size / sizeof(FUNCTION_PARAMETER));
+    //	NBparam = (int) (file_stat.st_size / sizeof(FPS_PARAM));
     NBparamMAX = fps->md->NBparamMAX;
     //printf("    Connected to %s, %ld entries\n", SM_fname, NBparamMAX);
     //fflush(stdout);
@@ -409,7 +409,7 @@ long function_parameter_struct_connect(
             }
         }
     }
-    DEBUG_TRACEPOINT("File: %s - Successful termination of function_parameter_struct_connect.\n",
+    DEBUG_TRACEPOINT("File: %s - Successful termination of fps_connect.\n",
                      SM_fname);
 
     return (NBparamMAX);

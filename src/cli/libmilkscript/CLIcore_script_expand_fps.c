@@ -774,9 +774,9 @@ static int expand_fpsvar_fps_strict(
     const char *fpsname = pname;
     const char *fprop   = dot2 + 1;
 
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     int fpsconn =
-        function_parameter_struct_connect(
+        fps_connect(
             fpsname, &fps,
             FPSCONNECT_SIMPLE);
     if(fpsconn == -1 || fps.parray == NULL)
@@ -817,7 +817,7 @@ static int expand_fpsvar_fps_strict(
                 }
             }
         }
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
         return 1;
     }
@@ -849,7 +849,7 @@ static int expand_fpsvar_fps_strict(
         *opos += clen;
     }
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return 1;
 }
 
@@ -1082,9 +1082,9 @@ void cli_expand_fpsvar(
             }
 
             /* ---- Legacy fallback ---- */
-            FUNCTION_PARAMETER_STRUCT fps;
+            FPS fps;
             int fpsconn =
-                function_parameter_struct_connect(
+                fps_connect(
                     fpsname, &fps,
                     FPSCONNECT_SIMPLE);
 
@@ -1139,7 +1139,7 @@ void cli_expand_fpsvar(
                         }
                     }
                 }
-                function_parameter_struct_disconnect(
+                fps_disconnect(
                     &fps);
                 continue;
             }
@@ -1175,7 +1175,7 @@ void cli_expand_fpsvar(
                 opos += clen;
             }
 
-            function_parameter_struct_disconnect(
+            fps_disconnect(
                 &fps);
         }
         else

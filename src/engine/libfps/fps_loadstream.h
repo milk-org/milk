@@ -8,7 +8,7 @@
 
 #include "fps.h"
 
-imageID functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps,
+imageID functionparameter_LoadStream(FPS *fps,
                                      int                        pindex,
                                      int                        fpsconnectmode);
 

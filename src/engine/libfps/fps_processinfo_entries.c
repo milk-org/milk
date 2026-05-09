@@ -17,7 +17,7 @@
  *
  */
 errno_t fps_add_processinfo_entries(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
     DEBUG_TRACE_FSTART();
@@ -216,7 +216,7 @@ errno_t fps_add_processinfo_entries(
 
 
 errno_t fps_to_processinfo(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     PROCESSINFO               *procinfo
 )
 {
