@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "setrow",
     .cmdkey      = "setrow",
-    .description = "set image row pixel values"
+    .description = "set image row pixel values",
+    .description_long =
+        "Set all pixels in a specified row of a 2D image to a given value. The row index and target value are specified as parameters."
 };
 
 

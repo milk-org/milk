@@ -26,7 +26,9 @@ static char p1_in[FUNCTION_PARAMETER_STRMAXLEN]
 static FPS_APP_INFO FPS_app_info_1 = {
     .fps_name    = "imstats",
     .cmdkey      = "imstats",
-    .description = "image stats"
+    .description = "image stats",
+    .description_long =
+        "Compute detailed statistics of a 2D image (mean, rms, min, max, percentiles) and write results to a file."
 };
 
 #define FPS_PARAMS_1(X) \
@@ -93,7 +95,9 @@ static FPS_APP_INFO FPS_app_info_2 = {
     .fps_name    = "imstatsf",
     .cmdkey      = "imstatsf",
     .description =
-        "image stats with file output"
+        "image stats with file output",
+    .description_long =
+        "Compute detailed statistics of a 2D image (mean, rms, min, max, percentiles) and write results to a file."
 };
 
 #define FPS_PARAMS_2(X) \

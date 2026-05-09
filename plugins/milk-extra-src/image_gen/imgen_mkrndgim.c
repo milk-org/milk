@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkrndgim",
     .cmdkey      = "mkrndgim",
-    .description = "make random gaussian image"
+    .description = "make random gaussian image",
+    .description_long =
+        "Generate a random image with Gaussian-distributed pixel values. Mean and standard deviation are configurable."
 };
 
 /* ================================================================

@@ -27,6 +27,7 @@ typedef struct FPS_APP_INFO_
     const char *fps_name;
     const char *cmdkey;
     const char *description;
+    const char *description_long;
 } FPS_APP_INFO;
 
 

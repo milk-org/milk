@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "stream_av_std",
     .cmdkey      = "stream_av_std",
-    .description = "RT compute of ave/std of image streams"
+    .description = "RT compute of ave/std of image streams",
+    .description_long =
+        "Compute running temporal statistics (mean, standard deviation) of a shared memory stream in real-time."
 };
 
 

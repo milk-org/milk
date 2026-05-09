@@ -73,7 +73,19 @@ if [ "$#" -ge 1 ]; then
 	exit 0
 	fi
 
-	if [ "$1" = "-h" ]; then
+	# Print verbose description and exit
+	if [ "$1" = "-h2" ] || [ "$1" = "--help-description" ]; then
+		set +o nounset
+		if [ -n "${MSextdescr:-}" ]; then
+			printf "%s\n" "${MSextdescr}"
+		else
+			printf "%s\n" "${MSdescr}"
+		fi
+		set -o nounset
+		exit 0
+	fi
+
+	if [ "$1" = "-h" ] || [ "$1" = "-hm" ]; then
 		MILKSCRIPTMODE="help"
 	fi
 
@@ -138,6 +150,7 @@ function milkscriptcmdlog()
 
 MSopt+=( "h:help:printHELP::print help and exit" )
 MSopt+=( "h1:help-oneline:printHELPshort::print 1-line help and exit" )
+MSopt+=( "hm:help-monochrome:printHELP::print monochrome help and exit" )
 MSopt+=( "chkp:check-prerequ:checkallprerequisitesExit::check all prerequisites and exit" )
 
 MSarg=( )

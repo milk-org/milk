@@ -72,6 +72,9 @@ uint16_t function_parameter_RUNexit(
 #include "fps_cli_query.h"
 #include "fps_cli_function.h"
 
+/* Shared help-message color palette and flag init */
+#include "milk_help.h"
+
 // ===========================
 // CONVENIENT MACROS FOR FPS
 // ===========================
@@ -85,31 +88,34 @@ uint16_t function_parameter_RUNexit(
  * @{
  */
 
+/* Legacy color aliases — map to milk_help.h palette.
+ * Used by non-help code (e.g. runtime status lines).
+ * New code should use MH_* macros instead.
+ */
 #ifndef COLORRESET
-#define COLORRESET     "\033[0m"
+#define COLORRESET     MH_RST
 #endif
 #ifndef COLORARGCLI
-#define COLORARGCLI    "\033[36m" // argument part of CLI call: cyan
+#define COLORARGCLI    MH_DFLT
 #endif
 #ifndef COLORARGnotCLI
-#define COLORARGnotCLI "\033[35m" // argument not part of CLI call: yellow
+#define COLORARGnotCLI MH_ARG
 #endif
 #ifndef COLORCOMMAND
-#define COLORCOMMAND   "\033[32m" // command: green
+#define COLORCOMMAND   MH_CMD
 #endif
 #ifndef COLORHEADER
-#define COLORHEADER    "\033[1m"  // header: bold
+#define COLORHEADER    MH_HDR
 #endif
 #ifndef COLOROPTION
-#define COLOROPTION    "\033[33m" // option: yellow
+#define COLOROPTION    MH_OPT
 #endif
 #ifndef COLORPRIMARY
-#define COLORPRIMARY   "\033[1;36m" // primary CLI argument: bold cyan
+#define COLORPRIMARY   MH_TITLE
 #endif
 #ifndef COLORNORMAL
-#define COLORNORMAL    "\033[0;37m" // normal text
-
-#define COLORERROR     "\033[31m"   // error: red
+#define COLORNORMAL    "\033[0;37m"
+#define COLORERROR     MH_ERR
 #endif
 
 /*
@@ -426,12 +432,25 @@ uint16_t function_parameter_RUNexit(
     CONFCHECK_FN) \
 int main(int argc, char *argv[]) { \
     MILK_EMBED_BUILD_TAG(); \
+    /* Pre-getopt scan: -h1 and -h2 must be \
+     * handled before anything else so -h1 is \
+     * never split into -h + 1.              */ \
     for (int _i = 1; _i < argc; _i++) { \
         if (strcmp(argv[_i], "-h1") == 0 || \
             strcmp(argv[_i], \
                    "--help-oneline") == 0) { \
             printf("%s\n", \
                    (APP_INFO).description); \
+            return 0; \
+        } \
+        if (strcmp(argv[_i], "-h2") == 0 || \
+            strcmp(argv[_i], \
+                   "--help-description") == 0) {\
+            const char *_dl = \
+                (APP_INFO).description_long; \
+            printf("%s\n", \
+                   _dl ? _dl \
+                   : (APP_INFO).description); \
             return 0; \
         } \
     } \
@@ -452,8 +471,7 @@ int main(int argc, char *argv[]) { \
     int use_loop = 0; \
     double loop_delay = -1.0; \
     int show_help = 0; \
-    int show_h1 = 0; \
-    int show_help_color = 1; \
+    int mh_color = 1; \
     char *command = NULL; \
     char *keywords = NULL; \
     char *description = NULL; \
@@ -472,21 +490,11 @@ int main(int argc, char *argv[]) { \
             strcmp(argv[i], "--help") == 0) { \
             show_help = 1; \
         } else if ( \
-            strcmp(argv[i], "-h1") == 0 || \
+            strcmp(argv[i], "-hm") == 0 || \
             strcmp(argv[i], \
-                   "--help-oneline") == 0) { \
-            show_h1 = 1; \
-        } else if (strcmp(argv[i], "-hc") == 0 ||\
-            strcmp(argv[i], \
-                   "--help-color") == 0) { \
+                   "--help-mono") == 0) { \
             show_help = 1; \
-            show_help_color = 1; \
-        } else if (strcmp(argv[i], \
-                   "-hnc") == 0 || \
-            strcmp(argv[i], \
-                   "--help-no-color") == 0) { \
-            show_help = 1; \
-            show_help_color = 0; \
+            mh_color = 0; \
         } else if (strcmp(argv[i], \
                    "-tmux") == 0) { \
             use_tmux = 1; \
@@ -507,9 +515,6 @@ int main(int argc, char *argv[]) { \
                     "--loopd") == 0) { \
             use_loop = 2; \
             use_procinfo = 1; \
-            /* Consume next arg as delay only if \
-             * it looks numeric (digit, '.', '-').\
-             * Otherwise use delay=0. */ \
             if (i + 1 < argc) { \
                 char c0 = argv[i + 1][0]; \
                 if ((c0 >= '0' && c0 <= '9') \
@@ -564,8 +569,8 @@ int main(int argc, char *argv[]) { \
             strcmp(command, "set") != 0 && \
             strcmp(command, "run") != 0) { \
             fprintf(stderr, \
-                    COLORERROR "Error:" \
-                    COLORRESET " '%s' is not a" \
+                    MH_ERR "Error:" MH_RST \
+                    " '%s' is not a" \
                     " valid command. Run with" \
                     " -h for help.\n", \
                     command); \
@@ -577,157 +582,123 @@ int main(int argc, char *argv[]) { \
                 STRINGMAXLEN_FPS_NAME - 1); \
     } \
     (void)keywords; (void)description; \
-    if (show_h1) { \
-        printf("%s\n", \
-               (APP_INFO).description); \
-        return 0; \
-    } \
     if (show_help || (argc < 2)) { \
-        if (show_help_color) { \
-            printf("\n" COLORHEADER "Usage:" \
-                   COLORRESET " %s " \
-                   COLOROPTION "[Options]" \
-                   COLORRESET " " \
-                   COLOROPTION "[fpsname:]" \
-                   COLORRESET COLORCOMMAND \
-                   "<Command>" COLORRESET \
-                   "\n", argv[0]); \
-            printf("  Compiled: %s %s\n\n", \
-                   __DATE__, __TIME__); \
-            printf(COLORHEADER "Description:" \
-                   COLORRESET "\n  %s\n\n", \
-                   (APP_INFO).description); \
-        } else { \
-            printf("\nUsage: %s [Options]" \
-                   " [fpsname:]<Command>\n", \
-                   argv[0]); \
-            printf("  Compiled: %s %s\n\n", \
-                   __DATE__, __TIME__); \
-            printf("Description:\n  %s\n\n", \
-                   (APP_INFO).description); \
+        /* TTY auto-detect for -h */ \
+        if (show_help && mh_color && \
+            !isatty(STDOUT_FILENO)) { \
+            mh_color = 0; \
         } \
-        if (show_help_color) \
-            printf(COLORHEADER "Options:" \
-                   COLORRESET "\n"); \
-        else printf("Options:\n"); \
-        if (show_help_color) { \
-            printf("  " COLOROPTION "-tmux" \
-                   COLORRESET \
-                   "       Run inside " \
-                   "tmux session.\n"); \
-            printf("  " COLOROPTION "-procinfo" \
-                   COLORRESET \
-                   "   Enable " \
-                   "processinfo.\n"); \
-            printf("  " COLOROPTION "-loops" \
-                   COLORRESET \
-                   "      Infinite loop," \
-                   " stream semaphore" \
-                   " trigger.\n"); \
-            printf("  " COLOROPTION \
-                   "-loopd SEC" \
-                   COLORRESET \
-                   " Infinite loop," \
-                   " delay trigger" \
-                   " (seconds).\n"); \
-            printf("  " COLOROPTION \
-                   "-n NAME" \
-                   COLORRESET \
-                   "   Set FPS instance" \
-                   " name.\n\n"); \
-        } else { \
-            printf("  -tmux       Run inside" \
-                   " tmux session.\n"); \
-            printf("  -procinfo   Enable" \
-                   " processinfo.\n"); \
-            printf("  -loops      Infinite loop," \
-                   " stream semaphore" \
-                   " trigger.\n"); \
-            printf("  -loopd SEC  Infinite loop," \
-                   " delay trigger" \
-                   " (seconds).\n"); \
-            printf("  -n NAME     Set FPS" \
-                   " instance name.\n\n"); \
+        /* ---- BANNER ---- */ \
+        milk_help_banner(argv[0], \
+            (APP_INFO).description, mh_color); \
+        /* ---- USAGE ---- */ \
+        milk_help_section("Usage", mh_color); \
+        printf("  %s %s %s%s\n\n", \
+               argv[0], \
+               MH(MH_OPT, "[options]"), \
+               MH(MH_OPT, "[fpsname:]"), \
+               MH(MH_CMD, "<command>")); \
+        /* ---- DESCRIPTION ---- */ \
+        { \
+            const char *_dl = \
+                (APP_INFO).description_long; \
+            const char *_desc = \
+                _dl ? _dl \
+                : (APP_INFO).description; \
+            milk_help_section("Description", \
+                              mh_color); \
+            printf("  %s\n\n", _desc); \
         } \
-        if (show_help_color) \
-            printf(COLORHEADER "Commands:" \
-                   COLORRESET "\n"); \
-        else printf("Commands:\n"); \
-        if (show_help_color) { \
-            printf("  " COLORCOMMAND "fpsinit" \
-                   COLORRESET \
-                   "    Create the FPS.\n"); \
-            printf("  " COLORCOMMAND "fps" \
-                   COLORRESET \
-                   "        Print FPS " \
-                   "content.\n"); \
-            printf("  " COLORCOMMAND "fpslist" \
-                   COLORRESET \
-                   "    List matching " \
-                   "FPS instances.\n"); \
-            printf("  " COLORCOMMAND "confstart" \
-                   COLORRESET \
-                   "  Configuration " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "confstep" \
-                   COLORRESET \
-                   "   Single config " \
-                   "step.\n"); \
-            printf("  " COLORCOMMAND "confstop" \
-                   COLORRESET \
-                   "   Stop config " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "runstart" \
-                   COLORRESET \
-                   "   Main processing " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "runstop" \
-                   COLORRESET \
-                   "    Stop processing " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "set" \
-                   COLORRESET " " \
-                   COLOROPTION "[args]" \
-                   COLORRESET \
-                   "  Set positional args" \
-                   " (. to skip).\n"); \
-            printf("  " COLORCOMMAND "exec" \
-                   COLORRESET " " \
-                   COLOROPTION "[args]" \
-                   COLORRESET \
-                   " Auto-init + set" \
-                   " args + run.\n\n"); \
+        /* ---- FPS NOTE ---- */ \
+        if (mh_color) { \
+            printf("  " MH_NOTE \
+                   "This is a fpsexec command." \
+                   " Command parameters map" \
+                   " to FPS parameters." MH_RST \
+                   "\n  Run " MH_CMD \
+                   "milk-fpsexec-help" MH_RST \
+                   " for detailed FPS" \
+                   " framework info.\n\n"); \
         } else { \
-            printf("  fpsinit    Create the " \
-                   "FPS.\n"); \
-            printf("  fps        Print FPS " \
-                   "content.\n"); \
-            printf("  fpslist    List matching " \
-                   "FPS instances.\n"); \
-            printf("  confstart  Configuration " \
-                   "loop.\n"); \
-            printf("  confstep   Single config " \
-                   "step.\n"); \
-            printf("  confstop   Stop config " \
-                   "loop.\n"); \
-            printf("  runstart   Main processing" \
-                   " loop.\n"); \
-            printf("  runstop    Stop processing" \
-                   " loop.\n"); \
-            printf("  set [args] Set positional" \
-                   " args (. to skip).\n"); \
-            printf("  exec [args] Auto-init +" \
-                   " set args + run.\n\n"); \
+            printf("  NOTE: This is a fpsexec" \
+                   " command. Command" \
+                   " parameters map to FPS" \
+                   " parameters.\n" \
+                   "  Run milk-fpsexec-help" \
+                   " for detailed FPS" \
+                   " framework info.\n\n"); \
         } \
+        /* ---- OPTIONS ---- */ \
+        milk_help_section("Options", mh_color); \
+        printf("  %s         Show this help\n", \
+               MH(MH_OPT, "-h, --help")); \
+        printf("  %s              One-line" \
+               " description\n", \
+               MH(MH_OPT, "-h1")); \
+        printf("  %s              Verbose" \
+               " description\n", \
+               MH(MH_OPT, "-h2")); \
+        printf("  %s              Monochrome" \
+               " help\n", \
+               MH(MH_OPT, "-hm")); \
+        printf("  %s            Run inside" \
+               " tmux session\n", \
+               MH(MH_OPT, "-tmux")); \
+        printf("  %s        Enable" \
+               " processinfo\n", \
+               MH(MH_OPT, "-procinfo")); \
+        printf("  %s           Infinite loop," \
+               " semaphore trigger\n", \
+               MH(MH_OPT, "-loops")); \
+        printf("  %s %s      Infinite loop," \
+               " delay trigger\n", \
+               MH(MH_OPT, "-loopd"), \
+               MH(MH_ARG, "SEC")); \
+        printf("  %s %s        Set FPS" \
+               " instance name\n\n", \
+               MH(MH_OPT, "-n"), \
+               MH(MH_ARG, "NAME")); \
+        /* ---- COMMANDS ---- */ \
+        milk_help_section("Commands", mh_color);\
+        printf("  %s          Create" \
+               " the FPS\n", \
+               MH(MH_CMD, "fpsinit")); \
+        printf("  %s              Print FPS" \
+               " content\n", \
+               MH(MH_CMD, "fps")); \
+        printf("  %s          List matching" \
+               " FPS instances\n", \
+               MH(MH_CMD, "fpslist")); \
+        printf("  %s        Configuration" \
+               " loop\n", \
+               MH(MH_CMD, "confstart")); \
+        printf("  %s         Single config" \
+               " step\n", \
+               MH(MH_CMD, "confstep")); \
+        printf("  %s         Stop config" \
+               " loop\n", \
+               MH(MH_CMD, "confstop")); \
+        printf("  %s         Main processing" \
+               " loop\n", \
+               MH(MH_CMD, "runstart")); \
+        printf("  %s          Stop" \
+               " processing loop\n", \
+               MH(MH_CMD, "runstop")); \
+        printf("  %s %s      Set positional" \
+               " args (. to skip)\n", \
+               MH(MH_CMD, "set"), \
+               MH(MH_OPT, "[args]")); \
+        printf("  %s %s     Auto-init + set" \
+               " args + run\n\n", \
+               MH(MH_CMD, "exec"), \
+               MH(MH_OPT, "[args]")); \
+        /* ---- PARAMETERS ---- */ \
         int col_kw_w = 7; \
         int col_tp_w = 4; \
         int col_df_w = 7; \
         PARAMS_MACRO(X_HELP_MEASURE_V2) \
-        if (show_help_color) \
-            printf(COLORHEADER \
-                   "CLI arguments:" \
-                   COLORRESET "\n"); \
-        else printf("CLI arguments:\n"); \
+        milk_help_section("Parameters", \
+                          mh_color); \
         printf("  %-3s %-*s %-*s %-*s %s\n", \
                "Idx", \
                col_kw_w, "Keyword", \
@@ -742,21 +713,21 @@ int main(int argc, char *argv[]) { \
                "-----------"); \
         int CLIargcnt = 0; \
         (void) CLIargcnt; \
+        int show_help_color = mh_color; \
+        (void) show_help_color; \
         PARAMS_MACRO(X_HELP_PRINT_V2) \
         printf("\n"); \
-        if (show_help_color) \
-            printf(COLOROPTION "Run " \
-                   COLORCOMMAND \
-                   "milk-fpsexec-help" \
-                   COLOROPTION \
-                   " for detailed FPS " \
-                   "framework info." \
-                   COLORRESET "\n\n"); \
-        else \
-            printf("Run milk-fpsexec-help" \
-                   " for detailed FPS " \
-                   "framework info." \
-                   "\n\n"); \
+        /* ---- SEE ALSO ---- */ \
+        { \
+            const char *_sa[] = { \
+                "milk-fpsexec-help", \
+                "milk-fpsCTRL", \
+                "milk-fpsexec-list" \
+            }; \
+            milk_help_see_also(_sa, 3, \
+                               mh_color); \
+        } \
+        printf("\n"); \
         return 0; \
     } \
     if (command == NULL) { \

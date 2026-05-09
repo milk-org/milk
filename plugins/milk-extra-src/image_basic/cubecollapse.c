@@ -27,7 +27,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cubecollapse",
     .cmdkey      = "cubecollapse",
-    .description = "collapse a cube along z"
+    .description = "collapse a cube along z",
+    .description_long =
+        "Collapse a 3D image cube along the z-axis by computing the mean, median, or sum of all slices. Produces a single 2D output image."
 };
 
 

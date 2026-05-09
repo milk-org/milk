@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "impsinvsvd",
     .cmdkey      = "impsinvsvd",
-    .description = "compute pseudoinverse"
+    .description = "compute pseudoinverse",
+    .description_long =
+        "Compute the pseudo-inverse of an image-to-mode matrix using SVD with configurable singular value truncation."
 };
 
 

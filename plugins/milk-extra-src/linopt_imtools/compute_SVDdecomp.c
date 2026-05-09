@@ -20,7 +20,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imsvd",
     .cmdkey      = "imsvd",
-    .description = "Singular values decomposition"
+    .description = "Singular values decomposition",
+    .description_long =
+        "Decompose image data using Singular Value Decomposition. Extracts principal modes and their singular values from an image cube."
 };
 
 

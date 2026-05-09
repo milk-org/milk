@@ -29,7 +29,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "readshmimsize",
     .cmdkey      = "readshmimsize",
-    .description = "read shared memory image size"
+    .description = "read shared memory image size",
+    .description_long =
+        "Read only the size metadata of a shared memory stream without mapping the full pixel buffer. Lightweight probe for stream dimensions."
 };
 
 

@@ -25,7 +25,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cubeslmatch",
     .cmdkey      = "cubeslmatch",
     .description =
-        "compute sqsum diffs between slices"
+        "compute sqsum diffs between slices",
+    .description_long =
+        "Compute a matrix of sum-of-squared differences between all pairs of slices in an image cube. Used for similarity analysis."
 };
 
 #define FPS_PARAMS(X) \

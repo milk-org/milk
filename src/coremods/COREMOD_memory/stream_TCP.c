@@ -81,7 +81,9 @@ static FPS_APP_INFO FPS_app_info_tsem = {
     .fps_name    = "testfuncsem",
     .cmdkey      = "testfuncsem",
     .description =
-        "test semaphore loop"
+        "test semaphore loop",
+    .description_long =
+        "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
 };
 
 #define FPS_PARAMS_TSEM(X) \
@@ -120,7 +122,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imnetwtransmit",
     .cmdkey      = "imnetwtransmit",
     .description =
-        "transmit image over network"
+        "transmit image over network",
+    .description_long =
+        "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
 };
 
 #define FPS_PARAMS(X) \
@@ -184,7 +188,9 @@ static FPS_APP_INFO FPS_app_info_rx = {
     .fps_name    = "imnetwreceive",
     .cmdkey      = "imnetwreceive",
     .description =
-        "receive image(s) over network"
+        "receive image(s) over network",
+    .description_long =
+        "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
 };
 
 #define FPS_PARAMS_RX(X) \

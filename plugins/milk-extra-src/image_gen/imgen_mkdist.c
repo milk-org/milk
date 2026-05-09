@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkdist",
     .cmdkey      = "mkdist",
-    .description = "make distance from point image"
+    .description = "make distance from point image",
+    .description_long =
+        "Generate a distance map: each pixel value is the Euclidean distance from a specified center point."
 };
 
 /* ================================================================

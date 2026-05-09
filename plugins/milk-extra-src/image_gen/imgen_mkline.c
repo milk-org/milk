@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkline",
     .cmdkey      = "mkline",
-    .description = "make line"
+    .description = "make line",
+    .description_long =
+        "Generate a line pattern on a 2D image with configurable endpoints, width, and intensity."
 };
 
 /* ================================================================

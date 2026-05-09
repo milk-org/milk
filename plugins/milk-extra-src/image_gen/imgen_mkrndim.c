@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkrndim",
     .cmdkey      = "mkrndim",
-    .description = "make random image"
+    .description = "make random image",
+    .description_long =
+        "Generate a random image with uniformly-distributed pixel values in a configurable range."
 };
 
 /* ================================================================

@@ -41,7 +41,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "fcorrel",
     .cmdkey      = "fcorrel",
     .description =
-        "correlate two images"
+        "correlate two images",
+    .description_long =
+        "Compute the cross-correlation of two images via FFT. Multiplies the Fourier transforms and applies the inverse FFT to produce the correlation map."
 };
 
 #define FPS_PARAMS(X) \

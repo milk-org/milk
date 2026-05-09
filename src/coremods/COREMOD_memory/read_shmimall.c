@@ -35,7 +35,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "readshmimall",
     .cmdkey      = "readshmimall",
     .description =
-        "read all shared memory images"
+        "read all shared memory images",
+    .description_long =
+        "Connect to all shared memory image streams currently present in /dev/shm. Maps every stream into the process address space."
 };
 
 

@@ -26,7 +26,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "multicrop",
     .cmdkey      = "multicrop2D",
     .description =
-        "crop 2D image, multiple crops"
+        "crop 2D image, multiple crops",
+    .description_long =
+        "Extract multiple rectangular sub-regions from a single 2D image, specified by a list of origin coordinates and sizes. Outputs are written as separate shared memory streams or assembled into a 3D cube."
 };
 
 

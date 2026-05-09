@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkgauss",
     .cmdkey      = "mkgauss",
-    .description = "make gaussian spot image"
+    .description = "make gaussian spot image",
+    .description_long =
+        "Generate a 2D Gaussian intensity pattern with configurable center, width (sigma), amplitude, and ellipticity."
 };
 
 /* ================================================================

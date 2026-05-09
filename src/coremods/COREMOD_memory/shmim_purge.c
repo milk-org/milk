@@ -29,7 +29,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "shmimpurge",
     .cmdkey      = "shmimpurge",
-    .description = "purge orphan streams"
+    .description = "purge orphan streams",
+    .description_long =
+        "Scan /dev/shm for stale (orphaned) image streams and remove them. A stream is considered stale if no process has it open or if its creator PID no longer exists."
 };
 
 

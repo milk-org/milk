@@ -16,7 +16,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "pixremap",
     .cmdkey      = "pixremap",
-    .description = "pixel remapping of image"
+    .description = "pixel remapping of image",
+    .description_long =
+        "Remap pixels from one image to another using an index map. Each output pixel is assigned the value of the input pixel at the index specified by the mapping array. Supports arbitrary geometric transformations."
 };
 
 // input image

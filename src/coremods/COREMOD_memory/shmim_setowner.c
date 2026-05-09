@@ -86,7 +86,9 @@ static char p_sname[FUNCTION_PARAMETER_STRMAXLEN]
 static FPS_APP_INFO FPS_app_info_creator = {
     .fps_name    = "shmimsetowncreator",
     .cmdkey      = "shmimsetowncreator",
-    .description = "set owner to creator PID"
+    .description = "set owner to creator PID",
+    .description_long =
+        "Change the owner PID of a shared memory image stream. Useful for transferring ownership when a process is restarted."
 };
 
 static CLICMDDATA CLIcmddata_creator = {
@@ -111,7 +113,9 @@ static errno_t __attribute__((unused)) compute_creator()
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "shmimsetowncurrent",
     .cmdkey      = "shmimsetowncurrent",
-    .description = "set owner to current PID"
+    .description = "set owner to current PID",
+    .description_long =
+        "Change the owner PID of a shared memory image stream. Useful for transferring ownership when a process is restarted."
 };
 
 static FPS_CLI_BINDING my_bindings[] = {
@@ -151,7 +155,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static FPS_APP_INFO FPS_app_info_init = {
     .fps_name    = "shmimsetowninit",
     .cmdkey      = "shmimsetowninit",
-    .description = "set owner to init PID"
+    .description = "set owner to init PID",
+    .description_long =
+        "Change the owner PID of a shared memory image stream. Useful for transferring ownership when a process is restarted."
 };
 
 static CLICMDDATA CLIcmddata_init = {

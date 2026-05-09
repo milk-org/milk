@@ -18,7 +18,16 @@ while [ $# -gt 0 ]; do
             echo "list installed milk-fpsexec-* standalone compute units"
             exit 0
             ;;
-        -h|--help)
+        -h2|--help-description)
+            echo "List all installed milk-fpsexec-* standalone" \
+                 "executables with their one-line descriptions." \
+                 "These are FPS compute units that can run" \
+                 "independently or be managed by the FPS" \
+                 "framework. Supports regex and fuzzy" \
+                 "subsequence search to filter results."
+            exit 0
+            ;;
+        -h|--help|-hm)
             cat <<'EOF'
 Usage: milk-fpsexec-list [OPTIONS] [SEARCH_TERM ...]
 
@@ -36,6 +45,9 @@ Options:
                  adjacent. Results are ranked by match
                  quality.
   -h, --help     Print this help message.
+  -h1            One-line description.
+  -h2            Verbose description.
+  -hm            Monochrome help.
 
 Arguments:
   SEARCH_TERM    Optional. One or more search terms to

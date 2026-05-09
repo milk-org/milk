@@ -36,7 +36,9 @@ static FPS_APP_INFO FPS_app_info = {
     .cmdkey      = "dispim3d",
     .description =
         "display 2D image as 3D surface "
-        "using gnuplot"
+        "using gnuplot",
+    .description_long =
+        "Display slices of a 3D image cube interactively. Provides a TUI-based viewer for browsing through cube frames."
 };
 
 #define FPS_PARAMS(X) \

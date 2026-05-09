@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "voronoi",
     .cmdkey      = "voronoi",
-    .description = "make Voronoi map from points file"
+    .description = "make Voronoi map from points file",
+    .description_long =
+        "Compute a Voronoi tessellation from a set of seed points. Each pixel is assigned to the nearest seed, creating a segmented map."
 };
 
 

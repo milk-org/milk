@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "Mremap",
     .cmdkey      = "Mremap",
-    .description = "use modal mapping for linear transformation"
+    .description = "use modal mapping for linear transformation",
+    .description_long =
+        "Apply a linear transformation defined by a modal mapping matrix. Remaps coefficients from one modal basis to another."
 };
 
 

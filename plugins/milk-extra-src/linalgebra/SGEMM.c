@@ -47,7 +47,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "sgemm",
     .cmdkey      = "sgemm",
-    .description = "matrix-matrix multiply"
+    .description = "matrix-matrix multiply",
+    .description_long =
+        "Perform single-precision matrix-matrix multiplication (SGEMM) using BLAS. Computes C = alpha * A * B + beta * C for dense matrices in shared memory."
 };
 
 

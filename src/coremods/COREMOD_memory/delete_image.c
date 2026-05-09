@@ -32,7 +32,9 @@ errno_t delete_image_ID(
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "rmimg",
     .cmdkey      = "rm",
-    .description = "remove image"
+    .description = "remove image",
+    .description_long =
+        "Remove a single image from the current process memory. Frees the local buffer. If the image is shared, only the local mapping is removed."
 };
 
 

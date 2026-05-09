@@ -25,7 +25,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streampaste",
     .cmdkey      = "streampaste",
     .description =
-        "paste two 2D streams"
+        "paste two 2D streams",
+    .description_long =
+        "Paste (overlay) one image stream onto a region of another. The source stream is copied into the destination at a specified offset position."
 };
 
 

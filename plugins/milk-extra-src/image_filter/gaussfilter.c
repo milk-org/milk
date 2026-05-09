@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "gaussfilt",
     .cmdkey      = "gaussfilt",
-    .description = "gaussian 2D filtering"
+    .description = "gaussian 2D filtering",
+    .description_long =
+        "Apply a 2D Gaussian convolution filter to an image. The kernel width is specified as a standard deviation (sigma) in pixels. Implemented via FFT for efficiency."
 };
 
 

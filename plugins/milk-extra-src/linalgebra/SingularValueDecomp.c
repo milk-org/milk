@@ -38,7 +38,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "compSVD",
     .cmdkey      = "compSVD",
-    .description = "compute SVD"
+    .description = "compute SVD",
+    .description_long =
+        "Compute the Singular Value Decomposition (SVD) of a matrix. Factorizes M = U * S * V^T using LAPACK routines."
 };
 
 

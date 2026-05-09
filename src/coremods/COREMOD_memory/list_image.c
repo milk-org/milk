@@ -52,7 +52,9 @@ static FPS_APP_INFO FPS_app_info_listim = {
     .fps_name    = "listim",
     .cmdkey      = "listim",
     .description =
-        "list images in memory"
+        "list images in memory",
+    .description_long =
+        "List all images currently loaded in the process memory space, showing name, dimensions, data type, and shared memory status."
 };
 
 static CLICMDDATA CLIcmddata_listim = {

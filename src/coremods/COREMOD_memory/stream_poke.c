@@ -26,7 +26,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "shmimpoke",
     .cmdkey      = "shmimpoke",
-    .description = "update stream without changing content"
+    .description = "update stream without changing content",
+    .description_long =
+        "Write a test pattern or constant value into a shared memory stream at a configurable rate. Useful for testing downstream consumers and verifying semaphore triggering."
 };
 
 

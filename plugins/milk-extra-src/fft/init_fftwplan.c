@@ -25,7 +25,9 @@ errno_t init_fftw_plans0();
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "initfft",
     .cmdkey      = "initfft",
-    .description = "init FFTW"
+    .description = "init FFTW",
+    .description_long =
+        "Initialize and cache FFTW plans for a given image size. Pre-computing plans avoids repeated FFTW planning overhead in real-time loops."
 };
 
 #define FPS_PARAMS(X)

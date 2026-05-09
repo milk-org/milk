@@ -32,7 +32,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imgetcircsym",
     .cmdkey      = "imgetcircsym",
     .description =
-        "extract circular symmetric part"
+        "extract circular symmetric part",
+    .description_long =
+        "Extract the circularly-symmetric component of a 2D image by computing the azimuthal average around the center."
 };
 
 #define FPS_PARAMS(X) \

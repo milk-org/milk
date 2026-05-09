@@ -41,7 +41,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "transl",
     .cmdkey      = "transl",
     .description =
-        "translate image via FFT"
+        "translate image via FFT",
+    .description_long =
+        "Translate (shift) an image by a sub-pixel offset using FFT phase multiplication. Applies a linear phase ramp in Fourier space for exact sub-pixel shifts."
 };
 
 #define FPS_PARAMS(X) \

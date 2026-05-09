@@ -75,7 +75,9 @@ static char p_dstname[FUNCTION_PARAMETER_STRMAXLEN]
 static FPS_APP_INFO FPS_app_info_cp = {
     .fps_name    = "cp",
     .cmdkey      = "cp",
-    .description = "copy image"
+    .description = "copy image",
+    .description_long =
+        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and metadata. Can also rename an existing image in the process table."
 };
 
 static CLICMDDATA CLIcmddata_cp = {
@@ -98,7 +100,9 @@ static errno_t __attribute__((unused)) compute_cp()
 static FPS_APP_INFO FPS_app_info_mv = {
     .fps_name    = "mv",
     .cmdkey      = "mv",
-    .description = "change image name"
+    .description = "change image name",
+    .description_long =
+        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and metadata. Can also rename an existing image in the process table."
 };
 
 static CLICMDDATA CLIcmddata_mv = {
@@ -122,7 +126,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imcp2shm",
     .cmdkey      = "imcp2shm",
     .description =
-        "copy image to shared memory"
+        "copy image to shared memory",
+    .description_long =
+        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and metadata. Can also rename an existing image in the process table."
 };
 
 static FPS_CLI_BINDING my_bindings[] = {

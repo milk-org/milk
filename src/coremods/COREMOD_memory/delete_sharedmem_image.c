@@ -27,7 +27,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "rmshmim",
     .cmdkey      = "rmshmim",
-    .description = "remove shared image and files"
+    .description = "remove shared image and files",
+    .description_long =
+        "Destroy a shared memory image stream and its associated files in /dev/shm. Removes the stream from all connected processes."
 };
 
 

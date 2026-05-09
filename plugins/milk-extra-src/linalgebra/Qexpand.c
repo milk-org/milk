@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "Qexpand",
     .cmdkey      = "Qexpand",
-    .description = "quadractic expansion of vector or matrix coeffs"
+    .description = "quadractic expansion of vector or matrix coeffs",
+    .description_long =
+        "Compute the quadratic expansion of a vector or matrix of coefficients. Generates cross-term products for nonlinear modeling."
 };
 
 

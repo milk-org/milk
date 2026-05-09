@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mk3Dim",
     .cmdkey      = "mk3Dim",
-    .description = "make 3D image"
+    .description = "make 3D image",
+    .description_long =
+        "Create a new 3D image cube in shared memory with specified dimensions and data type. Initializes all pixel values to zero."
 };
 
 
