@@ -215,6 +215,9 @@ add_executable(milkCTRL
     ../overview/overview_scan.c
     ../overview/overview_layout.c
     ../overview/overview_render.c
+    ../overview/overview_render_streams.c
+    ../overview/overview_render_procs.c
+    ../overview/overview_render_fps.c
     ../overview/overview_input.c
     ../overview/overview_ctrl.c
     ../overview/stream_graph.c
