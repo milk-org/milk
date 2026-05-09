@@ -18,7 +18,7 @@
  * - create function fpsrunstart, fpsrunstop, fpsconfstart and fpsconfstop
  */
 errno_t functionparameter_RUNstart(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
 

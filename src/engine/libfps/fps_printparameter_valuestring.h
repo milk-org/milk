@@ -10,7 +10,7 @@
 
 errno_t functionparameter_PrintParameter_ValueString(
 
-    FUNCTION_PARAMETER *fpsentry,
+    FPS_PARAM *fpsentry,
 
     char *outstring,
 
@@ -22,7 +22,7 @@ errno_t functionparameter_PrintParameter_ValueString(
 
 errno_t functionparameter_GetParamValueString(
 
-    FUNCTION_PARAMETER *fpsentry,
+    FPS_PARAM *fpsentry,
 
     char *outstring,
 

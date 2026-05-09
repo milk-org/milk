@@ -38,7 +38,7 @@ In this mode, arguments are captured via the CLI parser
 ### Key Characteristics
 
 - **Local Memory FPS:** CLI implementations maintain an
-  entirely local `FUNCTION_PARAMETER_STRUCT` (with
+  entirely local `FPS` (with
   `.SMfd = -1`) preventing the need for shared memory
   allocations if the command executes synchronously in a
   single shot.

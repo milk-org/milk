@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     }
 
     // Initialize global arrays for scan
-    fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));
+    fpsarray = (FPS *) calloc(NB_FPS_MAX, sizeof(FPS));
     for(int i = 0; i < NB_FPS_MAX; i++) fpsarray[i].SMfd = -1;
 
     KEYWORD_TREE_NODE *keywnode = (KEYWORD_TREE_NODE *) calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE));

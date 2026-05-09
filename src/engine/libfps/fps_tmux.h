@@ -9,13 +9,13 @@
 
 #include "fps.h"
 
-errno_t functionparameter_FPS_tmux_kill(FUNCTION_PARAMETER_STRUCT *fps);
+errno_t functionparameter_FPS_tmux_kill(FPS *fps);
 
-errno_t functionparameter_FPS_tmux_attach(FUNCTION_PARAMETER_STRUCT *fps);
+errno_t functionparameter_FPS_tmux_attach(FPS *fps);
 
-errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps);
+errno_t functionparameter_FPS_tmux_init(FPS *fps);
 
-errno_t functionparameter_FPS_tmux_ensure(FUNCTION_PARAMETER_STRUCT *fps);
+errno_t functionparameter_FPS_tmux_ensure(FPS *fps);
 
 errno_t functionparameter_FPS_tmux_standalone_setup(const char *fps_name);
 

@@ -6,7 +6,7 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray,
+int function_parameter_printlist(FPS_PARAM *funcparamarray,
                                  long                NBparamMAX)
 {
     long pindex = 0;

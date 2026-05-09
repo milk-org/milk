@@ -130,7 +130,7 @@ static int etrap_connect(CLI_ENGINE_TRAP *et)
     {
         et->fps.SMfd = -1;
         int rc =
-            function_parameter_struct_connect(
+            fps_connect(
                 et->target, &et->fps,
                 FPSCONNECT_SIMPLE);
         if(rc == -1 || et->fps.md == NULL
@@ -480,7 +480,7 @@ void cli_engine_traps_cleanup(void)
         {
             if(et->type == CLI_ETRAP_FPS)
             {
-                function_parameter_struct_disconnect(
+                fps_disconnect(
                     &et->fps);
             }
             else if(et->type

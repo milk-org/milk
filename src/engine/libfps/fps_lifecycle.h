@@ -52,7 +52,7 @@ int fps_generic_init(
  * @param nb_b      Number of bindings
  */
 void fps_loop_override_trigger(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     FPS_CLI_BINDING           *bindings,
     int                        nb_b
 );
@@ -68,7 +68,7 @@ void fps_loop_override_trigger(
  * @param delay_sec Delay between iterations (seconds)
  */
 void fps_loop_override_delay(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     double                     delay_sec
 );
 

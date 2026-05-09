@@ -15,10 +15,10 @@
  * This function quickly checks if the shared memory file descriptor is still valid
  * and if the file still exists on disk.
  * 
- * @param fps Pointer to FUNCTION_PARAMETER_STRUCT
+ * @param fps Pointer to FPS
  * @return int 1 if valid, 0 if invalid
  */
-int function_parameter_struct_isvalid(FUNCTION_PARAMETER_STRUCT *fps)
+int function_parameter_struct_isvalid(FPS *fps)
 {
     if (fps == NULL) {
         return 0;

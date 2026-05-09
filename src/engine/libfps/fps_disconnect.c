@@ -9,8 +9,8 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-int function_parameter_struct_disconnect(
-    FUNCTION_PARAMETER_STRUCT *funcparamstruct)
+int fps_disconnect(
+    FPS *funcparamstruct)
 {
     if (funcparamstruct == NULL) {
         return RETURN_SUCCESS;

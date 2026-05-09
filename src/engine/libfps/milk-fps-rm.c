@@ -141,11 +141,11 @@ static int remove_fps(
     int         verbose,
     int         force)
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
 
     fps.SMfd = -1;
 
-    if (function_parameter_struct_connect(
+    if (fps_connect(
             name, &fps, 0) == -1)
     {
         fprintf(stderr,
@@ -271,7 +271,7 @@ static int remove_fps(
                 "Abort: stop processes"
                 " before removing '%s' (or use -f/--force).\n",
                 name);
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &fps);
         return 1;
     }
@@ -282,7 +282,7 @@ static int remove_fps(
     }
 
     functionparameter_FPSremove(&fps);
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     printf("FPS '%s' removed.\n", name);
 
     return 0;

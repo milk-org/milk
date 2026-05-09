@@ -8,8 +8,8 @@
 
 #include "fps.h"
 
-int functionparameter_GetFileName(FUNCTION_PARAMETER_STRUCT *fps,
-                                  FUNCTION_PARAMETER        *fparam,
+int functionparameter_GetFileName(FPS *fps,
+                                  FPS_PARAM        *fparam,
                                   char                      *outfname,
                                   char                      *tagname);
 

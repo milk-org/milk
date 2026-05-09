@@ -19,11 +19,11 @@
 imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, uint32_t *imLOC);
 int file_exists(const char *filename);
 int is_fits_file(const char *filename);
-int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, FUNCTION_PARAMETER_STRUCT *fpstest);
+int functionparameter_ConnectExternalFPS(FPS *fpsentry, int pindex, FPS *fpstest);
 
 
 int functionparameter_CheckParameter(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    FPS *fpsentry,
     int                        pindex
 )
 {
@@ -331,7 +331,7 @@ int functionparameter_CheckParameter(
 
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
     {
-        FUNCTION_PARAMETER_STRUCT fpstest;
+        FPS fpstest;
         fpstest.SMfd = -1; // initialize
 
         functionparameter_ConnectExternalFPS(fpsentry, pindex, &fpstest);
@@ -367,7 +367,7 @@ int functionparameter_CheckParameter(
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
-            function_parameter_struct_disconnect(&fpstest);
+            fps_disconnect(&fpstest);
         }
     }
 
@@ -491,7 +491,7 @@ int functionparameter_CheckParameter(
 }
 
 
-int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
+int functionparameter_CheckParametersAll(FPS *fpsentry)
 {
     long NBparamMAX;
     long pindex;

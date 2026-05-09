@@ -27,7 +27,7 @@ errno_t function_parameter_struct_create(
 )
 {
     char                     *mapv = NULL;
-    FUNCTION_PARAMETER_STRUCT fps = {0};
+    FPS fps = {0};
 
     char   SM_fname[200];
     size_t sharedsize = 0; // shared memory size in bytes
@@ -50,7 +50,7 @@ errno_t function_parameter_struct_create(
     fflush(stdout);
 
     sharedsize = sizeof(FUNCTION_PARAMETER_STRUCT_MD);
-    sharedsize += sizeof(FUNCTION_PARAMETER) * NBparamMAX;
+    sharedsize += sizeof(FPS_PARAM) * NBparamMAX;
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
     if(SM_fd == -1)
@@ -89,7 +89,7 @@ errno_t function_parameter_struct_create(
 
     mapv = (char *) fps.md;
     mapv += sizeof(FUNCTION_PARAMETER_STRUCT_MD);
-    fps.parray = (FUNCTION_PARAMETER *) mapv;
+    fps.parray = (FPS_PARAM *) mapv;
 
     fps.md->NBparamMAX = NBparamMAX;
 
@@ -203,7 +203,7 @@ errno_t function_parameter_struct_create(
 }
 
 errno_t function_parameter_struct_realloc(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int NBparamMAX_new
 )
 {
@@ -212,8 +212,8 @@ errno_t function_parameter_struct_realloc(
     function_parameter_struct_shmdirname(shmdname);
     snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, fps->md->name);
 
-    size_t sharedsize_old = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FUNCTION_PARAMETER) * fps->md->NBparamMAX;
-    size_t sharedsize_new = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FUNCTION_PARAMETER) * NBparamMAX_new;
+    size_t sharedsize_old = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FPS_PARAM) * fps->md->NBparamMAX;
+    size_t sharedsize_new = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FPS_PARAM) * NBparamMAX_new;
 
     // 1. Unmap old
     munmap(fps->md, sharedsize_old);
@@ -241,12 +241,12 @@ errno_t function_parameter_struct_realloc(
 
     char *mapv = (char *) fps->md;
     mapv += sizeof(FUNCTION_PARAMETER_STRUCT_MD);
-    fps->parray = (FUNCTION_PARAMETER *) mapv;
+    fps->parray = (FPS_PARAM *) mapv;
 
     // 4. Initialize new part
     memset(&fps->parray[fps->md->NBparamMAX],
         0,
-        (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FUNCTION_PARAMETER));
+        (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FPS_PARAM));
 
     fps->md->NBparamMAX = NBparamMAX_new;
 

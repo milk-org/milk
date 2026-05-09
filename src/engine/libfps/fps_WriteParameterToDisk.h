@@ -13,7 +13,7 @@
 
 #include "fps.h"
 
-int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
+int functionparameter_WriteParameterToDisk(FPS *fpsentry,
         int                        pindex,
         char                      *tagname,
         char *commentstr);

@@ -34,7 +34,7 @@ static void fps_printparameter_bare_stream_name(
 }
 
 errno_t functionparameter_PrintParameter_ValueString(
-    FUNCTION_PARAMETER *fpsentry,
+    FPS_PARAM *fpsentry,
     char *outstring,
     int stringmaxlen
 )
@@ -144,7 +144,7 @@ errno_t functionparameter_PrintParameter_ValueString(
 }
 
 errno_t functionparameter_GetParamValueString(
-    FUNCTION_PARAMETER *fpsentry,
+    FPS_PARAM *fpsentry,
     char *outstring,
     int stringmaxlen
 )

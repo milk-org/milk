@@ -23,7 +23,7 @@
  *
  */
 int functionparameter_UserInputSetParamValue(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    FPS *fpsentry,
     int pindex
 )
 {

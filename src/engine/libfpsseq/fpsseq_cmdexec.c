@@ -69,7 +69,7 @@ static void milkseq_cmd_handle_sys(
     uint32_t                   cmdindex,
     MILKSEQ_STATE             *state,
     FPSCTRL_PROCESS_VARS      *fpsCTRLvar,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE         *keywnode,
     int                       *cmdFOUND,
     int                       *cmdOK,
@@ -267,7 +267,7 @@ static void milkseq_cmd_handle_sys(
 static void milkseq_cmd_handle_tmux(
     const char                *FPScommand,
     int                        nbword,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsindex,
     int                       *cmdFOUND,
     int                       *cmdOK,
@@ -330,7 +330,7 @@ static void milkseq_cmd_handle_tmux(
 static void milkseq_cmd_handle_conf(
     const char                *FPScommand,
     int                        nbword,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsindex,
     int                       *cmdFOUND,
     int                       *cmdOK,
@@ -483,7 +483,7 @@ static void milkseq_cmd_handle_conf(
 static void milkseq_cmd_handle_run(
     const char                *FPScommand,
     int                        nbword,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsindex,
     int                       *cmdFOUND,
     int                       *cmdOK,
@@ -578,7 +578,7 @@ static void milkseq_cmd_handle_run(
 int milkseq_exec_cmd(
     uint32_t                 cmdindex,
     MILKSEQ_STATE            *state,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE        *keywnode,
     FPSCTRL_PROCESS_VARS     *fpsCTRLvar,
     uint64_t                 *taskstatus
