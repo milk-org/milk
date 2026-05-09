@@ -189,6 +189,8 @@ install(FILES ../libmilkscript/CLIcore_UI_execute.h
 add_executable(milk-streamCTRL 
     ../streamCTRL/milk-streamCTRL.c
     ../streamCTRL/streamCTRL_TUI.c
+    ../streamCTRL/streamCTRL_TUI_render.c
+    ../streamCTRL/streamCTRL_TUI_input.c
     ../streamCTRL/streamCTRL_find_streams.c
     ../streamCTRL/streamCTRL_print_inode.c
     ../streamCTRL/streamCTRL_print_procpid.c
@@ -212,6 +214,11 @@ install(TARGETS milk-termview DESTINATION bin)
 add_executable(milkCTRL
     ../overview/milkCTRL.c
     ../overview/overview_data.c
+    ../overview/overview_data_sys.c
+    ../overview/overview_data_cache.c
+    ../overview/overview_data_scan.c
+    ../overview/overview_data_graph.c
+    ../overview/overview_data_sort.c
     ../overview/overview_scan.c
     ../overview/overview_layout.c
     ../overview/overview_render.c
@@ -237,6 +244,11 @@ add_executable(milk-stream-graph
     ../overview/milk-stream-graph.c
     ../overview/stream_graph.c
     ../overview/overview_data.c
+    ../overview/overview_data_sys.c
+    ../overview/overview_data_cache.c
+    ../overview/overview_data_scan.c
+    ../overview/overview_data_graph.c
+    ../overview/overview_data_sort.c
     ../overview/overview_scan.c
     ../overview/overview_layout.c
 )
@@ -254,6 +266,11 @@ install(TARGETS milk-stream-graph DESTINATION bin)
 add_executable(milk-stream-info
     ../overview/milk-stream-info.c
     ../overview/overview_data.c
+    ../overview/overview_data_sys.c
+    ../overview/overview_data_cache.c
+    ../overview/overview_data_scan.c
+    ../overview/overview_data_graph.c
+    ../overview/overview_data_sort.c
 )
 target_include_directories(milk-stream-info PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
@@ -269,6 +286,11 @@ install(TARGETS milk-stream-info DESTINATION bin)
 add_executable(milk-procinfo-info
     ../overview/milk-procinfo-info.c
     ../overview/overview_data.c
+    ../overview/overview_data_sys.c
+    ../overview/overview_data_cache.c
+    ../overview/overview_data_scan.c
+    ../overview/overview_data_graph.c
+    ../overview/overview_data_sort.c
 )
 target_include_directories(milk-procinfo-info PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO

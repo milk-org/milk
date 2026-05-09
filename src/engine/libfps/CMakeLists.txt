@@ -246,6 +246,11 @@ install(TARGETS milk-fps-search DESTINATION bin)
 add_executable(milk-fps-info
     milk-fps-info.c
     ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_sys.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_cache.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_scan.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_graph.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_sort.c
 )
 target_compile_definitions(milk-fps-info PRIVATE
     FPS_INFO_CONNECTIONS)
