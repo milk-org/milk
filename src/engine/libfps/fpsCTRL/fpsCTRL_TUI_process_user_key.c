@@ -48,7 +48,7 @@
  * Return: 0 on success or abort
  */
 static int fpsCTRL_inline_edit_param(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsindex,
     int                        pindex
 )
@@ -271,7 +271,7 @@ static int fpsCTRL_inline_edit_param(
 
 int fpsCTRL_TUI_process_user_key(
     int                        ch,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE         *keywnode,
     FPSCTRL_TASK_ENTRY        *fpsctrltasklist __attribute__((unused)),
     FPSCTRL_TASK_QUEUE        *fpsctrlqueuelist __attribute__((unused)),
@@ -730,7 +730,7 @@ int fpsCTRL_TUI_process_user_key(
         case 'R' : // start run process
             {
                 fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
+                FPS *selected_fps = &fps[fpsindex];
                 functionparameter_FPS_tmux_ensure(selected_fps);
                 char progexec[1024];
                 if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )
@@ -764,7 +764,7 @@ int fpsCTRL_TUI_process_user_key(
         case 'O': // start conf process
             {
                 fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
+                FPS *selected_fps = &fps[fpsindex];
                 functionparameter_FPS_tmux_ensure(selected_fps);
                 char progexec[1024];
                 if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )

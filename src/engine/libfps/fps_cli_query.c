@@ -43,7 +43,7 @@ void fps_print_query_info(
         int n = fps_local_count_entries();
 
         for (int i = 0; i < n; i++) {
-            FUNCTION_PARAMETER_STRUCT *lfps =
+            FPS *lfps =
                 fps_local_get_by_index(i);
             if (lfps == NULL ||
                 lfps->md == NULL)
@@ -131,9 +131,9 @@ void fps_print_query_info(
     /* ---- Parameter table ---- */
     printf("\n");
 
-    FUNCTION_PARAMETER_STRUCT *show_fps = NULL;
+    FPS *show_fps = NULL;
     int must_disconnect = 0;
-    static FUNCTION_PARAMETER_STRUCT tmp_fps;
+    static FPS tmp_fps;
 
     /* Try last-used FPS if it belongs to this
      * compute unit */
@@ -145,7 +145,7 @@ void fps_print_query_info(
                 fps_last_used_name);
         }
         else {
-            if (function_parameter_struct_connect(
+            if (fps_connect(
                     fps_last_used_name,
                     &tmp_fps,
                     FPSCONNECT_SIMPLE) != -1)
@@ -161,7 +161,7 @@ void fps_print_query_info(
     if (show_fps == NULL) {
         int n = fps_local_count_entries();
         for (int i = n - 1; i >= 0; i--) {
-            FUNCTION_PARAMETER_STRUCT *lfps =
+            FPS *lfps =
                 fps_local_get_by_index(i);
             if (lfps == NULL ||
                 lfps->md == NULL)
@@ -196,7 +196,7 @@ void fps_print_query_info(
             strncpy(try_name, fpsn,
                     sizeof(try_name) - 1);
         }
-        if (function_parameter_struct_connect(
+        if (fps_connect(
                 try_name, &tmp_fps,
                 FPSCONNECT_SIMPLE) != -1)
         {
@@ -233,7 +233,7 @@ void fps_print_query_info(
     }
 
     if (must_disconnect) {
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &tmp_fps);
     }
     /*

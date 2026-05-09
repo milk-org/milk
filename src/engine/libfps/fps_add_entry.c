@@ -27,7 +27,7 @@
  * 8.  If `valueptr` is provided, copy the initial values from it into the FPS.
  * 9.  Return the index of the newly added entry.
  */
-errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
+errno_t function_parameter_add_entry(FPS *fps,
                                      const char                *keywordstring,
                                      const char *descriptionstring,
                                      uint64_t    type,
@@ -41,7 +41,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
     char               *pch;
     char                tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
                                                                        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    FUNCTION_PARAMETER *funcparamarray;
+    FPS_PARAM *funcparamarray;
 
     funcparamarray = fps->parray;
 

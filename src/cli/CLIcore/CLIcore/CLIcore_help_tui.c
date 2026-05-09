@@ -440,10 +440,10 @@ int cli_fparam(void)
     
     char *fpsname = data.cmdargtoken[1].val.string;
     
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     fps.SMfd = -1;
 
-    if (function_parameter_struct_connect(fpsname, &fps, 0) == -1) {
+    if (fps_connect(fpsname, &fps, 0) == -1) {
         printf("Error: cannot connect to FPS '%s'.\n", fpsname);
         return RETURN_SUCCESS;
     }
@@ -579,6 +579,6 @@ int cli_fparam(void)
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     printf("\033[2J\033[H");
     
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return RETURN_SUCCESS;
 }

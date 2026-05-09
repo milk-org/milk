@@ -267,8 +267,8 @@ int main(int argc, char **argv)
     }
 
     // We need to keep track of the local fps list to feed to the scheduler
-    FUNCTION_PARAMETER_STRUCT fps[NB_FPS_MAX];
-    memset(fps, 0, sizeof(FUNCTION_PARAMETER_STRUCT) * NB_FPS_MAX);
+    FPS fps[NB_FPS_MAX];
+    memset(fps, 0, sizeof(FPS) * NB_FPS_MAX);
     KEYWORD_TREE_NODE *keywnode = calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE));
     FPSCTRL_PROCESS_VARS fpsCTRLvar = {0};
 

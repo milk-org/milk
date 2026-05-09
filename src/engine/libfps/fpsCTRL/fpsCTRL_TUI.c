@@ -464,7 +464,7 @@ errno_t functionparameter_CTRLscreen(
         for (int i = 0; i < fpsCTRLvar.NBfps; i++) {
             if (!function_parameter_struct_isvalid(&fpsarray[i])) {
                 needs_rescan = 1;
-                function_parameter_struct_disconnect(&fpsarray[i]);
+                fps_disconnect(&fpsarray[i]);
             }
         }
 
@@ -706,7 +706,7 @@ errno_t functionparameter_CTRLscreen(
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
     for(int fpsindex = 0; fpsindex < fpsCTRLvar.NBfps; fpsindex++)
     {
-        function_parameter_struct_disconnect(&fpsarray[fpsindex]);
+        fps_disconnect(&fpsarray[fpsindex]);
     }
 
 

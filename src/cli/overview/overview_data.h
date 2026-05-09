@@ -128,7 +128,7 @@ typedef struct
 
 
 /* =========================================================
- * FPS info (aggregated from FUNCTION_PARAMETER_STRUCT)
+ * FPS info (aggregated from FPS)
  * ========================================================= */
 
 #define OV_FPS_MAX_STREAM_PARAMS 24

@@ -17,19 +17,19 @@
 #include "overview_data.h"
 #include "overview_layout.h"
 
-/* fps_types.h for FUNCTION_PARAMETER_STRUCT and FPSCMDCODE_* */
+/* fps_types.h for FPS and FPSCMDCODE_* */
 #include "fps_types.h"
 
 /* ImageStreamIO for stream open/destroy */
 #include "ImageStreamIO/ImageStreamIO.h"
 
 /* Forward-declare FPS connect/disconnect (same pattern as overview_data.c) */
-long function_parameter_struct_connect(
+long fps_connect(
     const char               *name,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        fpsconnectmode);
-int function_parameter_struct_disconnect(
-    FUNCTION_PARAMETER_STRUCT *fps);
+int fps_disconnect(
+    FPS *fps);
 
 /* =========================================================
  * Internal FPS SHM signal helper
@@ -49,10 +49,10 @@ static int ov_ctrl_fps_signal(
     const char *fps_name,
     uint32_t    cmd)
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     memset(&fps, 0, sizeof(fps));
 
-    long rc = function_parameter_struct_connect(
+    long rc = fps_connect(
                   fps_name, &fps, FPSCONNECT_SIMPLE);
     if (rc != 0)
     {
@@ -64,7 +64,7 @@ static int ov_ctrl_fps_signal(
         fps.md->signal |= (uint64_t) cmd;
     }
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return 0;
 }
 

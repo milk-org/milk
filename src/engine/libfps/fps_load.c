@@ -45,7 +45,7 @@ long function_parameter_structure_load(char *fpsname)
         if(foundflag == 1)
         {
             fpsarray[fpsID].NBparam =
-                function_parameter_struct_connect(fpsname,
+                fps_connect(fpsname,
                                                   &fpsarray[fpsID],
                                                   FPSCONNECT_SIMPLE);
             if(fpsarray[fpsID].NBparam < 1)

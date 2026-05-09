@@ -11,7 +11,7 @@
  *
  * Run pre-set function fpsrunstop in tmux ctrl window
  */
-errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_RUNstop(FPS *fps)
 {
     // Move to correct launch directory
     //

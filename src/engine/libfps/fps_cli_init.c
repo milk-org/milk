@@ -22,7 +22,7 @@
 
 
 errno_t fps_init_from_bindings(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     const char                *cmdkey,
     const char                *description,
     FPS_CLI_BINDING           *bindings,

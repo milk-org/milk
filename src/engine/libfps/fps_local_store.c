@@ -17,7 +17,7 @@
 
 /** Local FPS store: array, usage flags, count */
 static int local_fps_count;
-static FUNCTION_PARAMETER_STRUCT
+static FPS
     local_fps_array[FPS_LOCAL_MAX];
 static int local_fps_used[FPS_LOCAL_MAX];
 
@@ -27,7 +27,7 @@ static char
                      [FPS_CREATOR_NAME_MAX];
 
 
-FUNCTION_PARAMETER_STRUCT *fps_local_find(
+FPS *fps_local_find(
     const char *name
 )
 {
@@ -47,7 +47,7 @@ FUNCTION_PARAMETER_STRUCT *fps_local_find(
 }
 
 
-FUNCTION_PARAMETER_STRUCT *fps_local_create(
+FPS *fps_local_create(
     const char *name,
     long        NBparamMAX
 )
@@ -64,11 +64,11 @@ FUNCTION_PARAMETER_STRUCT *fps_local_create(
     local_fps_used[idx] = 1;
     local_fps_creator[idx][0] = '\0';
 
-    FUNCTION_PARAMETER_STRUCT *fps =
+    FPS *fps =
         &local_fps_array[idx];
 
     memset(fps, 0,
-           sizeof(FUNCTION_PARAMETER_STRUCT));
+           sizeof(FPS));
     fps->SMfd = -1;
 
     /* Allocate metadata */
@@ -89,9 +89,9 @@ FUNCTION_PARAMETER_STRUCT *fps_local_create(
     fps->md->NBparamMAX = NBparamMAX;
 
     /* Allocate parameter array */
-    fps->parray = (FUNCTION_PARAMETER *)
+    fps->parray = (FPS_PARAM *)
         calloc(NBparamMAX,
-            sizeof(FUNCTION_PARAMETER));
+            sizeof(FPS_PARAM));
     if (fps->parray == NULL) {
         fprintf(stderr,
                 "ERROR: calloc parray for '%s'\n",
@@ -107,12 +107,12 @@ FUNCTION_PARAMETER_STRUCT *fps_local_create(
 }
 
 
-FUNCTION_PARAMETER_STRUCT *fps_local_get_or_create(
+FPS *fps_local_get_or_create(
     const char *name,
     long        NBparamMAX
 )
 {
-    FUNCTION_PARAMETER_STRUCT *fps =
+    FPS *fps =
         fps_local_find(name);
 
     if (fps != NULL) {
@@ -128,7 +128,7 @@ int fps_local_count_entries(void)
 }
 
 
-FUNCTION_PARAMETER_STRUCT *fps_local_get_by_index(
+FPS *fps_local_get_by_index(
     int idx
 )
 {

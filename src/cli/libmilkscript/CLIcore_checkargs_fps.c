@@ -53,7 +53,7 @@
  */
 int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                                 int                        nbarg,
-                                FUNCTION_PARAMETER_STRUCT *fps)
+                                FPS *fps)
 {
     DEBUG_TRACE_FSTART();
 
@@ -176,7 +176,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
 /** @brief Build FPS from command args
  */
 int CMDargs_to_FPSparams_create(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
     DEBUG_TRACE_FSTART();
@@ -468,12 +468,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                 // Ignore the command so it doesn't run, but allow FPS args check
                 dcfpscode = FPSCMDCODE_IGNORE;
                 // Print the FPS parameters by connecting to it
-                FUNCTION_PARAMETER_STRUCT tmp_fps;
-                if (function_parameter_struct_connect(FPS_name, &tmp_fps, FPSCONNECT_SIMPLE) == -1) {
+                FPS tmp_fps;
+                if (fps_connect(FPS_name, &tmp_fps, FPSCONNECT_SIMPLE) == -1) {
                     printf("FPS %s does not exist.\n", FPS_name);
                 } else {
                     function_parameter_print_info(&tmp_fps, 0, 0);
-                    function_parameter_struct_disconnect(&tmp_fps);
+                    fps_disconnect(&tmp_fps);
                 }
             }
         }

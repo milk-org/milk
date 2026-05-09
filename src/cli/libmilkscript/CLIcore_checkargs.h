@@ -36,10 +36,10 @@ errno_t CLI_checkarg_array(
 int CLIargs_to_FPSparams_setval(
     CLICMDARGDEF               fpscliarg[],
     int                        nbarg,
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 
 int CMDargs_to_FPSparams_create(
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 
 void *get_farg_ptr(char *tag, long *fpsi);
 

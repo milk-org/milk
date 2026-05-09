@@ -185,7 +185,7 @@ static void print_help(const char *progname)
  * without extra stream metadata.
  */
 static void param_value_str(
-    FUNCTION_PARAMETER *fp,
+    FPS_PARAM *fp,
     char *buf,
     int buflen
 )
@@ -336,9 +336,9 @@ int main(int argc, char *argv[])
     }
 
     /* Allocate FPS scan arrays */
-    fpsarray = (FUNCTION_PARAMETER_STRUCT *)
+    fpsarray = (FPS *)
         calloc(NB_FPS_MAX,
-               sizeof(FUNCTION_PARAMETER_STRUCT));
+               sizeof(FPS));
     for (int i = 0; i < NB_FPS_MAX; i++)
     {
         fpsarray[i].SMfd = -1;

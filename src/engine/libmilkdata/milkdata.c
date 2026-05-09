@@ -112,8 +112,8 @@ errno_t milk_data_init(void)
 
     /* Allocate FPS array */
     {
-        milk_data.fpsarray = (FUNCTION_PARAMETER_STRUCT *)
-            malloc(sizeof(FUNCTION_PARAMETER_STRUCT)
+        milk_data.fpsarray = (FPS *)
+            malloc(sizeof(FPS)
                    * milk_data.NB_MAX_FPS);
         if (milk_data.fpsarray == NULL)
         {

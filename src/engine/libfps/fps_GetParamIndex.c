@@ -6,7 +6,7 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps,
+int functionparameter_GetParamIndex(FPS *fps,
                                     const char                *paramname)
 {
     long index  = -1;

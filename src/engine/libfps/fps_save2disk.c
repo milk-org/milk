@@ -21,7 +21,7 @@ int save_fits(const char *imname, const char *filename);
 
 
 int functionparameter_SaveParam2disk(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    FPS *fpsentry,
     const char                *paramname
 )
 {
@@ -39,7 +39,7 @@ int functionparameter_SaveParam2disk(
 }
 
 
-int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
+int functionparameter_SaveFPS2disk_dir(FPS *fpsentry,
                                        char                      *dirname)
 {
     char  fname[STRINGMAXLEN_FULLFILENAME];
@@ -108,7 +108,7 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
  *
  * Writes in subdirectory fps datatir
  */
-int functionparameter_SaveFPS2disk(FUNCTION_PARAMETER_STRUCT *fps)
+int functionparameter_SaveFPS2disk(FPS *fps)
 {
     char outdir[STRINGMAXLEN_FULLFILENAME];
     WRITE_FULLFILENAME(outdir, "%s/%s", fps->md->workdir, fps->md->datadir);
@@ -156,7 +156,7 @@ int functionparameter_SaveFPS2disk(FUNCTION_PARAMETER_STRUCT *fps)
  * File loglist.dat in directory .conf.dirname
  *
  */
-errno_t functionparameter_write_archivescript(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_write_archivescript(FPS *fps)
 {
     // Write archive script
     // to be executed to archive most recent calibration data
@@ -244,7 +244,7 @@ errno_t functionparameter_write_archivescript(FUNCTION_PARAMETER_STRUCT *fps)
  * outname.fits.
  *
  */
-errno_t fps_write_RUNoutput_image(FUNCTION_PARAMETER_STRUCT *fps,
+errno_t fps_write_RUNoutput_image(FPS *fps,
                                   const char                *imagename,
                                   const char                *outname)
 {
@@ -281,7 +281,7 @@ errno_t fps_write_RUNoutput_image(FUNCTION_PARAMETER_STRUCT *fps,
  *
  *
  */
-FILE *fps_write_RUNoutput_file(FUNCTION_PARAMETER_STRUCT *fps,
+FILE *fps_write_RUNoutput_file(FPS *fps,
                                const char                *filename,
                                const char                *extension)
 {
@@ -393,7 +393,7 @@ static errno_t filecopy(char *sourcefilename, char *destfilename)
  * For each such file, copy <file>.outlog and <file> from datadir to confdir.
  *
  */
-errno_t fps_datadir_to_confdir(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t fps_datadir_to_confdir(FPS *fps)
 {
     struct dirent *indirentry; // Pointer for directory entry
     char          *file_ext;   // extension

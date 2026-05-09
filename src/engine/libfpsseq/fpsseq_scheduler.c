@@ -15,7 +15,7 @@
 
 int milkseq_scheduler_step(
     MILKSEQ_STATE *state,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_PROCESS_VARS *vars)
 {

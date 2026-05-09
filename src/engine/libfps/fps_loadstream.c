@@ -40,7 +40,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
  * @return imageID or -1 on failure
  */
 imageID functionparameter_LoadStream(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int                        pindex,
     int                        fpsconnectmode
 )

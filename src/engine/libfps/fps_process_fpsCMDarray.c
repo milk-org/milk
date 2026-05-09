@@ -43,7 +43,7 @@ int function_parameter_process_fpsCMDarray(
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
     KEYWORD_TREE_NODE  *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    FUNCTION_PARAMETER_STRUCT *fps)
+    FPS *fps)
 {
     // queue has no task
     int QUEUE_NOTASK = -1;
