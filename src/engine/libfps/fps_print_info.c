@@ -20,7 +20,7 @@
 #define C_BOLD   "\033[1m"
 
 int function_parameter_print_info(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int verbose,
     int show_info
 )

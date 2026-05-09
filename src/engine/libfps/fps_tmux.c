@@ -20,7 +20,7 @@
  * process shutdown, then kills the session.
  */
 int functionparameter_FPS_tmux_kill(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
     EXECUTE_SYSTEM_COMMAND(
@@ -41,7 +41,7 @@ int functionparameter_FPS_tmux_kill(
 }
 
 int functionparameter_FPS_tmux_attach(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
     // This should hang until the tmux is detached,
@@ -57,7 +57,7 @@ int functionparameter_FPS_tmux_attach(
  * Uses atomic tmux command chaining to avoid race conditions.
  */
 int functionparameter_FPS_tmux_init(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
     int funcstring_maxlen  = 10000;
@@ -222,7 +222,7 @@ int functionparameter_FPS_tmux_init(
  *
  */
 int functionparameter_FPS_tmux_ensure(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
     char cmd[1024];

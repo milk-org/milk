@@ -9,12 +9,12 @@
 
 #include "fps_disconnect.h"
 
-uint16_t function_parameter_FPCONFexit(FUNCTION_PARAMETER_STRUCT *fps)
+uint16_t function_parameter_FPCONFexit(FPS *fps)
 {
     //fps->md->confpid = 0;
 
     fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
-    function_parameter_struct_disconnect(fps);
+    fps_disconnect(fps);
 
     return 0;
 }

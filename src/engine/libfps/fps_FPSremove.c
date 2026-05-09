@@ -12,7 +12,7 @@
  * Requires CONF and RUN to be off
  *
  */
-errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_FPSremove(FPS *fps)
 {
 
     // get directory name

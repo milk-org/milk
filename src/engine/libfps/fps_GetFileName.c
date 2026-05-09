@@ -13,8 +13,8 @@
  *
  */
 int functionparameter_GetFileName(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    FUNCTION_PARAMETER        *fparam,
+    FPS *fps,
+    FPS_PARAM        *fparam,
     char                      *outfname,
     char                      *tagname)
 {

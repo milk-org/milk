@@ -11,7 +11,7 @@
 #include "print_nodeinfo.h"
 
 void fpsCTRLscreen_print_nodeinfo(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE *keywnode,
     int nodeSelected,
     int fpsindexSelected,

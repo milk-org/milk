@@ -70,7 +70,7 @@ int milkseq_list(char names[][FPSSEQ_NAME_MAX], int maxcount);
  */
 int milkseq_scheduler_step(
     MILKSEQ_STATE *state,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_PROCESS_VARS *vars);
 
@@ -108,7 +108,7 @@ int milkseq_fifo_read(MILKSEQ_STATE *state, int fifo_fd);
 int milkseq_exec_cmd(
     uint32_t                 cmdindex,
     MILKSEQ_STATE            *state,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE        *keywnode,
     FPSCTRL_PROCESS_VARS     *vars,
     uint64_t                 *taskstatus);
@@ -130,7 +130,7 @@ int milkseq_exec_cmd(
 errno_t milkseq_load_script(
     MILKSEQ_STATE             *state,
     const char                *filename,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE         *keywnode);
 
 #endif // FPSSEQ_H

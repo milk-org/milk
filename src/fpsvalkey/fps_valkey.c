@@ -91,7 +91,7 @@ static int check_and_reconnect(FPS_VALKEY_CTX *vctx)
  * @param buflen  Buffer length
  */
 static void param_value_to_string(
-    FUNCTION_PARAMETER *fp,
+    FPS_PARAM *fp,
     char *buf,
     int buflen
 )
@@ -243,9 +243,9 @@ static void *subscriber_loop(void *arg)
              * 4. Bump cnt0, signal UPDATE
              * 5. Disconnect
              */
-            FUNCTION_PARAMETER_STRUCT fps;
+            FPS fps;
             long nbp =
-                function_parameter_struct_connect(
+                fps_connect(
                     msg_fpsname, &fps,
                     FPSCONNECT_SIMPLE);
 
@@ -263,7 +263,7 @@ static void *subscriber_loop(void *arg)
 
             if (pidx == -1)
             {
-                function_parameter_struct_disconnect(
+                fps_disconnect(
                     &fps);
                 freeReplyObject(reply);
                 continue;
@@ -282,7 +282,7 @@ static void *subscriber_loop(void *arg)
                 fflush(stdout);
             }
 
-            function_parameter_struct_disconnect(
+            fps_disconnect(
                 &fps);
         }
 

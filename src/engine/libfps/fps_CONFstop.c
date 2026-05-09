@@ -10,7 +10,7 @@
 /** @brief FPS stop CONF process
  *
  */
-errno_t functionparameter_CONFstop(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_CONFstop(FPS *fps)
 {
     // send conf stop signal
     fps->md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;

@@ -28,7 +28,7 @@
  *
  */
 int functionparameter_WriteParameterToDisk(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    FPS *fpsentry,
     int                        pindex,
     char                      *tagname,
     char *commentstr)

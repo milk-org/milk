@@ -603,8 +603,8 @@ int cli_intercept_cmd_wait(const char *p)
             const char *value = eq + 1;
             double wait_timeout = tmstr ? atof(tmstr) : -1.0;
             
-            FUNCTION_PARAMETER_STRUCT fps;
-            if (function_parameter_struct_connect(fname, &fps, FPSCONNECT_SIMPLE) != -1 && fps.parray != NULL) {
+            FPS fps;
+            if (fps_connect(fname, &fps, FPSCONNECT_SIMPLE) != -1 && fps.parray != NULL) {
                 int pindex = functionparameter_GetParamIndex(&fps, param);
                 if (pindex < 0) {
                     char dotname[512];
@@ -658,7 +658,7 @@ int cli_intercept_cmd_wait(const char *p)
                     printf("wait: param %s not found in %s\n", param, fname);
                     cli_last_retval = 1;
                 }
-                function_parameter_struct_disconnect(&fps);
+                fps_disconnect(&fps);
             } else {
                 printf("wait: fps %s not found\n", fname);
                 cli_last_retval = 1;

@@ -15,7 +15,7 @@ typedef long variableID;
 #include "IMGID.h"
 
 int function_parameter_printlist(
-    FUNCTION_PARAMETER *funcparamarray,
+    FPS_PARAM *funcparamarray,
     long NBparamMAX);
 
 #ifdef USE_NCURSES
@@ -26,19 +26,19 @@ errno_t functionparameter_CTRLscreen(
     double  timeout_sec);
 #endif
 
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
+FPS function_parameter_FPCONFsetup(
     const char *fpsname,
     uint32_t mode);
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
+FPS function_parameter_FPCONFsetup_sized(
     const char *fpsname,
     uint32_t mode,
     long NBparamMAX);
 uint16_t function_parameter_FPCONFloopstep(
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 uint16_t function_parameter_FPCONFexit(
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 uint16_t function_parameter_RUNexit(
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 
 /* Core FPS operations (connect, params, entries) */
 #include "fps_core.h"
@@ -769,8 +769,8 @@ int main(int argc, char *argv[]) { \
                COLORRESET " %s\n", \
                fps_name, command); \
     if (strcmp(command, "fps") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect( \
+        FPS fps; \
+        if (fps_connect( \
                 fps_name, &fps, \
                 FPSCONNECT_SIMPLE) == -1) { \
             fprintf(stderr, \
@@ -780,16 +780,16 @@ int main(int argc, char *argv[]) { \
         } \
         function_parameter_print_info( \
             &fps, 0, 0); \
-        function_parameter_struct_disconnect( \
+        fps_disconnect( \
             &fps); \
         return 0; \
     } else if (strcmp(command, \
                       "fpslist") == 0) { \
-        FUNCTION_PARAMETER_STRUCT *fpsarray = \
-            (FUNCTION_PARAMETER_STRUCT *) \
+        FPS *fpsarray = \
+            (FPS *) \
             calloc(NB_FPS_MAX, \
                    sizeof( \
-                   FUNCTION_PARAMETER_STRUCT));\
+                   FPS));\
         if (fpsarray == NULL) return 1; \
         for (int i = 0; i < NB_FPS_MAX; i++) \
             fpsarray[i].SMfd = -1; \
@@ -842,7 +842,7 @@ int main(int argc, char *argv[]) { \
                            fpsarray[i].md \
                                ->description); \
                 } \
-                function_parameter_struct_disconnect( \
+                fps_disconnect( \
                     &fpsarray[i]); \
             } \
             if (!found) \
@@ -878,9 +878,9 @@ int main(int argc, char *argv[]) { \
             fps_name); \
         if (strcmp(command, "exec") == 0) { \
             { \
-                FUNCTION_PARAMETER_STRUCT fc_; \
+                FPS fc_; \
                 if (fps_name[0] != '_') { \
-                    if (function_parameter_struct_connect( \
+                    if (fps_connect( \
                             fps_name, &fc_, \
                             FPSCONNECT_SIMPLE) \
                         == -1) \
@@ -905,7 +905,7 @@ int main(int argc, char *argv[]) { \
                                "REUSE" \
                                COLORRESET "\n", \
                                fps_name); \
-                        function_parameter_struct_disconnect( \
+                        fps_disconnect( \
                             &fc_); \
                     } \
                 } \
@@ -913,8 +913,8 @@ int main(int argc, char *argv[]) { \
             /* Set CLI args into FPS before \
              * dispatching runstart to tmux */ \
             { \
-                FUNCTION_PARAMETER_STRUCT fs_; \
-                if (function_parameter_struct_connect(\
+                FPS fs_; \
+                if (fps_connect(\
                         fps_name, &fs_, \
                         FPSCONNECT_SIMPLE) != -1) \
                 { \
@@ -930,7 +930,7 @@ int main(int argc, char *argv[]) { \
                         fps_loop_override_delay(\
                             &fs_, loop_delay); \
                     } \
-                    function_parameter_struct_disconnect(\
+                    fps_disconnect(\
                         &fs_); \
                 } \
             } \
@@ -1002,8 +1002,8 @@ int main(int argc, char *argv[]) { \
         /* Sync CLI args into FPS before \
          * applying loop overrides. */ \
         if (use_loop && rc_ == 0) { \
-            FUNCTION_PARAMETER_STRUCT fp_; \
-            if (function_parameter_struct_connect(\
+            FPS fp_; \
+            if (fps_connect(\
                     fps_name, &fp_, \
                     FPSCONNECT_SIMPLE) != -1) {\
                 fps_process_cli_and_sync( \
@@ -1017,7 +1017,7 @@ int main(int argc, char *argv[]) { \
                     fps_loop_override_delay( \
                         &fp_, loop_delay); \
                 } \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fp_); \
             } \
         } \
@@ -1034,8 +1034,8 @@ int main(int argc, char *argv[]) { \
                       "confstop") == 0) { \
         return fps_generic_confstop(fps_name); \
     } else if (strcmp(command, "set") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect( \
+        FPS fps; \
+        if (fps_connect( \
                 fps_name, &fps, \
                 FPSCONNECT_SIMPLE) == -1) { \
             fprintf(stderr, \
@@ -1047,7 +1047,7 @@ int main(int argc, char *argv[]) { \
         fps_process_cli_and_sync( \
             &fps, farg_, \
             my_bindings_, nb_bindings_); \
-        function_parameter_struct_disconnect( \
+        fps_disconnect( \
             &fps); \
         printf("FPS " COLORCOMMAND "%s" \
                COLORRESET " set done\n", \
@@ -1058,9 +1058,9 @@ int main(int argc, char *argv[]) { \
          * then run. fps_name goes to shared mem \
          * when name lacks _ prefix. */ \
         { \
-            FUNCTION_PARAMETER_STRUCT fps_chk_; \
+            FPS fps_chk_; \
             if (fps_name[0] != '_') { \
-                if (function_parameter_struct_connect( \
+                if (fps_connect( \
                         fps_name, &fps_chk_, \
                         FPSCONNECT_SIMPLE) == -1) \
                 { \
@@ -1081,7 +1081,7 @@ int main(int argc, char *argv[]) { \
                            COLORCOMMAND "REUSE" \
                            COLORRESET "\n", \
                            fps_name); \
-                    function_parameter_struct_disconnect( \
+                    fps_disconnect( \
                         &fps_chk_); \
                 } \
             } \
@@ -1090,37 +1090,37 @@ int main(int argc, char *argv[]) { \
          * applying loop overrides, so that \
          * trigger stream names are available. */ \
         { \
-            FUNCTION_PARAMETER_STRUCT fps_sync_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_sync_; \
+            if (fps_connect(\
                     fps_name, &fps_sync_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_process_cli_and_sync( \
                     &fps_sync_, farg_, \
                     my_bindings_, nb_bindings_);\
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_sync_); \
             } \
         } \
         /* Apply -loops/-loopd overrides */ \
         if (use_loop == 1) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_trigger( \
                     &fps_lp_, my_bindings_, \
                     nb_bindings_); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } else if (use_loop == 2) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_delay( \
                     &fps_lp_, loop_delay); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } \
@@ -1134,37 +1134,37 @@ int main(int argc, char *argv[]) { \
         /* Sync CLI args into FPS before \
          * applying loop overrides. */ \
         { \
-            FUNCTION_PARAMETER_STRUCT fps_sync_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_sync_; \
+            if (fps_connect(\
                     fps_name, &fps_sync_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_process_cli_and_sync( \
                     &fps_sync_, farg_, \
                     my_bindings_, nb_bindings_);\
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_sync_); \
             } \
         } \
         /* Apply -loops/-loopd overrides */ \
         if (use_loop == 1) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_trigger( \
                     &fps_lp_, my_bindings_, \
                     nb_bindings_); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } else if (use_loop == 2) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_delay( \
                     &fps_lp_, loop_delay); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } \
@@ -1244,7 +1244,7 @@ int main(int argc, char *argv[]) { \
  * @param BLOCK_VALIDATE Code block to validate parameters (e.g. { validate(); })
  */
 #define FPS_CONF_STD_BODY(VARfps_name, VARloop, BLOCK_VAR_MAP, BLOCK_VALIDATE) \
-    FUNCTION_PARAMETER_STRUCT fps; \
+    FPS fps; \
     if (VARloop) { \
         printf("Starting configuration process loop for '%s'\n", VARfps_name); \
         fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_CONFSTART); \
@@ -1270,7 +1270,7 @@ int main(int argc, char *argv[]) { \
  * @brief Standard connection and parameter mapping for FPSRUN
  */
 #define FPS_RUN_STD_PREAMBLE(VARfps_name, VARfps, BLOCK_VAR_MAP) \
-    if (function_parameter_struct_connect(VARfps_name, &(VARfps), FPSCONNECT_RUN) == -1) { \
+    if (fps_connect(VARfps_name, &(VARfps), FPSCONNECT_RUN) == -1) { \
         fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", VARfps_name); \
         return 1; \
     } \
@@ -1303,7 +1303,7 @@ int main(int argc, char *argv[]) { \
         processinfo_update_output_stream(VARprocessinfo, VARoutput_image, VARinput_image); \
     } \
     processinfo_cleanExit(VARprocessinfo); \
-    function_parameter_struct_disconnect(&(VARfps));
+    fps_disconnect(&(VARfps));
 
 /** @} */ // end group fpsmacro
 

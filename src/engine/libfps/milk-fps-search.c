@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     }
 
     // Initialize fpsarray
-    fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));
+    fpsarray = (FPS *) calloc(NB_FPS_MAX, sizeof(FPS));
     if(fpsarray == NULL)
     {
         fprintf(stderr, "Error: cannot allocate fpsarray\n");
@@ -154,9 +154,9 @@ int main(int argc, char *argv[])
 
     for(int i = 0; i < NBfps; i++)
     {
-        FUNCTION_PARAMETER_STRUCT* fps = &fpsarray[i];
+        FPS* fps = &fpsarray[i];
         if (fps == NULL || fps->md == NULL || fps->parray == NULL) {
-            function_parameter_struct_disconnect(fps);
+            fps_disconnect(fps);
             continue;
         }
 
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
         }
 
         // Disconnect to clean up
-        function_parameter_struct_disconnect(fps);
+        fps_disconnect(fps);
     }
 
     if (!match_found && verbose) {

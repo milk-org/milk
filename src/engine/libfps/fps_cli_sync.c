@@ -42,7 +42,7 @@ void fps_cli_set_standalone_args(
  *        parameter, interpreting it according to the type.
  */
 static void set_fps_value_from_string(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     long                       pindex,
     uint64_t                   type,
     const char                *str
@@ -98,7 +98,7 @@ static void set_fps_value_from_string(
  *        the module-local C variable via the binding.
  */
 static void sync_fps_to_local(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     long                       pindex,
     FPS_CLI_BINDING           *b
 )
@@ -149,7 +149,7 @@ static void sync_fps_to_local(
 
 
 errno_t fps_process_cli_and_sync(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     CLICMDARGDEF              *farg,
     FPS_CLI_BINDING           *bindings,
     int                        nb_b

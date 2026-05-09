@@ -27,12 +27,12 @@
 
 /* Forward-declare FPS connect/disconnect to avoid
  * pulling in fps.h (which conflicts with our defs) */
-long function_parameter_struct_connect(
+long fps_connect(
     const char *name,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int fpsconnectmode);
-int function_parameter_struct_disconnect(
-    FUNCTION_PARAMETER_STRUCT *fps);
+int fps_disconnect(
+    FPS *fps);
 
 /* STRINGMAXLEN_FPS_DIRNAME defined in fps_types.h */
 #define OV_SHMDIR_MAXLEN STRINGMAXLEN_FPS_DIRNAME
@@ -309,7 +309,7 @@ static void scache_evict(int ci)
 typedef struct
 {
     char fname[STRINGMAXLEN_FPS_NAME];
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     int  in_use;
 
     /* Cached stream-type parameter indices.
@@ -346,7 +346,7 @@ static int fcache_find(const char *name)
 
 static void fcache_evict(int ci)
 {
-    function_parameter_struct_disconnect(
+    fps_disconnect(
         &s_fcache[ci].fps);
     s_fcache_nb--;
     if (ci < s_fcache_nb)
@@ -776,7 +776,7 @@ static struct timespec s_fps_mtime = {0, 0};
 static void fcache_build_params(
     ov_fps_cache_t *ce)
 {
-    FUNCTION_PARAMETER_STRUCT *fpsp = &ce->fps;
+    FPS *fpsp = &ce->fps;
     int sp = 0;
     int dp = 0;
 
@@ -796,7 +796,7 @@ static void fcache_build_params(
 
     for (int p = 0; p < nb_params && (sp < OV_FPS_MAX_STREAM_PARAMS || dp < OV_FPS_MAX_DISP_PARAMS); p++)
     {
-        FUNCTION_PARAMETER *fp =
+        FPS_PARAM *fp =
             &fpsp->parray[p];
         if (!(fp->fpflag & FPFLAG_ACTIVE))
         {
@@ -859,7 +859,7 @@ static void fill_fps_from_struct(
     OV_FPS          *f,
     ov_fps_cache_t  *ce)
 {
-    FUNCTION_PARAMETER_STRUCT *fpsp = &ce->fps;
+    FPS *fpsp = &ce->fps;
 
     memset(f, 0, sizeof(OV_FPS));
     strncpy(f->name, ce->fname,
@@ -887,7 +887,7 @@ static void fill_fps_from_struct(
     /* Read only the cached stream-type params */
     for (int sp = 0; sp < ce->sparam_nb; sp++)
     {
-        FUNCTION_PARAMETER *fp =
+        FPS_PARAM *fp =
             &fpsp->parray[ce->sparam_idx[sp]];
         strncpy(f->stream_param_name[sp],
                 ce->sparam_key[sp],
@@ -904,7 +904,7 @@ static void fill_fps_from_struct(
     /* Read the cached display params */
     for (int dp = 0; dp < ce->dparam_nb; dp++)
     {
-        FUNCTION_PARAMETER *fp = &fpsp->parray[ce->dparam_idx[dp]];
+        FPS_PARAM *fp = &fpsp->parray[ce->dparam_idx[dp]];
         strncpy(f->disp_param_name[dp], ce->dparam_key[dp], FUNCTION_PARAMETER_STRMAXLEN - 1);
         
         /* Format value to string based on type */
@@ -1057,7 +1057,7 @@ void ov_scan_fps(OV_MODEL *model)
             s_fcache[ci].fps.SMfd = -1;
 
             long fpsID =
-                function_parameter_struct_connect(
+                fps_connect(
                     fname,
                     &s_fcache[ci].fps,
                     FPSCONNECT_SIMPLE);
@@ -1334,7 +1334,7 @@ void ov_scan_cache_cleanup(void)
     /* Disconnect all cached FPS mappings */
     for (int i = s_fcache_nb - 1; i >= 0; i--)
     {
-        function_parameter_struct_disconnect(
+        fps_disconnect(
             &s_fcache[i].fps);
     }
     s_fcache_nb = 0;

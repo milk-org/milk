@@ -92,10 +92,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     fps.SMfd = -1;
 
-    if (function_parameter_struct_connect(fpsname, &fps, 0) == -1) {
+    if (fps_connect(fpsname, &fps, 0) == -1) {
         fprintf(stderr, "Error: cannot connect to FPS \"%s\".\n", fpsname);
         return 1;
     }
@@ -109,13 +109,13 @@ int main(int argc, char *argv[])
 
     if (command == NULL) {
         fprintf(stderr, "Error: unknown command \"%s\".\n", progname);
-        function_parameter_struct_disconnect(&fps);
+        fps_disconnect(&fps);
         return 1;
     }
 
     if (strlen(fps.md->execfullpath) == 0 || strcmp(fps.md->execfullpath, "unknown") == 0) {
         fprintf(stderr, "Error: execfullpath not set for FPS \"%s\".\n", fpsname);
-        function_parameter_struct_disconnect(&fps);
+        fps_disconnect(&fps);
         return 1;
     }
 
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
              snprintf(cmdline, sizeof(cmdline), "%s %s:%s", fps.md->execfullpath, fpsname, command);
              printf("Executing locally: %s\n", cmdline);
              int ret = system(cmdline);
-             function_parameter_struct_disconnect(&fps);
+             fps_disconnect(&fps);
              return WEXITSTATUS(ret);
         }
         
@@ -142,10 +142,10 @@ int main(int argc, char *argv[])
         
         printf("Executing locally: %s\n", cmdline);
         int ret = system(cmdline);
-        function_parameter_struct_disconnect(&fps);
+        fps_disconnect(&fps);
         return WEXITSTATUS(ret);
     }
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return 0;
 }

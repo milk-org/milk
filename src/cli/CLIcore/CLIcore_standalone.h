@@ -231,7 +231,7 @@ static inline int
 CLIargs_to_FPSparams_setval(
     CLICMDARGDEF *fca __attribute__((unused)),
     int n __attribute__((unused)),
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
     __attribute__((unused)))
 {
     return 0;
@@ -239,7 +239,7 @@ CLIargs_to_FPSparams_setval(
 
 static inline int
 CMDargs_to_FPSparams_create(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
     __attribute__((unused)))
 {
     return 0;

@@ -384,7 +384,7 @@ typedef struct
     int      connected;
     IMAGE    img;
     uint64_t last_cnt0;
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     char     last_fpsval[256];
     struct timespec last_fire_ts;
 } CLI_ENGINE_TRAP;

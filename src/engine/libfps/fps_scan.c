@@ -26,7 +26,7 @@
 errno_t functionparameter_scan_fps(
     uint32_t                   mode,
     char                      *fpsnamemask,
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     KEYWORD_TREE_NODE         *keywnode,
     int                       *ptr_NBkwn,
     int                       *ptr_fpsindex,
@@ -76,7 +76,7 @@ errno_t functionparameter_scan_fps(
     {
         if(fps[fpsindex].SMfd > -1)  // connected
         {
-            function_parameter_struct_disconnect(&fps[fpsindex]);
+            fps_disconnect(&fps[fpsindex]);
         }
     }
 
@@ -125,7 +125,7 @@ errno_t functionparameter_scan_fps(
         }
     }
 
-    //    NBparam = function_parameter_struct_connect(fpsname, &fps[fpsindex]);
+    //    NBparam = fps_connect(fpsname, &fps[fpsindex]);
 
     // create ROOT node (invisible)
     keywnode[0].keywordlevel = 0;
@@ -288,7 +288,7 @@ errno_t functionparameter_scan_fps(
 
 
                 long NBparamMAX =
-                    function_parameter_struct_connect(fpsname,
+                    fps_connect(fpsname,
                                                       &fps[fpsindex],
                                                       FPSCONNECT_SIMPLE);
 
