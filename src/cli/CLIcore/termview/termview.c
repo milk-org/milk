@@ -336,6 +336,51 @@ static inline int compare_doubles(const void *a, const void *b) {
 /* -----------------------------------------------------------------------
  * Main Screen Loop
  * ----------------------------------------------------------------------- */
+
+/* -----------------------------------------------------------------------
+ * Termview Refactored Context
+ * ----------------------------------------------------------------------- */
+typedef struct {
+    IMAGE *img;
+    int target_fps;
+    double current_cpu_usage;
+    double current_stream_fps;
+    uint64_t last_cnt0_for_fps;
+    uint64_t last_cnt0;
+    struct timespec last_time_real;
+    struct timespec last_time_cpu;
+    struct timespec last_render_real;
+    
+    int popup_type;
+    struct timespec popup_expiry_time;
+
+    int mouse_is_dragging;
+    int roi_is_dragging;
+    int last_mouse_x;
+    int last_mouse_y;
+    int roi_start_x;
+    int roi_start_y;
+    int roi_end_x;
+    int roi_end_y;
+    int input_mode;
+    char input_buf[64];
+    int input_len;
+
+    double *display_buffer;
+    int buffer_size;
+    tv_cell_t *screen;
+    tv_cell_t *prev_screen;
+    int screen_size;
+    char *frame_buffer;
+    size_t frame_buffer_size;
+    
+    long timeout_us;
+} tv_context_t;
+
+static void termview_update_fps_stats(tv_context_t *ctx);
+static void termview_handle_mouse_event(tv_context_t *ctx);
+static void termview_handle_keyboard_event(tv_context_t *ctx, int ch);
+
 errno_t termview_screen(const char *imagename, termview_options_t options)
 {
     IMAGE img;

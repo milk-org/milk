@@ -18,7 +18,11 @@ set(PERFBENCH_SCRIPTS
 # ──────────────────────────────────────────
 
 add_executable(milk-perfbench
-    milk-perfbench.c)
+    milk-perfbench.c
+    perfbench_setup.c
+    perfbench_perf.c
+    perfbench_sysmon.c
+    perfbench_report.c)
 
 target_include_directories(milk-perfbench PRIVATE
     ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
