@@ -10,6 +10,10 @@ message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 set(SOURCEFILES
 	${SRCNAME}.c
+	linARfilterPred_data.c
+	linARfilterPred_build.c
+	linARfilterPred_apply.c
+	linARfilterPred_pf.c
 	applyPF.c
 	build_linPF.c
 )
