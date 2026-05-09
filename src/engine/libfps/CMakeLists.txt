@@ -243,11 +243,21 @@ target_link_libraries(milk-fps-search PUBLIC
 )
 install(TARGETS milk-fps-search DESTINATION bin)
 
-add_executable(milk-fps-info milk-fps-info.c)
-target_link_libraries(milk-fps-info PUBLIC 
+add_executable(milk-fps-info
+    milk-fps-info.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data.c
+)
+target_compile_definitions(milk-fps-info PRIVATE
+    FPS_INFO_CONNECTIONS)
+target_include_directories(milk-fps-info PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+    ${CMAKE_SOURCE_DIR}/src/cli/overview
+)
+target_link_libraries(milk-fps-info PUBLIC
     milkfpsStandalone
-    pthread
-    m
+    ImageStreamIO milkprocessinfo
+    pthread m rt
 )
 install(TARGETS milk-fps-info DESTINATION bin)
 
