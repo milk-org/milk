@@ -176,6 +176,7 @@ install(FILES
     fps_procinfo_macros.h
     imgid_slice.h
     IMGID.h
+    milk_help.h
     DESTINATION include/libfps)
 
 # ==========================================
