@@ -10,4 +10,16 @@ long function_parameter_struct_connect(const char                *name,
                                        FUNCTION_PARAMETER_STRUCT *fps,
                                        int fpsconnectmode);
 
+/**
+ * @brief Short alias for function_parameter_struct_connect
+ */
+static inline long fps_connect(
+    const char *name,
+    FPS *fps,
+    int mode)
+{
+    return function_parameter_struct_connect(name, fps, mode);
+}
+
 #endif
+
