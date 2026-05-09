@@ -16,7 +16,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "unfold",
     .cmdkey      = "unfold",
-    .description = "image unfold, merge axis A into axis B"
+    .description = "image unfold, merge axis A into axis B",
+    .description_long =
+        "Reshape an image by merging one axis into another. For example, unfold a 3D cube (x, y, z) into a 2D image by merging z into y, producing dimensions (x, y*z). The total pixel count is preserved."
 };
 
 // input image names

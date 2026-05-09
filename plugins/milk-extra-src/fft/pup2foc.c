@@ -25,7 +25,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "pup2foc",
     .cmdkey      = "pup2foc",
-    .description = "pupil to focus by FFT"
+    .description = "pupil to focus by FFT",
+    .description_long =
+        "Propagate a wavefront from pupil plane to focal plane using FFT. Applies the Fraunhofer diffraction integral to compute the PSF from a pupil amplitude/phase map."
 };
 
 

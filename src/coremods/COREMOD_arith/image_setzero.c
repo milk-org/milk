@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imzero",
     .cmdkey      = "imzero",
-    .description = "set all image pixels to zero"
+    .description = "set all image pixels to zero",
+    .description_long =
+        "Zero-fill all pixel values in the target image stream. Operates in-place on the existing shared memory buffer, setting every element to 0."
 };
 
 

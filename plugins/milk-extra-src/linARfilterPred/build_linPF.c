@@ -56,7 +56,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkPF",
     .cmdkey      = "mkPF",
-    .description = "make linear predictive filter"
+    .description = "make linear predictive filter",
+    .description_long =
+        "Build a linear predictive filter from training data. Computes optimal FIR filter coefficients using least-squares."
 };
 
 

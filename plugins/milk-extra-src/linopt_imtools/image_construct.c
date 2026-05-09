@@ -16,7 +16,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imlinconstruct",
     .cmdkey      = "imlinconstruct",
     .description =
-        "construct image as linear sum of modes"
+        "construct image as linear sum of modes",
+    .description_long =
+        "Reconstruct an image as a linear combination of mode images. Applies coefficient vector to a mode cube to produce the output."
 };
 
 

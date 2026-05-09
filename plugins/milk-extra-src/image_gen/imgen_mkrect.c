@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkrect",
     .cmdkey      = "mkrect",
-    .description = "make rectangle"
+    .description = "make rectangle",
+    .description_long =
+        "Generate a filled rectangle on a 2D image with configurable position, size, and value."
 };
 
 /* ================================================================

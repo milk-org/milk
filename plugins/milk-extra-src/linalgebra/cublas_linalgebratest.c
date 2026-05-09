@@ -36,7 +36,9 @@ static int64_t lt_gpu = 1;
 static FPS_APP_INFO FPS_app_info_lt = {
     .fps_name = "linalgebratest",
     .cmdkey   = "linalgebratest",
-    .description = "test CUDA comp"
+    .description = "test CUDA comp",
+    .description_long =
+        "Test and benchmark cuBLAS linear algebra operations. Verifies GPU matrix multiply correctness and measures throughput."
 };
 #define FPS_PARAMS_LT(X) \
     X(".nbact", &lt_nact, \

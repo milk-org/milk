@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "ap2c",
     .cmdkey      = "ap2c",
-    .description = "amplitude, phase -> complex"
+    .description = "amplitude, phase -> complex",
+    .description_long =
+        "Construct a complex image from separate amplitude and phase images. Computes real = amp * cos(pha), imag = amp * sin(pha)."
 };
 
 

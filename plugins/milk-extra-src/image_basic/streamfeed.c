@@ -29,7 +29,9 @@ static double p_freq = 100.0;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imgstreamfeed",
     .cmdkey      = "imgstreamfeed",
-    .description = "feed stream of images"
+    .description = "feed stream of images",
+    .description_long =
+        "Feed a sequence of images from a 3D cube into a 2D shared memory stream, playing back slices at a configurable frame rate."
 };
 
 #define FPS_PARAMS(X) \

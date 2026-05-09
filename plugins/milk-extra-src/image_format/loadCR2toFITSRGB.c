@@ -35,7 +35,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "loadcr2torgb",
     .cmdkey      = "loadcr2torgb",
     .description =
-        "load CR2 file into R G B images"
+        "load CR2 file into R G B images",
+    .description_long =
+        "Load a Canon CR2 file and demosaic it into separate R, G, B FITS images."
 };
 
 #define FPS_PARAMS(X) \

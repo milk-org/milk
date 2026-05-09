@@ -16,7 +16,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imvecmult",
     .cmdkey      = "imvecmult",
-    .description = "multiply image by vector"
+    .description = "multiply image by vector",
+    .description_long =
+        "Multiply each slice of a 3D image cube by the corresponding element of a 1D vector. Applies element-wise scaling across the z-axis. Useful for applying modal coefficients to a mode cube."
 };
 
 static char iminname[

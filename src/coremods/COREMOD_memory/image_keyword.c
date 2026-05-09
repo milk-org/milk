@@ -38,7 +38,9 @@ imageID image_list_keywords(
 static FPS_APP_INFO FPS_app_info_listkw = {
     .fps_name    = "imlistkw",
     .cmdkey      = "imlistkw",
-    .description = "list image keywords"
+    .description = "list image keywords",
+    .description_long =
+        "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
 };
 
 static char p_listkw_imname[
@@ -85,7 +87,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imwritekwL",
     .cmdkey      = "imwritekwL",
     .description =
-        "write long type keyword"
+        "write long type keyword",
+    .description_long =
+        "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
 };
 
 static char p_imname[

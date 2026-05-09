@@ -30,7 +30,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "writefloatlock",
     .cmdkey      = "writefloatlock",
     .description =
-        "write float with file locking"
+        "write float with file locking",
+    .description_long =
+        "Write a FITS image as a raw 32-bit float binary file with file locking for safe concurrent access."
 };
 
 #define FPS_PARAMS(X) \

@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "crop2D",
     .cmdkey      = "crop2D",
-    .description = "crop 2D image"
+    .description = "crop 2D image",
+    .description_long =
+        "Extract a rectangular sub-region from a 2D image stream. Specify origin coordinates (x0, y0) and output dimensions (xsize, ysize). The cropped output is written to a shared memory stream."
 };
 
 

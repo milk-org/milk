@@ -65,7 +65,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "permut",
     .cmdkey      = "permut",
     .description =
-        "permut image quadrants"
+        "permut image quadrants",
+    .description_long =
+        "Permute image quadrants to shift the DC component to the center. Swaps the four quadrants of a 2D image for standard FFT display convention."
 };
 
 #define FPS_PARAMS(X) \

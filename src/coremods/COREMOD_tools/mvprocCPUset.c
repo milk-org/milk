@@ -52,7 +52,9 @@ static FPS_APP_INFO FPS_app_info_rtp = {
     .fps_name    = "rtprio",
     .cmdkey      = "rtprio",
     .description =
-        "set SCHED_FIFO priority"
+        "set SCHED_FIFO priority",
+    .description_long =
+        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS_RTP(X) \
@@ -81,7 +83,9 @@ static FPS_APP_INFO FPS_app_info_tset = {
     .fps_name    = "tsetpmove",
     .cmdkey      = "tsetpmove",
     .description =
-        "assign taskset to current process"
+        "assign taskset to current process",
+    .description_long =
+        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS_TSET(X) \
@@ -110,7 +114,9 @@ static FPS_APP_INFO FPS_app_info_tsete = {
     .fps_name    = "tsetpmoveext",
     .cmdkey      = "tsetpmoveext",
     .description =
-        "assign taskset for any process"
+        "assign taskset for any process",
+    .description_long =
+        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS_TSETE(X) \
@@ -144,7 +150,9 @@ static FPS_APP_INFO FPS_app_info_cset = {
     .fps_name    = "csetpmove",
     .cmdkey      = "csetpmove",
     .description =
-        "move current process to CPU set"
+        "move current process to CPU set",
+    .description_long =
+        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 static CLICMDDATA CLIcmddata_cset = {
@@ -168,7 +176,9 @@ static FPS_APP_INFO FPS_app_info = {
     .cmdkey      = "csetandprioext",
     .description =
         "move PID to CPU set and assign "
-        "RT priority"
+        "RT priority",
+    .description_long =
+        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS(X) \

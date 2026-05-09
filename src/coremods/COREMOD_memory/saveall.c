@@ -42,7 +42,9 @@ static FPS_APP_INFO FPS_app_info_snap = {
     .fps_name    = "imsaveallsnap",
     .cmdkey      = "imsaveallsnap",
     .description =
-        "save all images in directory"
+        "save all images in directory",
+    .description_long =
+        "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
 };
 
 static char p_dirname_snap[
@@ -90,7 +92,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imsaveallseq",
     .cmdkey      = "imsaveallseq",
     .description =
-        "save all images, sequence"
+        "save all images, sequence",
+    .description_long =
+        "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
 };
 
 static char p_dirname[

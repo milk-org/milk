@@ -26,7 +26,9 @@ static long long p_nmax = 10;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "testfftspeed",
     .cmdkey      = "testfftspeed",
-    .description = "test FFTW speed"
+    .description = "test FFTW speed",
+    .description_long =
+        "Benchmark FFTW performance for a given image size and transform type. Measures throughput in megapixels/s and reports optimal plan wisdom."
 };
 
 #define FPS_PARAMS(X) \

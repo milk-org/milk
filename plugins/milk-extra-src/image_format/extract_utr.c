@@ -30,7 +30,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cred_cds_utr",
     .cmdkey      = "cred_cds_utr",
-    .description = "RT compute of CDS/UTR for camera streams"
+    .description = "RT compute of CDS/UTR for camera streams",
+    .description_long =
+        "Compute up-the-ramp (UTR) or correlated double sampling (CDS) readout from IR detector frame sequences in real-time."
 };
 
 

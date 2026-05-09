@@ -14,7 +14,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "vec2im",
     .cmdkey      = "vec2im",
-    .description = "remap vector to image"
+    .description = "remap vector to image",
+    .description_long =
+        "Reconstruct a 2D image from a 1D vector using a pixel table. Inverse of image_to_vec."
 };
 
 

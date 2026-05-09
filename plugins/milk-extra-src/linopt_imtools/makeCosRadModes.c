@@ -16,7 +16,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkcosrmodes",
     .cmdkey      = "mkcosrmodes",
-    .description = "make basis of cosine radial modes"
+    .description = "make basis of cosine radial modes",
+    .description_long =
+        "Generate a basis of cosine radial modes within a circular aperture. Useful for radial wavefront decomposition."
 };
 
 

@@ -16,7 +16,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "pixunmap",
     .cmdkey      = "pixunmap",
-    .description = "pixel unmapping of image to 1D"
+    .description = "pixel unmapping of image to 1D",
+    .description_long =
+        "Reverse-map a 2D image to a 1D array using an index map. Each pixel in the input image is placed at the position specified by the unmap table. Inverse operation of pixremap."
 };
 
 // input image

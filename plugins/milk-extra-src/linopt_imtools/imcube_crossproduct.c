@@ -19,7 +19,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imcubeXprod",
     .cmdkey      = "imcubeXprod",
-    .description = "cross product of two image cubes"
+    .description = "cross product of two image cubes",
+    .description_long =
+        "Compute the cross-product matrix of two image cubes. Each element (i,j) is the dot product of slice i from cube A with slice j from cube B."
 };
 
 

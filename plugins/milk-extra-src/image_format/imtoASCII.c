@@ -22,7 +22,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im2ascii",
     .cmdkey      = "im2ascii",
     .description =
-        "convert image file to ASCII"
+        "convert image file to ASCII",
+    .description_long =
+        "Export image pixel values to a text (ASCII) file with configurable formatting and delimiters."
 };
 
 #define FPS_PARAMS(X) \

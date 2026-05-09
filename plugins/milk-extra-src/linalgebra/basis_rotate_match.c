@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "basisrotmatch",
     .cmdkey      = "basisrotmatch",
-    .description = "rotate modal basis to fit modes"
+    .description = "rotate modal basis to fit modes",
+    .description_long =
+        "Rotate a modal basis to best fit a set of target modes using least-squares matching."
 };
 
 

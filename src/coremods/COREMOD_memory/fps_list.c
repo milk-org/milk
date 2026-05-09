@@ -24,7 +24,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "fpslist",
     .cmdkey      = "fpslist",
     .description =
-        "list function parameter structures"
+        "list function parameter structures",
+    .description_long =
+        "List all FPS (Function Parameter Structure) instances currently active in shared memory. Shows FPS name, status, and associated process."
 };
 
 

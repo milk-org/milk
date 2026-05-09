@@ -30,7 +30,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imgstreamrec",
     .cmdkey      = "imgstreamrec",
     .description =
-        "record stream of images"
+        "record stream of images",
+    .description_long =
+        "Record frames from a 2D shared memory stream into a 3D cube or sequence of FITS files on disk."
 };
 
 #define FPS_PARAMS(X) \

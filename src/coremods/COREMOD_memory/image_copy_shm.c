@@ -26,7 +26,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imcpshm",
     .cmdkey      = "imcpshm",
-    .description = "copy image to shm"
+    .description = "copy image to shm",
+    .description_long =
+        "Copy an image from local memory to shared memory (/dev/shm), making it accessible to other processes. Creates the shared memory segment if it does not already exist."
 };
 
 

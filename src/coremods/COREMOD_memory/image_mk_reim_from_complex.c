@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "c2ri",
     .cmdkey      = "c2ri",
-    .description = "complex -> re, im"
+    .description = "complex -> re, im",
+    .description_long =
+        "Decompose a complex image into its real and imaginary components. Input is a complex-valued stream; outputs are two real-valued streams."
 };
 
 

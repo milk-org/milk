@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkgridpix",
     .cmdkey      = "mkgridpix",
-    .description = "make regular grid"
+    .description = "make regular grid",
+    .description_long =
+        "Generate a regular pixel grid pattern with configurable spacing and offset."
 };
 
 /* ================================================================
