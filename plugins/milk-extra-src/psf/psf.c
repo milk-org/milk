@@ -50,7 +50,9 @@ static FPS_APP_INFO FPS_app_info_psm = {
     .fps_name    = "psfseqmeas",
     .cmdkey      = "psfseqmeas",
     .description =
-        "measure PSF sequence"
+        "measure PSF sequence",
+    .description_long =
+        "Measure PSF properties from a sequence of images. Computes centroid, FWHM, Strehl ratio, and encircled energy."
 };
 
 #define FPS_PARAMS_PSM(X) \

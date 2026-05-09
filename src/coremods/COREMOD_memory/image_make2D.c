@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mk2Dim",
     .cmdkey      = "mk2Dim",
-    .description = "make 2D image"
+    .description = "make 2D image",
+    .description_long =
+        "Create a new 2D image in shared memory with specified dimensions and data type. Initializes all pixel values to zero."
 };
 
 

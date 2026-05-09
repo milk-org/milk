@@ -23,7 +23,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "breakcube",
     .cmdkey      = "breakcube",
     .description =
-        "break cube into individual images"
+        "break cube into individual images",
+    .description_long =
+        "Split a 3D FITS cube into individual 2D FITS files, one per slice along the z-axis. Output files are numbered sequentially."
 };
 
 

@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "lincRMiter",
     .cmdkey      = "lincRMiter",
-    .description = "estimate response matrix from input and output"
+    .description = "estimate response matrix from input and output",
+    .description_long =
+        "Estimate a response matrix from measured input-output pairs using least-squares linear regression."
 };
 
 

@@ -27,7 +27,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "shmimmerge",
     .cmdkey      = "shmimmerge",
     .description =
-        "Merge N in stream into out stream"
+        "Merge N in stream into out stream",
+    .description_long =
+        "Merge multiple 2D image streams into a single output stream by tiling them side-by-side or stacking them into a 3D cube."
 };
 
 

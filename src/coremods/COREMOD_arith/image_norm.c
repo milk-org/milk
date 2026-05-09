@@ -25,7 +25,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "normslice",
     .cmdkey      = "normslice",
-    .description = "image norm by slice"
+    .description = "image norm by slice",
+    .description_long =
+        "Compute the norm (sum of absolute values or RMS) of each slice in a 3D image cube. Returns a 1D array of per-slice norms. Useful for monitoring signal levels across time series or modal decompositions."
 };
 
 

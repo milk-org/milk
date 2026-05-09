@@ -35,7 +35,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "writef2file",
     .cmdkey      = "writef2file",
     .description =
-        "write float to file"
+        "write float to file",
+    .description_long =
+        "File system utility operations: count files matching a pattern, list directory contents, and check file existence."
 };
 
 

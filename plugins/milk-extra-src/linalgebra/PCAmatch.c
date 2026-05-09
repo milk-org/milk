@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "PCAmatch",
     .cmdkey      = "PCAmatch",
-    .description = "find matching linear combination across two modal bases"
+    .description = "find matching linear combination across two modal bases",
+    .description_long =
+        "Find the best matching linear combination between two modal bases using Principal Component Analysis cross-matching."
 };
 
 

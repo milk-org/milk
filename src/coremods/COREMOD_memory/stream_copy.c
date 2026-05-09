@@ -28,7 +28,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "shmimcopy",
     .cmdkey      = "shmimcopy",
     .description =
-        "copy in stream to existing out stream"
+        "copy in stream to existing out stream",
+    .description_long =
+        "Copy frames from one shared memory stream to another in real-time. Triggered by semaphore on the input stream. Supports type conversion between streams of different data types."
 };
 
 

@@ -31,7 +31,9 @@ static long long p_nbstep = 100;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "profile",
     .cmdkey      = "profile",
-    .description = "radial profile"
+    .description = "radial profile",
+    .description_long =
+        "Compute the azimuthally-averaged radial profile of a 2D image centered on a specified point."
 };
 
 #define FPS_PARAMS(X) \

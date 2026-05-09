@@ -14,7 +14,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mask2pixtable",
     .cmdkey      = "mask2pixtable",
-    .description = "make pixel tables from mask"
+    .description = "make pixel tables from mask",
+    .description_long =
+        "Convert a 2D binary mask into a pixel index table. Lists coordinates of active (non-zero) pixels for efficient vectorized access."
 };
 
 

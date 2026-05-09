@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "rotateim",
     .cmdkey      = "rotateim",
-    .description = "rotate 2D image"
+    .description = "rotate 2D image",
+    .description_long =
+        "Rotate a 2D image by an arbitrary angle using bilinear interpolation. Rotation center and angle are configurable."
 };
 
 

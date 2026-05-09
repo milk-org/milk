@@ -45,7 +45,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "MVMmextrmodes",
     .cmdkey      = "MVMmextrmodes",
-    .description = "extract modes by MVM"
+    .description = "extract modes by MVM",
+    .description_long =
+        "Extract modal coefficients from a wavefront by matrix-vector multiplication. Projects the input onto a pre-computed mode basis."
 };
 
 

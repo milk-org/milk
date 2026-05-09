@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkhexsegpup",
     .cmdkey      = "mkhexsegpup",
-    .description = "make hex seg pupil"
+    .description = "make hex seg pupil",
+    .description_long =
+        "Generate a hexagonally-segmented pupil pattern for simulating segmented-mirror telescopes (e.g., JWST, ELT)."
 };
 
 /* ================================================================

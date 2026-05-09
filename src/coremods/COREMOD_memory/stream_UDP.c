@@ -67,7 +67,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imudptransmit",
     .cmdkey      = "imudptransmit",
     .description =
-        "transmit image over UDP network"
+        "transmit image over UDP network",
+    .description_long =
+        "Transmit or receive image stream data over UDP for low-latency network streaming. Suitable for real-time telemetry where occasional packet loss is acceptable."
 };
 
 #define FPS_PARAMS(X) \
@@ -132,7 +134,9 @@ static FPS_APP_INFO FPS_app_info_rx = {
     .cmdkey      = "imudpreceive",
     .description =
         "receive image(s) over UDP "
-        "network"
+        "network",
+    .description_long =
+        "Transmit or receive image stream data over UDP for low-latency network streaming. Suitable for real-time telemetry where occasional packet loss is acceptable."
 };
 
 #define FPS_PARAMS_RX(X) \

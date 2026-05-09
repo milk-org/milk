@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "ri2c",
     .cmdkey      = "ri2c",
-    .description = "real, imaginary -> complex"
+    .description = "real, imaginary -> complex",
+    .description_long =
+        "Construct a complex image from separate real and imaginary component images. Combines two real-valued streams into one complex stream."
 };
 
 

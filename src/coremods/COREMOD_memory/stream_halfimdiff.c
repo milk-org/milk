@@ -24,7 +24,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streamhalfdiff",
     .cmdkey      = "streamhalfdiff",
     .description =
-        "half-image difference"
+        "half-image difference",
+    .description_long =
+        "Compute the difference between the left and right halves of an image stream. Produces a half-width output. Used for differential measurements in optical systems."
 };
 
 

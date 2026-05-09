@@ -16,7 +16,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkrnd",
     .cmdkey      = "mkrnd",
-    .description = "make random image"
+    .description = "make random image",
+    .description_long =
+        "Generate a random image with Poisson or Gaussian noise for testing and simulation."
 };
 
 

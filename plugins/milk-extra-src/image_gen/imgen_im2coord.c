@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im2coord",
     .cmdkey      = "im2coord",
-    .description = "make coordinate image"
+    .description = "make coordinate image",
+    .description_long =
+        "Create a coordinate image where each pixel value represents its (x, y) position. Useful for generating spatial masks and geometric transformations."
 };
 
 /* ================================================================

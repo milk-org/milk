@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mklincoord",
     .cmdkey      = "mklincoord",
-    .description = "make linear coordinate"
+    .description = "make linear coordinate",
+    .description_long =
+        "Generate a linear coordinate ramp image along a specified axis."
 };
 
 /* ================================================================

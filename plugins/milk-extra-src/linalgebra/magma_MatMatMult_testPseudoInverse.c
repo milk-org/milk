@@ -39,7 +39,9 @@ static char tp_o[FUNCTION_PARAMETER_STRMAXLEN]
 static FPS_APP_INFO FPS_app_info_tp = {
     .fps_name = "cudatestpsinv",
     .cmdkey   = "cudatestpsinv",
-    .description = "test pseudo inverse"
+    .description = "test pseudo inverse",
+    .description_long =
+        "Test pseudo-inverse computation using MAGMA GPU library. Validates matrix inversion accuracy and performance."
 };
 #define FPS_PARAMS_TP(X) \
     X(".matA", tp_a, \

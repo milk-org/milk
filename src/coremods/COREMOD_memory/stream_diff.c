@@ -24,7 +24,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streamdiff",
     .cmdkey      = "streamdiff",
     .description =
-        "compute stream difference"
+        "compute stream difference",
+    .description_long =
+        "Compute the pixel-wise difference between two image streams in real-time. Output stream = stream_A - stream_B. Operates as a continuous stream processor triggered by semaphore."
 };
 
 

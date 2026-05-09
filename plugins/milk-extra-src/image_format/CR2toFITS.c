@@ -33,7 +33,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cr2tofits",
     .cmdkey      = "cr2tofits",
     .description =
-        "convert cr2 file to fits"
+        "convert cr2 file to fits",
+    .description_long =
+        "Convert Canon CR2 raw camera files to FITS format. Extracts the raw sensor data and writes it as a FITS image."
 };
 
 #define FPS_PARAMS(X) \

@@ -31,7 +31,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imtrunc",
     .cmdkey      = "imtrunc",
     .description =
-        "truncate pixel values between min and max"
+        "truncate pixel values between min and max",
+    .description_long =
+        "Truncate pixel values in an image stream by clamping them to a specified range [min, max]. Pixels below min are set to min, pixels above max are set to max. Useful for filtering outliers or enforcing dynamic range limits in real-time streams."
 };
 
 

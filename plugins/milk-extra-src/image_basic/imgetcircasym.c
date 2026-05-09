@@ -33,7 +33,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imgetcircasym",
     .cmdkey      = "imgetcircasym",
     .description =
-        "extract non-circ symmetric part"
+        "extract non-circ symmetric part",
+    .description_long =
+        "Extract the non-circularly-symmetric component of a 2D image. Subtracts the azimuthal average to isolate asymmetric structures."
 };
 
 #define FPS_PARAMS(X) \

@@ -27,7 +27,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "loadfitsimgcube",
     .cmdkey      = "loadfitsimgcube",
     .description =
-        "load images into a single cube"
+        "load images into a single cube",
+    .description_long =
+        "Load multiple FITS image files from disk and assemble them into a single 3D cube in shared memory."
 };
 
 #define FPS_PARAMS(X) \

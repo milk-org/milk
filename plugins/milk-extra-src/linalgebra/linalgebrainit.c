@@ -27,7 +27,9 @@ int LINALGEBRA_init();
 static FPS_APP_INFO FPS_app_info_li = {
     .fps_name = "linalgebrainit",
     .cmdkey   = "linalgebrainit",
-    .description = "init linalgebra"
+    .description = "init linalgebra",
+    .description_long =
+        "Initialize linear algebra subsystem. Sets up BLAS/LAPACK configuration and GPU context if available."
 };
 #define FPS_PARAMS_LI(X)
 #include "fps.h"

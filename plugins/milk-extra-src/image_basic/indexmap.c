@@ -29,7 +29,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imindexmap",
     .cmdkey      = "imindexmap",
     .description =
-        "map values using index map"
+        "map values using index map",
+    .description_long =
+        "Map pixel values through a lookup table defined by an index map. Each output pixel takes the value at the index specified by the map."
 };
 
 #define FPS_PARAMS(X) \

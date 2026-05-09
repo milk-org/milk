@@ -13,7 +13,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "extractRGGBchan",
     .cmdkey      = "extractRGGBchan",
-    .description = "extract RGGB channels from color image"
+    .description = "extract RGGB channels from color image",
+    .description_long =
+        "Extract individual RGGB Bayer channels from a raw color camera image into separate monochrome images."
 };
 
 

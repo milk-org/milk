@@ -27,7 +27,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streamave",
     .cmdkey      = "streamave",
     .description =
-        "average stream of images"
+        "average stream of images",
+    .description_long =
+        "Compute a running average of image stream frames. Accumulates N consecutive frames and writes the mean to the output stream. Useful for background estimation and noise reduction."
 };
 
 

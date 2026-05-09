@@ -18,7 +18,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "slicenorm",
     .cmdkey      = "normalizeslice",
-    .description = "image normalize over mask by slice"
+    .description = "image normalize over mask by slice",
+    .description_long =
+        "Normalize each slice of a 3D image cube using a mask. For each slice, compute the weighted mean over the mask region and divide. Produces a cube where each slice has unit mean within the mask."
 };
 
 // input image names

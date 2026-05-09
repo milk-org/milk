@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkslopexy",
     .cmdkey      = "mkslopexy",
-    .description = "make slope image"
+    .description = "make slope image",
+    .description_long =
+        "Generate a planar slope image with configurable gradients along x and y axes."
 };
 
 /* ================================================================

@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "segs2wfmodes",
     .cmdkey      = "segs2wfmodes",
-    .description = "segments to WF modes"
+    .description = "segments to WF modes",
+    .description_long =
+        "Convert segment piston/tip/tilt commands into wavefront mode images for segmented-mirror telescope simulation."
 };
 
 /* ================================================================

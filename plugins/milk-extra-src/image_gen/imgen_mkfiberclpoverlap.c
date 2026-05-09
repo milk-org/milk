@@ -8,7 +8,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkfiberclpoverlap",
     .cmdkey      = "mkfiberclpoverlap",
-    .description = "fiber coupling overlap integral"
+    .description = "fiber coupling overlap integral",
+    .description_long =
+        "Compute the overlap integral between a PSF and a fiber mode for fiber coupling efficiency estimation in coronagraphic instruments."
 };
 
 /* ================================================================

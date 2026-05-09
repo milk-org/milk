@@ -40,7 +40,9 @@ static FPS_APP_INFO FPS_app_info_1 = {
     .fps_name    = "addim",
     .cmdkey      = "addim",
     .description =
-        "add two 2D images with offset"
+        "add two 2D images with offset",
+    .description_long =
+        "Add two 3D image cubes with a configurable spatial offset. Supports sub-pixel alignment via interpolation."
 };
 
 #define FPS_PARAMS_1(X) \
@@ -129,7 +131,9 @@ static FPS_APP_INFO FPS_app_info_2 = {
     .fps_name    = "addim3D",
     .cmdkey      = "addim3D",
     .description =
-        "add two 3D images with offset"
+        "add two 3D images with offset",
+    .description_long =
+        "Add two 3D image cubes with a configurable spatial offset. Supports sub-pixel alignment via interpolation."
 };
 
 #define FPS_PARAMS_2(X) \

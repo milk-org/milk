@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "resizeim",
     .cmdkey      = "resizeim",
-    .description = "resize 2D image"
+    .description = "resize 2D image",
+    .description_long =
+        "Resize a 2D image to arbitrary dimensions using bilinear interpolation."
 };
 
 

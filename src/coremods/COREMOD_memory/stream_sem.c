@@ -121,7 +121,9 @@ static FPS_APP_INFO FPS_app_info_seminfo = {
     .fps_name    = "imseminfo",
     .cmdkey      = "imseminfo",
     .description =
-        "display semaphore info"
+        "display semaphore info",
+    .description_long =
+        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, and monitoring semaphore state for inter-process synchronization."
 };
 
 static CLICMDDATA CLIcmddata_seminfo = {
@@ -144,7 +146,9 @@ static FPS_APP_INFO FPS_app_info_sempost = {
     .fps_name    = "imsetsempost",
     .cmdkey      = "imsetsempost",
     .description =
-        "post image semaphore"
+        "post image semaphore",
+    .description_long =
+        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, and monitoring semaphore state for inter-process synchronization."
 };
 
 static CLICMDDATA CLIcmddata_sempost = {
@@ -168,7 +172,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imsetsempostl",
     .cmdkey      = "imsetsempostl",
     .description =
-        "post image semaphore loop"
+        "post image semaphore loop",
+    .description_long =
+        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, and monitoring semaphore state for inter-process synchronization."
 };
 
 static long long p_dtus = 1000;
@@ -218,7 +224,9 @@ static FPS_APP_INFO FPS_app_info_semwait = {
     .fps_name    = "imsetsemwait",
     .cmdkey      = "imsetsemwait",
     .description =
-        "wait image semaphore"
+        "wait image semaphore",
+    .description_long =
+        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, and monitoring semaphore state for inter-process synchronization."
 };
 
 static CLICMDDATA CLIcmddata_semwait = {
@@ -242,7 +250,9 @@ static FPS_APP_INFO FPS_app_info_semflush = {
     .fps_name    = "imsetsemflush",
     .cmdkey      = "imsetsemflush",
     .description =
-        "flush image semaphore"
+        "flush image semaphore",
+    .description_long =
+        "Manage semaphores on shared memory image streams. Supports posting, waiting, flushing, and monitoring semaphore state for inter-process synchronization."
 };
 
 static CLICMDDATA CLIcmddata_semflush = {

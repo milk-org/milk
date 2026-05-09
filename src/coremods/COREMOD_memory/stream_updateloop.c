@@ -78,7 +78,9 @@ static FPS_APP_INFO FPS_app_info_burst = {
     .fps_name    = "streamburst",
     .cmdkey      = "streamburst",
     .description =
-        "send burst of frames to stream"
+        "send burst of frames to stream",
+    .description_long =
+        "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
 };
 
 #define FPS_PARAMS_BURST(X) \
@@ -116,7 +118,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "creaimstream",
     .cmdkey      = "creaimstream",
     .description =
-        "create 2D stream from 3D cube"
+        "create 2D stream from 3D cube",
+    .description_long =
+        "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
 };
 
 #define FPS_PARAMS(X) \
@@ -200,7 +204,9 @@ static FPS_APP_INFO FPS_app_info_strig = {
     .cmdkey      = "creaimstreamstrig",
     .description =
         "create 2D stream from 3D cube "
-        "(sem-triggered)"
+        "(sem-triggered)",
+    .description_long =
+        "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
 };
 
 static CLICMDDATA CLIcmddata_strig = {

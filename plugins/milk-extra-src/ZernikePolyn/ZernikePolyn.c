@@ -95,7 +95,9 @@ static FPS_APP_INFO FPS_app_info_mkz = {
     .fps_name    = "mkzer",
     .cmdkey      = "mkzer",
     .description =
-        "create Zernike polynomial"
+        "create Zernike polynomial",
+    .description_long =
+        "Compute and manipulate Zernike polynomials for wavefront analysis. Supports piston removal and modal decomposition."
 };
 
 #define FPS_PARAMS_MKZ(X) \
@@ -182,7 +184,9 @@ static FPS_APP_INFO FPS_app_info_rmp = {
     .fps_name    = "rmcpiston",
     .cmdkey      = "rmcpiston",
     .description =
-        "remove piston term from WF cube"
+        "remove piston term from WF cube",
+    .description_long =
+        "Compute and manipulate Zernike polynomials for wavefront analysis. Supports piston removal and modal decomposition."
 };
 
 #define FPS_PARAMS_RMP(X) \
