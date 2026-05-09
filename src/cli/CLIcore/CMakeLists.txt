@@ -250,6 +250,36 @@ target_link_libraries(milk-stream-graph PUBLIC
     ImageStreamIO milkprocessinfo milkfps m rt pthread)
 install(TARGETS milk-stream-graph DESTINATION bin)
 
+# milk-stream-info: detailed stream info with connections
+add_executable(milk-stream-info
+    ../overview/milk-stream-info.c
+    ../overview/overview_data.c
+)
+target_include_directories(milk-stream-info PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+    ${CMAKE_SOURCE_DIR}/src/cli/overview
+)
+target_link_libraries(milk-stream-info PUBLIC
+    ImageStreamIO milkprocessinfo milkfps m rt pthread)
+install(TARGETS milk-stream-info DESTINATION bin)
+
+# milk-procinfo-info: detailed processinfo with connections
+add_executable(milk-procinfo-info
+    ../overview/milk-procinfo-info.c
+    ../overview/overview_data.c
+)
+target_include_directories(milk-procinfo-info PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+    ${CMAKE_SOURCE_DIR}/src/cli/overview
+)
+target_link_libraries(milk-procinfo-info PUBLIC
+    ImageStreamIO milkprocessinfo milkfps m rt pthread)
+install(TARGETS milk-procinfo-info DESTINATION bin)
+
 # TESTING
 
 include(CTest)
