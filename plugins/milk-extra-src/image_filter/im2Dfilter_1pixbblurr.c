@@ -20,7 +20,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im2Dfilt1pblurr",
     .cmdkey      = "im2Dfilt1pblurr",
-    .description = "1 pixel radual blurr, can be iterated"
+    .description = "1 pixel radual blurr, can be iterated",
+    .description_long =
+        "Apply a 1-pixel box blur to a 2D image. Can be iterated multiple times to approximate a Gaussian blur via the central limit theorem."
 };
 
 

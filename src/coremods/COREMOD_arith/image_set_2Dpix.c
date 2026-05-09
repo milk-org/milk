@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "setpix",
     .cmdkey      = "setpix",
-    .description = "set image pixel value"
+    .description = "set image pixel value",
+    .description_long =
+        "Set the value of a single pixel at coordinates (x, y) in a 2D image stream. Useful for injecting test signals or modifying individual pixel values in shared memory."
 };
 
 

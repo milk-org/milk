@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "SVDmkM",
     .cmdkey      = "SVDmkM",
-    .description = "reconstruct SVD M"
+    .description = "reconstruct SVD M",
+    .description_long =
+        "Reconstruct a matrix from its SVD components. Computes M = U * S * V^T from pre-computed U, S, V matrices."
 };
 
 

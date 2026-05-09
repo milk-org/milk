@@ -26,7 +26,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streammlim",
     .cmdkey      = "streammlim",
     .description =
-        "monitor stream values for safety"
+        "monitor stream values for safety",
+    .description_long =
+        "Monitor pixel values in a stream and flag frames where values exceed configurable min/max thresholds. Reports out-of-range statistics."
 };
 
 

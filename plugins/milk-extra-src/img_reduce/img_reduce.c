@@ -74,7 +74,9 @@ static FPS_APP_INFO FPS_app_info_bpf = {
     .fps_name    = "rmbadpixfast",
     .cmdkey      = "rmbadpixfast",
     .description =
-        "remove bad pixels (fast algo)"
+        "remove bad pixels (fast algo)",
+    .description_long =
+        "Reduce raw astronomical image data: apply dark subtraction, flat fielding, and bad pixel correction to image cubes."
 };
 
 #define FPS_PARAMS_BPF(X) \
@@ -157,7 +159,9 @@ static FPS_APP_INFO FPS_app_info_bps = {
     .fps_name    = "rmbadpixfasts",
     .cmdkey      = "rmbadpixfasts",
     .description =
-        "remove bad pixels (fast, stream)"
+        "remove bad pixels (fast, stream)",
+    .description_long =
+        "Reduce raw astronomical image data: apply dark subtraction, flat fielding, and bad pixel correction to image cubes."
 };
 
 #define FPS_PARAMS_BPS(X) \
@@ -237,7 +241,9 @@ static FPS_APP_INFO FPS_app_info_css = {
     .fps_name    = "cubesimplestat",
     .cmdkey      = "cubesimplestat",
     .description =
-        "simple data cube stats"
+        "simple data cube stats",
+    .description_long =
+        "Reduce raw astronomical image data: apply dark subtraction, flat fielding, and bad pixel correction to image cubes."
 };
 
 #define FPS_PARAMS_CSS(X) \
@@ -326,7 +332,9 @@ static FPS_APP_INFO FPS_app_info_cn = {
     .fps_name    = "imcenternorm",
     .cmdkey      = "imcenternorm",
     .description =
-        "recenter and normalize image"
+        "recenter and normalize image",
+    .description_long =
+        "Reduce raw astronomical image data: apply dark subtraction, flat fielding, and bad pixel correction to image cubes."
 };
 
 #define FPS_PARAMS_CN(X) \
@@ -433,7 +441,9 @@ static FPS_APP_INFO FPS_app_info_cp = {
     .fps_name    = "imgcubeprocess",
     .cmdkey      = "imgcubeprocess",
     .description =
-        "data cube process"
+        "data cube process",
+    .description_long =
+        "Reduce raw astronomical image data: apply dark subtraction, flat fielding, and bad pixel correction to image cubes."
 };
 
 #define FPS_PARAMS_CP(X) \

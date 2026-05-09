@@ -28,7 +28,9 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "loadfits",
     .cmdkey      = "loadfits",
-    .description = "load FITS format file"
+    .description = "load FITS format file",
+    .description_long =
+        "Load a FITS file from disk into a shared memory image stream. Supports 2D and 3D images with automatic data type detection."
 };
 
 // CLI function arguments and parameters

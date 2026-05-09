@@ -30,7 +30,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streammon",
     .cmdkey      = "streammon",
-    .description = "stream monitor with multi-level time binning and circular buffer"
+    .description = "stream monitor with multi-level time binning and circular buffer",
+    .description_long =
+        "Monitor a shared memory stream with multi-level temporal binning and circular buffer logging. Tracks frame rate, statistics, and timing jitter."
 };
 
 

@@ -25,7 +25,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "rmall",
     .cmdkey      = "rmall",
-    .description = "remove all images"
+    .description = "remove all images",
+    .description_long =
+        "Remove all images and variables from the current process memory space. Frees all locally allocated image buffers but does not destroy shared memory segments."
 };
 
 

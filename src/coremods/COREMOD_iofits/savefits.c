@@ -32,7 +32,9 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "savefits",
     .cmdkey      = "saveFITS",
-    .description = "save image as FITS"
+    .description = "save image as FITS",
+    .description_long =
+        "Save a shared memory image stream to a FITS file on disk. Preserves keywords, data type, and multi-dimensional structure."
 };
 
 

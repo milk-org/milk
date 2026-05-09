@@ -23,7 +23,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im3Dto2D",
     .cmdkey      = "im3Dto2D",
     .description =
-        "collapse first 2 axis of 3D image"
+        "collapse first 2 axis of 3D image",
+    .description_long =
+        "Collapse the first two axes of a 3D image into a single axis. Reshapes (x, y, z) into (x*y, z) for vectorized processing."
 };
 
 #define FPS_PARAMS(X) \

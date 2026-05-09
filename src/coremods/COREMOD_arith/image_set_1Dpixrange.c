@@ -23,7 +23,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "setpix1D",
     .cmdkey      = "setpix1Drange",
     .description =
-        "set image pixel value over range"
+        "set image pixel value over range",
+    .description_long =
+        "Set a contiguous range of pixels in a 1D image or along the linear memory layout of a multi-dimensional image. Specify start index, end index, and the value to assign."
 };
 
 

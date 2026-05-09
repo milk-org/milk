@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "SVDmkU",
     .cmdkey      = "SVDmkU",
-    .description = "compute SVD U"
+    .description = "compute SVD U",
+    .description_long =
+        "Compute only the U matrix of the SVD decomposition for large matrices where the full SVD is memory-prohibitive."
 };
 
 

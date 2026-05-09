@@ -87,7 +87,9 @@ static FPS_APP_INFO FPS_app_info_status = {
     .fps_name    = "imsetstatus",
     .cmdkey      = "imsetstatus",
     .description =
-        "set image status variable"
+        "set image status variable",
+    .description_long =
+        "Reset or set the frame counter and write count of a shared memory image stream. Useful for synchronization and testing."
 };
 
 static CLICMDDATA CLIcmddata_status = {
@@ -114,7 +116,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imsetcnt0",
     .cmdkey      = "imsetcnt0",
     .description =
-        "set image cnt0 variable"
+        "set image cnt0 variable",
+    .description_long =
+        "Reset or set the frame counter and write count of a shared memory image stream. Useful for synchronization and testing."
 };
 
 static FPS_CLI_BINDING my_bindings[] = {
@@ -157,7 +161,9 @@ static FPS_APP_INFO FPS_app_info_cnt1 = {
     .fps_name    = "imsetcnt1",
     .cmdkey      = "imsetcnt1",
     .description =
-        "set image cnt1 variable"
+        "set image cnt1 variable",
+    .description_long =
+        "Reset or set the frame counter and write count of a shared memory image stream. Useful for synchronization and testing."
 };
 
 static CLICMDDATA CLIcmddata_cnt1 = {

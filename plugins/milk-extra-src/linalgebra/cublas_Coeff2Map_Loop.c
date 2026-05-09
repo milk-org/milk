@@ -46,7 +46,9 @@ static FPS_APP_INFO FPS_app_info_cm = {
     .fps_name = "cudacoeff2map",
     .cmdkey   = "cudacoeff2map",
     .description =
-        "CUDA multiply vector by modes"
+        "CUDA multiply vector by modes",
+    .description_long =
+        "GPU-accelerated coefficient-to-map conversion using cuBLAS. Continuously transforms modal coefficients into spatial maps."
 };
 #define FPS_PARAMS_CM(X) \
     X(".modes", cm_m, \
@@ -112,7 +114,9 @@ static FPS_APP_INFO FPS_app_info_co = {
     .fps_name = "cudacoeffo2map",
     .cmdkey   = "cudacoeffo2map",
     .description =
-        "CUDA coeff2map with offset"
+        "CUDA coeff2map with offset",
+    .description_long =
+        "GPU-accelerated coefficient-to-map conversion using cuBLAS. Continuously transforms modal coefficients into spatial maps."
 };
 #define FPS_PARAMS_CO(X) \
     X(".modes", co_m, \

@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "setcol",
     .cmdkey      = "setcol",
-    .description = "set image column pixel values"
+    .description = "set image column pixel values",
+    .description_long =
+        "Set all pixels in a specified column of a 2D image to a given value. The column index and target value are specified as parameters."
 };
 
 

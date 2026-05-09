@@ -102,7 +102,9 @@ static FPS_APP_INFO FPS_app_info_la = {
     .fps_name = "pfloadascii",
     .cmdkey   = "pfloadascii",
     .description =
-        "load ascii files to PF input"
+        "load ascii files to PF input",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_LA(X) \
     X(".tstart", &la_tstart, \
@@ -177,7 +179,9 @@ static FPS_APP_INFO FPS_app_info_sb = {
     .fps_name = "mselblock",
     .cmdkey   = "mselblock",
     .description =
-        "select modes belonging to block"
+        "select modes belonging to block",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_SB(X) \
     X(".in_name", sb_in, \
@@ -242,7 +246,9 @@ static FPS_APP_INFO FPS_app_info_rs = {
     .fps_name = "imrepshiftx",
     .cmdkey   = "imrepshiftx",
     .description =
-        "repeat and shift image along X"
+        "repeat and shift image along X",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_RS(X) \
     X(".in_name", rs_in, \
@@ -313,7 +319,9 @@ static FPS_APP_INFO FPS_app_info_mk = {
     .fps_name = "mkARpfilt",
     .cmdkey   = "mkARpfilt",
     .description =
-        "make linear AR filter"
+        "make linear AR filter",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_MK(X) \
     X(".in_name", mk_in, \
@@ -400,7 +408,9 @@ static FPS_APP_INFO FPS_app_info_ap = {
     .fps_name = "applyARpfilt",
     .cmdkey   = "applyARpfilt",
     .description =
-        "apply linear AR filter"
+        "apply linear AR filter",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_AP(X) \
     X(".in_name", ap_in, \
@@ -464,7 +474,9 @@ static double sg_fl = 2.65;
 static FPS_APP_INFO FPS_app_info_sg = {
     .fps_name = "mscangain",
     .cmdkey   = "mscangain",
-    .description = "scan gain"
+    .description = "scan gain",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_SG(X) \
     X(".in_name", sg_in, \
@@ -526,7 +538,9 @@ static FPS_APP_INFO FPS_app_info_pu = {
     .fps_name = "linARPFMupdate",
     .cmdkey   = "linARPFMupdate",
     .description =
-        "update predictive filter matrix"
+        "update predictive filter matrix",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_PU(X) \
     X(".pf_name", pu_pf, \
@@ -603,7 +617,9 @@ static FPS_APP_INFO FPS_app_info_rt = {
     .fps_name = "linARapplyRT",
     .cmdkey   = "linARapplyRT",
     .description =
-        "RT apply predictive filter"
+        "RT apply predictive filter",
+    .description_long =
+        "Linear autoregressive filter prediction engine. Manages filter training, update, and application for real-time prediction."
 };
 #define FPS_PARAMS_RT(X) \
     X(".in_name", rt_in, \

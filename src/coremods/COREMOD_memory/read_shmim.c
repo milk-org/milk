@@ -31,7 +31,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "readshmim",
     .cmdkey      = "readshmim",
-    .description = "read shared memory image"
+    .description = "read shared memory image",
+    .description_long =
+        "Connect to an existing shared memory image stream by name. Maps the stream into the current process address space for reading. Returns failure if the stream does not exist."
 };
 
 

@@ -14,6 +14,7 @@ help levels using the flags defined below.
 | Flag | Long form | Behavior |
 |------|-----------|----------|
 | `-h1` | `--help-oneline` | Print one line (the `.description` string), exit 0 |
+| `-h2` | `--help-description` | Print verbose description only (plain text, no color), exit 0 |
 | `-h` | `--help` | Full help with ANSI color (auto-suppressed if stdout is not a tty), exit 0 |
 | `-hm` | `--help-mono` | Full help, forced monochrome (no ANSI escapes), exit 0 |
 

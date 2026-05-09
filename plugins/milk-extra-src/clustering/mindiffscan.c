@@ -20,7 +20,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mindiffscan",
     .cmdkey      = "mindiffscan",
     .description =
-        "scan image cube for similar pairs"
+        "scan image cube for similar pairs",
+    .description_long =
+        "Scan an image cube for the most similar pair of slices by minimizing the sum-of-squared differences."
 };
 
 

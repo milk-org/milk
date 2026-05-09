@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkdisk",
     .cmdkey      = "mkdisk",
-    .description = "make disk image"
+    .description = "make disk image",
+    .description_long =
+        "Generate a filled disk (circle) pattern on a 2D image with configurable center, radius, and value."
 };
 
 

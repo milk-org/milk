@@ -82,7 +82,17 @@ while [ $# -gt 0 ]; do
             echo "start a multi-stage FPS pipeline for demonstration"
             exit 0
             ;;
-        -h|--help)
+        -h2|--help-description)
+            echo "Start a 7-node FPS image processing pipeline" \
+                 "for demonstration and testing. Creates a chain" \
+                 "of compute units (random generation, Gaussian" \
+                 "blur, truncation, resize, averaging, monitoring)" \
+                 "connected via shared-memory streams in tmux" \
+                 "sessions. Useful for testing milkCTRL," \
+                 "stream-graph, and pipeline diagnostics."
+            exit 0
+            ;;
+        -h|--help|-hm)
             cat <<'EOF'
 Usage: milk-demopipeline [OPTIONS] [COMMAND]
 
@@ -116,6 +126,8 @@ Options:
                        (default: 100).
   -h, --help           Print this help message.
   -h1, --help-oneline  Print one-line description.
+  -h2                  Print verbose description.
+  -hm                  Monochrome help.
 EOF
             exit 0
             ;;

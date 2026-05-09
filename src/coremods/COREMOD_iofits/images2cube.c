@@ -26,7 +26,9 @@ errno_t images_to_cube(const char *restrict img_name,
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imgs2cube",
     .cmdkey      = "imgs2cube",
-    .description = "combine individual images into cube"
+    .description = "combine individual images into cube",
+    .description_long =
+        "Assemble multiple 2D FITS files into a single 3D cube. Input files must have identical dimensions. The z-axis corresponds to the file sequence."
 };
 
 static char    *imgname;

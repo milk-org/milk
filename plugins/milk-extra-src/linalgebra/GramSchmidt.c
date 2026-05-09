@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "GramSchmidt",
     .cmdkey      = "GramSchmidt",
-    .description = "Gram-Schmidt process"
+    .description = "Gram-Schmidt process",
+    .description_long =
+        "Orthogonalize a set of vectors using the Gram-Schmidt process. Produces an orthonormal basis from the input set."
 };
 
 

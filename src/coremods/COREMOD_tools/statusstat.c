@@ -38,7 +38,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "ctsmstats",
     .cmdkey      = "ctsmstats",
     .description =
-        "monitors shared variable status"
+        "monitors shared variable status",
+    .description_long =
+        "Collect and display statistics about process status values written to shared memory streams. Histograms the status values over time."
 };
 
 #define FPS_PARAMS(X) \

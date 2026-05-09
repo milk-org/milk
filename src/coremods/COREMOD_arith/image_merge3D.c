@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "immerge",
     .cmdkey      = "immerge",
-    .description = "merge images along axis"
+    .description = "merge images along axis",
+    .description_long =
+        "Concatenate multiple 2D or 3D images along a specified axis to form a higher-dimensional data cube. Input images must have matching dimensions on all other axes."
 };
 
 

@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "c2ap",
     .cmdkey      = "c2ap",
-    .description = "complex -> ampl, pha"
+    .description = "complex -> ampl, pha",
+    .description_long =
+        "Decompose a complex image into its amplitude and phase components. Input is a complex-valued stream; outputs are two real-valued streams."
 };
 
 

@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "PCAdecomp",
     .cmdkey      = "PCAdecomp",
-    .description = "Principal Components Analysis decomposition"
+    .description = "Principal Components Analysis decomposition",
+    .description_long =
+        "GPU-accelerated Principal Component Analysis using cuBLAS. Decomposes data cubes into eigenimages and coefficients."
 };
 
 

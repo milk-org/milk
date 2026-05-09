@@ -2,20 +2,31 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "audit resource usage and latency causes for a running compute unit"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-latency-audit [OPTIONS] <PID|FPS_NAME>"
+    -h1|--help-oneline)
+        echo "audit resource usage and latency causes for a running compute unit"
         exit 0 ;;
+    -h2|--help-description)
+        echo "Audit resource usage and latency sources for a running" \
+             "fpsexec compute unit. Checks CPU scaling governor," \
+             "IRQ affinity, core isolation, and collects hardware" \
+             "performance counter statistics (context switches," \
+             "cache misses, TLB misses, page faults) via perf stat."
+        exit 0 ;;
+    -h|--help|-hm)
+        ;; # fall through to show_help below
 esac
 # Latency Audit Tool for milk/cacao compute units
 
 show_help() {
-    echo "Usage: milk-latency-audit [OPTIONS] <PID or FPS_NAME>"
+    echo "Usage: milk-latency-audit [OPTIONS] <PID|FPS_NAME>"
     echo "Audit resource usage and latency causes for a running compute unit."
     echo ""
     echo "Options:"
     echo "  -d, --duration SEC  Duration to run perf stat (default: 5)"
     echo "  -h, --help          Show this help message"
+    echo "  -h1                 One-line description"
+    echo "  -h2                 Verbose description"
+    echo "  -hm                 Monochrome help"
     echo ""
     echo "This tool requires 'perf' to be installed and may require sudo/root"
     echo "privileges to read hardware performance counters and IRQ affinities."
@@ -27,8 +38,12 @@ TARGET=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -h|--help)
+        -h|--help|-hm)
             show_help
+            exit 0
+            ;;
+        -h1|--help-oneline|-h2|--help-description)
+            # Already handled above; should not reach here
             exit 0
             ;;
         -d|--duration)

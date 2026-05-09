@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "set3Daxes",
     .cmdkey      = "set3Daxes",
-    .description = "set 3D image axes size"
+    .description = "set 3D image axes size",
+    .description_long =
+        "Reshape a 3D image by redefining its axis dimensions without changing the underlying data. The total number of pixels must remain the same. Useful for reinterpreting data layout."
 };
 
 

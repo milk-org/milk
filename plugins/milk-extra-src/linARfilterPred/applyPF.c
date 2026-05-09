@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "applyPF",
     .cmdkey      = "applyPF",
-    .description = "apply predictive filter"
+    .description = "apply predictive filter",
+    .description_long =
+        "Apply a linear predictive filter to a stream. Uses pre-computed filter coefficients to predict future frames from past ones."
 };
 
 

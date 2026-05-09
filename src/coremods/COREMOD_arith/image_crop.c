@@ -61,7 +61,9 @@ static long long p_zstart = 0;
 static FPS_APP_INFO FPS_app_info_2d = {
     .fps_name    = "extractim",
     .cmdkey      = "extractim",
-    .description = "crop 2D image"
+    .description = "crop 2D image",
+    .description_long =
+        "Extract a rectangular sub-region from a 2D or 3D image. Legacy implementation supporting both 2D crop (extractim) and 3D crop (extract3Dim) in a single file."
 };
 
 #define FPS_PARAMS_2D(X) \
@@ -112,7 +114,9 @@ static errno_t __attribute__((unused)) compute_2d()
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "extract3Dim",
     .cmdkey      = "extract3Dim",
-    .description = "crop 3D image"
+    .description = "crop 3D image",
+    .description_long =
+        "Extract a rectangular sub-region from a 2D or 3D image. Legacy implementation supporting both 2D crop (extractim) and 3D crop (extract3Dim) in a single file."
 };
 
 #define FPS_PARAMS(X) \

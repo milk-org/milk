@@ -26,7 +26,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imswapaxis2D",
     .cmdkey      = "imswapaxis2D",
     .description =
-        "swap axis of a 2D image"
+        "swap axis of a 2D image",
+    .description_long =
+        "Transpose a 2D image by swapping its x and y axes. Equivalent to a matrix transpose operation."
 };
 
 #define FPS_PARAMS(X) \

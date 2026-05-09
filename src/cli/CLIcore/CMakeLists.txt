@@ -302,6 +302,12 @@ target_link_libraries(milk-procinfo-info PUBLIC
     ImageStreamIO milkprocessinfo milkfps m rt pthread)
 install(TARGETS milk-procinfo-info DESTINATION bin)
 
+# milk-fuzzy-match: bigram fuzzy string matcher
+add_executable(milk-fuzzy-match
+    milk-fuzzy-match.c
+)
+install(TARGETS milk-fuzzy-match DESTINATION bin)
+
 # TESTING
 
 include(CTest)

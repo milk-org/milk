@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im3Dto2D",
     .cmdkey      = "im3D_to_stream2D",
-    .description = "convert 3D image to 2D stream"
+    .description = "convert 3D image to 2D stream",
+    .description_long =
+        "Convert a static 3D image cube into a 2D shared memory stream by sequentially playing back each slice as a frame. Useful for testing stream consumers with pre-recorded data."
 };
 
 

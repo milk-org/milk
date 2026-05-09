@@ -49,7 +49,9 @@ static FPS_APP_INFO FPS_app_info_ps = {
     .fps_name = "linalgebrapsinvSVD",
     .cmdkey   = "linalgebrapsinvSVD",
     .description =
-        "pseudo inverse via direct SVD"
+        "pseudo inverse via direct SVD",
+    .description_long =
+        "Compute SVD for pseudo-inverse using MAGMA. Low-level SVD computation step with GPU acceleration."
 };
 #define FPS_PARAMS_PS(X) \
     X(".inmat", ps_r, \

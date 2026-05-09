@@ -134,7 +134,9 @@ errno_t list_variable_ID_file(const char *fname)
 static FPS_APP_INFO FPS_app_info_listvar = {
     .fps_name    = "listvar",
     .cmdkey      = "listvar",
-    .description = "list variables in memory"
+    .description = "list variables in memory",
+    .description_long =
+        "List all variables currently defined in the process memory space, showing name, type, and value."
 };
 
 static char p_regex[FUNCTION_PARAMETER_STRMAXLEN]
@@ -188,7 +190,9 @@ static FPS_APP_INFO FPS_app_info_listvarf = {
     .fps_name    = "listvarf",
     .cmdkey      = "listvarf",
     .description =
-        "list variables to file"
+        "list variables to file",
+    .description_long =
+        "List all variables currently defined in the process memory space, showing name, type, and value."
 };
 
 static char p_fname[FUNCTION_PARAMETER_STRMAXLEN]

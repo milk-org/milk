@@ -31,7 +31,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streamdelay",
     .cmdkey      = "streamdelay",
     .description =
-        "delay input stream to output stream"
+        "delay input stream to output stream",
+    .description_long =
+        "Introduce a configurable frame delay on an image stream. Buffers incoming frames in a circular buffer and outputs frames from N steps earlier. Useful for simulating latency."
 };
 
 

@@ -121,7 +121,9 @@ static FPS_APP_INFO FPS_app_info_pi = {
     .fps_name = "linalgebrapsinv",
     .cmdkey   = "linalgebrapsinv",
     .description =
-        "compute pseudo inverse"
+        "compute pseudo inverse",
+    .description_long =
+        "Compute the Moore-Penrose pseudo-inverse of a matrix via SVD using the MAGMA GPU library."
 };
 #define FPS_PARAMS_PI(X) \
     X(".inmat", pi_r, \

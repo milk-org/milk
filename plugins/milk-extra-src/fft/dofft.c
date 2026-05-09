@@ -18,7 +18,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "dofft",
     .cmdkey      = "dofft",
-    .description = "perform 2D complex FFT"
+    .description = "perform 2D complex FFT",
+    .description_long =
+        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports real-to-complex and complex-to-complex transforms, forward and inverse directions."
 };
 
 
@@ -77,7 +79,9 @@ static FPS_APP_INFO FPS_app_info_1dfft = {
     .fps_name    = "do1Dfft",
     .cmdkey      = "do1Dfft",
     .description =
-        "perform 1D complex->complex FFT"
+        "perform 1D complex->complex FFT",
+    .description_long =
+        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports real-to-complex and complex-to-complex transforms, forward and inverse directions."
 };
 
 #define FPS_PARAMS_1DFFT(X) \
@@ -136,7 +140,9 @@ static FPS_APP_INFO FPS_app_info_1drfft = {
     .fps_name    = "do1Drfft",
     .cmdkey      = "do1Drfft",
     .description =
-        "perform 1D real->complex FFT"
+        "perform 1D real->complex FFT",
+    .description_long =
+        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports real-to-complex and complex-to-complex transforms, forward and inverse directions."
 };
 
 #define FPS_PARAMS_1DRFFT(X) \

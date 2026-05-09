@@ -14,7 +14,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im2vec",
     .cmdkey      = "im2vec",
-    .description = "remap image to vector"
+    .description = "remap image to vector",
+    .description_long =
+        "Remap a 2D image to a 1D vector using a pixel table (mask). Extracts active pixels into a compact array."
 };
 
 

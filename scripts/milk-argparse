@@ -358,6 +358,18 @@ function getoptargs {
 
 while (( "$#" )); do
     case "$1" in
+        -h2|--help-description)
+            # Handled by milk-script-std-config early exit;
+            # guard here in case it reaches argparse.
+            set +o nounset
+            if [ -n "${MSextdescr:-}" ]; then
+                printf "%s\n" "${MSextdescr}"
+            else
+                printf "%s\n" "${MSdescr}"
+            fi
+            set -o nounset
+            exit 0
+            ;;
         --*) # long option
             #echo "long option: $1"
             inputMSoptlongARRAY+=( $1 )

@@ -15,7 +15,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cropmask",
     .cmdkey      = "cropmask",
-    .description = "crop and mask image"
+    .description = "crop and mask image",
+    .description_long =
+        "Extract a sub-region from an image and apply a binary mask. Pixels outside the mask are set to zero. Combines cropping and masking in a single operation for efficient region-of-interest extraction."
 };
 
 static char cminsname[

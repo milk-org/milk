@@ -94,7 +94,7 @@
  * Return values from milk_help_init()
  * ─────────────────────────────────────────── */
 
-/** @brief No help flag found — continue normal execution */
+/** @brief No help flag found — continue */
 #define MH_ACTION_NONE  0
 /** @brief -h1 was printed, caller should return 0 */
 #define MH_ACTION_H1    1
@@ -102,6 +102,8 @@
 #define MH_ACTION_HELP  2
 /** @brief -hm requested, or -h but not a tty */
 #define MH_ACTION_MONO  3
+/** @brief -h2 was printed, caller should return 0 */
+#define MH_ACTION_H2    4
 
 /* ───────────────────────────────────────────
  * Initialization
@@ -113,20 +115,22 @@
 /**
  * @brief Scan argv for help flags.
  *
- * @param argc        Argument count.
- * @param argv        Argument vector.
- * @param description One-line description for -h1.
- * @return MH_ACTION_NONE, MH_ACTION_H1,
+ * @param argc             Argument count.
+ * @param argv             Argument vector.
+ * @param description      One-line description for -h1.
+ * @param description_long Verbose description for -h2
+ *                         (NULL falls back to description).
+ * @return MH_ACTION_NONE, MH_ACTION_H1, MH_ACTION_H2,
  *         MH_ACTION_HELP, or MH_ACTION_MONO.
  *
- * If -h1/--help-oneline is found, the description
- * is printed immediately and MH_ACTION_H1 is
- * returned.  The caller should then `return 0`.
+ * -h1 and -h2 print immediately and return.
+ * The caller should then `return 0`.
  */
 static inline int milk_help_init(
     int         argc,
     char       *argv[],
-    const char *description)
+    const char *description,
+    const char *description_long)
 {
     int want_help = 0;
     int want_mono = 0;
@@ -139,6 +143,18 @@ static inline int milk_help_init(
         {
             printf("%s\n", description);
             return MH_ACTION_H1;
+        }
+
+        if (strcmp(argv[i], "-h2") == 0 ||
+            strcmp(argv[i],
+                   "--help-description") == 0)
+        {
+            const char *desc =
+                (description_long != NULL)
+                ? description_long
+                : description;
+            printf("%s\n", desc);
+            return MH_ACTION_H2;
         }
 
         if (strcmp(argv[i], "-hm") == 0 ||

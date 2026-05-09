@@ -33,7 +33,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "impixdecodeU",
     .cmdkey      = "impixdecodeU",
     .description =
-        "decode image stream"
+        "decode image stream",
+    .description_long =
+        "Decode a pixel map to reconstruct a 2D image from a 1D encoded stream. The pixel map specifies the mapping from linear to 2D coordinates."
 };
 
 

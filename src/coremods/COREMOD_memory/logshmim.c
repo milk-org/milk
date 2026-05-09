@@ -56,7 +56,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streamFITSlog",
     .cmdkey      = "streamFITSlog",
     .description =
-        "log stream to FITS file(s)"
+        "log stream to FITS file(s)",
+    .description_long =
+        "Log shared memory image stream frames to disk as FITS files. Records every new frame triggered by semaphore posting, with configurable logging duration and file naming."
 };
 
 
