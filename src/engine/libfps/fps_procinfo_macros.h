@@ -188,27 +188,8 @@ typedef struct
         return RETURN_SUCCESS;           \
     }
 
-#define INSERT_STD_FPSCONFfunction        \
-    static errno_t FPSCONFfunction(void) \
-    { return RETURN_SUCCESS; }
 
-#define INSERT_STD_FPSRUNfunction         \
-    static errno_t FPSRUNfunction(void)  \
-    { return RETURN_SUCCESS; }
 
-#define INSERT_STD_FPSCLIfunction         \
-    /* already provided by CLIfunction */
-
-#define INSERT_STD_FPSCLIfunctions        \
-    INSERT_STD_FPSCONFfunction            \
-    INSERT_STD_FPSRUNfunction             \
-    INSERT_STD_CLIfunction
-
-#define INSERT_STD_FPSCONFfunction_DynamicSize \
-    INSERT_STD_FPSCONFfunction
-
-#define INSERT_STD_FPSCLIfunctions_DynamicSize \
-    INSERT_STD_FPSCLIfunctions
 
 #define INSERT_STD_CLIREGISTERFUNC {}
 
