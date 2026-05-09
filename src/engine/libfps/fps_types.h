@@ -533,4 +533,21 @@ typedef struct
     int pindex;
 } KEYWORD_TREE_NODE;
 
+
+/* ===== Short type aliases ===== */
+
+/**
+ * @brief Alias for FUNCTION_PARAMETER_STRUCT
+ *
+ * Both names are valid — use whichever reads better
+ * in context.
+ */
+typedef FUNCTION_PARAMETER_STRUCT FPS;
+
+/**
+ * @brief Alias for FUNCTION_PARAMETER
+ */
+typedef FUNCTION_PARAMETER FPS_PARAM;
+
 #endif /* FPS_TYPES_H */
+
