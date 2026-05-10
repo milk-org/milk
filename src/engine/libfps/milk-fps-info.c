@@ -30,12 +30,14 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * ANSI helpers for connection display
  * ========================================================= */
 
-#define CI_RST    "\033[0m"
-#define CI_HDR    "\033[1;35m"
-#define CI_LABEL  "\033[1;34m"
-#define CI_STREAM "\033[1;36m"
-#define CI_PROC   "\033[1;33m"
-#define CI_DIM    "\033[2m"
+#include "milk_help.h"
+
+#define CI_RST    MH_RST
+#define CI_HDR    MH_HDR
+#define CI_LABEL  MH_ARG
+#define CI_STREAM MH_TITLE
+#define CI_PROC   MH_NOTE
+#define CI_DIM    MH_DIM
 
 /* =========================================================
  * Connection display (requires OV_MODEL)
@@ -188,27 +190,74 @@ static void print_connections(const char *fpsname)
  * Help
  * ========================================================= */
 
-static void print_help(const char *progname)
+#define FI_DESC \
+    "print content of a Function Parameter Structure (FPS)"
+
+#define FI_DESC_LONG \
+    "Display all parameters and current values for an FPS instance.\n" \
+    "Output columns: parameter key, type, current value, flags.\n" \
+    "With -v, also shows limits, defaults, and FPS header metadata.\n" \
+    "With -c, cross-references stream and process connections\n" \
+    "from the live system graph built by milkCTRL/overview."
+
+static void print_help(const char *progname, int mh_color)
 {
-    printf("Usage: %s [options] <fpsname>\n",
-           progname);
-    printf("Print content of a Function "
-           "Parameter Structure (FPS).\n");
-    printf("\nOptions:\n");
-    printf("  -v, --verbose        "
-           "Verbose mode\n");
-    printf("  -i, --info           "
-           "Show stream info on "
-           "separate line\n");
+    milk_help_banner(progname, FI_DESC, mh_color);
+
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] %s<fpsname>%s\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", FI_DESC_LONG);
+
+    milk_help_section("Arguments", mh_color);
+    printf("  %s%-14s%s %s\n\n",
+           mh_color ? MH_ARG : "", "<fpsname>",
+           mh_color ? MH_RST : "", "Name of the FPS to inspect");
+
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-v, --verbose",
+           mh_color ? MH_RST : "", "Verbose (limits, defaults, header)");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-i, --info",
+           mh_color ? MH_RST : "", "Show stream info on separate line");
 #ifdef FPS_INFO_CONNECTIONS
-    printf("  -c, --connections    "
-           "Show graph connections\n");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-c, --connections",
+           mh_color ? MH_RST : "", "Show stream/process graph connections");
 #endif
-    printf("  -h, --help           "
-           "Show this help message\n");
-    printf("  -h1, --help-oneline  "
-           "Print one-line description "
-           "and exit\n");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "Print one-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Print verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ %smilk-fps-info%s %smyfps00%s\n",
+           mh_color ? MH_DIM : "",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s$ %smilk-fps-info%s -v %smyfps00%s\n\n",
+           mh_color ? MH_DIM : "",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+
+    const char *see_also[] = {
+        "milk-fps-list", "milk-fps-set", "milk-fps-track",
+        "milk-fpsCTRL"
+    };
+    milk_help_see_also(see_also, 4, mh_color);
 }
 
 /* =========================================================
@@ -217,14 +266,16 @@ static void print_help(const char *progname)
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline */
-    if (argc >= 2
-        && (strcmp(argv[1], "-h1") == 0
-            || strcmp(argv[1],
-                      "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                FI_DESC, FI_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
-        printf("print content of a Function "
-               "Parameter Structure (FPS)\n");
+        return 0;
+    }
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_help(argv[0], mh_color);
         return 0;
     }
 
@@ -258,15 +309,11 @@ int main(int argc, char *argv[])
             show_connections = 1;
             break;
         case 'h':
-            print_help(argv[0]);
-            return 0;
         case '1':
-            printf("print content of a "
-                   "Function Parameter "
-                   "Structure (FPS)\n");
-            return 0;
+            /* Handled above by milk_help_init() */
+            break;
         default:
-            print_help(argv[0]);
+            print_help(argv[0], 0);
             return 1;
         }
     }
@@ -275,7 +322,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr,
                 "Error: missing FPS name.\n");
-        print_help(argv[0]);
+        print_help(argv[0], 0);
         return 1;
     }
 

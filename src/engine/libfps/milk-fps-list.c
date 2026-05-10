@@ -14,39 +14,95 @@
 #include "fps.h"
 #include "fps_globals.h"
 #include "fps_scan.h"
+#include "milk_help.h"
 
-/* ANSI color codes */
-#define C_TITLE "\033[1;36m"  /* Cyan Bold   */
-#define C_HDR   "\033[1;34m"  /* Blue Bold   */
-#define C_NAME  "\033[1;32m"  /* Green Bold  */
-#define C_TYPE  "\033[1;33m"  /* Yellow Bold */
-#define C_SIZE  "\033[1m"     /* White Bold  */
-#define C_CNT   "\033[1;35m"  /* Magenta Bold */
-#define C_SEM   "\033[36m"    /* Cyan        */
-#define C_LINK  "\033[36m"    /* Cyan        */
-#define C_ERR   "\033[1;31m"  /* Red Bold    */
-#define C_DIM   "\033[2m"     /* Dim         */
-#define C_RST   "\033[0m"     /* Reset       */
+/* local color aliases — keep for table rendering, map to MH_* */
+#define C_TITLE MH_TITLE
+#define C_HDR   MH_HDR
+#define C_NAME  MH_CMD
+#define C_TYPE  MH_NOTE
+#define C_SIZE  MH_BOLD
+#define C_CNT   MH_ARG
+#define C_SEM   MH_DFLT
+#define C_LINK  MH_DFLT
+#define C_ERR   MH_ERR
+#define C_DIM   MH_DIM
+#define C_RST   MH_RST
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options] [regex pattern]\n", progname);
-    printf("List active FPS instances.\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -v, --verbose   Verbose mode (print search directory and details)\n");
-    printf("  -e, --exec      Show full path to executable\n");
-    printf("  -h, --help      Show this help message\n");
+#define FL_DESC "list Function Parameter Structures (FPS) in shared memory"
+#define FL_DESC_LONG \
+    "Scan /dev/shm for active FPS instances and print a summary table.\n" \
+    "Each row shows FPS name, executable, CLI key, conf/run PIDs,\n" \
+    "tmux status, and short description.\n" \
+    "An optional regex pattern filters which FPS names are shown."
+
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, FL_DESC, mh_color);
+
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] [%sregex%s]\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", FL_DESC_LONG);
+
+    milk_help_section("Arguments", mh_color);
+    printf("  %s%-14s%s %s\n\n",
+           mh_color ? MH_ARG : "", "[regex]",
+           mh_color ? MH_RST : "",
+           "Optional POSIX extended regex to filter by FPS name");
+
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-v, --verbose",
+           mh_color ? MH_RST : "",
+           "Verbose (print search directory and details)");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-e, --exec",
+           mh_color ? MH_RST : "", "Show full path to executable");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "Print one-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Print verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ %smilk-fps-list%s\n",
+           mh_color ? MH_DIM : "",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ %smilk-fps-list%s %smyfps.*%s\n\n",
+           mh_color ? MH_DIM : "",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+
+    const char *see_also[] = {
+        "milk-fps-info", "milk-fps-rm", "milk-fps-set", "milk-fpsCTRL"
+    };
+    milk_help_see_also(see_also, 4, mh_color);
 }
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                FL_DESC, FL_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
-        printf("list Function Parameter Structures (FPS) in shared memory\\n");
+        return 0;
+    }
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_help(argv[0], mh_color);
         return 0;
     }
 
@@ -62,8 +118,11 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "veh1", long_options, NULL)) != -1) {
-        switch (opt) {
+    while ((opt = getopt_long(argc, argv, "veh1",
+                              long_options, NULL)) != -1)
+    {
+        switch (opt)
+        {
             case 'v':
                 verbose = 1;
                 break;
@@ -71,13 +130,11 @@ int main(int argc, char *argv[])
                 show_exec = 1;
                 break;
             case 'h':
-                print_help(argv[0]);
-                return 0;
             case '1':
-                printf("list Function Parameter Structures (FPS) in shared memory\\n");
-                return 0;
+                /* Handled above by milk_help_init() */
+                break;
             default:
-                print_help(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
         }
     }
