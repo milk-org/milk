@@ -24,7 +24,9 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#include <libgen.h>
 
+#include "milk_help.h"
 #include "processinfo.h"
 
 /**
@@ -130,6 +132,40 @@ static long timespec_diff_ns(
 }
 
 
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, "read processinfo shared memory and output timing metrics as JSON", mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s %s<procinfo_shm_path>%s\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+
+    milk_help_section("Description", mh_color);
+    printf("  Maps a processinfo shared-memory file and extracts timing data (iteration/exec medians,\n"
+           "  timing circular buffer percentiles, loop count). It also reads VmPeak from /proc/<PID>/status.\n"
+           "  Output is JSON on stdout, intended for consumption by the milk-perfbench harness script.\n\n");
+
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+
+    const char *see_also[] = {
+        "milk-perfbench", "milk-procinfo-info"
+    };
+    milk_help_see_also(see_also, 2, mh_color);
+}
+
+
 /**
  * @brief Main entry point.
  *
@@ -139,11 +175,20 @@ static long timespec_diff_ns(
  */
 int main(int argc, char *argv[])
 {
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    const char *progname = basename(argv[0]);
+
+    int action = milk_help_init(argc, argv,
+                                "read processinfo shared memory and output timing metrics as JSON",
+                                "Maps a processinfo shared-memory file and extracts timing data. Output is JSON on stdout.");
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
-        printf("read processinfo shared memory and output timing metrics as JSON\n");
+        return 0;
+    }
+
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_help(progname, mh_color);
         return 0;
     }
 
@@ -151,7 +196,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr,
                 "Usage: %s <procinfo_shm_path>\n",
-                argv[0]);
+                progname);
         return 1;
     }
 

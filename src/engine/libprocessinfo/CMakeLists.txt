@@ -126,6 +126,7 @@ target_link_libraries(milk-procCTRL PUBLIC
     pthread
     m
 )
+target_include_directories(milk-procCTRL PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 
 add_executable(milk-procCTRL-scan
     procCTRL/milk-procCTRL-scan.c
