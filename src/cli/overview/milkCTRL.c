@@ -152,8 +152,10 @@ static void print_usage(const char *prog)
     printf("  k    Graceful kill (SIGTERM)\n");
     printf("  K    Immediate kill (SIGKILL)\n");
     printf("  x    Pause/resume (SIGSTOP/SIGCONT)\n");
-    printf("\nDetail View (ENTER or D):\n");
-    printf("  Toggles detail pane for selected item\n");
+    printf("  c    Cleanup dead processes (PROCS panel)\n");
+    printf("\nDetail View (ENTER or D) and Inspection (i):\n");
+    printf("  ENTER/D  Toggles detail pane for selected item\n");
+    printf("  i        Spawn interactive CLI diagnostic tool\n");
     printf("\nColumns:\n");
     printf("  STREAMS: MB/s throughput,"
            " total in panel footer\n");

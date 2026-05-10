@@ -94,4 +94,20 @@ void ov_ctrl_fps_remove(
     const OV_FPS *f,
     OV_CMDLOG    *log);
 
+/**
+ * ov_ctrl_procs_cleanup - remove crashed/stopped processes
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_procs_cleanup(
+    OV_CMDLOG *log);
+
+/**
+ * ov_ctrl_inspect_item - spawn an interactive detailed view
+ * @panel: the active panel type
+ * @item:  pointer to the selected item (OV_STREAM, OV_PROC, or OV_FPS)
+ */
+void ov_ctrl_inspect_item(
+    ov_focus_t     panel,
+    const void    *item);
+
 #endif /* OVERVIEW_CTRL_H */

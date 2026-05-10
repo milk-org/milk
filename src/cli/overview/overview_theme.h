@@ -283,7 +283,7 @@ static inline void ov_draw_panel_border(
     ov_rgb_t    tcolor,
     int         is_focused)
 {
-    ov_theme_fg(is_focused ? OV_FG_TEXT : OV_FG_DIM);
+    ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);
 
     /* top edge */
@@ -296,7 +296,7 @@ static inline void ov_draw_panel_border(
     if (title && title[0])
     {
         ov_buf_pos(row, col + 2);
-        ov_theme_fg(is_focused ? tcolor : OV_FG_MUTED);
+        ov_theme_fg(is_focused ? OV_FG_BRIGHT : OV_FG_MUTED);
         ov_buf_bold();
         ov_buf_printf(" %s ", title);
         ov_buf_reset_attr();
@@ -305,7 +305,7 @@ static inline void ov_draw_panel_border(
     /* sides */
     for (int r = row + 1; r < row + height - 1; r++)
     {
-        ov_theme_fg(is_focused ? OV_FG_TEXT : OV_FG_DIM);
+        ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
         ov_theme_bg(OV_BG_TERMINAL);
         ov_buf_pos(r, col);
         ov_buf_printf("%s", OV_BOX_V);
@@ -315,7 +315,7 @@ static inline void ov_draw_panel_border(
 
     /* bottom edge */
     ov_buf_pos(row + height - 1, col);
-    ov_theme_fg(is_focused ? OV_FG_TEXT : OV_FG_DIM);
+    ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_buf_printf("%s", OV_BOX_BL);
     ov_buf_hline_utf8(OV_BOX_H, width - 2);
     ov_buf_printf("%s", OV_BOX_BR);
