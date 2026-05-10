@@ -20,6 +20,10 @@
 /* fps_types.h for FPS and FPSCMDCODE_* */
 #include "fps_types.h"
 
+errno_t functionparameter_CONFstop(FPS *fps);
+errno_t functionparameter_RUNstop(FPS *fps);
+errno_t functionparameter_FPSremove(FPS *fps);
+
 /* ImageStreamIO for stream open/destroy */
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -54,7 +58,7 @@ static int ov_ctrl_fps_signal(
 
     long rc = fps_connect(
                   fps_name, &fps, FPSCONNECT_SIMPLE);
-    if (rc != 0)
+    if (rc == -1)
     {
         return -1;
     }
@@ -259,4 +263,35 @@ void ov_ctrl_fps_pause_toggle(const OV_FPS *f)
     {
         kill(f->confpid, sig);
     }
+}
+
+/**
+ * ov_ctrl_fps_remove - stop conf/run then remove the FPS SHM.
+ * @f: FPS model entry (read-only snapshot from OV_MODEL)
+ *
+ * Connects to the FPS, sends CONFstop and RUNstop, then
+ * removes the shared-memory file and associated tmux session.
+ * Mirrors fpsCTRL's ctrl+e behaviour.
+ */
+void ov_ctrl_fps_remove(const OV_FPS *f)
+{
+    if (f == NULL || !f->valid)
+    {
+        return;
+    }
+
+    FPS fps;
+    memset(&fps, 0, sizeof(fps));
+
+    long rc = fps_connect(f->name, &fps, FPSCONNECT_SIMPLE);
+    if (rc == -1)
+    {
+        return;
+    }
+
+    functionparameter_CONFstop(&fps);
+    functionparameter_RUNstop(&fps);
+    functionparameter_FPSremove(&fps);
+
+    fps_disconnect(&fps);
 }

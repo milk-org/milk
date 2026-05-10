@@ -36,7 +36,7 @@ void ov_render_help(const OV_LAYOUT *lay)
         { "  h        Toggle this help",             0 },
         { "  q        Quit",                         0 },
         { "Control mode  (c to toggle)",             0 },
-        { "  FPS:  r=run  s=conf",                   0 },
+        { "  FPS:  r=run  s=conf  e=remove",          0 },
         { "  STRM: d=delete stream",                 0 },
         { "Process signals  (PROCS & FPS panels)",   0 },
         { "  k  graceful kill (SIGTERM)",            0 },

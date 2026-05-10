@@ -145,7 +145,7 @@ static void print_usage(const char *prog)
     printf("  W          Export snapshot to file\n");
     printf("  h          Help overlay\n");
     printf("\nControl mode (c to toggle):\n");
-    printf("  FPS:  r=run  s=conf\n");
+    printf("  FPS:  r=run  s=conf  e=remove\n");
     printf("  STRM: d=delete stream\n");
     printf("\nProcess signals (PROCS & FPS panels):\n");
     printf("  k    Graceful kill (SIGTERM)\n");

@@ -49,4 +49,9 @@ void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig);
  */
 void ov_ctrl_fps_pause_toggle(const OV_FPS *f);
 
+/**
+ * ov_ctrl_fps_remove - stop conf/run and remove the FPS SHM entry.
+ */
+void ov_ctrl_fps_remove(const OV_FPS *f);
+
 #endif /* OVERVIEW_CTRL_H */

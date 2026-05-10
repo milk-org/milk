@@ -546,6 +546,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             const OV_FPS *f = &m->fps[lay->sel_fps];
             if (key == 'r') { ov_ctrl_fps_run_toggle(f); return 1; }
             if (key == 's') { ov_ctrl_fps_conf_toggle(f); return 1; }
+            if (key == 'e') { ov_ctrl_fps_remove(f); return 1; }
         }
 
         if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0 && lay->sel_stream < m->nb_streams)
