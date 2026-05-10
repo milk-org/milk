@@ -205,12 +205,14 @@ add_executable(milk-streamCTRL
 )
 
 target_link_libraries(milk-streamCTRL PUBLIC ImageStreamIO milkprocessinfo m rt pthread)
+target_include_directories(milk-streamCTRL PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 install(TARGETS milk-streamCTRL DESTINATION bin)
 
 # milk-fpsexec-mmon retired — use milk-streamCTRL instead
 
 add_executable(milk-termview termview/milk-termview.c termview/termview.c)
 target_link_libraries(milk-termview PUBLIC ImageStreamIO m)
+target_include_directories(milk-termview PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 
 install(TARGETS milk-termview DESTINATION bin)
 

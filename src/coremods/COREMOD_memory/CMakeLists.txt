@@ -305,7 +305,8 @@ install(TARGETS milk-stream-list DESTINATION bin)
 
 add_executable(milk-stream-create milk-stream-create.c)
 target_include_directories(milk-stream-create PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-stream-create ImageStreamIO)
 install(TARGETS milk-stream-create DESTINATION bin)
 
@@ -318,6 +319,7 @@ install(TARGETS milk-stream-rm DESTINATION bin)
 
 add_executable(milk-streamCTRL-cli milk-streamCTRL-cli.c)
 target_include_directories(milk-streamCTRL-cli PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-streamCTRL-cli ImageStreamIO)
 install(TARGETS milk-streamCTRL-cli DESTINATION bin)

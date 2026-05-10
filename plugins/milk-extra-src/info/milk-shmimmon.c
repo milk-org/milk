@@ -29,7 +29,9 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <libgen.h>
 
+#include "milk_help.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 
@@ -483,19 +485,47 @@ static void draw_frame(
  * Main
  * ============================================================= */
 
-static void print_help(const char *prog)
+static void print_help(const char *progname, int mh_color)
 {
-    printf("\nUsage: %s [OPTIONS] <stream>\n\n", prog);
-    printf("Monitor the content of a shared-memory image stream.\n\n");
-    printf("Options:\n");
-    printf("  -h, --help           This help text\n");
-    printf("  -h1, --help-oneline  One-line description\n");
-    printf("  -f <hz>              Refresh rate in Hz (default: %.0f)\n\n",
-           (double) SHMIMMON_DEFAULT_HZ);
-    printf("Keys (while running):\n");
-    printf("  q / x    Quit\n");
-    printf("  SPACE    Reset RMS exponential filter\n\n");
-    printf("Environment:\n");
+    milk_help_banner(progname, SHMIMMON_DESCRIPTION, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s %s[OPTIONS]%s %s<stream>%s\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+
+    milk_help_section("Description", mh_color);
+    printf("  Monitor the content of a shared-memory image stream in a live ncurses TUI.\n\n");
+
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-f <hz>",
+           mh_color ? MH_RST : "", "Refresh rate in Hz (default: 10)");
+
+    milk_help_section("Keys (while running)", mh_color);
+    printf("  %s%-15s%s %s\n",
+           mh_color ? MH_OPT : "", "q / x",
+           mh_color ? MH_RST : "", "Quit");
+    printf("  %s%-15s%s %s\n",
+           mh_color ? MH_OPT : "", "SPACE",
+           mh_color ? MH_RST : "", "Reset RMS exponential filter");
+    printf("  %s%-15s%s %s\n\n",
+           mh_color ? MH_OPT : "", "+ / -",
+           mh_color ? MH_RST : "", "Adjust sample rate");
+
+    milk_help_section("Environment", mh_color);
     printf("  MILK_SHM_DIR  Path to shared memory (default: /dev/shm)\n\n");
 }
 
@@ -507,34 +537,34 @@ int main(int argc, char *argv[])
     const char *stream  = NULL;
     float       hz      = SHMIMMON_DEFAULT_HZ;
 
-    /* Pre-scan: -h1 / --help-oneline must be caught before getopt
-     * because getopt(3) cannot handle multi-character short options.
-     * "-h1" would be split into "-h" and positional "1". */
-    for (int i = 1; i < argc; i++)
+    const char *progname = basename(argv[0]);
+
+    int action = milk_help_init(argc, argv,
+                                SHMIMMON_DESCRIPTION,
+                                "Monitor the content of a shared-memory image stream in a live ncurses TUI.");
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i], "--help-oneline") == 0)
-        {
-            printf("%s\n", SHMIMMON_DESCRIPTION);
-            return 0;
-        }
+        return 0;
+    }
+
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_help(progname, mh_color);
+        return 0;
     }
 
     /* — argument parsing — */
     static const struct option longopts[] = {
-        { "help",        no_argument,       NULL, 'h' },
         { NULL,          0,                 NULL,  0  }
     };
 
     int opt;
 
-    while ((opt = getopt_long(argc, argv, "hf:", longopts, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "+f:", longopts, NULL)) != -1)
     {
         switch (opt)
         {
-        case 'h':
-            print_help(argv[0]);
-            return 0;
 
         case 'f':
             hz = strtof(optarg, NULL);
@@ -546,7 +576,7 @@ int main(int argc, char *argv[])
             break;
 
         default:
-            fprintf(stderr, "Unknown option. Run %s -h for help.\n", argv[0]);
+            fprintf(stderr, "Unknown option. Run %s -h for help.\n", progname);
             return 1;
         }
     }
@@ -562,7 +592,7 @@ int main(int argc, char *argv[])
         fprintf(stderr,
                 "Error: missing stream name.\n"
                 "Run %s -h for help.\n",
-                argv[0]);
+                progname);
         return 1;
     }
 
