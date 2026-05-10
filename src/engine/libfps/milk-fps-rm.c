@@ -14,20 +14,60 @@
 
 #include "fps.h"
 #include "fps_FPSremove.h"
+#include "milk_help.h"
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options] [fpsname | regex pattern]\n", progname);
-    printf("Remove a Function Parameter Structure (FPS).\n");
-    printf("\n");
-    printf("If no FPS name is given, lists existing FPS instances\n");
-    printf("and prompts for selection. Multiple items can be\n");
-    printf("selected using numbers, ranges, or 'all' (e.g. 1 3 5-7).\n");
-    printf("A regex can be provided to filter the list.\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -f, --force     Force removal by killing running processes\n");
-    printf("  -v, --verbose   Verbose mode\n");
-    printf("  -h, --help      Show this help message\n");
+#define FR_DESC \
+    "remove Function Parameter Structure (FPS) from shared memory"
+#define FR_DESC_LONG \
+    "Remove one or more FPS instances from /dev/shm.\n" \
+    "Without a name argument, scans for all FPS instances and presents\n" \
+    "an interactive selection menu. With a name or regex, removes\n" \
+    "matching instances directly. Use -f to kill running processes\n" \
+    "before removal (otherwise running FPSes are left untouched)."
+
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, FR_DESC, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] [%sfpsname%s | %sregex%s]\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", FR_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-f, --force",
+           mh_color ? MH_RST : "", "Kill running processes before removal");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-v, --verbose",
+           mh_color ? MH_RST : "", "Verbose output");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-fps-rm%s              %s# interactive%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_DIM : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-fps-rm%s %smyfps00%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-fps-rm%s -f %smyfps00%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    const char *see_also[] = { "milk-fps-list", "milk-fps-info",
+                               "milk-fps-confstop", "milk-fps-runstop" };
+    milk_help_see_also(see_also, 4, mh_color);
 }
 
 /**
@@ -290,13 +330,14 @@ static int remove_fps(
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                FR_DESC, FR_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("remove Function Parameter Structure (FPS) from shared memory\\n");
+        print_help(argv[0], mh_color);
         return 0;
     }
 
@@ -312,26 +353,17 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv,
-                              "fvh1",
-                              long_options,
-                              NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "fvh1",
+                              long_options, NULL)) != -1)
     {
-        switch (opt) {
-            case 'f':
-                force = 1;
-                break;
-            case 'v':
-                verbose = 1;
-                break;
+        switch (opt)
+        {
+            case 'f': force   = 1; break;
+            case 'v': verbose = 1; break;
             case 'h':
-                print_help(argv[0]);
-                return 0;
-            case '1':
-                printf("remove Function Parameter Structure (FPS) from shared memory\\n");
-                return 0;
+            case '1': break; /* handled above */
             default:
-                print_help(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
         }
     }
