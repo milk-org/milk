@@ -143,9 +143,10 @@ static void print_usage(const char *prog)
     printf("  SPACE      Freeze selection highlight\n");
     printf("  /          Filter (regex search)\n");
     printf("  W          Export snapshot to file\n");
+    printf("  G          Toggle command log panel\n");
     printf("  h          Help overlay\n");
     printf("\nControl mode (c to toggle):\n");
-    printf("  FPS:  r=run  s=conf\n");
+    printf("  FPS:  r=run  s=conf  e=remove\n");
     printf("  STRM: d=delete stream\n");
     printf("\nProcess signals (PROCS & FPS panels):\n");
     printf("  k    Graceful kill (SIGTERM)\n");
@@ -249,6 +250,7 @@ int main(int argc, char *argv[])
     memset(&lay, 0, sizeof(lay));
     lay.view  = OV_VIEW_DASHBOARD;
     lay.focus = OV_FOCUS_STREAMS;
+    lay.cmdlog_rows = 4;
 
     /* --- Main TUI loop (~10 fps) --- */
     /* Clear screen once on startup */

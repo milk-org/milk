@@ -797,6 +797,7 @@ void ov_render_frame(
         ov_render_help(lay);
     }
 
+    ov_render_cmdlog(lay);
     ov_render_status(lay, m);
 
     /* End frame */
