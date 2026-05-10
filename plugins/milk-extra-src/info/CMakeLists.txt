@@ -124,8 +124,9 @@ target_sources(milk-fpsexec-info-strmonproc PRIVATE stream_monproc_shm.c)
 if(USE_CLI)
 add_executable(milk-shmimmon milk-shmimmon.c)
 target_include_directories(milk-shmimmon PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/engine
-    ${PROJECT_SOURCE_DIR}/src)
+    ${CMAKE_SOURCE_DIR}/src/engine
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+    ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(milk-shmimmon
     PRIVATE ImageStreamIO m)
 install(TARGETS milk-shmimmon DESTINATION bin)
