@@ -142,12 +142,14 @@ int max_rows = r.height - 3;
             const char *sl;
             switch (p->loopstat)
             {
-            case 0:  sl = "IDLE"; break;
-            case 1:  sl = " RUN"; break;
-            case 2:  sl = "PAUS"; break;
-            case 3:  sl = "TERM"; break;
-            case 4:  sl = "ERR!"; break;
-            default: sl = " ?? "; break;
+            case PROCESSINFO_LOOPSTAT_INIT:    sl = "INIT"; break;
+            case PROCESSINFO_LOOPSTAT_ACTIVE:  sl = " RUN"; break;
+            case PROCESSINFO_LOOPSTAT_PAUSE:   sl = "PAUS"; break;
+            case PROCESSINFO_LOOPSTAT_STOP:    sl = "STOP"; break;
+            case PROCESSINFO_LOOPSTAT_ERROR:   sl = "ERR!"; break;
+            case PROCESSINFO_LOOPSTAT_SPIN:    sl = "SPIN"; break;
+            case PROCESSINFO_LOOPSTAT_CRASHED: sl = "CRSH"; break;
+            default:                           sl = " ?? "; break;
             }
             rlen += snprintf(
                 rbuf + rlen,
@@ -372,12 +374,14 @@ int max_rows = r.height - 3;
             ov_rgb_t sc;
             switch (p->loopstat)
             {
-            case 0:  sc = OV_FG_DIM;    break;
-            case 1:  sc = OV_FG_ACTIVE;  break;
-            case 2:  sc = OV_FG_WARN;    break;
-            case 3:  sc = OV_FG_ERROR;   break;
-            case 4:  sc = OV_FG_ERROR;   break;
-            default: sc = OV_FG_DIM;     break;
+            case PROCESSINFO_LOOPSTAT_INIT:    sc = OV_FG_DIM;    break;
+            case PROCESSINFO_LOOPSTAT_ACTIVE:  sc = OV_FG_ACTIVE; break;
+            case PROCESSINFO_LOOPSTAT_PAUSE:   sc = OV_FG_WARN;   break;
+            case PROCESSINFO_LOOPSTAT_STOP:    sc = OV_FG_ZOMBIE; break;
+            case PROCESSINFO_LOOPSTAT_ERROR:   sc = OV_FG_ERROR;  break;
+            case PROCESSINFO_LOOPSTAT_SPIN:    sc = OV_FG_WARN;   break;
+            case PROCESSINFO_LOOPSTAT_CRASHED: sc = OV_FG_ERROR;  break;
+            default:                           sc = OV_FG_DIM;    break;
             }
             /* PID */
             {
