@@ -581,7 +581,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
     }
 
-    if (key == 'c')
+    if (key == 'C')
     {
         if (lay->focus == OV_FOCUS_PROCS)
         {
@@ -636,6 +636,19 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             if (key == 'e')
             {
                 ov_ctrl_fps_remove(f, log);
+                return 1;
+            }
+        }
+
+        if (lay->focus == OV_FOCUS_PROCS
+            && lay->sel_proc >= 0
+            && lay->sel_proc < m->nb_procs)
+        {
+            const OV_PROC *p =
+                &m->procs[lay->sel_proc];
+            if (key == 'e')
+            {
+                ov_ctrl_proc_remove(p, log);
                 return 1;
             }
         }

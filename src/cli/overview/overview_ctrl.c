@@ -236,6 +236,60 @@ void ov_ctrl_proc_sigkill(
     }
 }
 
+#include <errno.h>
+
+/**
+ * ov_ctrl_proc_remove - remove a single process from shm.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_proc_remove(
+    const OV_PROC *p,
+    OV_CMDLOG     *log)
+{
+    if (p == NULL || p->PID <= 0)
+    {
+        return;
+    }
+
+    if (kill(p->PID, 0) == 0 || errno == EPERM)
+    {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log,
+                           OV_CMDLOG_FAIL,
+                           "Process \"%s\" (PID %d) is still alive",
+                           p->name, p->PID);
+        }
+        return;
+    }
+
+    char fname[1024];
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
+             ov_get_shmdir(), p->name, (int)p->PID);
+
+    int rc = unlink(fname);
+    
+    if (log != NULL)
+    {
+        if (rc == 0)
+        {
+            ov_cmdlog_push(log,
+                           OV_CMDLOG_OK,
+                           "file %s removed",
+                           fname);
+        }
+        else
+        {
+            ov_cmdlog_push(log,
+                           OV_CMDLOG_FAIL,
+                           "failed to remove file %s",
+                           fname);
+        }
+    }
+}
+
+
 /**
  * pid_is_stopped - check if a process is in 'T' state.
  * @pid: process PID

@@ -55,6 +55,15 @@ void ov_ctrl_proc_sigkill(
     OV_CMDLOG     *log);
 
 /**
+ * ov_ctrl_proc_remove - remove a single process from shm.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_proc_remove(
+    const OV_PROC *p,
+    OV_CMDLOG     *log);
+
+/**
  * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT.
  * @p:   process model entry
  * @log: command log (may be NULL)

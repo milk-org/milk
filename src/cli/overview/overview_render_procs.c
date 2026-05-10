@@ -783,11 +783,11 @@ void ov_render_procs_panel(
     char title[80];
     if (lay->filter_proc[0] != '\0')
     {
-        snprintf(title, sizeof(title), "PROCESSES /%s/", lay->filter_proc);
+        snprintf(title, sizeof(title), "PROCESSINFO /%s/", lay->filter_proc);
     }
     else
     {
-        snprintf(title, sizeof(title), "PROCESSES");
+        snprintf(title, sizeof(title), "PROCESSINFO");
     }
     ov_draw_panel_border(
         r.row, r.col, r.height, r.width,
