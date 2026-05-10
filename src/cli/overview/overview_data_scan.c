@@ -765,10 +765,7 @@ void ov_scan_procs(OV_MODEL *model)
         hwm_this_tick = i;
 
         pid_t pid = s_pilist->PIDarray[i];
-        if (!pid_is_alive(pid))
-        {
-            continue;
-        }
+        int alive = pid_is_alive(pid);
 
         /* Look up in proc cache */
         int ci = pcache_find_pid(pid);
@@ -835,6 +832,18 @@ void ov_scan_procs(OV_MODEL *model)
         p->active = 1;
 
         p->loopstat = pinfo->loopstat;
+
+        if (!alive)
+        {
+            if (s_pilist->active[i] == 2 || p->loopstat == PROCESSINFO_LOOPSTAT_STOP)
+            {
+                p->loopstat = PROCESSINFO_LOOPSTAT_STOP;
+            }
+            else
+            {
+                p->loopstat = PROCESSINFO_LOOPSTAT_CRASHED;
+            }
+        }
         p->CTRLval  = pinfo->CTRLval;
         p->loopcnt  = pinfo->loopcnt;
         p->mem_rss_kb = pid_get_rss_kb(pinfo->PID);
