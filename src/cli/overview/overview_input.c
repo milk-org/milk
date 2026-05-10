@@ -16,6 +16,12 @@
 extern float ov_scan_get_interval(void);
 extern void  ov_scan_set_interval(float s);
 
+/* help panel utilities (overview_render_help.c) */
+extern int ov_help_visible_count(const OV_LAYOUT *lay);
+extern int ov_help_nb_sections(void);
+extern int ov_help_toggle_at(
+    OV_LAYOUT *lay, int vis_row);
+
 /**
  * ov_handle_key - process one key event.
  * @key: keycode from ov_get_key()
@@ -376,11 +382,19 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     if (key == 'p' || key == 'P')
     {
         lay->paused = !lay->paused;
+        ov_cmdlog_push(&lay->cmdlog,
+                       OV_CMDLOG_INFO,
+                       "Display %s",
+                       lay->paused
+                       ? "paused" : "resumed");
         return 1;
     }
     if (key == 'W')
     {
         ov_model_export_snapshot(m);
+        ov_cmdlog_push(&lay->cmdlog,
+                       OV_CMDLOG_OK,
+                       "Snapshot exported");
         return 1;
     }
 
@@ -519,39 +533,91 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
 
 static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
+    OV_CMDLOG *log = &lay->cmdlog;
+
     if (key == 'k' || key == 'K' || key == 'x')
     {
-        if (lay->focus == OV_FOCUS_PROCS && lay->sel_proc >= 0 && lay->sel_proc < m->nb_procs)
+        if (lay->focus == OV_FOCUS_PROCS
+            && lay->sel_proc >= 0
+            && lay->sel_proc < m->nb_procs)
         {
-            const OV_PROC *p = &m->procs[lay->sel_proc];
-            if (key == 'k') ov_ctrl_proc_kill(p);
-            else if (key == 'K') ov_ctrl_proc_sigkill(p);
-            else if (key == 'x') ov_ctrl_proc_pause_toggle(p);
+            const OV_PROC *p =
+                &m->procs[lay->sel_proc];
+            if (key == 'k')
+            {
+                ov_ctrl_proc_kill(p, log);
+            }
+            else if (key == 'K')
+            {
+                ov_ctrl_proc_sigkill(p, log);
+            }
+            else if (key == 'x')
+            {
+                ov_ctrl_proc_pause_toggle(p, log);
+            }
             return 1;
         }
-        else if (lay->focus == OV_FOCUS_FPS && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
+        else if (lay->focus == OV_FOCUS_FPS
+                 && lay->sel_fps >= 0
+                 && lay->sel_fps < m->nb_fps)
         {
-            const OV_FPS *f = &m->fps[lay->sel_fps];
-            if (key == 'k') ov_ctrl_fps_signal_pid(f, SIGTERM);
-            else if (key == 'K') ov_ctrl_fps_signal_pid(f, SIGKILL);
-            else if (key == 'x') ov_ctrl_fps_pause_toggle(f);
+            const OV_FPS *f =
+                &m->fps[lay->sel_fps];
+            if (key == 'k')
+            {
+                ov_ctrl_fps_signal_pid(
+                    f, SIGTERM, log);
+            }
+            else if (key == 'K')
+            {
+                ov_ctrl_fps_signal_pid(
+                    f, SIGKILL, log);
+            }
+            else if (key == 'x')
+            {
+                ov_ctrl_fps_pause_toggle(f, log);
+            }
             return 1;
         }
     }
 
     if (lay->ctrl_mode)
     {
-        if (lay->focus == OV_FOCUS_FPS && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
+        if (lay->focus == OV_FOCUS_FPS
+            && lay->sel_fps >= 0
+            && lay->sel_fps < m->nb_fps)
         {
-            const OV_FPS *f = &m->fps[lay->sel_fps];
-            if (key == 'r') { ov_ctrl_fps_run_toggle(f); return 1; }
-            if (key == 's') { ov_ctrl_fps_conf_toggle(f); return 1; }
+            const OV_FPS *f =
+                &m->fps[lay->sel_fps];
+            if (key == 'r')
+            {
+                ov_ctrl_fps_run_toggle(f, log);
+                return 1;
+            }
+            if (key == 's')
+            {
+                ov_ctrl_fps_conf_toggle(f, log);
+                return 1;
+            }
+            if (key == 'e')
+            {
+                ov_ctrl_fps_remove(f, log);
+                return 1;
+            }
         }
 
-        if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0 && lay->sel_stream < m->nb_streams)
+        if (lay->focus == OV_FOCUS_STREAMS
+            && lay->sel_stream >= 0
+            && lay->sel_stream < m->nb_streams)
         {
-            const OV_STREAM *s = &m->streams[lay->sel_stream];
-            if (key == 'd' || key == OV_KEY_DEL) { ov_ctrl_stream_delete(s); return 1; }
+            const OV_STREAM *s =
+                &m->streams[lay->sel_stream];
+            if (key == 'd'
+                || key == OV_KEY_DEL)
+            {
+                ov_ctrl_stream_delete(s, log);
+                return 1;
+            }
         }
     }
 
@@ -668,10 +734,34 @@ int ov_handle_key(
         return 1;
     }
 
+    /* Command log panel toggle — 'G' */
+    if (key == 'G')
+    {
+        if (lay->cmdlog_rows > 0)
+        {
+            lay->cmdlog_rows = 0;
+        }
+        else
+        {
+            lay->cmdlog_rows = 4;
+        }
+        ov_cmdlog_push(&lay->cmdlog,
+                       OV_CMDLOG_INFO,
+                       "Command log %s",
+                       lay->cmdlog_rows > 0
+                       ? "shown" : "hidden");
+        return 0;
+    }
+
     /* CONTROL mode toggle — 'c' */
     if (key == 'c')
     {
         lay->ctrl_mode = !lay->ctrl_mode;
+        ov_cmdlog_push(&lay->cmdlog,
+                       OV_CMDLOG_INFO,
+                       "Control mode %s",
+                       lay->ctrl_mode
+                       ? "ON" : "OFF");
         return 0;
     }
 
@@ -679,13 +769,88 @@ int ov_handle_key(
     if (key == 'h')
     {
         lay->show_help = !lay->show_help;
+        if (lay->show_help)
+        {
+            lay->help_sel = 0;
+        }
         return 0;
     }
 
-    /* If help is showing, any other key closes it */
+    /* Interactive help navigation when overlay is open */
     if (lay->show_help)
     {
-        lay->show_help = 0;
+        int nvis = ov_help_visible_count(lay);
+        if (nvis < 1)
+        {
+            nvis = 1;
+        }
+
+        switch (key)
+        {
+        case OV_KEY_UP:
+        case 'k':
+            if (lay->help_sel > 0)
+            {
+                lay->help_sel--;
+            }
+            break;
+
+        case OV_KEY_DOWN:
+        case 'j':
+            if (lay->help_sel < nvis - 1)
+            {
+                lay->help_sel++;
+            }
+            break;
+
+        case OV_KEY_HOME:
+            lay->help_sel = 0;
+            break;
+
+        case OV_KEY_END:
+            lay->help_sel = nvis - 1;
+            break;
+
+        case OV_KEY_PGUP:
+            lay->help_sel -= 8;
+            if (lay->help_sel < 0)
+            {
+                lay->help_sel = 0;
+            }
+            break;
+
+        case OV_KEY_PGDN:
+            lay->help_sel += 8;
+            if (lay->help_sel >= nvis)
+            {
+                lay->help_sel = nvis - 1;
+            }
+            break;
+
+        case OV_KEY_ENTER:
+        case '\r':
+        {
+            ov_help_toggle_at(lay, lay->help_sel);
+            /* Clamp cursor after expand change */
+            int new_nvis =
+                ov_help_visible_count(lay);
+            if (lay->help_sel >= new_nvis)
+            {
+                lay->help_sel = new_nvis - 1;
+            }
+            break;
+        }
+
+        case 'q':
+        case 27: /* ESC */
+            lay->show_help = 0;
+            break;
+
+        default:
+            /* Unknown key while help showing —
+             * ignore silently */
+            break;
+        }
         return 0;
     }
 

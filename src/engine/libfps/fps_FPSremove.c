@@ -31,9 +31,6 @@ errno_t functionparameter_FPSremove(FPS *fps)
         fps->md->name,
         fps->md->name);
 
-    fps->SMfd = -1;
-    close(fps->SMfd);
-
     //    remove(conflogfname);
     int ret     = remove(fpsfname);
     int errcode = errno;

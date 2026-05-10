@@ -9,7 +9,10 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <getopt.h>
-#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <errno.h>
 #include <regex.h>
 
 #include "processinfo_internal.h"
@@ -25,6 +28,7 @@
     "Scan the processinfo directory (e.g. /dev/shm) and remove all\n" \
     "proc.<name>.<pid>.shm files whose base name matches the given\n" \
     "POSIX extended regular expression.\n" \
+    "If --clean-dead is used, removes all entries with status CRASHED or STOPPED.\n" \
     "Also deactivates matching entries in the global pinfolist."
 
 static void print_help(const char *progname, int mh_color)
@@ -38,6 +42,9 @@ static void print_help(const char *progname, int mh_color)
     milk_help_section("Description", mh_color);
     printf("  %s\n\n", PI_RM_DESC_LONG);
     milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-c, --clean-dead",
+           mh_color ? MH_RST : "", "Remove all CRASHED or STOPPED entries");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-v, --verbose",
            mh_color ? MH_RST : "", "Verbose output");
@@ -75,19 +82,22 @@ int main(int argc, char *argv[])
     }
 
     int verbose = 0;
+    int clean_dead = 0;
     int opt;
 
     static struct option long_options[] = {
-        {"verbose", no_argument,       0, 'v'},
-        {"help",    no_argument,       0, 'h'},
+        {"clean-dead", no_argument,       0, 'c'},
+        {"verbose",    no_argument,       0, 'v'},
+        {"help",       no_argument,       0, 'h'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "vh",
+    while ((opt = getopt_long(argc, argv, "cvh",
                               long_options, NULL)) != -1)
     {
         switch (opt)
         {
+            case 'c': clean_dead = 1; break;
             case 'v': verbose = 1; break;
             case 'h': break; /* handled above */
             default:
@@ -96,14 +106,21 @@ int main(int argc, char *argv[])
         }
     }
 
+    const char *pattern;
     if (optind >= argc)
     {
-        fprintf(stderr, "Error: missing process name.\n");
-        print_help(argv[0], 0);
-        return 1;
+        if (clean_dead) {
+            pattern = ".*";
+        } else {
+            fprintf(stderr, "Error: missing process name.\n");
+            print_help(argv[0], 0);
+            return 1;
+        }
     }
-
-    const char *pattern = argv[optind];
+    else
+    {
+        pattern = argv[optind];
+    }
     regex_t regex;
     int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
     if (ret != 0) {
@@ -144,13 +161,37 @@ int main(int argc, char *argv[])
                 char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
                 snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, entry->d_name);
             
-                if (verbose) {
-                    printf("Removing %s\n", fullpath);
+                int should_remove = 1;
+
+                if (clean_dead) {
+                    should_remove = 0;
+                    int fd = open(fullpath, O_RDONLY);
+                    if (fd != -1) {
+                        PROCESSINFO *pinfo = mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
+                        if (pinfo != MAP_FAILED) {
+                            if (kill(pinfo->PID, 0) == -1 && errno == ESRCH) {
+                                // Process no longer exists
+                                should_remove = 1;
+                            } else if (pinfo->loopstat == PROCESSINFO_LOOPSTAT_CRASHED || 
+                                       pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP) {
+                                // Process exists but is explicitly marked crashed/stopped
+                                should_remove = 1;
+                            }
+                            munmap(pinfo, sizeof(PROCESSINFO));
+                        }
+                        close(fd);
+                    }
                 }
-                if (unlink(fullpath) == 0) {
-                    removed_count++;
-                } else {
-                    perror("unlink");
+
+                if (should_remove) {
+                    if (verbose) {
+                        printf("Removing %s\n", fullpath);
+                    }
+                    if (unlink(fullpath) == 0) {
+                        removed_count++;
+                    } else {
+                        perror("unlink");
+                    }
                 }
             }
         }
@@ -162,10 +203,28 @@ int main(int argc, char *argv[])
         if (pinfolist != NULL) {
             for (int i = 0; i < PROCESSINFOLISTSIZE; i++) {
                 if (pinfolist->active[i] != 0 && regexec(&regex, pinfolist->pnamearray[i], 0, NULL, 0) == 0) {
-                    if (verbose) {
-                        printf("Deactivating entry %d in pinfolist (PID %d)\n", i, pinfolist->PIDarray[i]);
+                    
+                    int should_deactivate = 1;
+
+                    if (clean_dead) {
+                        should_deactivate = 0;
+                        char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
+                        snprintf(fullpath, sizeof(fullpath), "%s/proc.%s.%d.shm", 
+                                 procdname, pinfolist->pnamearray[i], pinfolist->PIDarray[i]);
+                        
+                        // We check if the file was deleted in the previous step
+                        // If it doesn't exist anymore, it means it was deleted.
+                        if (access(fullpath, F_OK) != 0) {
+                            should_deactivate = 1;
+                        }
                     }
-                    pinfolist->active[i] = 0;
+
+                    if (should_deactivate) {
+                        if (verbose) {
+                            printf("Deactivating entry %d in pinfolist (PID %d)\n", i, pinfolist->PIDarray[i]);
+                        }
+                        pinfolist->active[i] = 0;
+                    }
                 }
             }
         }

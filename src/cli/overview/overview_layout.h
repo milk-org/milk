@@ -6,6 +6,9 @@
 #ifndef OVERVIEW_LAYOUT_H
 #define OVERVIEW_LAYOUT_H
 
+#include <stdint.h>
+#include <time.h>
+
 /* View modes */
 typedef enum {
     OV_VIEW_DASHBOARD = 0,
@@ -30,6 +33,34 @@ typedef enum {
     OV_FOCUS_COUNT,
 } ov_focus_t;
 
+/* ---- Command Log ---- */
+#define OV_CMDLOG_MAX  32  /* ring buffer capacity */
+#define OV_CMDLOG_MSG  96  /* max message length   */
+
+typedef enum {
+    OV_CMDLOG_INFO = 0, /* neutral informational */
+    OV_CMDLOG_OK,       /* action succeeded      */
+    OV_CMDLOG_FAIL,     /* action failed         */
+    OV_CMDLOG_WARN,     /* warning / partial     */
+} ov_cmdlog_level_t;
+
+typedef struct {
+    struct timespec    ts;
+    char               msg[OV_CMDLOG_MSG];
+    ov_cmdlog_level_t  level;
+} OV_CMDLOG_ENTRY;
+
+typedef struct {
+    OV_CMDLOG_ENTRY entries[OV_CMDLOG_MAX];
+    int  head;   /* next write position     */
+    int  count;  /* entries currently stored */
+} OV_CMDLOG;
+
+void ov_cmdlog_push(
+    OV_CMDLOG          *log,
+    ov_cmdlog_level_t   level,
+    const char         *fmt, ...);
+
 /* Layout state */
 typedef struct {
     int          term_rows;
@@ -45,6 +76,8 @@ typedef struct {
     int          scroll_fps;
     int          scroll_graph;
     int          show_help;
+    int          help_sel;     /* cursor row in help */
+    uint32_t     help_expand;  /* bitmask: 1=expanded */
     int          paused;
     char         filter[64];
     /* Per-panel regex filter strings */
@@ -59,7 +92,11 @@ typedef struct {
     OV_RECT      r_procs;
     OV_RECT      r_fps;
     OV_RECT      r_graph;
+    OV_RECT      r_cmdlog;
     OV_RECT      r_status;
+    /* Command log */
+    OV_CMDLOG    cmdlog;
+    int          cmdlog_rows; /* 0=hidden, default=4 */
     /* Control mode */
     int          ctrl_mode;
     int          ctrl_blink;
