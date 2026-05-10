@@ -227,6 +227,7 @@ add_executable(milkCTRL
     ../overview/overview_data_sort.c
     ../overview/overview_scan.c
     ../overview/overview_layout.c
+    ../overview/overview_cmdlog.c
     ../overview/overview_render.c
     ../overview/overview_render_streams.c
     ../overview/overview_render_procs.c
@@ -234,6 +235,7 @@ add_executable(milkCTRL
     ../overview/overview_render_graph.c
     ../overview/overview_render_status.c
     ../overview/overview_render_help.c
+    ../overview/overview_render_cmdlog.c
     ../overview/overview_input.c
     ../overview/overview_ctrl.c
     ../overview/stream_graph.c

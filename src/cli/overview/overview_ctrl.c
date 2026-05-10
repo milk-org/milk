@@ -6,11 +6,16 @@
  *   - FPS: toggle run process (r key), toggle conf process (s key)
  *   - Stream: delete SHM (d key)
  *   - Process: send SIGTERM (k key)
+ *
+ * Each function posts a status message to the OV_CMDLOG ring
+ * buffer so the user gets visual feedback on what happened.
  */
 
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <sys/types.h>
 
 #include "overview_defs.h"
@@ -27,7 +32,7 @@ errno_t functionparameter_FPSremove(FPS *fps);
 /* ImageStreamIO for stream open/destroy */
 #include "ImageStreamIO/ImageStreamIO.h"
 
-/* Forward-declare FPS connect/disconnect (same pattern as overview_data.c) */
+/* Forward-declare FPS connect/disconnect */
 long fps_connect(
     const char               *name,
     FPS *fps,
@@ -40,14 +45,16 @@ int fps_disconnect(
  * ========================================================= */
 
 /**
- * ov_ctrl_fps_signal - write a command code into the FPS SHM.
+ * ov_ctrl_fps_signal - write a command code into
+ * the FPS SHM.
  * @fps_name: FPS instance name
  * @cmd:      FPSCMDCODE_* value to OR into md->signal
  *
- * Opens the FPS in simple (read/write) mode, ORs the command,
- * and immediately disconnects.
+ * Opens the FPS in simple (read/write) mode, ORs the
+ * command, and immediately disconnects.
  *
- * Return: 0 on success, -1 if the SHM could not be opened.
+ * Return: 0 on success, -1 if the SHM could not be
+ * opened.
  */
 static int ov_ctrl_fps_signal(
     const char *fps_name,
@@ -77,13 +84,13 @@ static int ov_ctrl_fps_signal(
  * ========================================================= */
 
 /**
- * ov_ctrl_fps_run_toggle - start or stop the FPS run process.
- * @f: FPS model entry (read-only snapshot from OV_MODEL)
- *
- * Sends FPSCMDCODE_RUNSTART when run is not alive,
- * FPSCMDCODE_RUNSTOP when it is.
+ * ov_ctrl_fps_run_toggle - start or stop the FPS run.
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_run_toggle(const OV_FPS *f)
+void ov_ctrl_fps_run_toggle(
+    const OV_FPS *f,
+    OV_CMDLOG    *log)
 {
     if (f == NULL || !f->valid)
     {
@@ -93,18 +100,28 @@ void ov_ctrl_fps_run_toggle(const OV_FPS *f)
     uint32_t cmd = f->run_alive
                    ? FPSCMDCODE_RUNSTOP
                    : FPSCMDCODE_RUNSTART;
+    const char *action = f->run_alive
+                         ? "RUN stop" : "RUN start";
 
-    ov_ctrl_fps_signal(f->name, cmd);
+    int rc = ov_ctrl_fps_signal(f->name, cmd);
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log,
+                       rc == 0 ? OV_CMDLOG_OK
+                               : OV_CMDLOG_FAIL,
+                       "FPS \"%s\" — %s",
+                       f->name, action);
+    }
 }
 
 /**
- * ov_ctrl_fps_conf_toggle - start or stop the FPS conf process.
- * @f: FPS model entry (read-only snapshot from OV_MODEL)
- *
- * Sends FPSCMDCODE_CONFSTART when conf is not alive,
- * FPSCMDCODE_CONFSTOP when it is.
+ * ov_ctrl_fps_conf_toggle - start or stop the FPS conf.
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_conf_toggle(const OV_FPS *f)
+void ov_ctrl_fps_conf_toggle(
+    const OV_FPS *f,
+    OV_CMDLOG    *log)
 {
     if (f == NULL || !f->valid)
     {
@@ -114,18 +131,28 @@ void ov_ctrl_fps_conf_toggle(const OV_FPS *f)
     uint32_t cmd = f->conf_alive
                    ? FPSCMDCODE_CONFSTOP
                    : FPSCMDCODE_CONFSTART;
+    const char *action = f->conf_alive
+                         ? "CONF stop" : "CONF start";
 
-    ov_ctrl_fps_signal(f->name, cmd);
+    int rc = ov_ctrl_fps_signal(f->name, cmd);
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log,
+                       rc == 0 ? OV_CMDLOG_OK
+                               : OV_CMDLOG_FAIL,
+                       "FPS \"%s\" — %s",
+                       f->name, action);
+    }
 }
 
 /**
  * ov_ctrl_stream_delete - destroy a shared memory stream.
- * @s: stream model entry (read-only snapshot from OV_MODEL)
- *
- * Opens the stream SHM, calls ImageStreamIO_destroyIm() to
- * unmap and unlink the file, then marks the IMAGE as freed.
+ * @s:   stream model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_stream_delete(const OV_STREAM *s)
+void ov_ctrl_stream_delete(
+    const OV_STREAM *s,
+    OV_CMDLOG       *log)
 {
     if (s == NULL || !s->valid)
     {
@@ -137,37 +164,74 @@ void ov_ctrl_stream_delete(const OV_STREAM *s)
 
     if (ImageStreamIO_openIm(&im, s->name) != 0)
     {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Stream \"%s\" — delete"
+                           " failed (open)",
+                           s->name);
+        }
         return;
     }
 
     ImageStreamIO_destroyIm(&im);
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_OK,
+                       "Stream \"%s\" — deleted",
+                       s->name);
+    }
 }
 
 /**
  * ov_ctrl_proc_kill - send SIGTERM to a process.
- * @p: process model entry (read-only snapshot from OV_MODEL)
- *
- * Sends SIGTERM to p->PID.  No error is reported if the
- * process has already exited (kill returns ESRCH).
+ * @p:   process model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_kill(const OV_PROC *p)
+void ov_ctrl_proc_kill(
+    const OV_PROC *p,
+    OV_CMDLOG     *log)
 {
     if (p == NULL || p->PID <= 0)
     {
         return;
     }
 
-    kill(p->PID, SIGTERM);
+    int rc = kill(p->PID, SIGTERM);
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log,
+                       rc == 0 ? OV_CMDLOG_OK
+                               : OV_CMDLOG_FAIL,
+                       "Process \"%s\" (PID %d)"
+                       " — SIGTERM",
+                       p->name, p->PID);
+    }
 }
 
 /**
  * ov_ctrl_proc_sigkill - send SIGKILL to a process.
- * @p: process model entry
+ * @p:   process model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_sigkill(const OV_PROC *p)
+void ov_ctrl_proc_sigkill(
+    const OV_PROC *p,
+    OV_CMDLOG     *log)
 {
-    if (p == NULL || p->PID <= 0) return;
-    kill(p->PID, SIGKILL);
+    if (p == NULL || p->PID <= 0)
+    {
+        return;
+    }
+    int rc = kill(p->PID, SIGKILL);
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log,
+                       rc == 0 ? OV_CMDLOG_OK
+                               : OV_CMDLOG_FAIL,
+                       "Process \"%s\" (PID %d)"
+                       " — SIGKILL",
+                       p->name, p->PID);
+    }
 }
 
 /**
@@ -202,47 +266,86 @@ static int pid_is_stopped(pid_t pid)
 }
 
 /**
- * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT
- * for a process.
- * @p: process model entry
+ * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_pause_toggle(const OV_PROC *p)
+void ov_ctrl_proc_pause_toggle(
+    const OV_PROC *p,
+    OV_CMDLOG     *log)
 {
     if (p == NULL || p->PID <= 0)
     {
         return;
     }
-    kill(p->PID, pid_is_stopped(p->PID)
-                 ? SIGCONT : SIGSTOP);
+    int stopped = pid_is_stopped(p->PID);
+    int sig = stopped ? SIGCONT : SIGSTOP;
+    int rc = kill(p->PID, sig);
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log,
+                       rc == 0 ? OV_CMDLOG_OK
+                               : OV_CMDLOG_FAIL,
+                       "Process \"%s\" (PID %d) — %s",
+                       p->name, p->PID,
+                       stopped ? "resumed"
+                               : "paused");
+    }
 }
 
 /**
  * ov_ctrl_fps_signal_pid - send signal to FPS PIDs.
  * @f:   FPS model entry
  * @sig: signal number
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig)
+void ov_ctrl_fps_signal_pid(
+    const OV_FPS *f,
+    int           sig,
+    OV_CMDLOG    *log)
 {
     if (f == NULL)
     {
         return;
     }
+    int ok = 0;
     if (f->run_alive && f->runpid > 0)
     {
-        kill(f->runpid, sig);
+        if (kill(f->runpid, sig) == 0)
+        {
+            ok = 1;
+        }
     }
     if (f->conf_alive && f->confpid > 0)
     {
-        kill(f->confpid, sig);
+        if (kill(f->confpid, sig) == 0)
+        {
+            ok = 1;
+        }
+    }
+    if (log != NULL)
+    {
+        const char *signame =
+            (sig == SIGTERM) ? "SIGTERM"
+            : (sig == SIGKILL) ? "SIGKILL"
+            : "signal";
+        ov_cmdlog_push(log,
+                       ok ? OV_CMDLOG_OK
+                          : OV_CMDLOG_FAIL,
+                       "FPS \"%s\" — %s sent",
+                       f->name, signame);
     }
 }
 
 /**
  * ov_ctrl_fps_pause_toggle - toggle SIGSTOP/SIGCONT
  * for FPS run and conf processes.
- * @f: FPS model entry
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_pause_toggle(const OV_FPS *f)
+void ov_ctrl_fps_pause_toggle(
+    const OV_FPS *f,
+    OV_CMDLOG    *log)
 {
     if (f == NULL)
     {
@@ -263,17 +366,29 @@ void ov_ctrl_fps_pause_toggle(const OV_FPS *f)
     {
         kill(f->confpid, sig);
     }
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_OK,
+                       "FPS \"%s\" — %s",
+                       f->name,
+                       stopped ? "resumed"
+                               : "paused");
+    }
 }
 
 /**
- * ov_ctrl_fps_remove - stop conf/run then remove the FPS SHM.
- * @f: FPS model entry (read-only snapshot from OV_MODEL)
+ * ov_ctrl_fps_remove - stop conf/run then remove FPS.
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  *
- * Connects to the FPS, sends CONFstop and RUNstop, then
- * removes the shared-memory file and associated tmux session.
- * Mirrors fpsCTRL's ctrl+e behaviour.
+ * The underlying FPS functions call system("tmux ...")
+ * which can print "can't find window" errors to stderr.
+ * We temporarily redirect stderr to /dev/null to prevent
+ * TUI corruption, then restore it.
  */
-void ov_ctrl_fps_remove(const OV_FPS *f)
+void ov_ctrl_fps_remove(
+    const OV_FPS *f,
+    OV_CMDLOG    *log)
 {
     if (f == NULL || !f->valid)
     {
@@ -283,15 +398,51 @@ void ov_ctrl_fps_remove(const OV_FPS *f)
     FPS fps;
     memset(&fps, 0, sizeof(fps));
 
-    long rc = fps_connect(f->name, &fps, FPSCONNECT_SIMPLE);
+    long rc = fps_connect(
+                  f->name, &fps, FPSCONNECT_SIMPLE);
     if (rc == -1)
     {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "FPS \"%s\" — erase"
+                           " failed (connect)",
+                           f->name);
+        }
         return;
+    }
+
+    /* Suppress stderr from tmux commands to avoid
+     * "can't find window/session" messages that
+     * corrupt the TUI display. */
+    int saved_stderr = dup(STDERR_FILENO);
+    {
+        int devnull = open("/dev/null", O_WRONLY);
+        if (devnull >= 0)
+        {
+            dup2(devnull, STDERR_FILENO);
+            close(devnull);
+        }
     }
 
     functionparameter_CONFstop(&fps);
     functionparameter_RUNstop(&fps);
     functionparameter_FPSremove(&fps);
 
+    /* Restore stderr */
+    if (saved_stderr >= 0)
+    {
+        dup2(saved_stderr, STDERR_FILENO);
+        close(saved_stderr);
+    }
+
     fps_disconnect(&fps);
+
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_OK,
+                       "FPS \"%s\" — erased",
+                       f->name);
+    }
 }
+

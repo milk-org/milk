@@ -7,51 +7,91 @@
 #define OVERVIEW_CTRL_H
 
 #include "overview_data.h"
+#include "overview_layout.h"
 
 /**
  * ov_ctrl_fps_run_toggle - start or stop the FPS run process.
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_run_toggle(const OV_FPS *f);
+void ov_ctrl_fps_run_toggle(
+    const OV_FPS *f,
+    OV_CMDLOG    *log);
 
 /**
  * ov_ctrl_fps_conf_toggle - start or stop the FPS conf process.
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_conf_toggle(const OV_FPS *f);
+void ov_ctrl_fps_conf_toggle(
+    const OV_FPS *f,
+    OV_CMDLOG    *log);
 
 /**
  * ov_ctrl_stream_delete - destroy a shared memory stream.
+ * @s:   stream model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_stream_delete(const OV_STREAM *s);
+void ov_ctrl_stream_delete(
+    const OV_STREAM *s,
+    OV_CMDLOG       *log);
 
 /**
  * ov_ctrl_proc_kill - send SIGTERM to a process.
- * @p: process model entry (read-only snapshot from OV_MODEL)
+ * @p:   process model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_kill(const OV_PROC *p);
+void ov_ctrl_proc_kill(
+    const OV_PROC *p,
+    OV_CMDLOG     *log);
 
 /**
  * ov_ctrl_proc_sigkill - send SIGKILL to a process.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_sigkill(const OV_PROC *p);
+void ov_ctrl_proc_sigkill(
+    const OV_PROC *p,
+    OV_CMDLOG     *log);
 
 /**
- * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT for a process.
+ * ov_ctrl_proc_pause_toggle - toggle SIGSTOP/SIGCONT.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_proc_pause_toggle(const OV_PROC *p);
+void ov_ctrl_proc_pause_toggle(
+    const OV_PROC *p,
+    OV_CMDLOG     *log);
 
 /**
- * ov_ctrl_fps_signal_pid - helper to send signal to FPS PIDs
+ * ov_ctrl_fps_signal_pid - send signal to FPS PIDs.
+ * @f:   FPS model entry
+ * @sig: signal number
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_signal_pid(const OV_FPS *f, int sig);
+void ov_ctrl_fps_signal_pid(
+    const OV_FPS *f,
+    int           sig,
+    OV_CMDLOG    *log);
 
 /**
- * ov_ctrl_fps_pause_toggle - toggle SIGSTOP/SIGCONT for FPS processes.
+ * ov_ctrl_fps_pause_toggle - toggle SIGSTOP/SIGCONT
+ * for FPS processes.
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_pause_toggle(const OV_FPS *f);
+void ov_ctrl_fps_pause_toggle(
+    const OV_FPS *f,
+    OV_CMDLOG    *log);
 
 /**
- * ov_ctrl_fps_remove - stop conf/run and remove the FPS SHM entry.
+ * ov_ctrl_fps_remove - stop conf/run and remove the
+ * FPS SHM entry.
+ * @f:   FPS model entry
+ * @log: command log (may be NULL)
  */
-void ov_ctrl_fps_remove(const OV_FPS *f);
+void ov_ctrl_fps_remove(
+    const OV_FPS *f,
+    OV_CMDLOG    *log);
 
 #endif /* OVERVIEW_CTRL_H */

@@ -189,10 +189,19 @@ void ov_render_status(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m);
 
+void ov_render_cmdlog(const OV_LAYOUT *lay);
+
+void ov_render_help(const OV_LAYOUT *lay);
+void ov_render_preview_line(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
+
+/* Help panel utilities */
+int ov_help_nb_sections(void);
+int ov_help_visible_count(const OV_LAYOUT *lay);
+int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
 
 extern float ov_scan_get_interval(void);
 
 
 #endif /* OVERVIEW_RENDER_INTERNAL_H */
-void ov_render_help(const OV_LAYOUT *lay);
-void ov_render_preview_line(const OV_LAYOUT *lay, const OV_MODEL *m);
