@@ -458,6 +458,7 @@ static inline IMGID _stream_connect_create_2D_impl(
         imgc.mdt->size[1]    = ysize;
         imgc.mdt->NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = imgid_compare(img, imgc);
+        imgid_free(&imgc);
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
@@ -545,6 +546,7 @@ static inline IMGID stream_connect_create_3D(
         imgc.mdt->size[2]    = zsize;
         imgc.mdt->NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = imgid_compare(img, imgc);
+        imgid_free(&imgc);
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
