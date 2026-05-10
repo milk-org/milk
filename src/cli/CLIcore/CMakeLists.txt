@@ -313,6 +313,9 @@ install(TARGETS milk-procinfo-info DESTINATION bin)
 add_executable(milk-fuzzy-match
     milk-fuzzy-match.c
 )
+target_include_directories(milk-fuzzy-match PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+)
 install(TARGETS milk-fuzzy-match DESTINATION bin)
 
 # TESTING
