@@ -17,12 +17,18 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
+#include "libmilkdata/milk_type_dispatch.h"
 
 #include "image_total.h"
 
 #ifdef _OPENMP
 #include <omp.h>
 #define OMP_NELEMENT_LIMIT 1000000
+#define MILK_PRAGMA_OMP_MIN _Pragma("omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)")
+#define MILK_PRAGMA_OMP_MAX _Pragma("omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)")
+#else
+#define MILK_PRAGMA_OMP_MIN
+#define MILK_PRAGMA_OMP_MAX
 #endif
 
 double arith_image_mean_IMGID(IMGID *imgin)
@@ -60,202 +66,33 @@ double MILK_HOT arith_image_min_IMGID(IMGID *imgin)
 
     nelement = imgin->md[0].nelement;
 
-    if(datatype == _DATATYPE_FLOAT)
-    {
-        float * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.F);
-        float value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
+#define MIN_BODY(MBR) \
+    { \
+        __typeof__(imgin->im->array.MBR[0]) * MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR); \
+        __typeof__(ptr[0]) value = ptr[0]; \
+        MILK_PRAGMA_OMP_MIN \
+        for(uint64_t ii = 0; ii < nelement; ii++) \
+        { \
+            if(ptr[ii] < value) \
+            { \
+                value = ptr[ii]; \
+            } \
+        } \
+        OK = 1; \
+        return ((double) value); \
     }
 
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-        double * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.D);
-        double value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return (value);
-    }
-
-    else if(datatype == _DATATYPE_UINT8)
-    {
-        uint8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI8);
-        uint8_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_UINT16)
-    {
-        uint16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
-        uint16_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_UINT32)
-    {
-        uint32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI32);
-        uint32_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_UINT64)
-    {
-        uint64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI64);
-        uint64_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT8)
-    {
-        int8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI8);
-        int8_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT16)
-    {
-        int16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI16);
-        int16_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT32)
-    {
-        int32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI32);
-        int32_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT64)
-    {
-        int64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI64);
-        int64_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] < value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
+    MILK_FOR_EACH_DATATYPE(datatype, MIN_BODY, MIN_BODY(D))
+#undef MIN_BODY
 
     if(OK == 0)
     {
-        printf("Error : Invalid data format for arith_image_min\n");
+        PRINT_ERROR("invalid data type");
+        return 0.0;
     }
 
-    return (0);
+    return 0.0;
 }
 
 double arith_image_min(const char *ID_name)
@@ -266,9 +103,9 @@ double arith_image_min(const char *ID_name)
 
 double MILK_HOT arith_image_max_IMGID(IMGID *imgin)
 {
-    long    nelement;
-    uint8_t datatype;
-    int     OK = 0;
+    uint32_t datatype;
+    uint64_t nelement;
+    int      OK = 0;
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
@@ -278,195 +115,25 @@ double MILK_HOT arith_image_max_IMGID(IMGID *imgin)
 
     nelement = imgin->md[0].nelement;
 
-    if(datatype == _DATATYPE_FLOAT)
-    {
-        float * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.F);
-        float value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
+#define MAX_BODY(MBR) \
+    { \
+        __typeof__(imgin->im->array.MBR[0]) * MILK_RESTRICT ptr = \
+            MILK_ASSUME_ALIGNED(imgin->im->array.MBR); \
+        __typeof__(ptr[0]) value = ptr[0]; \
+        MILK_PRAGMA_OMP_MAX \
+        for(uint64_t ii = 0; ii < nelement; ii++) \
+        { \
+            if(ptr[ii] > value) \
+            { \
+                value = ptr[ii]; \
+            } \
+        } \
+        OK = 1; \
+        return ((double) value); \
     }
 
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-        double * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.D);
-        double value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return (value);
-    }
-
-    else if(datatype == _DATATYPE_UINT8)
-    {
-        uint8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI8);
-        uint8_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_UINT16)
-    {
-        uint16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
-        uint16_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_UINT32)
-    {
-        uint32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI32);
-        uint32_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_UINT64)
-    {
-        uint64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI64);
-        uint64_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT8)
-    {
-        int8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI8);
-        int8_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT16)
-    {
-        int16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI16);
-        int16_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT32)
-    {
-        int32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI32);
-        int32_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
-
-    else if(datatype == _DATATYPE_INT64)
-    {
-        int64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI64);
-        int64_t value = ptr[0];
-#ifdef _OPENMP
-        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            if(ptr[ii] > value)
-            {
-                value = ptr[ii];
-            }
-        }
-        OK = 1;
-        return ((double) value);
-    }
+    MILK_FOR_EACH_DATATYPE(datatype, MAX_BODY, MAX_BODY(D))
+#undef MAX_BODY
 
     if(OK == 0)
     {
