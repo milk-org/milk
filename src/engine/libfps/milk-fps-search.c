@@ -14,50 +14,69 @@
 #include "fps_globals.h"
 #include "fps_scan.h"
 #include "fps_printparameter_valuestring.h"
+#include "milk_help.h"
 
-/* ANSI color codes */
-#define C_TITLE "\033[1;36m"  /* Cyan Bold   */
-#define C_HDR   "\033[1;34m"  /* Blue Bold   */
-#define C_NAME  "\033[1;32m"  /* Green Bold  */
-#define C_TYPE  "\033[1;33m"  /* Yellow Bold */
-#define C_SIZE  "\033[1m"     /* White Bold  */
-#define C_CNT   "\033[1;35m"  /* Magenta Bold */
-#define C_SEM   "\033[36m"    /* Cyan        */
-#define C_LINK  "\033[36m"    /* Cyan        */
-#define C_ERR   "\033[1;31m"  /* Red Bold    */
-#define C_DIM   "\033[2m"     /* Dim         */
-#define C_RST   "\033[0m"     /* Reset       */
+#define C_TITLE MH_TITLE
+#define C_HDR   MH_HDR
+#define C_NAME  MH_CMD
+#define C_TYPE  MH_NOTE
+#define C_DIM   MH_DIM
+#define C_RST   MH_RST
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options] <regex pattern>\n", progname);
-    printf("Search for parameters across all active FPS instances matching a regex pattern.\n");
-    printf("The regex pattern is matched against the full parameter name, which is formatted as:\n");
-    printf("  <fpsname>.<parameter_key>\n");
-    printf("\n");
-    printf("Examples:\n");
-    printf("  %s \".*\"\n", progname);
-    printf("      Match all parameters in all active FPS instances.\n");
-    printf("  %s \"^myfps\\.\"\n", progname);
-    printf("      Match all parameters in the FPS named 'myfps'.\n");
-    printf("  %s \"\\.procinfo\\.\"\n", progname);
-    printf("      Match all parameters containing '.procinfo.' across all FPS instances.\n");
-    printf("  %s \"^myfps\\.procinfo\\.enabled$\" \n", progname);
-    printf("      Match the exact parameter 'procinfo.enabled' in the FPS 'myfps'.\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -v, --verbose   Verbose mode (print search details)\n");
-    printf("  -h, --help      Show this help message\n");
+#define FS_DESC "search FPS parameters for matching values"
+#define FS_DESC_LONG \
+    "Scan all active FPS instances in /dev/shm and print every\n" \
+    "parameter whose full name (<fpsname>.<key>) matches the given\n" \
+    "POSIX extended regular expression.\n" \
+    "Output columns: keyword, type, current value, description."
+
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, FS_DESC, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] %s<regex>%s\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", FS_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-v, --verbose",
+           mh_color ? MH_RST : "", "Verbose output");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-fps-search %s\".*\"%s\n",
+           mh_color ? MH_DIM : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-fps-search %s\"^myfps\\\\.\"\n%s\n",
+           mh_color ? MH_DIM : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    const char *see_also[] = { "milk-fps-list", "milk-fps-info" };
+    milk_help_see_also(see_also, 2, mh_color);
 }
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                FS_DESC, FS_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("search FPS parameters for matching values\\n");
+        print_help(argv[0], mh_color);
         return 0;
     }
 
@@ -71,26 +90,24 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "vh1", long_options, NULL)) != -1) {
-        switch (opt) {
-            case 'v':
-                verbose = 1;
-                break;
+    while ((opt = getopt_long(argc, argv, "vh1",
+                              long_options, NULL)) != -1)
+    {
+        switch (opt)
+        {
+            case 'v': verbose = 1; break;
             case 'h':
-                print_help(argv[0]);
-                return 0;
-            case '1':
-                printf("search FPS parameters for matching values\\n");
-                return 0;
+            case '1': break; /* handled above */
             default:
-                print_help(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
         }
     }
 
-    if (optind >= argc) {
+    if (optind >= argc)
+    {
         fprintf(stderr, "Error: missing regex pattern argument.\n");
-        print_help(argv[0]);
+        print_help(argv[0], 0);
         return 1;
     }
 
