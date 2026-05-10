@@ -22,6 +22,14 @@
 #include "fpsseq.h"
 #include "fps.h"
 #include "fps_scan.h"
+#include "milk_help.h"
+
+#define SEQ_ONELINE "FPS sequencer daemon"
+#define SEQ_DESC_LONG \
+    "Standalone FPS sequencer engine that manages task scheduling\n" \
+    "and execution for milk FPS pipelines.\n" \
+    "Reads commands from a FIFO, executes tasks in order, and\n" \
+    "optionally daemonizes (double-fork, PID file, log redirect)."
 
 static int keep_running = 1;
 
@@ -134,28 +142,66 @@ static int daemonize(
     return 0;
 }
 
-static void print_help()
+static void print_help(const char *prog, int mh_color)
 {
-    printf("milk-seq - Standalone FPS Sequencer Engine\n\n");
-    printf("Usage: milk-seq -n <name> [options]\n\n");
-    printf("Options:\n");
-    printf("  -n <name>        Sequencer name (required)\n");
-    printf("  -f <script.seq>  Sequence file to load on startup\n");
-    printf("  --headless       Run silently without TUI (default)\n");
-    printf("  --daemon         Daemonize (fork, detach from terminal)\n");
-    printf("  --fifo <path>    Custom FIFO path (default: /tmp/milkseq.<name>.fifo)\n");
-    printf("  --timeout <sec>  Exit after idle for <sec> seconds\n");
-    printf("  -h, --help       Show this brief help\n\n");
-    printf("When --daemon is used, PID file and log are written to\n");
-    printf("$MILK_SHM_DIR (default /milk/shm):\n");
+    milk_help_banner(prog, SEQ_ONELINE, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s %s-n <name>%s [%soptions%s]\n\n",
+           mh_color ? MH_CMD : "", prog, mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", SEQ_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "-n <name>",
+           mh_color ? MH_RST : "", "Sequencer name (required)");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "-f <script.seq>",
+           mh_color ? MH_RST : "", "Sequence file to load on startup");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "--headless",
+           mh_color ? MH_RST : "", "Run silently without TUI (default)");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "--daemon",
+           mh_color ? MH_RST : "", "Daemonize (fork, detach from terminal)");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "--fifo <path>",
+           mh_color ? MH_RST : "", "Custom FIFO path (default: /tmp/milkseq.<name>.fifo)");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "--timeout <sec>",
+           mh_color ? MH_RST : "", "Exit after idle for <sec> seconds");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-28s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-28s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Daemon paths", mh_color);
     printf("  PID: $MILK_SHM_DIR/milkseq.<name>.pid\n");
     printf("  Log: $MILK_SHM_DIR/milkseq.<name>.log\n\n");
-    printf("For extensive documentation, run `milk-seq-help`.\n");
 }
 
 
 int main(int argc, char **argv)
 {
+    int help_action = milk_help_init(argc, argv,
+                                    SEQ_ONELINE, SEQ_DESC_LONG);
+    if (help_action == MH_ACTION_H1 || help_action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (help_action == MH_ACTION_HELP);
+    if (help_action == MH_ACTION_HELP || help_action == MH_ACTION_MONO)
+    {
+        print_help(argv[0], mh_color);
+        return 0;
+    }
+
     char seq_name[FPSSEQ_NAME_MAX] = {0};
     char script_file[FPSSEQ_SCRIPT_PATH_MAX] = {0};
     char custom_fifo[FPSSEQ_FIFO_PATH_MAX] = {0};
@@ -167,15 +213,9 @@ int main(int argc, char **argv)
     // Parse arguments
     int i = 1;
     while (i < argc) {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i], "--help-oneline") == 0)
-        {
-            printf("FPS sequencer daemon\n");
-            return 0;
-        } else if (strcmp(argv[i], "-h") == 0 ||
-                   strcmp(argv[i], "--help") == 0) {
-            print_help();
-            return 0;
+        if (strcmp(argv[i], "-h") == 0 ||
+            strcmp(argv[i], "--help") == 0) {
+            break; /* handled above */
         } else if (strcmp(argv[i], "-n") == 0 && i + 1 < argc) {
             strncpy(seq_name, argv[i+1], FPSSEQ_NAME_MAX - 1);
             i += 2;
@@ -196,7 +236,7 @@ int main(int argc, char **argv)
             i++;
         } else {
             fprintf(stderr, "Unknown flag: %s\n", argv[i]);
-            print_help();
+            print_help(argv[0], 0);
             return 1;
         }
     }
