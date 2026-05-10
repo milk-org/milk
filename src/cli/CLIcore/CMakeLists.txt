@@ -190,6 +190,10 @@ add_executable(milk-streamCTRL
     ../streamCTRL/milk-streamCTRL.c
     ../streamCTRL/streamCTRL_TUI.c
     ../streamCTRL/streamCTRL_TUI_render.c
+    ../streamCTRL/streamCTRL_TUI_render_help.c
+    ../streamCTRL/streamCTRL_TUI_render_header.c
+    ../streamCTRL/streamCTRL_TUI_render_stream_rows.c
+    ../streamCTRL/streamCTRL_TUI_render_footer.c
     ../streamCTRL/streamCTRL_TUI_input.c
     ../streamCTRL/streamCTRL_find_streams.c
     ../streamCTRL/streamCTRL_print_inode.c
