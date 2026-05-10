@@ -229,6 +229,9 @@ add_executable(milkCTRL
     ../overview/overview_layout.c
     ../overview/overview_cmdlog.c
     ../overview/overview_render.c
+    ../overview/overview_render_detail.c
+    ../overview/overview_render_utils.c
+    ../overview/overview_render_relate.c
     ../overview/overview_render_streams.c
     ../overview/overview_render_procs.c
     ../overview/overview_render_fps.c

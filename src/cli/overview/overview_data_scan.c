@@ -690,47 +690,113 @@ void ov_scan_fps(OV_MODEL *model)
 }
 
 
-/* =========================================================
- * Process scanning
- * ========================================================= */
+/* Directory mtime for proc readdir skip */
+static struct timespec s_proc_mtime = {0, 0};
 
 void ov_scan_procs(OV_MODEL *model)
 {
     char shmdir[OV_SHMDIR_MAXLEN];
     function_parameter_struct_shmdirname(shmdir);
 
-    /* Persistent processinfo list mapping */
-    if (s_pilist == NULL)
+    /* Check directory mtime to skip readdir when
+     * no proc.*.shm files have been added or removed. */
+    struct stat dirstat;
+    if (stat(shmdir, &dirstat) != 0)
     {
-        char pilistfname[1024];
-        snprintf(pilistfname, sizeof(pilistfname),
-                 "%s/processinfo.list.shm", shmdir);
-
-        s_pilist_fd = open(pilistfname, O_RDONLY);
-        if (s_pilist_fd == -1)
-        {
-            model->nb_procs = 0;
-            return;
-        }
-
-        s_pilist =
-            (PROCESSINFOLIST *) mmap(
-                NULL,
-                sizeof(PROCESSINFOLIST),
-                PROT_READ,
-                MAP_SHARED,
-                s_pilist_fd,
-                0);
-
-        if (s_pilist == MAP_FAILED)
-        {
-            close(s_pilist_fd);
-            s_pilist    = NULL;
-            s_pilist_fd = -1;
-            model->nb_procs = 0;
-            return;
-        }
+        model->nb_procs = 0;
+        return;
     }
+
+    int dir_changed =
+        (dirstat.st_mtim.tv_sec
+            != s_proc_mtime.tv_sec)
+        || (dirstat.st_mtim.tv_nsec
+            != s_proc_mtime.tv_nsec);
+
+    if (!dir_changed && s_pcache_nb > 0)
+    {
+        /* Fast path: refresh data from existing mappings */
+        int idx = 0;
+        for (int ci = 0;
+             ci < s_pcache_nb && idx < OV_MAX_PROCS;
+             ci++)
+        {
+            OV_PROC   *p     = &model->procs[idx];
+            PROCESSINFO *pinfo = s_pcache[ci].pinfo;
+            pid_t pid = s_pcache[ci].pid;
+
+            memset(p, 0, sizeof(OV_PROC));
+            strncpy(p->name, pinfo->name,
+                    sizeof(p->name) - 1);
+            p->PID    = pid;
+            p->valid  = 1;
+            p->active = 1;
+            p->loopstat = pinfo->loopstat;
+
+            int alive = pid_is_alive(pid);
+            if (!alive)
+            {
+                p->loopstat =
+                    (pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP)
+                    ? PROCESSINFO_LOOPSTAT_STOP
+                    : PROCESSINFO_LOOPSTAT_CRASHED;
+            }
+
+            p->CTRLval  = pinfo->CTRLval;
+            p->loopcnt  = pinfo->loopcnt;
+            p->mem_rss_kb = pid_get_rss_kb(pid);
+            p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
+            p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
+            if (p->dtmedian_iter_ns > 0)
+            {
+                p->loop_hz =
+                    1.0e9 / (double) p->dtmedian_iter_ns;
+            }
+            strncpy(p->trigstreamname,
+                    pinfo->triggerstreamname,
+                    sizeof(p->trigstreamname) - 1);
+            p->triggermode    = pinfo->triggermode;
+            p->triggersem     = pinfo->triggersem;
+            p->triggermissed  = pinfo->triggermissedframe;
+            p->triggermissed_cumul =
+                pinfo->triggermissedframe_cumul;
+            p->MeasureTiming  = pinfo->MeasureTiming;
+            p->rt_priority    = pinfo->RT_priority;
+
+            {
+                ov_proc_cache_t *ce = &s_pcache[ci];
+                unsigned long ut = 0, st = 0;
+                if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
+                {
+                    if (ce->has_prev_cpu
+                        && s_scan_dt_sec > 0.01)
+                    {
+                        long clk = sysconf(_SC_CLK_TCK);
+                        unsigned long dticks =
+                            (ut - ce->prev_utime)
+                            + (st - ce->prev_stime);
+                        ce->cpu_pct = (float)(
+                            (double) dticks
+                            / ((double) clk
+                                * s_scan_dt_sec)
+                            * 100.0);
+                    }
+                    ce->prev_utime   = ut;
+                    ce->prev_stime   = st;
+                    ce->has_prev_cpu = 1;
+                }
+                p->cpu_used = ce->cpu_pct;
+            }
+
+            p->node_idx = -1;
+            idx++;
+        }
+        model->nb_procs = idx;
+        return;
+    }
+
+    /* Full path: directory changed — rescan via readdir */
+    s_proc_mtime = dirstat.st_mtim;
 
     /* Mark all proc cache entries as not-in-use */
     for (int i = 0; i < s_pcache_nb; i++)
@@ -738,36 +804,69 @@ void ov_scan_procs(OV_MODEL *model)
         s_pcache[i].in_use = 0;
     }
 
-    int idx = 0;
-
-    /* Track high-water mark of active indices to
-     * avoid scanning all 50K entries every tick.
-     * Margin of 256 catches newly-added entries. */
-    static int s_pilist_hwm = 256;
-    int scan_limit = s_pilist_hwm + 256;
-    if (scan_limit > PROCESSINFOLISTSIZE)
+    DIR *dp = opendir(shmdir);
+    if (dp == NULL)
     {
-        scan_limit = PROCESSINFOLISTSIZE;
+        model->nb_procs = 0;
+        return;
     }
 
-    int hwm_this_tick = 0;
+    int idx = 0;
+    struct dirent *ep;
 
-    for (int i = 0;
-         i < scan_limit
-         && idx < OV_MAX_PROCS;
-         i++)
+    while ((ep = readdir(dp)) != NULL
+           && idx < OV_MAX_PROCS)
     {
-        if (s_pilist->active[i] == 0)
+        /* Match proc.*.shm — at minimum "proc.a.1.shm" */
+        const char *fname = ep->d_name;
+        if (strncmp(fname, "proc.", 5) != 0)
+        {
+            continue;
+        }
+        int flen = (int) strlen(fname);
+        if (flen < 10)
+        {
+            continue;
+        }
+        if (strcmp(fname + flen - 4, ".shm") != 0)
+        {
+            continue;
+        }
+        /* proc.NAME.PID.shm — find last dot before .shm
+         * to split NAME and PID. */
+        /* Find second-to-last '.' */
+        const char *p_sfx = fname + flen - 4; /* points to .shm */
+        const char *p_pid_end = p_sfx;        /* one past PID digits */
+        /* Walk backward to the '.' before PID */
+        const char *q = p_pid_end - 1;
+        while (q > fname + 5 && *q != '.')
+        {
+            q--;
+        }
+        if (*q != '.')
+        {
+            continue;
+        }
+        /* Parse PID */
+        pid_t pid = (pid_t) atoi(q + 1);
+        if (pid <= 0)
+        {
+            continue;
+        }
+        /* Extract process name: fname+5 .. q-1 */
+        int pname_len = (int)(q - (fname + 5));
+        if (pname_len <= 0 ||
+            pname_len >= (int) sizeof(((OV_PROC *)0)->name))
         {
             continue;
         }
 
-        hwm_this_tick = i;
+        /* Full path for mmap */
+        char fpath[1024];
+        snprintf(fpath, sizeof(fpath),
+                 "%s/%s", shmdir, fname);
 
-        pid_t pid = s_pilist->PIDarray[i];
-        int alive = pid_is_alive(pid);
-
-        /* Look up in proc cache */
+        /* Look up in proc cache by PID */
         int ci = pcache_find_pid(pid);
         PROCESSINFO *pinfo = NULL;
 
@@ -779,20 +878,13 @@ void ov_scan_procs(OV_MODEL *model)
         }
         else
         {
-            /* Cache miss — map new */
+            /* Cache miss — open and mmap */
             if (s_pcache_nb >= OV_MAX_PROCS)
             {
                 continue;
             }
 
-            char pinfofname[1024];
-            snprintf(pinfofname, sizeof(pinfofname),
-                     "%s/proc.%s.%06d.shm",
-                     shmdir,
-                     s_pilist->pnamearray[i],
-                     (int) pid);
-
-            int pfd = open(pinfofname, O_RDONLY);
+            int pfd = open(fpath, O_RDONLY);
             if (pfd == -1)
             {
                 continue;
@@ -820,99 +912,105 @@ void ov_scan_procs(OV_MODEL *model)
             s_pcache[ci].in_use = 1;
             s_pcache_nb++;
             pinfo = pm;
-        }
+        } // cache miss
 
         OV_PROC *p = &model->procs[idx];
         memset(p, 0, sizeof(OV_PROC));
-        strncpy(p->name,
-                s_pilist->pnamearray[i],
-                sizeof(p->name) - 1);
+
+        /* Use name from PROCESSINFO struct if available,
+         * otherwise fall back to the name from the filename. */
+        if (pinfo != NULL && pinfo->name[0] != '\0')
+        {
+            strncpy(p->name, pinfo->name,
+                    sizeof(p->name) - 1);
+        }
+        else
+        {
+            memcpy(p->name, fname + 5, (size_t) pname_len);
+            p->name[pname_len] = '\0';
+        }
+
         p->PID    = pid;
         p->valid  = 1;
         p->active = 1;
 
-        p->loopstat = pinfo->loopstat;
+        if (pinfo != NULL)
+        {
+            p->loopstat = pinfo->loopstat;
+        }
 
+        int alive = pid_is_alive(pid);
         if (!alive)
         {
-            if (s_pilist->active[i] == 2 || p->loopstat == PROCESSINFO_LOOPSTAT_STOP)
-            {
-                p->loopstat = PROCESSINFO_LOOPSTAT_STOP;
-            }
-            else
-            {
-                p->loopstat = PROCESSINFO_LOOPSTAT_CRASHED;
-            }
-        }
-        p->CTRLval  = pinfo->CTRLval;
-        p->loopcnt  = pinfo->loopcnt;
-        p->mem_rss_kb = pid_get_rss_kb(pinfo->PID);
-
-        /* Timing stats */
-        p->dtmedian_iter_ns =
-            pinfo->dtmedian_iter_ns;
-        p->dtmedian_exec_ns =
-            pinfo->dtmedian_exec_ns;
-        if (p->dtmedian_iter_ns > 0)
-        {
-            p->loop_hz =
-                1.0e9
-                / (double) p->dtmedian_iter_ns;
+            p->loopstat =
+                (pinfo != NULL &&
+                 pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP)
+                ? PROCESSINFO_LOOPSTAT_STOP
+                : PROCESSINFO_LOOPSTAT_CRASHED;
         }
 
-        /* Trigger info */
-        strncpy(p->trigstreamname,
-                pinfo->triggerstreamname,
-                sizeof(p->trigstreamname) - 1);
-        p->triggermode = pinfo->triggermode;
-        p->triggersem  = pinfo->triggersem;
-        p->triggermissed =
-            pinfo->triggermissedframe;
-        p->triggermissed_cumul =
-            pinfo->triggermissedframe_cumul;
-        p->MeasureTiming = pinfo->MeasureTiming;
-
-        p->rt_priority = pinfo->RT_priority;
-
-        /* CPU% tracking via cache delta */
+        if (pinfo != NULL)
         {
-            ov_proc_cache_t *ce = &s_pcache[ci];
-            unsigned long ut = 0, st = 0;
-            if (pid_get_cpu_ticks(pid, &ut, &st)
-                == 0)
+            p->CTRLval  = pinfo->CTRLval;
+            p->loopcnt  = pinfo->loopcnt;
+            p->mem_rss_kb = pid_get_rss_kb(pinfo->PID);
+
+            /* Timing stats */
+            p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
+            p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
+            if (p->dtmedian_iter_ns > 0)
             {
-                if (ce->has_prev_cpu
-                    && s_scan_dt_sec > 0.01)
+                p->loop_hz =
+                    1.0e9
+                    / (double) p->dtmedian_iter_ns;
+            }
+
+            /* Trigger info */
+            strncpy(p->trigstreamname,
+                    pinfo->triggerstreamname,
+                    sizeof(p->trigstreamname) - 1);
+            p->triggermode    = pinfo->triggermode;
+            p->triggersem     = pinfo->triggersem;
+            p->triggermissed  = pinfo->triggermissedframe;
+            p->triggermissed_cumul =
+                pinfo->triggermissedframe_cumul;
+            p->MeasureTiming  = pinfo->MeasureTiming;
+            p->rt_priority    = pinfo->RT_priority;
+
+            /* CPU% tracking via cache delta */
+            {
+                ov_proc_cache_t *ce = &s_pcache[ci];
+                unsigned long ut = 0, st = 0;
+                if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {
-                    long clk = sysconf(
-                        _SC_CLK_TCK);
-                    unsigned long dticks =
-                        (ut - ce->prev_utime)
-                        + (st - ce->prev_stime);
-                    ce->cpu_pct = (float)(
-                        (double) dticks
-                        / ((double) clk
-                            * s_scan_dt_sec)
-                        * 100.0);
+                    if (ce->has_prev_cpu
+                        && s_scan_dt_sec > 0.01)
+                    {
+                        long clk = sysconf(
+                            _SC_CLK_TCK);
+                        unsigned long dticks =
+                            (ut - ce->prev_utime)
+                            + (st - ce->prev_stime);
+                        ce->cpu_pct = (float)(
+                            (double) dticks
+                            / ((double) clk
+                                * s_scan_dt_sec)
+                            * 100.0);
+                    }
+                    ce->prev_utime   = ut;
+                    ce->prev_stime   = st;
+                    ce->has_prev_cpu = 1;
                 }
-                ce->prev_utime   = ut;
-                ce->prev_stime   = st;
-                ce->has_prev_cpu = 1;
+                p->cpu_used = ce->cpu_pct;
             }
-            p->cpu_used = ce->cpu_pct;
-        }
+        } // if (pinfo != NULL)
 
         p->node_idx = -1;
         idx++;
-    }
+    } // while readdir
 
+    closedir(dp);
     model->nb_procs = idx;
-
-    /* Update high-water mark */
-    if (hwm_this_tick > s_pilist_hwm)
-    {
-        s_pilist_hwm = hwm_this_tick;
-    }
 
     /* Evict stale proc cache entries */
     for (int i = s_pcache_nb - 1; i >= 0; i--)
@@ -955,20 +1053,13 @@ void ov_scan_cache_cleanup(void)
     }
     s_pcache_nb = 0;
 
-    /* Unmap the processinfo list */
-    if (s_pilist != NULL)
-    {
-        munmap(s_pilist, sizeof(PROCESSINFOLIST));
-        close(s_pilist_fd);
-        s_pilist    = NULL;
-        s_pilist_fd = -1;
-    }
-
     /* Reset directory mtime trackers */
     memset(&s_shm_mtime, 0,
            sizeof(s_shm_mtime));
     memset(&s_fps_mtime, 0,
            sizeof(s_fps_mtime));
+    memset(&s_proc_mtime, 0,
+           sizeof(s_proc_mtime));
 
     /* Reset PID liveness cache */
     pid_cache_reset();

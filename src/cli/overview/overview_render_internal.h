@@ -78,6 +78,11 @@ int  bget(const uint64_t *words, int idx);
 const char *render_dtype(uint8_t dt);
 int         dtype_bytesize(uint8_t dt);
 
+void ov_compute_related(
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
+    OV_RELATED       *rel);
+
 void render_highlighted_name(
     const char *name,
     int         max_len,
