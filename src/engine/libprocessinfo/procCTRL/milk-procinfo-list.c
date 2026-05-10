@@ -12,55 +12,85 @@
 
 #include "processinfo.h"
 #include "processinfo_shm_list_create.h"
+#include "milk_help.h"
 
-/* ANSI color codes */
-#define C_TITLE "\033[1;36m"  /* Cyan Bold   */
-#define C_HDR   "\033[1;34m"  /* Blue Bold   */
-#define C_NAME  "\033[1;32m"  /* Green Bold  */
-#define C_TYPE  "\033[1;33m"  /* Yellow Bold */
-#define C_SIZE  "\033[1m"     /* White Bold  */
-#define C_CNT   "\033[1;35m"  /* Magenta Bold */
-#define C_SEM   "\033[36m"    /* Cyan        */
-#define C_LINK  "\033[36m"    /* Cyan        */
-#define C_ERR   "\033[1;31m"  /* Red Bold    */
-#define C_DIM   "\033[2m"     /* Dim         */
-#define C_RST   "\033[0m"     /* Reset       */
+#define C_TITLE MH_TITLE
+#define C_HDR   MH_HDR
+#define C_NAME  MH_CMD
+#define C_TYPE  MH_NOTE
+#define C_ERR   MH_ERR
+#define C_DIM   MH_DIM
+#define C_RST   MH_RST
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options] [regex pattern]\n", progname);
-    printf("List active processinfo instances.\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -h, --help      Show this help message\n");
+#define PIL_DESC "list processinfo shared-memory entries"
+#define PIL_DESC_LONG \
+    "Scan the processinfo shared-memory list and print a summary table.\n" \
+    "Each row shows process name, PID, and status (RUNNING/STOPPED/CRASHED).\n" \
+    "An optional POSIX regex filters which process names are shown."
+
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, PIL_DESC, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] [%sregex%s]\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", PIL_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-procinfo-list%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-procinfo-list%s %smyproc.*%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    const char *see_also[] = {
+        "milk-procinfo-info", "milk-procinfo-rm", "milk-procCTRL"
+    };
+    milk_help_see_also(see_also, 3, mh_color);
 }
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                PIL_DESC, PIL_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("list processinfo shared-memory entries\n");
+        print_help(argv[0], mh_color);
         return 0;
     }
-
 
     int opt;
 
     static struct option long_options[] = {
-        {"help",    no_argument,       0, 'h'},
+        {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "h", long_options, NULL)) != -1) {
-        switch (opt) {
-            case 'h':
-                print_help(argv[0]);
-                return 0;
+    while ((opt = getopt_long(argc, argv, "h",
+                              long_options, NULL)) != -1)
+    {
+        switch (opt)
+        {
+            case 'h': break; /* handled above */
             default:
-                print_help(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
         }
     }
