@@ -267,33 +267,16 @@ void ov_render_fps_panel(
  * detail was drawn, 0 if nothing to show (caller should
  * fall back to graph panel).
  */
-int ov_render_detail_panel(
+
+static int ov_fps__render_detail_stream(
     const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+    const OV_MODEL *m,
+    int ssel,
+    OV_RECT r,
+    int max_rows,
+    int row)
 {
-    OV_RECT r = lay->r_graph;
-    int max_rows = r.height - 2;
-    int row = r.row + 1;
 
-    /* Use frozen selection when freeze is active */
-    ov_focus_t focus = lay->freeze
-                       ? lay->freeze_focus
-                       : lay->focus;
-    int ssel = lay->freeze
-               ? lay->freeze_sel_stream
-               : lay->sel_stream;
-    int psel = lay->freeze
-               ? lay->freeze_sel_proc
-               : lay->sel_proc;
-    int fsel = lay->freeze
-               ? lay->freeze_sel_fps
-               : lay->sel_fps;
-
-    /* ---- Stream detail ---- */
-    if (focus == OV_FOCUS_STREAMS
-        && ssel >= 0
-        && ssel < m->nb_streams)
-    {
         const OV_STREAM *s =
             &m->streams[ssel];
 
@@ -673,13 +656,18 @@ int ov_render_detail_panel(
         }
         ov_buf_reset_attr();
         return 1;
-    } /* STREAM detail */
+    
+}
 
-    /* ---- Process detail ---- */
-    if (focus == OV_FOCUS_PROCS
-        && psel >= 0
-        && psel < m->nb_procs)
-    {
+static int ov_fps__render_detail_proc(
+    const OV_LAYOUT *lay,
+    const OV_MODEL *m,
+    int psel,
+    OV_RECT r,
+    int max_rows,
+    int row)
+{
+
         const OV_PROC *p =
             &m->procs[psel];
 
@@ -852,13 +840,18 @@ int ov_render_detail_panel(
         }
         ov_buf_reset_attr();
         return 1;
-    } /* PROCESS detail */
+    
+}
 
-    /* ---- FPS detail ---- */
-    if (focus == OV_FOCUS_FPS
-        && fsel >= 0
-        && fsel < m->nb_fps)
-    {
+static int ov_fps__render_detail_fps(
+    const OV_LAYOUT *lay,
+    const OV_MODEL *m,
+    int fsel,
+    OV_RECT r,
+    int max_rows,
+    int row)
+{
+
         const OV_FPS *f =
             &m->fps[fsel];
 
@@ -968,7 +961,34 @@ int ov_render_detail_panel(
         }
         ov_buf_reset_attr();
         return 1;
-    } /* FPS detail */
+    
+}
 
-    return 0; /* no detail to show */
+int ov_render_detail_panel(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
+{
+    OV_RECT r = lay->r_graph;
+    int max_rows = r.height - 2;
+    int row = r.row + 1;
+
+    ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int ssel = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+    int psel = lay->freeze ? lay->freeze_sel_proc   : lay->sel_proc;
+    int fsel = lay->freeze ? lay->freeze_sel_fps    : lay->sel_fps;
+
+    if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
+    {
+        return ov_fps__render_detail_stream(lay, m, ssel, r, max_rows, row);
+    }
+    if (focus == OV_FOCUS_PROCS && psel >= 0 && psel < m->nb_procs)
+    {
+        return ov_fps__render_detail_proc(lay, m, psel, r, max_rows, row);
+    }
+    if (focus == OV_FOCUS_FPS && fsel >= 0 && fsel < m->nb_fps)
+    {
+        return ov_fps__render_detail_fps(lay, m, fsel, r, max_rows, row);
+    }
+
+    return 0;
 }

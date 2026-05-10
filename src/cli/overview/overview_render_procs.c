@@ -11,58 +11,43 @@
  * now static inline in overview_render_internal.h */
 
 
-void ov_render_procs_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    const OV_RELATED *rel)
-{
-    OV_RECT r = lay->r_procs;
 
-    /* Build filtered index array */
+static int ov_procs__filter(
+    const OV_LAYOUT *lay,
+    const OV_MODEL *m,
+    int *filt_idx,
+    int *has_re,
+    regex_t *re)
+{
     const char *names[OV_MAX_PROCS];
     for (int i = 0; i < m->nb_procs; i++)
     {
         names[i] = m->procs[i].name;
     }
-    int filt_idx[OV_MAX_PROCS];
     int filt_n = ov_filter_build(
         lay->filter_proc, names,
         m->nb_procs, filt_idx, OV_MAX_PROCS);
 
-    int has_re = 0;
-    regex_t re;
+    *has_re = 0;
     if (lay->filter_proc[0] != '\0')
     {
-        if (regcomp(&re, lay->filter_proc, REG_EXTENDED | REG_ICASE) == 0)
+        if (regcomp(re, lay->filter_proc, REG_EXTENDED | REG_ICASE) == 0)
         {
-            has_re = 1;
+            *has_re = 1;
         }
     }
+    return filt_n;
+}
 
-    char title[80];
-    if (lay->filter_proc[0] != '\0')
-    {
-        snprintf(title, sizeof(title),
-                 "PROCESSES /%s/", lay->filter_proc);
-    }
-    else
-    {
-        snprintf(title, sizeof(title), "PROCESSES");
-    }
-    ov_draw_panel_border(
-        r.row, r.col, r.height, r.width,
-        title, OV_FG_PROC,
-        lay->focus == OV_FOCUS_PROCS);
-
-    int hrow = r.row + 1;
-    int hs   = lay->hscroll_proc;
-
+static void ov_procs__render_header(
+    const OV_LAYOUT *lay,
+    int hrow, int hs, OV_RECT r)
+{
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf(" ");
     ov_theme_fg(OV_FG_DIM);
 
-    /* Full header text (wider than panel) */
     char htext[256];
     int hlen;
     {
@@ -70,16 +55,11 @@ void ov_render_procs_panel(
         int sd = lay->sort_dir_proc;
         char c_name[20], c_pid[12];
         char c_stat[10], c_hz[10], c_mem[10];
-        int w_name = sort_col_label(c_name, sizeof(c_name),
-                       "NAME", 0, sk, sd, 14);
-        int w_pid = sort_col_label(c_pid, sizeof(c_pid),
-                       "PID", 1, sk, sd, 7);
-        int w_stat = sort_col_label(c_stat, sizeof(c_stat),
-                       "STAT", 2, sk, sd, 5);
-        int w_hz = sort_col_label(c_hz, sizeof(c_hz),
-                       "Hz", 3, sk, sd, 6);
-        int w_mem = sort_col_label(c_mem, sizeof(c_mem),
-                       "MEM", 4, sk, sd, 5);
+        int w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
+        int w_pid = sort_col_label(c_pid, sizeof(c_pid), "PID", 1, sk, sd, 7);
+        int w_stat = sort_col_label(c_stat, sizeof(c_stat), "STAT", 2, sk, sd, 5);
+        int w_hz = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
+        int w_mem = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
         hlen = snprintf(
             htext, sizeof(htext),
             "%-*s %*s %*s %*s"
@@ -92,24 +72,27 @@ void ov_render_procs_panel(
             "LOOPCNT", w_mem, c_mem,
             "MISSED", "PRIO");
     }
-    /* Apply hscroll: skip first hs chars */
+    int vis = hlen - hs;
+    if (vis < 0) vis = 0;
+    const char *start = htext + hs;
+    if (hs >= hlen)
     {
-        int vis = hlen - hs;
-        if (vis < 0)
-        {
-            vis = 0;
-        }
-        const char *start = htext + hs;
-        if (hs >= hlen)
-        {
-            start = "";
-            vis   = 0;
-        }
-        ov_buf_printf("%.*s", vis, start);
-        render_pad_spaces(1 + vis, r.width);
+        start = "";
+        vis   = 0;
     }
+    ov_buf_printf("%.*s", vis, start);
+    render_pad_spaces(1 + vis, r.width);
+}
 
-    int max_rows = r.height - 3;
+static void ov_procs__render_rows(
+    const OV_LAYOUT *lay,
+    const OV_MODEL *m,
+    const OV_RELATED *rel,
+    int hrow, int hs, OV_RECT r,
+    const int *filt_idx, int filt_n,
+    int has_re, const regex_t *re)
+{
+int max_rows = r.height - 3;
     int start = lay->scroll_proc;
 
     for (int i = 0; i < max_rows; i++)
@@ -339,7 +322,7 @@ void ov_render_procs_panel(
                 if (vv > 0)
                 {
                     regmatch_t pm[1];
-                    if (has_re && regexec(&re, p->name, 1, pm, 0) == 0)
+                    if (has_re && regexec(re, p->name, 1, pm, 0) == 0)
                     {
                         int b_len = pm[0].rm_so;
                         if (b_len > 14) b_len = 14;
@@ -762,6 +745,42 @@ void ov_render_procs_panel(
         r, lay->scroll_proc, max_rows,
         filt_n, OV_FG_PROC);
     ov_buf_reset_attr();
+
+    
+
+}
+
+void ov_render_procs_panel(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m,
+    const OV_RELATED *rel)
+{
+    OV_RECT r = lay->r_procs;
+
+    int filt_idx[OV_MAX_PROCS];
+    int has_re;
+    regex_t re;
+    int filt_n = ov_procs__filter(lay, m, filt_idx, &has_re, &re);
+
+    char title[80];
+    if (lay->filter_proc[0] != '\0')
+    {
+        snprintf(title, sizeof(title), "PROCESSES /%s/", lay->filter_proc);
+    }
+    else
+    {
+        snprintf(title, sizeof(title), "PROCESSES");
+    }
+    ov_draw_panel_border(
+        r.row, r.col, r.height, r.width,
+        title, OV_FG_PROC,
+        lay->focus == OV_FOCUS_PROCS);
+
+    int hrow = r.row + 1;
+    int hs   = lay->hscroll_proc;
+
+    ov_procs__render_header(lay, hrow, hs, r);
+    ov_procs__render_rows(lay, m, rel, hrow, hs, r, filt_idx, filt_n, has_re, &re);
 
     if (has_re)
     {
