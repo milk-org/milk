@@ -15,6 +15,7 @@
 static int ov_procs__filter(
     const OV_LAYOUT *lay,
     const OV_MODEL *m,
+    const OV_RELATED *rel,
     int *filt_idx,
     int *has_re,
     regex_t *re)
@@ -27,6 +28,19 @@ static int ov_procs__filter(
     int filt_n = ov_filter_build(
         lay->filter_proc, names,
         m->nb_procs, filt_idx, OV_MAX_PROCS);
+
+    if (lay->freeze && lay->freeze_focus != OV_FOCUS_PROCS && rel != NULL)
+    {
+        int new_filt_n = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (bget(rel->procs, filt_idx[i]))
+            {
+                filt_idx[new_filt_n++] = filt_idx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
 
     *has_re = 0;
     if (lay->filter_proc[0] != '\0')
@@ -764,7 +778,7 @@ void ov_render_procs_panel(
     int filt_idx[OV_MAX_PROCS];
     int has_re;
     regex_t re;
-    int filt_n = ov_procs__filter(lay, m, filt_idx, &has_re, &re);
+    int filt_n = ov_procs__filter(lay, m, rel, filt_idx, &has_re, &re);
 
     char title[80];
     if (lay->filter_proc[0] != '\0')

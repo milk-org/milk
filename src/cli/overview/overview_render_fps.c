@@ -25,6 +25,19 @@ void ov_render_fps_panel(
         lay->filter_fps, names,
         m->nb_fps, fidx, OV_MAX_FPS);
 
+    if (lay->freeze && lay->freeze_focus != OV_FOCUS_FPS && rel != NULL)
+    {
+        int new_filt_n = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (bget(rel->fps, fidx[i]))
+            {
+                fidx[new_filt_n++] = fidx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
     int has_re = 0;
     regex_t re;
     if (lay->filter_fps[0] != '\0')

@@ -25,6 +25,19 @@ void ov_render_streams_panel(
         lay->filter_stream, names,
         m->nb_streams, filt_idx, OV_MAX_STREAMS);
 
+    if (lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
+    {
+        int new_filt_n = 0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            if (bget(rel->streams, filt_idx[i]))
+            {
+                filt_idx[new_filt_n++] = filt_idx[i];
+            }
+        }
+        filt_n = new_filt_n;
+    }
+
     int has_re = 0;
     regex_t re;
     if (lay->filter_stream[0] != '\0')
