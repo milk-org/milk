@@ -111,6 +111,8 @@ add_executable(milk-procCTRL
     procCTRL/procCTRL_PIDcollectSystemInfo.c
     procCTRL/procCTRL_processinfo_scan.c
     procCTRL/procCTRL_TUI.c
+    procCTRL/procCTRL_TUI_render.c
+    procCTRL/procCTRL_TUI_input.c
     procCTRL/procCTRL_TUI_sort.c
     procCTRL/procCTRL_TUIcompat.c
 )
