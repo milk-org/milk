@@ -126,6 +126,9 @@ target_link_libraries(milk-procCTRL PUBLIC
 add_executable(milk-procCTRL-scan
     procCTRL/milk-procCTRL-scan.c
     procCTRL/procCTRL_PIDcollectSystemInfo.c
+    procCTRL/procCTRL_scan_cpuloads.c
+    procCTRL/procCTRL_scan_rebuild.c
+    procCTRL/procCTRL_scan_update.c
 )
 target_link_libraries(milk-procCTRL-scan PUBLIC
     milkprocessinfo
