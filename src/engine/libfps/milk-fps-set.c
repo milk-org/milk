@@ -16,15 +16,18 @@
 #include "fps_disconnect.h"
 #include "fps_paramvalue.h"
 #include "fps_GetParamIndex.h"
+#include "milk_help.h"
 
-// Helper to check if string starts with prefix
-int starts_with(const char *pre, const char *str) {
+/* Helper to check if string starts with prefix */
+static int starts_with(const char *pre, const char *str)
+{
     size_t lenpre = strlen(pre);
     size_t lenstr = strlen(str);
     return lenstr < lenpre ? 0 : strncmp(pre, str, lenpre) == 0;
 }
 
-const char* get_type_name(uint32_t type) {
+static const char *get_type_name(uint32_t type)
+{
     if (type & FPTYPE_INT32) return "INT32";
     if (type & FPTYPE_UINT32) return "UINT32";
     if (type & FPTYPE_INT64) return "INT64";
@@ -44,12 +47,51 @@ const char* get_type_name(uint32_t type) {
     return "UNKNOWN";
 }
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options] <FPSname>.<parameter> <value>\n", progname);
-    printf("Set value of an FPS parameter.\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -h, --help      Show this help message\n");
+#define FSET_DESC \
+    "set a parameter value in a Function Parameter Structure (FPS)"
+#define FSET_DESC_LONG \
+    "Write a new value to a named FPS parameter in shared memory.\n" \
+    "The parameter is specified as <FPSname>.<paramkey>.\n" \
+    "Supported types: INT32, UINT32, INT64, UINT64, FLOAT32, FLOAT64,\n" \
+    "STRING, FILENAME, STREAMNAME, ONOFF, TIMESPEC, PID.\n" \
+    "TIMESPEC parameters accept a float value in seconds (e.g. 0.001)."
+
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, FSET_DESC, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s %s<FPSname>.<param>%s %s<value>%s\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", FSET_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-fps-set%s %smyfps00.procinfo.enabled%s %sTRUE%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "",
+           mh_color ? MH_DFLT : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-fps-set%s %smyfps00.loopfreq%s %s100.0%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "",
+           mh_color ? MH_DFLT : "", mh_color ? MH_RST : "");
+    const char *see_also[] = {
+        "milk-fps-info", "milk-fps-list", "milk-fps-track"
+    };
+    milk_help_see_also(see_also, 3, mh_color);
 }
 
 void do_completion_scan(const char *word) {
@@ -120,19 +162,22 @@ void do_completion_scan(const char *word) {
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                FSET_DESC, FSET_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("set a parameter value in a Function Parameter Structure (FPS)\\n");
+        print_help(argv[0], mh_color);
         return 0;
     }
 
-    // Check for bash completion mode
-    if (getenv("COMP_LINE") != NULL) {
-        if (argc >= 3) {
+    /* Check for bash completion mode */
+    if (getenv("COMP_LINE") != NULL)
+    {
+        if (argc >= 3)
+        {
             do_completion_scan(argv[2]);
             return 0;
         }
@@ -146,27 +191,26 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "h1", long_options, &option_index)) != -1) {
-        switch (opt) {
+    while ((opt = getopt_long(argc, argv, "h1",
+                              long_options, &option_index)) != -1)
+    {
+        switch (opt)
+        {
             case 'h':
-                print_help(argv[0]);
-                return 0;
-            case '1':
-                printf("set a parameter value in a Function Parameter Structure (FPS)\\n");
-                return 0;
+            case '1': break; /* handled above */
             default:
-                print_help(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
         }
     }
 
-    if (optind + 2 > argc) {
-        if (optind + 1 == argc) {
-             fprintf(stderr, "Error: Missing value.\n");
-        } else {
-             fprintf(stderr, "Error: Missing arguments.\n");
-        }
-        print_help(argv[0]);
+    if (optind + 2 > argc)
+    {
+        if (optind + 1 == argc)
+            fprintf(stderr, "Error: Missing value.\n");
+        else
+            fprintf(stderr, "Error: Missing arguments.\n");
+        print_help(argv[0], 0);
         return 1;
     }
 
