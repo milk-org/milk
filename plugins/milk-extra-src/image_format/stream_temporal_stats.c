@@ -19,7 +19,7 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
-
+#include "milk_type_dispatch.h"
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
@@ -109,87 +109,36 @@ ave_std_accumulate(IMGID in_img, void *sum_x, void *sum_xx, int reset)
 
     if(reset)
     {
-        switch(in_img.md->datatype)
+#define ACCUM_RESET_BODY_F(MBR) FOREACH_CAST(0, n_pixels, MBR, float)
+#define ACCUM_RESET_BODY_D(MBR) FOREACH_CAST(0, n_pixels, MBR, double)
+
+        uint8_t datatype = in_img.md->datatype;
+        MILK_FOR_EACH_DATATYPE(datatype, ACCUM_RESET_BODY_F, ACCUM_RESET_BODY_D(D))
+        else
         {
-            case _DATATYPE_UINT8:
-                FOREACH_CAST(0, n_pixels, UI8, float);
-                break;
-            case _DATATYPE_INT8:
-                FOREACH_CAST(0, n_pixels, SI8, float);
-                break;
-            case _DATATYPE_UINT16:
-                FOREACH_CAST(0, n_pixels, UI16, float);
-                break;
-            case _DATATYPE_INT16:
-                FOREACH_CAST(0, n_pixels, SI16, float);
-                break;
-            case _DATATYPE_UINT32:
-                FOREACH_CAST(0, n_pixels, UI32, float);
-                break;
-            case _DATATYPE_INT32:
-                FOREACH_CAST(0, n_pixels, SI32, float);
-                break;
-            case _DATATYPE_UINT64:
-                FOREACH_CAST(0, n_pixels, UI64, double);
-                break;
-            case _DATATYPE_INT64:
-                FOREACH_CAST(0, n_pixels, SI64, double);
-                break;
-            case _DATATYPE_FLOAT:
-                FOREACH_CAST(0, n_pixels, F, float);
-                break;
-            case _DATATYPE_DOUBLE:
-                FOREACH_CAST(0, n_pixels, D, double);
-                break;
-            case _DATATYPE_COMPLEX_FLOAT:
-            case _DATATYPE_COMPLEX_DOUBLE:
-            default:
-                PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
-                return RETURN_FAILURE;
+            PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
+            return RETURN_FAILURE;
         }
+
+#undef ACCUM_RESET_BODY_F
+#undef ACCUM_RESET_BODY_D
     }
     else
     {
-        switch(in_img.md->datatype)
-        {
-            case _DATATYPE_UINT8:
-                FOREACH_CASTADD(0, n_pixels, UI8, float);
-                break;
-            case _DATATYPE_INT8:
-                FOREACH_CASTADD(0, n_pixels, SI8, float);
-                break;
-            case _DATATYPE_UINT16:
-                FOREACH_CASTADD(0, n_pixels, UI16, float);
-                break;
-            case _DATATYPE_INT16:
-                FOREACH_CASTADD(0, n_pixels, SI16, float);
-                break;
-            case _DATATYPE_UINT32:
-                FOREACH_CASTADD(0, n_pixels, UI32, float);
-                break;
-            case _DATATYPE_INT32:
-                FOREACH_CASTADD(0, n_pixels, SI32, float);
-                break;
-            case _DATATYPE_UINT64:
-                FOREACH_CASTADD(0, n_pixels, UI64, double);
-                break;
-            case _DATATYPE_INT64:
-                FOREACH_CASTADD(0, n_pixels, SI64, double);
-                break;
-            case _DATATYPE_FLOAT:
-                FOREACH_CASTADD(0, n_pixels, F, float);
-                break;
-            case _DATATYPE_DOUBLE:
-                FOREACH_CASTADD(0, n_pixels, D, double);
-                break;
-            case _DATATYPE_COMPLEX_FLOAT:
-            case _DATATYPE_COMPLEX_DOUBLE:
-            default:
-                PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
-                return RETURN_FAILURE;
-        }
-    }
+#define ACCUM_ADD_BODY_F(MBR) FOREACH_CASTADD(0, n_pixels, MBR, float)
+#define ACCUM_ADD_BODY_D(MBR) FOREACH_CASTADD(0, n_pixels, MBR, double)
 
+        uint8_t datatype = in_img.md->datatype;
+        MILK_FOR_EACH_DATATYPE(datatype, ACCUM_ADD_BODY_F, ACCUM_ADD_BODY_D(D))
+        else
+        {
+            PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
+            return RETURN_FAILURE;
+        }
+
+#undef ACCUM_ADD_BODY_F
+#undef ACCUM_ADD_BODY_D
+    }
 
     return RETURN_SUCCESS;
 }
