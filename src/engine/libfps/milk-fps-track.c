@@ -15,6 +15,53 @@
 #include "fps.h"
 #include "fps_globals.h"
 #include "fps_scan.h"
+#include "milk_help.h"
+
+#define FT_DESC "track and display FPS parameter values in real time"
+#define FT_DESC_LONG \
+    "Poll all active FPS instances and print any parameter whose value\n" \
+    "has changed since the previous scan. Timestamps are in UTC ISO-8601.\n" \
+    "An optional POSIX extended regex filters which FPS names are tracked.\n" \
+    "Output is one line per change: timestamp, FPS, parameter, value."
+
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, FT_DESC, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] [%sregex%s]\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", FT_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-i, --interval SEC",
+           mh_color ? MH_RST : "",
+           "Polling interval in seconds (default: 0.1)");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-fps-track%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-fps-track%s -i 0.5 %smyfps.*%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    const char *see_also[] = {
+        "milk-fps-info", "milk-fps-set", "milk-fps-list"
+    };
+    milk_help_see_also(see_also, 3, mh_color);
+}
 
 #define VALSTR_LEN 256
 
@@ -44,18 +91,6 @@ void print_ut_timestamp() {
            ts.tv_nsec / 1000000);
 }
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options] [regex_pattern]\n", progname);
-    printf("Monitor FPS parameter changes.\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -i, --interval SEC   Polling interval in seconds (default 0.1)\n");
-    printf("  -h, --help           Show this help message\n");
-    printf("\n");
-    printf("Arguments:\n");
-    printf("  regex_pattern        Optional regex to filter FPS names (default \".*\")\n");
-}
-
 static volatile int keep_running = 1;
 void sigint_handler(int sig) {
     (void)sig;
@@ -64,13 +99,14 @@ void sigint_handler(int sig) {
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                FT_DESC, FT_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("track and display FPS parameter values in real time\\n");
+        print_help(argv[0], mh_color);
         return 0;
     }
 
@@ -85,19 +121,16 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "i:h1", long_options, NULL)) != -1) {
-        switch (opt) {
-            case 'i':
-                interval = atof(optarg);
-                break;
+    while ((opt = getopt_long(argc, argv, "i:h1",
+                              long_options, NULL)) != -1)
+    {
+        switch (opt)
+        {
+            case 'i': interval = atof(optarg); break;
             case 'h':
-                print_help(argv[0]);
-                return 0;
-            case '1':
-                printf("track and display FPS parameter values in real time\\n");
-                return 0;
+            case '1': break; /* handled above */
             default:
-                print_help(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
         }
     }

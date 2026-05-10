@@ -12,56 +12,62 @@
 #include "libmilkcommon/multiselect_parse.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "milk_help.h"
 
-static void print_help(const char *progname)
+#define SR_DESC "remove a shared memory image stream"
+#define SR_DESC_LONG \
+    "Remove one or more ImageStreamIO shared-memory streams.\n" \
+    "Three modes:\n" \
+    "  (default)  Exact name match: remove the named stream.\n" \
+    "  -r         Regex match: list matches then confirm.\n" \
+    "  (no args)  Interactive: list all streams, select to remove."
+
+static void print_help(const char *progname, int mh_color)
 {
-    printf(
-        "Usage: %s [options] [STREAM_NAME]\n"
-        "\n"
-        "Remove ImageStreamIO shared memory"
-        " stream(s).\n"
-        "\n"
-        "Modes:\n"
-        "  (default)     Exact match. Removes the"
-        " single stream\n"
-        "                whose name matches"
-        " STREAM_NAME exactly.\n"
-        "  -r, --regex   Regex match. Treats"
-        " STREAM_NAME as an\n"
-        "                Extended Regular Expression"
-        " and shows\n"
-        "                all matching streams before"
-        " asking\n"
-        "                for confirmation.\n"
-        "\n"
-        "If no STREAM_NAME is given, lists all"
-        " existing\n"
-        "streams and prompts for interactive"
-        " selection.\n"
-        "Multiple items can be selected using"
-        " numbers,\n"
-        "ranges, or 'all'"
-        " (e.g. 1 3 5-7).\n"
-        "\n"
-        "Options:\n"
-        "  -r, --regex   Use regex matching"
-        " (may match multiple streams)\n"
-        "  -f, --force   Force removal without"
-        " confirmation (with -r)\n"
-        "  -v, --verbose Verbose mode\n"
-        "  -h, --help    Show this help message\n"
-        "\n"
-        "Examples:\n"
-        "  %s dm00disp    "
-        "  # exact: remove 'dm00disp'\n"
-        "  %s -r 'dm.*'   "
-        "  # regex: list dm* streams, confirm\n"
-        "  %s -r -f 'dm.*'"
-        "  # regex + force: remove immediately\n"
-        "  %s             "
-        "  # interactive selection\n",
-        progname, progname, progname,
-        progname, progname);
+    milk_help_banner(progname, SR_DESC, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] [%sSTREAM_NAME%s]\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", SR_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-r, --regex",
+           mh_color ? MH_RST : "", "Treat STREAM_NAME as a regex (may match multiple)");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-f, --force",
+           mh_color ? MH_RST : "", "Skip confirmation prompt (use with -r)");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-v, --verbose",
+           mh_color ? MH_RST : "", "Verbose output");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-stream-rm%s %sdm00disp%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-stream-rm%s %s-r%s %s'dm.*'%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-stream-rm%s %s-r -f%s %s'dm.*'%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    const char *see_also[] = { "milk-stream-list", "milk-stream-info" };
+    milk_help_see_also(see_also, 2, mh_color);
 }
 
 /**
@@ -308,16 +314,16 @@ static int read_line(char *buf, int size)
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                SR_DESC, SR_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("remove a shared memory image stream\n");
+        print_help(argv[0], mh_color);
         return 0;
     }
-
 
     int verbose = 0;
     int use_regex = 0;
@@ -347,11 +353,9 @@ int main(int argc, char *argv[])
         case 'f':
             force = 1;
             break;
-        case 'h':
-            print_help(argv[0]);
-            return 0;
+        case 'h': break; /* handled above */
         default:
-            print_help(argv[0]);
+            print_help(argv[0], 0);
             return 1;
         }
     }

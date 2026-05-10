@@ -18,38 +18,40 @@
 #include <signal.h>
 
 #include "overview_data.h"
+#include "milk_help.h"
 
 /* Required by overview_defs.h (extern) */
 volatile sig_atomic_t ov_sigINT  = 0;
 volatile sig_atomic_t ov_sigTERM = 0;
 
-/* =========================================================
- * One-line description (for -h1)
- * ========================================================= */
-
+/* One-line description */
 #define PI_ONELINE \
     "print detailed info and connections " \
     "for a processinfo entry"
 
-/* =========================================================
- * ANSI color helpers
- * ========================================================= */
+#define PI_DESC_LONG \
+    "Scan the processinfo shared-memory list and the FPS registry\n" \
+    "to build a connection graph, then print a rich diagnostic view\n" \
+    "for the specified process: status, loop timing, trigger\n" \
+    "configuration, streams written/read, and linked FPS entries.\n" \
+    "Process can be specified by name or by --pid PID."
 
-#define C_RST    "\033[0m"
-#define C_BOLD   "\033[1m"
-#define C_DIM    "\033[2m"
-#define C_TITLE  "\033[1;36m"
-#define C_HDR    "\033[1;35m"
-#define C_LABEL  "\033[1;34m"
-#define C_NAME   "\033[1;32m"
-#define C_STREAM "\033[1;36m"
-#define C_FPS    "\033[1;33m"
-#define C_VAL    "\033[1;37m"
+/* Replace local ANSI macros with milk_help.h equivalents */
+#define C_RST    MH_RST
+#define C_BOLD   MH_BOLD
+#define C_DIM    MH_DIM
+#define C_TITLE  MH_TITLE
+#define C_HDR    MH_HDR
+#define C_LABEL  MH_DFLT
+#define C_NAME   MH_CMD
+#define C_STREAM MH_DFLT
+#define C_FPS    MH_NOTE
+#define C_VAL    MH_BOLD
 #define C_ALIVE  "\033[1;32m"
-#define C_DEAD   "\033[1;31m"
-#define C_WARN   "\033[1;31m"
+#define C_DEAD   MH_ERR
+#define C_WARN   MH_ERR
 #define C_RUN    "\033[1;32m"
-#define C_STOP   "\033[2m"
+#define C_STOP   MH_DIM
 
 /* =========================================================
  * Loop status / CTRL val strings
@@ -373,20 +375,44 @@ static void print_proc_info(
  * Help
  * ========================================================= */
 
-static void print_help(void)
+static void print_help(const char *progname, int mh_color)
 {
-    printf(
-        "Usage: milk-procinfo-info [options] "
-        "<process_name | --pid PID>\n\n"
-        "%s\n\n"
-        "Options:\n"
-        "  --pid PID           "
-        "Look up process by PID\n"
-        "  -h, --help          "
-        "Show this help\n"
-        "  -h1, --help-oneline "
-        "Print one-line description\n",
-        PI_ONELINE);
+    milk_help_banner(progname, PI_ONELINE, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] [%s<process_name>%s]\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", PI_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "--pid PID",
+           mh_color ? MH_RST : "", "Look up process by PID instead of name");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-procinfo-info%s %smyproc%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-procinfo-info%s %s--pid%s %s1234%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    const char *see_also[] = {
+        "milk-procinfo-list", "milk-procinfo-rm", "milk-stream-info"
+    };
+    milk_help_see_also(see_also, 3, mh_color);
 }
 
 /* =========================================================
@@ -415,13 +441,14 @@ static int find_proc_by_name(
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1 before getopt */
-    if (argc >= 2
-        && (strcmp(argv[1], "-h1") == 0
-            || strcmp(argv[1],
-                      "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                PI_ONELINE, PI_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("%s\n", PI_ONELINE);
+        print_help(argv[0], mh_color);
         return 0;
     }
 
@@ -440,14 +467,12 @@ int main(int argc, char *argv[])
     {
         switch (opt)
         {
-        case 'h':
-            print_help();
-            return 0;
+        case 'h': break; /* handled above */
         case 'p':
             target_pid = (pid_t) atoi(optarg);
             break;
         default:
-            print_help();
+            print_help(argv[0], 0);
             return 1;
         }
     }
@@ -463,7 +488,7 @@ int main(int argc, char *argv[])
         fprintf(stderr,
                 "Error: process name or "
                 "--pid required\n\n");
-        print_help();
+        print_help(argv[0], 0);
         return 1;
     }
 

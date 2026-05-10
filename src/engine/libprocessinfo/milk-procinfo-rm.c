@@ -17,28 +17,62 @@
 #include "processinfo_procdirname.h"
 #include "processinfo_shm_list_create.h"
 #include "milkDebugTools.h"
+#include "milk_help.h"
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options] <regex pattern>\n", progname);
-    printf("Remove processinfo shared memory segments for given process name(s).\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -v, --verbose   Verbose mode\n");
-    printf("  -h, --help      Show this help message\n");
+#define PI_RM_DESC \
+    "remove processinfo shared-memory entries matching a regex"
+#define PI_RM_DESC_LONG \
+    "Scan the processinfo directory (e.g. /dev/shm) and remove all\n" \
+    "proc.<name>.<pid>.shm files whose base name matches the given\n" \
+    "POSIX extended regular expression.\n" \
+    "Also deactivates matching entries in the global pinfolist."
+
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, PI_RM_DESC, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] %s<regex>%s\n\n",
+           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", PI_RM_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-v, --verbose",
+           mh_color ? MH_RST : "", "Verbose output");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-procinfo-rm%s %smyproc%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    const char *see_also[] = { "milk-procinfo-list", "milk-procinfo-info" };
+    milk_help_see_also(see_also, 2, mh_color);
 }
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                PI_RM_DESC, PI_RM_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
-        printf("remove processinfo shared-memory entries matching a regex pattern\n");
+        print_help(argv[0], mh_color);
         return 0;
     }
-
 
     int verbose = 0;
     int opt;
@@ -49,23 +83,23 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "vh", long_options, NULL)) != -1) {
-        switch (opt) {
-            case 'v':
-                verbose = 1;
-                break;
-            case 'h':
-                print_help(argv[0]);
-                return 0;
+    while ((opt = getopt_long(argc, argv, "vh",
+                              long_options, NULL)) != -1)
+    {
+        switch (opt)
+        {
+            case 'v': verbose = 1; break;
+            case 'h': break; /* handled above */
             default:
-                print_help(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
         }
     }
 
-    if (optind >= argc) {
+    if (optind >= argc)
+    {
         fprintf(stderr, "Error: missing process name.\n");
-        print_help(argv[0]);
+        print_help(argv[0], 0);
         return 1;
     }
 
