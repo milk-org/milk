@@ -74,9 +74,6 @@ typedef struct
 
 extern ov_proc_cache_t s_pcache[OV_MAX_PROCS];
 extern int             s_pcache_nb;
-extern PROCESSINFOLIST *s_pilist;
-extern int              s_pilist_fd;
-
 extern double s_scan_dt_sec;
 
 // Function declarations

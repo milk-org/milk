@@ -21,6 +21,8 @@
 #include "overview_defs.h"
 #include "overview_data.h"
 #include "overview_layout.h"
+#include "overview_ctrl.h"
+#include "overview_ansi.h"
 
 /* fps_types.h for FPS and FPSCMDCODE_* */
 #include "fps_types.h"
@@ -234,6 +236,60 @@ void ov_ctrl_proc_sigkill(
     }
 }
 
+#include <errno.h>
+
+/**
+ * ov_ctrl_proc_remove - remove a single process from shm.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_proc_remove(
+    const OV_PROC *p,
+    OV_CMDLOG     *log)
+{
+    if (p == NULL || p->PID <= 0)
+    {
+        return;
+    }
+
+    if (kill(p->PID, 0) == 0 || errno == EPERM)
+    {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log,
+                           OV_CMDLOG_FAIL,
+                           "Process \"%s\" (PID %d) is still alive",
+                           p->name, p->PID);
+        }
+        return;
+    }
+
+    char fname[1024];
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
+             ov_get_shmdir(), p->name, (int)p->PID);
+
+    int rc = unlink(fname);
+    
+    if (log != NULL)
+    {
+        if (rc == 0)
+        {
+            ov_cmdlog_push(log,
+                           OV_CMDLOG_OK,
+                           "file %s removed",
+                           fname);
+        }
+        else
+        {
+            ov_cmdlog_push(log,
+                           OV_CMDLOG_FAIL,
+                           "failed to remove file %s",
+                           fname);
+        }
+    }
+}
+
+
 /**
  * pid_is_stopped - check if a process is in 'T' state.
  * @pid: process PID
@@ -444,5 +500,72 @@ void ov_ctrl_fps_remove(
                        "FPS \"%s\" — erased",
                        f->name);
     }
+}
+
+/**
+ * ov_ctrl_procs_cleanup - remove crashed/stopped processes
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_procs_cleanup(
+    OV_CMDLOG *log)
+{
+    /* Silently remove crashed/stopped procinfo entries */
+    int rc = system("milk-procinfo-rm -c >/dev/null 2>&1");
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log,
+                       rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
+                       "Process cleanup requested");
+    }
+}
+
+/**
+ * ov_ctrl_inspect_item - spawn an interactive detailed view
+ * @panel: the active panel type
+ * @item:  pointer to the selected item (OV_STREAM, OV_PROC, or OV_FPS)
+ */
+void ov_ctrl_inspect_item(
+    ov_focus_t     panel,
+    const void    *item)
+{
+    if (item == NULL)
+    {
+        return;
+    }
+
+    char cmd[512] = {0};
+
+    if (panel == OV_FOCUS_STREAMS)
+    {
+        const OV_STREAM *s = (const OV_STREAM *)item;
+        snprintf(cmd, sizeof(cmd), "milk-stream-info %s | less -R", s->name);
+    }
+    else if (panel == OV_FOCUS_PROCS)
+    {
+        const OV_PROC *p = (const OV_PROC *)item;
+        snprintf(cmd, sizeof(cmd), "milk-procinfo-info %s | less -R", p->name);
+    }
+    else if (panel == OV_FOCUS_FPS)
+    {
+        const OV_FPS *f = (const OV_FPS *)item;
+        snprintf(cmd, sizeof(cmd), "milk-fps-info %s | less -R", f->name);
+    }
+    else
+    {
+        return;
+    }
+
+    /* Suspend TUI */
+    ov_raw_mode_exit();
+    int rc_clear = system("clear");
+    (void)rc_clear;
+    
+    /* Spawn interactive diagnostic tool */
+    int rc_cmd = system(cmd);
+    (void)rc_cmd;
+    
+    /* Resume TUI */
+    ov_raw_mode_enter();
+    ov_buf_force_clear();
 }
 

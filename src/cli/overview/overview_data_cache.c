@@ -88,9 +88,6 @@ void fcache_evict(int ci)
 ov_proc_cache_t s_pcache[OV_MAX_PROCS];
 int             s_pcache_nb = 0;
 
-/* Processinfo list mapping (single, persistent) */
-PROCESSINFOLIST *s_pilist     = NULL;
-int              s_pilist_fd  = -1;
 
 int pcache_find_pid(pid_t pid)
 {
