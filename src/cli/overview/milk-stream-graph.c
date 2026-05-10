@@ -22,6 +22,7 @@
 
 #include "overview_data.h"
 #include "stream_graph.h"
+#include "milk_help.h"
 
 /* =========================================================
  * Version / description
@@ -30,6 +31,11 @@
 #define SG_VERSION "1.0.0"
 #define SG_ONELINE \
     "stream dependency graph with loop detection"
+
+#define SG_DESC_LONG \
+    "Compute and display ancestor/descendant lineage for a stream.\n" \
+    "Supports trigger, input, and full traversal modes with\n" \
+    "text, TrueColor ANSI, JSON, and interactive output formats."
 
 /* =========================================================
  * ANSI escape helpers (TrueColor)
@@ -125,33 +131,56 @@ static void sg_raw_exit(void)
  * Usage
  * ========================================================= */
 
-static void print_usage(const char *prog)
+static void print_usage(const char *prog, int mh_color)
 {
-    printf("milk-stream-graph v%s\n\n",
-           SG_VERSION);
-    printf("Usage: %s [options] <stream>\n\n",
-           prog);
-    printf("Options:\n");
-    printf("  -h, --help       Show help\n");
-    printf("  -h1              One-line description\n");
-    printf("  -m, --mode MODE  Traversal mode:\n");
-    printf("                   trigger|input|full"
-           " (default: trigger)\n");
-    printf("  -p, --pretty     TrueColor ANSI output\n");
-    printf("  -j, --json       JSON machine output\n");
-    printf("  -i, --interactive"
-           "  Interactive navigation\n");
-    printf("  -d DIR           Override SHM directory\n");
-    printf("  --depth N        Max depth"
-           " (default: %d)\n", SG_MAX_DEPTH);
-    printf("\nInteractive keys:\n");
+    milk_help_banner(prog, SG_ONELINE, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] %s<stream>%s\n\n",
+           mh_color ? MH_CMD : "", prog, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", SG_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-m, --mode MODE",
+           mh_color ? MH_RST : "", "Traversal mode: trigger|input|full (default: trigger)");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-p, --pretty",
+           mh_color ? MH_RST : "", "TrueColor ANSI output");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-j, --json",
+           mh_color ? MH_RST : "", "JSON machine-readable output");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-i, --interactive",
+           mh_color ? MH_RST : "", "Interactive navigation");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-d DIR",
+           mh_color ? MH_RST : "", "Override SHM directory");
+    printf("  %s%-25s%s %s (default: %d)\n",
+           mh_color ? MH_OPT : "", "--depth N",
+           mh_color ? MH_RST : "", "Max traversal depth", SG_MAX_DEPTH);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Interactive keys", mh_color);
     printf("  UP/DOWN   Navigate list\n");
     printf("  ENTER     Re-root on selected stream\n");
     printf("  r         Rescan graph\n");
-    printf("  t/i/f     Switch mode"
-           " (trigger/input/full)\n");
+    printf("  t/i/f     Switch mode (trigger/input/full)\n");
     printf("  g         Go to stream by name\n");
-    printf("  q         Quit\n");
+    printf("  q         Quit\n\n");
+    const char *see_also[] = { "milk-stream-info", "milk-stream-list" };
+    milk_help_see_also(see_also, 2, mh_color);
 }
 
 /* =========================================================
@@ -789,6 +818,17 @@ static void sg_interactive(
 
 int main(int argc, char *argv[])
 {
+    int action = milk_help_init(argc, argv,
+                                SG_ONELINE, SG_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_usage(argv[0], mh_color);
+        return 0;
+    }
+
     sg_mode_t   mode   = SG_MODE_TRIGGER;
     sg_output_t output = OUT_TEXT;
     int         interactive = 0;
@@ -797,18 +837,10 @@ int main(int argc, char *argv[])
     /* Parse arguments */
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-h1") == 0
-            || strcmp(argv[i],
-                      "--help-oneline") == 0)
-        {
-            printf("%s\n", SG_ONELINE);
-            return 0;
-        }
         if (strcmp(argv[i], "-h") == 0
             || strcmp(argv[i], "--help") == 0)
         {
-            print_usage(argv[0]);
-            return 0;
+            break; /* handled above */
         }
         if ((strcmp(argv[i], "-m") == 0
              || strcmp(argv[i], "--mode") == 0)

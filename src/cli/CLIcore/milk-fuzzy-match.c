@@ -26,6 +26,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "milk_help.h"
+
+#define FM_ONELINE "fuzzy-match lines against a query using bigram (Dice) similarity"
+#define FM_DESC_LONG \
+    "Reads lines from stdin or FILE and scores each against QUERY\n" \
+    "using bigram (Dice coefficient) similarity. Outputs lines that\n" \
+    "exceed the threshold, sorted by score descending.\n" \
+    "Output format: SCORE<TAB>LINE"
+
 #define MAX_BIGRAMS 512
 #define MAX_LINES   4096
 #define MAX_LINE_LEN 2048
@@ -149,25 +158,57 @@ static int cmp_score_desc(
     return 0;
 }
 
-static void print_usage(const char *prog)
+static void print_help(const char *prog, int mh_color)
 {
-    fprintf(stderr,
-        "Usage: %s [-t THRESHOLD] QUERY [FILE]\n"
-        "\n"
-        "Fuzzy-match lines against QUERY using\n"
-        "bigram (Dice coefficient) similarity.\n"
-        "\n"
-        "Options:\n"
-        "  -t THRESHOLD  Minimum score (0.0-1.0,"
-        " default 0.3)\n"
-        "\n"
-        "Output: SCORE<TAB>LINE  (sorted by score"
-        " descending)\n",
-        prog);
+    milk_help_banner(prog, FM_ONELINE, mh_color);
+    milk_help_section("Usage", mh_color);
+    printf("  %s%s%s [%soptions%s] %sQUERY%s [%sFILE%s]\n\n",
+           mh_color ? MH_CMD : "", prog, mh_color ? MH_RST : "",
+           mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    milk_help_section("Description", mh_color);
+    printf("  %s\n\n", FM_DESC_LONG);
+    milk_help_section("Options", mh_color);
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-t THRESHOLD",
+           mh_color ? MH_RST : "", "Minimum Dice score [0.0-1.0] (default: 0.3)");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h, --help",
+           mh_color ? MH_RST : "", "Show this help and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h1, --help-oneline",
+           mh_color ? MH_RST : "", "One-line description and exit");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-h2, --help-description",
+           mh_color ? MH_RST : "", "Verbose description and exit");
+    printf("  %s%-25s%s %s\n\n",
+           mh_color ? MH_OPT : "", "-hm, --help-mono",
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    milk_help_section("Examples", mh_color);
+    printf("  %s$ milk-fuzzy-match%s %saplay%s %s/usr/share/sounds/list.txt%s\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-stream-list%s | %s%s%s %sstream%s\n\n",
+           mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
+           mh_color ? MH_CMD : "", prog, mh_color ? MH_RST : "",
+           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 }
 
 int main(int argc, char **argv)
 {
+    int action = milk_help_init(argc, argv,
+                                FM_ONELINE, FM_DESC_LONG);
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+        return 0;
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_help(argv[0], mh_color);
+        return 0;
+    }
+
     double threshold = 0.3;
     const char *query = NULL;
     const char *filename = NULL;
@@ -177,26 +218,25 @@ int main(int argc, char **argv)
     while (argi < argc && argv[argi][0] == '-') {
         if (strcmp(argv[argi], "-t") == 0) {
             if (argi + 1 >= argc) {
-                print_usage(argv[0]);
+                print_help(argv[0], 0);
                 return 1;
             }
             threshold = atof(argv[argi + 1]);
             argi += 2;
         } else if (strcmp(argv[argi], "-h") == 0 ||
-                   strcmp(argv[argi],
-                          "--help") == 0) {
-            print_usage(argv[0]);
-            return 0;
+                   strcmp(argv[argi], "--help") == 0) {
+            break; /* handled above */
         } else {
             fprintf(stderr,
                     "Unknown option: %s\n",
                     argv[argi]);
+            print_help(argv[0], 0);
             return 1;
         }
     }
 
     if (argi >= argc) {
-        print_usage(argv[0]);
+        print_help(argv[0], 0);
         return 1;
     }
     query = argv[argi++];
