@@ -50,7 +50,7 @@
 
 #include "image_arith__im_f__im.h"
 #include "imgid_arith_helpers.h"
-#include "datatype_dispatch.h"
+#include <libmilkdata/milk_type_dispatch.h>
 #include "mathfuncs.h"
 
 #ifdef _OPENMP
@@ -193,7 +193,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
             pt2function(imgin->im->array.D[ii]);      \
     }
 
-    FOR_EACH_DATATYPE(datatype, UNARY_BODY, UNARY_BODY_D)
+    MILK_FOR_EACH_DATATYPE(datatype, UNARY_BODY, UNARY_BODY_D)
 
 #undef UNARY_BODY
 #undef UNARY_BODY_D
@@ -292,7 +292,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
             pt2function(imgin->im->array.D[ii], v0);  \
     }
 
-    FOR_EACH_DATATYPE(datatype, CST1_BODY, CST1_BODY_D)
+    MILK_FOR_EACH_DATATYPE(datatype, CST1_BODY, CST1_BODY_D)
 
 #undef CST1_BODY
 #undef CST1_BODY_D
@@ -396,7 +396,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
                 imgin->im->array.D[_ii], v0, v1);     \
     }
 
-    FOR_EACH_DATATYPE(datatype, CST2_BODY, CST2_BODY_D)
+    MILK_FOR_EACH_DATATYPE(datatype, CST2_BODY, CST2_BODY_D)
 
 #undef CST2_BODY
 #undef CST2_BODY_D
@@ -479,7 +479,7 @@ errno_t arith_image_function_1_1_inplace_IMGID(
                 (double)(imgin->im->array.D[_ii]));   \
     }
 
-    FOR_EACH_DATATYPE(datatype,
+    MILK_FOR_EACH_DATATYPE(datatype,
         INPLACE_BODY, INPLACE_BODY_D)
 
 #undef INPLACE_BODY

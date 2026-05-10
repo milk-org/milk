@@ -13,7 +13,7 @@
 #include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
-
+#include "libmilkdata/milk_type_dispatch.h"
 /* forward decls */
 imageID arith_image_crop(
     const char *ID_name,
@@ -374,408 +374,104 @@ imageID arith_image_crop(const char *ID_name,
 
     if(naxis == 1)
     {
-        if(datatype == _DATATYPE_FLOAT)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.F[ii - start[0]] =
-                    imgin.im->array.F[ii];
-            }
+#define CROP1D_BODY(MBR) \
+        for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++) \
+        { \
+            imgout.im->array.MBR[ii - start[0]] = imgin.im->array.MBR[ii]; \
         }
-        else if(datatype == _DATATYPE_DOUBLE)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.D[ii - start[0]] =
-                    imgin.im->array.D[ii];
-            }
+
+#define CROP1D_BODY_COMPLEX(MBR) \
+        for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++) \
+        { \
+            imgout.im->array.MBR[ii - start[0]].re = imgin.im->array.MBR[ii].re; \
+            imgout.im->array.MBR[ii - start[0]].im = imgin.im->array.MBR[ii].im; \
         }
-        else if(datatype == _DATATYPE_COMPLEX_FLOAT)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.CF[ii - start[0]].re =
-                    imgin.im->array.CF[ii].re;
-                imgout.im->array.CF[ii - start[0]].im =
-                    imgin.im->array.CF[ii].im;
-            }
-        }
-        else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.CD[ii - start[0]].re =
-                    imgin.im->array.CD[ii].re;
-                imgout.im->array.CD[ii - start[0]].im =
-                    imgin.im->array.CD[ii].im;
-            }
-        }
-        else if(datatype == _DATATYPE_UINT8)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.UI8[ii - start[0]] =
-                    imgin.im->array.UI8[ii];
-            }
-        }
-        else if(datatype == _DATATYPE_UINT16)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.UI16[ii - start[0]] =
-                    imgin.im->array.UI16[ii];
-            }
-        }
-        else if(datatype == _DATATYPE_UINT32)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.UI32[ii - start[0]] =
-                    imgin.im->array.UI32[ii];
-            }
-        }
-        else if(datatype == _DATATYPE_UINT64)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.UI64[ii - start[0]] =
-                    imgin.im->array.UI64[ii];
-            }
-        }
-        else if(datatype == _DATATYPE_INT8)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.SI8[ii - start[0]] =
-                    imgin.im->array.SI8[ii];
-            }
-        }
-        else if(datatype == _DATATYPE_INT16)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.SI16[ii - start[0]] =
-                    imgin.im->array.SI16[ii];
-            }
-        }
-        else if(datatype == _DATATYPE_INT32)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.SI32[ii - start[0]] =
-                    imgin.im->array.SI32[ii];
-            }
-        }
-        else if(datatype == _DATATYPE_INT64)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-            {
-                imgout.im->array.SI64[ii - start[0]] =
-                    imgin.im->array.SI64[ii];
-            }
-        }
+
+        MILK_FOR_EACH_DATATYPE(datatype, CROP1D_BODY, CROP1D_BODY(D))
+        else MILK_FOR_EACH_COMPLEX_TYPE(datatype, CROP1D_BODY_COMPLEX)
         else
         {
             PRINT_ERROR("invalid data type");
             exit(0);
         }
+
+#undef CROP1D_BODY
+#undef CROP1D_BODY_COMPLEX
     }
     if(naxis == 2)
     {
-        if(datatype == _DATATYPE_FLOAT)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.F[(jj - start[1]) * naxesout[0] +
-                                              (ii - start[0])] =
-                                                  imgin.im->array.F[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_DOUBLE)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.D[(jj - start[1]) * naxesout[0] +
-                                              (ii - start[0])] =
-                                                  imgin.im->array.D[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_COMPLEX_FLOAT)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                {
-                    imgout.im->array
-                    .CF[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .re = imgin.im->array.CF[jj * naxes[0] + ii].re;
-                    imgout.im->array
-                    .CF[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .im = imgin.im->array.CF[jj * naxes[0] + ii].im;
-                }
-        }
-        else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                {
-                    imgout.im->array
-                    .CD[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .re = imgin.im->array.CD[jj * naxes[0] + ii].re;
-                    imgout.im->array
-                    .CD[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .im = imgin.im->array.CD[jj * naxes[0] + ii].im;
-                }
-        }
-        else if(datatype == _DATATYPE_UINT8)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.UI8[(jj - start[1]) * naxesout[0] +
-                                                (ii - start[0])] =
-                                                    imgin.im->array.UI8[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_UINT16)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.UI16[(jj - start[1]) * naxesout[0] +
-                                                 (ii - start[0])] =
-                                                     imgin.im->array.UI16[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_UINT32)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.UI32[(jj - start[1]) * naxesout[0] +
-                                                 (ii - start[0])] =
-                                                     imgin.im->array.UI32[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_UINT64)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.UI64[(jj - start[1]) * naxesout[0] +
-                                                 (ii - start[0])] =
-                                                     imgin.im->array.UI64[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_INT8)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.SI8[(jj - start[1]) * naxesout[0] +
-                                                (ii - start[0])] =
-                                                    imgin.im->array.SI8[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_INT16)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.SI16[(jj - start[1]) * naxesout[0] +
-                                                 (ii - start[0])] =
-                                                     imgin.im->array.SI16[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_INT32)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.SI32[(jj - start[1]) * naxesout[0] +
-                                                 (ii - start[0])] =
-                                                     imgin.im->array.SI32[jj * naxes[0] + ii];
-        }
-        else if(datatype == _DATATYPE_INT64)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    imgout.im->array.SI64[(jj - start[1]) * naxesout[0] +
-                                                 (ii - start[0])] =
-                                                     imgin.im->array.SI64[jj * naxes[0] + ii];
-        }
+#define CROP2D_BODY(MBR) \
+        for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++) \
+            for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++) \
+                imgout.im->array.MBR[(jj - start[1]) * naxesout[0] + (ii - start[0])] = \
+                    imgin.im->array.MBR[jj * naxes[0] + ii];
+
+#define CROP2D_BODY_COMPLEX(MBR) \
+        for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++) \
+            for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++) \
+            { \
+                imgout.im->array.MBR[(jj - start[1]) * naxesout[0] + (ii - start[0])].re = \
+                    imgin.im->array.MBR[jj * naxes[0] + ii].re; \
+                imgout.im->array.MBR[(jj - start[1]) * naxesout[0] + (ii - start[0])].im = \
+                    imgin.im->array.MBR[jj * naxes[0] + ii].im; \
+            }
+
+        MILK_FOR_EACH_DATATYPE(datatype, CROP2D_BODY, CROP2D_BODY(D))
+        else MILK_FOR_EACH_COMPLEX_TYPE(datatype, CROP2D_BODY_COMPLEX)
         else
         {
             PRINT_ERROR("invalid data type");
             exit(0);
         }
+
+#undef CROP2D_BODY
+#undef CROP2D_BODY_COMPLEX
     }
     if(naxis == 3)
     {
-        //	printf("naxis = 3\n");
-        if(datatype == _DATATYPE_FLOAT)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.F
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.F[kk * naxes[0] * naxes[1] +
-                                                      jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_DOUBLE)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.D
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.D[kk * naxes[0] * naxes[1] +
-                                                      jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_COMPLEX_FLOAT)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array
-                        .CF[(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                            (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .re = imgin.im->array
-                              .CF[kk * naxes[0] * naxes[1] +
-                                     jj * naxes[0] + ii]
-                              .re;
-                        imgout.im->array
-                        .CF[(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                            (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .im = imgin.im->array
-                              .CF[kk * naxes[0] * naxes[1] +
-                                     jj * naxes[0] + ii]
-                              .im;
-                    }
-        }
-        else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array
-                        .CD[(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                            (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .re = imgin.im->array
-                              .CD[kk * naxes[0] * naxes[1] +
-                                     jj * naxes[0] + ii]
-                              .re;
-                        imgout.im->array
-                        .CD[(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                            (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .im = imgin.im->array
-                              .CD[kk * naxes[0] * naxes[1] +
-                                     jj * naxes[0] + ii]
-                              .im;
-                    }
-        }
-        else if(datatype == _DATATYPE_UINT8)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.UI8
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.UI8[kk * naxes[0] * naxes[1] +
-                                           jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_UINT16)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.UI16
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.UI16[kk * naxes[0] * naxes[1] +
-                                            jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_UINT32)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.UI32
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.UI32[kk * naxes[0] * naxes[1] +
-                                            jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_UINT64)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.UI64
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.UI64[kk * naxes[0] * naxes[1] +
-                                            jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_INT8)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.SI8
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.SI8[kk * naxes[0] * naxes[1] +
-                                           jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_INT16)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.SI16
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.SI16[kk * naxes[0] * naxes[1] +
-                                            jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_INT32)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.SI32
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.SI32[kk * naxes[0] * naxes[1] +
-                                            jj * naxes[0] + ii];
-                    }
-        }
-        else if(datatype == _DATATYPE_INT64)
-        {
-            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
-                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
-                    {
-                        imgout.im->array.SI64
-                        [(kk - start[2]) * naxesout[0] * naxesout[1] +
-                                         (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             imgin.im->array.SI64[kk * naxes[0] * naxes[1] +
-                                            jj * naxes[0] + ii];
-                    }
-        }
+#define CROP3D_BODY(MBR) \
+        for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++) \
+            for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++) \
+                for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++) \
+                { \
+                    imgout.im->array.MBR \
+                    [(kk - start[2]) * naxesout[0] * naxesout[1] + \
+                                     (jj - start[1]) * naxesout[0] + (ii - start[0])] = \
+                         imgin.im->array.MBR[kk * naxes[0] * naxes[1] + \
+                                                  jj * naxes[0] + ii]; \
+                }
+
+#define CROP3D_BODY_COMPLEX(MBR) \
+        for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++) \
+            for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++) \
+                for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++) \
+                { \
+                    imgout.im->array \
+                    .MBR[(kk - start[2]) * naxesout[0] * naxesout[1] + \
+                                        (jj - start[1]) * naxesout[0] + (ii - start[0])] \
+                    .re = imgin.im->array \
+                          .MBR[kk * naxes[0] * naxes[1] + \
+                                 jj * naxes[0] + ii] \
+                          .re; \
+                    imgout.im->array \
+                    .MBR[(kk - start[2]) * naxesout[0] * naxesout[1] + \
+                                        (jj - start[1]) * naxesout[0] + (ii - start[0])] \
+                    .im = imgin.im->array \
+                          .MBR[kk * naxes[0] * naxes[1] + \
+                                 jj * naxes[0] + ii] \
+                          .im; \
+                }
+
+        MILK_FOR_EACH_DATATYPE(datatype, CROP3D_BODY, CROP3D_BODY(D))
+        else MILK_FOR_EACH_COMPLEX_TYPE(datatype, CROP3D_BODY_COMPLEX)
         else
         {
             PRINT_ERROR("invalid data type");
             exit(0);
         }
+
+#undef CROP3D_BODY
+#undef CROP3D_BODY_COMPLEX
     }
 
     free(naxesout);
