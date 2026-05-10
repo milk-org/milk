@@ -217,7 +217,7 @@ void ov_render_streams_panel(
                         "%6.1fM ", mbps);
                 }
             } else {
-                STRM_FIELD(OV_FG_DIM, "     - ");
+                STRM_FIELD(OV_FG_DIM, "      - ");
             }
 
             STRM_FIELD(OV_FG_DIM, "%10lu ", (unsigned long) s->inode);
