@@ -581,6 +581,40 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
     }
 
+    if (key == 'C')
+    {
+        if (lay->focus == OV_FOCUS_PROCS)
+        {
+            ov_ctrl_procs_cleanup(log);
+            return 1;
+        }
+    }
+
+    if (key == 'i')
+    {
+        if (lay->focus == OV_FOCUS_STREAMS
+            && lay->sel_stream >= 0
+            && lay->sel_stream < m->nb_streams)
+        {
+            ov_ctrl_inspect_item(OV_FOCUS_STREAMS, &m->streams[lay->sel_stream]);
+            return 1;
+        }
+        else if (lay->focus == OV_FOCUS_PROCS
+                 && lay->sel_proc >= 0
+                 && lay->sel_proc < m->nb_procs)
+        {
+            ov_ctrl_inspect_item(OV_FOCUS_PROCS, &m->procs[lay->sel_proc]);
+            return 1;
+        }
+        else if (lay->focus == OV_FOCUS_FPS
+                 && lay->sel_fps >= 0
+                 && lay->sel_fps < m->nb_fps)
+        {
+            ov_ctrl_inspect_item(OV_FOCUS_FPS, &m->fps[lay->sel_fps]);
+            return 1;
+        }
+    }
+
     if (lay->ctrl_mode)
     {
         if (lay->focus == OV_FOCUS_FPS
@@ -602,6 +636,19 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             if (key == 'e')
             {
                 ov_ctrl_fps_remove(f, log);
+                return 1;
+            }
+        }
+
+        if (lay->focus == OV_FOCUS_PROCS
+            && lay->sel_proc >= 0
+            && lay->sel_proc < m->nb_procs)
+        {
+            const OV_PROC *p =
+                &m->procs[lay->sel_proc];
+            if (key == 'e')
+            {
+                ov_ctrl_proc_remove(p, log);
                 return 1;
             }
         }

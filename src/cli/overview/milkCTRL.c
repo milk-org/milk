@@ -146,14 +146,17 @@ static void print_usage(const char *prog)
     printf("  G          Toggle command log panel\n");
     printf("  h          Help overlay\n");
     printf("\nControl mode (c to toggle):\n");
-    printf("  FPS:  r=run  s=conf  e=remove\n");
-    printf("  STRM: d=delete stream\n");
+    printf("  FPS:   r=run  s=conf  e=remove\n");
+    printf("  PROCS: e=remove selected entry\n");
+    printf("  STRM:  d=delete stream\n");
     printf("\nProcess signals (PROCS & FPS panels):\n");
     printf("  k    Graceful kill (SIGTERM)\n");
     printf("  K    Immediate kill (SIGKILL)\n");
     printf("  x    Pause/resume (SIGSTOP/SIGCONT)\n");
-    printf("\nDetail View (ENTER or D):\n");
-    printf("  Toggles detail pane for selected item\n");
+    printf("  C    Cleanup dead/stopped procs (PROCS panel)\n");
+    printf("\nDetail View (ENTER or D) and Inspection (i):\n");
+    printf("  ENTER/D  Toggles detail pane for selected item\n");
+    printf("  i        Spawn interactive CLI diagnostic tool\n");
     printf("\nColumns:\n");
     printf("  STREAMS: MB/s throughput,"
            " total in panel footer\n");

@@ -18,7 +18,6 @@
 #include "processinfo_internal.h"
 #include "processinfo.h"
 #include "processinfo_procdirname.h"
-#include "processinfo_shm_list_create.h"
 #include "milkDebugTools.h"
 #include "milk_help.h"
 
@@ -28,8 +27,8 @@
     "Scan the processinfo directory (e.g. /dev/shm) and remove all\n" \
     "proc.<name>.<pid>.shm files whose base name matches the given\n" \
     "POSIX extended regular expression.\n" \
-    "If --clean-dead is used, removes all entries with status CRASHED or STOPPED.\n" \
-    "Also deactivates matching entries in the global pinfolist."
+    "If --clean-dead is used, removes only entries whose PID is no\n" \
+    "longer alive or whose loopstat is CRASHED/STOPPED."
 
 static void print_help(const char *progname, int mh_color)
 {
@@ -146,91 +145,119 @@ int main(int argc, char *argv[])
     struct dirent *entry;
 
     int removed_count = 0;
-    while ((entry = readdir(dir)) != NULL) {
-        if (strncmp(entry->d_name, "proc.", 5) == 0 &&
-            strstr(entry->d_name, ".shm") != NULL) {
-            
-            // Extract pname from proc.PNAME.XXXXXX.shm
-            char ext_pname[256];
-            strncpy(ext_pname, entry->d_name + 5, sizeof(ext_pname));
-            char *dot = strchr(ext_pname, '.');
-            if (dot) *dot = '\0';
-            
-            if (regexec(&regex, ext_pname, 0, NULL, 0) == 0) {
-                // Match found
-                char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
-                snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, entry->d_name);
-            
-                int should_remove = 1;
+    int skipped_alive = 0;
 
-                if (clean_dead) {
-                    should_remove = 0;
-                    int fd = open(fullpath, O_RDONLY);
-                    if (fd != -1) {
-                        PROCESSINFO *pinfo = mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
-                        if (pinfo != MAP_FAILED) {
-                            if (kill(pinfo->PID, 0) == -1 && errno == ESRCH) {
-                                // Process no longer exists
-                                should_remove = 1;
-                            } else if (pinfo->loopstat == PROCESSINFO_LOOPSTAT_CRASHED || 
-                                       pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP) {
-                                // Process exists but is explicitly marked crashed/stopped
-                                should_remove = 1;
-                            }
-                            munmap(pinfo, sizeof(PROCESSINFO));
-                        }
-                        close(fd);
-                    }
-                }
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strncmp(entry->d_name, "proc.", 5) != 0)
+        {
+            continue;
+        }
+        if (strstr(entry->d_name, ".shm") == NULL)
+        {
+            continue;
+        }
 
-                if (should_remove) {
-                    if (verbose) {
-                        printf("Removing %s\n", fullpath);
-                    }
-                    if (unlink(fullpath) == 0) {
-                        removed_count++;
-                    } else {
-                        perror("unlink");
-                    }
-                }
+        /* Extract pname from proc.PNAME.XXXXXX.shm */
+        char ext_pname[256];
+        strncpy(ext_pname, entry->d_name + 5,
+                sizeof(ext_pname) - 1);
+        ext_pname[sizeof(ext_pname) - 1] = '\0';
+        char *dot = strchr(ext_pname, '.');
+        if (dot)
+        {
+            *dot = '\0';
+        }
+
+        if (regexec(&regex, ext_pname, 0, NULL, 0) != 0)
+        {
+            continue;
+        }
+
+        /* Match found — open and map to inspect */
+        char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
+        snprintf(fullpath, sizeof(fullpath),
+                 "%s/%s", procdname, entry->d_name);
+
+        pid_t pid       = 0;
+        int   loopstat  = -1;
+        int   pid_alive = 0;
+
+        int fd = open(fullpath, O_RDONLY);
+        if (fd != -1)
+        {
+            PROCESSINFO *pinfo =
+                (PROCESSINFO *) mmap(
+                    NULL,
+                    sizeof(PROCESSINFO),
+                    PROT_READ,
+                    MAP_SHARED,
+                    fd,
+                    0);
+            if (pinfo != MAP_FAILED)
+            {
+                pid      = pinfo->PID;
+                loopstat = pinfo->loopstat;
+                /* alive = kill succeeds, or EPERM (process
+                 * exists but we lack permission to signal) */
+                pid_alive =
+                    (kill(pid, 0) == 0 || errno == EPERM);
+                munmap(pinfo, sizeof(PROCESSINFO));
             }
+            close(fd);
+        }
+
+        /* Liveness guard: always block removal of alive procs */
+        if (pid_alive)
+        {
+            fprintf(stderr,
+                    "Skipping %s — PID %ld is still alive\n",
+                    fullpath, (long) pid);
+            skipped_alive++;
+            continue;
+        }
+
+        /* --clean-dead: additionally require crashed/stopped */
+        if (clean_dead)
+        {
+            if (loopstat != PROCESSINFO_LOOPSTAT_CRASHED &&
+                loopstat != PROCESSINFO_LOOPSTAT_STOP)
+            {
+                if (verbose)
+                {
+                    printf("Skipping %s — not crashed/stopped\n",
+                           fullpath);
+                }
+                continue;
+            }
+        }
+
+        if (verbose)
+        {
+            printf("Removing %s\n", fullpath);
+        }
+        if (unlink(fullpath) == 0)
+        {
+            removed_count++;
+        }
+        else
+        {
+            perror("unlink");
         }
     }
     closedir(dir);
 
-    // Update global list
-    if (processinfo_shm_list_create() != -1) {
-        if (pinfolist != NULL) {
-            for (int i = 0; i < PROCESSINFOLISTSIZE; i++) {
-                if (pinfolist->active[i] != 0 && regexec(&regex, pinfolist->pnamearray[i], 0, NULL, 0) == 0) {
-                    
-                    int should_deactivate = 1;
-
-                    if (clean_dead) {
-                        should_deactivate = 0;
-                        char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
-                        snprintf(fullpath, sizeof(fullpath), "%s/proc.%s.%d.shm", 
-                                 procdname, pinfolist->pnamearray[i], pinfolist->PIDarray[i]);
-                        
-                        // We check if the file was deleted in the previous step
-                        // If it doesn't exist anymore, it means it was deleted.
-                        if (access(fullpath, F_OK) != 0) {
-                            should_deactivate = 1;
-                        }
-                    }
-
-                    if (should_deactivate) {
-                        if (verbose) {
-                            printf("Deactivating entry %d in pinfolist (PID %d)\n", i, pinfolist->PIDarray[i]);
-                        }
-                        pinfolist->active[i] = 0;
-                    }
-                }
-            }
-        }
+    printf("Removed %d shared memory segment(s)"
+           " matching '%s'",
+           removed_count, pattern);
+    if (skipped_alive > 0)
+    {
+        printf(" (%d skipped — PID still alive)",
+               skipped_alive);
     }
+    printf(".\n");
 
-    printf("Removed %d shared memory segments for processes matching '%s'.\n", removed_count, pattern);
+
 
     regfree(&regex);
 

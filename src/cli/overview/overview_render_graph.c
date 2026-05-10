@@ -166,11 +166,11 @@ void ov_render_preview_line(
         }
     }
 
-    /* [FREEZE] badge on right edge when frozen */
+    /* [SELECTED] badge on right edge when frozen */
     if (lay->freeze)
     {
-        const char *badge = " FREEZE ";
-        int bw = 8;
+        const char *badge = " SELECTED ";
+        int bw = 10;
         int col = W - bw + 1;
         if (col > 1)
         {
@@ -201,8 +201,8 @@ void ov_render_graph_panel(
     ov_theme_bg(OV_BG_HEADER);
     ov_theme_fg(OV_FG_DIM);
     char htext[256];
-    int hlen = snprintf(htext, sizeof(htext), " %-12s %-4s %-12s %-6s %-16s %-4s %-5s %-4s", 
-                        "PROCESS", "PID", "STREAM", "STATUS", "LOOPCNT", "MISS", "MEM", "PR");
+    int hlen = snprintf(htext, sizeof(htext), " %-12s %-4s %-12s %-9s %-18s %-5s %-4s", 
+                        "SOURCE", "", "TARGET", " LABEL", " TYPE", "SRCT", "TGTT");
     ov_buf_printf("%s", htext);
     render_pad_spaces(hlen, r.width);
     row++;
@@ -224,6 +224,11 @@ void ov_render_graph_panel(
     }
 
     int rendered_rows = 0;
+    ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int sel_s = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+    int sel_p = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+    int sel_f = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+
     for (int ei = 0; ei < m->nb_edges && rendered_rows < max_rows; ei++)
     {
         const OV_EDGE *e = &m->edges[ei];
@@ -235,7 +240,25 @@ void ov_render_graph_panel(
         ov_buf_pos(row, r.col + 1);
         
         int is_sel = (ei == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
-        ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : OV_BG_PANEL;
+        int is_rel = 0;
+        if (!is_sel && eff_focus != OV_FOCUS_GRAPH) {
+            if (eff_focus == OV_FOCUS_STREAMS) {
+                if ((src->type == OV_NODE_STREAM && src->index == sel_s) ||
+                    (tgt->type == OV_NODE_STREAM && tgt->index == sel_s)) is_rel = 1;
+            } else if (eff_focus == OV_FOCUS_PROCS) {
+                if ((src->type == OV_NODE_PROC && src->index == sel_p) ||
+                    (tgt->type == OV_NODE_PROC && tgt->index == sel_p)) is_rel = 1;
+            } else if (eff_focus == OV_FOCUS_FPS) {
+                if ((src->type == OV_NODE_FPS && src->index == sel_f) ||
+                    (tgt->type == OV_NODE_FPS && tgt->index == sel_f)) is_rel = 1;
+            }
+        }
+        
+        if (lay->freeze && lay->freeze_focus != OV_FOCUS_GRAPH && !is_rel) {
+            continue;
+        }
+
+        ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : (is_rel ? OV_BG_RELATED : OV_BG_PANEL);
         ov_theme_bg(row_bg);
         ov_buf_printf(" ");
 
@@ -295,7 +318,7 @@ void ov_render_graph_panel(
         }
 
         GRAPH_FIELD(tc, "%-12.12s", tgt->name);
-        GRAPH_FIELD(OV_FG_DIM, " [%.6s]", e->label);
+        GRAPH_FIELD(OV_FG_DIM, " [%-6.6s]", e->label);
         GRAPH_FIELD(OV_FG_TEXT, " %-16.16s ", etype);
         GRAPH_FIELD(sc, "%-4s ", styp);
         GRAPH_FIELD(tc, "%-4s", ttyp);

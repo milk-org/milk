@@ -137,7 +137,7 @@ void ov_model_export_snapshot(const OV_MODEL *m)
 
     /* Processes */
     fprintf(fp,
-        "\n=== PROCESSES (%d) ===\n", m->nb_procs);
+        "\n=== PROCESSINFO (%d) ===\n", m->nb_procs);
     fprintf(fp,
         "%-20s %7s %6s %8s %10s %s\n",
         "NAME", "PID", "STAT",
