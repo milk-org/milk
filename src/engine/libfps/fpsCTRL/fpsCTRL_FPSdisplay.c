@@ -26,73 +26,24 @@
 #define LEVEL0_SUMMARY_WIDTH 20
 #define TREE_LEVEL_WIDTH 12
 
-errno_t fpsCTRL_FPSdisplay(
-    KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar
-)
-{
-    DEBUG_TRACE_FSTART();
-
-    if(fpsCTRLvar->NBfps > 0)
-    {
-        DEBUG_TRACEPOINT("Check that selected node is OK");
-        if(strlen(keywnode[fpsCTRLvar->nodeSelected].keywordfull) < 1)
-        {
-            fpsCTRLvar->nodeSelected = 1;
-            while((strlen(keywnode[fpsCTRLvar->nodeSelected].keywordfull) < 1)
-                    && (fpsCTRLvar->nodeSelected < NB_KEYWNODE_MAX - 1))
-            {
-                fpsCTRLvar->nodeSelected ++;
-            }
-        }
-
-        DEBUG_TRACEPOINT("Selected node: %d", fpsCTRLvar->nodeSelected);
-
-        fpsCTRLvar->fpsindexSelected = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-        fpsCTRLvar->pindexSelected = keywnode[fpsCTRLvar->nodeSelected].pindex;
-
-        if (fpsarray[fpsCTRLvar->fpsindexSelected].md == NULL)
-        {
-            return RETURN_SUCCESS;
-        }
-
-        DEBUG_TRACEPOINT("fpsindexSelected: %d, pindexSelected: %d", fpsCTRLvar->fpsindexSelected, fpsCTRLvar->pindexSelected);
-
-        if (fpsCTRLvar->fpsCTRL_DisplayVerbose) {
-            fpsCTRLscreen_print_nodeinfo(
-                fpsarray,
-                keywnode,
-                fpsCTRLvar->nodeSelected,
-                fpsCTRLvar->fpsindexSelected,
-                fpsCTRLvar->pindexSelected);
-        }
-
-        int nodechain[MAXNBLEVELS];
-        nodechain[fpsCTRLvar->currentlevel] = fpsCTRLvar->directorynodeSelected;
-
-        int level = fpsCTRLvar->currentlevel - 1;
-        while(level > 0)
-        {
-            nodechain[level] = keywnode[nodechain[level + 1]].parent_index;
-            level --;
-        }
-        nodechain[0] = 0; // root
-
-        fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
-        
+static void fpsCTRL__filter_and_sort_children(
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    int *filtered_children,
+    int *num_filtered
+) {
         // Filter and Sort current directory children
-        int filtered_children[NB_KEYWNODE_MAX];
-        int num_filtered = 0;
+        (*num_filtered) = 0;
         
         for(int i = 0; i < keywnode[fpsCTRLvar->directorynodeSelected].NBchild; i++) {
             int knodeindex = keywnode[fpsCTRLvar->directorynodeSelected].child[i];
             
             if (fpsCTRLvar->search_string[0] != '\0') {
                 if (strcasestr(keywnode[knodeindex].keywordfull, fpsCTRLvar->search_string) != NULL) {
-                    filtered_children[num_filtered++] = knodeindex;
+                    filtered_children[(*num_filtered)++] = knodeindex;
                 }
             } else {
-                filtered_children[num_filtered++] = knodeindex;
+                filtered_children[(*num_filtered)++] = knodeindex;
             }
         }
         
@@ -102,10 +53,10 @@ errno_t fpsCTRL_FPSdisplay(
             || fpsCTRLvar->sort_mode == 2)
         {
             for (int i = 0;
-                 i < num_filtered - 1; i++)
+                 i < (*num_filtered) - 1; i++)
             {
                 for (int j = i + 1;
-                     j < num_filtered; j++)
+                     j < (*num_filtered); j++)
                 {
                     int swap = 0;
                     int ki = filtered_children[i];
@@ -158,16 +109,29 @@ errno_t fpsCTRL_FPSdisplay(
             }
         }
 
-        int GUIlineMax = num_filtered;
-        for(level = 0; level < fpsCTRLvar->currentlevel; level ++)
+}
+
+static void fpsCTRL__calculate_widths_and_layout(
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    int *nodechain,
+    int num_filtered,
+    int *filtered_children,
+    int *GUIlineMax,
+    int *child_index,
+    int *max_kw_width,
+    int *max_val_width
+) {
+        (*GUIlineMax) = num_filtered;
+        for(int level = 0; level < fpsCTRLvar->currentlevel; level ++)
         {
-            if(keywnode[nodechain[level]].NBchild > GUIlineMax)
+            if(keywnode[nodechain[level]].NBchild > (*GUIlineMax))
             {
-                GUIlineMax = keywnode[nodechain[level]].NBchild;
+                (*GUIlineMax) = keywnode[nodechain[level]].NBchild;
             }
         }
 
-        DEBUG_TRACEPOINT("GUIlineMax: %d", GUIlineMax);
+        DEBUG_TRACEPOINT("(*GUIlineMax): %d", (*GUIlineMax));
 
         if(!(fpsarray[fpsCTRLvar->fpsindexSelected].parray[0].fpflag &
                 FPFLAG_VISIBLE))      // if invisible
@@ -187,15 +151,15 @@ errno_t fpsCTRL_FPSdisplay(
 
         DEBUG_TRACEPOINT("GUIlineSelected[currentlevel]: %d", fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]);
 
-        int child_index[MAXNBLEVELS];
-        for(level = 0; level < MAXNBLEVELS ;
+        
+        for(int level = 0; level < MAXNBLEVELS ;
                 level ++)
         {
             child_index[level] = 0;
         }
 
         // Calculate dynamic widths for each level
-        int max_kw_width[MAXNBLEVELS];
+        
         for (int l = 0; l < MAXNBLEVELS; l++) max_kw_width[l] = 5; // minimum width
 
         // Widths for hierarchy columns (levels < currentlevel)
@@ -212,7 +176,7 @@ errno_t fpsCTRL_FPSdisplay(
         }
 
         // Width for the current level's keyword column
-        int max_val_width = 5;
+        (*max_val_width) = 5;
         int cl = fpsCTRLvar->currentlevel;
         for(int i = 0; i < num_filtered; i++)
         {
@@ -234,7 +198,7 @@ errno_t fpsCTRL_FPSdisplay(
                         200);
                 }
                 int val_len = strlen(valstring);
-                if (val_len > max_val_width) max_val_width = val_len;
+                if (val_len > (*max_val_width)) (*max_val_width) = val_len;
             }
             else
             {
@@ -243,9 +207,9 @@ errno_t fpsCTRL_FPSdisplay(
             if (kw_len > max_kw_width[cl]) max_kw_width[cl] = kw_len;
         }
         if (max_kw_width[cl] > 30) max_kw_width[cl] = 30;
-        if (max_val_width > 40) max_val_width = 40;
+        if ((*max_val_width) > 40) (*max_val_width) = 40;
 
-        DEBUG_TRACEPOINT("max_kw_width[cl]: %d, max_val_width: %d", max_kw_width[cl], max_val_width);
+        DEBUG_TRACEPOINT("max_kw_width[cl]: %d, (*max_val_width): %d", max_kw_width[cl], (*max_val_width));
 
         // Impose constraints based on terminal width
         int reserved_width = 25; 
@@ -256,9 +220,23 @@ errno_t fpsCTRL_FPSdisplay(
         if (max_kw_width[cl] > available_width / 2) max_kw_width[cl] = available_width / 2;
         
         TUI_newline();
+}
 
+static void fpsCTRL__render_summary_and_breadcrumbs(
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    int *nodechain,
+    int GUIlineMax,
+    int num_filtered,
+    int *filtered_children,
+    int *child_index,
+    int *dispindexMax,
+    int *doffsetindex,
+    int *lastindex,
+    int *summary_printed
+) {
         // 1-line summary for selected parameter
-        int summary_printed = 0;
+        (*summary_printed) = 0;
         if (keywnode[fpsCTRLvar->nodeSelected].leaf)
         {
             int fpsidx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
@@ -310,13 +288,13 @@ errno_t fpsCTRL_FPSdisplay(
                     TUI_printfw("%s", stream_info);
                     screenprint_unsetcolor(sumcolor);
                     TUI_newline();
-                    summary_printed = 1;
+                    (*summary_printed) = 1;
                     ImageStreamIO_closeIm(&tmpimg);
                 }
             }
 
             /* Trigger mode description */
-            if (!summary_printed)
+            if (!(*summary_printed))
             {
                 const char *kfull =
                     fpsarray[fpsidx]
@@ -382,7 +360,7 @@ errno_t fpsCTRL_FPSdisplay(
                         tval, tdesc);
                     screenprint_unsetcolor(2);
                     TUI_newline();
-                    summary_printed = 1;
+                    (*summary_printed) = 1;
                 }
             }
         }
@@ -396,7 +374,7 @@ errno_t fpsCTRL_FPSdisplay(
 
         /* Dynamically calculate required footer lines to prevent terminal scrolling.
          * If the printed lines exceed terminal height, the screen scrolls and tears the TUI. */
-        int footer_rows = (summary_printed ? 0 : 1) // Blank line if summary not printed
+        int footer_rows = ((*summary_printed) ? 0 : 1) // Blank line if summary not printed
                           + 2 // Breadcrumbs
                           + 1 // Root offset scroll indicator
                           + 1 // Bottom scroll indicator
@@ -404,33 +382,33 @@ errno_t fpsCTRL_FPSdisplay(
                           + status_lines // OK message or Error list
                           + 1; // Extra margin safety
 
-        int dispindexMax = (int) wrow - sc_cursor_row - footer_rows;
-        if(dispindexMax < 5) dispindexMax = 5;
+        (*dispindexMax) = (int) wrow - sc_cursor_row - footer_rows;
+        if((*dispindexMax) < 5) (*dispindexMax) = 5;
 
         int cl_scroll = fpsCTRLvar->currentlevel;
         if(cl_scroll < 0) cl_scroll = 0;
         
         int pindexActiveSelected = fpsCTRLvar->GUIlineSelected[cl_scroll];
-        int doffsetindex = fpsCTRLvar->display_offset[cl_scroll];
+        (*doffsetindex) = fpsCTRLvar->display_offset[cl_scroll];
 
         int margin = 2; // Keep at least 2 items visible above/below the cursor
         
-        if (pindexActiveSelected < doffsetindex + margin) {
-            doffsetindex = pindexActiveSelected - margin;
+        if (pindexActiveSelected < (*doffsetindex) + margin) {
+            (*doffsetindex) = pindexActiveSelected - margin;
         }
-        if (pindexActiveSelected > doffsetindex + dispindexMax - 1 - margin) {
-            doffsetindex = pindexActiveSelected - dispindexMax + 1 + margin;
+        if (pindexActiveSelected > (*doffsetindex) + (*dispindexMax) - 1 - margin) {
+            (*doffsetindex) = pindexActiveSelected - (*dispindexMax) + 1 + margin;
         }
         
-        if (doffsetindex > GUIlineMax - dispindexMax) doffsetindex = GUIlineMax - dispindexMax;
-        if (doffsetindex < 0) doffsetindex = 0;
+        if ((*doffsetindex) > GUIlineMax - (*dispindexMax)) (*doffsetindex) = GUIlineMax - (*dispindexMax);
+        if ((*doffsetindex) < 0) (*doffsetindex) = 0;
         
-        fpsCTRLvar->display_offset[cl_scroll] = doffsetindex;
+        fpsCTRLvar->display_offset[cl_scroll] = (*doffsetindex);
 
-        int lastindex = doffsetindex + dispindexMax;
-        if (lastindex > GUIlineMax) lastindex = GUIlineMax;
+        (*lastindex) = (*doffsetindex) + (*dispindexMax);
+        if ((*lastindex) > GUIlineMax) (*lastindex) = GUIlineMax;
 
-        if (!summary_printed)
+        if (!(*summary_printed))
         {
             TUI_newline();
         }
@@ -472,30 +450,46 @@ errno_t fpsCTRL_FPSdisplay(
 
         for (int l = 0; l < MAXNBLEVELS; l++) {
             if (l == fpsCTRLvar->currentlevel) {
-                child_index[l] = doffsetindex;
+                child_index[l] = (*doffsetindex);
             } else if (l < fpsCTRLvar->currentlevel) {
                 int start = fpsCTRLvar->display_offset[l];
                 int n_items = keywnode[nodechain[l]].NBchild;
                 int sel = fpsCTRLvar->GUIlineSelected[l];
                 
                 if (sel < start + margin) start = sel - margin;
-                if (sel > start + dispindexMax - 1 - margin) start = sel - dispindexMax + 1 + margin;
-                if (start > n_items - dispindexMax) start = n_items - dispindexMax;
+                if (sel > start + (*dispindexMax) - 1 - margin) start = sel - (*dispindexMax) + 1 + margin;
+                if (start > n_items - (*dispindexMax)) start = n_items - (*dispindexMax);
                 if (start < 0) start = 0;
                 
                 child_index[l] = start;
                 fpsCTRLvar->display_offset[l] = start;
             } else {
-                child_index[l] = doffsetindex;
+                child_index[l] = (*doffsetindex);
             }
         }
+}
 
+static void fpsCTRL__render_parameter_rows(
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    int *nodechain,
+    int *filtered_children,
+    int num_filtered,
+    int doffsetindex,
+    int lastindex,
+    int *child_index,
+    int *max_kw_width,
+    int max_val_width,
+    int GUIlineMax
+) {
+        int level = fpsCTRLvar->currentlevel - 1;
+        int cl = fpsCTRLvar->currentlevel;
         for(int GUIline = doffsetindex; GUIline < lastindex;
                 GUIline++)   // GUIline is the line number on GUI display
         {
-            for(level = 0; level < fpsCTRLvar->currentlevel; level ++)
+            for(int level = 0; level < fpsCTRLvar->currentlevel; level ++)
             {
-                int c_idx = child_index[level];
+                int c_idx = child_index[cl];
 
                 /* Determine if this row is the selected
                  * node in the chain for this level. */
@@ -589,8 +583,8 @@ errno_t fpsCTRL_FPSdisplay(
             }
 
             int knodeindex = -1;
-            if (child_index[level] < num_filtered) {
-                knodeindex = filtered_children[child_index[level]];
+            if (child_index[cl] < num_filtered) {
+                knodeindex = filtered_children[child_index[cl]];
             }
             
             if(knodeindex >= 0 && knodeindex < fpsCTRLvar->NBkwn)
@@ -616,7 +610,7 @@ errno_t fpsCTRL_FPSdisplay(
                     }
 
 
-                    if(child_index[level] < num_filtered)
+                    if(child_index[cl] < num_filtered)
                     {
                         screenprint_setcolor(5);
                         int l = keywnode[knodeindex].keywordlevel;
@@ -985,7 +979,13 @@ errno_t fpsCTRL_FPSdisplay(
             }
             TUI_newline();
         }
+}
 
+static void fpsCTRL__render_footer_status(
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    int GUIlineMax,
+    int dispindexMax
+) {
         int lastindex_root = fpsCTRLvar->display_offset[0] + dispindexMax;
         if (lastindex_root < GUIlineMax) {
             screenprint_setbold();
@@ -1033,7 +1033,87 @@ errno_t fpsCTRL_FPSdisplay(
             }
             screenprint_unsetbold();
         }
+}
+
+
+errno_t fpsCTRL_FPSdisplay(
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar
+)
+{
+    DEBUG_TRACE_FSTART();
+
+    if(fpsCTRLvar->NBfps > 0)
+    {
+        DEBUG_TRACEPOINT("Check that selected node is OK");
+        if(strlen(keywnode[fpsCTRLvar->nodeSelected].keywordfull) < 1)
+        {
+            fpsCTRLvar->nodeSelected = 1;
+            while((strlen(keywnode[fpsCTRLvar->nodeSelected].keywordfull) < 1)
+                    && (fpsCTRLvar->nodeSelected < NB_KEYWNODE_MAX - 1))
+            {
+                fpsCTRLvar->nodeSelected ++;
+            }
+        }
+
+        DEBUG_TRACEPOINT("Selected node: %d", fpsCTRLvar->nodeSelected);
+
+        fpsCTRLvar->fpsindexSelected = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        fpsCTRLvar->pindexSelected = keywnode[fpsCTRLvar->nodeSelected].pindex;
+
+        if (fpsarray[fpsCTRLvar->fpsindexSelected].md == NULL)
+        {
+            return RETURN_SUCCESS;
+        }
+
+        DEBUG_TRACEPOINT("fpsindexSelected: %d, pindexSelected: %d", fpsCTRLvar->fpsindexSelected, fpsCTRLvar->pindexSelected);
+
+        if (fpsCTRLvar->fpsCTRL_DisplayVerbose) {
+            fpsCTRLscreen_print_nodeinfo(
+                fpsarray,
+                keywnode,
+                fpsCTRLvar->nodeSelected,
+                fpsCTRLvar->fpsindexSelected,
+                fpsCTRLvar->pindexSelected);
+        }
+
+        int nodechain[MAXNBLEVELS];
+        nodechain[fpsCTRLvar->currentlevel] = fpsCTRLvar->directorynodeSelected;
+
+        int level = fpsCTRLvar->currentlevel - 1;
+        while(level > 0)
+        {
+            nodechain[level] = keywnode[nodechain[level + 1]].parent_index;
+            level --;
+        }
+        nodechain[0] = 0; // root
+
+        fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
+        
+        int filtered_children[NB_KEYWNODE_MAX];
+        int num_filtered = 0;
+        fpsCTRL__filter_and_sort_children(keywnode, fpsCTRLvar, filtered_children, &num_filtered);
+
+        int GUIlineMax = num_filtered;
+        int child_index[MAXNBLEVELS];
+        int max_kw_width[MAXNBLEVELS];
+        int max_val_width = 5;
+        fpsCTRL__calculate_widths_and_layout(keywnode, fpsCTRLvar, nodechain, num_filtered, filtered_children,
+                                             &GUIlineMax, child_index, max_kw_width, &max_val_width);
+
+        int dispindexMax = 5;
+        int doffsetindex = 0;
+        int lastindex = 0;
+        int summary_printed = 0;
+        fpsCTRL__render_summary_and_breadcrumbs(keywnode, fpsCTRLvar, nodechain, GUIlineMax, num_filtered, filtered_children, child_index,
+                                                &dispindexMax, &doffsetindex, &lastindex, &summary_printed);
+
+        fpsCTRL__render_parameter_rows(keywnode, fpsCTRLvar, nodechain, filtered_children, num_filtered,
+                                       doffsetindex, lastindex, child_index, max_kw_width, max_val_width, GUIlineMax);
+
+        fpsCTRL__render_footer_status(fpsCTRLvar, GUIlineMax, dispindexMax);
     }
+
     else
     {
         TUI_newline();
