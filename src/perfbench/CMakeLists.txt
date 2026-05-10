@@ -26,7 +26,8 @@ add_executable(milk-perfbench
 
 target_include_directories(milk-perfbench PRIVATE
     ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
-    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${PROJECT_SOURCE_DIR}/src/engine/libfps)
 
 target_link_libraries(milk-perfbench
     milkprocessinfo
@@ -45,7 +46,8 @@ add_executable(milk-perfbench-readprocinfo
 target_include_directories(
     milk-perfbench-readprocinfo PRIVATE
     ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
-    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${PROJECT_SOURCE_DIR}/src/engine/libfps)
 
 target_link_libraries(
     milk-perfbench-readprocinfo
@@ -63,7 +65,8 @@ add_executable(milk-perfbench-mkstream
 
 target_include_directories(
     milk-perfbench-mkstream PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${PROJECT_SOURCE_DIR}/src/engine/libfps)
 
 target_link_libraries(
     milk-perfbench-mkstream
