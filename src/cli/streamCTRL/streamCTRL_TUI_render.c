@@ -134,46 +134,14 @@ static inline void streamCTRL_print_frequ_field(
     TUI_printfw("%s", fbuf);
     SC_APPEND("\033[0m");
 }
-void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state) {
-        int NBsinfodisp = 10; // Default until recalculated
-        const int stringmaxlen = 300;
 
+static void streamCTRL__render_header_help(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state);
+static void streamCTRL__render_header_streams(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int *NBsinfodisp_out, int *lastindex_out, double *frame_t_sec_out, int *frame_color_level_out);
+static void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int NBsinfodisp, double frame_t_sec, int frame_color_level);
+static void streamCTRL__render_footer(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int NBsinfodisp);
 
-        TUI_clearscreen(&wrow, &wcol);
-
-        if(sTUIparam.dindexSelected < 0)
-        {
-            sTUIparam.dindexSelected = 0;
-        }
-        if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1)
-        {
-            sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;
-        }
-
-        DEBUG_TRACEPOINT("Erase screen");
-
-        //attron(A_BOLD);
-        screenprint_setbold();
-        snprintf(monstring,
-                 monstrlen,
-                 "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) "
-                 "FOR HELP",
-                 wrow,
-                 wcol,
-                 getpid());
-        //streamCTRL__print_header(monstring, '-');
-        DEBUG_TRACEPOINT("Print header");
-        screenprint_setcolor(12);
-        TUI_print_header(monstring, '-');
-        screenprint_unsetcolor(12);
-        //attroff(A_BOLD);
-        screenprint_unsetbold();
-
-        DEBUG_TRACEPOINT("Start display");
-
-        if(sTUIparam.DisplayMode == DISPLAY_MODE_HELP)  // help
-        {
-            //int attrval = A_BOLD;
+static void streamCTRL__render_header_help(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state) {
+//int attrval = A_BOLD;
 
             DEBUG_TRACEPOINT(" ");
 
@@ -217,10 +185,13 @@ void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct strea
             print_help_entry("r", "Force full screen redraw");
             print_help_entry("F", "Set match string pattern");
             print_help_entry("f", "Toggle apply match string to stream");
-        }
-        else
-        {
-            DEBUG_TRACEPOINT(" ");
+}
+
+static void streamCTRL__render_header_streams(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int *NBsinfodisp_out, int *lastindex_out, double *frame_t_sec_out, int *frame_color_level_out) {
+    int NBsinfodisp = 10;
+    double frame_t_sec = 0.0;
+    int frame_color_level = 0;
+DEBUG_TRACEPOINT(" ");
             /* Tab bar — rendered from TAB_LIST */
 #define RENDER_ONE_TAB(mode, key, label) \
     { \
@@ -320,7 +291,7 @@ void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct strea
                 TUI_newline();
             }
 
-            int lastindex;
+            int lastindex = 0;
             lastindex = doffsetindex + NBsinfodisp;
             if(lastindex > sTUIparam.NBsindex - 1)
             {
@@ -695,13 +666,21 @@ void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct strea
              * to avoid N system calls and repeated env-var checks per frame. */
             struct timespec frame_ts;
             clock_gettime(CLOCK_MONOTONIC, &frame_ts);
-            double frame_t_sec = frame_ts.tv_sec + frame_ts.tv_nsec * 1e-9;
+            frame_t_sec = frame_ts.tv_sec + frame_ts.tv_nsec * 1e-9;
 
             ansi_detect_color_level();
-            int frame_color_level = ansi__color_level;
+            frame_color_level = ansi__color_level;
+    if (NBsinfodisp_out) *NBsinfodisp_out = NBsinfodisp;
+    if (lastindex_out) *lastindex_out = lastindex;
+    if (frame_t_sec_out) *frame_t_sec_out = frame_t_sec;
+    if (frame_color_level_out) *frame_color_level_out = frame_color_level;
+}
 
-
-            for(int dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
+static void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int NBsinfodisp, double frame_t_sec, int frame_color_level) {
+    int DisplayFlag = 0;
+    int print_pid_mode = PRINT_PID_DEFAULT;
+    const int stringmaxlen = 300;
+for(int dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
             {
                 imageID ID;
                 int sindex = sTUIparam.ssindex[dindex];
@@ -1615,11 +1594,10 @@ void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct strea
 
                 DEBUG_TRACEPOINT(" ");
             }
-        }
+}
 
-        DEBUG_TRACEPOINT(" ");
-
-        /* ---- Scroll indicator footer ---- */
+static void streamCTRL__render_footer(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int NBsinfodisp) {
+/* ---- Scroll indicator footer ---- */
         if(sTUIparam.DisplayMode != DISPLAY_MODE_HELP)
         {
             int above = doffsetindex;
@@ -1665,5 +1643,41 @@ void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct strea
 
         TUI_cleartobottom();
         sc_frame_flush();
-
 }
+
+void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state) {
+    int NBsinfodisp = 10;
+    int lastindex = 0;
+    double frame_t_sec = 0.0;
+    int frame_color_level = 0;
+
+    TUI_clearscreen(&wrow, &wcol);
+
+    if(sTUIparam.dindexSelected < 0) sTUIparam.dindexSelected = 0;
+    if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1) sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;
+
+    DEBUG_TRACEPOINT("Erase screen");
+
+    screenprint_setbold();
+    snprintf(monstring, monstrlen, "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP", wrow, wcol, getpid());
+    DEBUG_TRACEPOINT("Print header");
+    screenprint_setcolor(12);
+    TUI_print_header(monstring, '-');
+    screenprint_unsetcolor(12);
+    screenprint_unsetbold();
+
+    DEBUG_TRACEPOINT("Start display");
+
+    if(sTUIparam.DisplayMode == DISPLAY_MODE_HELP)
+    {
+        streamCTRL__render_header_help(streamCTRLdata, state);
+    }
+    else
+    {
+        streamCTRL__render_header_streams(streamCTRLdata, state, &NBsinfodisp, &lastindex, &frame_t_sec, &frame_color_level);
+        streamCTRL__render_stream_rows(streamCTRLdata, state, NBsinfodisp, frame_t_sec, frame_color_level);
+    }
+
+    streamCTRL__render_footer(streamCTRLdata, state, NBsinfodisp);
+}
+
