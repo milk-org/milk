@@ -34,12 +34,12 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *cropinsname = NULL;
-static char     *outsname    = NULL;
-static uint32_t *cropxstart  = NULL;
-static uint32_t *cropxsize   = NULL;
-static uint32_t *cropystart  = NULL;
-static uint32_t *cropysize   = NULL;
+static char     cropinsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     outsname[FUNCTION_PARAMETER_STRMAXLEN]    = "out";
+static uint32_t cropxstart  = 0;
+static uint32_t cropxsize   = 100;
+static uint32_t cropystart  = 0;
+static uint32_t cropysize   = 100;
 
 
 /* ================================================================
@@ -47,11 +47,11 @@ static uint32_t *cropysize   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".insname", &cropinsname, \
+    X(".insname", cropinsname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "Input stream name") \
-    X(".outsname", &outsname, \
+    X(".outsname", outsname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "Output stream name") \
@@ -81,15 +81,10 @@ static MILK_HOT errno_t fpsexec(
     IMAGE *input_image,
     IMAGE *output_image)
 {
-    if (!cropxstart || !cropxsize
-        || !cropystart || !cropysize)
-    {
-        return RETURN_FAILURE;
-    }
-    uint32_t xs = *cropxstart;
-    uint32_t xw = *cropxsize;
-    uint32_t ys = *cropystart;
-    uint32_t yw = *cropysize;
+    uint32_t xs = cropxstart;
+    uint32_t xw = cropxsize;
+    uint32_t ys = cropystart;
+    uint32_t yw = cropysize;
     uint32_t iw = input_image->md[0].size[0];
     uint32_t ih = input_image->md[0].size[1];
     size_t ts = ImageStreamIO_typesize(
@@ -118,32 +113,26 @@ static MILK_HOT errno_t fpsexec(
  */
 static errno_t __attribute__((unused)) crop2D_validate()
 {
-    if (!cropinsname || !cropxstart
-        || !cropxsize || !cropystart
-        || !cropysize)
-    {
-        return RETURN_SUCCESS;
-    }
     IMAGE im;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(
             cropinsname, &im) == 0)
     {
         uint32_t w = im.md[0].size[0];
         uint32_t h = im.md[0].size[1];
-        if (*cropxstart + *cropxsize > w) {
-            if (*cropxstart >= w) {
-                *cropxstart = 0;
+        if (cropxstart + cropxsize > w) {
+            if (cropxstart >= w) {
+                cropxstart = 0;
             }
-            if (*cropxstart + *cropxsize > w) {
-                *cropxsize = w - *cropxstart;
+            if (cropxstart + cropxsize > w) {
+                cropxsize = w - cropxstart;
             }
         }
-        if (*cropystart + *cropysize > h) {
-            if (*cropystart >= h) {
-                *cropystart = 0;
+        if (cropystart + cropysize > h) {
+            if (cropystart >= h) {
+                cropystart = 0;
             }
-            if (*cropystart + *cropysize > h) {
-                *cropysize = h - *cropystart;
+            if (cropystart + cropysize > h) {
+                cropysize = h - cropystart;
             }
         }
         ImageStreamIO_closeIm(&im);
@@ -171,7 +160,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         &iin, ERRMODE_ABORT,
         dcimg, dcnimg);
     IMGID iout = stream_connect_create_2D(
-        outsname, *cropxsize, *cropysize,
+        outsname, cropxsize, cropysize,
         iin.md->datatype);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

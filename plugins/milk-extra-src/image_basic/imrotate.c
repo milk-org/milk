@@ -38,9 +38,9 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char  *imrotate_inimname  = NULL;
-static char  *imrotate_outimname = NULL;
-static float *imrotate_angle     = NULL;
+static char  imrotate_inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char  imrotate_outimname[FUNCTION_PARAMETER_STRMAXLEN] = "out";
+static float imrotate_angle     = 0.0f;
 
 
 /* ================================================================
@@ -48,11 +48,11 @@ static float *imrotate_angle     = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &imrotate_inimname, \
+    X(".in_name", imrotate_inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "input image") \
-    X(".out_name", &imrotate_outimname, \
+    X(".out_name", imrotate_outimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output image") \
@@ -155,7 +155,7 @@ static MILK_HOT errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     imrotate_step(
-        in.im, out.im, *imrotate_angle);
+        in.im, out.im, imrotate_angle);
     processinfo_update_output_stream(
         processinfo, out.im, in.im);
 
