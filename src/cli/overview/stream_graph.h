@@ -65,6 +65,18 @@ typedef struct
 } SG_LINEAGE_ENTRY;
 
 /**
+ * SG_RENDER_NODE - flattened graph node for vertical rendering.
+ */
+typedef struct {
+    int node_idx;
+    int depth;
+    int order;
+    int type;
+    char name[64];
+    int is_loop;
+} SG_RENDER_NODE;
+
+/**
  * SG_LINEAGE - complete lineage result for one stream.
  *
  * @ancestors:      upstream streams
@@ -133,5 +145,20 @@ void sg_compute_node_depths(
  * Return: static string like "Trigger", "Input", "Full".
  */
 const char *sg_mode_label(sg_mode_t mode);
+
+/**
+ * sg_compute_render_nodes - Computes a flattened, sorted list of nodes for vertical graph rendering.
+ * @m:          system model
+ * @start_node: root node to traverse from
+ * @mode:       traversal mode
+ * @out_nodes:  pre-allocated array (size OV_MAX_NODES) to store result
+ *
+ * Returns: number of nodes placed in out_nodes.
+ */
+int sg_compute_render_nodes(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    SG_RENDER_NODE *out_nodes);
 
 #endif /* STREAM_GRAPH_H */

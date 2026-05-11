@@ -147,7 +147,10 @@ static void print_usage(const char *prog, int mh_color)
            mh_color ? MH_RST : "", "Traversal mode: trigger|input|full (default: trigger)");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-p, --pretty",
-           mh_color ? MH_RST : "", "TrueColor ANSI output");
+           mh_color ? MH_RST : "", "Force TrueColor ANSI output");
+    printf("  %s%-25s%s %s\n",
+           mh_color ? MH_OPT : "", "-t, --text",
+           mh_color ? MH_RST : "", "Plain text machine-readable output");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-j, --json",
            mh_color ? MH_RST : "", "JSON machine-readable output");
@@ -373,106 +376,55 @@ static void sg_print_pretty(
            SGC_FPS "%s" SGC_RESET "\n\n",
            stream_name, sg_mode_label(mode));
 
-    /* Ancestors */
-    if (lin->nb_ancestors > 0)
+    if (lin->nb_ancestors == 0 && lin->nb_descendants == 0)
     {
-        printf(SGC_BOLD SGC_HEADER
-               " Ancestors (%d):" SGC_RESET "\n",
-               lin->nb_ancestors);
-        for (int i = 0;
-             i < lin->nb_ancestors; i++)
+        printf(SGC_DIM "  No lineage found\n\n" SGC_RESET);
+    }
+    else
+    {
+        /* Ancestors */
+        for (int i = lin->nb_ancestors - 1; i >= 0; i--)
         {
-            const SG_LINEAGE_ENTRY *e =
-                &lin->ancestors[i];
-            const char *sn =
-                m->streams[e->stream_idx].name;
-            const char *tree =
-                (i == lin->nb_ancestors - 1)
-                ? SG_TREE_END : SG_TREE_BR;
+            const SG_LINEAGE_ENTRY *e = &lin->ancestors[i];
+            const char *sn = m->streams[e->stream_idx].name;
 
-            printf(SGC_DEPTH "  ");
-            /* Indent by depth */
-            for (int d = 1; d < e->depth; d++)
+            printf(" " SGC_DEPTH "-%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET, e->depth, sn);
+            if (e->is_loop)
             {
-                printf(SG_TREE_V "   ");
+                printf(" " SGC_BLINK SGC_LOOP "[LOOP]" SGC_RESET);
             }
-            printf("%s" SG_TREE_H SG_TREE_H
-                   SGC_RESET, tree);
-
-            printf(" " SGC_DEPTH "+%d "
-                   SGC_STREAM "%s" SGC_RESET,
-                   e->depth, sn);
+            printf("\n");
 
             if (e->via_name[0] != '\0')
             {
-                printf(SGC_PROC " (%s)"
-                       SGC_RESET, e->via_name);
+                printf("      " SGC_ARROW "│" SGC_RESET "\n");
+                printf("      " SGC_ARROW "▼ " SGC_PROC "[%s]" SGC_RESET "\n", e->via_name);
             }
+        }
+
+        /* Root */
+        printf(" " SGC_DEPTH " 0 " SGC_RESET " " SGC_BOLD SGC_STREAM "%s" SGC_RESET "\n", stream_name);
+
+        /* Descendants */
+        for (int i = 0; i < lin->nb_descendants; i++)
+        {
+            const SG_LINEAGE_ENTRY *e = &lin->descendants[i];
+            const char *sn = m->streams[e->stream_idx].name;
+
+            if (e->via_name[0] != '\0')
+            {
+                printf("      " SGC_ARROW "│" SGC_RESET "\n");
+                printf("      " SGC_ARROW "▼ " SGC_PROC "[%s]" SGC_RESET "\n", e->via_name);
+            }
+
+            printf(" " SGC_DEPTH "+%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET, e->depth, sn);
             if (e->is_loop)
             {
-                printf(" " SGC_BLINK SGC_LOOP
-                       "[LOOP]" SGC_RESET);
+                printf(" " SGC_BLINK SGC_LOOP "[LOOP]" SGC_RESET);
             }
             printf("\n");
         }
         printf("\n");
-    }
-    else
-    {
-        printf(SGC_DIM
-               "  No ancestors found\n\n"
-               SGC_RESET);
-    }
-
-    /* Descendants */
-    if (lin->nb_descendants > 0)
-    {
-        printf(SGC_BOLD SGC_HEADER
-               " Descendants (%d):"
-               SGC_RESET "\n",
-               lin->nb_descendants);
-        for (int i = 0;
-             i < lin->nb_descendants; i++)
-        {
-            const SG_LINEAGE_ENTRY *e =
-                &lin->descendants[i];
-            const char *sn =
-                m->streams[e->stream_idx].name;
-            const char *tree =
-                (i == lin->nb_descendants - 1)
-                ? SG_TREE_END : SG_TREE_BR;
-
-            printf(SGC_DEPTH "  ");
-            for (int d = 1; d < e->depth; d++)
-            {
-                printf(SG_TREE_V "   ");
-            }
-            printf("%s" SG_TREE_H SG_TREE_H
-                   SGC_RESET, tree);
-
-            printf(" " SGC_DEPTH "+%d "
-                   SGC_STREAM "%s" SGC_RESET,
-                   e->depth, sn);
-
-            if (e->via_name[0] != '\0')
-            {
-                printf(SGC_PROC " (%s)"
-                       SGC_RESET, e->via_name);
-            }
-            if (e->is_loop)
-            {
-                printf(" " SGC_BLINK SGC_LOOP
-                       "[LOOP]" SGC_RESET);
-            }
-            printf("\n");
-        }
-        printf("\n");
-    }
-    else
-    {
-        printf(SGC_DIM
-               "  No descendants found\n\n"
-               SGC_RESET);
     }
 
     /* Cycle info */
@@ -544,7 +496,7 @@ static void sg_interactive(
         }
 
         total_items = lin.nb_ancestors
-                      + lin.nb_descendants;
+                      + lin.nb_descendants + 1;
         if (sel >= total_items && total_items > 0)
         {
             sel = total_items - 1;
@@ -580,93 +532,47 @@ static void sg_interactive(
         {
             int row = 0;
 
-            /* Ancestors */
-            if (lin.nb_ancestors > 0)
+            for (int i = lin.nb_ancestors - 1; i >= 0; i--)
             {
-                printf(SGC_BOLD SGC_HEADER
-                       " Ancestors (%d):"
-                       SGC_RESET "\n",
-                       lin.nb_ancestors);
-            }
-            for (int i = 0;
-                 i < lin.nb_ancestors; i++)
-            {
-                const SG_LINEAGE_ENTRY *e =
-                    &lin.ancestors[i];
-                const char *sn =
-                    model->streams[
-                        e->stream_idx].name;
+                const SG_LINEAGE_ENTRY *e = &lin.ancestors[i];
+                const char *sn = model->streams[e->stream_idx].name;
 
-                if (row == sel)
-                {
-                    printf("\033[7m");
-                }
-
-                printf("  " SGC_DEPTH "+%d "
-                       SGC_STREAM "%s" SGC_RESET,
-                       e->depth, sn);
-                if (e->via_name[0] != '\0')
-                {
-                    printf(SGC_PROC " (%s)"
-                           SGC_RESET,
-                           e->via_name);
-                }
-                if (e->is_loop)
-                {
-                    printf(" " SGC_LOOP
-                           "[LOOP]" SGC_RESET);
-                }
-
-                if (row == sel)
-                {
-                    printf("\033[27m");
-                }
-                printf(SGC_RESET "\n");
+                if (row == sel) printf("\033[7m");
+                printf(" " SGC_DEPTH "-%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET, e->depth, sn);
+                if (e->is_loop) printf(" " SGC_LOOP "[LOOP]" SGC_RESET);
+                if (row == sel) printf("\033[27m");
+                printf("\n");
                 row++;
-            }
 
-            /* Descendants */
-            if (lin.nb_descendants > 0)
-            {
-                printf(SGC_BOLD SGC_HEADER
-                       " Descendants (%d):"
-                       SGC_RESET "\n",
-                       lin.nb_descendants);
-            }
-            for (int i = 0;
-                 i < lin.nb_descendants; i++)
-            {
-                const SG_LINEAGE_ENTRY *e =
-                    &lin.descendants[i];
-                const char *sn =
-                    model->streams[
-                        e->stream_idx].name;
-
-                if (row == sel)
-                {
-                    printf("\033[7m");
-                }
-
-                printf("  " SGC_DEPTH "+%d "
-                       SGC_STREAM "%s" SGC_RESET,
-                       e->depth, sn);
                 if (e->via_name[0] != '\0')
                 {
-                    printf(SGC_PROC " (%s)"
-                           SGC_RESET,
-                           e->via_name);
+                    printf("      " SGC_ARROW "│" SGC_RESET "\n");
+                    printf("      " SGC_ARROW "▼ " SGC_PROC "[%s]" SGC_RESET "\n", e->via_name);
                 }
-                if (e->is_loop)
+            }
+
+            if (row == sel) printf("\033[7m");
+            printf(" " SGC_DEPTH " 0 " SGC_RESET " " SGC_BOLD SGC_STREAM "%s" SGC_RESET, current_stream);
+            if (row == sel) printf("\033[27m");
+            printf("\n");
+            row++;
+
+            for (int i = 0; i < lin.nb_descendants; i++)
+            {
+                const SG_LINEAGE_ENTRY *e = &lin.descendants[i];
+                const char *sn = model->streams[e->stream_idx].name;
+
+                if (e->via_name[0] != '\0')
                 {
-                    printf(" " SGC_LOOP
-                           "[LOOP]" SGC_RESET);
+                    printf("      " SGC_ARROW "│" SGC_RESET "\n");
+                    printf("      " SGC_ARROW "▼ " SGC_PROC "[%s]" SGC_RESET "\n", e->via_name);
                 }
 
-                if (row == sel)
-                {
-                    printf("\033[27m");
-                }
-                printf(SGC_RESET "\n");
+                if (row == sel) printf("\033[7m");
+                printf(" " SGC_DEPTH "+%-2d" SGC_RESET " " SGC_STREAM "%s" SGC_RESET, e->depth, sn);
+                if (e->is_loop) printf(" " SGC_LOOP "[LOOP]" SGC_RESET);
+                if (row == sel) printf("\033[27m");
+                printf("\n");
                 row++;
             }
 
@@ -739,25 +645,29 @@ static void sg_interactive(
             /* Re-root on selected stream */
             if (total_items > 0)
             {
-                int idx;
+                int idx = -1;
                 if (sel < lin.nb_ancestors)
                 {
-                    idx = lin.ancestors[sel]
-                              .stream_idx;
+                    idx = lin.ancestors[lin.nb_ancestors - 1 - sel].stream_idx;
+                }
+                else if (sel == lin.nb_ancestors)
+                {
+                    /* selected root */
                 }
                 else
                 {
-                    idx = lin.descendants[
-                              sel
-                              - lin.nb_ancestors]
-                              .stream_idx;
+                    idx = lin.descendants[sel - lin.nb_ancestors - 1].stream_idx;
                 }
-                strncpy(current_stream,
-                        model->streams[idx].name,
-                        sizeof(current_stream)
-                        - 1);
-                sel = 0;
-                need_scan = 1;
+                
+                if (idx >= 0)
+                {
+                    strncpy(current_stream,
+                            model->streams[idx].name,
+                            sizeof(current_stream)
+                            - 1);
+                    sel = 0;
+                    need_scan = 1;
+                }
             }
         }
         else if (buf[0] == 'g')
@@ -830,7 +740,7 @@ int main(int argc, char *argv[])
     }
 
     sg_mode_t   mode   = SG_MODE_TRIGGER;
-    sg_output_t output = OUT_TEXT;
+    sg_output_t output = isatty(STDOUT_FILENO) ? OUT_PRETTY : OUT_TEXT;
     int         interactive = 0;
     const char *stream_name = NULL;
 
@@ -853,6 +763,12 @@ int main(int argc, char *argv[])
             || strcmp(argv[i], "--pretty") == 0)
         {
             output = OUT_PRETTY;
+            continue;
+        }
+        if (strcmp(argv[i], "-t") == 0
+            || strcmp(argv[i], "--text") == 0)
+        {
+            output = OUT_TEXT;
             continue;
         }
         if (strcmp(argv[i], "-j") == 0
