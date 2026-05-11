@@ -889,18 +889,15 @@ int main(int argc, char *argv[])
             stream_name = argv[i];
             continue;
         }
-        fprintf(stderr,
-                "Unknown option: %s\n", argv[i]);
+        printf("\n\033[1;31mERROR\033[0m: Invalid option: %s\n\n", argv[i]);
+        print_usage(argv[0], mh_color);
         return 1;
     }
 
     if (stream_name == NULL)
     {
-        fprintf(stderr,
-                "Error: stream name required\n");
-        fprintf(stderr,
-                "Usage: %s [options] <stream>\n",
-                argv[0]);
+        printf("\n\033[1;31mERROR\033[0m: stream name required.\n\n");
+        print_usage(argv[0], mh_color);
         return 1;
     }
 

@@ -227,16 +227,15 @@ int main(int argc, char **argv)
                    strcmp(argv[argi], "--help") == 0) {
             break; /* handled above */
         } else {
-            fprintf(stderr,
-                    "Unknown option: %s\n",
-                    argv[argi]);
-            print_help(argv[0], 0);
+            printf("\n\033[1;31mERROR\033[0m: Unknown option: %s\n\n", argv[argi]);
+            print_help(argv[0], 1);
             return 1;
         }
     }
 
     if (argi >= argc) {
-        print_help(argv[0], 0);
+        printf("\n\033[1;31mERROR\033[0m: Missing QUERY argument.\n\n");
+        print_help(argv[0], 1);
         return 1;
     }
     query = argv[argi++];

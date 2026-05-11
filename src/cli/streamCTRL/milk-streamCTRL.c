@@ -116,6 +116,12 @@ int main(int argc, char *argv[])
         {
             setenv("MILK_SHM_DIR", argv[++i], 1);
         }
+        else
+        {
+            printf("\n\033[1;31mERROR\033[0m: Invalid option or argument '%s'.\n\n", argv[i]);
+            print_help(progname, 1);
+            return 1;
+        }
     }
 
     /* Install signal handlers */

@@ -282,7 +282,9 @@ int main(int argc, char *argv[])
         case 'h':
             print_help(argv[0]);
             return 0;
+        case '?':
         default:
+            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(argv[0]);
             return 1;
         }

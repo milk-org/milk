@@ -226,6 +226,11 @@ int main(int argc, char *argv[]) {
             case 'R':
                 rebuild = 1;
                 break;
+            case '?':
+            default:
+                printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+                printf("Usage: %s [-r rate_hz] [-v] [-R]\n", argv[0]);
+                return 1;
         }
     }
 
