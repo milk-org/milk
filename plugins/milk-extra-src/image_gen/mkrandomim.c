@@ -139,19 +139,16 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACEPOINT("make IMGID for %s",
                      outim_name);
 
-    IMGID img = imgid_make_from_name_2D(
-        outim_name, outim_xsize, outim_ysize);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
     /*
      * Connect to existing stream or create it.
-     * This populates img.im so make_image_random
-     * can access img.im->array.F[].
+     * Must be before the loop to avoid leaking
+     * img.mdt on every iteration.
      */
-    img = stream_connect_create_2D(
+    IMGID img = stream_connect_create_2D(
         outim_name, outim_xsize, outim_ysize,
         _DATATYPE_FLOAT);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     make_image_random(&img, distrib_val);
 
