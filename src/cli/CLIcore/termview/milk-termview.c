@@ -76,7 +76,8 @@ int main(int argc, char **argv)
     }
 
     if (argc < 2) {
-        fprintf(stderr, "Error: Missing stream name.\nRun %s -h for usage.\n", progname);
+        printf("\n\033[1;31mERROR\033[0m: Missing stream name.\n\n");
+        print_help(progname, 1);
         return 1;
     }
 

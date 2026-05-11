@@ -188,10 +188,15 @@ static int CLI_checkarg0(
     {
         if(errmsg == 1)
         {
-            printf("arg %d: wrong arg type (expected %s but got %s)\n",
-                   CLIargnum - 1,
-                   CLIargtype_to_string(funcargtype),
-                   CMDARGTOKEN_type_to_string(data.cmdargtoken[CLIargnum].type));
+            printf(
+                "\033[1;31mERROR\033[0m"
+                " arg %d: wrong type"
+                " (expected %s, got %s)\n",
+                CLIargnum - 1,
+                CLIargtype_to_string(funcargtype),
+                CMDARGTOKEN_type_to_string(
+                    data.cmdargtoken[CLIargnum]
+                        .type));
         }
         rval = 1;
     }
@@ -475,10 +480,18 @@ errno_t CLI_checkarg_array(
             {
                 if(data.cmdargtoken[2].type == CLIARG_MISSING)
                 {
-                    printf("Setting parameter %s : input missing\n",
-                           data.cmdargtoken[1].val.string);
+                    printf(
+                        "\n\033[1;31mERROR\033[0m"
+                        " Setting parameter %s :"
+                        " input missing\n",
+                        data.cmdargtoken[1]
+                            .val.string);
+                    help_command(
+                        data.cmd[data.cmdindex]
+                            .key);
                     DEBUG_TRACE_FEXIT();
-                    return RETURN_CLICHECKARGARRAY_FAILURE;
+                    return
+                        RETURN_CLICHECKARGARRAY_FAILURE;
                 }
 
                 // Update the parameter in FPS
@@ -509,8 +522,13 @@ errno_t CLI_checkarg_array(
     {
         if(data.cmdargtoken[2].type == CLIARG_MISSING)
         {
-            printf("Setting arg %s : input missing\n",
-                   fpscliarg[argindexmatch].fpstag);
+            printf(
+                "\n\033[1;31mERROR\033[0m"
+                " Setting arg %s :"
+                " input missing\n",
+                fpscliarg[argindexmatch].fpstag);
+            help_command(
+                data.cmd[data.cmdindex].key);
             DEBUG_TRACE_FEXIT();
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
@@ -596,8 +614,13 @@ errno_t CLI_checkarg_array(
         }
         else
         {
-            printf("Setting arg %s : Wrong type\n",
-                   fpscliarg[argindexmatch].fpstag);
+            printf(
+                "\n\033[1;31mERROR\033[0m"
+                " Setting arg %s :"
+                " wrong type\n",
+                fpscliarg[argindexmatch].fpstag);
+            help_command(
+                data.cmd[data.cmdindex].key);
             DEBUG_TRACE_FEXIT();
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
@@ -775,14 +798,20 @@ errno_t CLI_checkarg_array(
                 }
                 else
                 {
-                    printf("Error: Missing mandatory argument %d (%s: %s)\n",
-                           CLIarg,
-                           fpscliarg[arg].fpstag,
-                           fpscliarg[arg].descr);
-                    help_command(data.cmd[data.cmdindex].key);
+                    printf(
+                        "\n\033[1;31mERROR\033[0m"
+                        " Missing mandatory"
+                        " argument %d (%s: %s)\n",
+                        CLIarg,
+                        fpscliarg[arg].fpstag,
+                        fpscliarg[arg].descr);
+                    help_command(
+                        data.cmd[data.cmdindex]
+                            .key);
                     argcheck_process_flag = 0;
                     DEBUG_TRACE_FEXIT();
-                    return RETURN_CLICHECKARGARRAY_FAILURE;
+                    return
+                        RETURN_CLICHECKARGARRAY_FAILURE;
                 }
             }
 
@@ -944,6 +973,13 @@ errno_t CLI_checkarg_array(
     }
     else
     {
+        printf(
+            "\n\033[1;31mERROR\033[0m"
+            " %d argument(s) have wrong"
+            " type\n",
+            nberr);
+        help_command(
+            data.cmd[data.cmdindex].key);
         DEBUG_TRACE_FEXIT();
         return RETURN_CLICHECKARGARRAY_FAILURE;
     }

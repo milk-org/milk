@@ -338,6 +338,7 @@ int main(int argc, char *argv[])
             print_help(progname, 1);
             return 0;
         default:
+            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(progname, 1);
             return 1;
         }

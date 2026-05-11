@@ -159,7 +159,9 @@ int main(int argc, char *argv[])
             case 'l':
                 strncpy(procCTRL_logfile, optarg, 1023);
                 break;
+            case '?':
             default:
+                printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
                 print_help(argv[0]);
                 return 1;
         }
