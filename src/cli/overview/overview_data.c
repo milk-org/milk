@@ -40,6 +40,9 @@
 
 void ov_model_full_scan(OV_MODEL *model)
 {
+    static struct timespec s_last_scan = {0, 0};
+    static int s_has_prev_scan = 0;
+
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
@@ -47,11 +50,13 @@ void ov_model_full_scan(OV_MODEL *model)
     pid_cache_reset();
 
     /* Compute time delta for rate estimation
-     * (used by scache_rate_update inside scan) */
-    if (model->scan_count > 0)
+     * (used by scache_rate_update inside scan).
+     * Use a static timestamp so triple-buffered
+     * slots all share the same previous time. */
+    if (s_has_prev_scan)
     {
         struct timespec dt_ts = ov_timespec_diff(
-                                    model->last_scan_time, t0);
+                                    s_last_scan, t0);
         s_scan_dt_sec =
             (double) dt_ts.tv_sec
             + (double) dt_ts.tv_nsec * 1.0e-9;
@@ -79,6 +84,8 @@ void ov_model_full_scan(OV_MODEL *model)
     model->scan_time_ms =
         (double) dt.tv_sec * 1000.0
         + (double) dt.tv_nsec * 1.0e-6;
+    s_last_scan = t0;
+    s_has_prev_scan = 1;
     model->last_scan_time = t0;
     model->scan_count++;
 }

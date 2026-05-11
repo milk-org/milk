@@ -77,15 +77,20 @@ static int ov_fps__render_detail_stream(
         {
             ov_buf_pos(row + ri, r.col + 1);
             ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TEXT);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf(" cnt0: ");
+            ov_theme_fg(s->cnt_active
+                ? OV_FG_ACTIVE : OV_FG_DIM);
+            ov_buf_printf("%lu", (unsigned long) s->cnt0);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("  Hz: ");
+            ov_theme_fg(s->cnt_active
+                ? OV_FG_ACTIVE : OV_FG_DIM);
             int n = snprintf(NULL, 0,
                 " cnt0: %lu  Hz: %.1f",
                 (unsigned long) s->cnt0,
                 s->update_hz);
-            ov_buf_printf(
-                " cnt0: %lu  Hz: %.1f",
-                (unsigned long) s->cnt0,
-                s->update_hz);
+            ov_buf_printf("%.1f", s->update_hz);
             render_pad_spaces(n, r.width);
             ri++;
         }
@@ -441,12 +446,16 @@ static int ov_fps__render_detail_proc(
             ov_buf_pos(row + ri, r.col + 1);
             ov_theme_bg(OV_BG_PANEL);
             ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf(" Status: %s  Loops: ", sl);
+            ov_theme_fg(p->cnt_active
+                ? OV_FG_ACTIVE : OV_FG_DIM);
+            ov_buf_printf("%ld", (long) p->loopcnt);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("  Hz: ");
+            ov_theme_fg(p->cnt_active
+                ? OV_FG_ACTIVE : OV_FG_DIM);
+            ov_buf_printf("%.1f", p->loop_hz);
             int n = snprintf(NULL, 0,
-                " Status: %s  Loops: %ld"
-                "  Hz: %.1f",
-                sl, (long) p->loopcnt,
-                p->loop_hz);
-            ov_buf_printf(
                 " Status: %s  Loops: %ld"
                 "  Hz: %.1f",
                 sl, (long) p->loopcnt,
