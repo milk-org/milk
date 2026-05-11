@@ -111,6 +111,22 @@ void sg_compute_lineage(
     SG_LINEAGE     *out);
 
 /**
+ * sg_compute_node_depths - Generic BFS traversal for any node type.
+ * @m:          system model (streams, FPS, procs, graph)
+ * @start_node: index of the root node
+ * @mode:       traversal mode (trigger/input/full)
+ * @node_depths: array of size OV_MAX_NODES to store results
+ *
+ * Computes upstream (negative) and downstream (positive) depths
+ * from start_node to all other reachable nodes.
+ */
+void sg_compute_node_depths(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    int8_t         *node_depths);
+
+/**
  * sg_mode_label - human-readable label for a mode.
  * @mode: traversal mode
  *

@@ -481,3 +481,122 @@ const char *sg_mode_label(sg_mode_t mode)
     }
     return "Unknown";
 }
+
+/* =========================================================
+ * Generic node BFS (all node types)
+ * ========================================================= */
+
+void sg_compute_node_depths(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    int8_t         *node_depths)
+{
+    for (int i = 0; i < OV_MAX_NODES; i++) {
+        node_depths[i] = 127;
+    }
+    if (start_node < 0 || start_node >= m->nb_nodes) return;
+    node_depths[start_node] = 0;
+
+    ov_node_type_t start_type = m->nodes[start_node].type;
+
+    /* Downstream */
+    uint64_t visited[SG_BSET_WORDS(OV_MAX_NODES)];
+    memset(visited, 0, sizeof(visited));
+    sg_bset(visited, start_node);
+
+    sg_bfs_item_t queue[OV_MAX_NODES];
+    int qhead = 0, qtail = 0;
+    queue[qtail].node = start_node;
+    queue[qtail].depth = 0;
+    qtail++;
+
+    while (qhead < qtail)
+    {
+        sg_bfs_item_t cur = queue[qhead++];
+
+        if (cur.node != start_node && cur.depth > 0)
+        {
+            int d = cur.depth;
+            if (d > 127) d = 127;
+            if (node_depths[cur.node] == 127)
+                node_depths[cur.node] = (int8_t)d;
+        }
+
+        if (cur.depth >= SG_MAX_DEPTH) continue;
+
+        const OV_NODE *cn = &m->nodes[cur.node];
+
+        for (int ei = 0; ei < m->nb_edges; ei++)
+        {
+            const OV_EDGE *e = &m->edges[ei];
+            if (e->src_node != cur.node) continue;
+
+            if (cn->type == OV_NODE_STREAM) {
+                if (!sg_edge_matches_mode_from_stream(e, mode)) continue;
+            } else {
+                if (m->nodes[e->tgt_node].type != OV_NODE_STREAM) continue;
+            }
+
+            int next = e->tgt_node;
+            if (next < 0 || next >= m->nb_nodes) continue;
+            if (sg_bget(visited, next)) continue;
+
+            sg_bset(visited, next);
+            int d = cur.depth;
+            if (cn->type == start_type) d++;
+
+            queue[qtail].node = next;
+            queue[qtail].depth = d;
+            qtail++;
+        }
+    }
+
+    /* Upstream */
+    memset(visited, 0, sizeof(visited));
+    sg_bset(visited, start_node);
+    qhead = 0; qtail = 0;
+    queue[qtail].node = start_node;
+    queue[qtail].depth = 0;
+    qtail++;
+
+    while (qhead < qtail)
+    {
+        sg_bfs_item_t cur = queue[qhead++];
+
+        if (cur.node != start_node && cur.depth > 0)
+        {
+            int d = cur.depth;
+            if (d > 127) d = 127;
+            if (node_depths[cur.node] == 127)
+                node_depths[cur.node] = (int8_t)(-d);
+        }
+
+        if (cur.depth >= SG_MAX_DEPTH) continue;
+
+        const OV_NODE *cn = &m->nodes[cur.node];
+
+        for (int ei = 0; ei < m->nb_edges; ei++)
+        {
+            const OV_EDGE *e = &m->edges[ei];
+            if (e->tgt_node != cur.node) continue;
+
+            int next = e->src_node;
+            if (next < 0 || next >= m->nb_nodes) continue;
+            
+            if (cn->type != OV_NODE_STREAM) {
+                if (!sg_edge_matches_mode_from_stream(e, mode)) continue;
+            }
+
+            if (sg_bget(visited, next)) continue;
+
+            sg_bset(visited, next);
+            int d = cur.depth;
+            if (cn->type == start_type) d++;
+
+            queue[qtail].node = next;
+            queue[qtail].depth = d;
+            qtail++;
+        }
+    }
+}

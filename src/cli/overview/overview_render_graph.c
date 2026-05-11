@@ -201,8 +201,8 @@ void ov_render_graph_panel(
     ov_theme_bg(OV_BG_HEADER);
     ov_theme_fg(OV_FG_DIM);
     char htext[256];
-    int hlen = snprintf(htext, sizeof(htext), " %-12s %-4s %-12s %-9s %-18s %-5s %-4s", 
-                        "SOURCE", "", "TARGET", " LABEL", " TYPE", "SRCT", "TGTT");
+    int hlen = snprintf(htext, sizeof(htext), " %-12s    %-12s [%-6s] %-16s  %-4s %-4s", 
+                        "SOURCE", "TARGET", "LABEL", "TYPE", "SRCT", "TGTT");
     ov_buf_printf("%s", htext);
     render_pad_spaces(hlen, r.width);
     row++;

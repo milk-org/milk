@@ -180,7 +180,7 @@ void ov_ctrl_stream_delete(
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "Stream \"%s\" — deleted",
+                       "Stream \"%s\" — deleted 🗑",
                        s->name);
     }
 }
@@ -276,7 +276,7 @@ void ov_ctrl_proc_remove(
         {
             ov_cmdlog_push(log,
                            OV_CMDLOG_OK,
-                           "file %s removed",
+                           "file %s removed 🗑",
                            fname);
         }
         else
@@ -497,7 +497,7 @@ void ov_ctrl_fps_remove(
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "FPS \"%s\" — erased",
+                       "FPS \"%s\" — erased 🗑",
                        f->name);
     }
 }
