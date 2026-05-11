@@ -139,8 +139,8 @@ void ov_render_fps_panel(
             int fi = fidx[ffi];
             const OV_FPS *f = &m->fps[fi];
             int is_sel = (ffi == lay->sel_fps
-                          && lay->focus
-                             == OV_FOCUS_FPS);
+                          && (lay->focus == OV_FOCUS_FPS
+                              || lay->focus == OV_FOCUS_GRAPH));
             int is_frozen = (lay->freeze
                 && lay->freeze_focus
                    == OV_FOCUS_FPS

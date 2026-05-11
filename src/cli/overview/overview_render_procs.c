@@ -139,7 +139,8 @@ static void ov_procs__render_rows(
             int pi = filt_idx[fi];
             const OV_PROC *p = &m->procs[pi];
             int is_sel = (fi == lay->sel_proc
-                          && lay->focus == OV_FOCUS_PROCS);
+                          && (lay->focus == OV_FOCUS_PROCS
+                              || lay->focus == OV_FOCUS_GRAPH));
             int is_frozen = (lay->freeze
                 && lay->freeze_focus
                    == OV_FOCUS_PROCS

@@ -600,3 +600,82 @@ void sg_compute_node_depths(
         }
     }
 }
+
+int sg_compute_render_nodes(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    SG_RENDER_NODE *out_nodes)
+{
+    if (start_node < 0 || start_node >= m->nb_nodes)
+    {
+        return 0;
+    }
+
+    int8_t depths[OV_MAX_NODES];
+    for (int i = 0; i < OV_MAX_NODES; ++i)
+    {
+        depths[i] = 127;
+    }
+
+    sg_compute_node_depths(m, start_node, mode, depths);
+
+    /* Collect all reachable nodes */
+    SG_RENDER_NODE temp_nodes[OV_MAX_NODES];
+    int nb_nodes = 0;
+
+    for (int i = 0; i < m->nb_nodes; ++i)
+    {
+        if (depths[i] != 127)
+        {
+            temp_nodes[nb_nodes].node_idx = i;
+            temp_nodes[nb_nodes].depth = depths[i];
+            int type_order = m->nodes[i].type; // OV_NODE_STREAM=0, OV_NODE_FPS=1, OV_NODE_PROC=2
+            int reverse_type_order = 0;
+            ov_node_type_t start_type = m->nodes[start_node].type;
+            
+            if (start_type == OV_NODE_STREAM && depths[i] > 0) reverse_type_order = 1;
+            if (start_type != OV_NODE_STREAM && depths[i] < 0) reverse_type_order = 1;
+            
+            if (reverse_type_order)
+            {
+                type_order = 2 - type_order; // Invert: STREAM(2), FPS(1), PROC(0)
+            }
+            
+            temp_nodes[nb_nodes].order = depths[i] * 10 + type_order;
+            temp_nodes[nb_nodes].type = m->nodes[i].type;
+            
+            /* Detect loops using BFS lineage if needed, but for simplicity,
+             * we can just mark is_loop = 0. Real loop detection requires
+             * lineage structures. We'll leave it 0 for now. */
+            temp_nodes[nb_nodes].is_loop = 0;
+            
+            strncpy(temp_nodes[nb_nodes].name, m->nodes[i].name, sizeof(temp_nodes[nb_nodes].name) - 1);
+            temp_nodes[nb_nodes].name[sizeof(temp_nodes[nb_nodes].name) - 1] = '\0';
+            
+            nb_nodes++;
+        }
+    }
+
+    /* Sort by order (which embeds depth and topological type ordering) */
+    for (int i = 0; i < nb_nodes - 1; ++i)
+    {
+        for (int j = 0; j < nb_nodes - i - 1; ++j)
+        {
+            if (temp_nodes[j].order > temp_nodes[j + 1].order)
+            {
+                SG_RENDER_NODE tmp = temp_nodes[j];
+                temp_nodes[j] = temp_nodes[j + 1];
+                temp_nodes[j + 1] = tmp;
+            }
+        }
+    }
+
+    /* Copy to output */
+    for (int i = 0; i < nb_nodes; ++i)
+    {
+        out_nodes[i] = temp_nodes[i];
+    }
+
+    return nb_nodes;
+}
