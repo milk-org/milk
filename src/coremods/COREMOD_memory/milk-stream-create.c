@@ -161,9 +161,8 @@ int main(int argc, char *argv[])
             case 't':
                 dtype = parse_dtype(optarg);
                 if (dtype == 0) {
-                    fprintf(stderr,
-                            "Unknown type: %s\n",
-                            optarg);
+                    printf("\n\033[1;31mERROR\033[0m unknown type: %s\n\n", optarg);
+                    print_help(argv[0]);
                     return 1;
                 }
                 break;
@@ -174,6 +173,7 @@ int main(int argc, char *argv[])
                 print_help(argv[0]);
                 return 0;
             default:
+                printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
                 print_help(argv[0]);
                 return 1;
         }
@@ -181,9 +181,7 @@ int main(int argc, char *argv[])
 
     int npos = argc - optind;
     if (npos < 2) {
-        fprintf(stderr,
-                "Error: need at least name"
-                " and xsize.\n\n");
+        printf("\n\033[1;31mERROR\033[0m need at least name and xsize\n\n");
         print_help(argv[0]);
         return 1;
     }

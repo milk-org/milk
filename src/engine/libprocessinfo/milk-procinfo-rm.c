@@ -99,8 +99,10 @@ int main(int argc, char *argv[])
             case 'c': clean_dead = 1; break;
             case 'v': verbose = 1; break;
             case 'h': break; /* handled above */
+            case '?':
             default:
-                print_help(argv[0], 0);
+                printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+                print_help(argv[0], 1);
                 return 1;
         }
     }
@@ -111,8 +113,8 @@ int main(int argc, char *argv[])
         if (clean_dead) {
             pattern = ".*";
         } else {
-            fprintf(stderr, "Error: missing process name.\n");
-            print_help(argv[0], 0);
+            printf("\n\033[1;31mERROR\033[0m Missing process name.\n");
+            print_help(argv[0], 1);
             return 1;
         }
     }
@@ -125,7 +127,8 @@ int main(int argc, char *argv[])
     if (ret != 0) {
         char error_msg[128];
         regerror(ret, &regex, error_msg, sizeof(error_msg));
-        fprintf(stderr, "Error: Invalid regular expression. %s\n", error_msg);
+        printf("\n\033[1;31mERROR\033[0m Invalid regular expression. %s\n", error_msg);
+        print_help(argv[0], 1);
         return 1;
     }
 

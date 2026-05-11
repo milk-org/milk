@@ -130,7 +130,8 @@ int main(int argc, char *argv[])
             case 'h':
             case '1': break; /* handled above */
             default:
-                print_help(argv[0], 0);
+                printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+                print_help(argv[0], 1);
                 return 1;
         }
     }

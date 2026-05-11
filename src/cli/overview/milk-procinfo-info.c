@@ -472,7 +472,8 @@ int main(int argc, char *argv[])
             target_pid = (pid_t) atoi(optarg);
             break;
         default:
-            print_help(argv[0], 0);
+            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+            print_help(argv[0], 1);
             return 1;
         }
     }
@@ -485,10 +486,8 @@ int main(int argc, char *argv[])
 
     if (target_pid <= 0 && proc_name == NULL)
     {
-        fprintf(stderr,
-                "Error: process name or "
-                "--pid required\n\n");
-        print_help(argv[0], 0);
+        printf("\n\033[1;31mERROR\033[0m process name or --pid required\n\n");
+        print_help(argv[0], 1);
         return 1;
     }
 
