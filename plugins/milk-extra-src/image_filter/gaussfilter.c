@@ -51,7 +51,7 @@ static int32_t gaussfilt_filtersize = 0;
 #define FPS_PARAMS(X) \
     X(".in_name", gaussfilt_inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "input image") \
     X(".out_name", gaussfilt_outimname, \
       FPTYPE_STREAMNAME, 1, \

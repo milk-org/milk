@@ -54,7 +54,7 @@ static char   outimname[FUNCTION_PARAMETER_STRMAXLEN];
 #define FPS_PARAMS(X) \
     X(".in_name", inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "input image") \
     X(".min", &valmin, \
       FPTYPE_FLOAT64, 1, \

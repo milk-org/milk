@@ -57,7 +57,7 @@ static uint64_t streamave_comprms     = 0;
 #define FPS_PARAMS(X) \
     X(".in_name", streamave_inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "input image") \
     X(".outave_name", streamave_outimave, \
       FPTYPE_STREAMNAME, 1, \
