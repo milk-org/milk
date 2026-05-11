@@ -72,13 +72,14 @@ static const help_line_t HELP[] =
     { "  q        Quit",                        HF_CHILD,   HS_DISPLAY },
     /* --- Control mode --- */
     { "Control Mode  (c to toggle)",            HF_SECTION, HS_CTRL },
-    { "  FPS:  r=run  s=conf  e=remove",        HF_CHILD,   HS_CTRL },
-    { "  STRM: d=delete stream",                HF_CHILD,   HS_CTRL },
+    { "  FPS:  r=run  s=conf",                  HF_CHILD,   HS_CTRL },
+    { "  STRM: Del=delete stream",              HF_CHILD,   HS_CTRL },
     /* --- Process signals --- */
-    { "Process Signals  (PROCS & FPS panels)",  HF_SECTION, HS_SIGNALS },
-    { "  k  graceful kill (SIGTERM)",           HF_CHILD,   HS_SIGNALS },
-    { "  K  immediate kill (SIGKILL)",          HF_CHILD,   HS_SIGNALS },
-    { "  x  pause/resume (SIGSTOP/SIGCONT)",    HF_CHILD,   HS_SIGNALS },
+    { "Process Signals & Entries",              HF_SECTION, HS_SIGNALS },
+    { "  k   graceful kill (SIGTERM)",          HF_CHILD,   HS_SIGNALS },
+    { "  K   immediate kill (SIGKILL)",         HF_CHILD,   HS_SIGNALS },
+    { "  x   pause/resume (SIGSTOP/SIGCONT)",   HF_CHILD,   HS_SIGNALS },
+    { "  ^E  erase entry (STRM/PROC/FPS)",      HF_CHILD,   HS_SIGNALS },
     /* --- Detail view --- */
     { "Detail View",                            HF_SECTION, HS_DETAIL },
     { "  ENTER or D  Toggle detail pane",       HF_CHILD,   HS_DETAIL },

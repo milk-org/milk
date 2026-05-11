@@ -113,6 +113,52 @@ static void ov_apply_rank_sort(OV_MODEL *mm)
     }
 }
 
+int ov_render_header_text(const char *text, int hs, int max_vis_width)
+{
+    int vis_col = 0;
+    int printed = 0;
+    int i = 0;
+
+    while (text[i] != '\0' && printed < max_vis_width)
+    {
+        if (text[i] == '\x01')
+        {
+            if (vis_col >= hs)
+            {
+                ov_theme_fg(OV_FG_BRIGHT);
+                ov_buf_bold();
+            }
+            i++;
+        }
+        else if (text[i] == '\x02')
+        {
+            if (vis_col >= hs)
+            {
+                ov_buf_reset_attr();
+                ov_theme_bg(OV_BG_HEADER);
+                ov_theme_fg(OV_FG_DIM);
+            }
+            i++;
+        }
+        else
+        {
+            int clen = 1;
+            if ((text[i] & 0xE0) == 0xC0) clen = 2;
+            else if ((text[i] & 0xF0) == 0xE0) clen = 3;
+            else if ((text[i] & 0xF8) == 0xF0) clen = 4;
+
+            if (vis_col >= hs)
+            {
+                ov_buf_printf("%.*s", clen, text + i);
+                printed++;
+            }
+            vis_col++;
+            i += clen;
+        }
+    }
+    return printed;
+}
+
 void render_pad_spaces(int chars_written, int panel_width);
 
 
@@ -184,7 +230,7 @@ void ov_render_header(
 
     ov_theme_bg(OV_BG_HEADER);
 
-    /* Blinking [CTRL] badge — visible when ctrl_mode is ON */
+    /* Blinking badge — visible when ctrl_mode is ON, READ ONLY when OFF */
     int ctrl_w = 0;
     if (lay->ctrl_mode)
     {
@@ -195,7 +241,7 @@ void ov_render_header(
             ov_buf_bg(180, 20, 20);    /* deep red background */
             ov_buf_fg(255, 220, 220);  /* light text */
             ov_buf_bold();
-            ov_buf_printf(" CTRL ");
+            ov_buf_printf(" CONTROL ");
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
         }
@@ -203,11 +249,22 @@ void ov_render_header(
         {
             ov_buf_bg(80, 10, 10);     /* dim red background */
             ov_buf_fg(160, 80, 80);    /* dim text */
-            ov_buf_printf(" CTRL ");
+            ov_buf_printf(" CONTROL ");
             ov_buf_reset_attr();
             ov_theme_bg(OV_BG_HEADER);
         }
-        ctrl_w = 6; /* visual width of " CTRL " */
+        ctrl_w = 9; /* visual width of " CONTROL " */
+    }
+    else
+    {
+        /* READ ONLY badge (green) */
+        ov_buf_bg(20, 180, 20);    /* deep green background */
+        ov_buf_fg(220, 255, 220);  /* light text */
+        ov_buf_bold();
+        ov_buf_printf(" READ ONLY ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        ctrl_w = 11; /* visual width of " READ ONLY " */
     }
 
     ov_theme_fg(OV_FG_STREAM);
@@ -280,8 +337,64 @@ void ov_render_frame(
     if (lay->sort_pending)
     {
         OV_MODEL *mm = (OV_MODEL *)(uintptr_t) m;
+
+        /* Calculate ancestry depths before sorting */
+        int8_t depths[OV_MAX_NODES];
+        for (int i = 0; i < OV_MAX_NODES; i++) { depths[i] = 127; }
+
+        int sel_node = -1;
+        ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
+        int sel_stream_idx = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+        int sel_proc_idx = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+        int sel_fps_idx = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+
+        char saved_sel_stream[80] = {0};
+        char saved_sel_proc[80] = {0};
+        char saved_sel_fps[80] = {0};
+
+        {
+            const char *names[OV_MAX_NODES];
+            int fidx[OV_MAX_NODES];
+            
+            /* Streams */
+            for (int i = 0; i < mm->nb_streams; i++) names[i] = mm->streams[i].name;
+            int fn = ov_filter_build(lay->filter_stream, names, mm->nb_streams, fidx, OV_MAX_NODES);
+            if (lay->sel_stream >= 0 && lay->sel_stream < fn) {
+                strncpy(saved_sel_stream, mm->streams[fidx[lay->sel_stream]].name, 79);
+            }
+            if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0 && sel_stream_idx < fn) {
+                sel_node = mm->streams[fidx[sel_stream_idx]].node_idx;
+            }
+
+            /* Procs */
+            for (int i = 0; i < mm->nb_procs; i++) names[i] = mm->procs[i].name;
+            fn = ov_filter_build(lay->filter_proc, names, mm->nb_procs, fidx, OV_MAX_NODES);
+            if (lay->sel_proc >= 0 && lay->sel_proc < fn) {
+                strncpy(saved_sel_proc, mm->procs[fidx[lay->sel_proc]].name, 79);
+            }
+            if (focus == OV_FOCUS_PROCS && sel_proc_idx >= 0 && sel_proc_idx < fn) {
+                sel_node = mm->procs[fidx[sel_proc_idx]].node_idx;
+            }
+
+            /* FPS */
+            for (int i = 0; i < mm->nb_fps; i++) names[i] = mm->fps[i].name;
+            fn = ov_filter_build(lay->filter_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
+            if (lay->sel_fps >= 0 && lay->sel_fps < fn) {
+                strncpy(saved_sel_fps, mm->fps[fidx[lay->sel_fps]].name, 79);
+            }
+            if (focus == OV_FOCUS_FPS && sel_fps_idx >= 0 && sel_fps_idx < fn) {
+                sel_node = mm->fps[fidx[sel_fps_idx]].node_idx;
+            }
+        }
+
+        if (sel_node >= 0) {
+            sg_compute_node_depths(mm, sel_node, SG_MODE_FULL, depths);
+        }
+        ov_sort_set_depths(depths);
+
         ov_sort_streams(mm,
                         lay->sort_key_stream,
+
                         lay->sort_dir_stream);
         ov_sort_procs(mm,
                       lay->sort_key_proc,
@@ -309,6 +422,59 @@ void ov_render_frame(
         {
             strncpy(g_fps_order[i], mm->fps[i].name, 79);
             g_fps_order[i][79] = '\0';
+        }
+
+        {
+            const char *names[OV_MAX_NODES];
+            int fidx[OV_MAX_NODES];
+
+            if (saved_sel_stream[0] != '\0') {
+                for (int i = 0; i < mm->nb_streams; i++) names[i] = mm->streams[i].name;
+                int fn = ov_filter_build(lay->filter_stream, names, mm->nb_streams, fidx, OV_MAX_NODES);
+                for (int i = 0; i < fn; i++) {
+                    if (strcmp(saved_sel_stream, mm->streams[fidx[i]].name) == 0) {
+                        lay->sel_stream = i;
+                        int page_h = lay->r_streams.height - 3;
+                        if (page_h > 0) {
+                            if (lay->sel_stream < lay->scroll_stream) lay->scroll_stream = lay->sel_stream;
+                            if (lay->sel_stream >= lay->scroll_stream + page_h) lay->scroll_stream = lay->sel_stream - page_h + 1;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (saved_sel_proc[0] != '\0') {
+                for (int i = 0; i < mm->nb_procs; i++) names[i] = mm->procs[i].name;
+                int fn = ov_filter_build(lay->filter_proc, names, mm->nb_procs, fidx, OV_MAX_NODES);
+                for (int i = 0; i < fn; i++) {
+                    if (strcmp(saved_sel_proc, mm->procs[fidx[i]].name) == 0) {
+                        lay->sel_proc = i;
+                        int page_h = lay->r_procs.height - 3;
+                        if (page_h > 0) {
+                            if (lay->sel_proc < lay->scroll_proc) lay->scroll_proc = lay->sel_proc;
+                            if (lay->sel_proc >= lay->scroll_proc + page_h) lay->scroll_proc = lay->sel_proc - page_h + 1;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (saved_sel_fps[0] != '\0') {
+                for (int i = 0; i < mm->nb_fps; i++) names[i] = mm->fps[i].name;
+                int fn = ov_filter_build(lay->filter_fps, names, mm->nb_fps, fidx, OV_MAX_NODES);
+                for (int i = 0; i < fn; i++) {
+                    if (strcmp(saved_sel_fps, mm->fps[fidx[i]].name) == 0) {
+                        lay->sel_fps = i;
+                        int page_h = lay->r_fps.height - 3;
+                        if (page_h > 0) {
+                            if (lay->sel_fps < lay->scroll_fps) lay->scroll_fps = lay->sel_fps;
+                            if (lay->sel_fps >= lay->scroll_fps + page_h) lay->scroll_fps = lay->sel_fps - page_h + 1;
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
         lay->sort_pending = 0;

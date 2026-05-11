@@ -56,6 +56,7 @@ void ov_render_status(
         case 4:  sort_label = " [sort:MB/s]";  break;
         case 5:  sort_label = " [sort:inode]"; break;
         case 6:  sort_label = " [sort:count]"; break;
+        case 7:  sort_label = " [sort:ancestry]"; break;
         default: sort_label = " [sort:name]";  break;
         }
         break;
@@ -66,6 +67,7 @@ void ov_render_status(
         case 2:  sort_label = " [sort:stat]"; break;
         case 3:  sort_label = " [sort:Hz]";   break;
         case 4:  sort_label = " [sort:MEM]";  break;
+        case 5:  sort_label = " [sort:ancestry]"; break;
         default: sort_label = " [sort:name]"; break;
         }
         break;
@@ -74,6 +76,7 @@ void ov_render_status(
         {
         case 1:  sort_label = " [sort:alive]"; break;
         case 2:  sort_label = " [sort:MEM]";   break;
+        case 3:  sort_label = " [sort:ancestry]"; break;
         default: sort_label = " [sort:name]";  break;
         }
         break;
