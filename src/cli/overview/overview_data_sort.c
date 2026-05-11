@@ -18,6 +18,16 @@
  */
 static int ov_sort_dir_mul = 1;
 
+/**
+ * Cache of topological node depths used for ancestry sorting.
+ */
+static int8_t g_sort_depths[OV_MAX_NODES];
+
+void ov_sort_set_depths(const int8_t *depths)
+{
+    memcpy(g_sort_depths, depths, sizeof(g_sort_depths));
+}
+
 /* ----- Stream comparators ----- */
 
 static int sort_stream_by_name(
@@ -117,6 +127,23 @@ static int sort_stream_by_count(
     return 0;
 }
 
+static int sort_stream_by_ancestry(
+    const void *a, const void *b)
+{
+    const OV_STREAM *sa = (const OV_STREAM *) a;
+    const OV_STREAM *sb = (const OV_STREAM *) b;
+    int8_t da = (sa->node_idx >= 0 && sa->node_idx < OV_MAX_NODES) ? g_sort_depths[sa->node_idx] : 127;
+    int8_t db = (sb->node_idx >= 0 && sb->node_idx < OV_MAX_NODES) ? g_sort_depths[sb->node_idx] : 127;
+    
+    if (da == 127 && db != 127) return 1;
+    if (db == 127 && da != 127) return -1;
+
+    if (da != db) {
+        return ov_sort_dir_mul * (da - db);
+    }
+    return sort_stream_by_name(a, b);
+}
+
 /** Number of sortable stream columns. */
 #define OV_STREAM_SORT_NCOL 7
 
@@ -137,6 +164,7 @@ void ov_sort_streams(
     case 4:  cmp = sort_stream_by_throughput; break;
     case 5:  cmp = sort_stream_by_inode;      break;
     case 6:  cmp = sort_stream_by_count;      break;
+    case 7:  cmp = sort_stream_by_ancestry;   break;
     default: cmp = sort_stream_by_name;       break;
     }
     qsort(model->streams,
@@ -195,6 +223,23 @@ static int sort_proc_by_mem(
     return 0;
 }
 
+static int sort_proc_by_ancestry(
+    const void *a, const void *b)
+{
+    const OV_PROC *pa = (const OV_PROC *) a;
+    const OV_PROC *pb = (const OV_PROC *) b;
+    int8_t da = (pa->node_idx >= 0 && pa->node_idx < OV_MAX_NODES) ? g_sort_depths[pa->node_idx] : 127;
+    int8_t db = (pb->node_idx >= 0 && pb->node_idx < OV_MAX_NODES) ? g_sort_depths[pb->node_idx] : 127;
+    
+    if (da == 127 && db != 127) return 1;
+    if (db == 127 && da != 127) return -1;
+
+    if (da != db) {
+        return ov_sort_dir_mul * (da - db);
+    }
+    return sort_proc_by_name(a, b);
+}
+
 /** Number of sortable proc columns. */
 #define OV_PROC_SORT_NCOL 5
 
@@ -213,6 +258,7 @@ void ov_sort_procs(
     case 2:  cmp = sort_proc_by_stat; break;
     case 3:  cmp = sort_proc_by_hz;   break;
     case 4:  cmp = sort_proc_by_mem;  break;
+    case 5:  cmp = sort_proc_by_ancestry; break;
     default: cmp = sort_proc_by_name; break;
     }
     qsort(model->procs,
@@ -253,6 +299,23 @@ static int sort_fps_by_mem(
     return 0;
 }
 
+static int sort_fps_by_ancestry(
+    const void *a, const void *b)
+{
+    const OV_FPS *fa = (const OV_FPS *) a;
+    const OV_FPS *fb = (const OV_FPS *) b;
+    int8_t da = (fa->node_idx >= 0 && fa->node_idx < OV_MAX_NODES) ? g_sort_depths[fa->node_idx] : 127;
+    int8_t db = (fb->node_idx >= 0 && fb->node_idx < OV_MAX_NODES) ? g_sort_depths[fb->node_idx] : 127;
+    
+    if (da == 127 && db != 127) return 1;
+    if (db == 127 && da != 127) return -1;
+
+    if (da != db) {
+        return ov_sort_dir_mul * (da - db);
+    }
+    return sort_fps_by_name(a, b);
+}
+
 /** Number of sortable FPS columns. */
 #define OV_FPS_SORT_NCOL 3
 
@@ -269,6 +332,7 @@ void ov_sort_fps(
     {
     case 1:  cmp = sort_fps_by_status; break;
     case 2:  cmp = sort_fps_by_mem;    break;
+    case 3:  cmp = sort_fps_by_ancestry; break;
     default: cmp = sort_fps_by_name;   break;
     }
     qsort(model->fps,

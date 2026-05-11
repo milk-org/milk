@@ -83,6 +83,14 @@ typedef struct
 #define OV_BOX_BR   "╯"
 #define OV_BOX_H    "─"
 #define OV_BOX_V    "│"
+
+/* Double borders for focused panels */
+#define OV_BOX_TL_D "╔"
+#define OV_BOX_TR_D "╗"
+#define OV_BOX_BL_D "╚"
+#define OV_BOX_BR_D "╝"
+#define OV_BOX_H_D  "═"
+#define OV_BOX_V_D  "║"
 #define OV_BOX_LT   "├"
 #define OV_BOX_RT   "┤"
 #define OV_BOX_TB   "┬"
@@ -286,11 +294,18 @@ static inline void ov_draw_panel_border(
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);
 
+    const char *tl = is_focused ? OV_BOX_TL_D : OV_BOX_TL;
+    const char *tr = is_focused ? OV_BOX_TR_D : OV_BOX_TR;
+    const char *bl = is_focused ? OV_BOX_BL_D : OV_BOX_BL;
+    const char *br = is_focused ? OV_BOX_BR_D : OV_BOX_BR;
+    const char *h  = is_focused ? OV_BOX_H_D  : OV_BOX_H;
+    const char *v  = is_focused ? OV_BOX_V_D  : OV_BOX_V;
+
     /* top edge */
     ov_buf_pos(row, col);
-    ov_buf_printf("%s", OV_BOX_TL);
-    ov_buf_hline_utf8(OV_BOX_H, width - 2);
-    ov_buf_printf("%s", OV_BOX_TR);
+    ov_buf_printf("%s", tl);
+    ov_buf_hline_utf8(h, width - 2);
+    ov_buf_printf("%s", tr);
 
     /* title overlay */
     if (title && title[0])
@@ -308,17 +323,17 @@ static inline void ov_draw_panel_border(
         ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
         ov_theme_bg(OV_BG_TERMINAL);
         ov_buf_pos(r, col);
-        ov_buf_printf("%s", OV_BOX_V);
+        ov_buf_printf("%s", v);
         ov_buf_pos(r, col + width - 1);
-        ov_buf_printf("%s", OV_BOX_V);
+        ov_buf_printf("%s", v);
     }
 
     /* bottom edge */
     ov_buf_pos(row + height - 1, col);
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
-    ov_buf_printf("%s", OV_BOX_BL);
-    ov_buf_hline_utf8(OV_BOX_H, width - 2);
-    ov_buf_printf("%s", OV_BOX_BR);
+    ov_buf_printf("%s", bl);
+    ov_buf_hline_utf8(h, width - 2);
+    ov_buf_printf("%s", br);
 
     ov_buf_reset_attr();
 }
