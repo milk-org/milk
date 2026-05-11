@@ -73,6 +73,26 @@ void ov_ctrl_proc_pause_toggle(
     OV_CMDLOG     *log);
 
 /**
+ * ov_ctrl_proc_set_ctrlval - mutate process CTRLval.
+ * @p:   process model entry
+ * @val: new value (-1 to toggle between 0 and 1)
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_proc_set_ctrlval(
+    const OV_PROC *p,
+    int            val,
+    OV_CMDLOG     *log);
+
+/**
+ * ov_ctrl_proc_zero_counters - reset process loopcnt.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_proc_zero_counters(
+    const OV_PROC *p,
+    OV_CMDLOG     *log);
+
+/**
  * ov_ctrl_fps_signal_pid - send signal to FPS PIDs.
  * @f:   FPS model entry
  * @sig: signal number
