@@ -11,6 +11,35 @@
 #include "overview_data.h"
 #include "overview_layout.h"
 #include "overview_ctrl.h"
+#include "stream_graph.h"
+
+static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int target_type = -1;
+    int target_idx = -1;
+    
+    if (eff_focus == OV_FOCUS_STREAMS || eff_focus == OV_FOCUS_GRAPH) {
+        target_type = OV_NODE_STREAM;
+        target_idx = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+    } else if (eff_focus == OV_FOCUS_PROCS) {
+        target_type = OV_NODE_PROC;
+        target_idx = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+    } else if (eff_focus == OV_FOCUS_FPS) {
+        target_type = OV_NODE_FPS;
+        target_idx = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+    }
+
+    if (target_type != -1 && target_idx != -1) {
+        for (int i = 0; i < m->nb_nodes; i++) {
+            if (m->nodes[i].type == target_type && m->nodes[i].index == target_idx) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
 
 /* scan API */
 extern float ov_scan_get_interval(void);
@@ -401,14 +430,21 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     /* Graph jump on Enter (must be before detail mode toggle) */
     if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH)
     {
-        if (lay->sel_graph < m->nb_edges)
+        int start_node = get_graph_start_node(lay, m);
+        if (start_node >= 0)
         {
-            const OV_EDGE *edge = &m->edges[lay->sel_graph];
-            const OV_NODE *node = &m->nodes[edge->src_node];
-            if (node->type == OV_NODE_STREAM) { lay->focus = OV_FOCUS_STREAMS; lay->sel_stream = node->index; }
-            else if (node->type == OV_NODE_PROC) { lay->focus = OV_FOCUS_PROCS; lay->sel_proc = node->index; }
-            else if (node->type == OV_NODE_FPS) { lay->focus = OV_FOCUS_FPS; lay->sel_fps = node->index; }
-            lay->view = OV_VIEW_DASHBOARD;
+            SG_RENDER_NODE rnodes[OV_MAX_NODES];
+            int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+            if (lay->sel_graph < n_rnodes)
+            {
+                const SG_RENDER_NODE *rn = &rnodes[lay->sel_graph];
+                const OV_NODE *node = &m->nodes[rn->node_idx];
+                if (node->type == OV_NODE_STREAM) { lay->focus = OV_FOCUS_STREAMS; lay->sel_stream = node->index; }
+                else if (node->type == OV_NODE_PROC) { lay->focus = OV_FOCUS_PROCS; lay->sel_proc = node->index; }
+                else if (node->type == OV_NODE_FPS) { lay->focus = OV_FOCUS_FPS; lay->sel_fps = node->index; }
+                lay->view = OV_VIEW_DASHBOARD;
+                lay->freeze = 0;
+            }
         }
         return 1;
     }
@@ -441,7 +477,8 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     {
         if (key == OV_KEY_LEFT)
         {
-            if (lay->focus == OV_FOCUS_PROCS) lay->focus = OV_FOCUS_STREAMS;
+            if (lay->focus == OV_FOCUS_STREAMS) lay->focus = OV_FOCUS_GRAPH;
+            else if (lay->focus == OV_FOCUS_PROCS) lay->focus = OV_FOCUS_STREAMS;
             else if (lay->focus == OV_FOCUS_FPS) lay->focus = OV_FOCUS_PROCS;
             else if (lay->focus == OV_FOCUS_GRAPH)
             {
@@ -454,6 +491,7 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
             if (lay->focus == OV_FOCUS_STREAMS) lay->focus = OV_FOCUS_PROCS;
             else if (lay->focus == OV_FOCUS_PROCS) lay->focus = OV_FOCUS_FPS;
             else if (lay->focus == OV_FOCUS_FPS) lay->focus = OV_FOCUS_GRAPH;
+            else if (lay->focus == OV_FOCUS_GRAPH) lay->focus = OV_FOCUS_STREAMS;
         }
         return 1;
     }
@@ -720,44 +758,108 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         }
         page_h = lay->r_fps.height - 3;
         break;
+    case OV_FOCUS_GRAPH:
+        sel    = &lay->sel_graph;
+        scroll = &lay->scroll_graph;
+        {
+            int start_node = get_graph_start_node(lay, m);
+            if (start_node >= 0) {
+                SG_RENDER_NODE rnodes[OV_MAX_NODES];
+                count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+            } else {
+                count = 0;
+            }
+        }
+        page_h = lay->r_graph.height - 3;
+        break;
     default:
         break;
     }
 
     if (sel != NULL)
     {
-        if (key == OV_KEY_UP && *sel > 0)
+        int old_sel = *sel;
+        int navigated = 0;
+        int is_nav_key = 0;
+
+        if (key == OV_KEY_UP)
         {
-            (*sel)--;
-            return 1;
+            is_nav_key = 1;
+            if (*sel > 0) { (*sel)--; navigated = 1; }
         }
-        else if (key == OV_KEY_DOWN && *sel < count - 1)
+        else if (key == OV_KEY_DOWN)
         {
-            (*sel)++;
-            return 1;
+            is_nav_key = 1;
+            if (*sel < count - 1) { (*sel)++; navigated = 1; }
         }
         else if (key == OV_KEY_PGUP)
         {
+            is_nav_key = 1;
             *sel -= page_h;
             if (*sel < 0) *sel = 0;
-            return 1;
+            navigated = 1;
         }
         else if (key == OV_KEY_PGDN)
         {
+            is_nav_key = 1;
             *sel += page_h;
             if (*sel >= count) *sel = count - 1;
             if (*sel < 0) *sel = 0;
-            return 1;
+            navigated = 1;
         }
         else if (key == OV_KEY_HOME)
         {
+            is_nav_key = 1;
             *sel = 0;
-            return 1;
+            navigated = 1;
         }
         else if (key == OV_KEY_END)
         {
+            is_nav_key = 1;
             *sel = count - 1;
             if (*sel < 0) *sel = 0;
+            navigated = 1;
+        }
+
+        if (is_nav_key)
+        {
+            if (navigated)
+            {
+                if (lay->focus == OV_FOCUS_GRAPH && *sel != old_sel)
+                {
+                    int start_node = get_graph_start_node(lay, m);
+                    if (start_node >= 0)
+                    {
+                        SG_RENDER_NODE rnodes[OV_MAX_NODES];
+                        int n_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+                        if (*sel < n_rnodes)
+                        {
+                            const SG_RENDER_NODE *rn = &rnodes[*sel];
+                            const OV_NODE *node = &m->nodes[rn->node_idx];
+                            
+                            if (node->type == OV_NODE_STREAM) {
+                                lay->sel_stream = node->index;
+                                if (lay->sel_stream < lay->scroll_stream) lay->scroll_stream = lay->sel_stream;
+                                if (lay->r_streams.height > 3 && lay->sel_stream >= lay->scroll_stream + lay->r_streams.height - 3) {
+                                    lay->scroll_stream = lay->sel_stream - (lay->r_streams.height - 3) + 1;
+                                }
+                            } else if (node->type == OV_NODE_PROC) {
+                                lay->sel_proc = node->index;
+                                if (lay->sel_proc < lay->scroll_proc) lay->scroll_proc = lay->sel_proc;
+                                if (lay->r_procs.height > 3 && lay->sel_proc >= lay->scroll_proc + lay->r_procs.height - 3) {
+                                    lay->scroll_proc = lay->sel_proc - (lay->r_procs.height - 3) + 1;
+                                }
+                            } else if (node->type == OV_NODE_FPS) {
+                                lay->sel_fps = node->index;
+                                if (lay->sel_fps < lay->scroll_fps) lay->scroll_fps = lay->sel_fps;
+                                if (lay->r_fps.height > 3 && lay->sel_fps >= lay->scroll_fps + lay->r_fps.height - 3) {
+                                    lay->scroll_fps = lay->sel_fps - (lay->r_fps.height - 3) + 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             return 1;
         }
     }
@@ -926,6 +1028,8 @@ int ov_handle_key(
             sel = &lay->sel_proc; scroll = &lay->scroll_proc; page_h = lay->r_procs.height - 3; break;
         case OV_FOCUS_FPS:
             sel = &lay->sel_fps; scroll = &lay->scroll_fps; page_h = lay->r_fps.height - 3; break;
+        case OV_FOCUS_GRAPH:
+            sel = &lay->sel_graph; scroll = &lay->scroll_graph; page_h = lay->r_graph.height - 3; break;
         default: break;
         }
 

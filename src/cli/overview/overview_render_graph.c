@@ -185,6 +185,32 @@ void ov_render_preview_line(
     ov_buf_reset_attr();
 }
 
+static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int target_type = -1;
+    int target_idx = -1;
+    
+    if (eff_focus == OV_FOCUS_STREAMS || eff_focus == OV_FOCUS_GRAPH) {
+        target_type = OV_NODE_STREAM;
+        target_idx = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+    } else if (eff_focus == OV_FOCUS_PROCS) {
+        target_type = OV_NODE_PROC;
+        target_idx = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+    } else if (eff_focus == OV_FOCUS_FPS) {
+        target_type = OV_NODE_FPS;
+        target_idx = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+    }
+
+    if (target_type != -1 && target_idx != -1) {
+        for (int i = 0; i < m->nb_nodes; i++) {
+            if (m->nodes[i].type == target_type && m->nodes[i].index == target_idx) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
 
 void ov_render_graph_panel(
     const OV_LAYOUT *lay,
@@ -201,20 +227,28 @@ void ov_render_graph_panel(
     ov_theme_bg(OV_BG_HEADER);
     ov_theme_fg(OV_FG_DIM);
     char htext[256];
-    int hlen = snprintf(htext, sizeof(htext), " %-12s    %-12s [%-6s] %-16s  %-4s %-4s", 
-                        "SOURCE", "TARGET", "LABEL", "TYPE", "SRCT", "TGTT");
+    int hlen = snprintf(htext, sizeof(htext), " %-12s      %s", 
+                        "MODE", sg_mode_label(lay->lineage_mode));
     ov_buf_printf("%s", htext);
     render_pad_spaces(hlen, r.width);
     row++;
 
-    if (m->nb_edges == 0)
+    int start_node = get_graph_start_node(lay, m);
+    SG_RENDER_NODE rnodes[OV_MAX_NODES];
+    int nb_rnodes = 0;
+    
+    if (start_node >= 0) {
+        nb_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+    }
+
+    if (nb_rnodes == 0)
     {
         ov_buf_pos(row, r.col + 1);
         ov_theme_bg(OV_BG_PANEL);
         ov_buf_printf("  ");
         ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf("No connections detected");
-        render_pad_spaces(2 + 23, r.width);
+        ov_buf_printf("No graph available");
+        render_pad_spaces(2 + 18, r.width);
         row++;
         for (int i = 1; i < max_rows; i++, row++) {
             clear_row(row, r.col + 1, r.width - 2, OV_BG_PANEL);
@@ -224,69 +258,25 @@ void ov_render_graph_panel(
     }
 
     int rendered_rows = 0;
-    ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    int sel_s = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
-    int sel_p = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
-    int sel_f = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
+    int scroll = lay->scroll_graph;
 
-    for (int ei = 0; ei < m->nb_edges && rendered_rows < max_rows; ei++)
+    for (int ri = scroll; ri < nb_rnodes && rendered_rows < max_rows; ri++)
     {
-        const OV_EDGE *e = &m->edges[ei];
-        if (e->src_node < 0 || e->src_node >= m->nb_nodes || e->tgt_node < 0 || e->tgt_node >= m->nb_nodes) continue;
-
-        const OV_NODE *src = &m->nodes[e->src_node];
-        const OV_NODE *tgt = &m->nodes[e->tgt_node];
+        const SG_RENDER_NODE *rn = &rnodes[ri];
 
         ov_buf_pos(row, r.col + 1);
         
-        int is_sel = (ei == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
-        int is_rel = 0;
-        if (!is_sel && eff_focus != OV_FOCUS_GRAPH) {
-            if (eff_focus == OV_FOCUS_STREAMS) {
-                if ((src->type == OV_NODE_STREAM && src->index == sel_s) ||
-                    (tgt->type == OV_NODE_STREAM && tgt->index == sel_s)) is_rel = 1;
-            } else if (eff_focus == OV_FOCUS_PROCS) {
-                if ((src->type == OV_NODE_PROC && src->index == sel_p) ||
-                    (tgt->type == OV_NODE_PROC && tgt->index == sel_p)) is_rel = 1;
-            } else if (eff_focus == OV_FOCUS_FPS) {
-                if ((src->type == OV_NODE_FPS && src->index == sel_f) ||
-                    (tgt->type == OV_NODE_FPS && tgt->index == sel_f)) is_rel = 1;
-            }
-        }
-        
-        if (lay->freeze && lay->freeze_focus != OV_FOCUS_GRAPH && !is_rel) {
-            continue;
-        }
-
-        ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : (is_rel ? OV_BG_RELATED : OV_BG_PANEL);
+        int is_sel = (ri == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
+        ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : OV_BG_PANEL;
         ov_theme_bg(row_bg);
         ov_buf_printf(" ");
 
-        /* Detailed rendering with color */
-        ov_rgb_t sc;
-        const char *styp = "UNK";
-        switch (src->type) {
-        case OV_NODE_STREAM: sc = OV_FG_STREAM; styp = "STRM"; break;
-        case OV_NODE_FPS:    sc = OV_FG_FPS;    styp = "FPS "; break;
-        case OV_NODE_PROC:   sc = OV_FG_PROC;   styp = "PROC"; break;
-        }
-
-        ov_rgb_t tc;
-        const char *ttyp = "UNK";
-        switch (tgt->type) {
-        case OV_NODE_STREAM: tc = OV_FG_STREAM; ttyp = "STRM"; break;
-        case OV_NODE_FPS:    tc = OV_FG_FPS;    ttyp = "FPS "; break;
-        case OV_NODE_PROC:   tc = OV_FG_PROC;   ttyp = "PROC"; break;
-        }
-
-        const char *etype = "UNKNOWN";
-        switch (e->type) {
-        case OV_EDGE_PROC_WRITES_STREAM:   etype = "PROC_WRITES_STRM"; break;
-        case OV_EDGE_STREAM_TRIGGERS_PROC: etype = "STRM_TRIGS_PROC "; break;
-        case OV_EDGE_FPS_RUNS_PROC:        etype = "FPS_RUNS_PROC   "; break;
-        case OV_EDGE_FPS_INPUT_STREAM:     etype = "FPS_INPUT_STRM  "; break;
-        case OV_EDGE_FPS_OUTPUT_STREAM:    etype = "FPS_OUTPUT_STRM "; break;
-        case OV_EDGE_PROC_TRIGGER_STREAM:  etype = "PROC_TRIGS_STRM "; break;
+        ov_rgb_t c = OV_FG_TEXT;
+        const char *typ = "UNK";
+        switch (rn->type) {
+        case OV_NODE_STREAM: c = OV_FG_STREAM; typ = "STRM"; break;
+        case OV_NODE_FPS:    c = OV_FG_FPS;    typ = "FPS "; break;
+        case OV_NODE_PROC:   c = OV_FG_PROC;   typ = "PROC"; break;
         }
 
         int printed = 1;
@@ -308,20 +298,48 @@ void ov_render_graph_panel(
             }                                        \
         } while(0)
 
-        GRAPH_FIELD(sc, "%-12.12s", src->name);
-        
-        /* Box drawing character length workaround */
-        if (avail - printed >= 4) {
-            ov_theme_fg(OV_FG_CONN);
-            ov_buf_printf(" %s%s ", OV_BOX_H, OV_TRI_R);
-            printed += 4;
+        /* Selection marker */
+        if (rn->depth == 0) {
+            GRAPH_FIELD(OV_FG_WARN, ">> ");
+        } else {
+            GRAPH_FIELD(OV_FG_DIM, "   ");
         }
 
-        GRAPH_FIELD(tc, "%-12.12s", tgt->name);
-        GRAPH_FIELD(OV_FG_DIM, " [%-6.6s]", e->label);
-        GRAPH_FIELD(OV_FG_TEXT, " %-16.16s ", etype);
-        GRAPH_FIELD(sc, "%-4s ", styp);
-        GRAPH_FIELD(tc, "%-4s", ttyp);
+        /* Compute indentation based on depth */
+        int abs_depth = rn->depth;
+        if (abs_depth < 0) abs_depth = -abs_depth;
+        
+        /* Ancestors are indented progressively less to reach 0 at target, 
+           then descendants progressively more. */
+        int indent = 0;
+        if (rn->depth < 0) {
+            /* Ancestors: -1 is closer to target than -2. */
+            indent = (abs_depth - 1) * 2;
+        } else if (rn->depth > 0) {
+            indent = abs_depth * 2;
+        }
+        if (indent > 30) indent = 30;
+
+        char ind_str[64] = "";
+        if (indent > 0) {
+            memset(ind_str, ' ', indent);
+            ind_str[indent] = '\0';
+        }
+        GRAPH_FIELD(OV_FG_DIM, "%s", ind_str);
+
+        /* Draw node */
+        if (rn->type == OV_NODE_PROC || rn->type == OV_NODE_FPS) {
+            GRAPH_FIELD(OV_FG_CONN, "%s ", OV_TRI_D);
+            GRAPH_FIELD(c, "[%s] ", rn->name);
+        } else {
+            GRAPH_FIELD(c, "%s ", rn->name);
+        }
+        
+        GRAPH_FIELD(OV_FG_DIM, "(%s)", typ);
+
+        if (rn->depth == 0) {
+            GRAPH_FIELD(OV_FG_WARN, " <");
+        }
 
         #undef GRAPH_FIELD
 
