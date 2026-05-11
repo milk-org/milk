@@ -475,23 +475,41 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
 
     if (key == OV_KEY_LEFT || key == OV_KEY_RIGHT)
     {
+        /* In single-panel views (F3–F6), lock focus to
+         * the panel being shown — only allow left-right
+         * panel cycling on the Dashboard.
+         */
+        if (lay->view != OV_VIEW_DASHBOARD)
+        {
+            return 1;
+        }
+
         if (key == OV_KEY_LEFT)
         {
-            if (lay->focus == OV_FOCUS_STREAMS) lay->focus = OV_FOCUS_GRAPH;
-            else if (lay->focus == OV_FOCUS_PROCS) lay->focus = OV_FOCUS_STREAMS;
-            else if (lay->focus == OV_FOCUS_FPS) lay->focus = OV_FOCUS_PROCS;
+            if (lay->focus == OV_FOCUS_STREAMS)
+                lay->focus = OV_FOCUS_GRAPH;
+            else if (lay->focus == OV_FOCUS_PROCS)
+                lay->focus = OV_FOCUS_STREAMS;
+            else if (lay->focus == OV_FOCUS_FPS)
+                lay->focus = OV_FOCUS_PROCS;
             else if (lay->focus == OV_FOCUS_GRAPH)
             {
-                if (lay->view == OV_VIEW_DASHBOARD && !lay->detail_mode) lay->focus = OV_FOCUS_FPS;
-                else lay->focus = OV_FOCUS_STREAMS;
+                if (!lay->detail_mode)
+                    lay->focus = OV_FOCUS_FPS;
+                else
+                    lay->focus = OV_FOCUS_STREAMS;
             }
         }
         else
         {
-            if (lay->focus == OV_FOCUS_STREAMS) lay->focus = OV_FOCUS_PROCS;
-            else if (lay->focus == OV_FOCUS_PROCS) lay->focus = OV_FOCUS_FPS;
-            else if (lay->focus == OV_FOCUS_FPS) lay->focus = OV_FOCUS_GRAPH;
-            else if (lay->focus == OV_FOCUS_GRAPH) lay->focus = OV_FOCUS_STREAMS;
+            if (lay->focus == OV_FOCUS_STREAMS)
+                lay->focus = OV_FOCUS_PROCS;
+            else if (lay->focus == OV_FOCUS_PROCS)
+                lay->focus = OV_FOCUS_FPS;
+            else if (lay->focus == OV_FOCUS_FPS)
+                lay->focus = OV_FOCUS_GRAPH;
+            else if (lay->focus == OV_FOCUS_GRAPH)
+                lay->focus = OV_FOCUS_STREAMS;
         }
         return 1;
     }
