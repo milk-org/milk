@@ -975,8 +975,8 @@ static void fpsCTRL__render_parameter_rows(
                         screenprint_unsetbgcolor();
                     }
                 }
-                for(int l = 0; l < MAXNBLEVELS ; l++) child_index[l]++;
             }
+            for(int l = 0; l < MAXNBLEVELS ; l++) child_index[l]++;
             TUI_newline();
         }
 }
