@@ -587,6 +587,33 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
     return 0;
 }
 
+static const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    if (lay->sel_name_stream[0] == '\0') return NULL;
+    for (int i = 0; i < m->nb_streams; i++) {
+        if (strcmp(m->streams[i].name, lay->sel_name_stream) == 0) return &m->streams[i];
+    }
+    return NULL;
+}
+
+static const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    if (lay->sel_name_proc[0] == '\0') return NULL;
+    for (int i = 0; i < m->nb_procs; i++) {
+        if (strcmp(m->procs[i].name, lay->sel_name_proc) == 0) return &m->procs[i];
+    }
+    return NULL;
+}
+
+static const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    if (lay->sel_name_fps[0] == '\0') return NULL;
+    for (int i = 0; i < m->nb_fps; i++) {
+        if (strcmp(m->fps[i].name, lay->sel_name_fps) == 0) return &m->fps[i];
+    }
+    return NULL;
+}
+
 static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
@@ -599,166 +626,118 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             return 1;
         }
 
-        if (lay->focus == OV_FOCUS_FPS
-            && lay->sel_fps >= 0
-            && lay->sel_fps < m->nb_fps)
+        if (lay->focus == OV_FOCUS_FPS)
         {
-            ov_ctrl_fps_remove(&m->fps[lay->sel_fps], log);
-            return 1;
+            const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+            if (f) ov_ctrl_fps_remove(f, log);
         }
-        else if (lay->focus == OV_FOCUS_PROCS
-                 && lay->sel_proc >= 0
-                 && lay->sel_proc < m->nb_procs)
+        else if (lay->focus == OV_FOCUS_PROCS)
         {
-            ov_ctrl_proc_remove(&m->procs[lay->sel_proc], log);
-            return 1;
+            const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+            if (p) ov_ctrl_proc_remove(p, log);
         }
-        else if (lay->focus == OV_FOCUS_STREAMS
-                 && lay->sel_stream >= 0
-                 && lay->sel_stream < m->nb_streams)
+        else if (lay->focus == OV_FOCUS_STREAMS)
         {
-            ov_ctrl_stream_delete(&m->streams[lay->sel_stream], log);
-            return 1;
+            const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
+            if (s) ov_ctrl_stream_delete(s, log);
         }
-    }
-
-    if (key == 'k' || key == 'K')
-    {
-        if (lay->focus == OV_FOCUS_PROCS
-            && lay->sel_proc >= 0
-            && lay->sel_proc < m->nb_procs)
-        {
-            const OV_PROC *p =
-                &m->procs[lay->sel_proc];
-            if (key == 'k')
-            {
-                ov_ctrl_proc_kill(p, log);
-            }
-            else if (key == 'K')
-            {
-                ov_ctrl_proc_sigkill(p, log);
-            }
-            return 1;
-        }
-        else if (lay->focus == OV_FOCUS_FPS
-                 && lay->sel_fps >= 0
-                 && lay->sel_fps < m->nb_fps)
-        {
-            const OV_FPS *f =
-                &m->fps[lay->sel_fps];
-            if (key == 'k')
-            {
-                ov_ctrl_fps_signal_pid(
-                    f, SIGTERM, log);
-            }
-            else if (key == 'K')
-            {
-                ov_ctrl_fps_signal_pid(
-                    f, SIGKILL, log);
-            }
-            else if (key == 'x')
-            {
-                ov_ctrl_fps_pause_toggle(f, log);
-            }
-            return 1;
-        }
-    }
-
-    if (key == 'C')
-    {
-        if (lay->focus == OV_FOCUS_PROCS)
-        {
-            ov_ctrl_procs_cleanup(log);
-            return 1;
-        }
+        return 1;
     }
 
     if (key == 'i')
     {
-        if (lay->focus == OV_FOCUS_STREAMS
-            && lay->sel_stream >= 0
-            && lay->sel_stream < m->nb_streams)
+        if (lay->focus == OV_FOCUS_STREAMS)
         {
-            ov_ctrl_inspect_item(OV_FOCUS_STREAMS, &m->streams[lay->sel_stream]);
-            return 1;
+            const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
+            if (s) ov_ctrl_inspect_item(OV_FOCUS_STREAMS, s);
         }
-        else if (lay->focus == OV_FOCUS_PROCS
-                 && lay->sel_proc >= 0
-                 && lay->sel_proc < m->nb_procs)
+        else if (lay->focus == OV_FOCUS_PROCS)
         {
-            ov_ctrl_inspect_item(OV_FOCUS_PROCS, &m->procs[lay->sel_proc]);
-            return 1;
+            const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+            if (p) ov_ctrl_inspect_item(OV_FOCUS_PROCS, p);
         }
-        else if (lay->focus == OV_FOCUS_FPS
-                 && lay->sel_fps >= 0
-                 && lay->sel_fps < m->nb_fps)
+        else if (lay->focus == OV_FOCUS_FPS)
         {
-            ov_ctrl_inspect_item(OV_FOCUS_FPS, &m->fps[lay->sel_fps]);
-            return 1;
+            const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+            if (f) ov_ctrl_inspect_item(OV_FOCUS_FPS, f);
+        }
+        return 1;
+    }
+
+    int is_ctrl_action = 0;
+
+    if (lay->focus == OV_FOCUS_PROCS)
+    {
+        if (key == 'C')
+        {
+            is_ctrl_action = 1;
+            if (lay->ctrl_mode)
+            {
+                ov_ctrl_procs_cleanup(log);
+            }
+        }
+        else if (key == 'k' || key == 'K' || key == 'p' || key == ctrl('s') || key == 'e' || key == 'z')
+        {
+            is_ctrl_action = 1;
+            if (lay->ctrl_mode)
+            {
+                const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+                if (p)
+                {
+                    if (key == 'k') ov_ctrl_proc_kill(p, log);
+                    else if (key == 'K') ov_ctrl_proc_sigkill(p, log);
+                    else if (key == 'p') ov_ctrl_proc_set_ctrlval(p, -1, log);
+                    else if (key == ctrl('s')) ov_ctrl_proc_set_ctrlval(p, 2, log);
+                    else if (key == 'e') ov_ctrl_proc_set_ctrlval(p, 3, log);
+                    else if (key == 'z') ov_ctrl_proc_zero_counters(p, log);
+                }
+            }
+        }
+    }
+    else if (lay->focus == OV_FOCUS_FPS)
+    {
+        if (key == 'k' || key == 'K' || key == 'x' || key == 'r' || key == 's')
+        {
+            is_ctrl_action = 1;
+            if (lay->ctrl_mode)
+            {
+                const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+                if (f)
+                {
+                    if (key == 'k') ov_ctrl_fps_signal_pid(f, SIGTERM, log);
+                    else if (key == 'K') ov_ctrl_fps_signal_pid(f, SIGKILL, log);
+                    else if (key == 'x') ov_ctrl_fps_pause_toggle(f, log);
+                    else if (key == 'r') ov_ctrl_fps_run_toggle(f, log);
+                    else if (key == 's') ov_ctrl_fps_conf_toggle(f, log);
+                }
+            }
+        }
+    }
+    else if (lay->focus == OV_FOCUS_STREAMS)
+    {
+        if (key == OV_KEY_DEL)
+        {
+            is_ctrl_action = 1;
+            if (lay->ctrl_mode)
+            {
+                const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
+                if (s) ov_ctrl_stream_delete(s, log);
+            }
         }
     }
 
-    if (lay->ctrl_mode)
+    if (is_ctrl_action)
     {
-        if (lay->focus == OV_FOCUS_FPS
-            && lay->sel_fps >= 0
-            && lay->sel_fps < m->nb_fps)
+        if (!lay->ctrl_mode)
         {
-            const OV_FPS *f =
-                &m->fps[lay->sel_fps];
-            if (key == 'r')
-            {
-                ov_ctrl_fps_run_toggle(f, log);
-                return 1;
-            }
-            if (key == 's')
-            {
-                ov_ctrl_fps_conf_toggle(f, log);
-                return 1;
-            }
+            char keyname[16];
+            if (key == ctrl('s')) snprintf(keyname, sizeof(keyname), "CTRL+s");
+            else if (key == OV_KEY_DEL) snprintf(keyname, sizeof(keyname), "DEL");
+            else snprintf(keyname, sizeof(keyname), "'%c'", key);
+            
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "%s requires CONTROL mode", keyname);
         }
-
-        if (lay->focus == OV_FOCUS_PROCS
-            && lay->sel_proc >= 0
-            && lay->sel_proc < m->nb_procs)
-        {
-            const OV_PROC *p =
-                &m->procs[lay->sel_proc];
-            if (key == 'p')
-            {
-                ov_ctrl_proc_set_ctrlval(p, -1, log);
-                return 1;
-            }
-            if (key == ctrl('s'))
-            {
-                ov_ctrl_proc_set_ctrlval(p, 2, log);
-                return 1;
-            }
-            if (key == 'e')
-            {
-                ov_ctrl_proc_set_ctrlval(p, 3, log);
-                return 1;
-            }
-            if (key == 'z')
-            {
-                ov_ctrl_proc_zero_counters(p, log);
-                return 1;
-            }
-        }
-
-
-        if (lay->focus == OV_FOCUS_STREAMS
-            && lay->sel_stream >= 0
-            && lay->sel_stream < m->nb_streams)
-        {
-            const OV_STREAM *s =
-                &m->streams[lay->sel_stream];
-            if (key == OV_KEY_DEL)
-            {
-                ov_ctrl_stream_delete(s, log);
-                return 1;
-            }
-        }
+        return 1;
     }
 
     return 0;
@@ -1089,6 +1068,29 @@ int ov_handle_key(
             if (*sel < *scroll) *scroll = *sel;
             if (*sel >= *scroll + page_h) *scroll = *sel - page_h + 1;
         }
+        return 0;
+    }
+
+    if (key == '?')
+    {
+        char keys_str[128];
+        char ctrl_str[128] = "";
+
+        // Base keys always available
+        snprintf(keys_str, sizeof(keys_str), "Keys: q c h G ? TAB D L F W i <>[]sS +-= F2-F6 / ESC");
+
+        if (lay->ctrl_mode)
+        {
+            if (lay->focus == OV_FOCUS_FPS)
+                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (FPS): x r s k K ^e");
+            else if (lay->focus == OV_FOCUS_PROCS)
+                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (PROC): p ^s e z C k K ^e");
+            else if (lay->focus == OV_FOCUS_STREAMS)
+                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (STRM): DEL ^e");
+        }
+
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s%s", keys_str, ctrl_str);
+        if (lay->cmdlog_rows == 0) lay->cmdlog_rows = 4;
         return 0;
     }
 

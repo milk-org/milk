@@ -80,7 +80,7 @@ void ov_render_fps_panel(
                        (sk == 3) ? "ANCESTRY" : "NAME",
                        (sk == 3) ? 3 : 0, sk, sd, 18);
         int w_c = sort_col_label(c_c, sizeof(c_c),
-                       "C", 1, sk, sd, 2);
+                       "CPID", 1, sk, sd, 7);
         int w_mem = sort_col_label(c_mem, sizeof(c_mem),
                        "MEM", 2, sk, sd, 5);
         int desc_w =
@@ -88,11 +88,11 @@ void ov_render_fps_panel(
             ? 30 : 20;
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-*s %*s %1s %3s %*s"
-            " %-*s %8s %7s %7s",
-            w_name, c_name, w_c, c_c, "R", "STR", w_mem, c_mem,
+            "%-*s %*s %7s %3s %*s"
+            " %-*s %8s",
+            w_name, c_name, w_c, c_c, "RPID", "STR", w_mem, c_mem,
             desc_w, "DESCRIPTION",
-            "STATUS", "CPID", "RPID");
+            "STATUS");
     }
     
     {
@@ -118,10 +118,13 @@ void ov_render_fps_panel(
             int root_node = m->fps[root_fi].node_idx;
             if (root_node >= 0) {
                 int8_t node_depths[OV_MAX_NODES];
-                sg_compute_node_depths(m, root_node, SG_MODE_FULL, node_depths);
+                sg_compute_node_depths(
+                    m, root_node,
+                    SG_MODE_FPS, node_depths);
                 for (int fi = 0; fi < m->nb_fps; fi++) {
                     int n = m->fps[fi].node_idx;
-                    if (n >= 0) local_depth[fi] = node_depths[n];
+                    if (n >= 0 && node_depths[n] != 127)
+                        local_depth[fi] = node_depths[n];
                 }
             }
         }
@@ -232,8 +235,10 @@ void ov_render_fps_panel(
                         ? rel->sel_pid : 0;
 
             FPS_FIELD(OV_FG_FPS, "%-18.18s ", f->name);
-            FPS_PID_FIELD(f->confpid, "%2s ", f->conf_alive ? "C" : "-");
-            FPS_PID_FIELD(f->runpid, "%s ", f->run_alive ? "R" : "-");
+            if (f->confpid > 0) FPS_PID_FIELD(f->confpid, "%7d ", (int) f->confpid);
+            else FPS_FIELD(OV_FG_DIM, "%7s ", "-");
+            if (f->runpid > 0) FPS_PID_FIELD(f->runpid, "%7d ", (int) f->runpid);
+            else FPS_FIELD(OV_FG_DIM, "%7s ", "-");
             FPS_FIELD(OV_FG_TEXT, "%3d ", f->nb_stream_params);
             
             /* MEM */
@@ -255,8 +260,6 @@ void ov_render_fps_panel(
                     f->description);
             }
             FPS_FIELD(OV_FG_MUTED, "%08X ", f->md_status);
-            FPS_PID_FIELD(f->confpid, "%7d ", (int) f->confpid);
-            FPS_PID_FIELD(f->runpid, "%7d", (int) f->runpid);
             
             #undef FPS_PID_FIELD
             #undef FPS_FIELD
