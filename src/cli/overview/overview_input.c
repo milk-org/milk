@@ -408,7 +408,7 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         lay->lineage_mode = (lay->lineage_mode + 1) % 3;
         return 1;
     }
-    if (key == 'p' || key == 'P')
+    if (key == 'F')
     {
         lay->paused = !lay->paused;
         ov_cmdlog_push(&lay->cmdlog,
@@ -573,8 +573,14 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
-    if (key == ctrl('e') && lay->ctrl_mode)
+    if (key == ctrl('e'))
     {
+        if (!lay->ctrl_mode)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "CTRL+e requires CONTROL mode");
+            return 1;
+        }
+
         if (lay->focus == OV_FOCUS_FPS
             && lay->sel_fps >= 0
             && lay->sel_fps < m->nb_fps)
@@ -694,6 +700,33 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
         }
 
+        if (lay->focus == OV_FOCUS_PROCS
+            && lay->sel_proc >= 0
+            && lay->sel_proc < m->nb_procs)
+        {
+            const OV_PROC *p =
+                &m->procs[lay->sel_proc];
+            if (key == 'p')
+            {
+                ov_ctrl_proc_set_ctrlval(p, -1, log);
+                return 1;
+            }
+            if (key == ctrl('s'))
+            {
+                ov_ctrl_proc_set_ctrlval(p, 2, log);
+                return 1;
+            }
+            if (key == 'e')
+            {
+                ov_ctrl_proc_set_ctrlval(p, 3, log);
+                return 1;
+            }
+            if (key == 'z')
+            {
+                ov_ctrl_proc_zero_counters(p, log);
+                return 1;
+            }
+        }
 
 
         if (lay->focus == OV_FOCUS_STREAMS

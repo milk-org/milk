@@ -17,6 +17,9 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "overview_defs.h"
 #include "overview_data.h"
@@ -237,6 +240,149 @@ void ov_ctrl_proc_sigkill(
 }
 
 #include <errno.h>
+
+/**
+ * ov_ctrl_proc_set_ctrlval - mutate process CTRLval.
+ * @p:   process model entry
+ * @val: new value (-1 to toggle between 0 and 1)
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_proc_set_ctrlval(
+    const OV_PROC *p,
+    int            val,
+    OV_CMDLOG     *log)
+{
+    if (p == NULL || p->PID <= 0 || !p->valid)
+    {
+        return;
+    }
+
+    char fname[1024];
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
+             ov_get_shmdir(), p->name, (int)p->PID);
+
+    int fd = open(fname, O_RDWR);
+    if (fd < 0)
+    {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Process \"%s\" — ctrl failed (open)", p->name);
+        }
+        return;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) < 0 || st.st_size < (off_t)sizeof(PROCESSINFO))
+    {
+        close(fd);
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Process \"%s\" — ctrl failed (stat)", p->name);
+        }
+        return;
+    }
+
+    PROCESSINFO *pinfo = (PROCESSINFO *)mmap(NULL, sizeof(PROCESSINFO),
+                                             PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (pinfo == MAP_FAILED)
+    {
+        close(fd);
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Process \"%s\" — ctrl failed (mmap)", p->name);
+        }
+        return;
+    }
+
+    int old_val = pinfo->CTRLval;
+    int new_val = (val == -1) ? (old_val == 0 ? 1 : 0) : val;
+    pinfo->CTRLval = new_val;
+
+    munmap(pinfo, sizeof(PROCESSINFO));
+    close(fd);
+
+    if (log != NULL)
+    {
+        const char *action;
+        if (new_val == 0) action = "Resume";
+        else if (new_val == 1) action = "Pause";
+        else if (new_val == 2) action = "Step";
+        else if (new_val == 3) action = "Exit request";
+        else action = "CTRLval updated";
+
+        ov_cmdlog_push(log, OV_CMDLOG_OK,
+                       "Process \"%s\" — %s", p->name, action);
+    }
+}
+
+/**
+ * ov_ctrl_proc_zero_counters - reset process loopcnt.
+ * @p:   process model entry
+ * @log: command log (may be NULL)
+ */
+void ov_ctrl_proc_zero_counters(
+    const OV_PROC *p,
+    OV_CMDLOG     *log)
+{
+    if (p == NULL || p->PID <= 0 || !p->valid)
+    {
+        return;
+    }
+
+    char fname[1024];
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
+             ov_get_shmdir(), p->name, (int)p->PID);
+
+    int fd = open(fname, O_RDWR);
+    if (fd < 0)
+    {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Process \"%s\" — zero failed (open)", p->name);
+        }
+        return;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) < 0 || st.st_size < (off_t)sizeof(PROCESSINFO))
+    {
+        close(fd);
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Process \"%s\" — zero failed (stat)", p->name);
+        }
+        return;
+    }
+
+    PROCESSINFO *pinfo = (PROCESSINFO *)mmap(NULL, sizeof(PROCESSINFO),
+                                             PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (pinfo == MAP_FAILED)
+    {
+        close(fd);
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Process \"%s\" — zero failed (mmap)", p->name);
+        }
+        return;
+    }
+
+    pinfo->loopcnt = 0;
+
+    munmap(pinfo, sizeof(PROCESSINFO));
+    close(fd);
+
+    if (log != NULL)
+    {
+        ov_cmdlog_push(log, OV_CMDLOG_OK,
+                       "Process \"%s\" — Counters zeroed", p->name);
+    }
+}
 
 /**
  * ov_ctrl_proc_remove - remove a single process from shm.
