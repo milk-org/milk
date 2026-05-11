@@ -11,6 +11,8 @@ PIPELINE_NODES=(
     imtrunc
     gaussfilt2
     resizeim
+    rotateim
+    cropim
     streamave
     streammon
 )
@@ -22,6 +24,8 @@ PIPELINE_STREAMS=(
     truncated_out
     smooth_out
     resized_out
+    rotated_out
+    cropped_out
     averaged_out
 )
 
@@ -83,10 +87,11 @@ while [ $# -gt 0 ]; do
             exit 0
             ;;
         -h2|--help-description)
-            echo "Start a 7-node FPS image processing pipeline" \
+            echo "Start a 9-node FPS image processing pipeline" \
                  "for demonstration and testing. Creates a chain" \
                  "of compute units (random generation, Gaussian" \
-                 "blur, truncation, resize, averaging, monitoring)" \
+                 "blur, truncation, resize, rotation, cropping," \
+                 "averaging, monitoring)" \
                  "connected via shared-memory streams in tmux" \
                  "sessions. Useful for testing milkCTRL," \
                  "stream-graph, and pipeline diagnostics."
@@ -97,16 +102,20 @@ while [ $# -gt 0 ]; do
 Usage: milk-demopipeline [OPTIONS] [COMMAND]
 
 Start a multi-stage FPS pipeline for demonstration.
-This script sets up a 7-node image processing chain
+This script sets up a 9-node image processing chain
 inside tmux, creating a rich graph for milkCTRL:
 
   random_in ──> blurred_out ──> truncated_out
                                      │
                               smooth_out
                                      │
-                              resized_out
+                             resized_out
                                      │
-                             averaged_out
+                             rotated_out
+                                     │
+                             cropped_out
+                                     │
+                            averaged_out
 
 Pipeline stages:
   1. Random image generation   (random_in)
@@ -114,8 +123,10 @@ Pipeline stages:
   3. Image truncation          (truncated_out)
   4. Second Gaussian filter    (smooth_out)
   5. Image resize              (resized_out)
-  6. Running average           (averaged_out)
-  7. Stream monitor            (stats on averaged_out)
+  6. Image rotation            (rotated_out)
+  7. Image crop                (cropped_out)
+  8. Running average           (averaged_out)
+  9. Stream monitor            (stats on averaged_out)
 
 Commands:
   cleanup              Stop all pipeline processes
@@ -194,7 +205,8 @@ echo ""
 echo "  random_in -> blurred_out" \
      "-> truncated_out"
 echo "      -> smooth_out -> resized_out"
-echo "          -> averaged_out -> [monitor]"
+echo "          -> rotated_out -> cropped_out"
+echo "              -> averaged_out -> [monitor]"
 echo ""
 
 # 1. Generate a 512x512 random image
@@ -205,43 +217,47 @@ wait_for_stream random_in
 
 # 2. Gaussian filter (sigma 5.0, size 15)
 milk-fpsexec-imgfilt-gaussfilt \
-    -tmux -procinfo -loopd "$DELAY" \
+    -tmux -procinfo -loops \
     exec random_in blurred_out 5.0 15
 wait_for_stream blurred_out
 
 # 3. Truncate pixel values [0.2, 0.8]
 milk-fpsexec-arith-imtrunc \
-    -tmux -procinfo -loopd "$DELAY" \
+    -tmux -procinfo -loops \
     exec blurred_out 0.2 0.8 truncated_out
 wait_for_stream truncated_out
 
 # 4. Second Gaussian filter (sigma 3.0, size 7)
-#    Uses fpsinit + set + runstart because
-#    fpsname:exec with -tmux misparses positional
-#    args (known framework bug)
 milk-fpsexec-imgfilt-gaussfilt \
-    gaussfilt2:fpsinit
-milk-fpsexec-imgfilt-gaussfilt \
-    gaussfilt2:set \
-    truncated_out smooth_out 3.0 7
-milk-fpsexec-imgfilt-gaussfilt \
-    -tmux -procinfo -loopd "$DELAY" \
-    gaussfilt2:runstart
+    -n gaussfilt2 -tmux -procinfo -loops \
+    exec truncated_out smooth_out 3.0 7
 wait_for_stream smooth_out
 
 # 5. Resize smoothed image to 256x256
 milk-fpsexec-imgbasic-resizeim \
-    -tmux -procinfo -loopd "$DELAY" \
+    -tmux -procinfo -loops \
     exec smooth_out resized_out 256 256
 wait_for_stream resized_out
 
-# 6. Running average (window 10)
-/home/oguyon/src/milk/_build/src/coremods/COREMOD_memory/milk-fpsexec-mem-streamave \
-    -tmux -procinfo -loopd "$DELAY" \
-    exec resized_out averaged_out 10
+# 6. Image rotation
+milk-fpsexec-imgbasic-rotateim \
+    -tmux -procinfo -loops \
+    exec resized_out rotated_out 45.0
+wait_for_stream rotated_out
+
+# 7. Image crop
+milk-fpsexec-arith-crop2D \
+    -tmux -procinfo -loops \
+    exec rotated_out cropped_out 64 128 64 128
+wait_for_stream cropped_out
+
+# 8. Running average (window 10)
+milk-fpsexec-mem-streamave \
+    -tmux -procinfo -loops \
+    exec cropped_out averaged_out 10
 wait_for_stream averaged_out 15
 
-# 7. Stream monitor on the final output
+# 9. Stream monitor on the final output
 milk-fpsexec-info-strmonproc \
     -tmux -procinfo -loops \
     exec averaged_out 1 100
