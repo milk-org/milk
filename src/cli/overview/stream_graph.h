@@ -36,12 +36,14 @@
  * @SG_MODE_INPUT:   follow FPS input/read edges.
  * @SG_MODE_FULL:    follow all FPS stream params
  *                   (both input and output).
+ * @SG_MODE_FPS:     follow only FPS-stream edges.
  */
 typedef enum
 {
     SG_MODE_TRIGGER = 0,
     SG_MODE_INPUT   = 1,
     SG_MODE_FULL    = 2,
+    SG_MODE_FPS     = 3,
 } sg_mode_t;
 
 /* =========================================================
