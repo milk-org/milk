@@ -46,6 +46,7 @@ void print_help() {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
+        printf("\n\033[1;31mERROR\033[0m Missing arguments\n");
         print_help();
         return 1;
     }
@@ -71,7 +72,8 @@ int main(int argc, char *argv[]) {
             if (i + 1 < argc) {
                 val = atoll(argv[++i]);
             } else {
-                fprintf(stderr, "Error: -v requires an argument\n");
+                printf("\n\033[1;31mERROR\033[0m -v requires an argument\n");
+                print_help();
                 return 1;
             }
         } else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--abs") == 0) {
@@ -85,14 +87,16 @@ int main(int argc, char *argv[]) {
             if (streamname == NULL && argv[i][0] != '-') {
                 streamname = argv[i];
             } else {
-                fprintf(stderr, "Unknown argument: %s\n", argv[i]);
+                printf("\n\033[1;31mERROR\033[0m Unknown argument: %s\n", argv[i]);
+                print_help();
                 return 1;
             }
         }
     }
 
     if (streamname == NULL) {
-        fprintf(stderr, "Error: stream name required\n");
+        printf("\n\033[1;31mERROR\033[0m stream name required\n");
+        print_help();
         return 1;
     }
 

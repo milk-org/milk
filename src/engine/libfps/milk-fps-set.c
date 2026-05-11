@@ -199,7 +199,8 @@ int main(int argc, char *argv[])
             case 'h':
             case '1': break; /* handled above */
             default:
-                print_help(argv[0], 0);
+                printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+                print_help(argv[0], 1);
                 return 1;
         }
     }
@@ -207,10 +208,10 @@ int main(int argc, char *argv[])
     if (optind + 2 > argc)
     {
         if (optind + 1 == argc)
-            fprintf(stderr, "Error: Missing value.\n");
+            printf("\n\033[1;31mERROR\033[0m missing value\n\n");
         else
-            fprintf(stderr, "Error: Missing arguments.\n");
-        print_help(argv[0], 0);
+            printf("\n\033[1;31mERROR\033[0m missing arguments\n\n");
+        print_help(argv[0], 1);
         return 1;
     }
 

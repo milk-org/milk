@@ -192,10 +192,16 @@ int main(int argc, char *argv[])
             print_usage(argv[0]);
             return 0;
         }
-        if (strcmp(argv[i], "-d") == 0
+        else if (strcmp(argv[i], "-d") == 0
             && (i + 1 < argc))
         {
             setenv("MILK_SHM_DIR", argv[++i], 1);
+        }
+        else if (argv[i][0] == '-')
+        {
+            printf("\n\033[1;31mERROR\033[0m: Invalid option: %s\n\n", argv[i]);
+            print_usage(argv[0]);
+            return 1;
         }
     }
 

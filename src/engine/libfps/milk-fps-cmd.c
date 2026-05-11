@@ -159,9 +159,8 @@ int main(int argc, char *argv[])
 
     if (argc < 2)
     {
-        fprintf(stderr,
-                "Error: Missing <fpsname>. "
-                "Run %s -h for usage.\n", progname);
+        printf("\n\033[1;31mERROR\033[0m missing <fpsname>\n\n");
+        print_help(progname, 1);
         return 1;
     }
 
@@ -180,15 +179,16 @@ int main(int argc, char *argv[])
         }
         else
         {
-            fprintf(stderr,
-                    "Error: Unexpected argument '%s'.\n", argv[i]);
+            printf("\n\033[1;31mERROR\033[0m unexpected argument '%s'\n\n", argv[i]);
+            print_help(progname, 1);
             return 1;
         }
     } // for i
 
     if (fpsname == NULL)
     {
-        fprintf(stderr, "Error: Missing <fpsname>\n");
+        printf("\n\033[1;31mERROR\033[0m missing <fpsname>\n\n");
+        print_help(progname, 1);
         return 1;
     }
 

@@ -235,16 +235,15 @@ int main(int argc, char **argv)
             do_daemon = 1;
             i++;
         } else {
-            fprintf(stderr, "Unknown flag: %s\n", argv[i]);
-            print_help(argv[0], 0);
+            printf("\n\033[1;31mERROR\033[0m invalid option: %s\n\n", argv[i]);
+            print_help(argv[0], 1);
             return 1;
         }
     }
 
     if (seq_name[0] == '\0') {
-        fprintf(stderr,
-                "Error: Sequencer name (-n) is "
-                "required.\n");
+        printf("\n\033[1;31mERROR\033[0m sequencer name (-n) is required\n\n");
+        print_help(argv[0], 1);
         return 1;
     }
 

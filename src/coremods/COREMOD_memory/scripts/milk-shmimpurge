@@ -68,8 +68,9 @@ while getopts :hf: FLAG; do
             echo "using filter ${FILTERSTRING}"
             ;;
         \?)
-            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            echo -e "\n\033[1;31mERROR\033[0m Option -${OPTARG} not allowed."
             printHELP
+            exit 1
             ;;
     esac
 done
@@ -80,10 +81,10 @@ shift $((OPTIND-1))
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     if [ "$#" -ne $NBARGS ]; then
-        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+        echo -e "\n\033[1;31mERROR\033[0m Illegal number of parameters ($NBARGS params required, $# entered)"
     fi
     printHELP
-    exit
+    exit 1
 fi
 
 milk -n ${pname} << EOF
