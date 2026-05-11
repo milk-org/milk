@@ -310,7 +310,8 @@ void ov_render_streams_panel(
             const OV_STREAM *s = &m->streams[si];
             int is_sel =
                 (fi == lay->sel_stream
-                 && lay->focus == OV_FOCUS_STREAMS);
+                 && (lay->focus == OV_FOCUS_STREAMS
+                     || lay->focus == OV_FOCUS_GRAPH));
             int is_frozen = (lay->freeze
                 && lay->freeze_focus
                    == OV_FOCUS_STREAMS
