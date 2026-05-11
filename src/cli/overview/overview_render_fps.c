@@ -68,7 +68,7 @@ void ov_render_fps_panel(
 
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_printf(" ");
+    ov_buf_printf("    ");
     ov_theme_fg(OV_FG_DIM);
     char htext[256];
     int hlen;
@@ -77,7 +77,8 @@ void ov_render_fps_panel(
         int sd = lay->sort_dir_fps;
         char c_name[24], c_c[8], c_mem[10];
         int w_name = sort_col_label(c_name, sizeof(c_name),
-                       "NAME", 0, sk, sd, 18);
+                       (sk == 3) ? "ANCESTRY" : "NAME",
+                       (sk == 3) ? 3 : 0, sk, sd, 18);
         int w_c = sort_col_label(c_c, sizeof(c_c),
                        "C", 1, sk, sd, 2);
         int w_mem = sort_col_label(c_mem, sizeof(c_mem),
@@ -95,12 +96,35 @@ void ov_render_fps_panel(
     }
     
     {
-        int vis = hlen - hs;
-        if (vis < 0) vis = 0;
-        const char *start_str = htext + hs;
-        if (hs >= hlen) { start_str = ""; vis = 0; }
-        ov_buf_printf("%.*s", vis, start_str);
-        render_pad_spaces(1 + vis, r.width);
+        int vis_width = r.width - 4;
+        if (vis_width < 0) vis_width = 0;
+        int printed = ov_render_header_text(htext, hs, vis_width);
+        render_pad_spaces(4 + printed, r.width);
+    }
+
+    int8_t local_depth[OV_MAX_FPS];
+    memset(local_depth, 0, sizeof(local_depth));
+    {
+        int eff_sel = -1;
+        if (lay->freeze && lay->freeze_focus == OV_FOCUS_FPS
+            && lay->freeze_sel_fps >= 0 && lay->freeze_sel_fps < filt_n) {
+            eff_sel = lay->freeze_sel_fps;
+        } else if (lay->focus == OV_FOCUS_FPS
+                   && lay->sel_fps >= 0 && lay->sel_fps < filt_n) {
+            eff_sel = lay->sel_fps;
+        }
+        if (eff_sel >= 0) {
+            int root_fi = fidx[eff_sel];
+            int root_node = m->fps[root_fi].node_idx;
+            if (root_node >= 0) {
+                int8_t node_depths[OV_MAX_NODES];
+                sg_compute_node_depths(m, root_node, SG_MODE_FULL, node_depths);
+                for (int fi = 0; fi < m->nb_fps; fi++) {
+                    int n = m->fps[fi].node_idx;
+                    if (n >= 0) local_depth[fi] = node_depths[n];
+                }
+            }
+        }
     }
 
     int max_rows = r.height - 3;
@@ -133,12 +157,33 @@ void ov_render_fps_panel(
                          : OV_BG_PANEL;
 
             int hs_rem = hs;
-            int printed = 1;
+            int printed = 4;
             int avail = r.width - 2;
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
-            ov_buf_printf(" ");
+
+            /* Lineage depth badge: ◀N or N▶ */
+            int8_t sdepth = local_depth[fi];
+            if (sdepth != 0 && !is_sel && !is_frozen) {
+                int abs_d = sdepth < 0 ? -sdepth : sdepth;
+                if (abs_d > 99) abs_d = 99;
+                ov_theme_fg(OV_FG_WARN);
+                if (sdepth < 0) {
+                    if (abs_d < 10) ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
+                    else ov_buf_printf("\xe2\x97\x80%d ", abs_d);
+                } else {
+                    if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
+                    else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
+                }
+            } else {
+                if (is_sel || is_frozen) {
+                    ov_theme_fg(OV_FG_ACTIVE);
+                    ov_buf_printf("\xe2\x97\x8f   ");
+                } else {
+                    ov_buf_printf("    ");
+                }
+            }
 
             #define FPS_FIELD(color, fmt, ...)         \
             do {                                       \
@@ -259,6 +304,78 @@ void ov_render_fps_panel(
     render_scroll_indicators(
         r, lay->scroll_fps, max_rows,
         filt_n, OV_FG_FPS);
+
+    /* ---- Footer stats on bottom border ---- */
+    {
+        /* Totals over ALL FPS */
+        int  tot_conf = 0;
+        int  tot_run  = 0;
+        long tot_mem  = 0;
+        for (int j = 0; j < m->nb_fps; j++)
+        {
+            const OV_FPS *f = &m->fps[j];
+            if (f->conf_alive) { tot_conf++; }
+            if (f->run_alive)  { tot_run++;  }
+            tot_mem += f->mem_rss_kb;
+        }
+
+        /* Totals over filtered subset */
+        int  flt_conf = 0;
+        int  flt_run  = 0;
+        long flt_mem  = 0;
+        for (int j = 0; j < filt_n; j++)
+        {
+            const OV_FPS *f = &m->fps[fidx[j]];
+            if (f->conf_alive) { flt_conf++; }
+            if (f->run_alive)  { flt_run++;  }
+            flt_mem += f->mem_rss_kb;
+        }
+
+        int brow = r.row + r.height - 1;
+        int is_subset =
+            (filt_n < m->nb_fps);
+
+        /* Right side: total stats (always) */
+        char tmem[16];
+        format_mem_kb(tmem, sizeof(tmem), tot_mem);
+        char rbuf[80];
+        snprintf(rbuf, sizeof(rbuf),
+            " %d conf \u2502 %d run \u2502 %s ",
+            tot_conf, tot_run, tmem);
+        int rlen = (int) strlen(rbuf);
+        int rcol = r.col + r.width - rlen - 2;
+        if (rcol > r.col + 1)
+        {
+            ov_buf_pos(brow, rcol);
+            ov_theme_fg(
+                tot_run > 0
+                ? OV_FG_ACTIVE : OV_FG_DIM);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_buf_printf("%s", rbuf);
+        }
+
+        /* Left side: filtered stats */
+        if (is_subset)
+        {
+            char fmem[16];
+            format_mem_kb(
+                fmem, sizeof(fmem), flt_mem);
+            char lbuf[80];
+            snprintf(lbuf, sizeof(lbuf),
+                " %d conf \u2502 %d run \u2502 %s ",
+                flt_conf, flt_run, fmem);
+            int llen = (int) strlen(lbuf);
+            int lcol = r.col + 2;
+            if (lcol + llen < rcol)
+            {
+                ov_buf_pos(brow, lcol);
+                ov_theme_fg(OV_FG_WARN);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_buf_printf("%s", lbuf);
+            }
+        }
+    }
+
     ov_buf_reset_attr();
 
     if (has_re)

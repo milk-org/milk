@@ -59,7 +59,7 @@ static void ov_procs__render_header(
 {
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_printf(" ");
+    ov_buf_printf("    ");
     ov_theme_fg(OV_FG_DIM);
 
     char htext[256];
@@ -69,7 +69,9 @@ static void ov_procs__render_header(
         int sd = lay->sort_dir_proc;
         char c_name[20], c_pid[12];
         char c_stat[10], c_hz[10], c_mem[10];
-        int w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
+        int w_name = sort_col_label(c_name, sizeof(c_name),
+                                    (sk == 5) ? "ANCESTRY" : "NAME",
+                                    (sk == 5) ? 5 : 0, sk, sd, 14);
         int w_pid = sort_col_label(c_pid, sizeof(c_pid), "PID", 1, sk, sd, 7);
         int w_stat = sort_col_label(c_stat, sizeof(c_stat), "STAT", 2, sk, sd, 5);
         int w_hz = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
@@ -86,16 +88,10 @@ static void ov_procs__render_header(
             "LOOPCNT", w_mem, c_mem,
             "MISSED", "PRIO");
     }
-    int vis = hlen - hs;
-    if (vis < 0) vis = 0;
-    const char *start = htext + hs;
-    if (hs >= hlen)
-    {
-        start = "";
-        vis   = 0;
-    }
-    ov_buf_printf("%.*s", vis, start);
-    render_pad_spaces(1 + vis, r.width);
+    int vis_width = r.width - 4;
+    if (vis_width < 0) vis_width = 0;
+    int printed = ov_render_header_text(htext, hs, vis_width);
+    render_pad_spaces(4 + printed, r.width);
 }
 
 static void ov_procs__render_rows(
@@ -106,7 +102,32 @@ static void ov_procs__render_rows(
     const int *filt_idx, int filt_n,
     int has_re, const regex_t *re)
 {
-int max_rows = r.height - 3;
+    int8_t local_depth[OV_MAX_PROCS];
+    memset(local_depth, 0, sizeof(local_depth));
+    {
+        int eff_sel = -1;
+        if (lay->freeze && lay->freeze_focus == OV_FOCUS_PROCS
+            && lay->freeze_sel_proc >= 0 && lay->freeze_sel_proc < filt_n) {
+            eff_sel = lay->freeze_sel_proc;
+        } else if (lay->focus == OV_FOCUS_PROCS
+                   && lay->sel_proc >= 0 && lay->sel_proc < filt_n) {
+            eff_sel = lay->sel_proc;
+        }
+        if (eff_sel >= 0) {
+            int root_pi = filt_idx[eff_sel];
+            int root_node = m->procs[root_pi].node_idx;
+            if (root_node >= 0) {
+                int8_t node_depths[OV_MAX_NODES];
+                sg_compute_node_depths(m, root_node, SG_MODE_FULL, node_depths);
+                for (int pi = 0; pi < m->nb_procs; pi++) {
+                    int n = m->procs[pi].node_idx;
+                    if (n >= 0) local_depth[pi] = node_depths[n];
+                }
+            }
+        }
+    }
+
+    int max_rows = r.height - 3;
     int start = lay->scroll_proc;
 
     for (int i = 0; i < max_rows; i++)
@@ -295,9 +316,9 @@ int max_rows = r.height - 3;
                     _fb, sizeof(_fb), fmt,              \
                     __VA_ARGS__);                       \
                 int _skip = 0;                         \
-                if (hs > 0) {                          \
-                    _skip = (hs < _fl) ? hs : _fl;     \
-                    hs -= _skip;                       \
+                if (hs_rem > 0) {                      \
+                    _skip = (hs_rem < _fl) ? hs_rem : _fl; \
+                    hs_rem -= _skip;                   \
                 }                                      \
                 int _vis = _fl - _skip;                \
                 int _max = avail - printed;             \
@@ -317,8 +338,29 @@ int max_rows = r.height - 3;
             /* Re-do per-field with colors */
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
-            ov_buf_printf(" ");
-            printed = 1;
+
+            /* Lineage depth badge: ◀N or N▶ */
+            int8_t sdepth = local_depth[pi];
+            if (sdepth != 0 && !is_sel && !is_frozen) {
+                int abs_d = sdepth < 0 ? -sdepth : sdepth;
+                if (abs_d > 99) abs_d = 99;
+                ov_theme_fg(OV_FG_WARN);
+                if (sdepth < 0) {
+                    if (abs_d < 10) ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
+                    else ov_buf_printf("\xe2\x97\x80%d ", abs_d);
+                } else {
+                    if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
+                    else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
+                }
+            } else {
+                if (is_sel || is_frozen) {
+                    ov_theme_fg(OV_FG_ACTIVE);
+                    ov_buf_printf("\xe2\x97\x8f   ");
+                } else {
+                    ov_buf_printf("    ");
+                }
+            }
+            printed = 4;
 
             /* Name */
             {
@@ -762,9 +804,89 @@ int max_rows = r.height - 3;
     render_scroll_indicators(
         r, lay->scroll_proc, max_rows,
         filt_n, OV_FG_PROC);
-    ov_buf_reset_attr();
 
-    
+    /* ---- Footer stats on bottom border ---- */
+    {
+        /* Compute totals over ALL procs */
+        int   tot_run = 0;
+        float tot_cpu = 0.0f;
+        long  tot_mem = 0;
+        for (int j = 0; j < m->nb_procs; j++)
+        {
+            const OV_PROC *p = &m->procs[j];
+            if (p->loopstat
+                == PROCESSINFO_LOOPSTAT_ACTIVE)
+            {
+                tot_run++;
+            }
+            tot_cpu += p->cpu_used;
+            tot_mem += p->mem_rss_kb;
+        }
+
+        /* Compute totals over filtered subset */
+        int   flt_run = 0;
+        float flt_cpu = 0.0f;
+        long  flt_mem = 0;
+        for (int j = 0; j < filt_n; j++)
+        {
+            const OV_PROC *p =
+                &m->procs[filt_idx[j]];
+            if (p->loopstat
+                == PROCESSINFO_LOOPSTAT_ACTIVE)
+            {
+                flt_run++;
+            }
+            flt_cpu += p->cpu_used;
+            flt_mem += p->mem_rss_kb;
+        }
+
+        int  brow = r.row + r.height - 1;
+        int  is_subset =
+            (filt_n < m->nb_procs);
+
+        /* Right side: total stats (always) */
+        char tmem[16];
+        format_mem_kb(tmem, sizeof(tmem), tot_mem);
+        char rbuf[80];
+        snprintf(rbuf, sizeof(rbuf),
+            " %d RUN \u2502 %.0f%% CPU \u2502 %s ",
+            tot_run, (double) tot_cpu, tmem);
+        int rlen = (int) strlen(rbuf);
+        int rcol = r.col + r.width - rlen - 2;
+        if (rcol > r.col + 1)
+        {
+            ov_buf_pos(brow, rcol);
+            ov_theme_fg(OV_FG_ACTIVE);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_buf_printf("%s", rbuf);
+        }
+
+        /* Left side: filtered stats (only if
+         * filter is active) */
+        if (is_subset)
+        {
+            char fmem[16];
+            format_mem_kb(
+                fmem, sizeof(fmem), flt_mem);
+            char lbuf[80];
+            snprintf(lbuf, sizeof(lbuf),
+                " %d RUN \u2502 %.0f%% CPU \u2502 %s ",
+                flt_run,
+                (double) flt_cpu,
+                fmem);
+            int llen = (int) strlen(lbuf);
+            int lcol = r.col + 2;
+            if (lcol + llen < rcol)
+            {
+                ov_buf_pos(brow, lcol);
+                ov_theme_fg(OV_FG_WARN);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_buf_printf("%s", lbuf);
+            }
+        }
+    }
+
+    ov_buf_reset_attr();
 
 }
 

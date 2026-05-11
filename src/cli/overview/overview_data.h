@@ -393,6 +393,11 @@ void ov_add_edge(
  * ========================================================= */
 
 /**
+ * ov_sort_set_depths - set depths array for ancestry sorting.
+ */
+void ov_sort_set_depths(const int8_t *depths);
+
+/**
  * ov_sort_streams - sort streams array in-place.
  * @model: model whose streams to sort
  * @key:   0=name, 1=type, 2=size, 3=Hz, 4=inode, 5=count

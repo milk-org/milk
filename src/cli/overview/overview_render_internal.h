@@ -44,13 +44,18 @@ typedef struct
     uint64_t proc_writes[OV_PROC_WORDS];
     uint32_t fps_param_mask[OV_MAX_FPS];
     pid_t    sel_pid;
+
+    /** Signed BFS depth for each stream:
+     *  negative = upstream (ancestor),
+     *  positive = downstream (descendant),
+     *  0 = not in lineage (or is the root). */
+    int8_t   stream_depth[OV_MAX_STREAMS];
 } OV_RELATED;
 
 /* ---- Shared render utilities ---- */
 
-void render_pad_spaces(
-    int chars_written,
-    int panel_width);
+void render_pad_spaces(int chars_written, int panel_width);
+int ov_render_header_text(const char *text, int hs, int max_vis_width);
 
 void render_scroll_indicators(
     OV_RECT  r,
@@ -138,7 +143,7 @@ static inline int sort_col_label(
 {
     if (col_key == cur_key)
     {
-        snprintf(buf, bufsz, "%s%s",
+        snprintf(buf, bufsz, "\x01%s%s\x02",
                  label,
                  desc ? "\xe2\x96\xbc"
                       : "\xe2\x96\xb2");

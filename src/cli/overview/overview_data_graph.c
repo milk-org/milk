@@ -208,9 +208,15 @@ void ov_build_graph(OV_MODEL *model)
             }
 
             /* Find the process that writes
-             * this stream */
+             * this stream.
+             * Only proctrace[0] is the direct
+             * writer; entries [1..N] are upstream
+             * triggers in the causal chain and
+             * must NOT get write-edges. */
             int pi = ov_find_proc_by_pid(model, wpid);
-            if (pi >= 0 && model->procs[pi].node_idx >= 0)
+            if (t == 0
+                && pi >= 0
+                && model->procs[pi].node_idx >= 0)
             {
                 /* proc → stream (writes) */
                 ov_add_edge(

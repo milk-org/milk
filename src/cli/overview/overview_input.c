@@ -493,9 +493,9 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
     {
         switch (lay->focus)
         {
-        case OV_FOCUS_STREAMS: lay->sort_key_stream = (lay->sort_key_stream + 1) % 7; break;
-        case OV_FOCUS_PROCS:   lay->sort_key_proc = (lay->sort_key_proc + 1) % 5;   break;
-        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 1) % 3;     break;
+        case OV_FOCUS_STREAMS: lay->sort_key_stream = (lay->sort_key_stream + 1) % 8; break;
+        case OV_FOCUS_PROCS:   lay->sort_key_proc = (lay->sort_key_proc + 1) % 6;   break;
+        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 1) % 4;     break;
         default: break;
         }
         lay->sort_pending = 1;
@@ -506,9 +506,9 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
     {
         switch (lay->focus)
         {
-        case OV_FOCUS_STREAMS: lay->sort_key_stream = (lay->sort_key_stream + 6) % 7; break;
-        case OV_FOCUS_PROCS:   lay->sort_key_proc = (lay->sort_key_proc + 4) % 5;   break;
-        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 2) % 3;     break;
+        case OV_FOCUS_STREAMS: lay->sort_key_stream = (lay->sort_key_stream + 7) % 8; break;
+        case OV_FOCUS_PROCS:   lay->sort_key_proc = (lay->sort_key_proc + 5) % 6;   break;
+        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 3) % 4;     break;
         default: break;
         }
         lay->sort_pending = 1;
@@ -535,7 +535,32 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
-    if (key == 'k' || key == 'K' || key == 'x')
+    if (key == ctrl('e') && lay->ctrl_mode)
+    {
+        if (lay->focus == OV_FOCUS_FPS
+            && lay->sel_fps >= 0
+            && lay->sel_fps < m->nb_fps)
+        {
+            ov_ctrl_fps_remove(&m->fps[lay->sel_fps], log);
+            return 1;
+        }
+        else if (lay->focus == OV_FOCUS_PROCS
+                 && lay->sel_proc >= 0
+                 && lay->sel_proc < m->nb_procs)
+        {
+            ov_ctrl_proc_remove(&m->procs[lay->sel_proc], log);
+            return 1;
+        }
+        else if (lay->focus == OV_FOCUS_STREAMS
+                 && lay->sel_stream >= 0
+                 && lay->sel_stream < m->nb_streams)
+        {
+            ov_ctrl_stream_delete(&m->streams[lay->sel_stream], log);
+            return 1;
+        }
+    }
+
+    if (key == 'k' || key == 'K')
     {
         if (lay->focus == OV_FOCUS_PROCS
             && lay->sel_proc >= 0
@@ -550,10 +575,6 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             else if (key == 'K')
             {
                 ov_ctrl_proc_sigkill(p, log);
-            }
-            else if (key == 'x')
-            {
-                ov_ctrl_proc_pause_toggle(p, log);
             }
             return 1;
         }
@@ -633,25 +654,9 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_ctrl_fps_conf_toggle(f, log);
                 return 1;
             }
-            if (key == 'e')
-            {
-                ov_ctrl_fps_remove(f, log);
-                return 1;
-            }
         }
 
-        if (lay->focus == OV_FOCUS_PROCS
-            && lay->sel_proc >= 0
-            && lay->sel_proc < m->nb_procs)
-        {
-            const OV_PROC *p =
-                &m->procs[lay->sel_proc];
-            if (key == 'e')
-            {
-                ov_ctrl_proc_remove(p, log);
-                return 1;
-            }
-        }
+
 
         if (lay->focus == OV_FOCUS_STREAMS
             && lay->sel_stream >= 0
@@ -659,8 +664,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             const OV_STREAM *s =
                 &m->streams[lay->sel_stream];
-            if (key == 'd'
-                || key == OV_KEY_DEL)
+            if (key == OV_KEY_DEL)
             {
                 ov_ctrl_stream_delete(s, log);
                 return 1;
@@ -776,7 +780,7 @@ int ov_handle_key(
     }
 
     /* Quit */
-    if (key == 'q')
+    if (key == 'q' || key == 'x')
     {
         return 1;
     }
@@ -808,7 +812,7 @@ int ov_handle_key(
                        OV_CMDLOG_INFO,
                        "Control mode %s",
                        lay->ctrl_mode
-                       ? "ON" : "OFF");
+                       ? "✅ ON" : "❌ OFF");
         return 0;
     }
 
@@ -933,5 +937,10 @@ int ov_handle_key(
         return 0;
     }
 
+    if (key >= 32 && key < 127) {
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key: '%c' (code %d)", key, key);
+    } else {
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key code: %d", key);
+    }
     return 0;
 }

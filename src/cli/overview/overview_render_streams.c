@@ -69,7 +69,7 @@ void ov_render_streams_panel(
 
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_printf(" ");
+    ov_buf_printf("    ");
     ov_theme_fg(OV_FG_DIM);
     
     char htext[300];
@@ -80,7 +80,8 @@ void ov_render_streams_panel(
         char c_name[20], c_typ[10], c_size[16];
         char c_hz[10], c_mbps[12], c_ino[16], c_cnt[16];
         int w_name = sort_col_label(c_name, sizeof(c_name),
-                       "NAME", 0, sk, sd, 14);
+                       (sk == 7) ? "ANCESTRY" : "NAME",
+                       (sk == 7) ? 7 : 0, sk, sd, 14);
         int w_typ = sort_col_label(c_typ, sizeof(c_typ),
                        "TYP", 1, sk, sd, 4);
         int w_size = sort_col_label(c_size, sizeof(c_size),
@@ -106,16 +107,198 @@ void ov_render_streams_panel(
     }
     
     {
-        int vis = hlen - hs;
-        if (vis < 0) vis = 0;
-        const char *start_str = htext + hs;
-        if (hs >= hlen) { start_str = ""; vis = 0; }
-        ov_buf_printf("%.*s", vis, start_str);
-        render_pad_spaces(1 + vis, r.width);
+        int vis_width = r.width - 4;
+        if (vis_width < 0) vis_width = 0;
+        int printed = ov_render_header_text(htext, hs, vis_width);
+        render_pad_spaces(4 + printed, r.width);
     }
 
     int max_rows = r.height - 3;
     int start = lay->scroll_stream;
+
+    /* Compute lineage depths when a stream
+     * is selected.  sel_stream is a position in
+     * the filtered list; convert via filt_idx[]
+     * to obtain the model-level stream index. */
+    int8_t local_depth[OV_MAX_STREAMS];
+    memset(local_depth, 0, sizeof(local_depth));
+    {
+        int eff_sel = -1;
+        if (lay->freeze
+            && lay->freeze_focus
+               == OV_FOCUS_STREAMS
+            && lay->freeze_sel_stream >= 0
+            && lay->freeze_sel_stream < filt_n)
+        {
+            eff_sel = lay->freeze_sel_stream;
+        }
+        else if (lay->focus == OV_FOCUS_STREAMS
+                 && lay->sel_stream >= 0
+                 && lay->sel_stream < filt_n)
+        {
+            eff_sel = lay->sel_stream;
+        }
+        if (eff_sel >= 0)
+        {
+            int root_si = filt_idx[eff_sel];
+            SG_LINEAGE lin;
+            sg_compute_lineage(
+                m, root_si,
+                SG_MODE_FULL, &lin);
+
+            for (int a = 0;
+                 a < lin.nb_ancestors; a++)
+            {
+                int si =
+                    lin.ancestors[a].stream_idx;
+                if (si >= 0
+                    && si < m->nb_streams)
+                {
+                    int d =
+                        lin.ancestors[a].depth;
+                    if (d > 127) { d = 127; }
+                    local_depth[si] =
+                        (int8_t)(-d);
+                }
+            }
+            for (int di = 0;
+                 di < lin.nb_descendants; di++)
+            {
+                int si =
+                    lin.descendants[di]
+                        .stream_idx;
+                if (si >= 0
+                    && si < m->nb_streams)
+                {
+                    int dp =
+                        lin.descendants[di]
+                            .depth;
+                    if (dp > 127) { dp = 127; }
+                    local_depth[si] =
+                        (int8_t) dp;
+                }
+            }
+            /* DEBUG: dump to file once */
+            {
+                static int dbg_done = 0;
+                if (!dbg_done)
+                {
+                    dbg_done = 1;
+                    FILE *df = fopen(
+                        "/tmp/lineage_debug.txt",
+                        "w");
+                    if (df)
+                    {
+                        fprintf(df,
+                            "root_si=%d name=%s "
+                            "node=%d\n",
+                            root_si,
+                            m->streams[root_si]
+                                .name,
+                            m->streams[root_si]
+                                .node_idx);
+                        fprintf(df,
+                            "nb_edges=%d "
+                            "nb_nodes=%d\n",
+                            m->nb_edges,
+                            m->nb_nodes);
+                        const char *etnames[] = {
+                            "PROC_WRITES_STREAM",
+                            "STREAM_TRIGGERS_PROC",
+                            "FPS_RUNS_PROC",
+                            "FPS_INPUT_STREAM",
+                            "FPS_OUTPUT_STREAM",
+                            "PROC_TRIGGER_STREAM",
+                            "STREAM_READ_BY_PROC"
+                        };
+                        for (int ei = 0;
+                             ei < m->nb_edges;
+                             ei++)
+                        {
+                            const OV_EDGE *e =
+                                &m->edges[ei];
+                            const char *sn =
+                                (e->src_node >= 0
+                                 && e->src_node
+                                    < m->nb_nodes)
+                                ? m->nodes[
+                                    e->src_node]
+                                    .name
+                                : "??";
+                            const char *tn =
+                                (e->tgt_node >= 0
+                                 && e->tgt_node
+                                    < m->nb_nodes)
+                                ? m->nodes[
+                                    e->tgt_node]
+                                    .name
+                                : "??";
+                            const char *et =
+                                (e->type <= 6)
+                                ? etnames[e->type]
+                                : "??";
+                            fprintf(df,
+                                "EDGE[%d] "
+                                "%-20s -> "
+                                "%-20s %s\n",
+                                ei, sn, tn, et);
+                        }
+                        fprintf(df,
+                            "\nAncestors: %d\n",
+                            lin.nb_ancestors);
+                        for (int a = 0;
+                             a < lin.nb_ancestors;
+                             a++)
+                        {
+                            fprintf(df,
+                                "  anc[%d] "
+                                "depth=%d "
+                                "si=%d name=%s "
+                                "via=%s\n",
+                                a,
+                                lin.ancestors[a]
+                                    .depth,
+                                lin.ancestors[a]
+                                    .stream_idx,
+                                m->streams[
+                                    lin.ancestors[a]
+                                    .stream_idx]
+                                    .name,
+                                lin.ancestors[a]
+                                    .via_name);
+                        }
+                        fprintf(df,
+                            "\nDescendants: %d\n",
+                            lin.nb_descendants);
+                        for (int di = 0;
+                             di < lin
+                                 .nb_descendants;
+                             di++)
+                        {
+                            fprintf(df,
+                                "  desc[%d] "
+                                "depth=%d "
+                                "si=%d name=%s "
+                                "via=%s\n",
+                                di,
+                                lin.descendants[di]
+                                    .depth,
+                                lin.descendants[di]
+                                    .stream_idx,
+                                m->streams[
+                                    lin.descendants
+                                    [di]
+                                    .stream_idx]
+                                    .name,
+                                lin.descendants[di]
+                                    .via_name);
+                        }
+                        fclose(df);
+                    }
+                }
+            }
+        }
+    }
 
     for (int i = 0; i < max_rows; i++)
     {
@@ -145,17 +328,11 @@ void ov_render_streams_panel(
                          : OV_BG_PANEL;
 
             int hs_rem = hs;
-            int printed = 1;
+            int printed = 4;
             int avail = r.width - 2;
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
-            if (s->update_hz > 0.1) {
-                ov_theme_fg(OV_FG_ACTIVE);
-                ov_buf_printf("●");
-            } else {
-                ov_buf_printf(" ");
-            }
 
             #define STRM_FIELD(color, fmt, ...)        \
             do {                                       \
@@ -203,9 +380,36 @@ void ov_render_streams_panel(
             pid_t _spid = (rel != NULL)
                         ? rel->sel_pid : 0;
 
-            ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
+            /* Lineage depth badge: ←N or N→ */
+            int8_t sdepth = local_depth[si];
+            if (sdepth != 0 && !is_sel && !is_frozen)
+            {
+                int abs_d = sdepth < 0 ? -sdepth : sdepth;
+                if (abs_d > 99) abs_d = 99;
+                ov_theme_fg(OV_FG_WARN);
+                if (sdepth < 0) {
+                    if (abs_d < 10) ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
+                    else ov_buf_printf("\xe2\x97\x80%d ", abs_d);
+                } else {
+                    if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
+                    else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
+                }
+            }
+            else
+            {
+                if (s->update_hz > 0.1) {
+                    ov_theme_fg(OV_FG_ACTIVE);
+                    ov_buf_printf("\xe2\x97\x8f   ");
+                } else {
+                    ov_buf_printf("    ");
+                }
+            }
+
+            ov_rgb_t base_color = s->active
+                ? OV_FG_STREAM : OV_FG_DIM;
             
-            STRM_FIELD(base_color, "%-14.14s ", s->name);
+            STRM_FIELD(base_color,
+                "%-14.14s ", s->name);
             STRM_FIELD(OV_FG_MUTED, "%4s ", render_dtype(s->datatype));
             
             STRM_FIELD(OV_FG_TEXT, "%11s ", s->size_str);
@@ -302,43 +506,92 @@ void ov_render_streams_panel(
 
     /* Total MB/s footer on bottom border */
     {
-        double total_bps = 0.0;
+        /* Totals over ALL streams */
+        double total_all_bps = 0.0;
+        for (int i = 0; i < m->nb_streams; i++)
+        {
+            const OV_STREAM *s = &m->streams[i];
+            if (s->update_hz > 0.1)
+            {
+                total_all_bps += s->update_hz
+                    * (double) s->nelement
+                    * dtype_bytesize(s->datatype);
+            }
+        }
+
+        /* Totals over filtered subset */
+        double total_flt_bps = 0.0;
         for (int i = 0; i < filt_n; i++)
         {
             int si = filt_idx[i];
             const OV_STREAM *s = &m->streams[si];
             if (s->update_hz > 0.1)
             {
-                total_bps += s->update_hz
+                total_flt_bps += s->update_hz
                     * (double) s->nelement
                     * dtype_bytesize(s->datatype);
             }
         }
-        double total_mb = total_bps
-            / (1024.0 * 1024.0);
-        char tbuf[40];
-        if (total_mb >= 1000.0)
+
+        int  brow = r.row + r.height - 1;
+        int  is_subset =
+            (filt_n < m->nb_streams);
+
+        /* Right side: total (always) */
+        double total_all_mb =
+            total_all_bps / (1024.0 * 1024.0);
+        char rbuf[40];
+        if (total_all_mb >= 1000.0)
         {
-            snprintf(tbuf, sizeof(tbuf),
+            snprintf(rbuf, sizeof(rbuf),
                 " %.1f GB/s ",
-                total_mb / 1024.0);
+                total_all_mb / 1024.0);
         }
         else
         {
-            snprintf(tbuf, sizeof(tbuf),
+            snprintf(rbuf, sizeof(rbuf),
                 " %.1f MB/s ",
-                total_mb);
+                total_all_mb);
         }
-        int tlen = (int) strlen(tbuf);
-        int brow = r.row + r.height - 1;
-        int bcol = r.col + r.width
-            - tlen - 2;
-        if (bcol > r.col + 1)
+        int rlen = (int) strlen(rbuf);
+        int rcol = r.col + r.width - rlen - 2;
+        if (rcol > r.col + 1)
         {
-            ov_buf_pos(brow, bcol);
+            ov_buf_pos(brow, rcol);
             ov_theme_fg(OV_FG_ACTIVE);
             ov_theme_bg(OV_BG_PANEL);
-            ov_buf_printf("%s", tbuf);
+            ov_buf_printf("%s", rbuf);
+        }
+
+        /* Left side: filtered (only when
+         * filter is active) */
+        if (is_subset)
+        {
+            double flt_mb =
+                total_flt_bps
+                / (1024.0 * 1024.0);
+            char lbuf[40];
+            if (flt_mb >= 1000.0)
+            {
+                snprintf(lbuf, sizeof(lbuf),
+                    " %.1f GB/s ",
+                    flt_mb / 1024.0);
+            }
+            else
+            {
+                snprintf(lbuf, sizeof(lbuf),
+                    " %.1f MB/s ",
+                    flt_mb);
+            }
+            int llen = (int) strlen(lbuf);
+            int lcol = r.col + 2;
+            if (lcol + llen < rcol)
+            {
+                ov_buf_pos(brow, lcol);
+                ov_theme_fg(OV_FG_WARN);
+                ov_theme_bg(OV_BG_PANEL);
+                ov_buf_printf("%s", lbuf);
+            }
         }
     }
 
