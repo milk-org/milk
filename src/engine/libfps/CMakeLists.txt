@@ -219,7 +219,13 @@ install(TARGETS milk-fpsCTRL DESTINATION bin)
 add_executable(milk-fpsexec-help milk-fpsexec-help.c)
 install(TARGETS milk-fpsexec-help DESTINATION bin)
 
-install(PROGRAMS scripts/milk-fpsexec-list DESTINATION bin)
+# milk-fpsexec-list: C replacement for bash script
+add_executable(milk-fpsexec-list milk-fpsexec-list.c)
+target_include_directories(milk-fpsexec-list PRIVATE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+install(TARGETS milk-fpsexec-list DESTINATION bin)
+
 install(PROGRAMS scripts/milk-demopipeline DESTINATION bin)
 install(PROGRAMS scripts/milk-latency-audit DESTINATION bin)
 
