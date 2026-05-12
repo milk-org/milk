@@ -119,13 +119,13 @@ void ov_compute_related(
         if (e->src_node == sel_node)
         {
             other      = e->tgt_node;
-            is_write   = (e->type == OV_EDGE_PROC_WRITES_STREAM);
+            is_write   = (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
             fps_is_src = 0; /* FPS is tgt when stream→FPS */
         }
         else if (e->tgt_node == sel_node)
         {
             other      = e->src_node;
-            is_write   = 0;
+            is_write   = (e->type == OV_EDGE_PROC_WRITES_STREAM) || (e->type == OV_EDGE_FPS_OUTPUT_STREAM);
             fps_is_src = 1; /* FPS is src when FPS→stream */
         }
 
@@ -139,12 +139,20 @@ void ov_compute_related(
             && n->index < m->nb_streams)
         {
             bset(out->streams, n->index);
+            if (is_write)
+            {
+                bset(out->stream_written, n->index);
+            }
         }
         else if (n->type == OV_NODE_FPS && n->index >= 0
                  && n->index < m->nb_fps)
         {
             int fi = n->index;
             bset(out->fps, fi);
+            if (is_write)
+            {
+                bset(out->fps_writes, fi);
+            }
 
             /* Find all stream params of this FPS that match sel_node.
              * Only meaningful when the selection is a stream.

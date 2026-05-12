@@ -523,9 +523,10 @@ void sg_compute_node_depths(
     {
         sg_bfs_item_t cur = queue[qhead++];
 
-        if (cur.node != start_node && cur.depth > 0)
+        if (cur.node != start_node)
         {
             int d = cur.depth;
+            if (m->nodes[cur.node].type != start_type) d++;
             if (d > 127) d = 127;
             if (node_depths[cur.node] == 127)
                 node_depths[cur.node] = (int8_t)d;
@@ -586,9 +587,10 @@ void sg_compute_node_depths(
     {
         sg_bfs_item_t cur = queue[qhead++];
 
-        if (cur.node != start_node && cur.depth > 0)
+        if (cur.node != start_node)
         {
             int d = cur.depth;
+            if (m->nodes[cur.node].type != start_type) d++;
             if (d > 127) d = 127;
             if (node_depths[cur.node] == 127)
                 node_depths[cur.node] = (int8_t)(-d);
