@@ -40,42 +40,28 @@ static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, "interactive stream monitor TUI", mh_color);
     milk_help_section("Usage", mh_color);
-    printf("  %s%s%s [%soptions%s]\n\n",
-           mh_color ? MH_CMD : "", progname, mh_color ? MH_RST : "",
-           mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
+    printf("  $ %s [%s]\n\n", progname, MH(MH_OPT, "options"));
 
     milk_help_section("Description", mh_color);
     printf("  Launches the interactive Terminal User Interface (TUI) for monitoring and\n"
            "  managing shared memory streams in real-time.\n\n");
 
     milk_help_section("Options", mh_color);
-    printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-d DIR",
-           mh_color ? MH_RST : "", "Override SHM directory (default: /dev/shm)");
-    printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-w, --wave",
-           mh_color ? MH_RST : "", "Enable wave background animation");
-    printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-h, --help",
-           mh_color ? MH_RST : "", "Show this help and exit");
-    printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-h1, --help-oneline",
-           mh_color ? MH_RST : "", "One-line description and exit");
-    printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-h2, --help-description",
-           mh_color ? MH_RST : "", "Verbose description and exit");
-    printf("  %s%-25s%s %s\n\n",
-           mh_color ? MH_OPT : "", "-hm, --help-mono",
-           mh_color ? MH_RST : "", "Full help, no ANSI color");
+    printf("  %s %s                   Override SHM directory (default: /dev/shm)\n", MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
+    printf("  %s             Enable wave background animation\n", MH(MH_OPT, "-w, --wave"));
+    printf("  %s             Show this help and exit\n", MH(MH_OPT, "-h, --help"));
+    printf("  %s             One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
+    printf("  %s             Verbose description and exit\n", MH(MH_OPT, "-h2, --help-description"));
+    printf("  %s             Full help, no ANSI color\n\n", MH(MH_OPT, "-hm, --help-mono"));
 
     milk_help_section("Interactive Commands", mh_color);
-    printf("  %s%-12s%s %s\n", mh_color ? MH_CMD : "", "x", mh_color ? MH_RST : "", "Exit");
-    printf("  %s%-12s%s %s\n", mh_color ? MH_CMD : "", "h", mh_color ? MH_RST : "", "Help screen");
-    printf("  %s%-12s%s %s\n", mh_color ? MH_CMD : "", "F2-F6", mh_color ? MH_RST : "", "Switch tabs");
-    printf("  %s%-12s%s %s\n", mh_color ? MH_CMD : "", "UP/DOWN", mh_color ? MH_RST : "", "Navigate streams");
-    printf("  %s%-12s%s %s\n", mh_color ? MH_CMD : "", "CTRL+e", mh_color ? MH_RST : "", "Erase selected stream");
-    printf("  %s%-12s%s %s\n", mh_color ? MH_CMD : "", "+/-", mh_color ? MH_RST : "", "Increase/decrease display rate");
-    printf("  %s%-12s%s %s\n\n", mh_color ? MH_CMD : "", "{/}", mh_color ? MH_RST : "", "Decrease/increase scan rate");
+    printf("  %s                               Exit\n", MH(MH_CMD, "x"));
+    printf("  %s                               Help screen\n", MH(MH_CMD, "h"));
+    printf("  %s                           Switch tabs\n", MH(MH_CMD, "F2-F6"));
+    printf("  %s                         Navigate streams\n", MH(MH_CMD, "UP/DOWN"));
+    printf("  %s                          Erase selected stream\n", MH(MH_CMD, "CTRL+e"));
+    printf("  %s                             Increase/decrease display rate\n", MH(MH_CMD, "+/-"));
+    printf("  %s                             Decrease/increase scan rate\n\n", MH(MH_CMD, "{/}"));
 
     const char *see_also[] = {
         "milk-stream-info", "milk-stream-list", "milk-streamCTRL-cli"

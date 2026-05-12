@@ -125,23 +125,35 @@ static void print_help(const char *prog, int mh_color)
 
     milk_help_section("Description", mh_color);
     printf("  milkCTRL is the unified system dashboard TUI for the milk framework.\n"
-           "  It provides a consolidated view of all shared-memory components,\n"
-           "  including data streams, Function Processing Systems (FPS), and\n"
-           "  active processes.\n"
+           "  It provides a comprehensive, consolidated view of all shared-memory\n"
+           "  components across the machine, including data streams, Function\n"
+           "  Processing Systems (FPS), and active managed processes. Designed for\n"
+           "  low-latency, real-time environments, it allows operators to trace\n"
+           "  entire dataflow pipelines and diagnose bottlenecks dynamically.\n"
            "\n"
            "  Key capabilities include:\n"
-           "  - %s: Visualizes dataflow lineage between streams\n"
-           "    and the processes reading/writing them.\n"
-           "  - %s: Monitors cache misses (L1D, LLC, dTLB) per\n"
-           "    process iteration using Linux perf counters.\n"
-           "  - %s: Control execution states (pause, step, kill)\n"
-           "    and clean up zombie streams or stale memory segments safely.\n"
+           "  - %s: Visually traces dataflow lineage between streams\n"
+           "    and the specific processes reading or writing to them.\n"
+           "  - %s: Monitors cache misses (L1D, LLC, dTLB),\n"
+           "    instructions per cycle, and branching via Linux perf counters.\n"
+           "  - %s: Manipulates execution states (pause, step, kill)\n"
+           "    and cleans up zombie streams or stale memory segments safely.\n"
            "  - %s: Real-time metrics on process CPU usage, memory\n"
-           "    (RSS), context switching, and pipeline throughput.\n\n",
+           "    (RSS), context switching, sleep/run states, and pipeline throughput.\n\n",
            MH(MH_BOLD, "Live Pipeline Topology"),
            MH(MH_BOLD, "Hardware Diagnostics"),
            MH(MH_BOLD, "Process Orchestration"),
            MH(MH_BOLD, "System Telemetry"));
+
+    milk_help_section("Dashboard Layout", mh_color);
+    printf("  The TUI is organized into specialized views (tabs), selectable via F2-F6:\n"
+           "  - %s (F2): All panels (Streams, Processes, FPS) sharing the screen\n"
+           "  - %s (F3): Dedicated full-screen view of Streams\n"
+           "  - %s (F4): Dedicated full-screen view of Processes\n"
+           "  - %s  (F5): Dedicated full-screen view of FPS modules\n"
+           "  - %s (F6): Visual node graph showing data flow and lineage\n\n",
+           MH(MH_BOLD, "DASH"), MH(MH_BOLD, "STRM"), MH(MH_BOLD, "PROC"),
+           MH(MH_BOLD, "FPS"), MH(MH_BOLD, "CONN"));
 
     milk_help_section("Options", mh_color);
     printf("  %s                      Show this help\n", MH(MH_OPT, "-h, --help"));
@@ -150,47 +162,45 @@ static void print_help(const char *prog, int mh_color)
     printf("  %s %s                         Override SHM directory\n\n", MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
 
     milk_help_section("Navigation", mh_color);
-    printf("  %s, %s             Switch views\n", MH(MH_OPT, "F2-F6"), MH(MH_OPT, "^Left/^Right"));
-    printf("  %s                             Cycle panel focus\n", MH(MH_OPT, "TAB"));
-    printf("  %s                           Navigate list\n", MH(MH_OPT, "UP/DN"));
-    printf("  %s                      Panel focus / scroll\n", MH(MH_OPT, "Left/Right"));
-    printf("  %s                         Scroll page\n", MH(MH_OPT, "PgUp/Dn"));
-    printf("  %s                        Jump to top/bottom\n\n", MH(MH_OPT, "Home/End"));
+    printf("  %s, %s             Switch views (Dashboard, Streams, Procs, FPS, Graph)\n", MH(MH_OPT, "F2-F6"), MH(MH_OPT, "^Left/^Right"));
+    printf("  %s                             Cycle focus between active panels\n", MH(MH_OPT, "TAB"));
+    printf("  %s                           Navigate rows in focused list\n", MH(MH_OPT, "UP/DN"));
+    printf("  %s                       Ancestry navigation (jump to prev/next connected node)\n", MH(MH_OPT, "SHIFT+UP/DN"));
+    printf("  %s                      Scroll panel horizontally (or cycle focus on F2)\n", MH(MH_OPT, "Left/Right"));
+    printf("  %s                         Scroll page up/down\n", MH(MH_OPT, "PgUp/Dn"));
+    printf("  %s                        Jump to top/bottom of list\n", MH(MH_OPT, "Home/End"));
+    printf("  %s                               Filter (regex search) in focused panel\n\n", MH(MH_OPT, "/"));
 
     milk_help_section("Sorting", mh_color);
-    printf("  %s, %s                        Change sort column / mode\n", MH(MH_OPT, "</>"), MH(MH_OPT, "S/s"));
-    printf("  %s                               Toggle sort direction\n\n", MH(MH_OPT, "["));
+    printf("  %s, %s                        Cycle sort column backward/forward\n", MH(MH_OPT, "<"), MH(MH_OPT, ">/]"));
+    printf("  %s                               Sort by Name\n", MH(MH_OPT, "s"));
+    printf("  %s                               Sort by Frequency/Status\n", MH(MH_OPT, "S"));
+    printf("  %s                               Sort by Ancestry/Topology\n", MH(MH_OPT, "A"));
+    printf("  %s                               Toggle sort direction (Ascending/Descending)\n\n", MH(MH_OPT, "["));
 
-    milk_help_section("Display", mh_color);
-    printf("  %s                             Adjust scan rate\n", MH(MH_OPT, "+/-"));
-    printf("  %s                               Toggle detail pane\n", MH(MH_OPT, "D"));
-    printf("  %s                               Toggle lineage mode\n", MH(MH_OPT, "L"));
-    printf("  %s                               Pause/resume display\n", MH(MH_OPT, "p"));
-    printf("  %s                           Freeze selection highlight\n", MH(MH_OPT, "SPACE"));
-    printf("  %s                               Filter (regex search)\n", MH(MH_OPT, "/"));
-    printf("  %s                               Export snapshot to file\n", MH(MH_OPT, "W"));
-    printf("  %s                               Toggle command log panel\n", MH(MH_OPT, "G"));
-    printf("  %s                               Help overlay\n\n", MH(MH_OPT, "h"));
+    milk_help_section("Display & Layout", mh_color);
+    printf("  %s                             Adjust scan rate (increase/decrease speed)\n", MH(MH_OPT, "+/-"));
+    printf("  %s                         Toggle detail pane / Graph jump (on selected item)\n", MH(MH_OPT, "ENTER/D"));
+    printf("  %s                               Cycle graph lineage mode (on Graph view)\n", MH(MH_OPT, "L"));
+    printf("  %s                               Pause/resume display updates\n", MH(MH_OPT, "F"));
+    printf("  %s                           Freeze selection highlight (prevent jumping)\n", MH(MH_OPT, "SPACE"));
+    printf("  %s                               Export current snapshot to file\n", MH(MH_OPT, "W"));
+    printf("  %s                               Toggle command log panel visibility\n", MH(MH_OPT, "G"));
+    printf("  %s                               Spawn interactive CLI diagnostic tool\n", MH(MH_OPT, "i"));
+    printf("  %s                               Show help overlay\n\n", MH(MH_OPT, "h"));
 
-    milk_help_section("Control mode (c to toggle)", mh_color);
-    printf("  FPS:   %s=run  %s=conf  %s=remove\n", MH(MH_OPT, "r"), MH(MH_OPT, "s"), MH(MH_OPT, "e"));
-    printf("  PROCS: %s=remove selected entry\n", MH(MH_OPT, "e"));
-    printf("  STRM:  %s=delete stream\n\n", MH(MH_OPT, "d"));
-
-    milk_help_section("Process signals (PROCS & FPS panels)", mh_color);
-    printf("  %s                               Graceful kill (SIGTERM)\n", MH(MH_OPT, "k"));
-    printf("  %s                               Immediate kill (SIGKILL)\n", MH(MH_OPT, "K"));
-    printf("  %s                               Pause/resume (SIGSTOP/SIGCONT)\n", MH(MH_OPT, "x"));
-    printf("  %s                               Cleanup dead/stopped procs (PROCS panel)\n\n", MH(MH_OPT, "C"));
-
-    milk_help_section("Detail View (ENTER or D) and Inspection (i)", mh_color);
-    printf("  %s                         Toggles detail pane for selected item\n", MH(MH_OPT, "ENTER/D"));
-    printf("  %s                               Spawn interactive CLI diagnostic tool\n\n", MH(MH_OPT, "i"));
+    milk_help_section("Control Mode Actions (press 'c' to toggle mode)", mh_color);
+    printf("  Global: %s=Delete selected (STRM/FPS/PROC)\n", MH(MH_OPT, "CTRL+e"));
+    printf("  STRM:   %s=Delete stream\n", MH(MH_OPT, "DEL"));
+    printf("  PROCS:  %s=Kill %s=SIGKILL %s=Ctrl(-1) %s=Ctrl(2) %s=Ctrl(3) %s=Zero %s=Cleanup\n", 
+           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "p"), MH(MH_OPT, "^s"), MH(MH_OPT, "e"), MH(MH_OPT, "z"), MH(MH_OPT, "C"));
+    printf("  FPS:    %s=SIGTERM %s=SIGKILL %s=Pause %s=Run %s=Conf\n\n", 
+           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "x"), MH(MH_OPT, "r"), MH(MH_OPT, "s"));
 
     milk_help_section("Columns", mh_color);
-    printf("  STREAMS: MB/s throughput, total in panel footer\n");
-    printf("  PROCS:   DUTY%% (exec/iter), CPU%%, MEM (RSS)\n");
-    printf("  FPS:     MEM (RSS)\n\n");
+    printf("  STREAMS: NAME/ANCESTRY, TYP, SIZE, Hz, MB/s, INODE, OWNER, COUNT, SEMS, WPID, RPID\n");
+    printf("  PROCS:   NAME/ANCESTRY, PID, STAT, Hz, TRG, trig-strm, exec, DUTY, LOOPCNT, MEM, MISSED, PRIO\n");
+    printf("  FPS:     NAME/ANCESTRY, CPID, RPID, STR, MEM, DESCRIPTION, STATUS\n\n");
 
     milk_help_section("Mouse", mh_color);
     printf("  Click=select  DblClick=detail\n");
