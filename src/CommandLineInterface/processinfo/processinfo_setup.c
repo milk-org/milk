@@ -2,6 +2,7 @@
 
 #include "CLIcore.h"
 #include <processtools.h>
+#include "COREMOD_tools/mvprocCPUset.h"
 
 
 // High level processinfo function
@@ -96,24 +97,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
 
     if(processinfo->RT_priority > -1)
     {
-        struct sched_param schedpar;
-        // ===========================
-        // Set realtime priority
-        // ===========================
-        schedpar.sched_priority = processinfo->RT_priority;
-
-        if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
-        sched_setscheduler(
-            0,
-            SCHED_FIFO,
-            &schedpar);              //other option is SCHED_RR, might be faster
-        if(seteuid(data.ruid) != 0)  //Go back to normal privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+        COREMOD_TOOLS_mvProcRTPrio(processinfo->RT_priority);
     }
 
     return RETURN_SUCCESS;
