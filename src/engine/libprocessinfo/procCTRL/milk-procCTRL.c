@@ -13,78 +13,90 @@
 #include "processinfo.h"
 #include "procCTRL_TUI.h"
 
+#include "milk_help.h"
+
 // Prototypes for functions defined in other procCTRL files
 errno_t processinfo_CTRLscreen();
 
-void print_help(const char *progname) {
-    printf("Usage: %s [options]\n", progname);
-    printf("\n");
-    printf("MILK Process Control Tool (procCTRL)\n");
-    printf("====================================\n");
-    printf("This tool monitors and controls real-time loop processes in the MILK environment.\n");
-    printf("It provides a Text User Interface (TUI) to inspect process status, CPU usage,\n");
-    printf("scheduling, and shared memory links. It also allows sending control signals\n");
-    printf("to processes (pause, step, exit) and managing their affinity.\n");
-    printf("\n");
-    printf("  File Operations:\n");
-    printf("    READS:        processinfo.list.shm (Global Process List)\n");
-    printf("                  - Reads PID, name, and active status of all registered processes.\n");
-    printf("    READS/WRITES: proc.<process_name>.<PID>.shm (Process Control Block)\n");
-    printf("                  - Reads detailed status (loopstat), counters, timing, and triggers.\n");
-    printf("                  - Writes control signals (CTRLval) to Pause/Resume/Step/Exit.\n");
-    printf("\n");
-    printf("Options:\n");
-    printf("  -h, --help           Show this help message and exit.\n");
-    printf("  -d, --debug          Enable debug output to stdout (disables TUI).\n");
-    printf("  -c, --check-scan     Check if milk-procCTRL-scan is running and print its PID.\n");
-    printf("\n");
-    printf("Key Bindings (Interactive Mode):\n");
-    printf("--------------------------------\n");
-    printf("  F2  : Switch to CONTROL view (default)\n");
-    printf("  F3  : Switch to RESOURCES view (CPU/Memory)\n");
-    printf("  F4  : Switch to TRIGGERING view\n");
-    printf("  F5  : Switch to TIMING view\n");
-    printf("  F6  : Switch to PROCINFO parameters summary view\n");
-    printf("  h   : Show in-app Help screen\n");
-    printf("  f   : Freeze/Unfreeze display updates\n");
-    printf("  s   : Sort process list by currently highlighted column\n");
-    printf("  S   : Apply current sort criteria to all tabs/modes\n");
-    printf("  + - : Increase/Decrease update frequency\n");
-    printf("  x   : Exit milk-procCTRL\n");
-    printf("\n");
-    printf("Navigation & Column Control:\n");
-    printf("  UP/DN     : Move process selection cursor\n");
-    printf("  LEFT/RGHT : Move column highlight cursor\n");
-    printf("  1-9       : Toggle visibility of specific columns (mode-specific)\n");
-    printf("  CTRL + L/R: Cycle through display modes/tabs\n");
-    printf("\n");
-    printf("Process Control (on selection or current process):\n");
-    printf("  SPACE : Select/Unselect current process\n");
-    printf("  u     : Unselect all processes\n");
-    printf("  p     : Pause/Resume (Writes CTRLval)\n");
-    printf("  CTRL+S: Step (Writes CTRLval)\n");
-    printf("  e     : Request clean exit (Writes CTRLval)\n");
-    printf("  T     : Send SIGTERM\n");
-    printf("  K     : Send SIGKILL\n");
-    printf("  I     : Send SIGINT\n");
-    printf("  r / R : Remove log for selected / all inactive process(es)\n");
-    printf("  z / Z : Zero counter for selected / all process(es)\n");
-    printf("\n");
-    printf("For more details, press 'h' inside the tool.\n");
+static void print_help(const char *progname, int mh_color) {
+    milk_help_banner(progname, "interactive TUI for monitoring and controlling milk processes", mh_color);
+
+    milk_help_section("Usage", mh_color);
+    printf("  $ %s [%s]\n\n", progname, MH(MH_OPT, "options"));
+
+    milk_help_section("Description", mh_color);
+    printf("  This tool monitors and controls real-time loop processes in the MILK environment.\n"
+           "  It provides a Text User Interface (TUI) to inspect process status, CPU usage,\n"
+           "  scheduling, and shared memory links. It also allows sending control signals\n"
+           "  to processes (pause, step, exit) and managing their affinity.\n"
+           "\n"
+           "  File Operations:\n"
+           "  - READS:        %s (Global Process List)\n"
+           "                  Reads PID, name, and active status of all registered processes.\n"
+           "  - READS/WRITES: %s (Process Control Block)\n"
+           "                  Reads detailed status (loopstat), counters, timing, and triggers.\n"
+           "                  Writes control signals (CTRLval) to Pause/Resume/Step/Exit.\n\n",
+           MH(MH_BOLD, "processinfo.list.shm"),
+           MH(MH_BOLD, "proc.<process_name>.<PID>.shm"));
+
+    milk_help_section("Options", mh_color);
+    printf("  %s             Show this help message and exit\n", MH(MH_OPT, "-h, --help"));
+    printf("  %s             One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
+    printf("  %s             Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
+    printf("  %s             Enable debug output to stdout (disables TUI)\n", MH(MH_OPT, "-d, --debug"));
+    printf("  %s             Check if milk-procCTRL-scan is running and print its PID\n", MH(MH_OPT, "-c, --check-scan"));
+    printf("  %s %s                   Log output to specified file\n\n", MH(MH_OPT, "-l, --log"), MH(MH_ARG, "FILE"));
+
+    milk_help_section("Key Bindings (Interactive Mode)", mh_color);
+    printf("  %s                              Switch to CONTROL view (default)\n", MH(MH_CMD, "F2"));
+    printf("  %s                              Switch to RESOURCES view (CPU/Memory)\n", MH(MH_CMD, "F3"));
+    printf("  %s                              Switch to TRIGGERING view\n", MH(MH_CMD, "F4"));
+    printf("  %s                              Switch to TIMING view\n", MH(MH_CMD, "F5"));
+    printf("  %s                              Switch to PROCINFO parameters summary view\n", MH(MH_CMD, "F6"));
+    printf("  %s                               Show in-app Help screen\n", MH(MH_CMD, "h"));
+    printf("  %s                               Freeze/Unfreeze display updates\n", MH(MH_CMD, "f"));
+    printf("  %s                               Sort process list by currently highlighted column\n", MH(MH_CMD, "s"));
+    printf("  %s                               Apply current sort criteria to all tabs/modes\n", MH(MH_CMD, "S"));
+    printf("  %s                             Increase/Decrease update frequency\n", MH(MH_CMD, "+ -"));
+    printf("  %s                               Exit milk-procCTRL\n\n", MH(MH_CMD, "x"));
+
+    milk_help_section("Navigation & Column Control", mh_color);
+    printf("  %s                           Move process selection cursor\n", MH(MH_CMD, "UP/DN"));
+    printf("  %s                       Move column highlight cursor\n", MH(MH_CMD, "LEFT/RGHT"));
+    printf("  %s                             Toggle visibility of specific columns (mode-specific)\n", MH(MH_CMD, "1-9"));
+    printf("  %s                      Cycle through display modes/tabs\n\n", MH(MH_CMD, "CTRL + L/R"));
+
+    milk_help_section("Process Control (on selection or current process)", mh_color);
+    printf("  %s                           Select/Unselect current process\n", MH(MH_CMD, "SPACE"));
+    printf("  %s                               Unselect all processes\n", MH(MH_CMD, "u"));
+    printf("  %s                               Pause/Resume (Writes CTRLval)\n", MH(MH_CMD, "p"));
+    printf("  %s                          Step (Writes CTRLval)\n", MH(MH_CMD, "CTRL+S"));
+    printf("  %s                               Request clean exit (Writes CTRLval)\n", MH(MH_CMD, "e"));
+    printf("  %s                               Send SIGTERM\n", MH(MH_CMD, "T"));
+    printf("  %s                               Send SIGKILL\n", MH(MH_CMD, "K"));
+    printf("  %s                               Send SIGINT\n", MH(MH_CMD, "I"));
+    printf("  %s                           Remove log for selected / all inactive process(es)\n", MH(MH_CMD, "r / R"));
+    printf("  %s                           Zero counter for selected / all process(es)\n\n", MH(MH_CMD, "z / Z"));
 }
 
 int main(int argc, char *argv[])
 {
-    /* Handle -h1/--help-oneline before getopt so "-h1" is not
-     * parsed as "-h" (flag) + "1" (unknown). */
-    if (argc >= 2 &&
-        (strcmp(argv[1], "-h1") == 0 ||
-         strcmp(argv[1], "--help-oneline") == 0))
+    int action = milk_help_init(argc, argv,
+                                "interactive TUI for monitoring and controlling milk processes",
+                                "This tool monitors and controls real-time loop processes in the MILK environment.");
+    
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
-        printf("interactive TUI for monitoring and controlling milk processes\n");
         return 0;
     }
 
+    int mh_color = (action == MH_ACTION_HELP);
+
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_help(argv[0], mh_color);
+        return 0;
+    }
 
     int opt;
 
@@ -104,7 +116,7 @@ int main(int argc, char *argv[])
     while ((opt = getopt_long(argc, argv, "hdcl:", long_options, NULL)) != -1) {
         switch (opt) {
             case 'h':
-                print_help(argv[0]);
+                // Handled by milk_help_init
                 return 0;
             case 'd':
                 procCTRL_debug_mode = 1;
@@ -162,7 +174,7 @@ int main(int argc, char *argv[])
             case '?':
             default:
                 printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
-                print_help(argv[0]);
+                print_help(argv[0], 1);
                 return 1;
         }
     }
