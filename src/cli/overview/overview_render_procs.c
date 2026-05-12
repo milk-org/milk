@@ -154,18 +154,12 @@ static void ov_procs__render_rows(
             int is_write = (has_rel && rel != NULL
                             && bget(rel->proc_writes, pi));
             ov_rgb_t row_bg = OV_BG_PANEL;
-            int use_ul = 0;
-            ov_rgb_t ul_color = {0,0,0};
-
             if (is_sel) {
-                use_ul = 1;
-                ul_color = OV_UL_ACTIVE;
+                row_bg = OV_BG_SELECTED;
             } else if (is_frozen) {
-                use_ul = 1;
-                ul_color = OV_UL_FROZEN;
+                row_bg = OV_BG_FROZEN;
             } else if (is_rel) {
-                use_ul = 1;
-                ul_color = OV_UL_RELATED;
+                row_bg = OV_BG_RELATED;
             }
 
             /* Build the full row text into a local
@@ -313,10 +307,6 @@ static void ov_procs__render_rows(
             /* Reset and reposition */
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
-            if (use_ul) {
-                ov_theme_ul(ul_color);
-                ov_buf_underline();
-            }
             ov_buf_printf(" ");
 
             /* ---- per-field colored output ---- */
@@ -353,10 +343,8 @@ static void ov_procs__render_rows(
 
             /* Re-do per-field with colors */
             ov_buf_pos(row, r.col + 1);
-            ov_theme_bg(row_bg);
-            if (use_ul) {
-                ov_theme_ul(ul_color);
-                ov_buf_underline();
+            if (is_sel || is_frozen || is_rel) {
+                ov_theme_bg(row_bg);
             }
 
             /* Lineage depth badge: ◀N or N▶ */
@@ -371,6 +359,14 @@ static void ov_procs__render_rows(
                 } else {
                     if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
                     else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
+                }
+            } else if (eff_focus == OV_FOCUS_STREAMS && has_rel) {
+                if (is_write) {
+                    ov_theme_fg(OV_FG_ERROR);
+                    ov_buf_printf("\xe2\x96\xb6   ");
+                } else {
+                    ov_theme_fg(OV_FG_ACTIVE);
+                    ov_buf_printf("\xe2\x97\x80   ");
                 }
             } else {
                 if (is_sel || is_frozen) {
@@ -432,10 +428,8 @@ static void ov_procs__render_rows(
                                 ov_buf_printf("%.*s", len_to_print, fb + print_start);
                                 if (is_match[s]) {
                                     ov_buf_reset_attr();
-                                    ov_theme_bg(row_bg);
-                                    if (use_ul) {
-                                        ov_theme_ul(ul_color);
-                                        ov_buf_underline();
+                                    if (is_sel || is_frozen || is_rel) {
+                                        ov_theme_bg(row_bg);
                                     }
                                 }
                             }

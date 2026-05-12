@@ -50,6 +50,7 @@ static const help_line_t HELP[] =
     { "  TAB      Cycle panel focus",           HF_CHILD,   HS_NAV },
     { "  UP/DOWN  Navigate list",               HF_CHILD,   HS_NAV },
     { "  Left/Right  Panel focus / scroll",     HF_CHILD,   HS_NAV },
+    { "  SHIFT+Up/Down Ancestry (Up/Downstream)", HF_CHILD,   HS_NAV },
     { "  PgUp/Dn  Scroll page",                 HF_CHILD,   HS_NAV },
     { "  Home/End  Jump to top/bottom",         HF_CHILD,   HS_NAV },
     /* --- Sorting --- */

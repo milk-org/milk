@@ -154,18 +154,13 @@ void ov_render_fps_panel(
                 && eff_focus != OV_FOCUS_FPS
                 && has_rel);
             ov_rgb_t row_bg = OV_BG_PANEL;
-            int use_ul = 0;
-            ov_rgb_t ul_color = {0,0,0};
 
             if (is_sel) {
-                use_ul = 1;
-                ul_color = OV_UL_ACTIVE;
+                row_bg = OV_BG_SELECTED;
             } else if (is_frozen) {
-                use_ul = 1;
-                ul_color = OV_UL_FROZEN;
+                row_bg = OV_BG_FROZEN;
             } else if (is_rel) {
-                use_ul = 1;
-                ul_color = OV_UL_RELATED;
+                row_bg = OV_BG_RELATED;
             }
 
             int hs_rem = hs;
@@ -174,10 +169,6 @@ void ov_render_fps_panel(
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
-            if (use_ul) {
-                ov_theme_ul(ul_color);
-                ov_buf_underline();
-            }
 
             /* Lineage depth badge: ◀N or N▶ */
             int8_t sdepth = local_depth[fi];
@@ -196,6 +187,15 @@ void ov_render_fps_panel(
                 if (is_sel || is_frozen) {
                     ov_theme_fg(OV_FG_ACTIVE);
                     ov_buf_printf("\xe2\x97\x8f   ");
+                } else if (eff_focus == OV_FOCUS_STREAMS && is_rel && rel != NULL) {
+                    int is_written = bget(rel->fps_writes, fi);
+                    if (is_written) {
+                        ov_theme_fg(OV_FG_ERROR);
+                        ov_buf_printf("\xe2\x96\xb6   ");
+                    } else {
+                        ov_theme_fg(OV_FG_ACTIVE);
+                        ov_buf_printf("\xe2\x97\x80   ");
+                    }
                 } else {
                     ov_buf_printf("    ");
                 }
@@ -240,10 +240,8 @@ void ov_render_fps_panel(
                     fmt, ##__VA_ARGS__);                \
                 if (_match) {                          \
                     ov_buf_reset_attr();                \
-                    ov_theme_bg(row_bg);                \
-                    if (use_ul) {                       \
-                        ov_theme_ul(ul_color);          \
-                        ov_buf_underline();             \
+                    if (is_sel || is_frozen || is_rel) { \
+                        ov_theme_bg(row_bg);            \
                     }                                   \
                 }                                      \
             } while(0)
@@ -301,10 +299,8 @@ void ov_render_fps_panel(
                         int w = snprintf(NULL, 0, " [TRIG]");
                         ov_buf_printf(" [TRIG]");
                         ov_buf_reset_attr();
-                        ov_theme_bg(row_bg);
-                        if (use_ul) {
-                            ov_theme_ul(ul_color);
-                            ov_buf_underline();
+                        if (is_sel || is_frozen || is_rel) {
+                            ov_theme_bg(row_bg);
                         }
                         n5 += w;
                     }

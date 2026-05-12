@@ -11,9 +11,10 @@ static int ov_fps__render_detail_stream(
         const OV_STREAM *s =
             &m->streams[ssel];
 
-        ov_draw_panel_border(
+        const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
+        ov_draw_panel_tabs(
             r.row, r.col, r.height, r.width,
-            "STREAM DETAIL", OV_FG_STREAM, 1, 1);
+            tabs, 3, lay->graph_tab_mode, OV_FG_STREAM, lay->focus == OV_FOCUS_GRAPH);
 
         int ri = 0;
 
@@ -407,9 +408,10 @@ static int ov_fps__render_detail_proc(
         const OV_PROC *p =
             &m->procs[psel];
 
-        ov_draw_panel_border(
+        const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
+        ov_draw_panel_tabs(
             r.row, r.col, r.height, r.width,
-            "PROCESS DETAIL", OV_FG_PROC, 1, 1);
+            tabs, 3, lay->graph_tab_mode, OV_FG_PROC, lay->focus == OV_FOCUS_GRAPH);
 
         int ri = 0;
 
@@ -595,9 +597,10 @@ static int ov_fps__render_detail_fps(
         const OV_FPS *f =
             &m->fps[fsel];
 
-        ov_draw_panel_border(
+        const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
+        ov_draw_panel_tabs(
             r.row, r.col, r.height, r.width,
-            "FPS DETAIL", OV_FG_FPS, 1, 1);
+            tabs, 3, lay->graph_tab_mode, OV_FG_FPS, lay->focus == OV_FOCUS_GRAPH);
 
         int ri = 0;
 
@@ -731,4 +734,283 @@ int ov_render_detail_panel(
     }
 
     return 0;
+}
+
+int ov_render_resources_panel(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m)
+{
+    OV_RECT r = lay->r_graph;
+    int max_rows = r.height - 2;
+    int row = r.row + 1;
+
+    ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int ssel = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+    int psel = lay->freeze ? lay->freeze_sel_proc   : lay->sel_proc;
+    int fsel = lay->freeze ? lay->freeze_sel_fps    : lay->sel_fps;
+
+    pid_t target_pid = 0;
+    const char *target_name = "UNKNOWN";
+    ov_rgb_t target_color = OV_FG_DIM;
+
+    if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
+    {
+        target_pid = m->streams[ssel].ownerPID;
+        target_name = m->streams[ssel].name;
+        target_color = OV_FG_STREAM;
+    }
+    else if (focus == OV_FOCUS_PROCS && psel >= 0 && psel < m->nb_procs)
+    {
+        target_pid = m->procs[psel].PID;
+        target_name = m->procs[psel].name;
+        target_color = OV_FG_PROC;
+    }
+    else if (focus == OV_FOCUS_FPS && fsel >= 0 && fsel < m->nb_fps)
+    {
+        target_pid = m->fps[fsel].runpid;
+        if (target_pid == 0) target_pid = m->fps[fsel].confpid;
+        target_name = m->fps[fsel].name;
+        target_color = OV_FG_FPS;
+    }
+
+    const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
+    ov_draw_panel_tabs(
+        r.row, r.col, r.height, r.width,
+        tabs, 3, lay->graph_tab_mode, target_color, lay->focus == OV_FOCUS_GRAPH);
+
+    int ri = 0;
+
+    if (target_pid <= 0)
+    {
+        ov_buf_pos(row + ri, r.col + 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf(" No active process for %s", target_name);
+        render_pad_spaces(25 + strlen(target_name), r.width);
+        ri++;
+    }
+    else
+    {
+        /* Query core utilization */
+        int active_cores[128];
+        int num_active = pid_get_core_utilization(target_pid, active_cores, 128);
+        uint64_t core_mask = 0;
+        for (int i = 0; i < num_active; i++) {
+            if (active_cores[i] >= 0 && active_cores[i] < 64) {
+                core_mask |= (1ULL << active_cores[i]);
+            }
+        }
+        char stat_path[256];
+        snprintf(stat_path, sizeof(stat_path), "/proc/%d/statm", (int)target_pid);
+        FILE *f = fopen(stat_path, "r");
+        unsigned long vm_size = 0, vm_rss = 0;
+        if (f) {
+            if (fscanf(f, "%lu %lu", &vm_size, &vm_rss) == 2) {
+                // scale to MB (assuming 4KB pages)
+                vm_size = (vm_size * 4) / 1024;
+                vm_rss = (vm_rss * 4) / 1024;
+            }
+            fclose(f);
+        }
+
+        ov_advanced_stats_t adv_stats;
+        int has_adv = (pid_get_advanced_stats(target_pid, &adv_stats) == 0);
+        
+        int64_t target_loopcnt = 0;
+        for (int i = 0; i < m->nb_procs; i++) {
+            if (m->procs[i].PID == target_pid && m->procs[i].active) {
+                target_loopcnt = m->procs[i].loopcnt;
+                break;
+            }
+        }
+        
+        ov_perf_counters_t perf_cnt;
+        int has_perf = (pid_read_perf_counters(target_pid, target_loopcnt, &perf_cnt) == 0);
+
+        ov_buf_pos(row + ri, r.col + 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_TITLE);
+        ov_buf_bold();
+        int n = snprintf(NULL, 0, " %s  (PID %d)", target_name, (int)target_pid);
+        ov_buf_printf(" %s  (PID %d)", target_name, (int)target_pid);
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_PANEL);
+        render_pad_spaces(n, r.width);
+        ri++;
+        
+        if (ri < max_rows)
+        {
+            ov_buf_pos(row + ri, r.col + 1);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf(" Memory Usage:");
+            render_pad_spaces(14, r.width);
+            ri++;
+        }
+        
+        if (ri < max_rows)
+        {
+            ov_buf_pos(row + ri, r.col + 1);
+            ov_theme_fg(OV_FG_TEXT);
+            char buf[64];
+            int nb = snprintf(buf, sizeof(buf), "   RSS: %4lu MB   VIRT: %4lu MB", vm_rss, vm_size);
+            ov_buf_printf("%s", buf);
+            render_pad_spaces(nb, r.width);
+            ri++;
+        }
+        
+        if (ri < max_rows)
+        {
+            ov_buf_pos(row + ri, r.col + 1);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf(" CPU Core Activity:");
+            render_pad_spaces(19, r.width);
+            ri++;
+        }
+        
+        /* Draw core mask */
+        if (ri < max_rows)
+        {
+            ov_buf_pos(row + ri, r.col + 1);
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf("   [");
+            int chars_written = 4;
+            long num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+            if (num_cores <= 0 || num_cores > 64) num_cores = 64;
+            
+            for (int i = 0; i < num_cores; i++) {
+                if (core_mask & (1ULL << i)) {
+                    ov_theme_fg(OV_FG_PROC);
+                    ov_buf_printf("■");
+                } else {
+                    ov_theme_fg(OV_FG_DIM);
+                    ov_buf_printf("-");
+                }
+                chars_written++;
+            }
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf("]");
+            chars_written++;
+            
+            render_pad_spaces(chars_written, r.width);
+            ri++;
+        }
+        
+        if (has_adv) {
+            if (ri < max_rows) {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_fg(OV_FG_DIM);
+                render_pad_spaces(0, r.width);
+                ri++;
+            }
+            if (ri < max_rows) {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_fg(OV_FG_DIM);
+                ov_buf_printf(" Scheduling & Memory:");
+                render_pad_spaces(21, r.width);
+                ri++;
+            }
+            if (ri < max_rows) {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_fg(OV_FG_TEXT);
+                char buf[128];
+                int nb = snprintf(buf, sizeof(buf), "   Threads: %4lu    Migrations: %4lu", adv_stats.threads, adv_stats.migrations);
+                ov_buf_printf("%s", buf);
+                render_pad_spaces(nb, r.width);
+                ri++;
+            }
+            if (ri < max_rows) {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_fg(OV_FG_TEXT);
+                char buf[128];
+                int nb = snprintf(buf, sizeof(buf), "   Ctx Sw:  %4lu (Vol) / %4lu (Invol)", adv_stats.vol_ctxt, adv_stats.nonvol_ctxt);
+                ov_buf_printf("%s", buf);
+                render_pad_spaces(nb, r.width);
+                ri++;
+            }
+            if (ri < max_rows) {
+                ov_buf_pos(row + ri, r.col + 1);
+                ov_theme_fg(OV_FG_TEXT);
+                char buf[128];
+                int nb = snprintf(buf, sizeof(buf), "   Faults:  %4lu (Min) / %4lu (Maj)", adv_stats.minflt, adv_stats.majflt);
+                ov_buf_printf("%s", buf);
+                render_pad_spaces(nb, r.width);
+                ri++;
+            }
+        }
+        
+        if (ri < max_rows) {
+            ov_buf_pos(row + ri, r.col + 1);
+            ov_theme_fg(OV_FG_DIM);
+            render_pad_spaces(0, r.width);
+            ri++;
+        }
+        
+        if (ri < max_rows) {
+            ov_buf_pos(row + ri, r.col + 1);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf(" Hardware Counters:");
+            render_pad_spaces(19, r.width);
+            ri++;
+        }
+        
+        if (ri < max_rows) {
+            ov_buf_pos(row + ri, r.col + 1);
+            if (has_perf) {
+                ov_theme_fg(OV_FG_TEXT);
+                char buf[128];
+                int nb = snprintf(buf, sizeof(buf), "   Inst: %8llu    Cache Miss: %8llu", 
+                    (unsigned long long)perf_cnt.instructions, 
+                    (unsigned long long)perf_cnt.cache_misses);
+                ov_buf_printf("%s", buf);
+                render_pad_spaces(nb, r.width);
+                ri++;
+                
+                if (target_loopcnt > 0) {
+                    if (ri < max_rows) {
+                        ov_buf_pos(row + ri, r.col + 1);
+                        nb = snprintf(buf, sizeof(buf), "   Inst/Iter:  %.1f    Cache Miss/Iter: %.1f", 
+                            perf_cnt.inst_per_loop, perf_cnt.cache_miss_per_loop);
+                        ov_buf_printf("%s", buf);
+                        render_pad_spaces(nb, r.width);
+                        ri++;
+                    }
+                    if (ri < max_rows) {
+                        ov_buf_pos(row + ri, r.col + 1);
+                        ov_theme_fg(OV_FG_DIM);
+                        nb = snprintf(buf, sizeof(buf), "   Miss/Iter Breakdown:");
+                        ov_buf_printf("%s", buf);
+                        render_pad_spaces(nb, r.width);
+                        ri++;
+                    }
+                    if (ri < max_rows) {
+                        ov_buf_pos(row + ri, r.col + 1);
+                        ov_theme_fg(OV_FG_TEXT);
+                        nb = snprintf(buf, sizeof(buf), "     L1D: %.1f   LLC: %.1f   dTLB: %.1f   Branch: %.1f", 
+                            perf_cnt.l1d_miss_per_loop, perf_cnt.llc_miss_per_loop, perf_cnt.dtlb_miss_per_loop, perf_cnt.branch_miss_per_loop);
+                        ov_buf_printf("%s", buf);
+                        render_pad_spaces(nb, r.width);
+                        ri++;
+                    }
+                }
+            } else {
+                ov_theme_fg(OV_FG_WARN);
+                ov_buf_printf("   [Requires Privileges / CAP_PERFMON]");
+                render_pad_spaces(38, r.width);
+                ri++;
+                if (ri < max_rows) {
+                    ov_buf_pos(row + ri, r.col + 1);
+                    ov_buf_printf("   [Run: milk-setup-caps]");
+                    render_pad_spaces(25, r.width);
+                    ri++;
+                }
+            }
+        }
+    }
+
+    for (; ri < max_rows; ri++)
+    {
+        clear_row(row + ri, r.col + 1, r.width - 2, OV_BG_PANEL);
+    }
+    ov_buf_reset_attr();
+    return 1;
 }

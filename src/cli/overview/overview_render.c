@@ -168,10 +168,10 @@ static const char *view_label(ov_view_t v)
     switch (v)
     {
     case OV_VIEW_DASHBOARD: return "DASH";
-    case OV_VIEW_GRAPH:     return "GRAPH";
     case OV_VIEW_STREAMS:   return "STRM";
     case OV_VIEW_PROCS:     return "PROC";
     case OV_VIEW_FPS:       return "FPS";
+    case OV_VIEW_GRAPH:     return "CONN";
     default:                return "";
     }
 }
@@ -628,9 +628,17 @@ void ov_render_frame(
             ov_render_streams_panel(lay, m, &rel);
             ov_render_procs_panel(lay, m, &rel);
             ov_render_fps_panel(lay, m, &rel);
-            /* Detail pane replaces graph when active */
-            if (!lay->detail_mode
-                || !ov_render_detail_panel(lay, m))
+            int rendered = 0;
+            if (lay->graph_tab_mode == 1)
+            {
+                rendered = ov_render_detail_panel(lay, m);
+            }
+            else if (lay->graph_tab_mode == 2)
+            {
+                rendered = ov_render_resources_panel(lay, m);
+            }
+
+            if (!rendered)
             {
                 ov_render_graph_panel(lay, m);
             }

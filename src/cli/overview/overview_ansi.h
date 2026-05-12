@@ -40,10 +40,14 @@
 #define OV_KEY_ESC        27
 #define OV_KEY_CTRL_LEFT  277
 #define OV_KEY_CTRL_RIGHT 278
+#define OV_KEY_SHIFT_LEFT 279
+#define OV_KEY_SHIFT_RIGHT 280
+#define OV_KEY_SHIFT_UP 284
+#define OV_KEY_SHIFT_DOWN 285
 
-#define OV_KEY_MOUSE_CLICK  280
-#define OV_KEY_MOUSE_UP     281
-#define OV_KEY_MOUSE_DOWN   282
+#define OV_KEY_MOUSE_CLICK  281
+#define OV_KEY_MOUSE_UP     282
+#define OV_KEY_MOUSE_DOWN   283
 
 extern int ov_mouse_row;
 extern int ov_mouse_col;
@@ -519,10 +523,19 @@ static inline int ov_get_key(void)
                     }
                 }
 
-                /* CTRL+Arrow: ESC [ 1 ; 5 C/D */
-                if (buf_len >= 6 && buf[2] == '1' && buf[3] == ';' && buf[4] == '5') {
-                    if (buf[5] == 'D') { key = OV_KEY_CTRL_LEFT; consumed = 6; }
-                    else if (buf[5] == 'C') { key = OV_KEY_CTRL_RIGHT; consumed = 6; }
+                /* CTRL+Arrow: ESC [ 1 ; 5 C/D
+                 * SHIFT+Arrow: ESC [ 1 ; 2 A/B/C/D */
+                if (buf_len >= 6 && buf[2] == '1' && buf[3] == ';') {
+                    if (buf[4] == '5') {
+                        if (buf[5] == 'D') { key = OV_KEY_CTRL_LEFT; consumed = 6; }
+                        else if (buf[5] == 'C') { key = OV_KEY_CTRL_RIGHT; consumed = 6; }
+                    }
+                    else if (buf[4] == '2') {
+                        if (buf[5] == 'D') { key = OV_KEY_SHIFT_LEFT; consumed = 6; }
+                        else if (buf[5] == 'C') { key = OV_KEY_SHIFT_RIGHT; consumed = 6; }
+                        else if (buf[5] == 'A') { key = OV_KEY_SHIFT_UP; consumed = 6; }
+                        else if (buf[5] == 'B') { key = OV_KEY_SHIFT_DOWN; consumed = 6; }
+                    }
                     if (key) {
                         memmove(buf, buf + consumed, (size_t)(buf_len - consumed));
                         buf_len -= consumed;

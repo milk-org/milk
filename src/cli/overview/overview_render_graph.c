@@ -217,7 +217,8 @@ void ov_render_graph_panel(
     const OV_MODEL  *m)
 {
     OV_RECT r = lay->r_graph;
-    ov_draw_panel_border(r.row, r.col, r.height, r.width, "CONNECTIONS", OV_FG_CONN, lay->focus == OV_FOCUS_GRAPH, 0);
+    const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 3, lay->graph_tab_mode, OV_FG_CONN, lay->focus == OV_FOCUS_GRAPH);
 
     int max_rows = r.height - 3;
     int row = r.row + 1;

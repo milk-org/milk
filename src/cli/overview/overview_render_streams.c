@@ -323,18 +323,12 @@ void ov_render_streams_panel(
                  && rel != NULL
                  && bget(rel->streams, si));
             ov_rgb_t row_bg = OV_BG_PANEL;
-            int use_ul = 0;
-            ov_rgb_t ul_color = {0,0,0};
-
             if (is_sel) {
-                use_ul = 1;
-                ul_color = OV_UL_ACTIVE;
+                row_bg = OV_BG_SELECTED;
             } else if (is_frozen) {
-                use_ul = 1;
-                ul_color = OV_UL_FROZEN;
+                row_bg = OV_BG_FROZEN;
             } else if (is_rel) {
-                use_ul = 1;
-                ul_color = OV_UL_RELATED;
+                row_bg = OV_BG_RELATED;
             }
 
             int hs_rem = hs;
@@ -343,10 +337,6 @@ void ov_render_streams_panel(
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
-            if (use_ul) {
-                ov_theme_ul(ul_color);
-                ov_buf_underline();
-            }
 
             #define STRM_FIELD(color, fmt, ...)        \
             do {                                       \
@@ -387,10 +377,8 @@ void ov_render_streams_panel(
                     fmt, ##__VA_ARGS__);                \
                 if (_match) {                          \
                     ov_buf_reset_attr();                \
-                    ov_theme_bg(row_bg);                \
-                    if (use_ul) {                       \
-                        ov_theme_ul(ul_color);          \
-                        ov_buf_underline();             \
+                    if (is_sel || is_frozen || is_rel) {   \
+                        ov_theme_bg(row_bg);            \
                     }                                   \
                 }                                      \
             } while(0)
@@ -417,9 +405,22 @@ void ov_render_streams_panel(
             {
                 if (s->update_hz > 0.1) {
                     ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("\xe2\x97\x8f   ");
+                    ov_buf_printf("\xe2\x97\x8f ");
                 } else {
-                    ov_buf_printf("    ");
+                    ov_buf_printf("  ");
+                }
+
+                if ((eff_focus == OV_FOCUS_PROCS || eff_focus == OV_FOCUS_FPS) && is_rel && rel != NULL) {
+                    int is_written = bget(rel->stream_written, si);
+                    if (is_written) {
+                        ov_theme_fg(OV_FG_ERROR);
+                        ov_buf_printf("\xe2\x96\xb6 ");
+                    } else {
+                        ov_theme_fg(OV_FG_ACTIVE);
+                        ov_buf_printf("\xe2\x97\x80 ");
+                    }
+                } else {
+                    ov_buf_printf("  ");
                 }
             }
 

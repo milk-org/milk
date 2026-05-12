@@ -38,13 +38,10 @@ typedef struct
 #define OV_BG_PANEL       (ov_rgb_t){  30,  32,  40 }
 #define OV_BG_HEADER      (ov_rgb_t){  40,  44,  58 }
 #define OV_BG_SELECTED    (ov_rgb_t){  50,  60,  90 }
+#define OV_BG_RELATED     (ov_rgb_t){  38,  50,  42 }  /* soft green tint for related items */
+#define OV_BG_FROZEN      (ov_rgb_t){  40,  90, 140 }  /* bright blue tint for frozen selection */
 #define OV_BG_HOVER       (ov_rgb_t){  38,  42,  55 }
 #define OV_BG_PID_MATCH   (ov_rgb_t){  50, 180,  50 }  /* green bg for PID match */
-
-/* Underlines */
-#define OV_UL_ACTIVE      (ov_rgb_t){ 255, 255, 255 }  /* bright white for active selection underline */
-#define OV_UL_FROZEN      (ov_rgb_t){   0, 200, 255 }  /* bright cyan/blue for frozen selection underline */
-#define OV_UL_RELATED     (ov_rgb_t){  50, 255,  50 }  /* bright green for related selection underline */
 
 /* Foreground — text */
 #define OV_FG_TITLE       (ov_rgb_t){ 130, 170, 255 }
@@ -378,9 +375,12 @@ static inline void ov_draw_panel_border(
         ov_buf_pos(row, col + 2);
         ov_buf_bold();
         if (is_focused) {
-            ov_buf_printf_gradient(tcolor, OV_FG_BRIGHT, " %s ", title);
+            ov_theme_bg(tcolor);
+            ov_theme_fg(OV_BG_TERMINAL);
+            ov_buf_printf(" %s ", title);
         } else {
             ov_theme_fg(OV_FG_MUTED);
+            ov_theme_bg(OV_BG_TERMINAL);
             ov_buf_printf(" %s ", title);
         }
         ov_buf_reset_attr();
@@ -421,6 +421,84 @@ static inline void ov_draw_panel_border(
         ov_buf_pos(row + height, col + width);
         ov_buf_printf("▒");
     }
+
+    ov_buf_reset_attr();
+}
+
+/**
+ * ov_draw_panel_tabs - draw a panel frame with multiple tabs.
+ */
+static inline void ov_draw_panel_tabs(
+    int         row,
+    int         col,
+    int         height,
+    int         width,
+    const char **tabs,
+    int         num_tabs,
+    int         active_tab,
+    ov_rgb_t    tcolor,
+    int         is_focused)
+{
+    ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
+    ov_theme_bg(OV_BG_TERMINAL);
+
+    const char *tl = is_focused ? OV_BOX_TL_D : OV_BOX_TL;
+    const char *tr = is_focused ? OV_BOX_TR_D : OV_BOX_TR;
+    const char *bl = is_focused ? OV_BOX_BL_D : OV_BOX_BL;
+    const char *br = is_focused ? OV_BOX_BR_D : OV_BOX_BR;
+    const char *h  = is_focused ? OV_BOX_H_D  : OV_BOX_H;
+    const char *v  = is_focused ? OV_BOX_V_D  : OV_BOX_V;
+
+    /* top edge */
+    ov_buf_pos(row, col);
+    ov_buf_printf("%s", tl);
+    ov_buf_hline_utf8(h, width - 2);
+    ov_buf_printf("%s", tr);
+
+    /* title overlay: rendering tabs */
+    int current_col = col + 2;
+    for (int i = 0; i < num_tabs; i++)
+    {
+        ov_buf_pos(row, current_col);
+        ov_buf_bold();
+        if (i == active_tab) {
+            if (is_focused) {
+                ov_theme_bg(tcolor);
+                ov_theme_fg(OV_BG_TERMINAL);
+            } else {
+                ov_theme_bg(OV_FG_DIM);
+                ov_theme_fg(OV_BG_TERMINAL);
+            }
+        } else {
+            ov_theme_fg(OV_FG_MUTED);
+            ov_theme_bg(OV_BG_TERMINAL);
+        }
+        
+        char tab_text[64];
+        snprintf(tab_text, sizeof(tab_text), " %s ", tabs[i]);
+        ov_buf_printf("%s", tab_text);
+        
+        ov_buf_reset_attr();
+        current_col += strlen(tab_text) + 1; // 1 space between tabs
+    }
+
+    /* sides */
+    for (int r = row + 1; r < row + height - 1; r++)
+    {
+        ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
+        ov_theme_bg(OV_BG_TERMINAL);
+        ov_buf_pos(r, col);
+        ov_buf_printf("%s", v);
+        ov_buf_pos(r, col + width - 1);
+        ov_buf_printf("%s", v);
+    }
+
+    /* bottom edge */
+    ov_buf_pos(row + height - 1, col);
+    ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
+    ov_buf_printf("%s", bl);
+    ov_buf_hline_utf8(h, width - 2);
+    ov_buf_printf("%s", br);
 
     ov_buf_reset_attr();
 }

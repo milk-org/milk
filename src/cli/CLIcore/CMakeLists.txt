@@ -252,6 +252,7 @@ target_include_directories(milkCTRL PRIVATE
 target_link_libraries(milkCTRL PUBLIC
     ImageStreamIO milkprocessinfo milkfps m rt pthread)
 install(TARGETS milkCTRL DESTINATION bin)
+install(PROGRAMS ../overview/milk-setup-caps DESTINATION bin)
 
 # milk-stream-graph: stream dependency graph tool
 add_executable(milk-stream-graph
