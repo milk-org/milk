@@ -153,7 +153,7 @@ int pid_get_cpu_ticks(
      * cmajflt utime stime */
     int rc = fscanf(fp,
         "%*d %*s %*c %*d %*d %*d %*d %*d "
-        "%*u %*lu %*lu %*lu %*lu %lu %lu",
+        "%*u %*u %*u %*u %*u %lu %lu",
         utime, stime);
     fclose(fp);
 
