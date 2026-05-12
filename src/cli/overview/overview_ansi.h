@@ -127,6 +127,7 @@ typedef struct {
     char     ch[5];    // UTF-8 char up to 4 bytes + null terminator
     uint32_t fg;       // Color code + flag
     uint32_t bg;       // Color code + flag
+    uint32_t ul;       // Underline color
     uint8_t  attr;     // bitmask for BOLD, DIM, REVERSE, etc.
 } OV_CELL;
 
@@ -140,6 +141,7 @@ extern int ov__cursor_row; // 1-based
 extern int ov__cursor_col; // 1-based
 extern uint32_t ov__current_fg;
 extern uint32_t ov__current_bg;
+extern uint32_t ov__current_ul;
 extern uint8_t  ov__current_attr;
 
 static inline void ov_buf_force_clear(void)
@@ -154,6 +156,7 @@ static inline void ov_buf_reset(void)
     ov__cursor_col = 1;
     ov__current_fg = OV_COLOR_NONE;
     ov__current_bg = OV_COLOR_NONE;
+    ov__current_ul = OV_COLOR_NONE;
     ov__current_attr = 0;
 
     for (int r = 0; r < OV_MAX_ROWS; r++) {
@@ -162,6 +165,7 @@ static inline void ov_buf_reset(void)
             ov__shadow[r][c].ch[1] = '\0';
             ov__shadow[r][c].fg = OV_COLOR_NONE;
             ov__shadow[r][c].bg = OV_COLOR_NONE;
+            ov__shadow[r][c].ul = OV_COLOR_NONE;
             ov__shadow[r][c].attr = 0;
         }
     }
@@ -203,6 +207,7 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
     int emit_cursor_c = -1;
     uint32_t emit_fg = OV_COLOR_NONE;
     uint32_t emit_bg = OV_COLOR_NONE;
+    uint32_t emit_ul = OV_COLOR_NONE;
     uint8_t emit_attr = 0;
     char tmp[128];
 
@@ -233,11 +238,13 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
                 // Attr reset if missing
                 if ((emit_attr & ~sc->attr) != 0 || 
                     (sc->fg != emit_fg && emit_fg != OV_COLOR_NONE && sc->fg == OV_COLOR_NONE) ||
-                    (sc->bg != emit_bg && emit_bg != OV_COLOR_NONE && sc->bg == OV_COLOR_NONE)) {
+                    (sc->bg != emit_bg && emit_bg != OV_COLOR_NONE && sc->bg == OV_COLOR_NONE) ||
+                    (sc->ul != emit_ul && emit_ul != OV_COLOR_NONE && sc->ul == OV_COLOR_NONE)) {
                     ov_buf_append("\033[0m", 4);
                     emit_attr = 0;
                     emit_fg = OV_COLOR_NONE;
                     emit_bg = OV_COLOR_NONE;
+                    emit_ul = OV_COLOR_NONE;
                 }
 
                 // Add attrs
@@ -276,6 +283,18 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
                     }
                     emit_bg = sc->bg;
                 }
+                if (sc->ul != emit_ul) {
+                    if (sc->ul != OV_COLOR_NONE) {
+                        if (sc->ul & OV_COLOR_TRUE) {
+                            int n = snprintf(tmp, sizeof(tmp), "\033[58;2;%u;%u;%um", (sc->ul >> 16) & 0xFF, (sc->ul >> 8) & 0xFF, sc->ul & 0xFF);
+                            ov_buf_append(tmp, n);
+                        } else if (sc->ul & OV_COLOR_256) {
+                            int n = snprintf(tmp, sizeof(tmp), "\033[58;5;%um", sc->ul & 0xFF);
+                            ov_buf_append(tmp, n);
+                        }
+                    }
+                    emit_ul = sc->ul;
+                }
 
                 // Char
                 size_t chlen = strlen(sc->ch);
@@ -285,6 +304,11 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
                 *fc = *sc;
             }
         }
+    }
+
+    // Reset terminal state if we left it dirty so the next frame starts clean
+    if (emit_attr != 0 || emit_fg != OV_COLOR_NONE || emit_bg != OV_COLOR_NONE || emit_ul != OV_COLOR_NONE) {
+        ov_buf_append("\033[0m", 4);
     }
 
     // End synchronized output
@@ -302,6 +326,7 @@ static inline void ov_buf_append_char(const char *utf8_seq, int bytes) {
         cell->ch[bytes] = '\0';
         cell->fg = ov__current_fg;
         cell->bg = ov__current_bg;
+        cell->ul = ov__current_ul;
         cell->attr = ov__current_attr;
     }
     ov__cursor_col++;
@@ -357,6 +382,14 @@ static inline void ov_buf_bg_256(int code) {
     ov__current_bg = OV_COLOR_256 | (code & 0xFF);
 }
 
+static inline void ov_buf_ul_color(int r, int g, int b) {
+    ov__current_ul = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+}
+
+static inline void ov_buf_ul_color_256(int code) {
+    ov__current_ul = OV_COLOR_256 | (code & 0xFF);
+}
+
 static inline void ov_buf_pos(int row, int col) {
     ov__cursor_row = row;
     ov__cursor_col = col;
@@ -365,6 +398,7 @@ static inline void ov_buf_pos(int row, int col) {
 static inline void ov_buf_reset_attr(void) {
     ov__current_fg = OV_COLOR_NONE;
     ov__current_bg = OV_COLOR_NONE;
+    ov__current_ul = OV_COLOR_NONE;
     ov__current_attr = 0;
 }
 

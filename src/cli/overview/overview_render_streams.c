@@ -62,7 +62,7 @@ void ov_render_streams_panel(
     ov_draw_panel_border(
         r.row, r.col, r.height, r.width,
         title, OV_FG_STREAM,
-        lay->focus == OV_FOCUS_STREAMS);
+        lay->focus == OV_FOCUS_STREAMS, 0);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_stream;
@@ -322,11 +322,20 @@ void ov_render_streams_panel(
                  && eff_focus != OV_FOCUS_STREAMS
                  && rel != NULL
                  && bget(rel->streams, si));
-            ov_rgb_t row_bg = is_sel
-                ? OV_BG_SELECTED
-                : is_frozen ? OV_BG_FROZEN
-                : is_rel ? OV_BG_RELATED
-                         : OV_BG_PANEL;
+            ov_rgb_t row_bg = OV_BG_PANEL;
+            int use_ul = 0;
+            ov_rgb_t ul_color = {0,0,0};
+
+            if (is_sel) {
+                use_ul = 1;
+                ul_color = OV_FG_BRIGHT;
+            } else if (is_frozen) {
+                use_ul = 1;
+                ul_color = OV_BG_FROZEN;
+            } else if (is_rel) {
+                use_ul = 1;
+                ul_color = OV_BG_RELATED;
+            }
 
             int hs_rem = hs;
             int printed = 4;
@@ -334,6 +343,10 @@ void ov_render_streams_panel(
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
+            if (use_ul) {
+                ov_theme_ul(ul_color);
+                ov_buf_underline();
+            }
 
             #define STRM_FIELD(color, fmt, ...)        \
             do {                                       \
@@ -375,6 +388,10 @@ void ov_render_streams_panel(
                 if (_match) {                          \
                     ov_buf_reset_attr();                \
                     ov_theme_bg(row_bg);                \
+                    if (use_ul) {                       \
+                        ov_theme_ul(ul_color);          \
+                        ov_buf_underline();             \
+                    }                                   \
                 }                                      \
             } while(0)
 
@@ -494,6 +511,7 @@ void ov_render_streams_panel(
             // The active dot is now printed at the start of the line
             
             render_pad_spaces(printed, r.width);
+            ov_buf_reset_attr();
         }
         else
         {

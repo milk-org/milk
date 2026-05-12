@@ -61,7 +61,7 @@ void ov_render_fps_panel(
     ov_draw_panel_border(
         r.row, r.col, r.height, r.width,
         title, OV_FG_FPS,
-        lay->focus == OV_FOCUS_FPS);
+        lay->focus == OV_FOCUS_FPS, 0);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_fps;
@@ -153,11 +153,20 @@ void ov_render_fps_panel(
             int is_rel = (!is_sel && !is_frozen
                 && eff_focus != OV_FOCUS_FPS
                 && has_rel);
-            ov_rgb_t row_bg = is_sel
-                ? OV_BG_SELECTED
-                : is_frozen ? OV_BG_FROZEN
-                : is_rel ? OV_BG_RELATED
-                         : OV_BG_PANEL;
+            ov_rgb_t row_bg = OV_BG_PANEL;
+            int use_ul = 0;
+            ov_rgb_t ul_color = {0,0,0};
+
+            if (is_sel) {
+                use_ul = 1;
+                ul_color = OV_FG_BRIGHT;
+            } else if (is_frozen) {
+                use_ul = 1;
+                ul_color = OV_BG_FROZEN;
+            } else if (is_rel) {
+                use_ul = 1;
+                ul_color = OV_BG_RELATED;
+            }
 
             int hs_rem = hs;
             int printed = 4;
@@ -165,6 +174,10 @@ void ov_render_fps_panel(
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
+            if (use_ul) {
+                ov_theme_ul(ul_color);
+                ov_buf_underline();
+            }
 
             /* Lineage depth badge: ◀N or N▶ */
             int8_t sdepth = local_depth[fi];
@@ -228,6 +241,10 @@ void ov_render_fps_panel(
                 if (_match) {                          \
                     ov_buf_reset_attr();                \
                     ov_theme_bg(row_bg);                \
+                    if (use_ul) {                       \
+                        ov_theme_ul(ul_color);          \
+                        ov_buf_underline();             \
+                    }                                   \
                 }                                      \
             } while(0)
 
@@ -298,6 +315,7 @@ void ov_render_fps_panel(
             }
 
             render_pad_spaces(printed + n5, r.width);
+            ov_buf_reset_attr();
         }
         else
         {

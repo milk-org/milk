@@ -153,10 +153,20 @@ static void ov_procs__render_rows(
                           && has_rel);
             int is_write = (has_rel && rel != NULL
                             && bget(rel->proc_writes, pi));
-            ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED
-                            : is_frozen ? OV_BG_FROZEN
-                            : is_rel ? OV_BG_RELATED
-                                     : OV_BG_PANEL;
+            ov_rgb_t row_bg = OV_BG_PANEL;
+            int use_ul = 0;
+            ov_rgb_t ul_color = {0,0,0};
+
+            if (is_sel) {
+                use_ul = 1;
+                ul_color = OV_FG_BRIGHT;
+            } else if (is_frozen) {
+                use_ul = 1;
+                ul_color = OV_BG_FROZEN;
+            } else if (is_rel) {
+                use_ul = 1;
+                ul_color = OV_BG_RELATED;
+            }
 
             /* Build the full row text into a local
              * buffer so we can apply hscroll */
@@ -303,6 +313,10 @@ static void ov_procs__render_rows(
             /* Reset and reposition */
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
+            if (use_ul) {
+                ov_theme_ul(ul_color);
+                ov_buf_underline();
+            }
             ov_buf_printf(" ");
 
             /* ---- per-field colored output ---- */
@@ -340,6 +354,10 @@ static void ov_procs__render_rows(
             /* Re-do per-field with colors */
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
+            if (use_ul) {
+                ov_theme_ul(ul_color);
+                ov_buf_underline();
+            }
 
             /* Lineage depth badge: ◀N or N▶ */
             int8_t sdepth = local_depth[pi];
@@ -415,6 +433,10 @@ static void ov_procs__render_rows(
                                 if (is_match[s]) {
                                     ov_buf_reset_attr();
                                     ov_theme_bg(row_bg);
+                                    if (use_ul) {
+                                        ov_theme_ul(ul_color);
+                                        ov_buf_underline();
+                                    }
                                 }
                             }
                         }
@@ -796,6 +818,7 @@ static void ov_procs__render_rows(
                     ov_buf_hline(' ', rem);
                 }
             }
+            ov_buf_reset_attr();
         }
         else
         {
@@ -917,7 +940,7 @@ void ov_render_procs_panel(
     ov_draw_panel_border(
         r.row, r.col, r.height, r.width,
         title, OV_FG_PROC,
-        lay->focus == OV_FOCUS_PROCS);
+        lay->focus == OV_FOCUS_PROCS, 0);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_proc;

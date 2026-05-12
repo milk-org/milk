@@ -13,7 +13,7 @@ static int ov_fps__render_detail_stream(
 
         ov_draw_panel_border(
             r.row, r.col, r.height, r.width,
-            "STREAM DETAIL", OV_FG_STREAM, 0);
+            "STREAM DETAIL", OV_FG_STREAM, 1, 1);
 
         int ri = 0;
 
@@ -409,7 +409,7 @@ static int ov_fps__render_detail_proc(
 
         ov_draw_panel_border(
             r.row, r.col, r.height, r.width,
-            "PROCESS DETAIL", OV_FG_PROC, 0);
+            "PROCESS DETAIL", OV_FG_PROC, 1, 1);
 
         int ri = 0;
 
@@ -597,7 +597,7 @@ static int ov_fps__render_detail_fps(
 
         ov_draw_panel_border(
             r.row, r.col, r.height, r.width,
-            "FPS DETAIL", OV_FG_FPS, 0);
+            "FPS DETAIL", OV_FG_FPS, 1, 1);
 
         int ri = 0;
 

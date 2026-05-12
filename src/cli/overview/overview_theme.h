@@ -58,6 +58,13 @@ typedef struct
 /* Foreground — status */
 #define OV_FG_ACTIVE      (ov_rgb_t){  80, 220,  80 }
 #define OV_FG_IDLE        (ov_rgb_t){ 130, 140, 160 }
+
+/* Animation Parameters */
+#define OV_ANIM_PULSE_SPEED    0.15f
+#define OV_ANIM_PULSE_BG_MIN   (ov_rgb_t){  80,  10,  10 }
+#define OV_ANIM_PULSE_BG_MAX   (ov_rgb_t){ 180,  20,  20 }
+#define OV_ANIM_PULSE_FG_MIN   (ov_rgb_t){ 160,  80,  80 }
+#define OV_ANIM_PULSE_FG_MAX   (ov_rgb_t){ 255, 220, 220 }
 #define OV_FG_WARN        (ov_rgb_t){ 255, 180,   0 }
 #define OV_FG_ERROR       (ov_rgb_t){ 240,  60,  60 }
 #define OV_FG_ZOMBIE      (ov_rgb_t){ 180, 120,  40 }
@@ -109,6 +116,10 @@ typedef struct
 #define OV_BULLET   "●"
 #define OV_DIAMOND  "◆"
 
+/* LCARS block elements */
+#define OV_LCARS_LEFT  "▌"
+#define OV_LCARS_RIGHT "▐"
+
 /* Sparkline block characters (1/8 to full) */
 static const char *OV_SPARK_CHARS[] =
 {
@@ -128,6 +139,11 @@ static inline void ov_theme_fg(ov_rgb_t c)
 static inline void ov_theme_bg(ov_rgb_t c)
 {
     ov_buf_bg(c.r, c.g, c.b);
+}
+
+static inline void ov_theme_ul(ov_rgb_t c)
+{
+    ov_buf_ul_color(c.r, c.g, c.b);
 }
 
 /**
@@ -232,6 +248,51 @@ static inline void ov_buf_gradient_bar(
 }
 
 /**
+ * ov_buf_printf_gradient - print text with a gradient foreground color.
+ * @a:   start color
+ * @b:   end color
+ * @fmt: format string
+ */
+static inline void ov_buf_printf_gradient(
+    ov_rgb_t a,
+    ov_rgb_t b,
+    const char *fmt, ...)
+{
+    char tmp[4096];
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(tmp, sizeof(tmp), fmt, ap);
+    va_end(ap);
+
+    if (n > 0) {
+        if (n >= (int)sizeof(tmp)) n = (int)sizeof(tmp) - 1;
+        
+        int total_chars = 0;
+        int i = 0;
+        while (i < n) {
+            int char_len = utf8_char_length((unsigned char)tmp[i]);
+            if (i + char_len > n) char_len = n - i;
+            total_chars++;
+            i += char_len;
+        }
+
+        i = 0;
+        int char_idx = 0;
+        while (i < n) {
+            int char_len = utf8_char_length((unsigned char)tmp[i]);
+            if (i + char_len > n) char_len = n - i;
+            
+            float t = (total_chars > 1) ? (float)char_idx / (float)(total_chars - 1) : 0.0f;
+            ov_theme_fg(ov_rgb_lerp(a, b, t));
+            
+            ov_buf_append_char(&tmp[i], char_len);
+            i += char_len;
+            char_idx++;
+        }
+    }
+}
+
+/**
  * ov_buf_sparkline - draw a sparkline from a value array.
  * @row:     screen row
  * @col:     start column
@@ -289,7 +350,8 @@ static inline void ov_draw_panel_border(
     int         width,
     const char *title,
     ov_rgb_t    tcolor,
-    int         is_focused)
+    int         is_focused,
+    int         drop_shadow)
 {
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);
@@ -311,9 +373,13 @@ static inline void ov_draw_panel_border(
     if (title && title[0])
     {
         ov_buf_pos(row, col + 2);
-        ov_theme_fg(is_focused ? OV_FG_BRIGHT : OV_FG_MUTED);
         ov_buf_bold();
-        ov_buf_printf(" %s ", title);
+        if (is_focused) {
+            ov_buf_printf_gradient(tcolor, OV_FG_BRIGHT, " %s ", title);
+        } else {
+            ov_theme_fg(OV_FG_MUTED);
+            ov_buf_printf(" %s ", title);
+        }
         ov_buf_reset_attr();
     }
 
@@ -334,6 +400,24 @@ static inline void ov_draw_panel_border(
     ov_buf_printf("%s", bl);
     ov_buf_hline_utf8(h, width - 2);
     ov_buf_printf("%s", br);
+
+    /* drop shadow */
+    if (drop_shadow)
+    {
+        ov_theme_fg(OV_FG_DIM);
+        ov_theme_bg(OV_BG_TERMINAL);
+        /* bottom shadow */
+        ov_buf_pos(row + height, col + 1);
+        ov_buf_hline_utf8("▒", width);
+        /* right shadow */
+        for (int r = row + 1; r < row + height; r++)
+        {
+            ov_buf_pos(r, col + width);
+            ov_buf_printf("▒");
+        }
+        ov_buf_pos(row + height, col + width);
+        ov_buf_printf("▒");
+    }
 
     ov_buf_reset_attr();
 }
