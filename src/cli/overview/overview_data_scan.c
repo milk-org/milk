@@ -24,11 +24,17 @@ static void scache_rate_update(
 {
     ov_stream_cache_t *ce = &s_scache[ci];
 
+    s->cnt_active = 0;
     if (ce->has_prev && s_scan_dt_sec > 0.01)
     {
         uint64_t dc = s->cnt0 - ce->prev_cnt0;
         s->update_hz =
             (double) dc / s_scan_dt_sec;
+
+        if (dc > 0)
+        {
+            s->cnt_active = 1;
+        }
 
         /* Update sparkline in cache (auto-scale) */
         float sv = (float) s->update_hz;
@@ -765,6 +771,28 @@ void ov_scan_procs(OV_MODEL *model)
 
             {
                 ov_proc_cache_t *ce = &s_pcache[ci];
+
+                /* Hz from loopcnt delta (fallback) */
+                if (p->loop_hz < 0.1
+                    && ce->has_prev_loop
+                    && s_scan_dt_sec > 0.01)
+                {
+                    int64_t dlc =
+                        p->loopcnt - ce->prev_loopcnt;
+                    if (dlc > 0)
+                    {
+                        p->loop_hz =
+                            (double) dlc / s_scan_dt_sec;
+                    }
+                }
+                /* Flag whether counter is advancing */
+                p->cnt_active =
+                    (ce->has_prev_loop
+                     && p->loopcnt != ce->prev_loopcnt);
+                ce->prev_loopcnt  = p->loopcnt;
+                ce->has_prev_loop = 1;
+
+                /* CPU percent from tick delta */
                 unsigned long ut = 0, st = 0;
                 if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {
@@ -977,9 +1005,31 @@ void ov_scan_procs(OV_MODEL *model)
             p->MeasureTiming  = pinfo->MeasureTiming;
             p->rt_priority    = pinfo->RT_priority;
 
-            /* CPU% tracking via cache delta */
+            /* CPU% and Hz tracking via cache delta */
             {
                 ov_proc_cache_t *ce = &s_pcache[ci];
+
+                /* Hz from loopcnt delta (fallback) */
+                if (p->loop_hz < 0.1
+                    && ce->has_prev_loop
+                    && s_scan_dt_sec > 0.01)
+                {
+                    int64_t dlc =
+                        p->loopcnt - ce->prev_loopcnt;
+                    if (dlc > 0)
+                    {
+                        p->loop_hz =
+                            (double) dlc / s_scan_dt_sec;
+                    }
+                }
+                /* Flag whether counter is advancing */
+                p->cnt_active =
+                    (ce->has_prev_loop
+                     && p->loopcnt != ce->prev_loopcnt);
+                ce->prev_loopcnt  = p->loopcnt;
+                ce->has_prev_loop = 1;
+
+                /* CPU percent from tick delta */
                 unsigned long ut = 0, st = 0;
                 if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {

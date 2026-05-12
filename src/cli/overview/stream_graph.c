@@ -94,6 +94,12 @@ static int sg_edge_matches_mode_from_stream(
                    == OV_EDGE_STREAM_READ_BY_PROC
                 || e->type
                    == OV_EDGE_PROC_WRITES_STREAM);
+
+    case SG_MODE_FPS:
+        /* FPS-centric: only FPS<->stream edges */
+        return (e->type == OV_EDGE_FPS_INPUT_STREAM
+                || e->type
+                   == OV_EDGE_FPS_OUTPUT_STREAM);
     } /* switch mode */
 
     return 0;
@@ -478,6 +484,8 @@ const char *sg_mode_label(sg_mode_t mode)
         return "Input";
     case SG_MODE_FULL:
         return "Full";
+    case SG_MODE_FPS:
+        return "FPS";
     }
     return "Unknown";
 }
@@ -533,9 +541,22 @@ void sg_compute_node_depths(
             if (e->src_node != cur.node) continue;
 
             if (cn->type == OV_NODE_STREAM) {
-                if (!sg_edge_matches_mode_from_stream(e, mode)) continue;
+                if (!sg_edge_matches_mode_from_stream(
+                        e, mode))
+                    continue;
+            } else if (mode == SG_MODE_FPS) {
+                /* FPS mode: only FPS<->stream edges */
+                if (!sg_edge_matches_mode_from_stream(
+                        e, mode))
+                    continue;
             } else {
-                if (m->nodes[e->tgt_node].type != OV_NODE_STREAM) continue;
+                /* From FPS/PROC: follow edges to streams
+                 * and FPS_RUNS_PROC edges (FPS->proc) */
+                int tgt_type =
+                    m->nodes[e->tgt_node].type;
+                if (tgt_type != OV_NODE_STREAM
+                    && e->type != OV_EDGE_FPS_RUNS_PROC)
+                    continue;
             }
 
             int next = e->tgt_node;
@@ -544,7 +565,8 @@ void sg_compute_node_depths(
 
             sg_bset(visited, next);
             int d = cur.depth;
-            if (cn->type == start_type) d++;
+            if (m->nodes[next].type == start_type)
+                d++;
 
             queue[qtail].node = next;
             queue[qtail].depth = d;
@@ -584,15 +606,32 @@ void sg_compute_node_depths(
             int next = e->src_node;
             if (next < 0 || next >= m->nb_nodes) continue;
             
-            if (cn->type != OV_NODE_STREAM) {
-                if (!sg_edge_matches_mode_from_stream(e, mode)) continue;
+            if (mode == SG_MODE_FPS) {
+                /* FPS mode: restrict to FPS<->stream
+                 * edges for both stream and non-stream
+                 * nodes */
+                if (!sg_edge_matches_mode_from_stream(
+                        e, mode))
+                    continue;
+            } else if (cn->type != OV_NODE_STREAM) {
+                /* Going upstream from PROC/FPS:
+                 * accept stream-related edges and
+                 * FPS_RUNS_PROC (proc<-FPS).
+                 * Stream nodes: no filter (accept
+                 * all reverse edges). */
+                if (!sg_edge_matches_mode_from_stream(
+                        e, mode)
+                    && e->type
+                       != OV_EDGE_FPS_RUNS_PROC)
+                    continue;
             }
 
             if (sg_bget(visited, next)) continue;
 
             sg_bset(visited, next);
             int d = cur.depth;
-            if (cn->type == start_type) d++;
+            if (m->nodes[next].type == start_type)
+                d++;
 
             queue[qtail].node = next;
             queue[qtail].depth = d;

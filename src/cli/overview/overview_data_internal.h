@@ -70,6 +70,9 @@ typedef struct
     unsigned long prev_stime;
     int           has_prev_cpu;
     float         cpu_pct;
+
+    int64_t       prev_loopcnt;
+    int           has_prev_loop;
 } ov_proc_cache_t;
 
 extern ov_proc_cache_t s_pcache[OV_MAX_PROCS];
