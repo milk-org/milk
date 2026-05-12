@@ -388,7 +388,11 @@ void ov_render_frame(
         }
 
         if (sel_node >= 0) {
-            sg_compute_node_depths(mm, sel_node, SG_MODE_FULL, depths);
+            sg_mode_t smode =
+                (focus == OV_FOCUS_FPS)
+                ? SG_MODE_FPS : SG_MODE_FULL;
+            sg_compute_node_depths(
+                mm, sel_node, smode, depths);
         }
         ov_sort_set_depths(depths);
 
@@ -486,6 +490,87 @@ void ov_render_frame(
         OV_MODEL *mm = (OV_MODEL *)(uintptr_t) m;
         ov_apply_rank_sort(mm);
         g_last_model = m;
+    }
+
+    /* Enforce active selection tracking:
+     * If the selected item no longer exists in the filtered list
+     * (e.g. removed by an external process), reset the selection to 0.
+     * Otherwise, clamp bounds and update the tracked name. */
+    {
+        const char *names[OV_MAX_NODES];
+        int fidx[OV_MAX_NODES];
+
+        /* Streams */
+        for (int i = 0; i < m->nb_streams; i++) names[i] = m->streams[i].name;
+        int fn = ov_filter_build(lay->filter_stream, names, m->nb_streams, fidx, OV_MAX_NODES);
+        if (fn > 0) {
+            if (lay->sel_name_stream[0] != '\0') {
+                int still_exists = 0;
+                for (int i = 0; i < fn; i++) {
+                    if (strcmp(m->streams[fidx[i]].name, lay->sel_name_stream) == 0) {
+                        still_exists = 1;
+                        break;
+                    }
+                }
+                if (!still_exists) {
+                    lay->sel_stream = 0;
+                }
+            }
+            if (lay->sel_stream >= fn) lay->sel_stream = fn - 1;
+            if (lay->sel_stream < 0) lay->sel_stream = 0;
+            strncpy(lay->sel_name_stream, m->streams[fidx[lay->sel_stream]].name, 79);
+        } else {
+            lay->sel_stream = 0;
+            lay->sel_name_stream[0] = '\0';
+        }
+
+        /* Procs */
+        for (int i = 0; i < m->nb_procs; i++) names[i] = m->procs[i].name;
+        fn = ov_filter_build(lay->filter_proc, names, m->nb_procs, fidx, OV_MAX_NODES);
+        if (fn > 0) {
+            if (lay->sel_name_proc[0] != '\0') {
+                int still_exists = 0;
+                for (int i = 0; i < fn; i++) {
+                    if (strcmp(m->procs[fidx[i]].name, lay->sel_name_proc) == 0) {
+                        still_exists = 1;
+                        break;
+                    }
+                }
+                if (!still_exists) {
+                    lay->sel_proc = 0;
+                }
+            }
+            if (lay->sel_proc >= fn) lay->sel_proc = fn - 1;
+            if (lay->sel_proc < 0) lay->sel_proc = 0;
+            strncpy(lay->sel_name_proc, m->procs[fidx[lay->sel_proc]].name, 79);
+        } else {
+            lay->sel_proc = 0;
+            lay->sel_name_proc[0] = '\0';
+        }
+
+        /* FPS */
+        for (int i = 0; i < m->nb_fps; i++) names[i] = m->fps[i].name;
+        fn = ov_filter_build(lay->filter_fps, names, m->nb_fps, fidx, OV_MAX_NODES);
+        if (fn > 0) {
+            if (lay->sel_name_fps[0] != '\0') {
+                int still_exists = 0;
+                for (int i = 0; i < fn; i++) {
+                    if (strcmp(m->fps[fidx[i]].name, lay->sel_name_fps) == 0) {
+                        still_exists = 1;
+                        break;
+                    }
+                }
+                if (!still_exists) {
+                    lay->sel_fps = 0;
+                }
+            }
+            if (lay->sel_fps >= fn) lay->sel_fps = fn - 1;
+            if (lay->sel_fps < 0) lay->sel_fps = 0;
+            strncpy(lay->sel_name_fps, m->fps[fidx[lay->sel_fps]].name, 79);
+        } else {
+            lay->sel_fps = 0;
+            lay->sel_name_fps[0] = '\0';
+        }
     }
 
     /* Always patch graph node .index fields to

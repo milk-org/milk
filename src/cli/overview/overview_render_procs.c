@@ -121,7 +121,8 @@ static void ov_procs__render_rows(
                 sg_compute_node_depths(m, root_node, SG_MODE_FULL, node_depths);
                 for (int pi = 0; pi < m->nb_procs; pi++) {
                     int n = m->procs[pi].node_idx;
-                    if (n >= 0) local_depth[pi] = node_depths[n];
+                    if (n >= 0 && node_depths[n] != 127)
+                        local_depth[pi] = node_depths[n];
                 }
             }
         }
@@ -720,7 +721,8 @@ static void ov_procs__render_rows(
                 if (vv > mx) { vv = mx; }
                 if (vv > 0)
                 {
-                    ov_theme_fg(OV_FG_DIM);
+                    ov_theme_fg(p->cnt_active
+                        ? OV_FG_ACTIVE : OV_FG_DIM);
                     ov_buf_printf("%.*s", vv, fb + skip);
                     printed += vv;
                 }

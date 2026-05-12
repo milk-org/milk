@@ -167,7 +167,7 @@ void ov_ctrl_stream_delete(
     IMAGE im;
     memset(&im, 0, sizeof(im));
 
-    if (ImageStreamIO_openIm(&im, s->name) != 0)
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(s->name, &im) != 0)
     {
         if (log != NULL)
         {
@@ -179,7 +179,30 @@ void ov_ctrl_stream_delete(
         return;
     }
 
-    ImageStreamIO_destroyIm(&im);
+    /* Destroy semaphores */
+    for (int si = 0; si < im.md->sem; si++)
+    {
+        sem_destroy(im.semptr[si]);
+    }
+
+    /* Close (unmap + close fd) */
+    ImageStreamIO_closeIm(&im);
+
+    char fullpath[512];
+    ImageStreamIO_filename(fullpath, sizeof(fullpath), s->name);
+
+    if (unlink(fullpath) != 0)
+    {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "Stream \"%s\" — delete"
+                           " failed (unlink)",
+                           s->name);
+        }
+        return;
+    }
+
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,

@@ -124,6 +124,10 @@ typedef struct {
     int          freeze_sel_fps;
     /* Lineage tracking mode: 0 = Trigger, 1 = Input */
     int          lineage_mode;
+    /* Track selected names to handle external removals */
+    char         sel_name_stream[80];
+    char         sel_name_proc[80];
+    char         sel_name_fps[80];
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);

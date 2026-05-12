@@ -93,6 +93,7 @@ typedef struct
     uint64_t cnt0;
     uint64_t cnt0_prev;
     double   update_hz;
+    int      cnt_active;  /**< cnt0 changed since last scan */
 
     /* ownership */
     pid_t    creatorPID;
@@ -186,6 +187,7 @@ typedef struct
 
     /* counters */
     int64_t  loopcnt;
+    int      cnt_active;  /**< loopcnt changed since last scan */
 
     /* timing */
     long     dtmedian_iter_ns;
