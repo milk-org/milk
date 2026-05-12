@@ -31,6 +31,7 @@
 #include "stream_sem.h"
 
 #include "shmimlog_types.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -287,21 +288,7 @@ static void *save_telemetry_fits_function(
     // Set save function to RT priority 0
     // This is meant to be lower priority than the data collection into buffers
     //
-    int                RT_priority = tmsg->writerRTprio;
-    struct sched_param schedpar;
-
-    schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0,
-                       SCHED_FIFO,
-                       &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    COREMOD_TOOLS_mvProcRTPrio(tmsg->writerRTprio);
 
     // Add custom keywords
     int            NBcustomKW = 9;

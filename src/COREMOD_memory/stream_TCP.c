@@ -15,6 +15,7 @@
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
@@ -606,7 +607,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
  * mode = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
 
-imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
+imageID COREMOD_MEMORY_image_NETWORKreceive(int port,
         __attribute__((unused)) int mode,
         int RT_priority)
 {
@@ -683,18 +684,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         printf("\nCan't catch a requested signal (TERM, INT, ABRT, BUS, SEGV, HUP, PIPE)\n");
     }
 
-    schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0,
-                       SCHED_FIFO,
-                       &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    COREMOD_TOOLS_mvProcRTPrio(RT_priority);
 
     // create TCP socket
     if((fds_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)

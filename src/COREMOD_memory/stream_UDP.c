@@ -15,6 +15,7 @@
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
@@ -555,16 +556,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         }
     }
 
-    schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0, SCHED_FIFO, &schedpar);
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    COREMOD_TOOLS_mvProcRTPrio(RT_priority);
 
     // create UDP socket
     if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)

@@ -292,7 +292,7 @@ set(PROGRAM_PERMISSIONS_DEFAULT
 
 install(TARGETS milk
       DESTINATION bin
-      PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
+      PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT})
 
 
 
@@ -397,7 +397,7 @@ install(PROGRAMS
       						scripts/milk-fpslist-addentry
       						scripts/milk-fpsCTRL
       						scripts/milk-cr2tofits
-      			
+
 			scripts/milk-FITS2shm
       scripts/milk-fitsheader
 			scripts/milk-fpsmkcmd
