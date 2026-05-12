@@ -220,6 +220,8 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo);
 
 errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
         imageID      outstreamID);
+errno_t processinfo_update_output_stream_atime(PROCESSINFO *processinfo,
+        imageID outstreamID, struct timespec *atime);
 
 errno_t processinfo_CTRLscreen();
 
