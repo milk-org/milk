@@ -3,13 +3,13 @@
 # Thin wrapper: delegates to milk-logshim-ctrl on
 
 case "${1-}" in
-    -h1|--help-oneline) echo "resume logging a shared memory stream"; exit 0 ;;
-    -h|--help) milk-logshim-ctrl --help; exit $? ;;
+    -h1|--help-oneline|-h|--help|-hm|--help-mono)
+        exec milk-logshim-ctrl "$1"
+        ;;
 esac
 
 if [ $# -ne 1 ]; then
-    echo "Usage: $(basename "$0") <stream>"
-    echo "   or: milk-logshim-ctrl on <stream>"
+    milk-logshim-ctrl --help
     exit 1
 fi
 
