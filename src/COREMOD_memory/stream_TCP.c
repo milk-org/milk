@@ -1280,7 +1280,8 @@ imageID common_image_NETWORKreceive(int port,
         _monitor_index++;
 
         img_p->streamproctrace[0].cnt0 = img_p->md->cnt0;
-        processinfo_update_output_stream(processinfo, ID); // TODO
+        processinfo_update_output_stream_atime(processinfo, ID,
+                                               &img_p->md->atime); // TODO
 
 loop_cleanup:
         if((data.processinfo == 1) && (processinfo->MeasureTiming == 1))

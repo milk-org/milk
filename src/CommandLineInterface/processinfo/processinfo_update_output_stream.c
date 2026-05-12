@@ -8,9 +8,10 @@
  *
  */
 
-errno_t processinfo_update_output_stream(
+errno_t processinfo_update_output_stream_atime(
     PROCESSINFO *processinfo,
-    imageID      outstreamID
+    imageID      outstreamID,
+    struct timespec *atime
 )
 {
     if(data.image[outstreamID].md->shared == 1)
@@ -70,7 +71,15 @@ errno_t processinfo_update_output_stream(
         DEBUG_TRACEPOINT(" ");
     }
 
-    ImageStreamIO_UpdateIm(&data.image[outstreamID]);
+    ImageStreamIO_UpdateIm_atime(&data.image[outstreamID], atime);
 
     return RETURN_SUCCESS;
+}
+
+errno_t processinfo_update_output_stream(
+    PROCESSINFO *processinfo,
+    imageID      outstreamID
+)
+{
+    processinfo_update_output_stream_atime(processinfo, outstreamID, NULL);
 }
