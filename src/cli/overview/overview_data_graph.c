@@ -319,17 +319,24 @@ void ov_build_graph(OV_MODEL *model)
                 continue;
             }
 
-            uint64_t flags =
-                f->stream_param_flags[sp];
             const char *pname =
                 f->stream_param_name[sp];
 
-            int is_out = 0;
-            if (flags & FPFLAG_WRITE)
+            /* Skip procinfo trigger stream —
+             * already handled by
+             * PROC_TRIGGER_STREAM edges */
+            if (strstr(pname, "procinfo.trigger"))
             {
-                is_out = 1;
+                continue;
             }
-            else if (strstr(pname, "out") || strstr(pname, "OUT"))
+
+            /* Determine direction by param name.
+             * FPFLAG_WRITE cannot be used — it
+             * means "user-editable", which is
+             * set for both inputs and outputs. */
+            int is_out = 0;
+            if (strstr(pname, "out")
+                || strstr(pname, "OUT"))
             {
                 is_out = 1;
             }
