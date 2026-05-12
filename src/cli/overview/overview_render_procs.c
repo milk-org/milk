@@ -159,13 +159,13 @@ static void ov_procs__render_rows(
 
             if (is_sel) {
                 use_ul = 1;
-                ul_color = OV_FG_BRIGHT;
+                ul_color = OV_UL_ACTIVE;
             } else if (is_frozen) {
                 use_ul = 1;
-                ul_color = OV_BG_FROZEN;
+                ul_color = OV_UL_FROZEN;
             } else if (is_rel) {
                 use_ul = 1;
-                ul_color = OV_BG_RELATED;
+                ul_color = OV_UL_RELATED;
             }
 
             /* Build the full row text into a local

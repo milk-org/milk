@@ -159,13 +159,13 @@ void ov_render_fps_panel(
 
             if (is_sel) {
                 use_ul = 1;
-                ul_color = OV_FG_BRIGHT;
+                ul_color = OV_UL_ACTIVE;
             } else if (is_frozen) {
                 use_ul = 1;
-                ul_color = OV_BG_FROZEN;
+                ul_color = OV_UL_FROZEN;
             } else if (is_rel) {
                 use_ul = 1;
-                ul_color = OV_BG_RELATED;
+                ul_color = OV_UL_RELATED;
             }
 
             int hs_rem = hs;
@@ -301,7 +301,11 @@ void ov_render_fps_panel(
                         int w = snprintf(NULL, 0, " [TRIG]");
                         ov_buf_printf(" [TRIG]");
                         ov_buf_reset_attr();
-                        ov_theme_bg(is_rel ? OV_BG_RELATED : OV_BG_PANEL);
+                        ov_theme_bg(row_bg);
+                        if (use_ul) {
+                            ov_theme_ul(ul_color);
+                            ov_buf_underline();
+                        }
                         n5 += w;
                     }
                     else
