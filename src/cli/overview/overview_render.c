@@ -10,6 +10,7 @@
  */
 
 #include "overview_render_internal.h"
+#include <math.h>
 
 
 extern float ov_scan_get_interval(void);
@@ -167,10 +168,10 @@ static const char *view_label(ov_view_t v)
     switch (v)
     {
     case OV_VIEW_DASHBOARD: return "DASH";
-    case OV_VIEW_GRAPH:     return "GRAPH";
     case OV_VIEW_STREAMS:   return "STRM";
     case OV_VIEW_PROCS:     return "PROC";
     case OV_VIEW_FPS:       return "FPS";
+    case OV_VIEW_GRAPH:     return "CONN";
     default:                return "";
     }
 }
@@ -223,36 +224,36 @@ void ov_render_header(
     ov_buf_pos(r.row, r.col);
     ov_theme_bg(OV_BG_HEADER);
 
-    ov_theme_fg(OV_FG_BRIGHT);
+    /* LCARS-style rounded end cap */
+    ov_theme_fg(OV_GRAD_LO);
+    ov_buf_printf("%s", OV_LCARS_LEFT);
+
+    /* Gradient header text */
     ov_buf_bold();
-    ov_buf_printf(" %s milkCTRL ", OV_BULLET);
+    ov_buf_printf_gradient(OV_GRAD_LO, OV_GRAD_HI, " %s milkCTRL ", OV_BULLET);
     ov_buf_reset_attr();
 
+    /* LCARS-style rounded end cap (matching the gradient end) */
     ov_theme_bg(OV_BG_HEADER);
+    ov_theme_fg(OV_GRAD_HI);
+    ov_buf_printf("%s ", OV_LCARS_RIGHT);
 
     /* Blinking badge — visible when ctrl_mode is ON, READ ONLY when OFF */
     int ctrl_w = 0;
     if (lay->ctrl_mode)
     {
-        /* Blink: show solid for 4 frames, dim for 2 frames (6-frame cycle) */
-        int blink_on = ((lay->ctrl_blink / 4) % 2 == 0);
-        if (blink_on)
-        {
-            ov_buf_bg(180, 20, 20);    /* deep red background */
-            ov_buf_fg(255, 220, 220);  /* light text */
-            ov_buf_bold();
-            ov_buf_printf(" CONTROL ");
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_HEADER);
-        }
-        else
-        {
-            ov_buf_bg(80, 10, 10);     /* dim red background */
-            ov_buf_fg(160, 80, 80);    /* dim text */
-            ov_buf_printf(" CONTROL ");
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_HEADER);
-        }
+        /* Sine-based temporal pulsing for "CONTROL" badge */
+        float pulse = 0.5f + 0.5f * sinf(lay->ctrl_blink * OV_ANIM_PULSE_SPEED);
+        ov_rgb_t ctrl_bg = ov_rgb_lerp(OV_ANIM_PULSE_BG_MIN, OV_ANIM_PULSE_BG_MAX, pulse);
+        ov_rgb_t ctrl_fg = ov_rgb_lerp(OV_ANIM_PULSE_FG_MIN, OV_ANIM_PULSE_FG_MAX, pulse);
+
+        ov_buf_bg(ctrl_bg.r, ctrl_bg.g, ctrl_bg.b);
+        ov_buf_fg(ctrl_fg.r, ctrl_fg.g, ctrl_fg.b);
+        ov_buf_bold();
+        ov_buf_printf(" CONTROL ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+
         ctrl_w = 9; /* visual width of " CONTROL " */
     }
     else
@@ -627,9 +628,17 @@ void ov_render_frame(
             ov_render_streams_panel(lay, m, &rel);
             ov_render_procs_panel(lay, m, &rel);
             ov_render_fps_panel(lay, m, &rel);
-            /* Detail pane replaces graph when active */
-            if (!lay->detail_mode
-                || !ov_render_detail_panel(lay, m))
+            int rendered = 0;
+            if (lay->graph_tab_mode == 1)
+            {
+                rendered = ov_render_detail_panel(lay, m);
+            }
+            else if (lay->graph_tab_mode == 2)
+            {
+                rendered = ov_render_resources_panel(lay, m);
+            }
+
+            if (!rendered)
             {
                 ov_render_graph_panel(lay, m);
             }

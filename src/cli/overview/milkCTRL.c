@@ -50,6 +50,7 @@ int      ov__cursor_row = 1;
 int      ov__cursor_col = 1;
 uint32_t ov__current_fg = OV_COLOR_NONE;
 uint32_t ov__current_bg = OV_COLOR_NONE;
+uint32_t ov__current_ul = OV_COLOR_NONE;
 uint8_t  ov__current_attr = 0;
 
 /* =========================================================

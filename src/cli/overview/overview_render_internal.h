@@ -39,7 +39,9 @@
 typedef struct
 {
     uint64_t streams[OV_STREAM_WORDS];
+    uint64_t stream_written[OV_STREAM_WORDS];
     uint64_t fps[OV_FPS_WORDS];
+    uint64_t fps_writes[OV_FPS_WORDS];
     uint64_t procs[OV_PROC_WORDS];
     uint64_t proc_writes[OV_PROC_WORDS];
     uint32_t fps_param_mask[OV_MAX_FPS];
@@ -188,6 +190,10 @@ void ov_render_fps_panel(
     const OV_RELATED *rel);
 
 int ov_render_detail_panel(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
+
+int ov_render_resources_panel(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m);
 

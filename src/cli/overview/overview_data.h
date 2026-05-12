@@ -47,6 +47,53 @@ typedef enum
  */
 ov_pid_status_t pid_get_status(pid_t pid);
 
+/**
+ * pid_get_core_utilization - get cores actively utilized by a process's threads.
+ * @pid: process ID
+ * @cores: output array of core IDs
+ * @max_cores: maximum number of cores to read
+ *
+ * Return: number of cores written to @cores.
+ */
+int pid_get_core_utilization(pid_t pid, int *cores, int max_cores);
+
+typedef struct {
+    unsigned long minflt;
+    unsigned long majflt;
+    unsigned long threads;
+    unsigned long vol_ctxt;
+    unsigned long nonvol_ctxt;
+    unsigned long migrations;
+} ov_advanced_stats_t;
+
+/**
+ * pid_get_advanced_stats - get scheduling, memory faults, and thread counts
+ */
+int pid_get_advanced_stats(pid_t pid, ov_advanced_stats_t *out);
+
+typedef struct {
+    uint64_t instructions;
+    uint64_t cache_misses;
+    uint64_t branch_misses;
+    uint64_t l1d_misses;
+    uint64_t llc_misses;
+    uint64_t dtlb_misses;
+    
+    double inst_per_loop;
+    double cache_miss_per_loop;
+    double branch_miss_per_loop;
+    double l1d_miss_per_loop;
+    double llc_miss_per_loop;
+    double dtlb_miss_per_loop;
+} ov_perf_counters_t;
+
+/**
+ * pid_read_perf_counters - get hardware metrics via perf_event_open
+ * @loopcnt: current loop iteration count of the process, used to calculate per-loop rates.
+ * Requires CAP_PERFMON or root, or perf_event_paranoid <= 2
+ */
+int pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
+
 /* =========================================================
  * Node types
  * ========================================================= */
