@@ -236,6 +236,7 @@ and enforced. Know what they require:
 | `script-naming.md` | `milk-*` for OS executables, `.milk` for CLI scripts |
 | `shared-memory-safety.md` | SHM cleanup, stale detection, stream creation |
 | `testing-practices.md` | Run tests after changes; add regression tests |
+| `tui-browser-testing.md` | milk TUIs cannot be tested using browser testing tools |
 | `whatsnew-update.md` | Add entry to `docs/whatsnew.md` for significant features |
 
 ---

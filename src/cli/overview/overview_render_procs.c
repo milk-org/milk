@@ -153,10 +153,14 @@ static void ov_procs__render_rows(
                           && has_rel);
             int is_write = (has_rel && rel != NULL
                             && bget(rel->proc_writes, pi));
-            ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED
-                            : is_frozen ? OV_BG_FROZEN
-                            : is_rel ? OV_BG_RELATED
-                                     : OV_BG_PANEL;
+            ov_rgb_t row_bg = OV_BG_PANEL;
+            if (is_sel) {
+                row_bg = OV_BG_SELECTED;
+            } else if (is_frozen) {
+                row_bg = OV_BG_FROZEN;
+            } else if (is_rel) {
+                row_bg = OV_BG_RELATED;
+            }
 
             /* Build the full row text into a local
              * buffer so we can apply hscroll */
@@ -339,7 +343,9 @@ static void ov_procs__render_rows(
 
             /* Re-do per-field with colors */
             ov_buf_pos(row, r.col + 1);
-            ov_theme_bg(row_bg);
+            if (is_sel || is_frozen || is_rel) {
+                ov_theme_bg(row_bg);
+            }
 
             /* Lineage depth badge: ◀N or N▶ */
             int8_t sdepth = local_depth[pi];
@@ -353,6 +359,14 @@ static void ov_procs__render_rows(
                 } else {
                     if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
                     else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
+                }
+            } else if (eff_focus == OV_FOCUS_STREAMS && has_rel) {
+                if (is_write) {
+                    ov_theme_fg(OV_FG_ERROR);
+                    ov_buf_printf("\xe2\x96\xb6   ");
+                } else {
+                    ov_theme_fg(OV_FG_ACTIVE);
+                    ov_buf_printf("\xe2\x97\x80   ");
                 }
             } else {
                 if (is_sel || is_frozen) {
@@ -414,7 +428,9 @@ static void ov_procs__render_rows(
                                 ov_buf_printf("%.*s", len_to_print, fb + print_start);
                                 if (is_match[s]) {
                                     ov_buf_reset_attr();
-                                    ov_theme_bg(row_bg);
+                                    if (is_sel || is_frozen || is_rel) {
+                                        ov_theme_bg(row_bg);
+                                    }
                                 }
                             }
                         }
@@ -796,6 +812,7 @@ static void ov_procs__render_rows(
                     ov_buf_hline(' ', rem);
                 }
             }
+            ov_buf_reset_attr();
         }
         else
         {
@@ -917,7 +934,7 @@ void ov_render_procs_panel(
     ov_draw_panel_border(
         r.row, r.col, r.height, r.width,
         title, OV_FG_PROC,
-        lay->focus == OV_FOCUS_PROCS);
+        lay->focus == OV_FOCUS_PROCS, 0);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_proc;

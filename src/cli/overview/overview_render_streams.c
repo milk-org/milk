@@ -62,7 +62,7 @@ void ov_render_streams_panel(
     ov_draw_panel_border(
         r.row, r.col, r.height, r.width,
         title, OV_FG_STREAM,
-        lay->focus == OV_FOCUS_STREAMS);
+        lay->focus == OV_FOCUS_STREAMS, 0);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_stream;
@@ -322,11 +322,14 @@ void ov_render_streams_panel(
                  && eff_focus != OV_FOCUS_STREAMS
                  && rel != NULL
                  && bget(rel->streams, si));
-            ov_rgb_t row_bg = is_sel
-                ? OV_BG_SELECTED
-                : is_frozen ? OV_BG_FROZEN
-                : is_rel ? OV_BG_RELATED
-                         : OV_BG_PANEL;
+            ov_rgb_t row_bg = OV_BG_PANEL;
+            if (is_sel) {
+                row_bg = OV_BG_SELECTED;
+            } else if (is_frozen) {
+                row_bg = OV_BG_FROZEN;
+            } else if (is_rel) {
+                row_bg = OV_BG_RELATED;
+            }
 
             int hs_rem = hs;
             int printed = 4;
@@ -374,7 +377,9 @@ void ov_render_streams_panel(
                     fmt, ##__VA_ARGS__);                \
                 if (_match) {                          \
                     ov_buf_reset_attr();                \
-                    ov_theme_bg(row_bg);                \
+                    if (is_sel || is_frozen || is_rel) {   \
+                        ov_theme_bg(row_bg);            \
+                    }                                   \
                 }                                      \
             } while(0)
 
@@ -400,9 +405,22 @@ void ov_render_streams_panel(
             {
                 if (s->update_hz > 0.1) {
                     ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("\xe2\x97\x8f   ");
+                    ov_buf_printf("\xe2\x97\x8f ");
                 } else {
-                    ov_buf_printf("    ");
+                    ov_buf_printf("  ");
+                }
+
+                if ((eff_focus == OV_FOCUS_PROCS || eff_focus == OV_FOCUS_FPS) && is_rel && rel != NULL) {
+                    int is_written = bget(rel->stream_written, si);
+                    if (is_written) {
+                        ov_theme_fg(OV_FG_ERROR);
+                        ov_buf_printf("\xe2\x96\xb6 ");
+                    } else {
+                        ov_theme_fg(OV_FG_ACTIVE);
+                        ov_buf_printf("\xe2\x97\x80 ");
+                    }
+                } else {
+                    ov_buf_printf("  ");
                 }
             }
 
@@ -494,6 +512,7 @@ void ov_render_streams_panel(
             // The active dot is now printed at the start of the line
             
             render_pad_spaces(printed, r.width);
+            ov_buf_reset_attr();
         }
         else
         {

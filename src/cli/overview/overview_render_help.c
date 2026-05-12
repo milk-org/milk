@@ -50,6 +50,7 @@ static const help_line_t HELP[] =
     { "  TAB      Cycle panel focus",           HF_CHILD,   HS_NAV },
     { "  UP/DOWN  Navigate list",               HF_CHILD,   HS_NAV },
     { "  Left/Right  Panel focus / scroll",     HF_CHILD,   HS_NAV },
+    { "  SHIFT+Up/Down Ancestry (Up/Downstream)", HF_CHILD,   HS_NAV },
     { "  PgUp/Dn  Scroll page",                 HF_CHILD,   HS_NAV },
     { "  Home/End  Jump to top/bottom",         HF_CHILD,   HS_NAV },
     /* --- Sorting --- */
@@ -234,7 +235,7 @@ void ov_render_help(const OV_LAYOUT *lay)
     ov_draw_panel_border(
         pr, pc, ph, pw,
         "HELP  (↑↓ navigate  ENTER expand  h close)",
-        OV_FG_BRIGHT, 1);
+        OV_FG_BRIGHT, 1, 0);
 
     /* Clear interior */
     for (int r = pr + 1; r < pr + ph - 1; r++)

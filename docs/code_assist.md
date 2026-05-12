@@ -65,6 +65,7 @@ requiring you to remember every checklist.
 | Script naming | [`script-naming.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/script-naming.md) | `milk-*` for OS executables, `.milk` for CLI scripts. |
 | Shared memory safety | [`shared-memory-safety.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/shared-memory-safety.md) | SHM cleanup, stale detection, stream creation. |
 | Testing practices | [`testing-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/testing-practices.md) | Run tests after changes; add regression tests. |
+| TUI browser testing | [`tui-browser-testing.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/tui-browser-testing.md) | milk TUIs cannot be tested using browser testing tools. |
 | Workspace layout | [`files-directories.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/files-directories.md) | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
 | What's New | [`whatsnew-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/whatsnew-update.md) | Add entry to `docs/whatsnew.md` for significant features. |
 

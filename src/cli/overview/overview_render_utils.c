@@ -97,9 +97,11 @@ void clear_row(
     int width,
     ov_rgb_t bg)
 {
+    ov_buf_reset_attr();
     ov_buf_pos(row, col);
     ov_theme_bg(bg);
     ov_buf_hline(' ', width);
+    ov_buf_reset_attr();
 }
 
 /* Pad the remainder of a panel's interior row */

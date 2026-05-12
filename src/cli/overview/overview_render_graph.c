@@ -217,7 +217,8 @@ void ov_render_graph_panel(
     const OV_MODEL  *m)
 {
     OV_RECT r = lay->r_graph;
-    ov_draw_panel_border(r.row, r.col, r.height, r.width, "CONNECTIONS", OV_FG_CONN, lay->focus == OV_FOCUS_GRAPH);
+    const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
+    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 3, lay->graph_tab_mode, OV_FG_CONN, lay->focus == OV_FOCUS_GRAPH);
 
     int max_rows = r.height - 3;
     int row = r.row + 1;
@@ -267,8 +268,20 @@ void ov_render_graph_panel(
         ov_buf_pos(row, r.col + 1);
         
         int is_sel = (ri == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
-        ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : OV_BG_PANEL;
+        ov_rgb_t row_bg = OV_BG_PANEL;
+        int use_ul = 0;
+        ov_rgb_t ul_color = {0,0,0};
+
+        if (is_sel) {
+            use_ul = 1;
+            ul_color = OV_FG_BRIGHT;
+        }
+
         ov_theme_bg(row_bg);
+        if (use_ul) {
+            ov_theme_ul(ul_color);
+            ov_buf_underline();
+        }
         ov_buf_printf(" ");
 
         ov_rgb_t c = OV_FG_TEXT;
@@ -344,6 +357,7 @@ void ov_render_graph_panel(
         #undef GRAPH_FIELD
 
         render_pad_spaces(printed, r.width);
+        ov_buf_reset_attr();
         row++;
         rendered_rows++;
     }

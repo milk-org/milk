@@ -84,8 +84,13 @@ void ov_render_status(
         break;
     }
 
-    const char *detail_label =
-        lay->detail_mode ? " [DETAIL]" : "";
+    const char *detail_label = "";
+    switch (lay->graph_tab_mode)
+    {
+    case 0: detail_label = " [CONN]";   break;
+    case 1: detail_label = " [DETAIL]"; break;
+    case 2: detail_label = " [RES]";    break;
+    }
 
     /* Filter editing prompt overrides normal status */
     if (lay->filter_editing)

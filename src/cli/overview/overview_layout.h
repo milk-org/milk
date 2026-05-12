@@ -12,10 +12,10 @@
 /* View modes */
 typedef enum {
     OV_VIEW_DASHBOARD = 0,
-    OV_VIEW_GRAPH,
     OV_VIEW_STREAMS,
     OV_VIEW_PROCS,
     OV_VIEW_FPS,
+    OV_VIEW_GRAPH,
     OV_VIEW_COUNT,
 } ov_view_t;
 
@@ -100,8 +100,8 @@ typedef struct {
     /* Control mode */
     int          ctrl_mode;
     int          ctrl_blink;
-    /* Detail pane: replaces CONNECTIONS when item selected */
-    int          detail_mode;
+    /* Graph panel tab mode: 0=CONNECTIONS, 1=DETAILS, 2=RESOURCES */
+    int          graph_tab_mode;
     /* Horizontal scroll per panel */
     int          hscroll_stream;
     int          hscroll_proc;
