@@ -674,17 +674,13 @@ install(PROGRAMS
                         scripts/milk-logshimoff
                         scripts/milk-logshimon
                         scripts/milk-logshimstat
-                        scripts/milk-makecsetandrt
                         scripts/merge3DfitsTelemetry
       scripts/milk-images-merge
                         scripts/milk-scriptexample
                         scripts/milk-script-advanced
                         scripts/milk-script-std-config
                         scripts/milk-streamlink
-      scripts/milk-stream-scan
-
                         scripts/milk-shm2FITSloop
-                        scripts/milk-shmim-rm
 
                         scripts/tmuxkillall
                         scripts/tmuxsessionname
