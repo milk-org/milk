@@ -1,86 +1,10 @@
 #!/usr/bin/env bash
+# milk-shmimave — average stream frames
+# Thin wrapper: delegates to milk-fpsexec-mem-streamave
 
-# This script uses milk-argparse
-# See template milk-scriptexample in module milk_module_example for template and instructions
+case "${1-}" in
+    -h1|--help-oneline) echo "average stream frames"; exit 0 ;;
+    -h|--help) milk-fpsexec-mem-streamave --help; exit $? ;;
+esac
 
-# script 1-line description
-MSdescr="average stream frames"
-
-# Extended description
-MSdescr="average stream frames
-
-If output file name = NULL, do not write to filesystem
-Can write to image stream with -s option
-"
-
-# standard configuration
-#
-source milk-script-std-config
-
-# prerequisites
-#
-RequiredCommands=( milk )
-RequiredFiles=()
-RequiredDirs=()
-
-# SCRIPT ARGUMENTS (mandatory)
-# syntax: "name:type(s)/test(s):description"
-
-MSarg+=( "streamname:string:stream name" )
-MSarg+=( "nbave:integer:number of frames" )
-MSarg+=( "outname:string:outputename (FITS or stream)" )
-
-# SCRIPT OPTIONS
-# syntax: "short:long:functioncall:args[types]:description"
-
-# prefered semaphore
-#
-semindex="0"
-MSopt+=( "semi:semindex:set_semindex:semindex[int]:set prefered input semaphore" )
-function set_semindex() {
-	semindex="$1"
-}
-
-# output image stream
-#
-SOUTNAME="NULL"
-MSopt+=( "s:outsname:set_outsname:SOUTNAME[string]:set output stream name" )
-function set_outsname() {
-	SOUTNAME="$1"
-}
-
-# parse arguments
-source milk-argparse
-streamname="${inputMSargARRAY[0]}"
-NBframe="${inputMSargARRAY[1]}"
-outname="${inputMSargARRAY[2]}"
-
-echo ${streamname}
-
-pname="milkshmimave"
-fifoname="milkCLIfifo.${pname}"
-SF="milkCLIstartup.${pname}"
-
-echo "readshmim ${streamname}" > $SF
-echo "streamave ..procinfo 1" >> $SF
-echo "streamave ..triggersname ${streamname}" >> $SF
-echo "streamave ..triggermode 3" >> $SF
-echo "streamave ..loopcntMax ${NBframe}" >> $SF
-echo "streamave ..semindexrequested ${semindex}" >> $SF
-#echo "streamave ?" >> $SF
-echo "streamave ${streamname} imave ${NBframe}" >> $SF
-
-echo "# outname: ${outname}" >> $SF
-if [ "$outname" != "NULL" ]; then
-echo "saveFITS imave \"${outname}\"" >> $SF
-fi
-
-echo "# SOUTNAME: ${SOUTNAME}" >> $SF
-if [ "$SOUTNAME" != "NULL" ]; then
-echo "imcpshm imave ${SOUTNAME}" >> $SF
-fi
-echo "exitCLI" >> $SF
-
-MILK_QUIET=1 milk -n ${pname} -f ${fifoname} -s ${SF}
-
-rm ${SF}
+exec milk-fpsexec-mem-streamave "$@"
