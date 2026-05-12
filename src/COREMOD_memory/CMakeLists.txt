@@ -58,7 +58,6 @@ set(SOURCEFILES
     stream_poke.c
     stream_sem.c
     stream_TCP.c
-    stream_UDP.c
     stream_updateloop.c
     variable_ID.c
    )
@@ -117,7 +116,6 @@ set(INCLUDEFILES
     stream_poke.h
     stream_sem.h
     stream_TCP.h
-    stream_UDP.h
     stream_updateloop.h
     variable_ID.h
    )

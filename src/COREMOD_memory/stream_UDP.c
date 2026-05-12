@@ -16,142 +16,49 @@
 #include "read_shmim.h"
 #include "stream_sem.h"
 
-// set to 1 if transfering keywords
-static int TCPTRANSFERKW = 1;
-static int MULTIGRAM_MAGIC = 0x3E; // Random magic to start datagrams with.
-static int DGRAM_CHUNK_SIZE = 62 *
-                              1024; // Max payload per datagram, just shy of the maximum 65507 bytes
-
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
-imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
-        const char *IPaddr,
-        int         port,
-        int         do_counter_sync,
-        int         RT_priority);
-
-imageID COREMOD_MEMORY_image_NETUDPreceive(int port,
-        int do_counter_sync,
-        int RT_priority);
-
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
-
-static errno_t COREMOD_MEMORY_image_NETUDPtransmit__cli()
-{
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
-            CLI_checkarg(5, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_NETUDPtransmit(data.cmdargtoken[1].val.string,
-                                            data.cmdargtoken[2].val.string,
-                                            data.cmdargtoken[3].val.numl,
-                                            data.cmdargtoken[4].val.numl,
-                                            data.cmdargtoken[5].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-static errno_t COREMOD_MEMORY_image_NETUDPreceive__cli()
-{
-    if(0 + CLI_checkarg(1, CLIARG_INT64) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_NETUDPreceive(data.cmdargtoken[1].val.numl,
-                                           data.cmdargtoken[2].val.numl,
-                                           data.cmdargtoken[3].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t stream__UDP_addCLIcmd()
-{
-
-    RegisterCLIcommand(
-        "imudptransmit",
-        __FILE__,
-        COREMOD_MEMORY_image_NETUDPtransmit__cli,
-        "transmit image over network",
-        "<image> <IP addr> <port [long]> <do_counter_sync [int]>",
-        "imudptransmit im1 127.0.0.1 0 8888 0",
-        "long COREMOD_MEMORY_image_NETWORKtransmit(const char "
-        "*IDname, const char *IPaddr, int port, int do_counter_sync)");
-
-    RegisterCLIcommand(
-        "imudpreceive",
-        __FILE__,
-        COREMOD_MEMORY_image_NETUDPreceive__cli,
-        "receive image(s) over network. do_counter_sync=1 uses counter "
-        "instead of semaphore",
-        "<port [long]> <do_counter_sync [int]> <RT priority>",
-        "imupdreceive 8887 0 80",
-        "long COREMOD_MEMORY_image_NETWORKreceive(int port, int "
-        "do_counter_sync, int RT_priority)");
-
-    return RETURN_SUCCESS;
-}
-
 /** continuously transmits 2D image through TCP link
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
 
 imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
-        const char *IPaddr,
-        int         port,
-        int         do_counter_sync,
-        int         RT_priority)
+        const char *IPaddr, int port,
+        int do_counter_sync,
+        int RT_priority)
 {
-    imageID            ID;
+    imageID ID;
     struct sockaddr_in sock_server;
-    int                fds_client;
-    int                flag = 1;
-    //int                result;
-    unsigned long long cnt  = 0;
-    long long          iter = 0;
-    long               framesize; // pixel data only
-    uint32_t           xsize, ysize;
-    char              *ptr_img_data; // source
-    char              *ptr_img_data_slice; // source - offset by slice
-    int                res; // Return status for socket ops
-    int                byte_sock_count;
+    int fds_client;
+    int flag = 1;
+    // int                result;
+    unsigned long long cnt = 0;
+    long long iter = 0;
+    long framesize; // pixel data only
+    uint32_t xsize, ysize;
+    char *ptr_img_data;       // source
+    char *ptr_img_data_slice; // source - offset by slice
+    int res;                  // Return status for socket ops
+    int byte_sock_count;
 
     struct timespec ts;
-    long            scnt;
-    int             semval;
-    int             semr;
-    int             slice, oldslice;
-    int             NBslices;
+    long scnt;
+    int semval;
+    int semr;
+    int slice, oldslice;
+    int NBslices;
 
-    long            framesize1; // pixel data + metadata
-    long            framesizeall; // total frame size : pixel data + metadata + kw
+    long framesize1;   // pixel data + metadata
+    long framesizeall; // total frame size : pixel data + metadata + kw
 
-    char           *buff; // socket-side buffer (magic and metadata at beginning)
-    char           *ptr_buff_metadata; // socket-side buffer at metadata offset
-    char           *ptr_buff_data; // socket-side buffer at data offset
-    char           *ptr_buff_keywords; // socket-side buffer at keyword offset
+    char *buff;              // socket-side buffer (magic and metadata at beginning)
+    char *ptr_buff_metadata; // socket-side buffer at metadata offset
+    char *ptr_buff_data;     // socket-side buffer at data offset
+    char *ptr_buff_keywords; // socket-side buffer at keyword offset
 
     // Datagrams
-    long            n_udp_dgrams;
-    long            last_dgram_chunk;
-    char           *ptr_this_dgram;
-    long            this_dgram_size;
+    long n_udp_dgrams;
+    long last_dgram_chunk;
+    char *ptr_this_dgram;
+    long this_dgram_size;
 
     int semtrig = 6; // TODO - scan for available sem
     // IMPORTANT: do not use semtrig 0
@@ -198,32 +105,35 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     ID = image_ID(IDname);
 
+// TODO 1. FDS client setup
     if((fds_client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
         printf("ERROR creating socket\n");
         exit(0);
     }
 
-    setsockopt(fds_client, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
-    setsockopt(fds_client, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
+    setsockopt(fds_client, SOL_SOCKET, SO_REUSEADDR, (char *)&flag, sizeof(flag));
+    setsockopt(fds_client, SOL_SOCKET, SO_REUSEPORT, (char *)&flag, sizeof(flag));
 
 #ifdef SO_ATTACH_REUSEPORT_CBPF
-    setsockopt(fds_client, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
+    setsockopt(fds_client, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *)&flag,
                sizeof(flag));
 #endif
 
     if(loopOK == 1)
     {
-        memset((char *) &sock_server, 0, sizeof(sock_server));
-        sock_server.sin_family      = AF_INET;
-        sock_server.sin_port        = htons(port);
+        memset((char *)&sock_server, 0, sizeof(sock_server));
+        sock_server.sin_family = AF_INET;
+        sock_server.sin_port = htons(port);
         sock_server.sin_addr.s_addr = inet_addr(IPaddr);
     }
 
+// TODO 2. Initial send
+// TODO 3. Sizing
     if(loopOK == 1)
     {
-        xsize    = data.image[ID].md[0].size[0];
-        ysize    = data.image[ID].md[0].size[1];
+        xsize = data.image[ID].md[0].size[0];
+        ysize = data.image[ID].md[0].size[1];
         NBslices = 1;
         if(data.image[ID].md[0].naxis > 2 && data.image[ID].md[0].size[2] > 1)
         {
@@ -241,11 +151,11 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     if(loopOK == 1)
     {
-        ptr_img_data = (char *) ImageStreamIO_get_image_d_ptr(&data.image[ID]);
+        ptr_img_data = (char *)ImageStreamIO_get_image_d_ptr(&data.image[ID]);
 
         framesize1 = framesize + sizeof(IMAGE_METADATA);
 
-        if(TCPTRANSFERKW == 0)
+        if(SEND_KEYWORDS == 0)
         {
             framesizeall = framesize1;
         }
@@ -260,7 +170,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         last_dgram_chunk = framesizeall % DGRAM_CHUNK_SIZE;
 
         // Prepare transmit buffer - add two bytes for the magic + dgram number
-        buff = (char *) malloc(sizeof(char) * framesizeall);
+        buff = (char *)malloc(sizeof(char) * framesizeall);
         ptr_buff_metadata = buff + 2;
         ptr_buff_data = ptr_buff_metadata + sizeof(IMAGE_METADATA);
         ptr_buff_keywords = ptr_buff_data + framesize;
@@ -270,7 +180,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         fflush(stdout);
 
         oldslice = 0;
-        //sockOK = 1;
+        // sockOK = 1;
         printf("sem = %d\n", data.image[ID].md[0].sem);
         fflush(stdout);
     }
@@ -303,7 +213,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
             {
                 usleep(5);
             }
-            cnt  = data.image[ID].md[0].cnt0;
+            cnt = data.image[ID].md[0].cnt0;
             semr = 0;
         }
         else
@@ -370,10 +280,10 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                 ptr_img_data_slice = ptr_img_data + framesize * slice;
                 memcpy(ptr_buff_data, ptr_img_data_slice, framesize);
 
-                if(TCPTRANSFERKW == 1)
+                if(SEND_KEYWORDS == 1)
                 {
                     memcpy(ptr_buff_keywords,
-                           (char *) data.image[ID].kw,
+                           (char *)data.image[ID].kw,
                            data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
@@ -386,10 +296,10 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                                       DGRAM_CHUNK_SIZE + 2;
                     // Using the extra 2 bytes at the beginning for the first dgram
                     // Overwriting the 2 last bytes of previous dgrams for subsequent ones
-                    ptr_this_dgram[0] = MULTIGRAM_MAGIC;
+                    ptr_this_dgram[0] = MAGIC_UDP_MULTIGRAMS;
                     ptr_this_dgram[1] = dgram;
 
-                    //printf("This dgram id: %d, size: %ld\n", dgram, this_dgram_size);
+                    // printf("This dgram id: %d, size: %ld\n", dgram, this_dgram_size);
                     res = sendto(fds_client, ptr_this_dgram, this_dgram_size, 0,
                                  (const struct sockaddr *)&sock_server, sizeof(sock_server));
                     byte_sock_count += res;
@@ -451,51 +361,51 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 {
     struct sockaddr_in sock_server;
     struct sockaddr_in sock_client;
-    int                fds_server;
-    //int                fds_client;
-    socklen_t          slen_client = (socklen_t) sizeof(sock_client);
+    int fds_server;
+    // int                fds_client;
+    socklen_t slen_client = (socklen_t)sizeof(sock_client);
 
-    int  flag = 1;
+    int flag = 1;
     long recvsize;
-    //int  result;
-    //int  MAXPENDING = 5;
+    // int  result;
+    // int  MAXPENDING = 5;
 
     IMAGE_METADATA *imgmd;
     IMAGE_METADATA *imgmd_remote;
-    imageID         ID;
-    long            framesize;
-    uint32_t        xsize;
-    uint32_t        ysize;
+    imageID ID;
+    long framesize;
+    uint32_t xsize;
+    uint32_t ysize;
 
-    char           *ptr_dest_data_root; // Dest ISIO data buffer
-    char           *ptr_dest_data_sliceroot; // Dest ISIO data buffer
-//    char           *ptr_dest_data_current; // Dest ISIO data buffer
+    char *ptr_dest_data_root;      // Dest ISIO data buffer
+    char *ptr_dest_data_sliceroot; // Dest ISIO data buffer
+    //    char           *ptr_dest_data_current; // Dest ISIO data buffer
 
-    char           *ptr_buff_metadata; // socket-side buffer at metadata offset
-    char           *ptr_buff_data; // socket-side buffer at data offset
-    char           *ptr_buff_keywords; // socket-side buffer at keyword offset
+    char *ptr_buff_metadata; // socket-side buffer at metadata offset
+    char *ptr_buff_data;     // socket-side buffer at data offset
+    char *ptr_buff_keywords; // socket-side buffer at keyword offset
 
-    char           *buff; // socket-side complete buffer
-    char           *buff_udp; // socket-side datagram buffer
-    buff_udp = (char *) malloc(sizeof(char) * DGRAM_CHUNK_SIZE + 2);
-    char           *bigbuff_1MB; // socket-side datagram buffer
-    bigbuff_1MB = (char *) malloc(sizeof(char) * 1024 * 1024);
+    char *buff;     // socket-side complete buffer
+    char *buff_udp; // socket-side datagram buffer
+    buff_udp = (char *)malloc(sizeof(char) * DGRAM_CHUNK_SIZE + 2);
+    char *bigbuff_1MB; // socket-side datagram buffer
+    bigbuff_1MB = (char *)malloc(sizeof(char) * 1024 * 1024);
 
     // Datagrams
-    long            n_udp_dgrams;
-    long            last_dgram_chunk;
+    long n_udp_dgrams;
+    long last_dgram_chunk;
 
-    long            NBslices;
-    int             socketOpen = 1; // 0 if socket is closed
-    int             semval;
-    int             semnb;
-    int             OKim;
-    int             axis;
+    long NBslices;
+    int socketOpen = 1; // 0 if socket is closed
+    int semval;
+    int semnb;
+    int OKim;
+    int axis;
 
-    imgmd = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
+    imgmd = (IMAGE_METADATA *)malloc(sizeof(IMAGE_METADATA));
 
-    long                 framesize1;    // pixel data + metadata
-    long                 framesizefull; // pixel data + metadata + kw
+    long framesize1;    // pixel data + metadata
+    long framesizefull; // pixel data + metadata + kw
 
     struct sched_param schedpar;
 
@@ -507,7 +417,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         //
         char pinfoname[STRINGMAXLEN_FILENAME];
         snprintf(pinfoname, STRINGMAXLEN_FILENAME, "ntw-receive-%d", port);
-        processinfo           = processinfo_shm_create(pinfoname, 0);
+        processinfo = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = PROCESSINFO_LOOPSTAT_INIT;
 
         strcpy(processinfo->source_FUNCTION, __FUNCTION__);
@@ -556,12 +466,12 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+    if(seteuid(data.euid) != 0)  // This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0, SCHED_FIFO, &schedpar);
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
+    if(seteuid(data.ruid) != 0)  // Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
@@ -578,24 +488,24 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         exit(0);
     }
 
-    memset((char *) &sock_server, 0, sizeof(sock_server));
+    memset((char *)&sock_server, 0, sizeof(sock_server));
 
-    sock_server.sin_family      = AF_INET;
-    sock_server.sin_port        = htons(port);
+    sock_server.sin_family = AF_INET;
+    sock_server.sin_port = htons(port);
     sock_server.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    setsockopt(fds_server, SOL_SOCKET, SO_NO_CHECK, (char *) & flag, sizeof(flag));
-    setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
-    setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
+    setsockopt(fds_server, SOL_SOCKET, SO_NO_CHECK, (char *)&flag, sizeof(flag));
+    setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *)&flag, sizeof(flag));
+    setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *)&flag, sizeof(flag));
 
 #ifdef SO_ATTACH_REUSEPORT_CBPF
-    setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
+    setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *)&flag,
                sizeof(flag));
 #endif
 
-    //bind socket to port
+    // bind socket to port
     if(bind(fds_server,
-            (struct sockaddr *) &sock_server,
+            (struct sockaddr *)&sock_server,
             sizeof(sock_server)) == -1)
     {
         char msgstring[200];
@@ -641,7 +551,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         // printf("Init phase: recvsize = %ld, buff_udp[0] = %d, buff_udp[1] = %d\n", recvsize, buff_udp[0], buff_udp[1]);
 
         // If this is a first datagram, we're having the metadata here:
-        if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
+        if(buff_udp[0] == MAGIC_UDP_MULTIGRAMS && buff_udp[1] == 0)
         {
             memcpy(imgmd, buff_udp + 2, sizeof(IMAGE_METADATA));
             break;
@@ -699,7 +609,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     int nbkw = 0;
-    if(TCPTRANSFERKW == 1)
+    if(SEND_KEYWORDS == 1)
     {
         nbkw = imgmd[0].NBkw;
         if(imgmd[0].NBkw != data.image[ID].md[0].NBkw)
@@ -729,8 +639,8 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         printf("REUSING EXISTING IMAGE %s\n", imgmd[0].name);
     }
 
-    xsize    = data.image[ID].md[0].size[0];
-    ysize    = data.image[ID].md[0].size[1];
+    xsize = data.image[ID].md[0].size[0];
+    ysize = data.image[ID].md[0].size[1];
     NBslices = 1;
     if(data.image[ID].md[0].naxis > 2)
         if(data.image[ID].md[0].size[2] > 1)
@@ -748,16 +658,16 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                  200,
                  "<- %s [%d x %d x %ld] %s",
                  imgmd[0].name,
-                 (int) xsize,
-                 (int) ysize,
+                 (int)xsize,
+                 (int)ysize,
                  NBslices,
                  typestring);
         snprintf(processinfo->description,
                  STRINGMAXLEN_PROCESSINFO_DESCRIPTION,
                  "%s %dx%dx%ld %s",
                  imgmd[0].name,
-                 (int) xsize,
-                 (int) ysize,
+                 (int)xsize,
+                 (int)ysize,
                  NBslices,
                  typestring);
         processinfo_WriteMessage(processinfo, msgstring);
@@ -767,10 +677,10 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         ImageStreamIO_typesize(data.image[ID].md[0].datatype) * xsize * ysize;
     printf("image frame size = %ld\n", framesize);
 
-    ptr_dest_data_root = (char *) ImageStreamIO_get_image_d_ptr(&data.image[ID]);
+    ptr_dest_data_root = (char *)ImageStreamIO_get_image_d_ptr(&data.image[ID]);
 
     framesize1 = framesize + sizeof(IMAGE_METADATA);
-    if(TCPTRANSFERKW == 0)
+    if(SEND_KEYWORDS == 0)
     {
         framesizefull = framesize1;
     }
@@ -780,7 +690,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     // TODO
-    buff = (char *) malloc(sizeof(char) * framesizefull);
+    buff = (char *)malloc(sizeof(char) * framesizefull);
     ptr_buff_metadata = buff;
     ptr_buff_data = ptr_buff_metadata + sizeof(IMAGE_METADATA);
     ptr_buff_keywords = ptr_buff_data + framesize;
@@ -797,22 +707,22 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
     if(data.processinfo == 1)
     {
-        //notify processinfo that we are entering loop
+        // notify processinfo that we are entering loop
         processinfo->loopstat = PROCESSINFO_LOOPSTAT_ACTIVE;
     }
 
-    socketOpen   = 1;
+    socketOpen = 1;
     long loopcnt = 0;
-    int  loopOK  = 1;
+    int loopOK = 1;
 
     // In-loop counter watch and debug prompts
     long frameincr;
-    long minputcnt        = 0;
-    long moutputcnt       = 0;
-    long monitorinterval  = 10000;
-    long monitorindex     = 0;
+    long minputcnt = 0;
+    long moutputcnt = 0;
+    long monitorinterval = 10000;
+    long monitorindex = 0;
     long monitorloopindex = 0;
-    long cnt0previous     = 0;
+    long cnt0previous = 0;
 
     long first_dgram_bytes = n_udp_dgrams == 1 ? last_dgram_chunk + 2 :
                              DGRAM_CHUNK_SIZE + 2;
@@ -871,7 +781,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     break; // This should be a double break... loopOK = 0 should cover.
                 }
 
-                if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
+                if(buff_udp[0] == MAGIC_UDP_MULTIGRAMS && buff_udp[1] == 0)
                 {
                     printf("-- Resync achieved after %d datagrams.\n", n_dgram_wait);
                     abort_frame = 0;
@@ -883,7 +793,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     fflush(stdout);
                 }
             }
-
         }
         else
         {
@@ -900,7 +809,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
         if(socketOpen == 1 && loopOK == 1)
         {
-            if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
+            if(buff_udp[0] == MAGIC_UDP_MULTIGRAMS && buff_udp[1] == 0)
             {
                 // 0-th datagram is legit, memcpy it.
                 memcpy(buff, buff_udp + 2, first_dgram_bytes - 2);
@@ -932,7 +841,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             }
 
             // Acquire and copy subsequent datagrams
-            for(int k_dgram = 1; k_dgram < n_udp_dgrams ; ++k_dgram)
+            for(int k_dgram = 1; k_dgram < n_udp_dgrams; ++k_dgram)
             {
                 this_dgram_bytes = k_dgram == n_udp_dgrams - 1 ? last_dgram_chunk :
                                    DGRAM_CHUNK_SIZE;
@@ -945,7 +854,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     socketOpen = 0;
                     break;
                 }
-                if(buff_udp[0] != MULTIGRAM_MAGIC || buff_udp[1] != k_dgram)
+                if(buff_udp[0] != MAGIC_UDP_MULTIGRAMS || buff_udp[1] != k_dgram)
                 {
                     printf("UDP datagram sequence error (magic: %d, seen: %d, expected: %d)\n",
                            buff_udp[0], buff_udp[1], k_dgram);
@@ -961,7 +870,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             // Copy the data !
             memcpy(ptr_dest_data_sliceroot, ptr_buff_data, framesize);
 
-            if(TCPTRANSFERKW == 1)
+            if(SEND_KEYWORDS == 1)
             {
                 // copy kw
                 memcpy(data.image[ID].kw,
@@ -969,7 +878,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                        nbkw * sizeof(IMAGE_KEYWORD));
             }
 
-            frameincr = (long) imgmd_remote[0].cnt0 - cnt0previous;
+            frameincr = (long)imgmd_remote[0].cnt0 - cnt0previous;
 
             if(frameincr > 1)
             {
@@ -992,7 +901,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     data.image[ID].md[0].cnt0,
                     data.image[ID].md[0].cnt0 - moutputcnt);
 
-                minputcnt  = imgmd_remote[0].cnt0;
+                minputcnt = imgmd_remote[0].cnt0;
                 moutputcnt = data.image[ID].md[0].cnt0;
 
                 monitorloopindex++;
@@ -1083,7 +992,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     free(buff);
     free(buff_udp);
 
-    //close(fds_client);
+    // close(fds_client);
 
     printf("port %d closed\n", port);
     fflush(stdout);
