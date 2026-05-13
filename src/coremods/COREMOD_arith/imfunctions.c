@@ -116,6 +116,86 @@ static inline double get_pixel_double(
     }
 }
 
+static inline void do_math_2_1_fastpath(
+    IMGID *inimg1,
+    IMGID *inimg2,
+    IMGID *outimg,
+    double (*pt2function)(double, double))
+{
+    uint64_t nelement = inimg1->md->nelement;
+    uint8_t datatype = outimg->mdt->datatype;
+    uint8_t datatype1 = inimg1->md->datatype;
+    uint8_t datatype2 = inimg2->md->datatype;
+
+#ifdef _OPENMP
+    #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
+    {
+#endif
+        if (datatype == _DATATYPE_FLOAT && datatype1 == _DATATYPE_FLOAT && datatype2 == _DATATYPE_FLOAT)
+        {
+            float * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.F);
+            const float * MILK_RESTRICT in1ptr = MILK_ASSUME_ALIGNED(inimg1->im->array.F);
+            const float * MILK_RESTRICT in2ptr = MILK_ASSUME_ALIGNED(inimg2->im->array.F);
+#ifdef _OPENMP
+            #pragma omp for simd
+#endif
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                outptr[ii] = (float)pt2function((double)in1ptr[ii], (double)in2ptr[ii]);
+            }
+        }
+        else if (datatype == _DATATYPE_DOUBLE && datatype1 == _DATATYPE_DOUBLE && datatype2 == _DATATYPE_DOUBLE)
+        {
+            double * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.D);
+            const double * MILK_RESTRICT in1ptr = MILK_ASSUME_ALIGNED(inimg1->im->array.D);
+            const double * MILK_RESTRICT in2ptr = MILK_ASSUME_ALIGNED(inimg2->im->array.D);
+#ifdef _OPENMP
+            #pragma omp for simd
+#endif
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                outptr[ii] = pt2function(in1ptr[ii], in2ptr[ii]);
+            }
+        }
+        else if (datatype == _DATATYPE_FLOAT)
+        {
+            float * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.F);
+#ifdef _OPENMP
+            #pragma omp for simd
+#endif
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                double v1 = (datatype1 == _DATATYPE_DOUBLE) ? inimg1->im->array.D[ii] :
+                            (datatype1 == _DATATYPE_FLOAT) ? inimg1->im->array.F[ii] :
+                            get_pixel_double(inimg1->im, ii);
+                double v2 = (datatype2 == _DATATYPE_DOUBLE) ? inimg2->im->array.D[ii] :
+                            (datatype2 == _DATATYPE_FLOAT) ? inimg2->im->array.F[ii] :
+                            get_pixel_double(inimg2->im, ii);
+                outptr[ii] = (float)pt2function(v1, v2);
+            }
+        }
+        else if (datatype == _DATATYPE_DOUBLE)
+        {
+            double * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.D);
+#ifdef _OPENMP
+            #pragma omp for simd
+#endif
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                double v1 = (datatype1 == _DATATYPE_DOUBLE) ? inimg1->im->array.D[ii] :
+                            (datatype1 == _DATATYPE_FLOAT) ? inimg1->im->array.F[ii] :
+                            get_pixel_double(inimg1->im, ii);
+                double v2 = (datatype2 == _DATATYPE_DOUBLE) ? inimg2->im->array.D[ii] :
+                            (datatype2 == _DATATYPE_FLOAT) ? inimg2->im->array.F[ii] :
+                            get_pixel_double(inimg2->im, ii);
+                outptr[ii] = pt2function(v1, v2);
+            }
+        }
+#ifdef _OPENMP
+    }
+#endif
+}
+
 /* ------------------------------------------------------------------------- */
 /* Functions for bison / flex                                                */
 /* im : image
@@ -168,8 +248,8 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     }
     imgid_mkimage(imgout);
 
-    uint_fast64_t nelement = imgin->md->nelement;
-    uint8_t       datatype = imgin->md->datatype;
+    uint64_t nelement = imgin->md->nelement;
+    uint8_t  datatype = imgin->md->datatype;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
@@ -178,7 +258,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
 
 #define UNARY_BODY(M)                                 \
     OMP_FOR_SIMD                                      \
-    for (uint_fast64_t ii = 0; ii < nelement; ii++)   \
+    for (uint64_t ii = 0; ii < nelement; ii++)        \
     {                                                 \
         imgout->im->array.F[ii] =                     \
             (float) pt2function(                      \
@@ -187,7 +267,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
 
 #define UNARY_BODY_D                                  \
     OMP_FOR_SIMD                                      \
-    for (uint_fast64_t ii = 0; ii < nelement; ii++)   \
+    for (uint64_t ii = 0; ii < nelement; ii++)        \
     {                                                 \
         imgout->im->array.D[ii] =                     \
             pt2function(imgin->im->array.D[ii]);      \
@@ -248,7 +328,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if (imgin->im == NULL) { return RETURN_FAILURE; }
 
     imgout->mdt->naxis = imgin->md->naxis;
-    for(int i = 0; i < imgin->md->naxis; i++)
+    for(uint8_t i = 0; i < imgin->md->naxis; i++)
     {
         imgout->mdt->size[i] = imgin->md->size[i];
     }
@@ -266,8 +346,8 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     }
     imgid_mkimage(imgout);
 
-    uint_fast64_t nelement = imgin->md->nelement;
-    uint8_t       datatype = imgin->md->datatype;
+    uint64_t nelement = imgin->md->nelement;
+    uint8_t  datatype = imgin->md->datatype;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
@@ -276,7 +356,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
 
 #define CST1_BODY(M)                                  \
     OMP_FOR_SIMD                                      \
-    for (long ii = 0; ii < (long) nelement; ii++)     \
+    for (uint64_t ii = 0; ii < nelement; ii++)        \
     {                                                 \
         imgout->im->array.F[ii] =                     \
             (float) pt2function(                      \
@@ -286,7 +366,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
 
 #define CST1_BODY_D                                   \
     OMP_FOR_SIMD                                      \
-    for (long ii = 0; ii < (long) nelement; ii++)     \
+    for (uint64_t ii = 0; ii < nelement; ii++)        \
     {                                                 \
         imgout->im->array.D[ii] =                     \
             pt2function(imgin->im->array.D[ii], v0);  \
@@ -351,7 +431,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
     if (imgin->im == NULL) { return RETURN_FAILURE; }
 
     imgout->mdt->naxis = imgin->md->naxis;
-    for(int i = 0; i < imgin->md->naxis; i++)
+    for(uint8_t i = 0; i < imgin->md->naxis; i++)
     {
         imgout->mdt->size[i] = imgin->md->size[i];
     }
@@ -369,8 +449,8 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
     }
     imgid_mkimage(imgout);
 
-    uint_fast64_t nelement = imgin->md->nelement;
-    uint8_t       datatype = imgin->md->datatype;
+    uint64_t nelement = imgin->md->nelement;
+    uint8_t  datatype = imgin->md->datatype;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
@@ -379,7 +459,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
 
 #define CST2_BODY(M)                                  \
     OMP_FOR_SIMD                                      \
-    for (long _ii = 0; _ii < (long) nelement; _ii++)  \
+    for (uint64_t _ii = 0; _ii < nelement; _ii++)     \
     {                                                 \
         imgout->im->array.F[_ii] =                    \
             (float) pt2function(                      \
@@ -389,7 +469,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
 
 #define CST2_BODY_D                                   \
     OMP_FOR_SIMD                                      \
-    for (long _ii = 0; _ii < (long) nelement; _ii++)  \
+    for (uint64_t _ii = 0; _ii < nelement; _ii++)     \
     {                                                 \
         imgout->im->array.D[_ii] =                    \
             pt2function(                              \
@@ -453,7 +533,7 @@ errno_t arith_image_function_1_1_inplace_IMGID(
     double (*pt2function)(double))
 {
     uint8_t datatype = imgin->im->md->datatype;
-    long nelement = imgin->im->md->nelement;
+    uint64_t nelement = imgin->im->md->nelement;
 
     imgin->im->md->write = 0;
 #ifdef _OPENMP
@@ -463,7 +543,7 @@ errno_t arith_image_function_1_1_inplace_IMGID(
 
 #define INPLACE_BODY(M)                               \
     OMP_FOR_SIMD                                      \
-    for (long _ii = 0; _ii < nelement; _ii++)         \
+    for (uint64_t _ii = 0; _ii < nelement; _ii++)     \
     {                                                 \
         imgin->im->array.F[_ii] =                     \
             pt2function(                              \
@@ -472,7 +552,7 @@ errno_t arith_image_function_1_1_inplace_IMGID(
 
 #define INPLACE_BODY_D                                \
     OMP_FOR_SIMD                                      \
-    for (long _ii = 0; _ii < nelement; _ii++)         \
+    for (uint64_t _ii = 0; _ii < nelement; _ii++)     \
     {                                                 \
         imgin->im->array.D[_ii] =                     \
             (double) pt2function(                     \
@@ -643,84 +723,11 @@ errno_t arith_image_function_2_1_IMGID(
 
     if (fastpath)
     {
-#ifdef _OPENMP
-        #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
-        {
-#endif
-            if (datatype == _DATATYPE_FLOAT && datatype1 == _DATATYPE_FLOAT && datatype2 == _DATATYPE_FLOAT)
-            {
-                float * MILK_RESTRICT outptr =
-                    MILK_ASSUME_ALIGNED(outimg->im->array.F);
-                const float * MILK_RESTRICT in1ptr =
-                    MILK_ASSUME_ALIGNED(inimg1->im->array.F);
-                const float * MILK_RESTRICT in2ptr =
-                    MILK_ASSUME_ALIGNED(inimg2->im->array.F);
-#ifdef _OPENMP
-                #pragma omp for simd
-#endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    outptr[ii] = (float)pt2function((double)in1ptr[ii], (double)in2ptr[ii]);
-                }
-            }
-            else if (datatype == _DATATYPE_DOUBLE && datatype1 == _DATATYPE_DOUBLE && datatype2 == _DATATYPE_DOUBLE)
-            {
-                double * MILK_RESTRICT outptr =
-                    MILK_ASSUME_ALIGNED(outimg->im->array.D);
-                const double * MILK_RESTRICT in1ptr =
-                    MILK_ASSUME_ALIGNED(inimg1->im->array.D);
-                const double * MILK_RESTRICT in2ptr =
-                    MILK_ASSUME_ALIGNED(inimg2->im->array.D);
-#ifdef _OPENMP
-                #pragma omp for simd
-#endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    outptr[ii] = pt2function(in1ptr[ii], in2ptr[ii]);
-                }
-            }
-            else if (datatype == _DATATYPE_FLOAT)
-            {
-                float * MILK_RESTRICT outptr =
-                    MILK_ASSUME_ALIGNED(outimg->im->array.F);
-#ifdef _OPENMP
-                #pragma omp for simd
-#endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    double v1 = (datatype1 == _DATATYPE_DOUBLE) ? inimg1->im->array.D[ii] :
-                                (datatype1 == _DATATYPE_FLOAT) ? inimg1->im->array.F[ii] :
-                                get_pixel_double(inimg1->im, ii);
-                    double v2 = (datatype2 == _DATATYPE_DOUBLE) ? inimg2->im->array.D[ii] :
-                                (datatype2 == _DATATYPE_FLOAT) ? inimg2->im->array.F[ii] :
-                                get_pixel_double(inimg2->im, ii);
-                    outptr[ii] = (float)pt2function(v1, v2);
-                }
-            }
-            else if (datatype == _DATATYPE_DOUBLE)
-            {
-                double * MILK_RESTRICT outptr =
-                    MILK_ASSUME_ALIGNED(outimg->im->array.D);
-#ifdef _OPENMP
-                #pragma omp for simd
-#endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    double v1 = (datatype1 == _DATATYPE_DOUBLE) ? inimg1->im->array.D[ii] :
-                                (datatype1 == _DATATYPE_FLOAT) ? inimg1->im->array.F[ii] :
-                                get_pixel_double(inimg1->im, ii);
-                    double v2 = (datatype2 == _DATATYPE_DOUBLE) ? inimg2->im->array.D[ii] :
-                                (datatype2 == _DATATYPE_FLOAT) ? inimg2->im->array.F[ii] :
-                                get_pixel_double(inimg2->im, ii);
-                    outptr[ii] = pt2function(v1, v2);
-                }
-            }
-#ifdef _OPENMP
-        }
-#endif
+        do_math_2_1_fastpath(inimg1, inimg2, outimg, pt2function);
         DEBUG_TRACE_FEXIT();
         return RETURN_SUCCESS;
     }
+
 
     // slow path with broadcasting
     uint64_t * __restrict inpix1 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
@@ -870,7 +877,7 @@ errno_t arith_image_function_2_1_inplace(
     }
 
     long nelement = img1.md->nelement;
-    if (nelement != (long) img2.md->nelement)
+    if (nelement != img2.md->nelement)
     {
         PRINT_ERROR(
             "images %s and %s have different nelement\n",
@@ -889,7 +896,7 @@ errno_t arith_image_function_2_1_inplace(
     {
         #pragma omp for simd
 #endif
-        for (long ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             double v1 =
                 get_pixel_double(img1.im, ii);
@@ -926,12 +933,10 @@ errno_t arith_image_function_2_1_inplace(
 
 int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, double (*pt2function)(double, double))
 {
-    long ii;
-    
     if (imgin->im == NULL) { return RETURN_FAILURE; }
 
     imgout->mdt->naxis = imgin->md->naxis;
-    for(int i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
+    for(uint8_t i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
     imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
     
     if (imgout->im == NULL) {
@@ -941,7 +946,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
     }
     imgid_mkimage(imgout);
 
-    uint_fast64_t nelement = imgin->md->nelement;
+    uint64_t nelement = imgin->md->nelement;
 
     if (imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)
     {
@@ -950,7 +955,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
 #ifdef _OPENMP
     #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
              out[ii] = (float)pt2function((double)ptr[ii], f1);
         }
@@ -962,7 +967,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
 #ifdef _OPENMP
     #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
              out[ii] = pt2function(ptr[ii], f1);
         }
@@ -972,7 +977,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
 #ifdef _OPENMP
     #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             double v = get_pixel_double(imgin->im, ii);
             if (imgout->mdt->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1);
@@ -991,11 +996,11 @@ int arith_image_function_1f_1(const char *ID_name, double f1, const char *ID_out
 
 int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt2function)(double, double))
 {
-    long ii; uint_fast64_t nelement = imgin->im->md[0].nelement;
+    uint64_t nelement = imgin->im->md[0].nelement;
 #ifdef _OPENMP
     #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
-    for(ii = 0; ii < nelement; ii++)
+    for(uint64_t ii = 0; ii < nelement; ii++)
     {
         double v = get_pixel_double(imgin->im, ii);
         if (imgin->im->md[0].datatype == _DATATYPE_FLOAT) imgin->im->array.F[ii] = (float)pt2function(v, f1);
@@ -1023,7 +1028,7 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
     if (imgin->im == NULL) { return RETURN_FAILURE; }
 
     imgout->mdt->naxis = imgin->md->naxis;
-    for(int i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
+    for(uint8_t i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
     imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
     
     if (imgout->im == NULL) {
