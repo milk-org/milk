@@ -73,8 +73,8 @@ imageID break_cube(
         CREATE_IMAGENAME(framename,
                          "%s_%5u",
                          ID_name, kk);
-        for(long i = 0;
-            i < (long) strlen(framename);
+        for(size_t i = 0;
+            i < strlen(framename);
             i++)
         {
             if(framename[i] == ' ')
