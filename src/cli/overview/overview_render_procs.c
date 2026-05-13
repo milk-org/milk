@@ -724,8 +724,8 @@ static void ov_procs__render_rows(
             }
             /* LOOPCNT */
             {
-                char fb[80];
-                int fl = snprintf(fb, sizeof(fb), "%10lld ", (long long) p->loopcnt);
+                char fb[64];
+                int fl = snprintf(fb, sizeof(fb), "%10" PRId64 " ", (int64_t) p->loopcnt);
                 int skip = 0;
                 if (hs_rem > 0)
                 {
@@ -763,8 +763,8 @@ static void ov_procs__render_rows(
             }
             /* MISSED */
             {
-                char fb[80];
-                int fl = snprintf(fb, sizeof(fb), "%10llu ", (unsigned long long) p->triggermissed_cumul);
+                char fb[64];
+                int fl = snprintf(fb, sizeof(fb), "%10" PRIu64 " ", (uint64_t) p->triggermissed_cumul);
                 int skip = 0;
                 if (hs_rem > 0)
                 {
@@ -829,8 +829,8 @@ static void ov_procs__render_rows(
     {
         /* Compute totals over ALL procs */
         int   tot_run = 0;
-        float tot_cpu = 0.0f;
-        long  tot_mem = 0;
+        double tot_cpu = 0.0;
+        int64_t tot_mem = 0;
         for (int j = 0; j < m->nb_procs; j++)
         {
             const OV_PROC *p = &m->procs[j];
@@ -845,8 +845,8 @@ static void ov_procs__render_rows(
 
         /* Compute totals over filtered subset */
         int   flt_run = 0;
-        float flt_cpu = 0.0f;
-        long  flt_mem = 0;
+        double flt_cpu = 0.0;
+        int64_t flt_mem = 0;
         for (int j = 0; j < filt_n; j++)
         {
             const OV_PROC *p =

@@ -456,13 +456,13 @@ void ov_render_streams_panel(
                 STRM_FIELD(OV_FG_DIM, "      - ");
             }
 
-            STRM_FIELD(OV_FG_DIM, "%10lu ", (unsigned long) s->inode);
+            STRM_FIELD(OV_FG_DIM, "%10" PRIu64 " ", (uint64_t) s->inode);
             
             STRM_PID_FIELD(
                 s->ownerPID,
                 "%7d ", (int) s->ownerPID);
             STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM,
-                "%10lu ", (unsigned long) s->cnt0);
+                "%10" PRIu64 " ", (uint64_t) s->cnt0);
             
             for (int sm = 0; sm < 10; sm++) {
                 if (sm < s->nb_sem) {

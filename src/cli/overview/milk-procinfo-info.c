@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -142,9 +143,9 @@ static void print_proc_info(
     printf("   %-18s: %s\n",
            "CTRL val",
            ctrlval_str(p->CTRLval));
-    printf("   %-18s: " C_VAL "%ld" C_RST "\n",
+    printf("   %-18s: " C_VAL "%" PRId64 "" C_RST "\n",
            "Loop count",
-           (long) p->loopcnt);
+           (int64_t) p->loopcnt);
     if (p->rt_priority > 0)
     {
         printf("   %-18s: " C_VAL "%d" C_RST "\n",
@@ -158,9 +159,9 @@ static void print_proc_info(
     }
     if (p->mem_rss_kb > 0)
     {
-        printf("   %-18s: " C_VAL "%ld KB"
+        printf("   %-18s: " C_VAL "%" PRId64 " KB"
                C_RST "\n",
-               "RSS memory", p->mem_rss_kb);
+               "RSS memory", (int64_t) p->mem_rss_kb);
     }
 
     /* ---- Timing ---- */
@@ -225,10 +226,10 @@ static void print_proc_info(
                "Semaphore", p->triggersem);
     }
     printf("   %-18s: " C_VAL "%d" C_RST
-           " (cumul: %lu)\n",
+           " (cumul: %" PRIu64 ")\n",
            "Missed frames",
            p->triggermissed,
-           (unsigned long)
+           (uint64_t)
                p->triggermissed_cumul);
 
     /* ---- Connections (from graph) ---- */

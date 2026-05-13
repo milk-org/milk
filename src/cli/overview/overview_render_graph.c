@@ -71,16 +71,16 @@ void ov_render_preview_line(
         }
         len = snprintf(line, sizeof(line),
             " STM  %s  %s %s"
-            "  Hz:%.1f  ino:%lu"
-            "  own:%d  cnt:%lu"
+            "  Hz:%.1f  ino:%" PRIu64 ""
+            "  own:%d  cnt:%" PRIu64 ""
             "  wpid:%d  sem:%d",
             s->name,
             render_dtype(s->datatype),
             szb,
             s->update_hz,
-            (unsigned long) s->inode,
+            (uint64_t) s->inode,
             (int) s->ownerPID,
-            (unsigned long) s->cnt0,
+            (uint64_t) s->cnt0,
             (int) s->write_pid,
             s->nb_sem);
         break;
@@ -106,14 +106,14 @@ void ov_render_preview_line(
         len = snprintf(line, sizeof(line),
             " PRC  %s  PID:%d  %s"
             "  Hz:%.1f  trig:%s"
-            "  sem:%d  loop:%ld"
+            "  sem:%d  loop:%" PRId64 ""
             "  miss:%d  prio:%d",
             p->name, (int) p->PID, sl,
             p->loop_hz,
             p->trigstreamname[0]
                 ? p->trigstreamname : "-",
             p->triggersem,
-            (long) p->loopcnt,
+            (int64_t) p->loopcnt,
             p->triggermissed,
             p->rt_priority);
         break;

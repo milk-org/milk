@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -135,11 +136,11 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     {
         const OV_STREAM *s = &m->streams[i];
         fprintf(fp,
-            "%-20s %4d %12s %8.1f %10lu %7d %10lu\n",
+            "%-20s %4d %12s %8.1f %10" PRIu64 " %7d %10" PRIu64 "\n",
             s->name, s->datatype, s->size_str,
-            s->update_hz, (unsigned long) s->inode,
+            s->update_hz, (uint64_t) s->inode,
             (int) s->ownerPID,
-            (unsigned long) s->cnt0);
+            (uint64_t) s->cnt0);
     }
 
     /* Processes */
@@ -163,9 +164,9 @@ void ov_model_export_snapshot(const OV_MODEL *m)
         default: sl = "??";   break;
         }
         fprintf(fp,
-            "%-20s %7d %6s %8.1f %10ld %s\n",
+            "%-20s %7d %6s %8.1f %10" PRId64 " %s\n",
             p->name, (int) p->PID, sl,
-            p->loop_hz, p->mem_rss_kb,
+            p->loop_hz, (int64_t) p->mem_rss_kb,
             p->trigstreamname[0]
                 ? p->trigstreamname : "-");
     }
@@ -180,11 +181,11 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     {
         const OV_FPS *f = &m->fps[i];
         fprintf(fp,
-            "%-24s %4s %4s %10ld %s\n",
+            "%-24s %4s %4s %10" PRId64 " %s\n",
             f->name,
             f->conf_alive ? "Y" : "-",
             f->run_alive  ? "Y" : "-",
-            f->mem_rss_kb,
+            (int64_t) f->mem_rss_kb,
             f->description);
     }
 
