@@ -9,6 +9,6 @@
  */
 
 imageID
-arith_make_slopexy(const char *ID_name, long l1, long l2, double sx, double sy);
+arith_make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy);
 
 int execute_arith(const char *cmd1);

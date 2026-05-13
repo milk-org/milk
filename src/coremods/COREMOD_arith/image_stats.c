@@ -151,13 +151,13 @@ double arith_image_max(const char *ID_name)
 
 double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
 {
-    long            ii;
+    uint64_t        ii;
     double          value  = 0;
     long           *arrayL = NULL;
     float          *arrayF = NULL;
     double         *arrayD = NULL;
     unsigned short *arrayU = NULL;
-    long            nelement;
+    uint64_t        nelement;
     uint8_t         datatype;
     int             atypeOK = 1;
 
