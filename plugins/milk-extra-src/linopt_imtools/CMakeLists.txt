@@ -40,9 +40,7 @@ set(LINKLIBS
 	CLIcore
 )
 
-if(GSL_FOUND)
-    list(APPEND LINKLIBS ${GSL_LIBRARIES})
-endif()
+
 
 
 # DEFAULT SETTINGS
@@ -96,13 +94,8 @@ target_include_directories(${LIBNAME_COMPUTE} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
     $<INSTALL_INTERFACE:include>
     $<INSTALL_INTERFACE:include/${SRCNAME}>)
-if(GSL_FOUND)
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
-      m milkfps ${GSL_LIBRARIES})
-else()
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
+target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
       m milkfps)
-endif()
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
     DESTINATION lib)
 
