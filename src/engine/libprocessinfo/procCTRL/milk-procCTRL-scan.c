@@ -244,9 +244,15 @@ int main(int argc, char *argv[]) {
     }
 
     // 1. Create/Open Process List SHM
-    if (processinfo_shm_list_create() == -1) {
-        fprintf(stderr, "Error connecting to process list shared memory\n");
-        return 1;
+    {
+        long pindex_unused;
+        if (processinfo_shm_list_create(&pindex_unused)
+            != RETURN_SUCCESS)
+        {
+            PRINT_ERROR(
+                "Error connecting to process list shared memory");
+            return 1;
+        }
     }
 
     char procdname[STRINGMAXLEN_DIRNAME];

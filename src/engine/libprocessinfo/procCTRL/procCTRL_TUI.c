@@ -241,10 +241,14 @@ static errno_t procctrl_init(procctrl_context_t *ctx) {
     int NBCPUset __attribute__((unused)) = processinfo_CPUsets_List(ctx->CPUsetList, ctx->procinfoproc->has_cset);
 
     if (ctx->flog) { fprintf(ctx->flog, "Connecting to process list...\n"); fflush(ctx->flog); }
-    if(processinfo_shm_list_create() == -1) {
-        printf("==== ERROR: CANNOT ACCESS PROCESS LIST ====\n");
-        if (ctx->flog) fclose(ctx->flog);
-        return RETURN_FAILURE;
+    {
+        long pindex_unused;
+        if(processinfo_shm_list_create(&pindex_unused)
+           != RETURN_SUCCESS) {
+            printf("==== ERROR: CANNOT ACCESS PROCESS LIST ====\n");
+            if (ctx->flog) fclose(ctx->flog);
+            return RETURN_FAILURE;
+        }
     }
     ctx->procinfoproc->pinfolist = pinfolist;
     

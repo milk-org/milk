@@ -9,82 +9,98 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 #include "processinfo_internal.h"
 #include "processinfo.h"
 #include "processinfo_procdirname.h"
 #include "processinfo_shm_link.h"
+#include "processinfo_shm_list_create.h"
 
 #define FILEMODE 0666
 
 extern PROCESSINFOLIST *pinfolist;
 
 
-long processinfo_shm_list_create()
+/**
+ * @brief Create or attach to the processinfo list SHM and reserve a slot.
+ *
+ * If the list file does not exist, create it and zero its `active` flags.
+ * Otherwise, link to the existing file and find the first inactive slot.
+ *
+ * @param pindex_out  On success, receives the reserved slot index. Must
+ *                    not be NULL.
+ *
+ * @return RETURN_SUCCESS on success, RETURN_FAILURE on any error
+ *         (open/lseek/write/mmap failure, link failure, list full).
+ */
+errno_t processinfo_shm_list_create(long *pindex_out)
 {
-    char SM_fname[STRINGMAXLEN_FULLFILENAME];
-    long pindex = 0;
+    errno_t rv     = RETURN_FAILURE;
+    int     SM_fd  = -1;
+    long    pindex = 0;
 
+    if (pindex_out == NULL)
+    {
+        FUNC_RETURN_FAILURE("pindex_out is NULL");
+    }
+
+    char SM_fname[STRINGMAXLEN_FULLFILENAME];
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
     WRITE_FULLFILENAME(SM_fname, "%s/processinfo.list.shm", procdname);
 
-    /*
-    * Check if a file exist using stat() function.
-    * return 1 if the file exist otherwise return 0.
-    */
+    /* Check whether the list file already exists. */
     struct stat buffer;
     int         exists = stat(SM_fname, &buffer);
 
-    if(exists == -1)
+    if (exists == -1)
     {
         printf("CREATING PROCESSINFO LIST\n");
 
-        size_t sharedsize = 0; // shared memory size in bytes
-        int    SM_fd;          // shared memory file descriptor
-
-        sharedsize = sizeof(PROCESSINFOLIST);
+        size_t sharedsize = sizeof(PROCESSINFOLIST);
         umask(0);
-        SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
-        if(SM_fd == -1)
+        SM_fd = open(SM_fname,
+                     O_RDWR | O_CREAT | O_TRUNC,
+                     (mode_t) FILEMODE);
+        if (SM_fd == -1)
         {
-            perror("Error opening file for writing");
-            return -1;
+            PRINT_ERROR("open(%s) failed: %s",
+                        SM_fname, strerror(errno));
+            goto fail;
         }
 
-        int result;
-        result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
-        if(result == -1)
+        if (lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
         {
-            close(SM_fd);
-            fprintf(stderr, "Error calling lseek() to 'stretch' the file");
-            return -1;
+            PRINT_ERROR("lseek failed: %s", strerror(errno));
+            goto fail;
         }
 
-        result = write(SM_fd, "", 1);
-        if(result != 1)
+        if (write(SM_fd, "", 1) != 1)
         {
-            close(SM_fd);
-            perror("Error writing last byte of the file");
-            return -1;
+            PRINT_ERROR("write last byte failed: %s",
+                        strerror(errno));
+            goto fail;
         }
 
-        pinfolist = (PROCESSINFOLIST *) \
+        pinfolist = (PROCESSINFOLIST *)
                     mmap(0,
-                        sharedsize,
-                        PROT_READ | PROT_WRITE,
-                        MAP_SHARED,
-                        SM_fd,
-                        0);
-        if(pinfolist == MAP_FAILED)
+                         sharedsize,
+                         PROT_READ | PROT_WRITE,
+                         MAP_SHARED,
+                         SM_fd,
+                         0);
+        if (pinfolist == MAP_FAILED)
         {
-            close(SM_fd);
-            perror("Error mmapping the file");
-            return -1;
+            PRINT_ERROR("mmap(%s) failed: %s",
+                        SM_fname, strerror(errno));
+            pinfolist = NULL;
+            goto fail;
         }
 
-        for(pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
+        for (pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
         {
             pinfolist->active[pindex] = 0;
         }
@@ -93,29 +109,37 @@ long processinfo_shm_list_create()
     }
     else
     {
-        int SM_fd;
-        //struct stat file_stat;
+        int link_fd;
 
-        pinfolist = (PROCESSINFOLIST *) processinfo_shm_link(SM_fname, &SM_fd);
-        if(pinfolist == MAP_FAILED)
+        pinfolist = (PROCESSINFOLIST *)
+                    processinfo_shm_link(SM_fname, &link_fd);
+        if (pinfolist == MAP_FAILED)
         {
-            return -1;
+            FUNC_RETURN_FAILURE(
+                "processinfo_shm_link(%s) failed", SM_fname);
         }
 
-        while((pinfolist->active[pindex] != 0) &&
-                (pindex < PROCESSINFOLISTSIZE))
+        while ((pinfolist->active[pindex] != 0) &&
+               (pindex < PROCESSINFOLISTSIZE))
         {
             pindex++;
         }
 
-        if(pindex == PROCESSINFOLISTSIZE)
+        if (pindex == PROCESSINFOLISTSIZE)
         {
-            fprintf(stderr, "ERROR: pindex reaches max value\n");
-            return -1;
+            FUNC_RETURN_FAILURE(
+                "pindex reached max value (%d)",
+                PROCESSINFOLISTSIZE);
         }
     }
 
-    // printf("pindex = %ld\n", pindex);
+    *pindex_out = pindex;
+    rv = RETURN_SUCCESS;
 
-    return pindex;
+fail:
+    if (SM_fd != -1)
+    {
+        close(SM_fd);
+    }
+    return rv;
 }

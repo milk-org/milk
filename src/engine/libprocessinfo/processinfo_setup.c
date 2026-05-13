@@ -73,6 +73,13 @@ PROCESSINFO *processinfo_setup(
         DEBUG_TRACEPOINT(" ");
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
+        if (processinfo == NULL)
+        {
+            PRINT_ERROR(
+                "processinfo_shm_create(%s) failed", pinfoname0);
+            DEBUG_TRACE_FEXIT();
+            return NULL;
+        }
 
         DEBUG_TRACEPOINT(" ");
     }
