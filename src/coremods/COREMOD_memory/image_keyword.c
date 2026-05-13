@@ -210,6 +210,54 @@ CLIADDCMD_COREMOD_memory__image_keyword()
  * ============================================================= */
 
 /**
+ * @brief Internal helper to write a keyword
+ */
+static long _image_write_keyword(
+    IMGID img,
+    const char *kname,
+    char type,
+    long numl,
+    double numf,
+    const char *valstr,
+    const char *comment)
+{
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
+    long ID = img.ID;
+    if (ID == -1) {
+        return RETURN_FAILURE;
+    }
+    long NBkw = dcimg[ID].md[0].NBkw;
+
+    long kw = 0;
+    while((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
+    {
+        kw++;
+    }
+    long kw0 = kw;
+
+    if(kw0 == NBkw)
+    {
+        PRINT_ERROR("no available keyword slot");
+        return -1;
+    }
+    else
+    {
+        snprintf(dcimg[ID].kw[kw].name, KEYWORD_MAX_STRING, "%s", kname);
+        dcimg[ID].kw[kw].type = type;
+        if (type == 'L') {
+            dcimg[ID].kw[kw].value.numl = numl;
+        } else if (type == 'D') {
+            dcimg[ID].kw[kw].value.numf = numf;
+        } else if (type == 'S') {
+            snprintf(dcimg[ID].kw[kw].value.valstr, KEYWORD_MAX_STRING, "%s", valstr);
+        }
+        snprintf(dcimg[ID].kw[kw].comment, KEYWORD_MAX_COMMENT, "%s", comment);
+    }
+
+    return kw0;
+}
+
+/**
  * @brief Write a long-type keyword to an image
  *
  * Finds the first empty keyword slot (type 'N')
@@ -229,42 +277,7 @@ long image_write_keyword_L(
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    long ID = img.ID;
-    if (img.ID == -1) {
-        return RETURN_FAILURE;
-    }
-    long    kw, NBkw, kw0;
-
-    NBkw = dcimg[ID].md[0].NBkw;
-
-    kw = 0;
-    while((dcimg[ID].kw[kw].type != 'N')
-          && (kw < NBkw))
-    {
-        kw++;
-    }
-    kw0 = kw;
-
-    if(kw0 == NBkw)
-    {
-        PRINT_ERROR(
-            "no available keyword slot");
-        return -1;
-    }
-    else
-    {
-        snprintf(dcimg[ID].kw[kw].name,
-                 KEYWORD_MAX_STRING,
-                 "%s", kname);
-        dcimg[ID].kw[kw].type       = 'L';
-        dcimg[ID].kw[kw].value.numl = value;
-        snprintf(dcimg[ID].kw[kw].comment,
-                 KEYWORD_MAX_COMMENT,
-                 "%s", comment);
-    }
-
-    return kw0;
+    return _image_write_keyword(img, kname, 'L', value, 0.0, NULL, comment);
 }
 
 /**
@@ -283,44 +296,7 @@ long image_write_keyword_D(
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    long ID = img.ID;
-    if (img.ID == -1) {
-        return RETURN_FAILURE;
-    }
-    long    kw;
-    long    NBkw;
-    long    kw0;
-
-    NBkw = dcimg[ID].md[0].NBkw;
-
-    kw = 0;
-    while((dcimg[ID].kw[kw].type != 'N')
-          && (kw < NBkw))
-    {
-        kw++;
-    }
-    kw0 = kw;
-
-    if(kw0 == NBkw)
-    {
-        PRINT_ERROR(
-            "no available keyword slot");
-        return -1;
-    }
-    else
-    {
-        snprintf(dcimg[ID].kw[kw].name,
-                 KEYWORD_MAX_STRING,
-                 "%s", kname);
-        dcimg[ID].kw[kw].type       = 'D';
-        dcimg[ID].kw[kw].value.numf = value;
-        snprintf(dcimg[ID].kw[kw].comment,
-                 KEYWORD_MAX_COMMENT,
-                 "%s", comment);
-    }
-
-    return kw0;
+    return _image_write_keyword(img, kname, 'D', 0, value, NULL, comment);
 }
 
 /**
@@ -339,47 +315,28 @@ long image_write_keyword_S(
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    long ID = img.ID;
-    if (img.ID == -1) {
-        return RETURN_FAILURE;
-    }
-    long    kw;
-    long    NBkw;
-    long    kw0;
+    return _image_write_keyword(img, kname, 'S', 0, 0.0, value, comment);
+}
 
-    NBkw = dcimg[ID].md[0].NBkw;
+/**
+ * @brief Legacy wrappers taking IMGID
+ */
+errno_t image_keyword_addL(IMGID img, const char *kwname, long kwval, const char *comment)
+{
+    _image_write_keyword(img, kwname, 'L', kwval, 0.0, NULL, comment);
+    return RETURN_SUCCESS;
+}
 
-    kw = 0;
-    while((dcimg[ID].kw[kw].type != 'N')
-          && (kw < NBkw))
-    {
-        kw++;
-    }
-    kw0 = kw;
+errno_t image_keyword_addD(IMGID img, const char *kwname, double kwval, const char *comment)
+{
+    _image_write_keyword(img, kwname, 'D', 0, kwval, NULL, comment);
+    return RETURN_SUCCESS;
+}
 
-    if(kw0 == NBkw)
-    {
-        PRINT_ERROR(
-            "no available keyword slot");
-        return -1;
-    }
-    else
-    {
-        snprintf(dcimg[ID].kw[kw].name,
-                 KEYWORD_MAX_STRING,
-                 "%s", kname);
-        dcimg[ID].kw[kw].type = 'S';
-        snprintf(
-            dcimg[ID].kw[kw].value.valstr,
-            KEYWORD_MAX_STRING,
-            "%s", value);
-        snprintf(dcimg[ID].kw[kw].comment,
-                 KEYWORD_MAX_COMMENT,
-                 "%s", comment);
-    }
-
-    return kw0;
+errno_t image_keyword_addS(IMGID img, const char *kwname, const char *kwval, const char *comment)
+{
+    _image_write_keyword(img, kwname, 'S', 0, 0.0, kwval, comment);
+    return RETURN_SUCCESS;
 }
 
 /**

@@ -25,9 +25,7 @@ set(SOURCEFILES
     image_copy_shm.c
     image_ID.c
     image_keyword.c
-    image_keyword_addD.c
-    image_keyword_addL.c
-    image_keyword_addS.c
+    image_keyword_add.c
     image_keyword_list.c
     image_make2D.c
     image_make3D.c
@@ -87,9 +85,6 @@ set(INCLUDEFILES
     image_ID.h
     imageID.h
     image_keyword.h
-    image_keyword_addD.h
-    image_keyword_addL.h
-    image_keyword_addS.h
     image_keyword_list.h
     image_make2D.h
     image_make3D.h
@@ -289,6 +284,7 @@ endif()
 add_milk_standalone(mem-streamave stream_ave.c)
 add_milk_standalone(mem-streampoke stream_poke.c)
 add_milk_standalone(mem-streamcopy stream_copy.c)
+add_milk_standalone(imkwadd image_keyword_add.c)
 
 # Standalone executable
 add_executable(milk-fpsexec-cnt2push cnt2push_main.c)
