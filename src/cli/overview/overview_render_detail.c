@@ -62,14 +62,14 @@ static int ov_fps__render_detail_stream(
             ov_theme_fg(OV_FG_DIM);
             int n = snprintf(NULL, 0,
                 " Type: %s  Size: %s"
-                "  Elements: %lu",
+                "  Elements: %" PRIu64,
                 render_dtype(s->datatype), szb,
-                (unsigned long) s->nelement);
+                (uint64_t) s->nelement);
             ov_buf_printf(
                 " Type: %s  Size: %s"
-                "  Elements: %lu",
+                "  Elements: %" PRIu64,
                 render_dtype(s->datatype), szb,
-                (unsigned long) s->nelement);
+                (uint64_t) s->nelement);
             render_pad_spaces(n, r.width);
             ri++;
         }
@@ -82,14 +82,14 @@ static int ov_fps__render_detail_stream(
             ov_buf_printf(" cnt0: ");
             ov_theme_fg(s->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
-            ov_buf_printf("%lu", (unsigned long) s->cnt0);
+            ov_buf_printf("%" PRIu64, (uint64_t) s->cnt0);
             ov_theme_fg(OV_FG_DIM);
             ov_buf_printf("  Hz: ");
             ov_theme_fg(s->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
             int n = snprintf(NULL, 0,
-                " cnt0: %lu  Hz: %.1f",
-                (unsigned long) s->cnt0,
+                " cnt0: %" PRIu64 "  Hz: %.1f",
+                (uint64_t) s->cnt0,
                 s->update_hz);
             ov_buf_printf("%.1f", s->update_hz);
             render_pad_spaces(n, r.width);
@@ -103,16 +103,16 @@ static int ov_fps__render_detail_stream(
             ov_theme_fg(OV_FG_DIM);
             int n = snprintf(NULL, 0,
                 " Creator: %d  Owner: %d"
-                "  Inode: %lu",
+                "  Inode: %" PRIu64,
                 (int) s->creatorPID,
                 (int) s->ownerPID,
-                (unsigned long) s->inode);
+                (uint64_t) s->inode);
             ov_buf_printf(
                 " Creator: %d  Owner: %d"
-                "  Inode: %lu",
+                "  Inode: %" PRIu64,
                 (int) s->creatorPID,
                 (int) s->ownerPID,
-                (unsigned long) s->inode);
+                (uint64_t) s->inode);
             render_pad_spaces(n, r.width);
             ri++;
         }
@@ -451,16 +451,16 @@ static int ov_fps__render_detail_proc(
             ov_buf_printf(" Status: %s  Loops: ", sl);
             ov_theme_fg(p->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
-            ov_buf_printf("%ld", (long) p->loopcnt);
+            ov_buf_printf("%" PRId64, (int64_t) p->loopcnt);
             ov_theme_fg(OV_FG_DIM);
             ov_buf_printf("  Hz: ");
             ov_theme_fg(p->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
             ov_buf_printf("%.1f", p->loop_hz);
             int n = snprintf(NULL, 0,
-                " Status: %s  Loops: %ld"
+                " Status: %s  Loops: %" PRId64
                 "  Hz: %.1f",
-                sl, (long) p->loopcnt,
+                sl, (int64_t) p->loopcnt,
                 p->loop_hz);
             render_pad_spaces(n, r.width);
             ri++;
@@ -472,11 +472,11 @@ static int ov_fps__render_detail_proc(
             ov_theme_bg(OV_BG_PANEL);
             ov_theme_fg(OV_FG_TEXT);
             int n = snprintf(NULL, 0,
-                " CPU: %5.1f%%  Mem: %ld KB",
-                p->cpu_used, p->mem_rss_kb);
+                " CPU: %5.1f%%  Mem: %" PRId64 " KB",
+                p->cpu_used, (int64_t)p->mem_rss_kb);
             ov_buf_printf(
-                " CPU: %5.1f%%  Mem: %ld KB",
-                p->cpu_used, p->mem_rss_kb);
+                " CPU: %5.1f%%  Mem: %" PRId64 " KB",
+                p->cpu_used, (int64_t)p->mem_rss_kb);
             render_pad_spaces(n, r.width);
             ri++;
         }
@@ -519,14 +519,14 @@ static int ov_fps__render_detail_proc(
                 ov_theme_fg(OV_FG_DIM);
             }
             int n = snprintf(NULL, 0,
-                " Missed: %d (cumul: %lu)",
+                " Missed: %d (cumul: %" PRIu64 ")",
                 p->triggermissed,
-                (unsigned long)
+                (uint64_t)
                     p->triggermissed_cumul);
             ov_buf_printf(
-                " Missed: %d (cumul: %lu)",
+                " Missed: %d (cumul: %" PRIu64 ")",
                 p->triggermissed,
-                (unsigned long)
+                (uint64_t)
                     p->triggermissed_cumul);
             render_pad_spaces(n, r.width);
             ri++;
@@ -803,9 +803,9 @@ int ov_render_resources_panel(
         char stat_path[256];
         snprintf(stat_path, sizeof(stat_path), "/proc/%d/statm", (int)target_pid);
         FILE *f = fopen(stat_path, "r");
-        unsigned long vm_size = 0, vm_rss = 0;
+        uint64_t vm_size = 0, vm_rss = 0;
         if (f) {
-            if (fscanf(f, "%lu %lu", &vm_size, &vm_rss) == 2) {
+            if (fscanf(f, "%" SCNu64 " %" SCNu64, &vm_size, &vm_rss) == 2) {
                 // scale to MB (assuming 4KB pages)
                 vm_size = (vm_size * 4) / 1024;
                 vm_rss = (vm_rss * 4) / 1024;
@@ -852,7 +852,7 @@ int ov_render_resources_panel(
             ov_buf_pos(row + ri, r.col + 1);
             ov_theme_fg(OV_FG_TEXT);
             char buf[64];
-            int nb = snprintf(buf, sizeof(buf), "   RSS: %4lu MB   VIRT: %4lu MB", vm_rss, vm_size);
+            int nb = snprintf(buf, sizeof(buf), "   RSS: %4" PRIu64 " MB   VIRT: %4" PRIu64 " MB", vm_rss, vm_size);
             ov_buf_printf("%s", buf);
             render_pad_spaces(nb, r.width);
             ri++;
@@ -913,7 +913,7 @@ int ov_render_resources_panel(
                 ov_buf_pos(row + ri, r.col + 1);
                 ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
-                int nb = snprintf(buf, sizeof(buf), "   Threads: %4lu    Migrations: %4lu", adv_stats.threads, adv_stats.migrations);
+                int nb = snprintf(buf, sizeof(buf), "   Threads: %4" PRIu64 "    Migrations: %4" PRIu64, adv_stats.threads, adv_stats.migrations);
                 ov_buf_printf("%s", buf);
                 render_pad_spaces(nb, r.width);
                 ri++;
@@ -922,7 +922,7 @@ int ov_render_resources_panel(
                 ov_buf_pos(row + ri, r.col + 1);
                 ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
-                int nb = snprintf(buf, sizeof(buf), "   Ctx Sw:  %4lu (Vol) / %4lu (Invol)", adv_stats.vol_ctxt, adv_stats.nonvol_ctxt);
+                int nb = snprintf(buf, sizeof(buf), "   Ctx Sw:  %4" PRIu64 " (Vol) / %4" PRIu64 " (Invol)", adv_stats.vol_ctxt, adv_stats.nonvol_ctxt);
                 ov_buf_printf("%s", buf);
                 render_pad_spaces(nb, r.width);
                 ri++;
@@ -931,7 +931,7 @@ int ov_render_resources_panel(
                 ov_buf_pos(row + ri, r.col + 1);
                 ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
-                int nb = snprintf(buf, sizeof(buf), "   Faults:  %4lu (Min) / %4lu (Maj)", adv_stats.minflt, adv_stats.majflt);
+                int nb = snprintf(buf, sizeof(buf), "   Faults:  %4" PRIu64 " (Min) / %4" PRIu64 " (Maj)", adv_stats.minflt, adv_stats.majflt);
                 ov_buf_printf("%s", buf);
                 render_pad_spaces(nb, r.width);
                 ri++;

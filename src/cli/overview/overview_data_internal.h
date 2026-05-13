@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -66,8 +67,8 @@ typedef struct
     int           fd;
     int           in_use;
 
-    unsigned long prev_utime;
-    unsigned long prev_stime;
+    uint64_t prev_utime;
+    uint64_t prev_stime;
     int           has_prev_cpu;
     float         cpu_pct;
 
@@ -82,9 +83,9 @@ extern double s_scan_dt_sec;
 // Function declarations
 void pid_cache_reset(void);
 int pid_check_zombie(pid_t pid);
-long pid_get_rss_kb(pid_t pid);
+int64_t pid_get_rss_kb(pid_t pid);
 int pid_is_alive(pid_t pid);
-int pid_get_cpu_ticks(pid_t pid, unsigned long *utime, unsigned long *stime);
+int pid_get_cpu_ticks(pid_t pid, uint64_t *utime, uint64_t *stime);
 const char *ov_datatype_name(uint8_t dt);
 
 int scache_find(const char *name);

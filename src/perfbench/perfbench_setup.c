@@ -106,7 +106,7 @@ void resolve_git_commit(bench_cfg_t *cfg)
 /**
  * @brief Get executable size in bytes.
  */
-long exe_size(const char *exe)
+int64_t exe_size(const char *exe)
 {
     /* find full path */
     char cmd[MAX_CMD];
@@ -130,7 +130,7 @@ long exe_size(const char *exe)
     struct stat st;
     if (stat(path, &st) != 0)
         return 0;
-    return (long) st.st_size;
+    return (int64_t) st.st_size;
 }
 
 /**
