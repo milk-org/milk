@@ -239,30 +239,30 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     if(reverse == 0 && (xsizein != dcimg[IDmap].md[0].size[0] ||
                         ysizein != dcimg[IDmap].md[0].size[1]))
     {
-        printf(
-            "ERROR: xsize, ysize for %s (%d, %d) does not match %s (%d, "
-            "%d)\n",
+        PRINT_ERROR(
+            "xsize,ysize for %s (%d,%d) "
+            "does not match %s (%d,%d)",
             inputstream_name,
-            xsizein,
-            ysizein,
+            xsizein, ysizein,
             IDmap_name,
             dcimg[IDmap].md[0].size[0],
-            dcimg[IDmap].md[0].size[0]);
-        exit(0);
+            dcimg[IDmap].md[0].size[1]);
+        free(sizearray);
+        return RETURN_FAILURE;
     }
     if(reverse == 1 && (xsizeim != dcimg[IDmap].md[0].size[0] ||
                         ysizeim != dcimg[IDmap].md[0].size[1]))
     {
-        printf(
-            "ERROR: xsize, ysize for %s (%d, %d) does not match %s (%d, "
-            "%d)\n",
+        PRINT_ERROR(
+            "xsize,ysize for %s (%d,%d) "
+            "does not match %s (%d,%d)",
             IDout_name,
-            xsizein,
-            ysizein,
+            xsizein, ysizein,
             IDmap_name,
             dcimg[IDmap].md[0].size[0],
-            dcimg[IDmap].md[0].size[0]);
-        exit(0);
+            dcimg[IDmap].md[0].size[1]);
+        free(sizearray);
+        return RETURN_FAILURE;
     }
     if(NBslice > 1 && reverse == 1)
     {
@@ -335,8 +335,14 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     if((fp = fopen(NBpix_fname, "r")) == NULL)
     {
-        printf("ERROR : cannot open file \"%s\"\n", NBpix_fname);
-        exit(0);
+        PRINT_ERROR(
+            "cannot open file \"%s\"",
+            NBpix_fname);
+        free(nbpixslice);
+        free(tarray);
+        free(dtarray);
+        free(sizearray);
+        return RETURN_FAILURE;
     }
 
     for(slice = 0; slice < NBslice; slice++)

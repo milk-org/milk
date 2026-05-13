@@ -13,6 +13,8 @@
 #endif
 #include "image_total.h"
 
+#include <math.h>
+
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef _OPENMP
@@ -164,7 +166,7 @@ double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
     else
     {
         PRINT_ERROR("invalid data type");
-        exit(0);
+        return NAN;
     }
 
 #ifdef _OPENMP
@@ -327,7 +329,7 @@ double MILK_HOT arith_image_sumsquare_IMGID(IMGID *imgin)
     else
     {
         PRINT_ERROR("invalid data type");
-        exit(0);
+        return NAN;
     }
 
 #ifdef _OPENMP

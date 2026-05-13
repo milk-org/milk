@@ -317,7 +317,8 @@ errno_t read_1D_array(double *array, long nbpoints, const char *filename)
         if(fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
         {
             PRINT_ERROR("fscanf error");
-            exit(0);
+            fclose(fp);
+            return RETURN_FAILURE;
         }
     }
     fclose(fp);
@@ -339,7 +340,8 @@ int read_int_file(const char *fname)
         if(fscanf(fp, "%d", &value) != 1)
         {
             PRINT_ERROR("fscanf error");
-            exit(0);
+            fclose(fp);
+            return RETURN_FAILURE;
         }
         fclose(fp);
     }

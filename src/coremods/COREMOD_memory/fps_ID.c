@@ -72,10 +72,9 @@ long next_avail_fps_ID()
 
     if(ID == -1)
     {
-        printf("ERROR: ran out of FPS IDs - cannot allocate new ID\n");
-        printf("NB_MAX_FPS should be increased above current value (%ld)\n",
-               dcnfps);
-        exit(0);
+        PRINT_ERROR("ran out of FPS IDs"
+            " (NB_MAX_FPS=%ld)",
+            dcnfps);
     }
 
     return ID;

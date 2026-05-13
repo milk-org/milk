@@ -1,6 +1,3 @@
-#define _GNU_SOURCE
-#include "ImageStreamIO/ImageStruct.h"
-#define _GNU_SOURCE
 /**
  * @file    logshmim.c
  * @brief   Save telemetry stream data
@@ -10,6 +7,8 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+
+#include "ImageStreamIO/ImageStruct.h"
 
 #include <fcntl.h>
 #include <pthread.h>
@@ -266,8 +265,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         ImageStreamIO_typesize(datatype);
     if(typesize == -1)
     {
-        printf("ERROR: WRONG DATA TYPE\n");
-        exit(0);
+        PRINT_ERROR("wrong data type %d",
+                    (int) datatype);
+        return RETURN_FAILURE;
     }
 
     int buffindex = 0;
