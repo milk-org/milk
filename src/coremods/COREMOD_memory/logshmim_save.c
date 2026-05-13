@@ -228,60 +228,61 @@ void *save_telemetry_fits_function(
         if((fp = fopen(tmsg->fnameascii, "w"))
             == NULL)
         {
-            printf("ERROR: cannot create"
-                   " file \"%s\"\n",
-                   tmsg->fnameascii);
-            exit(0);
+            PRINT_ERROR(
+                "cannot create file \"%s\"",
+                tmsg->fnameascii);
         }
-
-        fprintf(fp,
-                "# Telemetry stream"
-                " timing data \n");
-        fprintf(fp,
-                "# File written by"
-                " function %s in file %s\n",
-                __FUNCTION__, __FILE__);
-        fprintf(fp, "# \n");
-        fprintf(fp,
-                "# col1 : datacube"
-                " frame index\n");
-        fprintf(fp,
-                "# col2 : Main index\n");
-        fprintf(fp,
-                "# col3 : Time since cube"
-                " origin (logging)\n");
-        fprintf(fp,
-                "# col4 : Absolute time"
-                " (logging)\n");
-        fprintf(fp,
-                "# col5 : Absolute time"
-                " (acquisition)\n");
-        fprintf(fp,
-                "# col6 : stream cnt0"
-                " index\n");
-        fprintf(fp,
-                "# col7 : stream cnt1"
-                " index\n");
-        fprintf(fp, "# \n");
-
-        double t0;
-        t0 = tmsg->arraytime[0];
-        for(long k = 0;
-             k < tmsg->cubesize; k++)
+        else
         {
             fprintf(fp,
-                    "%10ld  %10lu  %15.9lf"
-                    "   %20.9lf  %17.6lf"
-                    "   %10ld   %10ld\n",
-                    k,
-                    tmsg->arrayindex[k],
-                    tmsg->arraytime[k] - t0,
-                    tmsg->arraytime[k],
-                    tmsg->arrayaqtime[k],
-                    tmsg->arraycnt0[k],
-                    tmsg->arraycnt1[k]);
+                    "# Telemetry stream"
+                    " timing data \n");
+            fprintf(fp,
+                    "# File written by"
+                    " function %s in file %s\n",
+                    __FUNCTION__, __FILE__);
+            fprintf(fp, "# \n");
+            fprintf(fp,
+                    "# col1 : datacube"
+                    " frame index\n");
+            fprintf(fp,
+                    "# col2 : Main index\n");
+            fprintf(fp,
+                    "# col3 : Time since cube"
+                    " origin (logging)\n");
+            fprintf(fp,
+                    "# col4 : Absolute time"
+                    " (logging)\n");
+            fprintf(fp,
+                    "# col5 : Absolute time"
+                    " (acquisition)\n");
+            fprintf(fp,
+                    "# col6 : stream cnt0"
+                    " index\n");
+            fprintf(fp,
+                    "# col7 : stream cnt1"
+                    " index\n");
+            fprintf(fp, "# \n");
+
+            double t0;
+            t0 = tmsg->arraytime[0];
+            for(long k = 0;
+                 k < tmsg->cubesize; k++)
+            {
+                fprintf(fp,
+                        "%10ld  %10lu  %15.9lf"
+                        "   %20.9lf  %17.6lf"
+                        "   %10ld   %10ld\n",
+                        k,
+                        tmsg->arrayindex[k],
+                        tmsg->arraytime[k] - t0,
+                        tmsg->arraytime[k],
+                        tmsg->arrayaqtime[k],
+                        tmsg->arraycnt0[k],
+                        tmsg->arraycnt1[k]);
+            }
+            fclose(fp);
         }
-        fclose(fp);
     }
 
     {

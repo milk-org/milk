@@ -162,7 +162,7 @@ errno_t images_to_cube(
             {
                 PRINT_ERROR(
                     "Image has wrong size");
-                exit(0);
+                return RETURN_FAILURE;
             }
             for(uint32_t ii = 0;
                 ii < xsize; ii++)

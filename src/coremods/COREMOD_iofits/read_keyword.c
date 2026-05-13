@@ -78,7 +78,7 @@ errno_t read_keyword_alone(const char *restrict file_name,
     if(content == NULL)
     {
         PRINT_ERROR("malloc error");
-        exit(0);
+        return RETURN_FAILURE;
     }
 
     read_keyword(file_name, KEYWORD, content);

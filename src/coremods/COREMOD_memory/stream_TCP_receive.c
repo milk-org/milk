@@ -108,13 +108,14 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     // create TCP socket
     if((fds_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
     {
-        printf("ERROR creating socket\n");
+        PRINT_ERROR("creating socket");
         if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, "ERROR creating socket");
         }
-        exit(0);
+        free(imgmd);
+        return -1;
     }
 
     memset((char *) &sock_server, 0, sizeof(sock_server));
@@ -130,13 +131,15 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                          sizeof(flag));
     if(result < 0)
     {
-        printf("ERROR setsockopt\n");
+        PRINT_ERROR("setsockopt");
         if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, "ERROR socketopt");
         }
-        exit(0);
+        close(fds_server);
+        free(imgmd);
+        return -1;
     }
 
     sock_server.sin_family      = AF_INET;
@@ -151,14 +154,16 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         char msgstring[200];
 
         snprintf(msgstring, 200, "ERROR binding socket, port %d", port);
-        printf("%s\n", msgstring);
+        PRINT_ERROR("%s", msgstring);
 
         if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, msgstring);
         }
-        exit(0);
+        close(fds_server);
+        free(imgmd);
+        return -1;
     }
 
     if(listen(fds_server, MAXPENDING) < 0)
@@ -166,7 +171,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         char msgstring[200];
 
         snprintf(msgstring, 200, "ERROR listen socket");
-        printf("%s\n", msgstring);
+        PRINT_ERROR("%s", msgstring);
 
         if(dcprocinfo == 1)
         {
@@ -174,7 +179,9 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             processinfo_WriteMessage(processinfo, msgstring);
         }
 
-        exit(0);
+        close(fds_server);
+        free(imgmd);
+        return -1;
     }
 
     //    cnt = 0;
@@ -190,7 +197,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         char msgstring[200];
 
         snprintf(msgstring, 200, "ERROR accept socket");
-        printf("%s\n", msgstring);
+        PRINT_ERROR("%s", msgstring);
 
         if(dcprocinfo == 1)
         {
@@ -198,7 +205,9 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             processinfo_WriteMessage(processinfo, msgstring);
         }
 
-        exit(0);
+        close(fds_server);
+        free(imgmd);
+        return -1;
     }
 
     printf("Client connected\n");
@@ -211,7 +220,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         char msgstring[200];
 
         snprintf(msgstring, 200, "ERROR receiving image metadata");
-        printf("%s\n", msgstring);
+        PRINT_ERROR("%s", msgstring);
 
         if(dcprocinfo == 1)
         {
@@ -219,7 +228,10 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             processinfo_WriteMessage(processinfo, msgstring);
         }
 
-        exit(0);
+        close(fds_client);
+        close(fds_server);
+        free(imgmd);
+        return -1;
     }
 
     if(dcprocinfo == 1)
@@ -344,9 +356,14 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     if(ImageStreamIO_checktype(img_p->md->datatype, 0) == -1)
     {
-        printf("ERROR: WRONG DATA TYPE\n");
+        PRINT_ERROR(
+            "wrong data type %d",
+            (int) img_p->md->datatype);
         snprintf(typestring, 8, "%s", "ERR");
-        exit(0);
+        close(fds_client);
+        close(fds_server);
+        free(imgmd);
+        return -1;
     }
     framesize = ImageStreamIO_typesize(img_p->md->datatype) * xsize * ysize;
     printf("image frame size = %ld\n", framesize);
@@ -462,7 +479,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
         if((recvsize = recv(fds_client, buff, framesizefull, MSG_WAITALL)) < 0)
         {
-            printf("ERROR recv()\n");
+            PRINT_ERROR("recv()");
             socketOpen = 0;
         }
 

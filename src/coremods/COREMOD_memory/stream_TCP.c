@@ -497,8 +497,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
     {
-        printf("ERROR creating socket\n");
-        exit(0);
+        PRINT_ERROR("creating socket");
+        return -1;
     }
 
     result = setsockopt(fds_client,     /* socket affected */
@@ -571,12 +571,13 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
         if(-1 == ImageStreamIO_checktype(img_p->md->datatype, 0))
         {
-            printf("ERROR: WRONG DATA TYPE\n");
+            PRINT_ERROR(
+                "wrong data type %d",
+                (int) img_p->md->datatype);
             snprintf(errmsg,
                      200,
                      "WRONG DATA TYPE data type = %d\n",
                      img_p->md->datatype);
-            printf("data type = %d\n", img_p->md->datatype);
             processinfo_error(processinfo, errmsg);
             loopOK = 0;
         }

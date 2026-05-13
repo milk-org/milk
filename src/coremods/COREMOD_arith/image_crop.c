@@ -272,7 +272,7 @@ imageID arith_image_crop(const char *ID_name,
     if(naxis < 1)
     {
         PRINT_ERROR("naxis < 1");
-        exit(0);
+        return -1;
     }
     naxes = (uint32_t *) malloc(
         sizeof(uint32_t) * naxis);
@@ -281,7 +281,7 @@ imageID arith_image_crop(const char *ID_name,
         PRINT_ERROR(
             "malloc() error,"
             " naxis = %ld", naxis);
-        exit(0);
+        return -1;
     }
 
     naxesout = (uint32_t *) malloc(
@@ -289,7 +289,8 @@ imageID arith_image_crop(const char *ID_name,
     if(naxesout == NULL)
     {
         PRINT_ERROR("malloc() error");
-        exit(0);
+        free(naxes);
+        return -1;
     }
 
     datatype = imgin.md->datatype;
@@ -380,7 +381,7 @@ imageID arith_image_crop(const char *ID_name,
                     (int) datatype);
         free(naxesout);
         free(naxes);
-        exit(0);
+        return -1;
     }
     size_t elemsize = (size_t) typesize;
 
@@ -478,7 +479,7 @@ imageID arith_image_crop(const char *ID_name,
             naxis);
         free(naxesout);
         free(naxes);
-        exit(0);
+        return -1;
     }
 
     free(naxesout);
@@ -513,7 +514,7 @@ imageID arith_image_extract2D(
     if(start == NULL)
     {
         PRINT_ERROR("malloc() error");
-        exit(0);
+        return -1;
     }
 
     end = (long *) malloc(
@@ -521,7 +522,8 @@ imageID arith_image_extract2D(
     if(end == NULL)
     {
         PRINT_ERROR("malloc() error");
-        exit(0);
+        free(start);
+        return -1;
     }
 
     for(k = 0; k < naxis; k++)
@@ -560,33 +562,26 @@ imageID arith_image_extract3D(const char *in_name,
     start = (long *) malloc(sizeof(long) * 3);
     if(start == NULL)
     {
-        PRINT_ERROR("malloc() error");
-        printf("params: %s %s %ld %ld %ld %ld %ld %ld \n",
-               in_name,
-               out_name,
-               size_x,
-               size_y,
-               size_z,
-               xstart,
-               ystart,
-               zstart);
-        exit(0);
+        PRINT_ERROR(
+            "malloc() error, params: "
+            "%s %s %ld %ld %ld %ld %ld %ld",
+            in_name, out_name,
+            size_x, size_y, size_z,
+            xstart, ystart, zstart);
+        return -1;
     }
 
     end = (long *) malloc(sizeof(long) * 3);
     if(end == NULL)
     {
-        PRINT_ERROR("malloc() error");
-        printf("params: %s %s %ld %ld %ld %ld %ld %ld \n",
-               in_name,
-               out_name,
-               size_x,
-               size_y,
-               size_z,
-               xstart,
-               ystart,
-               zstart);
-        exit(0);
+        PRINT_ERROR(
+            "malloc() error, params: "
+            "%s %s %ld %ld %ld %ld %ld %ld",
+            in_name, out_name,
+            size_x, size_y, size_z,
+            xstart, ystart, zstart);
+        free(start);
+        return -1;
     }
 
     start[0] = xstart;
