@@ -264,16 +264,16 @@ int printERROR(const char *file, const char *func, int line, char *errmessage)
         char buff[256];
         if(strerror_r(errno, buff, 256) == 0)
         {
-            fprintf(stderr, "C Error: %s\n", buff);
+            PRINT_ERROR("C Error: %s", buff);
         }
         else
         {
-            fprintf(stderr, "Unknown C Error\n");
+            PRINT_ERROR("Unknown C Error");
         }
     }
     else
     {
-        fprintf(stderr, "No C error (errno = 0)\n");
+        PRINT_ERROR("No C error (errno = 0)");
     }
 
     fprintf(stderr,

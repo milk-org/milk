@@ -696,7 +696,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     int ms_status = milkscript_init(argc, argv);
     if(ms_status != 0)
     {
-        fprintf(stderr, "ERROR: milkscript_init() failed with code %d\n", ms_status);
+        PRINT_ERROR("ERROR: milkscript_init() failed with code %d", ms_status);
         DEBUG_TRACE_FEXIT();
         return ms_status;
     }

@@ -279,7 +279,7 @@ int main(int argc, char **argv)
     };
     if (milkscript_init(1, init_argv) != 0)
     {
-        fprintf(stderr, "milk-script: engine initialization failed\n");
+        PRINT_ERROR("milk-script: engine initialization failed");
         return 1;
     }
 
@@ -317,9 +317,7 @@ int main(int argc, char **argv)
         FILE *fp = fopen(script_argv[0], "r");
         if (!fp)
         {
-            fprintf(stderr,
-                    "milk-script: cannot open '%s': %s\n",
-                    script_argv[0], strerror(errno));
+            PRINT_ERROR("milk-script: cannot open '%s': %s", script_argv[0], strerror(errno));
             return 1;
         }
         milkscript_run(fp);

@@ -262,9 +262,7 @@ static int remove_orphan(const char *shmdir, const char *sname)
     }
 
     if (unlink(fullpath) != 0) {
-        fprintf(stderr,
-                "  \033[1;31mFAILED\033[0m: unlink '%s': %s\n",
-                fullpath, strerror(errno));
+        PRINT_ERROR("  \033[1;31mFAILED\033[0m: unlink '%s': %s", fullpath, strerror(errno));
         return 1;
     }
 
@@ -322,10 +320,8 @@ int main(int argc, char *argv[])
     /* Scan SHM directory */
     DIR *d = opendir(shmdir);
     if (d == NULL) {
-        fprintf(stderr,
-                "\033[1;31mERROR\033[0m:"
-                " cannot open '%s': %s\n",
-                shmdir, strerror(errno));
+        PRINT_ERROR("\033[1;31mERROR\033[0m:"
+                " cannot open '%s': %s", shmdir, strerror(errno));
         return 1;
     }
 
@@ -420,7 +416,7 @@ int main(int argc, char *argv[])
     }
 
     if (errors > 0) {
-        fprintf(stderr, "%d stream(s) failed to remove.\n", errors);
+        PRINT_ERROR("%d stream(s) failed to remove.", errors);
         return 1;
     }
 

@@ -279,8 +279,7 @@ int main(int argc, char *argv[])
     if (ov_scan_start() != 0)
     {
         ov_raw_mode_exit();
-        fprintf(stderr,
-                "ERROR: failed to start scan thread\n");
+        PRINT_ERROR("failed to start scan thread");
         return 1;
     }
 

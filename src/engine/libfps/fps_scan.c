@@ -196,7 +196,7 @@ errno_t functionparameter_scan_fps(
             {
                 if(fpsindex >= NB_FPS_MAX)
                 {
-                    fprintf(stderr, "WARNING: Maximum number of FPS reached (%d). Skipping %s\n", NB_FPS_MAX, dir->d_name);
+                    PRINT_ERROR("WARNING: Maximum number of FPS reached (%d). Skipping %s", NB_FPS_MAX, dir->d_name);
                     continue;
                 }
 
@@ -422,7 +422,7 @@ errno_t functionparameter_scan_fps(
                                     kwnindex = NBkwn;
                                     if(NBkwn >= NB_KEYWNODE_MAX)
                                     {
-                                        fprintf(stderr, "WARNING: Maximum number of keyword nodes reached (%d). Skipping further parameters.\n", NB_KEYWNODE_MAX);
+                                        PRINT_ERROR("WARNING: Maximum number of keyword nodes reached (%d). Skipping further parameters.", NB_KEYWNODE_MAX);
                                         break;
                                     }
 
@@ -478,7 +478,7 @@ errno_t functionparameter_scan_fps(
                                         }
                                         else
                                         {
-                                            fprintf(stderr, "WARNING: Maximum number of children reached for node %d (%d). Skipping child.\n", keywnode[kwnindex].parent_index, MAX_NB_CHILD);
+                                            PRINT_ERROR("WARNING: Maximum number of children reached for node %d (%d). Skipping child.", keywnode[kwnindex].parent_index, MAX_NB_CHILD);
                                         }
                                     }
 

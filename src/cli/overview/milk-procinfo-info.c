@@ -18,6 +18,7 @@
 #include <getopt.h>
 #include <signal.h>
 
+#include "overview_defs.h"
 #include "overview_data.h"
 #include "milk_help.h"
 
@@ -514,18 +515,15 @@ int main(int argc, char *argv[])
     {
         if (target_pid > 0)
         {
-            fprintf(stderr,
-                    C_WARN "Error:" C_RST
-                    " process with PID %d "
-                    "not found\n",
-                    (int) target_pid);
+            PRINT_ERROR(
+                "process with PID %d not found",
+                (int) target_pid);
         }
         else
         {
-            fprintf(stderr,
-                    C_WARN "Error:" C_RST
-                    " process '%s' not found"
-                    "\n", proc_name);
+            PRINT_ERROR(
+                "process '%s' not found",
+                proc_name);
         }
         ov_scan_cache_cleanup();
         return 1;

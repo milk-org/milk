@@ -20,6 +20,7 @@
 #include <poll.h>
 #include <time.h>
 
+#include "overview_defs.h"
 #include "overview_data.h"
 #include "stream_graph.h"
 #include "milk_help.h"
@@ -821,8 +822,7 @@ int main(int argc, char *argv[])
     OV_MODEL *model = calloc(1, sizeof(OV_MODEL));
     if (model == NULL)
     {
-        fprintf(stderr,
-                "Error: memory allocation\n");
+        PRINT_ERROR("memory allocation failed");
         return 1;
     }
 
@@ -840,9 +840,8 @@ int main(int argc, char *argv[])
                  model, stream_name);
     if (si < 0)
     {
-        fprintf(stderr,
-                "Error: stream '%s' not found\n",
-                stream_name);
+        PRINT_ERROR("stream '%s' not found",
+                    stream_name);
         free(model);
         return 1;
     }

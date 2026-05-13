@@ -13,6 +13,7 @@
 #include <getopt.h>
 #include <regex.h>
 
+#include "libmilkcommon/milkDebugTools.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "milk_help.h"
 
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
         if (ret != 0) {
             char error_msg[128];
             regerror(ret, &regex, error_msg, sizeof(error_msg));
-            fprintf(stderr, "Error: Invalid regular expression. %s\n", error_msg);
+            PRINT_ERROR("Error: Invalid regular expression. %s", error_msg);
             return 1;
         }
         use_regex = 1;
@@ -280,7 +281,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        fprintf(stderr, "Error opening directory %s\n", shmdir);
+        PRINT_ERROR("Error opening directory %s", shmdir);
         return 1;
     }
 

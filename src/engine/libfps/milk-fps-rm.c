@@ -159,10 +159,8 @@ static int kill_proc(
             return 0; /* confirmed gone */
 
         /* rc == 0 (alive) or rc == -1 with EPERM (still exists) */
-        fprintf(stderr,
-                "Error: %s (PID %d) still"
-                " running after SIGKILL.\n",
-                label, (int)pid);
+        PRINT_ERROR("Error: %s (PID %d) still"
+                " running after SIGKILL.", label, (int)pid);
         return 1;
     }
 }
@@ -188,9 +186,8 @@ static int remove_fps(
     if (fps_connect(
             name, &fps, 0) == -1)
     {
-        fprintf(stderr,
-                "Error: cannot connect to"
-                " FPS '%s'.\n", name);
+        PRINT_ERROR("Error: cannot connect to"
+                " FPS '%s'.", name);
         return 1;
     }
 
@@ -243,11 +240,9 @@ static int remove_fps(
                     }
                     kill(cpid, SIGKILL);
                     if (!wait_for_death(cpid, 1000)) {
-                        fprintf(stderr,
-                                "Error: conf process"
+                        PRINT_ERROR("Error: conf process"
                                 " (PID %d) could not be"
-                                " terminated for '%s'.\n",
-                                (int) cpid, name);
+                                " terminated for '%s'.", (int) cpid, name);
                         running = 1;
                     }
                 }
@@ -283,11 +278,9 @@ static int remove_fps(
                     }
                     kill(rpid, SIGKILL);
                     if (!wait_for_death(rpid, 1000)) {
-                        fprintf(stderr,
-                                "Error: run process"
+                        PRINT_ERROR("Error: run process"
                                 " (PID %d) could not be"
-                                " terminated for '%s'.\n",
-                                (int) rpid, name);
+                                " terminated for '%s'.", (int) rpid, name);
                         running = 1;
                     }
                 }
@@ -307,10 +300,8 @@ static int remove_fps(
 #undef wait_for_death
 
     if (running) {
-        fprintf(stderr,
-                "Abort: stop processes"
-                " before removing '%s' (or use -f/--force).\n",
-                name);
+        PRINT_ERROR("Abort: stop processes"
+                " before removing '%s' (or use -f/--force).", name);
         fps_disconnect(
             &fps);
         return 1;
@@ -436,7 +427,7 @@ int main(int argc, char *argv[])
 
         if (matched_count == 0) {
             if (pattern) {
-                fprintf(stderr, "Error: cannot connect to FPS '%s'. It may not exist.\n", pattern);
+                PRINT_ERROR("Error: cannot connect to FPS '%s'. It may not exist.", pattern);
             } else {
                 printf("No FPS instances found.\n");
             }
@@ -571,10 +562,8 @@ int main(int argc, char *argv[])
         }
 
         if (errors > 0) {
-            fprintf(stderr,
-                    "%d FPS(es) failed"
-                    " to remove.\n",
-                    errors);
+            PRINT_ERROR("%d FPS(es) failed"
+                    " to remove.", errors);
             return 1;
         }
         return 0;

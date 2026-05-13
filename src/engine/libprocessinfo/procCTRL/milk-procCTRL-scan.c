@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
     int fd_scan;
     PROCSCAN_SHM *scan_shm = (PROCSCAN_SHM *) create_scan_shm(scan_shm_name, sizeof(PROCSCAN_SHM), &fd_scan);
     if (scan_shm == MAP_FAILED) {
-         fprintf(stderr, "Error creating scan shared memory: %s\n", scan_shm_name);
+         PRINT_ERROR("Error creating scan shared memory: %s", scan_shm_name);
          return 1;
     }
 

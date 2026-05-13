@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
         if (ret != 0) {
             char error_msg[128];
             regerror(ret, &regex, error_msg, sizeof(error_msg));
-            fprintf(stderr, "Error: Invalid regular expression. %s\n", error_msg);
+            PRINT_ERROR("Error: Invalid regular expression. %s", error_msg);
             return 1;
         }
         use_regex = 1;
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     fpsarray = (FPS *) calloc(NB_FPS_MAX, sizeof(FPS));
     if(fpsarray == NULL)
     {
-        fprintf(stderr, "Error: cannot allocate fpsarray\n");
+        PRINT_ERROR("Error: cannot allocate fpsarray");
         return 1;
     }
     for(int i = 0; i < NB_FPS_MAX; i++)
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
     KEYWORD_TREE_NODE *keywnode = (KEYWORD_TREE_NODE *) calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE));
     if(keywnode == NULL)
     {
-        fprintf(stderr, "Error: cannot allocate keywnode\n");
+        PRINT_ERROR("Error: cannot allocate keywnode");
         free(fpsarray);
         return 1;
     }
