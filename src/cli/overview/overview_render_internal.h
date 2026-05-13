@@ -120,7 +120,7 @@ static inline const char *render_trigmode_label(
 static inline void format_mem_kb(
     char *buf,
     size_t sz,
-    long kb)
+    int64_t kb)
 {
     if (kb <= 0) {
         snprintf(buf, sz, "   -");
@@ -128,9 +128,9 @@ static inline void format_mem_kb(
         snprintf(buf, sz, "%4.1fG",
             (double)kb / (1024.0 * 1024.0));
     } else if (kb >= 1024) {
-        snprintf(buf, sz, "%4ldM", kb / 1024);
+        snprintf(buf, sz, "%4" PRId64 "M", kb / 1024);
     } else {
-        snprintf(buf, sz, "%4ldK", kb);
+        snprintf(buf, sz, "%4" PRId64 "K", kb);
     }
 }
 

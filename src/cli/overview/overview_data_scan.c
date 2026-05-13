@@ -793,14 +793,14 @@ void ov_scan_procs(OV_MODEL *model)
                 ce->has_prev_loop = 1;
 
                 /* CPU percent from tick delta */
-                unsigned long ut = 0, st = 0;
+                uint64_t ut = 0, st = 0;
                 if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {
                     if (ce->has_prev_cpu
                         && s_scan_dt_sec > 0.01)
                     {
                         long clk = sysconf(_SC_CLK_TCK);
-                        unsigned long dticks =
+                        uint64_t dticks =
                             (ut - ce->prev_utime)
                             + (st - ce->prev_stime);
                         ce->cpu_pct = (float)(
@@ -1030,7 +1030,7 @@ void ov_scan_procs(OV_MODEL *model)
                 ce->has_prev_loop = 1;
 
                 /* CPU percent from tick delta */
-                unsigned long ut = 0, st = 0;
+                uint64_t ut = 0, st = 0;
                 if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {
                     if (ce->has_prev_cpu
@@ -1038,7 +1038,7 @@ void ov_scan_procs(OV_MODEL *model)
                     {
                         long clk = sysconf(
                             _SC_CLK_TCK);
-                        unsigned long dticks =
+                        uint64_t dticks =
                             (ut - ce->prev_utime)
                             + (st - ce->prev_stime);
                         ce->cpu_pct = (float)(

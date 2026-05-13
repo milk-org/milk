@@ -216,8 +216,8 @@ static int sort_proc_by_hz(
 static int sort_proc_by_mem(
     const void *a, const void *b)
 {
-    long ma = ((const OV_PROC *) a)->mem_rss_kb;
-    long mb = ((const OV_PROC *) b)->mem_rss_kb;
+    int64_t ma = ((const OV_PROC *) a)->mem_rss_kb;
+    int64_t mb = ((const OV_PROC *) b)->mem_rss_kb;
     if (ma < mb) { return -ov_sort_dir_mul; }
     if (ma > mb) { return ov_sort_dir_mul; }
     return 0;
@@ -292,8 +292,8 @@ static int sort_fps_by_status(
 static int sort_fps_by_mem(
     const void *a, const void *b)
 {
-    long ma = ((const OV_FPS *) a)->mem_rss_kb;
-    long mb = ((const OV_FPS *) b)->mem_rss_kb;
+    int64_t ma = ((const OV_FPS *) a)->mem_rss_kb;
+    int64_t mb = ((const OV_FPS *) b)->mem_rss_kb;
     if (ma < mb) { return -ov_sort_dir_mul; }
     if (ma > mb) { return ov_sort_dir_mul; }
     return 0;

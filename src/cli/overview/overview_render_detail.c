@@ -958,9 +958,9 @@ int ov_render_resources_panel(
             if (has_perf) {
                 ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
-                int nb = snprintf(buf, sizeof(buf), "   Inst: %8llu    Cache Miss: %8llu", 
-                    (unsigned long long)perf_cnt.instructions, 
-                    (unsigned long long)perf_cnt.cache_misses);
+                int nb = snprintf(buf, sizeof(buf), "   Inst: %8" PRIu64 "    Cache Miss: %8" PRIu64 "", 
+                    (uint64_t)perf_cnt.instructions, 
+                    (uint64_t)perf_cnt.cache_misses);
                 ov_buf_printf("%s", buf);
                 render_pad_spaces(nb, r.width);
                 ri++;
