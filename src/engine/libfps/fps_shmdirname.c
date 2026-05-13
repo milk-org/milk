@@ -95,7 +95,10 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             tmpdir = opendir("/tmp");
             if(!tmpdir)
             {
-                exit(EXIT_FAILURE);
+                FUNC_RETURN_FAILURE(
+                    "could not locate any usable SHM "
+                    "directory (last fallback /tmp also "
+                    "failed to open)");
             }
             else
             {
