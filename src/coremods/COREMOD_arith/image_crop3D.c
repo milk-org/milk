@@ -18,22 +18,22 @@
 imageID arith_image_crop(
     const char *ID_name,
     const char *ID_out,
-    long *start, long *end,
-    long cropdim);
+    int64_t *start, int64_t *end,
+    int64_t cropdim);
 
 imageID arith_image_extract2D(
     const char *in_name,
     const char *out_name,
-    long size_x, long size_y,
-    long xstart, long ystart);
+    int64_t size_x, int64_t size_y,
+    int64_t xstart, int64_t ystart);
 
 imageID arith_image_extract3D(
     const char *in_name,
     const char *out_name,
-    long size_x, long size_y,
-    long size_z,
-    long xstart, long ystart,
-    long zstart);
+    int64_t size_x, int64_t size_y,
+    int64_t size_z,
+    int64_t xstart, int64_t ystart,
+    int64_t zstart);
 
 
 /* ================================================================
@@ -46,12 +46,12 @@ static char p_inname[
 static char p_outname[
     FUNCTION_PARAMETER_STRMAXLEN]
     = "ime";
-static long long p_sizex = 256;
-static long long p_sizey = 256;
-static long long p_sizez = 5;
-static long long p_xstart = 100;
-static long long p_ystart = 100;
-static long long p_zstart = 0;
+static int64_t p_sizex = 256;
+static int64_t p_sizey = 256;
+static int64_t p_sizez = 5;
+static int64_t p_xstart = 100;
+static int64_t p_ystart = 100;
+static int64_t p_zstart = 0;
 
 
 /* ================================================================
@@ -243,18 +243,18 @@ CLIADDCMD_COREMOD_arith__image_crop()
 
 imageID arith_image_crop(const char *ID_name,
                          const char *ID_out,
-                         long       *start,
-                         long       *end,
-                         long        cropdim)
+                         int64_t       *start,
+                         int64_t       *end,
+                         int64_t        cropdim)
 {
-    long      naxis;
-    long      i;
+    int64_t      naxis;
+    int64_t      i;
     uint32_t *naxes    = NULL;
     uint32_t *naxesout = NULL;
     uint8_t   datatype;
 
-    long start_c[3];
-    long end_c[3];
+    int64_t start_c[3];
+    int64_t end_c[3];
 
     for(i = 0; i < 3; i++)
     {
@@ -490,13 +490,13 @@ imageID arith_image_crop(const char *ID_name,
 imageID arith_image_extract2D(
     const char *in_name,
     const char *out_name,
-    long        size_x,
-    long        size_y,
-    long        xstart,
-    long        ystart)
+    int64_t        size_x,
+    int64_t        size_y,
+    int64_t        xstart,
+    int64_t        ystart)
 {
-    long        *start = NULL;
-    long        *end   = NULL;
+    int64_t        *start = NULL;
+    int64_t        *end   = NULL;
     imageID      IDout;
     uint_fast8_t k;
 
@@ -507,16 +507,16 @@ imageID arith_image_extract2D(
                  dcimg, dcnimg);
     int naxis = img.md->naxis;
 
-    start = (long *) malloc(
-        sizeof(long) * naxis);
+    start = (int64_t *) malloc(
+        sizeof(int64_t) * naxis);
     if(start == NULL)
     {
         PRINT_ERROR("malloc() error");
         return -1;
     }
 
-    end = (long *) malloc(
-        sizeof(long) * naxis);
+    end = (int64_t *) malloc(
+        sizeof(int64_t) * naxis);
     if(end == NULL)
     {
         PRINT_ERROR("malloc() error");
@@ -546,18 +546,18 @@ imageID arith_image_extract2D(
 
 imageID arith_image_extract3D(const char *in_name,
                               const char *out_name,
-                              long        size_x,
-                              long        size_y,
-                              long        size_z,
-                              long        xstart,
-                              long        ystart,
-                              long        zstart)
+                              int64_t        size_x,
+                              int64_t        size_y,
+                              int64_t        size_z,
+                              int64_t        xstart,
+                              int64_t        ystart,
+                              int64_t        zstart)
 {
     imageID IDout;
-    long   *start = NULL;
-    long   *end   = NULL;
+    int64_t   *start = NULL;
+    int64_t   *end   = NULL;
 
-    start = (long *) malloc(sizeof(long) * 3);
+    start = (int64_t *) malloc(sizeof(int64_t) * 3);
     if(start == NULL)
     {
         PRINT_ERROR(
@@ -569,7 +569,7 @@ imageID arith_image_extract3D(const char *in_name,
         return -1;
     }
 
-    end = (long *) malloc(sizeof(long) * 3);
+    end = (int64_t *) malloc(sizeof(int64_t) * 3);
     if(end == NULL)
     {
         PRINT_ERROR(
