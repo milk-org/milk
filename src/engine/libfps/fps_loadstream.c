@@ -60,7 +60,7 @@ imageID functionparameter_LoadStream(
         printf("\033[1;31mFAILURE\033[0m:"
                " invalid stream modifier "
                "prefix in \"%s\"\n", rawname);
-        exit(EXIT_FAILURE);
+        return -1;
     }
     /* Apply location modifier to flags */
     uint64_t saved_flags =
@@ -100,7 +100,7 @@ imageID functionparameter_LoadStream(
                    sp.name, (long) probeID);
             fps->parray[pindex].fpflag =
                 saved_flags;
-            exit(EXIT_FAILURE);
+            return -1;
         }
     }
 
@@ -168,7 +168,7 @@ imageID functionparameter_LoadStream(
                "stream \"%s\" is in shared"
                " memory, not local\n",
                sp.name);
-        exit(EXIT_FAILURE);
+        return -1;
     }
     if (sp.loc == 'S' && ID >= 0 &&
         imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
@@ -178,7 +178,7 @@ imageID functionparameter_LoadStream(
                "stream \"%s\" is in local"
                " memory, not shared\n",
                sp.name);
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     /* must-exist check */
@@ -189,7 +189,7 @@ imageID functionparameter_LoadStream(
                "stream \"%s\""
                " not found\n",
                sp.name);
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     /* Required-stream enforcement: abort with a clear message
@@ -218,7 +218,7 @@ imageID functionparameter_LoadStream(
                     fps->parray[pindex].keywordfull);
         }
         fflush(stderr);
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     if (run_req && ID == -1)
@@ -245,7 +245,7 @@ imageID functionparameter_LoadStream(
                     fps->parray[pindex].keywordfull);
         }
         fflush(stderr);
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     return ID;

@@ -148,8 +148,8 @@ errno_t functionparameter_outlog(
             fpout = fopen(logfname, "a");
             if(fpout == NULL)
             {
-                printf("ERROR: cannot open file\n");
-                exit(EXIT_FAILURE);
+                FUNC_RETURN_FAILURE(
+                    "fopen(%s, \"a\") failed", logfname);
             }
             LogOutOpen = 1;
         }
