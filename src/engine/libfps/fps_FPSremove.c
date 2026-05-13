@@ -24,7 +24,7 @@ errno_t functionparameter_FPSremove(FPS *fps)
     WRITE_FULLFILENAME(fpsfname, "%s/%s.fps.shm", shmdname, fps->md->name);
 
     // delete sym links
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "find %s -follow -type f -name \"fpslog.*%s\" -exec grep -q \"LOGSTART "
         "%s\" {} \\; -delete",
         shmdname,
@@ -84,29 +84,29 @@ errno_t functionparameter_FPSremove(FPS *fps)
                  fps->md->name);
         if (system(chkcmd) == 0)
         {
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:ctrl"
                 " \" exit\" C-m",
                 fps->md->name);
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:ctrl"
                 " \" exit\" C-m",
                 fps->md->name);
 
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:conf"
                 " \" exit\" C-m",
                 fps->md->name);
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:conf"
                 " \" exit\" C-m",
                 fps->md->name);
 
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:run"
                 " \" exit\" C-m",
                 fps->md->name);
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:run"
                 " \" exit\" C-m",
                 fps->md->name);

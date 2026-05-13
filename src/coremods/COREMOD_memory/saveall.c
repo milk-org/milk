@@ -243,7 +243,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
         }
     }
 
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "mkdir -p %s", dirname);
 
     for(i = 0; i < imcnt; i++)
@@ -327,7 +327,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
         (uint32_t *) malloc(
             sizeof(uint32_t) * imcnt);
 
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "mkdir -p %s", dirname);
 
     {

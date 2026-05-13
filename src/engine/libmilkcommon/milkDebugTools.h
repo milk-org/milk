@@ -133,7 +133,7 @@ typedef long variableID;
         } \
     } while (0)
 
-#define EXECUTE_SYSTEM_COMMAND(format, ...) \
+#define EXECUTE_SYSTEM_COMMAND_NOCHECK(format, ...) \
     do \
     {\
         char syscommandstring[STRINGMAXLEN_COMMAND]; \
@@ -142,7 +142,7 @@ typedef long variableID;
         (void)_ret; \
     } while (0)
 
-#define EXECUTE_SYSTEM_COMMAND_ERRCHECK(format, ...) \
+#define EXECUTE_SYSTEM_COMMAND(format, ...) \
     do \
     {\
         char syscommandstring[STRINGMAXLEN_COMMAND]; \

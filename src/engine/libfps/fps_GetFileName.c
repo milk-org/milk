@@ -24,7 +24,7 @@ int functionparameter_GetFileName(
     //char fpsdatadirname[STRINGMAXLEN_DIRNAME];
 
     WRITE_DIRNAME(ffname, "%s/%s/fps/", fps->md->workdir, fps->md->datadir);
-    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", ffname);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", ffname);
 
     // build up directory name
     for(l = 0; l < fparam->keywordlevel - 1; l++)

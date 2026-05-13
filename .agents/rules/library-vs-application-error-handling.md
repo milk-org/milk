@@ -90,23 +90,21 @@ that return them must still be declared `errno_t`,
 and the codes must satisfy
 `code >= IMAGESTREAMIO_FAILURE`.
 
-## 3. `EXECUTE_SYSTEM_COMMAND` — Intended Default
+## 3. `EXECUTE_SYSTEM_COMMAND` — Default Is Checked
 
-- **Today:** `EXECUTE_SYSTEM_COMMAND` is silent — its
-  expansion casts the `system()` return to `(void)`.
-  `EXECUTE_SYSTEM_COMMAND_ERRCHECK` is the safe
-  variant. Adoption is inverted: ~82 silent callers
-  vs. ~4 checked.
-- **Rule for new code:** always use
-  `EXECUTE_SYSTEM_COMMAND_ERRCHECK`.
-- **Documented intent (not yet implemented):** a
-  future macro change will swap the names —
-  `EXECUTE_SYSTEM_COMMAND` will become the checked
-  variant; the silent path will be renamed
-  `EXECUTE_SYSTEM_COMMAND_NOCHECK` and require an
-  explanatory comment per call site. Until that
-  lands, treat the bare `EXECUTE_SYSTEM_COMMAND` as
-  deprecated.
+- `EXECUTE_SYSTEM_COMMAND(format, ...)` checks the
+  `system()` return and logs failures via
+  `PRINT_ERROR`. Use this by default.
+- `EXECUTE_SYSTEM_COMMAND_NOCHECK(format, ...)` is the
+  opt-in silent variant. Use it only when the exit
+  status genuinely doesn't matter (e.g. a `tmux
+  kill-session` whose absence is expected) and document
+  the reason in a one-line comment above the call.
+- New code reaches for the checked default. Existing
+  `_NOCHECK` call sites should be audited
+  opportunistically: convert to the checked default if
+  failure is meaningful, leave the `_NOCHECK` form with
+  a justifying comment otherwise.
 
 ## 4. Standalone CLI Exit Codes
 

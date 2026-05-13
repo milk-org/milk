@@ -19,17 +19,17 @@ errno_t functionparameter_CONFstart(FPS *fps)
 {
     // Move to correct launch directory
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" cd %s\" C-m",
                            fps->md->name,
                            fps->md->workdir);
 
     if (strstr(fps->md->execfullpath, "fpsexec") != NULL) {
-        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" %s %s:confstart\" C-m",
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" %s %s:confstart\" C-m",
                                fps->md->name,
                                fps->md->execfullpath,
                                fps->md->name);
     } else {
-        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" fpsconfstart\" C-m",
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" fpsconfstart\" C-m",
                                fps->md->name);
     }
 
