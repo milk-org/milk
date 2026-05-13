@@ -1023,8 +1023,6 @@ int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*p
 
 int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout, double (*pt2function)(double, double, double))
 {
-    long ii; 
-    
     if (imgin->im == NULL) { return RETURN_FAILURE; }
 
     imgout->mdt->naxis = imgin->md->naxis;
@@ -1038,11 +1036,11 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
     }
     imgid_mkimage(imgout);
 
-    uint_fast64_t nelement = imgin->md->nelement;
+    uint64_t nelement = imgin->md->nelement;
 #ifdef _OPENMP
     #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
-    for(ii = 0; ii < nelement; ii++)
+    for(uint64_t ii = 0; ii < nelement; ii++)
     {
         double v = get_pixel_double(imgin->im, ii);
         if (imgout->mdt->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1, f2);
@@ -1060,11 +1058,11 @@ int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const 
 
 int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2, double (*pt2function)(double, double, double))
 {
-    long ii; uint_fast64_t nelement = imgin->im->md[0].nelement;
+    uint64_t nelement = imgin->im->md[0].nelement;
 #ifdef _OPENMP
     #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
-    for(ii = 0; ii < nelement; ii++)
+    for(uint64_t ii = 0; ii < nelement; ii++)
     {
         double v = get_pixel_double(imgin->im, ii);
         if (imgin->im->md[0].datatype == _DATATYPE_FLOAT) imgin->im->array.F[ii] = (float)pt2function(v, f1, f2);
