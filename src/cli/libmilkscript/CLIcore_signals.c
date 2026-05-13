@@ -76,7 +76,7 @@ static void set_terminal_echo_on()
     struct termios termInfo;
     if(tcgetattr(0, &termInfo) == -1)
     {
-        perror("tcgetattr");
+        PRINT_ERROR("tcgetattr: %s", strerror(errno));
         exit(1);
     }
     termInfo.c_lflag |= ECHO; /* turn on ECHO */

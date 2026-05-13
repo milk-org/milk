@@ -289,7 +289,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         struct timespec ts;
         if(clock_gettime(CLOCK_MILK, &ts) == -1)
         {
-            perror("clock_gettime");
+            PRINT_ERROR("clock_gettime: %s", strerror(errno));
             exit(EXIT_FAILURE);
         }
 

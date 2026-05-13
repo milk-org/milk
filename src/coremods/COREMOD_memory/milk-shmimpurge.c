@@ -22,6 +22,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "libmilkcommon/milkDebugTools.h"
+
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "milk_help.h"
 
@@ -177,7 +179,7 @@ static int is_stream_orphan(const char *fullpath, int verbose)
 
     DIR *proc = opendir("/proc");
     if (proc == NULL) {
-        perror("opendir(/proc)");
+        PRINT_ERROR("opendir(/proc): %s", strerror(errno));
         return 0; /* fail-safe: assume live */
     }
 

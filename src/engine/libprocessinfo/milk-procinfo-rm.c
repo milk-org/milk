@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
     DIR *dir = opendir(procdname);
     if (!dir) {
-        perror("opendir");
+        PRINT_ERROR("opendir: %s", strerror(errno));
         return 1;
     }
 
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            perror("unlink");
+            PRINT_ERROR("unlink: %s", strerror(errno));
         }
     }
     closedir(dir);

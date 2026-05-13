@@ -15,7 +15,7 @@ int processinfo_shm_close(PROCESSINFO *pinfo, int fd)
 {
     if(munmap(pinfo, sizeof(PROCESSINFO)) == -1)
     {
-        perror("Error un-mmapping the file");
+        PRINT_ERROR("Error un-mmapping the file: %s", strerror(errno));
     }
     close(fd);
 

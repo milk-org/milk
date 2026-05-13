@@ -63,7 +63,7 @@ int functionparameter_read_fpsCMD_fifo(
                 }
                 else // read 0 byte
                 {
-                    //perror("read 0 byte");
+                    //PRINT_ERROR("read 0 byte: %s", strerror(errno));
                     return cmdcnt;
                 }
             }

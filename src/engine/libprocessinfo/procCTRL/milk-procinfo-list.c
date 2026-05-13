@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     DIR *dir = opendir(procdname);
     if (dir == NULL)
     {
-        perror("opendir");
+        PRINT_ERROR("opendir: %s", strerror(errno));
         if (use_regex)
         {
             regfree(&regex);

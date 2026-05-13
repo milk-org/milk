@@ -73,7 +73,7 @@ int find_streams(
                 if(retv == -1)
                 {
                     printf("File \"%s\"", dir->d_name);
-                    perror("Error running lstat on file ");
+                    PRINT_ERROR("Error running lstat on file: %s", strerror(errno));
                     exit(EXIT_FAILURE);
                 }
 
