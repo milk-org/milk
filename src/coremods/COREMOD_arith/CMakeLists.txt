@@ -28,6 +28,10 @@ set(SOURCEFILES
 	image_vecmult.c
 	image_dxdy.c
 	imfunctions.c
+	im_complex.c
+	im_math_unary.c
+	im_math_basic.c
+	im_math_logic.c
 	mathfuncs.c
 	image_arith__im__im.c
 	image_arith__im_im__im.c
@@ -35,6 +39,7 @@ set(SOURCEFILES
 	image_arith__im_f__im.c
 	image_arith__im_f_f__im.c
 	execute_arith.c
+	execute_arith_engines.c
 )
 
 set(INCLUDEFILES
