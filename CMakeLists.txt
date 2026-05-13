@@ -29,10 +29,7 @@ project(milk LANGUAGES C)
 #   Enable FITS file I/O (COREMOD_iofits). Requires
 #   cfitsio. Disable for a POSIX-only core build.
 #
-# USE_GSL (default ON):
-#   Enable GSL for plugins that need it (e.g.
-#   linopt_imtools). Core milk no longer uses GSL.
-#
+
 # Build tiers (see docs/install/build_tiers.md):
 #
 #   Engine-only (POSIX deps only):
@@ -59,7 +56,7 @@ option(USE_NCURSES  "Enable ncurses and TUI support"   ON)
 option(USE_READLINE "Enable readline support"          ON)
 option(USE_TREESITTER
     "Enable tree-sitter syntax highlighting (CLI)" ON)
-option(USE_GSL      "Enable GSL for plugins"           ON)
+
 option(USE_STATIC_LTO
     "Static-link standalone exes for full LTO" OFF)
 
@@ -112,9 +109,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(OPENBLAS openblas)
 pkg_check_modules(MKL mkl-sdl)
 #pkg_check_modules(MKL mkl-static-ilp64-gomp)
-if(USE_GSL)
-    pkg_check_modules(GSL gsl)
-endif()
+
 
 enable_language(C)
 
