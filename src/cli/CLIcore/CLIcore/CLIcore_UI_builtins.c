@@ -717,7 +717,7 @@ errno_t cli_pwd(void)
     }
     else
     {
-        perror("pwd");
+        PRINT_ERROR("pwd: %s", strerror(errno));
         return RETURN_FAILURE;
     }
 }

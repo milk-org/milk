@@ -133,7 +133,7 @@ int get_PIDmax()
     {
         if(ferror(fp))
         {
-            perror("fscanf");
+            PRINT_ERROR("fscanf: %s", strerror(errno));
         }
         else
         {
