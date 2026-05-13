@@ -24,7 +24,9 @@
 #include "CLIcore_standalone.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "stream_slice.h"
