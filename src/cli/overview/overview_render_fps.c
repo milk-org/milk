@@ -331,7 +331,7 @@ void ov_render_fps_panel(
         /* Totals over ALL FPS */
         int  tot_conf = 0;
         int  tot_run  = 0;
-        long tot_mem  = 0;
+        int64_t tot_mem  = 0;
         for (int j = 0; j < m->nb_fps; j++)
         {
             const OV_FPS *f = &m->fps[j];
@@ -343,7 +343,7 @@ void ov_render_fps_panel(
         /* Totals over filtered subset */
         int  flt_conf = 0;
         int  flt_run  = 0;
-        long flt_mem  = 0;
+        int64_t flt_mem  = 0;
         for (int j = 0; j < filt_n; j++)
         {
             const OV_FPS *f = &m->fps[fidx[j]];
