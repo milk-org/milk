@@ -133,9 +133,9 @@ imageID read_sharedmem_image_size(
             {
                 printf("unmapping %s\n",
                        SM_fname);
-                perror(
-                    "Error un-mmapping"
-                    " the file");
+                PRINT_ERROR(
+                    "Error un-mmapping the file: %s",
+                    strerror(errno));
             }
             close(SM_fd);
         }

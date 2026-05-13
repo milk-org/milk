@@ -273,7 +273,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
                 {
                     if(ferror(fp))
                     {
-                        perror("fscanf");
+                        PRINT_ERROR("fscanf: %s", strerror(errno));
                         *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                         if(MEMLOADREPORT == 1)
                         {
@@ -573,7 +573,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
                 {
                     if(ferror(fp))
                     {
-                        perror("fscanf");
+                        PRINT_ERROR("fscanf: %s", strerror(errno));
                         *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                         if(MEMLOADREPORT == 1)
                         {

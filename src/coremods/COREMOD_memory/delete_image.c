@@ -237,7 +237,7 @@ errno_t delete_image(
                     ID,
                     dcimg[ID].md,
                     dcimg[ID].memsize);
-                perror("Error un-mmapping the file");
+                PRINT_ERROR("Error un-mmapping the file: %s", strerror(errno));
             }
 
             close(dcimg[ID].shmfd);

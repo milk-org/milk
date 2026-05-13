@@ -483,7 +483,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
                 if(byte_sock_count != framesizeall + 2 * n_udp_dgrams)
                 {
-                    perror("socket send error ");
+                    PRINT_ERROR("socket send error: %s", strerror(errno));
                     snprintf(errmsg,
                              200,
                              "ERROR: send() sent a different "
