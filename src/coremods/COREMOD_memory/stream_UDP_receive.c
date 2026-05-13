@@ -111,13 +111,16 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     // create UDP socket
     if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
-        printf("ERROR creating socket\n");
+        PRINT_ERROR("creating socket");
         if(dcprocinfo == 1)
         {
             processinfo->loopstat = PROCESSINFO_LOOPSTAT_ERROR;
             processinfo_WriteMessage(processinfo, "ERROR creating socket");
         }
-        exit(0);
+        free(imgmd);
+        free(buff_udp);
+        free(bigbuff_1MB);
+        return -1;
     }
 
     memset((char *) &sock_server, 0, sizeof(sock_server));
@@ -155,14 +158,18 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         char msgstring[200];
 
         snprintf(msgstring, 200, "ERROR binding socket, port %d", port);
-        printf("%s\n", msgstring);
+        PRINT_ERROR("%s", msgstring);
 
         if(dcprocinfo == 1)
         {
             processinfo->loopstat = PROCESSINFO_LOOPSTAT_ERROR;
             processinfo_WriteMessage(processinfo, msgstring);
         }
-        exit(0);
+        close(fds_server);
+        free(imgmd);
+        free(buff_udp);
+        free(bigbuff_1MB);
+        return -1;
     }
 
     // Try and receive only the metadata
@@ -181,7 +188,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                      200,
                      "ERROR receiving image metadata, recvsize = %ld, n_dgram_wait = %d",
                      recvsize, n_dgram_wait);
-            printf("%s\n", msgstring);
+            PRINT_ERROR("%s", msgstring);
 
             if(dcprocinfo == 1)
             {
@@ -189,7 +196,11 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                 processinfo_WriteMessage(processinfo, msgstring);
             }
 
-            exit(0);
+            close(fds_server);
+            free(imgmd);
+            free(buff_udp);
+            free(bigbuff_1MB);
+            return -1;
         }
 
         // printf("Init phase: recvsize = %ld, buff_udp[0] = %d, buff_udp[1] = %d\n", recvsize, buff_udp[0], buff_udp[1]);
@@ -442,10 +453,12 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                                     (struct sockaddr *)&sock_client, &slen_client);
                 if(recvsize < 0 || n_dgram_wait == MAX_DATAGRAM_WAIT - 1)
                 {
-                    printf("ERROR recvfrom() @ A [%d - %s]\n", errno, strerror(errno));
+                    PRINT_ERROR(
+                        "recvfrom() @ A [%d - %s]",
+                        errno, strerror(errno));
                     loopOK = 0;
                     socketOpen = 0;
-                    break; // This should be a double break... loopOK = 0 should cover.
+                    break;
                 }
 
                 if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
@@ -468,7 +481,9 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             if(recvfrom(fds_server, buff_udp, first_dgram_bytes, 0,
                         (struct sockaddr *)&sock_client, &slen_client) < 0)
             {
-                printf("ERROR recvfrom() @ B [%d - %s]\n", errno, strerror(errno));
+                PRINT_ERROR(
+                    "recvfrom() @ B [%d - %s]",
+                    errno, strerror(errno));
                 loopOK = 0;
                 socketOpen = 0;
                 break;
@@ -518,7 +533,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
                 if(recvsize < 0)
                 {
-                    printf("ERROR recvfrom`()\n");
+                    PRINT_ERROR("recvfrom()");
                     socketOpen = 0;
                     break;
                 }

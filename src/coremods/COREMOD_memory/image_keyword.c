@@ -248,9 +248,9 @@ long image_write_keyword_L(
 
     if(kw0 == NBkw)
     {
-        printf("ERROR: no available"
-               " keyword entry\n");
-        exit(0);
+        PRINT_ERROR(
+            "no available keyword slot");
+        return -1;
     }
     else
     {
@@ -304,9 +304,9 @@ long image_write_keyword_D(
 
     if(kw0 == NBkw)
     {
-        printf("ERROR: no available"
-               " keyword entry\n");
-        exit(0);
+        PRINT_ERROR(
+            "no available keyword slot");
+        return -1;
     }
     else
     {
@@ -360,16 +360,16 @@ long image_write_keyword_S(
 
     if(kw0 == NBkw)
     {
-        printf("ERROR: no available"
-               " keyword entry\n");
-        exit(0);
+        PRINT_ERROR(
+            "no available keyword slot");
+        return -1;
     }
     else
     {
         snprintf(dcimg[ID].kw[kw].name,
                  KEYWORD_MAX_STRING,
                  "%s", kname);
-        dcimg[ID].kw[kw].type = 'D';
+        dcimg[ID].kw[kw].type = 'S';
         snprintf(
             dcimg[ID].kw[kw].value.valstr,
             KEYWORD_MAX_STRING,

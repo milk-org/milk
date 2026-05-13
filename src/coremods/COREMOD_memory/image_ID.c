@@ -137,10 +137,9 @@ imageID next_avail_image_ID(
 #endif
     if(ID == -1)
     {
-        printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
-        printf("NB_MAX_IMAGE should be increased above current value (%ld)\n",
-               dcnimg);
-        exit(0);
+        PRINT_ERROR("ran out of image IDs"
+            " (NB_MAX_IMAGE=%ld)",
+            dcnimg);
     }
 
     DEBUG_TRACEPOINT("FOUT ID : %ld", ID);

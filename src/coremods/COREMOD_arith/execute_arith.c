@@ -1122,7 +1122,7 @@ int execute_arith(const char *cmd1)
                                 "Function %s only "
                                 "applicable on images",
                                 fname);
-                            exit(0);
+                            return RETURN_FAILURE;
                         }
                         break;
                     }
@@ -1137,7 +1137,7 @@ int execute_arith(const char *cmd1)
                                 "Function %s only "
                                 "applicable on images",
                                 fname);
-                            exit(0);
+                            return RETURN_FAILURE;
                         }
                         tmp_prec =
                             unary_dispatch[ui].scalar_fn(
@@ -1213,7 +1213,7 @@ int execute_arith(const char *cmd1)
                         PRINT_ERROR(
                             "Function fmod not available "
                             "for VARIABLE x IMAGE inputs");
-                        exit(0);
+                        return RETURN_FAILURE;
                     }
                     else if(a1im && a2var)
                     {
@@ -1315,7 +1315,7 @@ int execute_arith(const char *cmd1)
                     {
                         PRINT_ERROR(
                             "Wrong input to function testlt");
-                        exit(0);
+                        return RETURN_FAILURE;
                     }
                 }
                 else if(strcmp(fn, "testmt") == 0)
@@ -1349,7 +1349,7 @@ int execute_arith(const char *cmd1)
                     {
                         PRINT_ERROR(
                             "Wrong input to function testmt");
-                        exit(0);
+                        return RETURN_FAILURE;
                     }
                 }
                 else if(strcmp(fn, "perc") == 0)
@@ -1358,7 +1358,7 @@ int execute_arith(const char *cmd1)
                     {
                         PRINT_ERROR(
                             "Wrong input to function perc");
-                        exit(0);
+                        return RETURN_FAILURE;
                     }
                     else
                     {
@@ -1391,7 +1391,7 @@ int execute_arith(const char *cmd1)
                         PRINT_ERROR(
                             "Syntax error with "
                             "function trunc");
-                        exit(0);
+                        return RETURN_FAILURE;
                     }
                 }
 

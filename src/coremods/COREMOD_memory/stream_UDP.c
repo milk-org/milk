@@ -319,8 +319,8 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     if((fds_client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
-        printf("ERROR creating socket\n");
-        exit(0);
+        PRINT_ERROR("creating UDP socket");
+        return -1;
     }
 
     setsockopt(fds_client,

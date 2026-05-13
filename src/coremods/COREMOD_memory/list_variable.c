@@ -41,8 +41,9 @@ errno_t list_variable_ID(const char *regexstr)
         {
             char errbuf[128];
             regerror(rc, &re, errbuf, sizeof(errbuf));
-            printf("ERROR: bad regex \"%s\": %s\n",
-                   regexstr, errbuf);
+            PRINT_ERROR(
+                "bad regex \"%s\": %s",
+                regexstr, errbuf);
             return RETURN_FAILURE;
         }
         use_regex = 1;

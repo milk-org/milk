@@ -203,7 +203,7 @@ errno_t mk_amph_from_complex_IMGID(
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");
-        exit(0);
+        return RETURN_FAILURE;
     }
 
     DEBUG_TRACE_FEXIT();
