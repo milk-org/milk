@@ -47,7 +47,7 @@ errno_t arith_image_function_CF_CF__CF(
     IMGID imgout =
         imgid_make_from_name(ID_out);
     imgout.mdt->naxis = img1.md->naxis;
-    for(long i = 0;
+    for(uint8_t i = 0;
         i < img1.md->naxis; i++)
     {
         imgout.mdt->size[i] =
@@ -61,7 +61,7 @@ errno_t arith_image_function_CF_CF__CF(
         1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
 
-    long nelement =
+    uint64_t nelement =
         img1.md->nelement;
 
 #ifdef _OPENMP
@@ -69,7 +69,7 @@ errno_t arith_image_function_CF_CF__CF(
     {
         #pragma omp for simd
 #endif
-        for(long ii = 0;
+        for(uint64_t ii = 0;
             ii < nelement; ii++)
         {
             imgout.im->array.CF[ii] =
@@ -110,7 +110,7 @@ errno_t arith_image_function_CD_CD__CD(
     IMGID imgout =
         imgid_make_from_name(ID_out);
     imgout.mdt->naxis = img1.md->naxis;
-    for(long i = 0;
+    for(uint8_t i = 0;
         i < img1.md->naxis; i++)
     {
         imgout.mdt->size[i] =
@@ -124,7 +124,7 @@ errno_t arith_image_function_CD_CD__CD(
         1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
 
-    long nelement =
+    uint64_t nelement =
         img1.md->nelement;
 
 #ifdef _OPENMP
@@ -132,7 +132,7 @@ errno_t arith_image_function_CD_CD__CD(
     {
         #pragma omp for simd
 #endif
-        for(long ii = 0;
+        for(uint64_t ii = 0;
             ii < nelement; ii++)
         {
             imgout.im->array.CD[ii] =
