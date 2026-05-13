@@ -23,8 +23,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <gsl/gsl_multifit.h>
-#include <gsl/gsl_multimin.h>
 #include <malloc.h>
 #include <math.h>
 #include <sched.h>
@@ -37,12 +35,7 @@
 
 #include <fitsio.h>
 
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_cblas.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
+
 
 #include <time.h>
 
