@@ -155,7 +155,7 @@ errno_t exitCLI()
 
     if(Listimfile == 1)
     {
-        EXECUTE_SYSTEM_COMMAND("rm imlist.txt");
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("rm imlist.txt");
     }
 
     if(dcquiet == 0)
@@ -374,7 +374,7 @@ errno_t CLI_startup()
     {
         printf("        CLI PID = %d\n", (int) CLIPID);
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "echo -n \"        \"; cat /proc/%d/status | grep "
             "Cpus_allowed_list",
             CLIPID);
@@ -878,11 +878,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             }
             else if(data.fifoON == 1)
             {
-                EXECUTE_SYSTEM_COMMAND("file %s",
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("file %s",
                                        CLIstartupfilename); //TEST
-                EXECUTE_SYSTEM_COMMAND("cat %s",
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s",
                                        CLIstartupfilename); //TEST
-                EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null",
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null",
                                        CLIstartupfilename,
                                        data.fifoname);
 

@@ -225,7 +225,7 @@ errno_t streamCTRL_keyinput_process(
 
     case 'F': // set stream name filter string
         // TUI_exit();
-        EXECUTE_SYSTEM_COMMAND("clear");
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("clear");
         printf("Enter string: ");
         fflush(stdout);
         stringindex = 0;

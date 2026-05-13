@@ -23,17 +23,17 @@ int functionparameter_FPS_tmux_kill(
     FPS *fps
 )
 {
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux send-keys -t %s:ctrl C-c 2>/dev/null",
         fps->md->name);
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux send-keys -t %s:conf C-c 2>/dev/null",
         fps->md->name);
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux send-keys -t %s:run C-c 2>/dev/null",
         fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux kill-session -t %s 2>/dev/null",
         fps->md->name);
 
@@ -46,7 +46,7 @@ int functionparameter_FPS_tmux_attach(
 {
     // This should hang until the tmux is detached,
     // and then return to the current fpsCTRL window.
-    EXECUTE_SYSTEM_COMMAND("tmux attach -t %s", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux attach -t %s", fps->md->name);
     return RETURN_SUCCESS;
 }
 
@@ -68,7 +68,7 @@ int functionparameter_FPS_tmux_init(
     functionparameter_FPS_tmux_kill(fps);
 
     // Create session with all 3 windows atomically
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux new-session -s %s -d -n ctrl \\;"
         " new-window -n conf \\;"
         " new-window -n run \\;"
@@ -117,29 +117,29 @@ int functionparameter_FPS_tmux_init(
                  "%s", mloadstringcp);
     }
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" bash\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" bash\" C-m",
                            fps->md->name); // This spins a bash-in-bash.
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
 
     // source rootdir fpstmuxenv first
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" source ../fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" source ../fpstmuxenv\" C-m",
                            fps->md->name);
     // then local fpstmuxenv
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" source fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" source fpstmuxenv\" C-m",
                            fps->md->name);
 
 
     // confstart
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" bash\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" bash\" C-m",
                            fps->md->name); // This spins a bash-in-bash.
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" source ../fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" source ../fpstmuxenv\" C-m",
                            fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" source  fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" source  fpstmuxenv\" C-m",
                            fps->md->name);
 
 
@@ -165,19 +165,19 @@ int functionparameter_FPS_tmux_init(
              fps->md->callfuncname,
              argstring);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" %s\" C-m",
                            fps->md->name,
                            functionstring);
 
     // runstart
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" bash\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" bash\" C-m",
                            fps->md->name); // This spins a bash-in-bash.
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" source ../fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" source ../fpstmuxenv\" C-m",
                            fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" source fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" source fpstmuxenv\" C-m",
                            fps->md->name);
 
     snprintf(functionstring,
@@ -193,7 +193,7 @@ int functionparameter_FPS_tmux_init(
              fps->md->callfuncname,
              argstring);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \"%s\" C-m",
                            fps->md->name,
                            functionstring);
 
@@ -211,7 +211,7 @@ int functionparameter_FPS_tmux_init(
              fps->md->callfuncname,
              argstring);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \"%s\" C-m",
                            fps->md->name,
                            functionstring);
 
@@ -251,7 +251,7 @@ int functionparameter_FPS_tmux_standalone_setup(
         return RETURN_SUCCESS;
     }
 
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux new-session -s %s -d -n ctrl \\;"
         " new-window -n conf \\;"
         " new-window -n run \\;"
@@ -269,7 +269,7 @@ int functionparameter_FPS_tmux_send(
     const char *cmd_str
 )
 {
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:%s \"%s\" C-m", fps_name, window, cmd_str);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:%s \"%s\" C-m", fps_name, window, cmd_str);
     return RETURN_SUCCESS;
 }
 

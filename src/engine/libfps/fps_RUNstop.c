@@ -15,22 +15,22 @@ errno_t functionparameter_RUNstop(FPS *fps)
 {
     // Move to correct launch directory
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
                            fps->md->name,
                            fps->md->workdir);
 
     if (strstr(fps->md->execfullpath, "fpsexec") != NULL) {
-        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s %s:runstop\" C-m",
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" %s %s:runstop\" C-m",
                                fps->md->name,
                                fps->md->execfullpath,
                                fps->md->name);
     } else {
-        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" fpsrunstop\" C-m",
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" fpsrunstop\" C-m",
                                fps->md->name);
     }
 
     // Send C-c in case runstop command is not implemented
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run C-c &> /dev/null",
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run C-c &> /dev/null",
                            fps->md->name);
 
     fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;

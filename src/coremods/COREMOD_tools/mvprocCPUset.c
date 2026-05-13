@@ -386,7 +386,7 @@ int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
              rtprio, getpid());
     printf("Executing command: %s\n", command);
 
-    EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
+    EXECUTE_SYSTEM_COMMAND("%s", command);
 
     if(setresuid(dcruid, dcruid, dceuid) !=
             0) // Go back to normal privileges
@@ -434,7 +434,7 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
              tsetspec, pid);
     printf("Executing command: %s\n", command);
 
-    EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
+    EXECUTE_SYSTEM_COMMAND("%s", command);
 
     if(setresuid(dcruid, dcruid, dceuid) !=
             0) // Go back to normal privileges
@@ -489,7 +489,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
     else
     {
         // Command does exist
-        EXECUTE_SYSTEM_COMMAND("%s", command);
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("%s", command);
         if(dcretval != 0)
         {
             if(dcretval == 512)
@@ -514,7 +514,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
                  rtprio, pid);
         printf("Executing command: %s\n", command);
 
-        EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
+        EXECUTE_SYSTEM_COMMAND("%s", command);
     }
 
     if(setresuid(dcruid, dcruid, dceuid) !=

@@ -205,7 +205,7 @@ long load_fitsimages(
     char fname1[STRINGMAXLEN_FILENAME];
     FILE *fp;
 
-	EXECUTE_SYSTEM_COMMAND("ls %s.fits > flist.tmp\n", strfilter);
+	EXECUTE_SYSTEM_COMMAND_NOCHECK("ls %s.fits > flist.tmp\n", strfilter);
 
 
     if((fp = fopen("flist.tmp", "r")) == NULL)
@@ -228,7 +228,7 @@ long load_fitsimages(
 
     fclose(fp);
 
-    EXECUTE_SYSTEM_COMMAND("rm flist.tmp");
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("rm flist.tmp");
 
     printf("%ld images loaded\n", cnt);
 
@@ -442,7 +442,7 @@ long basic_addimagesfiles(
     imageID ID;
     int init = 0; // becomes 1 when first image encountered
 
-	EXECUTE_SYSTEM_COMMAND("ls %s.fits > flist.tmp\n", strfilter);
+	EXECUTE_SYSTEM_COMMAND_NOCHECK("ls %s.fits > flist.tmp\n", strfilter);
 
 
     if((fp = fopen("flist.tmp", "r")) == NULL)
@@ -474,7 +474,7 @@ long basic_addimagesfiles(
 
     fclose(fp);
 
-    EXECUTE_SYSTEM_COMMAND("rm flist.tmp");
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("rm flist.tmp");
 
     printf("%ld images coadded (stored in variable imcnt) -> %s\n", cnt, outname);
     create_variable_ID("imcnt", 1.0 * cnt);

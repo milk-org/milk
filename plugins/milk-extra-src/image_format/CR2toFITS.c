@@ -121,7 +121,7 @@ imageID CR2toFITS(const char *__restrict fnameCR2,
     long    xsize, ysize;
     long    ii;
 
-    EXECUTE_SYSTEM_COMMAND("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
 
     ID = read_PGMimage("_tmppgm.pgm", "tmpfits1");
     if(system("rm _tmppgm.pgm") != 0)
@@ -131,7 +131,7 @@ imageID CR2toFITS(const char *__restrict fnameCR2,
 
     if(CR2toFITS_NORM == 1)
     {
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"ISO speed\"| awk '{print $3}' > "
             "iso_tmp.txt",
             fnameCR2);
@@ -153,7 +153,7 @@ imageID CR2toFITS(const char *__restrict fnameCR2,
 
         printf("iso = %f\n", iso);
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"Shutter\"| awk '{print $2}' > "
             "shutter_tmp.txt",
             fnameCR2);
@@ -175,7 +175,7 @@ imageID CR2toFITS(const char *__restrict fnameCR2,
         }
         printf("shutter = %f\n", shutter);
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"Aperture\"| awk '{print $2}' > "
             "aperture_tmp.txt",
             fnameCR2);

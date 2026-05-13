@@ -427,7 +427,7 @@ errno_t CLI_execute_line()
             if(fp == NULL)
             {
                 printf("ERROR: cannot log into file %s\n", data.CLIlogname);
-                EXECUTE_SYSTEM_COMMAND("mkdir -p %s/logdir/%04d%02d%02d\n",
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s/logdir/%04d%02d%02d\n",
                                        getenv("HOME"),
                                        1900 + uttime->tm_year,
                                        1 + uttime->tm_mon,

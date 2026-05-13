@@ -27,7 +27,7 @@ errno_t functionparameter_RUNstart(
         long pindex;
 
         // Move to correct launch directory
-        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m",
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" cd %s\" C-m",
                                fps->md->name,
                                fps->md->workdir);
 
@@ -36,7 +36,7 @@ errno_t functionparameter_RUNstart(
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.cset");
         if(pindex > -1)
         {
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:run \" export "
                 "TCSETCMDPREFIX=\\\"csetpmove %s;\\\"\" C-m",
                 fps->md->name,
@@ -44,7 +44,7 @@ errno_t functionparameter_RUNstart(
         }
         else
         {
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:run \" export "
                 "TCSETCMDPREFIX=\"\"\" C-m",
                 fps->md->name);
@@ -55,7 +55,7 @@ errno_t functionparameter_RUNstart(
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.taskset");
         if(pindex > -1)
         {
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:run \" export "
                 "TCSETCMDPREFIX=\\\"\\${TCSETCMDPREFIX} tsetpmove "
                 "\\\\\\\"%s\\\\\\\";\\\"\" C-m",
@@ -64,7 +64,7 @@ errno_t functionparameter_RUNstart(
         }
         else
         {
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:run \" export "
                 "TCSETCMDPREFIX=\"\"\" C-m",
                 fps->md->name);
@@ -78,7 +78,7 @@ errno_t functionparameter_RUNstart(
             long NBthread =
                 functionparameter_GetParamValue_INT64(fps,
                         ".procinfo.NBthread");
-            EXECUTE_SYSTEM_COMMAND(
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:run \" export "
                 "OMP_NUM_THREADS=%ld\" C-m",
                 fps->md->name,
@@ -100,19 +100,19 @@ errno_t functionparameter_RUNstart(
         }
 
         // create output directory if it does not already exit
-        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" mkdir %s\" C-m",
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" mkdir %s\" C-m",
                                fps->md->name,
                                fps->md->datadir);
 
         // Send run command
         //
         if (strstr(fps->md->execfullpath, "fpsexec") != NULL) {
-            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" %s %s:runstart\" C-m",
+            EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" %s %s:runstart\" C-m",
                                    fps->md->name,
                                    fps->md->execfullpath,
                                    fps->md->name);
         } else {
-            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" fpsrunstart\" C-m",
+            EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" fpsrunstart\" C-m",
                                    fps->md->name);
         }
 

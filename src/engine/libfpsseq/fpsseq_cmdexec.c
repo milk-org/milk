@@ -1048,12 +1048,12 @@ int milkseq_exec_cmd(
                 DEBUG_TRACEPOINT(" ");
                 if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
                 {
-                    EXECUTE_SYSTEM_COMMAND(
+                    EXECUTE_SYSTEM_COMMAND_NOCHECK(
                         "tmux send-keys -t %s:run \"cd %s\" "
                         "C-m",
                         fps[fpsindex].md->name,
                         fps[fpsindex].md->workdir);
-                    EXECUTE_SYSTEM_COMMAND(
+                    EXECUTE_SYSTEM_COMMAND_NOCHECK(
                         "tmux send-keys -t %s:run \"%s %s\" "
                         "C-m",
                         fps[fpsindex].md->name,

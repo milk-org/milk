@@ -657,7 +657,7 @@ errno_t help()
 errno_t helpreadline()
 {
 
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "more %s/src/CommandLineInterface/doc/helpreadline.md",
         dcsourcedir);
 

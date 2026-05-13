@@ -250,7 +250,7 @@ errno_t delete_image(
 
             if(dcrmshm == 1)
             {
-                EXECUTE_SYSTEM_COMMAND(
+                EXECUTE_SYSTEM_COMMAND_NOCHECK(
                     "rm /dev/shm/sem.%s.%s_sem*",
                     dcshmsemdir,
                     img->name);
@@ -261,7 +261,7 @@ errno_t delete_image(
                     img->name);
                 remove(fname);
 
-                EXECUTE_SYSTEM_COMMAND(
+                EXECUTE_SYSTEM_COMMAND_NOCHECK(
                     "rm %s/%s.im.shm",
                     dcshmdir, img->name);
             }

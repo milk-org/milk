@@ -112,7 +112,7 @@ long load_fitsimages_cube(
 
     printf("Filter = %s\n", strfilter);
 
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "ls %s > flist.tmp\n", strfilter);
 
     xsize = 0;

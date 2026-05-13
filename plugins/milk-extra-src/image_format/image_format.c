@@ -296,7 +296,7 @@ imageID loadCR2(
 {
     imageID ID;
 
-    EXECUTE_SYSTEM_COMMAND("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
 
     ID = read_PGMimage("_tmppgm.pgm", IDname);
     if(system("rm _tmppgm.pgm") != 0)
@@ -322,7 +322,7 @@ long CR2toFITS_strfilter(
     char fname1[STRINGMAXLEN_FULLFILENAME];
     FILE *fp;
 
-    EXECUTE_SYSTEM_COMMAND("ls %s.CR2 > flist.tmp\n", strfilter);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("ls %s.CR2 > flist.tmp\n", strfilter);
 
     fp = fopen("flist.tmp", "r");
     while(fgets(fname, STRINGMAXLEN_FULLFILENAME, fp) != NULL)
@@ -350,7 +350,7 @@ long CR2toFITS_strfilter(
 
     fclose(fp);
 
-    EXECUTE_SYSTEM_COMMAND("rm flist.tmp");
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("rm flist.tmp");
 
     printf("%ld files converted\n", cnt);
 

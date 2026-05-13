@@ -572,7 +572,7 @@ int fps_generic_runstop(const char *fps_name)
      * 2. Clear the CMDRUN status flag
      * 3. Signal the GUI to update
      */
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux send-keys -t %s:run C-c"
         " 2>/dev/null",
         fps.md->name);
