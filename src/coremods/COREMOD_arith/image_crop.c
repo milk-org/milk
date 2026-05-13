@@ -18,22 +18,22 @@
 imageID arith_image_crop(
     const char *ID_name,
     const char *ID_out,
-    long *start, long *end,
-    long cropdim);
+    int64_t *start, int64_t *end,
+    int64_t cropdim);
 
 imageID arith_image_extract2D(
     const char *in_name,
     const char *out_name,
-    long size_x, long size_y,
-    long xstart, long ystart);
+    int64_t size_x, int64_t size_y,
+    int64_t xstart, int64_t ystart);
 
 imageID arith_image_extract3D(
     const char *in_name,
     const char *out_name,
-    long size_x, long size_y,
-    long size_z,
-    long xstart, long ystart,
-    long zstart);
+    int64_t size_x, int64_t size_y,
+    int64_t size_z,
+    int64_t xstart, int64_t ystart,
+    int64_t zstart);
 
 
 /* ================================================================
@@ -46,12 +46,12 @@ static char p_inname[
 static char p_outname[
     FUNCTION_PARAMETER_STRMAXLEN]
     = "ime";
-static long long p_sizex = 256;
-static long long p_sizey = 256;
-static long long p_sizez = 5;
-static long long p_xstart = 100;
-static long long p_ystart = 100;
-static long long p_zstart = 0;
+static int64_t p_sizex = 256;
+static int64_t p_sizey = 256;
+static int64_t p_sizez = 5;
+static int64_t p_xstart = 100;
+static int64_t p_ystart = 100;
+static int64_t p_zstart = 0;
 
 
 /* ================================================================
@@ -243,18 +243,18 @@ CLIADDCMD_COREMOD_arith__image_crop()
 
 imageID arith_image_crop(const char *ID_name,
                          const char *ID_out,
-                         long       *start,
-                         long       *end,
-                         long        cropdim)
+                         int64_t       *start,
+                         int64_t       *end,
+                         int64_t        cropdim)
 {
-    long      naxis;
-    long      i;
+    int64_t      naxis;
+    int64_t      i;
     uint32_t *naxes    = NULL;
     uint32_t *naxesout = NULL;
     uint8_t   datatype;
 
-    long start_c[3];
-    long end_c[3];
+    int64_t start_c[3];
+    int64_t end_c[3];
 
     for(i = 0; i < 3; i++)
     {
@@ -387,7 +387,7 @@ imageID arith_image_crop(const char *ID_name,
 
     if (naxis == 1)
     {
-        long ncopy = end_c[0] - start_c[0];
+        int64_t ncopy = end_c[0] - start_c[0];
         if (ncopy > 0)
         {
             __builtin_memcpy(
@@ -401,23 +401,23 @@ imageID arith_image_crop(const char *ID_name,
     }
     else if (naxis == 2)
     {
-        long row_elems =
+        int64_t row_elems =
             end_c[0] - start_c[0];
         if (row_elems > 0)
         {
-            for (long jj = start_c[1];
+            for (int64_t jj = start_c[1];
                  jj < end_c[1]; jj++)
             {
-                long dst_off =
+                int64_t dst_off =
                     ((jj - start[1])
-                     * (long) naxesout[0]
+                     * (int64_t) naxesout[0]
                      + (start_c[0]
                         - start[0]))
-                    * (long) elemsize;
-                long src_off =
-                    (jj * (long) naxes[0]
+                    * (int64_t) elemsize;
+                int64_t src_off =
+                    (jj * (int64_t) naxes[0]
                      + start_c[0])
-                    * (long) elemsize;
+                    * (int64_t) elemsize;
                 __builtin_memcpy(
                     (char *) imgout.im->array.raw
                         + dst_off,
@@ -430,37 +430,37 @@ imageID arith_image_crop(const char *ID_name,
     }
     else if (naxis == 3)
     {
-        long row_elems =
+        int64_t row_elems =
             end_c[0] - start_c[0];
         if (row_elems > 0)
         {
-            long in_slice =
-                (long) naxes[0]
-                * (long) naxes[1];
-            long out_slice =
-                (long) naxesout[0]
-                * (long) naxesout[1];
+            int64_t in_slice =
+                (int64_t) naxes[0]
+                * (int64_t) naxes[1];
+            int64_t out_slice =
+                (int64_t) naxesout[0]
+                * (int64_t) naxesout[1];
 
-            for (long kk = start_c[2];
+            for (int64_t kk = start_c[2];
                  kk < end_c[2]; kk++)
             {
-                for (long jj = start_c[1];
+                for (int64_t jj = start_c[1];
                      jj < end_c[1]; jj++)
                 {
-                    long dst_off =
+                    int64_t dst_off =
                         ((kk - start[2])
                          * out_slice
                          + (jj - start[1])
-                         * (long) naxesout[0]
+                         * (int64_t) naxesout[0]
                          + (start_c[0]
                             - start[0]))
-                        * (long) elemsize;
-                    long src_off =
+                        * (int64_t) elemsize;
+                    int64_t src_off =
                         (kk * in_slice
                          + jj
-                         * (long) naxes[0]
+                         * (int64_t) naxes[0]
                          + start_c[0])
-                        * (long) elemsize;
+                        * (int64_t) elemsize;
                     __builtin_memcpy(
                         (char *) imgout.im->array.raw
                             + dst_off,
@@ -492,13 +492,13 @@ imageID arith_image_crop(const char *ID_name,
 imageID arith_image_extract2D(
     const char *in_name,
     const char *out_name,
-    long        size_x,
-    long        size_y,
-    long        xstart,
-    long        ystart)
+    int64_t        size_x,
+    int64_t        size_y,
+    int64_t        xstart,
+    int64_t        ystart)
 {
-    long        *start = NULL;
-    long        *end   = NULL;
+    int64_t        *start = NULL;
+    int64_t        *end   = NULL;
     imageID      IDout;
     uint_fast8_t k;
 
@@ -509,16 +509,16 @@ imageID arith_image_extract2D(
                  dcimg, dcnimg);
     int naxis = img.md->naxis;
 
-    start = (long *) malloc(
-        sizeof(long) * naxis);
+    start = (int64_t *) malloc(
+        sizeof(int64_t) * naxis);
     if(start == NULL)
     {
         PRINT_ERROR("malloc() error");
         return -1;
     }
 
-    end = (long *) malloc(
-        sizeof(long) * naxis);
+    end = (int64_t *) malloc(
+        sizeof(int64_t) * naxis);
     if(end == NULL)
     {
         PRINT_ERROR("malloc() error");
@@ -548,18 +548,18 @@ imageID arith_image_extract2D(
 
 imageID arith_image_extract3D(const char *in_name,
                               const char *out_name,
-                              long        size_x,
-                              long        size_y,
-                              long        size_z,
-                              long        xstart,
-                              long        ystart,
-                              long        zstart)
+                              int64_t        size_x,
+                              int64_t        size_y,
+                              int64_t        size_z,
+                              int64_t        xstart,
+                              int64_t        ystart,
+                              int64_t        zstart)
 {
     imageID IDout;
-    long   *start = NULL;
-    long   *end   = NULL;
+    int64_t   *start = NULL;
+    int64_t   *end   = NULL;
 
-    start = (long *) malloc(sizeof(long) * 3);
+    start = (int64_t *) malloc(sizeof(int64_t) * 3);
     if(start == NULL)
     {
         PRINT_ERROR(
@@ -571,7 +571,7 @@ imageID arith_image_extract3D(const char *in_name,
         return -1;
     }
 
-    end = (long *) malloc(sizeof(long) * 3);
+    end = (int64_t *) malloc(sizeof(int64_t) * 3);
     if(end == NULL)
     {
         PRINT_ERROR(
