@@ -391,7 +391,7 @@ errno_t functionparameter_CTRLscreen(
         // Create FIFO if it does not exist
         if (access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1) {
             if (mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1) {
-                perror("mkfifo");
+                PRINT_ERROR("mkfifo: %s", strerror(errno));
             }
         }
         fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
