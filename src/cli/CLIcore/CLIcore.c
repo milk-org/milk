@@ -322,7 +322,7 @@ int cli_fifo_open(const char *path)
         O_RDWR | O_NONBLOCK);
     if(data.fifofd == -1)
     {
-        perror("open");
+        PRINT_ERROR("open: %s", strerror(errno));
         printf("File name : %s\n",
                data.fifoname);
         return -1;
@@ -610,7 +610,7 @@ static int handle_fifo_input(const char *prompt)
             }
             else
             {
-                perror("read");
+                PRINT_ERROR("read: %s", strerror(errno));
                 return -1; /* signal error */
             }
         }
@@ -1011,7 +1011,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 }
                 else
                 {
-                    perror("select");
+                    PRINT_ERROR("select: %s", strerror(errno));
                     DEBUG_TRACE_FEXIT();
                     return EXIT_FAILURE;
                 }

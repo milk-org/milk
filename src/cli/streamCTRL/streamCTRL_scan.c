@@ -376,7 +376,7 @@ void *streamCTRL_scan(
 
                     if(system(command) == -1)
                     {
-                        perror("Command system() failed");
+                        PRINT_ERROR("Command system() failed: %s", strerror(errno));
                         exit(EXIT_FAILURE);
                     }
 

@@ -4,12 +4,14 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <dirent.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <termios.h>
 #include <regex.h>
 
 #include "libmilkcommon/multiselect_parse.h"
+#include "libmilkcommon/milkDebugTools.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "milk_help.h"
@@ -100,7 +102,7 @@ static int remove_single_stream(
                    sname);
         }
         if (unlink(fullpath) != 0) {
-            perror("unlink");
+            PRINT_ERROR("unlink: %s", strerror(errno));
             return 1;
         }
         printf("  Stream symlink '%s'"
@@ -138,7 +140,7 @@ static int remove_single_stream(
 
     /* Unlink the SHM file */
     if (unlink(fullpath) != 0) {
-        perror("unlink");
+        PRINT_ERROR("unlink: %s", strerror(errno));
         return 1;
     }
 

@@ -353,7 +353,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         {
             if(ferror(fp))
             {
-                perror("fscanf");
+                PRINT_ERROR("fscanf: %s", strerror(errno));
             }
             else
             {
@@ -452,7 +452,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         {
             if(clock_gettime(CLOCK_MILK, &ts) == -1)
             {
-                perror("clock_gettime");
+                PRINT_ERROR("clock_gettime: %s", strerror(errno));
                 exit(EXIT_FAILURE);
             }
             ts.tv_sec += 1;

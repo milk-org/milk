@@ -22,10 +22,12 @@
  */
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "libmilkcommon/milkDebugTools.h"
 #include "milk_help.h"
 
 #define FM_ONELINE "fuzzy-match lines against a query using bigram (Dice) similarity"
@@ -247,7 +249,8 @@ int main(int argc, char **argv)
     if (filename != NULL) {
         fp = fopen(filename, "r");
         if (fp == NULL) {
-            perror(filename);
+            PRINT_ERROR("fopen(%s): %s",
+                        filename, strerror(errno));
             return 1;
         }
     }

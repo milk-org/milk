@@ -300,7 +300,7 @@ static inline int stream_net_sem_wait(
     struct timespec ts;
     if (clock_gettime(CLOCK_MILK, &ts) == -1)
     {
-        perror("clock_gettime");
+        PRINT_ERROR("clock_gettime: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
     ts.tv_sec += 2;

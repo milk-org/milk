@@ -524,7 +524,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                    (struct sockaddr *) &sock_server,
                    sizeof(sock_server)) < 0)
         {
-            perror("Error  connect() failed ");
+            PRINT_ERROR("Error  connect() failed: %s", strerror(errno));
             printf("port = %d\n", port);
             processinfo_error(processinfo, "ERROR: connect() failed\n");
             loopOK = 0;
@@ -680,7 +680,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
                 if(rs != framesizeall)
                 {
-                    perror("socket send error ");
+                    PRINT_ERROR("socket send error: %s", strerror(errno));
                     snprintf(errmsg,
                              200,
                              "ERROR: send() sent a different "

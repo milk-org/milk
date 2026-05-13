@@ -11,9 +11,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include "milkDebugTools.h"
 #include "fpsseq.h"
 #include "fps_types.h"
 
@@ -42,12 +44,12 @@ MILKSEQ_STATE *milkseq_create(const char *name)
 
     int fd = shm_open(shm_name, O_CREAT | O_RDWR | O_EXCL, 0666);
     if (fd == -1) {
-        perror("shm_open milkseq");
+        PRINT_ERROR("shm_open milkseq: %s", strerror(errno));
         return NULL;
     }
 
     if (ftruncate(fd, sizeof(MILKSEQ_STATE)) == -1) {
-        perror("ftruncate milkseq");
+        PRINT_ERROR("ftruncate milkseq: %s", strerror(errno));
         close(fd);
         shm_unlink(shm_name);
         return NULL;
@@ -57,7 +59,7 @@ MILKSEQ_STATE *milkseq_create(const char *name)
     close(fd);
 
     if (state == MAP_FAILED) {
-        perror("mmap milkseq");
+        PRINT_ERROR("mmap milkseq: %s", strerror(errno));
         shm_unlink(shm_name);
         return NULL;
     }
@@ -79,7 +81,7 @@ MILKSEQ_STATE *milkseq_create(const char *name)
     build_fifo_name(state->fifo_path, sizeof(state->fifo_path), name);
     unlink(state->fifo_path); // remove stale
     if (mkfifo(state->fifo_path, 0666) == -1) {
-        perror("mkfifo milkseq");
+        PRINT_ERROR("mkfifo milkseq: %s", strerror(errno));
         // Non-fatal, but warn
     }
 
@@ -102,7 +104,7 @@ MILKSEQ_STATE *milkseq_connect(const char *name)
     close(fd);
 
     if (state == MAP_FAILED) {
-        perror("mmap milkseq connect");
+        PRINT_ERROR("mmap milkseq connect: %s", strerror(errno));
         return NULL;
     }
 

@@ -39,6 +39,7 @@
 #include <asm/unistd.h>
 #include <limits.h>
 
+#include "libmilkcommon/milkDebugTools.h"
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStruct.h"
 
@@ -1268,7 +1269,7 @@ static void run_phase(
     pid_t child = fork();
     if (child < 0)
     {
-        perror("fork");
+        PRINT_ERROR("fork: %s", strerror(errno));
         *wall_ns = 0;
         phase->valid = 0;
         if (pi) pi->valid = 0;

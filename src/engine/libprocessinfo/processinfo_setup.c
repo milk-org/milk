@@ -151,7 +151,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
         schedpar.sched_priority = processinfo->RT_priority;
 
         if (sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0) {
-            // perror("sched_setscheduler");
+            // PRINT_ERROR("sched_setscheduler: %s", strerror(errno));
         }
     }
 

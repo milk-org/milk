@@ -229,7 +229,7 @@ errno_t function_parameter_struct_realloc(
     // 2. Resize file
     if(truncate(SM_fname, sharedsize_new) == -1)
     {
-        perror("Error truncating file for realloc");
+        PRINT_ERROR("Error truncating file for realloc: %s", strerror(errno));
         return RETURN_FAILURE;
     }
 
@@ -243,7 +243,7 @@ errno_t function_parameter_struct_realloc(
                   0);
     if(fps->md == MAP_FAILED)
     {
-        perror("Error re-mmapping the file");
+        PRINT_ERROR("Error re-mmapping the file: %s", strerror(errno));
         return RETURN_FAILURE;
     }
 
