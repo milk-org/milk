@@ -20,7 +20,9 @@
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
