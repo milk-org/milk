@@ -94,110 +94,47 @@ errno_t mk_complex_from_reim_IMGID(
     }
     uint64_t nelement = imgre->md[0].nelement;
 
+#define MK_COMPLEX_LOOP(DTYPE_OUT, TYPE_RE, TYPE_IM, TYPE_OUT, UNION_RE, UNION_IM, UNION_OUT) \
+    { \
+        datatype_out = DTYPE_OUT; \
+        imgout->mdt->datatype = datatype_out; \
+        createimagefromIMGID(imgout); \
+        TYPE_RE * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.UNION_RE); \
+        TYPE_IM * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.UNION_IM); \
+        TYPE_OUT * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.UNION_OUT); \
+_Pragma("omp parallel if (nelement > OMP_NELEMENT_LIMIT)") \
+        { \
+_Pragma("omp for simd") \
+            for(uint64_t ii = 0; ii < nelement; ii++) \
+            { \
+                ptr_out[ii].re = ptr_re[ii]; \
+                ptr_out[ii].im = ptr_im[ii]; \
+            } \
+        } \
+    }
+
     if((datatype_re == _DATATYPE_FLOAT)
         && (datatype_im == _DATATYPE_FLOAT))
     {
-        datatype_out = _DATATYPE_COMPLEX_FLOAT;
-        imgout->mdt->datatype = datatype_out;
-        createimagefromIMGID(imgout);
-
-        float * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.F);
-        float * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.F);
-        complex_float * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CF);
-
-#ifdef _OPENMP
-        #pragma omp parallel \
-            if (nelement > OMP_NELEMENT_LIMIT)
-        {
-            #pragma omp for simd
-#endif
-            for(uint64_t ii = 0; ii < nelement; ii++)
-            {
-                ptr_out[ii].re = ptr_re[ii];
-                ptr_out[ii].im = ptr_im[ii];
-            }
-#ifdef _OPENMP
-        }
-#endif
+        MK_COMPLEX_LOOP(_DATATYPE_COMPLEX_FLOAT, float, float, complex_float, F, F, CF)
     }
     else if((datatype_re == _DATATYPE_FLOAT)
             && (datatype_im == _DATATYPE_DOUBLE))
     {
-        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        imgout->mdt->datatype = datatype_out;
-        createimagefromIMGID(imgout);
-
-        float * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.F);
-        double * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.D);
-        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CD);
-
-#ifdef _OPENMP
-        #pragma omp parallel \
-            if (nelement > OMP_NELEMENT_LIMIT)
-        {
-            #pragma omp for simd
-#endif
-            for(uint64_t ii = 0; ii < nelement; ii++)
-            {
-                ptr_out[ii].re = ptr_re[ii];
-                ptr_out[ii].im = ptr_im[ii];
-            }
-#ifdef _OPENMP
-        }
-#endif
+        MK_COMPLEX_LOOP(_DATATYPE_COMPLEX_DOUBLE, float, double, complex_double, F, D, CD)
     }
     else if((datatype_re == _DATATYPE_DOUBLE)
             && (datatype_im == _DATATYPE_FLOAT))
     {
-        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        imgout->mdt->datatype = datatype_out;
-        createimagefromIMGID(imgout);
-
-        double * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.D);
-        float * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.F);
-        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CD);
-
-#ifdef _OPENMP
-        #pragma omp parallel \
-            if (nelement > OMP_NELEMENT_LIMIT)
-        {
-            #pragma omp for simd
-#endif
-            for(uint64_t ii = 0; ii < nelement; ii++)
-            {
-                ptr_out[ii].re = ptr_re[ii];
-                ptr_out[ii].im = ptr_im[ii];
-            }
-#ifdef _OPENMP
-        }
-#endif
+        MK_COMPLEX_LOOP(_DATATYPE_COMPLEX_DOUBLE, double, float, complex_double, D, F, CD)
     }
     else if((datatype_re == _DATATYPE_DOUBLE)
             && (datatype_im == _DATATYPE_DOUBLE))
     {
-        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        imgout->mdt->datatype = datatype_out;
-        createimagefromIMGID(imgout);
-
-        double * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.D);
-        double * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.D);
-        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CD);
-
-#ifdef _OPENMP
-        #pragma omp parallel \
-            if (nelement > OMP_NELEMENT_LIMIT)
-        {
-            #pragma omp for simd
-#endif
-            for(uint64_t ii = 0; ii < nelement; ii++)
-            {
-                ptr_out[ii].re = ptr_re[ii];
-                ptr_out[ii].im = ptr_im[ii];
-            }
-#ifdef _OPENMP
-        }
-#endif
+        MK_COMPLEX_LOOP(_DATATYPE_COMPLEX_DOUBLE, double, double, complex_double, D, D, CD)
     }
+
+#undef MK_COMPLEX_LOOP
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");

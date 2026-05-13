@@ -51,9 +51,7 @@
 #include "image_copy.h"
 #include "image_copy_shm.h"
 #include "image_keyword.h"
-#include "image_keyword_addD.h"
-#include "image_keyword_addL.h"
-#include "image_keyword_addS.h"
+#include "image_keyword_add.h"
 #include "image_keyword_list.h"
 #include "image_make2D.h"
 #include "image_make3D.h"
@@ -115,9 +113,7 @@ static errno_t init_module_CLI()
     //KEYWORDS
     CLIADDCMD_COREMOD_memory__image_keyword();
     CLIADDCMD_COREMOD_memory__image_keyword_list();
-    CLIADDCMD_COREMOD_memory__image_keyword_addD();
-    CLIADDCMD_COREMOD_memory__image_keyword_addL();
-    CLIADDCMD_COREMOD_memory__image_keyword_addS();
+    CLIADDCMD_COREMOD_memory__image_keyword_add();
 
     // READ SHARED MEM IMAGE AND SIZE
     CLIADDCMD_COREMOD_memory__read_sharedmem_image();
