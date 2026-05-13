@@ -15,10 +15,7 @@
 #include "check_fitsio_status.h"
 #include "data_type_code.h"
 
-#include "COREMOD_memory/image_keyword_addD.h"
-#include "COREMOD_memory/image_keyword_addL.h"
-#include "COREMOD_memory/image_keyword_addS.h"
-
+#include "COREMOD_memory/image_keyword.h"
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
 // ==========================================

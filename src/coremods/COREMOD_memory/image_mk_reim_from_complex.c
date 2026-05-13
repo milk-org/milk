@@ -90,106 +90,44 @@ errno_t mk_reim_from_complex_IMGID(
 
     uint64_t nelement = imgin->md[0].nelement;
 
+#define MK_REIM_LOOP(DTYPE_OUT, TYPE_IN, TYPE_OUT, UNION_IN, UNION_OUT) \
+    { \
+        imgre->mdt->datatype = DTYPE_OUT; \
+        if(imgre->ID == -1) createimagefromIMGID(imgre); \
+        imgim->mdt->datatype = DTYPE_OUT; \
+        if(imgim->ID == -1) createimagefromIMGID(imgim); \
+        imgre->md[0].write = 1; \
+        imgim->md[0].write = 1; \
+        TYPE_IN * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.UNION_IN); \
+        TYPE_OUT * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.UNION_OUT); \
+        TYPE_OUT * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.UNION_OUT); \
+_Pragma("omp parallel if (nelement > OMP_NELEMENT_LIMIT)") \
+        { \
+_Pragma("omp for simd") \
+            for(uint64_t ii = 0; ii < nelement; ii++) \
+            { \
+                ptr_re[ii] = ptr_in[ii].re; \
+                ptr_im[ii] = ptr_in[ii].im; \
+            } \
+        } \
+        if(imgre->md[0].shared == 1) COREMOD_MEMORY_image_set_sempost_byID(imgre->ID, -1); \
+        if(imgim->md[0].shared == 1) COREMOD_MEMORY_image_set_sempost_byID(imgim->ID, -1); \
+        imgre->md[0].cnt0++; \
+        imgim->md[0].cnt0++; \
+        imgre->md[0].write = 0; \
+        imgim->md[0].write = 0; \
+    }
+
     if(datatype == _DATATYPE_COMPLEX_FLOAT)
     {
-        imgre->mdt->datatype = _DATATYPE_FLOAT;
-        if(imgre->ID == -1)
-        {
-            createimagefromIMGID(imgre);
-        }
-
-        imgim->mdt->datatype = _DATATYPE_FLOAT;
-        if(imgim->ID == -1)
-        {
-            createimagefromIMGID(imgim);
-        }
-
-        imgre->md[0].write = 1;
-        imgim->md[0].write = 1;
-        complex_float * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CF);
-        float * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.F);
-        float * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.F);
-
-#ifdef _OPENMP
-        #pragma omp parallel \
-            if (nelement > OMP_NELEMENT_LIMIT)
-        {
-            #pragma omp for simd
-#endif
-            for(uint64_t ii = 0; ii < nelement; ii++)
-            {
-                ptr_re[ii] = ptr_in[ii].re;
-                ptr_im[ii] = ptr_in[ii].im;
-            }
-#ifdef _OPENMP
-        }
-#endif
-        if(imgre->md[0].shared == 1)
-        {
-            COREMOD_MEMORY_image_set_sempost_byID(
-                imgre->ID, -1);
-        }
-        if(imgim->md[0].shared == 1)
-        {
-            COREMOD_MEMORY_image_set_sempost_byID(
-                imgim->ID, -1);
-        }
-        imgre->md[0].cnt0++;
-        imgim->md[0].cnt0++;
-        imgre->md[0].write = 0;
-        imgim->md[0].write = 0;
+        MK_REIM_LOOP(_DATATYPE_FLOAT, complex_float, float, CF, F)
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
     {
-        imgre->mdt->datatype =
-            _DATATYPE_DOUBLE;
-        if(imgre->ID == -1)
-        {
-            createimagefromIMGID(imgre);
-        }
-
-        imgim->mdt->datatype =
-            _DATATYPE_DOUBLE;
-        if(imgim->ID == -1)
-        {
-            createimagefromIMGID(imgim);
-        }
-
-        imgre->md[0].write = 1;
-        imgim->md[0].write = 1;
-        complex_double * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CD);
-        double * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.D);
-        double * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.D);
-
-#ifdef _OPENMP
-        #pragma omp parallel \
-            if (nelement > OMP_NELEMENT_LIMIT)
-        {
-            #pragma omp for simd
-#endif
-            for(uint64_t ii = 0; ii < nelement; ii++)
-            {
-                ptr_re[ii] = ptr_in[ii].re;
-                ptr_im[ii] = ptr_in[ii].im;
-            }
-#ifdef _OPENMP
-        }
-#endif
-        if(imgre->md[0].shared == 1)
-        {
-            COREMOD_MEMORY_image_set_sempost_byID(
-                imgre->ID, -1);
-        }
-        if(imgim->md[0].shared == 1)
-        {
-            COREMOD_MEMORY_image_set_sempost_byID(
-                imgim->ID, -1);
-        }
-        imgre->md[0].cnt0++;
-        imgim->md[0].cnt0++;
-        imgre->md[0].write = 0;
-        imgim->md[0].write = 0;
+        MK_REIM_LOOP(_DATATYPE_DOUBLE, complex_double, double, CD, D)
     }
+
+#undef MK_REIM_LOOP
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");

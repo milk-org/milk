@@ -32,8 +32,6 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 
-#include "COREMOD_memory/image_keyword_addD.h"
-#include "COREMOD_memory/image_keyword_addS.h"
 
 #include "create_image.h"
 #include "delete_image.h"
