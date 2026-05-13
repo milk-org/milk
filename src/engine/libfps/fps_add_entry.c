@@ -102,12 +102,10 @@ errno_t function_parameter_add_entry(FPS *fps,
             }
             else
             {
-                printf("ERROR [%s line %d]: NBparamMAX %ld limit reached and realloc failed\n",
-                       __FILE__,
-                       __LINE__,
-                       NBparamMAX);
-                fflush(stdout);
-                exit(0);
+                FUNC_RETURN_FAILURE(
+                    "NBparamMAX %ld limit reached and "
+                    "realloc failed",
+                    NBparamMAX);
             }
         }
 

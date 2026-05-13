@@ -5,6 +5,7 @@
 
 #include <dirent.h>
 #include <string.h>
+#include <errno.h>
 
 #include <libgen.h>   // basename
 #include <sys/stat.h> // fstat
@@ -211,10 +212,11 @@ errno_t functionparameter_scan_fps(
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
-                    printf("File \"%s\"", dir->d_name);
-                    perror("Error running lstat on file ");
-                    fflush(stdout);
-                    exit(EXIT_FAILURE);
+                    PRINT_ERROR(
+                        "lstat(%s) failed: %s",
+                        fullname, strerror(errno));
+                    closedir(d);
+                    return RETURN_FAILURE;
                 }
 
                 if(S_ISLNK(buf.st_mode))  // resolve link name
@@ -589,9 +591,8 @@ errno_t functionparameter_scan_fps(
     {
         char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
-        printf("ERROR: missing %s directory\n", shmdname);
-        fflush(stdout);
-        exit(EXIT_FAILURE);
+        FUNC_RETURN_FAILURE(
+            "missing SHM directory %s", shmdname);
     }
 
     if(verbose > 0)

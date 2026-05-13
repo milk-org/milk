@@ -7,6 +7,8 @@
 #include <sys/mman.h> // mmap
 #include <sys/stat.h> // fstat
 #include <unistd.h>   // for close
+#include <string.h>   // for strerror
+#include <errno.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -139,10 +141,9 @@ long fps_connect(
               0);
     if(fps->md == MAP_FAILED)
     {
+        PRINT_ERROR("mmap failed: %s", strerror(errno));
         close(SM_fd);
-        perror("Error mmapping the file");
-        fflush(stdout);
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     DEBUG_TRACEPOINT("File: %s - attempting connect\n", SM_fname);

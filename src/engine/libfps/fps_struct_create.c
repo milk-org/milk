@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -26,16 +27,17 @@ errno_t function_parameter_struct_create(
     const char *name
 )
 {
-    char                     *mapv = NULL;
-    FPS fps = {0};
-
-    char   SM_fname[200];
-    size_t sharedsize = 0; // shared memory size in bytes
-    int    SM_fd;          // shared memory file descriptor
+    errno_t                   rv         = RETURN_FAILURE;
+    char                     *mapv       = NULL;
+    int                       SM_fd      = -1;
+    size_t                    sharedsize = 0;
+    FPS                       fps        = {0};
+    fps.md = MAP_FAILED;
 
     char shmdname[200];
     function_parameter_struct_shmdirname(shmdname);
 
+    char SM_fname[200];
     if(snprintf(SM_fname, 200, "%s/%s.fps.shm", shmdname, name) < 0)
     {
         PRINT_ERROR("snprintf error");
@@ -55,36 +57,33 @@ errno_t function_parameter_struct_create(
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
     if(SM_fd == -1)
     {
-        perror("Error opening file for writing");
-        exit(0);
+        PRINT_ERROR("open(%s) failed: %s",
+                    SM_fname, strerror(errno));
+        goto fail;
     }
 
     fps.SMfd = SM_fd;
 
-    int result;
-    result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
-    if(result == -1)
+    if(lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
     {
-        close(SM_fd);
-        fprintf(stderr, "Error calling lseek() to 'stretch' the file\n");
-        exit(0);
+        PRINT_ERROR("lseek failed: %s", strerror(errno));
+        goto fail;
     }
 
-    result = write(SM_fd, "", 1);
-    if(result != 1)
+    if(write(SM_fd, "", 1) != 1)
     {
-        close(SM_fd);
-        perror("Error writing last byte of the file");
-        exit(0);
+        PRINT_ERROR("write last byte failed: %s",
+                    strerror(errno));
+        goto fail;
     }
 
     fps.md = (FUNCTION_PARAMETER_STRUCT_MD *)
              mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
     if(fps.md == MAP_FAILED)
     {
-        close(SM_fd);
-        perror("Error mmapping the file");
-        exit(0);
+        PRINT_ERROR("mmap(%s) failed: %s",
+                    SM_fname, strerror(errno));
+        goto fail;
     }
 
     mapv = (char *) fps.md;
@@ -124,8 +123,8 @@ errno_t function_parameter_struct_create(
     }
     else
     {
-        perror("getcwd() error");
-        return 1;
+        PRINT_ERROR("getcwd failed: %s", strerror(errno));
+        goto fail;
     }
 
     strncpy(fps.md->sourcefname, "NULL", FPS_SRCDIR_STRLENMAX - 1);
@@ -197,9 +196,18 @@ errno_t function_parameter_struct_create(
     fps.cmdset.triggerdelayptr = NULL;
     fps.cmdset.triggertimeoutptr = NULL;
 
-    munmap(fps.md, sharedsize);
+    rv = RETURN_SUCCESS;
 
-    return 0;
+fail:
+    if (fps.md != MAP_FAILED)
+    {
+        munmap(fps.md, sharedsize);
+    }
+    if (SM_fd != -1)
+    {
+        close(SM_fd);
+    }
+    return rv;
 }
 
 errno_t function_parameter_struct_realloc(
