@@ -338,8 +338,9 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(naxis != 3)
     {
-        printf("ERROR: input image %s should be 3D\n", IDin_name);
-        exit(0);
+        PRINT_ERROR("input image %s should be 3D", IDin_name);
+        free(arraysize);
+        return RETURN_FAILURE;
     }
     arraysize[0]     = dcimg[IDin].md[0].size[0];
     arraysize[1]     = dcimg[IDin].md[0].size[1];
@@ -358,19 +359,19 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
     }
     if(dcimg[IDout].md[0].size[0] != dcimg[IDin].md[0].size[0])
     {
-        printf("ERROR: in and out have different size\n");
+        PRINT_ERROR("in and out have different size");
         free(arraysize);
         return RETURN_FAILURE;
     }
     if(dcimg[IDout].md[0].size[1] != dcimg[IDin].md[0].size[1])
     {
-        printf("ERROR: in and out have different size\n");
+        PRINT_ERROR("in and out have different size");
         free(arraysize);
         return RETURN_FAILURE;
     }
     if(dcimg[IDout].md[0].datatype != dcimg[IDin].md[0].datatype)
     {
-        printf("ERROR: in and out have different datatype\n");
+        PRINT_ERROR("in and out have different datatype");
         free(arraysize);
         return RETURN_FAILURE;
     }
@@ -490,7 +491,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
 
     if(NBcubes < 1)
     {
-        printf("ERROR: invalid number of input cubes, needs to be >0");
+        PRINT_ERROR("invalid number of input cubes, needs to be >0");
         return RETURN_FAILURE;
     }
 
@@ -570,8 +571,9 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(naxis != 3)
     {
-        printf("ERROR: input image %s should be 3D\n", IDinname);
-        exit(0);
+        PRINT_ERROR("input image %s should be 3D", IDinname);
+        free(arraysize);
+        return RETURN_FAILURE;
     }
     arraysize[0] = dcimg[IDin[0]].md[0].size[0];
     arraysize[1] = dcimg[IDin[0]].md[0].size[1];
@@ -824,8 +826,9 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(naxis != 3)
     {
-        printf("ERROR: input image %s should be 3D\n", IDinname);
-        exit(0);
+        PRINT_ERROR("input image %s should be 3D", IDinname);
+        free(arraysize);
+        return RETURN_FAILURE;
     }
     arraysize[0] = dcimg[IDin].md[0].size[0];
     arraysize[1] = dcimg[IDin].md[0].size[1];

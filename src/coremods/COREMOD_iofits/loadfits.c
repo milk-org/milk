@@ -389,7 +389,7 @@ errno_t load_fits_IMGID(
         if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
-            exit(0);
+            return RETURN_FAILURE;
         }
         {
             int status = 0;
@@ -497,7 +497,7 @@ errno_t load_fits_IMGID(
         if(barray == NULL)
         {
             PRINT_ERROR("malloc error");
-            exit(0);
+            return RETURN_FAILURE;
         }
 
         {

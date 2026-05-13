@@ -112,9 +112,10 @@ imageID read_sharedmem_image_size(
             if(map == MAP_FAILED)
             {
                 close(SM_fd);
-                perror(
-                    "Error mmapping the file");
-                exit(0);
+                PRINT_ERROR(
+                    "mmap failed for %s",
+                    SM_fname);
+                return -1;
             }
 
             fp = fopen(fname, "w");
