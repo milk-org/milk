@@ -581,6 +581,14 @@ int cli_handle_shell_builtins(void)
                             processinfo_shm_create(
                                 pname,
                                 PROCESSINFO_CTRLVAL_RUN);
+                        if (procinfo == NULL)
+                        {
+                            PRINT_WARNING(
+                                "processinfo_shm_create(%s) "
+                                "failed; continuing without "
+                                "process tracking",
+                                pname);
+                        }
                     }
 
                     int iter = 0;
@@ -833,6 +841,14 @@ int cli_handle_shell_builtins(void)
                             processinfo_shm_create(
                                 pname,
                                 PROCESSINFO_CTRLVAL_RUN);
+                        if (procinfo == NULL)
+                        {
+                            PRINT_WARNING(
+                                "processinfo_shm_create(%s) "
+                                "failed; continuing without "
+                                "process tracking",
+                                pname);
+                        }
                     }
 
                     char prev[256];
