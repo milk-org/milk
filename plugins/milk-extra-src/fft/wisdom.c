@@ -119,7 +119,7 @@ errno_t export_wisdom()
     char  wisdom_file_single[STRINGMAXLEN_FULLFILENAME];
     char  wisdom_file_double[STRINGMAXLEN_FULLFILENAME];
 
-    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", FFTCONFIGDIR);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", FFTCONFIGDIR);
 
 #ifdef FFTWMT
     WRITE_FULLFILENAME(wisdom_file_single,

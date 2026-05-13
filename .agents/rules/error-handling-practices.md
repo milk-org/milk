@@ -71,13 +71,13 @@ display).
   your desired format string) to ensure the error log
   retains the required file/line/function context.
 - **Execution:** When executing shell commands via
-  `system()`, do not check the return code manually.
-  Instead, use `EXECUTE_SYSTEM_COMMAND_ERRCHECK(format,
-  ...)` which wraps the execution and error logging
-  automatically. (The bare `EXECUTE_SYSTEM_COMMAND`
-  macro silently discards the return value and is
-  treated as deprecated — see
-  `library-vs-application-error-handling.md` §3.)
+  `system()`, use `EXECUTE_SYSTEM_COMMAND(format, ...)`
+  which wraps the call, checks the exit status, and
+  logs failures via `PRINT_ERROR`. The opt-in
+  `EXECUTE_SYSTEM_COMMAND_NOCHECK` variant silently
+  discards the return value and must only be used when
+  ignoring the exit status is justified by a comment
+  (see `library-vs-application-error-handling.md` §3).
 
 ## 5. Transition Strategy
 

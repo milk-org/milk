@@ -117,7 +117,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
                          const char *__restrict fnameFITSg,
                          const char *__restrict fnameFITSb)
 {
-    EXECUTE_SYSTEM_COMMAND("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
 
     read_PGMimage("_tmppgm.pgm", "tmpfits1");
     //  r = system("rm _tmppgm.pgm");
@@ -131,7 +131,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         //imageID ID;
         //long xsize,ysize;
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"ISO speed\"| awk '{print $3}' > "
             "iso_tmp.txt",
             fnameCR2);
@@ -152,7 +152,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         }
         printf("iso = %f\n", iso);
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"Shutter\"| awk '{print $2}' > "
             "shutter_tmp.txt",
             fnameCR2);
@@ -174,7 +174,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         }
         printf("shutter = %f\n", shutter);
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"Aperture\"| awk '{print $2}' > "
             "aperture_tmp.txt",
             fnameCR2);
