@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 
     char *dot = strchr(fullkey, '.');
     if(dot == NULL) {
-        fprintf(stderr, "Error: Invalid format '%s'. Expected <FPSname>.<parameter>\n", fullkey);
+        PRINT_ERROR("Error: Invalid format '%s'. Expected <FPSname>.<parameter>", fullkey);
         return 1;
     }
 
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
         &fps,
         FPSCONNECT_SIMPLE);
     if(NBparam == -1) {
-        fprintf(stderr, "Error: Could not connect to FPS '%s'\n", fpsname);
+        PRINT_ERROR("Error: Could not connect to FPS '%s'", fpsname);
         return 1;
     }
     fps.NBparam = NBparam;
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
     if(pindex == -1) {
         pindex = functionparameter_GetParamIndex(&fps, dot+1);
         if(pindex == -1) {
-             fprintf(stderr, "Error: Parameter '%s' not found in FPS '%s'\n", keyword, fpsname);
+             PRINT_ERROR("Error: Parameter '%s' not found in FPS '%s'", keyword, fpsname);
              fps_disconnect(&fps);
              return 1;
         }
@@ -258,9 +258,9 @@ int main(int argc, char *argv[])
         printf("Parameter '%s' set to '%s'\n", fullkey, value_str);
     } else {
         vOK = 0;
-        fprintf(stderr, "Error: Failed to set parameter '%s'. Type mismatch or invalid format.\n", fullkey);
-        fprintf(stderr, "       Parameter Type: %s\n", get_type_name(type));
-        fprintf(stderr, "       Input Value:    '%s'\n", value_str);
+        PRINT_ERROR("Error: Failed to set parameter '%s'. Type mismatch or invalid format.", fullkey);
+        PRINT_ERROR("       Parameter Type: %s", get_type_name(type));
+        PRINT_ERROR("       Input Value:    '%s'", value_str);
     }
 
     fps_disconnect(&fps);

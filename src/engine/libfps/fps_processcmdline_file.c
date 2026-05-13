@@ -25,7 +25,7 @@ int functionparameter_FPSprocess_cmdfile(
 
     if(fpinputcmd == NULL)
     {
-        fprintf(stderr, "ERROR: cannot open command file %s\n", infname);
+        PRINT_ERROR("ERROR: cannot open command file %s", infname);
         return RETURN_FAILURE;
     }
     if(fpinputcmd != NULL)

@@ -116,7 +116,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
 
     if((fpgnuplot = popen(cmd, "w")) == NULL)
     {
-        fprintf(stderr, "could not connect to gnuplot\n");
+        PRINT_ERROR("could not connect to gnuplot");
         return -1;
     }
 

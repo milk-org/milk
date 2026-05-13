@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include "libmilkcommon/milkDebugTools.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
 void print_help() {
@@ -104,7 +105,7 @@ int main(int argc, char *argv[]) {
     errno_t res = ImageStreamIO_read_sharedmem_image_toIMAGE(streamname,
         &image);
     if (res != 0) {
-        fprintf(stderr, "Error: could not read shared memory image %s\n", streamname);
+        PRINT_ERROR("Error: could not read shared memory image %s", streamname);
         return 1;
     }
 

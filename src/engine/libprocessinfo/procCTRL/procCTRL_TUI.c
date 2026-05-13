@@ -192,7 +192,8 @@ static errno_t procctrl_init(procctrl_context_t *ctx) {
 
     if (ctx->flog) { fprintf(ctx->flog, "Checking for daemon...\n"); fflush(ctx->flog); }
     if (system("pgrep \"milk-procCTRL-s\" > /dev/null") != 0) {
-        fprintf(stderr, "\nWARNING: milk-procCTRL-scan daemon is not running.\n");
+        PRINT_WARNING(
+            "milk-procCTRL-scan daemon is not running");
         printf("Start it now in tmux session 'milk-procCTRL-scan'? [y/n] ");
         fflush(stdout);
         char response = 'n';
@@ -201,12 +202,12 @@ static errno_t procctrl_init(procctrl_context_t *ctx) {
             if(system("tmux new-session -d -s milk-procCTRL-scan 'milk-procCTRL-scan'") < 0) {}
             sleep(1);
             if (system("pgrep \"milk-procCTRL-s\" > /dev/null") != 0) {
-                fprintf(stderr, "ERROR: Failed to launch milk-procCTRL-scan daemon.\n");
+                PRINT_ERROR("ERROR: Failed to launch milk-procCTRL-scan daemon.");
                 if (ctx->flog) fclose(ctx->flog);
                 return RETURN_FAILURE;
             }
         } else {
-            fprintf(stderr, "ERROR: milk-procCTRL-scan daemon is required for this tool.\n");
+            PRINT_ERROR("ERROR: milk-procCTRL-scan daemon is required for this tool.");
             if (ctx->flog) fclose(ctx->flog);
             return RETURN_FAILURE;
         }
@@ -273,7 +274,7 @@ static errno_t procctrl_init(procctrl_context_t *ctx) {
     ctx->procinfoproc->pinfodisp = (PROCESSINFODISP *) calloc(PROCESSINFOLISTSIZE, sizeof(PROCESSINFODISP));
     if (ctx->procinfoproc->pinfodisp == NULL) {
         ansi_raw_mode_exit();
-        fprintf(stderr, "FATAL ERROR: Could not allocate 250MB process info buffer.\n");
+        PRINT_ERROR("FATAL ERROR: Could not allocate 250MB process info buffer.");
         if (ctx->flog) fclose(ctx->flog);
         return RETURN_FAILURE;
     }

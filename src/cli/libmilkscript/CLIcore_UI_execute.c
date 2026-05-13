@@ -200,8 +200,7 @@ errno_t CLI_execute_line()
     /* set -x: trace output */
     if(cli_flag_xtrace)
     {
-        fprintf(stderr, "+ %s\n",
-                data.CLIcmdline);
+        PRINT_ERROR("+ %s", data.CLIcmdline);
     }
 
     /* Output redirection: > or >> */

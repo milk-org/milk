@@ -363,7 +363,7 @@ errno_t help_command(
         reti = regcomp(&regex, cmdkey, REG_EXTENDED);
         if(reti)
         {
-            fprintf(stderr, "Could not compile regex : \"%s\"\n", cmdkey);
+            PRINT_ERROR("Could not compile regex : \"%s\"", cmdkey);
             exit(1);
         }
         int        maxGroups = 8;
@@ -438,7 +438,7 @@ errno_t help_command(
                 {
                     char msgbuf[100];
                     regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-                    fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                    PRINT_ERROR("Regex match failed: %s", msgbuf);
                     exit(1);
                 }
             }
@@ -480,7 +480,7 @@ errno_t command_info_search(const char *restrict searchstring)
     int reti = regcomp(&regex, searchstring, REG_EXTENDED);
     if(reti)
     {
-        fprintf(stderr, "Could not compile regex : \"%s\"\n", searchstring);
+        PRINT_ERROR("Could not compile regex : \"%s\"", searchstring);
         exit(1);
     }
     int        maxGroups = 8;
@@ -573,7 +573,7 @@ errno_t command_info_search(const char *restrict searchstring)
             {
                 char msgbuf[100];
                 regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-                fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                PRINT_ERROR("Regex match failed: %s", msgbuf);
                 exit(1);
             }
         }

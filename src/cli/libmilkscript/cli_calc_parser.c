@@ -90,7 +90,7 @@ void parse_errmsg(const char *msg)
 {
     if ((parse_mode == 1 || data.core.Debug > 0) && dcquiet == 0)
     {
-        fprintf(stderr, "   [CALC_PARSER_ERROR] %s\n", msg);
+        PRINT_ERROR("   [CALC_PARSER_ERROR] %s", msg);
     }
     data.parseerror = 1;
     parse_error = 1;
