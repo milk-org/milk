@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #include "processinfo.h"
 
@@ -21,11 +22,11 @@
  * Processinfo SHM helpers
  * ============================================================= */
 
-/** Compare two longs for qsort */
-static int cmp_long(const void *a, const void *b)
+/** Compare two int64_t for qsort */
+static int cmp_int64(const void *a, const void *b)
 {
-    long la = *(const long *) a;
-    long lb = *(const long *) b;
+    int64_t la = *(const int64_t *) a;
+    int64_t lb = *(const int64_t *) b;
     return (la > lb) - (la < lb);
 }
 
@@ -120,19 +121,19 @@ void read_proc_mem(
     while (fgets(line, sizeof(line), fp))
     {
         if (strncmp(line, "VmPeak:", 7) == 0)
-            sscanf(line + 7, " %ld", &st->vmpeak_kb);
+            sscanf(line + 7, " %" SCNd64, &st->vmpeak_kb);
         else if (strncmp(line, "VmHWM:", 6) == 0)
-            sscanf(line + 6, " %ld", &st->vmhwm_kb);
+            sscanf(line + 6, " %" SCNd64, &st->vmhwm_kb);
         else if (strncmp(line, "VmRSS:", 6) == 0)
-            sscanf(line + 6, " %ld", &st->vmrss_kb);
+            sscanf(line + 6, " %" SCNd64, &st->vmrss_kb);
         else if (strncmp(line,
                          "voluntary_ctxt_switches:",
                          24) == 0)
-            sscanf(line + 24, " %ld", &st->vol_ctxt);
+            sscanf(line + 24, " %" SCNd64, &st->vol_ctxt);
         else if (strncmp(line,
                          "nonvoluntary_ctxt_switches:",
                          27) == 0)
-            sscanf(line + 27, " %ld", &st->nvol_ctxt);
+            sscanf(line + 27, " %" SCNd64, &st->nvol_ctxt);
     }
     fclose(fp);
 }
@@ -154,12 +155,12 @@ void read_smaps_huge(pid_t pid, pi_stats_t *st)
     if (!fp)
         return;
     char line[256];
-    long val = 0;
+    int64_t val = 0;
     while (fgets(line, sizeof(line), fp))
     {
         if (strncmp(line, "AnonHugePages:", 14) == 0)
         {
-            sscanf(line + 14, " %ld", &val);
+            sscanf(line + 14, " %" SCNd64, &val);
             break;
         }
     }
@@ -179,8 +180,8 @@ void read_cpu_freq(pi_stats_t *st)
 {
     st->cpu_freq_min_khz = -1;
     st->cpu_freq_max_khz = -1;
-    long fmin = LONG_MAX;
-    long fmax = 0;
+    int64_t fmin = INT64_MAX;
+    int64_t fmax = 0;
     int  found = 0;
 
     for (int cpu = 0; cpu < 1024; cpu++)
@@ -206,8 +207,8 @@ void read_cpu_freq(pi_stats_t *st)
                 break; /* no more CPUs */
             continue;
         }
-        long f = 0;
-        if (fscanf(fp, "%ld", &f) == 1 && f > 0)
+        int64_t f = 0;
+        if (fscanf(fp, "%" SCNd64, &f) == 1 && f > 0)
         {
             found = 1;
             if (f < fmin)
@@ -233,7 +234,7 @@ void read_cpu_freq(pi_stats_t *st)
  *
  * @param uj Pointer to store result
  */
-long long read_rapl_energy(void)
+int64_t read_rapl_energy(void)
 {
     const char *rapl =
         "/sys/class/powercap/intel-rapl/"
@@ -241,8 +242,8 @@ long long read_rapl_energy(void)
     FILE *fp = fopen(rapl, "r");
     if (!fp)
         return -1LL;
-    long long val = -1LL;
-    IGNORE_RESULT(fscanf(fp, "%lld", &val));
+    int64_t val = -1LL;
+    IGNORE_RESULT(fscanf(fp, "%" SCNd64, &val));
     fclose(fp);
     return val;
 }
@@ -304,30 +305,30 @@ void read_procinfo_stats(
     if (nbsam > PROCESSINFO_NBtimer)
         nbsam = PROCESSINFO_NBtimer;
 
-    long iter_ns[PROCESSINFO_NBtimer];
-    long exec_ns[PROCESSINFO_NBtimer];
+    int64_t iter_ns[PROCESSINFO_NBtimer];
+    int64_t exec_ns[PROCESSINFO_NBtimer];
     int  nv = 0;
 
     for (int i = 1; i < nbsam; i++)
     {
-        long dt_exec =
-            (pi->texecend[i].tv_sec
+        int64_t dt_exec =
+            (int64_t)(pi->texecend[i].tv_sec
              - pi->texecstart[i].tv_sec)
-            * 1000000000L
-            + (pi->texecend[i].tv_nsec
+            * 1000000000LL
+            + (int64_t)(pi->texecend[i].tv_nsec
                - pi->texecstart[i].tv_nsec);
-        long dt_iter =
-            (pi->texecstart[i].tv_sec
+        int64_t dt_iter =
+            (int64_t)(pi->texecstart[i].tv_sec
              - pi->texecstart[i-1].tv_sec)
-            * 1000000000L
-            + (pi->texecstart[i].tv_nsec
+            * 1000000000LL
+            + (int64_t)(pi->texecstart[i].tv_nsec
                - pi->texecstart[i-1].tv_nsec);
         /* Reject negative, zero, or implausibly
          * large values (stale ring buffer entries
          * from a previous FPS session). */
         if (dt_exec > 0 && dt_iter > 0
-            && dt_exec < 10000000000L
-            && dt_iter < 10000000000L)
+            && dt_exec < 10000000000LL
+            && dt_iter < 10000000000LL)
         {
             exec_ns[nv] = dt_exec;
             iter_ns[nv] = dt_iter;
@@ -348,7 +349,7 @@ void read_procinfo_stats(
 
     /* RAPL energy delta */
     {
-        long long rapl_end = read_rapl_energy();
+        int64_t rapl_end = read_rapl_energy();
         if (rapl_start >= 0 && rapl_end >= 0)
         {
             /* Handle counter wrap (max_energy_range_uj)
@@ -371,9 +372,9 @@ void read_procinfo_stats(
         return;
 
     qsort(exec_ns, (size_t) nv,
-          sizeof(long), cmp_long);
+          sizeof(int64_t), cmp_int64);
     qsort(iter_ns,  (size_t) nv,
-          sizeof(long), cmp_long);
+          sizeof(int64_t), cmp_int64);
 
     /* Compute percentile index, clamped to [0,nv-1] */
 #define PCTILE(arr, pct) \

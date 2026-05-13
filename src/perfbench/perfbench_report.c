@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 /* ================================================================
  * Counter math helpers
@@ -71,7 +72,7 @@ void write_json(
     long long          w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    long               exe_sz)
+    int64_t            exe_sz)
 {
     FILE *fp = fopen(cfg->result_file, "w");
     if (!fp)
@@ -94,7 +95,7 @@ void write_json(
     fprintf(fp, "  \"timestamp\": \"%s\",\n", ts);
     fprintf(fp, "  \"compute_unit\": \"%s\",\n",
             cfg->fpsexec);
-    fprintf(fp, "  \"exe_size_bytes\": %ld,\n",
+    fprintf(fp, "  \"exe_size_bytes\": %" PRId64 ",\n",
             exe_sz);
     fprintf(fp, "  \"git_commit\": \"%s\",\n",
             cfg->git_commit);
@@ -156,28 +157,28 @@ void write_json(
     {
         fprintf(fp,
             "  \"processinfo\": {\n"
-            "    \"loopcnt\": %ld,\n"
-            "    \"p50_iter_ns\": %ld,\n"
-            "    \"p95_iter_ns\": %ld,\n"
-            "    \"p99_iter_ns\": %ld,\n"
-            "    \"p999_iter_ns\": %ld,\n"
-            "    \"max_iter_ns\": %ld,\n"
-            "    \"jitter_iter_ns\": %ld,\n"
-            "    \"p50_exec_ns\": %ld,\n"
-            "    \"p95_exec_ns\": %ld,\n"
-            "    \"p99_exec_ns\": %ld,\n"
-            "    \"p999_exec_ns\": %ld,\n"
-            "    \"max_exec_ns\": %ld,\n"
-            "    \"jitter_exec_ns\": %ld,\n"
-            "    \"vmpeak_kb\": %ld,\n"
-            "    \"vmhwm_kb\": %ld,\n"
-            "    \"vmrss_kb\": %ld,\n"
-            "    \"anon_huge_kb\": %ld,\n"
-            "    \"vol_ctxt_switches\": %ld,\n"
-            "    \"nvol_ctxt_switches\": %ld,\n"
-            "    \"cpu_freq_min_khz\": %ld,\n"
-            "    \"cpu_freq_max_khz\": %ld,\n"
-            "    \"rapl_energy_uj\": %lld\n"
+            "    \"loopcnt\": %" PRId64 ",\n"
+            "    \"p50_iter_ns\": %" PRId64 ",\n"
+            "    \"p95_iter_ns\": %" PRId64 ",\n"
+            "    \"p99_iter_ns\": %" PRId64 ",\n"
+            "    \"p999_iter_ns\": %" PRId64 ",\n"
+            "    \"max_iter_ns\": %" PRId64 ",\n"
+            "    \"jitter_iter_ns\": %" PRId64 ",\n"
+            "    \"p50_exec_ns\": %" PRId64 ",\n"
+            "    \"p95_exec_ns\": %" PRId64 ",\n"
+            "    \"p99_exec_ns\": %" PRId64 ",\n"
+            "    \"p999_exec_ns\": %" PRId64 ",\n"
+            "    \"max_exec_ns\": %" PRId64 ",\n"
+            "    \"jitter_exec_ns\": %" PRId64 ",\n"
+            "    \"vmpeak_kb\": %" PRId64 ",\n"
+            "    \"vmhwm_kb\": %" PRId64 ",\n"
+            "    \"vmrss_kb\": %" PRId64 ",\n"
+            "    \"anon_huge_kb\": %" PRId64 ",\n"
+            "    \"vol_ctxt_switches\": %" PRId64 ",\n"
+            "    \"nvol_ctxt_switches\": %" PRId64 ",\n"
+            "    \"cpu_freq_min_khz\": %" PRId64 ",\n"
+            "    \"cpu_freq_max_khz\": %" PRId64 ",\n"
+            "    \"rapl_energy_uj\": %" PRId64 "\n"
             "  },\n",
             pi->loopcnt,
             pi->p50_iter, pi->p95_iter,
@@ -206,24 +207,24 @@ void write_json(
     {
         fprintf(fp,
             "  \"processinfo_warmup\": {\n"
-            "    \"loopcnt\": %ld,\n"
-            "    \"p50_iter_ns\": %ld,\n"
-            "    \"p95_iter_ns\": %ld,\n"
-            "    \"p99_iter_ns\": %ld,\n"
-            "    \"p999_iter_ns\": %ld,\n"
-            "    \"max_iter_ns\": %ld,\n"
-            "    \"jitter_iter_ns\": %ld,\n"
-            "    \"p50_exec_ns\": %ld,\n"
-            "    \"p95_exec_ns\": %ld,\n"
-            "    \"p99_exec_ns\": %ld,\n"
-            "    \"p999_exec_ns\": %ld,\n"
-            "    \"max_exec_ns\": %ld,\n"
-            "    \"jitter_exec_ns\": %ld,\n"
-            "    \"vol_ctxt_switches\": %ld,\n"
-            "    \"nvol_ctxt_switches\": %ld,\n"
-            "    \"cpu_freq_min_khz\": %ld,\n"
-            "    \"cpu_freq_max_khz\": %ld,\n"
-            "    \"rapl_energy_uj\": %lld\n"
+            "    \"loopcnt\": %" PRId64 ",\n"
+            "    \"p50_iter_ns\": %" PRId64 ",\n"
+            "    \"p95_iter_ns\": %" PRId64 ",\n"
+            "    \"p99_iter_ns\": %" PRId64 ",\n"
+            "    \"p999_iter_ns\": %" PRId64 ",\n"
+            "    \"max_iter_ns\": %" PRId64 ",\n"
+            "    \"jitter_iter_ns\": %" PRId64 ",\n"
+            "    \"p50_exec_ns\": %" PRId64 ",\n"
+            "    \"p95_exec_ns\": %" PRId64 ",\n"
+            "    \"p99_exec_ns\": %" PRId64 ",\n"
+            "    \"p999_exec_ns\": %" PRId64 ",\n"
+            "    \"max_exec_ns\": %" PRId64 ",\n"
+            "    \"jitter_exec_ns\": %" PRId64 ",\n"
+            "    \"vol_ctxt_switches\": %" PRId64 ",\n"
+            "    \"nvol_ctxt_switches\": %" PRId64 ",\n"
+            "    \"cpu_freq_min_khz\": %" PRId64 ",\n"
+            "    \"cpu_freq_max_khz\": %" PRId64 ",\n"
+            "    \"rapl_energy_uj\": %" PRId64 "\n"
             "  }\n",
             pi_w->loopcnt,
             pi_w->p50_iter, pi_w->p95_iter,
@@ -463,7 +464,7 @@ void print_summary(
     long long          w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    long               exe_sz)
+    int64_t            exe_sz)
 {
     /* detect color support once */
     g_use_color = isatty(STDOUT_FILENO);
@@ -696,44 +697,44 @@ void print_summary(
          */
 #define print_pi_row(label, tot, wrm, unit) \
         do { \
-            long _wv = (long)(wrm); \
+            int64_t _wv = (int64_t)(wrm); \
             if (hw && pi_w && pi_w->valid) \
                 printf( \
-                    "  %s%-*s%s %s%*ld%s %-3s%*ld %-3s\n", \
+                    "  %s%-*s%s %s%*" PRId64 "%s %-3s%*" PRId64 " %-3s\n", \
                     CD, COL1W, (label), CR, \
-                    CWH, COL2W, (long)(tot), CR, \
+                    CWH, COL2W, (int64_t)(tot), CR, \
                     (unit), \
                     COL2W - 1, _wv, (unit)); \
             else \
                 printf( \
-                    "  %s%-*s%s %s%*ld%s %-3s\n", \
+                    "  %s%-*s%s %s%*" PRId64 "%s %-3s\n", \
                     CD, COL1W, (label), CR, \
-                    CWH, COL2W, (long)(tot), CR, \
+                    CWH, COL2W, (int64_t)(tot), CR, \
                     (unit)); \
         } while (0)
 
         print_section("Timing  (processinfo ring buffer)");
         print_sep();
-        printf("  %s%-*s%s %s%*ld%s\n",
+        printf("  %s%-*s%s %s%*" PRId64 "%s\n",
                CD, COL1W, "  Iterations counted", CR,
-               CWH, COL2W, (long)pi->loopcnt, CR);
+               CWH, COL2W, (int64_t)pi->loopcnt, CR);
 
         /* Scale ns → µs for display if values > 5000 ns */
-        long scale = (pi->p50_iter > 5000L) ? 1000L : 1L;
+        int64_t scale = (pi->p50_iter > 5000LL) ? 1000LL : 1LL;
         const char *tunit =
-            (scale == 1000L) ? "µs" : "ns";
+            (scale == 1000LL) ? "µs" : "ns";
 
 #define print_timing_row(lbl, tot, wrm) \
         do { \
-            long _t = (long)(tot) / scale; \
-            long _w = (long)(wrm) / scale; \
+            int64_t _t = (int64_t)(tot) / scale; \
+            int64_t _w = (int64_t)(wrm) / scale; \
             if (hw && pi_w && pi_w->valid) \
-                printf("  %s%-*s%s %s%*ld%s %-3s%*ld %-3s\n",\
+                printf("  %s%-*s%s %s%*" PRId64 "%s %-3s%*" PRId64 " %-3s\n",\
                        CD, COL1W, (lbl), CR, \
                        CWH, COL2W, _t, CR, tunit, \
                        COL2W - 1, _w, tunit); \
             else \
-                printf("  %s%-*s%s %s%*ld%s %-3s\n", \
+                printf("  %s%-*s%s %s%*" PRId64 "%s %-3s\n", \
                        CD, COL1W, (lbl), CR, \
                        CWH, COL2W, _t, CR, tunit); \
         } while (0)
@@ -743,81 +744,81 @@ void print_summary(
                CD, "", "p50", "p95",
                CWH, "p99", CR);
         /* Iter row */
-        printf("  %s%-*s%s %s%14ld%s %-3s%14ld %-3s"
-               "%s%14ld%s %-3s\n",
+        printf("  %s%-*s%s %s%14" PRId64 "%s %-3s%14" PRId64 " %-3s"
+               "%s%14" PRId64 "%s %-3s\n",
                CD, COL1W, "  Iter time", CR,
-               CD, (long)pi->p50_iter / scale, CR,
+               CD, (int64_t)pi->p50_iter / scale, CR,
                tunit,
-               (long)pi->p95_iter / scale, tunit,
-               CWH, (long)pi->p99_iter / scale, CR,
+               (int64_t)pi->p95_iter / scale, tunit,
+               CWH, (int64_t)pi->p99_iter / scale, CR,
                tunit);
         /* Exec row */
-        printf("  %s%-*s%s %s%14ld%s %-3s%14ld %-3s"
-               "%s%14ld%s %-3s\n",
+        printf("  %s%-*s%s %s%14" PRId64 "%s %-3s%14" PRId64 " %-3s"
+               "%s%14" PRId64 "%s %-3s\n",
                CD, COL1W, "  Exec time", CR,
-               CD, (long)pi->p50_exec / scale, CR,
+               CD, (int64_t)pi->p50_exec / scale, CR,
                tunit,
-               (long)pi->p95_exec / scale, tunit,
-               CWH, (long)pi->p99_exec / scale, CR,
+               (int64_t)pi->p95_exec / scale, tunit,
+               CWH, (int64_t)pi->p99_exec / scale, CR,
                tunit);
         /* Jitter + max */
-        printf("  %s%-*s%s %s%14ld%s %-3s   "
-               "%s%-*s%s %s%14ld%s %-3s\n",
+        printf("  %s%-*s%s %s%14" PRId64 "%s %-3s   "
+               "%s%-*s%s %s%14" PRId64 "%s %-3s\n",
                CD, COL1W, "  Iter jitter (p99-p50)", CR,
-               CWH, (long)pi->jitter_iter / scale, CR,
+               CWH, (int64_t)pi->jitter_iter / scale, CR,
                tunit,
                CD, COL1W, "  Exec jitter (p99-p50)", CR,
-               CWH, (long)pi->jitter_exec / scale, CR,
+               CWH, (int64_t)pi->jitter_exec / scale, CR,
                tunit);
-        printf("  %s%-*s%s %s%14ld%s %-3s   "
-               "%s%-*s%s %s%14ld%s %-3s\n",
+        printf("  %s%-*s%s %s%14" PRId64 "%s %-3s   "
+               "%s%-*s%s %s%14" PRId64 "%s %-3s\n",
                CD, COL1W, "  Iter max", CR,
-               CWH, (long)pi->max_iter / scale, CR,
+               CWH, (int64_t)pi->max_iter / scale, CR,
                tunit,
                CD, COL1W, "  Exec max", CR,
-               CWH, (long)pi->max_exec / scale, CR,
+               CWH, (int64_t)pi->max_exec / scale, CR,
                tunit);
 #undef print_timing_row
 
         print_section("Memory & OS");
         print_sep();
         print_pi_row("  Peak RSS",
-                     pi->vmhwm_kb, 0L, "kB");
+                     pi->vmhwm_kb, 0LL, "kB");
         print_pi_row("  Virtual peak",
-                     pi->vmpeak_kb, 0L, "kB");
+                     pi->vmpeak_kb, 0LL, "kB");
         if (pi->anon_huge_kb > 0)
             print_pi_row("  Anon huge pages",
-                         pi->anon_huge_kb, 0L, "kB");
+                         pi->anon_huge_kb, 0LL, "kB");
         print_pi_row("  Vol ctx switches",
                      pi->vol_ctxt,
-                     (pi_w ? pi_w->vol_ctxt : 0L),
+                     (pi_w ? pi_w->vol_ctxt : 0LL),
                      "");
         print_pi_row("  Nonvol ctx switches",
                      pi->nvol_ctxt,
-                     (pi_w ? pi_w->nvol_ctxt : 0L),
+                     (pi_w ? pi_w->nvol_ctxt : 0LL),
                      "");
         if (pi->cpu_freq_min_khz > 0)
         {
             print_pi_row(
                 "  CPU freq (min)",
-                pi->cpu_freq_min_khz / 1000L,
+                pi->cpu_freq_min_khz / 1000LL,
                 (pi_w ? pi_w->cpu_freq_min_khz
-                            / 1000L : 0L),
+                            / 1000LL : 0LL),
                 "MHz");
             print_pi_row(
                 "  CPU freq (max)",
-                pi->cpu_freq_max_khz / 1000L,
+                pi->cpu_freq_max_khz / 1000LL,
                 (pi_w ? pi_w->cpu_freq_max_khz
-                            / 1000L : 0L),
+                            / 1000LL : 0LL),
                 "MHz");
         }
         if (pi->rapl_uj >= 0)
             print_pi_row(
                 "  RAPL (package)",
-                (long)(pi->rapl_uj / 1000LL),
+                (int64_t)(pi->rapl_uj / 1000LL),
                 (pi_w && pi_w->rapl_uj >= 0
-                    ? (long)(pi_w->rapl_uj / 1000LL)
-                    : 0L),
+                    ? (int64_t)(pi_w->rapl_uj / 1000LL)
+                    : 0LL),
                 "mJ");
         else
             printf("  %s%-*s%s %sN/A%s "
@@ -831,7 +832,7 @@ void print_summary(
 
     /* Executable info */
     print_heavy_sep();
-    printf("  %s%-*s%s %s%*ld%s B   "
+    printf("  %s%-*s%s %s%*" PRId64 "%s B   "
            "%s%-*s%s %s%s%s\n",
            CD, COL1W, "Executable size", CR,
            CWH, COL2W, exe_sz, CR,

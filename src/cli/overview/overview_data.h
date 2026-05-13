@@ -58,12 +58,12 @@ ov_pid_status_t pid_get_status(pid_t pid);
 int pid_get_core_utilization(pid_t pid, int *cores, int max_cores);
 
 typedef struct {
-    unsigned long minflt;
-    unsigned long majflt;
-    unsigned long threads;
-    unsigned long vol_ctxt;
-    unsigned long nonvol_ctxt;
-    unsigned long migrations;
+    uint64_t minflt;
+    uint64_t majflt;
+    uint64_t threads;
+    uint64_t vol_ctxt;
+    uint64_t nonvol_ctxt;
+    uint64_t migrations;
 } ov_advanced_stats_t;
 
 /**
@@ -192,7 +192,7 @@ typedef struct
     pid_t    confpid;
     pid_t    runpid;
     
-    long     mem_rss_kb;
+    int64_t  mem_rss_kb;
     int      conf_alive;
     int      run_alive;
 
@@ -237,8 +237,8 @@ typedef struct
     int      cnt_active;  /**< loopcnt changed since last scan */
 
     /* timing */
-    long     dtmedian_iter_ns;
-    long     dtmedian_exec_ns;
+    int64_t  dtmedian_iter_ns;
+    int64_t  dtmedian_exec_ns;
     double   loop_hz;
 
     /* trigger */
@@ -252,7 +252,7 @@ typedef struct
     /* CPU & Memory */
     int      rt_priority;
     float    cpu_used;
-    long     mem_rss_kb;
+    int64_t  mem_rss_kb;
 
     /* sparkline history */
     float    spark_cpu[OV_SPARKLINE_LEN];
