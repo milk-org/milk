@@ -207,19 +207,21 @@ errno_t load_fits_IMGID(
         DEBUG_TRACEPOINT("naxis = %ld", naxis);
     }
 
-    for(long i = 0; i < naxis; i++)
+    for(uint32_t i = 0; i < naxis; i++)
     {
-        WRITE_FITSKEYWNAME(keyword, "NAXIS%ld", i + 1);
+        WRITE_FITSKEYWNAME(keyword, "NAXIS%u", i + 1);
 
         {
             int status = 0;
-            fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &status);
+            long tmp_naxis = 0;
+            fits_read_key(fptr, TLONG, keyword, &tmp_naxis, comment, &status);
+            naxes[i] = (uint32_t)tmp_naxis;
             FITSIO_CHECK_ERROR(status,
                                errmode,
-                               "File %s has no NAXIS%ld",
+                               "File %s has no NAXIS%u",
                                file_name,
                                i);
-            //printf("    naxis%ld = %u\n", i, naxes[i]);
+            //printf("    naxis%u = %u\n", i, naxes[i]);
         }
     }
 
@@ -255,7 +257,7 @@ errno_t load_fits_IMGID(
     }
 
     nelements = 1;
-    for(long i = 0; i < naxis; i++)
+    for(uint32_t i = 0; i < naxis; i++)
     {
         nelements *= naxes[i];
     }
@@ -264,7 +266,7 @@ errno_t load_fits_IMGID(
     if(bitpix == -32)
     {
         imgout->mdt->naxis = naxis;
-        for(long i = 0; i < naxis; i++)
+        for(uint32_t i = 0; i < naxis; i++)
         {
             imgout->mdt->size[i] = naxes[i];
         }
@@ -299,7 +301,7 @@ errno_t load_fits_IMGID(
     if(bitpix == -64)
     {
         imgout->mdt->naxis = naxis;
-        for(long i = 0; i < naxis; i++)
+        for(uint32_t i = 0; i < naxis; i++)
         {
             imgout->mdt->size[i] = naxes[i];
         }
@@ -334,7 +336,7 @@ errno_t load_fits_IMGID(
     if(bitpix == 16)
     {
         imgout->mdt->naxis = naxis;
-        for(long i = 0; i < naxis; i++)
+        for(uint32_t i = 0; i < naxis; i++)
         {
             imgout->mdt->size[i] = naxes[i];
         }
@@ -368,7 +370,7 @@ errno_t load_fits_IMGID(
     if(bitpix == 32)
     {
         imgout->mdt->naxis = naxis;
-        for(long i = 0; i < naxis; i++)
+        for(uint32_t i = 0; i < naxis; i++)
         {
             imgout->mdt->size[i] = naxes[i];
         }
@@ -406,8 +408,8 @@ errno_t load_fits_IMGID(
         }
 
         bzero = 0.0;
-        for(uint_fast64_t ii = 0;
-            ii < (uint_fast64_t) nelements;
+        for(uint64_t ii = 0;
+            ii < (uint64_t) nelements;
             ii++)
         {
             imgout->im->array.SI32[ii] =
@@ -421,7 +423,7 @@ errno_t load_fits_IMGID(
     if(bitpix == 64)
     {
         imgout->mdt->naxis = naxis;
-        for(long i = 0; i < naxis; i++)
+        for(uint32_t i = 0; i < naxis; i++)
         {
             imgout->mdt->size[i] = naxes[i];
         }
@@ -460,8 +462,8 @@ errno_t load_fits_IMGID(
         }
 
         bzero = 0.0;
-        for(uint_fast64_t ii = 0;
-            ii < (uint_fast64_t) nelements;
+        for(uint64_t ii = 0;
+            ii < (uint64_t) nelements;
             ii++)
         {
             imgout->im->array.SI64[ii] =
@@ -475,7 +477,7 @@ errno_t load_fits_IMGID(
     if(bitpix == 8)
     {
         imgout->mdt->naxis = naxis;
-        for(long i = 0; i < naxis; i++)
+        for(uint32_t i = 0; i < naxis; i++)
         {
             imgout->mdt->size[i] = naxes[i];
         }
@@ -514,8 +516,8 @@ errno_t load_fits_IMGID(
                 bitpix);
         }
 
-        for(uint_fast64_t ii = 0;
-            ii < (uint_fast64_t) nelements;
+        for(uint64_t ii = 0;
+            ii < (uint64_t) nelements;
             ii++)
         {
             imgout->im->array.F[ii] =

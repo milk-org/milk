@@ -16,7 +16,7 @@
 // ==========================================
 
 errno_t images_to_cube(const char *restrict img_name,
-                       long nbframes,
+                       uint32_t nbframes,
                        const char *restrict cube_name);
 
 // ==========================================
@@ -52,7 +52,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    return images_to_cube(imgname, *nbframes, cubename);
+    return images_to_cube(imgname, (uint32_t)(*nbframes), cubename);
 }
 
 
@@ -92,14 +92,14 @@ FPS_MAIN_STANDALONE_V2(
 
 errno_t images_to_cube(
     const char *restrict img_name,
-    long nbframes,
+    uint32_t nbframes,
     const char *restrict cube_name)
 {
     DEBUG_TRACE_FSTART();
     char imname[STRINGMAXLEN_IMGNAME];
 
-    long frame = 0;
-    CREATE_IMAGENAME(imname, "%s%05ld",
+    uint32_t frame = 0;
+    CREATE_IMAGENAME(imname, "%s%05u",
                      img_name, frame);
 
     IMGID img1 =
@@ -113,7 +113,7 @@ errno_t images_to_cube(
     uint32_t xsize = img1.md->size[0];
     uint32_t ysize = img1.md->size[1];
 
-    printf("SIZE = %u %u %ld\n",
+    printf("SIZE = %u %u %u\n",
            xsize, ysize, nbframes);
     fflush(stdout);
 
@@ -137,9 +137,9 @@ errno_t images_to_cube(
 
     for(frame = 1; frame < nbframes; frame++)
     {
-        WRITE_IMAGENAME(imname, "%s%05ld",
+        WRITE_IMAGENAME(imname, "%s%05u",
                         img_name, frame);
-        printf("Adding image %s -> %ld/%ld.."
+        printf("Adding image %s -> %u/%u.."
                " ", img_name, frame,
                nbframes);
         fflush(stdout);
