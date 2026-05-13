@@ -84,8 +84,8 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
             tok = strtok_r(NULL, " \t", &sav);
             if(tok == NULL)
             {
-                fprintf(stderr, "ERROR: wait_any: missing timeout value after -t\n");
-                fprintf(stderr, "USAGE: wait_any [-t timeout] <events...>\n");
+                PRINT_ERROR("ERROR: wait_any: missing timeout value after -t");
+                PRINT_ERROR("USAGE: wait_any [-t timeout] <events...>");
                 cli_last_retval = 255;
                 return -1;
             }
@@ -110,7 +110,7 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
             const char *dot = strchr(body, '.');
             if(dot == NULL)
             {
-                fprintf(stderr, "wait_any: bad F: token: %s\n", tok);
+                PRINT_ERROR("wait_any: bad F: token: %s", tok);
                 cli_last_retval = 255;
                 return -1;
             }
@@ -132,7 +132,7 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
 
             if(op_pos == NULL)
             {
-                fprintf(stderr, "wait_any: no operator in F: token: %s\n", tok);
+                PRINT_ERROR("wait_any: no operator in F: token: %s", tok);
                 cli_last_retval = 255;
                 return -1;
             }
@@ -152,7 +152,7 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
             const char *colon = strchr(body, ':');
             if(colon == NULL)
             {
-                fprintf(stderr, "wait_any: bad P: token: %s\n", tok);
+                PRINT_ERROR("wait_any: bad P: token: %s", tok);
                 cli_last_retval = 255;
                 return -1;
             }
@@ -175,7 +175,7 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
         }
         else
         {
-            fprintf(stderr, "wait_any: unknown event prefix: %s\n", tok);
+            PRINT_ERROR("wait_any: unknown event prefix: %s", tok);
             cli_last_retval = 255;
             return -1;
         }
@@ -184,7 +184,7 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
 
     if(tok != NULL)
     {
-        fprintf(stderr, "ERROR: wait_any: too many events (max %d)\n", WA_MAX_EVENTS);
+        PRINT_ERROR("ERROR: wait_any: too many events (max %d)", WA_MAX_EVENTS);
         cli_last_retval = 255;
         return -1;
     }
@@ -400,7 +400,7 @@ int cli_intercept_cmd_wait_any(const char *p)
         /* --- open event handles --- */
         if(!open_waitany_handles(events, nevents))
         {
-            fprintf(stderr, "wait_any: no events could be opened\n");
+            PRINT_ERROR("wait_any: no events could be opened");
             cli_last_retval = 255;
             /* Still close what was opened if any */
             close_waitany_handles(events, nevents);

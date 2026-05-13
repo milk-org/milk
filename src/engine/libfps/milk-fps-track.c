@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
     regex_t regex;
     int reti = regcomp(&regex, regex_pattern, REG_EXTENDED | REG_NOSUB);
     if (reti) {
-        fprintf(stderr, "Could not compile regex\n");
+        PRINT_ERROR("Could not compile regex");
         return 1;
     }
 
@@ -235,9 +235,7 @@ int main(int argc, char *argv[])
                     fpsarray[i].md->NBparamMAX
                     * sizeof(PARAM_TRACK));
                 if (tmp == NULL) {
-                    fprintf(stderr,
-                        "realloc failed for %s params\n",
-                        track_list[track_idx].name);
+                    PRINT_ERROR("realloc failed for %s params", track_list[track_idx].name);
                     continue;
                 }
                 track_list[track_idx].params = tmp;

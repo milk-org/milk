@@ -1242,7 +1242,7 @@ int main(int argc, char *argv[]) { \
  */
 #define FPS_RUN_STD_PREAMBLE(VARfps_name, VARfps, BLOCK_VAR_MAP) \
     if (fps_connect(VARfps_name, &(VARfps), FPSCONNECT_RUN) == -1) { \
-        fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", VARfps_name); \
+        PRINT_ERROR("Error: FPS '%s' not found. Run 'fpsinit' first.", VARfps_name); \
         return 1; \
     } \
     BLOCK_VAR_MAP

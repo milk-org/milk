@@ -18,6 +18,7 @@
 #include <getopt.h>
 #include <signal.h>
 
+#include "overview_defs.h"
 #include "overview_data.h"
 #include "milk_help.h"
 #include <inttypes.h>
@@ -574,11 +575,9 @@ int main(int argc, char *argv[])
                  &model, stream_name);
     if (si < 0)
     {
-        fprintf(stderr,
-                C_WARN "Error:" C_RST
-                " stream '%s' not found "
-                "in shared memory\n",
-                stream_name);
+        PRINT_ERROR(
+            "stream '%s' not found in shared memory",
+            stream_name);
         ov_scan_cache_cleanup();
         return 1;
     }

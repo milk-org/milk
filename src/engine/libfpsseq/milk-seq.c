@@ -261,8 +261,7 @@ int main(int argc, char **argv)
     /* Daemonize if requested */
     if (do_daemon) {
         if (daemonize(pidpath, logpath) < 0) {
-            fprintf(stderr,
-                    "Failed to daemonize\n");
+            PRINT_ERROR("Failed to daemonize");
             return 1;
         }
     }
@@ -283,7 +282,7 @@ int main(int argc, char **argv)
     // Create sequencer state
     MILKSEQ_STATE *state = milkseq_create(seq_name);
     if (!state) {
-        fprintf(stderr, "Failed to create sequencer state '%s'\n", seq_name);
+        PRINT_ERROR("Failed to create sequencer state '%s'", seq_name);
         return 1;
     }
 
@@ -300,7 +299,7 @@ int main(int argc, char **argv)
 
     int fifo_fd = open(state->fifo_path, O_RDONLY | O_NONBLOCK);
     if (fifo_fd == -1) {
-        fprintf(stderr, "Failed to open FIFO %s\n", state->fifo_path);
+        PRINT_ERROR("Failed to open FIFO %s", state->fifo_path);
         milkseq_destroy(seq_name);
         return 1;
     }
@@ -321,7 +320,7 @@ int main(int argc, char **argv)
     if (script_file[0] != '\0') {
         strncpy(state->script_path, script_file, sizeof(state->script_path) - 1);
         if (milkseq_load_script(state, script_file, fps, keywnode) != 0) {
-            fprintf(stderr, "Failed to load script: %s\n", script_file);
+            PRINT_ERROR("Failed to load script: %s", script_file);
         }
     }
 

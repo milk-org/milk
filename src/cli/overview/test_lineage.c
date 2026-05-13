@@ -65,9 +65,8 @@ int main(int argc, char *argv[])
         &m, argv[1]);
     if (si < 0)
     {
-        fprintf(stderr,
-            "Stream '%s' not found\n",
-            argv[1]);
+        PRINT_ERROR("stream '%s' not found",
+                    argv[1]);
         return 1;
     }
     printf("\nStream '%s' -> model idx %d, "
