@@ -18,6 +18,7 @@
 #include <regex.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "stream_graph.h"
 #include "overview_defs.h"

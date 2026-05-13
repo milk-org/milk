@@ -62,7 +62,7 @@ int pid_check_zombie(pid_t pid)
 /**
  * pid_get_rss_kb - Read RSS memory usage in KB.
  */
-long pid_get_rss_kb(pid_t pid)
+int64_t pid_get_rss_kb(pid_t pid)
 {
     char path[64];
     snprintf(path, sizeof(path), "/proc/%d/statm", (int) pid);
@@ -71,8 +71,8 @@ long pid_get_rss_kb(pid_t pid)
     {
         return 0;
     }
-    long size, rss = 0;
-    if (fscanf(fp, "%ld %ld", &size, &rss) != 2)
+    int64_t size, rss = 0;
+    if (fscanf(fp, "%" SCNi64 " %" SCNi64, &size, &rss) != 2)
     {
         rss = 0;
     }
@@ -135,8 +135,8 @@ int pid_is_alive(pid_t pid)
  */
 int pid_get_cpu_ticks(
     pid_t          pid,
-    unsigned long *utime,
-    unsigned long *stime)
+    uint64_t      *utime,
+    uint64_t      *stime)
 {
     char path[64];
     snprintf(path, sizeof(path),
@@ -153,7 +153,7 @@ int pid_get_cpu_ticks(
      * cmajflt utime stime */
     int rc = fscanf(fp,
         "%*d %*s %*c %*d %*d %*d %*d %*d "
-        "%*u %*u %*u %*u %*u %lu %lu",
+        "%*u %*u %*u %*u %*u %" SCNu64 " %" SCNu64,
         utime, stime);
     fclose(fp);
 

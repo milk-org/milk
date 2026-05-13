@@ -516,7 +516,7 @@ static void fill_fps_from_struct(
         switch (fp->type)
         {
         case FPTYPE_INT64:
-            snprintf(valstr, sizeof(valstr), "%ld", (long)fp->val.i64[0]);
+            snprintf(valstr, sizeof(valstr), "%" PRIi64, fp->val.i64[0]);
             break;
         case FPTYPE_FLOAT64:
             snprintf(valstr, sizeof(valstr), "%g", fp->val.f64[0]);

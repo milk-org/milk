@@ -61,25 +61,25 @@ typedef struct
 typedef struct
 {
     /* timing percentiles */
-    long p50_iter,  p95_iter,  p99_iter;
-    long p999_iter, max_iter;
-    long p50_exec,  p95_exec,  p99_exec;
-    long p999_exec, max_exec;
+    int64_t p50_iter,  p95_iter,  p99_iter;
+    int64_t p999_iter, max_iter;
+    int64_t p50_exec,  p95_exec,  p99_exec;
+    int64_t p999_exec, max_exec;
     /* derived jitter (p99 - p50) */
-    long jitter_iter, jitter_exec;
-    long loopcnt;
+    int64_t jitter_iter, jitter_exec;
+    int64_t loopcnt;
     /* memory */
-    long vmpeak_kb, vmhwm_kb, vmrss_kb;
-    long anon_huge_kb; /* anonymous huge pages */
+    int64_t vmpeak_kb, vmhwm_kb, vmrss_kb;
+    int64_t anon_huge_kb; /* anonymous huge pages */
     /* OS scheduling */
-    long vol_ctxt;  /* voluntary context switches   */
-    long nvol_ctxt; /* non-voluntary context switches */
+    int64_t vol_ctxt;  /* voluntary context switches   */
+    int64_t nvol_ctxt; /* non-voluntary context switches */
     /* CPU frequency during run (kHz) */
-    long cpu_freq_min_khz;
-    long cpu_freq_max_khz;
+    int64_t cpu_freq_min_khz;
+    int64_t cpu_freq_max_khz;
     /* RAPL energy (micro-joules, -1 if unavailable) */
-    long long rapl_uj;
-    long exe_size; /* bytes */
+    int64_t rapl_uj;
+    int64_t exe_size; /* bytes */
     int  valid;
 } pi_stats_t;
 
@@ -108,7 +108,7 @@ int run_cmd(const char *fmt, ...);
 void resolve_procdir(bench_cfg_t *cfg);
 void resolve_shmdir(char *shmdir, size_t sz);
 void resolve_git_commit(bench_cfg_t *cfg);
-long exe_size(const char *exe);
+int64_t exe_size(const char *exe);
 void read_build_tags(const char *exe, char *out, size_t outsz);
 void make_fpsname(char *out, size_t sz);
 void fps_set(const char *fpsname, const char *key, const char *val);
@@ -121,7 +121,7 @@ void find_proc_shm(bench_cfg_t *cfg, pid_t pid, char *shm_path, size_t sz);
 void read_proc_mem(pid_t pid, pi_stats_t *st);
 void read_smaps_huge(pid_t pid, pi_stats_t *st);
 void read_cpu_freq(pi_stats_t *st);
-long long read_rapl_energy(void);
+int64_t read_rapl_energy(void);
 void read_procinfo_stats(bench_cfg_t *cfg, pid_t pid, pi_stats_t *st);
 
 // perf.c
@@ -129,7 +129,7 @@ int perf_open_all(pid_t pid, int *fds);
 void perf_read_close(int *fds, hw_phase_t *hw);
 
 // report.c
-void write_json(const bench_cfg_t *cfg, const hw_phase_t *t, const hw_phase_t *w, int measured, long long t_ns, long long w_ns, const pi_stats_t *pi, const pi_stats_t *pi_w, long exe_size);
-void print_summary(const bench_cfg_t *cfg, int measured, const hw_phase_t *t, const hw_phase_t *w, long long t_ns, long long w_ns, const pi_stats_t *pi, const pi_stats_t *pi_w, long exe_size);
+void write_json(const bench_cfg_t *cfg, const hw_phase_t *t, const hw_phase_t *w, int measured, long long t_ns, long long w_ns, const pi_stats_t *pi, const pi_stats_t *pi_w, int64_t exe_size);
+void print_summary(const bench_cfg_t *cfg, int measured, const hw_phase_t *t, const hw_phase_t *w, long long t_ns, long long w_ns, const pi_stats_t *pi, const pi_stats_t *pi_w, int64_t exe_size);
 
 #endif /* PERFBENCH_H */

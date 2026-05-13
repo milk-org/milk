@@ -20,6 +20,7 @@
 
 #include "overview_data.h"
 #include "milk_help.h"
+#include <inttypes.h>
 
 /* Required by overview_defs.h (extern) */
 volatile sig_atomic_t ov_sigINT  = 0;
@@ -207,23 +208,23 @@ static void print_stream_info(
     }
 
     printf(C_LABEL " %-20s" C_RST ": "
-           C_VAL "%lu" C_RST "\n",
+           C_VAL "%" PRIu64 C_RST "\n",
            "Elements",
-           (unsigned long) s->nelement);
+           (uint64_t) s->nelement);
 
     {
-        unsigned long bytes =
-            (unsigned long) s->nelement
+        uint64_t bytes =
+            (uint64_t) s->nelement
             * dtype_bytes(s->datatype);
         printf(C_LABEL " %-20s" C_RST ": "
-               C_VAL "%lu bytes" C_RST "\n",
+               C_VAL "%" PRIu64 " bytes" C_RST "\n",
                "Memory", bytes);
     }
 
     printf(C_LABEL " %-20s" C_RST ": "
-           C_VAL "%lu" C_RST "\n",
+           C_VAL "%" PRIu64 C_RST "\n",
            "Inode",
-           (unsigned long) s->inode);
+           (uint64_t) s->inode);
     printf(C_TITLE
            "========================================"
            "================\n" C_RST);
@@ -259,9 +260,9 @@ static void print_stream_info(
 
     /* ---- Counters ---- */
     printf("\n" C_HDR " Counters" C_RST "\n");
-    printf("   %-18s: " C_VAL "%lu" C_RST "\n",
+    printf("   %-18s: " C_VAL "%" PRIu64 C_RST "\n",
            "cnt0",
-           (unsigned long) s->cnt0);
+           (uint64_t) s->cnt0);
     if (s->update_hz > 0.01)
     {
         printf("   %-18s: " C_VAL "%.1f Hz"
@@ -462,11 +463,11 @@ static void print_stream_info(
                 proc_name_by_pid(
                     m, s->proctrace_pid[t]);
             printf("   [%d] PID=%-6d"
-                   "  trig_inode=%-8lu"
+                   "  trig_inode=%-8" PRIu64
                    "  mode=%d",
                    t,
                    (int) s->proctrace_pid[t],
-                   (unsigned long)
+                   (uint64_t)
                        s->proctrace_inode[t],
                    s->proctrace_trigmode[t]);
             if (pn)
