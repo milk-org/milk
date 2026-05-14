@@ -295,7 +295,7 @@ void ov_render_header(
     int tabs_width = 0;
     for (int v = 0; v < OV_VIEW_COUNT; v++)
     {
-        tabs_width += (int) strlen(view_label((ov_view_t) v)) + 6;
+        tabs_width += (int) strlen(view_label((ov_view_t) v)) + 9;
     }
 
     int pad = r.width - tabs_width - chars_left;
@@ -310,21 +310,31 @@ void ov_render_header(
     {
         if (v == (int) lay->view)
         {
+            ov_theme_bg(OV_BG_HEADER);
+            ov_theme_fg(OV_FG_TITLE);
+            ov_buf_printf(" %s", OV_LCARS_LEFT);
             ov_theme_bg(OV_FG_TITLE);
             ov_theme_fg(OV_BG_TERMINAL);
             ov_buf_bold();
+            ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
+            ov_theme_fg(OV_FG_TITLE);
+            ov_buf_printf("%s ", OV_LCARS_RIGHT);
         }
         else
         {
             ov_theme_bg(OV_BG_HEADER);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf(" [");
             ov_theme_fg(OV_FG_TEXT);
             ov_buf_bold();
+            ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
+            ov_buf_reset_attr();
+            ov_theme_bg(OV_BG_HEADER);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("] ");
         }
-        ov_buf_printf("[F%d:%s]", v + 2, view_label((ov_view_t) v));
-        ov_buf_reset_attr();
-
-        ov_theme_bg(OV_BG_HEADER);
-        ov_buf_printf(" ");
     }
 
     ov_theme_bg(OV_BG_HEADER);
