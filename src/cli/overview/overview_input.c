@@ -383,14 +383,7 @@ static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
 
     if (key == OV_KEY_BTAB)
     {
-        if (lay->focus == OV_FOCUS_GRAPH)
-        {
-            lay->graph_tab_mode = (lay->graph_tab_mode + 1) % 3;
-        }
-        else
-        {
-            lay->focus = (ov_focus_t)(((int) lay->focus + OV_FOCUS_COUNT - 1) % OV_FOCUS_COUNT);
-        }
+        lay->graph_tab_mode = (lay->graph_tab_mode + 1) % 3;
         return 1;
     }
 
