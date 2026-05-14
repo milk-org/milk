@@ -295,7 +295,7 @@ void ov_render_header(
     int tabs_width = 0;
     for (int v = 0; v < OV_VIEW_COUNT; v++)
     {
-        tabs_width += (int) strlen(view_label((ov_view_t) v)) + 5;
+        tabs_width += (int) strlen(view_label((ov_view_t) v)) + 6;
     }
 
     int pad = r.width - tabs_width - chars_left;
@@ -320,8 +320,11 @@ void ov_render_header(
             ov_theme_fg(OV_FG_TEXT);
             ov_buf_bold();
         }
-        ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
+        ov_buf_printf("[F%d:%s]", v + 2, view_label((ov_view_t) v));
         ov_buf_reset_attr();
+
+        ov_theme_bg(OV_BG_HEADER);
+        ov_buf_printf(" ");
     }
 
     ov_theme_bg(OV_BG_HEADER);
