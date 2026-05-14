@@ -27,7 +27,12 @@ Run this workflow when asked to review or audit code quality, or when you notice
 4. **Check for Code Duplication**:
    - Find structurally identical logic or copy-pasted code. Factorize it into shared macros or `static inline` functions.
 
-5. **Audit Dependencies and Performance**:
+5. **Audit Error Handling** (see `error-handling-practices.md`):
+   - Replace raw `printf`/`perror` with `milkDebugTools.h` macros (`PRINT_ERROR`, `FUNC_CHECK_RETURN`, etc.).
+   - Ensure mandatory syscalls (`open`, `mmap`, `sem_post`, etc.) have their returns checked and propagated.
+   - Verify proper use of `RETURN_SUCCESS`/`RETURN_FAILURE` and the `goto fail;` cleanup pattern for functions holding multiple resources.
+
+6. **Audit Dependencies and Performance**:
    - Ensure the file strictly includes only what it uses. Check for implicit dependencies and remove unused headers.
    - Cross-check `#include` and cross-module dependencies against `docs/dependency_graph.md`.
    - Identify dependencies that can be simplified or decoupled.
@@ -39,5 +44,6 @@ Run this workflow when asked to review or audit code quality, or when you notice
      - `code-style-guide.md`
      - `naming-conventions.md`
      - `performance-practices.md`
+     - `error-handling-practices.md`
      - `architecture-principles.md`
    - Run the `/compile-test` workflow to verify your changes.
