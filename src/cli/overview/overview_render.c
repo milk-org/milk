@@ -310,8 +310,8 @@ void ov_render_header(
     {
         if (v == (int) lay->view)
         {
-            ov_theme_bg(OV_BG_SELECTED);
-            ov_theme_fg(OV_FG_BRIGHT);
+            ov_theme_bg(OV_FG_TITLE);
+            ov_theme_fg(OV_BG_TERMINAL);
             ov_buf_bold();
         }
         else
