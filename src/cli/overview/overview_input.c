@@ -870,10 +870,13 @@ static int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL
             }
         } else if (lay->focus == OV_FOCUS_STREAMS && tn->type == OV_NODE_STREAM) {
             lay->sel_stream = tn->index;
+            lay->sel_name_stream[0] = '\0';
         } else if (lay->focus == OV_FOCUS_PROCS && tn->type == OV_NODE_PROC) {
             lay->sel_proc = tn->index;
+            lay->sel_name_proc[0] = '\0';
         } else if (lay->focus == OV_FOCUS_FPS && tn->type == OV_NODE_FPS) {
             lay->sel_fps = tn->index;
+            lay->sel_name_fps[0] = '\0';
         }
     }
     return 1;
@@ -1020,6 +1023,10 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         {
             if (navigated)
             {
+                if (lay->focus == OV_FOCUS_STREAMS) lay->sel_name_stream[0] = '\0';
+                else if (lay->focus == OV_FOCUS_PROCS) lay->sel_name_proc[0] = '\0';
+                else if (lay->focus == OV_FOCUS_FPS) lay->sel_name_fps[0] = '\0';
+
                 if (lay->focus == OV_FOCUS_GRAPH && *sel != old_sel)
                 {
                     int start_node = get_graph_start_node(lay, m);
@@ -1034,18 +1041,21 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                             
                             if (node->type == OV_NODE_STREAM) {
                                 lay->sel_stream = node->index;
+                                lay->sel_name_stream[0] = '\0';
                                 if (lay->sel_stream < lay->scroll_stream) lay->scroll_stream = lay->sel_stream;
                                 if (lay->r_streams.height > 3 && lay->sel_stream >= lay->scroll_stream + lay->r_streams.height - 3) {
                                     lay->scroll_stream = lay->sel_stream - (lay->r_streams.height - 3) + 1;
                                 }
                             } else if (node->type == OV_NODE_PROC) {
                                 lay->sel_proc = node->index;
+                                lay->sel_name_proc[0] = '\0';
                                 if (lay->sel_proc < lay->scroll_proc) lay->scroll_proc = lay->sel_proc;
                                 if (lay->r_procs.height > 3 && lay->sel_proc >= lay->scroll_proc + lay->r_procs.height - 3) {
                                     lay->scroll_proc = lay->sel_proc - (lay->r_procs.height - 3) + 1;
                                 }
                             } else if (node->type == OV_NODE_FPS) {
                                 lay->sel_fps = node->index;
+                                lay->sel_name_fps[0] = '\0';
                                 if (lay->sel_fps < lay->scroll_fps) lay->scroll_fps = lay->sel_fps;
                                 if (lay->r_fps.height > 3 && lay->sel_fps >= lay->scroll_fps + lay->r_fps.height - 3) {
                                     lay->scroll_fps = lay->sel_fps - (lay->r_fps.height - 3) + 1;
