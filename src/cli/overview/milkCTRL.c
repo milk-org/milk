@@ -200,7 +200,7 @@ static void print_help(const char *prog, int mh_color)
     milk_help_section("Columns", mh_color);
     printf("  STREAMS: NAME/ANCESTRY, TYP, SIZE, Hz, MB/s, INODE, OWNER, COUNT, SEMS, WPID, RPID\n");
     printf("  PROCS:   NAME/ANCESTRY, PID, STAT, Hz, TRG, trig-strm, exec, DUTY, LOOPCNT, MEM, MISSED, PRIO\n");
-    printf("  FPS:     NAME/ANCESTRY, CPID, RPID, STR, MEM, DESCRIPTION, STATUS\n\n");
+    printf("  FPS:     NAME/ANCESTRY, CPID, RPID, STR, MEM, DESCRIPTION\n\n");
 
     milk_help_section("Mouse", mh_color);
     printf("  Click=select  DblClick=detail\n");

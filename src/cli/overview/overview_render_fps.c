@@ -89,10 +89,9 @@ void ov_render_fps_panel(
         hlen = snprintf(
             htext, sizeof(htext),
             "%-*s %*s %7s %3s %*s"
-            " %-*s %8s",
+            " %-*s",
             w_name, c_name, w_c, c_c, "RPID", "STR", w_mem, c_mem,
-            desc_w, "DESCRIPTION",
-            "STATUS");
+            desc_w, "DESCRIPTION");
     }
     
     {
@@ -274,7 +273,6 @@ void ov_render_fps_panel(
                     "%-20.20s ",
                     f->description);
             }
-            FPS_FIELD(OV_FG_MUTED, "%08X ", f->md_status);
             
             #undef FPS_PID_FIELD
             #undef FPS_FIELD
