@@ -16,11 +16,45 @@
 #include <math.h>
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/pixel_dispatch.h"
 
 #ifdef _OPENMP
 #include <omp.h>
 #define OMP_NELEMENT_LIMIT 100000
+#define OMP_FOR_SIMD _Pragma("omp for simd")
+#else
+#define OMP_FOR_SIMD
 #endif
+
+/**
+ * @brief Typed reduction over all elements
+ *
+ * Generates one else-if branch per real datatype.
+ * Each branch creates a restrict+aligned typed pointer
+ * and runs an OMP-simd reduction loop.
+ *
+ * @param DTYPE   _DATATYPE_* constant
+ * @param ACC     Union accessor (F, D, UI8, ...)
+ * @param CTYPE   C type (float, double, uint8_t, ...)
+ *
+ * Captured from enclosing scope:
+ *   imgin, nelement, lvalue, datatype
+ *
+ * ACCUM_CAST and ELEM_EXPR(v) must be #defined
+ * before invoking FOREACH_REAL_DATATYPE.
+ */
+#define REDUCE_CASE(DTYPE, ACC, CTYPE)                  \
+    else if (datatype == DTYPE)                         \
+    {                                                   \
+        CTYPE * MILK_RESTRICT ptr =                     \
+            MILK_ASSUME_ALIGNED(imgin->im->array.ACC);  \
+        OMP_FOR_SIMD                                    \
+        for (uint64_t ii = 0; ii < nelement; ii++)      \
+        {                                               \
+            lvalue += (ACCUM_CAST) ELEM_EXPR(ptr[ii]);  \
+        }                                               \
+    }
+
 
 double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 {
@@ -38,145 +72,30 @@ double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 
     lvalue = 0.0;
 
+#define ACCUM_CAST long double
+#define ELEM_EXPR(v) (v)
+
 #ifdef _OPENMP
-    #pragma omp parallel reduction(+:lvalue) if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel reduction(+:lvalue) \
+        if (nelement > OMP_NELEMENT_LIMIT)
     {
 #endif
 
-    if(datatype == _DATATYPE_FLOAT)
-    {
-        float * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.F);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-        double * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.D);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_UINT8)
-    {
-        uint8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI8);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_UINT16)
-    {
-        uint16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_UINT32)
-    {
-        uint32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI32);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_UINT64)
-    {
-        uint64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI64);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_INT8)
-    {
-        int8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI8);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_INT16)
-    {
-        int16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI16);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-        int32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI32);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_INT64)
-    {
-        int64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI64);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) ptr[ii];
-        }
-    }
+    if (0) {}  // anchor for else-if chain
+    FOREACH_REAL_DATATYPE(REDUCE_CASE)
     else
     {
         PRINT_ERROR("invalid data type");
-        return NAN;
     }
 
 #ifdef _OPENMP
-    }
+    } // omp parallel
 #endif
 
-    double value;
-    value = (double) lvalue;
+#undef ACCUM_CAST
+#undef ELEM_EXPR
 
-    return (value);
+    return (double) lvalue;
 }
 
 double arith_image_total(const char *ID_name)
@@ -187,9 +106,9 @@ double arith_image_total(const char *ID_name)
 
 double MILK_HOT arith_image_sumsquare_IMGID(IMGID *imgin)
 {
-    double lvalue; // uses double internally
-    uint64_t    nelement;
-    uint8_t     datatype;
+    double   lvalue; // uses double internally
+    uint64_t nelement;
+    uint8_t  datatype;
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
@@ -201,146 +120,33 @@ double MILK_HOT arith_image_sumsquare_IMGID(IMGID *imgin)
 
     lvalue = 0.0;
 
+#define ACCUM_CAST double
+#define ELEM_EXPR(v) ((v) * (v))
+
 #ifdef _OPENMP
-    #pragma omp parallel reduction(+:lvalue) if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel reduction(+:lvalue) \
+        if (nelement > OMP_NELEMENT_LIMIT)
     {
 #endif
 
-    if(datatype == _DATATYPE_FLOAT)
-    {
-        float * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.F);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-        double * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.D);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_UINT8)
-    {
-        uint8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI8);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_UINT16)
-    {
-        uint16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_UINT32)
-    {
-        uint32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI32);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_UINT64)
-    {
-        uint64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.UI64);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_INT8)
-    {
-        int8_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI8);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_INT16)
-    {
-        int16_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI16);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-        int32_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI32);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_INT64)
-    {
-        int64_t * MILK_RESTRICT ptr =
-            MILK_ASSUME_ALIGNED(imgin->im->array.SI64);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint64_t ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (double)(ptr[ii] * ptr[ii]);
-        }
-    }
+    if (0) {}  // anchor for else-if chain
+    FOREACH_REAL_DATATYPE(REDUCE_CASE)
     else
     {
         PRINT_ERROR("invalid data type");
-        return NAN;
     }
 
 #ifdef _OPENMP
-    }
+    } // omp parallel
 #endif
 
-    double value;
-    value = (double) lvalue;
+#undef ACCUM_CAST
+#undef ELEM_EXPR
 
-    return (value);
+    return (double) lvalue;
 }
+
+#undef REDUCE_CASE
 
 double arith_image_sumsquare(const char *ID_name)
 {

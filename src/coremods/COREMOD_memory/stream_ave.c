@@ -17,6 +17,7 @@
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/pixel_dispatch.h"
 
 
 /* ================================================================
@@ -135,27 +136,14 @@ static MILK_HOT errno_t fpsexec(
         } \
     }
 
-    if (imgin->md[0].datatype == _DATATYPE_FLOAT) {
-        STREAM_AVE_LOOP(float, F);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT16) {
-        STREAM_AVE_LOOP(uint16_t, UI16);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT8) {
-        STREAM_AVE_LOOP(uint8_t, UI8);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT8) {
-        STREAM_AVE_LOOP(int8_t, SI8);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT16) {
-        STREAM_AVE_LOOP(int16_t, SI16);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT32) {
-        STREAM_AVE_LOOP(uint32_t, UI32);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT32) {
-        STREAM_AVE_LOOP(int32_t, SI32);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT64) {
-        STREAM_AVE_LOOP(uint64_t, UI64);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT64) {
-        STREAM_AVE_LOOP(int64_t, SI64);
-    } else if (imgin->md[0].datatype == _DATATYPE_DOUBLE) {
-        STREAM_AVE_LOOP(double, D);
-    }
+#define STREAM_AVE_DISPATCH(DTYPE, ACC, CTYPE)       \
+    else if (imgin->md[0].datatype == DTYPE)           \
+        STREAM_AVE_LOOP(CTYPE, ACC)
+
+    if (0) {}  // anchor for else-if chain
+    FOREACH_REAL_DATATYPE(STREAM_AVE_DISPATCH)
+
+#undef STREAM_AVE_DISPATCH
 
     #undef STREAM_AVE_LOOP
 
