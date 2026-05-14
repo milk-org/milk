@@ -44,6 +44,7 @@
 #define OV_KEY_SHIFT_RIGHT 280
 #define OV_KEY_SHIFT_UP 284
 #define OV_KEY_SHIFT_DOWN 285
+#define OV_KEY_BTAB 286
 
 #define OV_KEY_MOUSE_CLICK  281
 #define OV_KEY_MOUSE_UP     282
@@ -485,7 +486,7 @@ static inline int ov_get_key(void)
                 case 'D': key = OV_KEY_LEFT; consumed = 3; break;
                 case 'H': key = OV_KEY_HOME; consumed = 3; break;
                 case 'F': key = OV_KEY_END; consumed = 3; break;
-                case 'Z': key = OV_KEY_TAB; consumed = 3; break;
+                case 'Z': key = OV_KEY_BTAB; consumed = 3; break;
                 default: break;
                 }
                 if (key) {
