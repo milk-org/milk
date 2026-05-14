@@ -286,6 +286,7 @@ listed task types:
 | `/review-pr` | Reviewing a PR for standards compliance |
 | `/setup-dev-environment` | First-time development setup |
 | `/update-programmers-guide` | After architectural changes |
+| `/audit-code-quality` | Audit code for readability, simplicity, and organization |
 | `/audit-help-consistency` | After editing help text anywhere |
 | `/check-type-consistency` | Auditing data type handling in switch blocks |
 | `/cli-robustness-test` | Running CLI robustness test suite |
