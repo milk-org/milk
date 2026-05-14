@@ -194,7 +194,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         /* Check for header tab clicks */
         if (mr == lay->r_header.row && mc >= 1)
         {
-            int tab_widths[] = {9, 10, 9, 9, 8};
+            int tab_widths[] = {9, 9, 9, 8, 9};
             int tabs_total_width = 0;
             for (int v = 0; v < OV_VIEW_COUNT; v++) tabs_total_width += tab_widths[v];
             
