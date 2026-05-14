@@ -91,8 +91,14 @@ int main(int argc, char *argv[])
         "  " C_CMD "-loopd SEC" C_RST
         "     Infinite loop, delay"
         " trigger (seconds)\n"
-        "  " C_CMD "-h" C_RST
-        "              Show help message\n\n");
+        "  " C_CMD "-h, --help" C_RST
+        "      Show help message\n"
+        "  " C_CMD "-h1, --help-oneline" C_RST
+        " Show one-line description\n"
+        "  " C_CMD "-h2, --help-description" C_RST
+        " Show verbose description\n"
+        "  " C_CMD "-hm, --help-mono" C_RST
+        "    Show help message (monochrome)\n\n");
 
     /* ---- Commands ---- */
     printf(C_HDR "Commands\n" C_RST);

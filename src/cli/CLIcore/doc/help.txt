@@ -5,6 +5,12 @@ COMMAND LINE OPTIONS
 
   -h, --help
 	print this message and exit
+  -h1, --help-oneline
+	print one-line description and exit
+  -h2, --help-description
+	print verbose description and exit
+  -hm, --help-mono
+	print help message without ANSI colors and exit
   -v, --version
 	Print version and exit
   -i, --info

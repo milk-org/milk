@@ -35,6 +35,9 @@ available:
 | Option | Description |
 |--------|-------------|
 | `-h`, `--help` | Print help and exit |
+| `-h1`, `--help-oneline` | Print one-line description and exit |
+| `-h2`, `--help-description` | Print verbose description and exit |
+| `-hm`, `--help-mono` | Print help message without ANSI colors and exit |
 | `-v`, `--version` | Print version and exit |
 | `-i`, `--info` | Print version, settings, info and exit |
 | `--verbose` | Be verbose |
