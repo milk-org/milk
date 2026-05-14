@@ -191,7 +191,7 @@ void ov_render_fps_panel(
     const OV_RELATED *rel);
 
 int ov_render_detail_panel(
-    const OV_LAYOUT *lay,
+    OV_LAYOUT       *lay,
     const OV_MODEL  *m);
 
 int ov_render_resources_panel(

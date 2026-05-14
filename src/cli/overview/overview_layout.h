@@ -75,6 +75,8 @@ typedef struct {
     int          scroll_proc;
     int          scroll_fps;
     int          scroll_graph;
+    int          scroll_detail;
+    int          detail_total_lines;
     int          show_help;
     int          help_sel;     /* cursor row in help */
     uint32_t     help_expand;  /* bitmask: 1=expanded */

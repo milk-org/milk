@@ -1,6 +1,16 @@
 #include "overview_render_internal.h"
+
+#define skip_draw (line_idx < lay->scroll_detail || ri >= max_rows)
+
+#define H_ov_buf_pos(r, c) if (!(skip_draw)) ov_buf_pos(r, c)
+#define H_ov_theme_bg(c) if (!(skip_draw)) ov_theme_bg(c)
+#define H_ov_theme_fg(c) if (!(skip_draw)) ov_theme_fg(c)
+#define H_ov_buf_bold() if (!(skip_draw)) ov_buf_bold()
+#define H_ov_buf_reset_attr() if (!(skip_draw)) ov_buf_reset_attr()
+#define H_ov_buf_printf(...) if (!(skip_draw)) ov_buf_printf(__VA_ARGS__)
+#define H_render_pad_spaces(n, w) if (!(skip_draw)) render_pad_spaces(n, w)
 static int ov_fps__render_detail_stream(
-    const OV_LAYOUT *lay,
+    OV_LAYOUT       *lay,
     const OV_MODEL *m,
     int ssel,
     OV_RECT r,
@@ -17,24 +27,26 @@ static int ov_fps__render_detail_stream(
             tabs, 3, lay->graph_tab_mode, OV_FG_STREAM, lay->focus == OV_FOCUS_GRAPH);
 
         int ri = 0;
+    int line_idx = 0;
 
         /* Name */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TITLE);
-            ov_buf_bold();
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TITLE);
+            H_ov_buf_bold();
             int n = snprintf(NULL, 0,
                 " %s", s->name);
-            ov_buf_printf(" %s", s->name);
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_PANEL);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_ov_buf_printf(" %s", s->name);
+            H_ov_buf_reset_attr();
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Type + Size */
-        if (ri < max_rows)
+        if (1)
         {
             char szb[48];
             if (s->naxis == 1)
@@ -57,94 +69,98 @@ static int ov_fps__render_detail_stream(
                     (unsigned) s->size[1],
                     (unsigned) s->size[2]);
             }
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_DIM);
             int n = snprintf(NULL, 0,
                 " Type: %s  Size: %s"
                 "  Elements: %" PRIu64,
                 render_dtype(s->datatype), szb,
                 (uint64_t) s->nelement);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " Type: %s  Size: %s"
                 "  Elements: %" PRIu64,
                 render_dtype(s->datatype), szb,
                 (uint64_t) s->nelement);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Counters */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf(" cnt0: ");
-            ov_theme_fg(s->cnt_active
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_printf(" cnt0: ");
+            H_ov_theme_fg(s->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
-            ov_buf_printf("%" PRIu64, (uint64_t) s->cnt0);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("  Hz: ");
-            ov_theme_fg(s->cnt_active
+            H_ov_buf_printf("%" PRIu64, (uint64_t) s->cnt0);
+            H_ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_printf("  Hz: ");
+            H_ov_theme_fg(s->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
             int n = snprintf(NULL, 0,
                 " cnt0: %" PRIu64 "  Hz: %.1f",
                 (uint64_t) s->cnt0,
                 s->update_hz);
-            ov_buf_printf("%.1f", s->update_hz);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_ov_buf_printf("%.1f", s->update_hz);
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* PIDs */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_DIM);
             int n = snprintf(NULL, 0,
                 " Creator: %d  Owner: %d"
                 "  Inode: %" PRIu64,
                 (int) s->creatorPID,
                 (int) s->ownerPID,
                 (uint64_t) s->inode);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " Creator: %d  Owner: %d"
                 "  Inode: %" PRIu64,
                 (int) s->creatorPID,
                 (int) s->ownerPID,
                 (uint64_t) s->inode);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Semaphores */
         if (s->nb_sem > 0)
         {
-            if (ri < max_rows)
+            if (1)
             {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_bg(OV_BG_PANEL);
-                ov_theme_fg(OV_FG_TITLE);
-                ov_buf_bold();
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_bg(OV_BG_PANEL);
+                H_ov_theme_fg(OV_FG_TITLE);
+                H_ov_buf_bold();
                 int n = snprintf(NULL, 0, " Semaphores (%d):", s->nb_sem);
-                ov_buf_printf(" Semaphores (%d):", s->nb_sem);
-                ov_buf_reset_attr();
-                ov_theme_bg(OV_BG_PANEL);
-                render_pad_spaces(n, r.width);
-                ri++;
+                H_ov_buf_printf(" Semaphores (%d):", s->nb_sem);
+                H_ov_buf_reset_attr();
+                H_ov_theme_bg(OV_BG_PANEL);
+                H_render_pad_spaces(n, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
-            for (int i = 0; i < s->nb_sem && ri < max_rows; i++)
+            for (int i = 0; i < s->nb_sem; i++)
             {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_bg(OV_BG_PANEL);
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_bg(OV_BG_PANEL);
                 
                 int val = s->semval[i];
                 if (val > 0)
                 {
-                    ov_theme_fg(OV_FG_WARN);
+                    H_ov_theme_fg(OV_FG_WARN);
                 }
                 else
                 {
-                    ov_theme_fg(OV_FG_TEXT);
+                    H_ov_theme_fg(OV_FG_TEXT);
                 }
                 
                 char rpid_str[32] = "";
@@ -155,34 +171,36 @@ static int ov_fps__render_detail_stream(
                 int n = snprintf(NULL, 0,
                     "  [%d] val:%d  %s",
                     i, val, rpid_str);
-                ov_buf_printf(
+                H_ov_buf_printf(
                     "  [%d] val:%d  %s",
                     i, val, rpid_str);
-                render_pad_spaces(n, r.width);
-                ri++;
+                H_render_pad_spaces(n, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
         }
         /* Proctrace entries */
-        if (ri < max_rows && s->nb_proctrace > 0)
+        if (s->nb_proctrace > 0)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TITLE);
-            ov_buf_bold();
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TITLE);
+            H_ov_buf_bold();
             int n = snprintf(NULL, 0,
                 " Process trace (%d):",
                 s->nb_proctrace);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " Process trace (%d):",
                 s->nb_proctrace);
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_PANEL);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_ov_buf_reset_attr();
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
 
             for (int t = 0;
                  t < s->nb_proctrace
-                 && ri < max_rows; t++)
+                ; t++)
             {
                 /* Find proc name by PID */
                 const char *pname = "???";
@@ -196,10 +214,10 @@ static int ov_fps__render_detail_stream(
                         break;
                     }
                 }
-                ov_buf_pos(
+                H_ov_buf_pos(
                     row + ri, r.col + 1);
-                ov_theme_bg(OV_BG_PANEL);
-                ov_theme_fg(
+                H_ov_theme_bg(OV_BG_PANEL);
+                H_ov_theme_fg(
                     ov_pid_color(
                         s->proctrace_pid[t]));
                 int n2 = snprintf(NULL, 0,
@@ -209,16 +227,17 @@ static int ov_fps__render_detail_stream(
                     pname,
                     render_trigmode_label(
                         s->proctrace_trigmode[t]));
-                ov_buf_printf(
+                H_ov_buf_printf(
                     "  PID %d (%s)"
                     "  mode:%s",
                     (int) s->proctrace_pid[t],
                     pname,
                     render_trigmode_label(
                         s->proctrace_trigmode[t]));
-                render_pad_spaces(
+                H_render_pad_spaces(
                     n2, r.width);
-                ri++;
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
         }
         /* ---- Stream lineage ---- */
@@ -233,36 +252,37 @@ static int ov_fps__render_detail_stream(
                 (lin.nb_ancestors > 0
                  || lin.nb_descendants > 0);
 
-            if (has_lineage && ri < max_rows)
+            if (has_lineage)
             {
                 /* blank separator line */
                 clear_row(
                     row + ri, r.col + 1,
                     r.width - 2, OV_BG_PANEL);
-                ri++;
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
 
             /* Ancestors (upstream) */
             if (lin.nb_ancestors > 0
-                && ri < max_rows)
+               )
             {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_bg(OV_BG_PANEL);
-                ov_theme_fg(OV_FG_TITLE);
-                ov_buf_bold();
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_bg(OV_BG_PANEL);
+                H_ov_theme_fg(OV_FG_TITLE);
+                H_ov_buf_bold();
                 const char *ml = sg_mode_label(
                     (sg_mode_t) lay->lineage_mode);
                 int printed = snprintf(
                     NULL, 0,
                     " Ancestors [%s] (%d):",
                     ml, lin.nb_ancestors);
-                ov_buf_printf(
+                H_ov_buf_printf(
                     " Ancestors [%s] (%d):",
                     ml, lin.nb_ancestors);
-                ov_buf_reset_attr();
-                ov_theme_bg(OV_BG_PANEL);
+                H_ov_buf_reset_attr();
+                H_ov_theme_bg(OV_BG_PANEL);
 
-                for (int a = 0; a < lin.nb_ancestors && ri < max_rows; a++)
+                for (int a = 0; a < lin.nb_ancestors; a++)
                 {
                     const SG_LINEAGE_ENTRY *le = &lin.ancestors[a];
                     const char *sn = m->streams[le->stream_idx].name;
@@ -275,11 +295,12 @@ static int ov_fps__render_detail_stream(
 
                     if (printed + item_len >= r.width - 2)
                     {
-                        render_pad_spaces(printed, r.width);
-                        ri++;
+                        H_render_pad_spaces(printed, r.width);
+                        if (!skip_draw) { ri++; }
+            line_idx++;
                         if (ri >= max_rows) break;
-                        ov_buf_pos(row + ri, r.col + 1);
-                        ov_theme_bg(OV_BG_PANEL);
+                        H_ov_buf_pos(row + ri, r.col + 1);
+                        H_ov_theme_bg(OV_BG_PANEL);
                         printed = 0;
                         item_len = snprintf(NULL, 0, " -%d %s", le->depth, sn);
                         if (le->via_name[0] != '\0') {
@@ -288,52 +309,53 @@ static int ov_fps__render_detail_stream(
                     }
 
                     if (le->depth == 1)
-                        ov_theme_fg(OV_FG_STREAM);
+                        H_ov_theme_fg(OV_FG_STREAM);
                     else
-                        ov_theme_fg(OV_FG_DIM);
+                        H_ov_theme_fg(OV_FG_DIM);
 
                     int p1 = snprintf(NULL, 0, "  -%d %s", le->depth, sn);
                     if (printed == 0) p1 = snprintf(NULL, 0, " -%d %s", le->depth, sn);
                     
-                    if (printed == 0) ov_buf_printf(" -%d %s", le->depth, sn);
-                    else ov_buf_printf("  -%d %s", le->depth, sn);
+                    if (printed == 0) H_ov_buf_printf(" -%d %s", le->depth, sn);
+                    else H_ov_buf_printf("  -%d %s", le->depth, sn);
                     printed += p1;
 
                     if (le->via_name[0] != '\0')
                     {
-                        ov_theme_fg(OV_FG_PROC);
-                        ov_buf_printf("(%s)", le->via_name);
+                        H_ov_theme_fg(OV_FG_PROC);
+                        H_ov_buf_printf("(%s)", le->via_name);
                         printed += snprintf(NULL, 0, "(%s)", le->via_name);
                     }
                 }
-                if (ri < max_rows)
+                if (1)
                 {
-                    render_pad_spaces(printed, r.width);
-                    ri++;
+                    H_render_pad_spaces(printed, r.width);
+                    if (!skip_draw) { ri++; }
+            line_idx++;
                 }
             } /* ancestors */
 
             /* Descendants (downstream) */
             if (lin.nb_descendants > 0
-                && ri < max_rows)
+               )
             {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_bg(OV_BG_PANEL);
-                ov_theme_fg(OV_FG_TITLE);
-                ov_buf_bold();
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_bg(OV_BG_PANEL);
+                H_ov_theme_fg(OV_FG_TITLE);
+                H_ov_buf_bold();
                 const char *mld = sg_mode_label(
                     (sg_mode_t) lay->lineage_mode);
                 int printed = snprintf(
                     NULL, 0,
                     " Descendants [%s] (%d):",
                     mld, lin.nb_descendants);
-                ov_buf_printf(
+                H_ov_buf_printf(
                     " Descendants [%s] (%d):",
                     mld, lin.nb_descendants);
-                ov_buf_reset_attr();
-                ov_theme_bg(OV_BG_PANEL);
+                H_ov_buf_reset_attr();
+                H_ov_theme_bg(OV_BG_PANEL);
 
-                for (int d = 0; d < lin.nb_descendants && ri < max_rows; d++)
+                for (int d = 0; d < lin.nb_descendants; d++)
                 {
                     const SG_LINEAGE_ENTRY *le = &lin.descendants[d];
                     const char *sn = m->streams[le->stream_idx].name;
@@ -346,11 +368,12 @@ static int ov_fps__render_detail_stream(
 
                     if (printed + item_len >= r.width - 2)
                     {
-                        render_pad_spaces(printed, r.width);
-                        ri++;
+                        H_render_pad_spaces(printed, r.width);
+                        if (!skip_draw) { ri++; }
+            line_idx++;
                         if (ri >= max_rows) break;
-                        ov_buf_pos(row + ri, r.col + 1);
-                        ov_theme_bg(OV_BG_PANEL);
+                        H_ov_buf_pos(row + ri, r.col + 1);
+                        H_ov_theme_bg(OV_BG_PANEL);
                         printed = 0;
                         item_len = snprintf(NULL, 0, " +%d %s", le->depth, sn);
                         if (le->via_name[0] != '\0') {
@@ -359,45 +382,47 @@ static int ov_fps__render_detail_stream(
                     }
 
                     if (le->depth == 1)
-                        ov_theme_fg(OV_FG_STREAM);
+                        H_ov_theme_fg(OV_FG_STREAM);
                     else
-                        ov_theme_fg(OV_FG_DIM);
+                        H_ov_theme_fg(OV_FG_DIM);
 
                     int p1 = snprintf(NULL, 0, "  +%d %s", le->depth, sn);
                     if (printed == 0) p1 = snprintf(NULL, 0, " +%d %s", le->depth, sn);
                     
-                    if (printed == 0) ov_buf_printf(" +%d %s", le->depth, sn);
-                    else ov_buf_printf("  +%d %s", le->depth, sn);
+                    if (printed == 0) H_ov_buf_printf(" +%d %s", le->depth, sn);
+                    else H_ov_buf_printf("  +%d %s", le->depth, sn);
                     printed += p1;
 
                     if (le->via_name[0] != '\0')
                     {
-                        ov_theme_fg(OV_FG_PROC);
-                        ov_buf_printf("(%s)", le->via_name);
+                        H_ov_theme_fg(OV_FG_PROC);
+                        H_ov_buf_printf("(%s)", le->via_name);
                         printed += snprintf(NULL, 0, "(%s)", le->via_name);
                     }
                 }
-                if (ri < max_rows)
+                if (1)
                 {
-                    render_pad_spaces(printed, r.width);
-                    ri++;
+                    H_render_pad_spaces(printed, r.width);
+                    if (!skip_draw) { ri++; }
+            line_idx++;
                 }
             } /* descendants */
         } /* lineage */
         /* Clear remaining rows */
+        lay->detail_total_lines = line_idx;
         for (; ri < max_rows; ri++)
         {
             clear_row(
                 row + ri, r.col + 1,
                 r.width - 2, OV_BG_PANEL);
         }
-        ov_buf_reset_attr();
+        H_ov_buf_reset_attr();
         return 1;
     
 }
 
 static int ov_fps__render_detail_proc(
-    const OV_LAYOUT *lay,
+    OV_LAYOUT       *lay,
     const OV_MODEL *m,
     int psel,
     OV_RECT r,
@@ -414,26 +439,28 @@ static int ov_fps__render_detail_proc(
             tabs, 3, lay->graph_tab_mode, OV_FG_PROC, lay->focus == OV_FOCUS_GRAPH);
 
         int ri = 0;
+    int line_idx = 0;
 
         /* Name + PID */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TITLE);
-            ov_buf_bold();
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TITLE);
+            H_ov_buf_bold();
             int n = snprintf(NULL, 0,
                 " %s  (PID %d)",
                 p->name, (int) p->PID);
-            ov_buf_printf(" %s  (PID %d)",
+            H_ov_buf_printf(" %s  (PID %d)",
                 p->name, (int) p->PID);
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_PANEL);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_ov_buf_reset_attr();
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Status + loop info */
-        if (ri < max_rows)
+        if (1)
         {
             const char *sl;
             switch (p->loopstat)
@@ -445,47 +472,49 @@ static int ov_fps__render_detail_proc(
             case 4:  sl = "ERROR"; break;
             default: sl = "UNKNOWN"; break;
             }
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TEXT);
-            ov_buf_printf(" Status: %s  Loops: ", sl);
-            ov_theme_fg(p->cnt_active
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TEXT);
+            H_ov_buf_printf(" Status: %s  Loops: ", sl);
+            H_ov_theme_fg(p->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
-            ov_buf_printf("%" PRId64, (int64_t) p->loopcnt);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("  Hz: ");
-            ov_theme_fg(p->cnt_active
+            H_ov_buf_printf("%" PRId64, (int64_t) p->loopcnt);
+            H_ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_printf("  Hz: ");
+            H_ov_theme_fg(p->cnt_active
                 ? OV_FG_ACTIVE : OV_FG_DIM);
-            ov_buf_printf("%.1f", p->loop_hz);
+            H_ov_buf_printf("%.1f", p->loop_hz);
             int n = snprintf(NULL, 0,
                 " Status: %s  Loops: %" PRId64
                 "  Hz: %.1f",
                 sl, (int64_t) p->loopcnt,
                 p->loop_hz);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* CPU and Mem */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TEXT);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TEXT);
             int n = snprintf(NULL, 0,
                 " CPU: %5.1f%%  Mem: %" PRId64 " KB",
                 p->cpu_used, (int64_t)p->mem_rss_kb);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " CPU: %5.1f%%  Mem: %" PRId64 " KB",
                 p->cpu_used, (int64_t)p->mem_rss_kb);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Trigger info */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_CONN);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_CONN);
             int n = snprintf(NULL, 0,
                 " Trigger: %s  stream: %s"
                 "  sem: %d",
@@ -494,7 +523,7 @@ static int ov_fps__render_detail_proc(
                 (p->trigstreamname[0] != '\0')
                     ? p->trigstreamname : "-",
                 p->triggersem);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " Trigger: %s  stream: %s"
                 "  sem: %d",
                 render_trigmode_label(
@@ -502,40 +531,42 @@ static int ov_fps__render_detail_proc(
                 (p->trigstreamname[0] != '\0')
                     ? p->trigstreamname : "-",
                 p->triggersem);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Missed frames */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
             if (p->triggermissed > 0)
             {
-                ov_theme_fg(OV_FG_WARN);
+                H_ov_theme_fg(OV_FG_WARN);
             }
             else
             {
-                ov_theme_fg(OV_FG_DIM);
+                H_ov_theme_fg(OV_FG_DIM);
             }
             int n = snprintf(NULL, 0,
                 " Missed: %d (cumul: %" PRIu64 ")",
                 p->triggermissed,
                 (uint64_t)
                     p->triggermissed_cumul);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " Missed: %d (cumul: %" PRIu64 ")",
                 p->triggermissed,
                 (uint64_t)
                     p->triggermissed_cumul);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Exec time + overhead */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
             if (p->MeasureTiming
                 && p->dtmedian_exec_ns > 0)
             {
@@ -548,45 +579,47 @@ static int ov_fps__render_detail_proc(
                         * (double) p->dtmedian_exec_ns
                         / (double) p->dtmedian_iter_ns;
                 }
-                ov_theme_fg(OV_FG_TEXT);
+                H_ov_theme_fg(OV_FG_TEXT);
                 int n = snprintf(NULL, 0,
                     " Exec: %.3f ms  Load: %.1f%%"
                     "  RT: %d",
                     exec_ms, overhead,
                     p->rt_priority);
-                ov_buf_printf(
+                H_ov_buf_printf(
                     " Exec: %.3f ms  Load: %.1f%%"
                     "  RT: %d",
                     exec_ms, overhead,
                     p->rt_priority);
-                render_pad_spaces(n, r.width);
+                H_render_pad_spaces(n, r.width);
             }
             else
             {
-                ov_theme_fg(OV_FG_DIM);
+                H_ov_theme_fg(OV_FG_DIM);
                 int n = snprintf(NULL, 0,
                     " Timing: disabled  RT: %d",
                     p->rt_priority);
-                ov_buf_printf(
+                H_ov_buf_printf(
                     " Timing: disabled  RT: %d",
                     p->rt_priority);
-                render_pad_spaces(n, r.width);
+                H_render_pad_spaces(n, r.width);
             }
-            ri++;
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
+        lay->detail_total_lines = line_idx;
         for (; ri < max_rows; ri++)
         {
             clear_row(
                 row + ri, r.col + 1,
                 r.width - 2, OV_BG_PANEL);
         }
-        ov_buf_reset_attr();
+        H_ov_buf_reset_attr();
         return 1;
     
 }
 
 static int ov_fps__render_detail_fps(
-    const OV_LAYOUT *lay,
+    OV_LAYOUT       *lay,
     const OV_MODEL *m,
     int fsel,
     OV_RECT r,
@@ -603,41 +636,43 @@ static int ov_fps__render_detail_fps(
             tabs, 3, lay->graph_tab_mode, OV_FG_FPS, lay->focus == OV_FOCUS_GRAPH);
 
         int ri = 0;
+    int line_idx = 0;
 
         /* Name */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TITLE);
-            ov_buf_bold();
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TITLE);
+            H_ov_buf_bold();
             int n = snprintf(NULL, 0,
                 " %s", f->name);
-            ov_buf_printf(" %s", f->name);
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_PANEL);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_ov_buf_printf(" %s", f->name);
+            H_ov_buf_reset_attr();
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Description */
-        if (ri < max_rows
-            && f->description[0] != '\0')
+        if (f->description[0] != '\0')
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TEXT);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TEXT);
             int n = snprintf(NULL, 0,
                 " %s", f->description);
-            ov_buf_printf(" %s", f->description);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_ov_buf_printf(" %s", f->description);
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Conf / Run status */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_DIM);
             /* PID status labels */
             const char *cst, *rst;
             ov_pid_status_t cs =
@@ -655,60 +690,64 @@ static int ov_fps__render_detail_fps(
                 "  Run: %s (PID %d)",
                 cst, (int) f->confpid,
                 rst, (int) f->runpid);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " Conf: %s (PID %d)"
                 "  Run: %s (PID %d)",
                 cst, (int) f->confpid,
                 rst, (int) f->runpid);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         /* Parameters */
-        if (ri < max_rows && f->nb_disp_params > 0)
+        if (f->nb_disp_params > 0)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_bg(OV_BG_PANEL);
-            ov_theme_fg(OV_FG_TITLE);
-            ov_buf_bold();
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_ov_theme_fg(OV_FG_TITLE);
+            H_ov_buf_bold();
             int n = snprintf(NULL, 0,
                 " Parameters (%d):",
                 f->nb_disp_params);
-            ov_buf_printf(
+            H_ov_buf_printf(
                 " Parameters (%d):",
                 f->nb_disp_params);
-            ov_buf_reset_attr();
-            ov_theme_bg(OV_BG_PANEL);
-            render_pad_spaces(n, r.width);
-            ri++;
+            H_ov_buf_reset_attr();
+            H_ov_theme_bg(OV_BG_PANEL);
+            H_render_pad_spaces(n, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
 
-            for (int dp = 0; dp < f->nb_disp_params && ri < max_rows; dp++)
+            for (int dp = 0; dp < f->nb_disp_params; dp++)
             {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_bg(OV_BG_PANEL);
-                ov_theme_fg(OV_FG_DIM);
-                ov_buf_printf("  ");
-                ov_theme_fg(OV_FG_CONN);
-                ov_buf_printf("%-24.24s", f->disp_param_name[dp]);
-                ov_theme_fg(OV_FG_TEXT);
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_bg(OV_BG_PANEL);
+                H_ov_theme_fg(OV_FG_DIM);
+                H_ov_buf_printf("  ");
+                H_ov_theme_fg(OV_FG_CONN);
+                H_ov_buf_printf("%-24.24s", f->disp_param_name[dp]);
+                H_ov_theme_fg(OV_FG_TEXT);
                 int n2 = snprintf(NULL, 0, " = %s", f->disp_param_value[dp]);
-                ov_buf_printf(" = %s", f->disp_param_value[dp]);
-                render_pad_spaces(2 + 24 + n2, r.width);
-                ri++;
+                H_ov_buf_printf(" = %s", f->disp_param_value[dp]);
+                H_render_pad_spaces(2 + 24 + n2, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
         }
+        lay->detail_total_lines = line_idx;
         for (; ri < max_rows; ri++)
         {
             clear_row(
                 row + ri, r.col + 1,
                 r.width - 2, OV_BG_PANEL);
         }
-        ov_buf_reset_attr();
+        H_ov_buf_reset_attr();
         return 1;
     
 }
 
 int ov_render_detail_panel(
-    const OV_LAYOUT *lay,
+    OV_LAYOUT       *lay,
     const OV_MODEL  *m)
 {
     OV_RECT r = lay->r_graph;
@@ -779,15 +818,17 @@ int ov_render_resources_panel(
         tabs, 3, lay->graph_tab_mode, target_color, lay->focus == OV_FOCUS_GRAPH);
 
     int ri = 0;
+    int line_idx = 0;
 
     if (target_pid <= 0)
     {
-        ov_buf_pos(row + ri, r.col + 1);
-        ov_theme_bg(OV_BG_PANEL);
-        ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf(" No active process for %s", target_name);
-        render_pad_spaces(25 + strlen(target_name), r.width);
-        ri++;
+        H_ov_buf_pos(row + ri, r.col + 1);
+        H_ov_theme_bg(OV_BG_PANEL);
+        H_ov_theme_fg(OV_FG_DIM);
+        H_ov_buf_printf(" No active process for %s", target_name);
+        H_render_pad_spaces(25 + strlen(target_name), r.width);
+        if (!skip_draw) { ri++; }
+            line_idx++;
     }
     else
     {
@@ -827,181 +868,199 @@ int ov_render_resources_panel(
         ov_perf_counters_t perf_cnt;
         int has_perf = (pid_read_perf_counters(target_pid, target_loopcnt, &perf_cnt) == 0);
 
-        ov_buf_pos(row + ri, r.col + 1);
-        ov_theme_bg(OV_BG_PANEL);
-        ov_theme_fg(OV_FG_TITLE);
-        ov_buf_bold();
+        H_ov_buf_pos(row + ri, r.col + 1);
+        H_ov_theme_bg(OV_BG_PANEL);
+        H_ov_theme_fg(OV_FG_TITLE);
+        H_ov_buf_bold();
         int n = snprintf(NULL, 0, " %s  (PID %d)", target_name, (int)target_pid);
-        ov_buf_printf(" %s  (PID %d)", target_name, (int)target_pid);
-        ov_buf_reset_attr();
-        ov_theme_bg(OV_BG_PANEL);
-        render_pad_spaces(n, r.width);
-        ri++;
+        H_ov_buf_printf(" %s  (PID %d)", target_name, (int)target_pid);
+        H_ov_buf_reset_attr();
+        H_ov_theme_bg(OV_BG_PANEL);
+        H_render_pad_spaces(n, r.width);
+        if (!skip_draw) { ri++; }
+            line_idx++;
         
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf(" Memory Usage:");
-            render_pad_spaces(14, r.width);
-            ri++;
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_printf(" Memory Usage:");
+            H_render_pad_spaces(14, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_fg(OV_FG_TEXT);
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_fg(OV_FG_TEXT);
             char buf[64];
             int nb = snprintf(buf, sizeof(buf), "   RSS: %4" PRIu64 " MB   VIRT: %4" PRIu64 " MB", vm_rss, vm_size);
-            ov_buf_printf("%s", buf);
-            render_pad_spaces(nb, r.width);
-            ri++;
+            H_ov_buf_printf("%s", buf);
+            H_render_pad_spaces(nb, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf(" CPU Core Activity:");
-            render_pad_spaces(19, r.width);
-            ri++;
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_printf(" CPU Core Activity:");
+            H_render_pad_spaces(19, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         
         /* Draw core mask */
-        if (ri < max_rows)
+        if (1)
         {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_fg(OV_FG_TEXT);
-            ov_buf_printf("   [");
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_fg(OV_FG_TEXT);
+            H_ov_buf_printf("   [");
             int chars_written = 4;
             long num_cores = sysconf(_SC_NPROCESSORS_ONLN);
             if (num_cores <= 0 || num_cores > 64) num_cores = 64;
             
             for (int i = 0; i < num_cores; i++) {
                 if (core_mask & (1ULL << i)) {
-                    ov_theme_fg(OV_FG_PROC);
-                    ov_buf_printf("■");
+                    H_ov_theme_fg(OV_FG_PROC);
+                    H_ov_buf_printf("■");
                 } else {
-                    ov_theme_fg(OV_FG_DIM);
-                    ov_buf_printf("-");
+                    H_ov_theme_fg(OV_FG_DIM);
+                    H_ov_buf_printf("-");
                 }
                 chars_written++;
             }
-            ov_theme_fg(OV_FG_TEXT);
-            ov_buf_printf("]");
+            H_ov_theme_fg(OV_FG_TEXT);
+            H_ov_buf_printf("]");
             chars_written++;
             
-            render_pad_spaces(chars_written, r.width);
-            ri++;
+            H_render_pad_spaces(chars_written, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         
         if (has_adv) {
-            if (ri < max_rows) {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_fg(OV_FG_DIM);
-                render_pad_spaces(0, r.width);
-                ri++;
+            if (1) {
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_fg(OV_FG_DIM);
+                H_render_pad_spaces(0, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
-            if (ri < max_rows) {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_fg(OV_FG_DIM);
-                ov_buf_printf(" Scheduling & Memory:");
-                render_pad_spaces(21, r.width);
-                ri++;
+            if (1) {
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_fg(OV_FG_DIM);
+                H_ov_buf_printf(" Scheduling & Memory:");
+                H_render_pad_spaces(21, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
-            if (ri < max_rows) {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_fg(OV_FG_TEXT);
+            if (1) {
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
                 int nb = snprintf(buf, sizeof(buf), "   Threads: %4" PRIu64 "    Migrations: %4" PRIu64, adv_stats.threads, adv_stats.migrations);
-                ov_buf_printf("%s", buf);
-                render_pad_spaces(nb, r.width);
-                ri++;
+                H_ov_buf_printf("%s", buf);
+                H_render_pad_spaces(nb, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
-            if (ri < max_rows) {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_fg(OV_FG_TEXT);
+            if (1) {
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
                 int nb = snprintf(buf, sizeof(buf), "   Ctx Sw:  %4" PRIu64 " (Vol) / %4" PRIu64 " (Invol)", adv_stats.vol_ctxt, adv_stats.nonvol_ctxt);
-                ov_buf_printf("%s", buf);
-                render_pad_spaces(nb, r.width);
-                ri++;
+                H_ov_buf_printf("%s", buf);
+                H_render_pad_spaces(nb, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
-            if (ri < max_rows) {
-                ov_buf_pos(row + ri, r.col + 1);
-                ov_theme_fg(OV_FG_TEXT);
+            if (1) {
+                H_ov_buf_pos(row + ri, r.col + 1);
+                H_ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
                 int nb = snprintf(buf, sizeof(buf), "   Faults:  %4" PRIu64 " (Min) / %4" PRIu64 " (Maj)", adv_stats.minflt, adv_stats.majflt);
-                ov_buf_printf("%s", buf);
-                render_pad_spaces(nb, r.width);
-                ri++;
+                H_ov_buf_printf("%s", buf);
+                H_render_pad_spaces(nb, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
             }
         }
         
-        if (ri < max_rows) {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_fg(OV_FG_DIM);
-            render_pad_spaces(0, r.width);
-            ri++;
+        if (1) {
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_fg(OV_FG_DIM);
+            H_render_pad_spaces(0, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         
-        if (ri < max_rows) {
-            ov_buf_pos(row + ri, r.col + 1);
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf(" Hardware Counters:");
-            render_pad_spaces(19, r.width);
-            ri++;
+        if (1) {
+            H_ov_buf_pos(row + ri, r.col + 1);
+            H_ov_theme_fg(OV_FG_DIM);
+            H_ov_buf_printf(" Hardware Counters:");
+            H_render_pad_spaces(19, r.width);
+            if (!skip_draw) { ri++; }
+            line_idx++;
         }
         
-        if (ri < max_rows) {
-            ov_buf_pos(row + ri, r.col + 1);
+        if (1) {
+            H_ov_buf_pos(row + ri, r.col + 1);
             if (has_perf) {
-                ov_theme_fg(OV_FG_TEXT);
+                H_ov_theme_fg(OV_FG_TEXT);
                 char buf[128];
                 int nb = snprintf(buf, sizeof(buf), "   Inst: %8" PRIu64 "    Cache Miss: %8" PRIu64 "", 
                     (uint64_t)perf_cnt.instructions, 
                     (uint64_t)perf_cnt.cache_misses);
-                ov_buf_printf("%s", buf);
-                render_pad_spaces(nb, r.width);
-                ri++;
+                H_ov_buf_printf("%s", buf);
+                H_render_pad_spaces(nb, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
                 
                 if (target_loopcnt > 0) {
-                    if (ri < max_rows) {
-                        ov_buf_pos(row + ri, r.col + 1);
+                    if (1) {
+                        H_ov_buf_pos(row + ri, r.col + 1);
                         nb = snprintf(buf, sizeof(buf), "   Inst/Iter:  %.1f    Cache Miss/Iter: %.1f", 
                             perf_cnt.inst_per_loop, perf_cnt.cache_miss_per_loop);
-                        ov_buf_printf("%s", buf);
-                        render_pad_spaces(nb, r.width);
-                        ri++;
+                        H_ov_buf_printf("%s", buf);
+                        H_render_pad_spaces(nb, r.width);
+                        if (!skip_draw) { ri++; }
+            line_idx++;
                     }
-                    if (ri < max_rows) {
-                        ov_buf_pos(row + ri, r.col + 1);
-                        ov_theme_fg(OV_FG_DIM);
+                    if (1) {
+                        H_ov_buf_pos(row + ri, r.col + 1);
+                        H_ov_theme_fg(OV_FG_DIM);
                         nb = snprintf(buf, sizeof(buf), "   Miss/Iter Breakdown:");
-                        ov_buf_printf("%s", buf);
-                        render_pad_spaces(nb, r.width);
-                        ri++;
+                        H_ov_buf_printf("%s", buf);
+                        H_render_pad_spaces(nb, r.width);
+                        if (!skip_draw) { ri++; }
+            line_idx++;
                     }
-                    if (ri < max_rows) {
-                        ov_buf_pos(row + ri, r.col + 1);
-                        ov_theme_fg(OV_FG_TEXT);
+                    if (1) {
+                        H_ov_buf_pos(row + ri, r.col + 1);
+                        H_ov_theme_fg(OV_FG_TEXT);
                         nb = snprintf(buf, sizeof(buf), "     L1D: %.1f   LLC: %.1f   dTLB: %.1f   Branch: %.1f", 
                             perf_cnt.l1d_miss_per_loop, perf_cnt.llc_miss_per_loop, perf_cnt.dtlb_miss_per_loop, perf_cnt.branch_miss_per_loop);
-                        ov_buf_printf("%s", buf);
-                        render_pad_spaces(nb, r.width);
-                        ri++;
+                        H_ov_buf_printf("%s", buf);
+                        H_render_pad_spaces(nb, r.width);
+                        if (!skip_draw) { ri++; }
+            line_idx++;
                     }
                 }
             } else {
-                ov_theme_fg(OV_FG_WARN);
-                ov_buf_printf("   [Requires Privileges / CAP_PERFMON]");
-                render_pad_spaces(38, r.width);
-                ri++;
-                if (ri < max_rows) {
-                    ov_buf_pos(row + ri, r.col + 1);
-                    ov_buf_printf("   [Run: milk-setup-caps]");
-                    render_pad_spaces(25, r.width);
-                    ri++;
+                H_ov_theme_fg(OV_FG_WARN);
+                H_ov_buf_printf("   [Requires Privileges / CAP_PERFMON]");
+                H_render_pad_spaces(38, r.width);
+                if (!skip_draw) { ri++; }
+            line_idx++;
+                if (1) {
+                    H_ov_buf_pos(row + ri, r.col + 1);
+                    H_ov_buf_printf("   [Run: milk-setup-caps]");
+                    H_render_pad_spaces(25, r.width);
+                    if (!skip_draw) { ri++; }
+            line_idx++;
                 }
             }
         }
@@ -1011,6 +1070,6 @@ int ov_render_resources_panel(
     {
         clear_row(row + ri, r.col + 1, r.width - 2, OV_BG_PANEL);
     }
-    ov_buf_reset_attr();
+    H_ov_buf_reset_attr();
     return 1;
 }
