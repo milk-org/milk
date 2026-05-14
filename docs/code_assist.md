@@ -111,6 +111,7 @@ step-by-step checklists for common tasks.
 | `/review-pr` | [`review-pr.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/review-pr.md) | Review a PR for coding standards compliance. |
 | `/setup-dev-environment` | [`setup-dev-environment.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/setup-dev-environment.md) | First-time development environment setup. |
 | `/update-programmers-guide` | [`update-programmers-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md) | Scan recent commits and refresh `docs/programmers_guide.md`. |
+| `/audit-code-quality` | [`audit-code-quality.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/audit-code-quality.md) | Audit code for readability, simplicity, duplication, file length, and removable dependencies. |
 | `/audit-help-consistency` | [`audit-help-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/audit-help-consistency.md) | Cross-check all help sources for drift or contradictions. |
 | `/check-type-consistency` | [`check-type-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/check-type-consistency.md) | Audit `switch` blocks for incomplete type handling. |
 | `/cli-robustness-test` | [`cli-robustness-test.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/cli-robustness-test.md) | Run the CLI robustness test suite. |
