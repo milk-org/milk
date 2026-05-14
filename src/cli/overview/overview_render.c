@@ -317,7 +317,8 @@ void ov_render_header(
         else
         {
             ov_theme_bg(OV_BG_HEADER);
-            ov_theme_fg(OV_FG_DIM);
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_bold();
         }
         ov_buf_printf(" F%d:%s ", v + 2, view_label((ov_view_t) v));
         ov_buf_reset_attr();
