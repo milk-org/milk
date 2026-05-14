@@ -314,10 +314,35 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         }
         else if (INSIDE(lay->r_graph, mr, mc))
         {
-            sel    = &lay->sel_graph;
-            scroll = &lay->scroll_graph;
-            count  = m->nb_edges;
-            page_h = lay->r_graph.height - 3;
+            if (lay->graph_tab_mode == 0)
+            {
+                sel    = &lay->sel_graph;
+                scroll = &lay->scroll_graph;
+                int start_node = get_graph_start_node(lay, m);
+                if (start_node >= 0) {
+                    SG_RENDER_NODE rnodes[OV_MAX_NODES];
+                    count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+                } else {
+                    count = m->nb_edges;
+                }
+                page_h = lay->r_graph.height - 3;
+            }
+            else if (lay->graph_tab_mode == 1)
+            {
+                page_h = lay->r_graph.height - 3;
+                lay->scroll_detail += dir;
+                if (lay->scroll_detail < 0) lay->scroll_detail = 0;
+                if (lay->scroll_detail > lay->detail_total_lines - page_h) {
+                    lay->scroll_detail = lay->detail_total_lines - page_h;
+                }
+                if (lay->scroll_detail < 0) lay->scroll_detail = 0;
+                return 1;
+            }
+            else 
+            {
+                /* RESOURCES panel */
+                return 1;
+            }
         }
 
         if (sel != NULL && scroll != NULL)
@@ -900,18 +925,47 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
         page_h = lay->r_fps.height - 3;
         break;
     case OV_FOCUS_GRAPH:
-        sel    = &lay->sel_graph;
-        scroll = &lay->scroll_graph;
-        {
-            int start_node = get_graph_start_node(lay, m);
-            if (start_node >= 0) {
-                SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-            } else {
-                count = 0;
+        if (lay->graph_tab_mode == 0) {
+            sel    = &lay->sel_graph;
+            scroll = &lay->scroll_graph;
+            {
+                int start_node = get_graph_start_node(lay, m);
+                if (start_node >= 0) {
+                    SG_RENDER_NODE rnodes[OV_MAX_NODES];
+                    count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+                } else {
+                    count = 0;
+                }
             }
+            page_h = lay->r_graph.height - 3;
+        } else if (lay->graph_tab_mode == 1) {
+            sel = NULL;
+            scroll = NULL;
+            count = lay->detail_total_lines;
+            page_h = lay->r_graph.height - 3;
+            
+            if (key == OV_KEY_UP) {
+                if (lay->scroll_detail > 0) lay->scroll_detail--;
+            } else if (key == OV_KEY_DOWN) {
+                if (lay->scroll_detail < lay->detail_total_lines - page_h) lay->scroll_detail++;
+            } else if (key == OV_KEY_PGUP) {
+                lay->scroll_detail -= page_h;
+                if (lay->scroll_detail < 0) lay->scroll_detail = 0;
+            } else if (key == OV_KEY_PGDN) {
+                lay->scroll_detail += page_h;
+                if (lay->scroll_detail > lay->detail_total_lines - page_h) lay->scroll_detail = lay->detail_total_lines - page_h;
+                if (lay->scroll_detail < 0) lay->scroll_detail = 0;
+            } else if (key == OV_KEY_HOME) {
+                lay->scroll_detail = 0;
+            } else if (key == OV_KEY_END) {
+                lay->scroll_detail = lay->detail_total_lines - page_h;
+                if (lay->scroll_detail < 0) lay->scroll_detail = 0;
+            }
+            return 1;
+        } else {
+            sel = NULL;
+            scroll = NULL;
         }
-        page_h = lay->r_graph.height - 3;
         break;
     default:
         break;

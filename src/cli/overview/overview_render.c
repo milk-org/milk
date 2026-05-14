@@ -514,6 +514,12 @@ void ov_render_frame(
                 for (int i = 0; i < fn; i++) {
                     if (strcmp(m->streams[fidx[i]].name, lay->sel_name_stream) == 0) {
                         still_exists = 1;
+                        lay->sel_stream = i;
+                        int page_h = lay->r_streams.height - 3;
+                        if (page_h > 0) {
+                            if (lay->sel_stream < lay->scroll_stream) lay->scroll_stream = lay->sel_stream;
+                            if (lay->sel_stream >= lay->scroll_stream + page_h) lay->scroll_stream = lay->sel_stream - page_h + 1;
+                        }
                         break;
                     }
                 }
@@ -538,6 +544,12 @@ void ov_render_frame(
                 for (int i = 0; i < fn; i++) {
                     if (strcmp(m->procs[fidx[i]].name, lay->sel_name_proc) == 0) {
                         still_exists = 1;
+                        lay->sel_proc = i;
+                        int page_h = lay->r_procs.height - 3;
+                        if (page_h > 0) {
+                            if (lay->sel_proc < lay->scroll_proc) lay->scroll_proc = lay->sel_proc;
+                            if (lay->sel_proc >= lay->scroll_proc + page_h) lay->scroll_proc = lay->sel_proc - page_h + 1;
+                        }
                         break;
                     }
                 }
@@ -562,6 +574,12 @@ void ov_render_frame(
                 for (int i = 0; i < fn; i++) {
                     if (strcmp(m->fps[fidx[i]].name, lay->sel_name_fps) == 0) {
                         still_exists = 1;
+                        lay->sel_fps = i;
+                        int page_h = lay->r_fps.height - 3;
+                        if (page_h > 0) {
+                            if (lay->sel_fps < lay->scroll_fps) lay->scroll_fps = lay->sel_fps;
+                            if (lay->sel_fps >= lay->scroll_fps + page_h) lay->scroll_fps = lay->sel_fps - page_h + 1;
+                        }
                         break;
                     }
                 }
