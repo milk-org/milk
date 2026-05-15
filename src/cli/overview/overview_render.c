@@ -686,6 +686,22 @@ void ov_render_frame(
             break;
         case OV_VIEW_FPS:
             ov_render_fps_panel(lay, m, &rel);
+            if (lay->sel_fps >= 0
+                && lay->sel_fps < m->nb_fps
+                && m->fps[lay->sel_fps].nb_disp_params > 0)
+            {
+                ov_render_fps_params_panel(lay, m);
+            }
+            else
+            {
+                /* No params: draw empty right panel */
+                ov_draw_panel_border(
+                    lay->r_fps_params.row,
+                    lay->r_fps_params.col,
+                    lay->r_fps_params.height,
+                    lay->r_fps_params.width,
+                    "PARAMS", OV_FG_DIM, 0, 0);
+            }
             break;
         default:
             break;

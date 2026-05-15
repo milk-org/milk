@@ -1,4 +1,5 @@
 #include "overview_render_internal.h"
+#include "fps_types.h"
 
 #define skip_draw (line_idx < lay->scroll_detail || ri >= max_rows)
 
@@ -650,26 +651,187 @@ static int ov_fps__render_detail_fps(
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TITLE);
         H_ov_buf_bold();
-        int n = snprintf(NULL, 0, " Parameters (%d):", f->nb_disp_params);
-        H_ov_buf_printf(" Parameters (%d):", f->nb_disp_params);
+        int n = snprintf(NULL, 0,
+            " Parameters (%d):",
+            f->nb_disp_params);
+        H_ov_buf_printf(
+            " Parameters (%d):",
+            f->nb_disp_params);
         H_ov_buf_reset_attr();
         H_ov_theme_bg(OV_BG_PANEL);
-        H_render_pad_spaces(n, r.width);
+
+        /* Hint: ↑↓ ENTER (only when graph focused) */
+        if (lay->focus == OV_FOCUS_GRAPH
+            && lay->graph_tab_mode == 1)
+        {
+            H_ov_theme_fg(OV_FG_DIM);
+            int h = snprintf(NULL, 0,
+                "  [↑↓ ENTER]");
+            H_ov_buf_printf("  [↑↓ ENTER]");
+            H_render_pad_spaces(n + h, r.width);
+        }
+        else
+        {
+            H_render_pad_spaces(n, r.width);
+        }
         if (!skip_draw) { ri++; }
         line_idx++;
 
-        for (int dp = 0; dp < f->nb_disp_params; dp++)
+        /* Clamp param_sel */
+        if (lay->param_sel >= f->nb_disp_params)
         {
+            lay->param_sel =
+                f->nb_disp_params - 1;
+        }
+
+        /* Auto-scroll to keep selection visible */
+        {
+            int vis_rows = max_rows - ri;
+            if (vis_rows < 1) { vis_rows = 1; }
+            if (lay->param_sel >= 0)
+            {
+                if (lay->param_sel
+                    < lay->param_scroll)
+                {
+                    lay->param_scroll =
+                        lay->param_sel;
+                }
+                if (lay->param_sel
+                    >= lay->param_scroll
+                       + vis_rows)
+                {
+                    lay->param_scroll =
+                        lay->param_sel
+                        - vis_rows + 1;
+                }
+            }
+            if (lay->param_scroll < 0)
+            {
+                lay->param_scroll = 0;
+            }
+        }
+
+        for (int dp = 0;
+             dp < f->nb_disp_params; dp++)
+        {
+            /* Skip rows above scroll window */
+            if (dp < lay->param_scroll)
+            {
+                line_idx++;
+                continue;
+            }
+
+            int is_sel = (dp == lay->param_sel
+                && lay->focus == OV_FOCUS_GRAPH
+                && lay->graph_tab_mode == 1);
+            ov_rgb_t row_bg = is_sel
+                ? OV_BG_SELECTED : OV_BG_PANEL;
+
             H_ov_buf_pos(row + ri, r.col + 1);
-            H_ov_theme_bg(OV_BG_PANEL);
-            H_ov_theme_fg(OV_FG_DIM);
-            H_ov_buf_printf("  ");
-            H_ov_theme_fg(OV_FG_CONN);
-            H_ov_buf_printf("%-24.24s", f->disp_param_name[dp]);
-            H_ov_theme_fg(OV_FG_TEXT);
-            int n2 = snprintf(NULL, 0, " = %s", f->disp_param_value[dp]);
-            H_ov_buf_printf(" = %s", f->disp_param_value[dp]);
-            H_render_pad_spaces(2 + 24 + n2, r.width);
+            H_ov_theme_bg(row_bg);
+
+            /* Writability indicator */
+            int writable =
+                (f->disp_param_flags[dp]
+                 & FPFLAG_WRITESTATUS) != 0;
+            if (is_sel)
+            {
+                H_ov_theme_fg(writable
+                    ? OV_FG_ACTIVE : OV_FG_DIM);
+                H_ov_buf_printf(
+                    writable ? " \xe2\x9c\x8e"
+                             : " \xf0\x9f\x94\x92");
+            }
+            else
+            {
+                H_ov_buf_printf("  ");
+            }
+
+            /* Type badge */
+            const char *tbadge = "???";
+            ov_rgb_t tcolor = OV_FG_DIM;
+            uint32_t pt = f->disp_param_type[dp];
+            if (pt == FPTYPE_INT64
+                || pt == FPTYPE_INT32)
+            {
+                tbadge = "INT";
+                tcolor = (ov_rgb_t){
+                    120, 180, 255};
+            }
+            else if (pt == FPTYPE_UINT64
+                || pt == FPTYPE_UINT32)
+            {
+                tbadge = "UINT";
+                tcolor = (ov_rgb_t){
+                    100, 160, 220};
+            }
+            else if (pt == FPTYPE_FLOAT64
+                || pt == FPTYPE_FLOAT32)
+            {
+                tbadge = "FLT";
+                tcolor = (ov_rgb_t){
+                    180, 200, 100};
+            }
+            else if (pt == FPTYPE_ONOFF)
+            {
+                tbadge = "ON/OFF";
+                tcolor = (ov_rgb_t){
+                    220, 180, 60};
+            }
+            else if (pt == FPTYPE_STREAMNAME)
+            {
+                tbadge = "STRM";
+                tcolor = OV_FG_STREAM;
+            }
+            else if (pt == FPTYPE_FPSNAME)
+            {
+                tbadge = "FPS";
+                tcolor = OV_FG_FPS;
+            }
+            else if (FPTYPE_IS_STRING(pt))
+            {
+                tbadge = "STR";
+                tcolor = (ov_rgb_t){
+                    200, 160, 120};
+            }
+            else if (pt == FPTYPE_PID)
+            {
+                tbadge = "PID";
+                tcolor = OV_FG_PROC;
+            }
+            else if (pt == FPTYPE_TIMESPEC)
+            {
+                tbadge = "TIME";
+                tcolor = (ov_rgb_t){
+                    160, 180, 200};
+            }
+
+            H_ov_theme_fg(tcolor);
+            H_ov_buf_printf("[%-6s]", tbadge);
+
+            /* Parameter name */
+            H_ov_theme_fg(is_sel
+                ? OV_FG_BRIGHT : OV_FG_CONN);
+            H_ov_buf_printf(
+                " %-20.20s",
+                f->disp_param_name[dp]);
+
+            /* Value */
+            H_ov_theme_fg(is_sel
+                ? OV_FG_BRIGHT : OV_FG_TEXT);
+            int n2 = snprintf(NULL, 0,
+                " = %s",
+                f->disp_param_value[dp]);
+            H_ov_buf_printf(
+                " = %s",
+                f->disp_param_value[dp]);
+
+            /* Pad remainder */
+            /* 2 (icon) + 8 (badge) + 1 (sp)
+             * + 20 (name) + n2 (val) */
+            H_render_pad_spaces(
+                2 + 8 + 1 + 20 + n2, r.width);
+
             if (!skip_draw) { ri++; }
             line_idx++;
         } // for disp_params
@@ -697,6 +859,7 @@ int ov_render_detail_panel(
     int psel = lay->freeze ? lay->freeze_sel_proc   : lay->sel_proc;
     int fsel = lay->freeze ? lay->freeze_sel_fps    : lay->sel_fps;
 
+    /* If a list panel is directly focused, show its item's details. */
     if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
     {
         return ov_fps__render_detail_stream(lay, m, ssel, r, max_rows, row);
@@ -708,6 +871,23 @@ int ov_render_detail_panel(
     if (focus == OV_FOCUS_FPS && fsel >= 0 && fsel < m->nb_fps)
     {
         return ov_fps__render_detail_fps(lay, m, fsel, r, max_rows, row);
+    }
+
+    /* Focus is on the graph panel (or no focused list panel).
+     * Still render details for whatever list item is selected,
+     * so that clicking/tabbing into the graph panel does not
+     * make the panel jump to CONNECTIONS view. */
+    if (fsel >= 0 && fsel < m->nb_fps)
+    {
+        return ov_fps__render_detail_fps(lay, m, fsel, r, max_rows, row);
+    }
+    if (ssel >= 0 && ssel < m->nb_streams)
+    {
+        return ov_fps__render_detail_stream(lay, m, ssel, r, max_rows, row);
+    }
+    if (psel >= 0 && psel < m->nb_procs)
+    {
+        return ov_fps__render_detail_proc(lay, m, psel, r, max_rows, row);
     }
 
     return 0;

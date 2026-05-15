@@ -112,4 +112,45 @@ void pcache_evict(int ci)
     }
 }
 
+/* =========================================================
+ * FPS cache public accessors
+ * ========================================================= */
 
+/**
+ * ov_fcache_get_fps - return raw FPS pointer by name.
+ *
+ * Returns the memory-mapped FPS struct from the cache,
+ * or NULL if the FPS is not currently cached.
+ */
+FPS *ov_fcache_get_fps(const char *name)
+{
+    int ci = fcache_find(name);
+    if (ci < 0)
+    {
+        return NULL;
+    }
+    return &s_fcache[ci].fps;
+}
+
+/**
+ * ov_fcache_get_param_index - map display index to
+ *     raw FPS parameter array index.
+ *
+ * @fps_name: FPS name to look up in cache
+ * @disp_idx: display parameter index (0..nb_disp_params-1)
+ *
+ * Return: raw parray index, or -1 on error.
+ */
+int ov_fcache_get_param_index(
+    const char *fps_name,
+    int         disp_idx)
+{
+    int ci = fcache_find(fps_name);
+    if (ci < 0
+        || disp_idx < 0
+        || disp_idx >= s_fcache[ci].dparam_nb)
+    {
+        return -1;
+    }
+    return s_fcache[ci].dparam_idx[disp_idx];
+}

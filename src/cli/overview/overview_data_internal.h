@@ -95,4 +95,12 @@ void fcache_evict(int ci);
 int pcache_find_pid(pid_t pid);
 void pcache_evict(int ci);
 
+/** Get cached FPS pointer for direct parameter access */
+FPS *ov_fcache_get_fps(const char *name);
+
+/** Get raw parameter index by display index */
+int ov_fcache_get_param_index(
+    const char *fps_name,
+    int         disp_idx);
+
 #endif // OVERVIEW_DATA_INTERNAL_H
