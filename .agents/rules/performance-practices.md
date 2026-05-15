@@ -168,20 +168,10 @@ non-GCC compilers.
 - Run `cmake .. -DVEC_REPORT=ON` to see which
   loops GCC couldn't vectorize and why.
 - **Match loop index type to bound type.**
-  A type mismatch between a loop index and its
-  bound (e.g., `uint32_t` index vs `uint64_t`
-  bound) prevents GCC from vectorizing the loop
-  entirely. GCC cannot prove the narrower index
-  won't wrap before reaching the wider bound,
-  so it falls back to scalar code. This causes
-  up to 8× slowdown (scalar `vmulss` vs
-  vectorized `vmulps`).
-  Use `uint32_t` indices with `uint32_t` bounds
-  (`md->size[]`), `uint64_t` indices with
-  `uint64_t` bounds (`md->nelement`, `xysize`).
-  When combining `uint32_t` axis sizes into a
-  pixel count, cast before multiplying:
-  `uint64_t xysize = (uint64_t)xsize * ysize;`
+  A type mismatch prevents GCC from vectorizing
+  (up to 8× slowdown). See
+  `naming-conventions.md` §3.8 for the full
+  type-matching table and examples.
 
 ## CPU Core Pinning (Thread Affinity)
 
