@@ -17,8 +17,39 @@ trigger: always_on
 - In `.c` files, Kernel-Doc may also include implementation
   details when useful (algorithm notes, design rationale,
   non-obvious logic), but the `.h` file should remain brief.
-- Use the Linux kernel's C coding style if it doesn't
-  conflict with the above rules.
+- Follow the Linux kernel's C coding conventions for
+  naming, scope, and control flow philosophy (early
+  exit, `goto fail` cleanup). See
+  `error-handling-practices.md` §9 for the `goto`
+  pattern.
+- **Brace style: Allman.** Place the opening brace
+  on its own line for both function definitions and
+  control-flow statements (`if`, `for`, `while`,
+  `do`, `switch`). This is the dominant style in
+  the existing codebase (~77% of control blocks).
+  Use the brace style already present in a file
+  when editing; use Allman for new files.
+  ```c
+  /* Function definition */
+  static errno_t compute_stream(
+      const float *restrict in,
+      float       *restrict out,
+      uint64_t nelement)
+  {
+      /* Control flow — brace on next line */
+      if (in == NULL)
+      {
+          return RETURN_FAILURE;
+      }
+
+      for (uint64_t ii = 0; ii < nelement; ii++)
+      {
+          out[ii] = in[ii] * 2.0f;
+      }
+
+      return RETURN_SUCCESS;
+  }
+  ```
 - Enable and enforce compiler warnings (`-Wall`, `-Wextra`)
   during development to catch missing declarations early.
   Treat them as errors (`-Werror`) in CI/CD.
@@ -26,13 +57,15 @@ trigger: always_on
   headers it relies on, rather than implicitly relying on
   another header to include them (e.g. relying on
   `CLIcore.h` to provide `math.h` or `stdlib.h`).
-- Add a closing comment to any scope longer than ~10 lines:
+- Add a closing comment to any scope longer than
+  ~10 lines:
   ```c
   #ifdef HAVE_CUDA
   // ... many lines ...
   #endif // HAVE_CUDA
 
-  if (condition_met) {
+  if (condition_met)
+  {
       // ... many lines ...
   } // if (condition_met)
   ```
@@ -41,13 +74,15 @@ trigger: always_on
   indentation:
   ```c
   /* GOOD — early exit */
-  if (ptr == NULL) {
+  if (ptr == NULL)
+  {
       return RETURN_FAILURE;
   }
   // main logic at low indentation ...
 
   /* BAD — unnecessary nesting */
-  if (ptr != NULL) {
+  if (ptr != NULL)
+  {
       // main logic indented ...
   }
   ```

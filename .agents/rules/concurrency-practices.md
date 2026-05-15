@@ -42,22 +42,36 @@ patterns to avoid race conditions.
   each loop iteration for run/stop/pause
   commands.
 
-## Atomic Operations
+## `volatile` Keyword
 
-- For simple flag variables shared between
-  processes, use `volatile` if the variable is
-  a simple integer flag read by one process and
-  written by another.
+`volatile` prevents the compiler from caching a
+value in a register, but it provides **no**
+atomicity or memory ordering guarantees across
+CPU cores.
+
+- **Required** for signal handler flags — use
+  `volatile sig_atomic_t` (POSIX mandate):
+  ```c
+  static volatile sig_atomic_t got_sigint = 0;
+  ```
+- **Acceptable** on single-word SHM status fields
+  that are polled in a spin loop, where a brief
+  stale value is harmless (e.g.,
+  `IMAGE_METADATA.write`). The semaphore post
+  after the write provides the actual memory
+  barrier.
+- **Never use** on pixel data pointers or array
+  pointers — it disables SIMD vectorization
+  entirely. Synchronize via semaphores instead.
 - For counters or complex shared state, prefer
   the `processinfo` mechanism which handles
-  atomic updates.
+  updates through shared memory with proper
+  synchronization.
 
 ## Do NOT Use
 
 - `pthread_mutex` across processes — use
   semaphores instead.
-- `volatile` on pointers to stream data — it
-  prevents compiler optimization. Synchronize
-  via semaphores instead.
 - `sched_setaffinity` — use `processinfo` CPU
   mask instead (see `performance-practices.md`).
+
