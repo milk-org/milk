@@ -306,6 +306,7 @@ int main(int argc, char *argv[])
     lay.view  = OV_VIEW_DASHBOARD;
     lay.focus = OV_FOCUS_STREAMS;
     lay.cmdlog_rows = 4;
+    lay.param_sel = -1;
 
     /* --- Main TUI loop (~10 fps) --- */
     /* Clear screen once on startup */

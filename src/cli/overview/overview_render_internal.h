@@ -202,6 +202,10 @@ void ov_render_graph_panel(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m);
 
+void ov_render_fps_params_panel(
+    OV_LAYOUT       *lay,
+    const OV_MODEL  *m);
+
 void ov_render_status(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m);

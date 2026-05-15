@@ -130,6 +130,20 @@ typedef struct {
     char         sel_name_stream[80];
     char         sel_name_proc[80];
     char         sel_name_fps[80];
+    /* FPS parameter navigation (detail panel) */
+    int          param_sel;        /* selected param (-1=none) */
+    int          param_scroll;     /* scroll offset */
+    int          param_editing;    /* 1 = inline edit active */
+    char         param_edit_buf[200];
+    int          param_edit_pos;   /* cursor in edit buffer */
+    /* FPS parameter tree state (F5 full-screen view) */
+    int          fps_param_focus;  /* 0=FPS list, 1=param tree */
+    char         fps_param_path[200]; /* Current tree path, e.g. "conf" or "conf.sub" */
+    int          fps_param_sel;    /* selected row in param tree */
+    int          fps_param_scroll; /* scroll offset in param tree */
+    /* F5 view split rects */
+    OV_RECT      r_fps_list;       /* left: FPS list  */
+    OV_RECT      r_fps_params;     /* right: param tree */
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);

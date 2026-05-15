@@ -87,5 +87,28 @@ void ov_layout_compute(OV_LAYOUT *lay)
         lay->r_procs   = lay->r_streams;
         lay->r_fps     = lay->r_streams;
         lay->r_graph   = lay->r_streams;
+
+        /* F5 split: ~40% list, ~60% params */
+        if (lay->view == OV_VIEW_FPS)
+        {
+            int lw = (W * 2) / 5;
+            if (lw < 20)
+            {
+                lw = 20;
+            }
+            lay->r_fps_list   = (OV_RECT){
+                body_top, 1, body_h, lw
+            };
+            lay->r_fps_params = (OV_RECT){
+                body_top, lw + 1, body_h, W - lw
+            };
+            /* Keep r_fps pointing to list for panel rendering */
+            lay->r_fps = lay->r_fps_list;
+        }
+        else
+        {
+            lay->r_fps_list   = lay->r_fps;
+            lay->r_fps_params = lay->r_fps;
+        }
     }
 }
