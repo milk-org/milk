@@ -543,6 +543,8 @@ static void fill_fps_from_struct(
             break;
         }
         strncpy(f->disp_param_value[dp], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
+        f->disp_param_type[dp]  = fp->type;
+        f->disp_param_flags[dp] = fp->fpflag;
     }
     f->nb_disp_params = ce->dparam_nb;
 
