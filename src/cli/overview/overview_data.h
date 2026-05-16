@@ -172,6 +172,9 @@ typedef struct
 
     /* graph node index (-1 if not in graph) */
     int      node_idx;
+
+    /* new-item flash counter (frames remaining) */
+    int      is_new;
 } OV_STREAM;
 
 
@@ -222,6 +225,13 @@ typedef struct
 
     /* graph node index */
     int      node_idx;
+
+    /* sparkline history: run-process Hz */
+    float    hz_hist[OV_SPARKLINE_LEN];
+    int      hz_hist_idx;
+
+    /* new-item flash counter (frames remaining) */
+    int      is_new;
 } OV_FPS;
 
 typedef struct {
@@ -277,6 +287,16 @@ typedef struct
 
     /* graph node index */
     int      node_idx;
+
+    /* process start time (seconds since boot) */
+    int64_t  start_time_sec;
+
+    /* stale detection: number of consecutive scans
+     * where alive but loopcnt unchanged */
+    int      stale_count;
+
+    /* new-item flash counter (frames remaining) */
+    int      is_new;
 } OV_PROC;
 
 

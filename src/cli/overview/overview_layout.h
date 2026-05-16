@@ -98,6 +98,12 @@ typedef struct {
     char         filter_fps[64];
     int          filter_editing; /* 1 = typing filter */
     int          filter_cursor;  /* cursor pos in filter */
+    int          filter_jump;    /* 1 = jump-to-match mode */
+    /* Multi-select state for FPS batch ops (#8) */
+    uint8_t      multi_sel_fps[200]; /* per-FPS select */
+    int          multi_sel_count;    /* count of selected */
+    /* Compact mode (#13): hide extra columns */
+    int          compact_mode;
     /* Dashboard panel rects */
     OV_RECT      r_header;
     OV_RECT      r_streams;
@@ -139,6 +145,7 @@ typedef struct {
     /* Track selected names to handle external removals */
     char         sel_name_stream[80];
     char         sel_name_proc[80];
+    pid_t        sel_pid_proc;
     char         sel_name_fps[80];
     /* FPS parameter navigation (detail panel) */
     int          param_sel;        /* selected param (-1=none) */

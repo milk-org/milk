@@ -69,7 +69,7 @@ void ov_render_fps_panel(
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf("    ");
-    ov_theme_fg(OV_FG_DIM);
+    ov_theme_fg(OV_FG_FPS_HDR);
     char htext[256];
     int hlen;
     {
@@ -99,9 +99,15 @@ void ov_render_fps_panel(
     {
         int vis_width = r.width - 4;
         if (vis_width < 0) vis_width = 0;
-        int printed = ov_render_header_text(htext, hs, vis_width);
+        int printed = ov_render_header_text(
+            htext, hs, vis_width, OV_FG_FPS_HDR);
         render_pad_spaces(4 + printed, r.width);
     }
+
+    /* Separator between header and data rows */
+    render_separator(
+        hrow + 1, r.col + 1,
+        r.width - 2, OV_FG_FPS_HDR);
 
     int8_t local_depth[OV_MAX_FPS];
     memset(local_depth, 0, sizeof(local_depth));
@@ -131,12 +137,12 @@ void ov_render_fps_panel(
         }
     }
 
-    int max_rows = r.height - 3;
+    int max_rows = r.height - 4;
     int start = lay->scroll_fps;
 
     for (int i = 0; i < max_rows; i++)
     {
-        int row = hrow + 1 + i;
+        int row = hrow + 2 + i;
         int ffi = start + i;
         if (ffi < filt_n)
         {
@@ -162,7 +168,10 @@ void ov_render_fps_panel(
                 row_bg = OV_BG_FROZEN;
             } else if (is_rel) {
                 row_bg = OV_BG_RELATED;
+            } else if (f->is_new > 0) {
+                row_bg = OV_BG_NEW_ITEM;
             }
+            row_bg = zebra_bg(row_bg, i);
 
             int hs_rem = hs;
             int printed = 4;
@@ -170,6 +179,24 @@ void ov_render_fps_panel(
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
+
+            /* Focus ring accent strip (#10) */
+            int panel_focused =
+                (lay->focus == OV_FOCUS_FPS);
+            render_focus_strip(
+                row, r.col + 1,
+                panel_focused,
+                OV_FG_FPS, row_bg);
+
+            /* Multi-select marker (#8) */
+            int fsi = (int)(f - m->fps);
+            if (fsi >= 0 && fsi < 200
+                && lay->multi_sel_fps[fsi])
+            {
+                ov_theme_fg(OV_FG_ACTIVE);
+                ov_buf_printf("\xe2\x97\x86"); /* ◆ */
+                printed += 1;
+            }
 
             /* Lineage depth badge: ◀N or N▶ */
             int8_t sdepth = local_depth[fi];
@@ -225,21 +252,25 @@ void ov_render_fps_panel(
 
             /* PID field with inverted highlight when it
              * matches the selected process PID:
-             * green background + bold black text */
+             * green background + bold black text (or red/white if crashed) */
             #define FPS_PID_FIELD(pid_val, fmt, ...)    \
             do {                                       \
                 pid_t _pval = (pid_t)(pid_val);        \
                 int _match = (_spid > 0                \
                     && _pval == _spid);                \
                 int _idx = ov_find_proc_by_pid(m, _pval); \
-                int _crashed = (_idx >= 0 && m->procs[_idx].loopstat == 4 /* PROCESSINFO_LOOPSTAT_CRASHED */); \
+                int _crashed = (_idx >= 0 && m->procs[_idx].loopstat == PROCESSINFO_LOOPSTAT_CRASHED); \
                 if (_match) {                          \
-                    ov_theme_bg(OV_BG_PID_MATCH);      \
+                    if (_crashed) {                    \
+                        ov_theme_bg(OV_FG_ERROR);      \
+                    } else {                           \
+                        ov_theme_bg(OV_BG_PID_MATCH);  \
+                    }                                  \
                     ov_buf_bold();                      \
                 }                                      \
                 ov_rgb_t _fg;                          \
                 if (_crashed) {                        \
-                    _fg = (ov_rgb_t){255, 60, 60};     \
+                    _fg = _match ? (ov_rgb_t){255, 255, 255} : OV_FG_ERROR; \
                 } else if (_match) {                   \
                     _fg = (ov_rgb_t){0, 0, 0};         \
                 } else {                               \
@@ -278,20 +309,36 @@ void ov_render_fps_panel(
             format_mem_kb(memstr, sizeof(memstr), f->mem_rss_kb);
             FPS_FIELD(OV_FG_TEXT, "%5s ", memstr);
 
-            /* Detailed columns */
-            if (lay->view == OV_VIEW_FPS)
+            /* Detailed columns (hidden in compact) */
+            if (!lay->compact_mode)
             {
-                FPS_FIELD(OV_FG_DIM,
-                    "%-30.30s ",
-                    f->description);
+                if (lay->view == OV_VIEW_FPS)
+                {
+                    FPS_FIELD(OV_FG_DIM,
+                        "%-30.30s ",
+                        f->description);
+                }
+                else
+                {
+                    FPS_FIELD(OV_FG_DIM,
+                        "%-20.20s ",
+                        f->description);
+                }
+                /* FPS Hz sparkline (#6) */
+                if (f->hz_hist_idx > 0)
+                {
+                    render_sparkline(
+                        f->hz_hist,
+                        f->hz_hist_idx,
+                        OV_SPARKLINE_LEN,
+                        8,
+                        OV_FG_FPS);
+                    printed += 8;
+                    ov_buf_printf(" ");
+                    printed += 1;
+                }
             }
-            else
-            {
-                FPS_FIELD(OV_FG_DIM,
-                    "%-20.20s ",
-                    f->description);
-            }
-            
+
             #undef FPS_PID_FIELD
             #undef FPS_FIELD
 
@@ -347,6 +394,8 @@ void ov_render_fps_panel(
         /* Totals over ALL FPS */
         int  tot_conf = 0;
         int  tot_run  = 0;
+        int  tot_crash = 0;
+        int  tot_idle  = 0;
         int64_t tot_mem  = 0;
         for (int j = 0; j < m->nb_fps; j++)
         {
@@ -354,6 +403,15 @@ void ov_render_fps_panel(
             if (f->conf_alive) { tot_conf++; }
             if (f->run_alive)  { tot_run++;  }
             tot_mem += f->mem_rss_kb;
+            if (f->runpid > 0 && !f->run_alive)
+            {
+                tot_crash++;
+            }
+            if (f->conf_alive && !f->run_alive
+                && f->runpid <= 0)
+            {
+                tot_idle++;
+            }
         }
 
         /* Totals over filtered subset */
@@ -375,10 +433,27 @@ void ov_render_fps_panel(
         /* Right side: total stats (always) */
         char tmem[16];
         format_mem_kb(tmem, sizeof(tmem), tot_mem);
-        char rbuf[80];
-        snprintf(rbuf, sizeof(rbuf),
-            " %d conf \u2502 %d run \u2502 %s ",
-            tot_conf, tot_run, tmem);
+        char rbuf[120];
+        int roff = snprintf(rbuf, sizeof(rbuf),
+            " %d conf \u2502 %d run",
+            tot_conf, tot_run);
+        if (tot_crash > 0)
+        {
+            roff += snprintf(
+                rbuf + roff,
+                sizeof(rbuf) - (size_t) roff,
+                " \u2502 %d crash", tot_crash);
+        }
+        if (tot_idle > 0)
+        {
+            roff += snprintf(
+                rbuf + roff,
+                sizeof(rbuf) - (size_t) roff,
+                " \u2502 %d idle", tot_idle);
+        }
+        snprintf(rbuf + roff,
+                 sizeof(rbuf) - (size_t) roff,
+                 " \u2502 %s ", tmem);
         int rlen = (int) strlen(rbuf);
         int below = filt_n - lay->scroll_fps - max_rows;
         int dw = 0;

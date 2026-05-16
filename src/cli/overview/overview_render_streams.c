@@ -70,7 +70,7 @@ void ov_render_streams_panel(
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf("    ");
-    ov_theme_fg(OV_FG_DIM);
+    ov_theme_fg(OV_FG_STREAM_HDR);
     
     char htext[300];
     int hlen;
@@ -109,11 +109,17 @@ void ov_render_streams_panel(
     {
         int vis_width = r.width - 4;
         if (vis_width < 0) vis_width = 0;
-        int printed = ov_render_header_text(htext, hs, vis_width);
+        int printed = ov_render_header_text(
+            htext, hs, vis_width, OV_FG_STREAM_HDR);
         render_pad_spaces(4 + printed, r.width);
     }
 
-    int max_rows = r.height - 3;
+    /* Separator between header and data rows */
+    render_separator(
+        hrow + 1, r.col + 1,
+        r.width - 2, OV_FG_STREAM_HDR);
+
+    int max_rows = r.height - 4;
     int start = lay->scroll_stream;
 
     /* Compute lineage depths when a stream
@@ -302,7 +308,7 @@ void ov_render_streams_panel(
 
     for (int i = 0; i < max_rows; i++)
     {
-        int row = hrow + 1 + i;
+        int row = hrow + 2 + i;
         int fi = start + i;
         if (fi < filt_n)
         {
@@ -329,7 +335,10 @@ void ov_render_streams_panel(
                 row_bg = OV_BG_FROZEN;
             } else if (is_rel) {
                 row_bg = OV_BG_RELATED;
+            } else if (s->is_new > 0) {
+                row_bg = OV_BG_NEW_ITEM;
             }
+            row_bg = zebra_bg(row_bg, i);
 
             int hs_rem = hs;
             int printed = 4;
@@ -337,6 +346,14 @@ void ov_render_streams_panel(
 
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
+
+            /* Focus ring accent strip (#10) */
+            int panel_focused =
+                (lay->focus == OV_FOCUS_STREAMS);
+            render_focus_strip(
+                row, r.col + 1,
+                panel_focused,
+                OV_FG_STREAM, row_bg);
 
             #define STRM_FIELD(color, fmt, ...)        \
             do {                                       \
@@ -456,27 +473,33 @@ void ov_render_streams_panel(
                 STRM_FIELD(OV_FG_DIM, "      - ");
             }
 
-            STRM_FIELD(OV_FG_DIM, "%10" PRIu64 " ", (uint64_t) s->inode);
+            if (!lay->compact_mode)
+            {
+                STRM_FIELD(OV_FG_DIM, "%10" PRIu64 " ", (uint64_t) s->inode);
+            }
             
             STRM_PID_FIELD(
                 s->ownerPID,
                 "%7d ", (int) s->ownerPID);
-            STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM,
-                "%10" PRIu64 " ", (uint64_t) s->cnt0);
-            
-            for (int sm = 0; sm < 10; sm++) {
-                if (sm < s->nb_sem) {
-                    int val = s->semval[sm];
-                    char c;
-                    if (val < 0) c = '-';
-                    else if (val > 9) c = '+';
-                    else c = '0' + val;
-                    STRM_FIELD(ov_get_sem_color(val), "%c", c);
-                } else {
-                    STRM_FIELD(OV_FG_DIM, ".");
+            if (!lay->compact_mode)
+            {
+                STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM,
+                    "%10" PRIu64 " ", (uint64_t) s->cnt0);
+
+                for (int sm = 0; sm < 10; sm++) {
+                    if (sm < s->nb_sem) {
+                        int val = s->semval[sm];
+                        char c;
+                        if (val < 0) c = '-';
+                        else if (val > 9) c = '+';
+                        else c = '0' + val;
+                        STRM_FIELD(ov_get_sem_color(val), "%c", c);
+                    } else {
+                        STRM_FIELD(OV_FG_DIM, ".");
+                    }
                 }
+                STRM_FIELD(OV_FG_DIM, " ");
             }
-            STRM_FIELD(OV_FG_DIM, " ");
 
             /* Write PID */
             if (s->write_pid > 0) {
