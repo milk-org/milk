@@ -61,7 +61,9 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s                         Navigate streams\n", MH(MH_CMD, "UP/DOWN"));
     printf("  %s                          Erase selected stream\n", MH(MH_CMD, "CTRL+e"));
     printf("  %s                             Increase/decrease display rate\n", MH(MH_CMD, "+/-"));
-    printf("  %s                             Decrease/increase scan rate\n\n", MH(MH_CMD, "{/}"));
+    printf("  %s                             Decrease/increase scan rate\n", MH(MH_CMD, "{/}"));
+    printf("  %s                           Click to select stream entry\n", MH(MH_CMD, "Mouse"));
+    printf("  %s                          Scroll selection up/down\n\n", MH(MH_CMD, "Scroll"));
 
     const char *see_also[] = {
         "milk-stream-info", "milk-stream-list", "milk-streamCTRL-cli"

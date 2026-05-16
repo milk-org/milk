@@ -214,7 +214,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay);
 
 void ov_render_help(const OV_LAYOUT *lay);
 void ov_render_preview_line(
-    const OV_LAYOUT *lay,
+    OV_LAYOUT       *lay,
     const OV_MODEL  *m);
 
 /* Help panel utilities */

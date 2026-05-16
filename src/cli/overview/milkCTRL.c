@@ -43,6 +43,7 @@ int ov_mouse_btn = 0;
 
 char ov__screenbuf[OV_SCREENBUF_SIZE];
 int  ov__screenbuf_len = 0;
+uint64_t ov__total_bytes_rendered = 0;
 
 OV_CELL  ov__shadow[OV_MAX_ROWS][OV_MAX_COLS];
 OV_CELL  ov__front[OV_MAX_ROWS][OV_MAX_COLS];

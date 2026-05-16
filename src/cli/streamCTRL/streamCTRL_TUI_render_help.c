@@ -45,5 +45,14 @@ void streamCTRL__render_header_help(streamCTRLarg_struct *streamCTRLdata, struct
             print_help_entry("r", "Force full screen redraw");
             print_help_entry("F", "Set match string pattern");
             print_help_entry("f", "Toggle apply match string to stream");
+
+            TUI_newline();
+            TUI_printfw("============ NAVIGATION");
+            TUI_newline();
+            print_help_entry("UP/DOWN", "Move selection");
+            print_help_entry("PgUp/PgDn", "Move selection by 10");
+            print_help_entry("LEFT/RIGHT", "Summary / detail view");
+            print_help_entry("Click", "Select stream entry");
+            print_help_entry("Scroll", "Scroll selection up/down");
 }
 

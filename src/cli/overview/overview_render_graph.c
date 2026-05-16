@@ -11,10 +11,13 @@
  * selected item.
  */
 void ov_render_preview_line(
-    const OV_LAYOUT *lay,
+    OV_LAYOUT       *lay,
     const OV_MODEL  *m)
 {
     int W = lay->term_cols;
+
+    /* Reset button tracking */
+    lay->nb_preview_btns = 0;
 
     ov_buf_pos(2, 1);
     ov_theme_bg(OV_BG_PANEL);
@@ -163,6 +166,155 @@ void ov_render_preview_line(
         if (rem > 0)
         {
             ov_buf_printf("%.*s", rem, line + 5);
+        }
+    }
+
+    /* ---- Action buttons (right-aligned) ---- */
+    {
+        /* Button definitions: label, bg color, id */
+        struct {
+            const char *label;
+            ov_rgb_t    bg;
+            int         id;
+        } btns[5];
+        int nb = 0;
+
+        if (focus == OV_FOCUS_PROCS
+            && psel >= 0 && psel < m->nb_procs)
+        {
+            const OV_PROC *p = &m->procs[psel];
+            /* Pause / Resume */
+            if (p->loopstat == 2)
+            {
+                btns[nb].label = " [p] \xe2\x96\xb6 Resume ";
+                btns[nb].bg = (ov_rgb_t){30, 120, 60};
+                btns[nb].id = OV_BTN_PROC_PAUSE;
+                nb++;
+                
+                /* Step */
+                btns[nb].label = " [s] \xe2\x8f\xad Step ";
+                btns[nb].bg = (ov_rgb_t){120, 100, 30};
+                btns[nb].id = OV_BTN_PROC_STEP;
+                nb++;
+            }
+            else
+            {
+                btns[nb].label = " [p] \xe2\x8f\xb8 Pause ";
+                btns[nb].bg = (ov_rgb_t){50, 90, 160};
+                btns[nb].id = OV_BTN_PROC_PAUSE;
+                nb++;
+            }
+            /* Exit (clean stop) */
+            btns[nb].label = " [e] \xe2\x8f\xbb Exit ";
+            btns[nb].bg = (ov_rgb_t){160, 120, 30};
+            btns[nb].id = OV_BTN_PROC_EXIT;
+            nb++;
+            /* Kill (SIGTERM) */
+            btns[nb].label =
+                " [k] \xe2\x98\xa0 Kill ";
+            btns[nb].bg = (ov_rgb_t){180, 40, 40};
+            btns[nb].id = OV_BTN_PROC_KILL;
+            nb++;
+        }
+        else if (focus == OV_FOCUS_FPS
+                 && fsel >= 0
+                 && fsel < m->nb_fps)
+        {
+            const OV_FPS *f = &m->fps[fsel];
+            /* Conf toggle */
+            btns[nb].label = f->conf_alive
+                ? " [s] \xe2\x96\xa0 Conf "
+                : " [s] \xe2\x96\xb6 Conf ";
+            btns[nb].bg = f->conf_alive
+                ? (ov_rgb_t){160, 120, 30}
+                : (ov_rgb_t){30, 120, 60};
+            btns[nb].id = OV_BTN_FPS_CONF;
+            nb++;
+            /* Run toggle */
+            btns[nb].label = f->run_alive
+                ? " [r] \xe2\x96\xa0 Run "
+                : " [r] \xe2\x96\xb6 Run ";
+            btns[nb].bg = f->run_alive
+                ? (ov_rgb_t){160, 120, 30}
+                : (ov_rgb_t){30, 120, 60};
+            btns[nb].id = OV_BTN_FPS_RUN;
+            nb++;
+            /* Kill */
+            btns[nb].label =
+                " [k] \xe2\x98\xa0 Kill ";
+            btns[nb].bg = (ov_rgb_t){180, 40, 40};
+            btns[nb].id = OV_BTN_FPS_KILL;
+            nb++;
+        }
+
+        if (nb > 0)
+        {
+            /* Compute total width of all buttons
+             * (1 space gap between each) */
+            int btn_widths[5];
+            int total_w = 0;
+            for (int bi = 0; bi < nb; bi++)
+            {
+                /* strlen gives byte count; UTF-8
+                 * symbols use 3 bytes per glyph,
+                 * so subtract 2 per symbol for
+                 * display width */
+                int blen = (int) strlen(
+                    btns[bi].label);
+                /* Count UTF-8 leading bytes
+                 * (0xE2) to find symbol count */
+                int syms = 0;
+                for (int k = 0; k < blen; k++)
+                {
+                    if ((unsigned char)
+                        btns[bi].label[k]
+                        == 0xE2)
+                    {
+                        syms++;
+                    }
+                }
+                btn_widths[bi] = blen - syms * 2;
+                total_w += btn_widths[bi];
+            }
+            total_w += (nb - 1); /* gaps */
+
+            /* Reserve space for SELECTED badge */
+            int reserved = lay->freeze ? 12 : 1;
+            int start_col =
+                W - total_w - reserved + 1;
+            if (start_col < 1)
+            {
+                start_col = 1;
+            }
+
+            int col = start_col;
+            for (int bi = 0; bi < nb; bi++)
+            {
+                ov_buf_pos(2, col);
+                ov_buf_bg(btns[bi].bg.r,
+                          btns[bi].bg.g,
+                          btns[bi].bg.b);
+                ov_buf_fg(255, 255, 255);
+                ov_buf_bold();
+                ov_buf_printf("%s",
+                    btns[bi].label);
+                ov_buf_reset_attr();
+
+                /* Record button position */
+                if (lay->nb_preview_btns < 4)
+                {
+                    int idx = lay->nb_preview_btns;
+                    lay->preview_btns[idx].col =
+                        col;
+                    lay->preview_btns[idx].width =
+                        btn_widths[bi];
+                    lay->preview_btns[idx].id =
+                        btns[bi].id;
+                    lay->nb_preview_btns++;
+                }
+
+                col += btn_widths[bi] + 1;
+            }
         }
     }
 

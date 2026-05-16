@@ -354,6 +354,7 @@ errno_t streamCTRL_CTRLscreen(void)
     ino_t inodeselected      = 0;
 
     struct streamCTRL_TUI_state state;
+    state.body_start_row = 0;
     while(sc_sigINT == 0 && sc_sigTERM == 0 && sTUIparam.loopOK == 1)
     {
         DEBUG_TRACEPOINT("loop start");

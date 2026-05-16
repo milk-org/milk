@@ -162,6 +162,106 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
     ((MR) >= (R).row && (MR) < (R).row + (R).height && \
      (MC) >= (R).col && (MC) < (R).col + (R).width)
 
+/**
+ * ov_input__exec_preview_btn - execute a preview-bar
+ * button action.
+ *
+ * Buttons are explicit UI affordances, so they auto-
+ * enable ctrl_mode and log the action.
+ */
+/* Forward declarations for helpers defined below */
+static const OV_PROC *ov_input_get_sel_proc(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
+static const OV_FPS *ov_input_get_sel_fps(
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m);
+
+static void ov_input__exec_preview_btn(
+    int              btn_id,
+    OV_LAYOUT       *lay,
+    const OV_MODEL  *m)
+{
+    OV_CMDLOG *log = &lay->cmdlog;
+
+    switch (btn_id)
+    {
+    case OV_BTN_PROC_PAUSE:
+    {
+        const OV_PROC *p =
+            ov_input_get_sel_proc(lay, m);
+        if (p)
+        {
+            ov_ctrl_proc_set_ctrlval(p, -1, log);
+        }
+        break;
+    }
+    case OV_BTN_PROC_EXIT:
+    {
+        const OV_PROC *p =
+            ov_input_get_sel_proc(lay, m);
+        if (p)
+        {
+            ov_ctrl_proc_set_ctrlval(p, 3, log);
+        }
+        break;
+    }
+    case OV_BTN_PROC_KILL:
+    {
+        const OV_PROC *p =
+            ov_input_get_sel_proc(lay, m);
+        if (p)
+        {
+            ov_ctrl_proc_kill(p, log);
+        }
+        break;
+    }
+    case OV_BTN_PROC_STEP:
+    {
+        const OV_PROC *p =
+            ov_input_get_sel_proc(lay, m);
+        if (p)
+        {
+            ov_ctrl_proc_set_ctrlval(p, 2, log);
+        }
+        break;
+    }
+    case OV_BTN_FPS_CONF:
+    {
+        const OV_FPS *f =
+            ov_input_get_sel_fps(lay, m);
+        if (f)
+        {
+            ov_ctrl_fps_conf_toggle(f, log);
+        }
+        break;
+    }
+    case OV_BTN_FPS_RUN:
+    {
+        const OV_FPS *f =
+            ov_input_get_sel_fps(lay, m);
+        if (f)
+        {
+            ov_ctrl_fps_run_toggle(f, log);
+        }
+        break;
+    }
+    case OV_BTN_FPS_KILL:
+    {
+        const OV_FPS *f =
+            ov_input_get_sel_fps(lay, m);
+        if (f)
+        {
+            ov_ctrl_fps_signal_pid(
+                f, SIGTERM, log);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (key == OV_KEY_MOUSE_CLICK)
@@ -220,6 +320,24 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         break;
                     }
                     x += tab_widths[v];
+                }
+            }
+        }
+
+        /* --- Preview-bar button clicks (row 2) --- */
+        if (mr == 2 && lay->nb_preview_btns > 0)
+        {
+            for (int bi = 0;
+                 bi < lay->nb_preview_btns; bi++)
+            {
+                int bc = lay->preview_btns[bi].col;
+                int bw = lay->preview_btns[bi].width;
+                if (mc >= bc && mc < bc + bw)
+                {
+                    ov_input__exec_preview_btn(
+                        lay->preview_btns[bi].id,
+                        lay, m);
+                    return 1;
                 }
             }
         }
@@ -289,6 +407,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 if (idx < m->nb_streams)
                 {
                     lay->sel_stream = idx;
+                    lay->sel_name_stream[0] = '\0';
                     if (is_dbl)
                     {
                         lay->graph_tab_mode = 1;
@@ -309,6 +428,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 if (idx < m->nb_procs)
                 {
                     lay->sel_proc = idx;
+                    lay->sel_name_proc[0] = '\0';
                     if (is_dbl)
                     {
                         lay->graph_tab_mode = 1;
@@ -339,16 +459,19 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         {
                             lay->focus = OV_FOCUS_STREAMS;
                             lay->sel_stream = node->index;
+                            lay->sel_name_stream[0] = '\0';
                         }
                         else if (node->type == OV_NODE_PROC)
                         {
                             lay->focus = OV_FOCUS_PROCS;
                             lay->sel_proc = node->index;
+                            lay->sel_name_proc[0] = '\0';
                         }
                         else if (node->type == OV_NODE_FPS)
                         {
                             lay->focus = OV_FOCUS_FPS;
                             lay->sel_fps = node->index;
+                            lay->sel_name_fps[0] = '\0';
                         }
                         lay->view = OV_VIEW_DASHBOARD;
                     }
@@ -370,6 +493,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     if (idx < m->nb_streams)
                     {
                         lay->sel_stream = idx;
+                        lay->sel_name_stream[0] = '\0';
                         if (is_dbl)
                         {
                             lay->graph_tab_mode = 1;
@@ -389,6 +513,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     if (idx < m->nb_procs)
                     {
                         lay->sel_proc = idx;
+                        lay->sel_name_proc[0] = '\0';
                         if (is_dbl)
                         {
                             lay->graph_tab_mode = 1;
@@ -408,6 +533,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     if (idx < m->nb_fps)
                     {
                         lay->sel_fps = idx;
+                        lay->sel_name_fps[0] = '\0';
                         if (is_dbl)
                         {
                             lay->graph_tab_mode = 1;
@@ -437,16 +563,19 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                             {
                                 lay->focus = OV_FOCUS_STREAMS;
                                 lay->sel_stream = node->index;
+                                lay->sel_name_stream[0] = '\0';
                             }
                             else if (node->type == OV_NODE_PROC)
                             {
                                 lay->focus = OV_FOCUS_PROCS;
                                 lay->sel_proc = node->index;
+                                lay->sel_name_proc[0] = '\0';
                             }
                             else if (node->type == OV_NODE_FPS)
                             {
                                 lay->focus = OV_FOCUS_FPS;
                                 lay->sel_fps = node->index;
+                                lay->sel_name_fps[0] = '\0';
                             }
                             lay->view = OV_VIEW_DASHBOARD;
                         }
@@ -865,7 +994,7 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         return 1;
     }
 
-    if (key == 's' && !(lay->ctrl_mode && lay->focus == OV_FOCUS_FPS))
+    if (key == 's' && !(lay->ctrl_mode && (lay->focus == OV_FOCUS_FPS || lay->focus == OV_FOCUS_PROCS)))
     {
         switch (lay->focus)
         {
@@ -1009,7 +1138,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_ctrl_procs_cleanup(log);
             }
         }
-        else if (key == 'k' || key == 'K' || key == 'p' || key == ctrl('s') || key == 'e' || key == 'z')
+        else if (key == 'k' || key == 'K' || key == 'p' || key == 's' || key == ctrl('s') || key == 'e' || key == 'z')
         {
             is_ctrl_action = 1;
             if (lay->ctrl_mode)
@@ -1020,7 +1149,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     if (key == 'k') ov_ctrl_proc_kill(p, log);
                     else if (key == 'K') ov_ctrl_proc_sigkill(p, log);
                     else if (key == 'p') ov_ctrl_proc_set_ctrlval(p, -1, log);
-                    else if (key == ctrl('s')) ov_ctrl_proc_set_ctrlval(p, 2, log);
+                    else if (key == 's' || key == ctrl('s')) ov_ctrl_proc_set_ctrlval(p, 2, log);
                     else if (key == 'e') ov_ctrl_proc_set_ctrlval(p, 3, log);
                     else if (key == 'z') ov_ctrl_proc_zero_counters(p, log);
                 }

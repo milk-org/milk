@@ -33,6 +33,16 @@ typedef enum {
     OV_FOCUS_COUNT,
 } ov_focus_t;
 
+/* Preview-bar button action IDs */
+#define OV_BTN_NONE       0
+#define OV_BTN_PROC_PAUSE 1  /* toggle pause/resume  */
+#define OV_BTN_PROC_EXIT  2  /* clean exit (CTRLval=3)*/
+#define OV_BTN_PROC_KILL  3  /* SIGTERM              */
+#define OV_BTN_PROC_STEP  4  /* step (CTRLval=2)     */
+#define OV_BTN_FPS_CONF   5  /* toggle conf          */
+#define OV_BTN_FPS_RUN    6  /* toggle run           */
+#define OV_BTN_FPS_KILL   7  /* SIGTERM FPS pids     */
+
 /* ---- Command Log ---- */
 #define OV_CMDLOG_MAX  32  /* ring buffer capacity */
 #define OV_CMDLOG_MSG  96  /* max message length   */
@@ -144,6 +154,13 @@ typedef struct {
     /* F5 view split rects */
     OV_RECT      r_fps_list;       /* left: FPS list  */
     OV_RECT      r_fps_params;     /* right: param tree */
+    /* Preview-bar action buttons (row 2) */
+    struct {
+        int col;   /* 1-based start column (0 = unused) */
+        int width; /* visible width in columns */
+        int id;    /* action ID: OV_BTN_* */
+    }            preview_btns[4];
+    int          nb_preview_btns;
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);
