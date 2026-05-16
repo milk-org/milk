@@ -479,12 +479,23 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
         if (lay->view == OV_VIEW_DASHBOARD)
         {
-            /* Check for dashboard horizontal split drag */
-            int h_split_row = lay->r_streams.row + lay->r_streams.height;
+            /* Check for dashboard horizontal split drag.
+             * The split border is at h_split_row, which
+             * coincides with r_graph.row (the tab header
+             * row of the bottom-right panel).  Only start
+             * a drag when the click is in the LEFT half
+             * (under streams/fps); clicks on the RIGHT
+             * half fall through so tab labels remain
+             * clickable. */
+            int h_split_row =
+                lay->r_streams.row + lay->r_streams.height;
             if (mr == h_split_row - 1 || mr == h_split_row)
             {
-                lay->dash_split_h_dragging = 1;
-                return 1;
+                if (mc < lay->r_graph.col)
+                {
+                    lay->dash_split_h_dragging = 1;
+                    return 1;
+                }
             }
             /* Check for dashboard vertical split drag */
             int v_split_col = lay->r_streams.width;
