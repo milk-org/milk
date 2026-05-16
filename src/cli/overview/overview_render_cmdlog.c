@@ -78,19 +78,19 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         {
         case OV_CMDLOG_OK:
             bullet_fg = (ov_rgb_t){80, 220, 80};
-            bullet    = "●";
+            bullet    = "✓";
             break;
         case OV_CMDLOG_FAIL:
             bullet_fg = (ov_rgb_t){220, 60, 60};
-            bullet    = "●";
+            bullet    = "✗";
             break;
         case OV_CMDLOG_WARN:
             bullet_fg = (ov_rgb_t){220, 180, 40};
-            bullet    = "●";
+            bullet    = "⚠";
             break;
         default: /* INFO */
-            bullet_fg = (ov_rgb_t){100, 100, 120};
-            bullet    = "●";
+            bullet_fg = (ov_rgb_t){100, 140, 200};
+            bullet    = "ℹ";
             break;
         }
 

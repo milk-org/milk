@@ -277,15 +277,23 @@ static int sort_fps_by_name(
         ((const OV_FPS *) b)->name);
 }
 
-static int sort_fps_by_status(
+static int sort_fps_by_cpid(
     const void *a, const void *b)
 {
-    const OV_FPS *fa = (const OV_FPS *) a;
-    const OV_FPS *fb = (const OV_FPS *) b;
-    int aa = fa->conf_alive + fa->run_alive;
-    int ab = fb->conf_alive + fb->run_alive;
-    if (aa < ab) { return -ov_sort_dir_mul; }
-    if (aa > ab) { return ov_sort_dir_mul; }
+    pid_t pa = ((const OV_FPS *) a)->confpid;
+    pid_t pb = ((const OV_FPS *) b)->confpid;
+    if (pa < pb) { return -ov_sort_dir_mul; }
+    if (pa > pb) { return ov_sort_dir_mul; }
+    return 0;
+}
+
+static int sort_fps_by_rpid(
+    const void *a, const void *b)
+{
+    pid_t pa = ((const OV_FPS *) a)->runpid;
+    pid_t pb = ((const OV_FPS *) b)->runpid;
+    if (pa < pb) { return -ov_sort_dir_mul; }
+    if (pa > pb) { return ov_sort_dir_mul; }
     return 0;
 }
 
@@ -317,7 +325,7 @@ static int sort_fps_by_ancestry(
 }
 
 /** Number of sortable FPS columns. */
-#define OV_FPS_SORT_NCOL 3
+#define OV_FPS_SORT_NCOL 4
 
 void ov_sort_fps(
     OV_MODEL *model, int key, int dir)
@@ -330,9 +338,10 @@ void ov_sort_fps(
     int (*cmp)(const void *, const void *);
     switch (key)
     {
-    case 1:  cmp = sort_fps_by_status; break;
+    case 1:  cmp = sort_fps_by_cpid;   break;
     case 2:  cmp = sort_fps_by_mem;    break;
     case 3:  cmp = sort_fps_by_ancestry; break;
+    case 4:  cmp = sort_fps_by_rpid;   break;
     default: cmp = sort_fps_by_name;   break;
     }
     qsort(model->fps,
