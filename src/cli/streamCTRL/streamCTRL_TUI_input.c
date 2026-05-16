@@ -259,6 +259,42 @@ errno_t streamCTRL_keyinput_process(
     case 'r': // force full screen redraw
         if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
         break;
+
+    // ============ MOUSE
+
+    case ANSI_KEY_MOUSE: // left-click selects entry
+    {
+        int click_row = ansi__last_mouse.y;
+        int body_row  = state->body_start_row;
+        if(body_row > 0 && click_row >= body_row)
+        {
+            int new_sel =
+                (int) state->doffsetindex
+                + (click_row - body_row);
+            if(new_sel >= 0
+               && new_sel < sTUIparam.NBsindex)
+            {
+                sTUIparam.dindexSelected = new_sel;
+            }
+        }
+        break;
+    }
+
+    case ANSI_KEY_SCROLL_UP:
+        sTUIparam.dindexSelected -= 3;
+        if(sTUIparam.dindexSelected < 0)
+        {
+            sTUIparam.dindexSelected = 0;
+        }
+        break;
+
+    case ANSI_KEY_SCROLL_DN:
+        sTUIparam.dindexSelected += 3;
+        if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1)
+        {
+            sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;
+        }
+        break;
     }
     return EXIT_SUCCESS;
 }
