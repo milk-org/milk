@@ -53,6 +53,39 @@ extern int ov_help_toggle_at(
     OV_LAYOUT *lay, int vis_row);
 
 /**
+ * hit_panel_tab - detect which tab label was clicked.
+ * @mc:       mouse column (1-based)
+ * @panel_col: panel left column
+ * @tabs:     tab label array
+ * @num_tabs: number of tabs
+ *
+ * Uses the same layout as ov_draw_panel_tabs: tabs start
+ * at panel_col+2, each rendered as " LABEL " with 1-space
+ * gap between tabs.
+ *
+ * Return: tab index [0..num_tabs-1], or -1 if no tab hit.
+ */
+static int hit_panel_tab(
+    int         mc,
+    int         panel_col,
+    const char **tabs,
+    int         num_tabs)
+{
+    int cur = panel_col + 2;
+    for (int ii = 0; ii < num_tabs; ii++)
+    {
+        /* Tab text is " LABEL ", so width = strlen + 2 */
+        int tw = (int) strlen(tabs[ii]) + 2;
+        if (mc >= cur && mc < cur + tw)
+        {
+            return ii;
+        }
+        cur += tw + 1; /* +1 for gap between tabs */
+    }
+    return -1;
+}
+
+/**
  * ov_handle_key - process one key event.
  * @key: keycode from ov_get_key()
  * @lay: mutable layout state
@@ -477,40 +510,75 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                  && INSIDE(lay->r_graph, mr, mc))
         {
             lay->focus = OV_FOCUS_GRAPH;
-            int body_row =
-                mr - lay->r_graph.row - 2;
-            if (body_row >= 0)
+
+            /* Tab header click */
+            if (mr == lay->r_graph.row)
             {
-                int idx =
-                    lay->scroll_graph + body_row;
-                if (idx < m->nb_edges)
+                const char *dtabs[] = {
+                    "CONNECTIONS",
+                    "DETAILS",
+                    "RESOURCES"
+                };
+                int ti = hit_panel_tab(
+                    mc, lay->r_graph.col,
+                    dtabs, 3);
+                if (ti >= 0)
                 {
-                    lay->sel_graph = idx;
-                    if (is_dbl)
+                    lay->graph_tab_mode = ti;
+                }
+            }
+            else
+            {
+                int body_row =
+                    mr - lay->r_graph.row - 2;
+                if (body_row >= 0)
+                {
+                    int idx =
+                        lay->scroll_graph
+                        + body_row;
+                    if (idx < m->nb_edges)
                     {
-                        const OV_EDGE *edge =
-                            &m->edges[idx];
-                        const OV_NODE *node =
-                            &m->nodes[edge->src_node];
-                        if (node->type == OV_NODE_STREAM)
+                        lay->sel_graph = idx;
+                        if (is_dbl)
                         {
-                            lay->focus = OV_FOCUS_STREAMS;
-                            lay->sel_stream = node->index;
-                            lay->sel_name_stream[0] = '\0';
+                            const OV_EDGE *edge =
+                                &m->edges[idx];
+                            const OV_NODE *node =
+                                &m->nodes[
+                                    edge->src_node];
+                            if (node->type
+                                == OV_NODE_STREAM)
+                            {
+                                lay->focus =
+                                    OV_FOCUS_STREAMS;
+                                lay->sel_stream =
+                                    node->index;
+                                lay->sel_name_stream
+                                    [0] = '\0';
+                            }
+                            else if (node->type
+                                == OV_NODE_PROC)
+                            {
+                                lay->focus =
+                                    OV_FOCUS_PROCS;
+                                lay->sel_proc =
+                                    node->index;
+                                lay->sel_name_proc
+                                    [0] = '\0';
+                            }
+                            else if (node->type
+                                == OV_NODE_FPS)
+                            {
+                                lay->focus =
+                                    OV_FOCUS_FPS;
+                                lay->sel_fps =
+                                    node->index;
+                                lay->sel_name_fps
+                                    [0] = '\0';
+                            }
+                            lay->view =
+                                OV_VIEW_DASHBOARD;
                         }
-                        else if (node->type == OV_NODE_PROC)
-                        {
-                            lay->focus = OV_FOCUS_PROCS;
-                            lay->sel_proc = node->index;
-                            lay->sel_name_proc[0] = '\0';
-                        }
-                        else if (node->type == OV_NODE_FPS)
-                        {
-                            lay->focus = OV_FOCUS_FPS;
-                            lay->sel_fps = node->index;
-                            lay->sel_name_fps[0] = '\0';
-                        }
-                        lay->view = OV_VIEW_DASHBOARD;
                     }
                 }
             }
@@ -581,40 +649,75 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             else if (INSIDE(lay->r_graph, mr, mc))
             {
                 lay->focus = OV_FOCUS_GRAPH;
-                int body_row =
-                    mr - lay->r_graph.row - 2;
-                if (body_row >= 0)
+
+                /* Tab header click */
+                if (mr == lay->r_graph.row)
                 {
-                    int idx =
-                        lay->scroll_graph + body_row;
-                    if (idx < m->nb_edges)
+                    const char *dtabs[] = {
+                        "CONNECTIONS",
+                        "DETAILS",
+                        "RESOURCES"
+                    };
+                    int ti = hit_panel_tab(
+                        mc, lay->r_graph.col,
+                        dtabs, 3);
+                    if (ti >= 0)
                     {
-                        lay->sel_graph = idx;
-                        if (is_dbl)
+                        lay->graph_tab_mode = ti;
+                    }
+                }
+                else
+                {
+                    int body_row =
+                        mr - lay->r_graph.row - 2;
+                    if (body_row >= 0)
+                    {
+                        int idx =
+                            lay->scroll_graph
+                            + body_row;
+                        if (idx < m->nb_edges)
                         {
-                            const OV_EDGE *edge =
-                                &m->edges[idx];
-                            const OV_NODE *node =
-                                &m->nodes[edge->src_node];
-                            if (node->type == OV_NODE_STREAM)
+                            lay->sel_graph = idx;
+                            if (is_dbl)
                             {
-                                lay->focus = OV_FOCUS_STREAMS;
-                                lay->sel_stream = node->index;
-                                lay->sel_name_stream[0] = '\0';
+                                const OV_EDGE *edge =
+                                    &m->edges[idx];
+                                const OV_NODE *node =
+                                    &m->nodes[
+                                        edge->src_node];
+                                if (node->type
+                                    == OV_NODE_STREAM)
+                                {
+                                    lay->focus =
+                                        OV_FOCUS_STREAMS;
+                                    lay->sel_stream =
+                                        node->index;
+                                    lay->sel_name_stream
+                                        [0] = '\0';
+                                }
+                                else if (node->type
+                                    == OV_NODE_PROC)
+                                {
+                                    lay->focus =
+                                        OV_FOCUS_PROCS;
+                                    lay->sel_proc =
+                                        node->index;
+                                    lay->sel_name_proc
+                                        [0] = '\0';
+                                }
+                                else if (node->type
+                                    == OV_NODE_FPS)
+                                {
+                                    lay->focus =
+                                        OV_FOCUS_FPS;
+                                    lay->sel_fps =
+                                        node->index;
+                                    lay->sel_name_fps
+                                        [0] = '\0';
+                                }
+                                lay->view =
+                                    OV_VIEW_DASHBOARD;
                             }
-                            else if (node->type == OV_NODE_PROC)
-                            {
-                                lay->focus = OV_FOCUS_PROCS;
-                                lay->sel_proc = node->index;
-                                lay->sel_name_proc[0] = '\0';
-                            }
-                            else if (node->type == OV_NODE_FPS)
-                            {
-                                lay->focus = OV_FOCUS_FPS;
-                                lay->sel_fps = node->index;
-                                lay->sel_name_fps[0] = '\0';
-                            }
-                            lay->view = OV_VIEW_DASHBOARD;
                         }
                     }
                 }
