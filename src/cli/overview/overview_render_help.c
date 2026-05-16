@@ -69,6 +69,7 @@ static const help_line_t HELP[] =
     { "  /        Filter (regex search)",       HF_CHILD,   HS_DISPLAY },
     { "  W        Export snapshot to file",     HF_CHILD,   HS_DISPLAY },
     { "  G        Toggle command log panel",    HF_CHILD,   HS_DISPLAY },
+    { "  v/V      Resize command log panel",    HF_CHILD,   HS_DISPLAY },
     { "  h        Toggle this help",            HF_CHILD,   HS_DISPLAY },
     { "  q        Quit",                        HF_CHILD,   HS_DISPLAY },
     /* --- Control mode --- */

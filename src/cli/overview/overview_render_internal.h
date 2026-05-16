@@ -150,7 +150,7 @@ static inline int sort_col_label(
                  label,
                  desc ? "\xe2\x96\xbc"
                       : "\xe2\x96\xb2");
-        return visual_width + 2;
+        return visual_width + 4;
     }
     else
     {

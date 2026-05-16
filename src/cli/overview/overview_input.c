@@ -620,6 +620,14 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 }
             }
         }
+        
+        /* Check if clicking on cmdlog border to start dragging */
+        int log_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
+        if (mr == log_top - 1)
+        {
+            lay->cmdlog_dragging = 1;
+        }
+        
         return 1;
     }
 
@@ -628,6 +636,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         lay->fps_split_dragging = 0;
         lay->dash_split_v_dragging = 0;
         lay->dash_split_h_dragging = 0;
+        lay->cmdlog_dragging = 0;
         return 1;
     }
 
@@ -635,6 +644,18 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         int mr = ov_mouse_row;
         int mc = ov_mouse_col;
+
+        /* Global: Command log panel height drag */
+        int log_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
+        if (lay->cmdlog_dragging || (mr == log_top - 1))
+        {
+            lay->cmdlog_dragging = 1;
+            int new_h = lay->term_rows - 1 - mr;
+            if (new_h < 0) new_h = 0;
+            if (new_h > lay->term_rows / 2) new_h = lay->term_rows / 2;
+            lay->cmdlog_rows = new_h;
+            return 1;
+        }
 
         if (lay->view == OV_VIEW_FPS)
         {
@@ -941,6 +962,21 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     if (key == 'L')
     {
         lay->lineage_mode = (lay->lineage_mode + 1) % 3;
+        return 1;
+    }
+    if (key == 'v' || key == 'V')
+    {
+        int step = (key == 'v') ? -1 : 1;
+        if (lay->cmdlog_rows == 0 && step > 0)
+        {
+            lay->cmdlog_rows = 4;
+        }
+        else
+        {
+            lay->cmdlog_rows += step;
+        }
+        if (lay->cmdlog_rows < 0) lay->cmdlog_rows = 0;
+        if (lay->cmdlog_rows > lay->term_rows / 2) lay->cmdlog_rows = lay->term_rows / 2;
         return 1;
     }
     if (key == '{' || key == '}')
@@ -2106,7 +2142,7 @@ int ov_handle_key(
         char ctrl_str[128] = "";
 
         // Base keys always available
-        snprintf(keys_str, sizeof(keys_str), "Keys: q c h G ? TAB D L F W i <>[]sS +-= F2-F6 / ESC");
+        snprintf(keys_str, sizeof(keys_str), "Keys: q c h G v V ? TAB D L F W i <>[]sS +-= F2-F6 / ESC");
 
         if (lay->ctrl_mode)
         {
