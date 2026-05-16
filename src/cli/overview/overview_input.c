@@ -336,7 +336,7 @@ static void ov_input__procs_header_click(
 }
 
 static const char *fps_col_names[] = {
-    "NAME", "STATUS", "MEM", "ANCESTRY"
+    "NAME", "CPID", "MEM", "ANCESTRY", "RPID"
 };
 
 static void ov_input__fps_header_click(
@@ -354,6 +354,7 @@ static void ov_input__fps_header_click(
         col_idx = (lay->sort_key_fps == 3) ? 3 : 0;
     }
     else if (c >= 23 && c < 31) { col_idx = 1; }
+    else if (c >= 31 && c < 39) { col_idx = 4; }
     else if (c >= 43 && c < 49) { col_idx = 2; }
 
     if (col_idx >= 0)
@@ -1522,7 +1523,7 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         {
         case OV_FOCUS_STREAMS: lay->sort_key_stream = (lay->sort_key_stream + 1) % 8; break;
         case OV_FOCUS_PROCS:   lay->sort_key_proc = (lay->sort_key_proc + 1) % 6;   break;
-        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 1) % 4;     break;
+        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 1) % 5;     break;
         default: break;
         }
         lay->sort_pending = 1;
@@ -1535,7 +1536,7 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
         {
         case OV_FOCUS_STREAMS: lay->sort_key_stream = (lay->sort_key_stream + 7) % 8; break;
         case OV_FOCUS_PROCS:   lay->sort_key_proc = (lay->sort_key_proc + 5) % 6;   break;
-        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 3) % 4;     break;
+        case OV_FOCUS_FPS:     lay->sort_key_fps = (lay->sort_key_fps + 4) % 5;     break;
         default: break;
         }
         lay->sort_pending = 1;

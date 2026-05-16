@@ -75,12 +75,14 @@ void ov_render_fps_panel(
     {
         int sk = lay->sort_key_fps;
         int sd = lay->sort_dir_fps;
-        char c_name[24], c_c[8], c_mem[10];
+        char c_name[24], c_c[8], c_r[8], c_mem[10];
         int w_name = sort_col_label(c_name, sizeof(c_name),
                        (sk == 3) ? "ANCESTRY" : "NAME",
                        (sk == 3) ? 3 : 0, sk, sd, 18);
         int w_c = sort_col_label(c_c, sizeof(c_c),
                        "CPID", 1, sk, sd, 7);
+        int w_r = sort_col_label(c_r, sizeof(c_r),
+                       "RPID", 4, sk, sd, 7);
         int w_mem = sort_col_label(c_mem, sizeof(c_mem),
                        "MEM", 2, sk, sd, 5);
         int desc_w =
@@ -88,9 +90,9 @@ void ov_render_fps_panel(
             ? 30 : 20;
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-*s %3s %*s %7s %3s %*s"
+            "%-*s %3s %*s %*s %3s %*s"
             " %-*s",
-            w_name, c_name, "TMX", w_c, c_c, "RPID", "STR", w_mem, c_mem,
+            w_name, c_name, "TMX", w_c, c_c, w_r, c_r, "STR", w_mem, c_mem,
             desc_w, "DESCRIPTION");
     }
     
