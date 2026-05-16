@@ -342,20 +342,20 @@ static const char *fps_col_names[] = {
 static void ov_input__fps_header_click(
     OV_LAYOUT *lay, int mc)
 {
-    int c = mc - lay->r_fps.col - 5
+    int c = mc - lay->r_fps.col - 4
             + lay->hscroll_fps;
     if (c < 0)
     {
         return;
     }
     int col_idx = -1;
-    if (c < 19)
+    if (c <= 19)
     {
         col_idx = (lay->sort_key_fps == 3) ? 3 : 0;
     }
-    else if (c >= 23 && c < 31) { col_idx = 1; }
-    else if (c >= 31 && c < 39) { col_idx = 4; }
-    else if (c >= 43 && c < 49) { col_idx = 2; }
+    else if (c >= 22 && c <= 30) { col_idx = 1; }
+    else if (c >= 30 && c <= 38) { col_idx = 4; }
+    else if (c >= 42 && c <= 48) { col_idx = 2; }
 
     if (col_idx >= 0)
     {

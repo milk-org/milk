@@ -228,17 +228,24 @@ void ov_render_fps_panel(
              * green background + bold black text */
             #define FPS_PID_FIELD(pid_val, fmt, ...)    \
             do {                                       \
+                pid_t _pval = (pid_t)(pid_val);        \
                 int _match = (_spid > 0                \
-                    && (pid_t)(pid_val) == _spid);     \
+                    && _pval == _spid);                \
+                int _idx = ov_find_proc_by_pid(m, _pval); \
+                int _crashed = (_idx >= 0 && m->procs[_idx].loopstat == 4 /* PROCESSINFO_LOOPSTAT_CRASHED */); \
                 if (_match) {                          \
                     ov_theme_bg(OV_BG_PID_MATCH);      \
                     ov_buf_bold();                      \
                 }                                      \
-                FPS_FIELD(                             \
-                    _match                             \
-                    ? ((ov_rgb_t){0,0,0})              \
-                    : ov_pid_color((pid_val)),          \
-                    fmt, ##__VA_ARGS__);                \
+                ov_rgb_t _fg;                          \
+                if (_crashed) {                        \
+                    _fg = (ov_rgb_t){255, 60, 60};     \
+                } else if (_match) {                   \
+                    _fg = (ov_rgb_t){0, 0, 0};         \
+                } else {                               \
+                    _fg = ov_pid_color(_pval);         \
+                }                                      \
+                FPS_FIELD(_fg, fmt, ##__VA_ARGS__);    \
                 if (_match) {                          \
                     ov_buf_reset_attr();                \
                     if (is_sel || is_frozen || is_rel) { \
