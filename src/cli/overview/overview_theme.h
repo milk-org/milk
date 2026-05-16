@@ -36,12 +36,15 @@ typedef struct
 /* Panel backgrounds */
 #define OV_BG_TERMINAL    (ov_rgb_t){  20,  22,  28 }
 #define OV_BG_PANEL       (ov_rgb_t){  30,  32,  40 }
+#define OV_BG_PANEL_ALT   (ov_rgb_t){  25,  27,  35 }
 #define OV_BG_HEADER      (ov_rgb_t){  40,  44,  58 }
 #define OV_BG_SELECTED    (ov_rgb_t){  50,  60,  90 }
 #define OV_BG_RELATED     (ov_rgb_t){  38,  50,  42 }  /* soft green tint for related items */
 #define OV_BG_FROZEN      (ov_rgb_t){  40,  90, 140 }  /* bright blue tint for frozen selection */
 #define OV_BG_HOVER       (ov_rgb_t){  38,  42,  55 }
 #define OV_BG_PID_MATCH   (ov_rgb_t){  50, 180,  50 }  /* green bg for PID match */
+#define OV_BG_STALE       (ov_rgb_t){  55,  45,  20 }  /* amber tint for stale procs */
+#define OV_BG_NEW_ITEM    (ov_rgb_t){  40,  60,  50 }  /* green flash for new items */
 
 /* Foreground — text */
 #define OV_FG_TITLE       (ov_rgb_t){ 130, 170, 255 }
@@ -54,6 +57,11 @@ typedef struct
 #define OV_FG_STREAM      (ov_rgb_t){  80, 200, 220 }
 #define OV_FG_FPS         (ov_rgb_t){ 130, 170, 255 }
 #define OV_FG_PROC        (ov_rgb_t){ 180, 140, 255 }
+
+/* Dimmed accent colors for column headers */
+#define OV_FG_STREAM_HDR  (ov_rgb_t){  55, 140, 155 }
+#define OV_FG_FPS_HDR     (ov_rgb_t){  90, 120, 180 }
+#define OV_FG_PROC_HDR    (ov_rgb_t){ 125, 100, 180 }
 
 /* Foreground — status */
 #define OV_FG_ACTIVE      (ov_rgb_t){  80, 220,  80 }

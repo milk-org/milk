@@ -111,9 +111,10 @@ void ov_render_status(
             break;
         }
         ov_theme_fg(OV_FG_TEXT);
+        char pfx = lay->filter_jump ? '?' : '/';
         int np = snprintf(
-            NULL, 0, " /%s", fstr);
-        ov_buf_printf(" /%s", fstr);
+            NULL, 0, " %c%s", pfx, fstr);
+        ov_buf_printf(" %c%s", pfx, fstr);
 
         /* Blinking cursor */
         ov_buf_fg(255, 200, 50);
@@ -145,6 +146,46 @@ void ov_render_status(
     {
         n1 = snprintf(NULL, 0, " scan:%.0fms %.1fHz", m->scan_time_ms, rate_hz);
         ov_buf_printf(" scan:%.0fms %.1fHz", m->scan_time_ms, rate_hz);
+    }
+    /* Breadcrumb trail (#11) */
+    {
+        const char *view_name = "";
+        switch (lay->view)
+        {
+        case OV_VIEW_DASHBOARD: view_name = "OVW"; break;
+        case OV_VIEW_STREAMS:  view_name = "STR"; break;
+        case OV_VIEW_FPS:      view_name = "FPS"; break;
+        case OV_VIEW_PROCS:    view_name = "PRC"; break;
+        default:               view_name = "???"; break;
+        }
+        const char *panel_name = "";
+        ov_rgb_t panel_fg = OV_FG_DIM;
+        switch (lay->focus)
+        {
+        case OV_FOCUS_STREAMS:
+            panel_name = "Streams";
+            panel_fg = OV_FG_STREAM;
+            break;
+        case OV_FOCUS_FPS:
+            panel_name = "FPS";
+            panel_fg = OV_FG_FPS;
+            break;
+        case OV_FOCUS_PROCS:
+            panel_name = "Procs";
+            panel_fg = OV_FG_PROC;
+            break;
+        default:
+            panel_name = "Graph";
+            break;
+        }
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("  %s", view_name);
+        ov_buf_printf(" \xe2\x80\xba ");
+        ov_theme_fg(panel_fg);
+        ov_buf_printf("%s", panel_name);
+        n1 += 3 + (int) strlen(view_name)
+            + 3 + (int) strlen(panel_name);
+        ov_theme_fg(OV_FG_DIM);
     }
 
     int n_hints = snprintf(NULL, 0,

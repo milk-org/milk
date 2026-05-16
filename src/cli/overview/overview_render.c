@@ -114,7 +114,11 @@ static void ov_apply_rank_sort(OV_MODEL *mm)
     }
 }
 
-int ov_render_header_text(const char *text, int hs, int max_vis_width)
+int ov_render_header_text(
+    const char *text,
+    int         hs,
+    int         max_vis_width,
+    ov_rgb_t    base_fg)
 {
     int vis_col = 0;
     int printed = 0;
@@ -128,6 +132,7 @@ int ov_render_header_text(const char *text, int hs, int max_vis_width)
             {
                 ov_theme_fg(OV_FG_BRIGHT);
                 ov_buf_bold();
+                ov_buf_underline();
             }
             i++;
         }
@@ -137,7 +142,7 @@ int ov_render_header_text(const char *text, int hs, int max_vis_width)
             {
                 ov_buf_reset_attr();
                 ov_theme_bg(OV_BG_HEADER);
-                ov_theme_fg(OV_FG_DIM);
+                ov_theme_fg(base_fg);
             }
             i++;
         }
@@ -281,11 +286,11 @@ void ov_render_header(
         ov_buf_bg(ctrl_bg.r, ctrl_bg.g, ctrl_bg.b);
         ov_buf_fg(ctrl_fg.r, ctrl_fg.g, ctrl_fg.b);
         ov_buf_bold();
-        ov_buf_printf(" CONTROL ");
+        ov_buf_printf(" [c] CONTROL ");
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
 
-        ctrl_w = 9; /* visual width of " CONTROL " */
+        ctrl_w = 13; /* visual width of " [c] CONTROL " */
     }
     else
     {
@@ -293,10 +298,10 @@ void ov_render_header(
         ov_buf_bg(20, 180, 20);    /* deep green background */
         ov_buf_fg(220, 255, 220);  /* light text */
         ov_buf_bold();
-        ov_buf_printf(" READ ONLY ");
+        ov_buf_printf(" [c] READ ONLY ");
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
-        ctrl_w = 11; /* visual width of " READ ONLY " */
+        ctrl_w = 15; /* visual width of " [c] READ ONLY " */
     }
 
     ov_theme_fg(OV_FG_STREAM);
@@ -587,7 +592,8 @@ void ov_render_frame(
             if (lay->sel_name_proc[0] != '\0') {
                 int still_exists = 0;
                 for (int i = 0; i < fn; i++) {
-                    if (strcmp(m->procs[fidx[i]].name, lay->sel_name_proc) == 0) {
+                    if (strcmp(m->procs[fidx[i]].name, lay->sel_name_proc) == 0 &&
+                        m->procs[fidx[i]].PID == lay->sel_pid_proc) {
                         still_exists = 1;
                         lay->sel_proc = i;
                         int page_h = lay->r_procs.height - 3;
@@ -605,9 +611,11 @@ void ov_render_frame(
             if (lay->sel_proc >= fn) lay->sel_proc = fn - 1;
             if (lay->sel_proc < 0) lay->sel_proc = 0;
             strncpy(lay->sel_name_proc, m->procs[fidx[lay->sel_proc]].name, 79);
+            lay->sel_pid_proc = m->procs[fidx[lay->sel_proc]].PID;
         } else {
             lay->sel_proc = 0;
             lay->sel_name_proc[0] = '\0';
+            lay->sel_pid_proc = 0;
         }
 
         /* FPS */
