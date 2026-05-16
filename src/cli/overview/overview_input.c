@@ -241,54 +241,137 @@ static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV
     return count;
 }
 
-static void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
+static const char *stream_col_names[] = {
+    "NAME", "TYP", "SIZE", "Hz",
+    "MB/s", "INODE", "COUNT", "ANCESTRY"
+};
+
+static void ov_input__streams_header_click(
+    OV_LAYOUT *lay, int mc)
 {
-    int c = mc - lay->r_streams.col - 5 + lay->hscroll_stream;
-    if (c < 0) return;
+    int c = mc - lay->r_streams.col - 5
+            + lay->hscroll_stream;
+    if (c < 0)
+    {
+        return;
+    }
     int col_idx = -1;
-    if (c < 15) col_idx = (lay->sort_key_stream == 7) ? 7 : 0;
-    else if (c < 20) col_idx = 1;
-    else if (c < 32) col_idx = 2;
-    else if (c < 39) col_idx = 3;
-    else if (c < 47) col_idx = 4;
-    else if (c < 58) col_idx = 5;
-    else if (c >= 66 && c < 77) col_idx = 6;
-    
-    if (col_idx >= 0) {
-        if (lay->sort_key_stream == col_idx) lay->sort_dir_stream = !lay->sort_dir_stream;
-        else { lay->sort_key_stream = col_idx; lay->sort_dir_stream = 0; }
+    if (c < 15)
+    {
+        col_idx = (lay->sort_key_stream == 7) ? 7 : 0;
+    }
+    else if (c < 20) { col_idx = 1; }
+    else if (c < 32) { col_idx = 2; }
+    else if (c < 39) { col_idx = 3; }
+    else if (c < 47) { col_idx = 4; }
+    else if (c < 58) { col_idx = 5; }
+    else if (c >= 66 && c < 77) { col_idx = 6; }
+
+    if (col_idx >= 0)
+    {
+        if (lay->sort_key_stream == col_idx)
+        {
+            lay->sort_dir_stream =
+                !lay->sort_dir_stream;
+        }
+        else
+        {
+            lay->sort_key_stream = col_idx;
+            lay->sort_dir_stream = 0;
+        }
+        ov_cmdlog_push(
+            &lay->cmdlog, OV_CMDLOG_INFO,
+            "Sort STREAMS by %s %s",
+            stream_col_names[col_idx],
+            lay->sort_dir_stream ? "▼" : "▲");
+        ov_scan_force_update();
     }
 }
 
-static void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
+static const char *proc_col_names[] = {
+    "NAME", "PID", "STAT", "Hz",
+    "MEM", "ANCESTRY"
+};
+
+static void ov_input__procs_header_click(
+    OV_LAYOUT *lay, int mc)
 {
-    int c = mc - lay->r_procs.col - 5 + lay->hscroll_proc;
-    if (c < 0) return;
+    int c = mc - lay->r_procs.col - 5
+            + lay->hscroll_proc;
+    if (c < 0)
+    {
+        return;
+    }
     int col_idx = -1;
-    if (c < 15) col_idx = (lay->sort_key_proc == 5) ? 5 : 0;
-    else if (c < 23) col_idx = 1;
-    else if (c < 29) col_idx = 2;
-    else if (c < 36) col_idx = 3;
-    else if (c >= 84 && c < 90) col_idx = 4;
-    
-    if (col_idx >= 0) {
-        if (lay->sort_key_proc == col_idx) lay->sort_dir_proc = !lay->sort_dir_proc;
-        else { lay->sort_key_proc = col_idx; lay->sort_dir_proc = 0; }
+    if (c < 15)
+    {
+        col_idx = (lay->sort_key_proc == 5) ? 5 : 0;
+    }
+    else if (c < 23) { col_idx = 1; }
+    else if (c < 29) { col_idx = 2; }
+    else if (c < 36) { col_idx = 3; }
+    else if (c >= 84 && c < 90) { col_idx = 4; }
+
+    if (col_idx >= 0)
+    {
+        if (lay->sort_key_proc == col_idx)
+        {
+            lay->sort_dir_proc =
+                !lay->sort_dir_proc;
+        }
+        else
+        {
+            lay->sort_key_proc = col_idx;
+            lay->sort_dir_proc = 0;
+        }
+        ov_cmdlog_push(
+            &lay->cmdlog, OV_CMDLOG_INFO,
+            "Sort PROCS by %s %s",
+            proc_col_names[col_idx],
+            lay->sort_dir_proc ? "▼" : "▲");
+        ov_scan_force_update();
     }
 }
 
-static void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
+static const char *fps_col_names[] = {
+    "NAME", "STATUS", "MEM", "ANCESTRY"
+};
+
+static void ov_input__fps_header_click(
+    OV_LAYOUT *lay, int mc)
 {
-    int c = mc - lay->r_fps.col - 5 + lay->hscroll_fps;
-    if (c < 0) return;
+    int c = mc - lay->r_fps.col - 5
+            + lay->hscroll_fps;
+    if (c < 0)
+    {
+        return;
+    }
     int col_idx = -1;
-    if (c < 19) col_idx = (lay->sort_key_fps == 3) ? 3 : 0;
-    else if (c >= 23 && c < 31) col_idx = 1;
-    else if (c >= 43 && c < 49) col_idx = 2;
-    
-    if (col_idx >= 0) {
-        if (lay->sort_key_fps == col_idx) lay->sort_dir_fps = !lay->sort_dir_fps;
-        else { lay->sort_key_fps = col_idx; lay->sort_dir_fps = 0; }
+    if (c < 19)
+    {
+        col_idx = (lay->sort_key_fps == 3) ? 3 : 0;
+    }
+    else if (c >= 23 && c < 31) { col_idx = 1; }
+    else if (c >= 43 && c < 49) { col_idx = 2; }
+
+    if (col_idx >= 0)
+    {
+        if (lay->sort_key_fps == col_idx)
+        {
+            lay->sort_dir_fps =
+                !lay->sort_dir_fps;
+        }
+        else
+        {
+            lay->sort_key_fps = col_idx;
+            lay->sort_dir_fps = 0;
+        }
+        ov_cmdlog_push(
+            &lay->cmdlog, OV_CMDLOG_INFO,
+            "Sort FPS by %s %s",
+            fps_col_names[col_idx],
+            lay->sort_dir_fps ? "▼" : "▲");
+        ov_scan_force_update();
     }
 }
 
