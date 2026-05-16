@@ -198,7 +198,7 @@ static void print_connections(const char *fpsname)
     "Output columns: parameter key, type, current value, flags.\n" \
     "With -v, also shows limits, defaults, and FPS header metadata.\n" \
     "With -c, cross-references stream and process connections\n" \
-    "from the live system graph built by milkCTRL/overview."
+    "from the live system graph built by milk-CTRL/overview."
 
 static void print_help(const char *progname, int mh_color)
 {

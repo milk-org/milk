@@ -1,9 +1,9 @@
 /**
  * @file overview_defs.h
- * @brief Standalone definitions for milkCTRL TUI
+ * @brief Standalone definitions for milk-CTRL TUI
  *
  * Provides all standalone macros, types, and helpers
- * needed by milkCTRL without depending on CLIcore.
+ * needed by milk-CTRL without depending on CLIcore.
  * Mirrors the streamCTRL_defs.h pattern.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @file    overview_render_fps.c
- * @brief   FPS panel + detail panel rendering for milkCTRL
+ * @brief   FPS panel + detail panel rendering for milk-CTRL
  *
  * Split from overview_render.c for navigability.
  */

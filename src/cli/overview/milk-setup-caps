@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# milk-setup-caps: Helper script to grant CAP_PERFMON and CAP_SYS_ADMIN to milkCTRL
+# milk-setup-caps: Helper script to grant CAP_PERFMON and CAP_SYS_ADMIN to milk-CTRL
 # This is required to access hardware performance counters for cache misses and instruction counts.
 
 set -e
 
-TARGET=$(which milkCTRL 2>/dev/null) || true
+TARGET=$(which milk-CTRL 2>/dev/null) || true
 
 if [ -z "$TARGET" ]; then
-    echo "Error: milkCTRL not found in PATH."
+    echo "Error: milk-CTRL not found in PATH."
     exit 1
 fi
 

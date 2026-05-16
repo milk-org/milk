@@ -217,7 +217,7 @@ target_include_directories(milk-termview PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURC
 install(TARGETS milk-termview DESTINATION bin)
 
 # milkCTRL: unified system dashboard TUI
-add_executable(milkCTRL
+add_executable(milk-CTRL
     ../overview/milkCTRL.c
     ../overview/overview_data.c
     ../overview/overview_data_sys.c
@@ -245,15 +245,15 @@ add_executable(milkCTRL
     ../overview/overview_render_fps_params.c
     ../overview/stream_graph.c
 )
-target_include_directories(milkCTRL PRIVATE
+target_include_directories(milk-CTRL PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
     ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
     ${CMAKE_SOURCE_DIR}/src/engine/libfps
     ${CMAKE_SOURCE_DIR}/src/cli/overview
 )
-target_link_libraries(milkCTRL PUBLIC
+target_link_libraries(milk-CTRL PUBLIC
     ImageStreamIO milkprocessinfo milkfps m rt pthread)
-install(TARGETS milkCTRL DESTINATION bin)
+install(TARGETS milk-CTRL DESTINATION bin)
 install(PROGRAMS ../overview/milk-setup-caps DESTINATION bin)
 
 # milk-stream-graph: stream dependency graph tool

@@ -1,6 +1,6 @@
 /**
  * @file overview_layout.h
- * @brief Panel layout definitions for milkCTRL
+ * @brief Panel layout definitions for milk-CTRL
  */
 
 #ifndef OVERVIEW_LAYOUT_H

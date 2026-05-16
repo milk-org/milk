@@ -1,6 +1,6 @@
 /**
  * @file    overview_render_help.c
- * @brief   Collapsible help overlay for milkCTRL
+ * @brief   Collapsible help overlay for milk-CTRL
  *
  * Organizes help into topic sections that the user
  * can navigate (UP/DOWN) and expand/collapse (ENTER).

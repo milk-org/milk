@@ -1,6 +1,6 @@
 /**
  * @file    overview_render_procs.c
- * @brief   PROCS panel rendering for milkCTRL
+ * @brief   PROCS panel rendering for milk-CTRL
  *
  * Split from overview_render.c for navigability.
  */

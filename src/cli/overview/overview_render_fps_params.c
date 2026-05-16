@@ -1,6 +1,6 @@
 /**
  * @file    overview_render_fps_params.c
- * @brief   FPS parameter tree panel for milkCTRL F5 view
+ * @brief   FPS parameter tree panel for milk-CTRL F5 view
  *
  * Renders the right-side parameter panel when the F5
  * (OV_VIEW_FPS) tab is active. Shows a scrollable flat

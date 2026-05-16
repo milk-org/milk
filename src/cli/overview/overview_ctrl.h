@@ -1,6 +1,6 @@
 /**
  * @file overview_ctrl.h
- * @brief Control-mode actions for milkCTRL
+ * @brief Control-mode actions for milk-CTRL
  */
 
 #ifndef OVERVIEW_CTRL_H

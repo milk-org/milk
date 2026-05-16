@@ -1,6 +1,6 @@
 /**
  * @file    overview_render_fps_params.h
- * @brief   FPS parameter tree panel for milkCTRL F5 view
+ * @brief   FPS parameter tree panel for milk-CTRL F5 view
  */
 
 #ifndef OVERVIEW_RENDER_FPS_PARAMS_H

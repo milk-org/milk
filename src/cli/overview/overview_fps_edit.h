@@ -1,6 +1,6 @@
 /**
  * @file overview_fps_edit.h
- * @brief Inline FPS parameter editing for milkCTRL
+ * @brief Inline FPS parameter editing for milk-CTRL
  */
 
 #ifndef OVERVIEW_FPS_EDIT_H

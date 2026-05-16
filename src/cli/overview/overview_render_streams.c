@@ -1,6 +1,6 @@
 /**
  * @file    overview_render_streams.c
- * @brief   STREAMS panel rendering for milkCTRL
+ * @brief   STREAMS panel rendering for milk-CTRL
  *
  * Split from overview_render.c for navigability.
  */

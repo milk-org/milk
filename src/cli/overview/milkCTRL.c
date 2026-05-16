@@ -1,6 +1,6 @@
 /**
- * @file milkCTRL.c
- * @brief Main entry point for milkCTRL TUI
+ * @file milk-CTRL.c
+ * @brief Main entry point for milk-CTRL TUI
  *
  * Standalone binary providing a unified dashboard of all
  * milk shared-memory components (streams, FPS, processes)
@@ -119,13 +119,13 @@ extern int ov_handle_key(
 
 static void print_help(const char *prog, int mh_color)
 {
-    milk_help_banner(prog, "unified system dashboard TUI (milkCTRL) for streams, FPS, and processes", mh_color);
+    milk_help_banner(prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
 
     milk_help_section("Usage", mh_color);
     printf("  $ %s [%s %s]\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
 
     milk_help_section("Description", mh_color);
-    printf("  milkCTRL is the unified system dashboard TUI for the milk framework.\n"
+    printf("  milk-CTRL is the unified system dashboard TUI for the milk framework.\n"
            "  It provides a comprehensive, consolidated view of all shared-memory\n"
            "  components across the machine, including data streams, Function\n"
            "  Processing Systems (FPS), and active managed processes. Designed for\n"
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 {
     /* --- Help handling --- */
     int action = milk_help_init(argc, argv,
-        "unified system dashboard TUI (milkCTRL) for streams, FPS, and processes",
+        "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
         NULL);
 
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
