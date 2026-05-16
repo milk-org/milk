@@ -9,7 +9,7 @@ process associations.
 
 `milk-streamCTRL` scans `/dev/shm/*.im.shm` and
 displays real-time telemetry for each stream. Unlike
-the broader `milkCTRL` dashboard, this tool focuses
+the broader `milk-CTRL` dashboard, this tool focuses
 exclusively on stream diagnostics with higher detail.
 
 ## Files

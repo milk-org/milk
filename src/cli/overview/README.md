@@ -1,4 +1,4 @@
-# overview (milkCTRL)
+# overview (milk-CTRL)
 
 Unified TUI dashboard for monitoring and controlling
 milk processes, streams, and FPS entries. Provides
@@ -7,7 +7,7 @@ runtime environment.
 
 ## Purpose
 
-`milkCTRL` aggregates real-time data from shared memory
+`milk-CTRL` aggregates real-time data from shared memory
 (streams, FPS, processinfo) into a multi-panel ncurses
 interface with sorting, filtering, search, and
 interactive control.
@@ -25,7 +25,7 @@ interactive control.
 
 | File | Description |
 |------|-------------|
-| `milkCTRL.c` | Entry point and main loop |
+| `milk-CTRL.c` | Entry point and main loop |
 | `overview_data.c/.h` | Data scanning and model updates |
 | `overview_render.c` | Panel rendering (largest file) |
 | `overview_input.c` | Keyboard input handler |

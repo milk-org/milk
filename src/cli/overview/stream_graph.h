@@ -8,7 +8,7 @@
  * detects cycles (loops) in the stream graph.
  *
  * Used by both the standalone milk-stream-graph tool
- * and the milkCTRL CONNECTIONS panel.
+ * and the milk-CTRL CONNECTIONS panel.
  *
  * Dependencies: overview_data.h (OV_MODEL)
  */

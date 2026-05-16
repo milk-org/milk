@@ -1,6 +1,6 @@
 /**
  * @file overview_render_cmdlog.c
- * @brief Render the command log strip for milkCTRL
+ * @brief Render the command log strip for milk-CTRL
  *
  * Draws the most recent N log entries in a strip
  * above the status bar.  Each entry shows a timestamp,

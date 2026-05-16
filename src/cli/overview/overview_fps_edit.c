@@ -1,6 +1,6 @@
 /**
  * @file overview_fps_edit.c
- * @brief Inline FPS parameter editing for milkCTRL
+ * @brief Inline FPS parameter editing for milk-CTRL
  *
  * Implements an inline parameter edit bar at the bottom
  * of the terminal, modeled on fpsCTRL_inline_edit_param.
@@ -189,7 +189,7 @@ int ov_fps_inline_edit(
         {
             functionparameter_WriteParameterToDisk(
                 fps, pindex,
-                "setval", "milkCTRL_toggle");
+                "setval", "milk-CTRL_toggle");
             functionparameter_SaveFPS2disk(fps);
         }
 
@@ -344,7 +344,7 @@ int ov_fps_inline_edit(
                 functionparameter_WriteParameterToDisk(
                     fps, pindex,
                     "setval",
-                    "milkCTRL_SetParamValue");
+                    "milk-CTRL_SetParamValue");
                 functionparameter_SaveFPS2disk(fps);
             }
         }

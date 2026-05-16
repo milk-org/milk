@@ -1,6 +1,6 @@
 /**
  * @file overview_input.c
- * @brief Keyboard input handler for milkCTRL
+ * @brief Keyboard input handler for milk-CTRL
  */
 
 #include <stdlib.h>

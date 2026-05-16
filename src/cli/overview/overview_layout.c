@@ -1,6 +1,6 @@
 /**
  * @file overview_layout.c
- * @brief Panel layout computation for milkCTRL
+ * @brief Panel layout computation for milk-CTRL
  */
 
 #include "overview_defs.h"

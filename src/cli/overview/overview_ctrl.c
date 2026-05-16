@@ -1,6 +1,6 @@
 /**
  * @file overview_ctrl.c
- * @brief Control-mode actions for milkCTRL
+ * @brief Control-mode actions for milk-CTRL
  *
  * Implements write operations available when CONTROL mode is ON:
  *   - FPS: toggle run process (r key), toggle conf process (s key)

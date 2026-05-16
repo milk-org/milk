@@ -1,6 +1,6 @@
 /**
  * @file overview_data.h
- * @brief Unified data model for milkCTRL
+ * @brief Unified data model for milk-CTRL
  *
  * Aggregates stream, FPS, and processinfo data into
  * a single graph model with nodes and directed edges.
@@ -519,7 +519,7 @@ int ov_filter_build(
  * ov_model_export_snapshot - dump model to a text file.
  * @m: model to export
  *
- * Writes a timestamped snapshot to /tmp/milkCTRL_snapshot_*.txt
+ * Writes a timestamped snapshot to /tmp/milk-CTRL_snapshot_*.txt
  * containing all streams, processes, and FPS entries.
  */
 void ov_model_export_snapshot(const OV_MODEL *m);

@@ -1,6 +1,6 @@
 /**
  * @file overview_data.c
- * @brief Scan and graph-building for milkCTRL
+ * @brief Scan and graph-building for milk-CTRL
  *
  * Implements the three scanners (streams, FPS, processes)
  * and the cross-referencing graph builder.
@@ -108,7 +108,7 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     struct tm *tm_ptr = localtime(&now);
     char fname[128];
     strftime(fname, sizeof(fname),
-        "/tmp/milkCTRL_snapshot_%Y%m%d_%H%M%S.txt",
+        "/tmp/milk-CTRL_snapshot_%Y%m%d_%H%M%S.txt",
         tm_ptr);
 
     FILE *fp = fopen(fname, "w");
@@ -121,7 +121,7 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     strftime(tstr, sizeof(tstr),
         "%Y-%m-%d %H:%M:%S", tm_ptr);
     fprintf(fp,
-        "# milkCTRL snapshot — %s\n"
+        "# milk-CTRL snapshot — %s\n"
         "# streams: %d  procs: %d  fps: %d"
         "  edges: %d\n\n",
         tstr, m->nb_streams, m->nb_procs,
