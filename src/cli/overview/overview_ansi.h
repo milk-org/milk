@@ -49,6 +49,8 @@
 #define OV_KEY_MOUSE_CLICK  281
 #define OV_KEY_MOUSE_UP     282
 #define OV_KEY_MOUSE_DOWN   283
+#define OV_KEY_MOUSE_DRAG   287
+#define OV_KEY_MOUSE_RELEASE 288
 
 extern int ov_mouse_row;
 extern int ov_mouse_col;
@@ -82,7 +84,7 @@ static inline void ov_raw_mode_enter(void)
     int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 
-    const char seq[] = "\033[?1049h\033[?25l\033[?7l\033[?1000h\033[?1006h";
+    const char seq[] = "\033[?1049h\033[?25l\033[?7l\033[?1002h\033[?1006h";
     if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0) {}
     ov__raw_active = 1;
 }
@@ -90,7 +92,7 @@ static inline void ov_raw_mode_enter(void)
 static inline void ov_raw_mode_exit(void)
 {
     if (!ov__raw_active) return;
-    const char seq[] = "\033[?1006l\033[?1000l\033[?25h\033[?7h\033[0m\033[?1049l";
+    const char seq[] = "\033[?1006l\033[?1002l\033[?25h\033[?7h\033[0m\033[?1049l";
     if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0) {}
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
     ov__raw_active = 0;
@@ -572,7 +574,9 @@ static inline int ov_get_key(void)
 
                         if (mb == 64) return OV_KEY_MOUSE_UP;
                         if (mb == 65) return OV_KEY_MOUSE_DOWN;
+                        if ((mb & 32) && press) return OV_KEY_MOUSE_DRAG;
                         if (mb == 0 && press) return OV_KEY_MOUSE_CLICK;
+                        if (!press) return OV_KEY_MOUSE_RELEASE;
                         return OV_KEY_NONE;
                     }
                     return OV_KEY_NONE;

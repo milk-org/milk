@@ -88,9 +88,9 @@ void ov_render_fps_panel(
             ? 30 : 20;
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-*s %*s %7s %3s %*s"
+            "%-*s %3s %*s %7s %3s %*s"
             " %-*s",
-            w_name, c_name, w_c, c_c, "RPID", "STR", w_mem, c_mem,
+            w_name, c_name, "TMX", w_c, c_c, "RPID", "STR", w_mem, c_mem,
             desc_w, "DESCRIPTION");
     }
     
@@ -249,6 +249,15 @@ void ov_render_fps_panel(
                         ? rel->sel_pid : 0;
 
             FPS_FIELD(OV_FG_FPS, "%-18.18s ", f->name);
+
+            char tmx_str[4] = {
+                (f->tmux_flags & OV_TMUX_CTRL) ? 'c' : '-',
+                (f->tmux_flags & OV_TMUX_CONF) ? 'C' : '-',
+                (f->tmux_flags & OV_TMUX_RUN)  ? 'r' : '-',
+                '\0'
+            };
+            FPS_FIELD(OV_FG_DIM, "%3s ", tmx_str);
+
             if (f->confpid > 0) FPS_PID_FIELD(f->confpid, "%7d ", (int) f->confpid);
             else FPS_FIELD(OV_FG_DIM, "%7s ", "-");
             if (f->runpid > 0) FPS_PID_FIELD(f->runpid, "%7d ", (int) f->runpid);

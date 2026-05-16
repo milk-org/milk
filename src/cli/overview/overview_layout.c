@@ -51,25 +51,43 @@ void ov_layout_compute(OV_LAYOUT *lay)
         {
             body_h = 4;
         }
-        /* 2x2 grid layout */
-        int half_w = W / 2;
-        int half_h = body_h / 2;
+        /* 2x2 grid layout using adjustable splits */
+        int dash_w = (int)(W * lay->dash_split_v_ratio);
+        int dash_h = (int)(body_h * lay->dash_split_h_ratio);
+
+        if (dash_w < 20)
+        {
+            dash_w = 20;
+        }
+        if (dash_w > W - 20)
+        {
+            dash_w = W - 20;
+        }
+
+        if (dash_h < 4)
+        {
+            dash_h = 4;
+        }
+        if (dash_h > body_h - 4)
+        {
+            dash_h = body_h - 4;
+        }
 
         lay->r_streams = (OV_RECT){
             body_top, 1,
-            half_h, half_w
+            dash_h, dash_w
         };
         lay->r_procs = (OV_RECT){
-            body_top, half_w + 1,
-            half_h, W - half_w
+            body_top, dash_w + 1,
+            dash_h, W - dash_w
         };
         lay->r_fps = (OV_RECT){
-            body_top + half_h, 1,
-            body_h - half_h, half_w
+            body_top + dash_h, 1,
+            body_h - dash_h, dash_w
         };
         lay->r_graph = (OV_RECT){
-            body_top + half_h, half_w + 1,
-            body_h - half_h, W - half_w
+            body_top + dash_h, dash_w + 1,
+            body_h - dash_h, W - dash_w
         };
     }
     else
@@ -88,13 +106,17 @@ void ov_layout_compute(OV_LAYOUT *lay)
         lay->r_fps     = lay->r_streams;
         lay->r_graph   = lay->r_streams;
 
-        /* F5 split: ~40% list, ~60% params */
+        /* F5 split */
         if (lay->view == OV_VIEW_FPS)
         {
-            int lw = (W * 2) / 5;
+            int lw = (int)(W * lay->fps_split_ratio);
             if (lw < 20)
             {
                 lw = 20;
+            }
+            if (lw > W - 20)
+            {
+                lw = W - 20;
             }
             lay->r_fps_list   = (OV_RECT){
                 body_top, 1, body_h, lw

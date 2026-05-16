@@ -30,7 +30,9 @@
 /* fps_types.h for FPS and FPSCMDCODE_* */
 #include "fps_types.h"
 
+errno_t functionparameter_CONFstart(FPS *fps);
 errno_t functionparameter_CONFstop(FPS *fps);
+errno_t functionparameter_RUNstart(FPS *fps);
 errno_t functionparameter_RUNstop(FPS *fps);
 errno_t functionparameter_FPSremove(FPS *fps);
 
@@ -46,24 +48,22 @@ int fps_disconnect(
     FPS *fps);
 
 /* =========================================================
- * Internal FPS SHM signal helper
+ * Internal FPS action helper
  * ========================================================= */
 
 /**
- * ov_ctrl_fps_signal - write a command code into
- * the FPS SHM.
+ * ov_ctrl_fps_action - perform an FPS function parameter action
  * @fps_name: FPS instance name
- * @cmd:      FPSCMDCODE_* value to OR into md->signal
+ * @action:   Function to execute
  *
- * Opens the FPS in simple (read/write) mode, ORs the
- * command, and immediately disconnects.
+ * Opens the FPS in simple mode, runs the action, and disconnects.
+ * Suppresses stderr to prevent tmux errors from corrupting TUI.
  *
- * Return: 0 on success, -1 if the SHM could not be
- * opened.
+ * Return: 0 on success, -1 if the SHM could not be opened.
  */
-static int ov_ctrl_fps_signal(
+static int ov_ctrl_fps_action(
     const char *fps_name,
-    uint32_t    cmd)
+    errno_t (*action)(FPS *))
 {
     FPS fps;
     memset(&fps, 0, sizeof(fps));
@@ -75,9 +75,22 @@ static int ov_ctrl_fps_signal(
         return -1;
     }
 
-    if (fps.md != NULL)
+    /* Suppress stderr from tmux commands to avoid TUI corruption */
+    int saved_stderr = dup(STDERR_FILENO);
+    int devnull = open("/dev/null", O_WRONLY);
+    if (devnull >= 0)
     {
-        fps.md->signal |= (uint64_t) cmd;
+        dup2(devnull, STDERR_FILENO);
+        close(devnull);
+    }
+
+    action(&fps);
+
+    /* Restore stderr */
+    if (saved_stderr >= 0)
+    {
+        dup2(saved_stderr, STDERR_FILENO);
+        close(saved_stderr);
     }
 
     fps_disconnect(&fps);
@@ -102,13 +115,13 @@ void ov_ctrl_fps_run_toggle(
         return;
     }
 
-    uint32_t cmd = f->run_alive
-                   ? FPSCMDCODE_RUNSTOP
-                   : FPSCMDCODE_RUNSTART;
+    errno_t (*action_fn)(FPS *) = f->run_alive
+                                  ? functionparameter_RUNstop
+                                  : functionparameter_RUNstart;
     const char *action = f->run_alive
                          ? "RUN stop" : "RUN start";
 
-    int rc = ov_ctrl_fps_signal(f->name, cmd);
+    int rc = ov_ctrl_fps_action(f->name, action_fn);
     if (log != NULL)
     {
         ov_cmdlog_push(log,
@@ -133,13 +146,13 @@ void ov_ctrl_fps_conf_toggle(
         return;
     }
 
-    uint32_t cmd = f->conf_alive
-                   ? FPSCMDCODE_CONFSTOP
-                   : FPSCMDCODE_CONFSTART;
+    errno_t (*action_fn)(FPS *) = f->conf_alive
+                                  ? functionparameter_CONFstop
+                                  : functionparameter_CONFstart;
     const char *action = f->conf_alive
                          ? "CONF stop" : "CONF start";
 
-    int rc = ov_ctrl_fps_signal(f->name, cmd);
+    int rc = ov_ctrl_fps_action(f->name, action_fn);
     if (log != NULL)
     {
         ov_cmdlog_push(log,
