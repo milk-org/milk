@@ -54,6 +54,20 @@
 #define ANSI_KEY_F12       276
 #define ANSI_KEY_CTRL_LEFT  277
 #define ANSI_KEY_CTRL_RIGHT 278
+#define ANSI_KEY_MOUSE      279
+#define ANSI_KEY_SCROLL_UP  280
+#define ANSI_KEY_SCROLL_DN  281
+
+/* Mouse event data — valid when ansi_get_key() returns
+ * ANSI_KEY_MOUSE, ANSI_KEY_SCROLL_UP, or ANSI_KEY_SCROLL_DN. */
+struct ansi_mouse_event
+{
+    int x;   /* 1-based column */
+    int y;   /* 1-based row    */
+    int btn; /* 0=left, 1=mid, 2=right, 64=scrollup, 65=scrolldn */
+};
+
+extern struct ansi_mouse_event ansi__last_mouse;
 
 /* ctrl(x) helper — same as CLIcore convention */
 #ifndef ctrl
@@ -100,8 +114,13 @@ static inline void ansi_raw_mode_enter(void)
         fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
     }
 
-    /* hide cursor and disable line wrap */
-    if(write(STDOUT_FILENO, "\033[?25l\033[?7l", 11) < 0) {}
+    /* hide cursor, disable line wrap, enable SGR mouse tracking */
+    if(write(STDOUT_FILENO,
+             "\033[?25l\033[?7l"
+             "\033[?1000h\033[?1006h",
+             11 + 10 + 10) < 0)
+    {
+    }
     ansi__raw_active = 1;
 }
 
@@ -114,10 +133,17 @@ static inline void ansi_raw_mode_exit(void)
     {
         return;
     }
-    /* show cursor and enable line wrap */
-    if(write(STDOUT_FILENO, "\033[?25h\033[?7h", 11) < 0) {}
+    /* disable mouse tracking, show cursor, enable line wrap */
+    if(write(STDOUT_FILENO,
+             "\033[?1006l\033[?1000l"
+             "\033[?25h\033[?7h",
+             10 + 10 + 11) < 0)
+    {
+    }
     /* clear screen, reset attributes, home cursor */
-    if(write(STDOUT_FILENO, "\033[0m\033[2J\033[H", 11) < 0) {}
+    if(write(STDOUT_FILENO, "\033[0m\033[2J\033[H", 11) < 0)
+    {
+    }
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
     ansi__raw_active = 0;
 }
@@ -420,6 +446,75 @@ static inline int ansi_get_key(void)
             {
                 int consumed = 0;
                 int key      = 0;
+
+                /* ---- SGR mouse: ESC [ < Btn;X;Y M/m ---- */
+                if(buf[2] == '<')
+                {
+                    /* Find terminator: 'M' (press) or 'm' (release) */
+                    int term_idx = -1;
+                    for(int ii = 3; ii < buf_len && ii < 32; ii++)
+                    {
+                        if(buf[ii] == 'M' || buf[ii] == 'm')
+                        {
+                            term_idx = ii;
+                            break;
+                        }
+                    }
+                    if(term_idx == -1)
+                    {
+                        /* Incomplete — wait for more bytes */
+                        return ANSI_KEY_NONE;
+                    }
+
+                    int mbtn = 0, mx = 1, my = 1;
+                    {
+                        /* Parse "Btn;X;Y" between buf[3..term_idx-1] */
+                        char tmp[64];
+                        int  tlen = term_idx - 3;
+                        if(tlen > 0 && tlen < (int) sizeof(tmp))
+                        {
+                            memcpy(tmp, buf + 3, tlen);
+                            tmp[tlen] = '\0';
+                            sscanf(tmp, "%d;%d;%d", &mbtn, &mx, &my);
+                        }
+                    }
+
+                    /* Save terminator before consume */
+                    unsigned char term_ch = buf[term_idx];
+
+                    consumed = term_idx + 1;
+                    memmove(buf, buf + consumed, buf_len - consumed);
+                    buf_len -= consumed;
+
+                    ansi__last_mouse.btn = mbtn;
+                    ansi__last_mouse.x   = mx;
+                    ansi__last_mouse.y   = my;
+
+                    /* Only act on press ('M'), ignore release ('m') */
+                    if(term_ch == 'm')
+                    {
+                        return ANSI_KEY_NONE;
+                    }
+
+                    /* Scroll wheel: btn 64 = up, 65 = down */
+                    if(mbtn == 64)
+                    {
+                        return ANSI_KEY_SCROLL_UP;
+                    }
+                    if(mbtn == 65)
+                    {
+                        return ANSI_KEY_SCROLL_DN;
+                    }
+
+                    /* Left-click press (btn 0) */
+                    if(mbtn == 0)
+                    {
+                        return ANSI_KEY_MOUSE;
+                    }
+
+                    /* Other buttons — consume but ignore */
+                    return ANSI_KEY_NONE;
+                } /* end SGR mouse */
 
                 switch(buf[2])
                 {

@@ -213,6 +213,37 @@ static double get_cpu_usage(void)
     return smoothed_cpu;
 }
 
+static double get_bandwidth_usage(void)
+{
+    static struct timespec last_time;
+    static uint64_t last_bytes = 0;
+    static int initialized = 0;
+    static double smoothed_bw = 0.0;
+    
+    struct timespec current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    
+    if (!initialized) {
+        last_time = current_time;
+        last_bytes = ov__total_bytes_rendered;
+        initialized = 1;
+        return 0.0;
+    }
+    
+    double dt = (current_time.tv_sec - last_time.tv_sec) +
+                (current_time.tv_nsec - last_time.tv_nsec) / 1e9;
+                
+    if (dt >= 0.5) { /* update every 0.5s */
+        uint64_t d_bytes = ov__total_bytes_rendered - last_bytes;
+        /* bandwidth in kB/s */
+        double inst_bw = (double)d_bytes / 1024.0 / dt;
+        smoothed_bw = inst_bw;
+        last_bytes = ov__total_bytes_rendered;
+        last_time = current_time;
+    }
+    return smoothed_bw;
+}
+
 void ov_render_header(
     OV_LAYOUT       *lay,
     const OV_MODEL  *m)
@@ -289,8 +320,12 @@ void ov_render_header(
     int c6 = snprintf(NULL, 0, "  CPU: %4.1f%%", cpu_pct);
     ov_buf_printf("  CPU: %4.1f%%", cpu_pct);
 
+    double bw_kbs = get_bandwidth_usage();
+    int c7 = snprintf(NULL, 0, "  BW: %4.1f kB/s", bw_kbs);
+    ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
+
     /* c1 visual length: 17 chars for " ● milkCTRL " */
-    int chars_left = 17 + ctrl_w + c2 + c3 + c4 + c5 + c6;
+    int chars_left = 17 + ctrl_w + c2 + c3 + c4 + c5 + c6 + c7;
 
     int tabs_width = 0;
     for (int v = 0; v < OV_VIEW_COUNT; v++)

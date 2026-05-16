@@ -483,6 +483,11 @@ DEBUG_TRACEPOINT(" ");
 
             ansi_detect_color_level();
             frame_color_level = ansi__color_level;
+
+    /* Record where data rows start for mouse click mapping.
+     * sc_cursor_row is now past all header/column-header rows. */
+    state->body_start_row = sc_cursor_row;
+
     if (NBsinfodisp_out) *NBsinfodisp_out = NBsinfodisp;
     if (lastindex_out) *lastindex_out = lastindex;
     if (frame_t_sec_out) *frame_t_sec_out = frame_t_sec;

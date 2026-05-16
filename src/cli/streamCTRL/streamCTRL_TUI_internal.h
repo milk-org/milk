@@ -100,6 +100,11 @@ struct streamCTRL_TUI_state {
     int NBupstreamproc;
     
     long long loopcnt;
+
+    /** Terminal row where the first data entry starts (1-based).
+     *  Set by the header renderer so the input handler can
+     *  map mouse click row to display index. */
+    int body_start_row;
 };
 
 // Functions implemented in streamCTRL_TUI_input.c
