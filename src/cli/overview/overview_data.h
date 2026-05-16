@@ -401,6 +401,12 @@ void ov_model_full_scan(OV_MODEL *model);
 int ov_scan_has_new_data(void);
 
 /**
+ * ov_scan_force_update - interrupt sleep to force an immediate scan.
+ */
+void ov_scan_force_update(void);
+
+
+/**
  * ov_scan_cache_cleanup - release all persistent
  * SHM mappings held by the scan caches.
  *

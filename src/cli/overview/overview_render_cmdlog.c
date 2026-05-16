@@ -78,19 +78,19 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         {
         case OV_CMDLOG_OK:
             bullet_fg = (ov_rgb_t){80, 220, 80};
-            bullet    = "●";
+            bullet    = "✅";
             break;
         case OV_CMDLOG_FAIL:
             bullet_fg = (ov_rgb_t){220, 60, 60};
-            bullet    = "●";
+            bullet    = "❌";
             break;
         case OV_CMDLOG_WARN:
             bullet_fg = (ov_rgb_t){220, 180, 40};
-            bullet    = "●";
+            bullet    = "⚠️";
             break;
         default: /* INFO */
             bullet_fg = (ov_rgb_t){100, 100, 120};
-            bullet    = "·";
+            bullet    = "ℹ️";
             break;
         }
 
@@ -102,7 +102,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         /* Status bullet */
         ov_buf_fg(bullet_fg.r, bullet_fg.g, bullet_fg.b);
         ov_buf_printf("%s ", bullet);
-        nw += 4; /* bullet(1) + space + 2 for UTF-8 */
+        nw += 3; /* emoji(approx 2 cols) + space */
 
         /* Message text */
         ov_buf_fg(180, 180, 200);

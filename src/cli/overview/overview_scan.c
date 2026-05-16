@@ -56,6 +56,7 @@ static pthread_mutex_t ov_model_mutex =
 static pthread_t      ov_scan_thread;
 static volatile int   ov_scan_running    = 0;
 static volatile float ov_scan_interval_s = 1.0f;
+static atomic_int     ov_force_update_flag = 0;
 
 /**
  * ov_scan_get_interval - get current scan interval.
@@ -134,8 +135,9 @@ static void *ov_scan_thread_func(
             int num_sleeps = (int)(interval / 0.01f);
             for (int i = 0; i < num_sleeps; i++)
             {
-                if (!ov_scan_running || OV_SIG_ANY_SET())
+                if (!ov_scan_running || OV_SIG_ANY_SET() || atomic_load_explicit(&ov_force_update_flag, memory_order_acquire))
                 {
+                    atomic_store_explicit(&ov_force_update_flag, 0, memory_order_release);
                     break;
                 }
                 nanosleep(&ts, NULL);
@@ -207,4 +209,12 @@ const OV_MODEL *ov_scan_get_model(void)
     pthread_mutex_unlock(&ov_model_mutex);
 
     return &ov_model_slots[ov_display_idx];
+}
+
+/**
+ * ov_scan_force_update - interrupt sleep to force an immediate scan.
+ */
+void ov_scan_force_update(void)
+{
+    atomic_store_explicit(&ov_force_update_flag, 1, memory_order_release);
 }

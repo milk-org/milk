@@ -99,6 +99,9 @@ static const help_line_t HELP[] =
     { "Mouse",                                  HF_SECTION, HS_MOUSE },
     { "  Click=select  DblClick=detail",        HF_CHILD,   HS_MOUSE },
     { "  Scroll wheel=navigate list",           HF_CHILD,   HS_MOUSE },
+    { "  Click column headers to sort",         HF_CHILD,   HS_MOUSE },
+    { "  Click dashboard tabs to switch",       HF_CHILD,   HS_MOUSE },
+    { "  Drag panel borders to resize",         HF_CHILD,   HS_MOUSE },
     /* --- Colors --- */
     { "Colors",                                 HF_SECTION, HS_COLORS },
     { "",                                       HF_CHILD | HF_COLORS,
