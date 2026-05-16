@@ -60,7 +60,7 @@ static void ov_procs__render_header(
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf("    ");
-    ov_theme_fg(OV_FG_DIM);
+    ov_theme_fg(OV_FG_PROC_HDR);
 
     char htext[256];
     int hlen;
@@ -79,10 +79,12 @@ static void ov_procs__render_header(
         hlen = snprintf(
             htext, sizeof(htext),
             "%-*s %*s %*s %*s"
+            " %6s"
             " %3s %-10s %7s %5s"
             "  CPU%%  %10s %*s %10s %4s",
             w_name, c_name, w_pid, c_pid,
             w_stat, c_stat, w_hz, c_hz,
+            "UPTIME",
             "TRG", "trig-strm",
             "exec", "DUTY",
             "LOOPCNT", w_mem, c_mem,
@@ -90,8 +92,14 @@ static void ov_procs__render_header(
     }
     int vis_width = r.width - 4;
     if (vis_width < 0) vis_width = 0;
-    int printed = ov_render_header_text(htext, hs, vis_width);
+    int printed = ov_render_header_text(
+        htext, hs, vis_width, OV_FG_PROC_HDR);
     render_pad_spaces(4 + printed, r.width);
+
+    /* Separator between header and data rows */
+    render_separator(
+        hrow + 1, r.col + 1,
+        r.width - 2, OV_FG_PROC_HDR);
 }
 
 static void ov_procs__render_rows(
@@ -128,12 +136,12 @@ static void ov_procs__render_rows(
         }
     }
 
-    int max_rows = r.height - 3;
+    int max_rows = r.height - 4;
     int start = lay->scroll_proc;
 
     for (int i = 0; i < max_rows; i++)
     {
-        int row = hrow + 1 + i;
+        int row = hrow + 2 + i;
         int fi = start + i;
         if (fi < filt_n)
         {
@@ -160,7 +168,12 @@ static void ov_procs__render_rows(
                 row_bg = OV_BG_FROZEN;
             } else if (is_rel) {
                 row_bg = OV_BG_RELATED;
+            } else if (p->stale_count >= 3) {
+                row_bg = OV_BG_STALE;
+            } else if (p->is_new > 0) {
+                row_bg = OV_BG_NEW_ITEM;
             }
+            row_bg = zebra_bg(row_bg, i);
 
             /* Build the full row text into a local
              * buffer so we can apply hscroll */
@@ -213,69 +226,89 @@ static void ov_procs__render_rows(
                     "     - ");
             }
 
-            /* Trigger mode label */
-            rlen += snprintf(
-                rbuf + rlen,
-                sizeof(rbuf) - (size_t) rlen,
-                "%3s ", render_trigmode_label(
-                    p->triggermode));
-
-            /* Trigger stream name (truncated) */
-            if (p->trigstreamname[0] != '\0'
-                && p->triggermode > 0)
+            /* Uptime (#7) */
             {
+                char uptstr[12] = "-";
+                if (p->start_time_sec > 0)
+                {
+                    format_uptime(
+                        uptstr, sizeof(uptstr),
+                        p->start_time_sec);
+                }
                 rlen += snprintf(
                     rbuf + rlen,
                     sizeof(rbuf) - (size_t) rlen,
-                    "%-10.10s ",
-                    p->trigstreamname);
-            }
-            else
-            {
-                rlen += snprintf(
-                    rbuf + rlen,
-                    sizeof(rbuf) - (size_t) rlen,
-                    "%-10s ", "-");
+                    "%6s ", uptstr);
             }
 
-            /* Exec time (ms) */
-            if (p->MeasureTiming
-                && p->dtmedian_exec_ns > 0)
+            /* Trigger, exec time, missed (hidden
+             * in compact mode #13) */
+            if (!lay->compact_mode)
             {
-                double exec_ms =
-                    1.0e-6
-                    * (double) p->dtmedian_exec_ns;
+                /* Trigger mode label */
                 rlen += snprintf(
                     rbuf + rlen,
                     sizeof(rbuf) - (size_t) rlen,
-                    "%7.3f", exec_ms);
-            }
-            else
-            {
-                rlen += snprintf(
-                    rbuf + rlen,
-                    sizeof(rbuf) - (size_t) rlen,
-                    "      -");
-            }
+                    "%3s ", render_trigmode_label(
+                        p->triggermode));
 
-            /* Direction arrow */
-            if (has_rel)
-            {
-                const char *arr =
-                    is_write ? " W" : " R";
-                rlen += snprintf(
-                    rbuf + rlen,
-                    sizeof(rbuf) - (size_t) rlen,
-                    "%s", arr);
-            }
+                /* Trigger stream name (truncated) */
+                if (p->trigstreamname[0] != '\0'
+                    && p->triggermode > 0)
+                {
+                    rlen += snprintf(
+                        rbuf + rlen,
+                        sizeof(rbuf) - (size_t) rlen,
+                        "%-10.10s ",
+                        p->trigstreamname);
+                }
+                else
+                {
+                    rlen += snprintf(
+                        rbuf + rlen,
+                        sizeof(rbuf) - (size_t) rlen,
+                        "%-10s ", "-");
+                }
 
-            /* Missed frame badge */
-            if (p->triggermissed > 0)
-            {
-                rlen += snprintf(
-                    rbuf + rlen,
-                    sizeof(rbuf) - (size_t) rlen,
-                    " M:%d", p->triggermissed);
+                /* Exec time (ms) */
+                if (p->MeasureTiming
+                    && p->dtmedian_exec_ns > 0)
+                {
+                    double exec_ms =
+                        1.0e-6
+                        * (double) p->dtmedian_exec_ns;
+                    rlen += snprintf(
+                        rbuf + rlen,
+                        sizeof(rbuf) - (size_t) rlen,
+                        "%7.3f", exec_ms);
+                }
+                else
+                {
+                    rlen += snprintf(
+                        rbuf + rlen,
+                        sizeof(rbuf) - (size_t) rlen,
+                        "      -");
+                }
+
+                /* Direction arrow */
+                if (has_rel)
+                {
+                    const char *arr =
+                        is_write ? " W" : " R";
+                    rlen += snprintf(
+                        rbuf + rlen,
+                        sizeof(rbuf) - (size_t) rlen,
+                        "%s", arr);
+                }
+
+                /* Missed frame badge */
+                if (p->triggermissed > 0)
+                {
+                    rlen += snprintf(
+                        rbuf + rlen,
+                        sizeof(rbuf) - (size_t) rlen,
+                        " M:%d", p->triggermissed);
+                }
             }
 
             /* Now render with hscroll and color */
@@ -307,6 +340,15 @@ static void ov_procs__render_rows(
             /* Reset and reposition */
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(row_bg);
+
+            /* Focus ring accent strip (#10) */
+            int panel_focused =
+                (lay->focus == OV_FOCUS_PROCS);
+            render_focus_strip(
+                row, r.col + 1,
+                panel_focused,
+                OV_FG_PROC, row_bg);
+
             ov_buf_printf(" ");
 
             /* ---- per-field colored output ---- */

@@ -81,6 +81,10 @@ void ov_model_full_scan(OV_MODEL *model)
 
     ov_build_graph(model);
 
+    /* Post-scan enrichment: sparklines, uptime,
+     * stale detection, new-item flash */
+    ov_post_scan_enrich(model);
+
     clock_gettime(CLOCK_MONOTONIC, &t1);
     struct timespec dt = ov_timespec_diff(t0, t1);
     model->scan_time_ms =

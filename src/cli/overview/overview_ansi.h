@@ -51,6 +51,8 @@
 #define OV_KEY_MOUSE_DOWN   283
 #define OV_KEY_MOUSE_DRAG   287
 #define OV_KEY_MOUSE_RELEASE 288
+#define OV_KEY_CTRL_SCROLL_UP   289
+#define OV_KEY_CTRL_SCROLL_DOWN 290
 
 extern int ov_mouse_row;
 extern int ov_mouse_col;
@@ -574,6 +576,9 @@ static inline int ov_get_key(void)
 
                         if (mb == 64) return OV_KEY_MOUSE_UP;
                         if (mb == 65) return OV_KEY_MOUSE_DOWN;
+                        /* Ctrl+scroll (#12) */
+                        if (mb == 80) return OV_KEY_CTRL_SCROLL_UP;
+                        if (mb == 81) return OV_KEY_CTRL_SCROLL_DOWN;
                         if ((mb & 32) && press) return OV_KEY_MOUSE_DRAG;
                         if (mb == 0 && press) return OV_KEY_MOUSE_CLICK;
                         if (!press) return OV_KEY_MOUSE_RELEASE;

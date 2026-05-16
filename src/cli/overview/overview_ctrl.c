@@ -136,7 +136,7 @@ void ov_ctrl_fps_run_toggle(
             ov_cmdlog_push(log,
                            rc == 0 ? OV_CMDLOG_OK
                                    : OV_CMDLOG_FAIL,
-                           "⚙️ FPS \"%s\" — RUN stop",
+                           "⏹️ FPS \"%s\" — RUN stop",
                            f->name);
         }
         return;
@@ -153,7 +153,7 @@ void ov_ctrl_fps_run_toggle(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "⚙️ FPS \"%s\" — RUN start"
+                           "▶️ FPS \"%s\" — RUN start"
                            " failed (connect)",
                            f->name);
         }
@@ -223,7 +223,7 @@ void ov_ctrl_fps_run_toggle(
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "⚙️ FPS \"%s\" — RUN start",
+                       "▶️ FPS \"%s\" — RUN start",
                        f->name);
     }
 }
@@ -254,7 +254,8 @@ void ov_ctrl_fps_conf_toggle(
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
                                : OV_CMDLOG_FAIL,
-                       "⚙️ FPS \"%s\" — %s",
+                       "%s FPS \"%s\" — %s",
+                       f->conf_alive ? "⏹️" : "▶️",
                        f->name, action);
     }
 }
@@ -439,14 +440,15 @@ void ov_ctrl_proc_set_ctrlval(
     if (log != NULL)
     {
         const char *action;
-        if (new_val == 0) action = "Resume";
-        else if (new_val == 1) action = "Pause";
-        else if (new_val == 2) action = "Step";
-        else if (new_val == 3) action = "Exit request";
-        else action = "CTRLval updated";
+        const char *emoji = "⚡";
+        if (new_val == 0) { action = "Resume"; emoji = "⏯️"; }
+        else if (new_val == 1) { action = "Pause"; emoji = "⏸️"; }
+        else if (new_val == 2) { action = "Step"; emoji = "⏭️"; }
+        else if (new_val == 3) { action = "Exit request"; emoji = "⏹️"; }
+        else { action = "CTRLval updated"; }
 
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "⚡ Process \"%s\" — %s", p->name, action);
+                       "%s Process \"%s\" — %s", emoji, p->name, action);
     }
 }
 
@@ -620,7 +622,8 @@ void ov_ctrl_proc_pause_toggle(
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
                                : OV_CMDLOG_FAIL,
-                       "Process \"%s\" (PID %d) — %s",
+                       "%s Process \"%s\" (PID %d) — %s",
+                       stopped ? "⏯️" : "⏸️",
                        p->name, p->PID,
                        stopped ? "resumed"
                                : "paused");
@@ -703,7 +706,8 @@ void ov_ctrl_fps_pause_toggle(
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "FPS \"%s\" — %s",
+                       "%s FPS \"%s\" — %s",
+                       stopped ? "⏯️" : "⏸️",
                        f->name,
                        stopped ? "resumed"
                                : "paused");
