@@ -468,6 +468,9 @@ int main(int argc, char *argv[]) { \
         = ""; \
     int use_tmux = 0; \
     int use_procinfo = 0; \
+    if (getenv("MILK_FPSPROCINFO") != NULL) { \
+        use_procinfo = 1; \
+    } \
     int use_loop = 0; \
     double loop_delay = -1.0; \
     int show_help = 0; \

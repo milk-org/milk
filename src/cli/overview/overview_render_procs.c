@@ -834,12 +834,16 @@ static void ov_procs__render_rows(
         for (int j = 0; j < m->nb_procs; j++)
         {
             const OV_PROC *p = &m->procs[j];
-            if (p->loopstat
-                == PROCESSINFO_LOOPSTAT_ACTIVE)
+            if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE)
             {
                 tot_run++;
             }
-            tot_cpu += p->cpu_used;
+            if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE ||
+                p->loopstat == PROCESSINFO_LOOPSTAT_SPIN ||
+                p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
+            {
+                tot_cpu += p->cpu_used;
+            }
             tot_mem += p->mem_rss_kb;
         }
 
@@ -851,12 +855,16 @@ static void ov_procs__render_rows(
         {
             const OV_PROC *p =
                 &m->procs[filt_idx[j]];
-            if (p->loopstat
-                == PROCESSINFO_LOOPSTAT_ACTIVE)
+            if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE)
             {
                 flt_run++;
             }
-            flt_cpu += p->cpu_used;
+            if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE ||
+                p->loopstat == PROCESSINFO_LOOPSTAT_SPIN ||
+                p->loopstat == PROCESSINFO_LOOPSTAT_INIT)
+            {
+                flt_cpu += p->cpu_used;
+            }
             flt_mem += p->mem_rss_kb;
         }
 

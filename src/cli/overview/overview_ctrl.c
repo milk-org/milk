@@ -30,11 +30,15 @@
 /* fps_types.h for FPS and FPSCMDCODE_* */
 #include "fps_types.h"
 
+/* EXECUTE_SYSTEM_COMMAND_NOCHECK macro */
+#include "milkDebugTools.h"
+
 errno_t functionparameter_CONFstart(FPS *fps);
 errno_t functionparameter_CONFstop(FPS *fps);
 errno_t functionparameter_RUNstart(FPS *fps);
 errno_t functionparameter_RUNstop(FPS *fps);
 errno_t functionparameter_FPSremove(FPS *fps);
+int functionparameter_FPS_tmux_ensure(FPS *fps);
 
 /* ImageStreamIO for stream open/destroy */
 #include "ImageStreamIO/ImageStreamIO.h"
@@ -105,6 +109,13 @@ static int ov_ctrl_fps_action(
  * ov_ctrl_fps_run_toggle - start or stop the FPS run.
  * @f:   FPS model entry
  * @log: command log (may be NULL)
+ *
+ * For runstart, we bypass functionparameter_RUNstart()
+ * because it gates on CHECKOK and silently no-ops if
+ * conf hasn't validated parameters yet. Instead we
+ * directly send tmux commands, mirroring fpsCTRL's 'R'
+ * key handler.  For runstop, we delegate to
+ * functionparameter_RUNstop() which has no such gate.
  */
 void ov_ctrl_fps_run_toggle(
     const OV_FPS *f,
@@ -115,20 +126,105 @@ void ov_ctrl_fps_run_toggle(
         return;
     }
 
-    errno_t (*action_fn)(FPS *) = f->run_alive
-                                  ? functionparameter_RUNstop
-                                  : functionparameter_RUNstart;
-    const char *action = f->run_alive
-                         ? "RUN stop" : "RUN start";
+    if (f->run_alive)
+    {
+        /* --- RUN stop (no CHECKOK gate) --- */
+        int rc = ov_ctrl_fps_action(
+                     f->name, functionparameter_RUNstop);
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log,
+                           rc == 0 ? OV_CMDLOG_OK
+                                   : OV_CMDLOG_FAIL,
+                           "⚙️ FPS \"%s\" — RUN stop",
+                           f->name);
+        }
+        return;
+    }
 
-    int rc = ov_ctrl_fps_action(f->name, action_fn);
+    /* --- RUN start: direct tmux dispatch --- */
+    FPS fps;
+    memset(&fps, 0, sizeof(fps));
+
+    long rc = fps_connect(
+                  f->name, &fps, FPSCONNECT_SIMPLE);
+    if (rc == -1)
+    {
+        if (log != NULL)
+        {
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
+                           "⚙️ FPS \"%s\" — RUN start"
+                           " failed (connect)",
+                           f->name);
+        }
+        return;
+    }
+
+    /* Suppress stderr from tmux commands */
+    int saved_stderr = dup(STDERR_FILENO);
+    {
+        int devnull = open("/dev/null", O_WRONLY);
+        if (devnull >= 0)
+        {
+            dup2(devnull, STDERR_FILENO);
+            close(devnull);
+        }
+    }
+
+    functionparameter_FPS_tmux_ensure(&fps);
+
+    /* cd to workdir */
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
+        "tmux send-keys -t %s:run \" cd %s\" C-m",
+        fps.md->name, fps.md->workdir);
+
+    /* Determine executable */
+    char progexec[1024];
+    {
+        const char *ep = fps.md->execfullpath;
+        char *bn = strrchr(ep, '/');
+        const char *base = bn ? bn + 1 : ep;
+        if (strlen(ep) > 0
+            && strcmp(base, "unknown") != 0
+            && strcmp(base, "milk") != 0
+            && strcmp(base, "cacao") != 0)
+        {
+            strncpy(progexec, ep, sizeof(progexec) - 1);
+            progexec[sizeof(progexec) - 1] = '\0';
+        }
+        else
+        {
+            snprintf(progexec, sizeof(progexec),
+                     "%s-exec",
+                     fps.md->callprogname);
+        }
+    }
+
+    /* Send run command */
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
+        "tmux send-keys -t %s:run \" %s %s:runstart\""
+        " C-m",
+        fps.md->name, progexec, fps.md->name);
+
+    fps.md->status |=
+        FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
+    fps.md->signal |=
+        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+
+    /* Restore stderr */
+    if (saved_stderr >= 0)
+    {
+        dup2(saved_stderr, STDERR_FILENO);
+        close(saved_stderr);
+    }
+
+    fps_disconnect(&fps);
+
     if (log != NULL)
     {
-        ov_cmdlog_push(log,
-                       rc == 0 ? OV_CMDLOG_OK
-                               : OV_CMDLOG_FAIL,
-                       "⚙️ FPS \"%s\" — %s",
-                       f->name, action);
+        ov_cmdlog_push(log, OV_CMDLOG_OK,
+                       "⚙️ FPS \"%s\" — RUN start",
+                       f->name);
     }
 }
 
