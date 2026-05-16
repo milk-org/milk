@@ -1,6 +1,6 @@
 /**
  * @file overview_scan.c
- * @brief Background scan thread for milkCTRL
+ * @brief Background scan thread for milk-CTRL
  *
  * Runs ov_model_full_scan() in a loop on a background
  * thread with a configurable sleep interval. Uses

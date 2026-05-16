@@ -1,7 +1,7 @@
 /**
  * @file    overview_render.c
  * @brief   Shared render utilities and orchestrator
- *          for milkCTRL
+ *          for milk-CTRL
  *
  * Panel-specific rendering lives in:
  *   - overview_render_streams.c
@@ -261,7 +261,7 @@ void ov_render_header(
 
     /* Gradient header text */
     ov_buf_bold();
-    ov_buf_printf_gradient(OV_GRAD_LO, OV_GRAD_HI, " %s milkCTRL ", OV_BULLET);
+    ov_buf_printf_gradient(OV_GRAD_LO, OV_GRAD_HI, " %s milk-CTRL ", OV_BULLET);
     ov_buf_reset_attr();
 
     /* LCARS-style rounded end cap (matching the gradient end) */
@@ -324,7 +324,7 @@ void ov_render_header(
     int c7 = snprintf(NULL, 0, "  BW: %4.1f kB/s", bw_kbs);
     ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
 
-    /* c1 visual length: 17 chars for " ● milkCTRL " */
+    /* c1 visual length: 17 chars for " ● milk-CTRL " */
     int chars_left = 17 + ctrl_w + c2 + c3 + c4 + c5 + c6 + c7;
 
     int tabs_width = 0;

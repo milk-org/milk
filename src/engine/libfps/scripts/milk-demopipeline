@@ -112,7 +112,7 @@ ${MH_HDR}Usage:${MH_RST}
 
 ${MH_HDR}Description:${MH_RST}
   This script sets up a 9-node image processing chain inside tmux,
-  creating a rich graph for milkCTRL:
+  creating a rich graph for milk-CTRL:
 
     random_in ──> blurred_out ──> truncated_out
                                        │
@@ -151,7 +151,7 @@ ${MH_HDR}Environment:${MH_RST}
   MILK_SHM_DIR         Directory for shared memory files (${MH_DFLT}default: /milk/shm${MH_RST}).
 
 ${MH_HDR}See Also:${MH_RST}
-  ${MH_CMD}milkCTRL${MH_RST}
+  ${MH_CMD}milk-CTRL${MH_RST}
 EOF
 }
 
@@ -172,7 +172,7 @@ while [ $# -gt 0 ]; do
                  "blur, truncation, resize, rotation, cropping," \
                  "averaging, monitoring)" \
                  "connected via shared-memory streams in tmux" \
-                 "sessions. Useful for testing milkCTRL," \
+                 "sessions. Useful for testing milk-CTRL," \
                  "stream-graph, and pipeline diagnostics."
             exit 0
             ;;
@@ -305,7 +305,7 @@ milk-fpsexec-info-strmonproc \
 
 echo ""
 echo "Pipeline started in tmux sessions."
-echo "Run 'milkCTRL' and press D on a stream"
+echo "Run 'milk-CTRL' and press D on a stream"
 echo "to see ancestors/descendants."
 echo ""
 echo "Run 'milk-demopipeline cleanup' to stop."

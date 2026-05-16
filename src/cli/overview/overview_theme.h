@@ -1,6 +1,6 @@
 /**
  * @file overview_theme.h
- * @brief btop-inspired dark theme for milkCTRL
+ * @brief btop-inspired dark theme for milk-CTRL
  *
  * Defines semantic color tokens used throughout the TUI.
  * Uses TrueColor (24-bit) RGB values and provides helpers

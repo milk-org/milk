@@ -1,6 +1,6 @@
 /**
  * @file overview_cmdlog.c
- * @brief Command log ring buffer for milkCTRL
+ * @brief Command log ring buffer for milk-CTRL
  *
  * Provides a simple ring-buffer API for posting
  * timestamped, leveled log entries that the TUI
