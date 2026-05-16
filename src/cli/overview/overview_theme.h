@@ -482,6 +482,13 @@ static inline void ov_draw_panel_tabs(
         current_col += strlen(tab_text) + 1; // 1 space between tabs
     }
 
+    if (current_col + 15 < col + width) {
+        ov_buf_pos(row, current_col + 1);
+        ov_theme_fg(OV_FG_MUTED);
+        ov_theme_bg(OV_BG_TERMINAL);
+        ov_buf_printf("(Click tab)");
+    }
+
     /* sides */
     for (int r = row + 1; r < row + height - 1; r++)
     {

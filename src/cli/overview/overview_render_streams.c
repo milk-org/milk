@@ -575,7 +575,15 @@ void ov_render_streams_panel(
                 total_all_mb);
         }
         int rlen = (int) strlen(rbuf);
-        int rcol = r.col + r.width - rlen - 2;
+        int below = filt_n - lay->scroll_stream - max_rows;
+        int dw = 0;
+        if (below > 0)
+        {
+            dw = 3;
+            int tmp = below;
+            while (tmp > 0) { dw++; tmp /= 10; }
+        }
+        int rcol = r.col + r.width - rlen - dw - 4;
         if (rcol > r.col + 1)
         {
             ov_buf_pos(brow, rcol);

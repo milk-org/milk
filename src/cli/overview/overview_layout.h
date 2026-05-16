@@ -169,6 +169,7 @@ typedef struct {
     float        dash_split_h_ratio;
     int          dash_split_v_dragging;
     int          dash_split_h_dragging;
+    int          cmdlog_dragging;
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);

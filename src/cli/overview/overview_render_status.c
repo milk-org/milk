@@ -148,10 +148,10 @@ void ov_render_status(
     }
 
     int n_hints = snprintf(NULL, 0,
-        "%s%s%s  +/- TAB D S/s / p c G h q",
+        "%s%s%s  +/- TAB D S/s / p c G h q  (Click headers/tabs)",
         ctrl_hint, sort_label, detail_label);
     ov_buf_printf(
-        "%s%s%s  +/- TAB D S/s / p c G h q",
+        "%s%s%s  +/- TAB D S/s / p c G h q  (Click headers/tabs)",
         ctrl_hint, sort_label, detail_label);
     n1 += n_hints;
 

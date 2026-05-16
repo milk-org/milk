@@ -53,6 +53,39 @@ extern int ov_help_toggle_at(
     OV_LAYOUT *lay, int vis_row);
 
 /**
+ * hit_panel_tab - detect which tab label was clicked.
+ * @mc:       mouse column (1-based)
+ * @panel_col: panel left column
+ * @tabs:     tab label array
+ * @num_tabs: number of tabs
+ *
+ * Uses the same layout as ov_draw_panel_tabs: tabs start
+ * at panel_col+2, each rendered as " LABEL " with 1-space
+ * gap between tabs.
+ *
+ * Return: tab index [0..num_tabs-1], or -1 if no tab hit.
+ */
+static int hit_panel_tab(
+    int         mc,
+    int         panel_col,
+    const char **tabs,
+    int         num_tabs)
+{
+    int cur = panel_col + 2;
+    for (int ii = 0; ii < num_tabs; ii++)
+    {
+        /* Tab text is " LABEL ", so width = strlen + 2 */
+        int tw = (int) strlen(tabs[ii]) + 2;
+        if (mc >= cur && mc < cur + tw)
+        {
+            return ii;
+        }
+        cur += tw + 1; /* +1 for gap between tabs */
+    }
+    return -1;
+}
+
+/**
  * ov_handle_key - process one key event.
  * @key: keycode from ov_get_key()
  * @lay: mutable layout state
@@ -177,6 +210,174 @@ static const OV_FPS *ov_input_get_sel_fps(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m);
 
+static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    int count = 0;
+    if (focus == OV_FOCUS_STREAMS) {
+        count = m->nb_streams;
+        if (lay->filter_stream[0] != '\0') {
+            const char *names[OV_MAX_STREAMS];
+            for (int i = 0; i < count; i++) names[i] = m->streams[i].name;
+            int fidx[OV_MAX_STREAMS];
+            count = ov_filter_build(lay->filter_stream, names, count, fidx, OV_MAX_STREAMS);
+        }
+    } else if (focus == OV_FOCUS_PROCS) {
+        count = m->nb_procs;
+        if (lay->filter_proc[0] != '\0') {
+            const char *names[OV_MAX_PROCS];
+            for (int i = 0; i < count; i++) names[i] = m->procs[i].name;
+            int fidx[OV_MAX_PROCS];
+            count = ov_filter_build(lay->filter_proc, names, count, fidx, OV_MAX_PROCS);
+        }
+    } else if (focus == OV_FOCUS_FPS) {
+        count = m->nb_fps;
+        if (lay->filter_fps[0] != '\0') {
+            const char *names[OV_MAX_FPS];
+            for (int i = 0; i < count; i++) names[i] = m->fps[i].name;
+            int fidx[OV_MAX_FPS];
+            count = ov_filter_build(lay->filter_fps, names, count, fidx, OV_MAX_FPS);
+        }
+    }
+    return count;
+}
+
+static const char *stream_col_names[] = {
+    "NAME", "TYP", "SIZE", "Hz",
+    "MB/s", "INODE", "COUNT", "ANCESTRY"
+};
+
+static void ov_input__streams_header_click(
+    OV_LAYOUT *lay, int mc)
+{
+    int c = mc - lay->r_streams.col - 5
+            + lay->hscroll_stream;
+    if (c < 0)
+    {
+        return;
+    }
+    int col_idx = -1;
+    if (c < 15)
+    {
+        col_idx = (lay->sort_key_stream == 7) ? 7 : 0;
+    }
+    else if (c < 20) { col_idx = 1; }
+    else if (c < 32) { col_idx = 2; }
+    else if (c < 39) { col_idx = 3; }
+    else if (c < 47) { col_idx = 4; }
+    else if (c < 58) { col_idx = 5; }
+    else if (c >= 66 && c < 77) { col_idx = 6; }
+
+    if (col_idx >= 0)
+    {
+        if (lay->sort_key_stream == col_idx)
+        {
+            lay->sort_dir_stream =
+                !lay->sort_dir_stream;
+        }
+        else
+        {
+            lay->sort_key_stream = col_idx;
+            lay->sort_dir_stream = 0;
+        }
+        ov_cmdlog_push(
+            &lay->cmdlog, OV_CMDLOG_INFO,
+            "Sort STREAMS by %s %s",
+            stream_col_names[col_idx],
+            lay->sort_dir_stream ? "▼" : "▲");
+        lay->sort_pending = 1;
+        ov_scan_force_update();
+    }
+}
+
+static const char *proc_col_names[] = {
+    "NAME", "PID", "STAT", "Hz",
+    "MEM", "ANCESTRY"
+};
+
+static void ov_input__procs_header_click(
+    OV_LAYOUT *lay, int mc)
+{
+    int c = mc - lay->r_procs.col - 5
+            + lay->hscroll_proc;
+    if (c < 0)
+    {
+        return;
+    }
+    int col_idx = -1;
+    if (c < 15)
+    {
+        col_idx = (lay->sort_key_proc == 5) ? 5 : 0;
+    }
+    else if (c < 23) { col_idx = 1; }
+    else if (c < 29) { col_idx = 2; }
+    else if (c < 36) { col_idx = 3; }
+    else if (c >= 84 && c < 90) { col_idx = 4; }
+
+    if (col_idx >= 0)
+    {
+        if (lay->sort_key_proc == col_idx)
+        {
+            lay->sort_dir_proc =
+                !lay->sort_dir_proc;
+        }
+        else
+        {
+            lay->sort_key_proc = col_idx;
+            lay->sort_dir_proc = 0;
+        }
+        ov_cmdlog_push(
+            &lay->cmdlog, OV_CMDLOG_INFO,
+            "Sort PROCS by %s %s",
+            proc_col_names[col_idx],
+            lay->sort_dir_proc ? "▼" : "▲");
+        lay->sort_pending = 1;
+        ov_scan_force_update();
+    }
+}
+
+static const char *fps_col_names[] = {
+    "NAME", "STATUS", "MEM", "ANCESTRY"
+};
+
+static void ov_input__fps_header_click(
+    OV_LAYOUT *lay, int mc)
+{
+    int c = mc - lay->r_fps.col - 5
+            + lay->hscroll_fps;
+    if (c < 0)
+    {
+        return;
+    }
+    int col_idx = -1;
+    if (c < 19)
+    {
+        col_idx = (lay->sort_key_fps == 3) ? 3 : 0;
+    }
+    else if (c >= 23 && c < 31) { col_idx = 1; }
+    else if (c >= 43 && c < 49) { col_idx = 2; }
+
+    if (col_idx >= 0)
+    {
+        if (lay->sort_key_fps == col_idx)
+        {
+            lay->sort_dir_fps =
+                !lay->sort_dir_fps;
+        }
+        else
+        {
+            lay->sort_key_fps = col_idx;
+            lay->sort_dir_fps = 0;
+        }
+        ov_cmdlog_push(
+            &lay->cmdlog, OV_CMDLOG_INFO,
+            "Sort FPS by %s %s",
+            fps_col_names[col_idx],
+            lay->sort_dir_fps ? "▼" : "▲");
+        lay->sort_pending = 1;
+        ov_scan_force_update();
+    }
+}
+
 static void ov_input__exec_preview_btn(
     int              btn_id,
     OV_LAYOUT       *lay,
@@ -189,7 +390,7 @@ static void ov_input__exec_preview_btn(
         ov_cmdlog_push(
             &lay->cmdlog,
             OV_CMDLOG_WARN,
-            "Action requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+            "🚫 Action requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
         return;
     }
 
@@ -269,6 +470,8 @@ static void ov_input__exec_preview_btn(
     default:
         break;
     }
+    
+    ov_scan_force_update();
 }
 
 static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
@@ -356,17 +559,29 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
          * for non-active panels all overlap the full
          * screen, so we must check the view first and
          * route directly to the correct handler.
-         * On the Dashboard all four rects are distinct
+         * on the Dashboard all four rects are distinct
          * so the cascade works normally.
          */
+
         if (lay->view == OV_VIEW_DASHBOARD)
         {
-            /* Check for dashboard horizontal split drag */
-            int h_split_row = lay->r_streams.row + lay->r_streams.height;
+            /* Check for dashboard horizontal split drag.
+             * The split border is at h_split_row, which
+             * coincides with r_graph.row (the tab header
+             * row of the bottom-right panel).  Only start
+             * a drag when the click is in the LEFT half
+             * (under streams/fps); clicks on the RIGHT
+             * half fall through so tab labels remain
+             * clickable. */
+            int h_split_row =
+                lay->r_streams.row + lay->r_streams.height;
             if (mr == h_split_row - 1 || mr == h_split_row)
             {
-                lay->dash_split_h_dragging = 1;
-                return 1;
+                if (mc < lay->r_graph.col)
+                {
+                    lay->dash_split_h_dragging = 1;
+                    return 1;
+                }
             }
             /* Check for dashboard vertical split drag */
             int v_split_col = lay->r_streams.width;
@@ -409,7 +624,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 lay->fps_param_focus = 0;
                 int body_row =
                     mr - lay->r_fps.row - 2;
-                if (body_row >= 0)
+                if (body_row == -1)
+                {
+                    ov_input__fps_header_click(lay, mc);
+                }
+                else if (body_row >= 0)
                 {
                     int idx =
                         lay->scroll_fps + body_row;
@@ -437,7 +656,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             lay->focus = OV_FOCUS_STREAMS;
             int body_row =
                 mr - lay->r_streams.row - 2;
-            if (body_row >= 0)
+            if (body_row == -1)
+            {
+                ov_input__streams_header_click(lay, mc);
+            }
+            else if (body_row >= 0)
             {
                 int idx =
                     lay->scroll_stream + body_row;
@@ -458,7 +681,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             lay->focus = OV_FOCUS_PROCS;
             int body_row =
                 mr - lay->r_procs.row - 2;
-            if (body_row >= 0)
+            if (body_row == -1)
+            {
+                ov_input__procs_header_click(lay, mc);
+            }
+            else if (body_row >= 0)
             {
                 int idx =
                     lay->scroll_proc + body_row;
@@ -477,40 +704,76 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                  && INSIDE(lay->r_graph, mr, mc))
         {
             lay->focus = OV_FOCUS_GRAPH;
-            int body_row =
-                mr - lay->r_graph.row - 2;
-            if (body_row >= 0)
+
+            /* Tab header click */
+            if (mr == lay->r_graph.row)
             {
-                int idx =
-                    lay->scroll_graph + body_row;
-                if (idx < m->nb_edges)
+                const char *dtabs[] = {
+                    "CONNECTIONS",
+                    "DETAILS",
+                    "RESOURCES"
+                };
+                int ti = hit_panel_tab(
+                    mc, lay->r_graph.col,
+                    dtabs, 3);
+                if (ti >= 0)
                 {
-                    lay->sel_graph = idx;
-                    if (is_dbl)
+                    lay->graph_tab_mode = ti;
+                    ov_scan_force_update();
+                }
+            }
+            else
+            {
+                int body_row =
+                    mr - lay->r_graph.row - 2;
+                if (body_row >= 0)
+                {
+                    int idx =
+                        lay->scroll_graph
+                        + body_row;
+                    if (idx < m->nb_edges)
                     {
-                        const OV_EDGE *edge =
-                            &m->edges[idx];
-                        const OV_NODE *node =
-                            &m->nodes[edge->src_node];
-                        if (node->type == OV_NODE_STREAM)
+                        lay->sel_graph = idx;
+                        if (is_dbl)
                         {
-                            lay->focus = OV_FOCUS_STREAMS;
-                            lay->sel_stream = node->index;
-                            lay->sel_name_stream[0] = '\0';
+                            const OV_EDGE *edge =
+                                &m->edges[idx];
+                            const OV_NODE *node =
+                                &m->nodes[
+                                    edge->src_node];
+                            if (node->type
+                                == OV_NODE_STREAM)
+                            {
+                                lay->focus =
+                                    OV_FOCUS_STREAMS;
+                                lay->sel_stream =
+                                    node->index;
+                                lay->sel_name_stream
+                                    [0] = '\0';
+                            }
+                            else if (node->type
+                                == OV_NODE_PROC)
+                            {
+                                lay->focus =
+                                    OV_FOCUS_PROCS;
+                                lay->sel_proc =
+                                    node->index;
+                                lay->sel_name_proc
+                                    [0] = '\0';
+                            }
+                            else if (node->type
+                                == OV_NODE_FPS)
+                            {
+                                lay->focus =
+                                    OV_FOCUS_FPS;
+                                lay->sel_fps =
+                                    node->index;
+                                lay->sel_name_fps
+                                    [0] = '\0';
+                            }
+                            lay->view =
+                                OV_VIEW_DASHBOARD;
                         }
-                        else if (node->type == OV_NODE_PROC)
-                        {
-                            lay->focus = OV_FOCUS_PROCS;
-                            lay->sel_proc = node->index;
-                            lay->sel_name_proc[0] = '\0';
-                        }
-                        else if (node->type == OV_NODE_FPS)
-                        {
-                            lay->focus = OV_FOCUS_FPS;
-                            lay->sel_fps = node->index;
-                            lay->sel_name_fps[0] = '\0';
-                        }
-                        lay->view = OV_VIEW_DASHBOARD;
                     }
                 }
             }
@@ -523,7 +786,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 lay->focus = OV_FOCUS_STREAMS;
                 int body_row =
                     mr - lay->r_streams.row - 2;
-                if (body_row >= 0)
+                if (body_row == -1)
+                {
+                    ov_input__streams_header_click(lay, mc);
+                }
+                else if (body_row >= 0)
                 {
                     int idx =
                         lay->scroll_stream + body_row;
@@ -543,7 +810,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 lay->focus = OV_FOCUS_PROCS;
                 int body_row =
                     mr - lay->r_procs.row - 2;
-                if (body_row >= 0)
+                if (body_row == -1)
+                {
+                    ov_input__procs_header_click(lay, mc);
+                }
+                else if (body_row >= 0)
                 {
                     int idx =
                         lay->scroll_proc + body_row;
@@ -563,7 +834,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 lay->focus = OV_FOCUS_FPS;
                 int body_row =
                     mr - lay->r_fps.row - 2;
-                if (body_row >= 0)
+                if (body_row == -1)
+                {
+                    ov_input__fps_header_click(lay, mc);
+                }
+                else if (body_row >= 0)
                 {
                     int idx =
                         lay->scroll_fps + body_row;
@@ -581,45 +856,91 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             else if (INSIDE(lay->r_graph, mr, mc))
             {
                 lay->focus = OV_FOCUS_GRAPH;
-                int body_row =
-                    mr - lay->r_graph.row - 2;
-                if (body_row >= 0)
+
+                /* Tab header click */
+                if (mr == lay->r_graph.row)
                 {
-                    int idx =
-                        lay->scroll_graph + body_row;
-                    if (idx < m->nb_edges)
+                    const char *dtabs[] = {
+                        "CONNECTIONS",
+                        "DETAILS",
+                        "RESOURCES"
+                    };
+                    int ti = hit_panel_tab(
+                        mc, lay->r_graph.col,
+                        dtabs, 3);
+                    if (ti >= 0)
                     {
-                        lay->sel_graph = idx;
-                        if (is_dbl)
+                        lay->graph_tab_mode = ti;
+                        ov_scan_force_update();
+                    }
+                }
+                else
+                {
+                    int body_row =
+                        mr - lay->r_graph.row - 2;
+                    if (body_row >= 0)
+                    {
+                        int idx =
+                            lay->scroll_graph
+                            + body_row;
+                        if (idx < m->nb_edges)
                         {
-                            const OV_EDGE *edge =
-                                &m->edges[idx];
-                            const OV_NODE *node =
-                                &m->nodes[edge->src_node];
-                            if (node->type == OV_NODE_STREAM)
+                            lay->sel_graph = idx;
+                            if (is_dbl)
                             {
-                                lay->focus = OV_FOCUS_STREAMS;
-                                lay->sel_stream = node->index;
-                                lay->sel_name_stream[0] = '\0';
+                                const OV_EDGE *edge =
+                                    &m->edges[idx];
+                                const OV_NODE *node =
+                                    &m->nodes[
+                                        edge->src_node];
+                                if (node->type
+                                    == OV_NODE_STREAM)
+                                {
+                                    lay->focus =
+                                        OV_FOCUS_STREAMS;
+                                    lay->sel_stream =
+                                        node->index;
+                                    lay->sel_name_stream
+                                        [0] = '\0';
+                                }
+                                else if (node->type
+                                    == OV_NODE_PROC)
+                                {
+                                    lay->focus =
+                                        OV_FOCUS_PROCS;
+                                    lay->sel_proc =
+                                        node->index;
+                                    lay->sel_name_proc
+                                        [0] = '\0';
+                                }
+                                else if (node->type
+                                    == OV_NODE_FPS)
+                                {
+                                    lay->focus =
+                                        OV_FOCUS_FPS;
+                                    lay->sel_fps =
+                                        node->index;
+                                    lay->sel_name_fps
+                                        [0] = '\0';
+                                }
+                                lay->view =
+                                    OV_VIEW_DASHBOARD;
                             }
-                            else if (node->type == OV_NODE_PROC)
-                            {
-                                lay->focus = OV_FOCUS_PROCS;
-                                lay->sel_proc = node->index;
-                                lay->sel_name_proc[0] = '\0';
-                            }
-                            else if (node->type == OV_NODE_FPS)
-                            {
-                                lay->focus = OV_FOCUS_FPS;
-                                lay->sel_fps = node->index;
-                                lay->sel_name_fps[0] = '\0';
-                            }
-                            lay->view = OV_VIEW_DASHBOARD;
                         }
                     }
                 }
             }
         }
+        
+        /* Check if clicking on cmdlog border to start dragging */
+        {
+            int cmdlog_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
+            if (mr == cmdlog_top - 1 || mr == cmdlog_top)
+            {
+                lay->cmdlog_dragging = 1;
+            }
+        }
+        
         return 1;
     }
 
@@ -628,6 +949,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         lay->fps_split_dragging = 0;
         lay->dash_split_v_dragging = 0;
         lay->dash_split_h_dragging = 0;
+        lay->cmdlog_dragging = 0;
         return 1;
     }
 
@@ -635,6 +957,18 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         int mr = ov_mouse_row;
         int mc = ov_mouse_col;
+
+        /* Global: Command log panel height drag */
+        int cmdlog_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
+        if (lay->cmdlog_dragging || (mr == cmdlog_top - 1 || mr == cmdlog_top))
+        {
+            lay->cmdlog_dragging = 1;
+            int new_h = lay->term_rows - 1 - mr;
+            if (new_h < 0) new_h = 0;
+            if (new_h > lay->term_rows / 2) new_h = lay->term_rows / 2;
+            lay->cmdlog_rows = new_h;
+            return 1;
+        }
 
         if (lay->view == OV_VIEW_FPS)
         {
@@ -710,7 +1044,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 sel    = &lay->sel_fps;
                 scroll = &lay->scroll_fps;
-                count  = m->nb_fps;
+                count  = ov_input_get_filtered_count(OV_FOCUS_FPS, lay, m);
                 page_h = lay->r_fps.height - 3;
             }
         }
@@ -718,14 +1052,14 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             sel    = &lay->sel_stream;
             scroll = &lay->scroll_stream;
-            count  = m->nb_streams;
+            count  = ov_input_get_filtered_count(OV_FOCUS_STREAMS, lay, m);
             page_h = lay->r_streams.height - 3;
         }
         else if (lay->view == OV_VIEW_PROCS)
         {
             sel    = &lay->sel_proc;
             scroll = &lay->scroll_proc;
-            count  = m->nb_procs;
+            count  = ov_input_get_filtered_count(OV_FOCUS_PROCS, lay, m);
             page_h = lay->r_procs.height - 3;
         }
         else if (lay->view == OV_VIEW_GRAPH)
@@ -782,21 +1116,21 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 sel    = &lay->sel_stream;
                 scroll = &lay->scroll_stream;
-                count  = m->nb_streams;
+                count  = ov_input_get_filtered_count(OV_FOCUS_STREAMS, lay, m);
                 page_h = lay->r_streams.height - 3;
             }
             else if (INSIDE(lay->r_procs, mr, mc))
             {
                 sel    = &lay->sel_proc;
                 scroll = &lay->scroll_proc;
-                count  = m->nb_procs;
+                count  = ov_input_get_filtered_count(OV_FOCUS_PROCS, lay, m);
                 page_h = lay->r_procs.height - 3;
             }
             else if (INSIDE(lay->r_fps, mr, mc))
             {
                 sel    = &lay->sel_fps;
                 scroll = &lay->scroll_fps;
-                count  = m->nb_fps;
+                count  = ov_input_get_filtered_count(OV_FOCUS_FPS, lay, m);
                 page_h = lay->r_fps.height - 3;
             }
             else if (INSIDE(lay->r_graph, mr, mc))
@@ -851,12 +1185,22 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
         if (sel != NULL && scroll != NULL)
         {
+            *scroll += dir;
+            if (*scroll < 0) *scroll = 0;
+            if (page_h > 0 && *scroll > count - page_h) {
+                *scroll = count - page_h;
+                if (*scroll < 0) *scroll = 0;
+            }
+
             *sel += dir;
-            if (*sel < 0) *sel = 0;
+            if (*sel < *scroll) *sel = *scroll;
+            if (page_h > 0 && *sel >= *scroll + page_h) *sel = *scroll + page_h - 1;
             if (*sel >= count) *sel = count - 1;
             if (*sel < 0) *sel = 0;
-            if (*sel < *scroll) *scroll = *sel;
-            if (page_h > 0 && *sel >= *scroll + page_h) *scroll = *sel - page_h + 1;
+
+            if (sel == &lay->sel_stream) lay->sel_name_stream[0] = '\0';
+            else if (sel == &lay->sel_proc) lay->sel_name_proc[0] = '\0';
+            else if (sel == &lay->sel_fps) lay->sel_name_fps[0] = '\0';
         }
         return 1;
     }
@@ -943,6 +1287,21 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         lay->lineage_mode = (lay->lineage_mode + 1) % 3;
         return 1;
     }
+    if (key == 'v' || key == 'V')
+    {
+        int step = (key == 'v') ? -1 : 1;
+        if (lay->cmdlog_rows == 0 && step > 0)
+        {
+            lay->cmdlog_rows = 4;
+        }
+        else
+        {
+            lay->cmdlog_rows += step;
+        }
+        if (lay->cmdlog_rows < 0) lay->cmdlog_rows = 0;
+        if (lay->cmdlog_rows > lay->term_rows / 2) lay->cmdlog_rows = lay->term_rows / 2;
+        return 1;
+    }
     if (key == '{' || key == '}')
     {
         float step = (key == '{') ? -0.05f : 0.05f;
@@ -996,9 +1355,9 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         lay->paused = !lay->paused;
         ov_cmdlog_push(&lay->cmdlog,
                        OV_CMDLOG_INFO,
-                       "Display %s",
-                       lay->paused
-                       ? "paused" : "resumed");
+                       "%s Display %s",
+                       lay->paused ? "⏸️" : "▶️",
+                       lay->paused ? "paused" : "resumed");
         return 1;
     }
     if (key == 'W')
@@ -1006,7 +1365,7 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         ov_model_export_snapshot(m);
         ov_cmdlog_push(&lay->cmdlog,
                        OV_CMDLOG_OK,
-                       "Snapshot exported");
+                       "📸 Snapshot exported");
         return 1;
     }
 
@@ -1234,7 +1593,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         if (!lay->ctrl_mode)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_WARN, "CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "🚫 CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
             return 1;
         }
 
@@ -1253,6 +1612,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
             if (s) ov_ctrl_stream_delete(s, log);
         }
+        ov_scan_force_update();
         return 1;
     }
 
@@ -1347,7 +1707,11 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             else if (key == OV_KEY_DEL) snprintf(keyname, sizeof(keyname), "DEL");
             else snprintf(keyname, sizeof(keyname), "'%c'", key);
             
-            ov_cmdlog_push(log, OV_CMDLOG_WARN, "%s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)", keyname);
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "🚫 %s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)", keyname);
+        }
+        else
+        {
+            ov_scan_force_update();
         }
         return 1;
     }
@@ -2106,7 +2470,7 @@ int ov_handle_key(
         char ctrl_str[128] = "";
 
         // Base keys always available
-        snprintf(keys_str, sizeof(keys_str), "Keys: q c h G ? TAB D L F W i <>[]sS +-= F2-F6 / ESC");
+        snprintf(keys_str, sizeof(keys_str), "Keys: q c h G v V ? TAB D L F W i <>[]sS +-= F2-F6 / ESC");
 
         if (lay->ctrl_mode)
         {
@@ -2118,15 +2482,15 @@ int ov_handle_key(
                 snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (STRM): DEL ^e");
         }
 
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s%s", keys_str, ctrl_str);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "⌨️ %s%s", keys_str, ctrl_str);
         if (lay->cmdlog_rows == 0) lay->cmdlog_rows = 4;
         return 0;
     }
 
-    if (key >= 32 && key < 127) {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key: '%c' (code %d)", key, key);
+    if (key >= 32 && key <= 126) {
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key: '%c' (code %d)", key, key);
     } else {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key code: %d", key);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key code: %d", key);
     }
     return 0;
 }

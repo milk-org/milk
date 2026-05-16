@@ -108,7 +108,14 @@ errno_t functionparameter_RUNstart(
 
         // Send run command
         //
-        if (strstr(fps->md->execfullpath, "fpsexec") != NULL) {
+        char * exec_basename = strrchr(fps->md->execfullpath, '/');
+        exec_basename = (exec_basename != NULL) ? exec_basename + 1 : fps->md->execfullpath;
+
+        if (strcmp(exec_basename, "milk") != 0 && 
+            strcmp(exec_basename, "cacao") != 0 && 
+            strlen(exec_basename) > 0 && 
+            strcmp(exec_basename, "unknown") != 0) 
+        {
             EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" %s %s:runstart\" C-m",
                                    fps->md->name,
                                    fps->md->execfullpath,

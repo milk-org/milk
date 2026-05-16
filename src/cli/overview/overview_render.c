@@ -534,7 +534,7 @@ void ov_render_frame(
         lay->sort_pending = 0;
         g_last_model = m;
     }
-    else if (m != g_last_model)
+    else
     {
         /* A new scan model arrived. Re-apply the saved order so items don't shuffle. */
         OV_MODEL *mm = (OV_MODEL *)(uintptr_t) m;

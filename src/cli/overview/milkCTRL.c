@@ -208,7 +208,10 @@ static void print_help(const char *prog, int mh_color)
 
     milk_help_section("Mouse", mh_color);
     printf("  Click=select  DblClick=detail\n");
-    printf("  Scroll wheel=navigate list\n\n");
+    printf("  Scroll wheel=navigate list\n");
+    printf("  Click column headers to sort\n");
+    printf("  Click dashboard tabs to switch views\n");
+    printf("  Drag panel borders to resize\n\n");
     printf("  %s                               Quit\n", MH(MH_OPT, "q"));
 }
 
