@@ -127,7 +127,7 @@ void ov_ctrl_fps_run_toggle(
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
                                : OV_CMDLOG_FAIL,
-                       "FPS \"%s\" — %s",
+                       "⚙️ FPS \"%s\" — %s",
                        f->name, action);
     }
 }
@@ -158,7 +158,7 @@ void ov_ctrl_fps_conf_toggle(
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
                                : OV_CMDLOG_FAIL,
-                       "FPS \"%s\" — %s",
+                       "⚙️ FPS \"%s\" — %s",
                        f->name, action);
     }
 }
@@ -185,7 +185,7 @@ void ov_ctrl_stream_delete(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Stream \"%s\" — delete"
+                           "🚫 Stream \"%s\" — delete"
                            " failed (open)",
                            s->name);
         }
@@ -209,7 +209,7 @@ void ov_ctrl_stream_delete(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Stream \"%s\" — delete"
+                           "🚫 Stream \"%s\" — delete"
                            " failed (unlink)",
                            s->name);
         }
@@ -219,7 +219,7 @@ void ov_ctrl_stream_delete(
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "Stream \"%s\" — deleted 🗑",
+                       "🗑️ Stream \"%s\" — deleted",
                        s->name);
     }
 }
@@ -244,7 +244,7 @@ void ov_ctrl_proc_kill(
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
                                : OV_CMDLOG_FAIL,
-                       "Process \"%s\" (PID %d)"
+                       "💀 Process \"%s\" (PID %d)"
                        " — SIGTERM",
                        p->name, p->PID);
     }
@@ -303,7 +303,7 @@ void ov_ctrl_proc_set_ctrlval(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Process \"%s\" — ctrl failed (open)", p->name);
+                           "🚫 Process \"%s\" — ctrl failed (open)", p->name);
         }
         return;
     }
@@ -315,7 +315,7 @@ void ov_ctrl_proc_set_ctrlval(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Process \"%s\" — ctrl failed (stat)", p->name);
+                           "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
         }
         return;
     }
@@ -328,7 +328,7 @@ void ov_ctrl_proc_set_ctrlval(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Process \"%s\" — ctrl failed (mmap)", p->name);
+                           "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
         }
         return;
     }
@@ -350,7 +350,7 @@ void ov_ctrl_proc_set_ctrlval(
         else action = "CTRLval updated";
 
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "Process \"%s\" — %s", p->name, action);
+                       "⚡ Process \"%s\" — %s", p->name, action);
     }
 }
 
@@ -378,7 +378,7 @@ void ov_ctrl_proc_zero_counters(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Process \"%s\" — zero failed (open)", p->name);
+                           "🚫 Process \"%s\" — zero failed (open)", p->name);
         }
         return;
     }
@@ -390,7 +390,7 @@ void ov_ctrl_proc_zero_counters(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Process \"%s\" — zero failed (stat)", p->name);
+                           "🚫 Process \"%s\" — zero failed (stat)", p->name);
         }
         return;
     }
@@ -403,7 +403,7 @@ void ov_ctrl_proc_zero_counters(
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "Process \"%s\" — zero failed (mmap)", p->name);
+                           "🚫 Process \"%s\" — zero failed (mmap)", p->name);
         }
         return;
     }
@@ -416,7 +416,7 @@ void ov_ctrl_proc_zero_counters(
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "Process \"%s\" — Counters zeroed", p->name);
+                       "0️⃣ Process \"%s\" — Counters zeroed", p->name);
     }
 }
 
@@ -440,7 +440,7 @@ void ov_ctrl_proc_remove(
         {
             ov_cmdlog_push(log,
                            OV_CMDLOG_FAIL,
-                           "Process \"%s\" (PID %d) is still alive",
+                           "🚫 Process \"%s\" (PID %d) is still alive",
                            p->name, p->PID);
         }
         return;
@@ -679,7 +679,7 @@ void ov_ctrl_fps_remove(
     if (log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "FPS \"%s\" — erased 🗑",
+                       "🗑️ FPS \"%s\" — erased",
                        f->name);
     }
 }
@@ -697,7 +697,7 @@ void ov_ctrl_procs_cleanup(
     {
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "Process cleanup requested");
+                       "🧹 Process cleanup requested");
     }
 }
 

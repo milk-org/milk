@@ -90,7 +90,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
             break;
         default: /* INFO */
             bullet_fg = (ov_rgb_t){100, 100, 120};
-            bullet    = "·";
+            bullet    = "●";
             break;
         }
 
@@ -102,7 +102,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         /* Status bullet */
         ov_buf_fg(bullet_fg.r, bullet_fg.g, bullet_fg.b);
         ov_buf_printf("%s ", bullet);
-        nw += 4; /* bullet(1) + space + 2 for UTF-8 */
+        nw += 2; /* 1 col bullet + space */
 
         /* Message text */
         ov_buf_fg(180, 180, 200);

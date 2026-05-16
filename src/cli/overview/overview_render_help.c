@@ -69,6 +69,7 @@ static const help_line_t HELP[] =
     { "  /        Filter (regex search)",       HF_CHILD,   HS_DISPLAY },
     { "  W        Export snapshot to file",     HF_CHILD,   HS_DISPLAY },
     { "  G        Toggle command log panel",    HF_CHILD,   HS_DISPLAY },
+    { "  v/V      Resize command log panel",    HF_CHILD,   HS_DISPLAY },
     { "  h        Toggle this help",            HF_CHILD,   HS_DISPLAY },
     { "  q        Quit",                        HF_CHILD,   HS_DISPLAY },
     /* --- Control mode --- */
@@ -98,6 +99,9 @@ static const help_line_t HELP[] =
     { "Mouse",                                  HF_SECTION, HS_MOUSE },
     { "  Click=select  DblClick=detail",        HF_CHILD,   HS_MOUSE },
     { "  Scroll wheel=navigate list",           HF_CHILD,   HS_MOUSE },
+    { "  Click column headers to sort",         HF_CHILD,   HS_MOUSE },
+    { "  Click dashboard tabs to switch",       HF_CHILD,   HS_MOUSE },
+    { "  Drag panel borders to resize",         HF_CHILD,   HS_MOUSE },
     /* --- Colors --- */
     { "Colors",                                 HF_SECTION, HS_COLORS },
     { "",                                       HF_CHILD | HF_COLORS,
