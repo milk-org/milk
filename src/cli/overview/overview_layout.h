@@ -161,6 +161,14 @@ typedef struct {
         int id;    /* action ID: OV_BTN_* */
     }            preview_btns[4];
     int          nb_preview_btns;
+    /* F5 view drag state */
+    float        fps_split_ratio;
+    int          fps_split_dragging;
+    /* F2 dashboard view drag state */
+    float        dash_split_v_ratio;
+    float        dash_split_h_ratio;
+    int          dash_split_v_dragging;
+    int          dash_split_h_dragging;
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);

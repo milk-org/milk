@@ -1076,6 +1076,76 @@ void ov_scan_procs(OV_MODEL *model)
 
 
 /* =========================================================
+ * tmux session scanning
+ * ========================================================= */
+
+void ov_scan_tmux_sessions(OV_MODEL *model)
+{
+    /* Reset all tmux flags */
+    for (int i = 0; i < model->nb_fps; i++)
+    {
+        model->fps[i].tmux_flags = 0;
+    }
+
+    if (model->nb_fps == 0)
+    {
+        return;
+    }
+
+    FILE *fp = popen("tmux list-windows -a -F \"#{session_name}:#{window_name}\" 2>/dev/null", "r");
+    if (fp == NULL)
+    {
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), fp) != NULL)
+    {
+        /* Strip newline */
+        int len = strlen(line);
+        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+        {
+            line[--len] = '\0';
+        }
+
+        /* Find the colon */
+        char *colon = strchr(line, ':');
+        if (colon == NULL)
+        {
+            continue;
+        }
+
+        *colon = '\0';
+        const char *session_name = line;
+        const char *window_name  = colon + 1;
+
+        /* Find matching FPS in model */
+        for (int i = 0; i < model->nb_fps; i++)
+        {
+            if (strcmp(model->fps[i].name, session_name) == 0)
+            {
+                if (strcmp(window_name, "ctrl") == 0)
+                {
+                    model->fps[i].tmux_flags |= OV_TMUX_CTRL;
+                }
+                else if (strcmp(window_name, "conf") == 0)
+                {
+                    model->fps[i].tmux_flags |= OV_TMUX_CONF;
+                }
+                else if (strcmp(window_name, "run") == 0)
+                {
+                    model->fps[i].tmux_flags |= OV_TMUX_RUN;
+                }
+                break;
+            }
+        }
+    }
+
+    pclose(fp);
+}
+
+
+/* =========================================================
  * Cache cleanup (called from ov_scan_stop)
  * ========================================================= */
 

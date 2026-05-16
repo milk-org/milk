@@ -7,6 +7,7 @@
 #include "fps_internal.h"
 #include "fps_globals.h"
 #include "timeutils.h"
+#include "fps_tmux.h"
 
 #include "fps_GetParamIndex.h"
 
@@ -21,6 +22,7 @@ errno_t functionparameter_RUNstart(
     FPS *fps
 )
 {
+    functionparameter_FPS_tmux_ensure(fps);
 
     if(fps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
     {

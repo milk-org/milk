@@ -291,10 +291,18 @@ void ov_render_preview_line(
             for (int bi = 0; bi < nb; bi++)
             {
                 ov_buf_pos(2, col);
-                ov_buf_bg(btns[bi].bg.r,
-                          btns[bi].bg.g,
-                          btns[bi].bg.b);
-                ov_buf_fg(255, 255, 255);
+                if (!lay->ctrl_mode)
+                {
+                    ov_buf_bg(60, 60, 60);
+                    ov_buf_fg(180, 180, 180);
+                }
+                else
+                {
+                    ov_buf_bg(btns[bi].bg.r,
+                              btns[bi].bg.g,
+                              btns[bi].bg.b);
+                    ov_buf_fg(255, 255, 255);
+                }
                 ov_buf_bold();
                 ov_buf_printf("%s",
                     btns[bi].label);

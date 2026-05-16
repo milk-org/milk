@@ -180,6 +180,9 @@ static void print_help(const char *prog, int mh_color)
     printf("  %s                               Toggle sort direction (Ascending/Descending)\n\n", MH(MH_OPT, "["));
 
     milk_help_section("Display & Layout", mh_color);
+    printf("  %s, %s                        Adjust F5:FPS vertical split panel size\n", MH(MH_OPT, "{"), MH(MH_OPT, "}"));
+    printf("  %s, %s                        Adjust F2:Dashboard vertical split\n", MH(MH_OPT, "{"), MH(MH_OPT, "}"));
+    printf("  %s, %s                        Adjust F2:Dashboard horizontal split\n", MH(MH_OPT, "("), MH(MH_OPT, ")"));
     printf("  %s                             Adjust scan rate (increase/decrease speed)\n", MH(MH_OPT, "+/-"));
     printf("  %s                         Toggle detail pane / Graph jump (on selected item)\n", MH(MH_OPT, "ENTER/D"));
     printf("  %s                               Cycle graph lineage mode (on Graph view)\n", MH(MH_OPT, "L"));
@@ -308,6 +311,12 @@ int main(int argc, char *argv[])
     lay.focus = OV_FOCUS_STREAMS;
     lay.cmdlog_rows = 4;
     lay.param_sel = -1;
+    lay.fps_split_ratio = 0.4f;
+    lay.fps_split_dragging = 0;
+    lay.dash_split_v_ratio = 0.5f;
+    lay.dash_split_h_ratio = 0.5f;
+    lay.dash_split_v_dragging = 0;
+    lay.dash_split_h_dragging = 0;
 
     /* --- Main TUI loop (~10 fps) --- */
     /* Clear screen once on startup */
