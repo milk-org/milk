@@ -196,6 +196,12 @@ typedef struct
     int      conf_alive;
     int      run_alive;
 
+    /* tmux tracking */
+    uint8_t  tmux_flags;
+#define OV_TMUX_CTRL 0x01
+#define OV_TMUX_CONF 0x02
+#define OV_TMUX_RUN  0x04
+
     /* stream-type parameters (for edges) */
     int      nb_stream_params;
     char     stream_param_name[OV_FPS_MAX_STREAM_PARAMS]
@@ -363,6 +369,15 @@ void ov_scan_fps(OV_MODEL *model);
  * Maps the processinfo list and reads active processes.
  */
 void ov_scan_procs(OV_MODEL *model);
+
+/**
+ * ov_scan_tmux_sessions - check for live FPS tmux sessions.
+ * @model: model to update
+ *
+ * Parses `tmux list-windows` to update the OV_TMUX_* flags
+ * on the scanned FPS entries.
+ */
+void ov_scan_tmux_sessions(OV_MODEL *model);
 
 /**
  * ov_build_graph - build node/edge graph from scan data.

@@ -184,6 +184,15 @@ static void ov_input__exec_preview_btn(
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
+    if (!lay->ctrl_mode)
+    {
+        ov_cmdlog_push(
+            &lay->cmdlog,
+            OV_CMDLOG_WARN,
+            "Action requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+        return;
+    }
+
     switch (btn_id)
     {
     case OV_BTN_PROC_PAUSE:
@@ -350,8 +359,36 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
          * On the Dashboard all four rects are distinct
          * so the cascade works normally.
          */
+        if (lay->view == OV_VIEW_DASHBOARD)
+        {
+            /* Check for dashboard horizontal split drag */
+            int h_split_row = lay->r_streams.row + lay->r_streams.height;
+            if (mr == h_split_row - 1 || mr == h_split_row)
+            {
+                lay->dash_split_h_dragging = 1;
+                return 1;
+            }
+            /* Check for dashboard vertical split drag */
+            int v_split_col = lay->r_streams.width;
+            if (mc == v_split_col || mc == v_split_col + 1)
+            {
+                if (mr >= lay->r_streams.row && mr < lay->r_streams.row + lay->r_streams.height + lay->r_fps.height)
+                {
+                    lay->dash_split_v_dragging = 1;
+                    return 1;
+                }
+            }
+        }
+
         if (lay->view == OV_VIEW_FPS)
         {
+            /* F5: Check for split drag */
+            if (mc == lay->r_fps_list.width || mc == lay->r_fps_list.width + 1)
+            {
+                lay->fps_split_dragging = 1;
+                return 1;
+            }
+
             /* F5: left = fps list, right = params */
             if (INSIDE(lay->r_fps_params, mr, mc))
             {
@@ -584,6 +621,65 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
         }
         return 1;
+    }
+
+    if (key == OV_KEY_MOUSE_RELEASE)
+    {
+        lay->fps_split_dragging = 0;
+        lay->dash_split_v_dragging = 0;
+        lay->dash_split_h_dragging = 0;
+        return 1;
+    }
+
+    if (key == OV_KEY_MOUSE_DRAG)
+    {
+        int mr = ov_mouse_row;
+        int mc = ov_mouse_col;
+
+        if (lay->view == OV_VIEW_FPS)
+        {
+            if (lay->fps_split_dragging || (mc >= lay->r_fps_list.width - 1 && mc <= lay->r_fps_list.width + 2))
+            {
+                lay->fps_split_dragging = 1;
+                float ratio = (float)mc / lay->term_cols;
+                if (ratio < 0.1f) ratio = 0.1f;
+                if (ratio > 0.9f) ratio = 0.9f;
+                lay->fps_split_ratio = ratio;
+                return 1;
+            }
+        }
+        if (lay->view == OV_VIEW_DASHBOARD)
+        {
+            int h_split_row = lay->r_streams.row + lay->r_streams.height;
+            int v_split_col = lay->r_streams.width;
+
+            int handled = 0;
+            if (lay->dash_split_h_dragging || (mr >= h_split_row - 1 && mr <= h_split_row + 1))
+            {
+                lay->dash_split_h_dragging = 1;
+                int log_h = lay->cmdlog_rows;
+                if (log_h < 0) log_h = 0;
+                int body_top = 3;
+                int body_h = lay->term_rows - 3 - log_h;
+                if (body_h < 4) body_h = 4;
+                float ratio = (float)(mr - body_top) / body_h;
+                if (ratio < 0.1f) ratio = 0.1f;
+                if (ratio > 0.9f) ratio = 0.9f;
+                lay->dash_split_h_ratio = ratio;
+                handled = 1;
+            }
+            if (lay->dash_split_v_dragging || (mc >= v_split_col - 1 && mc <= v_split_col + 2))
+            {
+                lay->dash_split_v_dragging = 1;
+                float ratio = (float)mc / lay->term_cols;
+                if (ratio < 0.1f) ratio = 0.1f;
+                if (ratio > 0.9f) ratio = 0.9f;
+                lay->dash_split_v_ratio = ratio;
+                handled = 1;
+            }
+            if (handled) return 1;
+        }
+        return 0; /* Ignore other drags for now */
     }
 
     if (key == OV_KEY_MOUSE_UP || key == OV_KEY_MOUSE_DOWN)
@@ -847,6 +943,54 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         lay->lineage_mode = (lay->lineage_mode + 1) % 3;
         return 1;
     }
+    if (key == '{' || key == '}')
+    {
+        float step = (key == '{') ? -0.05f : 0.05f;
+        if (lay->view == OV_VIEW_FPS)
+        {
+            lay->fps_split_ratio += step;
+            if (lay->fps_split_ratio < 0.1f) lay->fps_split_ratio = 0.1f;
+            if (lay->fps_split_ratio > 0.9f) lay->fps_split_ratio = 0.9f;
+            return 1;
+        }
+        else if (lay->view == OV_VIEW_DASHBOARD)
+        {
+            lay->dash_split_v_ratio += step;
+            if (lay->dash_split_v_ratio < 0.1f) lay->dash_split_v_ratio = 0.1f;
+            if (lay->dash_split_v_ratio > 0.9f) lay->dash_split_v_ratio = 0.9f;
+            return 1;
+        }
+    }
+    if (key == '(' || key == ')')
+    {
+        float step = (key == '(') ? -0.05f : 0.05f;
+        if (lay->view == OV_VIEW_DASHBOARD)
+        {
+            lay->dash_split_h_ratio += step;
+            if (lay->dash_split_h_ratio < 0.1f) lay->dash_split_h_ratio = 0.1f;
+            if (lay->dash_split_h_ratio > 0.9f) lay->dash_split_h_ratio = 0.9f;
+            return 1;
+        }
+    }
+
+    if (key == '{' || key == '}')
+    {
+        float step = (key == '{') ? -0.05f : 0.05f;
+        if (lay->view == OV_VIEW_DASHBOARD)
+        {
+            lay->dash_split_v_ratio += step;
+            if (lay->dash_split_v_ratio < 0.1f) lay->dash_split_v_ratio = 0.1f;
+            if (lay->dash_split_v_ratio > 0.9f) lay->dash_split_v_ratio = 0.9f;
+            return 1;
+        }
+        else if (lay->view == OV_VIEW_FPS)
+        {
+            lay->fps_split_ratio += step;
+            if (lay->fps_split_ratio < 0.1f) lay->fps_split_ratio = 0.1f;
+            if (lay->fps_split_ratio > 0.9f) lay->fps_split_ratio = 0.9f;
+            return 1;
+        }
+    }
     if (key == 'F')
     {
         lay->paused = !lay->paused;
@@ -891,6 +1035,12 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     /* ENTER — open DETAILS for list panels; toggle when on graph */
     if ((key == 10 || key == 13) && m != NULL)
     {
+        /* In dedicated FPS view, ENTER is used to edit parameters */
+        if (lay->view == OV_VIEW_FPS)
+        {
+            return 0;
+        }
+
         if (lay->focus == OV_FOCUS_STREAMS
             || lay->focus == OV_FOCUS_PROCS
             || lay->focus == OV_FOCUS_FPS)
@@ -1084,7 +1234,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         if (!lay->ctrl_mode)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_WARN, "CTRL+e requires CONTROL mode");
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
             return 1;
         }
 
@@ -1197,7 +1347,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             else if (key == OV_KEY_DEL) snprintf(keyname, sizeof(keyname), "DEL");
             else snprintf(keyname, sizeof(keyname), "'%c'", key);
             
-            ov_cmdlog_push(log, OV_CMDLOG_WARN, "%s requires CONTROL mode", keyname);
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "%s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)", keyname);
         }
         return 1;
     }
@@ -1335,7 +1485,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
 
         /* RIGHT from list → enter param panel */
         if (lay->fps_param_focus == 0
-            && (key == OV_KEY_RIGHT || key == OV_KEY_ENTER || key == '\r')
+            && (key == OV_KEY_RIGHT || key == OV_KEY_ENTER || key == '\r' || key == '\n')
             && has_params)
         {
             lay->fps_param_focus = 1;
@@ -1426,7 +1576,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                 }
                 return 1;
             }
-            if (key == OV_KEY_RIGHT || key == OV_KEY_ENTER || key == '\r')
+            if (key == OV_KEY_RIGHT || key == OV_KEY_ENTER || key == '\r' || key == '\n')
             {
                 if (lay->fps_param_sel >= 0 && lay->fps_param_sel < nitems)
                 {
@@ -1447,14 +1597,14 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                         lay->fps_param_sel = 0;
                         lay->fps_param_scroll = 0;
                     }
-                    else if (key == OV_KEY_ENTER || key == '\r')
+                    else if (key == OV_KEY_ENTER || key == '\r' || key == '\n')
                     {
                         if (!lay->ctrl_mode)
                         {
                             ov_cmdlog_push(
                                 &lay->cmdlog,
                                 OV_CMDLOG_WARN,
-                                "Edit requires CONTROL mode");
+                                "Edit requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
                         }
                         else
                         {
@@ -1589,7 +1739,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                     lay->param_sel = -1;
                 }
                 else if (key == OV_KEY_ENTER
-                         || key == '\r')
+                         || key == '\r' || key == '\n')
                 {
                     if (!lay->ctrl_mode)
                     {
@@ -1597,7 +1747,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                             &lay->cmdlog,
                             OV_CMDLOG_WARN,
                             "Edit requires "
-                            "CONTROL mode");
+                            "CONTROL mode (press c to toggle CTRL mode ON/OFF)");
                     }
                     else
                     {

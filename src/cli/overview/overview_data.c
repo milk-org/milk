@@ -76,6 +76,7 @@ void ov_model_full_scan(OV_MODEL *model)
 
     ov_scan_streams(model);
     ov_scan_fps(model);
+    ov_scan_tmux_sessions(model);
     ov_scan_procs(model);
 
     ov_build_graph(model);
