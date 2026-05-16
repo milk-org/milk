@@ -284,6 +284,7 @@ static void ov_input__streams_header_click(
             "Sort STREAMS by %s %s",
             stream_col_names[col_idx],
             lay->sort_dir_stream ? "▼" : "▲");
+        lay->sort_pending = 1;
         ov_scan_force_update();
     }
 }
@@ -329,6 +330,7 @@ static void ov_input__procs_header_click(
             "Sort PROCS by %s %s",
             proc_col_names[col_idx],
             lay->sort_dir_proc ? "▼" : "▲");
+        lay->sort_pending = 1;
         ov_scan_force_update();
     }
 }
@@ -371,6 +373,7 @@ static void ov_input__fps_header_click(
             "Sort FPS by %s %s",
             fps_col_names[col_idx],
             lay->sort_dir_fps ? "▼" : "▲");
+        lay->sort_pending = 1;
         ov_scan_force_update();
     }
 }
@@ -387,7 +390,7 @@ static void ov_input__exec_preview_btn(
         ov_cmdlog_push(
             &lay->cmdlog,
             OV_CMDLOG_WARN,
-            "Action requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+            "🚫 Action requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
         return;
     }
 
@@ -716,6 +719,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 if (ti >= 0)
                 {
                     lay->graph_tab_mode = ti;
+                    ov_scan_force_update();
                 }
             }
             else
@@ -867,6 +871,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     if (ti >= 0)
                     {
                         lay->graph_tab_mode = ti;
+                        ov_scan_force_update();
                     }
                 }
                 else
@@ -1350,9 +1355,9 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         lay->paused = !lay->paused;
         ov_cmdlog_push(&lay->cmdlog,
                        OV_CMDLOG_INFO,
-                       "Display %s",
-                       lay->paused
-                       ? "paused" : "resumed");
+                       "%s Display %s",
+                       lay->paused ? "⏸️" : "▶️",
+                       lay->paused ? "paused" : "resumed");
         return 1;
     }
     if (key == 'W')
@@ -1360,7 +1365,7 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
         ov_model_export_snapshot(m);
         ov_cmdlog_push(&lay->cmdlog,
                        OV_CMDLOG_OK,
-                       "Snapshot exported");
+                       "📸 Snapshot exported");
         return 1;
     }
 
@@ -1588,7 +1593,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         if (!lay->ctrl_mode)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_WARN, "CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "🚫 CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
             return 1;
         }
 
@@ -1702,7 +1707,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             else if (key == OV_KEY_DEL) snprintf(keyname, sizeof(keyname), "DEL");
             else snprintf(keyname, sizeof(keyname), "'%c'", key);
             
-            ov_cmdlog_push(log, OV_CMDLOG_WARN, "%s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)", keyname);
+            ov_cmdlog_push(log, OV_CMDLOG_WARN, "🚫 %s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)", keyname);
         }
         else
         {
@@ -2477,15 +2482,15 @@ int ov_handle_key(
                 snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (STRM): DEL ^e");
         }
 
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s%s", keys_str, ctrl_str);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "⌨️ %s%s", keys_str, ctrl_str);
         if (lay->cmdlog_rows == 0) lay->cmdlog_rows = 4;
         return 0;
     }
 
-    if (key >= 32 && key < 127) {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key: '%c' (code %d)", key, key);
+    if (key >= 32 && key <= 126) {
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key: '%c' (code %d)", key, key);
     } else {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key code: %d", key);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key code: %d", key);
     }
     return 0;
 }
