@@ -275,16 +275,14 @@ static void ov_input__streams_header_click(
         return;
     }
     int col_idx = -1;
-    if (c < 15)
-    {
-        col_idx = (lay->sort_key_stream == 7) ? 7 : 0;
-    }
-    else if (c < 20) { col_idx = 1; }
-    else if (c < 32) { col_idx = 2; }
-    else if (c < 39) { col_idx = 3; }
-    else if (c < 47) { col_idx = 4; }
-    else if (c < 58) { col_idx = 5; }
-    else if (c >= 66 && c < 77) { col_idx = 6; }
+    if (c < 4)             { col_idx = 7; }
+    else if (c < 19)      { col_idx = 0; }
+    else if (c < 24)      { col_idx = 1; }
+    else if (c < 36)      { col_idx = 2; }
+    else if (c < 43)      { col_idx = 3; }
+    else if (c < 51)      { col_idx = 4; }
+    else if (c < 62)      { col_idx = 5; }
+    else if (c >= 70 && c < 81) { col_idx = 6; }
 
     if (col_idx >= 0)
     {
@@ -323,14 +321,12 @@ static void ov_input__procs_header_click(
         return;
     }
     int col_idx = -1;
-    if (c < 15)
-    {
-        col_idx = (lay->sort_key_proc == 5) ? 5 : 0;
-    }
-    else if (c < 23) { col_idx = 1; }
-    else if (c < 29) { col_idx = 2; }
-    else if (c < 36) { col_idx = 3; }
-    else if (c >= 84 && c < 90) { col_idx = 4; }
+    if (c < 4)             { col_idx = 5; }
+    else if (c < 19)      { col_idx = 0; }
+    else if (c < 27)      { col_idx = 1; }
+    else if (c < 33)      { col_idx = 2; }
+    else if (c < 40)      { col_idx = 3; }
+    else if (c >= 88 && c < 94) { col_idx = 4; }
 
     if (col_idx >= 0)
     {
@@ -368,13 +364,11 @@ static void ov_input__fps_header_click(
         return;
     }
     int col_idx = -1;
-    if (c <= 19)
-    {
-        col_idx = (lay->sort_key_fps == 3) ? 3 : 0;
-    }
-    else if (c >= 22 && c <= 30) { col_idx = 1; }
-    else if (c >= 30 && c <= 38) { col_idx = 4; }
-    else if (c >= 42 && c <= 48) { col_idx = 2; }
+    if (c < 4)             { col_idx = 3; }
+    else if (c <= 23)     { col_idx = 0; }
+    else if (c >= 26 && c <= 34) { col_idx = 1; }
+    else if (c >= 34 && c <= 42) { col_idx = 4; }
+    else if (c >= 46 && c <= 52) { col_idx = 2; }
 
     if (col_idx >= 0)
     {

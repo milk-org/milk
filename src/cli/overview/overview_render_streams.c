@@ -406,38 +406,46 @@ void ov_render_streams_panel(
             pid_t _spid = (rel != NULL)
                         ? rel->sel_pid : 0;
 
-            /* Ancestry column (separate from name) */
+            /* Ancestry column — rendered raw (UTF-8
+             * arrows are 3 bytes / 1 display char).
+             * Fixed width: 4 display chars. */
             int8_t sdepth = local_depth[si];
             if (sdepth != 0 && !is_sel && !is_frozen)
             {
                 int abs_d = sdepth < 0
                     ? -sdepth : sdepth;
                 if (abs_d > 99) abs_d = 99;
-                char abuf[8];
+                ov_theme_fg(OV_FG_WARN);
                 if (sdepth < 0)
                 {
-                    snprintf(abuf, sizeof(abuf),
-                        "\xe2\x97\x80%d", abs_d);
+                    if (abs_d < 10)
+                        ov_buf_printf(
+                            "\xe2\x97\x80%d  ", abs_d);
+                    else
+                        ov_buf_printf(
+                            "\xe2\x97\x80%d ", abs_d);
                 }
                 else
                 {
-                    snprintf(abuf, sizeof(abuf),
-                        "%d\xe2\x96\xb6", abs_d);
+                    if (abs_d < 10)
+                        ov_buf_printf(
+                            "%d\xe2\x96\xb6  ", abs_d);
+                    else
+                        ov_buf_printf(
+                            "%d\xe2\x96\xb6 ", abs_d);
                 }
-                STRM_FIELD(OV_FG_WARN,
-                    "%-3s ", abuf);
             }
             else
             {
                 /* Activity dot */
                 if (s->update_hz > 0.1)
                 {
-                    STRM_FIELD(OV_FG_ACTIVE,
-                        "\xe2\x97\x8f ");
+                    ov_theme_fg(OV_FG_ACTIVE);
+                    ov_buf_printf("\xe2\x97\x8f ");
                 }
                 else
                 {
-                    STRM_FIELD(OV_FG_DIM, "  ");
+                    ov_buf_printf("  ");
                 }
 
                 /* R/W direction arrow */
@@ -449,20 +457,21 @@ void ov_render_streams_panel(
                         bget(rel->stream_written, si);
                     if (is_written)
                     {
-                        STRM_FIELD(OV_FG_ERROR,
-                            "\xe2\x96\xb6 ");
+                        ov_theme_fg(OV_FG_ERROR);
+                        ov_buf_printf("\xe2\x96\xb6 ");
                     }
                     else
                     {
-                        STRM_FIELD(OV_FG_ACTIVE,
-                            "\xe2\x97\x80 ");
+                        ov_theme_fg(OV_FG_ACTIVE);
+                        ov_buf_printf("\xe2\x97\x80 ");
                     }
                 }
                 else
                 {
-                    STRM_FIELD(OV_FG_DIM, "  ");
+                    ov_buf_printf("  ");
                 }
             }
+            printed += 4;
 
             ov_rgb_t base_color = s->active
                 ? OV_FG_STREAM : OV_FG_DIM;
