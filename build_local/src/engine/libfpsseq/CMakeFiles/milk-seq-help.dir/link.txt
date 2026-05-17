@@ -1,1 +1,0 @@
-/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-seq-help.dir/milk-seq-help.c.o" -o milk-seq-help  -Wl,-rpath,::::::::::::::::::::::::::::::::::::::::

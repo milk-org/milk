@@ -1,1 +1,0 @@
-/usr/bin/cc -fPIC -Ofast -DNDEBUG -std=gnu17 -funroll-loops -shared -Wl,-soname,libImageStreamIO.so -o libImageStreamIO.so CMakeFiles/ImageStreamIO.dir/ImageStreamIO.c.o   -L/usr/local/include  -Wl,-rpath,:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
