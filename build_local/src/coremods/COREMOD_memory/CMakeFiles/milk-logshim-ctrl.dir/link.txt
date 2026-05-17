@@ -1,1 +1,0 @@
-/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-logshim-ctrl.dir/milk-logshim-ctrl.c.o" -o milk-logshim-ctrl   -L/usr/local/lib  -Wl,-rpath,:::::::::::::::::::::::::::::::::::::::::::::::::::::::

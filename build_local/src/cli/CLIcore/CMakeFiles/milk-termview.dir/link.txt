@@ -1,1 +1,0 @@
-/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-termview.dir/termview/milk-termview.c.o" "CMakeFiles/milk-termview.dir/termview/termview.c.o" -o milk-termview   -L/usr/local/lib  -L/usr/local/include  -Wl,-rpath,/usr/local/lib:/usr/local/include:/home/oguyon/src/milk/build_local/src/engine/ImageStreamIO: ../../engine/ImageStreamIO/libImageStreamIO.so -lm

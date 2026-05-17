@@ -1,1 +1,0 @@
-/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-procinfo-help.dir/milk-procinfo-help.c.o" -o milk-procinfo-help  -Wl,-rpath,::::::::::::::::::::::::::::::::::::::::
