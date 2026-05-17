@@ -2,10 +2,32 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "convert CR2 raw image to FITS format"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-cr2tofits <input.CR2> <output>"
-        echo "Convert a Canon CR2 raw image file to FITS format via milk-cli."
+    -h1|--help-oneline)
+        echo "convert CR2 raw image to FITS format"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Convert a Canon CR2 raw image file" \
+             "to FITS format via milk-cli."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        if [ "$1" = "-hm" ] || [ "$1" = "--help-mono" ] \
+            || ! [ -t 1 ]; then
+            T="" R="" H="" C="" A=""
+        else
+            T=$'\033[1;36m' R=$'\033[0m'
+            H=$'\033[1;34m' C=$'\033[1;32m'
+            A=$'\033[1;35m'
+        fi
+        echo "${T}milk-cr2tofits${R}" \
+            "— convert CR2 raw image to FITS format"
+        echo ""
+        echo "${H}Usage:${R}"
+        echo "  ${C}milk-cr2tofits${R}" \
+            "${A}input.CR2${R} ${A}output${R}"
+        echo ""
+        echo "${H}Description:${R}"
+        echo "  Convert a Canon CR2 raw image file" \
+             "to FITS format via milk-cli."
         exit 0 ;;
 esac
 

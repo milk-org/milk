@@ -2,10 +2,39 @@
 
 # Early-exit help flags (getopts cannot handle long options)
 case "${1-}" in
-    -h1|--help-oneline) echo "print or extract FITS file header"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-fitsheader [-w] <file1> [file2 ...]"
-        echo "Print FITS header to stdout. With -w, also write <file>.header."
+    -h1|--help-oneline)
+        echo "print or extract FITS file header"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Print FITS header to stdout. With -w," \
+             "also write each file's header to" \
+             "<file>.header on disk."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        if [ "$1" = "-hm" ] || [ "$1" = "--help-mono" ] \
+            || ! [ -t 1 ]; then
+            T="" R="" H="" C="" O="" A=""
+        else
+            T=$'\033[1;36m' R=$'\033[0m'
+            H=$'\033[1;34m' C=$'\033[1;32m'
+            O=$'\033[33m'   A=$'\033[1;35m'
+        fi
+        echo "${T}milk-fitsheader${R}" \
+            "— print or extract FITS file header"
+        echo ""
+        echo "${H}Usage:${R}"
+        echo "  ${C}milk-fitsheader${R}" \
+            "[${O}-w${R}] ${A}file1${R}" \
+            "[${A}file2${R} ...]"
+        echo ""
+        echo "${H}Description:${R}"
+        echo "  Print FITS header to stdout."
+        echo "  With ${O}-w${R}, also write" \
+             "<file>.header."
+        echo ""
+        echo "${H}Options:${R}"
+        echo "  ${O}-w${R}" \
+            "  Write header to <file>.header"
         exit 0 ;;
 esac
 

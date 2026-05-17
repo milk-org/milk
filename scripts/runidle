@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "suspend process unless X session is idle"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Suspend/resume a process based on" \
+             "X session idle time. Requires" \
+             "xprintidle."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: runidle <PID>"
+        echo "Suspend process unless X session is idle."
+        exit 0 ;;
+esac
 # this script suspends a process unless X session is idle
 # used to run non time-critical intensive processes whenever X session is idle
 #

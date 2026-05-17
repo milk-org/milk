@@ -10,16 +10,46 @@ case "${1-}" in
     -h1|--help-oneline)
         echo "${MSdescr}"
         exit 0 ;;
-    -h|--help)
-        echo "milk-cli-all : ${MSdescr}"
+    -h2|--help-description)
+        echo "Launch milk-cli with all standard plugin" \
+             "modules pre-loaded. Useful for interactive" \
+             "sessions that need access to FFT, linear" \
+             "algebra, image processing, and statistics."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        if [ "$1" = "-hm" ] || [ "$1" = "--help-mono" ] \
+            || ! [ -t 1 ]; then
+            C="" R=""
+        else
+            C=$'\033[1;36m' R=$'\033[0m'
+            HDR=$'\033[1;34m' CMD=$'\033[1;32m'
+            OPT=$'\033[33m'
+        fi
+        : "${HDR:=}" "${CMD:=}" "${OPT:=}"
+        echo "${C}milk-cli-all${R} — ${MSdescr}"
         echo ""
-        echo "Loads modules:"
-        echo "  ${modulelist}"
+        echo "${HDR}Usage:${R}"
+        echo "  ${CMD}milk-cli-all${R}" \
+            "[${OPT}MILK OPTIONS ...${R}]"
         echo ""
-        echo "USAGE:"
-        echo "  milk-cli-all [MILK OPTIONS ...]"
+        echo "${HDR}Description:${R}"
+        echo "  Loads modules:"
+        echo "    ${modulelist}"
         echo ""
-        echo "All arguments are forwarded to milk-cli."
+        echo "  All arguments are forwarded to milk-cli."
+        echo ""
+        echo "${HDR}Options:${R}"
+        echo "  ${OPT}-h, --help${R}" \
+            "          Print this help message."
+        echo "  ${OPT}-h1, --help-oneline${R}" \
+            "  One-line description."
+        echo "  ${OPT}-h2${R}" \
+            "                  Verbose description."
+        echo "  ${OPT}-hm${R}" \
+            "                  Monochrome help."
+        echo ""
+        echo "${HDR}See Also:${R}"
+        echo "  ${CMD}milk-cli${R}"
         exit 0
         ;;
     -hs)
