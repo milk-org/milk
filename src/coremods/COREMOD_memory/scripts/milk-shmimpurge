@@ -2,10 +2,16 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "purge orphan shared memory streams and files"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-shmimpurge [-f <filter>]  -- remove orphan shmim streams"
+    -h1|--help-oneline)
+        echo "purge orphan shared memory streams and files"
         exit 0 ;;
+    -h2|--help-description)
+        echo "Remove orphan shared memory image" \
+             "streams and associated files. An" \
+             "optional filter string can be" \
+             "specified to match stream names."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through
 esac
 
 # number of arguments to script

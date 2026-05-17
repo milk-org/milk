@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "monitor image stream"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Monitor an image stream with real-time" \
+             "statistics display via milk-cli."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through to printHELP
+esac
+
 # number of arguments to script
 NBARGS=1
 

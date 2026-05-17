@@ -1,5 +1,18 @@
 #! /bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "log image stream to disk"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Start process to log image stream" \
+             "to disk. Delegates to milk-cli's" \
+             "shmimstreamlog command."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through to printHELP
+esac
+
 NBARGS=3
 
 pname="logshim-$1"

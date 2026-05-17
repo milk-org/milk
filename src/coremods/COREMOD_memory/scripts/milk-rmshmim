@@ -2,10 +2,15 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "remove shared memory stream and associated files"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-rmshmim <stream(s)>  -- remove shmim and associated files"
+    -h1|--help-oneline)
+        echo "remove shared memory stream and associated files"
         exit 0 ;;
+    -h2|--help-description)
+        echo "Remove shared memory image stream and" \
+             "associated files. Multiple streams can" \
+             "be entered separated by comma."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through
 esac
 
 # number of arguments to script
