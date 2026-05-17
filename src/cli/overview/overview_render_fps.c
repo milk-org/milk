@@ -75,10 +75,12 @@ void ov_render_fps_panel(
     {
         int sk = lay->sort_key_fps;
         int sd = lay->sort_dir_fps;
-        char c_name[24], c_c[8], c_r[8], c_mem[10];
+        char c_anc[8], c_name[24];
+        char c_c[8], c_r[8], c_mem[10];
+        int w_anc = sort_col_label(c_anc, sizeof(c_anc),
+                       "A", 3, sk, sd, 3);
         int w_name = sort_col_label(c_name, sizeof(c_name),
-                       (sk == 3) ? "ANCESTRY" : "NAME",
-                       (sk == 3) ? 3 : 0, sk, sd, 18);
+                       "NAME", 0, sk, sd, 18);
         int w_c = sort_col_label(c_c, sizeof(c_c),
                        "CPID", 1, sk, sd, 7);
         int w_r = sort_col_label(c_r, sizeof(c_r),
@@ -90,9 +92,11 @@ void ov_render_fps_panel(
             ? 30 : 20;
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-*s %3s %*s %*s %3s %*s"
+            "%-*s %-*s %3s %*s %*s %3s %*s"
             " %-*s",
-            w_name, c_name, "TMX", w_c, c_c, w_r, c_r, "STR", w_mem, c_mem,
+            w_anc, c_anc,
+            w_name, c_name, "TMX", w_c, c_c,
+            w_r, c_r, "STR", w_mem, c_mem,
             desc_w, "DESCRIPTION");
     }
     
@@ -198,37 +202,8 @@ void ov_render_fps_panel(
                 printed += 1;
             }
 
-            /* Lineage depth badge: ◀N or N▶ */
+            /* Ancestry column (separate from name) */
             int8_t sdepth = local_depth[fi];
-            if (sdepth != 0 && !is_sel && !is_frozen) {
-                int abs_d = sdepth < 0 ? -sdepth : sdepth;
-                if (abs_d > 99) abs_d = 99;
-                ov_theme_fg(OV_FG_WARN);
-                if (sdepth < 0) {
-                    if (abs_d < 10) ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
-                    else ov_buf_printf("\xe2\x97\x80%d ", abs_d);
-                } else {
-                    if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
-                    else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
-                }
-            } else {
-                if (is_sel || is_frozen) {
-                    ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("\xe2\x97\x8f   ");
-                } else if (eff_focus == OV_FOCUS_STREAMS && is_rel && rel != NULL) {
-                    int is_written = bget(rel->fps_writes, fi);
-                    if (is_written) {
-                        ov_theme_fg(OV_FG_ERROR);
-                        ov_buf_printf("\xe2\x96\xb6   ");
-                    } else {
-                        ov_theme_fg(OV_FG_ACTIVE);
-                        ov_buf_printf("\xe2\x97\x80   ");
-                    }
-                } else {
-                    ov_buf_printf("    ");
-                }
-            }
-
             #define FPS_FIELD(color, fmt, ...)         \
             do {                                       \
                 char _fb[128];                         \
@@ -287,6 +262,51 @@ void ov_render_fps_panel(
 
             pid_t _spid = (rel != NULL)
                         ? rel->sel_pid : 0;
+
+            if (sdepth != 0 && !is_sel && !is_frozen)
+            {
+                int abs_d = sdepth < 0
+                    ? -sdepth : sdepth;
+                if (abs_d > 99) abs_d = 99;
+                char abuf[8];
+                if (sdepth < 0)
+                {
+                    snprintf(abuf, sizeof(abuf),
+                        "\xe2\x97\x80%d", abs_d);
+                }
+                else
+                {
+                    snprintf(abuf, sizeof(abuf),
+                        "%d\xe2\x96\xb6", abs_d);
+                }
+                FPS_FIELD(OV_FG_WARN,
+                    "%-3s ", abuf);
+            }
+            else if (is_sel || is_frozen)
+            {
+                FPS_FIELD(OV_FG_ACTIVE,
+                    "\xe2\x97\x8f   ");
+            }
+            else if (eff_focus == OV_FOCUS_STREAMS
+                && is_rel && rel != NULL)
+            {
+                int is_written =
+                    bget(rel->fps_writes, fi);
+                if (is_written)
+                {
+                    FPS_FIELD(OV_FG_ERROR,
+                        "\xe2\x96\xb6   ");
+                }
+                else
+                {
+                    FPS_FIELD(OV_FG_ACTIVE,
+                        "\xe2\x97\x80   ");
+                }
+            }
+            else
+            {
+                FPS_FIELD(OV_FG_DIM, "    ");
+            }
 
             FPS_FIELD(OV_FG_FPS, "%-18.18s ", f->name);
 

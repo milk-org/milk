@@ -67,21 +67,27 @@ static void ov_procs__render_header(
     {
         int sk = lay->sort_key_proc;
         int sd = lay->sort_dir_proc;
-        char c_name[20], c_pid[12];
+        char c_anc[8], c_name[20], c_pid[12];
         char c_stat[10], c_hz[10], c_mem[10];
+        int w_anc = sort_col_label(c_anc, sizeof(c_anc),
+                                    "A", 5, sk, sd, 3);
         int w_name = sort_col_label(c_name, sizeof(c_name),
-                                    (sk == 5) ? "ANCESTRY" : "NAME",
-                                    (sk == 5) ? 5 : 0, sk, sd, 14);
-        int w_pid = sort_col_label(c_pid, sizeof(c_pid), "PID", 1, sk, sd, 7);
-        int w_stat = sort_col_label(c_stat, sizeof(c_stat), "STAT", 2, sk, sd, 5);
-        int w_hz = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
-        int w_mem = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
+                                    "NAME", 0, sk, sd, 14);
+        int w_pid = sort_col_label(c_pid, sizeof(c_pid),
+                                    "PID", 1, sk, sd, 7);
+        int w_stat = sort_col_label(c_stat, sizeof(c_stat),
+                                    "STAT", 2, sk, sd, 5);
+        int w_hz = sort_col_label(c_hz, sizeof(c_hz),
+                                    "Hz", 3, sk, sd, 6);
+        int w_mem = sort_col_label(c_mem, sizeof(c_mem),
+                                    "MEM", 4, sk, sd, 5);
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-*s %*s %*s %*s"
+            "%-*s %-*s %*s %*s %*s"
             " %6s"
             " %3s %-10s %7s %5s"
             "  CPU%%  %10s %*s %10s %4s",
+            w_anc, c_anc,
             w_name, c_name, w_pid, c_pid,
             w_stat, c_stat, w_hz, c_hz,
             "UPTIME",
@@ -362,7 +368,7 @@ static void ov_procs__render_rows(
                 char _fb[80];                          \
                 int _fl = snprintf(                    \
                     _fb, sizeof(_fb), fmt,              \
-                    __VA_ARGS__);                       \
+                    ##__VA_ARGS__);                      \
                 int _skip = 0;                         \
                 if (hs_rem > 0) {                      \
                     _skip = (hs_rem < _fl) ? hs_rem : _fl; \
@@ -389,36 +395,50 @@ static void ov_procs__render_rows(
                 ov_theme_bg(row_bg);
             }
 
-            /* Lineage depth badge: ◀N or N▶ */
+            /* Ancestry column (separate from name) */
             int8_t sdepth = local_depth[pi];
-            if (sdepth != 0 && !is_sel && !is_frozen) {
-                int abs_d = sdepth < 0 ? -sdepth : sdepth;
+            if (sdepth != 0 && !is_sel && !is_frozen)
+            {
+                int abs_d = sdepth < 0
+                    ? -sdepth : sdepth;
                 if (abs_d > 99) abs_d = 99;
-                ov_theme_fg(OV_FG_WARN);
-                if (sdepth < 0) {
-                    if (abs_d < 10) ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
-                    else ov_buf_printf("\xe2\x97\x80%d ", abs_d);
-                } else {
-                    if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
-                    else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
+                char abuf[8];
+                if (sdepth < 0)
+                {
+                    snprintf(abuf, sizeof(abuf),
+                        "\xe2\x97\x80%d", abs_d);
                 }
-            } else if (eff_focus == OV_FOCUS_STREAMS && has_rel) {
-                if (is_write) {
-                    ov_theme_fg(OV_FG_ERROR);
-                    ov_buf_printf("\xe2\x96\xb6   ");
-                } else {
-                    ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("\xe2\x97\x80   ");
+                else
+                {
+                    snprintf(abuf, sizeof(abuf),
+                        "%d\xe2\x96\xb6", abs_d);
                 }
-            } else {
-                if (is_sel || is_frozen) {
-                    ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("\xe2\x97\x8f   ");
-                } else {
-                    ov_buf_printf("    ");
+                PROC_FIELD(OV_FG_WARN,
+                    "%-3s ", abuf);
+            }
+            else if (eff_focus == OV_FOCUS_STREAMS
+                && has_rel)
+            {
+                if (is_write)
+                {
+                    PROC_FIELD(OV_FG_ERROR,
+                        "\xe2\x96\xb6   ");
+                }
+                else
+                {
+                    PROC_FIELD(OV_FG_ACTIVE,
+                        "\xe2\x97\x80   ");
                 }
             }
-            printed = 4;
+            else if (is_sel || is_frozen)
+            {
+                PROC_FIELD(OV_FG_ACTIVE,
+                    "\xe2\x97\x8f   ");
+            }
+            else
+            {
+                PROC_FIELD(OV_FG_DIM, "    ");
+            }
 
             /* Name */
             {
