@@ -63,7 +63,10 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-procinfo-rm%s %smyproc%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = { "milk-procinfo-list", "milk-procinfo-info" };
+    const char *see_also[] = {
+        "milk-procinfo-list:list active processinfo instances",
+        "milk-procinfo-info:inspect processinfo memory contents"
+    };
     milk_help_see_also(see_also, 2, mh_color);
 }
 

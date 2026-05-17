@@ -1,0 +1,84 @@
+#! /bin/bash
+# milk-shm2FITSloop — periodically save a shared memory stream to FITS
+
+MSdescr="periodically save shared memory stream to FITS file"
+
+# ---------------------------------------------------------------------------
+# Early-exit help flags — checked before any side-effects
+# ---------------------------------------------------------------------------
+for _arg in "$@"; do
+    case "${_arg}" in
+        -h1|--help-oneline)
+            echo "${MSdescr}"
+            exit 0
+            ;;
+        -h|--help)
+            cat <<EOF
+Usage: milk-shm2FITSloop <stream> <delay_sec>
+
+${MSdescr}
+
+Arguments:
+  <stream>      Shared memory stream name (e.g. ircam0)
+  <delay_sec>   Save interval in seconds (e.g. 1.0)
+
+Description:
+  Opens a tmux session running milk-cli, reads the named stream into
+  shared memory, then saves it to <stream>.fits every <delay_sec>
+  seconds.  Press CTRL+C to stop.
+
+Options:
+  -h, --help          Show this help and exit
+  -h1, --help-oneline Print one-line description and exit
+EOF
+            exit 0
+            ;;
+    esac
+done
+unset _arg
+
+# ---------------------------------------------------------------------------
+# Argument validation
+# ---------------------------------------------------------------------------
+if [ $# -ne 2 ]; then
+    echo "Error: expected 2 arguments, got $#" >&2
+    echo "Usage: milk-shm2FITSloop <stream> <delay_sec>" >&2
+    echo "Run 'milk-shm2FITSloop --help' for details." >&2
+    exit 1
+fi
+
+STREAM="$1"
+DELAY="$2"
+
+progname=$(basename "$0")
+tmuxname="${progname}-${STREAM}"
+pname="${tmuxname}"
+
+# ---------------------------------------------------------------------------
+# Cleanup trap — only registered after args are validated
+# ---------------------------------------------------------------------------
+function cleanup {
+    echo "clean exit"
+    tmux send-keys -t "${tmuxname}" "exitCLI" C-m 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+echo "Saving stream ${STREAM} to disk every ${DELAY} sec"
+echo "Running inside tmux session ${tmuxname}"
+echo "Press [CTRL+C] to stop.."
+
+tmux new-session -d -s "${tmuxname}"
+tmux send-keys -t "${tmuxname}" "milk-cli -n ${pname}" C-m
+tmux send-keys -t "${tmuxname}" "readshmim ${STREAM}" C-m
+
+IMCNT=0
+while :
+do
+    echo "saving count ${IMCNT}"
+    tmux send-keys -t "${tmuxname}" "savefits ${STREAM} \"!${STREAM}.fits\"" C-m
+    (( IMCNT++ )) || true
+    sleep "${DELAY}"
+done

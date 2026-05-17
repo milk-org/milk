@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# milk-logshimstat — show status of shared memory log stream
+# Thin wrapper: delegates to milk-logshim-ctrl stat
+
+case "${1-}" in
+    -h1|--help-oneline|-h|--help|-hm|--help-mono)
+        exec milk-logshim-ctrl "$1"
+        ;;
+esac
+
+if [ $# -ne 1 ]; then
+    milk-logshim-ctrl --help
+    exit 1
+fi
+
+exec milk-logshim-ctrl stat "$1"

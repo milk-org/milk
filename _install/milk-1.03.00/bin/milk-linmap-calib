@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+
+MSdescr="Linear mapping between input frames A and output frames B cubes"
+
+MSextdescr="
+A frames and B frames are FITS cubes, same z-size
+
+For calibration (mode = cal) :
+
+Do PCA if both imA and imB
+UA and UB are the modes used for decomposing images in A-space and B-space
+MCA and MCB are the modal coefficients to the decomposition
+
+Output mapping consists of:
+- mapUA.fits     : A-space modes
+- mapTMABm:fits  : A to B modal translation map
+- mapTMBAm:fits  : B to A modal translation map
+- mapUB.fits     : B-space modes
+
+Also included decomposition coeffs of input frames:
+- imSA.fits
+- imVA.fits
+- imSB.fits
+- imVB.fits
+
+
+For reconstruction (mode = rec):
+
+imA in an input, imB an output.
+"
+
+source milk-script-std-config
+
+RequiredCommands=( milk-all )
+RequiredFiles=()
+RequiredDirs=()
+
+MSarg+=( "mode:string:mode calib/rec" )
+
+MSarg+=( "inA:string:input frames A" )
+MSarg+=( "inB:string:modes onto which to decompose" )
+MSarg+=( "SVDlim:float:SVD limit" )
+MSarg+=( "mapn:string:output mapping name" )
+
+GPUindex="-1"
+MSopt+=( "g:gpu:setgpu:GPU[int]:GPU index, -1 for CPU" )
+function setgpu() {
+	GPUindex="$1"
+}
+
+source milk-argparse
+
+runmode="${inputMSargARRAY[0]}"
+immA="${inputMSargARRAY[1]}"
+immB="${inputMSargARRAY[2]}"
+SVDlim="${inputMSargARRAY[3]}"
+WORKDIR="${inputMSargARRAY[4]}"
+
+
+mkdir -p ${WORKDIR}
+echo "WORKDIR = ${WORKDIR}"
+
+
+if [ "${runmode}" = "cal" ]; then
+
+milk-all << EOF
+loadfits "${immA}" imAu
+imA=1.0*imAu
+saveFITS imA "${WORKDIR}/imA.fits"
+linalg.compSVD .GPUdevice ${GPUindex}
+linalg.compSVD .maxNBmode 10000
+
+linalg.compSVD imA imUA imSA imVA ${SVDlim}
+listim
+saveFITS imUA "${WORKDIR}/mapUA.fits"
+#saveFITS imSA "${WORKDIR}/imSA.fits"
+saveFITS imVA "${WORKDIR}/imVA.fits"
+saveFITS SV "${WORKDIR}/SVA.fits"
+
+# compute MCAT
+imvecmult imVA SV MCAT 1
+#saveFITS MCAT "${WORKDIR}/MCAT.fits"
+
+# compute MCAinv
+imvecmult imVA SVinv MCAinv 1
+#saveFITS MCAinv "${WORKDIR}/MCAinv.fits"
+
+#linalg.sgemm .GPUdevice 0
+#linalg.sgemm .transpA 1
+#linalg.sgemm .transpB 0
+#linalg.sgemm  MCAT MCAinv MCAID
+#saveFITS MCAID "${WORKDIR}/MCAID.fits"
+
+
+# check reconstruction of input frames
+#linalg.sgemm .GPUdevice 0
+#linalg.sgemm .transpA 0
+#linalg.sgemm .transpB 1
+#linalg.sgemm imUA SVDvnmodes imM
+#saveFITS imM "${WORKDIR}/imM.fits"
+
+# Check
+#linalg.sgemm imVA imVA imVV
+#saveFITS imVV "${WORKDIR}/imVV.fits"
+
+# Check
+#linalg.sgemm .transpA 1
+#linalg.sgemm .transpB 0
+#linalg.sgemm imVA imVA imVV1
+#saveFITS imVV1 "${WORKDIR}/imVV1.fits"
+
+rm SV
+rm SVDvnmodes
+rm SVDunmodes
+rm SVinv
+rm SVDinrec
+
+loadfits "${immB}" imBu
+imB=1.0*imBu
+saveFITS imB "${WORKDIR}/imB.fits"
+linalg.compSVD .GPUdevice 0
+linalg.compSVD .maxNBmode 10000
+linalg.compSVD imB imUB imSB imVB ${SVDlim}
+saveFITS imUB "${WORKDIR}/mapUB.fits"
+#saveFITS imSB "${WORKDIR}/imSB.fits"
+saveFITS imVB "${WORKDIR}/imVB.fits"
+saveFITS SV "${WORKDIR}/SVB.fits"
+
+# compute MCBT
+imvecmult imVB SV MCBT 1
+#saveFITS MCBT "${WORKDIR}/MCBT.fits"
+
+# compute MCBinv
+imvecmult imVB SVinv MCBinv 1
+#saveFITS MCBinv "${WORKDIR}/MCBinv.fits"
+
+# Compute modal translation matrix TMABm
+linalg.sgemm .transpA 1
+linalg.sgemm .transpB 0
+linalg.sgemm MCBT MCAinv TMABm
+saveFITS TMABm "${WORKDIR}/mapTMABm.fits"
+
+# Compute modal translation matrix TMBAm
+linalg.sgemm .transpA 1
+linalg.sgemm .transpB 0
+linalg.sgemm MCAT MCBinv TMBAm
+saveFITS TMBAm "${WORKDIR}/mapTMBAm.fits"
+
+listim
+# linalg.Mremap
+exitCLI
+EOF
+
+fi
+
+
+if [ "${runmode}" = "rec" ]; then
+echo "RECONSTRUCT"
+
+milk-all << EOF
+loadfits "${immA}" imAu
+imA=1.0*imAu
+
+loadfits "${WORKDIR}/mapUA.fits" imUA
+
+# compute A-space coeffs
+linalg.sgemm .GPUdevice 0
+linalg.sgemm .transpA 1
+linalg.sgemm .transpB 0
+linalg.sgemm imUA imA imCcoeffA
+
+# convert to B-space coeffs
+loadfits "${WORKDIR}/mapTMABm.fits" TMABm
+linalg.sgemm .transpA 0
+linalg.sgemm .transpB 0
+linalg.sgemm TMABm imCcoeffA imCcoeffB
+
+# Expand to B-space
+loadfits "${WORKDIR}/mapUB.fits" imUB
+linalg.sgemm imUB imCcoeffB imB
+
+saveFITS imB "${immB}"
+
+listim
+exitCLI
+EOF
+
+fi
+
+
+
+

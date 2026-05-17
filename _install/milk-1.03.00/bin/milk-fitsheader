@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+# Early-exit help flags (getopts cannot handle long options)
+case "${1-}" in
+    -h1|--help-oneline) echo "print or extract FITS file header"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-fitsheader [-w] <file1> [file2 ...]"
+        echo "Print FITS header to stdout. With -w, also write <file>.header."
+        exit 0 ;;
+esac
+
+writeoutput=false
+
+while getopts "w" opt; do
+  case $opt in
+    w)
+      writeoutput=true
+      ;;
+    \?) # Handle invalid options
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Shift positional parameters past the options
+shift "$((OPTIND - 1))"
+
+
+# Check if any files are provided
+if [ "$#" -eq 0 ]; then
+  echo "Usage: $0 [-w] <file1> [file2 ...]"
+  echo " -w : Write FITS header as <file>.header"
+  exit 1
+fi
+
+CNTskipped=0
+CNTproc=0
+
+for file in "$@"; do
+  if [ -f "$file" ]; then
+
+extension="${file##*.}"
+filename_no_extension="${file%.*}"
+#echo "Extension = $extension"
+#echo "filename_no_extension= = $filename_no_extension"
+
+filename="${file}"
+if [[ $extension == "fz" ]];then
+  outfile="${filename_no_extension}.header"
+else
+  outfile="$filename.header"
+fi
+
+    
+if [ -f $outfile ]; then
+  CNTskipped=$((CNTskipped + 1))
+  #echo "    File $outfile exists -> skipping"
+else
+  CNTproc=$((CNTproc + 1))
+if $writeoutput; then
+  if [[ $extension == "fz" ]];then
+    cat $filename | fold -w 80 | sed '1,/COMPRESSED_IMAGE/ d' | sed '/END                  /Q' > $outfile
+  else
+    cat $filename | fold -w 80 | sed '/END                  /Q' > $outfile
+  fi
+else
+  if [[ $extension == "fz" ]];then
+    cat $filename | fold -w 80 | sed '1,/COMPRESSED_IMAGE/ d' | sed '/END                  /Q' 
+  else
+    cat $filename | fold -w 80 | sed '/END                  /Q'
+  fi
+fi
+fi
+    # echo "Processing file: $file"
+#  else
+    #echo "Warning: '$file' is not a regular file, skipping."
+  fi
+
+done
+
+
+
+printf "%50s   %5d proc   %5d skip\n" "$PWD" $CNTproc $CNTskipped
+
+
+
+

@@ -1,0 +1,207 @@
+#!/bin/bash
+
+exit
+
+# number of arguments to script
+NBARGS=0
+
+
+srcdir="$PWD"
+
+
+if [ -f .scripts_src_dir.conf ]; then
+srcdir=$( cat .scripts_src_dir.conf )
+fi
+
+
+# ======================= PROCESS NAME =================================
+pname=`echo "$0" | sed "s/\.\///g"`
+echo "pname = $pname"
+
+
+
+filelist="runPIAACMCdesign run runclean runopt runPIAACMC sim waitforfile1 setconf optloop"
+dirlist=""
+
+printHELP ()
+{
+echo "------------------------------------------------------------------------"
+echo "$(tput bold) $pname : SYNC PIAACMC scripts $(tput sgr0)"
+echo "------------------------------------------------------------------------"
+echo " SOURCE      directory: $srcdir "
+echo " DESTINATION directory: $destdir "
+echo "  "
+echo " $(tput bold)USAGE:$(tput sgr0)"
+echo "     $0 [-hesdtc]"
+echo ""
+echo " $(tput bold)OPTIONS:$(tput sgr0)"
+echo "     $(tput bold)-h$(tput sgr0)              (h)elp"
+echo "     $(tput bold)-e$(tput sgr0) <DESTdir>    (e)xport syncscript to directory"
+echo "     $(tput bold)-s$(tput sgr0) <SRCdir>     (s)ource directory for scripts"
+echo "     $(tput bold)-d$(tput sgr0)              har(d) copy instead of symbolic link"
+echo "     $(tput bold)-x$(tput sgr0)              copy e(x)amples"
+echo "     $(tput bold)-t$(tput sgr0)              (t)est mode. Do not write/remove file, show commands to be executed"
+echo "     $(tput bold)-c$(tput sgr0)              (c)lear all files in directory (USE WITH CARE)"
+echo ""
+echo "------------------------------------------------------------------------"
+}
+
+
+
+
+# copy PIAACMC design scripts to local directory
+execname="coffee"
+srcdir=$( $execname -i 2> /dev/null | grep SOURCEDIR| awk '{ print $NF }')
+destdir=$( pwd )
+
+
+
+# ================= OPTIONS =============================
+
+HARD="0"
+EXAMPLES="0"
+TESTMODE="0"
+while getopts :htcs:e:dx FLAG; do
+  case $FLAG in
+    h)  #show help
+      printHELP
+      exit
+      ;;
+    t)
+    TESTMODE="1"
+    ;;
+    s) # source directory
+    srcdir="$OPTARG"
+    if [ "$TESTMODE" = "1" ]; then
+    echo "TEST MODE: source dir = $srcdir"
+    fi
+    ;;
+    c) # clear
+    echo "Clearing all directory and files"
+	echo "REMOVING:"
+    ls | grep -v syncscripts
+    ls | grep -v syncscripts | xargs rm -rf
+    ;;
+    e) # export script to directory
+    echo "$srcdir" > $OPTARG/.scripts_src_dir.conf
+    if [ $TESTMODE = "1" ]; then
+	echo "TEST MODE - COMMAND  :  rm $OPTARG/syncscripts 2> /dev/null"
+	echo "TEST MODE - COMMAND  :  ln -s $srcdir/syncscripts $OPTARG/syncscripts"
+	else
+    rm $OPTARG/syncscripts 2> /dev/null
+    ln -s $srcdir/syncscripts $OPTARG/syncscripts
+    fi
+    exit
+    ;;
+    d)
+    HARD="1"
+    ;;
+    x)
+    EXAMPLES="1"
+    ;;
+    \?) #unrecognized option - show help
+      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+      printHELP
+      ;;
+  esac
+done
+
+
+shift $((OPTIND-1))
+
+
+
+
+
+
+
+EXITSTATUS=0
+
+function checkFile {
+if [ -f $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
+    EXITSTATUS=1
+fi
+}
+
+
+
+
+
+
+
+if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
+if [ "$#" -ne $NBARGS ]; then
+    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+fi
+printHELP
+        exit
+fi
+
+
+
+
+
+
+
+
+echo ""
+echo "SYNCING PIAACMC scripts..."
+echo ""
+
+
+
+
+
+
+
+
+#srcdir="$HOME/src/PIAACMCdesign/src/PIAACMCsimul/scripts"
+
+echo "Destination directory  :  $destdir"
+echo "Source      directory  :  $srcdir"
+
+
+
+if [ ! -f "piaacmcscriptsinit.txt" ]; then
+if [ $TESTMODE = "1" ]; then
+echo "TEST MODE - COMMAND  :  sudo apt-get install inotify-tools"
+echo "TEST MODE - COMMAND  :  sudo cp $srcdir/PIAACMCsimul/scripts/waitforfile /usr/local/bin/"
+echo "TEST MODE - COMMAND  :  touch piaacmcscriptsinit.txt"
+else
+sudo apt-get install inotify-tools
+sudo cp $srcdir/PIAACMCsimul/scripts/waitforfile /usr/local/bin/
+touch piaacmcscriptsinit.txt
+fi
+fi
+
+
+if [ $EXAMPLES = "1" ]; then
+echo "COPYING EXAMPLES  $srcdir/PIAACMCsimul/examples -> $destdir/"
+rsync -au --progress $srcdir/PIAACMCsimul/examples $destdir/
+fi
+
+
+for fname in ${filelist[*]}
+do
+	srcfile="$srcdir/PIAACMCsimul/scripts/$fname"
+	destfile="$destdir/$fname"
+
+	echo "syncing file $srcfile -> $destfile"
+	checkFile "$srcfile"
+
+	if [ "$srcfile" = "$destfile" ]; then
+	echo "WARNING: source and destination are identical - skipping"
+	else
+	if [ $TESTMODE = "1" ]; then
+	echo "TEST MODE - COMMAND  :  rm $destfile 2> /dev/null"
+	echo "TEST MODE - COMMAND  :  ln -s $srcfile $destfile"
+	else
+	rm $file 2> /dev/null
+	ln -s $srcfile $destfile
+	fi
+	fi
+done

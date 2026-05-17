@@ -160,7 +160,8 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_RST : "", "Full help, no ANSI color");
 
     const char *see_also[] = {
-        "milk-perfbench", "milk-procinfo-info"
+        "milk-perfbench:run milk performance benchmarks",
+        "milk-procinfo-info:inspect processinfo memory contents"
     };
     milk_help_see_also(see_also, 2, mh_color);
 }

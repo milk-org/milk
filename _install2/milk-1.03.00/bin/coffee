@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+MILKCLI_APPNAME="coffee" MILKCLI_ADD_LIBS="$MILKCLI_ADD_LIBS;coffeeAOsystSim,coffeecoronagraphs,coffeeOptSystProp,coffeePIAACMCsimul,milkWFpropagate,milkcudacomp" milk-cli "$@"

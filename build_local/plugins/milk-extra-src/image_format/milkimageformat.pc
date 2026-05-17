@@ -1,0 +1,12 @@
+prefix=/home/oguyon/local_milk/milk-1.03.00
+exec_prefix=/home/oguyon/local_milk/milk-1.03.00
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: lib_milkimageformat_project
+Description: 
+Version: 
+
+Requires:
+Libs: -L${libdir} -lImageStreamIO -lCLIcore
+Cflags: -I${includedir}

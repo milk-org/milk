@@ -65,8 +65,12 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-fps-rm%s -f %smyfps00%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = { "milk-fps-list", "milk-fps-info",
-                               "milk-fps-confstop", "milk-fps-runstop" };
+    const char *see_also[] = {
+        "milk-fps-list:list active FPS instances",
+        "milk-fps-info:inspect FPS directory contents",
+        "milk-fps-confstop:stop an FPS configuration process",
+        "milk-fps-runstop:stop an FPS run process"
+    };
     milk_help_see_also(see_also, 4, mh_color);
 }
 

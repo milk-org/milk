@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+
+FPSKWname="CACAO_FPSPROC_MODALCTRL_STATS"
+
+FPSKWval="NULL"
+if [ ! -z "${CACAO_FPSPROC_MODALCTRL_STATS+x}" ]; then
+	FPSKWval="$CACAO_FPSPROC_MODALCTRL_STATS"
+fi
+
+
+# FPS name
+fpsname="mctrlstats"
+fpsarg0="${CACAO_LOOPNUMBER}"
+
+# FPS full name
+fpsfname="${fpsname}-${fpsarg0}"
+
+# function call
+fpsfcall="cacao-cli.modalCTRLstats"
+
+# short description
+fpsdescr="Modal control stats"
+
+
+
+
+function fpsentry_addmodules() {
+	echo "no module to be added"
+}
+
+function fpsentry_addcmds() {
+	addfpscmd "setval ${fpsfname}.AOloopindex ${CACAO_LOOPNUMBER}"
+	addfpscmd "setval ${fpsfname}.procinfo.loopcntMax -1"
+	addfpscmd "setval ${fpsfname}.procinfo.triggermode 3"
+	addfpscmd "setval ${fpsfname}.procinfo.triggertimeout 100"
+	addfpscmd "setval ${fpsfname}.procinfo.triggersname aol${CACAO_LOOPNUMBER}_modevalOL_buff"
+}
+
+
+source milk-fpslist-addentry

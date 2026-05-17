@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+CACAOTASK_SCRIPT_FNAME=$0
+source cacaotask-check # check environment
+
+# ======================================================================
+# PERFORM ACTIONS FOR THIS TASK
+# ======================================================================
+mkdir -p ${CACAO_LOOPROOTDIR}/simLHS
+cd $CONFDIR/simLHS/
+
+shopt -s nullglob
+for gfile in *.get.bash
+do
+	echo ">>> sourcing $gfile"
+    source $gfile
+    echo "<<< done"
+done
+shopt -u nullglob
+
+
+cd ${CURRENTDIR}
+
+
+cp ${CONFDIR}/simLHS/*.fits ${CACAO_LOOPROOTDIR}/simLHS/ 2>/dev/null || :
+cp ${CONFDIR}/simLHS/*.fits.gz ${CACAO_LOOPROOTDIR}/simLHS/ 2>/dev/null || :
+
+
+
+# uncompress all gz files
+gunzip ${CACAO_LOOPROOTDIR}/simLHS/*.fits.gz 2>/dev/null || :
+
+# ======================================================================
+# WRITE CLEANUP SCRIPT FOR THIS TASK
+# ======================================================================
+
+# Inside cat <<EOT section :
+# ${VAR} will be resolved prior to writing to destination
+# \${VAR} will not be resolved, and will appear as ${VAR} in the destination
+
+cat <<EOT >>  ${CLEANSCRIPT}
+#!/usr/bin/env bash
+source milk-script-std-config
+
+rm -f ${CACAO_LOOPROOTDIR}/simLHS/*
+rmdir ${CACAO_LOOPROOTDIR}/simLHS || :
+
+EOT
+
+# ======================================================================
+# STORE OUTPUT ENVIRONMENT VARIABLES
+# ======================================================================

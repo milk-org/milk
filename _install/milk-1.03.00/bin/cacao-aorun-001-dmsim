@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="Simulation DM"
+
+# Extended description
+MSextdescr="Simulation DM
+
+Starts DM control for simulated DM
+"
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+MSarg+=( "action:string:action (start/stop/check)" )
+source milk-argparse
+ACTION="${inputMSargARRAY[0]}"
+
+
+ACTIONOK=0
+
+
+
+if [ ${ACTION} == "check" ]; then
+ACTIONOK=1
+fi
+
+# Checking FPS
+FPScheckOK="OK"
+checkFPSON CACAO_FPSPROC_DMCH2DISPSIM ${CACAO_FPSPROC_DMCH2DISPSIM}
+echo "FPScheckOK = ${FPScheckOK}"
+
+if [ ${FPScheckOK} == "FAIL" ]; then
+echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] FPS check failed"
+cacaomsglog "ERROR FPScheck"
+exit 1
+fi
+
+
+NBchannel=12
+
+if [ ${ACTION} == "start" ]; then
+ACTIONOK=1
+cacaomsglog "START"
+# ======================================================================
+# Starting DM combination process
+# ======================================================================
+
+sendFPScmd "setval DMch2disp-${CACAO_DMSIMINDEX}.NBchannel ${NBchannel}"
+sendFPScmd "setval DMch2disp-${CACAO_DMSIMINDEX}.option.voltmode OFF"
+sendFPScmd "setval DMch2disp-${CACAO_DMSIMINDEX}.option.DClevel 0.0"
+
+sendFPScmd "confwupdate DMch2disp-${CACAO_DMSIMINDEX}"
+sendFPScmd "runstart DMch2disp-${CACAO_DMSIMINDEX}"
+
+# WAIT for dm${CACAO_DMSIMINDEX}disp to appear
+filename="${MILK_SHM_DIR}/dm${CACAO_DMSIMINDEX}disp.im.shm"
+echo "Waiting for file ${filename} ..."
+until [ -f "$filename" ]
+do
+     sleep 0.1
+done
+milk-shmim-zero aol${CACAO_LOOPNUMBER}_dmC
+
+for (( ch=0; ch<NBchannel; ch++ ))
+do
+   echo "zeroing $ch"
+   dmchstring=$( printf "dm%02ddisp%02d" ${CACAO_DMSIMINDEX} $ch )
+   milk-shmim-zero ${dmchstring}
+done
+
+
+fi
+
+
+if [ ${ACTION} == "stop" ]; then
+ACTIONOK=1
+cacaomsglog "STOP"
+sendFPScmd "runstop DMch2disp-${CACAO_DMSIMINDEX}"
+fi
+
+
+
+
+if [ ${ACTIONOK} == 0 ]; then
+echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] ACTION $ACTION undefined"
+fi
+
+cacaomsglog "END"

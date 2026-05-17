@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "convert CR2 raw image to FITS format"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-cr2tofits <input.CR2> <output>"
+        echo "Convert a Canon CR2 raw image file to FITS format via milk-cli."
+        exit 0 ;;
+esac
+
+milk-cli << EOF
+mload milkimageformat
+imgformat.cr2tofits "$1" "$2"
+exit
+EOF

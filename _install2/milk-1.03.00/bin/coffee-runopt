@@ -1,0 +1,688 @@
+#!/usr/bin/env bash
+
+
+# exit on error
+set -e
+
+# debug mode
+#set -x
+#export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+execname="coffee"
+
+# exit on error
+export MILK_ERROREXIT="1"
+
+
+
+
+
+# function to check previous command return code and exit if not successful
+exit_on_error() {
+    exit_code=$1
+    last_command=${@:2}
+    if [ $exit_code -ne 0 ]; then
+        >&2 echo -e "\n\033[31;1m EXIT on ERROR \033[0m \"${last_command}\" command failed with exit code ${exit_code}.\n"
+        exit $exit_code
+    fi
+}
+
+# enable !! command completion
+set -o history -o histexpand
+
+
+
+
+function exitOK() {
+	echo -e "\n\033[32;1m SUCCESS \033[0m $0 \n"
+	exit
+}
+
+function exitERR() {
+	echo -e "\n\033[31;1m ERROR \033[0m $0 \n"
+	exit 1
+}
+
+
+
+
+size=1024 # default
+file="./conf/conf_size.txt"
+if [ -f $file ]
+	then
+	size=$(echo "$(cat $file)")
+	echo "size = $size pix"
+fi
+
+
+
+MdesignStepMax=13 #default
+file="./log/conf_MdesignStepMax.txt"
+if [ -f $file ]
+	then
+	MdesignStepMax=$(echo "$(cat $file)")
+	echo "Monochromatic Max design Step  = $MdesignStepMax"
+	ok=0
+fi
+
+
+# save command string to filesystem (useful for debugging)
+mkdir -p log
+echo "$0 $@" > ./log/`basename "$0"`_cmdstring.txt
+echo "$0 $@"
+
+
+errorfile="errorstatus.txt"
+checkerrorstatus ()
+{
+if [ -f ${errorfile} ]; then
+	echo ""
+	if grep -q "REACHED STATE EXIT POINT" "$errorfile"; then
+		echo -e "\033[32;1m****** [$(date)] NORMAL EXIT: script $0 : $(cat ${errorfile})\033[0m"
+		rm $errorfile
+		exitOK
+	else
+		echo "\033[31;1m****** [$(date)] FATAL ERROR: script $0 : $(cat ${errorfile})\033[0m"
+		rm $errorfile
+		exitERR
+	fi
+fi
+}
+
+
+printhelp ()
+{
+	echo "------------------------------------------------------------------------------"
+	echo ""
+	echo "               SCRIPT FOR PIAACMC DESIGN AND EVALUATION"
+	echo "               SEQUENCES OPERATIONS TO SCRIPT sim"
+	echo "                MOST PARAMETERS ARE PASSED TO sim"
+	echo ""
+	echo ""
+	echo ""
+	echo "Syntax:"
+	echo " $0 <1:command> <2:puppixscale> <3:coin> <4:coout> <5:fpmrad> <6:lambda> <7:PIAAmaterial> <8:LStransm> <9:NBlyotstop> <10:mlambda> <11:mlambdaB> <12:NBrings> <13:maskradld> <14:ssize> <15:extmode> <16:fpmmaterial> <17:index>"
+	echo "Example : "
+	echo " $0 optsingle    0.00011        0.30     0.29       1.10       550          Mirror         0.75            4           850          10            22           1.60          15           0          Mirror      001"
+	echo ""
+	echo " 1 command:"
+	echo "   designmono                : design monochromatic PIAACMC system"
+	echo "   propmono                  : monochromatic propagation point source"
+	echo "   proppoly                  : polychromatic propagation point source"
+	echo "   optsingle                 : (create and) optimize a configuration / polychromatic mask until processes is killed"
+	echo "   eval0                     : compute contrast (only on-axis contrast and PSF)"
+	echo "   eval1                     : compute contrasts (compute on-axis and resolved source PSFs and contrasts)"
+	echo "   eval2                     : compute all contrasts, transmission curve"
+	echo "   psfcomploop1              : loop PSF computation (to be used for WFC)"
+	echo "                   will compute PSF every time a file named looppsfcomp appears"
+	echo "                   loop will stop when file loopstop appears"
+	echo "                   Following files will appear in shared memory: "
+	echo "                        psfout : PSF intensity image"
+	echo "                        psfout_re: real part"
+	echo "                        psfout_im: imaginary part"
+	echo
+	echo "Arguments specific to PIAACMC design excluding focal plane mask :"
+	echo " 2    pscale                 : pupil plane pixel scale"
+	echo " 3    coin                   : input central obstruction"
+	echo " 4    coout                  : output central obstruction"
+	echo " 5    fpmrad                 : nominal PIAACMC focal plane mask radius"
+	echo " 6    lambda                 : design wavelength"
+	echo " 7    PIAAmaterial           : PIAA optics material"
+	echo " 8    LStransm               : Lyot stops geometric transmission"
+	echo " 9    NBlyotstop             : Number of Lyot stops"
+	echo "Note: other settings are specified as conf_.txt files:"
+	echo "            conf_size.txt            [default = 1024]  : array size                                $size pix"
+	echo "            ./log/conf_MdesignStepMax.txt  [default = 13]    : max design step for monochromatic design  $MdesignStepMax"
+	echo ""
+	echo ""
+	echo "Arguments specific to PIAACMC focal plane mask :"
+	echo " 10   mlambda                : mask wavelength [nm]"
+	echo " 11   mlambdaB               : mask bandwidth [%]"
+	echo " 12   NBrings                : number of rings in the focal plane mask"
+	echo " 13   maskradld              : physical mask radius [l/D]"
+	echo " 14   ssize                  : extended source radius [-10 log(rad)]. 00 if point source"
+	echo " 15   extmode                : extended source mode (0: 3pts, 1: 6pts)"
+	echo " 16   fpmmaterial            : material used for the focal plane mask"
+	echo ""
+	echo " 17   fpmminsag              : min sag [m]"
+	echo " 18   fpmmaxsag              : max sag [m]"
+	echo " 19   fpmregsag_coeff        : regularization coefficient"
+	echo " 20   fpmregsag_alpha        : regularization exponent"
+	echo " 21   fpmccnbr               : center cone nb rings"
+	echo " 22   fpmccz                 : center cone sag"
+	echo " 23   fpmocradld             : outer cone rad [l/D]"
+	echo " 24   fpmocz                 : outer sag offset [m]"
+	echo ""
+	echo " 25   index"
+	echo ""
+	echo "------------------------------------------------------------------------------"
+}
+
+NBARGS=25
+
+if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
+	printhelp
+if [ "$#" -ne $NBARGS ] && [ ! "$1" == "help" ]; then
+    echo "Illegal number of parameters ($NBARGS params required, $# entered)"
+	echo "Illegal number of parameters ($NBARGS params required, $# entered)" > $errorfile
+	checkerrorstatus
+fi
+	exitERR
+fi
+
+
+
+
+checkerrorstatus
+
+
+# arguments related to PIAACMC optical design, expect focal plane mask
+pscale=$2 # pupil plane pixel scale
+coin=$3   # input central obstruction (linear)
+coout=$4  # output central obstruction (linear)
+fpmrad=$5 # nominal PIAA focal plane mask radius
+lambda=$6
+PIAAmaterial="$7"
+LStransm=$8
+NBlyotstop=$9
+
+# arguments related to focal plane mask design
+mlambda=${10}
+mlambdaB=${11}
+NBrings=${12}
+maskradld=${13}
+ssize=${14}
+extmode=${15}
+fpmmaterial="${16}"
+
+fpmminsag=${17}
+fpmmaxsag=${18}
+fpmregsag_coeff=${19}
+fpmregsag_alpha=${20}
+fpmccnbr=${21}
+fpmccz=${22}
+fpmocradld=${23}
+fpmocz=${24}
+
+# configuration index
+index=${25}
+
+# list of arguments passed to sim :
+# $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $ssize $extmode $fpmmaterial $index
+
+
+loopmode=0
+nbDM=0
+
+searchtime=36000.0
+# search time [sec]
+
+computetransmcurve=0
+
+
+
+computecontrast=2
+# 0: do not compute PSFs and contrast curves
+# 1: compute only on-axis contrast and PSF
+# 2: compute on-axis and resolved source (0.01 l/D) PSFs and contrasts
+# 3: compute on-axis and resolved source (0.01 l/D, 0.03 l/D) PSFs and contrasts
+
+inputmode=0
+# 0: unknown -> error
+# 1: monochromatic design
+# 2: polychromatic mask optimization
+# 3: evaluate solution
+
+optimizeloop=0
+
+
+
+
+
+if [ $1 == "designmono" ]; then
+	echo "monochromatic PIAACMC design"
+	searchtime=0.0
+	computecontrast=0
+	inputmode=1
+fi
+
+
+
+if [ $1 == "propmono" ]; then
+	echo "monochromatic PIAACMC design propagation"
+	searchtime=0.0
+	computecontrast=0
+	inputmode=10
+fi
+
+
+if [ $1 == "proppoly" ]; then
+	echo "polychromatic PIAACMC design propagation"
+	searchtime=0.0
+	computecontrast=0
+	inputmode=11
+fi
+
+
+if [ $1 == "optsingle" ]; then
+	echo "optimize single configuration"
+	searchtime=7200.0
+	computecontrast=0
+	inputmode=2
+fi
+
+
+if [ $1 == "optloop" ]; then
+	echo "optimize single configuration (loop)"
+	searchtime=7200.0
+	computecontrast=0
+	inputmode=2
+	optimizeloop=1
+fi
+
+
+if [ $1 == "eval0" ]; then
+	echo "Evaluate Solution"
+	searchtime=0.0
+	computetransmcurve=0
+	computecontrast=1
+	inputmode=3
+fi
+
+if [ $1 == "eval1" ]; then
+	echo "Evaluate Solution"
+	searchtime=0.0
+	computetransmcurve=0
+	computecontrast=3
+	inputmode=3
+fi
+
+if [ $1 == "eval2" ]; then
+	echo "Evaluate Solution"
+	searchtime=0.0
+	computetransmcurve=1
+	computecontrast=3
+	inputmode=3
+fi
+
+
+
+if [ $1 == "psfcomploop1" ]; then
+	echo "Loop PSF compute, 1 DM"
+	searchtime=0.0
+	computetransmcurve=0
+	computecontrast=1
+	inputmode=3
+	loopmode=1
+	nbDM=1
+fi
+
+
+
+
+
+
+
+
+if [ $inputmode -eq 0 ]; then
+	echo "ERROR: command $1 not recognized"
+	exitERR
+fi
+
+
+
+reoptimize=1
+
+NBlambda=20
+
+
+echo "lambda = $lambda nm"
+
+
+
+
+echo "-- STEP 00 --"
+
+
+
+
+
+mzfpmoptimize ()
+{
+stepfile=$(printf "stepfile_fpmr%4.2f_coin%4.2f_coout%4.2f_sr%02d_l%04d_maskrad%4.2f_rings%03d_ss%02d" "$fpmrad" "$coin" "$coout" "$lambdaB" "$lambda" "$maskradld" "$NBrings" "$ssize")
+
+if [ $reoptimize -eq 1 ]; then
+	stepfiletest="bogus"
+	else
+	stepfiletest=$stepfile
+fi
+
+
+
+if [ ! -f ${stepfiletest} ]
+then
+
+# Turn focal plane mask into zones, Compute polychromatic response to zones, store result in FPMresp
+echo "1" > ./log/conf_FPMsectors.txt
+echo "$NBlambda" > ./log/conf_nblambda.txt
+
+#NOTE: this does nothing... can be removed ?
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 800 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 800 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index # set configuration settings
+checkerrorstatus
+
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 101 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 101 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index # compute FPMresp if not present
+checkerrorstatus
+
+
+# Search for optimal solution
+echo "$searchtime" > searchtime.txt
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 102 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha  $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 102 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+
+
+
+
+# LOOP STUFF
+loopOK=1
+loopcnt=0
+touch looppsfcomp
+rm looppsfcomp_done
+
+
+initlooppsf=0
+
+while [ $loopOK -eq 1 ]; do
+coffee-waitforfile1 looppsfcomp loopstop
+rm looppsfcomp
+echo "loopOK $loopcnt"
+sleep 1
+loopcnt=$(( $loopcnt + 1 ))
+
+
+
+
+dirname=$( cat log/dirname.txt )
+echo "dirname = $dirname"
+
+
+
+
+# compute polychromatic PSF on-axis
+if [ $computecontrast -eq 1 ]
+then
+execcode=$(( 720 + 10*$nbDM ))
+echo "execcode = $execcode"
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim $execcode $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim $execcode $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+fi
+
+
+# compute polychromatic PSF for extended source
+
+# 0.01 l/D
+# evaluation for eval0 and eval1 added by Justin
+if [ $computecontrast -gt 0 ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 721 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 721 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+fi
+
+# 0.03 l/D
+if [ $computecontrast -eq 3 ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 722 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 722 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+fi
+
+# 0.001 l/D
+if [ $computecontrast -eq 3 ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 723 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 723 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+fi
+
+
+# 0.003 l/D
+if [ $computecontrast -eq 3 ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 724 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 724 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+fi
+
+
+# 0.0001 l/D
+if [ $computecontrast -eq 3 ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 725 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 725 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+fi
+
+
+
+
+
+
+if [ $computetransmcurve -eq 1 ]
+then
+echo "computing transmission curve"
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-sim 750 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+coffee-sim 750 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+checkerrorstatus
+fi
+
+touch looppsfcomp_done  # letting know other process that the PSF has been computed
+
+
+
+
+# END OF LOOP STUFF
+$execname << EOF
+creaimshm psfout $size $size $
+quit
+EOF
+exit_on_error $? "$execname"
+
+
+if [ $initlooppsf -eq 0 ]; then
+$execname << EOF
+creaimshm psfout $size $size $NBlambda
+creaimshm psfout_re $size $size $NBlambda
+creaimshm psfout_im $size $size $NBlambda
+exit
+EOF
+exit_on_error $? "$execname"
+
+initlooppsf=1
+fi
+checkerrorstatus
+
+# copy psf0 to shared memory
+$execname << EOF
+readshmim psfout
+readshmim psfout_re
+readshmim psfout_im
+loadfits "$dirname/psfi0.fits" psf
+loadfits "$dirname/psfa0.fits" psfa
+loadfits "$dirname/psfp0.fits" psfp
+cp psf psfout
+ap2c psfa psfp psfc
+c2ri psfc psfre psfim
+cp psfre psfout_re
+cp psfim psfout_im
+exit
+EOF
+exit_on_error $? "$execname"
+checkerrorstatus
+
+loopOK=0 # default: exit loop
+if [ $loopmode -eq 1 ]; then
+loopOK=1 # keep going
+fi
+if [ -f "loopstop" ]; then
+loopOK=0
+rm loopstop
+fi
+done
+
+
+
+
+
+
+# make focal plane mask OPD
+#coffee-sim $fpmrad 0.30 $2 00 0 $lambdaB $lambda 800 000
+
+touch $stepfile
+
+fi
+}
+
+
+echo "-- STEP 01 --"
+
+
+funcprocess ()
+{
+file1="./status/design_coin${coin}_coout${coout}_fpmrad${fpmrad}_l${lambda}_${PIAAmaterial}_lt${LStransm}_nbls${NBlyotstop}_mono.txt"
+echo "file1 : $file1"
+
+echo "funcprocess: MdesignStepMax = $MdesignStepMax"
+
+if [ -f ${file1} ]
+then
+	echo "file ${file1} exists"
+
+else
+	echo "file ${file1} does not exist"
+
+	# if directory does not exist but monochromatic design reference exists, adopt it, otherwise, do nothing
+	datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+	echo "$datestr  coffee-sim 501 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+	coffee-sim 501 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+
+	checkerrorstatus
+
+
+	# PHASE 1: COMPUTE MONOCHROMATIC IDEAL PIAACMC
+	echo "$MdesignStepMax"
+	datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+	echo "$datestr  coffee-sim $MdesignStepMax $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+	coffee-sim $MdesignStepMax $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+
+	checkerrorstatus
+
+	# copy solution as master reference (if it does not exist) for other lambda / lambdaB
+	datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+	echo "$datestr  coffee-sim 500 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+	coffee-sim 500 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+	checkerrorstatus
+
+	# COMPUTE MONOCHROMATIC ON-AXIS PSF with NO focal plane mask -> CONTRAST CALIBRATION
+	datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+	echo "$datestr  ./sim 699 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+	coffee-sim 699 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+	checkerrorstatus
+
+	# COMPUTE MONOCHROMATIC ON-AXIS PSF with idealized focal plane mask
+	datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+	echo "$datestr  coffee-sim 700 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+	coffee-sim 700 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+	checkerrorstatus
+
+	#touch $file1
+fi
+
+if [ $inputmode -gt 1 ]; then
+	echo "POLYCHROMATIC MASK COMPUTATION"
+	mzfpmoptimize
+
+	while [ $optimizeloop -eq 1 ]
+	do
+	mzfpmoptimize
+	done
+fi
+}
+
+
+echo "-- STEP 02 inputmode = ${inputmode}--"
+
+
+mkdir -p status
+rm -f status/design_coin${coin}_coout${coout}_fpmrad${fpmrad}_l${lambda}_${PIAAmaterial}_lt${LStransm}_nbls${NBlyotstop}_mono.txt
+
+
+
+
+
+
+
+
+
+# designmono
+if [ $inputmode -eq 1 ]; then
+	reoptimize=1
+	funcprocess
+	i=$( echo "$MdesignStepMax" | awk '{printf("%02d\n",$1-1)}')
+	cp PSFcontrastval.txt PSFcontrastval_step$i.txt
+	checkerrorstatus
+fi
+
+
+# propmono
+if [ $inputmode -eq 10 ]; then
+	# COMPUTE ON-AXIS PSF with idealized focal plane mask, monochromatic
+	datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+	echo "$datestr  coffee-sim 700 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index" >> cmdlog.txt
+	coffee-sim 700 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+	checkerrorstatus
+fi
+
+
+# proppoly
+if [ $inputmode -eq 11 ]; then
+	# COMPUTE ON-AXIS PSF polychromatic
+	datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+	echo "$datestr  coffee-sim 720 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+	checkerrorstatus" >> cmdlog.txt
+	coffee-sim 720 $pscale $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $ssize $extmode $fpmmaterial $index
+	checkerrorstatus
+fi
+
+
+# optsingle
+if [ $inputmode -eq 2 ]; then
+	reoptimize=1
+	funcprocess
+	checkerrorstatus
+fi
+
+
+
+# eval single, eval0, eval1, eval3
+if [ $inputmode -eq 3 ]; then
+	reoptimize=1
+	funcprocess
+	checkerrorstatus
+fi
+
+
+exitOK

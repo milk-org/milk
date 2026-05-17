@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# milk-streamlink — establish shared memory stream symlink
+# Thin wrapper: delegates to milk-stream-link
+
+case "${1-}" in
+    -h1|--help-oneline) echo "establish shared memory stream symlink"; exit 0 ;;
+    -h|--help) milk-stream-link --help; exit $? ;;
+esac
+
+exec milk-stream-link "$@"

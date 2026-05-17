@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+
+# TEMPLATE SCRIPT FOR ADDING CACAO FPS-ENABLED PROCESSES
+
+# Runs from CACAO_LOOPROOTDIR
+
+# For each FPS-enabled process:
+# - entry is added to fpslist.txt file
+# - fpssetup.setval files created
+
+
+
+# script 1-line description
+MSdescr="Register cacao-cli processes to fpslist file"
+
+
+
+
+MSextdescr="Add FPS entries to fpslist file
+
+Runs from CACAO_LOOPROOTDIR
+
+For each FPS-enabled process:
+- entry is added to fpslist.txt file
+- fpssetup.setval files created
+"
+
+
+source milk-script-std-config
+
+
+
+
+ListFPSADDscripts=0
+MSopt+=( "l:listfpsadd:set_ListFPSADDscripts::List all fpslistadd scrits" )
+function set_ListFPSADDscripts() {
+	ListFPSADDscripts=1
+}
+
+
+source milk-argparse
+
+errexit=0
+
+
+
+
+if [ $errexit = 1 ]; then
+	exit 1
+fi
+
+set +u
+
+
+
+
+# If listing files
+# will exit when done
+#
+if [ $ListFPSADDscripts == "1" ]; then
+
+# Run all system fpslistadd files
+#
+milkbindir="${MILK_INSTALLDIR}/bin"
+shopt -s nullglob
+for fpslistaddexec in ${milkbindir}/cacao-fpslistadd-*; do
+        #echo ">>>>>>>>>>>>>>>>>> Running ${fpslistaddexec}"
+        FPSLISTADD_MODE="info" ${fpslistaddexec} -h
+done
+shopt -u nullglob
+
+
+# Run local fpslistadd files
+#
+shopt -s nullglob
+for fpslf in cacao-fpslistadd-*; do
+	#echo "Processing fpslistadd file ${fpslf}"
+	. ./${fpslf} -h
+done
+shopt -u nullglob
+
+exit
+fi
+
+
+
+# If not, proceed
+
+
+set -u
+source cacao-check-cacaovars
+set +u
+
+
+touch fpslist.txt
+
+# communicate to subscripts they are being sourced from the main script
+#
+FPSLISTADDSCRIPT="1"
+
+# log messages
+
+
+LOGFILEDIR="$PWD/log"
+mkdir -p $LOGFILEDIR
+LOGFILENAME="${LOGFILEDIR}/$(basename $0).log"
+rm -f $LOGFILENAME
+
+
+mkdir -p fps.conf
+
+function echolog {
+    echo $1
+    echo "$(date -u +"%Y%m%dT%H%M%S.%N %s.%N") $1" >> $LOGFILENAME
+}
+
+function runstrcmd {
+    echolog "RUNNING CMD : $1"
+    eval "$1"
+}
+
+
+
+# write header to fpssetup file
+#
+function addfpscmdheader {
+    taskfname="fps.conf/fpssetup.cacaosetup-confstart.${fpsfname}.conf"
+    rm -f ${taskfname}
+    echo "# Function Parameter Structure (FPS) setup configuration" >> ${taskfname}
+    echo "# Written by cacao-fpslistadd - edits will be overwritten and lost when re-running $0" >> ${taskfname}
+    echo "# These are the default initial values for FPS entries" >> ${taskfname}
+    echo "# This file is read by script cacao-setup, which sends its content to milk-fpsCTRL's input fifo upon confstart" >> ${taskfname}
+    echo "# " >> ${taskfname}
+}
+
+
+
+# write entry to fpssetup file
+#
+function addfpscmd {
+    taskfname="fps.conf/fpssetup.cacaosetup-confstart.${fpsfname}.conf"
+    echolog "FPS CMD TO ${taskfname} : $1"
+	echo "$1" >> ${taskfname}
+}
+
+
+
+echo "START cacao-fpslistadd"
+
+
+echolog "START"
+
+
+# User is expected to set FPS processes to ON or OFF before running this script
+# Examples:
+
+#export CACAO_FPSPROC_DMCOMB="ON"
+#export CACAO_FPSPROC_STREAMDELAY="ON"
+#export CACAO_FPSPROC_SIMMVMGPU="ON"
+#export CACAO_FPSPROC_MLAT="ON"
+#export CACAO_FPSPROC_ACQLINRM="ON"
+
+
+
+
+
+# If CACAO_FPSPROC_CMDMCOMB set, DM index for control modes
+CACAO_CMDMINDEX="2"
+
+
+
+
+# Run all system fpslistadd files
+#
+milkbindir="${MILK_INSTALLDIR}/bin"
+shopt -s nullglob
+for fpslistaddexec in ${milkbindir}/cacao-fpslistadd-*; do
+        source ${fpslistaddexec}
+done
+for fpslistaddexec in ${milkbindir}/milk-fpslistadd-*; do
+        source ${fpslistaddexec}
+done
+shopt -u nullglob
+
+
+# Run local fpslistadd files
+#
+shopt -s nullglob
+for fpslf in cacao-fpslistadd-*; do
+	echo "Processing fpslistadd file ${fpslf}"
+	. ./${fpslf}
+done
+for fpslf in milk-fpslistadd-*; do
+	echo "Processing fpslistadd file ${fpslf}"
+	. ./${fpslf}
+done
+shopt -u nullglob
+
+
+echolog "END"

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# milk-shmimpoke — poke existing stream
+# Thin wrapper: delegates to milk-fpsexec-mem-streampoke
+
+case "${1-}" in
+    -h1|--help-oneline) echo "poke existing stream"; exit 0 ;;
+    -h|--help) milk-fpsexec-mem-streampoke --help; exit $? ;;
+esac
+
+exec milk-fpsexec-mem-streampoke "$@"

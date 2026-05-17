@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+for i in `seq 1 1000`;
+do
+if [ ! -f "optloop.stop" ]; then
+run-runPIAACMCdesign -m 200
+fi
+done

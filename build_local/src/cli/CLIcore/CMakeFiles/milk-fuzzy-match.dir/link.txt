@@ -1,0 +1,1 @@
+/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-fuzzy-match.dir/milk-fuzzy-match.c.o" -o milk-fuzzy-match   -L/usr/local/lib  -Wl,-rpath,:::::::::::::::::::::::::::::::::::::::::::::::::::::::

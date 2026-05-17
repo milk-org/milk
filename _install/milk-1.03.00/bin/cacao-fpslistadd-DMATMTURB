@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+FPSKWname="CACAO_FPSPROC_DMATMTURB"
+
+FPSKWval="NULL"
+if [ ! -z "${CACAO_FPSPROC_DMATMTURB+x}" ]; then
+	FPSKWval="$CACAO_FPSPROC_DMATMTURB"
+fi
+
+
+# FPS name
+fpsname="DMatmturb"
+fpsarg0="${CACAO_LOOPNUMBER}"
+
+# FPS full name
+fpsfname="${fpsname}-${fpsarg0}"
+
+# function call
+fpsfcall="cacao-fpsexec-dmturb"
+
+# short description
+fpsdescr="DM atmospheric turbulence"
+
+
+function fpsentry_addmodules() {
+	echo "no module to be added"
+}
+
+
+function fpsentry_addcmds() {
+	DMTURBCHAN="10"
+	addfpscmd "setval ${fpsfname}.dmstream dm${CACAO_DMINDEX}disp${DMTURBCHAN}"
+	addfpscmd "setval ${fpsfname}.turbfname atmturbC.fits"
+	# infinite loop
+	addfpscmd "setval ${fpsfname}.procinfo.loopcntMax -1"
+	addfpscmd "setval ${fpsfname}.procinfo.triggermode 4" # delay
+	addfpscmd "setval ${fpsfname}.procinfo.triggersname NULL"
+	addfpscmd "setval ${fpsfname}.procinfo.triggerdelay 0.0001" # 100us
+	addfpscmd "setval ${fpsfname}.procinfo.triggertimeout 1" # 1s
+}
+
+
+
+source milk-fpslist-addentry

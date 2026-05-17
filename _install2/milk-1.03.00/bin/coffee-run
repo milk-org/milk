@@ -1,0 +1,863 @@
+#!/usr/bin/env bash
+
+# exit on error
+set -e
+
+# debug mode
+#set -x
+#export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+
+export MILK_ERROREXIT="1"
+
+function exitOK() {
+	echo -e "\n\033[32;1m SUCCESS \033[0m $0 \n"
+	exit
+}
+
+function exitERR() {
+	echo -e "\n\033[31;1m ERROR \033[0m $0 \n"
+	exit 1
+}
+
+
+
+# Designing PIAACMC
+
+
+
+errorfile="errorstatus.txt"
+rm -f $errorfile
+
+
+mkdir -p conf
+mkdir -p log
+
+
+function loadparam() {
+file="conf/conf_$1.txt"
+if [ ! -f $file ]; then
+echo "$2" > $file
+fi
+var=$( cat "$file" )
+eval "$1=$var"
+}
+
+function printvar() {
+eval "var=${!1}"
+printf "\033[1;34m%20s\033[0m  [\033[1;32m%10s\033[0m]  %s\n" "$1" "$var" "$2"
+}
+
+
+# loading parameters
+# 2nd arg is default value - will only be adopted if corresponding conf/conf_<parameter>.txt file DOES NOT EXIST
+# To force YOUR parameter values to be used, you can :
+#    (1) rm ./conf/*
+#    (2) edit values in this script
+#    (3) re-execute this script
+
+
+# MAIN FUNCTION ARGUMENTS
+loadparam PIAAmode 1
+
+loadparam PIAAcoeff 1.0
+loadparam coin 0.300
+loadparam coout 0.250
+loadparam fpmradld 1.000
+loadparam PIAAmaterial "Mirror"
+loadparam LStransm 0.70
+loadparam NBls 4
+loadparam lambda 800
+loadparam mlambda 800
+loadparam mlambdaB 10
+loadparam nblambda 10
+loadparam FPMsectors 1
+loadparam NBrings 22
+loadparam maskradld 1.60
+loadparam ssize 20
+loadparam extmode 0
+
+loadparam fpmmaterial "Mirror"
+loadparam fpmminsag "-1e-6"
+loadparam fpmmaxsag "1e-6"
+loadparam fpmregsag_coeff "1.0"
+loadparam fpmregsag_alpha "1.0"
+
+loadparam fpmccnbr 0
+loadparam fpmccz $fpmmaxsag
+loadparam fpmocradld 8.0
+loadparam fpmocz 0.0
+
+loadparam size 1024
+loadparam beamrad 0.02
+loadparam pscale 0.0001
+loadparam Fratio 80.0
+loadparam PIAAr0lim 1.15
+loadparam PIAAr1lim 1.50
+loadparam PIAAsep 1.0
+loadparam PIAA0pos 1.0
+loadparam invPIAAmode 1
+
+loadparam prePIAA0maskpos 1.0
+loadparam postPIAA0maskpos 1.5
+loadparam piaaNBCmodesmax 40
+loadparam piaaCPAmax 10.0
+loadparam LyotZmin -2.5
+loadparam LyotZmax 0.5
+loadparam pupoutmaskrad 0.92
+
+# CONFIGURATION FLAGS/PARAMETERS
+loadparam PIAAcirc 0   # if set to 1, force PIAA shapes to be circular (no Fourier modes)
+
+
+
+loadparam REGPIAACCOEFF 300.0
+loadparam REGPIAACALPHA 0.2
+loadparam REGPIAAFCOEFF 300.0
+loadparam REGPIAAFALPHA 0.2
+
+
+
+
+
+function printvarall() {
+
+echo -e "\033[1m          CURRENT PARAMETERS VALUES :\033[0m"
+echo " "
+
+tput rev
+echo " OPTICAL DESIGN:"
+tput sgr0
+
+echo " File conjugations.txt in piaacmcconf directory lists optical design elements and location"
+echo ""
+
+tput rev
+echo " PIAA OPTICS DESIGN:"
+tput sgr0
+
+printvar "PIAAmode" 		"PIAA mode (0: Classical apodization/APLCMC, 1: PIAA)"
+
+printvar "fpmradld" 		"Focal plane mask radius [l/D] for ideal monochromatic design."
+echo "					Usually between 0.7 and 2.0."
+echo "					Will define target IWA for the coronagraph design."
+
+if [ "$PIAAmode" -eq "1" ]; then
+
+printvar "PIAAcoeff" 		"Fraction of PIAA apodization (usually 1.0)."
+echo "					If less than 1.0, some of the apodization will be done classically."
+
+printvar "coin" 			"Central obstruction at input beam [unit: beam radius]"
+echo "					For example: 0.3 means 30% central obstruction."
+echo "					Should be set to be at least as large as input pupil central obstruction"
+
+printvar "coout" 			"Central obstruction at output beam [unit: beam radius]"
+echo "					The PIAA-remapped beam may have a different central obstruction."
+echo "					Usually, this should be set to approximately half of the input central obstruction, "
+echo "					otherwise, the remapping will induce stronger distortions near central obstruction."
+
+printvar "PIAAmaterial" 	"PIAA optics material"
+echo "					Applies to both PIAA optics."
+echo "					Examples: Mirror, CaF2, SiO2"
+
+printvar "PIAAcirc" 		"FLAG: 1 if PIAA shapes are circular (no Fourier modes)"
+echo "					Setting this parameter to 1 forces PIAA shapes to be defined by a 1D radial sag profile."
+
+printvar "REGPIAACCOEFF" 	"PIAA regularization amplitude, cosine modes"
+echo "					Damping parameter to keep cosine (=1D radial sag) terms small."
+
+printvar "REGPIAACALPHA" 	"PIAA regularization power law, cosine modes"
+echo "					Power law defines relative damping between low and high spatial frequencies."
+echo "					High value keeps high spatial frequencies terms small."
+
+printvar "REGPIAAFCOEFF" 	"PIAA regularization amplitude, Fourier modes"
+echo "					Damping parameter to keep Fourier modes (=2D sag terms) small."
+
+printvar "REGPIAAFALPHA" 	"PIAA regularization power law, Fourier modes"
+echo "					Power law defines relative damping between low and high spatial frequencies."
+echo "					High value keeps high spatial frequencies terms small."
+
+fi
+
+echo ""
+tput rev
+echo " LYOT STOP(S) DESIGN:"
+tput sgr0
+
+if [ "$PIAAmode" -eq "1" ]; then
+
+printvar "LStransm" "Lyot stop transmission"
+echo "					Example: 0.80 for 80% goal transmission."
+
+printvar "NBls" 			"Number of Lyot stops"
+echo "					1 or 2 usually works well. Sometimes 3 helps."
+
+fi
+printvar "lambda" 			"Wavelength for monochromatic design [nm]"
+echo "					Monochromatic propagations to optimize PIAA optics will be performed at this wavelength."
+
+echo ""
+tput rev
+echo " FOCAL PLANE MASK DESIGN:"
+tput sgr0
+
+printvar "fpmmaterial" 		"Focal plane mask material"
+echo "					Examples: Mirror, CaF2, SiO2"
+
+printvar "FPMsectors" 		"Mask geometry: 0=disk, 1=sectors, 2=hexagonal tiling"
+
+printvar "NBrings" 			"Number of rings in focal plane mask"
+
+printvar "maskradld" 		"Mask outer radius at central wavelength [l/D]"
+
+printvar "fpmminsag" 		"Min focal plane mask sag"
+
+printvar "fpmmaxsag" 		"Max focal plane mask sag"
+
+printvar "fpmregsag_coeff" 	"Sag regularization coefficient"
+
+printvar "fpmregsag_alpha" 	"Sag regularization coefficient exponent"
+
+printvar "fpmccnbr" 		"How many central rings replaced by cone (set to 0 if no central cone)"
+echo "					The focal plane mask can be designed with an inner cone to diffract more light close to pupil edge (LOWFS)"
+echo "					When enabling this feature, the central ring(s) will be replaced by a cone."
+echo "					Set to 0 if no inner cone needed."
+
+printvar "fpmccz" 			"Sag at cone center (sag at cone edge will be midpoint between minsag and maxsag)"
+
+printvar "fpmocradld" 		"Outer cone outer radius [l/D]"
+echo "					The focal plane mask can be designed with an outer cone to diffract more light close to pupil edge (LOWFS)"
+echo "					Set to 0 if no outer cone needed. Set to value larger than maskradld otherwise"
+echo "					WARNING: Enabling this feature may reduce planet throughput"
+
+printvar "fpmocz" 			"Sag at inner edge of outer cone (sag = 0 at outer edge), set to 0 if no outer cone"
+
+echo ""
+tput rev
+echo "OPTIMIZATION PARAMETERS:"
+tput sgr0
+
+printvar "mlambda" 			"Central wavelength for polychromatic design [nm]"
+
+printvar "mlambdaB" 		"Spectral bandwidth [%]"
+
+printvar "nblambda" 		"Number of wavelength values"
+
+printvar "ssize" 			"Source angular size for mask optimization (20: 0.01 l/D; 10: 0.1 l/D)"
+echo "					Any strictly positive value between 01 and 99 is valid."
+echo "					This parameter will be ignored if extmode=0"
+
+printvar "extmode" 			"Source extent mode (0: 1 point, 1: 3 points; 2: 6 points)"
+echo "					0: point source will be considered and ssize parameter will be ignored."
+echo "					1: three points, equilateral triangle around optical axis"
+
+echo ""
+tput rev
+echo " OPTICAL DESIGN:"
+tput sgr0
+
+echo "	Note: PIAA0 = first PIAA element, PIAA1 = second PIAA element."
+echo "	Note: Unfolded collimated beam layout considered here."
+
+printvar "size" 			"Array size"
+echo "					Large value will slow down computations"
+echo "					Usually 1024, 2048 or 4096."
+
+printvar "beamrad" 			"Beam radius [m]"
+echo "					Physical size of input beam."
+echo "					Note: pscale and beamrad are used together to compute beam size in pixel."
+
+printvar "pscale" 			"Pixel scale in pupil [m/pix]"
+echo "					Note: pscale and beamrad are used together to compute beam size in pixel."
+
+printvar "Fratio" 			"F ratio at focal plane mask"
+echo "					Defines physical scale of focal plane mask."
+
+
+if [ "$PIAAmode" -eq "1" ]; then
+
+printvar "PIAAr0lim" 		"Outer edge of PIAA optic 0 [beam radius unit]"
+echo "					Should be larger than 1.0 to extend PIAA optic 0 shape beyond geometrical beam size."
+echo "					PIAA optic 0 shape will be extended past geometrical beam size to gently handle diffraction."
+
+printvar "PIAAr1lim" 		"Outer edge of PIAA optic 1 [beam radius unit]"
+echo "					Should be larger than 1.0 to extend PIAA optic 1 shape beyond geometrical beam size."
+echo "					PIAA optic 1 shape will be extended past geometrical beam size to gently handle diffraction."
+echo "					Note: PIAA remapping will map r0lim to r1lim."
+
+printvar "PIAAsep" 			"Distance between PIAA optics [m]"
+
+printvar "PIAA0pos" 		"PIAA optic 0 distance from pupil plane [m]"
+
+printvar "invPIAAmode" 		"0: no inv PIAA, 1: inv PIAA after Lyot stops, 2: inv PIAA before Lyot stops"
+
+fi
+
+printvar "prePIAA0maskpos" 	"Pre-PIAA optic 0 mask distance from pupil plane [m] (if prePIAA0mask.fits exists)"
+
+if [ "$PIAAmode" -eq "1" ]; then
+
+printvar "postPIAA0maskpos" "Post-PIAA optic 0 mask distance from pupil plane [m] (if postPIAA0mask.fits exits)"
+
+printvar "piaaNBCmodesmax" 	"Maximum number of radial cosine modes for PIAA optics"
+
+printvar "piaaCPAmax" 		"Maximum spatial frequency (CPA) for PIAA optics"
+
+printvar "LyotZmin" 		"Minimum value for Lyot stop(s) conjugation range [m]"
+echo "					Relative to element named \"post focal plane mask pupil\""
+
+printvar "LyotZmax" 		"Maximum value for Lyot stop(s) conjugation range [m]"
+echo "					Relative to element named \"post focal plane mask pupil\""
+
+fi
+printvar "pupoutmaskrad" 	"Output pupil mask radius (scaled to pupil radius)"
+echo " "
+}
+
+
+
+printFPMnotes ()
+{
+	echo ""
+	echo "File names containing [name] are specific to a focal plane mask design"
+	echo "[name] denotes the focal plane mask and is composed of two sub-fields [name_a].[name_b]"
+	echo ""
+	echo "Example:"
+	echo "s2_l1650_sr01_nbr020_mr200_ssr30_ssm1_wb05.minsag-00600_maxsag000600_fpmregc010000_fpmrega002000_Mirror"
+	echo ""
+	echo " ----- Format ------"
+	echo ""
+	echo "s[%d]          piaacmcsimul_var.PIAACMC_FPMsectors                       Mask geometry type (2: hexagons)\n"
+	echo "l[%04ld]       (long) (1.0e9*piaacmc[0].lambda + 0.1)                    Central wavelength [nm]\n"
+	echo "sr[%02ld]      (long) (1.0*piaacmc[0].lambdaB + 0.1)                     Spectral bandwidth [percent]\n"
+	echo "nbr[%03ld]     piaacmc[0].NBrings                                        Number of rings\n"
+	echo "mr[%03ld]      (long) (100.0*piaacmcsimul_var.PIAACMC_MASKRADLD+0.1)     Mask radius at central wavelength [l/D]\n"
+	echo "ssr[%02ld]     piaacmcsimul_var.computePSF_ResolvedTarget                Resolved target radius\n"
+	echo "ssm[%02ld]     piaacmcsimul_var.computePSF_ResolvedTarget_mode           Resolved target type\n"
+	echo "wb[%02d]       piaacmc[0].nblambda                                       Number of wavelengths\n"
+	echo ""
+	echo "minsag[%06ld]  (long) (1.0e9*piaacmc[0].fpmminsag - 0.1)                 Mininmum sag value [nm]\n"
+	echo "maxsag[%06ld]  (long) (1.0e9*piaacmc[0].fpmmaxsag + 0.1)                 Maximum sag value [nm]\n"
+	echo "fpmregc[%06ld] (long) (1000.0*piaacmc[0].fpmsagreg_coeff+0.1)            Regularization coefficient\n"
+	echo "fpmrega[%06ld] (long) (1000.0*piaacmc[0].fpmsagreg_coeff+0.1)            Regularization exponent\n"
+	echo "[%s]           piaacmc[0].fpmmaterial_name                               Material name\n"
+	echo ""
+}
+
+
+
+printhelpeval0 ()
+{
+	echo ""
+	echo "====================================================================="
+	echo "====================================================================="
+	echo "               PIAACMC DESIGN evaluation level 0 (eval0)"
+	echo "                         list of files"
+	printFPMnotes
+	echo "====================================================================="
+	echo "====================================================================="
+	printvarall
+	echo "====================================================================="
+	echo "====================================================================="
+	echo ""
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- OPTIMIZATION PARAMETERS"
+	echo ""
+	echo "- lambdalist.txt                           List of discrete wavelength values [m]"
+	echo "     WRITTEN by function PIAACMCsimul_init()"
+	echo ""
+	echo "- scoringmask[T].fits                      Pixel scoring mask"
+	echo "       [T]    Mask geometry type"
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- OPTICAL DESIGN"
+	echo ""
+	echo "- conjugations.txt                         location of planes (unfolded collimated space)"
+	echo "     WRITTEN by function PIAACMCsimul_init()"
+	echo ""
+	echo "- piaacmcparams.conf                       Misc optical parameters"
+	echo "     WRITTEN by function PIAACMCsimul_savepiaacmcconf()"
+	echo "     READ by function PIAACMCsimul_loadpiaacmcconf()"
+	echo ""
+	echo "- LyotStop#.fits                           Lyot stops"
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- PIAA OPTICS"
+	echo ""
+	echo "- ModesExpr_CPA.txt                        Fourier modes analytical expressions"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo ""
+	echo "- ModesExpr_CosRad.txt                     Cosine modes analytical expressions"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo ""
+	echo "- Fmodes.fits.gz                           Fourier modes"
+	echo ""
+	echo "- Cmodes.fits.gz                           Cosine modes"
+	echo ""
+	echo "- piaa0Cmodes.fits                        PIAA optic 0 cosine coefficients, 1D list"
+	echo ""
+	echo "- piaa0Fmodes.fits                        PIAA optic 0 Fourier coefficients, 1D list"
+	echo ""
+	echo "- piaa1Cmodes.fits                        PIAA optic 1 cosine coefficients, 1D list"
+	echo ""
+	echo "- piaa1Fmodes.fits                        PIAA optic 1 Fourier coefficients, 1D list"
+	echo ""
+	echo "- piaam0z.fits                             PIAA mirror 0 sag, 2D map [m]"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo "- piaam1z.fits                             PIAA mirror 1 sag, 2D map [m]"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo "- piaa0Cz.fits                            PIAA optic 0 sag, 2D map, cosine terms [m]"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo "- piaa1Cz.fits                            PIAA optic 1 sag, 2D map, cosine terms [m]"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo "- piaa0Fz.fits                            PIAA optic 0 sag, 2D map, Fourier terms [m]"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo "- piaa1Fz.fits                            PIAA mirror 1 sag, 2D map, Fourier terms [m]"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo "- conf_PIAAmaterial_code.txt               Code for PIAA material (for verification)"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo "- conf_PIAAmaterial_name.txt               Name of PIAA  material (for verification)"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_makePIAAshapes()"
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- FOCAL PLANE MASK - PHYSICAL MASK"
+	echo ""
+	echo "For [name] with \"wb[XX]\", with XX number of wavelengths:"
+	echo ""
+	echo "- fpm_zonez.[name].fits         Focal plane mask zone sags. 1 pixel per zone, 1D line"
+	echo "     READ by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     - if does not exist : WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_savepiaacmcconf()"
+	echo ""
+	echo "- fpm_zonea.[name].fits         Focal plane mask zone amplitudes. 1 pixel per zone, 1D line"
+	echo "     READ by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     - if does not exist : WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo "     WRITTEN by function PIAACMCsimul_savepiaacmcconf()"
+	echo ""
+	echo "- fpm_zonescoord_[T]_[ZZZ].txt             Focal plane mask zones coordinates"
+	echo "       [T]    Mask geometry type"
+	echo "       [ZZZ]  Number of rings"
+	echo "     WRITTEN by function PIAACMCsimul_mkFPM_zonemap()"
+	echo ""
+	echo "- fpm_sagmapHR.[name].best.fits.gz         Focal plane mask zones geometry (hi-res)"
+	echo ""
+	echo "- conf_fpmmaterial_code.txt                Code for focal plane mask material (for verification)"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo ""
+	echo "- conf_fpmmaterial_name.txt                Name of focal plane mask material (for verification)"
+	echo "     WRITTEN by function PIAACMCsimul_initpiaacmcconf()"
+	echo ""
+	echo "NOTE: map2D files below are heavily undersampled, and should not be used for design purposes."
+	echo "They are provided for numerical verification of diffraction propagations"
+	echo ""
+	echo "- fpm_sagmap2D.[name].fits.gz              Sag map [m], 2D image sampled at focal plane"
+	echo "     WRITTEN by function PIAACMCsimul_mkFocalPlaneMask(), called by function PIAACMCsimul_init()"
+	echo ""
+	echo "- fpm_zonemap2D.[name].fits.gz             Zone map [m], 2D image sampled at focal plane"
+	echo "     WRITTEN by function PIAACMCsimul_mkFocalPlaneMask(), called by function PIAACMCsimul_init()"
+	echo ""
+	echo "- fpm_CAampmap2D.[name].fits.gz            Complex amplitude, amplitude map [m], 2D image sampled at focal plane"
+	echo "     WRITTEN by function PIAACMCsimul_mkFocalPlaneMask(), called by function PIAACMCsimul_init()"
+	echo ""
+	echo "- fpm_CAphamap2D.[name].fits.gz            Complex amplitude, phase map [m], 2D image sampled at focal plane"
+	echo "     WRITTEN by function PIAACMCsimul_mkFocalPlaneMask(), called by function PIAACMCsimul_init()"
+	echo ""
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- COMPLEX AMPLITUDE IMAGES"
+	echo ""
+	echo "- WFamp0_xxx.fits.gz                       Complex amplitude (amplitude) in planes"
+	echo ""
+	echo "- WFamp0_xxx.fits.gz                       Complex amplitude (amplitude) in planes"
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- PSF IMAGES"
+	echo ""
+	echo "For [name] with \"wb[XX]\", with XX > 01 number of wavelengths:"
+	echo "- psfi0_ptsrc_sm[T].[name].fits             Point source PSF, physical mask, polychromatic"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo ""
+	echo "For [name] with \"wb01\" :"
+	echo "- psfi0_ptsrc_sm[T].[name].fits             Point source PSF, theoretical mask, monochromatic"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo ""
+	echo "- psfi0_nofpm.fits                          Point source PSF, no focal plane mask, monochromatic"
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- PHOTOMETRY AND CONTRAST"
+	echo ""
+	echo "- CnormFactor.txt                          Contrast normalization factor (internal use in code)"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo "     READ by function PPIAACMCsimul_exec_optimize_fpm_zones()"
+	echo ""
+	echo "For theoretical (_wb01) and physical (_wb[XX]) focal plane masks :"
+	echo ""
+	echo "- contrast_ptsrc_sm[T].[name].txt          Point source contrast"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo ""
+	echo "- flux_ptsrc_sm[T].[name].txt              Point source flux for each plane"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo ""
+	echo "---------------------------------------------------------------------"
+	}
+
+
+printhelpeval1 ()
+{
+	echo ""
+	echo "---------------------------------------------------------------------"
+	echo "               PIAACMC DESIGN evaluation level 1 (eval1)"
+	echo "                         list of files"
+	echo ""
+	printFPMnotes
+	echo ""
+	echo "====================================================================="
+	echo "---- PSF IMAGES"
+	echo ""
+	echo "- psfi0_x00_y00.fits                            Polychromatic on-axis point source PSF, central lambda"
+	echo ""
+	echo "- psfi0_x50_y00.fits                            Polychromatic off-axis point source PSF, x=5l/D at central lambda, y=0"
+	echo ""
+	echo "- psfi0_ptsrc_sm0_s2_....fits                   Polychromatic on-axis point source PSF"
+	echo ""
+	echo "- psfi0_exsrc[SSS]_sm[T].[name].fits            Extended source PSF"
+	echo "       [SSS]  Source size"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo "     WRITTEN by function PIAACMCsimul_eval_poly_design()"
+	echo ""
+	echo "- psfi0INC_extsrc[SS]_sm[T].[name].fits         Extended source PSF, incoherent component"
+	echo "       [SS]   Source size"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_eval_poly_design()"
+	echo ""
+	echo "- psfi0COH_extsrc[SS]_sm[T].[name].fits         Extended source PSF, coherent component"
+	echo "       [SS]   Source size"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_eval_poly_design()"
+	echo ""
+	echo ""
+	echo "====================================================================="
+	echo "---- PHOTOMETRY AND CONTRAST"
+	echo ""
+	echo "- flux_ptsrc_sm[T].[name].txt              Point source flux for each plane"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo ""
+	echo "- contrast_ptsrc_sm[T].[name].txt          Point source contrast"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_computePSF()"
+	echo ""
+	echo "- ContrastCurve_extsrc[SS]_sm[T].[name].txt     Contrast curve, total, coherent and incoherent components"
+	echo "       [SS]   Source size"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_eval_poly_design()"
+	echo ""
+	echo "- ContrastCurveP_extsrc[SS]_sm[T].[name].txt    Contrast curve, radial percentiles"
+	echo "       [SS]   Source size"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_eval_poly_design()"
+	echo ""
+	echo "- ContrastVal_extsrc[SS]_sm[T].[name].txt    Contrast value"
+	echo "       [SS]   Source size"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_eval_poly_design()"
+	echo ""
+	echo "- ContrastCurve_tt000.[name].txt              Contrast curve, point source"
+	echo "     WRITTEN by function PIAACMCsimul_eval_poly_design()"
+	echo ""
+	echo ""
+	echo "---------------------------------------------------------------------"
+}
+
+printhelpeval2 ()
+{
+	echo ""
+	echo "---------------------------------------------------------------------"
+	echo "               PIAACMC DESIGN evaluation level 2 (eval2)"
+	echo "                         list of files"
+	echo ""
+	echo ""
+	echo "---------------------------------------------------------------------"
+	echo "- transmCurve_sm[T].[name].txt               Transmission curve"
+	echo "       [T]    Scoring mask type used for optimization"
+	echo "     WRITTEN by function PIAACMCsimul_measure_transm_curve()"
+	echo ""
+}
+
+
+printhelp ()
+{
+echo
+echo "------------------------------------------------------------------------"
+echo -e "\033[1m                 PIAACMC DESIGN SCRIPT \033[0m"
+echo " "
+echo " Edit script to set PIAACMC design parameters"
+echo " Design parameters stored in conf/conf_<param>.txt"
+echo " Design parameters list [current value]:"
+echo ""
+echo " To change design parameter values, you may:"
+echo "     edit conf/conf_<parameter>.txt  file"
+echo " OR"
+echo "     rm conf/*"
+echo "     edit default values in current bash script"
+echo "     re-run current script with no argument to check values"
+echo ""
+echo " Once satisfied with values, launch current script with eval argument (evalsingle, eval0, eval1, or eval2)"
+echo ""
+echo "------------------------------------------------------------------------"
+printvarall
+echo "------------------------------------------------------------------------"
+echo -e "\033[1m                       USAGE \033[0m"
+echo " $0 <command>"
+echo "  command : "
+echo "     optsingle <stepstop>  : optimize up to, but not including, step <stepstop>"
+echo "                                       stepstrop=18 for monochromatic idealized design"
+echo "                                             Stops immediately, no performance measurement (this mode is for debugging)"
+echo "                                       stepstop=200 to include polychromatic optimization"
+echo "                             Files :"
+echo "                                <workdir>/linoptval.txt          : log for each optimization scan"
+echo "                                <workdir>/mode13_....bestval.txt : overall best solution"
+echo "                                <workdir>/fpm_zonez_...best.fits : best zone sags solution"
+echo "     propmono   <bogusarg> : propagate existing solution (monochromatic)"
+echo "     designmono <MaxStep>  : design monochromatic PIAACMC up to, but not including, step <MaxStep>, and measure its contrast"
+echo "                             This mode is useful to track design performance during design process"
+echo "                             Contrast is normalized by computing PSF without focal plane mask"
+echo "                             Common usage is :"
+echo "                                  designmono 1"
+echo "                                  # inspect results"
+echo "                                  designmono 2"
+echo "                                  # inspect results"
+echo "                                  ..."
+echo "                       NOTE: type \"./runPIAACMC helpsteps\" to list design steps description"
+echo "     proppoly <bogusarg>   : polychromatic propagation point source"
+echo "     eval0 <stepstop>      : level 0 evaluation (compute on-axis PSF and contrast), <stepstop> should be set to 18"
+echo "                    output files:  flux_ptsrc_sm0_s2_l_...          "
+echo "                                   contrast_ptsrc_sm0_s2_l....txt"
+echo "                                   psfi0_ptsrc_sm0_s2_l...fits"
+echo "                                Notes: sm = scoring mask"
+echo "                                       s = segments (2=hex)"
+echo "     eval1 <stepstop>      : level 1 evaluation (on-axis and resolved source PSFs and contrasts), <stepstop> should be set to 18"
+echo "                    OUTPUT FILES:  ContrastCurve_extsrc15_..."
+echo "                                   ContrastVal_extsrc15_..."
+echo "                                   psfi0_extsrc15_..."
+echo "     eval2 <stepstop>      : level 2 evaluation (compute all contrasts + transmission curve), <stepstop> should be set to 18"
+echo "                    OUTPUT FILES:  transmCurve_<parameters>.txt"
+echo ""
+echo "  Focal plane mask zone response file name:"
+echo ""
+echo "  FPMresp<s>_s<sec>_l<lambdanm>_sr<bandw>_nbr<NBrings>_mr<maskradld>_ssr<sourcesize>_ssm<sourcemode>_<material>_wb<NBlambda>.fits"
+echo "    s           scroring mask type, 0 or 1"
+echo "    sec         sector type. 2: hexagonal tiling"
+echo "    lambdanm    wavelength [nm]"
+echo "    bandw       spectral bandwidth [%]"
+echo "    NBrings     number of rings"
+echo "    maskradld   focal plane mask radius [l/D]"
+echo "    sourcesize  source size. 10: 0.1 l/d, 20: 0.01 l/d, 30: 0.001 l/D"
+echo "    sourcemode  extended source mode. 0: 1pt, 1: 3pt, 2: 6pt"
+echo "    material    focal plane mask subtrate"
+echo "    NBlambda    number of wavelengths"
+echo "------------------------------------------------------------------------"
+}
+
+
+
+NBARGS=2
+
+if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
+        printhelp
+if [ "$#" -ne $NBARGS ]; then
+    printvarall > "log/varlog.txt"
+    echo "Illegal number of parameters ($NBARGS params required, $# entered)"
+fi
+        exitOK
+fi
+
+printvarall > "log/varlog.txt"
+runoptcmd=$1
+
+
+
+echo "200" > ./log/conf_MdesignStepMax.txt
+
+if [ "$runoptcmd" = "designmono" ]; then
+echo "$2" > ./log/conf_MdesignStepMax.txt
+fi
+
+echo "$2" > ./log/conf_exitpt.txt
+
+
+if [ "$runoptcmd" = "eval0" ]; then
+echo "$2" > ./log/conf_MdesignStepMax.txt
+echo "19" > ./log/conf_exitpt.txt
+fi
+
+
+if [ "$runoptcmd" = "eval1" ]; then
+echo "$2" > ./log/conf_MdesignStepMax.txt
+echo "19" > ./log/conf_exitpt.txt
+fi
+
+
+if [ "$runoptcmd" = "eval2" ]; then
+echo "$2" > ./log/conf_MdesignStepMax.txt
+echo "19" > ./log/conf_exitpt.txt
+fi
+
+
+rm -f cmdlog.txt
+
+
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-runopt $runoptcmd $pscale $coin $coout $fpmradld $lambda $PIAAmaterial $LStransm $NBls $mlambda $mlambdaB $NBrings $maskradld $ssize $extmode $fpmmaterial $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz 000" > cmdlog.txt
+
+touch run.cmd.tsart
+
+
+# THIS IS THE MAIN COMMAND
+
+
+coffee-runopt $runoptcmd $pscale $coin $coout $fpmradld $lambda $PIAAmaterial $LStransm $NBls $mlambda $mlambdaB $NBrings $maskradld $ssize $extmode $fpmmaterial $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz 000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if [ "$runoptcmd" = "eval0" ]; then
+mkdir -p eval0
+printhelpeval0 > ./eval0/README.txt
+# copy all new files
+# find ./piaacmcconf_i000/ -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+# copy fpm_zonez
+
+cp ./ref/Fmode*.fits ./eval0/
+gzip -f ./eval0/Fmode*.fits
+cp ./ref/Cmode*.fits ./eval0/
+gzip -f ./eval0/Cmode*.fits
+
+find ./piaacmcconf_i000/fpm_*map2D.*.fits.gz -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/contrast_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/flux_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/psfi0_ptsrc* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/WFamp0_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/WFpha0_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/conf_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/scoring* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+
+# added by Justin to match modified on line 386 in rupopt fxn mzfpmoptimize
+find ./piaacmcconf_i000/Contrast* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/psfi0_x00* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+find ./piaacmcconf_i000/psfi0_x50* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+
+#find ./piaacmcconf_i000/ -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval0/
+
+echo "cp piaacmcconf_i000/fpm_zone*$( cat fpm_name.txt )* ./eval0/" > tmpcmd
+echo "cp piaacmcconf_i000/fpm_sagmapHR*$( cat fpm_name.txt )*.best.fits ./eval0/" >> tmpcmd
+chmod +x tmpcmd
+./tmpcmd
+
+
+cp __test_zonemap_00.fits ./eval0/fpmzmap.fits
+
+cd piaacmcconf_i000/
+cp fpm_zonescoord*.txt ../eval0/ || :
+cp ModesExpr_CPA.txt ../eval0/ || :
+cp ModesExpr_CosRad.txt ../eval0/ || :
+cp lambdalist.txt ../eval0/ || :
+cp conjugations.txt ../eval0/ || :
+cp piaacmcparams.conf ../eval0/ || :
+cp LyotStop*.fits ../eval0/ || :
+cp piaa*modes.fits ../eval0/ || :
+cp piaam[0-1]z.fits ../eval0/ || :
+cp piaa[0-1]Cz.fits ../eval0/ || :
+cp piaa[0-1]Fz.fits ../eval0/ || :
+cp CnormFactor.txt ../eval0/ || :
+cp psfi0_step699.fits ../eval0/psfi0_nofpm.fits || :
+cd ../eval0
+
+# compress some files
+gzip -f WFamp*.fits
+gzip -f WFpha*.fits
+gzip -f fpmzmap.fits
+gzip -f fpm_sagmapHR*.best.fits
+cd ..
+fi
+
+
+
+function eval1cp ()
+{
+mkdir -p eval1
+printhelpeval1 > ./eval1/README.txt
+find ./piaacmcconf_i000/Contrast* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/contrast_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/flux_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/psfi0_extsrc* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/psfi0INC_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/psfi0COH_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/psfi0_ptsrc* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/psfi0_x00* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+find ./piaacmcconf_i000/psfi0_x50* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval1/
+cd eval1
+gzip -f *.fits
+cd ..
+}
+
+
+if [ "$runoptcmd" = "eval1" ]; then
+eval1cp
+fi
+
+
+
+if [ "$runoptcmd" = "eval2" ]; then
+
+eval1cp
+
+mkdir -p eval2
+printhelpeval2 > ./eval2/README.txt
+find ./piaacmcconf_i000/transmCurve_* -type f -newer run.cmd.tsart -print0 | xargs -0 cp -t ./eval2/
+fi
+
+
+#rm run.cmd.tsart
+
+
+exitOK

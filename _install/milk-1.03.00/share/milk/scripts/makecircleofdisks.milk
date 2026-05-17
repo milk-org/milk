@@ -1,0 +1,112 @@
+#
+# makecircleofdisks.milk
+# Creates a 2D image containing N filled disks,
+# regularly spaced along a circle.
+#
+# Usage:
+#   milk-cli -s makecircleofdisks.milk \
+#            [ndisks] [disk_radius] [circle_radius] \
+#            [image_size] [output_name]
+#
+# Arguments (all optional, defaults shown):
+#   $1  ndisks        Number of disks          (6)
+#   $2  disk_radius   Radius of each disk, px  (10)
+#   $3  circle_radius Radius of ring, px       (40)
+#   $4  imsize        Image side length, px    (128)
+#   $5  outname       Output SHM stream name   (circleofdisks)
+#
+# The output is a float32 image: 1.0 inside each
+# disk, 0.0 elsewhere.
+# It remains in shared memory after this script
+# exits and is also saved as <outname>.fits
+# (if iofits is available).
+#
+
+set -e
+
+# ── Parse arguments with defaults ──────────────────
+_ndisks=${1:-6}
+_drad=${2:-10}
+_crad=${3:-40}
+_imsz=${4:-128}
+_out=${5:-circleofdisks}
+
+echo "makecircleofdisks:"
+echo "  N=$_ndisks  disk_r=$_drad  circle_r=$_crad"
+echo "  size=${_imsz}x${_imsz}  out=$_out"
+
+# ── Cleanup handler ────────────────────────────────
+trap '_circdisk_cleanup' EXIT
+function _circdisk_cleanup {
+    mem.rm _cdc_xmap 0
+    mem.rm _cdc_ymap 0
+    mem.rm _cdc_dist 0
+}
+
+# ── Create working images ──────────────────────────
+mem.mk2Dim _cdc_xmap ${_imsz} ${_imsz}
+mem.mk2Dim _cdc_ymap ${_imsz} ${_imsz}
+mem.mk2Dim _cdc_dist ${_imsz} ${_imsz}
+mem.mk2Dim ${_out}   ${_imsz} ${_imsz}
+
+# Zero-fill output
+${_out} = ${_out} * 0.0
+
+# ── Build coordinate maps ──────────────────────────
+# _cdc_xmap[row,col] = col  (x-coordinate)
+# _cdc_ymap[row,col] = row  (y-coordinate)
+#
+# Strategy:
+#   setcol fills every pixel in column c with value c
+#   setrow fills every pixel in row    r with value r
+#
+echo "  building coordinate maps..."
+_cidx=0
+while [ $_cidx -lt ${_imsz} ]; do
+    arith.setcol _cdc_xmap $_cidx $_cidx
+    arith.setrow _cdc_ymap $_cidx $_cidx
+    _cidx=$(expr $_cidx + 1)
+done
+
+# ── Image centre pixel (0-based) ───────────────────
+_ctr=$(expr $_imsz / 2)
+
+# ── Loop: stamp one disk per angular position ──────
+_pi=3.14159265358979
+_radsq = $_drad * $_drad
+
+_idx=0
+while [ $_idx -lt $_ndisks ]; do
+
+    # Angle evenly spaced around the full circle
+    _ang=$(awk "BEGIN {print 2.0 * $_pi * $_idx / $_ndisks}")
+
+    # Disk centre (floating-point pixel coordinates)
+    _cxf=$(awk "BEGIN {print $_ctr + $_crad * cos($_ang)}")
+    _cyf=$(awk "BEGIN {print $_ctr + $_crad * sin($_ang)}")
+
+    echo "  disk $_idx: centre ($_cxf , $_cyf)"
+
+    # Squared Euclidean distance from every pixel
+    # to disk centre
+    _cdc_dist = (_cdc_xmap - $_cxf) * (_cdc_xmap - $_cxf) + (_cdc_ymap - $_cyf) * (_cdc_ymap - $_cyf)
+
+    # Accumulate: OR via  out |= (dist² <= r²)
+    ${_out} = where(${_out} + (_cdc_dist <= $_radsq) > 0.5, 1.0, 0.0)
+
+    _idx=$(expr $_idx + 1)
+done
+
+echo "  image '${_out}' ready in SHM"
+
+# ── Optional FITS save ─────────────────────────────
+set +e
+iofits.saveFITS ${_out} ${_out}.fits
+if [ $? -eq 0 ]; then
+    echo "  saved ${_out}.fits"
+else
+    echo "  (iofits not available – skipping FITS save)"
+fi
+set -e
+
+echo "makecircleofdisks: DONE"

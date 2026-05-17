@@ -183,7 +183,10 @@ static void print_usage(const char *prog, int mh_color)
     printf("  t/i/f     Switch mode (trigger/input/full)\n");
     printf("  g         Go to stream by name\n");
     printf("  q         Quit\n\n");
-    const char *see_also[] = { "milk-stream-info", "milk-stream-list" };
+    const char *see_also[] = {
+        "milk-stream-info:inspect stream metadata and data",
+        "milk-stream-list:list active shared memory streams"
+    };
     milk_help_see_also(see_also, 2, mh_color);
 }
 

@@ -66,7 +66,9 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s                          Scroll selection up/down\n\n", MH(MH_CMD, "Scroll"));
 
     const char *see_also[] = {
-        "milk-stream-info", "milk-stream-list", "milk-streamCTRL-cli"
+        "milk-stream-info:inspect stream metadata and data",
+        "milk-stream-list:list active shared memory streams",
+        "milk-streamCTRL-cli:command-line stream control"
     };
     milk_help_see_also(see_also, 3, mh_color);
 }
