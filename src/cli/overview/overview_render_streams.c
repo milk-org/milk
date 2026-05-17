@@ -77,11 +77,13 @@ void ov_render_streams_panel(
     {
         int sk = lay->sort_key_stream;
         int sd = lay->sort_dir_stream;
-        char c_name[20], c_typ[10], c_size[16];
+        char c_anc[8], c_name[20], c_typ[10];
+        char c_size[16];
         char c_hz[10], c_mbps[12], c_ino[16], c_cnt[16];
+        int w_anc = sort_col_label(c_anc, sizeof(c_anc),
+                       "A", 7, sk, sd, 3);
         int w_name = sort_col_label(c_name, sizeof(c_name),
-                       (sk == 7) ? "ANCESTRY" : "NAME",
-                       (sk == 7) ? 7 : 0, sk, sd, 14);
+                       "NAME", 0, sk, sd, 14);
         int w_typ = sort_col_label(c_typ, sizeof(c_typ),
                        "TYP", 1, sk, sd, 4);
         int w_size = sort_col_label(c_size, sizeof(c_size),
@@ -96,9 +98,10 @@ void ov_render_streams_panel(
                        "COUNT", 6, sk, sd, 10);
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-*s %*s %*s %*s"
+            "%-*s %-*s %*s %*s %*s"
             " %*s %*s %7s %*s %10s"
             " %7s %s",
+            w_anc, c_anc,
             w_name, c_name, w_typ, c_typ,
             w_size, c_size, w_hz, c_hz,
             w_mbps, c_mbps, w_ino, c_ino,
@@ -403,41 +406,61 @@ void ov_render_streams_panel(
             pid_t _spid = (rel != NULL)
                         ? rel->sel_pid : 0;
 
-            /* Lineage depth badge: ←N or N→ */
+            /* Ancestry column (separate from name) */
             int8_t sdepth = local_depth[si];
             if (sdepth != 0 && !is_sel && !is_frozen)
             {
-                int abs_d = sdepth < 0 ? -sdepth : sdepth;
+                int abs_d = sdepth < 0
+                    ? -sdepth : sdepth;
                 if (abs_d > 99) abs_d = 99;
-                ov_theme_fg(OV_FG_WARN);
-                if (sdepth < 0) {
-                    if (abs_d < 10) ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
-                    else ov_buf_printf("\xe2\x97\x80%d ", abs_d);
-                } else {
-                    if (abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
-                    else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
+                char abuf[8];
+                if (sdepth < 0)
+                {
+                    snprintf(abuf, sizeof(abuf),
+                        "\xe2\x97\x80%d", abs_d);
                 }
+                else
+                {
+                    snprintf(abuf, sizeof(abuf),
+                        "%d\xe2\x96\xb6", abs_d);
+                }
+                STRM_FIELD(OV_FG_WARN,
+                    "%-3s ", abuf);
             }
             else
             {
-                if (s->update_hz > 0.1) {
-                    ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("\xe2\x97\x8f ");
-                } else {
-                    ov_buf_printf("  ");
+                /* Activity dot */
+                if (s->update_hz > 0.1)
+                {
+                    STRM_FIELD(OV_FG_ACTIVE,
+                        "\xe2\x97\x8f ");
+                }
+                else
+                {
+                    STRM_FIELD(OV_FG_DIM, "  ");
                 }
 
-                if ((eff_focus == OV_FOCUS_PROCS || eff_focus == OV_FOCUS_FPS) && is_rel && rel != NULL) {
-                    int is_written = bget(rel->stream_written, si);
-                    if (is_written) {
-                        ov_theme_fg(OV_FG_ERROR);
-                        ov_buf_printf("\xe2\x96\xb6 ");
-                    } else {
-                        ov_theme_fg(OV_FG_ACTIVE);
-                        ov_buf_printf("\xe2\x97\x80 ");
+                /* R/W direction arrow */
+                if ((eff_focus == OV_FOCUS_PROCS
+                    || eff_focus == OV_FOCUS_FPS)
+                    && is_rel && rel != NULL)
+                {
+                    int is_written =
+                        bget(rel->stream_written, si);
+                    if (is_written)
+                    {
+                        STRM_FIELD(OV_FG_ERROR,
+                            "\xe2\x96\xb6 ");
                     }
-                } else {
-                    ov_buf_printf("  ");
+                    else
+                    {
+                        STRM_FIELD(OV_FG_ACTIVE,
+                            "\xe2\x97\x80 ");
+                    }
+                }
+                else
+                {
+                    STRM_FIELD(OV_FG_DIM, "  ");
                 }
             }
 
