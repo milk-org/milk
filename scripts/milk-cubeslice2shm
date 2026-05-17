@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "copy FITS cube slice to shared memory stream"
+        exit 0 ;;
+esac
 
 MSdescr="copy FITS cube slice to shared memory stream"
 

@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "execute milk-cli command"
+        exit 0 ;;
+esac
 
 MSdescr="execute milk-cli command"
 

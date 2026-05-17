@@ -3,6 +3,12 @@
 # This script uses milk-argparse
 # See template milk-scriptexample for details
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "poke existing stream"
+        exit 0 ;;
+esac
 
 # script 1-line description
 MSdescr="poke existing stream"

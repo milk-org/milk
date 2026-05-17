@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Example script"
+        exit 0 ;;
+esac
+
 MSdescr="Example script"
 
 MSextdescr="Example script long description

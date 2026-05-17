@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Transmit SHM over network (TCP or UDP)"
+        exit 0 ;;
+esac
+
 MSdescr="Transmit SHM over network (TCP or UDP)"
 
 source milk-script-std-config

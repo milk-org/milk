@@ -13,6 +13,13 @@ Queries are run in parallel (up to MILK_COMMANDS_JOBS concurrent jobs,
 default: number of CPU cores) to keep total runtime under ~1 s.
 "
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "list milk- commands with one-line descriptions"
+        exit 0 ;;
+esac
+
 source milk-script-std-config
 
 PRINTPATH="0"

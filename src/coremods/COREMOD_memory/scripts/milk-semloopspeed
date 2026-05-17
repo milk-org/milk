@@ -8,6 +8,13 @@
 # Sets up two streams, imA and imB
 #
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "measure semaphore latency"
+        exit 0 ;;
+esac
+
 # script 1-line description
 MSdescr="measure semaphore latency"
 

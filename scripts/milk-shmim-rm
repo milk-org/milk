@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "remove stream and associated files"
+        exit 0 ;;
+esac
 
 MSdescr="remove stream and associated files"
 

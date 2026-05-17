@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Linear projection of modesA onto modesB"
+        exit 0 ;;
+esac
+
 MSdescr="Linear projection of modesA onto modesB"
 
 MSextdescr="Project modesA (image cube) onto modesB (image cube)

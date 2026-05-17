@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Linear mapping between input frames A and output frames B cubes"
+        exit 0 ;;
+esac
+
 MSdescr="Linear mapping between input frames A and output frames B cubes"
 
 MSextdescr="
