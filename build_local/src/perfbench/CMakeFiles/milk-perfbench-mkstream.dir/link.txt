@@ -1,0 +1,1 @@
+/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-perfbench-mkstream.dir/perfbench-mkstream.c.o" -o milk-perfbench-mkstream   -L/usr/local/include  -Wl,-rpath,/usr/local/include:/home/oguyon/src/milk/build_local/src/engine/ImageStreamIO: ../engine/ImageStreamIO/libImageStreamIO.so

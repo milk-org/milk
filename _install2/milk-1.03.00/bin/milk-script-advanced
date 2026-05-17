@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# ==============================================================================
+# NAME: milk-script-advanced
+# DESC: Advanced native milk-cli script template
+# ==============================================================================
+# 1. BASH HEADER: Configuration & Argument Parsing
+# ==============================================================================
+MSdescr="advanced native milk-cli script template with bash argument parsing"
+
+# Early-exit for -h1 before any sourcing
+case "${1-}" in
+    -h1|--help-oneline) echo "${MSdescr}"; exit 0 ;;
+esac
+
+# standard configuration
+source milk-script-std-config
+
+MSextdescr="Demonstrates leveraging milk-cli native processing with robust bash args.
+This script uses standard bash for argument parsing and prerequisite checks,
+and then drops into a native milk-cli heredoc block for zero-overhead execution."
+
+# Prerequisites
+RequiredCommands=(tmux milk-cli)
+RequiredFiles=()
+RequiredDirs=()
+RequiredPipes=()
+
+# Arguments
+MSarg+=( "streamname:string:Name of the input stream to wait for" )
+MSarg+=( "gain:float:Gain to apply to the FPS control (e.g. 0.5)" )
+
+# Options
+MSopt+=( "v:verbose:verbosefunc::Enable verbose output" )
+function verbosefunc() { export SCRIPT_VERBOSE=1; }
+
+# parse arguments
+# milk-argparse automatically creates and exports uppercase ENV vars 
+# of our arguments ($STREAMNAME, $GAIN) for native use in milk-cli
+source milk-argparse
+
+# ==============================================================================
+# 2. NATIVE EXECUTION: Zero-Overhead milk-cli Block
+# ==============================================================================
+# Note the single quotes around 'EOF'. We want milk-cli to expand variables
+# natively, not bash. This prevents syntax collisions and enables native fast paths.
+
+milk-cli -s << 'EOF'
+
+# --- A. Orchestration & Waiting ---
+echo "Waiting natively for stream: $STREAMNAME..."
+waitfor_stream $STREAMNAME 10
+if [ $? -ne 0 ]; then
+    echo "Timeout waiting for $STREAMNAME"
+    exit 1
+fi
+
+# Native dot-expansion for stream metadata
+echo "Stream is online. Shape is: ${$STREAMNAME.xsize}x${$STREAMNAME.ysize}"
+
+# --- C. Native Image Math ---
+# Allocate an image natively and perform algebra without spawning cacao plugins
+echo "Allocating mask image..."
+mem.mk2Dim mask_img ${$STREAMNAME.xsize} ${$STREAMNAME.ysize}
+mask_img = mask_img * 0.0 + 1.0
+
+# --- D. Event trigger ---
+echo "Waiting for the next frame..."
+on_update $STREAMNAME {
+    echo "Frame arrived!"
+    # Execute fast native math or logging here
+    # Make sure to exit after processing the frame for this example script
+    # exit
+}
+
+echo "Script complete."
+EOF

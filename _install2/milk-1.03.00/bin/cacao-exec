@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+
+MSdescr="Execute cacao-cli command"
+
+MSextdescr="Execute command string within cacao-cli command line interface (CLI)
+
+Multiple commands separated by ;
+For example, \"listim;listim\" will run listim command twice
+"
+
+
+
+source milk-script-std-config
+
+
+MSarg+=( "cmd:string:command string, enter within \"\"" )
+
+
+pname="cacaoexec"
+MSopt+=( "n:pname:set_pname:pname[string]:set process name" )
+function set_pname() {
+	pname="$1"
+}
+
+
+source milk-argparse
+
+
+cmdstring="${inputMSargARRAY[0]}"
+
+
+
+
+
+
+
+IFS=';' read -r -a array <<< "$cmdstring"
+
+
+
+#fifoname="cacaoCLIfifo.${pname}"
+SF="${MILK_SHM_DIR}/.cacaoCLIstartup.${pname}.$$"
+echo "" > $SF
+for cmdline in "${array[@]}"
+do
+    echo "${cmdline}" >> ${SF}
+done
+echo "exitCLI" >> ${SF}
+
+echo "SF = ${SF}"
+cacao-cli -n ${pname} -f -s ${SF}
+
+rm ${SF}

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+FPSKWname="CACAO_FPSPROC_MKPF"
+
+FPSKWval="NULL"
+if [ ! -z "${CACAO_FPSPROC_MKPF+x}" ]; then
+	FPSKWval="$CACAO_FPSPROC_MKPF"
+fi
+
+
+if [ -z "${CACAO_PF_NBBLOCK+x}" ]; then
+	CACAO_PF_NBBLOCK=1
+fi
+
+
+for (( blki=0; blki<${CACAO_PF_NBBLOCK}; blki++ ))
+do
+
+BLKindex=$( printf %02d $blki )
+
+# FPS name
+fpsname="mkPF${BLKindex}"
+fpsarg0="${CACAO_LOOPNUMBER}"
+
+# FPS full name
+fpsfname="${fpsname}-${fpsarg0}"
+
+# function call
+fpsfcall="milk-fpsexec-linpred-buildlinPF"
+
+# short description
+fpsdescr="Build Predictive Filter ${BLKindex}"
+
+
+
+
+function fpsentry_addmodules() {
+	echo "+milklinARfilterPred;milklinalgebra" >> fpslist.txt
+}
+
+
+function fpsentry_addcmds() {
+	addfpscmd "setval ${fpsfname}.procinfo.loopcntMax -1" # infinite loop
+	addfpscmd "setval ${fpsfname}.procinfo.triggermode 3" #semaphore
+	addfpscmd "setval ${fpsfname}.procinfo.triggersname aol${CACAO_LOOPNUMBER}_modevalOLbuff_blk${BLKindex}"
+	addfpscmd "setval ${fpsfname}.procinfo.triggertimeout 10000.0"
+
+	addfpscmd "setval ${fpsfname}.inname aol${CACAO_LOOPNUMBER}_modevalOLbuff_blk${BLKindex}"
+	addfpscmd "setval ${fpsfname}.outPFname aol${CACAO_LOOPNUMBER}_outPF_blk${BLKindex}"
+}
+
+
+source milk-fpslist-addentry
+
+done

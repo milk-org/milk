@@ -1,0 +1,2715 @@
+#!/usr/bin/env bash
+
+# exit on error
+set -e
+
+# debug mode
+#set -x
+#export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+
+
+unset TMUX
+
+mkdir -p log
+
+pid=$$
+
+NBthreadsFPMresp=4
+
+#execname="PIAACMCdesign -e"  # only run program if X is inactive (prevents slowing down user)
+execname="coffee"
+
+# exit on error
+export MILK_ERROREXIT="1"
+
+# function to check previous command return code and exit if not successful
+exit_on_error() {
+    exit_code=$1
+    last_command=${@:2}
+    if [ $exit_code -ne 0 ]; then
+        >&2 echo -e "\n\033[31;1m EXIT on ERROR \033[0m \"${last_command}\" command failed with exit code ${exit_code}.\n"
+        exit $exit_code
+    fi
+}
+
+# enable !! command completion
+set -o history -o histexpand
+
+
+
+function exitOK() {
+	echo -e "\n\033[32;1m SUCCESS \033[0m $0 \n"
+	exit
+}
+
+function exitERR() {
+	echo -e "\n\033[31;1m ERROR \033[0m $0 \n"
+	exit 1
+}
+
+
+
+
+
+black='\E[30;40m'
+red='\E[31;40m'
+green='\E[32;40m'
+yellow='\E[33;40m'
+blue='\E[34;40m'
+magenta='\E[35;40m'
+cyan='\E[36;40m'
+white='\E[37;40m'
+bblack='\E[1;30;40m'
+bred='\E[1;31;40m'
+bgreen='\E[1;32;40m'
+byellow='\E[1;33;40m'
+bblue='\E[1;34;40m'
+bmagenta='\E[1;35;40m'
+bcyan='\E[1;36;40m'
+bwhite='\E[1;37;40m'
+
+
+errorfile="errorstatus.txt"
+checkerrorstatus ()
+{
+if [ -f ${errorfile} ]
+then
+echo ""
+echo "****** [$(date)] FATAL ERROR: script $0 : $(cat ${errorfile})"
+echo "****** exit script $0"
+echo "****** Manually remove file $errorfile to unlock"
+echo "****** bye !"
+echo ""
+exit 1
+fi
+}
+
+
+
+
+
+alias Reset="tput sgr0"      #  Reset text attributes to normal
+                             #+ without clearing screen.
+
+
+
+
+
+
+cecho ()                     # Color-echo.
+                             # Argument $1 = message
+                             # Argument $2 = color
+{
+local default_msg="No message passed."
+                             # Doesn't really need to be a local variable.
+
+message=${1:-$default_msg}   # Defaults to default message.
+color=${2:-$black}           # Defaults to black, if not specified.
+
+#  echo -e "$color"
+  echo -e "$color $message \033[0m"
+#  echo -e "\033[0m"
+                      # Reset to normal.
+  tput sgr0
+  return
+}
+
+
+
+
+
+
+function loadparam() {
+file="conf/conf_$1.txt"
+if [ ! -f $file ]; then
+echo "$2" > $file
+fi
+var=$( cat "$file" )
+eval "$1=$var"
+}
+
+
+
+
+
+
+
+
+
+function checkexit() {
+
+
+if [ $state -eq $statestop ]
+then
+echo "STATE STOP POINT ($statestop)"
+sleep 1
+cleanup
+exitOK
+fi
+
+if [ $state -eq $exitpt ]
+then
+echo "$0 REACHED STATE EXIT POINT ($exitpt)" > errorstatus.txt
+echo "$0 REACHED STATE EXIT POINT ($exitpt)"
+cleanup
+exitOK
+else
+echo "$state neq $exitpt -> CONTINUING"
+fi
+
+}
+
+
+
+
+
+printhelp_designsteps()
+{
+	echo ""
+	cecho "---------- PIAACMC SIMULATION STEPS -------------" $bwhite
+	echo " "
+	cecho "STEP 000 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Compute on-axis PSF, monochromatic, idealized PIAACMC, first iteration"
+	echo "  PIAACMCsimul_exec mode(s): 000"
+	echo ""
+	echo "  OUTPUT:"
+	echo -e "     \033[1m Cmodes_$size.fits \033[0m       : Circular radial cosine modes"
+	echo -e "     \033[1m Fmodes_$size.fits \033[0m       : Fourier modes"
+	echo "Inside directory piaacmcconf_1_coin<coin>_coout<coout>_fpmr<fpmr>_l<lambda>_<material>_lt<LyotTransm>_ls<#LyotStops>_i000 :"
+	echo "   Apodization and PIAA optics:"
+	echo -e "     \033[1m APLCapo.1.100.0.290.info \033[0m : file written by prolate generation function coronagraph_make_2Dprolate in coronagraphs.c"
+	echo -e "     \033[1m apo2Drad.fits            \033[0m : Idealized PIAACMC 2D apodization (amplitude)"
+	echo -e "     \033[1m piaam0z.fits             \033[0m : PIAA M0 shape (2D sag [m])"
+	echo -e "     \033[1m piaam1z.fits             \033[0m : PIAA M1 shape (2D sag [m])"
+	echo -e "     \033[1m PIAA_Mshapes.txt         \033[0m : PIAA shapes (radial txt file, cols: r0, z0, r1, z1)"
+	echo -e "     \033[1m piaa0Cmodes.fits         \033[0m : idealized PIAACMC mirror/lens 0 cosine modes (copied from ./piaaref/) "
+	echo -e "     \033[1m piaa0Fmodes.fits         \033[0m : idealized PIAACMC mirror/lens 0 Fourier modes (copied from ./piaaref/) "
+	echo -e "     \033[1m piaa1Cmodes.fits         \033[0m : idealized PIAACMC mirror/lens 1 cosine modes (copied from ./piaaref/) "
+	echo -e "     \033[1m piaa1Fmodes.fits         \033[0m : idealized PIAACMC mirror/lens 1 Fourier modes (copied from ./piaaref/) "
+	echo -e "     \033[1m piaa0Cres.fits           \033[0m : idealized PIAA M0/L0 cosine fit residual"
+	echo -e "     \033[1m piaa1Cres.fits           \033[0m : idealized PIAA M1/L1 cosine fit residual"
+	echo -e "     \033[1m piaa0Cz.fits             \033[0m : idealized PIAA M0/L0 cosine fit sag "
+	echo -e "     \033[1m piaa1Cz.fits             \033[0m : idealized PIAA M1/L1 cosine fit sag "
+	echo -e "     \033[1m piaa0Fz.fits             \033[0m : idealized PIAA M0/L0 Fourier fit sag"
+	echo -e "     \033[1m piaa1Fz.fits             \033[0m : idealized PIAA M1/L1 Fourier fit sag"
+	echo "   Other files:"
+	echo -e "     \033[1m LyotStop<#>.fits         \033[0m : Lyot stop number #"
+	echo -e "     \033[1m tmp_flux.txt             \033[0m : total flux at each step of the propagation"
+	echo -e "     \033[1m psfi0_step000.fits       \033[0m : PSF intensity"
+	echo -e "     \033[1m WFamp###.fits            \033[0m : Amplitude at plane ###"
+	echo -e "     \033[1m WFpha###.fits            \033[0m : Phase at plane ###"
+	echo -e "     \033[1m scoringmask0.fits        \033[0m : Set of focal plane points used for contrast optimization"
+	echo -e "     \033[1m lambdalist.txt           \033[0m : List of wavelength values"
+	echo -e "     \033[1m conjugations.txt         \033[0m : List of planes and conjugation values"
+	echo ""
+	echo -e "\E[1;32m  DESCRIPTION:\E[0m"
+	echo "    Compute prolate spheroidal apodization for a centrally obscured circular aperture (->apo2Drad.fits)"
+	echo "    Compute radial remapping and radial PIAA Mirror shapes to achieve the desired apodization (function PIAACMCsimul_init_geomPIAA_rad) ->PIAA_Mshapes.txt"
+	echo "    Compute 2D PIAA mirror shapes -> piaam0z.fits, piaam1z.fits"
+	echo "    Fit Mirror Cmodes and Fmodes to piaam0z and piaam1z -> piaa0Cmodes.fits piaa0Fmodes.fits piaa1Cmodes.fits piaa1Fmodes.fits"
+	echo "    Make actual 2D shapes for fitted mirror coefficients (function PIAACMCsimul_makePIAAshapes) IF LENSES, MULTIPLY SHAPE BY 2/(n-1) : COEFFICIENTS ARE FOR MIRROR EQUIVALENT SHAPES"
+	echo "           -> piaam0z.fits piaam1z.fits (for mirrors)"
+	echo "           -> piaar0zsag.fits piaar1zsag.fits (for lenses)"
+	echo "    Set up optical configuration and propagate light"
+	echo ""
+	cecho "STEP 001 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Repeat above step to compute on-axis PSF"
+	echo ""
+	cecho "STEP 002 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Specify input pupil geometry"
+	echo ""
+	cecho "STEP 003 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Compute on-axis PSF"
+	echo ""
+	cecho "STEP 004 ----------------------------------------" $bwhite
+	echo "  PIAACMCsimul_exec mode(s): 005"
+	echo ""
+	echo "     Optimize Lyot stop(s) shapes and locations (monochromatic light)"
+	echo ""
+	echo "  INPUT:"
+	echo -e "     \033[1m PIAACMC_lstransm           \033[0m : Lyot stops geometric transmission (default=0.85)"
+	echo ""
+	echo "  OUTPUT:"
+	echo -e "     \033[1m OAincohc.fits              \033[0m : Incoherent flux distribution in Lyot conjugation search space (3D cube), off-axis source"
+	echo -e "     \033[1m test_oals_index.fits       \033[0m : darkest pixel index of OAincohc.fits (NOTE: not used directly towards Lyot stop computation)"
+	echo -e "     \033[1m test_val_index.fits        \033[0m : darkest pixel value of OAincohc.fits (NOTE: not used directly towards Lyot stop computation)"
+	echo -e "     \033[1m LyotStop<###>.fits         \033[0m : Lyot Stop(s)"
+	echo -e "     \033[1m piaacmcparams.conf         \033[0m : contains updated conjugations (absolute)"
+	echo -e "     \033[1m piaacmcparams_step004.conf \033[0m : contains updated conjugations (absolute)"
+	echo ""
+	echo -e "\E[1;32m  DESCRIPTION:\E[0m"
+	echo "    Compute incoherent flux in search space -> OAincohc.fits"
+	echo ""
+	cecho "STEP 005 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Optimize focal plane mask transm -> result_fpmt.log "
+	echo ""
+	cecho "STEP 006 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Compute Lyot stops shapes and locations, 2nd pass, LStransm0 throughput)"
+	echo -e "     \033[1m LMintC_step006.fits        \033[0m : 3D incoherent illumination"
+	echo ""
+	cecho "STEP 007 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Tune PIAA shapes and focal plane mask transm, 10 cosine modes, 5 Fourier modes"
+	echo ""
+	echo ""
+	cecho "STEP 008 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Tune PIAA shapes and focal plane mask transm, 20 cosine modes, 10 Fourier modes"
+	echo ""
+	cecho "STEP 009 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Compute Lyot stops shapes and locations, 2nd pass, throughput = LStransm1"
+	echo ""
+	cecho "STEP 010 ----------------------------------------" $bwhite
+	echo ""
+	echo "    Tune Lyot Stops locations"
+	echo ""
+	cecho "STEP 011 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Tune PIAA shapes and focal plane mask transm, 20, 20"
+	echo ""
+	cecho "STEP 012 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Tune PIAA shapes and focal plane mask transm"
+	echo ""
+	cecho "STEP 013 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Compute Lyot stops shapes and locations, 3rd pass, 80% throughput"
+	echo ""
+	cecho "STEP 014 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Tune Lyot stops conjugation"
+	echo ""
+	cecho "STEP 015 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Tune PIAA shapes and focal plane mask transm # modes: 20, 20"
+	echo ""
+	cecho "STEP 016 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Tune PIAA shapes and focal plane mask transm, # modes: 40, 150"
+	echo ""
+	cecho "STEP 017 ----------------------------------------" $bwhite
+	echo ""
+	echo "     Tune PIAA shapes and focal plane mask transm, # modes: 40, 625"
+	echo ""
+
+}
+
+
+
+
+
+
+
+
+printhelp ()
+{
+	echo ""
+	echo "main PIAACMC design scrit"
+
+	echo ""
+	echo "Print description of design steps:"
+	echo "	$0 helpsteps"
+	echo ""
+
+	echo "EXPECTED INPUT:"
+	echo "  arg1 : directory name                           $1"
+	echo "  arg2 : size (1024, 2048, 4096 etc...)           $2"
+	echo "  arg3 : pupil scale (m/pix)                      $3"
+	echo "  arg4 : pupil file                               $4"
+	echo "  arg5 : centobs 0                                $5"
+	echo "  arg6 : centobs 1                                $6"
+	echo "  arg7 : mask radius [l/D]  (idealized)           $7"
+	echo "  arg8 : design lambda                            $8"
+	echo "  arg9 : PIAA material                            $9"
+	echo "  arg10: Lyot Stop transm                         ${10}"
+	echo "  arg11: Number of Lyot Stops                     ${11}"
+	echo "  arg12: mask lambda                              ${12}"
+	echo "  arg13: mask spectral bandwidth                  ${13}"
+	echo "  arg14: mask number of rings                     ${14}"
+	echo "  arg15: mask physical radius [l/D]               ${15}"
+	echo "  arg16: resolved source size (00=unresolved)     ${16}"
+	echo "  arg17: extended source mode                     ${17}"
+	echo "  arg18: focal plane material                     ${18}"
+	echo "  arg19: min sag [m]                              ${19}"
+	echo "  arg20: max sag [m]                              ${20}"
+	echo "  arg21  fpmregsag_coeff                          ${21}"
+	echo "  arg22: fpmregsag_alpha                          ${22}"
+	echo "  arg23: center cone nb rings                     ${23}"
+	echo "  arg24: center cone sag                          ${24}"
+	echo "  arg25: outer cone rad [l/D]                     ${25}"
+	echo "  arg26: outer sag offset [m]                     ${26}"
+	echo "  arg27: index                                    ${27}"
+	echo "  arg28: design step                              ${28}"
+	echo ""
+	echo "========= PARAMETERS IN runPIAACMC script ============="
+	echo ""
+	echo "PIAA regularization, C coeff                     ${REGPIAACCOEFF}"
+	echo "PIAA regularization, F coeff                     ${REGPIAAFCOEFF}"
+	echo "PIAA regularization, C alpha                     ${REGPIAACALPHA}"
+	echo "PIAA regularization, F alpha                     ${REGPIAAFALPHA}"
+	echo ""
+}
+
+
+
+
+NBARGS=28
+
+
+if [ "$1" = "helpsteps" ]; then
+	printhelp_designsteps
+	exitOK
+fi
+
+
+if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
+	printhelp $@
+if [ "$#" -ne $NBARGS ]; then
+	echo "$0: Illegal number of parameters ($NBARGS params required, $# entered)"
+	echo "$0: Illegal number of parameters ($NBARGS params required, $# entered)" > $errorfile
+	checkerrorstatus
+fi
+	exitOK
+fi
+
+
+
+mkdir -p ./$1
+
+
+# READ CONFIGURATION FILES
+loadparam PIAAmode 0   # if set to 1, use PIAA optics
+loadparam PIAAcoeff 0.9
+loadparam PIAAcirc 0   # if set to 1, force PIAA shapes to be circular (no Fourier modes)
+loadparam FPMsectors "1"
+loadparam nblambda "10"
+loadparam beamrad "0.01"
+loadparam Fratio "80"
+loadparam r0lim "1.15"
+loadparam r1lim "1.50"
+loadparam PIAAsep "1.00"
+loadparam PIAA0pos "1.00"
+loadparam prePIAA0maskpos "1.00"
+loadparam postPIAA0maskpos "1.00"
+loadparam piaaNBCmodesmax "40"
+loadparam piaaCPAmax "10.0"
+loadparam LyotZmin "-2.5"
+loadparam LyotZmax "-2.5"
+loadparam pupoutmaskrad "0.99"
+loadparam invPIAAmode "1"
+
+
+loadparam REGPIAACCOEFF "300.0"
+loadparam REGPIAACALPHA "0.2"
+loadparam REGPIAAFCOEFF "300.0"
+loadparam REGPIAAFALPHA "0.2"
+
+
+
+
+
+
+size=$2
+pscale=$3
+centobs0=$5
+centobs1=$6
+fpmradld=$7
+lambda=$8
+
+
+echo "$9" > $1/conf_PIAAmaterial_name.txt
+
+LStransm=${10}
+NBlyotstop=${11}
+mlambda=${12}
+mlambdaB=${13}
+NBrings=${14}
+FPM_MASKRADLD=${15}
+PIAACMC_resolved=${16}
+PIAACMC_extmode=${17}
+
+echo "${18}" > $1/conf_fpmmaterial_name.txt
+
+fpmminsag=${19}
+fpmmaxsag=${20}
+fpmsagreg_coeff=${21}
+fpmsagreg_alpha=${22}
+fpmccnbr=${23}
+fpmccz=${24}
+fpmocr=${25}
+fpmocz=${26}
+
+index=${27}
+
+# STEP PRE-PROCESSING
+rstep=${28}
+
+
+
+
+PIAACMC_nbiter=20
+
+
+PIAACMC_dftgrid=0 # full sampling unless otherwise specified
+kmaxC=10
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=5
+fi
+
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+
+checkerrorstatus
+
+
+
+# default
+state=$rstep
+statestop=$rstep
+
+
+
+# if $26 in [0-99]
+# run steps from 0 to $26
+#if ((rstep >= 0 && rstep <= 99)); then
+
+if [ "$rstep" -ge "0" ] && [ "$rstep" -le "200" ]; then
+echo ""
+state=0
+statestop=${rstep}
+fi
+
+# if $26 in [100-109]
+# run steps from 100 to $26
+
+#if ((rstep >= 100 && rstep <= 109)); then
+#if [ "$rstep" -ge "100" ] && ["$rstep" le 109 ]; then
+#echo ""
+#state=100
+#statestop=${rstep}
+#fi
+
+
+
+echo "state = $state"
+echo "statestop = $statestop"
+
+
+
+exitpt="100000" #default
+file="./log/conf_exitpt.txt"
+if [ -f $file ]
+	then
+	exitpt=$(echo "$(cat $file)")
+	else
+	#echo "CANNOT READ FILE ${file}"
+	ok=0
+fi
+echo "exitpt = $exitpt"
+
+
+
+
+
+
+
+
+
+LStransm0=0.6
+LStransm2=$LStransm
+LStransm1=$( echo "($LStransm0+$LStransm2)*0.5" | bc -l )
+
+
+
+
+
+
+
+
+
+
+
+# 0 : default
+# 1 : fewer points, smaller FOV
+SCORINGMASKTYPE=1
+
+
+NBpropStep=200
+
+# PARAMETER LOAD SCRIPT TO BE EXECUTED - DEFAULT VALUES
+startupfile="clistartup$pid.txt"
+echo "PIAACMC_PIAAmode=${PIAAmode}" > $startupfile
+echo "PIAACMC_size=${size}" >> $startupfile  #2
+echo "PIAACMC_pixscale=${pscale}" >> $startupfile  #3
+echo "PIAACMC_centobs0=${centobs0}" >> $startupfile #5
+echo "PIAACMC_centobs1=${centobs1}" >> $startupfile #6
+echo "PIAACMC_fpmradld=${fpmradld}" >> $startupfile #7
+echo "PIAACMC_LStransm0=$LStransm0" >> $startupfile #10
+echo "PIAACMC_LStransm1=$LStransm1" >> $startupfile #10
+echo "PIAACMC_LStransm2=$LStransm2" >> $startupfile #10
+echo "PIAACMC_nblstop=$NBlyotstop" >> $startupfile #11
+echo "PIAACMC_lambda=${mlambda}" >> $startupfile #12
+echo "PIAACMC_lambdaB=${mlambdaB}" >> $startupfile #13
+echo "PIAACMC_NBrings=$NBrings" >> $startupfile #14
+echo "PIAACMC_MASKRADLD=${FPM_MASKRADLD}" >> $startupfile #15
+echo "PIAACMC_resolved=$PIAACMC_resolved" >> $startupfile #16
+echo "PIAACMC_extmode=$PIAACMC_extmode" >> $startupfile #17
+echo "PIAACMC_fpmminsag=${fpmminsag}" >> $startupfile #19
+echo "PIAACMC_fpmmaxsag=${fpmmaxsag}" >> $startupfile #20
+echo "PIAACMC_fpmsagreg_coeff=${fpmsagreg_coeff}" >> $startupfile #21
+echo "PIAACMC_fpmsagreg_alpha=${fpmsagreg_alpha}" >> $startupfile #22
+echo "PIAACMC_NBringCentCone=${fpmccnbr}" >> $startupfile #23
+echo "PIAACMC_fpmCentConeZ=${fpmccz}" >> $startupfile #24
+echo "PIAACMC_fpmOuterConeRadld=${fpmocr}" >> $startupfile #25
+echo "PIAACMC_fpmOuterConeZ=${fpmocz}" >> $startupfile #26
+
+echo "PIAACMC_dftgrid=${PIAACMC_dftgrid}" >> $startupfile
+echo "PIAACMC_nblambda=${nblambda}" >> $startupfile
+echo "PIAACMC_beamrad=${beamrad}" >> $startupfile
+echo "PIAACMC_Fratio=${Fratio}" >> $startupfile
+echo "PIAACMC_r0lim=${r0lim}" >> $startupfile
+echo "PIAACMC_r1lim=${r1lim}" >> $startupfile
+echo "PIAACMC_PIAAsep=${PIAAsep}" >> $startupfile
+echo "PIAACMC_PIAA0pos=${PIAA0pos}" >> $startupfile
+echo "PIAACMC_invPIAAmode=${invPIAAmode}" >> $startupfile
+echo "PIAACMC_prePIAA0maskpos=${prePIAA0maskpos}" >> $startupfile
+echo "PIAACMC_postPIAA0maskpos=${postPIAA0maskpos}" >> $startupfile
+echo "PIAACMC_piaaNBCmodesmax=${piaaNBCmodesmax}" >> $startupfile
+echo "PIAACMC_piaaCPAmax=${piaaCPAmax}" >> $startupfile
+echo "PIAACMC_LyotZmin=${LyotZmin}" >> $startupfile
+echo "PIAACMC_LyotZmax=${LyotZmax}" >> $startupfile
+echo "PIAACMC_pupoutmaskrad=${pupoutmaskrad}" >> $startupfile
+fifoname="runPIAACMCfifo$pid"
+
+
+
+execnamestring="$execname -s $startupfile -f $fifoname"
+
+
+cp $startupfile test_startupfile.txt
+
+
+
+
+
+cleanup ()
+{
+rm -f $startupfile
+rm -f $fifoname
+rm -f runPIAACMCfifo*
+rm -f clistartup*.txt
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# STEP 210: tune PIAA shapes and focal plane mask zones, 10 cosine modes, 5 Fourier modes
+# -> linoptval.txt
+kmaxC=10
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=5
+fi
+
+if [ 210 -eq ${state} ]; then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step210  Tune PIAA shapes and focal plane mask zones, 10 cosine modes, 5 Fourier modes"
+echo "$datestr  $0  LINE $LINENO    step210  Tune PIAA shapes and focal plane mask zones, 10 cosine modes, 5 Fourier modes" >> cmdlog.txt
+ echo "step 210"
+echo "210" > ./$1/runstep
+touch ./$1/step210.run.txt
+$execnamestring -n step210 << EOF
+PIAACMC_nbiter=20
+PIAACMC_lambda=${lambda}
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+
+
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step$step.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step$step.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step$step.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step$step.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step$step.fits
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step$step.fits
+cp ./$1/linoptval.txt ./$1/linoptval_step007.txt
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# STEP 500: copy point source mask to extended mask
+## TBM
+if [ 500 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step500  Copy point source mask to extended mask"
+echo "$datestr  $0  LINE $LINENO    step500  Copy point source mask to extended mask" >> cmdlog.txt
+echo "cp fpm_zonea00_20_001_001.fits fpm_zonea10_20_001_001.fits"
+echo "cp fpm_zonez00_20_001_001.fits fpm_zonez10_20_001_001.fits"
+printf "Copy monochromatic mask to polychromatic extended mask\n"
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 699 : compute on-axis PSF (monochromatic), no focal plane mask
+if [ 699 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step699  Compute on-axis monochromatic PSF- idealized PIAACMC - no focal plane mask"
+echo "$datestr  $0  LINE $LINENO    step699  Compute on-axis monochromatic PSF- idealized PIAACMC - no focal plane mask" >> cmdlog.txt
+echo "699" > ./$1/runstep
+touch ./$1/step699.run.txt
+cp ./$1/piaacmcparams_idealmonomask.conf ./$1/piaacmcparams.conf
+$execnamestring -n step699 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+PIAACMC_NOFPM=1
+PIAACMC_fpmtype=0
+PIAACMC_FPMsectors=0
+PIAACMC_NBrings=1
+PIAACMC_nblambda=1
+PIAACMC_resolved=0
+SCORINGMASKTYPE=$SCORINGMASKTYPE
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step699.fits
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 700 : compute on-axis PSF (monochromatic), idelized focal plane mask
+if [ 700 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step700  Compute on-axis monochromatic PSF - idealized PIAACMC"
+echo "$datestr  $0  LINE $LINENO    step700  Compute on-axis monochromatic PSF - idealized PIAACMC" >> cmdlog.txt
+echo "700" > ./$1/runstep
+touch ./$1/step700.run.txt
+cp ./$1/piaacmcparams_idealmonomask.conf ./$1/piaacmcparams.conf
+$execnamestring -n step700 << EOF
+#
+PIAACMC_dftgrid=0
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+loadfits "OPDerr.fits" opderr
+PIAACMC_fpmtype=0
+PIAACMC_FPMsectors=0
+PIAACMC_NBrings=1
+PIAACMC_nblambda=1
+PIAACMC_resolved=0
+SCORINGMASKTYPE=$SCORINGMASKTYPE
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step700.fits
+cleanup
+exitOK
+fi
+
+
+
+
+
+if [ 701 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step701  Eval monochromatic contrast for on-axis PSF, and pointing sensitivity - idealized PIAACMC"
+echo "$datestr  $0  LINE $LINENO    step701  Eval monochromatic contrast for on-axis PSF, and pointing sensitivity - idealized PIAACMC" >> cmdlog.txt
+ if [ ! -f ./$1/step007.txt ]
+ then
+ echo "====================== step 701 requires step 007 ======================================="
+ echo "====================== step 701 requires step 007 =======================================" >> cmdlog.txt
+ else
+ echo "eval monochromatic contrast for on-axis PSF, and pointing sensitivity - idealized PIAACMC"
+echo "701" > ./$1/runstep
+touch ./$1/step701.run.txt
+$execnamestring -n step701 << EOF
+PIAACMC_fpmtype=0
+PIAACMC_FPMsectors=0
+PIAACMC_NBrings=1
+PIAACMC_nblambda=1
+PIAACMC_resolved=0
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0_starim.fits ./$1/psfi0_step701.fits
+cleanup
+exitOK
+fi
+fi
+
+
+
+
+
+# % : compute on-axis PSF (monochromatic) extended source
+if [ 702 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step702  Compute on-axis monochromatic PSF - extended source"
+echo "$datestr  $0  LINE $LINENO    step702  Compute on-axis monochromatic PSF - extended source"  >> cmdlog.txt
+echo "702" > ./$1/runstep
+touch ./$1/step702.run.txt
+$execnamestring -n step702 << EOF
+PIAACMC_FPMsectors=0
+PIAACMC_NBrings=1
+PIAACMC_nblambda=1
+PIAACMC_resolved=1
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+
+
+
+
+
+if [ 720 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step720  Compute on-axis polychromatic PSF"
+echo "$datestr  $0  LINE $LINENO    step720  Compute on-axis polychromatic PSF" >> cmdlog.txt
+echo "720" > ./$1/runstep
+touch ./$1/step720.run.txt
+$execnamestring -n step720 << EOF
+#
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_SAVE_fpm=1
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+if [ 721 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step721  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.01 l/D"
+echo "$datestr  $0  LINE $LINENO    step721  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.01 l/D" >> cmdlog.txt
+if [ ! -f ./$1/step007.txt ]
+ then
+ echo "====================== step 721 requires step 007 ======================================="
+ exit 1
+ else
+ echo "721: eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.01 l/D"
+echo "${FPM_MASKRADLD} $FPMsectors $NBrings ${10} ${11} $PIAACMC_resolved $2 $3 $5 $6 $7"
+echo "721" > ./$1/runstep
+touch ./$1/step721.run.txt
+$execnamestring -n step721 << EOF
+#
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_ldoffset=0.01
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0_starim.fits ./$1/psfi0_step721.fits
+cleanup
+exit
+fi
+fi
+
+
+
+
+if [ 722 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step722  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.03 l/D"
+echo "$datestr  $0  LINE $LINENO    step722  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.03 l/D" >> cmdlog.txt
+ if [ ! -f ./$1/step007.txt ]
+ then
+ echo "====================== step 722 requires step 007 ======================================="
+ exit 1
+ else
+ echo "722: eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.03 l/D"
+echo "${FPM_MASKRADLD} $FPMsectors $NBrings ${10} ${11} $PIAACMC_resolved $2 $3 $5 $6 $7"
+echo "722" > ./$1/runstep
+touch ./$1/step722.run.txt
+$execnamestring -n step722 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_ldoffset=0.03
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0_starim.fits ./$1/psfi0_step722.fits
+cleanup
+exitOK
+fi
+fi
+
+
+
+if [ 723 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step723  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.001 l/D"
+echo "$datestr  $0  LINE $LINENO    step723  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.001 l/D" >> cmdlog.txt
+ if [ ! -f ./$1/step007.txt ]
+ then
+ echo "====================== step 723 requires step 007 ======================================="
+ exit
+ else
+ echo "723: eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.001 l/D"
+echo "${FPM_MASKRADLD} $FPMsectors $NBrings ${10} ${11} $PIAACMC_resolved $2 $3 $5 $6 $7"
+echo "722" > ./$1/runstep
+touch ./$1/step723.run.txt
+$execnamestring -n step723 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_ldoffset=0.001
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0_starim.fits ./$1/psfi0_step723.fits
+cleanup
+exitOK
+fi
+fi
+
+
+
+if [ 724 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step724  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.003 l/D"
+echo "$datestr  $0  LINE $LINENO    step724  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.003 l/D" >> cmdlog.txt
+ if [ ! -f ./$1/step007.txt ]
+ then
+ echo "====================== step 724 requires step 007 ======================================="
+ exit
+ else
+ echo "724: eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.003 l/D"
+echo "${FPM_MASKRADLD} $FPMsectors $NBrings ${10} ${11} $PIAACMC_resolved $2 $3 $5 $6 $7"
+echo "724" > ./$1/runstep
+touch ./$1/step724.run.txt
+$execnamestring -n step724 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_ldoffset=0.003
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0_starim.fits ./$1/psfi0_step724.fits
+cleanup
+exitOK
+fi
+fi
+
+
+
+if [ 725 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step725  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.0001 l/D"
+echo "$datestr  $0  LINE $LINENO    step725  Eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.0001 l/D" >> cmdlog.txt
+ if [ ! -f ./$1/step007.txt ]
+ then
+ echo "====================== step 725 requires step 007 ======================================="
+ exit
+ else
+ echo "725: eval polychromatic contrast for on-axis PSF, and pointing sensitivity, 0.0001 l/D"
+echo "${FPM_MASKRADLD} $FPMsectors $NBrings ${10} ${11} $PIAACMC_resolved $2 $3 $5 $6 $7"
+echo "725" > ./$1/runstep
+touch ./$1/step725.run.txt
+$execnamestring -n step725 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_ldoffset=0.0001
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0_starim.fits ./$1/psfi0_step725.fits
+cleanup
+exitOK
+fi
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if [ 730 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step730  Compute on-axis polychromatic PSF, includes WFC with 1 DM"
+echo "$datestr  $0  LINE $LINENO    step730  Compute on-axis polychromatic PSF, includes WFC with 1 DM" >> cmdlog.txt
+echo "730" > ./$1/runstep
+touch ./$1/step730.run.txt
+$execnamestring -n step730 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_WFCmode=1
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+if [ 740 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step740  Compute on-axis polychromatic PSF, includes WFC with 2 DMs"
+echo "$datestr  $0  LINE $LINENO    step740  Compute on-axis polychromatic PSF, includes WFC with 2 DMs" >> cmdlog.txt
+echo "740" > ./$1/runstep
+touch ./$1/step740.run.txt
+$execnamestring -n step740 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+PIAACMC_WFCmode=2
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+
+if [ 750 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step750  transmission curve"
+echo "$datestr  $0  LINE $LINENO    step750  transmission curve" >> cmdlog.txt
+ if [ ! -f ./$1/step007.txt ]
+ then
+ echo "====================== step 750 requires step 007 ======================================="
+ echo "====================== step 750 requires step 007 =======================================" >> cmdlog.txt
+ exit
+ else
+ echo "750: transmission curve"
+echo "${FPM_MASKRADLD} $FPMsectors $NBrings ${10} ${11} $PIAACMC_resolved $PIAACMC_extmode $2 $3 $5 $6 $7"
+echo "750" > ./$1/runstep
+touch ./$1/step750.run.txt
+$execnamestring -n step750 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+coffeepiaacmcsim.run $1 101
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+fi
+
+
+
+
+
+
+
+if [ 771 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step771  eval polychromatic contrast for on-axis PSF, and pointing sensitivity"
+echo "$datestr  $0  LINE $LINENO    step771  eval polychromatic contrast for on-axis PSF, and pointing sensitivity" >> cmdlog.txt
+echo "111" > ./$1/runstep
+touch ./$1/step111.run.txt
+$execnamestring -n step111 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=$nblambda
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+if [ 772 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step772  Eval monochromatic contrast for on-axis PSF, and pointing sensitivity"
+echo "$datestr  $0  LINE $LINENO    step772  Eval monochromatic contrast for on-axis PSF, and pointing sensitivity" >> cmdlog.txt
+echo "112" > ./$1/runstep
+touch ./$1/step112.run.txt
+$execnamestring -n step112 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=1
+PIAACMC_resolved=0
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+
+if [ 773 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step773  Eval monochromatic contrast for on-axis PSF, and pointing sensitivity"
+echo "$datestr  $0  LINE $LINENO    step773  Eval monochromatic contrast for on-axis PSF, and pointing sensitivity" >> cmdlog.txt
+echo "113" > ./$1/runstep
+touch ./$1/step113.run.txt
+$execnamestring -n step113 << EOF
+PIAACMC_dftgrid=2
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_nblambda=1
+PIAACMC_resolved=0
+coffeepiaacmcsim.run $1 100
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+if [ 774 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step774  Eval monochromatic transmission curve"
+echo "$datestr  $0  LINE $LINENO    step774  Eval monochromatic transmission curve" >> cmdlog.txt
+echo "114" > ./$1/runstep
+touch ./$1/step114.run.txt
+$execnamestring -n step114 << EOF
+PIAACMC_dftgrid=0
+PIAACMC_FPMsectors=0
+PIAACMC_nblambda=1
+coffeepiaacmcsim.run $1 101
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 800 : import FPM configuration setting from parent directory
+if [ 800 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step800  Import FPM configuration setting from parent directory"
+echo "$datestr  $0  LINE $LINENO    step800  Import FPM configuration setting from parent directory" >> cmdlog.txt
+touch ./$1/step800.run.txt
+echo "800" > ./$1/runstep
+$execnamestring -n step800 << EOF
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+coffeepiaacmcsim.run $1 300
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exit
+fi
+
+
+
+# 801 : remove configuration settings
+if [ 801 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step801  Remove FPM configuration settings"
+echo "$datestr  $0  LINE $LINENO    step801  Remove FPM configuration settings" >> cmdlog.txt
+echo "801" > ./$1/runstep
+touch ./$1/step801.run.txt
+$execnamestring -n step801 << EOF
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+coffeepiaacmcsim.run $1 301
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+# 802 : restore configuration settings
+if [ 802 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step802  Restore FPM configuration settings"
+echo "$datestr  $0  LINE $LINENO    step802  Restore FPM configuration settings" >> cmdlog.txt
+echo "802" > ./$1/runstep
+touch ./$1/step802.run.txt
+$execnamestring -n step802 << EOF
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+PIAACMC_NBrings=$NBrings
+coffeepiaacmcsim.run $1 302
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+cleanup
+exitOK
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ====================================== BEGIN MAIN DESIGN SCRIPT =========================================
+# if PIAAmode = 0, only step 000 is executed
+
+
+# =========================================================================================================
+# STEP 000: make monochromatic PIAACMC idealized design, circular central obstruction, assume point source
+# =========================================================================================================
+#
+
+
+checkexit
+
+
+
+
+
+echo "kmaxF = $kmaxF"
+
+if [ "$PIAAmode" -eq "0" ]; then
+ cp pup_$size.fits _pupmaskload.fits
+ cp $4 ./$1/pupa0_$2.fits
+fi
+
+
+if [ 0 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step000.txt ]
+ then
+ echo "$datestr  $0  LINE $LINENO    step000  Compute PSF"
+ echo "$datestr  $0  LINE $LINENO    step000  Compute PSF" >> cmdlog.txt
+echo "000" > ./$1/runstep
+touch ./$1/step000.run.txt
+
+
+#
+# in APLC mode, skip steps 1 to 17
+#
+if [ "$PIAAmode" -eq "0" ]; then
+touch ./$1/step001.txt
+touch ./$1/step002.txt
+touch ./$1/step003.txt
+touch ./$1/step004.txt
+touch ./$1/step005.txt
+touch ./$1/step006.txt
+touch ./$1/step007.txt
+touch ./$1/step008.txt
+touch ./$1/step009.txt
+touch ./$1/step010.txt
+touch ./$1/step011.txt
+touch ./$1/step012.txt
+touch ./$1/step013.txt
+touch ./$1/step014.txt
+touch ./$1/step015.txt
+touch ./$1/step016.txt
+touch ./$1/step017.txt
+fi
+
+
+$execnamestring -n step000 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+
+# load mask if available
+loadfits .errmode 1
+loadfits "_pupmaskload.fits" pupmaskim
+
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step000.fits
+touch ./$1/step000.txt
+else
+ echo "$datestr  $0  LINE $LINENO    skip step 000 [  0] (Compute on-axis PSF, monochromatic, idealized PIAACMC, first iteration)"
+ echo "$datestr  $0  LINE $LINENO    skip step 000 [  0] (Compute on-axis PSF, monochromatic, idealized PIAACMC, first iteration)" >> cmdlog.txt
+  fi
+state=001
+
+
+fi
+
+
+
+
+
+if [ "$PIAAmode" -eq "1" ]; then
+rm -f _pupmaskload.fits
+fi
+
+
+if [ $state -eq $statestop ]
+then
+echo "STATE STOP POINT (000)"
+sleep 5
+cleanup
+exitOK
+fi
+
+
+
+checkexit
+
+
+
+
+
+
+
+# STEP 001: repeat above step to compute on-axis PSF
+#
+# -> piaacmcparams_01.conf
+#
+
+if [ 1 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step001.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step001  Compute on-axis PSF"
+echo "$datestr  $0  LINE $LINENO    step001  Compute on-axis PSF" >> cmdlog.txt
+ echo "001" > ./$1/runstep
+ touch ./$1/step001.run.txt
+$execnamestring -n step001 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+ mv ./$1/psfi0.fits ./$1/psfi0_step001.fits
+ cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step001.conf
+ cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step001.fits
+ cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step001.fits
+ cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step001.fits
+ cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step001.fits
+ touch ./$1/step001.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 001 [  0] (Compute on-axis PSF, monochromatic, idealized PIAACMC)"
+ echo "$datestr  $0  LINE $LINENO    skip step 001 [  0] (Compute on-axis PSF, monochromatic, idealized PIAACMC)" >> cmdlog.txt
+ fi
+state="002"
+fi
+
+
+
+
+checkexit
+
+
+
+
+
+
+
+# STEP 002: Specify input pupil geometry
+
+if [ "002" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step002.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step002  Specify input pupil geometry"
+echo "$datestr  $0  LINE $LINENO    step002  Specify input pupil geometry" >> cmdlog.txt
+ echo $4
+ cp $4 ./$1/pupa0_$2.fits
+ touch ./$1/step002.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 002       (load pupil geometry)"
+ echo "$datestr  $0  LINE $LINENO    skip step 002       (load pupil geometry)" >> cmdlog.txt
+ fi
+state="003"
+fi
+
+
+checkexit
+
+
+
+
+
+
+#
+# STEP 003: compute on-axis PSF
+#
+if [ "003" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step003.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step003  compute on-axis PSF"
+echo "$datestr  $0  LINE $LINENO    step003  compute on-axis PSF" >> cmdlog.txt
+echo "003" > ./$1/runstep
+touch ./$1/step003.run.txt
+$execnamestring -n step003 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+coffeepiaacmcsim.run $1 0
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step003.fits
+touch ./$1/step003.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 003 [  0] (Compute on-axis PSF)"
+ echo "$datestr  $0  LINE $LINENO    skip step 003 [  0] (Compute on-axis PSF)" >> cmdlog.txt
+ fi
+state="004"
+fi
+
+
+
+
+
+checkexit
+
+
+
+
+#
+# STEP 004: compute Lyot stops shapes and locations
+# This is done in monochromatic light
+#
+# output:
+# LyotStop0.fits
+# ...
+#
+
+if [ "004" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step004.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step004  Compute Lyot stops shapes and locations"
+echo "$datestr  $0  LINE $LINENO    step004  Compute Lyot stops shapes and locations" >> cmdlog.txt
+echo "004" > ./$1/runstep
+touch ./$1/step004.run.txt
+$execnamestring -n step004 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_lstransm=$LStransm2
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_nbpropstep=$NBpropStep
+coffeepiaacmcsim.run $1 5
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step004.fits
+
+cp ./$1/LMintC.fits ./$1/LMintC_step004.fits
+cp ./$1/LyotStop0.fits ./$1/LyotStop0_step004.fits
+cp ./$1/LyotStop1.fits ./$1/LyotStop1_step004.fits || :
+cp ./$1/LyotStop2.fits ./$1/LyotStop2_step004.fits || :
+cp ./$1/LyotStop3.fits ./$1/LyotStop3_step004.fits || :
+
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step004.conf
+touch ./$1/step004.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 004 [  5] (Compute Lyot stops shapes and locations, 1st pass)"
+ echo "$datestr  $0  LINE $LINENO    skip step 004 [  5] (Compute Lyot stops shapes and locations, 1st pass)" >> cmdlog.txt
+ fi
+state="005"
+fi
+
+
+
+checkexit
+
+
+
+
+#
+# STEP 005: optimize focal plane mask transm
+# -> result_fpmt.log
+#
+if [ "005" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step005.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step005  Optimize focal plane mask transm"
+echo "$datestr  $0  LINE $LINENO    step005  Optimize focal plane mask transm" >> cmdlog.txt
+echo "005" > ./$1/runstep
+touch ./$1/step005.run.txt
+$execnamestring -n step005 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+coffeepiaacmcsim.run $1 2
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step005.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step005.conf
+touch ./$1/step005.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 005 [  2] (optimize focal plane mask transm, 1st pass - see result_fpmt.log for results)"
+ echo "$datestr  $0  LINE $LINENO    skip step 005 [  2] (optimize focal plane mask transm, 1st pass - see result_fpmt.log for results)" >> cmdlog.txt
+ fi
+state="006"
+fi
+
+
+
+checkexit
+
+
+
+# STEP 006: compute Lyot stops shapes and locations, 2nd pass, LStransm0 throughput)
+# This is done in monochromatic light
+#
+# output:
+# LyotStop0.fits
+# ...
+#
+
+if [ 006 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step006.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step006  Compute Lyot stops shapes and locations, 2nd pass, 70%% throughput"
+echo "$datestr  $0  LINE $LINENO    step006  Compute Lyot stops shapes and locations, 2nd pass, 70%% throughput" >> cmdlog.txt
+echo "006" > ./$1/runstep
+touch ./$1/step006.run.txt
+$execnamestring -n step006 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_lstransm=$LStransm0
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_nbpropstep=$NBpropStep
+coffeepiaacmcsim.run $1 5
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step006.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step006.conf
+
+cp ./$1/LMintC.fits ./$1/LMintC_step006.fits
+cp ./$1/LcombOA.fits ./$1/LcombOA_step006.fits
+cp ./$1/LyotStop0.fits ./$1/LyotStop0_step006.fits
+cp ./$1/LyotStop1.fits ./$1/LyotStop1_step006.fits || :
+cp ./$1/LyotStop2.fits ./$1/LyotStop2_step006.fits || :
+cp ./$1/LyotStop3.fits ./$1/LyotStop3_step006.fits || :
+
+touch ./$1/step006.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 006 [  5] (Compute Lyot stops shapes and locations, 2nd pass, 70%% throughput)"
+ echo "$datestr  $0  LINE $LINENO    skip step 006 [  5] (Compute Lyot stops shapes and locations, 2nd pass, 70%% throughput)" >> cmdlog.txt
+ fi
+state=007
+fi
+
+
+
+checkexit
+
+
+
+# STEP 007: tune PIAA shapes and focal plane mask transm, 10 cosine modes, 5 Fourier modes
+# -> linoptval.txt
+kmaxC=10
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=5
+fi
+echo "PIAAcirc = $PIAAcirc"
+echo "kmaxF = $kmaxF"
+
+#sleep 10000000
+
+if [ "007" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step007.txt ]
+ then
+ echo "$datestr  $0  LINE $LINENO    step007  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF"
+ echo "$datestr  $0  LINE $LINENO    step007  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF" >> cmdlog.txt
+ echo "step 007"
+echo "007" > ./$1/runstep
+touch ./$1/step007.run.txt
+$execnamestring -n step007 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nbiter=20
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step$step.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step$step.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step$step.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step$step.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step$step.fits || :
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step$step.fits || :
+cp ./$1/linoptval.txt ./$1/linoptval_step007.txt
+touch ./$1/step007.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 007 [ 40] (tune PIAA shapes and focal plane mask transm # modes: 10, 5)"
+ echo "$datestr  $0  LINE $LINENO    skip step 007 [ 40] (tune PIAA shapes and focal plane mask transm # modes: 10, 5)" >> cmdlog.txt
+ fi
+state="008"
+fi
+
+
+
+checkexit
+
+
+
+
+
+
+# STEP 008: tune PIAA shapes and focal plane mask transm, 20 cosine modes, 20 Fourier modes
+# -> linoptval.txt
+kmaxC=20
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=20
+fi
+
+if [ "008" -eq ${state} ]
+then
+if [ ! -f ./$1/step008.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step008  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF"
+echo "$datestr  $0  LINE $LINENO    step008  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF" >> cmdlog.txt
+echo "008" > ./$1/runstep
+touch ./$1/step008.run.txt
+$execnamestring -n step008 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nbiter=20
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step008.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step008.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step008.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step008.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step008.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step008.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step008.fits || :
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step008.fits || :
+cp ./$1/linoptval.txt ./$1/linoptval_step008.txt
+touch ./$1/step008.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 008 [ 40] (tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF)"
+ echo "$datestr  $0  LINE $LINENO    skip step 008 [ 40] (tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF)" >> cmdlog.txt
+ fi
+state="009"
+fi
+
+
+
+checkexit
+
+
+
+
+
+# STEP 009: Compute Lyot stops shapes and locations, 3nd pass, throughput = LStransm1
+
+if [ "009" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step009.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step009  Compute Lyot stops shapes and locations, 3nd pass, $LStransm1 throughput"
+echo "$datestr  $0  LINE $LINENO    step009  Compute Lyot stops shapes and locations, 3nd pass, $LStransm1 throughput" >> cmdlog.txt
+step="009"
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step009 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_lstransm=$LStransm1
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_nbpropstep=$NBpropStep
+coffeepiaacmcsim.run $1 5
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step009.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step009.conf
+
+cp ./$1/LMintC.fits ./$1/LMintC_step009.fits
+cp ./$1/LcombOA.fits ./$1/LcombOA_step009.fits
+cp ./$1/LyotStop0.fits ./$1/LyotStop0_step009.fits
+cp ./$1/LyotStop1.fits ./$1/LyotStop1_step009.fits || :
+cp ./$1/LyotStop2.fits ./$1/LyotStop2_step009.fits || :
+cp ./$1/LyotStop3.fits ./$1/LyotStop3_step009.fits || :
+
+touch ./$1/step009.txt
+ else
+ echo "datestr  $0  LINE $LINENO    skip step 009 [  5] (Compute Lyot stops shapes and locations, 3nd pass, $LStransm1 throughput)"
+ echo "datestr  $0  LINE $LINENO    skip step 009 [  5] (Compute Lyot stops shapes and locations, 3nd pass, $LStransm1 throughput)" >> cmdlog.txt
+ fi
+state="010"
+fi
+
+
+
+
+
+checkexit
+
+
+
+# STEP 010: Tune Lyot stops conjugations
+
+if [ "010" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step010.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step010  Tune Lyot stops conjugations"
+echo "$datestr  $0  LINE $LINENO    step010  Tune Lyot stops conjugations" >> cmdlog.txt
+step="010"
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step010 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_lstransm=$LStransm1
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_nbpropstep=$NBpropStep
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 1
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step010.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step010.conf
+touch ./$1/step010.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 010 [  1] (Tune Lyot stops conjugations)"
+ echo "$datestr  $0  LINE $LINENO    skip step 010 [  1] (Tune Lyot stops conjugations)" >> cmdlog.txt
+ fi
+state="011"
+fi
+
+
+
+
+checkexit
+
+
+# STEP 011: Tune PIAA shapes and focal plane mask transm, 20, 20
+# -> linoptval.txt
+
+kmaxC=20
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=20
+fi
+
+if [ "011" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+ if [ ! -f ./$1/step011.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step011  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF"
+echo "$datestr  $0  LINE $LINENO    step011  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF" >> cmdlog.txt
+step="011"
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step011 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nbiter=20
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step$step.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step$step.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step$step.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step$step.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step$step.fits || :
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step$step.fits || :
+cp ./$1/linoptval.txt ./$1/linoptval_step011.txt
+touch ./$1/step011.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 011 [ 40] (Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF)"
+ echo "$datestr  $0  LINE $LINENO    skip step 011 [ 40] (Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF)" >> cmdlog.txt
+ fi
+state="012"
+fi
+
+
+
+
+
+checkexit
+
+
+
+
+
+
+
+
+# STEP 012: tune PIAA shapes and focal plane mask transm, 40, 100
+# -> linoptval.txt
+kmaxC=40
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=100
+fi
+
+if [ "012" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step="012"
+ if [ ! -f ./$1/step012.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step$step  Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF"
+echo "$datestr  $0  LINE $LINENO    step$step  Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF" >> cmdlog.txt
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step012 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nbiter=10
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step$step.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step$step.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step$step.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step$step.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step$step.fits || :
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step$step.fits || :
+cp ./$1/linoptval.txt ./$1/linoptval_step012.txt
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_idealmonomask.conf
+touch ./$1/step012.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 012 [ 40] (Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF)"
+ echo "$datestr  $0  LINE $LINENO    skip step 012 [ 40] (Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF)" >> cmdlog.txt
+ fi
+state="013"
+fi
+
+
+
+
+checkexit
+
+
+
+
+
+# STEP 013: Compute Lyot stops shapes and locations, 4rth pass, $LStransm2 throughput
+
+if [ "013" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step="013"
+ if [ ! -f ./$1/step013.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step$step  Compute Lyot stops shapes and locations, 4rth pass, $LStransm2 throughput"
+echo "$datestr  $0  LINE $LINENO    step$step  Compute Lyot stops shapes and locations, 4rth pass, $LStransm2 throughput" >> cmdlog.txt
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step013 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_lstransm=$LStransm2
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_nbpropstep=$NBpropStep
+PIAACMC_save=1
+coffeepiaacmcsim.run $1 5
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_idealmonomask.conf
+
+cp ./$1/LMintC.fits ./$1/LMintC_step013.fits
+cp ./$1/LcombOA.fits ./$1/LcombOA_step013.fits
+cp ./$1/LyotStop0.fits ./$1/LyotStop0_step013.fits
+cp ./$1/LyotStop1.fits ./$1/LyotStop1_step013.fits || :
+cp ./$1/LyotStop2.fits ./$1/LyotStop2_step013.fits || :
+cp ./$1/LyotStop3.fits ./$1/LyotStop3_step013.fits || :
+
+touch ./$1/step013.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 013 [  5] (Compute Lyot stops shapes and locations, 4rth pass, $LStransm2 throughput)"
+ echo "$datestr  $0  LINE $LINENO    skip step 013 [  5] (Compute Lyot stops shapes and locations, 4rth pass, $LStransm2 throughput)" >> cmdlog.txt
+ fi
+state="014"
+fi
+
+
+
+checkexit
+
+
+
+
+# STEP 014: Tune Lyot stops conjugations
+
+if [ "014" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step="014"
+ if [ ! -f ./$1/step014.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step$step  Tune Lyot stops conjugations"
+echo "$datestr  $0  LINE $LINENO    step$step  Tune Lyot stops conjugations" >> cmdlog.txt
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step014 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_lstransm=$LStransm2
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_nbpropstep=$NBpropStep
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 1
+
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_idealmonomask.conf
+touch ./$1/step014.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 014 [  1] (Tune Lyot stops conjugations)\n"
+ echo "$datestr  $0  LINE $LINENO    skip step 014 [  1] (Tune Lyot stops conjugations)\n" >> cmdlog.txt
+ fi
+state="015"
+fi
+
+
+
+checkexit
+
+
+
+
+
+# STEP 015 : tune PIAA shapes and focal plane mask transm, # modes: 20, 20
+# -> linoptval.txt
+kmaxC=20
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=20
+fi
+
+if [ "015" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step=015
+ if [ ! -f ./$1/step015.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step$step  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF"
+echo "$datestr  $0  LINE $LINENO    step$step  Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF" >> cmdlog.txt
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step015 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nbiter=20
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step$step.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step$step.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step$step.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step$step.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step$step.fits || :
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step$step.fits || :
+cp ./$1/linoptval.txt ./$1/linoptval_step015.txt
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_idealmonomask.conf
+touch ./$1/step015.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 015 [ 40] (Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF)"
+ echo "$datestr  $0  LINE $LINENO    skip step 015 [ 40] (Tune PIAA shapes and focal plane mask transm # modes: $kmaxC, $kmaxF)" >> cmdlog.txt
+ fi
+state="016"
+fi
+
+
+checkexit
+
+
+
+
+
+
+
+
+# STEP 016: tune PIAA shapes and focal plane mask transm, # modes: 40, 150
+# -> linoptval.txt
+kmaxC=40
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=150
+fi
+
+if [ "016" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step="016"
+ if [ ! -f ./$1/step016.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step$stepT  une PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF"
+echo "$datestr  $0  LINE $LINENO    step$stepT  une PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF" >> cmdlog.txt
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step016 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nbiter=10
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step$step.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step$step.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step$step.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step$step.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step$step.fits || :
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step$step.fits || :
+cp ./$1/linoptval.txt ./$1/linoptval_step016.txt
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_idealmonomask.conf
+touch ./$1/step016.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 016 [ 40] (Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF)"
+ echo "$datestr  $0  LINE $LINENO    skip step 016 [ 40] (Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF)" >> cmdlog.txt
+ fi
+state="017"
+fi
+
+
+
+
+checkexit
+
+
+
+# STEP 017: tune PIAA shapes and focal plane mask transm, # modes: 40, 625
+# -> linoptval.txt
+kmaxC=40
+
+kmaxF=0
+if [ "$PIAAcirc" -eq "0" ]; then
+kmaxF=625
+fi
+
+if [ 017 -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step=017
+ if [ ! -f ./$1/step017.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step$step  Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF"
+echo "$datestr  $0  LINE $LINENO    step$step  Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF" >> cmdlog.txt
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step017 << EOF
+# idealized mask
+PIAACMC_MASKRADLD=0.0
+
+PIAACMC_resolved=0
+PIAACMC_nbiter=10
+PIAACMC_nblambda=1
+PIAACMC_lambda=${lambda}
+PIAACMC_maxoptCterm=${kmaxC}
+PIAACMC_maxoptFterm=${kmaxF}
+
+REGPIAASHAPES=1
+loadfits "$1/piaa0Cmodes_step001.fits" piaa0Cmref
+loadfits "$1/piaa1Cmodes_step001.fits" piaa1Cmref
+loadfits "$1/piaa0Fmodes_step001.fits" piaa0Fmref
+loadfits "$1/piaa1Fmodes_step001.fits" piaa1Fmref
+
+REGPIAA_C_COEFF=${REGPIAACCOEFF}
+REGPIAA_C_ALPHA=${REGPIAACALPHA}
+REGPIAA_F_COEFF=${REGPIAAFCOEFF}
+REGPIAA_F_ALPHA=${REGPIAAFALPHA}
+
+PIAACMC_dftgrid=0
+
+coffeepiaacmcsim.run $1 40
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+mv ./$1/psfi0.fits ./$1/psfi0_step$step.fits
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_step$step.conf
+cp ./$1/piaa0Cmodes.fits ./$1/piaa0Cmodes_step$step.fits
+cp ./$1/piaa0Fmodes.fits ./$1/piaa0Fmodes_step$step.fits
+cp ./$1/piaa1Cmodes.fits ./$1/piaa1Cmodes_step$step.fits
+cp ./$1/piaa1Fmodes.fits ./$1/piaa1Fmodes_step$step.fits
+cp ./$1/fpm_zonez.fits ./$1/fpm_zonez_step$step.fits || :
+cp ./$1/fpm_zonea.fits ./$1/fpm_zonea_step$step.fits || :
+cp ./$1/linoptval.txt ./$1/linoptval_step017.txt
+cp ./$1/piaacmcparams.conf ./$1/piaacmcparams_idealmonomask.conf
+touch ./$1/step017.txt
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 017 [ 40] (Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF)"
+ echo "$datestr  $0  LINE $LINENO    skip step 017 [ 40] (Tune PIAA shapes and focal plane mask transm, # modes: $kmaxC, $kmaxF)" >> cmdlog.txt
+ fi
+state="018"
+fi
+
+
+checkexit
+
+
+
+# STEP 18: go to step 100
+
+if [ "018" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step=018
+echo "$datestr  $0  LINE $LINENO    step$step  --" >> cmdlog.txt
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+state="100"
+fi
+
+
+checkexit
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+# STEP 100: Turn focal plane mask into physical mask with zones, Compute polychromatic response to zones, store result in FPMresp
+#
+if [ "100" -eq ${state} ]
+then
+    datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+step="100"
+    if [ ! -f ./$1/step100.txt ]
+    then
+    echo "$datestr  $0  LINE $LINENO    step100  Turn focal plane mask into physical mask with zones, Compute polychromatic response to zones, store result in FPMresp"
+    echo "$datestr  $0  LINE $LINENO    step100  Turn focal plane mask into physical mask with zones, Compute polychromatic response to zones, store result in FPMresp" >> cmdlog.txt
+    echo "$step" > ./$1/runstep
+    touch ./$1/step$step.run.txt
+
+
+    NBthreadsFPMrespm1=$(( $NBthreadsFPMresp - 1 ))
+
+    echo "NBthreadsFPMrespm1 = ${NBthreadsFPMrespm1}"
+    echo "NBthreadsFPMresp = ${NBthreadsFPMresp}"
+
+    for thread in `seq 0 1 ${NBthreadsFPMrespm1}`;
+    do
+    echo " - thread = $thread"
+    done
+
+
+
+    rm -f initOK_${pid}
+
+
+
+
+for thread in `seq 0 1 ${NBthreadsFPMrespm1}`;
+do
+echo "STARTING COMPONENT $thread"
+echo "waitforfile initOK_${pid}" > script${pid}FPMt${thread}n${NBthreadsFPMresp}
+
+fifoname1="${fifoname}t${thread}n${NBthreadsFPMresp}"
+execname1="$execname -s $startupfile -f $fifoname1"
+
+echo "$execname1 -n ${pid}FPMt${thread}n${NBthreadsFPMresp} << EOF" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "PIAACMC_fpmtype=1" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "PIAACMC_FPMsectors=$FPMsectors" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "SCORINGMASKTYPE=$SCORINGMASKTYPE" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+
+echo "# Number of threads" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "PIAACMC_FPMresp_mp=${NBthreadsFPMresp}" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+
+echo "# Current thread ( if thread > mp, then combine results)" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "PIAACMC_FPMresp_thread=${thread}" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+
+echo "PIAACMC_save=0" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "coffeepiaacmcsim.run $1 11" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "exitCLI" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+echo "EOF" >> script${pid}FPMt${thread}n${NBthreadsFPMresp}
+
+
+chmod +x script${pid}FPMt${thread}n${NBthreadsFPMresp}
+
+tmux new-session -d -s ${pid}FPMt${thread}n${NBthreadsFPMresp}
+tmux send-keys -t ${pid}FPMt${thread}n${NBthreadsFPMresp} "./script${pid}FPMt${thread}n${NBthreadsFPMresp}" C-m
+#tmux send-keys -t ${pid}FPMt${thread}n${NBthreadsFPMresp} "exit" C-m
+done
+
+
+
+
+
+
+if [ 1 -eq 1 ]
+then
+touch teststep_002
+thread=${NBthreadsFPMresp} # this thread waits for the other ones to complete
+$execnamestring -n ${pid}FPMt${thread}n${NBthreadsFPMresp} << EOF
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+SCORINGMASKTYPE=$SCORINGMASKTYPE
+
+# Number of threads
+PIAACMC_FPMresp_mp=${NBthreadsFPMresp}
+
+# Current thread ( if thread > mp, then combine results)
+PIAACMC_FPMresp_thread=${thread}
+PIAACMC_save=0
+PID=${pid}
+coffeepiaacmcsim.run $1 11
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+
+rm -f initOK_${pid}
+
+
+# clean up threads and temporary files
+for thread in `seq 0 1 ${NBthreadsFPMrespm1}`;
+do
+tmux kill-session -t ${pid}FPMt${thread}n${NBthreadsFPMresp}
+rm -f script${pid}FPMt${thread}n${NBthreadsFPMresp}
+done
+fi
+
+
+
+
+
+#touch ./$1/step100.txt
+
+
+
+#mv ./$1/psfi0.fits ./$1/psfi0_step100.fits
+ else
+ echo "$datestr  $0  LINE $LINENO    skip step 100 [ 11] turn focal plane mask into zones, Compute polychromatic response to zones, store result in FPMresp"
+ echo "$datestr  $0  LINE $LINENO    skip step 100 [ 11] turn focal plane mask into zones, Compute polychromatic response to zones, store result in FPMresp" >> cmdlog.txt
+ fi
+state="101"
+fi
+
+
+
+checkexit
+
+
+
+# STEP 101: search for optimal FPM solution
+#
+
+if [ "101" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "entering step 101"
+if [ ! -f ./$1/step101.txt ]
+ then
+echo "$datestr  $0  LINE $LINENO    step101  Search for optimal FPM solution"
+echo "$datestr  $0  LINE $LINENO    step101  Search for optimal FPM solution" >> cmdlog.txt
+step="101"
+echo "$step" > ./$1/runstep
+touch ./$1/step$step.run.txt
+$execnamestring -n step101 << EOF
+PIAACMC_fpmtype=1
+PIAACMC_FPMsectors=$FPMsectors
+SCORINGMASKTYPE=$SCORINGMASKTYPE
+PIAACMC_save=0
+PIAACMC_nbiterSA=10000
+PIAACMC_nbiterDS=100
+
+coffeepiaacmcsim.run $1 13
+exitCLI
+EOF
+exit_on_error $? "$execnamestring"
+ else
+echo "$datestr  $0  LINE $LINENO    skip step 101 [ 13] search for optimal solution"
+echo "$datestr  $0  LINE $LINENO    skip step 101 [ 13] search for optimal solution" >> cmdlog.txt
+fi
+#touch ./$1/step101.txt
+state="102"
+fi
+
+
+
+checkexit
+
+
+
+
+# STEP 102: exit
+
+if [ "102" -eq ${state} ]
+then
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  $0  LINE $LINENO    step102  END"
+echo "$datestr  $0  LINE $LINENO    step102  END" >> cmdlog.txt
+cleanup
+exitOK
+fi
+
+
+checkexit
+
+
+
+
+
+
+
+
+
+
+
+====================================== END OF STATE MACHINE ==============================================
+cleanup
+
+
+
+exitOK

@@ -287,7 +287,9 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_RST : "", "Full help, no ANSI color");
 
     const char *see_also[] = {
-        "milk-streamCTRL", "milk-stream-info", "milk-stream-list"
+        "milk-streamCTRL:launch the stream control dashboard TUI",
+        "milk-stream-info:inspect stream metadata and data",
+        "milk-stream-list:list active shared memory streams"
     };
     milk_help_see_also(see_also, 3, mh_color);
 }

@@ -1,0 +1,1 @@
+/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-makecsetandrt.dir/milk-makecsetandrt.c.o" -o milk-makecsetandrt   -L/usr/local/lib  -Wl,-rpath,/usr/local/lib:::::::::::::::::::::::::::::::::::::::::

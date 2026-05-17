@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
+MSdescr="Compute modal response from zonal RM"
+
+
+set +u
+if [ -z ${CACAO_CONFWDIR+x} ]; then
+	CACAO_CONFWDIR="conf"
+fi
+set -u
+
+
+MSextdescr="
+Computes modal response matrix (RM) from zonal RM.
+
+Arg: Zonal response matrix name
+File name is ${CACAO_CONFWDIR}/RMmodesDM/<MODESNAME>.fits
+
+Input: ${CACAO_CONFWDIR}/zrespM.fits
+Zonal response matrix, one actuator poke response per slice
+
+Input: ${CACAO_CONFWDIR}/RMmodesDM/<MODESNAME>.fits
+DM modes, one mode per slice
+
+Output: ${CACAO_CONFWDIR}/RMmodesWFS/<MODESNAME>.fits
+Computed WFS modes, one mode per slice
+
+Upon completion, set RM to output of this sctipt:
+  ln -s $(pwd)/${CACAO_CONFWDIR}/RMmodesDM/RMsyn_modesDM.fits ./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits
+  ln -s $(pwd)/${CACAO_CONFWDIR}/RMmodesWFS/RMsyn_modesWFS.fits ./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits
+
+"
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+MSarg+=( "DMmodes:string:DM modes cube FITS file" )
+
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+
+
+source milk-argparse
+
+DMmodeCname="${inputMSargARRAY[0]}"
+DMmCfname="${CACAO_CONFWDIR}/RMmodesDM/${DMmodeCname}.fits"
+
+
+checkFile ${DMmCfname}
+
+
+
+cacaomsglog "START"
+
+
+
+
+# Compute WFS response of synthetic modes
+#
+mkdir -p ${CACAO_CONFWDIR}/RMmodesWFS
+cacao-cli << EOF
+loadfits "${CACAO_CONFWDIR}/zrespM.fits" zrespM
+loadfits "${CACAO_CONFWDIR}/RMmodesDM/${DMmodeCname}.fits" dmC
+cacaocc.generateRMWFS zrespM dmC wfsC
+saveFITS wfsC "${CACAO_CONFWDIR}/RMmodesWFS/${DMmodeCname}.fits"
+listim
+exitCLI
+EOF
+
+
+
+echo "Set default to ${DMmodeCname} files"
+
+rm -f ./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits
+ln -s $(pwd)/${CACAO_CONFWDIR}/RMmodesDM/${DMmodeCname}.fits ./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits
+echo "ln -s $(pwd)/${CACAO_CONFWDIR}/RMmodesDM/${DMmodeCname}.fits ./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits"
+cacaomsglog "USING ${DMmodeCname} as RMmodesDM"
+
+rm -f ./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits
+ln -s $(pwd)/${CACAO_CONFWDIR}/RMmodesWFS/${DMmodeCname}.fits ./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits
+echo "ln -s $(pwd)/${CACAO_CONFWDIR}/RMmodesWFS/${DMmodeCname}.fits ./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits"
+cacaomsglog "USING ${DMmodeCname} as RMmodesWFS"
+
+
+
+# LOGGING
+# see cacaofuncs-log for conventions
+#
+#source cacaofuncs-log
+#cacao-calib-logFITSfile RMmodesDM
+#cacao-calib-logFITSfile RMmodesWFS
+
+
+
+cacaomsglog "END"

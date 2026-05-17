@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
+MSdescr="Decode Hadamard response matrix"
+
+set +u
+if [ -z ${CACAO_CONFWDIR+x} ]; then
+	CACAO_CONFWDIR="conf"
+fi
+set -u
+
+
+FILE_Hipixindex="${CACAO_CONFWDIR}/RMmodesDM/Hpixindex.fits"
+FILE_Hmat="${CACAO_CONFWDIR}/RMmodesDM/Hmat.fits"
+FILE_HpokeC="${CACAO_CONFWDIR}/RMmodesDM/HpokeC.fits"
+FILE_HrespC="${CACAO_CONFWDIR}/RMmodesWFS/HpokeC.WFSresp.fits"
+
+MSextdescr="Decode H RM to zonal RM
+
+Input:
+${FILE_Hipixindex}
+${FILE_Hmat}
+${FILE_HpokeC}
+${FILE_HrespC}
+
+Ouput:
+${CACAO_CONFWDIR}/RMmodesDM/zpokeC-H.fits
+${CACAO_CONFWDIR}/RMmodesWFS/zrespM-H.fits
+${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits
+${CACAO_CONFWDIR}/RMzrec_modesDM.fits
+${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits
+${CACAO_CONFWDIR}/RMzrec_modesWFS.fits
+${CACAO_CONFWDIR}/zrespM.fits
+"
+
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+
+
+RequiredFiles=( ${FILE_Hipixindex} ${FILE_Hmat} ${FILE_HpokeC} ${FILE_HrespC} )
+
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+
+
+
+source milk-argparse
+
+cacaomsglog "START"
+
+cacao-cli << EOF
+loadfits "${FILE_Hipixindex}" pixiind
+loadfits "${FILE_Hmat}" Hmat
+loadfits "${FILE_HpokeC}" HpokeC
+loadfits "${FILE_HrespC}" HrespC
+cacaocc.aolHaddec HpokeC Hmat pixiind zpokeC
+cacaocc.aolHaddec HrespC Hmat pixiind zrespC
+saveFITS zpokeC "${CACAO_CONFWDIR}/RMmodesDM/zpokeC-H.fits"
+saveFITS zrespC "${CACAO_CONFWDIR}/RMmodesWFS/zrespM-H.fits"
+exitCLI
+EOF
+cp ${CACAO_CONFWDIR}/RMmodesWFS/zrespM-H.fits ${CACAO_CONFWDIR}/zrespM.fits
+
+
+# Override measlinresp symlinking
+ln -sf ${PWD}/${CACAO_CONFWDIR}/RMmodesDM/zpokeC-H.fits ./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits
+cp $(pwd)/${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits ./${CACAO_CONFWDIR}/RMzrec_modesDM.fits
+
+ln -sf ${PWD}/${CACAO_CONFWDIR}/RMmodesWFS/zrespM-H.fits ./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits
+cp $(pwd)/${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits ./${CACAO_CONFWDIR}/RMzrec_modesWFS.fits
+
+# LOGGING
+#
+source cacaofuncs-log
+
+cacao-calib-logFITSfile RMzrec_modesDM
+
+cacao-calib-logFITSfile RMzrec_modesWFS
+
+# Load to shmim
+cacao-calib-streamupdate zrespM
+
+
+cacaomsglog "END"

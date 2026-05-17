@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+MSdescr="milk-cli with all installed modules"
+
+modulelist="milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milk_module_example,milkpsf,milkstatistic,milkZernikePolyn"
+
+# Handle script-level help only; pass everything else
+# through to milk-cli.
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "${MSdescr}"
+        exit 0 ;;
+    -h|--help)
+        echo "milk-cli-all : ${MSdescr}"
+        echo ""
+        echo "Loads modules:"
+        echo "  ${modulelist}"
+        echo ""
+        echo "USAGE:"
+        echo "  milk-cli-all [MILK OPTIONS ...]"
+        echo ""
+        echo "All arguments are forwarded to milk-cli."
+        exit 0
+        ;;
+    -hs)
+        printf "%s\n" "${MSdescr}"
+        exit 0
+        ;;
+esac
+
+# Check if we are running from source directory
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+ROOT_DIR=$(dirname "$SCRIPT_DIR")
+MILK_EXEC="milk-cli"
+
+if [ -d "$ROOT_DIR/_build/lib" ]; then
+    echo "Running from source directory, overriding MILK_INSTALLDIR to $ROOT_DIR/_build"
+    export MILK_INSTALLDIR="$ROOT_DIR/_build"
+    if [ -x "$ROOT_DIR/_build/milk-cli" ]; then
+        MILK_EXEC="$ROOT_DIR/_build/milk-cli"
+        echo "Using built executable: $MILK_EXEC"
+    fi
+fi
+
+MILKCLI_APPNAME="milk-cli-all" \
+    MILKCLI_ADD_LIBS="${MILKCLI_ADD_LIBS-};${modulelist}" \
+    $MILK_EXEC "$@"

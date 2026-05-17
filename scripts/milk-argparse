@@ -3,7 +3,21 @@
 # Early-exit help flags — only execute when run standalone, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     case "${1-}" in
-        -h1|--help-oneline) echo "bash argument parser library for milk scripts (source this, do not run directly)"; exit 0 ;;
+        -h1|--help-oneline)
+            echo "bash argument parser library for" \
+                 "milk scripts (source this, do not" \
+                 "run directly)"
+            exit 0 ;;
+        -h2|--help-description)
+            echo "Provides MSarg/MSopt arrays," \
+                 "printHELP, and argument parsing." \
+                 "Source from scripts; do not" \
+                 "run directly."
+            exit 0 ;;
+        -h|--help|-hm|--help-mono)
+            echo "Library script; source from your" \
+                 "script, do not run directly."
+            exit 0 ;;
     esac
 fi
 
@@ -143,70 +157,99 @@ function checkCommand {
 
 
 
-
-
 function printHELP {
 
-    optlistshort=""
-    optindex=0
-    while [ $optindex -lt ${NBopt} ]; do
-        optlistshort="${optlistshort}[${fgRed}-${inputMSoptshortARRAY[$optindex]}${txReset}]"
-        let optindex+=1
-    done
-
+    # Build argument list string
     argliststring=""
     if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
-		argindex=0
-		while [ $argindex -lt ${NBarg} ]; do
-			argliststring="${argliststring} ${inputMSargnameARRAY[$argindex]}"
-			let argindex+=1
-		done
-	else
-		argliststring="<argument sting>"
-	fi
+        argindex=0
+        while [ $argindex -lt ${NBarg} ]; do
+            argliststring="${argliststring} ${MH_ARG}${inputMSargnameARRAY[$argindex]}${MH_RST}"
+            let argindex+=1
+        done
+    fi
 
-
-    echo "------------------------------------------------------------------------"
-    echo "${txBold} ${pname} : ${MSdescr}  ${txReset}"
-    echo " $0"
-    echo "------------------------------------------------------------------------"
+    # Banner
+    echo "${MH_TITLE}${pname}${MH_RST}" \
+        "— ${MSdescr}"
     echo ""
+
+    # Usage
+    echo "${MH_HDR}Usage:${MH_RST}"
+    echo "  ${MH_CMD}${pname}${MH_RST}" \
+        "[${MH_OPT}OPTIONS${MH_RST}]${argliststring}"
+    echo ""
+
+    # Description
     set +o nounset
-    if [ ! -z "${MSextdescr}" ]; then
-        printf "${MSextdescr}"
-        echo ""
+    if [ -n "${MSextdescr:-}" ]; then
+        echo "${MH_HDR}Description:${MH_RST}"
+        printf "  %s\n" "${MSextdescr}"
         echo ""
     fi
     set -o nounset
-    echo " $(tput bold)USAGE:$(tput sgr0)"
-    echo "     ${pname} [OPTION(S)] ${fgYellow}${argliststring}${txReset}"
-    echo "     option(s): ${optlistshort}"
-    echo ""
-    echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
-    if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
-		argindex=0
-		while [ $argindex -lt ${NBarg} ]; do
-			def_val="${inputMSargdefaultARRAY[$argindex]:-}"
-			if [ -n "$def_val" ]; then
-				desc_str="${inputMSargdescrARRAY[$argindex]} (Default: ${def_val})"
-			else
-				desc_str="${inputMSargdescrARRAY[$argindex]}"
-			fi
-			printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${desc_str}"
-			let argindex+=1
-		done
-	else
-		echo "	no argument parsing"
-	fi
-    echo ""
-    echo " $(tput bold)OPTIONS:$(tput sgr0)"
+
+    # Arguments
+    if [ $MILK_SCRIPT_ARGPARSE = 1 ] \
+        && [ ${NBarg} -gt 0 ]; then
+        echo "${MH_HDR}Arguments:${MH_RST}"
+        argindex=0
+        while [ $argindex -lt ${NBarg} ]; do
+            def_val="${inputMSargdefaultARRAY[$argindex]:-}"
+            if [ -n "$def_val" ]; then
+                def_str=" (${MH_DFLT}default: ${def_val}${MH_RST})"
+            else
+                def_str=""
+            fi
+            printf "  ${MH_ARG}%-14s${MH_RST}" \
+                "${inputMSargnameARRAY[$argindex]}"
+            printf " [%s]" \
+                "${inputMSargtypeARRAY[$argindex]}"
+            echo ""
+            echo "      ${inputMSargdescrARRAY[$argindex]}${def_str}"
+            let argindex+=1
+        done
+        echo ""
+    fi
+
+    # Options
+    echo "${MH_HDR}Options:${MH_RST}"
     optindex=0
     while [ $optindex -lt ${NBopt} ]; do
-        echo -e " ${fgRed}-${inputMSoptshortARRAY[$optindex]}${txReset}, ${fgRed}--${inputMSoptlongARRAY[$optindex]}${txReset} ${fgBGreen}${inputMSoptargARRAY[$optindex]}${txReset}"
-        echo "     ${inputMSoptdescrARRAY[$optindex]}"
+        local short="${inputMSoptshortARRAY[$optindex]}"
+        local long="${inputMSoptlongARRAY[$optindex]}"
+        local optarg="${inputMSoptargARRAY[$optindex]}"
+        local descr="${inputMSoptdescrARRAY[$optindex]}"
+        if [ -n "$optarg" ]; then
+            printf "  ${MH_OPT}-%s, --%s${MH_RST}" \
+                "$short" "$long"
+            printf " ${MH_ARG}%s${MH_RST}\n" \
+                "$optarg"
+        else
+            printf "  ${MH_OPT}-%s, --%s${MH_RST}\n" \
+                "$short" "$long"
+        fi
+        echo "      ${descr}"
         let optindex+=1
     done
     echo ""
+
+    # See Also
+    set +o nounset
+    if [ "${MSseealso+set}" = "set" ] \
+        && [ ${#MSseealso[@]} -gt 0 ]; then
+        echo "${MH_HDR}See Also:${MH_RST}"
+        for entry in "${MSseealso[@]}"; do
+            local sacmd="${entry%%:*}"
+            local sadesc="${entry#*:}"
+            printf "  ${MH_CMD}%-24s${MH_RST}" \
+                "${sacmd}"
+            echo " — ${sadesc}"
+        done
+        echo ""
+    fi
+    set -o nounset
+
     exit 0
 }
 
@@ -214,7 +257,7 @@ function printHELP {
 
 printHELPshort ()
 {
-    printf "%20s       ${MSdescr}\n" "$0"
+    printf "%s\n" "${MSdescr}"
     exit 0
 }
 
@@ -469,7 +512,7 @@ if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
 
 	if [[ ${NBargin} -ne ${NBarg} ]]; then
 		printHELP
-		echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
+		echo "${MH_ERR} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${MH_RST}"
 		exit 1
 	fi
 fi

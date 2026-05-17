@@ -1,0 +1,256 @@
+#!/usr/bin/env bash
+
+# number of arguments to script
+NBARGS=0
+
+
+# ======================= PROCESS NAME =================================
+pname=`echo "$0" | sed "s/\.\///g"`
+
+
+function exitOK() {
+	echo -e "\n\033[32;1m SUCCESS \033[0m $0 \n"
+	exit
+}
+
+function exitERR() {
+	echo -e "\n\033[31;1m ERROR \033[0m $0 \n"
+	exit 1
+}
+
+
+
+function CLEANinput {
+rm pup_1024.fits
+rm pup_2048.fits
+rm -rf conf
+rm piaacmcscriptsinit.txt
+}
+
+
+
+function CLEANoutput {
+
+rm -rf testdir
+rm -rf log
+rm -rf ref
+rm -rf status
+rm -rf piaacmcconf_*
+rm -rf eval*
+
+rm -f stop.time_elapsed.ttxt
+rm -f cmdlogtest.txt
+rm -f cmdlogtest1.txt
+rm -f tmpcmd
+rm -f ModesExpr_CPA.txt
+rm -f prePIAA0mask.fits
+rm -f prePIAA1mask.fits
+rm -f postPIAA0mask.fits
+rm -f postPIAA1mask.fits
+rm -f initOK*
+rm -f run.cmd.tsart
+rm -f optcoeff*.fits
+rm -f step0*.txt
+rm -f varlog.txt
+rm -f cpamodesfreq.fits
+rm -f cmdlog.txt
+rm -f Cmodes_*
+rm -f Fmodes_*
+rm -f clistartup*.txt
+rm -f test*
+rm -f piaacmc*/*thread0*.fits
+rm -f piaacmc*/*thread0*.fits.tmp
+rm -f piaacmc*/WFamp0*.fits
+rm -f piaacmc*/WFpha0*.fits
+rm -f piaacmc*/psfi*.fits
+rm -f piaacmc*/LMintC.fits
+rm -f tmp_*
+rm -f PSFcontrastval.txt
+rm -f eigenv.dat
+rm -f __test*
+rm -f stepfile*
+rm -f searchtime.txt
+rm -f looppsfcomp_done
+rm -f conj_test.txt
+rm -f _pupmaskload.fits
+rm -f SVDmodes.log
+rm -f eigenv_*
+rm -f sag0.txt
+rm -f timeused.txt
+rm -f step200.txt
+rm -f fpsagtest.txt
+rm -f fpm_name.txt
+rm -f fpm_name_conf.txt
+rm -f ModesExpr_CosRad.txt
+rm -f FPmask.tmp.fits
+rm -f APLCapo.*.info
+}
+
+
+
+
+
+
+function printHELP {
+echo "------------------------------------------------------------------------"
+echo "$(tput bold) $pname : PIAACMC DESIGN CLEAN FILES $(tput sgr0)"
+echo "------------------------------------------------------------------------"
+echo "Remove data files"
+echo ""
+echo " $(tput bold)USAGE:$(tput sgr0)"
+echo "     $0 [-h] -l <level[0-2]"
+echo ""
+echo " $(tput bold)OPTIONS:$(tput sgr0)"
+echo "     $(tput bold)-h$(tput sgr0)              help"
+echo "     $(tput bold)-l$(tput sgr0) <level>      clean level (default = 0)"
+echo "                              0 : remove all data files, leave only scripts"
+echo "                              1 : remove all results, leave scripts and input"
+echo ""
+echo "------------------------------------------------------------------------"
+}
+
+
+printHELP1 ()
+{
+    printf "%20s       PIAACMC design script\n" "$0"
+}
+
+
+
+
+
+
+
+
+
+EXITSTATUS=0
+
+function checkis1 {
+if [ "$2" = "1" ]
+	then
+	echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Variable $(tput bold)$1$(tput sgr0) set to 1"
+	else
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Variable $(tput bold)$1$(tput sgr0) not set to 1"
+    EXITSTATUS=1
+fi
+}
+
+function checkFile {
+if [ -f $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
+    EXITSTATUS=1
+fi
+}
+
+function checkDir {
+if [ -d $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) not found"
+    EXITSTATUS=1
+fi
+}
+
+function cmdexists()
+{
+  command -v "$1" >/dev/null 2>&1
+}
+
+
+function checkCommand {
+if cmdexists $1; then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) found"
+else
+    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) not installed.  Aborting."; EXITSTATUS=1;
+fi
+
+}
+
+
+
+
+
+
+
+# ================= OPTIONS =============================
+
+DesignExampleIndex=1 # default
+
+# Transform long options to short ones
+singlelinehelp=0
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--help") set -- "$@" "-h" ;;
+    "--help1")
+set -- "$@" "-h"
+singlelinehelp=1;
+;;
+    *)        set -- "$@" "$arg"
+  esac
+done
+
+
+CLEANlevel="0"
+# Parse command line flags
+while getopts :hl: FLAG; do
+  case $FLAG in
+    h)  #show help
+      if [ "$singlelinehelp" -eq "0" ]; then
+      printHELP
+      else
+      printHELP1
+      fi
+      exitOK
+      ;;
+    l)
+    CLEANlevel=$OPTARG
+    ;;
+    \?)
+      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+      printHELP
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
+
+
+
+
+
+
+
+if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ] || [ "$OptionSelected" = "0" ]; then
+if [ "$#" -ne $NBARGS ]; then
+    echo "$(tput setaf 1)$(tput bold) $0: Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+fi
+printHELP
+        exitOK
+fi
+
+CLEANok="0"
+
+if [ "$CLEANlevel" = "0" ]; then
+CLEANinput
+CLEANoutput
+CLEANok="1"
+fi
+
+
+if [ "$CLEANlevel" = "1" ]; then
+CLEANoutput
+CLEANok="1"
+fi
+
+if [ "$CLEANok" = "0" ]; then
+echo "ERROR: Clean level not recognized, nothing done"
+fi
+
+
+exitOK

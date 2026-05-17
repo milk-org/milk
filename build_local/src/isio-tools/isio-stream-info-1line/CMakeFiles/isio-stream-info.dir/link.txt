@@ -1,0 +1,1 @@
+/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/isio-stream-info.dir/isio-stream-info.c.o" -o isio-stream-info   -L/usr/local/milk-1.03.00/lib  -L/usr/local/include  -Wl,-rpath,/home/oguyon/src/milk/build_local/src/engine/ImageStreamIO:/usr/local/milk-1.03.00/lib:/usr/local/include: -lm ../../engine/ImageStreamIO/libImageStreamIO.so -lpthread

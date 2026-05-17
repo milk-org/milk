@@ -1,0 +1,18 @@
+/**
+ * @file COREMOD_tools.h
+ * @brief Coremod tools module
+ */
+
+#ifndef _TOOLS_H
+#define _TOOLS_H
+
+#include "COREMOD_tools/fileutils.h"
+#include "COREMOD_tools/imdisplay3d.h"
+#include "COREMOD_tools/linregress.h"
+#include "COREMOD_tools/logfunc.h"
+#include "COREMOD_tools/mvprocCPUset.h"
+#include "quicksort.h"
+#include "COREMOD_tools/statusstat.h"
+#include "COREMOD_tools/stringutils.h"
+
+#endif

@@ -1,0 +1,162 @@
+#!/bin/bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "audit resource usage and latency causes for a running compute unit"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Audit resource usage and latency sources for a running" \
+             "fpsexec compute unit. Checks CPU scaling governor," \
+             "IRQ affinity, core isolation, and collects hardware" \
+             "performance counter statistics (context switches," \
+             "cache misses, TLB misses, page faults) via perf stat."
+        exit 0 ;;
+    -h|--help|-hm)
+        ;; # fall through to show_help below
+esac
+# Latency Audit Tool for milk/cacao compute units
+
+show_help() {
+    echo "Usage: milk-latency-audit [OPTIONS] <PID|FPS_NAME>"
+    echo "Audit resource usage and latency causes for a running compute unit."
+    echo ""
+    echo "Options:"
+    echo "  -d, --duration SEC  Duration to run perf stat (default: 5)"
+    echo "  -h, --help          Show this help message"
+    echo "  -h1                 One-line description"
+    echo "  -h2                 Verbose description"
+    echo "  -hm                 Monochrome help"
+    echo ""
+    echo "This tool requires 'perf' to be installed and may require sudo/root"
+    echo "privileges to read hardware performance counters and IRQ affinities."
+}
+
+# Parse options
+DURATION=5
+TARGET=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help|-hm)
+            show_help
+            exit 0
+            ;;
+        -h1|--help-oneline|-h2|--help-description)
+            # Already handled above; should not reach here
+            exit 0
+            ;;
+        -d|--duration)
+            DURATION="$2"
+            shift 2
+            ;;
+        -*)
+            echo "Unknown option $1"
+            show_help
+            exit 1
+            ;;
+        *)
+            TARGET="$1"
+            shift
+            ;;
+    esac
+done
+
+if [[ -z "$TARGET" ]]; then
+    echo "Error: Missing target PID or FPS name."
+    show_help
+    exit 1
+fi
+
+# Check if perf is installed
+if ! command -v perf &> /dev/null; then
+    echo "ERROR: 'perf' command not found."
+    echo "Please install linux-tools-common and linux-tools-generic (or equivalent for your OS)."
+    exit 1
+fi
+
+# Resolve target to PID
+re='^[0-9]+$'
+if [[ $TARGET =~ $re ]]; then
+    PID=$TARGET
+else
+    # Try to find exactly one process matching the FPS name
+    # Can match milk-fpsexec-<name> or cacao-fpsexec-<name>
+    PIDS=$(pgrep -f "fpsexec-${TARGET}" | grep -v "pgrep")
+    if [[ -z "$PIDS" ]]; then
+        echo "Error: Could not find any process matching 'fpsexec-${TARGET}'"
+        exit 1
+    fi
+    PID_COUNT=$(echo "$PIDS" | wc -w)
+    if [[ $PID_COUNT -gt 1 ]]; then
+        echo "Error: Multiple processes match '${TARGET}':"
+        pgrep -a -f "fpsexec-${TARGET}"
+        echo "Please specify a PID directly."
+        exit 1
+    fi
+    PID=$PIDS
+fi
+
+if ! kill -0 "$PID" 2>/dev/null; then
+    echo "Error: Process $PID does not exist or you lack permission to access it."
+    exit 1
+fi
+
+# Get process name and CPU pinning
+PNAME=$(cat /proc/$PID/comm 2>/dev/null)
+CPU_LIST=$(taskset -pc $PID 2>/dev/null | awk '{print $NF}')
+
+echo "================================================================"
+echo " Latency Audit for PID $PID ($PNAME)"
+echo " Pinned CPUs: $CPU_LIST"
+echo "================================================================"
+
+# Check CPU scaling governor
+if [[ "$CPU_LIST" =~ ^[0-9]+$ ]]; then
+    GOV_FILE="/sys/devices/system/cpu/cpu${CPU_LIST}/cpufreq/scaling_governor"
+    if [[ -f "$GOV_FILE" ]]; then
+        GOV=$(cat "$GOV_FILE" 2>/dev/null)
+        if [[ "$GOV" != "performance" ]]; then
+            echo "[WARNING] CPU $CPU_LIST scaling governor is '$GOV' (not 'performance')."
+            echo "          This can cause significant latency jitter. Run:"
+            echo "          echo performance | sudo tee $GOV_FILE"
+        else
+            echo "[OK] CPU $CPU_LIST scaling governor is 'performance'."
+        fi
+    fi
+else
+    echo "[NOTE] Process is pinned to multiple CPUs ($CPU_LIST) or not pinned."
+    echo "       Latency is best controlled when pinned to a single isolated core."
+    echo "       Wait for perf results below for more details."
+fi
+
+# Check IRQ affinity
+if [[ "$CPU_LIST" =~ ^[0-9]+$ ]]; then
+    echo ""
+    echo "Checking IRQ affinities for CPU $CPU_LIST..."
+    cd /proc/irq 2>/dev/null || true
+    if [[ "$PWD" == "/proc/irq" ]]; then
+        for dir in *; do
+            if [[ -d "$dir" ]] && [[ -f "$dir/smp_affinity_list" ]]; then
+                AFF=$(cat "$dir/smp_affinity_list" 2>/dev/null)
+                if [[ "$AFF" == "$CPU_LIST" ]]; then
+                    DEV=$(cat "/proc/interrupts" 2>/dev/null | grep "^ *${dir}:" | awk -F'  +' '{print $NF}')
+                    echo "[WARNING] IRQ $dir ($DEV) is explicitly routed to CPU $CPU_LIST."
+                fi
+            fi
+        done
+        echo "  (Note: Many IRQs default to all CPUs. Ensure CPU $CPU_LIST is isolated via isolcpus= in grub if needed)"
+    fi
+fi
+
+echo ""
+echo "Running perf stat for $DURATION seconds..."
+echo "Monitoring context-switches, cpu-migrations, page-faults (minor/major)..."
+echo "Monitoring cache misses (L1/LLC) and TLB misses (dTLB/iTLB)..."
+echo ""
+
+# Run perf stat
+perf stat -p "$PID" -e context-switches,cpu-migrations,page-faults,minor-faults,major-faults,L1-dcache-load-misses,L1-dcache-store-misses,LLC-load-misses,LLC-store-misses,dTLB-load-misses,dTLB-store-misses,iTLB-load-misses sleep "$DURATION" 2>&1
+
+echo ""
+echo "Audit complete."

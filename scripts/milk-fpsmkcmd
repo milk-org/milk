@@ -2,9 +2,23 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "write FPS command scripts from fpslist.txt"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-fpsmkcmd  -- generate fpscmd/ scripts from fpslist.txt"
+    -h1|--help-oneline)
+        echo "write FPS command scripts from fpslist.txt"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Generate fpscmd/ scripts from the" \
+             "fpslist.txt configuration file."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: milk-fpsmkcmd" \
+             "— generate fpscmd/ scripts" \
+             "from fpslist.txt"
+        echo ""
+        echo "See Also:"
+        echo "  milk-fpsinit" \
+            "          — initialize FPS structures"
+        echo "  milk-fpslist-addentry" \
+            "  — register FPS process"
         exit 0 ;;
 esac
 # Write FPS command scripts

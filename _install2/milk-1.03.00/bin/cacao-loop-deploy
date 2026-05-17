@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
+# script 1-line description
+MSdescr="Deploy a cacao-cli loop example from source code"
+
+
+
+# Extended description
+conflist=$( ls $MILK_ROOT/plugins/cacao-src/AOloopControl/examples | grep "\-conf" | sed 's/\-[^-]*$//')
+
+
+MSextdescr="Configuration is loaded from cacao-cli source code
+
+
+Import configuration from source code (-c) and run it (-r).
+
+Calls cacao-task-manager to run the configuration.
+-c will create empty rootdir folder where user can put custom conf files.
+
+Env variables (optional) as cacaovars modifiers :
+	CACAO_LOOPNUMBER   [integer] loop number
+	CACAO_LOOPNAME     [string]  loop name
+	CACAO_DMINDEX      [integer] DM index
+	CACAO_DMSIMINDEX   [integer] simulation DM index
+
+
+Available configurations :
+
+$conflist
+
+"
+
+# standard configuration
+# location ./scripts/
+source milk-script-std-config
+
+# prerequisites
+#
+RequiredCommands=( milk tmux cacao-cli )
+RequiredFiles=()
+RequiredDirs=( ${MILK_ROOT} )
+
+
+
+# SCRIPT MANDATORY ARGUMENTS
+# syntax: "name:type(s)/test(s):description"
+#
+MSarg+=( "cacaoconfname:string:configuration name" )
+
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+#
+FORCE="0"
+MSopt+=( "f:force:set_force::force deployment" )
+function set_force() {
+	FORCE="1"
+}
+
+CPCONF="ON"
+RUNCONF="ON"
+
+MSopt+=( "c:copy:set_copy::copy configuration, do not run it" )
+function set_copy() {
+	RUNCONF="OFF"
+}
+
+
+MSopt+=( "r:run:set_run::run configuration, do not copy it" )
+function set_run() {
+	CPCONF="OFF"
+}
+
+
+
+
+# parse arguments
+source milk-argparse
+cacaoconfname="${inputMSargARRAY[0]}"
+
+
+echo "Configuration ${cacaoconfname}"
+
+
+# Download example
+confsrcdir="${MILK_ROOT}/plugins/cacao-src/AOloopControl/examples/${cacaoconfname}-conf"
+
+
+if [ ${CPCONF} == "ON" ]; then
+
+if [[ -d "$confsrcdir" ]]
+then
+	echo "Running : rsync -a --progress ${MILK_ROOT}/plugins/cacao-src/AOloopControl/examples/${cacaoconfname}-conf ."
+	rsync -a --progress ${MILK_ROOT}/plugins/cacao-src/AOloopControl/examples/${cacaoconfname}-conf .
+else
+	echo "ERROR: Cannot find directory ${confsrcdir}"
+	exit 1
+fi
+
+
+fi
+
+
+# modify cacaovars file
+echo "Modifying cacaovars (optional) ..."
+
+CACAOVARSFILE="${cacaoconfname}-conf/cacaovars.bash"
+
+set +u
+if [ ! -z ${CACAO_LOOPNUMBER+x} ]; then
+
+re='^[0-9]+$'
+if ! [[ $CACAO_LOOPNUMBER =~ $re ]] ; then
+	echo "CACAO_LOOPNUMBER is not a number"
+else
+	echo "CACAO_LOOPNUMBER = ${CACAO_LOOPNUMBER}"
+	sed -i 's/CACAO_LOOPNUMBER="[0-9]*"/CACAO_LOOPNUMBER="'$CACAO_LOOPNUMBER'"/g' ${CACAOVARSFILE}
+fi
+
+fi
+set -u
+
+
+set +u
+if [ ! -z ${CACAO_DMINDEX+x} ]; then
+
+re='^[0-9]+$'
+if ! [[ $CACAO_DMINDEX =~ $re ]] ; then
+	echo "CACAO_DMINDEX is not a number"
+else
+	echo "CACAO_DMINDEX = ${CACAO_DMINDEX}"
+	sed -i 's/CACAO_DMINDEX="[0-9]*"/CACAO_DMINDEX="'$CACAO_DMINDEX'"/g' ${CACAOVARSFILE}
+fi
+
+fi
+set -u
+
+
+set +u
+if [ ! -z ${CACAO_DMSIMINDEX+x} ]; then
+
+re='^[0-9]+$'
+if ! [[ $CACAO_DMSIMINDEX =~ $re ]] ; then
+	echo "CACAO_DMSIMINDEX is not a number"
+else
+	echo "CACAO_DMSIMINDEX = ${CACAO_DMSIMINDEX}"
+	sed -i 's/CACAO_DMSIMINDEX="[0-9]*"/CACAO_DMSIMINDEX="'$CACAO_DMSIMINDEX'"/g' ${CACAOVARSFILE}
+fi
+
+fi
+set -u
+
+
+set +u
+if [ ! -z ${CACAO_LOOPNAME+x} ]; then
+echo "CACAO_LOOPNAME = ${CACAO_LOOPNAME}"
+sed -i 's/CACAO_LOOPNAME=\"[^\"]*\"/CACAO_LOOPNAME=\"'$CACAO_LOOPNAME'\"/g' ${CACAOVARSFILE}
+fi
+set -u
+
+
+
+if [ ${RUNCONF} == "ON" ]; then
+
+
+nbtask=$( grep -c '^[^#]' ${cacaoconfname}-conf////tasklist.txt )
+echo "${nbtask} TASKS"
+
+
+
+# Run cacao-cli task manager
+
+
+cacao-task-manager -X ${nbtask} ${cacaoconfname}
+
+
+source ${cacaoconfname}-conf/cacaovars.bash
+
+echo ""
+echo "CACAO_LOOPROOTDIR = ${CACAO_LOOPROOTDIR}"
+echo "CACAO_LOOPRUNDIR = ${CACAO_LOOPRUNDIR}"
+
+# copy all scripts to rootdir
+mkdir -p ./${CACAO_LOOPROOTDIR}/scripts
+cp ${cacaoconfname}-conf/scripts/* ./${CACAO_LOOPROOTDIR}/scripts/ 2>/dev/null || :
+
+fi

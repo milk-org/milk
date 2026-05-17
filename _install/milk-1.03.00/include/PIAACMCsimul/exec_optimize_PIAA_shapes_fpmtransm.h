@@ -1,0 +1,6 @@
+#ifndef PIAACMCSIMUL_EXEC_OPTIMIZE_PIAA_SHAPES_FPMTRANSM_H
+#define PIAACMCSIMUL_EXEC_OPTIMIZE_PIAA_SHAPES_FPMTRANSM_H
+
+errno_t exec_optimize_PIAA_shapes_fpmtransm();
+
+#endif

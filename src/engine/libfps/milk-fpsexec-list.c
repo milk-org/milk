@@ -124,9 +124,9 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
     const char *see_also[] = {
-        "milk-fpsexec-help",
-        "milk-fpsCTRL",
-        "milk-fps-set"
+        "milk-fpsexec-help:print detailed FPS framework info",
+        "milk-fpsCTRL:launch the FPS dashboard TUI",
+        "milk-fps-set:set an FPS parameter value"
     };
     milk_help_see_also(see_also, 3, mh_color);
 }

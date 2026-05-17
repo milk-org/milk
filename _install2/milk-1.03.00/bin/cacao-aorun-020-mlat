@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="Measure hardware latency"
+
+
+MSextdescr="Measures hardware latency between input and output streams
+
+Pokes input stream, listens to ouput stream
+Requires acquWFS process to run
+
+Writes output to env variables CACAO_WFSFRATE and CACAO_LATENCYHARDWFR
+These are written in file <looprundir>/fps.mlat-<loopnumber>.datadir/cacaovars.bash,
+which is sourced by subsequent scripts.
+"
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+
+WaitForCompletion=0
+MSopt+=( "w:waitfcomp:set_WaitForCompletion::wait for process to complete to exist script" )
+function set_WaitForCompletion() {
+	WaitForCompletion=1
+}
+
+ACTUATORPOKE=0
+MSopt+=( "a:actuator:set_actuator::single actuator measurement" )
+function set_actuator() {
+	ACTUATORPOKE=1
+}
+
+actX=0
+MSopt+=( "ax:actuatorX:set_actX:actuatorX[int]:poke actuator X coord" )
+function set_actX() {
+	actX=$1
+}
+
+actY=0
+MSopt+=( "ay:actuatorY:set_actY:actuatorY[int]:poke actuator Y coord" )
+function set_actY() {
+	actY=$1
+}
+
+
+
+
+DisplayGraph=0
+MSopt+=( "d:displayresults:set_DisplayGraph::run the gnuplot dislay routine" )
+function set_DisplayGraph() {
+	DisplayGraph=1
+}
+
+
+source milk-argparse
+
+
+errexit=0
+
+# Checking FPS
+FPScheckOK="OK"
+checkFPSON CACAO_FPSPROC_MLAT ${CACAO_FPSPROC_MLAT}
+
+if [ ${FPScheckOK} == "FAIL" ]; then
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] FPS check failed"
+	cacaomsglog "ERROR FPScheck"
+	errexit=1
+	exit 1
+fi
+
+
+# Checking stream
+streamcheckOK="OK"
+checkstream aol${CACAO_LOOPNUMBER}_wfsim
+
+if [ ${streamcheckOK} == "FAIL" ]; then
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] stream check failed"
+	cacaomsglog "ERROR streamcheck"
+	errexit=1
+	exit 1
+fi
+
+
+if [ $errexit = 1 ]; then
+	exit 1
+fi
+
+
+
+cacaomsglog "START"
+
+# Save poke response time sequence cube
+sendFPScmd "setval mlat-${CACAO_LOOPNUMBER}.option.saveseq ON"
+
+
+if [[ ${ACTUATORPOKE} -eq 0 ]]; then
+sendFPScmd "setval mlat-${CACAO_LOOPNUMBER}.pokemap null"
+else
+## prepare pokemap
+milk-all << EOF
+mk2Dim "s>aol${CACAO_LOOPNUMBER}_pokemap" ${CACAO_DMxsize} ${CACAO_DMysize}
+setpix aol${CACAO_LOOPNUMBER}_pokemap 1.0 ${actX} ${actY}
+exitCLI
+EOF
+sendFPScmd "setval mlat-${CACAO_LOOPNUMBER}.pokemap aol${CACAO_LOOPNUMBER}_pokemap"
+fi
+
+
+
+
+sendFPScmd "setval mlat-${CACAO_LOOPNUMBER}.wfsstream aol${CACAO_LOOPNUMBER}_imWFS2"
+sendFPScmd "confwupdate mlat-${CACAO_LOOPNUMBER}"
+sendFPScmd "runstart mlat-${CACAO_LOOPNUMBER}"
+
+if [ $WaitForCompletion == "1" ]; then
+	echo "Waiting for completion ..."
+	pOK=1
+	while [ $pOK -gt 0 ]; do
+		sleep 0.2
+		pOK=$(ps -alx| grep mlat-${CACAO_LOOPNUMBER} | grep RUNSTART | wc -l) || :
+	done
+fi
+
+if [ $DisplayGraph == "1" ]; then
+	echo "Running GNUPLOT over the latest run"
+	$(cd ${LOOPNAME}-rundir/fps.mlat-${CACAO_LOOPNUMBER}.datadir;
+	gnuplot <<< EOF
+plot "hardwlatency.dat" u 2:3
+exit
+EOF
+	);
+fi
+
+cacaomsglog "END"

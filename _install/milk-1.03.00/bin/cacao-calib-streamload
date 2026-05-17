@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="Load calibration stream from disk"
+
+
+MSextdescr="Load calibration from disk
+
+With argument sname, the script will :
+- Upload calibration file conf/sname.fits to aolX_sname
+- Copy conf/sname.fits to conf/shmim.sname.fits to reflect current shared memory content
+- Archive copy of conf/sname.fits to logdir
+- Record the operation in the cacao-cli message log
+"
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+# prerequisites
+#
+RequiredPipes=() # don't need the fpsCTRL fifo for this operation
+RequiredDirs+=( "conf" )
+
+MSarg+=( "streamname:string:stream name" )
+
+source milk-argparse
+
+sname="${inputMSargARRAY[0]}"
+
+checkFile "conf/${sname}.fits"
+
+if [ ${EXITSTATUS} = 1 ]; then
+	exit 1
+fi
+
+
+
+cacaomsglog "START"
+
+
+# LOGGING
+# see cacaofuncs-log for conventions
+
+source cacaofuncs-log
+
+cacao-calib-logFITSfile ${sname}
+cacao-calib-loadFITSfile ${sname} ${LOGFILEOUT}
+
+cacaomsglog "END"

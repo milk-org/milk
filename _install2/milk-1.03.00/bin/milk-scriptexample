@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+
+MSdescr="Example script"
+
+MSextdescr="Example script long description
+Can span muliple lines
+
+$(tput bold)EXAMPLES:$(tput sgr0)
+	${pname} infname 100 outfname 
+
+"
+
+
+# standard configuration
+# provides useful functions :
+# - startspin and stopspin
+# - milkdatestring
+source milk-script-std-config
+
+
+# prerequisites
+#
+RequiredCommands=(tmux ls)
+RequiredFiles=(f1 f2)
+RequiredDirs=("/usr/local")
+
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name:type(s)/test(s):description"
+
+MSarg+=( "infile:string:input filename" )
+MSarg+=( "nb:int:number of lines" )
+MSarg+=( "outfile:string:output filename" )
+
+
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+MSopt+=( "a:archive:archivefunc::archive .conf files" )
+MSopt+=( "m:match:matchfunc:value[float]:check if value is match" )
+MSopt+=( "s:stress:stressfunc:nbcpu[int] timeout[float]:run stress test" )
+
+function archivefunc() {
+	echo "archive .conf files (argument string : $@)"
+	set +e # allow errors
+	cp *.conf{,.bak}
+	[ ! -f main.conf ] && echo "File not found"
+	set -e
+}
+
+function matchfunc() {
+	echo "check value (argument string : $@)"
+	local randomnb=$RANDOM
+	declare -r randomnb
+	if [[ "$1" = "${randomnb}" ]]; then
+	  echo "value is a match to ${randomnb}"
+	else
+	  echo "value does not match ${randomnb}"
+	fi
+}
+
+function stressfunc() {
+	helpstring="running stress test (argument string : $@)"
+	echo ${helpstring^^}
+
+	startspin
+	stress --cpu $1 --io 1 --vm 1 --vm-bytes 16M --timeout $2s &> /dev/null
+	stopspin
+}
+
+# parse arguments
+# provides functions:
+# - checkFile, checkPipe, checkDir, cmdexists, checkCommand, printHELP
+source milk-argparse
+
+# pull paramters
+infile="${inputMSargARRAY[0]}"
+
+
+
+
+# Additional checks
+# if failing, will set EXITSTATUS to 1
+
+
+# checkFile "otherfileneeded.txt"
+# checkDir "somedir"
+
+#if [ $EXITSTATUS = 1 ]; then
+#    exit
+#fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# execute script commands
+
+milk-cli << EOF
+m?
+exitCLI
+EOF
+
+tput init
+
+end=$(( $(tput colors)-1 ))
+w=8
+for c in $(seq 0 $end); do
+    eval "$(printf "tput setaf %3s   " "$c")"; echo -n "$_"
+    [[ $c -ge $(( w*2 )) ]] && offset=2 || offset=0
+    [[ $(((c+offset) % (w-offset))) -eq $(((w-offset)-1)) ]] && echo
+done
+
+tput init
+
+exit
+
+
+function redraw() {
+        local str width height length
+
+        width=$(tput cols)
+        height=$(tput lines)
+        str="Width = $width Height = $height"
+        length=${#str}
+        clear
+        tput cup $((height / 2)) $(((width / 2) - (length / 2)))
+        echo "$str"
+    }
+
+trap redraw WINCH
+
+redraw
+while true; do
+        :
+done

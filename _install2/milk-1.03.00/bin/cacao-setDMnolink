@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+MSdescr="Set DM channels, no link mode"
+MSextdescr="Set DM channels, no link mode"
+
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+RequiredFiles=(DMINDEX)
+
+
+source milk-argparse
+
+
+if [ -f DMINDEX ]; then
+    DMINDEX=$( head -1 DMINDEX )
+else
+	cacaomsglog "Error: no DMINDEX file. Are we running this from the correct directory ?"
+    exit 1
+fi
+
+
+
+
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp03.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmC.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp07.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmoffloadC.im.shm
+
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp00.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmO.im.shm
+
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp04.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP0.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp05.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP1.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp06.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP2.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp07.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP3.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp08.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP4.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp09.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP5.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp10.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP6.im.shm
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp11.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmZP7.im.shm
+
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp02.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmRM.im.shm
+
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp10.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmturb.im.shm
+
+ln -sf ${MILK_SHM_DIR}/dm${DMINDEX}disp.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_dmdisp.im.shm

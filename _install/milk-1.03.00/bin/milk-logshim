@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# milk-logshim — log shared memory image stream to disk
+# Thin wrapper: delegates to milk-logshim-ctrl
+
+# Pass all help flags directly to the C binary for compliant color output
+case "${1-}" in
+    -h1|--help-oneline|-h|--help|-hm|--help-mono)
+        exec milk-logshim-ctrl "$1"
+        ;;
+esac
+
+CPUSET_ARGS=()
+
+# Parse -c <cpuset> before forwarding
+ARGS=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -c) CPUSET_ARGS=(-c "$2"); shift 2 ;;
+        *)  ARGS+=("$1"); shift ;;
+    esac
+done
+
+STREAM="${ARGS[0]-}"
+BLOCKSIZE="${ARGS[1]-}"
+DIR="${ARGS[2]-}"
+
+if [ -z "$STREAM" ] || [ -z "$BLOCKSIZE" ] || [ -z "$DIR" ]; then
+    milk-logshim-ctrl --help
+    exit 1
+fi
+
+exec milk-logshim-ctrl start "$STREAM" "$BLOCKSIZE" "$DIR" "${CPUSET_ARGS[@]}"

@@ -1,0 +1,11 @@
+/**
+ * @file WFSmap.h
+ * @brief Wfsmap module
+ */
+
+#ifndef AOLOOPCONTROL_IOTOOLS_WFSMAP_H
+#define AOLOOPCONTROL_IOTOOLS_WFSMAP_H
+
+errno_t CLIADDCMD_AOloopControl_IOtools__WFSmap();
+
+#endif

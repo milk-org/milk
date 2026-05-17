@@ -86,7 +86,10 @@ static void print_help(const char *progname, int color)
     printf("  %s$ milk-stream-link%s %s-p myprefix- ircam0%s\n\n",
            color ? MH_CMD : "", color ? MH_RST : "",
            color ? MH_ARG : "", color ? MH_RST : "");
-    const char *see_also[] = { "milk-stream-list", "milk-stream-create" };
+    const char *see_also[] = {
+        "milk-stream-list:list active shared memory streams",
+        "milk-stream-create:create a new shared memory stream"
+    };
     milk_help_see_also(see_also, 2, color);
 }
 
