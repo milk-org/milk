@@ -395,50 +395,59 @@ static void ov_procs__render_rows(
                 ov_theme_bg(row_bg);
             }
 
-            /* Ancestry column (separate from name) */
+            /* Ancestry column — rendered raw (UTF-8
+             * arrows are 3 bytes / 1 display char).
+             * Fixed width: 4 display chars. */
             int8_t sdepth = local_depth[pi];
             if (sdepth != 0 && !is_sel && !is_frozen)
             {
                 int abs_d = sdepth < 0
                     ? -sdepth : sdepth;
                 if (abs_d > 99) abs_d = 99;
-                char abuf[8];
+                ov_theme_fg(OV_FG_WARN);
                 if (sdepth < 0)
                 {
-                    snprintf(abuf, sizeof(abuf),
-                        "\xe2\x97\x80%d", abs_d);
+                    if (abs_d < 10)
+                        ov_buf_printf(
+                            "\xe2\x97\x80%d  ", abs_d);
+                    else
+                        ov_buf_printf(
+                            "\xe2\x97\x80%d ", abs_d);
                 }
                 else
                 {
-                    snprintf(abuf, sizeof(abuf),
-                        "%d\xe2\x96\xb6", abs_d);
+                    if (abs_d < 10)
+                        ov_buf_printf(
+                            "%d\xe2\x96\xb6  ", abs_d);
+                    else
+                        ov_buf_printf(
+                            "%d\xe2\x96\xb6 ", abs_d);
                 }
-                PROC_FIELD(OV_FG_WARN,
-                    "%-3s ", abuf);
             }
             else if (eff_focus == OV_FOCUS_STREAMS
                 && has_rel)
             {
                 if (is_write)
                 {
-                    PROC_FIELD(OV_FG_ERROR,
-                        "\xe2\x96\xb6   ");
+                    ov_theme_fg(OV_FG_ERROR);
+                    ov_buf_printf("\xe2\x96\xb6   ");
                 }
                 else
                 {
-                    PROC_FIELD(OV_FG_ACTIVE,
-                        "\xe2\x97\x80   ");
+                    ov_theme_fg(OV_FG_ACTIVE);
+                    ov_buf_printf("\xe2\x97\x80   ");
                 }
             }
             else if (is_sel || is_frozen)
             {
-                PROC_FIELD(OV_FG_ACTIVE,
-                    "\xe2\x97\x8f   ");
+                ov_theme_fg(OV_FG_ACTIVE);
+                ov_buf_printf("\xe2\x97\x8f   ");
             }
             else
             {
-                PROC_FIELD(OV_FG_DIM, "    ");
+                ov_buf_printf("    ");
             }
+            printed += 4;
 
             /* Name */
             {
