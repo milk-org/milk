@@ -4,7 +4,8 @@
 
 case "${1-}" in
     -h1|--help-oneline) echo "establish shared memory stream symlink"; exit 0 ;;
-    -h|--help) milk-stream-link --help; exit $? ;;
+    -h2|--help-description) milk-stream-link -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-stream-link "$1"; exit $? ;;
 esac
 
 exec milk-stream-link "$@"

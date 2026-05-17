@@ -5,7 +5,8 @@
 
 case "${1-}" in
     -h1|--help-oneline) echo "poke existing stream from stream trigger"; exit 0 ;;
-    -h|--help) milk-fpsexec-mem-streampoke --help; exit $? ;;
+    -h2|--help-description) milk-fpsexec-mem-streampoke -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-fpsexec-mem-streampoke "$1"; exit $? ;;
 esac
 
 exec milk-fpsexec-mem-streampoke "$@"

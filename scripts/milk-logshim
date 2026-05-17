@@ -4,7 +4,7 @@
 
 # Pass all help flags directly to the C binary for compliant color output
 case "${1-}" in
-    -h1|--help-oneline|-h|--help|-hm|--help-mono)
+    -h1|--help-oneline|-h2|--help-description|-h|--help|-hm|--help-mono)
         exec milk-logshim-ctrl "$1"
         ;;
 esac
