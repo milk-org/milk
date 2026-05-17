@@ -96,7 +96,10 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-shmimpurge%s %s-n%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
-    const char *see_also[] = { "milk-stream-rm", "milk-stream-list" };
+    const char *see_also[] = {
+        "milk-stream-rm:remove shared memory streams",
+        "milk-stream-list:list active shared memory streams"
+    };
     milk_help_see_also(see_also, 2, mh_color);
 }
 

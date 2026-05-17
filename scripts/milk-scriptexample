@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Example script"
+        exit 0 ;;
+esac
+
 MSdescr="Example script"
 
 MSextdescr="Example script long description
@@ -72,6 +79,9 @@ function stressfunc() {
 # parse arguments
 # provides functions:
 # - checkFile, checkPipe, checkDir, cmdexists, checkCommand, printHELP
+MSseealso+=( "milk-script-advanced:advanced script template" )
+MSseealso+=( "milk-tutorial:milk tutorial by examples" )
+
 source milk-argparse
 
 # pull paramters

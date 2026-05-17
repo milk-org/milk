@@ -3,7 +3,19 @@
 # Early-exit help flags — only execute when run standalone, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     case "${1-}" in
-        -h1|--help-oneline) echo "bash tab-completion script for milk-cli and cacao fpsexec commands"; exit 0 ;;
+        -h1|--help-oneline)
+            echo "bash tab-completion script for milk-cli" \
+                 "and cacao fpsexec commands"
+            exit 0 ;;
+        -h2|--help-description)
+            echo "Provides bash tab-completion for" \
+                 "milk-cli, milk-fpsexec-*, and" \
+                 "cacao-fpsexec-* commands."
+            exit 0 ;;
+        -h|--help|-hm|--help-mono)
+            echo "Source this file in your shell to" \
+                 "enable tab-completion."
+            exit 0 ;;
     esac
 fi
 # milk-completion.sh

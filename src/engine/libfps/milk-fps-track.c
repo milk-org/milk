@@ -58,7 +58,9 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
     const char *see_also[] = {
-        "milk-fps-info", "milk-fps-set", "milk-fps-list"
+        "milk-fps-info:inspect FPS directory contents",
+        "milk-fps-set:set an FPS parameter value",
+        "milk-fps-list:list active FPS instances"
     };
     milk_help_see_also(see_also, 3, mh_color);
 }

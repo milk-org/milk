@@ -267,26 +267,40 @@ static inline void milk_help_see_also(
 {
     if (color)
     {
-        printf(MH_HDR "See also:" MH_RST "\n  ");
+        printf(MH_HDR "See Also:" MH_RST "\n");
     }
     else
     {
-        printf("See also:\n  ");
+        printf("See Also:\n");
     }
 
     for (int i = 0; i < ncmds; i++)
     {
-        if (i > 0)
+        const char *cmd = cmds[i];
+        const char *colon = strchr(cmd, ':');
+        if (colon != NULL)
         {
-            printf(", ");
-        }
-        if (color)
-        {
-            printf(MH_CMD "%s" MH_RST, cmds[i]);
+            int cmd_len = colon - cmd;
+            if (color)
+            {
+                printf("  " MH_CMD "%-24.*s" MH_RST " — %s\n",
+                       cmd_len, cmd, colon + 1);
+            }
+            else
+            {
+                printf("  %-24.*s — %s\n", cmd_len, cmd, colon + 1);
+            }
         }
         else
         {
-            printf("%s", cmds[i]);
+            if (color)
+            {
+                printf("  " MH_CMD "%s" MH_RST "\n", cmd);
+            }
+            else
+            {
+                printf("  %s\n", cmd);
+            }
         }
     }
     printf("\n");

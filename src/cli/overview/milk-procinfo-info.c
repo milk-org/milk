@@ -412,7 +412,9 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
     const char *see_also[] = {
-        "milk-procinfo-list", "milk-procinfo-rm", "milk-stream-info"
+        "milk-procinfo-list:list active processinfo instances",
+        "milk-procinfo-rm:remove a processinfo instance",
+        "milk-stream-info:inspect stream metadata and data"
     };
     milk_help_see_also(see_also, 3, mh_color);
 }

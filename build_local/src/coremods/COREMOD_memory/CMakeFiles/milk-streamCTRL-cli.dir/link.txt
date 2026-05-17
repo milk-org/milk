@@ -1,0 +1,1 @@
+/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-streamCTRL-cli.dir/milk-streamCTRL-cli.c.o" -o milk-streamCTRL-cli   -L/usr/local/lib  -L/usr/local/include  -Wl,-rpath,/usr/local/lib:/usr/local/include:/home/oguyon/src/milk/build_local/src/engine/ImageStreamIO: ../../engine/ImageStreamIO/libImageStreamIO.so

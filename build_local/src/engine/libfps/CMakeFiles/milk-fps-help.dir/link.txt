@@ -1,0 +1,1 @@
+/usr/bin/cc -Ofast -DNDEBUG -std=gnu17 -funroll-loops "CMakeFiles/milk-fps-help.dir/milk-fps-help.c.o" -o milk-fps-help  -Wl,-rpath,::::::::::::::::::::::::::::::::::::::::

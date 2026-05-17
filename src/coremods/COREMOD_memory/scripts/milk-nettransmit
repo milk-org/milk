@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Transmit SHM over network (TCP or UDP)"
+        exit 0 ;;
+esac
+
 MSdescr="Transmit SHM over network (TCP or UDP)"
 
 source milk-script-std-config
@@ -63,6 +70,8 @@ MSopt+=( "p:prio:set_prio:prio[int]:Set RT priority [default 30]." )
 function set_prio() {
     RTPRIO="$1"
 }
+
+MSseealso+=( "milk-shmimcopy-semtrig:copy stream on semaphore" )
 
 source milk-argparse
 PORT="${inputMSargARRAY[0]}"

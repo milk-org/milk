@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/CLIcore.dir/CLIcore.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_bookmark.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_bookmark.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_builtins.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_builtins.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_builtins_fifo.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_builtins_fifo.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_completion.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_completion.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_completion_tab.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_completion_tab.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_highlight.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_highlight.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_hintarea.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_hintarea.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history_cmds.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history_cmds.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history_display.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history_display.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_prompt.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_prompt.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_help_tui.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore/CLIcore_help_tui.c.o.d"
+  "CMakeFiles/CLIcore.dir/CLIcore_cmd_registry.c.o"
+  "CMakeFiles/CLIcore.dir/CLIcore_cmd_registry.c.o.d"
+  "CMakeFiles/CLIcore.dir/treesitter/cli_treesitter.c.o"
+  "CMakeFiles/CLIcore.dir/treesitter/cli_treesitter.c.o.d"
+  "CMakeFiles/CLIcore.dir/treesitter/milkcli_parser.c.o"
+  "CMakeFiles/CLIcore.dir/treesitter/milkcli_parser.c.o.d"
+  "libCLIcore.pdb"
+  "libCLIcore.so"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/CLIcore.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

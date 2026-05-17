@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "initialize Function Parameter Structures (FPS)"
+        exit 0 ;;
+esac
 
 MSdescr="initialize Function Parameter Structures (FPS)"
 
@@ -79,6 +85,9 @@ function set_logmode () {
 RequiredCommands=(tmux)
 RequiredFiles=()
 RequiredDirs=()
+
+MSseealso+=( "milk-fpsmkcmd:write FPS command scripts" )
+MSseealso+=( "milk-fpslist-addentry:register FPS process" )
 
 source milk-argparse
 

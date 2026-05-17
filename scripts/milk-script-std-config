@@ -63,6 +63,39 @@ export txEndStand=$(tput rmso)   # exit standout
 export txReset=$(tput sgr0)   # reset attributes
 
 
+# =========== Standard help color macros ===========
+# Match milk_help.h macros for consistent output
+# across shell scripts and C executables.
+# Suppressed when stdout is not a TTY or when -hm
+# (monochrome) is requested.
+FORCE_MONOCHROME="${FORCE_MONOCHROME:-0}"
+
+if [ -t 1 ] && [ "$FORCE_MONOCHROME" != "1" ]; then
+    export MH_RST=$'\033[0m'
+    export MH_BOLD=$'\033[1m'
+    export MH_DIM=$'\033[2m'
+    export MH_TITLE=$'\033[1;36m'
+    export MH_HDR=$'\033[1;34m'
+    export MH_CMD=$'\033[1;32m'
+    export MH_OPT=$'\033[33m'
+    export MH_ARG=$'\033[1;35m'
+    export MH_DFLT=$'\033[36m'
+    export MH_NOTE=$'\033[1;33m'
+    export MH_ERR=$'\033[1;31m'
+else
+    export MH_RST=""
+    export MH_BOLD=""
+    export MH_DIM=""
+    export MH_TITLE=""
+    export MH_HDR=""
+    export MH_CMD=""
+    export MH_OPT=""
+    export MH_ARG=""
+    export MH_DFLT=""
+    export MH_NOTE=""
+    export MH_ERR=""
+fi
+
 
 MILKSCRIPTMODE=""
 if [ "$#" -ge 1 ]; then
@@ -85,7 +118,17 @@ if [ "$#" -ge 1 ]; then
 		exit 0
 	fi
 
-	if [ "$1" = "-h" ] || [ "$1" = "-hm" ]; then
+	if [ "$1" = "-hm" ] || [ "$1" = "--help-mono" ]; then
+		FORCE_MONOCHROME=1
+		# Re-set MH macros to empty
+		export MH_RST="" MH_BOLD="" MH_DIM=""
+		export MH_TITLE="" MH_HDR="" MH_CMD=""
+		export MH_OPT="" MH_ARG="" MH_DFLT=""
+		export MH_NOTE="" MH_ERR=""
+		MILKSCRIPTMODE="help"
+	fi
+
+	if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
 		MILKSCRIPTMODE="help"
 	fi
 

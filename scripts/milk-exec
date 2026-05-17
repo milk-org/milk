@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "execute milk-cli command"
+        exit 0 ;;
+esac
 
 MSdescr="execute milk-cli command"
 
@@ -26,6 +32,9 @@ function set_testmode() {
     echo "CTEST_FULL_OUTPUT"
 }
 
+
+MSseealso+=( "milk-cli-all:milk-cli with all modules" )
+MSseealso+=( "milk-commands:list milk commands with descriptions" )
 
 source milk-argparse
 

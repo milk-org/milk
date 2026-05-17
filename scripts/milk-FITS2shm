@@ -4,7 +4,8 @@
 
 case "${1-}" in
     -h1|--help-oneline) echo "load FITS file to shared memory stream"; exit 0 ;;
-    -h|--help) milk-fpsexec-iofits-loadfits --help; exit $? ;;
+    -h2|--help-description) milk-fpsexec-iofits-loadfits -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-fpsexec-iofits-loadfits "$1"; exit $? ;;
 esac
 
 exec milk-fpsexec-iofits-loadfits "$@"

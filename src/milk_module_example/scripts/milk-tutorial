@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "milk tutorial by examples"
+        exit 0 ;;
+esac
+
 # script 1-line description
 MSdescr="milk tutorial by examples"
 
@@ -28,6 +35,9 @@ function customcleanup {
 RequiredCommands=( milk tmux nnn )
 RequiredFiles=()
 RequiredDirs=()
+
+MSseealso+=( "milk-scriptexample:example milk script" )
+MSseealso+=( "milk-script-advanced:advanced script template" )
 
 source milk-argparse
 

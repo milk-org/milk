@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Simple function test"
+        exit 0 ;;
+esac
 
 MSdescr="Simple function test"
 
@@ -15,6 +21,9 @@ source milk-script-std-config
 RequiredCommands=(milk)
 RequiredFiles=()
 RequiredDirs=()
+
+MSseealso+=( "milk-scriptexample:example milk script" )
+MSseealso+=( "milk-tutorial:milk tutorial by examples" )
 
 source milk-argparse
 

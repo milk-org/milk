@@ -1,5 +1,17 @@
 #! /bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "load FITS files to shared memory"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Load FITS image files into shared" \
+             "memory streams via milk-cli."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through
+esac
+
 NBARGS=2
 
 pname=`basename "$0"`
@@ -44,6 +56,9 @@ function printHELP {
     echo "   $pname -c -p aol3_ ims10"
     echo "        Load image102.fits to stream aol3_ims10"
     echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-FITS2shm        load FITS to shared memory"
+    echo "     milk-cubeslice2shm   load cube slice to stream"
     echo "------------------------------------------------------------------------"
 }
 

@@ -4,7 +4,8 @@
 
 case "${1-}" in
     -h1|--help-oneline) echo "copy stream data content"; exit 0 ;;
-    -h|--help) milk-fpsexec-mem-streamcopy --help; exit $? ;;
+    -h2|--help-description) milk-fpsexec-mem-streamcopy -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-fpsexec-mem-streamcopy "$1"; exit $? ;;
 esac
 
 exec milk-fpsexec-mem-streamcopy "$@"

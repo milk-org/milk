@@ -1,5 +1,28 @@
 #!/usr/bin/env bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "check milk-cli installation and configuration"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Verify that MILK_ROOT, MILK_INSTALLDIR," \
+             "MILK_SHM_DIR are set and valid, and that" \
+             "key commands (milk-cli, milk-cli-all) are" \
+             "in PATH."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: milk-check"
+        echo "Check milk-cli installation and configuration."
+        echo ""
+        echo "See Also:"
+        echo "  milk-check-standalone-deps" \
+            "  — verify standalone link deps"
+        echo "  milk-debug" \
+            "                  — run milk-cli under valgrind"
+        exit 0 ;;
+esac
+
 echo "Checking milk-cli installation and configuration ..."
 
 # Color shortcuts

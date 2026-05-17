@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Linear projection of modesA onto space defined by modesB"
+        exit 0 ;;
+esac
+
 MSdescr="Linear projection of modesA onto space defined by modesB"
 
 MSextdescr="Project modesA (image cube) onto modesB (image cube)
@@ -35,6 +42,9 @@ function setgpu() {
 	GPUindex="$1"
 }
 
+
+MSseealso+=( "milk-linmap-calib:calibrate linear mapping" )
+MSseealso+=( "milk-modes-project-U:project modesA onto modesB" )
 
 source milk-argparse
 

@@ -10,8 +10,21 @@ case "${1-}" in
         fi
         exit 0
         ;;
-    -h|--help)
-        echo "Usage: milk-fpslist-addentry  -- sourced by cacao-fpslistadd to register an FPS"
+    -h2|--help-description)
+        echo "Sourced by cacao-fpslistadd to" \
+             "register an FPS compute unit in" \
+             "the fpslist tracking file."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: milk-fpslist-addentry" \
+             "— sourced by cacao-fpslistadd" \
+             "to register an FPS"
+        echo ""
+        echo "See Also:"
+        echo "  milk-fpsinit" \
+            "    — initialize FPS structures"
+        echo "  milk-fpsmkcmd" \
+            "   — write FPS command scripts"
         exit 0 ;;
 esac
 

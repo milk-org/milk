@@ -1,3 +1,20 @@
+#!/bin/bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "wait for file to appear on disk"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Block until the specified file exists" \
+             "on disk, polling via inotifywait."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: waitforfile <filepath>"
+        echo "Wait for file to appear on disk."
+        exit 0 ;;
+esac
+
 while [ ! -f "$1" ]
 do
 	echo "WAITING for file $1"

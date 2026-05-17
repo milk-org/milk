@@ -71,7 +71,9 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
     const char *see_also[] = {
-        "milk-procinfo-info", "milk-procinfo-rm", "milk-procCTRL"
+        "milk-procinfo-info:inspect processinfo memory contents",
+        "milk-procinfo-rm:remove a processinfo instance",
+        "milk-procCTRL:launch the processinfo dashboard TUI"
     };
     milk_help_see_also(see_also, 3, mh_color);
 }

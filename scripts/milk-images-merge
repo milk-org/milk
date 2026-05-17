@@ -4,7 +4,8 @@
 
 case "${1-}" in
     -h1|--help-oneline) echo "Merge images"; exit 0 ;;
-    -h|--help) milk-fpsexec-arith-immerge --help; exit $? ;;
+    -h2|--help-description) milk-fpsexec-arith-immerge -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-fpsexec-arith-immerge "$1"; exit $? ;;
 esac
 
 exec milk-fpsexec-arith-immerge "$@"

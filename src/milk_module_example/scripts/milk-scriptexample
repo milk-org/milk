@@ -3,6 +3,12 @@
 # This script uses milk-argparse
 # See template milk-scriptexample in module milk_module_example for template and instructions
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "poke existing stream"
+        exit 0 ;;
+esac
 
 # script 1-line description
 MSdescr="poke existing stream"
@@ -46,6 +52,9 @@ function set_pokeDelay() {
 }
 
 # parse arguments
+MSseealso+=( "milk-streampoke:poke existing stream" )
+MSseealso+=( "milk-test-simplefunc:simple function test" )
+
 source milk-argparse
 streamname="${inputMSargARRAY[0]}"
 

@@ -63,7 +63,10 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-fps-search %s\"^myfps\\\\.\"\n%s\n",
            mh_color ? MH_DIM : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = { "milk-fps-list", "milk-fps-info" };
+    const char *see_also[] = {
+        "milk-fps-list:list active FPS instances",
+        "milk-fps-info:inspect FPS directory contents"
+    };
     milk_help_see_also(see_also, 2, mh_color);
 }
 

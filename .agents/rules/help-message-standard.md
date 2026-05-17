@@ -96,8 +96,15 @@ sections in this exact order.  Sections marked
    Two-space indent.  Align at column 14.
 5. **Examples**: `$` prompt in `MH_DIM`, executable
    in `MH_CMD`, arguments in `MH_ARG`.
-6. **See Also**: related commands in `MH_CMD`,
-   separated by commas.
+6. **See Also**: one entry per line, two-space indent.
+   Command name in `MH_CMD`, followed by ` — ` (em-dash)
+   and a short description in normal text.  For shell
+   scripts using `milk-argparse`, populate the
+   `MSseealso` array:
+   ```bash
+   MSseealso+=( "milk-shmimlog:log image stream to disk" )
+   MSseealso+=( "milk-streamFITSlog:log stream as FITS" )
+   ```
 7. **Line length**: help output ≤ 80 columns when
    practical.
 

@@ -177,7 +177,9 @@ static void print_help(
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
     milk_help_section("Prerequisites", mh_color);
     print_setup_commands("milk", "2-5", mh_color);
-    const char *see_also[] = { "milk-fps-set" };
+    const char *see_also[] = {
+        "milk-fps-set:set an FPS parameter value"
+    };
     milk_help_see_also(see_also, 1, mh_color);
 }
 

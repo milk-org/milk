@@ -1,5 +1,22 @@
 #!/usr/bin/env bash
 
+# Early-exit help flags (when run standalone)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    case "${1-}" in
+        -h1|--help-oneline)
+            echo "FPS add: WFS stream crop mask"
+            exit 0 ;;
+        -h2|--help-description)
+            echo "Sourced by cacao-fpslistadd to" \
+                 "register the WFS stream crop" \
+                 "mask FPS process."
+            exit 0 ;;
+        -h|--help|-hm|--help-mono)
+            echo "Sourced by cacao-fpslistadd;" \
+                 "not intended for direct use."
+            exit 0 ;;
+    esac
+fi
 if [ -z ${FPSLISTADDSCRIPT+x} ]; then
 	printf "\e[1;34m[sourced by cacao-fpslistadd]\e[0m FPS add: WFS stream crop"
 else

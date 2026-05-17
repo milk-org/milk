@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "copy FITS cube slice to shared memory stream"
+        exit 0 ;;
+esac
 
 MSdescr="copy FITS cube slice to shared memory stream"
 
@@ -16,6 +22,9 @@ MSarg+=( "slice:int:cube slice" )
 MSarg+=( "stream:string:stream name" )
 
 
+
+MSseealso+=( "milk-FITS2shm:load FITS file to shared memory" )
+MSseealso+=( "milkFits2shm:load FITS files to shared memory" )
 
 source milk-argparse
 

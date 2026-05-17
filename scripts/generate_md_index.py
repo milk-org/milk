@@ -2,6 +2,20 @@
 """
 Generates docs/Markdown_Index.md containing links to all markdown files in the repository.
 """
+import sys
+if len(sys.argv) > 1:
+    if sys.argv[1] in ('-h1', '--help-oneline'):
+        print("generate markdown documentation index")
+        sys.exit(0)
+    if sys.argv[1] in ('-h2', '--help-description'):
+        print("Scan repo for .md files and generate"
+              " docs/Markdown_Index.md.")
+        sys.exit(0)
+    if sys.argv[1] in ('-h', '--help', '-hm', '--help-mono'):
+        print("Usage: generate_md_index.py")
+        print("Generate markdown documentation index.")
+        sys.exit(0)
+
 import os
 import re
 from pathlib import Path

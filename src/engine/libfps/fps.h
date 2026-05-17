@@ -723,9 +723,9 @@ int main(int argc, char *argv[]) { \
         /* ---- SEE ALSO ---- */ \
         { \
             const char *_sa[] = { \
-                "milk-fpsexec-help", \
-                "milk-fpsCTRL", \
-                "milk-fpsexec-list" \
+                "milk-fpsexec-help:print detailed FPS framework info", \
+                "milk-fpsCTRL:launch the FPS dashboard TUI", \
+                "milk-fpsexec-list:list installed fpsexec commands" \
             }; \
             milk_help_see_also(_sa, 3, \
                                mh_color); \
