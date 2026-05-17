@@ -236,7 +236,8 @@ function printHELP {
 
     # See Also
     set +o nounset
-    if [ ${#MSseealso[@]:-0} -gt 0 ]; then
+    if [ "${MSseealso+set}" = "set" ] \
+        && [ ${#MSseealso[@]} -gt 0 ]; then
         echo "${MH_HDR}See Also:${MH_RST}"
         for entry in "${MSseealso[@]}"; do
             local sacmd="${entry%%:*}"
