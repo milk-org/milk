@@ -233,6 +233,22 @@ function printHELP {
         let optindex+=1
     done
     echo ""
+
+    # See Also
+    set +o nounset
+    if [ ${#MSseealso[@]:-0} -gt 0 ]; then
+        echo "${MH_HDR}See Also:${MH_RST}"
+        for entry in "${MSseealso[@]}"; do
+            local sacmd="${entry%%:*}"
+            local sadesc="${entry#*:}"
+            printf "  ${MH_CMD}%-24s${MH_RST}" \
+                "${sacmd}"
+            echo " — ${sadesc}"
+        done
+        echo ""
+    fi
+    set -o nounset
+
     exit 0
 }
 

@@ -71,6 +71,8 @@ function set_prio() {
     RTPRIO="$1"
 }
 
+MSseealso+=( "milk-shmimcopy-semtrig:copy stream on semaphore" )
+
 source milk-argparse
 PORT="${inputMSargARRAY[0]}"
 

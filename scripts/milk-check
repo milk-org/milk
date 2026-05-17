@@ -14,6 +14,12 @@ case "${1-}" in
     -h|--help|-hm|--help-mono)
         echo "Usage: milk-check"
         echo "Check milk-cli installation and configuration."
+        echo ""
+        echo "See Also:"
+        echo "  milk-check-standalone-deps" \
+            "  — verify standalone link deps"
+        echo "  milk-debug" \
+            "                  — run milk-cli under valgrind"
         exit 0 ;;
 esac
 

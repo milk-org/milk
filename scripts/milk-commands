@@ -50,6 +50,9 @@ function set_search()
 	SEARCHTERM="$1"
 }
 
+MSseealso+=( "milk-exec:execute milk-cli command" )
+MSseealso+=( "milk-cli-all:milk-cli with all modules" )
+
 source milk-argparse
 
 

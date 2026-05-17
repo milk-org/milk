@@ -49,6 +49,8 @@ function set_debug() {
 }
 
 # parse arguments
+MSseealso+=( "milk-semtestspeed:test semaphore latency" )
+
 source milk-argparse
 
 NBLOOP="${inputMSargARRAY[0]}"

@@ -38,6 +38,9 @@ function printHELP {
     echo " $(tput bold)EXAMPLE:$(tput sgr0)"
     echo "     logshim ircam2 10000 /media/data/20150222/ircamlog/"
     echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-streamFITSlog   log stream as FITS files"
+    echo "     milk-shm2FITSloop    save stream to FITS periodically"
     echo "------------------------------------------------------------------------"
 }
 

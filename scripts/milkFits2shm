@@ -56,6 +56,9 @@ function printHELP {
     echo "   $pname -c -p aol3_ ims10"
     echo "        Load image102.fits to stream aol3_ims10"
     echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-FITS2shm        load FITS to shared memory"
+    echo "     milk-cubeslice2shm   load cube slice to stream"
     echo "------------------------------------------------------------------------"
 }
 

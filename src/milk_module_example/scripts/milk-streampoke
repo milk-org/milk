@@ -57,6 +57,9 @@ function set_pokeDelay() {
 
 
 # parse arguments
+MSseealso+=( "milk-shmimpoke:poke existing stream" )
+MSseealso+=( "milk-scriptexample:example milk script" )
+
 source milk-argparse
 streamname="${inputMSargARRAY[0]}"
 

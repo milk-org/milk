@@ -57,6 +57,12 @@ for _arg in "$@"; do
                 "                   Verbose description"
             echo "  ${O}-hm${R}" \
                 "                   Monochrome help"
+            echo ""
+            echo "${H}See Also:${R}"
+            echo "  ${C}milk-shmimlog${R}" \
+                "             — log stream to disk"
+            echo "  ${C}milk-streamFITSlog${R}" \
+                "        — log stream as FITS files"
             exit 0
             ;;
     esac

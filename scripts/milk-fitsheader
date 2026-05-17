@@ -35,6 +35,12 @@ case "${1-}" in
         echo "${H}Options:${R}"
         echo "  ${O}-w${R}" \
             "  Write header to <file>.header"
+        echo ""
+        echo "${H}See Also:${R}"
+        echo "  ${C}milk-cr2tofits${R}" \
+            "            — convert CR2 to FITS"
+        echo "  ${C}milk-FITS2shm${R}" \
+            "             — load FITS to shared memory"
         exit 0 ;;
 esac
 

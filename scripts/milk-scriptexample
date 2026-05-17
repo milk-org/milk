@@ -79,6 +79,9 @@ function stressfunc() {
 # parse arguments
 # provides functions:
 # - checkFile, checkPipe, checkDir, cmdexists, checkCommand, printHELP
+MSseealso+=( "milk-script-advanced:advanced script template" )
+MSseealso+=( "milk-tutorial:milk tutorial by examples" )
+
 source milk-argparse
 
 # pull paramters

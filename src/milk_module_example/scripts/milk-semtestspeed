@@ -33,6 +33,8 @@ MSarg+=( "nbloop:integer:number of loop iterations" )
 MSarg+=( "semtrig:integer:semaphore trigger" )
 
 
+MSseealso+=( "milk-semloopspeed:measure semaphore latency" )
+
 source milk-argparse
 
 NBLOOP="${inputMSargARRAY[0]}"

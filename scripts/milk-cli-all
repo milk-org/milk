@@ -49,7 +49,10 @@ case "${1-}" in
             "                  Monochrome help."
         echo ""
         echo "${HDR}See Also:${R}"
-        echo "  ${CMD}milk-cli${R}"
+        echo "  ${CMD}milk-exec${R}" \
+            "                — execute milk-cli command"
+        echo "  ${CMD}milk-commands${R}" \
+            "             — list milk commands"
         exit 0
         ;;
     -hs)

@@ -55,6 +55,9 @@ function setgpu() {
 	GPUindex="$1"
 }
 
+MSseealso+=( "milk-modes-project:project modesA onto modesB space" )
+MSseealso+=( "milk-modes-project-U:project modesA onto modesB" )
+
 source milk-argparse
 
 runmode="${inputMSargARRAY[0]}"

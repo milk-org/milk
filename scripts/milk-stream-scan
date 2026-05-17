@@ -23,6 +23,9 @@ RequiredCommands=( milk-cli )
 RequiredFiles=()
 RequiredDirs=()
 
+MSseealso+=( "milk-shmimpurge:purge orphan shared memory streams" )
+MSseealso+=( "milk-commands:list milk commands with descriptions" )
+
 source milk-argparse
 
 fname="_streamscan_$$"

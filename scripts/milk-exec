@@ -33,6 +33,9 @@ function set_testmode() {
 }
 
 
+MSseealso+=( "milk-cli-all:milk-cli with all modules" )
+MSseealso+=( "milk-commands:list milk commands with descriptions" )
+
 source milk-argparse
 
 

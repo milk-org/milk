@@ -32,6 +32,9 @@ function printHELP {
     echo " $(tput bold)INPUT:$(tput sgr0)"
     echo "     <stream>     data stream"
     echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-stream-scan    scan for streams on system"
+    echo "     milk-shmimave       average stream frames"
     echo "------------------------------------------------------------------------"
 }
 

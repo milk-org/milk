@@ -13,6 +13,10 @@ if len(sys.argv) > 1:
         print("Usage: shmimview2 <shmfile> [min] [max]"
               " [zoom]")
         print("Shared memory stream live viewer v2.")
+        print("")
+        print("See Also:")
+        print("  pyshmimview      — stream viewer (v1)")
+        print("  milk-shmimmon    — monitor image stream")
         sys.exit(0)
 
 import pygame, sys

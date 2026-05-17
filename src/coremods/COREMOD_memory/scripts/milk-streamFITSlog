@@ -186,6 +186,9 @@ function set_cset()
 	cset=$1
 }
 
+MSseealso+=( "milk-shmimlog:log image stream to disk" )
+MSseealso+=( "milk-shm2FITSloop:save stream to FITS periodically" )
+
 source milk-argparse
 
 STREAMNAME="${inputMSargARRAY[0]}"

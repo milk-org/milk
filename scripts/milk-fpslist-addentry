@@ -19,6 +19,12 @@ case "${1-}" in
         echo "Usage: milk-fpslist-addentry" \
              "— sourced by cacao-fpslistadd" \
              "to register an FPS"
+        echo ""
+        echo "See Also:"
+        echo "  milk-fpsinit" \
+            "    — initialize FPS structures"
+        echo "  milk-fpsmkcmd" \
+            "   — write FPS command scripts"
         exit 0 ;;
 esac
 

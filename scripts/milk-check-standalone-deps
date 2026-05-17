@@ -58,6 +58,10 @@ case "${1-}" in
             "                   Verbose description."
         echo "  ${O}-hm${R}" \
             "                   Monochrome help."
+        echo ""
+        echo "${H}See Also:${R}"
+        echo "  ${C}milk-check${R}" \
+            "               — check milk installation"
         exit 0 ;;
 esac
 

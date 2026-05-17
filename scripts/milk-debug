@@ -14,6 +14,10 @@ case "${1-}" in
         echo "Usage: milk-debug"
         echo "Run milk-cli under valgrind for" \
              "memory leak detection."
+        echo ""
+        echo "See Also:"
+        echo "  milk-check" \
+            "  — check milk installation"
         exit 0 ;;
 esac
 echo ""

@@ -28,6 +28,12 @@ case "${1-}" in
         echo "${H}Description:${R}"
         echo "  Convert a Canon CR2 raw image file" \
              "to FITS format via milk-cli."
+        echo ""
+        echo "${H}See Also:${R}"
+        echo "  ${C}milk-fitsheader${R}" \
+            "           — print FITS file header"
+        echo "  ${C}milk-FITS2shm${R}" \
+            "            — load FITS to shared memory"
         exit 0 ;;
 esac
 

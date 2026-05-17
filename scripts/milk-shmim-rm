@@ -22,6 +22,9 @@ MSarg+=( "stream:string:stream name" )
 
 
 
+MSseealso+=( "milk-rmshmim:remove shared memory stream and files" )
+MSseealso+=( "milk-shmimpurge:purge orphan shared memory streams" )
+
 source milk-argparse
 
 

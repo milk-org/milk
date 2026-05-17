@@ -36,6 +36,9 @@ RequiredCommands=( milk tmux nnn )
 RequiredFiles=()
 RequiredDirs=()
 
+MSseealso+=( "milk-scriptexample:example milk script" )
+MSseealso+=( "milk-script-advanced:advanced script template" )
+
 source milk-argparse
 
 SKIP=0

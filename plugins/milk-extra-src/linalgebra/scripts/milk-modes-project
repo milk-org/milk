@@ -43,6 +43,9 @@ function setgpu() {
 }
 
 
+MSseealso+=( "milk-linmap-calib:calibrate linear mapping" )
+MSseealso+=( "milk-modes-project-U:project modesA onto modesB" )
+
 source milk-argparse
 
 

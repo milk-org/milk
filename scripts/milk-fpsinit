@@ -86,6 +86,9 @@ RequiredCommands=(tmux)
 RequiredFiles=()
 RequiredDirs=()
 
+MSseealso+=( "milk-fpsmkcmd:write FPS command scripts" )
+MSseealso+=( "milk-fpslist-addentry:register FPS process" )
+
 source milk-argparse
 
 echo "FPSLIST: ${FPSlistfilename}"

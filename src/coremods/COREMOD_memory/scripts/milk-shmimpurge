@@ -35,6 +35,9 @@ function printHELP {
     echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
     echo "     $(tput bold)-f$(tput sgr0)          only purge streams matching (f)ilter"
     echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-rmshmim       remove shared memory stream"
+    echo "     milk-shmim-rm      remove stream and files"
     echo "------------------------------------------------------------------------"
 }
 

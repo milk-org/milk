@@ -22,6 +22,9 @@ RequiredCommands=(milk)
 RequiredFiles=()
 RequiredDirs=()
 
+MSseealso+=( "milk-scriptexample:example milk script" )
+MSseealso+=( "milk-tutorial:milk tutorial by examples" )
+
 source milk-argparse
 
 

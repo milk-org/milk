@@ -33,6 +33,10 @@ function printHELP {
     echo " $(tput bold)OPTIONS:$(tput sgr0)"
     echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
     echo ""
+    echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-shmim-rm      remove stream and files"
+    echo "     milk-shmimpurge    purge orphan streams"
     echo "------------------------------------------------------------------------"
 }
 
