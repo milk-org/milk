@@ -160,7 +160,7 @@ static void sync_fps_to_local(
             fps->parray[pindex].val.string[0],
             FUNCTION_PARAMETER_STRMAXLEN - 1);
         ((char *) b->ptr)[
-            FUNCTION_PARAMETER_STRMAXLEN - 1]
+        FUNCTION_PARAMETER_STRMAXLEN - 1]
             = '\0';
     }
 }

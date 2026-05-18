@@ -160,7 +160,7 @@ void milk_rng_init(uint64_t seed)
 {
     MILK_RNG *rng = (MILK_RNG *)
                     calloc(1, sizeof(MILK_RNG));
-    if (rng == NULL)
+    if(rng == NULL)
     {
         PRINT_ERROR("MILK_RNG alloc failed");
         exit(1);
@@ -175,7 +175,7 @@ void milk_rng_init(uint64_t seed)
 
 void milk_rng_free(void)
 {
-    if (milk_data.rndgen != NULL)
+    if(milk_data.rndgen != NULL)
     {
         free(milk_data.rndgen);
         milk_data.rndgen = NULL;
@@ -218,7 +218,7 @@ double milk_rng_gaussian(double sigma)
 {
     MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
 
-    if (rng->has_spare)
+    if(rng->has_spare)
     {
         rng->has_spare = 0;
         return rng->spare * sigma;
@@ -231,7 +231,7 @@ double milk_rng_gaussian(double sigma)
         v = 2.0 * milk_rng_uniform() - 1.0;
         s = u * u + v * v;
     }
-    while (s >= 1.0 || s == 0.0);
+    while(s >= 1.0 || s == 0.0);
 
     double f = sqrt(-2.0 * log(s) / s);
     rng->spare     = v * f;
@@ -248,7 +248,7 @@ double milk_rng_gaussian(double sigma)
  */
 long milk_rng_poisson(double mu)
 {
-    if (mu < 30.0)
+    if(mu < 30.0)
     {
         /* Knuth's algorithm */
         double L = exp(-mu);
@@ -260,7 +260,7 @@ long milk_rng_poisson(double mu)
             k++;
             p *= milk_rng_uniform();
         }
-        while (p > L);
+        while(p > L);
         return k - 1;
     }
     else
@@ -268,7 +268,7 @@ long milk_rng_poisson(double mu)
         /* Gaussian approximation for large mu */
         double val = mu
                      + milk_rng_gaussian(1.0) * sqrt(mu);
-        if (val < 0.0)
+        if(val < 0.0)
         {
             val = 0.0;
         }
