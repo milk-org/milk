@@ -7,6 +7,6 @@
 #define FPS_CTRLSCREEN_LEVEL0NODE_SUMMARY_H
 
 void fpsCTRLscreen_level0node_summary(FPS *fps,
-                                      int                        fpsindex);
+                                      int                        fps_idx);
 
 #endif

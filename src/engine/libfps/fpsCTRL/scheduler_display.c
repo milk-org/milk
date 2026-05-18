@@ -39,8 +39,8 @@ errno_t fpsCTRL_scheduler_display(
                         sizeof(fpsCTRLvar->milkseq_name)
                         - 1);
                 fpsCTRLvar->milkseq_name[
-                sizeof(fpsCTRLvar->milkseq_name)
-                - 1] = '\0';
+                    sizeof(fpsCTRLvar->milkseq_name)
+                    - 1] = '\0';
             }
         }
     }
@@ -76,12 +76,12 @@ errno_t fpsCTRL_scheduler_display(
     }
 
     long sortcnt = 0;
-    for(int fpscmdindex = 0; fpscmdindex < (int)state->NBtasks_max; fpscmdindex++)
+    for(int fpscmd_idx = 0; fpscmd_idx < (int)state->NBtasks_max; fpscmd_idx++)
     {
-        if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_SHOW)
+        if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_SHOW)
         {
-            sort_evalarray[sortcnt] = -1.0 * state->tasklist[fpscmdindex].inputindex;
-            sort_indexarray[sortcnt] = fpscmdindex;
+            sort_evalarray[sortcnt] = -1.0 * state->tasklist[fpscmd_idx].inputindex;
+            sort_indexarray[sortcnt] = fpscmd_idx;
             sortcnt++;
         }
     }
@@ -93,44 +93,44 @@ errno_t fpsCTRL_scheduler_display(
 
     TUI_printfw(" showing   %d / %d  tasks   [ Sequencer: %s ]\n", wrow - 8, (int)sortcnt, state->name);
 
-    for(int sortindex = 0; sortindex < sortcnt; sortindex++)
+    for(int sort_idx = 0; sort_idx < sortcnt; sort_idx++)
     {
-        int fpscmdindex = sort_indexarray[sortindex];
+        int fpscmd_idx = sort_indexarray[sort_idx];
 
-        if(sortindex < wrow - 8)   // display
+        if(sort_idx < wrow - 8)   // display
         {
             int attron2 = 0;
             int attrbold = 0;
 
-            if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_RUNNING)
+            if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_RUNNING)
             {
                 attron2 = 1;
                 screenprint_setcolor(COLOR_OK);
             }
-            else if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_ACTIVE)
+            else if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_ACTIVE)
             {
                 attrbold = 1;
                 screenprint_setbold();
             }
 
             // measure age since submission
-            tdiff =  timespec_diff(state->tasklist[fpscmdindex].creationtime,
+            tdiff =  timespec_diff(state->tasklist[fpscmd_idx].creationtime,
                                    tnow);
             double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             TUI_printfw("%6.2f s ", tdiffv);
 
-            if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_RUNNING)
+            if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_RUNNING)
             {
                 tdiff =  timespec_diff(
-                             state->tasklist[fpscmdindex].activationtime,
+                             state->tasklist[fpscmd_idx].activationtime,
                              tnow);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                 TUI_printfw(" %6.2f s ", tdiffv);
             }
-            else if(!(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_ACTIVE))
+            else if(!(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_ACTIVE))
             {
-                tdiff =  timespec_diff(state->tasklist[fpscmdindex].activationtime,
-                                       state->tasklist[fpscmdindex].completiontime);
+                tdiff =  timespec_diff(state->tasklist[fpscmd_idx].activationtime,
+                                       state->tasklist[fpscmd_idx].completiontime);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                 screenprint_setcolor(COLOR_WARNING);
                 TUI_printfw(" %6.2f s ", tdiffv);
@@ -141,7 +141,7 @@ errno_t fpsCTRL_scheduler_display(
                 TUI_printfw("          ");
             }
 
-            if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_ACTIVE)
+            if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_ACTIVE)
             {
                 TUI_printfw(">> ");
             }
@@ -150,7 +150,7 @@ errno_t fpsCTRL_scheduler_display(
                 TUI_printfw("  ");
             }
 
-            if(state->tasklist[fpscmdindex].flag & FPSTASK_FLAG_WAITONRUN)
+            if(state->tasklist[fpscmd_idx].flag & FPSTASK_FLAG_WAITONRUN)
             {
                 TUI_printfw("WR ");
             }
@@ -159,7 +159,7 @@ errno_t fpsCTRL_scheduler_display(
                 TUI_printfw("   ");
             }
 
-            if(state->tasklist[fpscmdindex].flag & FPSTASK_FLAG_WAITONCONF)
+            if(state->tasklist[fpscmd_idx].flag & FPSTASK_FLAG_WAITONCONF)
             {
                 TUI_printfw("WC ");
             }
@@ -169,11 +169,11 @@ errno_t fpsCTRL_scheduler_display(
             }
 
             TUI_printfw("[Q:%02d P:%02d] %4d",
-                        state->tasklist[fpscmdindex].queue,
-                        state->queuelist[state->tasklist[fpscmdindex].queue].priority,
-                        fpscmdindex);
+                        state->tasklist[fpscmd_idx].queue,
+                        state->queuelist[state->tasklist[fpscmd_idx].queue].priority,
+                        fpscmd_idx);
 
-            if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_RECEIVED)
+            if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_RECEIVED)
             {
                 TUI_printfw(" R");
             }
@@ -182,31 +182,31 @@ errno_t fpsCTRL_scheduler_display(
                 TUI_printfw(" -");
             }
 
-            if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_CMDNOTFOUND)
+            if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_CMDNOTFOUND)
             {
                 screenprint_setcolor(COLOR_WARNING);
                 TUI_printfw(" NOTCMD");
                 screenprint_unsetcolor(COLOR_WARNING);
             }
-            else if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_CMDFAIL)
+            else if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_CMDFAIL)
             {
                 screenprint_setcolor(COLOR_ERROR);
                 TUI_printfw(" FAILED");
                 screenprint_unsetcolor(COLOR_ERROR);
             }
-            else if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_CMDOK)
+            else if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_CMDOK)
             {
                 screenprint_setcolor(COLOR_OK);
                 TUI_printfw(" PROCOK");
                 screenprint_unsetcolor(COLOR_OK);
             }
-            else if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_RECEIVED)
+            else if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_RECEIVED)
             {
                 screenprint_setcolor(COLOR_OK);
                 TUI_printfw(" RECVD ");
                 screenprint_unsetcolor(COLOR_OK);
             }
-            else if(state->tasklist[fpscmdindex].status & FPSTASK_STATUS_WAITING)
+            else if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_WAITING)
             {
                 screenprint_setcolor(5);
                 TUI_printfw("WAITING");
@@ -219,7 +219,7 @@ errno_t fpsCTRL_scheduler_display(
                 screenprint_unsetcolor(COLOR_WARNING);
             }
 
-            TUI_printfw("  %s\n", state->tasklist[fpscmdindex].cmdstring);
+            TUI_printfw("  %s\n", state->tasklist[fpscmd_idx].cmdstring);
 
             if(attron2 == 1)
             {

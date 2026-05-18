@@ -221,9 +221,9 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
         fpsCTRLvar->help_wrowstart = 0;
     }
 
-    for(int ii = 0; ii < display_lines; ii++)
+    for(int line_idx = 0; line_idx < display_lines; line_idx++)
     {
-        int idx = fpsCTRLvar->help_wrowstart + ii;
+        int idx = fpsCTRLvar->help_wrowstart + line_idx;
         if(idx < line_cnt)
         {
             TUI_printfw("%s\n", lines[idx]);
@@ -270,15 +270,15 @@ inline static void fpsCTRLscreen_print_FPShelp(
     char mloadstringcp[mloadstring_maxlen];
     memset(mloadstringcp, 0, sizeof(mloadstringcp));
     snprintf(mloadstring, mloadstring_maxlen, " ");
-    for(int m = 0;
-            m < fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule;
-            m++)
+    for(int mod_idx = 0;
+            mod_idx < fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule;
+            mod_idx++)
     {
         snprintf(mloadstringcp,
                  mloadstring_maxlen,
                  "%smload %s;",
                  mloadstring,
-                 fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[m]);
+                 fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[mod_idx]);
         snprintf(mloadstring, mloadstring_maxlen,
                  "%s", mloadstringcp);
     }
@@ -408,12 +408,12 @@ errno_t functionparameter_CTRLscreen(
     strncpy(fpsCTRLvar.fpsnamemask, fpsnamemask,
             sizeof(fpsCTRLvar.fpsnamemask) - 1);
     fpsCTRLvar.fpsnamemask[
-     sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
+        sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
     strncpy(fpsCTRLvar.fpsCTRLfifoname,
             fpsCTRLfifoname,
             sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1);
     fpsCTRLvar.fpsCTRLfifoname[
-     sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
+        sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
         = '\0';
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
@@ -422,12 +422,12 @@ errno_t functionparameter_CTRLscreen(
 
     fpsCTRLvar.NBindex = 0;
 
-    for(int kn = 0; kn < NB_KEYWNODE_MAX; kn++)
+    for(int knode_idx = 0; knode_idx < NB_KEYWNODE_MAX; knode_idx++)
     {
-        keywnode[kn].keywordfull[0] = '\0';
-        for(int ch = 0; ch < MAX_NB_CHILD; ch++)
+        keywnode[knode_idx].keywordfull[0] = '\0';
+        for(int child_idx = 0; child_idx < MAX_NB_CHILD; child_idx++)
         {
-            keywnode[kn].child[ch] = 0;
+            keywnode[knode_idx].child[child_idx] = 0;
         }
     }
 
@@ -452,14 +452,14 @@ errno_t functionparameter_CTRLscreen(
     }
     long fifocmdcnt = 0;
 
-    for(int level = 0; level < MAXNBLEVELS; level++)
+    for(int level_idx = 0; level_idx < MAXNBLEVELS; level_idx++)
     {
-        fpsCTRLvar.GUIlineSelected[level] = 0;
+        fpsCTRLvar.GUIlineSelected[level_idx] = 0;
     }
 
-    for(int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
+    for(int keyw_idx = 0; keyw_idx < NB_KEYWNODE_MAX; keyw_idx++)
     {
-        keywnode[kindex].NBchild = 0;
+        keywnode[keyw_idx].NBchild = 0;
     }
 
     {
@@ -502,12 +502,12 @@ errno_t functionparameter_CTRLscreen(
     {
         // ==== VALIDATE ALL CONNECTED FPSs ====
         int needs_rescan = 0;
-        for(int ii = 0; ii < fpsCTRLvar.NBfps; ii++)
+        for(int fps_idx = 0; fps_idx < fpsCTRLvar.NBfps; fps_idx++)
         {
-            if(!function_parameter_struct_isvalid(&fpsarray[ii]))
+            if(!function_parameter_struct_isvalid(&fpsarray[fps_idx]))
             {
                 needs_rescan = 1;
-                fps_disconnect(&fpsarray[ii]);
+                fps_disconnect(&fpsarray[fps_idx]);
             }
         }
 
@@ -744,9 +744,9 @@ errno_t functionparameter_CTRLscreen(
     }
 
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
-    for(int fpsindex = 0; fpsindex < fpsCTRLvar.NBfps; fpsindex++)
+    for(int fps_idx = 0; fps_idx < fpsCTRLvar.NBfps; fps_idx++)
     {
-        fps_disconnect(&fpsarray[fpsindex]);
+        fps_disconnect(&fpsarray[fps_idx]);
     }
 
 
