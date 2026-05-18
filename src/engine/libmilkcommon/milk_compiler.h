@@ -127,7 +127,7 @@
  *
  * @param addr  Address to prefetch
  * @param rw    0 = read, 1 = write
- * @param loc   Locality 0–3 (3 = keep in all
+ * @param loc   Locality 0-3 (3 = keep in all
  *              cache levels)
  *
  * Use for sequential walks through large

@@ -29,9 +29,9 @@ void fps_cli_set_standalone_args(
  * @brief Sync CLI arguments to FPS and local variables.
  *
  * Performs two-step sync:
- * 1. CLI tokens → FPS values (from standalone args
+ * 1. CLI tokens -> FPS values (from standalone args
  *    or milk CLI argdata)
- * 2. FPS values → local C variables via bindings
+ * 2. FPS values -> local C variables via bindings
  *
  * @param fps       FPS structure to sync
  * @param farg      CLICMDARGDEF array (for milk CLI mode)

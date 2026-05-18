@@ -173,7 +173,7 @@ errno_t fps_process_cli_and_sync(
     int                        nb_b
 )
 {
-    /* ---- Step 1: CLI → FPS ---- */
+    /* ---- Step 1: CLI -> FPS ---- */
     if(standalone_argv != NULL)
     {
         /*
@@ -280,7 +280,7 @@ errno_t fps_process_cli_and_sync(
 #endif
     }
 
-    /* ---- Step 2: FPS → local C variables ---- */
+    /* ---- Step 2: FPS -> local C variables ---- */
     for(int ii = 0; ii < nb_b; ii++)
     {
         long pindex =

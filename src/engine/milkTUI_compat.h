@@ -108,7 +108,7 @@ static inline void sc_frame_clear(void)
 }
 
 /* =========================================================
- * TUI_newline — advance to the next terminal row
+ * TUI_newline -- advance to the next terminal row
  * ========================================================= */
 
 static inline void TUI_newline(void)
@@ -119,7 +119,7 @@ static inline void TUI_newline(void)
 }
 
 /* =========================================================
- * TUI_printfw — print formatted text to frame buffer
+ * TUI_printfw -- print formatted text to frame buffer
  *
  * Handles embedded newlines and enforces column limits.
  * ========================================================= */
@@ -133,7 +133,7 @@ static inline void TUI_printfw(
 
     va_start(ap, fmt);
     int n = vsnprintf(
-        tmpbuf, sizeof(tmpbuf), fmt, ap);
+                tmpbuf, sizeof(tmpbuf), fmt, ap);
     va_end(ap);
 
     if(n <= 0)
@@ -153,7 +153,7 @@ static inline void TUI_printfw(
         }
         else if(sc_cursor_col < sc_term_cols
                 && sc_framebuf_pos
-                       < SC_FRAMEBUF_SIZE - 1)
+                < SC_FRAMEBUF_SIZE - 1)
         {
             sc_framebuf[sc_framebuf_pos++] =
                 tmpbuf[i];
@@ -168,7 +168,7 @@ static inline void TUI_cleartobottom(void)
 }
 
 /* =========================================================
- * screenprint_* — attribute helpers
+ * screenprint_* -- attribute helpers
  *
  * These emit raw ANSI codes into the frame buffer.
  * ========================================================= */
@@ -505,7 +505,7 @@ static inline void screenprint_unsetbgcolor(void)
 }
 
 /* =========================================================
- * TUI_print_header — header line padded with char
+ * TUI_print_header -- header line padded with char
  * ========================================================= */
 
 static inline int TUI_print_header(
@@ -632,7 +632,7 @@ static inline int get_singlechar_block(void)
 }
 
 /* =========================================================
- * print_help_entry — formatted help key line
+ * print_help_entry -- formatted help key line
  * ========================================================= */
 
 static inline void print_help_entry(
@@ -646,7 +646,7 @@ static inline void print_help_entry(
     TUI_newline();
 }
 
-/* TUISCREEN — struct for legacy compat */
+/* TUISCREEN -- struct for legacy compat */
 typedef struct
 {
     int  index;

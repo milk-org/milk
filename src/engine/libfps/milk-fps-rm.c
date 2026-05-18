@@ -76,7 +76,7 @@ static void print_help(const char *progname, int mh_color)
 }
 
 /**
- * kill_proc() - Terminate a process with SIGTERM→SIGKILL escalation
+ * kill_proc() - Terminate a process with SIGTERM->SIGKILL escalation
  * @pid:     Process ID to terminate; must be > 0
  * @label:   Human-readable label used in diagnostic messages
  * @name:    FPS name used in diagnostic messages

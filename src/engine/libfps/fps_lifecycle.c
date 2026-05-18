@@ -252,7 +252,7 @@ void fps_loop_override_trigger(
             else
             {
                 /*
-                 * Local var empty — CLI sync
+                 * Local var empty -- CLI sync
                  * hasn't populated it yet.
                  * Read from FPS shared memory.
                  */
@@ -345,7 +345,7 @@ void fps_loop_override_trigger(
     }
     else
     {
-        PRINT_WARNING("[-loops] No trigger stream found — semaphore trigger not configured.");
+        PRINT_WARNING("[-loops] No trigger stream found -- semaphore trigger not configured.");
         PRINT_WARNING("  Loop will use delay mode. To fix, flag a stream parameter with FPFLAG_TRIGGER_STREAM.");
 
         functionparameter_SetParamValue_INT64(
@@ -409,7 +409,7 @@ int fps_generic_conf_cb(
 {
     if(fps_name[0] == '_')
     {
-        printf("Local FPS '%s' — "
+        printf("Local FPS '%s' -- "
                "monitoring loop skipped.\n",
                fps_name);
         return 0;
@@ -490,7 +490,7 @@ int fps_generic_run(
         fps_disconnect(
             &fps);
 
-        /* Phase 2: reconnect as RUN — streams
+        /* Phase 2: reconnect as RUN -- streams
          * now load with CLI-updated values. */
         FPS_RUN_STD_PREAMBLE(
             fps_name, fps, {});
@@ -506,12 +506,12 @@ int fps_generic_run(
      *
      * Setting dcfpsptr here allows the macro
      * to pick up all FPS-derived settings
-     * (triggermode, loopcntMax, MeasureTiming…)
+     * (triggermode, loopcntMax, MeasureTiming...)
      * at its own processinfo_setup time.
      *
      * Do NOT wrap compute_fn() in a second
      * FPS_RUN_PROCESSINFO_LOOP: that would
-     * multiply iterations by loopcntMax².
+     * multiply iterations by loopcntMax^2.
      */
     /*
      * Set FPS_name (the global that dcfpsname
@@ -552,7 +552,7 @@ int fps_generic_runstop(const char *fps_name)
 
     if(fps_name[0] == '_')
     {
-        printf("Local FPS '%s' — stop signal "
+        printf("Local FPS '%s' -- stop signal "
                "ignored (lifetime limited to "
                "process).\n",
                fps_name);
@@ -572,7 +572,7 @@ int fps_generic_runstop(const char *fps_name)
      * That function dispatches a "runstop" command
      * to the tmux :ctrl window via send-keys, but
      * fps_generic_runstop() is itself invoked FROM
-     * the :ctrl window — calling RUNstop() creates
+     * the :ctrl window -- calling RUNstop() creates
      * an infinite tmux command loop.
      *
      * Instead, perform the stop actions directly:
@@ -607,7 +607,7 @@ int fps_generic_confstop(const char *fps_name)
 
     if(fps_name[0] == '_')
     {
-        printf("Local FPS '%s' — stop signal "
+        printf("Local FPS '%s' -- stop signal "
                "ignored (lifetime limited to "
                "process).\n",
                fps_name);

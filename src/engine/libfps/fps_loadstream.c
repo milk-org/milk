@@ -89,7 +89,7 @@ imageID functionparameter_LoadStream(
         if(probeID != -1)
         {
             PRINT_ERROR(
-                "@N modifier — "
+                "@N modifier -- "
                 "stream \"%s\" already "
                 "exists (ID %ld)",
                 sp.name, (long) probeID);
@@ -105,12 +105,12 @@ imageID functionparameter_LoadStream(
              &(fps->parray[pindex].fpflag),
              &imLOC);
 
-    /* Concise one-line status — include the FPS key so empty stream
+    /* Concise one-line status -- include the FPS key so empty stream
      * names can be traced back to the parameter that caused them.
      * Tags appended:
-     *   [empty]         — parameter value was never set
-     *   [RUN-REQUIRED]  — runstart will abort if not found
-     *   [CONF-REQUIRED] — confstart will abort if not found
+     *   [empty]         -- parameter value was never set
+     *   [RUN-REQUIRED]  -- runstart will abort if not found
+     *   [CONF-REQUIRED] -- confstart will abort if not found
      */
     int name_empty = (sp.name[0] == '\0');
     int run_req  = (fpsconnectmode == FPSCONNECT_RUN) &&
@@ -159,7 +159,7 @@ imageID functionparameter_LoadStream(
             imLOC == STREAM_LOAD_SOURCE_SHAREMEM)
     {
         PRINT_ERROR(
-            "@L modifier — "
+            "@L modifier -- "
             "stream \"%s\" is in shared"
             " memory, not local",
             sp.name);
@@ -169,7 +169,7 @@ imageID functionparameter_LoadStream(
             imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
     {
         PRINT_ERROR(
-            "@S modifier — "
+            "@S modifier -- "
             "stream \"%s\" is in local"
             " memory, not shared",
             sp.name);
@@ -180,7 +180,7 @@ imageID functionparameter_LoadStream(
     if(sp.must_exist && ID == -1)
     {
         PRINT_ERROR(
-            "@E modifier — "
+            "@E modifier -- "
             "stream \"%s\""
             " not found",
             sp.name);

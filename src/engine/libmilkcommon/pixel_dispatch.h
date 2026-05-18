@@ -6,7 +6,7 @@
  * copy-paste switch/if blocks when iterating
  * over image pixel types.
  *
- * Usage example — set pixel range:
+ * Usage example -- set pixel range:
  * @code
  * #define SET_PIX_CASE(DT, ACC, CTYPE)          \
  *     case DT:                                  \
@@ -32,7 +32,7 @@
  *
  * @param X  Macro taking (DTYPE, ACCESSOR, CTYPE)
  *   - DTYPE    _DATATYPE_* constant
- *   - ACCESSOR array union member (UI8, F, …)
+ *   - ACCESSOR array union member (UI8, F, ...)
  *   - CTYPE    C language type
  */
 #define FOREACH_REAL_DATATYPE(X)                \

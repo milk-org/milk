@@ -7,16 +7,16 @@
  * FLOAT64, FLOAT32, TIMESPEC, STRING, ONOFF, fpflag).
  *
  * Accessor pattern (repeated per type):
- *  - GetParamValue_TYPE()  — read current value and
+ *  - GetParamValue_TYPE()  -- read current value and
  *    snapshot it into val[3] for change-detection.
- *  - SetParamValue_TYPE()  — write value and bump
+ *  - SetParamValue_TYPE()  -- write value and bump
  *    cnt0 + value_cnt so watchers detect the update.
- *  - GetParamPtr_TYPE()    — return a direct pointer
+ *  - GetParamPtr_TYPE()    -- return a direct pointer
  *    to val[0] for zero-copy hot-path reads.
  *
  * The val[] array stores:
  *   [0] = current, [1] = min, [2] = max, [3] = last.
- * GetParamValue copies [0]→[3] so callers can later
+ * GetParamValue copies [0]->[3] so callers can later
  * compare [0] vs [3] to detect changes.
  */
 
