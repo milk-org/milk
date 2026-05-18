@@ -12,6 +12,7 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <poll.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -58,26 +59,40 @@ fpsCTRLscreen_print_footer_status(
     DEBUG_TRACE_FSTART();
 
     int status_row = sc_term_rows;
-    if (fpsCTRLvar->search_mode > 0) {
+    if(fpsCTRLvar->search_mode > 0)
+    {
         SC_APPEND("\033[%d;1H", status_row - 1);
         SC_APPEND("\033[2K"); // Clear line
         screenprint_setbold();
-        if (fpsCTRLvar->search_mode == 1) {
+        if(fpsCTRLvar->search_mode == 1)
+        {
             ansi_detect_color_level();
-            if(ansi__color_level>=3) SC_APPEND("\033[38;2;255;165;0m"); // Orange
-            else if(ansi__color_level==2) SC_APPEND("\033[38;5;214m");
-            else SC_APPEND("\033[33m");
-            SC_APPEND(" \xE2\x9C\x94 Search: "); // Fallback magnifying glass equivalent or checkmark. Using '?' for safety in some terms, or just "Search:" 
+            if(ansi__color_level >= 3)
+            {
+                SC_APPEND("\033[38;2;255;165;0m");    // Orange
+            }
+            else if(ansi__color_level == 2)
+            {
+                SC_APPEND("\033[38;5;214m");
+            }
+            else
+            {
+                SC_APPEND("\033[33m");
+            }
+            SC_APPEND(" \xE2\x9C\x94 Search: "); // Fallback magnifying glass equivalent or checkmark. Using '?' for safety in some terms, or just "Search:"
             // Wait, we can use 🔍 if terminal supports it. The user specified "sleek", let's just use "Search:" to be safe with fonts or standard Unicode.
             SC_APPEND("Search: ");
-        } else {
+        }
+        else
+        {
             screenprint_color_flag();
             SC_APPEND(" Filter: ");
         }
         screenprint_unsetbold();
         screenprint_setnormal();
         SC_APPEND("%s", fpsCTRLvar->search_string);
-        if (fpsCTRLvar->search_mode == 1) {
+        if(fpsCTRLvar->search_mode == 1)
+        {
             SC_APPEND("\033[5m_\033[25m"); // Blinking cursor
         }
     }
@@ -87,27 +102,45 @@ fpsCTRLscreen_print_footer_status(
     SC_APPEND("\033[2K"); // clear line with background color
 
     SC_APPEND(" [MODE: ");
-    if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_HELP) SC_APPEND("HELP] ");
-    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG) SC_APPEND("LOG] ");
-    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL) SC_APPEND("CTRL] ");
-    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER) SC_APPEND("SEQ] ");
-    
-    if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL) {
-        static const char *smode[] = {
+    if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
+    {
+        SC_APPEND("HELP] ");
+    }
+    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
+    {
+        SC_APPEND("LOG] ");
+    }
+    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
+    {
+        SC_APPEND("CTRL] ");
+    }
+    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
+    {
+        SC_APPEND("SEQ] ");
+    }
+
+    if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
+    {
+        static const char *smode[] =
+        {
             "Default", "A-Z", "Status"
         };
         int sm = fpsCTRLvar->sort_mode;
-        if (sm < 0 || sm > 2) sm = 0;
+        if(sm < 0 || sm > 2)
+        {
+            sm = 0;
+        }
         SC_APPEND("[SORT: %s] ", smode[sm]);
     }
 
     SC_APPEND("[PID %d] [%d FPS] ", (int)getpid(), NBfps);
     SC_APPEND("| (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search ");
-    
-    if (fpsCTRLvar->fpsCTRL_DisplayVerbose) {
+
+    if(fpsCTRLvar->fpsCTRL_DisplayVerbose)
+    {
         SC_APPEND(" [VERBOSE] ");
     }
-    
+
     // Pad rest of line with background (handled by 2K mostly, but just in case)
     screenprint_setnormal();
     DEBUG_TRACE_FEXIT();
@@ -115,7 +148,7 @@ fpsCTRLscreen_print_footer_status(
 
 /**
  * @brief Print help
- * 
+ *
  */
 inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
@@ -123,11 +156,11 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 
     char lines[100][256];
     int line_cnt = 0;
-    
-    #define ADD_LINE(...) do { \
+
+#define ADD_LINE(...) do { \
         if (line_cnt < 100) snprintf(lines[line_cnt++], 256, __VA_ARGS__); \
     } while(0)
-    
+
     ADD_LINE("");
     ADD_LINE("  \033[1;38;5;111m============ SCREENS\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "v / V", "Verbose mode ON / OFF");
@@ -156,7 +189,7 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "T / t", "Initialize/kill tmux session");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+e", "Stop conf/run, erase FPS");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "E", "Stop conf/run, erase FPS, kill tmux");
-    
+
     ADD_LINE("");
     ADD_LINE("  \033[1;38;5;111m============ OTHER UTILITIES\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "s", "Rescan shared memory directory");
@@ -169,21 +202,35 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 
     // Enforce scroll bounds
     int display_lines = sc_term_rows - 4; // leave margin for header/footer
-    if (display_lines < 5) display_lines = 5;
+    if(display_lines < 5)
+    {
+        display_lines = 5;
+    }
 
     int max_scroll = line_cnt - display_lines;
-    if (max_scroll < 0) max_scroll = 0;
-    if (fpsCTRLvar->help_wrowstart > max_scroll) fpsCTRLvar->help_wrowstart = max_scroll;
-    if (fpsCTRLvar->help_wrowstart < 0) fpsCTRLvar->help_wrowstart = 0;
-    
-    for (int i = 0; i < display_lines; i++) {
-        int idx = fpsCTRLvar->help_wrowstart + i;
-        if (idx < line_cnt) {
+    if(max_scroll < 0)
+    {
+        max_scroll = 0;
+    }
+    if(fpsCTRLvar->help_wrowstart > max_scroll)
+    {
+        fpsCTRLvar->help_wrowstart = max_scroll;
+    }
+    if(fpsCTRLvar->help_wrowstart < 0)
+    {
+        fpsCTRLvar->help_wrowstart = 0;
+    }
+
+    for(int ii = 0; ii < display_lines; ii++)
+    {
+        int idx = fpsCTRLvar->help_wrowstart + ii;
+        if(idx < line_cnt)
+        {
             TUI_printfw("%s\n", lines[idx]);
         }
     }
 
-    #undef ADD_LINE
+#undef ADD_LINE
 
     DEBUG_TRACE_FEXIT();
 }
@@ -191,7 +238,7 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 
 /**
  * @brief Print help
- * 
+ *
  */
 inline static void fpsCTRLscreen_print_FPShelp(
     KEYWORD_TREE_NODE *keywnode,
@@ -338,7 +385,7 @@ errno_t functionparameter_CTRLscreen(
 
     {
         char cwd[PATH_MAX];
-        if ( getcwd(cwd, sizeof(cwd)) == NULL )
+        if(getcwd(cwd, sizeof(cwd)) == NULL)
         {
             snprintf(cwd, sizeof(cwd), "ERROR");
         }
@@ -361,17 +408,17 @@ errno_t functionparameter_CTRLscreen(
     strncpy(fpsCTRLvar.fpsnamemask, fpsnamemask,
             sizeof(fpsCTRLvar.fpsnamemask) - 1);
     fpsCTRLvar.fpsnamemask[
-        sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
+     sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
     strncpy(fpsCTRLvar.fpsCTRLfifoname,
             fpsCTRLfifoname,
             sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1);
     fpsCTRLvar.fpsCTRLfifoname[
-        sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
+     sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
         = '\0';
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
-    
+
 
     fpsCTRLvar.NBindex = 0;
 
@@ -387,15 +434,20 @@ errno_t functionparameter_CTRLscreen(
     fpsCTRLvar.milkseq_state = NULL;
     fpsCTRLvar.milkseq_name[0] = '\0';
 
-    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
+    if(strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
+    {
         // Create FIFO if it does not exist
-        if (access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1) {
-            if (mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1) {
+        if(access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1)
+        {
+            if(mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1)
+            {
                 PRINT_ERROR("mkfifo: %s", strerror(errno));
             }
         }
         fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
-    } else {
+    }
+    else
+    {
         fpsCTRLvar.fpsCTRLfifofd = -1;
     }
     long fifocmdcnt = 0;
@@ -422,8 +474,8 @@ errno_t functionparameter_CTRLscreen(
                                    1 // verbose
                                   );
         TUI_printfw("%d function parameter structure(s) imported, %ld parameters\n",
-               fpsCTRLvar.NBfps,
-               NBpindex);
+                    fpsCTRLvar.NBfps,
+                    NBpindex);
     }
 
     fpsCTRLvar.nodeSelected = 1;
@@ -436,19 +488,8 @@ errno_t functionparameter_CTRLscreen(
         loopOK = 0;
     }
 
-    // how long between getchar probes
-    int getchardt_us_ref = 100000;
-
-    // refresh every 0.1 sec without input
-    int refreshtimeoutus_ref = 100000;
-
-    int getchardt_us     = getchardt_us_ref;
-    int refreshtimeoutus = refreshtimeoutus_ref;
-
-    // if(TUI_get_screenprintmode() == SCREENPRINT_NCURSES)  // ncurses mode
-    {
-        refreshtimeoutus_ref = 100000; // 10 Hz
-    }
+    // poll() timeout: ~10 Hz periodic refresh
+    int poll_timeout_ms = 100;
 
     int refresh_screen = 1; // 1 if screen should be refreshed
 
@@ -461,10 +502,12 @@ errno_t functionparameter_CTRLscreen(
     {
         // ==== VALIDATE ALL CONNECTED FPSs ====
         int needs_rescan = 0;
-        for (int i = 0; i < fpsCTRLvar.NBfps; i++) {
-            if (!function_parameter_struct_isvalid(&fpsarray[i])) {
+        for(int ii = 0; ii < fpsCTRLvar.NBfps; ii++)
+        {
+            if(!function_parameter_struct_isvalid(&fpsarray[ii]))
+            {
                 needs_rescan = 1;
-                fps_disconnect(&fpsarray[i]);
+                fps_disconnect(&fpsarray[ii]);
             }
         }
 
@@ -472,24 +515,31 @@ errno_t functionparameter_CTRLscreen(
         static int last_shm_count = -1;
         int current_shm_count = 0;
         DIR *d = opendir(shmdname);
-        if (d) {
+        if(d)
+        {
             struct dirent *dir;
-            while ((dir = readdir(d)) != NULL) {
-                if (strstr(dir->d_name, ".fps.shm") != NULL) {
+            while((dir = readdir(d)) != NULL)
+            {
+                if(strstr(dir->d_name, ".fps.shm") != NULL)
+                {
                     current_shm_count++;
                 }
             }
             closedir(d);
         }
 
-        if (last_shm_count == -1) {
+        if(last_shm_count == -1)
+        {
             last_shm_count = current_shm_count;
-        } else if (current_shm_count != last_shm_count) {
+        }
+        else if(current_shm_count != last_shm_count)
+        {
             needs_rescan = 1;
             last_shm_count = current_shm_count;
         }
 
-        if (needs_rescan) {
+        if(needs_rescan)
+        {
             long NBpindex = 0;
             functionparameter_scan_fps(fpsCTRLvar.mode,
                                        fpsCTRLvar.fpsnamemask,
@@ -501,69 +551,60 @@ errno_t functionparameter_CTRLscreen(
                                        0 // quiet
                                       );
             refresh_screen = 2; // Force refresh
-            
+
             // Adjust selected index if it's now out of bounds
-            if (fpsCTRLvar.fpsindexSelected >= fpsCTRLvar.NBfps && fpsCTRLvar.NBfps > 0) {
+            if(fpsCTRLvar.fpsindexSelected >= fpsCTRLvar.NBfps && fpsCTRLvar.NBfps > 0)
+            {
                 fpsCTRLvar.fpsindexSelected = fpsCTRLvar.NBfps - 1;
-            } else if (fpsCTRLvar.NBfps == 0) {
+            }
+            else if(fpsCTRLvar.NBfps == 0)
+            {
                 fpsCTRLvar.fpsindexSelected = 0;
             }
 
             // Clamping node indices to the keyword array bounds
-            if (fpsCTRLvar.nodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0) {
+            if(fpsCTRLvar.nodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0)
+            {
                 fpsCTRLvar.nodeSelected = fpsCTRLvar.NBkwn - 1;
-            } else if (fpsCTRLvar.NBkwn == 0) {
+            }
+            else if(fpsCTRLvar.NBkwn == 0)
+            {
                 fpsCTRLvar.nodeSelected = 0;
             }
-            if (fpsCTRLvar.directorynodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0) {
+            if(fpsCTRLvar.directorynodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0)
+            {
                 fpsCTRLvar.directorynodeSelected = 0; // fallback to ROOT
-            } else if (fpsCTRLvar.NBkwn == 0) {
+            }
+            else if(fpsCTRLvar.NBkwn == 0)
+            {
                 fpsCTRLvar.directorynodeSelected = 0;
             }
         }
-        
+
         int NBtaskLaunched = 0;
+        int ch = ANSI_KEY_NONE;
 
-        //long icnt = 0;
-        int ch = -1;
-
-        int timeoutuscnt = 0;
-
-        while(refresh_screen == 0)  // wait for input
+        // Event-driven input: poll() on stdin
+        // Mirrors milkCTRL.c pattern
         {
-            // Command processing moved to standalone milk-seq daemon
+            struct pollfd pfd;
+            pfd.fd     = STDIN_FILENO;
+            pfd.events = POLLIN;
 
-            // gradually slow down
-            getchardt_us = (int)(1.01 * getchardt_us);
-            if(getchardt_us > getchardt_us_ref)
+            int pr = poll(&pfd, 1, poll_timeout_ms);
+            if(pr > 0 && (pfd.revents & POLLIN))
             {
-                getchardt_us = getchardt_us_ref;
-            }
-
-            usleep(getchardt_us);
-
-            // ==================
-            // = GET USER INPUT =
-            // ==================
-            ch = get_singlechar_nonblock();
-
-            if(ch == -1)
-            {
-                refresh_screen = 0;
+                ch = get_singlechar_nonblock();
+                if(ch != ANSI_KEY_NONE)
+                {
+                    refresh_screen = 2;
+                }
             }
             else
             {
-                refresh_screen = 2;
-                getchardt_us = 10000; // check often
-            }
-
-            timeoutuscnt += getchardt_us;
-            if(timeoutuscnt > refreshtimeoutus)
-            {
+                // timeout or error: periodic refresh
                 refresh_screen = 1;
             }
-
-            DEBUG_TRACEPOINT(" ");
         }
 
         if(refresh_screen > 0)
@@ -599,10 +640,9 @@ errno_t functionparameter_CTRLscreen(
             if(fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
             {
                 TUI_printfw(
-                    "======== FPSCTRL info  ( screen refresh cnt %7lld  "
-                    "scan interval %7d us)\n",
-                    loopcnt,
-                    getchardt_us);
+                    "======== FPSCTRL info  "
+                    "( screen refresh cnt %7lld )\n",
+                    loopcnt);
                 TUI_printfw(
                     "    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
                     "%ld   NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n",
@@ -617,7 +657,7 @@ errno_t functionparameter_CTRLscreen(
                 char logfname[STRINGMAXLEN_FULLFILENAME];
                 getFPSlogfname(logfname);
                 int flagFPSoutlog = get_FLAG_FPSOUTLOG();
-                if ( flagFPSoutlog == 0 )
+                if(flagFPSoutlog == 0)
                 {
                     TUI_printfw("    OUTPUT LOG   [%2d] : DISABLED (G/g to toggle ON/OFF)", flagFPSoutlog);
                 }
@@ -627,7 +667,7 @@ errno_t functionparameter_CTRLscreen(
                 }
                 TUI_printfw("\n");
 
-                if (fpsCTRLvar.NBfps > 0 && fpsarray[fpsCTRLvar.fpsindexSelected].md != NULL)
+                if(fpsCTRLvar.NBfps > 0 && fpsarray[fpsCTRLvar.fpsindexSelected].md != NULL)
                 {
                     TUI_printfw("    FPS keywords     :  %s\n", fpsarray[fpsCTRLvar.fpsindexSelected].md->keywordarray);
                 }
@@ -696,7 +736,7 @@ errno_t functionparameter_CTRLscreen(
 
     {
         char cwd[PATH_MAX];
-        if ( getcwd(cwd, sizeof(cwd)) == NULL )
+        if(getcwd(cwd, sizeof(cwd)) == NULL)
         {
             snprintf(cwd, sizeof(cwd), "ERROR");
         }
@@ -713,9 +753,14 @@ errno_t functionparameter_CTRLscreen(
     // free(keywnode);
 
     // No longer freeing local task queues
-    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
+    if(strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
+    {
         unlink(fpsCTRLvar.fpsCTRLfifoname);
     }
+
+    // Free persistent scheduler sort buffers
+    free(fpsCTRLvar.sched_sort_eval);
+    free(fpsCTRLvar.sched_sort_index);
 
     functionparameter_outlog("LOGFILECLOSE", "close log file");
 

@@ -288,19 +288,19 @@ typedef struct
     uint64_t userflag;
 
     char keywordfull[
-        FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+     FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+     FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char keyword[
         FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][
-        FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int keywordlevel;
 
     char keywordfrom[
-        FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+     FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+     FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
 
     char description[
-        FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+     FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 
     uint32_t type;
 
@@ -384,7 +384,7 @@ typedef struct
     char helptext[FPS_HELPTEXT_STRMAXLEN];
     char execfullpath[512];
     char keywordarray[
-        FPS_KEYWORDARRAY_STRMAXLEN];
+     FPS_KEYWORDARRAY_STRMAXLEN];
     char workdir[FPS_CWD_STRLENMAX];
     char datadir[FPS_DIR_STRLENMAX];
     char confdir[FPS_DIR_STRLENMAX];
@@ -392,11 +392,11 @@ typedef struct
     int sourceline;
     char pname[FPS_PNAME_STRMAXLEN];
     char callprogname[
-        FPS_CALLPROGNAME_STRMAXLEN];
+     FPS_CALLPROGNAME_STRMAXLEN];
     char callfuncname[
-        FPS_CALLFUNCNAME_STRMAXLEN];
+     FPS_CALLFUNCNAME_STRMAXLEN];
     char tmuxname[
-        STRINGMAXLEN_PROCESSINFO_TMUXNAME];
+     STRINGMAXLEN_PROCESSINFO_TMUXNAME];
     char nameindexW[16][10];
     int  NBnameindex;
     pid_t           confpid;
@@ -511,6 +511,9 @@ typedef struct
     char     search_string[100];
     int      search_mode;
     int      sort_mode;
+    double  *sched_sort_eval;  // persistent sort key array
+    long    *sched_sort_index; // persistent sort index array
+    long     sched_sort_cap;   // current allocation capacity
 } FPSCTRL_PROCESS_VARS;
 
 #define NB_KEYWNODE_MAX 6000
@@ -519,11 +522,11 @@ typedef struct
 typedef struct
 {
     char keywordfull[
-        FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+     FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+     FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char keyword[
         FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][
-        FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int keywordlevel;
     int parent_index;
     int NBchild;
@@ -550,4 +553,3 @@ typedef FUNCTION_PARAMETER_STRUCT FPS;
 typedef FUNCTION_PARAMETER FPS_PARAM;
 
 #endif /* FPS_TYPES_H */
-
