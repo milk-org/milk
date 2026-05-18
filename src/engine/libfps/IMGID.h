@@ -124,7 +124,7 @@ static inline IMGID imgid_make()
 {
     IMGID img;
 
-    img.mdt = (IMAGE_METADATA*) malloc(sizeof(IMAGE_METADATA));
+    img.mdt = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
 
     // default values for image creation
     img.mdt->datatype = _DATATYPE_FLOAT;
@@ -167,7 +167,7 @@ static inline void imgid_free(
     }
     img->mdt = NULL;
 
-    if (img->slice_im != NULL)
+    if(img->slice_im != NULL)
     {
         free(img->slice_im);
         img->slice_im = NULL;
@@ -212,7 +212,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     {
         FPS_STREAMNAME_PARSED sp =
             fps_streamname_parse(name);
-        if (!sp.error)
+        if(!sp.error)
         {
             img.stream_loc = sp.loc;
             img.stream_must_exist =
@@ -221,7 +221,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
                 sp.must_new;
             effective_name = sp.name;
 
-            if (sp.loc == 'L')
+            if(sp.loc == 'L')
             {
                 img.mdt->shared = 0;
             }
@@ -342,7 +342,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
         strncpy(img.name, bare,
                 STRINGMAXLEN_IMAGE_NAME - 1);
 
-        if (has_bracket)
+        if(has_bracket)
         {
             img.slice =
                 imgid_slice_parse(slicebuf);
@@ -469,14 +469,38 @@ static inline uint64_t imgid_mdcompare(
 {
     uint64_t diff = 0;
 
-    if (md1->datatype != md2->datatype) { diff |= (1ULL << 0); }
-    if (md1->naxis != md2->naxis) { diff |= (1ULL << 1); }
-    if (md1->size[0] != md2->size[0]) { diff |= (1ULL << 2); }
-    if (md1->size[1] != md2->size[1]) { diff |= (1ULL << 3); }
-    if (md1->size[2] != md2->size[2]) { diff |= (1ULL << 4); }
-    if (md1->shared != md2->shared) { diff |= (1ULL << 5); }
-    if (md1->NBkw != md2->NBkw) { diff |= (1ULL << 6); }
-    if (md1->CBsize != md2->CBsize) { diff |= (1ULL << 7); }
+    if(md1->datatype != md2->datatype)
+    {
+        diff |= (1ULL << 0);
+    }
+    if(md1->naxis != md2->naxis)
+    {
+        diff |= (1ULL << 1);
+    }
+    if(md1->size[0] != md2->size[0])
+    {
+        diff |= (1ULL << 2);
+    }
+    if(md1->size[1] != md2->size[1])
+    {
+        diff |= (1ULL << 3);
+    }
+    if(md1->size[2] != md2->size[2])
+    {
+        diff |= (1ULL << 4);
+    }
+    if(md1->shared != md2->shared)
+    {
+        diff |= (1ULL << 5);
+    }
+    if(md1->NBkw != md2->NBkw)
+    {
+        diff |= (1ULL << 6);
+    }
+    if(md1->CBsize != md2->CBsize)
+    {
+        diff |= (1ULL << 7);
+    }
 
     return diff;
 }
@@ -690,9 +714,10 @@ static inline uint64_t imgid_compare_md(
 
 
 // Create image from IMGID
-static inline void imgid_mkimage(IMGID * img)
+static inline void imgid_mkimage(IMGID *img)
 {
-    ImageStreamIO_createIm(img->im, img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype, img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
+    ImageStreamIO_createIm(img->im, img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype,
+                           img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
     img->md = img->im->md;
     img->createcnt++;
 }
@@ -701,8 +726,10 @@ static inline void imgid_mkimage(IMGID * img)
 // Read ImageStreamIO from shared memory
 //
 
-static inline const char* imgid_strerror(errno_t err) {
-    switch (err) {
+static inline const char *imgid_strerror(errno_t err)
+{
+    switch(err)
+    {
     case IMGID_CONNECTED:
         return "CONNECTED";
     case IMGID_CREATED:
@@ -750,23 +777,31 @@ static inline errno_t imgid_connect(
 
     img_connected.ID = -1;
 
-    if (strlen(img->name) == 0) {
+    if(strlen(img->name) == 0)
+    {
         retcode = IMGID_ERR_BADNAME;
         goto imgid_connect_report;
     }
 
-    image = (IMAGE*) malloc(sizeof(IMAGE));
-    if (image == NULL) {
+    image = (IMAGE *) malloc(sizeof(IMAGE));
+    if(image == NULL)
+    {
         retcode = IMGID_ERR_ALLOCATION;
         goto imgid_connect_report;
     }
 
-    if (ImageStreamIO_read_sharedmem_image_toIMAGE(img->name, image) == IMAGESTREAMIO_SUCCESS) {
+    if(ImageStreamIO_read_sharedmem_image_toIMAGE(img->name, image) == IMAGESTREAMIO_SUCCESS)
+    {
         success = 1;
-    } else {
-        if (FLAG == IMGID_CONNECT_CHECK_CREATE) {
+    }
+    else
+    {
+        if(FLAG == IMGID_CONNECT_CHECK_CREATE)
+        {
             success = 0;
-        } else {
+        }
+        else
+        {
             free(image);
             img->ID = -1; // Propagate failure
             retcode = IMGID_ERR_NOTFOUND;
@@ -774,7 +809,8 @@ static inline errno_t imgid_connect(
         }
     }
 
-    if (success) {
+    if(success)
+    {
         // We have an image connected.
         img_connected.im = image;
         img_connected.md = image->md;
@@ -782,14 +818,16 @@ static inline errno_t imgid_connect(
         img_connected.ID = 0;
 
         // Now check if it matches the template 'img' if FLAG is set
-        if (FLAG == IMGID_CONNECT_CHECK_FAIL || FLAG == IMGID_CONNECT_CHECK_CREATE) {
+        if(FLAG == IMGID_CONNECT_CHECK_FAIL || FLAG == IMGID_CONNECT_CHECK_CREATE)
+        {
 
             // Compare img_connected with img (template)
             // img is the template here.
 
             uint64_t diff = imgid_compare(img_connected, *img);
 
-            if (diff == 0) {
+            if(diff == 0)
+            {
                 // Match!
                 // Copy connection info to *img
                 img->im = img_connected.im;
@@ -800,16 +838,20 @@ static inline errno_t imgid_connect(
                 imgid_update_creationparams(img);
                 retcode = IMGID_CONNECTED;
                 goto imgid_connect_report;
-            } else {
+            }
+            else
+            {
                 // Mismatch
-                if (FLAG == IMGID_CONNECT_CHECK_FAIL) {
+                if(FLAG == IMGID_CONNECT_CHECK_FAIL)
+                {
                     printf("Image format mismatch\n");
                     free(image);
                     img->ID = -1;
                     retcode = IMGID_ERR_MISMATCH;
                     goto imgid_connect_report;
                 }
-                if (FLAG == IMGID_CONNECT_CHECK_CREATE) {
+                if(FLAG == IMGID_CONNECT_CHECK_CREATE)
+                {
                     // Re-create
                     // First free the memory of the image we connected to (but shouldn't close it, just free wrapper)
                     free(image);
@@ -817,8 +859,9 @@ static inline errno_t imgid_connect(
                     // Create new one using `img` params.
 
                     // Allocate new IMAGE for it?
-                    img->im = (IMAGE*) malloc(sizeof(IMAGE));
-                    if(img->im == NULL) {
+                    img->im = (IMAGE *) malloc(sizeof(IMAGE));
+                    if(img->im == NULL)
+                    {
                         img->ID = -1;
                         retcode = IMGID_ERR_ALLOCATION;
                         goto imgid_connect_report;
@@ -826,11 +869,14 @@ static inline errno_t imgid_connect(
                     img->mdt->shared = 1; // Enforce shared for connect
                     imgid_mkimage(img);
 
-                    if (img->createcnt > 0) {
+                    if(img->createcnt > 0)
+                    {
                         img->ID = 0;
                         retcode = IMGID_RECREATED;
                         goto imgid_connect_report;
-                    } else {
+                    }
+                    else
+                    {
                         free(img->im);
                         img->ID = -1;
                         retcode = IMGID_ERR_ALLOCATION;
@@ -838,7 +884,9 @@ static inline errno_t imgid_connect(
                     }
                 }
             }
-        } else {
+        }
+        else
+        {
             // No check, just copy info
             img->im = img_connected.im;
             img->md = img_connected.md;
@@ -849,9 +897,12 @@ static inline errno_t imgid_connect(
             retcode = IMGID_CONNECTED;
             goto imgid_connect_report;
         }
-    } else {
+    }
+    else
+    {
         // Read failed (does not exist?)
-        if (FLAG == IMGID_CONNECT_CHECK_CREATE) {
+        if(FLAG == IMGID_CONNECT_CHECK_CREATE)
+        {
             // Create it
             img->im = image; // use the allocated struct
             img->mdt->shared = 1;

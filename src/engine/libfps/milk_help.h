@@ -135,19 +135,19 @@ static inline int milk_help_init(
     int want_help = 0;
     int want_mono = 0;
 
-    for (int ii = 1; ii < argc; ii++)
+    for(int ii = 1; ii < argc; ii++)
     {
-        if (strcmp(argv[ii], "-h1") == 0 ||
-            strcmp(argv[ii],
-                   "--help-oneline") == 0)
+        if(strcmp(argv[ii], "-h1") == 0 ||
+                strcmp(argv[ii],
+                       "--help-oneline") == 0)
         {
             printf("%s\n", description);
             return MH_ACTION_H1;
         }
 
-        if (strcmp(argv[ii], "-h2") == 0 ||
-            strcmp(argv[ii],
-                   "--help-description") == 0)
+        if(strcmp(argv[ii], "-h2") == 0 ||
+                strcmp(argv[ii],
+                       "--help-description") == 0)
         {
             const char *desc =
                 (description_long != NULL)
@@ -157,33 +157,33 @@ static inline int milk_help_init(
             return MH_ACTION_H2;
         }
 
-        if (strcmp(argv[ii], "-hm") == 0 ||
-            strcmp(argv[ii],
-                   "--help-mono") == 0)
+        if(strcmp(argv[ii], "-hm") == 0 ||
+                strcmp(argv[ii],
+                       "--help-mono") == 0)
         {
             want_help = 1;
             want_mono = 1;
         }
 
-        if (strcmp(argv[ii], "-h") == 0 ||
-            strcmp(argv[ii], "--help") == 0)
+        if(strcmp(argv[ii], "-h") == 0 ||
+                strcmp(argv[ii], "--help") == 0)
         {
             want_help = 1;
         }
     }
 
-    if (!want_help)
+    if(!want_help)
     {
         return MH_ACTION_NONE;
     }
 
-    if (want_mono)
+    if(want_mono)
     {
         return MH_ACTION_MONO;
     }
 
     /* Auto-detect: suppress color if not a tty */
-    if (isatty(STDOUT_FILENO))
+    if(isatty(STDOUT_FILENO))
     {
         return MH_ACTION_HELP;
     }
@@ -211,7 +211,7 @@ static inline void milk_help_banner(
 {
     /* Extract basename */
     const char *base = strrchr(progname, '/');
-    if (base)
+    if(base)
     {
         base++;
     }
@@ -220,7 +220,7 @@ static inline void milk_help_banner(
         base = progname;
     }
 
-    if (color)
+    if(color)
     {
         printf("\n" MH_TITLE "%s" MH_RST
                " -- %s\n\n",
@@ -243,7 +243,7 @@ static inline void milk_help_section(
     const char *title,
     int         color)
 {
-    if (color)
+    if(color)
     {
         printf(MH_HDR "%s:" MH_RST "\n", title);
     }
@@ -265,7 +265,7 @@ static inline void milk_help_see_also(
     int         ncmds,
     int         color)
 {
-    if (color)
+    if(color)
     {
         printf(MH_HDR "See Also:" MH_RST "\n");
     }
@@ -274,14 +274,14 @@ static inline void milk_help_see_also(
         printf("See Also:\n");
     }
 
-    for (int ii = 0; ii < ncmds; ii++)
+    for(int ii = 0; ii < ncmds; ii++)
     {
         const char *cmd = cmds[ii];
         const char *colon = strchr(cmd, ':');
-        if (colon != NULL)
+        if(colon != NULL)
         {
             int cmd_len = colon - cmd;
-            if (color)
+            if(color)
             {
                 printf("  " MH_CMD "%-24.*s" MH_RST " -- %s\n",
                        cmd_len, cmd, colon + 1);
@@ -293,7 +293,7 @@ static inline void milk_help_see_also(
         }
         else
         {
-            if (color)
+            if(color)
             {
                 printf("  " MH_CMD "%s" MH_RST "\n", cmd);
             }

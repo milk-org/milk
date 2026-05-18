@@ -30,8 +30,8 @@
  * @param right   Right index (inclusive)
  */
 void qs2(
-    double       * __restrict array,
-    double       * __restrict array1,
+    double        *__restrict array,
+    double        *__restrict array1,
     unsigned long left,
     unsigned long right
 )
@@ -98,9 +98,9 @@ void qs2(
  * @param right   Right index (inclusive)
  */
 void qs3(
-    double       * __restrict array,
-    double       * __restrict array1,
-    double       * __restrict array2,
+    double        *__restrict array,
+    double        *__restrict array1,
+    double        *__restrict array2,
     unsigned long left,
     unsigned long right
 )
@@ -170,9 +170,9 @@ void qs3(
  * @param right   Right index (inclusive)
  */
 void qs3_float(
-    float        * __restrict array,
-    float        * __restrict array1,
-    float        * __restrict array2,
+    float         *__restrict array,
+    float         *__restrict array1,
+    float         *__restrict array2,
     unsigned long left,
     unsigned long right
 )
@@ -242,9 +242,9 @@ void qs3_float(
  * @param right   Right index (inclusive)
  */
 void qs3_double(
-    double       * __restrict array,
-    double       * __restrict array1,
-    double       * __restrict array2,
+    double        *__restrict array,
+    double        *__restrict array1,
+    double        *__restrict array2,
     unsigned long left,
     unsigned long right
 )
@@ -314,8 +314,8 @@ void qs3_double(
  * @param right   Right index (inclusive)
  */
 void qs2l(
-    double * __restrict array,
-    long   * __restrict array1,
+    double *__restrict array,
+    long    *__restrict array1,
     unsigned long left,
     unsigned long right
 )
@@ -378,8 +378,8 @@ void qs2l(
  * @param right   Right index (inclusive)
  */
 void qs2ul(
-    double        * __restrict array,
-    unsigned long * __restrict array1,
+    double         *__restrict array,
+    unsigned long *__restrict array1,
     unsigned long  left,
     unsigned long  right)
 {
@@ -442,8 +442,8 @@ void qs2ul(
  * @param right   Right index (inclusive)
  */
 void qs2l_double(
-    double       * __restrict array,
-    long         * __restrict array1,
+    double        *__restrict array,
+    long          *__restrict array1,
     unsigned long left,
     unsigned long right
 )
@@ -508,8 +508,8 @@ void qs2l_double(
  * @param right   Right index (inclusive)
  */
 void qs2ul_double(
-    double        * __restrict array,
-    unsigned long * __restrict array1,
+    double         *__restrict array,
+    unsigned long *__restrict array1,
     unsigned long  left,
     unsigned long  right
 )
@@ -573,9 +573,9 @@ void qs2ul_double(
  * @param right   Right index (inclusive)
  */
 void qs3ll_double(
-    double       * __restrict array,
-    long         * __restrict array1,
-    long         * __restrict array2,
+    double        *__restrict array,
+    long          *__restrict array1,
+    long          *__restrict array2,
     unsigned long left,
     unsigned long right
 )
@@ -642,9 +642,9 @@ void qs3ll_double(
  * @param right   Right index (inclusive)
  */
 void qs3ulul_double(
-    double        * __restrict array,
-    unsigned long * __restrict array1,
-    unsigned long * __restrict array2,
+    double         *__restrict array,
+    unsigned long *__restrict array1,
+    unsigned long *__restrict array2,
     unsigned long  left,
     unsigned long  right
 )
@@ -717,8 +717,8 @@ void qs3ulul_double(
  * @param count   Number of elements
  */
 void quick_sort2(
-    double       * __restrict array,
-    double       * __restrict array1,
+    double        *__restrict array,
+    double        *__restrict array1,
     unsigned long count
 )
 {
@@ -734,9 +734,9 @@ void quick_sort2(
  * @param count   Number of elements
  */
 void quick_sort3(
-    double       * __restrict array,
-    double       * __restrict array1,
-    double       * __restrict array2,
+    double        *__restrict array,
+    double        *__restrict array1,
+    double        *__restrict array2,
     unsigned long count
 )
 {
@@ -752,9 +752,9 @@ void quick_sort3(
  * @param count   Number of elements
  */
 void quick_sort3_float(
-    float        * __restrict array,
-    float        * __restrict array1,
-    float        * __restrict array2,
+    float         *__restrict array,
+    float         *__restrict array1,
+    float         *__restrict array2,
     unsigned long count
 )
 {
@@ -770,9 +770,9 @@ void quick_sort3_float(
  * @param count   Number of elements
  */
 void quick_sort3_double(
-    double       * __restrict array,
-    double       * __restrict array1,
-    double       * __restrict array2,
+    double        *__restrict array,
+    double        *__restrict array1,
+    double        *__restrict array2,
     unsigned long count
 )
 {
@@ -787,8 +787,8 @@ void quick_sort3_double(
  * @param count   Number of elements
  */
 void quick_sort2l(
-    double * __restrict array,
-    long * __restrict array1,
+    double *__restrict array,
+    long *__restrict array1,
     unsigned long count
 )
 {
@@ -803,8 +803,8 @@ void quick_sort2l(
  * @param count   Number of elements
  */
 void quick_sort2ul(
-    double * __restrict array,
-    unsigned long * __restrict array1,
+    double *__restrict array,
+    unsigned long *__restrict array1,
     unsigned long count
 )
 {
@@ -821,8 +821,8 @@ void quick_sort2ul(
  * @param count   Number of elements
  */
 void quick_sort2l_double(
-    double * __restrict array,
-    long * __restrict array1,
+    double *__restrict array,
+    long *__restrict array1,
     unsigned long count
 )
 {
@@ -839,8 +839,8 @@ void quick_sort2l_double(
  * @param count   Number of elements
  */
 void quick_sort2ul_double(
-    double        * __restrict array,
-    unsigned long * __restrict array1,
+    double         *__restrict array,
+    unsigned long *__restrict array1,
     unsigned long  count
 )
 {
@@ -856,9 +856,9 @@ void quick_sort2ul_double(
  * @param count   Number of elements
  */
 void quick_sort3ll_double(
-    double       * __restrict array,
-    long         * __restrict array1,
-    long         * __restrict array2,
+    double        *__restrict array,
+    long          *__restrict array1,
+    long          *__restrict array2,
     unsigned long count
 )
 {
@@ -874,9 +874,9 @@ void quick_sort3ll_double(
  * @param count   Number of elements
  */
 void quick_sort3ulul_double(
-    double        * __restrict array,
-    unsigned long * __restrict array1,
-    unsigned long * __restrict array2,
+    double         *__restrict array,
+    unsigned long *__restrict array1,
+    unsigned long *__restrict array2,
     unsigned long  count
 )
 {

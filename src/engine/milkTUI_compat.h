@@ -133,7 +133,7 @@ static inline void TUI_printfw(
 
     va_start(ap, fmt);
     int n = vsnprintf(
-        tmpbuf, sizeof(tmpbuf), fmt, ap);
+                tmpbuf, sizeof(tmpbuf), fmt, ap);
     va_end(ap);
 
     if(n <= 0)
@@ -153,7 +153,7 @@ static inline void TUI_printfw(
         }
         else if(sc_cursor_col < sc_term_cols
                 && sc_framebuf_pos
-                       < SC_FRAMEBUF_SIZE - 1)
+                < SC_FRAMEBUF_SIZE - 1)
         {
             sc_framebuf[sc_framebuf_pos++] =
                 tmpbuf[i];

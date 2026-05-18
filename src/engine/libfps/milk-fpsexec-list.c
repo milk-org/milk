@@ -50,7 +50,8 @@
 #define FZ_START_BONUS   3
 
 /** Entry: one discovered milk-fpsexec-* command */
-struct felentry {
+struct felentry
+{
     char  name[128];
     char  desc[FEL_DESC_MAX];
     int   score;        /* fuzzy score (0 = not set) */
@@ -123,7 +124,8 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-fpsexec-list%s %s-j%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-fpsexec-help:print detailed FPS framework info",
         "milk-fpsCTRL:launch the FPS dashboard TUI",
         "milk-fps-set:set an FPS parameter value"
@@ -144,15 +146,18 @@ static int fetch_description(
     snprintf(cmdline, sizeof(cmdline), "%s -h1 2>/dev/null", cmd);
 
     FILE *fp = popen(cmdline, "r");
-    if (fp == NULL) {
+    if(fp == NULL)
+    {
         return 0;
     }
 
     int ok = 0;
-    if (fgets(desc, (int)descsz, fp) != NULL) {
+    if(fgets(desc, (int)descsz, fp) != NULL)
+    {
         /* Strip trailing newline */
         size_t n = strlen(desc);
-        if (n > 0 && desc[n - 1] == '\n') {
+        if(n > 0 && desc[n - 1] == '\n')
+        {
             desc[n - 1] = '\0';
         }
         ok = (strlen(desc) > 0);
@@ -165,7 +170,8 @@ static int fetch_description(
  * discover_commands() - Find all milk-fpsexec-* in PATH
  * Fills g_entries[], sets g_n_entries.
  * -------------------------------------------------------------- */
-static const char *g_skip[] = {
+static const char *g_skip[] =
+{
     "milk-fpsexec-help",
     "milk-fpsexec-list",
     NULL
@@ -173,8 +179,10 @@ static const char *g_skip[] = {
 
 static int should_skip(const char *name)
 {
-    for (int skpi = 0; g_skip[skpi] != NULL; skpi++) {
-        if (strcmp(name, g_skip[skpi]) == 0) {
+    for(int skpi = 0; g_skip[skpi] != NULL; skpi++)
+    {
+        if(strcmp(name, g_skip[skpi]) == 0)
+        {
             return 1;
         }
     }
@@ -184,7 +192,8 @@ static int should_skip(const char *name)
 static void discover_commands(void)
 {
     const char *path_env = getenv("PATH");
-    if (path_env == NULL) {
+    if(path_env == NULL)
+    {
         return;
     }
 
@@ -197,42 +206,49 @@ static void discover_commands(void)
     int n_seen = 0;
 
     char *dir = strtok(path_copy, ":");
-    while (dir != NULL && g_n_entries < FEL_MAX_CMDS) {
+    while(dir != NULL && g_n_entries < FEL_MAX_CMDS)
+    {
         char pattern[512];
         snprintf(pattern, sizeof(pattern),
                  "%s/milk-fpsexec-*", dir);
 
         glob_t gl;
-        if (glob(pattern, GLOB_NOSORT, NULL, &gl) == 0) {
-            for (size_t path_idx = 0;
-                 path_idx < gl.gl_pathc && g_n_entries < FEL_MAX_CMDS;
-                 path_idx++)
+        if(glob(pattern, GLOB_NOSORT, NULL, &gl) == 0)
+        {
+            for(size_t path_idx = 0;
+                    path_idx < gl.gl_pathc && g_n_entries < FEL_MAX_CMDS;
+                    path_idx++)
             {
                 /* Extract basename */
                 const char *bname =
                     strrchr(gl.gl_pathv[path_idx], '/');
                 bname = bname ? bname + 1 : gl.gl_pathv[path_idx];
 
-                if (should_skip(bname)) {
+                if(should_skip(bname))
+                {
                     continue;
                 }
 
                 /* Dedup check */
                 int dup = 0;
-                for (int seen_idx = 0; seen_idx < n_seen; seen_idx++) {
-                    if (strcmp(seen[seen_idx], bname) == 0) {
+                for(int seen_idx = 0; seen_idx < n_seen; seen_idx++)
+                {
+                    if(strcmp(seen[seen_idx], bname) == 0)
+                    {
                         dup = 1;
                         break;
                     }
                 }
-                if (dup) {
+                if(dup)
+                {
                     continue;
                 }
 
                 /* Only include executables */
                 struct stat st;
-                if (stat(gl.gl_pathv[path_idx], &st) != 0 ||
-                    !(st.st_mode & S_IXUSR)) {
+                if(stat(gl.gl_pathv[path_idx], &st) != 0 ||
+                        !(st.st_mode & S_IXUSR))
+                {
                     continue;
                 }
 
@@ -240,9 +256,9 @@ static void discover_commands(void)
                 strncpy(e->name, bname, sizeof(e->name) - 1);
                 e->name[sizeof(e->name) - 1] = '\0';
 
-                if (!fetch_description(
-                        gl.gl_pathv[path_idx], e->desc,
-                        sizeof(e->desc)))
+                if(!fetch_description(
+                            gl.gl_pathv[path_idx], e->desc,
+                            sizeof(e->desc)))
                 {
                     strncpy(e->desc, "(no description)",
                             sizeof(e->desc) - 1);
@@ -252,7 +268,8 @@ static void discover_commands(void)
                 e->hl_n  = 0;
 
                 /* Record in seen list */
-                if (n_seen < FEL_MAX_CMDS) {
+                if(n_seen < FEL_MAX_CMDS)
+                {
                     strncpy(seen[n_seen], bname,
                             sizeof(seen[0]) - 1);
                     n_seen++;
@@ -310,34 +327,41 @@ static int fuzzy_score(
     int prev_ti   = -2;
     int n_pos     = 0;
 
-    for (size_t ti = 0;
-         ti < tlen && (size_t)qi < qlen;
-         ti++)
+    for(size_t ti = 0;
+            ti < tlen && (size_t)qi < qlen;
+            ti++)
     {
         char tc = (char)tolower((unsigned char)text[ti]);
         char qc = (char)tolower((unsigned char)query[qi]);
 
-        if (tc != qc) {
+        if(tc != qc)
+        {
             continue;
         }
 
         /* Record position */
-        if (n_pos < posmax) {
+        if(n_pos < posmax)
+        {
             positions[n_pos++] = (int)ti;
         }
 
         score += FZ_CHAR_SCORE;
 
-        if (prev_ti + 1 == (int)ti) {
+        if(prev_ti + 1 == (int)ti)
+        {
             score += FZ_CONSEC_BONUS;
         }
 
-        if (ti == 0) {
+        if(ti == 0)
+        {
             score += FZ_START_BONUS;
-        } else {
+        }
+        else
+        {
             char prev_c = text[ti - 1];
-            if (prev_c == '-' || prev_c == '_' ||
-                prev_c == ' ') {
+            if(prev_c == '-' || prev_c == '_' ||
+                    prev_c == ' ')
+            {
                 score += FZ_BOUND_BONUS;
             }
         }
@@ -346,15 +370,18 @@ static int fuzzy_score(
         qi++;
     } // for ti
 
-    if ((size_t)qi < qlen) {
+    if((size_t)qi < qlen)
+    {
         /* Full query not consumed -- no match */
-        if (n_pos_out) {
+        if(n_pos_out)
+        {
             *n_pos_out = 0;
         }
         return 0;
     }
 
-    if (n_pos_out) {
+    if(n_pos_out)
+    {
         *n_pos_out = n_pos;
     }
     return score;
@@ -376,24 +403,31 @@ static void print_highlighted(
     static char is_hl[COL_NAME + FEL_DESC_MAX + 4];
     memset(is_hl, 0, sizeof(is_hl));
 
-    for (int hl_idx = 0; hl_idx < hl_n; hl_idx++) {
-        if (hl_pos[hl_idx] < (int)sizeof(is_hl)) {
+    for(int hl_idx = 0; hl_idx < hl_n; hl_idx++)
+    {
+        if(hl_pos[hl_idx] < (int)sizeof(is_hl))
+        {
             is_hl[hl_pos[hl_idx]] = 1;
         }
     }
 
     int in_hl = 0;
-    for (int ch_idx = 0; ch_idx < slen; ch_idx++) {
-        if (is_hl[ch_idx] && !in_hl) {
+    for(int ch_idx = 0; ch_idx < slen; ch_idx++)
+    {
+        if(is_hl[ch_idx] && !in_hl)
+        {
             printf("\033[1;33m");
             in_hl = 1;
-        } else if (!is_hl[ch_idx] && in_hl) {
+        }
+        else if(!is_hl[ch_idx] && in_hl)
+        {
             printf("\033[0m");
             in_hl = 0;
         }
         putchar(s[ch_idx]);
     }
-    if (in_hl) {
+    if(in_hl)
+    {
         printf("\033[0m");
     }
 }
@@ -406,11 +440,13 @@ static void print_header(void)
     printf("\033[1;34m%-*s %s\033[0m\n",
            COL_NAME, "COMMAND", "DESCRIPTION");
 
-    for (int ch_idx = 0; ch_idx < COL_NAME; ch_idx++) {
+    for(int ch_idx = 0; ch_idx < COL_NAME; ch_idx++)
+    {
         putchar('-');
     }
     printf(" ");
-    for (int ch_idx = 0; ch_idx < 40; ch_idx++) {
+    for(int ch_idx = 0; ch_idx < 40; ch_idx++)
+    {
         putchar('-');
     }
     putchar('\n');
@@ -424,12 +460,15 @@ static void output_json(
     int                    n)
 {
     printf("[\n");
-    for (int ent_idx = 0; ent_idx < n; ent_idx++) {
+    for(int ent_idx = 0; ent_idx < n; ent_idx++)
+    {
         /* Escape double quotes in description */
         printf("  {\"name\": \"%s\", \"description\": \"",
                entries[ent_idx].name);
-        for (const char *p = entries[ent_idx].desc; *p; p++) {
-            if (*p == '"') {
+        for(const char *p = entries[ent_idx].desc; *p; p++)
+        {
+            if(*p == '"')
+            {
                 putchar('\\');
             }
             putchar(*p);
@@ -445,14 +484,16 @@ static void output_json(
 int main(int argc, char *argv[])
 {
     int action = milk_help_init(
-        argc, argv, FEL_DESC, FEL_DESC_LONG);
+                     argc, argv, FEL_DESC, FEL_DESC_LONG);
 
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2) {
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
     }
 
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO) {
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
         print_help(argv[0], mh_color);
         return 0;
     }
@@ -463,20 +504,27 @@ int main(int argc, char *argv[])
     int   n_terms  = 0;
     const char *terms[64];
 
-    for (int arg_idx = 1; arg_idx < argc; arg_idx++) {
-        if (strcmp(argv[arg_idx], "-f") == 0 ||
-            strcmp(argv[arg_idx], "--fuzzy") == 0)
+    for(int arg_idx = 1; arg_idx < argc; arg_idx++)
+    {
+        if(strcmp(argv[arg_idx], "-f") == 0 ||
+                strcmp(argv[arg_idx], "--fuzzy") == 0)
         {
             fuzzy = 1;
-        } else if (strcmp(argv[arg_idx], "-j") == 0 ||
-                   strcmp(argv[arg_idx], "--json") == 0)
+        }
+        else if(strcmp(argv[arg_idx], "-j") == 0 ||
+                strcmp(argv[arg_idx], "--json") == 0)
         {
             json_out = 1;
-        } else if (argv[arg_idx][0] != '-') {
-            if (n_terms < 64) {
+        }
+        else if(argv[arg_idx][0] != '-')
+        {
+            if(n_terms < 64)
+            {
                 terms[n_terms++] = argv[arg_idx];
             }
-        } else {
+        }
+        else
+        {
             fprintf(stderr,
                     "\n\033[1;31mERROR\033[0m:"
                     " unknown option '%s'.\n\n", argv[arg_idx]);
@@ -496,7 +544,8 @@ int main(int argc, char *argv[])
     static struct felentry filtered[FEL_MAX_CMDS];
     int n_filtered = 0;
 
-    for (int ent_idx = 0; ent_idx < g_n_entries; ent_idx++) {
+    for(int ent_idx = 0; ent_idx < g_n_entries; ent_idx++)
+    {
         struct felentry *e = &g_entries[ent_idx];
 
         /* Build the "line" as "name  desc" for matching */
@@ -504,41 +553,46 @@ int main(int argc, char *argv[])
         snprintf(line, sizeof(line),
                  "%-*s %s", COL_NAME, e->name, e->desc);
 
-        if (n_terms == 0) {
+        if(n_terms == 0)
+        {
             filtered[n_filtered++] = *e;
             continue;
         }
 
-        if (fuzzy) {
+        if(fuzzy)
+        {
             /* All terms must match; accumulate score + positions */
             int total_score = 0;
             static int all_pos[FEL_MAX_CMDS];
             int        n_all_pos = 0;
             int        matched = 1;
 
-            for (int term_idx = 0; term_idx < n_terms; term_idx++) {
+            for(int term_idx = 0; term_idx < n_terms; term_idx++)
+            {
                 static int pos[FEL_DESC_MAX + 128];
                 int n_pos = 0;
                 int sc = fuzzy_score(
-                    terms[term_idx], line, pos,
-                    (int)(sizeof(pos) / sizeof(pos[0])),
-                    &n_pos);
-                if (sc == 0) {
+                             terms[term_idx], line, pos,
+                             (int)(sizeof(pos) / sizeof(pos[0])),
+                             &n_pos);
+                if(sc == 0)
+                {
                     matched = 0;
                     break;
                 }
                 total_score += sc;
-                for (int pos_idx = 0;
-                     pos_idx < n_pos &&
-                     n_all_pos < (int)(sizeof(all_pos) /
-                                       sizeof(all_pos[0]));
-                     pos_idx++)
+                for(int pos_idx = 0;
+                        pos_idx < n_pos &&
+                        n_all_pos < (int)(sizeof(all_pos) /
+                                          sizeof(all_pos[0]));
+                        pos_idx++)
                 {
                     all_pos[n_all_pos++] = pos[pos_idx];
                 }
             } // for term_idx
 
-            if (!matched) {
+            if(!matched)
+            {
                 continue;
             }
 
@@ -546,28 +600,32 @@ int main(int argc, char *argv[])
             fe.score = total_score;
             /* Copy highlight positions */
             int copy_n = n_all_pos <
-                (int)(sizeof(fe.hl_pos) /
-                      sizeof(fe.hl_pos[0]))
-                ? n_all_pos
-                : (int)(sizeof(fe.hl_pos) /
-                         sizeof(fe.hl_pos[0]));
+                         (int)(sizeof(fe.hl_pos) /
+                               sizeof(fe.hl_pos[0]))
+                         ? n_all_pos
+                         : (int)(sizeof(fe.hl_pos) /
+                                 sizeof(fe.hl_pos[0]));
             memcpy(fe.hl_pos, all_pos,
                    (size_t)copy_n * sizeof(int));
             fe.hl_n = copy_n;
             filtered[n_filtered++] = fe;
 
-        } else {
+        }
+        else
+        {
             /* Regex mode: first term only */
             regex_t re;
-            if (regcomp(&re, terms[0],
-                        REG_EXTENDED | REG_ICASE |
-                        REG_NOSUB) != 0) {
+            if(regcomp(&re, terms[0],
+                       REG_EXTENDED | REG_ICASE |
+                       REG_NOSUB) != 0)
+            {
                 fprintf(stderr,
                         "\033[1;31mERROR\033[0m:"
                         " invalid regex '%s'\n", terms[0]);
                 return 1;
             }
-            if (regexec(&re, line, 0, NULL, 0) == 0) {
+            if(regexec(&re, line, 0, NULL, 0) == 0)
+            {
                 filtered[n_filtered++] = *e;
             }
             regfree(&re);
@@ -575,25 +633,31 @@ int main(int argc, char *argv[])
     } // for ent_idx
 
     /* Sort fuzzy results by score */
-    if (fuzzy && n_terms > 0) {
+    if(fuzzy && n_terms > 0)
+    {
         qsort(filtered, (size_t)n_filtered,
               sizeof(filtered[0]), cmp_score_desc);
     }
 
     /* Output */
-    if (json_out) {
+    if(json_out)
+    {
         output_json(filtered, n_filtered);
         return 0;
     }
 
-    if (n_filtered == 0) {
-        if (n_terms > 0) {
+    if(n_filtered == 0)
+    {
+        if(n_terms > 0)
+        {
             printf("No matches found");
-            if (fuzzy) {
+            if(fuzzy)
+            {
                 printf(" (fuzzy)");
             }
             printf(" for '%s", terms[0]);
-            for (int term_idx = 1; term_idx < n_terms; term_idx++) {
+            for(int term_idx = 1; term_idx < n_terms; term_idx++)
+            {
                 printf(" %s", terms[term_idx]);
             }
             printf("'.\n");
@@ -603,10 +667,12 @@ int main(int argc, char *argv[])
 
     print_header();
 
-    for (int ent_idx = 0; ent_idx < n_filtered; ent_idx++) {
+    for(int ent_idx = 0; ent_idx < n_filtered; ent_idx++)
+    {
         struct felentry *e = &filtered[ent_idx];
 
-        if (fuzzy && n_terms > 0) {
+        if(fuzzy && n_terms > 0)
+        {
             char line[COL_NAME + FEL_DESC_MAX + 4];
             snprintf(line, sizeof(line),
                      "%-*s %s", COL_NAME,
@@ -614,7 +680,9 @@ int main(int argc, char *argv[])
             printf("[%3d] ", e->score);
             print_highlighted(line, e->hl_pos, e->hl_n);
             putchar('\n');
-        } else {
+        }
+        else
+        {
             printf("%-*s %s\n",
                    COL_NAME, e->name, e->desc);
         }

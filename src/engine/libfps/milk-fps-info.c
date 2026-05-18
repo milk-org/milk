@@ -52,18 +52,18 @@ static void print_connections(const char *fpsname)
 
     /* Find our FPS in the model */
     int fi = -1;
-    for (int ii = 0; ii < model.nb_fps; ii++)
+    for(int ii = 0; ii < model.nb_fps; ii++)
     {
-        if (model.fps[ii].valid
-            && strcmp(model.fps[ii].name,
-                      fpsname) == 0)
+        if(model.fps[ii].valid
+                && strcmp(model.fps[ii].name,
+                          fpsname) == 0)
         {
             fi = ii;
             break;
         }
     }
 
-    if (fi < 0)
+    if(fi < 0)
     {
         printf("\n" CI_HDR " Connections" CI_RST
                CI_DIM
@@ -74,7 +74,7 @@ static void print_connections(const char *fpsname)
     }
 
     int fni = model.fps[fi].node_idx;
-    if (fni < 0)
+    if(fni < 0)
     {
         printf("\n" CI_HDR " Connections" CI_RST
                CI_DIM
@@ -90,21 +90,21 @@ static void print_connections(const char *fpsname)
     int found_any = 0;
 
     /* FPS -> process (runs) */
-    for (int ee = 0; ee < model.nb_edges; ee++)
+    for(int ee = 0; ee < model.nb_edges; ee++)
     {
-        if (model.edges[ee].src_node != fni)
+        if(model.edges[ee].src_node != fni)
         {
             continue;
         }
-        if (model.edges[ee].type
-            != OV_EDGE_FPS_RUNS_PROC)
+        if(model.edges[ee].type
+                != OV_EDGE_FPS_RUNS_PROC)
         {
             continue;
         }
         int ni = model.edges[ee].tgt_node;
-        if (ni < 0
-            || ni >= model.nb_nodes
-            || model.nodes[ni].type
+        if(ni < 0
+                || ni >= model.nb_nodes
+                || model.nodes[ni].type
                 != OV_NODE_PROC)
         {
             continue;
@@ -119,21 +119,21 @@ static void print_connections(const char *fpsname)
     }
 
     /* stream -> FPS (input) */
-    for (int ee = 0; ee < model.nb_edges; ee++)
+    for(int ee = 0; ee < model.nb_edges; ee++)
     {
-        if (model.edges[ee].tgt_node != fni)
+        if(model.edges[ee].tgt_node != fni)
         {
             continue;
         }
-        if (model.edges[ee].type
-            != OV_EDGE_FPS_INPUT_STREAM)
+        if(model.edges[ee].type
+                != OV_EDGE_FPS_INPUT_STREAM)
         {
             continue;
         }
         int ni = model.edges[ee].src_node;
-        if (ni < 0
-            || ni >= model.nb_nodes
-            || model.nodes[ni].type
+        if(ni < 0
+                || ni >= model.nb_nodes
+                || model.nodes[ni].type
                 != OV_NODE_STREAM)
         {
             continue;
@@ -147,21 +147,21 @@ static void print_connections(const char *fpsname)
     }
 
     /* FPS -> stream (output) */
-    for (int ee = 0; ee < model.nb_edges; ee++)
+    for(int ee = 0; ee < model.nb_edges; ee++)
     {
-        if (model.edges[ee].src_node != fni)
+        if(model.edges[ee].src_node != fni)
         {
             continue;
         }
-        if (model.edges[ee].type
-            != OV_EDGE_FPS_OUTPUT_STREAM)
+        if(model.edges[ee].type
+                != OV_EDGE_FPS_OUTPUT_STREAM)
         {
             continue;
         }
         int ni = model.edges[ee].tgt_node;
-        if (ni < 0
-            || ni >= model.nb_nodes
-            || model.nodes[ni].type
+        if(ni < 0
+                || ni >= model.nb_nodes
+                || model.nodes[ni].type
                 != OV_NODE_STREAM)
         {
             continue;
@@ -174,7 +174,7 @@ static void print_connections(const char *fpsname)
         found_any = 1;
     }
 
-    if (!found_any)
+    if(!found_any)
     {
         printf("   " CI_DIM
                "(no connections found)"
@@ -253,7 +253,8 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-fps-list:list active FPS instances",
         "milk-fps-set:set an FPS parameter value",
         "milk-fps-track:monitor FPS parameters",
@@ -270,12 +271,12 @@ int main(int argc, char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 FI_DESC, FI_DESC_LONG);
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
     }
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
@@ -286,7 +287,8 @@ int main(int argc, char *argv[])
     int show_connections = 0;
     int opt;
 
-    static struct option long_options[] = {
+    static struct option long_options[] =
+    {
         {"verbose",      no_argument, 0, 'v'},
         {"info",         no_argument, 0, 'i'},
         {"connections",  no_argument, 0, 'c'},
@@ -295,11 +297,11 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(
-                argc, argv, "vich1",
-                long_options, NULL)) != -1)
+    while((opt = getopt_long(
+                     argc, argv, "vich1",
+                     long_options, NULL)) != -1)
     {
-        switch (opt)
+        switch(opt)
         {
         case 'v':
             verbose = 1;
@@ -321,7 +323,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (optind >= argc)
+    if(optind >= argc)
     {
         printf("\n\033[1;31mERROR\033[0m missing FPS name.\n\n");
         print_help(argv[0], 1);
@@ -333,7 +335,7 @@ int main(int argc, char *argv[])
     FPS fps;
     fps.SMfd = -1;
 
-    if (fps_connect(fpsname, &fps, 0) == -1)
+    if(fps_connect(fpsname, &fps, 0) == -1)
     {
         fprintf(stderr,
                 "Error: cannot connect "
@@ -347,12 +349,12 @@ int main(int argc, char *argv[])
     fps_disconnect(&fps);
 
 #ifdef FPS_INFO_CONNECTIONS
-    if (show_connections)
+    if(show_connections)
     {
         print_connections(fpsname);
     }
 #else
-    if (show_connections)
+    if(show_connections)
     {
         fprintf(stderr,
                 "Warning: --connections not "

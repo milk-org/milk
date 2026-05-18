@@ -31,7 +31,7 @@
  * @return 0 on success
  */
 int bubble_sort(
-    double * __restrict array,
+    double *__restrict array,
     unsigned long count
 )
 {
@@ -60,7 +60,7 @@ int bubble_sort(
  * @param right  Right index of partition (inclusive)
  */
 void qs_float(
-    float * __restrict array,
+    float *__restrict array,
     unsigned long left,
     unsigned long right
 )
@@ -115,7 +115,7 @@ void qs_float(
  * @param right  Right index of partition (inclusive)
  */
 void qs_long(
-    long * __restrict array,
+    long *__restrict array,
     unsigned long left,
     unsigned long right
 )
@@ -170,7 +170,7 @@ void qs_long(
  * @param right  Right index of partition (inclusive)
  */
 void qs_double(
-    double * __restrict array,
+    double *__restrict array,
     unsigned long left,
     unsigned long right
 )
@@ -226,7 +226,7 @@ void qs_double(
  * @param right  Right index (inclusive)
  */
 void qs_ushort(
-    unsigned short * __restrict array,
+    unsigned short *__restrict array,
     unsigned long left,
     unsigned long right
 )
@@ -288,7 +288,7 @@ void qs_ushort(
  * @param count  Number of elements
  */
 void quick_sort_float(
-    float * __restrict array,
+    float *__restrict array,
     unsigned long count
 )
 {
@@ -302,7 +302,7 @@ void quick_sort_float(
  * @param count  Number of elements
  */
 void quick_sort_long(
-    long * __restrict array,
+    long *__restrict array,
     unsigned long count
 )
 {
@@ -316,7 +316,7 @@ void quick_sort_long(
  * @param count  Number of elements
  */
 void quick_sort_double(
-    double * __restrict array,
+    double *__restrict array,
     unsigned long count
 )
 {
@@ -330,7 +330,7 @@ void quick_sort_double(
  * @param count  Number of elements
  */
 void quick_sort_ushort(
-    unsigned short * __restrict array,
+    unsigned short *__restrict array,
     unsigned long count
 )
 {

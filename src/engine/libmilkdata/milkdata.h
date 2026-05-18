@@ -80,7 +80,7 @@ typedef struct
     long funccallcnt;
 
     char funcstack[MAXNB_FUNCSTACK]
-        [STRINGMAXLEN_FUNCSTAK_FUNCNAME];
+    [STRINGMAXLEN_FUNCSTAK_FUNCNAME];
     long fcntstack[MAXNB_FUNCSTACK];
     int  linestack[MAXNB_FUNCSTACK];
 

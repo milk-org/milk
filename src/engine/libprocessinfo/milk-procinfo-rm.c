@@ -63,7 +63,8 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-procinfo-rm%s %smyproc%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-procinfo-list:list active processinfo instances",
         "milk-procinfo-info:inspect processinfo memory contents"
     };
@@ -74,10 +75,12 @@ int main(int argc, char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 PI_RM_DESC, PI_RM_DESC_LONG);
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
+    }
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
@@ -87,35 +90,44 @@ int main(int argc, char *argv[])
     int clean_dead = 0;
     int opt;
 
-    static struct option long_options[] = {
+    static struct option long_options[] =
+    {
         {"clean-dead", no_argument,       0, 'c'},
         {"verbose",    no_argument,       0, 'v'},
         {"help",       no_argument,       0, 'h'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "cvh",
-                              long_options, NULL)) != -1)
+    while((opt = getopt_long(argc, argv, "cvh",
+                             long_options, NULL)) != -1)
     {
-        switch (opt)
+        switch(opt)
         {
-            case 'c': clean_dead = 1; break;
-            case 'v': verbose = 1; break;
-            case 'h': break; /* handled above */
-            case '?':
-            default:
-                printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
-                print_help(argv[0], 1);
-                return 1;
+        case 'c':
+            clean_dead = 1;
+            break;
+        case 'v':
+            verbose = 1;
+            break;
+        case 'h':
+            break; /* handled above */
+        case '?':
+        default:
+            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+            print_help(argv[0], 1);
+            return 1;
         }
     }
 
     const char *pattern;
-    if (optind >= argc)
+    if(optind >= argc)
     {
-        if (clean_dead) {
+        if(clean_dead)
+        {
             pattern = ".*";
-        } else {
+        }
+        else
+        {
             printf("\n\033[1;31mERROR\033[0m Missing process name.\n");
             print_help(argv[0], 1);
             return 1;
@@ -127,7 +139,8 @@ int main(int argc, char *argv[])
     }
     regex_t regex;
     int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
-    if (ret != 0) {
+    if(ret != 0)
+    {
         char error_msg[128];
         regerror(ret, &regex, error_msg, sizeof(error_msg));
         printf("\n\033[1;31mERROR\033[0m Invalid regular expression. %s\n", error_msg);
@@ -138,12 +151,14 @@ int main(int argc, char *argv[])
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
-    if (verbose) {
+    if(verbose)
+    {
         printf("Scanning directory '%s' to remove processes matching '%s'...\n", procdname, pattern);
     }
 
     DIR *dir = opendir(procdname);
-    if (!dir) {
+    if(!dir)
+    {
         PRINT_ERROR("opendir: %s", strerror(errno));
         return 1;
     }
@@ -153,13 +168,13 @@ int main(int argc, char *argv[])
     int removed_count = 0;
     int skipped_alive = 0;
 
-    while ((entry = readdir(dir)) != NULL)
+    while((entry = readdir(dir)) != NULL)
     {
-        if (strncmp(entry->d_name, "proc.", 5) != 0)
+        if(strncmp(entry->d_name, "proc.", 5) != 0)
         {
             continue;
         }
-        if (strstr(entry->d_name, ".shm") == NULL)
+        if(strstr(entry->d_name, ".shm") == NULL)
         {
             continue;
         }
@@ -170,12 +185,12 @@ int main(int argc, char *argv[])
                 sizeof(ext_pname) - 1);
         ext_pname[sizeof(ext_pname) - 1] = '\0';
         char *dot = strchr(ext_pname, '.');
-        if (dot)
+        if(dot)
         {
             *dot = '\0';
         }
 
-        if (regexec(&regex, ext_pname, 0, NULL, 0) != 0)
+        if(regexec(&regex, ext_pname, 0, NULL, 0) != 0)
         {
             continue;
         }
@@ -190,7 +205,7 @@ int main(int argc, char *argv[])
         int   pid_alive = 0;
 
         int fd = open(fullpath, O_RDONLY);
-        if (fd != -1)
+        if(fd != -1)
         {
             PROCESSINFO *pinfo =
                 (PROCESSINFO *) mmap(
@@ -200,7 +215,7 @@ int main(int argc, char *argv[])
                     MAP_SHARED,
                     fd,
                     0);
-            if (pinfo != MAP_FAILED)
+            if(pinfo != MAP_FAILED)
             {
                 pid      = pinfo->PID;
                 loopstat = pinfo->loopstat;
@@ -214,7 +229,7 @@ int main(int argc, char *argv[])
         }
 
         /* Liveness guard: always block removal of alive procs */
-        if (pid_alive)
+        if(pid_alive)
         {
             fprintf(stderr,
                     "Skipping %s -- PID %ld is still alive\n",
@@ -224,12 +239,12 @@ int main(int argc, char *argv[])
         }
 
         /* --clean-dead: additionally require crashed/stopped */
-        if (clean_dead)
+        if(clean_dead)
         {
-            if (loopstat != PROCESSINFO_LOOPSTAT_CRASHED &&
-                loopstat != PROCESSINFO_LOOPSTAT_STOP)
+            if(loopstat != PROCESSINFO_LOOPSTAT_CRASHED &&
+                    loopstat != PROCESSINFO_LOOPSTAT_STOP)
             {
-                if (verbose)
+                if(verbose)
                 {
                     printf("Skipping %s -- not crashed/stopped\n",
                            fullpath);
@@ -238,11 +253,11 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (verbose)
+        if(verbose)
         {
             printf("Removing %s\n", fullpath);
         }
-        if (unlink(fullpath) == 0)
+        if(unlink(fullpath) == 0)
         {
             removed_count++;
         }
@@ -256,7 +271,7 @@ int main(int argc, char *argv[])
     printf("Removed %d shared memory segment(s)"
            " matching '%s'",
            removed_count, pattern);
-    if (skipped_alive > 0)
+    if(skipped_alive > 0)
     {
         printf(" (%d skipped -- PID still alive)",
                skipped_alive);

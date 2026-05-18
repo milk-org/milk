@@ -1211,7 +1211,7 @@ int main(int argc, char *argv[]) { \
 
 /**
  * @brief Standard body for FPSCONF function
- * 
+ *
  * @param VARfps_name Name of the FPS
  * @param VARloop Loop flag (1 for loop, 0 for single step)
  * @param BLOCK_VAR_MAP Code block to map parameters (e.g. { ptr = ...; })
