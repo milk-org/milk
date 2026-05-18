@@ -12,6 +12,7 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <poll.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -176,8 +177,8 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     if (fpsCTRLvar->help_wrowstart > max_scroll) fpsCTRLvar->help_wrowstart = max_scroll;
     if (fpsCTRLvar->help_wrowstart < 0) fpsCTRLvar->help_wrowstart = 0;
     
-    for (int i = 0; i < display_lines; i++) {
-        int idx = fpsCTRLvar->help_wrowstart + i;
+    for (int ii = 0; ii < display_lines; ii++) {
+        int idx = fpsCTRLvar->help_wrowstart + ii;
         if (idx < line_cnt) {
             TUI_printfw("%s\n", lines[idx]);
         }
@@ -436,19 +437,8 @@ errno_t functionparameter_CTRLscreen(
         loopOK = 0;
     }
 
-    // how long between getchar probes
-    int getchardt_us_ref = 100000;
-
-    // refresh every 0.1 sec without input
-    int refreshtimeoutus_ref = 100000;
-
-    int getchardt_us     = getchardt_us_ref;
-    int refreshtimeoutus = refreshtimeoutus_ref;
-
-    // if(TUI_get_screenprintmode() == SCREENPRINT_NCURSES)  // ncurses mode
-    {
-        refreshtimeoutus_ref = 100000; // 10 Hz
-    }
+    // poll() timeout: ~10 Hz periodic refresh
+    int poll_timeout_ms = 100;
 
     int refresh_screen = 1; // 1 if screen should be refreshed
 
@@ -461,10 +451,10 @@ errno_t functionparameter_CTRLscreen(
     {
         // ==== VALIDATE ALL CONNECTED FPSs ====
         int needs_rescan = 0;
-        for (int i = 0; i < fpsCTRLvar.NBfps; i++) {
-            if (!function_parameter_struct_isvalid(&fpsarray[i])) {
+        for (int ii = 0; ii < fpsCTRLvar.NBfps; ii++) {
+            if (!function_parameter_struct_isvalid(&fpsarray[ii])) {
                 needs_rescan = 1;
-                fps_disconnect(&fpsarray[i]);
+                fps_disconnect(&fpsarray[ii]);
             }
         }
 
@@ -523,47 +513,25 @@ errno_t functionparameter_CTRLscreen(
         }
         
         int NBtaskLaunched = 0;
+        int ch = ANSI_KEY_NONE;
 
-        //long icnt = 0;
-        int ch = -1;
-
-        int timeoutuscnt = 0;
-
-        while(refresh_screen == 0)  // wait for input
+        // Event-driven input: poll() on stdin
+        // Mirrors milkCTRL.c pattern
         {
-            // Command processing moved to standalone milk-seq daemon
+            struct pollfd pfd;
+            pfd.fd     = STDIN_FILENO;
+            pfd.events = POLLIN;
 
-            // gradually slow down
-            getchardt_us = (int)(1.01 * getchardt_us);
-            if(getchardt_us > getchardt_us_ref)
-            {
-                getchardt_us = getchardt_us_ref;
-            }
-
-            usleep(getchardt_us);
-
-            // ==================
-            // = GET USER INPUT =
-            // ==================
-            ch = get_singlechar_nonblock();
-
-            if(ch == -1)
-            {
-                refresh_screen = 0;
-            }
-            else
-            {
-                refresh_screen = 2;
-                getchardt_us = 10000; // check often
-            }
-
-            timeoutuscnt += getchardt_us;
-            if(timeoutuscnt > refreshtimeoutus)
-            {
+            int pr = poll(&pfd, 1, poll_timeout_ms);
+            if (pr > 0 && (pfd.revents & POLLIN)) {
+                ch = get_singlechar_nonblock();
+                if (ch != ANSI_KEY_NONE) {
+                    refresh_screen = 2;
+                }
+            } else {
+                // timeout or error: periodic refresh
                 refresh_screen = 1;
             }
-
-            DEBUG_TRACEPOINT(" ");
         }
 
         if(refresh_screen > 0)
@@ -599,10 +567,9 @@ errno_t functionparameter_CTRLscreen(
             if(fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
             {
                 TUI_printfw(
-                    "======== FPSCTRL info  ( screen refresh cnt %7lld  "
-                    "scan interval %7d us)\n",
-                    loopcnt,
-                    getchardt_us);
+                    "======== FPSCTRL info  "
+                    "( screen refresh cnt %7lld )\n",
+                    loopcnt);
                 TUI_printfw(
                     "    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
                     "%ld   NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n",
@@ -716,6 +683,10 @@ errno_t functionparameter_CTRLscreen(
     if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
         unlink(fpsCTRLvar.fpsCTRLfifoname);
     }
+
+    // Free persistent scheduler sort buffers
+    free(fpsCTRLvar.sched_sort_eval);
+    free(fpsCTRLvar.sched_sort_index);
 
     functionparameter_outlog("LOGFILECLOSE", "close log file");
 

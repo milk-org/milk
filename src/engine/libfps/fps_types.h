@@ -511,6 +511,9 @@ typedef struct
     char     search_string[100];
     int      search_mode;
     int      sort_mode;
+    double  *sched_sort_eval;  // persistent sort key array
+    long    *sched_sort_index; // persistent sort index array
+    long     sched_sort_cap;   // current allocation capacity
 } FPSCTRL_PROCESS_VARS;
 
 #define NB_KEYWNODE_MAX 6000

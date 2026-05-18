@@ -49,9 +49,25 @@ errno_t fpsCTRL_scheduler_display(
 
     MILKSEQ_STATE *state = (MILKSEQ_STATE *) fpsCTRLvar->milkseq_state;
 
-    // Sort entries from most recent to most ancient, using inputindex
-    double *sort_evalarray = (double *) malloc(sizeof(double) * state->NBtasks_max);
-    long *sort_indexarray = (long *) malloc(sizeof(long) * state->NBtasks_max);
+    // Lazy-allocate persistent sort buffers
+    long need_cap = (long) state->NBtasks_max;
+    if (need_cap > fpsCTRLvar->sched_sort_cap) {
+        free(fpsCTRLvar->sched_sort_eval);
+        free(fpsCTRLvar->sched_sort_index);
+        fpsCTRLvar->sched_sort_eval =
+            (double *) malloc(sizeof(double) * need_cap);
+        fpsCTRLvar->sched_sort_index =
+            (long *) malloc(sizeof(long) * need_cap);
+        fpsCTRLvar->sched_sort_cap = need_cap;
+    }
+    double *sort_evalarray = fpsCTRLvar->sched_sort_eval;
+    long *sort_indexarray = fpsCTRLvar->sched_sort_index;
+
+    if (sort_evalarray == NULL
+        || sort_indexarray == NULL) {
+        TUI_printfw(" \n Sort buffer alloc error.\n");
+        return RETURN_FAILURE;
+    }
 
     long sortcnt = 0;
     for(int fpscmdindex = 0; fpscmdindex < (int)state->NBtasks_max; fpscmdindex++)
@@ -68,7 +84,6 @@ errno_t fpsCTRL_scheduler_display(
     {
         quick_sort2l(sort_evalarray, sort_indexarray, sortcnt);
     }
-    free(sort_evalarray);
 
     TUI_printfw(" showing   %d / %d  tasks   [ Sequencer: %s ]\n", wrow - 8, (int)sortcnt, state->name);
 
@@ -180,7 +195,6 @@ errno_t fpsCTRL_scheduler_display(
             if(attrbold == 1) screenprint_unsetbold();
         }
     }
-    free(sort_indexarray);
 
     return RETURN_SUCCESS;
 }
