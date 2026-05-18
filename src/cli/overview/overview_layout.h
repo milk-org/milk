@@ -118,6 +118,16 @@ typedef struct {
     /* Control mode */
     int          ctrl_mode;
     int          ctrl_blink;
+    /* Mouse hover track */
+    int          mouse_hover;
+    int          hover_view;         /* Logical focus enum (e.g. OV_FOCUS_STREAMS) or -1 */
+    int          hover_idx;          /* Index of item hovered */
+    int          hover_is_header;    /* 1 if hovering header */
+    int          hover_col_logical;  /* Logical column index (0, 1, 2...) */
+    char         hover_tooltip[256]; /* Text to display in tooltip pass */
+    int          hover_global_stream; /* Global stream index hovered (-1 if none) */
+    int          hover_global_proc;   /* Global proc index hovered (-1 if none) */
+    int          hover_global_fps;    /* Global fps index hovered (-1 if none) */
     /* Graph panel tab mode: 0=CONNECTIONS, 1=DETAILS, 2=RESOURCES */
     int          graph_tab_mode;
     /* Horizontal scroll per panel */
@@ -171,12 +181,16 @@ typedef struct {
     /* F5 view drag state */
     float        fps_split_ratio;
     int          fps_split_dragging;
+    int          fps_split_hover;
     /* F2 dashboard view drag state */
     float        dash_split_v_ratio;
     float        dash_split_h_ratio;
     int          dash_split_v_dragging;
     int          dash_split_h_dragging;
     int          cmdlog_dragging;
+    int          dash_split_v_hover;
+    int          dash_split_h_hover;
+    int          cmdlog_split_hover;
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);

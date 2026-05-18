@@ -53,10 +53,13 @@
 #define OV_KEY_MOUSE_RELEASE 288
 #define OV_KEY_CTRL_SCROLL_UP   289
 #define OV_KEY_CTRL_SCROLL_DOWN 290
+#define OV_KEY_MOUSE_MOVE   291
 
 extern int ov_mouse_row;
 extern int ov_mouse_col;
 extern int ov_mouse_btn;
+extern int ov_hover_row;
+extern int ov_hover_col;
 
 #ifndef ctrl
 #define ctrl(x) ((x) & 0x1f)
@@ -94,10 +97,21 @@ static inline void ov_raw_mode_enter(void)
 static inline void ov_raw_mode_exit(void)
 {
     if (!ov__raw_active) return;
-    const char seq[] = "\033[?1006l\033[?1002l\033[?25h\033[?7h\033[0m\033[?1049l";
+    const char seq[] = "\033[?1003l\033[?1006l\033[?1002l\033[?25h\033[?7h\033[0m\033[?1049l";
     if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0) {}
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
     ov__raw_active = 0;
+}
+
+static inline void ov_set_mouse_hover(int enable)
+{
+    if (enable) {
+        const char seq[] = "\033[?1002l\033[?1003h";
+        if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0) {}
+    } else {
+        const char seq[] = "\033[?1003l\033[?1002h";
+        if (write(STDOUT_FILENO, seq, sizeof(seq) - 1) < 0) {}
+    }
 }
 
 static inline void ov_get_terminal_size(int *rows, int *cols)
@@ -579,6 +593,14 @@ static inline int ov_get_key(void)
                         /* Ctrl+scroll (#12) */
                         if (mb == 80) return OV_KEY_CTRL_SCROLL_UP;
                         if (mb == 81) return OV_KEY_CTRL_SCROLL_DOWN;
+                        
+                        /* Mouse move (passive) */
+                        if (mb == 35 && press) {
+                            ov_hover_col = mc;
+                            ov_hover_row = mr;
+                            return OV_KEY_MOUSE_MOVE;
+                        }
+
                         if ((mb & 32) && press) return OV_KEY_MOUSE_DRAG;
                         if (mb == 0 && press) return OV_KEY_MOUSE_CLICK;
                         if (!press) return OV_KEY_MOUSE_RELEASE;
