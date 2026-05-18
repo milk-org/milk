@@ -17,13 +17,8 @@
 #include <stdio.h>
 
 #include "fps.h"
+#include "fps_internal.h"
 #include "fps_streamname_parse.h"
-
-imageID COREMOD_IOFITS_LoadMemStream(
-    const char *sname,
-    uint64_t   *streamflag,
-    uint32_t   *imLOC
-);
 
 
 /**
@@ -55,18 +50,18 @@ imageID functionparameter_LoadStream(
     FPS_STREAMNAME_PARSED sp =
         fps_streamname_parse(rawname);
 
-    if (sp.error)
+    if(sp.error)
     {
         PRINT_ERROR(
-               "invalid stream modifier "
-               "prefix in \"%s\"", rawname);
+            "invalid stream modifier "
+            "prefix in \"%s\"", rawname);
         return -1;
     }
     /* Apply location modifier to flags */
     uint64_t saved_flags =
         fps->parray[pindex].fpflag;
 
-    switch (sp.loc)
+    switch(sp.loc)
     {
     case 'L':
         fps->parray[pindex].fpflag |=
@@ -83,7 +78,7 @@ imageID functionparameter_LoadStream(
     }
 
     /* must-new check */
-    if (sp.must_new)
+    if(sp.must_new)
     {
         uint32_t probeLOC;
         uint64_t probeflags = 0;
@@ -91,13 +86,13 @@ imageID functionparameter_LoadStream(
             COREMOD_IOFITS_LoadMemStream(
                 sp.name, &probeflags, &probeLOC);
 
-        if (probeID != -1)
+        if(probeID != -1)
         {
             PRINT_ERROR(
-                   "@N modifier — "
-                   "stream \"%s\" already "
-                   "exists (ID %ld)",
-                   sp.name, (long) probeID);
+                "@N modifier — "
+                "stream \"%s\" already "
+                "exists (ID %ld)",
+                sp.name, (long) probeID);
             fps->parray[pindex].fpflag =
                 saved_flags;
             return -1;
@@ -106,9 +101,9 @@ imageID functionparameter_LoadStream(
 
     /* Load using bare name */
     ID = COREMOD_IOFITS_LoadMemStream(
-        sp.name,
-        &(fps->parray[pindex].fpflag),
-        &imLOC);
+             sp.name,
+             &(fps->parray[pindex].fpflag),
+             &imLOC);
 
     /* Concise one-line status — include the FPS key so empty stream
      * names can be traced back to the parameter that caused them.
@@ -125,29 +120,29 @@ imageID functionparameter_LoadStream(
 
     printf("  stream [%s] \"%s\"",
            fps->parray[pindex].keywordfull, sp.name);
-    if (name_empty)
+    if(name_empty)
     {
         printf(" \033[33m[empty]\033[0m");
     }
-    if (run_req)
+    if(run_req)
     {
         printf(" \033[1;31m[RUN-REQUIRED]\033[0m");
     }
-    if (conf_req)
+    if(conf_req)
     {
         printf(" \033[1;31m[CONF-REQUIRED]\033[0m");
     }
-    if (sp.loc != '\0' || sp.must_exist || sp.must_new)
+    if(sp.loc != '\0' || sp.must_exist || sp.must_new)
     {
         char label[8];
         fps_streamname_modifier_label(&sp, label, sizeof(label));
         printf(" %s", label);
     }
-    if (ID >= 0)
+    if(ID >= 0)
     {
         printf(" -> \033[32mFOUND\033[0m (ID %ld)\n", (long) ID);
     }
-    else if (name_empty)
+    else if(name_empty)
     {
         printf(" -> \033[90m[skipped: parameter not configured]\033[0m\n");
     }
@@ -160,43 +155,43 @@ imageID functionparameter_LoadStream(
     fps->parray[pindex].fpflag = saved_flags;
 
     /* Location modifier enforcement */
-    if (sp.loc == 'L' && ID >= 0 &&
-        imLOC == STREAM_LOAD_SOURCE_SHAREMEM)
+    if(sp.loc == 'L' && ID >= 0 &&
+            imLOC == STREAM_LOAD_SOURCE_SHAREMEM)
     {
         PRINT_ERROR(
-               "@L modifier — "
-               "stream \"%s\" is in shared"
-               " memory, not local",
-               sp.name);
+            "@L modifier — "
+            "stream \"%s\" is in shared"
+            " memory, not local",
+            sp.name);
         return -1;
     }
-    if (sp.loc == 'S' && ID >= 0 &&
-        imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
+    if(sp.loc == 'S' && ID >= 0 &&
+            imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
     {
         PRINT_ERROR(
-               "@S modifier — "
-               "stream \"%s\" is in local"
-               " memory, not shared",
-               sp.name);
+            "@S modifier — "
+            "stream \"%s\" is in local"
+            " memory, not shared",
+            sp.name);
         return -1;
     }
 
     /* must-exist check */
-    if (sp.must_exist && ID == -1)
+    if(sp.must_exist && ID == -1)
     {
         PRINT_ERROR(
-               "@E modifier — "
-               "stream \"%s\""
-               " not found",
-               sp.name);
+            "@E modifier — "
+            "stream \"%s\""
+            " not found",
+            sp.name);
         return -1;
     }
 
     /* Required-stream enforcement: abort with a clear message
      * identifying the parameter and stream name that blocked startup. */
-    if (conf_req && ID == -1)
+    if(conf_req && ID == -1)
     {
-        if (name_empty)
+        if(name_empty)
         {
             fprintf(stderr,
                     "\n\033[1;31mABORT\033[0m confstart: "
@@ -221,9 +216,9 @@ imageID functionparameter_LoadStream(
         return -1;
     }
 
-    if (run_req && ID == -1)
+    if(run_req && ID == -1)
     {
-        if (name_empty)
+        if(name_empty)
         {
             fprintf(stderr,
                     "\n\033[1;31mABORT\033[0m runstart: "
