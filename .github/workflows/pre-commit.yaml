@@ -52,9 +52,9 @@ jobs:
         continue-on-error: true
         working-directory: ${{ inputs.working-directory }}
         run: |
-          git fetch --no-tags --depth=1 \
-            origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 \
+              origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
             pre-commit run \
               --from-ref "origin/${{ github.base_ref }}" \
               --to-ref "HEAD" \
@@ -85,9 +85,9 @@ jobs:
       - name: Re-run pre-commit hooks
         working-directory: ${{ inputs.working-directory }}
         run: |
-          git fetch --no-tags --depth=1 \
-            origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 \
+              origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
             pre-commit run \
               --from-ref "origin/${{ github.base_ref }}" \
               --to-ref "HEAD" \
