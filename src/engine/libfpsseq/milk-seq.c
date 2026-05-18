@@ -48,12 +48,13 @@ static void sigterm_handler(int signum)
 static const char *get_shm_dir(void)
 {
     const char *dir = getenv("MILK_SHM_DIR");
-    if (dir && dir[0] != '\0') {
+    if(dir && dir[0] != '\0')
+    {
         return dir;
     }
     struct stat st;
-    if (stat("/milk/shm", &st) == 0
-        && S_ISDIR(st.st_mode))
+    if(stat("/milk/shm", &st) == 0
+            && S_ISDIR(st.st_mode))
     {
         return "/milk/shm";
     }
@@ -72,43 +73,50 @@ static int daemonize(
     const char *pidpath,
     const char *logpath)
 {
-    /* First fork — parent exits */
+    /* First fork -- parent exits */
     pid_t pid = fork();
-    if (pid < 0) {
+    if(pid < 0)
+    {
         return -1;
     }
-    if (pid > 0) {
+    if(pid > 0)
+    {
         _exit(0); /* parent exits */
     }
 
     /* New session leader */
-    if (setsid() < 0) {
+    if(setsid() < 0)
+    {
         return -1;
     }
 
-    /* Second fork — prevent re-acquiring tty */
+    /* Second fork -- prevent re-acquiring tty */
     pid = fork();
-    if (pid < 0) {
+    if(pid < 0)
+    {
         return -1;
     }
-    if (pid > 0) {
+    if(pid > 0)
+    {
         _exit(0);
     }
 
     /* Redirect stdout/stderr to log file (or /dev/null on failure) */
     int logfd = open(
-        logpath,
-        O_WRONLY | O_CREAT | O_APPEND,
-        0644);
-    if (logfd < 0) {
+                    logpath,
+                    O_WRONLY | O_CREAT | O_APPEND,
+                    0644);
+    if(logfd < 0)
+    {
         /* Fall back to /dev/null to avoid inheriting the terminal */
         logfd = open("/dev/null", O_WRONLY);
-        if (logfd < 0) {
+        if(logfd < 0)
+        {
             return -1;
         }
     }
-    if (dup2(logfd, STDOUT_FILENO) < 0 ||
-        dup2(logfd, STDERR_FILENO) < 0)
+    if(dup2(logfd, STDOUT_FILENO) < 0 ||
+            dup2(logfd, STDERR_FILENO) < 0)
     {
         close(logfd);
         return -1;
@@ -117,10 +125,12 @@ static int daemonize(
 
     /* Redirect stdin from /dev/null */
     int nullfd = open("/dev/null", O_RDONLY);
-    if (nullfd < 0) {
+    if(nullfd < 0)
+    {
         return -1;
     }
-    if (dup2(nullfd, STDIN_FILENO) < 0) {
+    if(dup2(nullfd, STDIN_FILENO) < 0)
+    {
         close(nullfd);
         return -1;
     }
@@ -128,11 +138,13 @@ static int daemonize(
     /* Write PID file atomically and exclusively */
     {
         int pidfd = open(pidpath, O_WRONLY | O_CREAT | O_EXCL, 0600);
-        if (pidfd < 0) {
+        if(pidfd < 0)
+        {
             /* Fail daemonization if PID file cannot be created */
             return -1;
         }
-        if (dprintf(pidfd, "%d\n", (int)getpid()) < 0) {
+        if(dprintf(pidfd, "%d\n", (int)getpid()) < 0)
+        {
             close(pidfd);
             return -1;
         }
@@ -192,11 +204,13 @@ static void print_help(const char *prog, int mh_color)
 int main(int argc, char **argv)
 {
     int help_action = milk_help_init(argc, argv,
-                                    SEQ_ONELINE, SEQ_DESC_LONG);
-    if (help_action == MH_ACTION_H1 || help_action == MH_ACTION_H2)
+                                     SEQ_ONELINE, SEQ_DESC_LONG);
+    if(help_action == MH_ACTION_H1 || help_action == MH_ACTION_H2)
+    {
         return 0;
+    }
     int mh_color = (help_action == MH_ACTION_HELP);
-    if (help_action == MH_ACTION_HELP || help_action == MH_ACTION_MONO)
+    if(help_action == MH_ACTION_HELP || help_action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
@@ -212,36 +226,53 @@ int main(int argc, char **argv)
 
     // Parse arguments
     int i = 1;
-    while (i < argc) {
-        if (strcmp(argv[i], "-h") == 0 ||
-            strcmp(argv[i], "--help") == 0) {
+    while(i < argc)
+    {
+        if(strcmp(argv[i], "-h") == 0 ||
+                strcmp(argv[i], "--help") == 0)
+        {
             break; /* handled above */
-        } else if (strcmp(argv[i], "-n") == 0 && i + 1 < argc) {
-            strncpy(seq_name, argv[i+1], FPSSEQ_NAME_MAX - 1);
+        }
+        else if(strcmp(argv[i], "-n") == 0 && i + 1 < argc)
+        {
+            strncpy(seq_name, argv[i + 1], FPSSEQ_NAME_MAX - 1);
             i += 2;
-        } else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
-            strncpy(script_file, argv[i+1], FPSSEQ_SCRIPT_PATH_MAX - 1);
+        }
+        else if(strcmp(argv[i], "-f") == 0 && i + 1 < argc)
+        {
+            strncpy(script_file, argv[i + 1], FPSSEQ_SCRIPT_PATH_MAX - 1);
             i += 2;
-        } else if (strcmp(argv[i], "--fifo") == 0 && i + 1 < argc) {
-            strncpy(custom_fifo, argv[i+1], FPSSEQ_FIFO_PATH_MAX - 1);
+        }
+        else if(strcmp(argv[i], "--fifo") == 0 && i + 1 < argc)
+        {
+            strncpy(custom_fifo, argv[i + 1], FPSSEQ_FIFO_PATH_MAX - 1);
             i += 2;
-        } else if (strcmp(argv[i], "--timeout") == 0 && i + 1 < argc) {
-            timeout_sec = atoi(argv[i+1]);
+        }
+        else if(strcmp(argv[i], "--timeout") == 0 && i + 1 < argc)
+        {
+            timeout_sec = atoi(argv[i + 1]);
             i += 2;
-        } else if (strcmp(argv[i], "--headless") == 0) {
+        }
+        else if(strcmp(argv[i], "--headless") == 0)
+        {
             // currently implied
             i++;
-        } else if (strcmp(argv[i], "--daemon") == 0) {
+        }
+        else if(strcmp(argv[i], "--daemon") == 0)
+        {
             do_daemon = 1;
             i++;
-        } else {
+        }
+        else
+        {
             printf("\n\033[1;31mERROR\033[0m invalid option: %s\n\n", argv[i]);
             print_help(argv[0], 1);
             return 1;
         }
     }
 
-    if (seq_name[0] == '\0') {
+    if(seq_name[0] == '\0')
+    {
         printf("\n\033[1;31mERROR\033[0m sequencer name (-n) is required\n\n");
         print_help(argv[0], 1);
         return 1;
@@ -259,8 +290,10 @@ int main(int argc, char **argv)
     }
 
     /* Daemonize if requested */
-    if (do_daemon) {
-        if (daemonize(pidpath, logpath) < 0) {
+    if(do_daemon)
+    {
+        if(daemonize(pidpath, logpath) < 0)
+        {
             PRINT_ERROR("Failed to daemonize");
             return 1;
         }
@@ -281,24 +314,28 @@ int main(int argc, char **argv)
 
     // Create sequencer state
     MILKSEQ_STATE *state = milkseq_create(seq_name);
-    if (!state) {
+    if(!state)
+    {
         PRINT_ERROR("Failed to create sequencer state '%s'", seq_name);
         return 1;
     }
 
-    if (custom_fifo[0] != '\0') {
+    if(custom_fifo[0] != '\0')
+    {
         strncpy(state->fifo_path, custom_fifo, sizeof(state->fifo_path) - 1);
         // Destroy default fifo and make custom
         char default_fifo[FPSSEQ_FIFO_PATH_MAX];
         snprintf(default_fifo, sizeof(default_fifo), "/tmp/milkseq.%s.fifo", seq_name);
-        if (strcmp(default_fifo, custom_fifo) != 0) {
+        if(strcmp(default_fifo, custom_fifo) != 0)
+        {
             unlink(default_fifo);
         }
         mkfifo(state->fifo_path, 0666);
     }
 
     int fifo_fd = open(state->fifo_path, O_RDONLY | O_NONBLOCK);
-    if (fifo_fd == -1) {
+    if(fifo_fd == -1)
+    {
         PRINT_ERROR("Failed to open FIFO %s", state->fifo_path);
         milkseq_destroy(seq_name);
         return 1;
@@ -317,9 +354,11 @@ int main(int argc, char **argv)
     functionparameter_scan_fps(1, "_ALL", fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
 
     // Load initial script if provided
-    if (script_file[0] != '\0') {
+    if(script_file[0] != '\0')
+    {
         strncpy(state->script_path, script_file, sizeof(state->script_path) - 1);
-        if (milkseq_load_script(state, script_file, fps, keywnode) != 0) {
+        if(milkseq_load_script(state, script_file, fps, keywnode) != 0)
+        {
             PRINT_ERROR("Failed to load script: %s", script_file);
         }
     }
@@ -331,26 +370,32 @@ int main(int argc, char **argv)
     time_t last_idle_time = time(NULL);
 
     // Main Run Loop
-    while (keep_running) {
+    while(keep_running)
+    {
         // Read FIFO
         int cmds_read = milkseq_fifo_read(state, fifo_fd);
 
         // Periodically rescan the FPS tree (like fpsCTRL does)
-        if (iter % 100 == 0) {
+        if(iter % 100 == 0)
+        {
             functionparameter_scan_fps(1, "_ALL", fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
         }
 
         // Run scheduler step
         int launched = milkseq_scheduler_step(state, fps, keywnode, &fpsCTRLvar);
 
-        if (cmds_read > 0 || launched > 0 || state->NBtasks_active > 0) {
+        if(cmds_read > 0 || launched > 0 || state->NBtasks_active > 0)
+        {
             last_idle_time = time(NULL);
-        } else if (timeout_sec > 0 && (time(NULL) - last_idle_time) > timeout_sec) {
+        }
+        else if(timeout_sec > 0 && (time(NULL) - last_idle_time) > timeout_sec)
+        {
             printf("Idle timeout reached. Exiting.\n");
             break;
         }
 
-        if (fpsCTRLvar.exitloop) {
+        if(fpsCTRLvar.exitloop)
+        {
             printf("Exit command received. Shutting down.\n");
             break;
         }
@@ -366,7 +411,8 @@ int main(int argc, char **argv)
     milkseq_destroy(seq_name);
 
     /* Clean up PID file */
-    if (do_daemon && pidpath[0] != '\0') {
+    if(do_daemon && pidpath[0] != '\0')
+    {
         unlink(pidpath);
     }
 

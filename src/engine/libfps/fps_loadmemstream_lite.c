@@ -11,8 +11,8 @@
  * Supports @X: prefix modifiers on stream names:
  *   L  Only search local imarray (no SHM)
  *   S  Force shared memory (default behavior)
- *   E  Must exist (return -1 → caller error)
- *   N  Must not exist (return -1 → caller error)
+ *   E  Must exist (return -1 -> caller error)
+ *   N  Must not exist (return -1 -> caller error)
  */
 
 #include <string.h>
@@ -51,16 +51,16 @@ static imageID find_in_local(const char *sname)
     IMAGE *imarray = milkfps_imarray;
     long   nb_max  = milkfps_nb_max;
 
-    if (imarray == NULL || nb_max <= 0)
+    if(imarray == NULL || nb_max <= 0)
     {
         return -1;
     }
 
-    for (long ii = 0; ii < nb_max; ii++)
+    for(long ii = 0; ii < nb_max; ii++)
     {
-        if (imarray[ii].used == 1 &&
-            strncmp(imarray[ii].name, sname,
-                    STRINGMAXLEN_IMAGE_NAME)
+        if(imarray[ii].used == 1 &&
+                strncmp(imarray[ii].name, sname,
+                        STRINGMAXLEN_IMAGE_NAME)
                 == 0)
         {
             return ii;
@@ -86,9 +86,9 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
     *imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
 
-    if (sname == NULL || strlen(sname) == 0 ||
-        strcmp(sname, " ") == 0 ||
-        strcmp(sname, "NULL") == 0)
+    if(sname == NULL || strlen(sname) == 0 ||
+            strcmp(sname, " ") == 0 ||
+            strcmp(sname, "NULL") == 0)
     {
         *imLOC = STREAM_LOAD_SOURCE_NULL;
         return -1;
@@ -98,7 +98,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
     FPS_STREAMNAME_PARSED sp =
         fps_streamname_parse(sname);
 
-    if (sp.error)
+    if(sp.error)
     {
         printf("ERROR: invalid stream modifier "
                "in \"%s\"\n", sname);
@@ -111,10 +111,10 @@ imageID COREMOD_IOFITS_LoadMemStream(
     long   nb_max  = milkfps_nb_max;
 
     /* @N: must-not-exist check */
-    if (sp.must_new)
+    if(sp.must_new)
     {
         imageID existing = find_in_local(name);
-        if (existing >= 0)
+        if(existing >= 0)
         {
             printf("@N modifier: \"%s\" already "
                    "exists locally (ID %ld)\n",
@@ -122,20 +122,20 @@ imageID COREMOD_IOFITS_LoadMemStream(
             return -1;
         }
 
-        if (imarray != NULL)
+        if(imarray != NULL)
         {
             char shmpath_n[512];
-            if (ImageStreamIO_filename(
+            if(ImageStreamIO_filename(
                         shmpath_n,
                         sizeof(shmpath_n),
                         name)
                     == IMAGESTREAMIO_SUCCESS &&
-                access(shmpath_n, F_OK) == 0)
+                    access(shmpath_n, F_OK) == 0)
             {
                 IMAGE tmpimg;
-                if (ImageStreamIO_openIm(
-                        &tmpimg, name)
-                    == IMAGESTREAMIO_SUCCESS)
+                if(ImageStreamIO_openIm(
+                            &tmpimg, name)
+                        == IMAGESTREAMIO_SUCCESS)
                 {
                     ImageStreamIO_closeIm(
                         &tmpimg);
@@ -149,16 +149,16 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
-    /* @L: local-only — skip SHM */
-    if (sp.loc == 'L')
+    /* @L: local-only -- skip SHM */
+    if(sp.loc == 'L')
     {
         imageID id = find_in_local(name);
-        if (id >= 0)
+        if(id >= 0)
         {
             *imLOC =
                 STREAM_LOAD_SOURCE_LOCALMEM;
         }
-        else if (sp.must_exist)
+        else if(sp.must_exist)
         {
             printf("@LE modifier: \"%s\" not "
                    "found in local memory\n",
@@ -169,33 +169,34 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
     /* Default / @S: shared memory path */
 
-    if (imarray == NULL || nb_max <= 0)
+    if(imarray == NULL || nb_max <= 0)
     {
         /*
          * No image array (pure library context).
          * Just check SHM existence.
          */
         char shmpath_lib[STRINGMAXLEN_FILE_NAME];
-        if (ImageStreamIO_filename(shmpath_lib, sizeof(shmpath_lib), name) != IMAGESTREAMIO_SUCCESS || access(shmpath_lib, F_OK) != 0)
+        if(ImageStreamIO_filename(shmpath_lib, sizeof(shmpath_lib), name) != IMAGESTREAMIO_SUCCESS
+                || access(shmpath_lib, F_OK) != 0)
         {
-            if (sp.must_exist)
+            if(sp.must_exist)
             {
-                 printf("@E modifier: \"%s\" "
-                        "not found in SHM\n",
-                        name);
+                printf("@E modifier: \"%s\" "
+                       "not found in SHM\n",
+                       name);
             }
             return -1;
         }
 
         IMAGE tmpimg;
-        if (ImageStreamIO_openIm(&tmpimg, name)
-            == IMAGESTREAMIO_SUCCESS)
+        if(ImageStreamIO_openIm(&tmpimg, name)
+                == IMAGESTREAMIO_SUCCESS)
         {
             *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
             ImageStreamIO_closeIm(&tmpimg);
             return 0;
         }
-        if (sp.must_exist)
+        if(sp.must_exist)
         {
             printf("@E modifier: \"%s\" not "
                    "found in SHM\n", name);
@@ -204,14 +205,14 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
     /* Check if already loaded locally */
-    if (sp.loc != 'S')
+    if(sp.loc != 'S')
     {
         /* Default: check local first */
-        for (long ii = 0; ii < nb_max; ii++)
+        for(long ii = 0; ii < nb_max; ii++)
         {
-            if (imarray[ii].used == 1 &&
-                strncmp(imarray[ii].name, name,
-                        STRINGMAXLEN_IMAGE_NAME)
+            if(imarray[ii].used == 1 &&
+                    strncmp(imarray[ii].name, name,
+                            STRINGMAXLEN_IMAGE_NAME)
                     == 0)
             {
                 *imLOC =
@@ -223,15 +224,15 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
     /* Find a free slot */
     long slot = -1;
-    for (long ii = 0; ii < nb_max; ii++)
+    for(long ii = 0; ii < nb_max; ii++)
     {
-        if (imarray[ii].used == 0)
+        if(imarray[ii].used == 0)
         {
             slot = ii;
             break;
         }
     }
-    if (slot == -1)
+    if(slot == -1)
     {
         return -1;
     }
@@ -243,10 +244,10 @@ imageID COREMOD_IOFITS_LoadMemStream(
         char shmpath[512];
         snprintf(shmpath, sizeof(shmpath),
                  "/milk/shm/%s.im.shm", name);
-        if (access(shmpath, F_OK) != 0)
+        if(access(shmpath, F_OK) != 0)
         {
             /* SHM file does not exist */
-            if (sp.must_exist)
+            if(sp.must_exist)
             {
                 printf("@E modifier: \"%s\" "
                        "not found\n", name);
@@ -256,8 +257,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
     /* Open stream into the slot */
-    if (ImageStreamIO_openIm(
-            &imarray[slot], name)
+    if(ImageStreamIO_openIm(
+                &imarray[slot], name)
             == IMAGESTREAMIO_SUCCESS)
     {
         imarray[slot].used = 1;
@@ -267,7 +268,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         return slot;
     }
 
-    if (sp.must_exist)
+    if(sp.must_exist)
     {
         printf("@E modifier: \"%s\" not found\n",
                name);
@@ -299,7 +300,7 @@ __attribute__((weak, visibility("hidden")))
 int is_fits_file(const char *filename)
 {
     const char *ext = strrchr(filename, '.');
-    if (ext && strcmp(ext, ".fits") == 0)
+    if(ext && strcmp(ext, ".fits") == 0)
     {
         return 1;
     }

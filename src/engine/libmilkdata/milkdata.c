@@ -203,7 +203,7 @@ static inline uint64_t xorshift64star(
 double milk_rng_uniform(void)
 {
     MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
-    /* 53-bit mantissa → [0, 1) */
+    /* 53-bit mantissa -> [0, 1) */
     return (xorshift64star(rng) >> 11)
            * (1.0 / 9007199254740992.0);
 }

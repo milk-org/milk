@@ -2,7 +2,7 @@
  * @file    milkdata.h
  * @brief   Core milk data structures
  *
- * Defines MILK_DATA — the minimal data structure
+ * Defines MILK_DATA -- the minimal data structure
  * needed by all milk programs (CLI and standalone).
  * The CLI extends this with CLI-specific fields
  * in the DATA struct (see CLIcore.h).
@@ -80,7 +80,7 @@ typedef struct
     long funccallcnt;
 
     char funcstack[MAXNB_FUNCSTACK]
-        [STRINGMAXLEN_FUNCSTAK_FUNCNAME];
+    [STRINGMAXLEN_FUNCSTAK_FUNCNAME];
     long fcntstack[MAXNB_FUNCSTACK];
     int  linestack[MAXNB_FUNCSTACK];
 
