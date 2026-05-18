@@ -11,7 +11,7 @@
 typedef int errno_t;
 #endif
 
-#include <malloc.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +40,7 @@ typedef int errno_t;
 
 #include "procCTRL_TUIcompat.h"
 #include "milkDebugTools.h"
+#include "processinfo_internal.h"
 
 static char local_shmdir[STRINGMAXLEN_DIRNAME];
 #define SHAREDPROCDIR local_shmdir
@@ -69,7 +70,7 @@ char procCTRL_logfile[1024] = "";
 
 short unsigned int wrow, wcol;
 
-extern PROCESSINFOLIST *pinfolist;
+
 
 #include "processinfo_scan_shm.h"
 static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList, int has_cset)
@@ -137,15 +138,7 @@ static int __attribute__((unused)) processinfo_SelectFromList(STRINGLISTENTRY *S
     return selected;
 }
 
-/* Sort context and proc_comp() are in
- * procCTRL_TUI_sort.c */
-extern int sort_ctx_m;
-extern int sort_ctx_col;
-extern int sort_ctx_dir;
-extern PROCSCAN_SHM *sort_ctx_scan_shm;
-extern PROCESSINFOLIST *sort_ctx_pinfolist;
-extern int proc_comp(
-    const void *a, const void *b);
+
 
 
 static inline void *link_scan_shm(const char *name, size_t size) {
@@ -332,13 +325,16 @@ errno_t processinfo_CTRLscreen()
         return RETURN_FAILURE;
     }
 
-    int backstderr = -1, newstderr = -1;
+    int backstderr = -1;
     if (procCTRL_debug_mode == 0) {
         fflush(stderr);
         backstderr = dup(STDERR_FILENO);
-        newstderr  = open("/dev/null", O_WRONLY);
-        dup2(newstderr, STDERR_FILENO);
-        close(newstderr);
+        int newstderr = open("/dev/null", O_WRONLY);
+        if (newstderr != -1)
+        {
+            dup2(newstderr, STDERR_FILENO);
+            close(newstderr);
+        }
     }
 
     if (ctx.flog) { fprintf(ctx.flog, "Entering main loop.\n"); fflush(ctx.flog); }

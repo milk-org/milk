@@ -166,9 +166,9 @@ int main(int argc, char *argv[])
         PRINT_ERROR("Error: cannot allocate fpsarray");
         return 1;
     }
-    for(int i = 0; i < NB_FPS_MAX; i++)
+    for(int ii = 0; ii < NB_FPS_MAX; ii++)
     {
-        fpsarray[i].SMfd = -1;
+        fpsarray[ii].SMfd = -1;
     }
 
     // Keywnode for scan
@@ -194,15 +194,15 @@ int main(int argc, char *argv[])
            "    RUN", "P", "Description");
 
     printf(C_DIM);
-    for (int i=0; i<116; i++) putchar('-');
+    for (int ii=0; ii<116; ii++) putchar('-');
     printf(C_RST "\n");
 
     if (NBfps > 0) {
-        for(int i = 0; i < NBfps; i++)
+        for(int ii = 0; ii < NBfps; ii++)
         {
-            if (use_regex && regexec(&regex, fpsarray[i].md->name, 0, NULL, 0) != 0) {
+            if (use_regex && regexec(&regex, fpsarray[ii].md->name, 0, NULL, 0) != 0) {
                 // Disconnect skipped elements
-                fps_disconnect(&fpsarray[i]);
+                fps_disconnect(&fpsarray[ii]);
                 continue;
             }
 
@@ -216,16 +216,16 @@ int main(int argc, char *argv[])
 
             const char *exec_basename =
                 strrchr(
-                    fpsarray[i].md->execfullpath,
+                    fpsarray[ii].md->execfullpath,
                     '/');
             if (exec_basename)
                 exec_basename++;
             else
                 exec_basename =
-                    fpsarray[i].md->execfullpath;
+                    fpsarray[ii].md->execfullpath;
 
             // Check CONF process
-            pid_t confpid = fpsarray[i].md->confpid;
+            pid_t confpid = fpsarray[ii].md->confpid;
             if (confpid > 0 && kill(confpid, 0) == 0) {
                 snprintf(conf_pid_str, 32, "%s%7d%s", COLORCOMMAND, (int)confpid, COLORRESET);
             } else {
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
             }
 
             // Check RUN process
-            pid_t runpid = fpsarray[i].md->runpid;
+            pid_t runpid = fpsarray[ii].md->runpid;
             if (runpid > 0 && kill(runpid, 0) == 0) {
                 snprintf(run_pid_str, 32, "%s%7d%s", COLORCOMMAND, (int)runpid, COLORRESET);
             } else {
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 
             // Check tmux session
             char tmux_cmd[256];
-            snprintf(tmux_cmd, sizeof(tmux_cmd), "tmux has-session -t %s 2> /dev/null", fpsarray[i].md->name);
+            snprintf(tmux_cmd, sizeof(tmux_cmd), "tmux has-session -t %s 2> /dev/null", fpsarray[ii].md->name);
             if (system(tmux_cmd) == 0) {
                 snprintf(tmux_str, 32, "[%stmu%s]", COLORCOMMAND, COLORRESET);
             } else {
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
             }
 
             // Check processinfo
-            if (fpsarray[i].parray != NULL && functionparameter_GetParamIndex(&fpsarray[i], ".procinfo.enabled") != -1) {
+            if (fpsarray[ii].parray != NULL && functionparameter_GetParamIndex(&fpsarray[ii], ".procinfo.enabled") != -1) {
                 snprintf(proc_str, 32, "%sP%s", C_NAME, C_RST);
             } else {
                 snprintf(proc_str, 32, "%s-%s", C_DIM, C_RST);
@@ -264,25 +264,25 @@ int main(int argc, char *argv[])
                        C_TYPE "%-30s" C_RST " "
                        C_HDR "%-20s" C_RST " "
                        "%s   %s\n",
-                       fpsarray[i].md->name,
-                       fpsarray[i].md->execfullpath,
-                       fpsarray[i].md->callprogname,
+                       fpsarray[ii].md->name,
+                       fpsarray[ii].md->execfullpath,
+                       fpsarray[ii].md->callprogname,
                        status_str,
-                       fpsarray[i].md->description);
+                       fpsarray[ii].md->description);
             } else {
                 printf(C_NAME "%-25s" C_RST " "
                        C_TYPE "%-30s" C_RST " "
                        C_HDR "%-20s" C_RST " "
                        "%s   %s\n",
-                       fpsarray[i].md->name,
+                       fpsarray[ii].md->name,
                        exec_basename,
-                       fpsarray[i].md->callprogname,
+                       fpsarray[ii].md->callprogname,
                        status_str,
-                       fpsarray[i].md->description);
+                       fpsarray[ii].md->description);
             }
             
             // Disconnect to clean up
-            fps_disconnect(&fpsarray[i]);
+            fps_disconnect(&fpsarray[ii]);
         }
         printf("\n");
     }

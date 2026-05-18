@@ -134,9 +134,9 @@ int main(int argc, char *argv[])
         regfree(&regex);
         return 1;
     }
-    for(int i = 0; i < NB_FPS_MAX; i++)
+    for(int ii = 0; ii < NB_FPS_MAX; ii++)
     {
-        fpsarray[i].SMfd = -1;
+        fpsarray[ii].SMfd = -1;
     }
 
     // Keywnode for scan
@@ -173,9 +173,9 @@ int main(int argc, char *argv[])
     int kw_width = 30;
     int val_width = 20;
 
-    for(int i = 0; i < NBfps; i++)
+    for(int ii = 0; ii < NBfps; ii++)
     {
-        FPS* fps = &fpsarray[i];
+        FPS* fps = &fpsarray[ii];
         if (fps == NULL || fps->md == NULL || fps->parray == NULL) {
             fps_disconnect(fps);
             continue;
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
                         printf(C_TITLE "========================================================\n" C_RST);
                         
                         printf("%-30s %12s %-20s %s\n", "Keyword", "Type", "Value", "Description");
-                        for (int k=0; k<80; k++) printf("-");
+                        for (int kk=0; kk<80; kk++) printf("-");
                         printf("\n");
 
                         fps_has_match = 1;

@@ -14,4 +14,9 @@
 #include "milkDebugTools.h"
 #include "ImageStreamIO/ImageStruct.h"
 
-#endif
+#include "processinfo.h"
+
+/* Global process-info list (defined in processinfo_globals.c) */
+extern PROCESSINFOLIST *pinfolist;
+
+#endif // PROCESSINFO_INTERNAL_H

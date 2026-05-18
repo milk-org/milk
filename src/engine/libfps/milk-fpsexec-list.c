@@ -173,8 +173,8 @@ static const char *g_skip[] = {
 
 static int should_skip(const char *name)
 {
-    for (int i = 0; g_skip[i] != NULL; i++) {
-        if (strcmp(name, g_skip[i]) == 0) {
+    for (int skpi = 0; g_skip[skpi] != NULL; skpi++) {
+        if (strcmp(name, g_skip[skpi]) == 0) {
             return 1;
         }
     }
@@ -204,14 +204,14 @@ static void discover_commands(void)
 
         glob_t gl;
         if (glob(pattern, GLOB_NOSORT, NULL, &gl) == 0) {
-            for (size_t i = 0;
-                 i < gl.gl_pathc && g_n_entries < FEL_MAX_CMDS;
-                 i++)
+            for (size_t path_idx = 0;
+                 path_idx < gl.gl_pathc && g_n_entries < FEL_MAX_CMDS;
+                 path_idx++)
             {
                 /* Extract basename */
                 const char *bname =
-                    strrchr(gl.gl_pathv[i], '/');
-                bname = bname ? bname + 1 : gl.gl_pathv[i];
+                    strrchr(gl.gl_pathv[path_idx], '/');
+                bname = bname ? bname + 1 : gl.gl_pathv[path_idx];
 
                 if (should_skip(bname)) {
                     continue;
@@ -219,8 +219,8 @@ static void discover_commands(void)
 
                 /* Dedup check */
                 int dup = 0;
-                for (int j = 0; j < n_seen; j++) {
-                    if (strcmp(seen[j], bname) == 0) {
+                for (int seen_idx = 0; seen_idx < n_seen; seen_idx++) {
+                    if (strcmp(seen[seen_idx], bname) == 0) {
                         dup = 1;
                         break;
                     }
@@ -231,7 +231,7 @@ static void discover_commands(void)
 
                 /* Only include executables */
                 struct stat st;
-                if (stat(gl.gl_pathv[i], &st) != 0 ||
+                if (stat(gl.gl_pathv[path_idx], &st) != 0 ||
                     !(st.st_mode & S_IXUSR)) {
                     continue;
                 }
@@ -241,7 +241,7 @@ static void discover_commands(void)
                 e->name[sizeof(e->name) - 1] = '\0';
 
                 if (!fetch_description(
-                        gl.gl_pathv[i], e->desc,
+                        gl.gl_pathv[path_idx], e->desc,
                         sizeof(e->desc)))
                 {
                     strncpy(e->desc, "(no description)",
@@ -259,7 +259,7 @@ static void discover_commands(void)
                 }
 
                 g_n_entries++;
-            } // for i
+            } // for path_idx
         } // if glob ok
         globfree(&gl);
         dir = strtok(NULL, ":");
@@ -376,22 +376,22 @@ static void print_highlighted(
     static char is_hl[COL_NAME + FEL_DESC_MAX + 4];
     memset(is_hl, 0, sizeof(is_hl));
 
-    for (int i = 0; i < hl_n; i++) {
-        if (hl_pos[i] < (int)sizeof(is_hl)) {
-            is_hl[hl_pos[i]] = 1;
+    for (int hl_idx = 0; hl_idx < hl_n; hl_idx++) {
+        if (hl_pos[hl_idx] < (int)sizeof(is_hl)) {
+            is_hl[hl_pos[hl_idx]] = 1;
         }
     }
 
     int in_hl = 0;
-    for (int i = 0; i < slen; i++) {
-        if (is_hl[i] && !in_hl) {
+    for (int ch_idx = 0; ch_idx < slen; ch_idx++) {
+        if (is_hl[ch_idx] && !in_hl) {
             printf("\033[1;33m");
             in_hl = 1;
-        } else if (!is_hl[i] && in_hl) {
+        } else if (!is_hl[ch_idx] && in_hl) {
             printf("\033[0m");
             in_hl = 0;
         }
-        putchar(s[i]);
+        putchar(s[ch_idx]);
     }
     if (in_hl) {
         printf("\033[0m");
@@ -406,11 +406,11 @@ static void print_header(void)
     printf("\033[1;34m%-*s %s\033[0m\n",
            COL_NAME, "COMMAND", "DESCRIPTION");
 
-    for (int i = 0; i < COL_NAME; i++) {
+    for (int ch_idx = 0; ch_idx < COL_NAME; ch_idx++) {
         putchar('-');
     }
     printf(" ");
-    for (int i = 0; i < 40; i++) {
+    for (int ch_idx = 0; ch_idx < 40; ch_idx++) {
         putchar('-');
     }
     putchar('\n');
@@ -424,17 +424,17 @@ static void output_json(
     int                    n)
 {
     printf("[\n");
-    for (int i = 0; i < n; i++) {
+    for (int ent_idx = 0; ent_idx < n; ent_idx++) {
         /* Escape double quotes in description */
         printf("  {\"name\": \"%s\", \"description\": \"",
-               entries[i].name);
-        for (const char *p = entries[i].desc; *p; p++) {
+               entries[ent_idx].name);
+        for (const char *p = entries[ent_idx].desc; *p; p++) {
             if (*p == '"') {
                 putchar('\\');
             }
             putchar(*p);
         }
-        printf("\"}%s\n", i + 1 < n ? "," : "");
+        printf("\"}%s\n", ent_idx + 1 < n ? "," : "");
     }
     printf("]\n");
 }
@@ -463,27 +463,27 @@ int main(int argc, char *argv[])
     int   n_terms  = 0;
     const char *terms[64];
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-f") == 0 ||
-            strcmp(argv[i], "--fuzzy") == 0)
+    for (int arg_idx = 1; arg_idx < argc; arg_idx++) {
+        if (strcmp(argv[arg_idx], "-f") == 0 ||
+            strcmp(argv[arg_idx], "--fuzzy") == 0)
         {
             fuzzy = 1;
-        } else if (strcmp(argv[i], "-j") == 0 ||
-                   strcmp(argv[i], "--json") == 0)
+        } else if (strcmp(argv[arg_idx], "-j") == 0 ||
+                   strcmp(argv[arg_idx], "--json") == 0)
         {
             json_out = 1;
-        } else if (argv[i][0] != '-') {
+        } else if (argv[arg_idx][0] != '-') {
             if (n_terms < 64) {
-                terms[n_terms++] = argv[i];
+                terms[n_terms++] = argv[arg_idx];
             }
         } else {
             fprintf(stderr,
                     "\n\033[1;31mERROR\033[0m:"
-                    " unknown option '%s'.\n\n", argv[i]);
+                    " unknown option '%s'.\n\n", argv[arg_idx]);
             print_help(argv[0], 1);
             return 1;
         }
-    } // for i
+    } // for arg_idx
 
     /* Discover commands */
     discover_commands();
@@ -496,8 +496,8 @@ int main(int argc, char *argv[])
     static struct felentry filtered[FEL_MAX_CMDS];
     int n_filtered = 0;
 
-    for (int i = 0; i < g_n_entries; i++) {
-        struct felentry *e = &g_entries[i];
+    for (int ent_idx = 0; ent_idx < g_n_entries; ent_idx++) {
+        struct felentry *e = &g_entries[ent_idx];
 
         /* Build the "line" as "name  desc" for matching */
         char line[COL_NAME + FEL_DESC_MAX + 4];
@@ -516,11 +516,11 @@ int main(int argc, char *argv[])
             int        n_all_pos = 0;
             int        matched = 1;
 
-            for (int t = 0; t < n_terms; t++) {
+            for (int term_idx = 0; term_idx < n_terms; term_idx++) {
                 static int pos[FEL_DESC_MAX + 128];
                 int n_pos = 0;
                 int sc = fuzzy_score(
-                    terms[t], line, pos,
+                    terms[term_idx], line, pos,
                     (int)(sizeof(pos) / sizeof(pos[0])),
                     &n_pos);
                 if (sc == 0) {
@@ -528,15 +528,15 @@ int main(int argc, char *argv[])
                     break;
                 }
                 total_score += sc;
-                for (int p = 0;
-                     p < n_pos &&
+                for (int pos_idx = 0;
+                     pos_idx < n_pos &&
                      n_all_pos < (int)(sizeof(all_pos) /
                                        sizeof(all_pos[0]));
-                     p++)
+                     pos_idx++)
                 {
-                    all_pos[n_all_pos++] = pos[p];
+                    all_pos[n_all_pos++] = pos[pos_idx];
                 }
-            } // for t
+            } // for term_idx
 
             if (!matched) {
                 continue;
@@ -572,7 +572,7 @@ int main(int argc, char *argv[])
             }
             regfree(&re);
         }
-    } // for i
+    } // for ent_idx
 
     /* Sort fuzzy results by score */
     if (fuzzy && n_terms > 0) {
@@ -593,8 +593,8 @@ int main(int argc, char *argv[])
                 printf(" (fuzzy)");
             }
             printf(" for '%s", terms[0]);
-            for (int t = 1; t < n_terms; t++) {
-                printf(" %s", terms[t]);
+            for (int term_idx = 1; term_idx < n_terms; term_idx++) {
+                printf(" %s", terms[term_idx]);
             }
             printf("'.\n");
         }
@@ -603,8 +603,8 @@ int main(int argc, char *argv[])
 
     print_header();
 
-    for (int i = 0; i < n_filtered; i++) {
-        struct felentry *e = &filtered[i];
+    for (int ent_idx = 0; ent_idx < n_filtered; ent_idx++) {
+        struct felentry *e = &filtered[ent_idx];
 
         if (fuzzy && n_terms > 0) {
             char line[COL_NAME + FEL_DESC_MAX + 4];
@@ -618,7 +618,7 @@ int main(int argc, char *argv[])
             printf("%-*s %s\n",
                    COL_NAME, e->name, e->desc);
         }
-    } // for i
+    } // for ent_idx
 
     return 0;
 }

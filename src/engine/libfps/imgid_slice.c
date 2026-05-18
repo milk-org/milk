@@ -73,9 +73,9 @@ static int parse_one_axis(
 
     /* Count colons */
     int ncolon = 0;
-    for (int i = 0; buf[i] != '\0'; i++)
+    for (int ii = 0; buf[ii] != '\0'; ii++)
     {
-        if (buf[i] == ':')
+        if (buf[ii] == ':')
         {
             ncolon++;
         }
@@ -228,24 +228,24 @@ IMGID_SLICE imgid_slice_parse(
     s.naxis = (uint8_t) naxis;
 
     /* Initialize all axes to defaults */
-    for (int a = 0; a < IMGID_SLICE_MAXAXIS; a++)
+    for (int aa = 0; aa < IMGID_SLICE_MAXAXIS; aa++)
     {
-        s.start[a] = 0;
-        s.end[a]   = -1;
-        s.step[a]  = 1;
-        s.bin[a]   = 0;
+        s.start[aa] = 0;
+        s.end[aa]   = -1;
+        s.step[aa]  = 1;
+        s.bin[aa]   = 0;
     }
 
     /* Parse each axis */
-    for (int a = 0; a < naxis; a++)
+    for (int aa = 0; aa < naxis; aa++)
     {
-        if (parse_one_axis(axes[a], &s, a) != 0)
+        if (parse_one_axis(axes[aa], &s, aa) != 0)
         {
             s.error = 1;
             snprintf(s.errmsg,
                      sizeof(s.errmsg),
                      "invalid axis %d spec: %s",
-                     a, axes[a]);
+                     aa, axes[aa]);
             return s;
         }
     }
@@ -279,87 +279,87 @@ int imgid_slice_output_size(
 {
     if (!s->has_slice)
     {
-        for (int a = 0; a < src_naxis; a++)
+        for (int aa = 0; aa < src_naxis; aa++)
         {
-            out_size[a] = src_size[a];
+            out_size[aa] = src_size[aa];
         }
         return 0;
     }
 
-    for (int a = 0; a < s->naxis; a++)
+    for (int aa = 0; aa < s->naxis; aa++)
     {
-        if (a >= src_naxis)
+        if (aa >= src_naxis)
         {
             snprintf(s->errmsg,
                      sizeof(s->errmsg),
                      "slice axis %d > naxis %d",
-                     a, src_naxis);
+                     aa, src_naxis);
             s->error = 1;
             return 1;
         }
 
-        int32_t sz = (int32_t) src_size[a];
+        int32_t sz = (int32_t) src_size[aa];
 
         /* Resolve negative indices */
-        if (s->start[a] < 0)
+        if (s->start[aa] < 0)
         {
-            s->start[a] = sz + s->start[a];
+            s->start[aa] = sz + s->start[aa];
         }
-        if (s->end[a] < 0)
+        if (s->end[aa] < 0)
         {
             /* Sentinel -1 from parser = full axis
              * Other negatives = count from end */
-            s->end[a] = sz + s->end[a];
+            s->end[aa] = sz + s->end[aa];
         }
 
         /* Clamp to valid range */
-        if (s->start[a] < 0)
+        if (s->start[aa] < 0)
         {
-            s->start[a] = 0;
+            s->start[aa] = 0;
         }
-        if (s->start[a] >= sz)
+        if (s->start[aa] >= sz)
         {
             snprintf(s->errmsg,
                      sizeof(s->errmsg),
                      "axis %d start %d >= size %d",
-                     a, s->start[a], sz);
+                     aa, s->start[aa], sz);
             s->error = 1;
             return 1;
         }
-        if (s->end[a] >= sz)
+        if (s->end[aa] >= sz)
         {
             snprintf(s->errmsg,
                      sizeof(s->errmsg),
                      "axis %d end %d >= size %d",
-                     a, s->end[a], sz);
+                     aa, s->end[aa], sz);
             s->error = 1;
             return 1;
         }
-        if (s->end[a] < 0)
+        if (s->end[aa] < 0)
         {
-            s->end[a] = 0;
+            s->end[aa] = 0;
         }
 
         /* Compute axis output length */
-        int32_t absstep = abs(s->step[a]);
+        int32_t absstep = abs(s->step[aa]);
         if (absstep == 0)
         {
             s->error = 1;
             snprintf(s->errmsg,
                      sizeof(s->errmsg),
-                     "axis %d step is 0", a);
+                     "axis %d step is 0", aa);
             return 1;
         }
 
         int32_t range;
-        if (s->step[a] > 0)
+        if (s->step[aa] > 0)
         {
-            range = s->end[a] - s->start[a] + 1;
+            range = s->end[aa] - s->start[aa] + 1;
         }
         else
         {
             /* Reversed: start > end */
-            range = s->start[a] - s->end[a] + 1;
+            range = s->start[aa] - s->end[aa] + 1;
         }
 
         if (range <= 0)
@@ -368,36 +368,36 @@ int imgid_slice_output_size(
                      sizeof(s->errmsg),
                      "axis %d empty range "
                      "[%d:%d] step %d",
-                     a, s->start[a],
-                     s->end[a], s->step[a]);
+                     aa, s->start[aa],
+                     s->end[aa], s->step[aa]);
             s->error = 1;
             return 1;
         }
 
-        if (s->bin[a])
+        if (s->bin[aa])
         {
             /* Binning: output = range / step */
-            out_size[a] =
+            out_size[aa] =
                 (uint32_t)(range / absstep);
         }
         else
         {
             /* Stride: output = ceil(range/step) */
-            out_size[a] =
+            out_size[aa] =
                 (uint32_t)((range + absstep - 1)
                            / absstep);
         }
 
-        if (out_size[a] == 0)
+        if (out_size[aa] == 0)
         {
-            out_size[a] = 1;
+            out_size[aa] = 1;
         }
     }
 
     /* Axes beyond naxis: copy source size */
-    for (int a = s->naxis; a < src_naxis; a++)
+    for (int aa = s->naxis; aa < src_naxis; aa++)
     {
-        out_size[a] = src_size[a];
+        out_size[aa] = src_size[aa];
     }
 
     return 0;
@@ -428,45 +428,45 @@ void imgid_slice_format(
     int pos = 0;
     pos += snprintf(buf + pos, bufsz - pos, "[");
 
-    for (int a = 0; a < s->naxis; a++)
+    for (int aa = 0; aa < s->naxis; aa++)
     {
-        if (a > 0)
+        if (aa > 0)
         {
             pos += snprintf(buf + pos,
                             bufsz - pos, ",");
         }
 
-        if (s->step[a] == 1
-            && s->start[a] == 0
-            && s->end[a] == -1)
+        if (s->step[aa] == 1
+            && s->start[aa] == 0
+            && s->end[aa] == -1)
         {
             pos += snprintf(buf + pos,
                             bufsz - pos, "*");
         }
-        else if (s->step[a] == -1
-                 && s->start[a] == 0
-                 && s->end[a] == -1)
+        else if (s->step[aa] == -1
+                 && s->start[aa] == 0
+                 && s->end[aa] == -1)
         {
             pos += snprintf(buf + pos,
                             bufsz - pos, "-*");
         }
-        else if (s->step[a] == 1)
+        else if (s->step[aa] == 1)
         {
             pos += snprintf(buf + pos,
                             bufsz - pos,
                             "%d:%d",
-                            s->start[a],
-                            s->end[a]);
+                            s->start[aa],
+                            s->end[aa]);
         }
         else
         {
             pos += snprintf(buf + pos,
                             bufsz - pos,
                             "%d:%d:%d%s",
-                            s->start[a],
-                            s->end[a],
-                            s->step[a],
-                            s->bin[a] ? "b" : "");
+                            s->start[aa],
+                            s->end[aa],
+                            s->step[aa],
+                            s->bin[aa] ? "b" : "");
         }
     }
 
@@ -499,15 +499,15 @@ void imgid_slice_shmname(
                        sizeof(slicestr));
 
     /* Replace [ ] : , with underscores */
-    for (int i = 0; slicestr[i] != '\0'; i++)
+    for (int ii = 0; slicestr[ii] != '\0'; ii++)
     {
-        if (slicestr[i] == '['
-            || slicestr[i] == ']'
-            || slicestr[i] == ':'
-            || slicestr[i] == ','
-            || slicestr[i] == '-')
+        if (slicestr[ii] == '['
+            || slicestr[ii] == ']'
+            || slicestr[ii] == ':'
+            || slicestr[ii] == ','
+            || slicestr[ii] == '-')
         {
-            slicestr[i] = '_';
+            slicestr[ii] = '_';
         }
     }
 

@@ -34,13 +34,13 @@ FPS *fps_local_find(
     if (name == NULL) {
         return NULL;
     }
-    for (int i = 0; i < local_fps_count; i++) {
-        if (local_fps_used[i] &&
-            strncmp(local_fps_array[i].md->name,
+    for (int ii = 0; ii < local_fps_count; ii++) {
+        if (local_fps_used[ii] &&
+            strncmp(local_fps_array[ii].md->name,
                     name,
                     FPS_PNAME_STRMAXLEN - 1) == 0)
         {
-            return &local_fps_array[i];
+            return &local_fps_array[ii];
         }
     }
     return NULL;
@@ -150,16 +150,16 @@ void fps_local_set_creator(
     if (name == NULL || creator_name == NULL) {
         return;
     }
-    for (int i = 0; i < local_fps_count; i++) {
-        if (local_fps_used[i] &&
-            strncmp(local_fps_array[i].md->name,
+    for (int ii = 0; ii < local_fps_count; ii++) {
+        if (local_fps_used[ii] &&
+            strncmp(local_fps_array[ii].md->name,
                     name,
                     FPS_PNAME_STRMAXLEN - 1) == 0)
         {
-            strncpy(local_fps_creator[i],
+            strncpy(local_fps_creator[ii],
                     creator_name,
                     FPS_CREATOR_NAME_MAX - 1);
-            local_fps_creator[i][
+            local_fps_creator[ii][
                 FPS_CREATOR_NAME_MAX - 1] = '\0';
             return;
         }
@@ -202,10 +202,10 @@ void fps_shared_record_usage(
         return;
     }
     /* Check if already recorded */
-    for (int i = 0; i < shared_track_count; i++) {
-        if (strcmp(shared_track_fps[i],
+    for (int ii = 0; ii < shared_track_count; ii++) {
+        if (strcmp(shared_track_fps[ii],
                   fps_name) == 0 &&
-            strcmp(shared_track_creator[i],
+            strcmp(shared_track_creator[ii],
                   creator_name) == 0)
         {
             return;
@@ -240,10 +240,10 @@ int fps_shared_was_used_by(
     {
         return 0;
     }
-    for (int i = 0; i < shared_track_count; i++) {
-        if (strcmp(shared_track_fps[i],
+    for (int ii = 0; ii < shared_track_count; ii++) {
+        if (strcmp(shared_track_fps[ii],
                   fps_name) == 0 &&
-            strcmp(shared_track_creator[i],
+            strcmp(shared_track_creator[ii],
                   creator_name) == 0)
         {
             return 1;

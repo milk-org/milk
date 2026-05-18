@@ -31,8 +31,8 @@ void fpsCTRLscreen_print_nodeinfo(
     
     if (fps[fpsindexSelected].md->NBnameindex > 0) {
         TUI_printfw(" [");
-        for(int i = 0; i < fps[fpsindexSelected].md->NBnameindex; i++) {
-            TUI_printfw(" %s", fps[fpsindexSelected].md->nameindexW[i]);
+        for(int ii = 0; ii < fps[fpsindexSelected].md->NBnameindex; ii++) {
+            TUI_printfw(" %s", fps[fpsindexSelected].md->nameindexW[ii]);
         }
         TUI_printfw(" ]");
     }
@@ -44,8 +44,8 @@ void fpsCTRLscreen_print_nodeinfo(
     
     if (fps[fpsindexSelected].md->NBmodule > 0) {
         TUI_printfw("    %-16s:", "Libraries");
-        for(int m = 0; m < fps[fpsindexSelected].md->NBmodule; m++) {
-            TUI_printfw(" [%s]", fps[fpsindexSelected].md->modulename[m]);
+        for(int mm = 0; mm < fps[fpsindexSelected].md->NBmodule; mm++) {
+            TUI_printfw(" [%s]", fps[fpsindexSelected].md->modulename[mm]);
         }
         TUI_printfw("\n");
     }

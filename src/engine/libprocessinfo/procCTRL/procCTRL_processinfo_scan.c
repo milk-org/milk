@@ -14,6 +14,7 @@
 #include <time.h>
 
 #include "processinfo.h"
+#include "processinfo_internal.h"
 #include "milkDebugTools.h"
 #include "processtools.h"
 #include "processinfo_procdirname.h"
@@ -25,8 +26,6 @@
 #include "procCTRL_TUI.h"
 #include "timeutils.h"
 #include "quicksort.h"
-
-extern PROCESSINFOLIST *pinfolist;
 
 // Perform one scan step (update data, sort list)
 void processinfo_scan_step(PROCINFOPROC *pinfop)

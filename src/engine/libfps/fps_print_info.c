@@ -85,7 +85,7 @@ int function_parameter_print_info(
     if (val_width > 60) val_width = 60;
 
     printf("%4s %-*s %12s %*s %8s %s\n", "CLI", kw_width, "Keyword", "Type", val_width, "Value", "Count", "Description");
-    for (int i=0; i<4 + 1 + kw_width + 1 + 12 + 1 + val_width + 1 + 8 + 1 + 30; i++) printf("-");
+    for (int ii=0; ii<4 + 1 + kw_width + 1 + 12 + 1 + val_width + 1 + 8 + 1 + 30; ii++) printf("-");
     printf("\n");
 
     for (int pindex = 0; pindex < fps->md->NBparamMAX; pindex++) {

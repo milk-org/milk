@@ -60,10 +60,10 @@ static void fps_autopopulate_trigger_stream(
 {
     /* Find the first TRIGGER_STREAM binding */
     const char *trigger_name = NULL;
-    for (int i = 0; i < nb_b; i++) {
-        if ((bindings[i].fpflag
+    for (int ii = 0; ii < nb_b; ii++) {
+        if ((bindings[ii].fpflag
              & FPFLAG_TRIGGER_STREAM)
-            && (bindings[i].type
+            && (bindings[ii].type
                 == FPTYPE_STREAMNAME))
         {
             /*
@@ -71,7 +71,7 @@ static void fps_autopopulate_trigger_stream(
              * buffer (char[]) for string types.
              */
             trigger_name =
-                (const char *) bindings[i].ptr;
+                (const char *) bindings[ii].ptr;
             break;
         }
     }
@@ -195,10 +195,10 @@ int fps_check_has_trigger_binding(
     int              nb_b
 )
 {
-    for (int i = 0; i < nb_b; i++) {
-        if ((bindings[i].fpflag
+    for (int ii = 0; ii < nb_b; ii++) {
+        if ((bindings[ii].fpflag
              & FPFLAG_TRIGGER_STREAM)
-            && (bindings[i].type
+            && (bindings[ii].type
                 == FPTYPE_STREAMNAME))
         {
             return 1;
@@ -226,15 +226,15 @@ void fps_loop_override_trigger(
     char current_ts[FUNCTION_PARAMETER_STRMAXLEN]
         = "";
 
-    for (int i = 0; i < nb_b; i++) {
-        if ((bindings[i].fpflag
+    for (int ii = 0; ii < nb_b; ii++) {
+        if ((bindings[ii].fpflag
              & FPFLAG_TRIGGER_STREAM)
-            && (bindings[i].type
+            && (bindings[ii].type
                 == FPTYPE_STREAMNAME))
         {
             /* Try local variable first */
             const char *local =
-                (const char *) bindings[i].ptr;
+                (const char *) bindings[ii].ptr;
             if (local != NULL
                 && local[0] != '\0')
             {
@@ -249,7 +249,7 @@ void fps_loop_override_trigger(
                  */
                 strncpy(
                     trigger_kw,
-                    bindings[i].fpskeyword,
+                    bindings[ii].fpskeyword,
                     sizeof(trigger_kw) - 1);
             }
             break;

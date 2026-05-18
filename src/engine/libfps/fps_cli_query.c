@@ -42,9 +42,9 @@ void fps_print_query_info(
         int local_count = 0;
         int n = fps_local_count_entries();
 
-        for (int i = 0; i < n; i++) {
+        for (int ii = 0; ii < n; ii++) {
             FPS *lfps =
-                fps_local_get_by_index(i);
+                fps_local_get_by_index(ii);
             if (lfps == NULL ||
                 lfps->md == NULL)
             {
@@ -58,7 +58,7 @@ void fps_print_query_info(
             /* Only show FPS belonging to this
              * compute unit */
             const char *creator =
-                fps_local_get_creator(i);
+                fps_local_get_creator(ii);
             if (creator[0] != '\0' &&
                 strcmp(creator, fpsn) != 0)
             {
@@ -160,9 +160,9 @@ void fps_print_query_info(
      * compute unit */
     if (show_fps == NULL) {
         int n = fps_local_count_entries();
-        for (int i = n - 1; i >= 0; i--) {
+        for (int ii = n - 1; ii >= 0; ii--) {
             FPS *lfps =
-                fps_local_get_by_index(i);
+                fps_local_get_by_index(ii);
             if (lfps == NULL ||
                 lfps->md == NULL)
             {
@@ -174,7 +174,7 @@ void fps_print_query_info(
                 continue;
             }
             const char *creator =
-                fps_local_get_creator(i);
+                fps_local_get_creator(ii);
             if (creator[0] != '\0' &&
                 strcmp(creator, fpsn) != 0)
             {

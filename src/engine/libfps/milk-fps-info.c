@@ -52,13 +52,13 @@ static void print_connections(const char *fpsname)
 
     /* Find our FPS in the model */
     int fi = -1;
-    for (int i = 0; i < model.nb_fps; i++)
+    for (int ii = 0; ii < model.nb_fps; ii++)
     {
-        if (model.fps[i].valid
-            && strcmp(model.fps[i].name,
+        if (model.fps[ii].valid
+            && strcmp(model.fps[ii].name,
                       fpsname) == 0)
         {
-            fi = i;
+            fi = ii;
             break;
         }
     }
@@ -90,18 +90,18 @@ static void print_connections(const char *fpsname)
     int found_any = 0;
 
     /* FPS → process (runs) */
-    for (int e = 0; e < model.nb_edges; e++)
+    for (int ee = 0; ee < model.nb_edges; ee++)
     {
-        if (model.edges[e].src_node != fni)
+        if (model.edges[ee].src_node != fni)
         {
             continue;
         }
-        if (model.edges[e].type
+        if (model.edges[ee].type
             != OV_EDGE_FPS_RUNS_PROC)
         {
             continue;
         }
-        int ni = model.edges[e].tgt_node;
+        int ni = model.edges[ee].tgt_node;
         if (ni < 0
             || ni >= model.nb_nodes
             || model.nodes[ni].type
@@ -119,18 +119,18 @@ static void print_connections(const char *fpsname)
     }
 
     /* stream → FPS (input) */
-    for (int e = 0; e < model.nb_edges; e++)
+    for (int ee = 0; ee < model.nb_edges; ee++)
     {
-        if (model.edges[e].tgt_node != fni)
+        if (model.edges[ee].tgt_node != fni)
         {
             continue;
         }
-        if (model.edges[e].type
+        if (model.edges[ee].type
             != OV_EDGE_FPS_INPUT_STREAM)
         {
             continue;
         }
-        int ni = model.edges[e].src_node;
+        int ni = model.edges[ee].src_node;
         if (ni < 0
             || ni >= model.nb_nodes
             || model.nodes[ni].type
@@ -147,18 +147,18 @@ static void print_connections(const char *fpsname)
     }
 
     /* FPS → stream (output) */
-    for (int e = 0; e < model.nb_edges; e++)
+    for (int ee = 0; ee < model.nb_edges; ee++)
     {
-        if (model.edges[e].src_node != fni)
+        if (model.edges[ee].src_node != fni)
         {
             continue;
         }
-        if (model.edges[e].type
+        if (model.edges[ee].type
             != OV_EDGE_FPS_OUTPUT_STREAM)
         {
             continue;
         }
-        int ni = model.edges[e].tgt_node;
+        int ni = model.edges[ee].tgt_node;
         if (ni < 0
             || ni >= model.nb_nodes
             || model.nodes[ni].type

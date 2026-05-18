@@ -120,7 +120,7 @@ void qs_long(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     long                   x, y;
 
     i = left;
@@ -175,7 +175,7 @@ void qs_double(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
 
     i = left;
@@ -231,7 +231,7 @@ void qs_ushort(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     unsigned short         x, y;
 
     i = left;

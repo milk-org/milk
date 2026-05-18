@@ -163,10 +163,10 @@ errno_t fps_process_cli_and_sync(
          * positional args after it to primary bindings.
          */
         int cmd_pos = -1;
-        for (int j = 1; j < standalone_argc; j++) {
+        for (int jj = 1; jj < standalone_argc; jj++) {
             /* Extract command part after optional
              * 'name:' prefix */
-            const char *arg = standalone_argv[j];
+            const char *arg = standalone_argv[jj];
             const char *cmd_part = arg;
             {
                 const char *cp = strchr(arg, ':');
@@ -181,7 +181,7 @@ errno_t fps_process_cli_and_sync(
                 strcmp(cmd_part, "confstep") == 0 ||
                 strcmp(cmd_part, "fpsinit") == 0)
             {
-                cmd_pos = j;
+                cmd_pos = jj;
                 break;
             }
         }
@@ -189,11 +189,11 @@ errno_t fps_process_cli_and_sync(
         /* If no explicit command, try implicit run
          * (first non-flag arg) */
         if (cmd_pos == -1) {
-            for (int j = 1;
-                 j < standalone_argc; j++)
+            for (int jj = 1;
+                 jj < standalone_argc; jj++)
             {
-                if (standalone_argv[j][0] != '-') {
-                    cmd_pos = j;
+                if (standalone_argv[jj][0] != '-') {
+                    cmd_pos = jj;
                     break;
                 }
             }
@@ -201,11 +201,11 @@ errno_t fps_process_cli_and_sync(
 
         if (cmd_pos != -1) {
             int cli_idx = 0;
-            for (int a = cmd_pos + 1;
-                 a < standalone_argc; a++)
+            for (int aa = cmd_pos + 1;
+                 aa < standalone_argc; aa++)
             {
                 /* Skip -flag arguments */
-                if (standalone_argv[a][0] == '-')
+                if (standalone_argv[aa][0] == '-')
                     continue;
 
                 /* Map to next primary binding */
@@ -221,12 +221,12 @@ errno_t fps_process_cli_and_sync(
                         bindings[cli_idx]
                             .fpskeyword);
                 if (pindex != -1 &&
-                    strcmp(standalone_argv[a],
+                    strcmp(standalone_argv[aa],
                            ".") != 0) {
                     set_fps_value_from_string(
                         fps, pindex,
                         bindings[cli_idx].type,
-                        standalone_argv[a]);
+                        standalone_argv[aa]);
                 }
                 cli_idx++;
             }
@@ -250,14 +250,14 @@ errno_t fps_process_cli_and_sync(
     }
 
     /* ---- Step 2: FPS → local C variables ---- */
-    for (int i = 0; i < nb_b; i++) {
+    for (int ii = 0; ii < nb_b; ii++) {
         long pindex =
             functionparameter_GetParamIndex(
-                fps, bindings[i].fpskeyword);
+                fps, bindings[ii].fpskeyword);
 
         if (pindex != -1) {
             sync_fps_to_local(
-                fps, pindex, &bindings[i]);
+                fps, pindex, &bindings[ii]);
         }
     }
 

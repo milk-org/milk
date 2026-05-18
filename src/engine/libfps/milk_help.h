@@ -135,18 +135,18 @@ static inline int milk_help_init(
     int want_help = 0;
     int want_mono = 0;
 
-    for (int i = 1; i < argc; i++)
+    for (int ii = 1; ii < argc; ii++)
     {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i],
+        if (strcmp(argv[ii], "-h1") == 0 ||
+            strcmp(argv[ii],
                    "--help-oneline") == 0)
         {
             printf("%s\n", description);
             return MH_ACTION_H1;
         }
 
-        if (strcmp(argv[i], "-h2") == 0 ||
-            strcmp(argv[i],
+        if (strcmp(argv[ii], "-h2") == 0 ||
+            strcmp(argv[ii],
                    "--help-description") == 0)
         {
             const char *desc =
@@ -157,16 +157,16 @@ static inline int milk_help_init(
             return MH_ACTION_H2;
         }
 
-        if (strcmp(argv[i], "-hm") == 0 ||
-            strcmp(argv[i],
+        if (strcmp(argv[ii], "-hm") == 0 ||
+            strcmp(argv[ii],
                    "--help-mono") == 0)
         {
             want_help = 1;
             want_mono = 1;
         }
 
-        if (strcmp(argv[i], "-h") == 0 ||
-            strcmp(argv[i], "--help") == 0)
+        if (strcmp(argv[ii], "-h") == 0 ||
+            strcmp(argv[ii], "--help") == 0)
         {
             want_help = 1;
         }
@@ -274,9 +274,9 @@ static inline void milk_help_see_also(
         printf("See Also:\n");
     }
 
-    for (int i = 0; i < ncmds; i++)
+    for (int ii = 0; ii < ncmds; ii++)
     {
-        const char *cmd = cmds[i];
+        const char *cmd = cmds[ii];
         const char *colon = strchr(cmd, ':');
         if (colon != NULL)
         {

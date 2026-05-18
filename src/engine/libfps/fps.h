@@ -488,65 +488,65 @@ int main(int argc, char *argv[]) { \
         PARAMS_MACRO(FPS_X_FARG) \
     }; \
     (void) farg_; \
-    for (int i = 1; i < argc; i++) { \
-        if (strcmp(argv[i], "-h") == 0 || \
-            strcmp(argv[i], "--help") == 0) { \
+    for (int ii = 1; ii < argc; ii++) { \
+        if (strcmp(argv[ii], "-h") == 0 || \
+            strcmp(argv[ii], "--help") == 0) { \
             show_help = 1; \
         } else if ( \
-            strcmp(argv[i], "-hm") == 0 || \
-            strcmp(argv[i], \
+            strcmp(argv[ii], "-hm") == 0 || \
+            strcmp(argv[ii], \
                    "--help-mono") == 0) { \
             show_help = 1; \
             mh_color = 0; \
-        } else if (strcmp(argv[i], \
+        } else if (strcmp(argv[ii], \
                    "-tmux") == 0) { \
             use_tmux = 1; \
-        } else if (strcmp(argv[i], \
+        } else if (strcmp(argv[ii], \
                    "-procinfo") == 0 || \
-            strcmp(argv[i], \
+            strcmp(argv[ii], \
                    "--procinfo") == 0) { \
             use_procinfo = 1; \
-        } else if (strcmp(argv[i], \
+        } else if (strcmp(argv[ii], \
                    "-loops") == 0 || \
-            strcmp(argv[i], \
+            strcmp(argv[ii], \
                    "--loops") == 0) { \
             use_loop = 1; \
             use_procinfo = 1; \
-        } else if (strcmp(argv[i], \
+        } else if (strcmp(argv[ii], \
                     "-loopd") == 0 || \
-            strcmp(argv[i], \
+            strcmp(argv[ii], \
                     "--loopd") == 0) { \
             use_loop = 2; \
             use_procinfo = 1; \
-            if (i + 1 < argc) { \
-                char c0 = argv[i + 1][0]; \
+            if (ii + 1 < argc) { \
+                char c0 = argv[ii + 1][0]; \
                 if ((c0 >= '0' && c0 <= '9') \
                     || c0 == '.' || c0 == '-') {\
-                    loop_delay = atof(argv[++i]);\
+                    loop_delay = atof(argv[++ii]);\
                 } else { \
                     loop_delay = 0.0; \
                 } \
             } else { \
                 loop_delay = 0.0; \
             } \
-        } else if ((strcmp(argv[i], "-k") == 0 ||\
-            strcmp(argv[i], \
+        } else if ((strcmp(argv[ii], "-k") == 0 ||\
+            strcmp(argv[ii], \
                    "--keywords") == 0) \
-            && i + 1 < argc) { \
-            keywords = argv[++i]; \
-        } else if ((strcmp(argv[i], "-d") == 0 ||\
-            strcmp(argv[i], \
+            && ii + 1 < argc) { \
+            keywords = argv[++ii]; \
+        } else if ((strcmp(argv[ii], "-d") == 0 ||\
+            strcmp(argv[ii], \
                    "--description") == 0) \
-            && i + 1 < argc) { \
-            description = argv[++i]; \
-        } else if ((strcmp(argv[i], "-n") == 0 ||\
-            strcmp(argv[i], \
+            && ii + 1 < argc) { \
+            description = argv[++ii]; \
+        } else if ((strcmp(argv[ii], "-n") == 0 ||\
+            strcmp(argv[ii], \
                    "--name") == 0) \
-            && i + 1 < argc) { \
-            strncpy(arg_fps_name, argv[++i], \
+            && ii + 1 < argc) { \
+            strncpy(arg_fps_name, argv[++ii], \
                     STRINGMAXLEN_FPS_NAME - 1); \
         } else if (command == NULL) { \
-            command = argv[i]; \
+            command = argv[ii]; \
             if ((colon_pos = strchr(command, \
                                     ':')) \
                 != NULL) { \
@@ -765,8 +765,8 @@ int main(int argc, char *argv[]) { \
                    sizeof( \
                    FPS));\
         if (fpsarray == NULL) return 1; \
-        for (int i = 0; i < NB_FPS_MAX; i++) \
-            fpsarray[i].SMfd = -1; \
+        for (int ii = 0; ii < NB_FPS_MAX; ii++) \
+            fpsarray[ii].SMfd = -1; \
         KEYWORD_TREE_NODE *keywnode = \
             (KEYWORD_TREE_NODE *) \
             calloc(NB_KEYWNODE_MAX, \
@@ -782,12 +782,12 @@ int main(int argc, char *argv[]) { \
             char *eb = strrchr(argv[0], '/'); \
             if (eb) eb++; else eb = argv[0]; \
             int found = 0; \
-            for (int i = 0; i < NBfps; i++) { \
+            for (int ii = 0; ii < NBfps; ii++) { \
                 char *fb = strrchr( \
-                    fpsarray[i].md \
+                    fpsarray[ii].md \
                         ->execfullpath, '/'); \
                 if (fb) fb++; \
-                else fb = fpsarray[i].md \
+                else fb = fpsarray[ii].md \
                     ->execfullpath; \
                 if (strcmp(eb, fb) == 0) { \
                     if (!found) { \
@@ -803,21 +803,21 @@ int main(int argc, char *argv[]) { \
                         found = 1; \
                     } \
                     char ss[32] = "UNKNOWN"; \
-                    if (fpsarray[i].md->status \
+                    if (fpsarray[ii].md->status \
                         & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) \
                         strcpy(ss, "CONF"); \
-                    else if (fpsarray[i].md \
+                    else if (fpsarray[ii].md \
                         ->status \
                         & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) \
                         strcpy(ss, "RUN"); \
                     printf("%-30s %-10s %s\n", \
-                           fpsarray[i].md->name,\
+                           fpsarray[ii].md->name,\
                            ss, \
-                           fpsarray[i].md \
+                           fpsarray[ii].md \
                                ->description); \
                 } \
                 fps_disconnect( \
-                    &fpsarray[i]); \
+                    &fpsarray[ii]); \
             } \
             if (!found) \
                 printf("No matching FPS for " \

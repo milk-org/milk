@@ -91,13 +91,13 @@ int functionparameter_FPS_tmux_init(
         snprintf(argstring, argstring_maxlen, " ");
     }
 
-    for(int i = 1; i < fps->md->NBnameindex; i++)
+    for(int ii = 1; ii < fps->md->NBnameindex; ii++)
     {
         snprintf(argstringcp,
                  argstring_maxlen,
                  "%s %s",
                  argstring,
-                 fps->md->nameindexW[i]);
+                 fps->md->nameindexW[ii]);
         snprintf(argstring, argstring_maxlen,
                  "%s", argstringcp);
     }
@@ -106,13 +106,13 @@ int functionparameter_FPS_tmux_init(
     char mloadstring[mloadstring_maxlen];
     char mloadstringcp[mloadstring_maxlen];
     snprintf(mloadstring, mloadstring_maxlen, " ");
-    for(int m = 0; m < fps->md->NBmodule; m++)
+    for(int mm = 0; mm < fps->md->NBmodule; mm++)
     {
         snprintf(mloadstringcp,
                  mloadstring_maxlen,
                  "%smload %s;",
                  mloadstring,
-                 fps->md->modulename[m]);
+                 fps->md->modulename[mm]);
         snprintf(mloadstring, mloadstring_maxlen,
                  "%s", mloadstringcp);
     }

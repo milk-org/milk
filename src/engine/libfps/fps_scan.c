@@ -39,7 +39,7 @@ errno_t functionparameter_scan_fps(
     int pindex;
     int kwnindex;
     int NBkwn;
-    int l;
+    int ll;
 
 
     // FPS list file
@@ -398,13 +398,13 @@ errno_t functionparameter_scan_fps(
                                         int match = 1;
                                         // keywords at all levels need to match
 
-                                        for(l = 0; l < level; l++)
+                                        for(ll = 0; ll < level; ll++)
                                         {
                                             if(strcmp(fps[fpsindex]
                                                       .parray[pindex0]
-                                                      .keyword[l],
+                                                      .keyword[ll],
                                                       keywnode[kwnindex]
-                                                      .keyword[l]) != 0)
+                                                      .keyword[ll]) != 0)
                                             {
                                                 match = 0;
                                             }
@@ -441,14 +441,14 @@ errno_t functionparameter_scan_fps(
                                             int match = 1;
 
                                             for(
-                                                l = 0; l < level - 1;
-                                                l++) // keywords at all levels need to match
+                                                ll = 0; ll < level - 1;
+                                                ll++) // keywords at all levels need to match
                                             {
                                                 if(strcmp(fps[fpsindex]
                                                           .parray[pindex0]
-                                                          .keyword[l],
+                                                          .keyword[ll],
                                                           keywnode[kwnindexp]
-                                                          .keyword[l]) != 0)
+                                                          .keyword[ll]) != 0)
                                                 {
                                                     match = 0;
                                                 }
@@ -489,28 +489,28 @@ errno_t functionparameter_scan_fps(
                                     }
                                     keywnode[kwnindex].keywordlevel = level;
 
-                                    for(l = 0; l < level; l++)
+                                    for(ll = 0; ll < level; ll++)
                                     {
                                         char tmpstring[200];
                                         strncpy(
                                             keywnode[kwnindex]
-                                                .keyword[l],
+                                                .keyword[ll],
                                             fps[fpsindex]
                                                 .parray[pindex0]
-                                                .keyword[l],
+                                                .keyword[ll],
                                             FUNCTION_PARAMETER_KEYWORD_STRMAXLEN
                                             - 1);
                                         keywnode[kwnindex]
-                                            .keyword[l][
+                                            .keyword[ll][
                                             FUNCTION_PARAMETER_KEYWORD_STRMAXLEN
                                             - 1] = '\0';
-                                        if(l == 0)
+                                        if(ll == 0)
                                         {
                                             strncpy(
                                                 keywnode[kwnindex]
                                                     .keywordfull,
                                                 keywnode[kwnindex]
-                                                    .keyword[l],
+                                                    .keyword[ll],
                                                 sizeof(keywnode[kwnindex]
                                                        .keywordfull)
                                                 - 1);
@@ -527,7 +527,7 @@ errno_t functionparameter_scan_fps(
                                                 sizeof(tmpstring),
                                                 ".%s",
                                                 keywnode[kwnindex]
-                                                    .keyword[l]);
+                                                    .keyword[ll]);
                                             strncat(
                                                 keywnode[kwnindex]
                                                     .keywordfull,

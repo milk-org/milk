@@ -35,8 +35,8 @@ static void fpsCTRL__filter_and_sort_children(
         // Filter and Sort current directory children
         (*num_filtered) = 0;
         
-        for(int i = 0; i < keywnode[fpsCTRLvar->directorynodeSelected].NBchild; i++) {
-            int knodeindex = keywnode[fpsCTRLvar->directorynodeSelected].child[i];
+        for(int ii = 0; ii < keywnode[fpsCTRLvar->directorynodeSelected].NBchild; ii++) {
+            int knodeindex = keywnode[fpsCTRLvar->directorynodeSelected].child[ii];
             
             if (fpsCTRLvar->search_string[0] != '\0') {
                 if (strcasestr(keywnode[knodeindex].keywordfull, fpsCTRLvar->search_string) != NULL) {
@@ -52,15 +52,15 @@ static void fpsCTRL__filter_and_sort_children(
         if (fpsCTRLvar->sort_mode == 1
             || fpsCTRLvar->sort_mode == 2)
         {
-            for (int i = 0;
-                 i < (*num_filtered) - 1; i++)
+            for (int ii = 0;
+                 ii < (*num_filtered) - 1; ii++)
             {
-                for (int j = i + 1;
-                     j < (*num_filtered); j++)
+                for (int jj = ii + 1;
+                     jj < (*num_filtered); jj++)
                 {
                     int swap = 0;
-                    int ki = filtered_children[i];
-                    int kj = filtered_children[j];
+                    int ki = filtered_children[ii];
+                    int kj = filtered_children[jj];
 
                     if (fpsCTRLvar->sort_mode == 1)
                     {
@@ -100,10 +100,10 @@ static void fpsCTRL__filter_and_sort_children(
                     if (swap)
                     {
                         int tmp =
-                            filtered_children[i];
-                        filtered_children[i] =
-                            filtered_children[j];
-                        filtered_children[j] = tmp;
+                            filtered_children[ii];
+                        filtered_children[ii] =
+                            filtered_children[jj];
+                        filtered_children[jj] = tmp;
                     }
                 }
             }
@@ -123,11 +123,11 @@ static void fpsCTRL__calculate_widths_and_layout(
     int *max_val_width
 ) {
         (*GUIlineMax) = num_filtered;
-        for(int level = 0; level < fpsCTRLvar->currentlevel; level ++)
+        for(int ll = 0; ll < fpsCTRLvar->currentlevel; ll ++)
         {
-            if(keywnode[nodechain[level]].NBchild > (*GUIlineMax))
+            if(keywnode[nodechain[ll]].NBchild > (*GUIlineMax))
             {
-                (*GUIlineMax) = keywnode[nodechain[level]].NBchild;
+                (*GUIlineMax) = keywnode[nodechain[ll]].NBchild;
             }
         }
 
@@ -152,27 +152,27 @@ static void fpsCTRL__calculate_widths_and_layout(
         DEBUG_TRACEPOINT("GUIlineSelected[currentlevel]: %d", fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]);
 
         
-        for(int level = 0; level < MAXNBLEVELS ;
-                level ++)
+        for(int ll = 0; ll < MAXNBLEVELS ;
+                ll ++)
         {
-            child_index[level] = 0;
+            child_index[ll] = 0;
         }
 
         // Calculate dynamic widths for each level
         
-        for (int l = 0; l < MAXNBLEVELS; l++) max_kw_width[l] = 5; // minimum width
+        for (int ll = 0; ll < MAXNBLEVELS; ll++) max_kw_width[ll] = 5; // minimum width
 
         // Widths for hierarchy columns (levels < currentlevel)
-        for (int l = 0; l < fpsCTRLvar->currentlevel; l++)
+        for (int ll = 0; ll < fpsCTRLvar->currentlevel; ll++)
         {
-            int parent_node = nodechain[l];
-            for (int i = 0; i < keywnode[parent_node].NBchild; i++)
+            int parent_node = nodechain[ll];
+            for (int ii = 0; ii < keywnode[parent_node].NBchild; ii++)
             {
-                int kn = keywnode[parent_node].child[i];
-                int len = strlen(keywnode[kn].keyword[l]);
-                if (len > max_kw_width[l]) max_kw_width[l] = len;
+                int kn = keywnode[parent_node].child[ii];
+                int len = strlen(keywnode[kn].keyword[ll]);
+                if (len > max_kw_width[ll]) max_kw_width[ll] = len;
             }
-            if (max_kw_width[l] > 30) max_kw_width[l] = 30;
+            if (max_kw_width[ll] > 30) max_kw_width[ll] = 30;
         }
 
         // Width for the current level's keyword column
@@ -213,7 +213,7 @@ static void fpsCTRL__calculate_widths_and_layout(
 
         // Impose constraints based on terminal width
         int reserved_width = 25; 
-        for (int l = 0; l < fpsCTRLvar->currentlevel; l++) reserved_width += max_kw_width[l] + 3;
+        for (int ll = 0; ll < fpsCTRLvar->currentlevel; ll++) reserved_width += max_kw_width[ll] + 3;
         int available_width = sc_term_cols - reserved_width;
         if (available_width < 40) available_width = 40;
         
@@ -425,12 +425,12 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
         screenprint_setbold();
         screenprint_setcolor(6); // Cyan
         TUI_printfw("  PATH: / ");
-        for (int l = 0; l < fpsCTRLvar->currentlevel; l++) {
-            int parent_node = nodechain[l];
-            int sel_idx = fpsCTRLvar->GUIlineSelected[l];
+        for (int ll = 0; ll < fpsCTRLvar->currentlevel; ll++) {
+            int parent_node = nodechain[ll];
+            int sel_idx = fpsCTRLvar->GUIlineSelected[ll];
             if (sel_idx >= 0 && sel_idx < keywnode[parent_node].NBchild) {
                 int kn = keywnode[parent_node].child[sel_idx];
-                TUI_printfw("%s / ", keywnode[kn].keyword[l]);
+                TUI_printfw("%s / ", keywnode[kn].keyword[ll]);
             }
         }
         screenprint_unsetcolor(6);
@@ -448,23 +448,23 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
             TUI_newline();
         }
 
-        for (int l = 0; l < MAXNBLEVELS; l++) {
-            if (l == fpsCTRLvar->currentlevel) {
-                child_index[l] = (*doffsetindex);
-            } else if (l < fpsCTRLvar->currentlevel) {
-                int start = fpsCTRLvar->display_offset[l];
-                int n_items = keywnode[nodechain[l]].NBchild;
-                int sel = fpsCTRLvar->GUIlineSelected[l];
+        for (int ll = 0; ll < MAXNBLEVELS; ll++) {
+            if (ll == fpsCTRLvar->currentlevel) {
+                child_index[ll] = (*doffsetindex);
+            } else if (ll < fpsCTRLvar->currentlevel) {
+                int start = fpsCTRLvar->display_offset[ll];
+                int n_items = keywnode[nodechain[ll]].NBchild;
+                int sel = fpsCTRLvar->GUIlineSelected[ll];
                 
                 if (sel < start + margin) start = sel - margin;
                 if (sel > start + (*dispindexMax) - 1 - margin) start = sel - (*dispindexMax) + 1 + margin;
                 if (start > n_items - (*dispindexMax)) start = n_items - (*dispindexMax);
                 if (start < 0) start = 0;
                 
-                child_index[l] = start;
-                fpsCTRLvar->display_offset[l] = start;
+                child_index[ll] = start;
+                fpsCTRLvar->display_offset[ll] = start;
             } else {
-                child_index[l] = (*doffsetindex);
+                child_index[ll] = (*doffsetindex);
             }
         }
 }
@@ -487,7 +487,7 @@ static void fpsCTRL__render_parameter_rows(
         for(int GUIline = doffsetindex; GUIline < lastindex;
                 GUIline++)   // GUIline is the line number on GUI display
         {
-            for(int level = 0; level < fpsCTRLvar->currentlevel; level ++)
+            for(int ll = 0; ll < fpsCTRLvar->currentlevel; ll ++)
             {
                 int c_idx = child_index[cl];
 
@@ -976,7 +976,7 @@ static void fpsCTRL__render_parameter_rows(
                     }
                 }
             }
-            for(int l = 0; l < MAXNBLEVELS ; l++) child_index[l]++;
+            for(int ll = 0; ll < MAXNBLEVELS ; ll++) child_index[ll]++;
             TUI_newline();
         }
 }
