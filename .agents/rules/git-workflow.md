@@ -122,15 +122,15 @@ back-and-forth discussions. If multiple design
 options were considered, briefly explain why the
 chosen approach was selected over the alternatives.
 
-### AI Authorship
+### Authorship
 
 - **Model(s) used** — list every model that
-  contributed code in this PR. For the agent model,
-  just put **Antigravity**.
-- **User edits** — state whether the user made
-  direct edits to source code alongside the
-  agent work, and if so, summarize what was
-  edited manually.
+  contributed code in this PR (e.g., **Gemini 3.1 Pro**).
+  Always ask the user to confirm which model was used.
+  If the user contributed by directly editing the code,
+  append `+ user edits` next to the AI model.
+- **Reviewed and signed off by** — list the user
+  who reviewed and approved the PR draft.
 
 ## Parallel Development (Git Worktrees)
 
