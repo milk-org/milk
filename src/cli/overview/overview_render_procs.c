@@ -178,6 +178,8 @@ static void ov_procs__render_rows(
                 row_bg = OV_BG_STALE;
             } else if (p->is_new > 0) {
                 row_bg = OV_BG_NEW_ITEM;
+            } else if (lay->mouse_hover && lay->hover_global_proc == pi) {
+                row_bg = OV_BG_HOVER;
             }
             row_bg = zebra_bg(row_bg, i);
 
@@ -874,6 +876,29 @@ static void ov_procs__render_rows(
             }
 
             #undef PROC_FIELD
+
+            if (lay->mouse_hover && lay->hover_view == OV_FOCUS_PROCS && lay->hover_idx == fi)
+            {
+                char loc_upt[12] = "-";
+                if (p->start_time_sec > 0)
+                {
+                    format_uptime(loc_upt, sizeof(loc_upt), p->start_time_sec);
+                }
+                snprintf((char*)lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                         "PID: %d | Up: %s | CPU: %4.1f%% | Exec: %zu ns", 
+                         (int)p->PID, loc_upt, p->cpu_used, (size_t)p->dtmedian_exec_ns);
+
+                int btn_w = 8; /* " [Kill] " */
+                int rem = avail - printed;
+                if (rem >= btn_w)
+                {
+                    ov_buf_hline(' ', rem - btn_w);
+                    ov_theme_bg(OV_FG_ERROR);
+                    ov_theme_fg(OV_FG_TEXT);
+                    ov_buf_printf(" [Kill] ");
+                    printed += rem;
+                }
+            }
 
             /* Pad remainder */
             {

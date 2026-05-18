@@ -20,6 +20,10 @@
 
 /* libfps headers after overview headers to
  * avoid macro redefinition warnings */
+#undef STRINGMAXLEN_DIRNAME
+#undef STRINGMAXLEN_FULLFILENAME
+#undef STRINGMAXLEN_COMMAND
+#undef PRINT_ERROR
 #include "fps_types.h"
 #include "fps_paramvalue.h"
 #include "fps_printparameter_valuestring.h"

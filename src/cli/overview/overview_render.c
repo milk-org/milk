@@ -278,18 +278,18 @@ void ov_render_header(
     int ctrl_w = 0;
     if (lay->ctrl_mode)
     {
-        /* Sine-based temporal pulsing for "CONTROL" badge */
-        float pulse = 0.5f + 0.5f * sinf(lay->ctrl_blink * OV_ANIM_PULSE_SPEED);
-        ov_rgb_t ctrl_bg = ov_rgb_lerp(OV_ANIM_PULSE_BG_MIN, OV_ANIM_PULSE_BG_MAX, pulse);
-        ov_rgb_t ctrl_fg = ov_rgb_lerp(OV_ANIM_PULSE_FG_MIN, OV_ANIM_PULSE_FG_MAX, pulse);
-
-        ov_buf_bg(ctrl_bg.r, ctrl_bg.g, ctrl_bg.b);
-        ov_buf_fg(ctrl_fg.r, ctrl_fg.g, ctrl_fg.b);
+        /* Software blinking badge for "CONTROL" (10 fps -> 2Hz blink) */
+        if ((lay->ctrl_blink % 10) < 5) {
+            ov_buf_bg(OV_ANIM_PULSE_BG_MAX.r, OV_ANIM_PULSE_BG_MAX.g, OV_ANIM_PULSE_BG_MAX.b);
+            ov_buf_fg(OV_ANIM_PULSE_FG_MAX.r, OV_ANIM_PULSE_FG_MAX.g, OV_ANIM_PULSE_FG_MAX.b);
+        } else {
+            ov_buf_bg(220, 40, 40);    /* vibrant red */
+            ov_buf_fg(255, 255, 255);  /* white text */
+        }
         ov_buf_bold();
         ov_buf_printf(" [c] CONTROL ");
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
-
         ctrl_w = 13; /* visual width of " [c] CONTROL " */
     }
     else
@@ -302,6 +302,31 @@ void ov_render_header(
         ov_buf_reset_attr();
         ov_theme_bg(OV_BG_HEADER);
         ctrl_w = 15; /* visual width of " [c] READ ONLY " */
+    }
+
+    ov_buf_printf(" ");
+    int hover_w = 0;
+    if (lay->mouse_hover)
+    {
+        /* Mouse hover active badge */
+        ov_buf_bg(180, 180, 20);   /* deep yellow background */
+        ov_buf_fg(255, 255, 220);  /* light text */
+        ov_buf_bold();
+        ov_buf_printf(" [m] HOVER: ON ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        hover_w = 16; /* visual width of "  [m] HOVER: ON " */
+    }
+    else
+    {
+        /* Mouse hover inactive badge */
+        ov_buf_bg(80, 80, 80);     /* dim gray background */
+        ov_buf_fg(200, 200, 200);  /* light gray text */
+        ov_buf_bold();
+        ov_buf_printf(" [m] HOVER: OFF ");
+        ov_buf_reset_attr();
+        ov_theme_bg(OV_BG_HEADER);
+        hover_w = 17; /* visual width of "  [m] HOVER: OFF " */
     }
 
     ov_theme_fg(OV_FG_STREAM);
@@ -330,7 +355,7 @@ void ov_render_header(
     ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
 
     /* c1 visual length: 17 chars for " ● milk-CTRL " */
-    int chars_left = 17 + ctrl_w + c2 + c3 + c4 + c5 + c6 + c7;
+    int chars_left = 17 + ctrl_w + hover_w + c2 + c3 + c4 + c5 + c6 + c7;
 
     int tabs_width = 0;
     for (int v = 0; v < OV_VIEW_COUNT; v++)
@@ -380,11 +405,57 @@ void ov_render_header(
     ov_theme_bg(OV_BG_HEADER);
 }
 
+static void ov_draw_tooltip(OV_LAYOUT *lay)
+{
+    if (!lay->mouse_hover || lay->hover_tooltip[0] == '\0')
+    {
+        return;
+    }
+
+    int len = (int) strlen(lay->hover_tooltip);
+    if (len == 0)
+    {
+        return;
+    }
+
+    /* Try drawing above the cursor first */
+    int tr = ov_mouse_row - 1;
+    int tc = ov_mouse_col;
+
+    /* Screen boundary clamping */
+    if (tr < 0)
+    {
+        tr = ov_mouse_row + 1; /* flip below */
+    }
+    
+    if (tc + len + 2 > lay->term_cols)
+    {
+        tc = lay->term_cols - len - 2;
+    }
+    if (tc < 0)
+    {
+        tc = 0;
+    }
+
+    ov_buf_pos(tr, tc);
+    ov_theme_bg(OV_BG_HEADER); /* Pop out visually */
+    ov_theme_fg(OV_FG_WARN);
+    ov_buf_printf(" %s ", lay->hover_tooltip);
+
+    /* Reset for next frame */
+    lay->hover_tooltip[0] = '\0';
+}
+
+
 void ov_render_frame(
     OV_LAYOUT       *lay,
     const OV_MODEL  *m)
 {
     ov_buf_reset();
+
+    /* Perform global hit-test to populate hover state */
+    ov_hittest(lay, m, ov_mouse_row, ov_mouse_col);
+    ov_hittest_resolve_globals(lay, m);
 
     /* One-shot sort: only runs once when the user
      * presses S or s.  Order stays frozen until
@@ -759,7 +830,65 @@ void ov_render_frame(
     ov_render_cmdlog(lay);
     ov_render_status(lay, m);
 
+    /* Highlight movable edges if hovering */
+    if (lay->mouse_hover && !lay->show_help)
+    {
+        ov_theme_fg(OV_FG_WARN);
+        ov_theme_bg(OV_BG_TERMINAL);
+        ov_buf_bold();
+
+        if (lay->cmdlog_split_hover)
+        {
+            int cmdlog_top = (lay->cmdlog_rows > 0) ? (lay->term_rows - lay->cmdlog_rows) : lay->term_rows;
+            if (cmdlog_top > 1)
+            {
+                ov_buf_pos(cmdlog_top - 1, 1);
+                ov_buf_hline_utf8(OV_BOX_H_D, lay->term_cols);
+            }
+        }
+
+        if (lay->view == OV_VIEW_DASHBOARD)
+        {
+            if (lay->dash_split_h_hover)
+            {
+                int r = lay->r_streams.row + lay->r_streams.height - 1;
+                ov_buf_pos(r, 1);
+                ov_buf_hline_utf8(OV_BOX_H_D, lay->term_cols);
+                ov_buf_pos(r + 1, 1);
+                ov_buf_hline_utf8(OV_BOX_H_D, lay->term_cols);
+            }
+            if (lay->dash_split_v_hover)
+            {
+                int c = lay->r_streams.width;
+                for (int rr = lay->r_streams.row; rr < lay->r_fps.row + lay->r_fps.height; rr++)
+                {
+                    ov_buf_pos(rr, c);
+                    ov_buf_printf("%s", OV_BOX_V_D);
+                    ov_buf_pos(rr, c + 1);
+                    ov_buf_printf("%s", OV_BOX_V_D);
+                }
+            }
+        }
+        else if (lay->view == OV_VIEW_FPS)
+        {
+            if (lay->fps_split_hover)
+            {
+                int c = lay->r_fps_list.width;
+                for (int rr = lay->r_fps_list.row; rr < lay->r_fps_list.row + lay->r_fps_list.height; rr++)
+                {
+                    ov_buf_pos(rr, c);
+                    ov_buf_printf("%s", OV_BOX_V_D);
+                    ov_buf_pos(rr, c + 1);
+                    ov_buf_printf("%s", OV_BOX_V_D);
+                }
+            }
+        }
+
+        ov_buf_reset_attr();
+    }
+
     /* End frame */
+    ov_draw_tooltip(lay);
 
     ov_buf_flush_delta(lay->term_rows, lay->term_cols);
 }

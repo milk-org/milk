@@ -133,7 +133,16 @@ void ov_render_streams_panel(
     memset(local_depth, 0, sizeof(local_depth));
     {
         int eff_sel = -1;
-        if (lay->freeze
+        if (lay->mouse_hover && lay->hover_global_stream >= 0)
+        {
+            for (int i = 0; i < filt_n; i++) {
+                if (filt_idx[i] == lay->hover_global_stream) {
+                    eff_sel = i;
+                    break;
+                }
+            }
+        }
+        else if (lay->freeze
             && lay->freeze_focus
                == OV_FOCUS_STREAMS
             && lay->freeze_sel_stream >= 0
@@ -340,6 +349,8 @@ void ov_render_streams_panel(
                 row_bg = OV_BG_RELATED;
             } else if (s->is_new > 0) {
                 row_bg = OV_BG_NEW_ITEM;
+            } else if (lay->mouse_hover && lay->hover_global_stream == si) {
+                row_bg = OV_BG_HOVER;
             }
             row_bg = zebra_bg(row_bg, i);
 
@@ -564,6 +575,24 @@ void ov_render_streams_panel(
             #undef STRM_PID_FIELD
             #undef STRM_FIELD
             
+            if (lay->mouse_hover && lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx == si)
+            {
+                snprintf((char*)lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                         "Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64, 
+                         s->name, s->naxis, s->size_str, s->nb_sem, (uint64_t)s->inode);
+
+                int btn_w = 10; /* " [Delete] " */
+                int rem = r.width - printed;
+                if (rem >= btn_w)
+                {
+                    render_pad_spaces(printed, r.width - btn_w);
+                    ov_theme_bg(OV_FG_ERROR);
+                    ov_theme_fg(OV_FG_TEXT);
+                    ov_buf_printf(" [Delete] ");
+                    printed = r.width;
+                }
+            }
+
             // The active dot is now printed at the start of the line
             
             render_pad_spaces(printed, r.width);

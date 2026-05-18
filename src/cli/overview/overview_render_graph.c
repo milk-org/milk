@@ -395,11 +395,11 @@ void ov_render_graph_panel(
     row++;
 
     int start_node = get_graph_start_node(lay, m);
-    SG_RENDER_NODE rnodes[OV_MAX_NODES];
+    SG_TREE_NODE rnodes[OV_MAX_NODES];
     int nb_rnodes = 0;
     
     if (start_node >= 0) {
-        nb_rnodes = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
+        nb_rnodes = sg_compute_render_tree(m, start_node, lay->lineage_mode, rnodes);
     }
 
     if (nb_rnodes == 0)
@@ -423,7 +423,7 @@ void ov_render_graph_panel(
 
     for (int ri = scroll; ri < nb_rnodes && rendered_rows < max_rows; ri++)
     {
-        const SG_RENDER_NODE *rn = &rnodes[ri];
+        const SG_TREE_NODE *rn = &rnodes[ri];
 
         ov_buf_pos(row, r.col + 1);
         
@@ -431,6 +431,8 @@ void ov_render_graph_panel(
         ov_rgb_t row_bg = OV_BG_PANEL;
         int use_ul = 0;
         ov_rgb_t ul_color = {0,0,0};
+
+        /* We no longer highlight the entire row on hover, only the specific element */
 
         if (is_sel) {
             use_ul = 1;
@@ -443,14 +445,6 @@ void ov_render_graph_panel(
             ov_buf_underline();
         }
         ov_buf_printf(" ");
-
-        ov_rgb_t c = OV_FG_TEXT;
-        const char *typ = "UNK";
-        switch (rn->type) {
-        case OV_NODE_STREAM: c = OV_FG_STREAM; typ = "STRM"; break;
-        case OV_NODE_FPS:    c = OV_FG_FPS;    typ = "FPS "; break;
-        case OV_NODE_PROC:   c = OV_FG_PROC;   typ = "PROC"; break;
-        }
 
         int printed = 1;
         int avail = r.width - 2;
@@ -471,47 +465,43 @@ void ov_render_graph_panel(
             }                                        \
         } while(0)
 
-        /* Selection marker */
-        if (rn->depth == 0) {
-            GRAPH_FIELD(OV_FG_WARN, ">> ");
-        } else {
-            GRAPH_FIELD(OV_FG_DIM, "   ");
+        /* Draw tree prefix */
+        GRAPH_FIELD(OV_FG_DIM, "%s", rn->tree_prefix);
+
+        /* Selection marker / Target marker */
+        if (rn->is_target) {
+            GRAPH_FIELD(OV_FG_WARN, "\xe2\x96\xb6 "); /* Arrow */
         }
 
-        /* Compute indentation based on depth */
-        int abs_depth = rn->depth;
-        if (abs_depth < 0) abs_depth = -abs_depth;
+        /* Draw node name */
+        ov_rgb_t name_color = rn->is_target ? OV_FG_WARN : OV_FG_STREAM;
+        int hl_stream = (lay->mouse_hover && lay->hover_global_stream >= 0 && rn->stream_idx == lay->hover_global_stream);
+        if (hl_stream) ov_theme_bg(OV_BG_HOVER);
+        GRAPH_FIELD(name_color, "%s", rn->name);
+        if (hl_stream) ov_theme_bg(row_bg);
         
-        /* Ancestors are indented progressively less to reach 0 at target, 
-           then descendants progressively more. */
-        int indent = 0;
-        if (rn->depth < 0) {
-            /* Ancestors: -1 is closer to target than -2. */
-            indent = (abs_depth - 1) * 2;
-        } else if (rn->depth > 0) {
-            indent = abs_depth * 2;
-        }
-        if (indent > 30) indent = 30;
-
-        char ind_str[64] = "";
-        if (indent > 0) {
-            memset(ind_str, ' ', indent);
-            ind_str[indent] = '\0';
-        }
-        GRAPH_FIELD(OV_FG_DIM, "%s", ind_str);
-
-        /* Draw node */
-        if (rn->type == OV_NODE_PROC || rn->type == OV_NODE_FPS) {
-            GRAPH_FIELD(OV_FG_CONN, "%s ", OV_TRI_D);
-            GRAPH_FIELD(c, "[%s] ", rn->name);
-        } else {
-            GRAPH_FIELD(c, "%s ", rn->name);
-        }
-        
-        GRAPH_FIELD(OV_FG_DIM, "(%s)", typ);
-
-        if (rn->depth == 0) {
-            GRAPH_FIELD(OV_FG_WARN, " <");
+        /* Draw writer proc */
+        if (rn->writer_name[0] != '\0') {
+            GRAPH_FIELD(OV_FG_DIM, " [");
+            if (rn->is_target_proc) {
+                GRAPH_FIELD(OV_FG_WARN, "\xe2\x96\xb6 ");
+            }
+            ov_rgb_t proc_color = rn->is_target_proc ? OV_FG_WARN : OV_FG_PROC;
+            
+            int proc_idx = -1;
+            for (int i = 0; i < m->nb_procs; i++) {
+                if (strcmp(m->procs[i].name, rn->writer_name) == 0) {
+                    proc_idx = i;
+                    break;
+                }
+            }
+            int hl_proc = (lay->mouse_hover && lay->hover_global_proc >= 0 && proc_idx == lay->hover_global_proc);
+            
+            if (hl_proc) ov_theme_bg(OV_BG_HOVER);
+            GRAPH_FIELD(proc_color, "%s", rn->writer_name);
+            if (hl_proc) ov_theme_bg(row_bg);
+            
+            GRAPH_FIELD(OV_FG_DIM, "]");
         }
 
         #undef GRAPH_FIELD

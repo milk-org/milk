@@ -111,13 +111,19 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         {
             msg_max = 0;
         }
-        int msg_len = (int) strlen(e->msg);
-        if (msg_len > msg_max)
-        {
-            msg_len = msg_max;
+        
+        int msg_disp_len = 0;
+        int max_bytes = 0;
+        for (int i = 0; e->msg[i] != '\0'; ) {
+            int cw = utf8_char_length((unsigned char)e->msg[i]);
+            if (msg_disp_len + 1 > msg_max) break;
+            msg_disp_len += 1;
+            max_bytes += cw;
+            i += cw;
         }
-        ov_buf_printf("%.*s", msg_len, e->msg);
-        nw += msg_len;
+        
+        ov_buf_printf("%.*s", max_bytes, e->msg);
+        nw += msg_disp_len;
 
         /* Pad remainder */
         int pad = r.width - nw;

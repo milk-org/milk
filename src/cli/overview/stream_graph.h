@@ -79,6 +79,19 @@ typedef struct {
 } SG_RENDER_NODE;
 
 /**
+ * SG_TREE_NODE - flattened tree node for lineage rendering.
+ */
+typedef struct {
+    int stream_idx;          /* Index in m->streams */
+    int is_target;           /* 1 if this is the target root stream */
+    int is_target_proc;      /* 1 if the writer_name matches the target process */
+    int depth;               /* Graph depth */
+    char name[64];           /* Stream name */
+    char writer_name[64];    /* Name of the process/fps writing this stream */
+    char tree_prefix[128];   /* Prefix strings for rendering (e.g. "├── ") */
+} SG_TREE_NODE;
+
+/**
  * SG_LINEAGE - complete lineage result for one stream.
  *
  * @ancestors:      upstream streams
@@ -162,5 +175,20 @@ int sg_compute_render_nodes(
     int             start_node,
     sg_mode_t       mode,
     SG_RENDER_NODE *out_nodes);
+
+/**
+ * sg_compute_render_tree - Computes a top-down flattened list of stream nodes representing the lineage.
+ * @m:          system model
+ * @start_node: root node to traverse from
+ * @mode:       traversal mode
+ * @out_nodes:  pre-allocated array (size OV_MAX_NODES) to store result
+ *
+ * Returns: number of nodes placed in out_nodes.
+ */
+int sg_compute_render_tree(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    SG_TREE_NODE   *out_nodes);
 
 #endif /* STREAM_GRAPH_H */

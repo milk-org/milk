@@ -724,8 +724,12 @@ static int ov_fps__render_detail_fps(
             int is_sel = (dp == lay->param_sel
                 && lay->focus == OV_FOCUS_GRAPH
                 && lay->graph_tab_mode == 1);
+            int header_rows = 3 + (f->description[0] != '\0' ? 1 : 0);
+            int is_hover = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH 
+                && lay->graph_tab_mode == 1 && lay->hover_idx == header_rows + (dp - lay->param_scroll));
+            
             ov_rgb_t row_bg = is_sel
-                ? OV_BG_SELECTED : OV_BG_PANEL;
+                ? OV_BG_SELECTED : (is_hover ? OV_BG_HOVER : OV_BG_PANEL);
 
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(row_bg);
@@ -817,14 +821,44 @@ static int ov_fps__render_detail_fps(
                 f->disp_param_name[dp]);
 
             /* Value */
-            H_ov_theme_fg(is_sel
-                ? OV_FG_BRIGHT : OV_FG_TEXT);
+            if (pt == FPTYPE_STREAMNAME)
+            {
+                int s_idx = ov_find_stream_by_name(m, f->disp_param_value[dp]);
+                ov_rgb_t vcolor = (s_idx >= 0) ? OV_FG_STREAM : OV_FG_DIM;
+                if (is_sel || is_hover) {
+                    H_ov_theme_fg(vcolor);
+                    H_ov_buf_bold();
+                } else {
+                    H_ov_theme_fg(vcolor);
+                }
+            }
+            else if (pt == FPTYPE_ONOFF)
+            {
+                int is_on = (strcmp(f->disp_param_value[dp], "ON") == 0 || strcmp(f->disp_param_value[dp], "1") == 0);
+                ov_rgb_t vcolor = is_on ? (ov_rgb_t){100, 255, 100} : OV_FG_DIM;
+                if (is_sel || is_hover) {
+                    H_ov_theme_fg(vcolor);
+                    H_ov_buf_bold();
+                } else {
+                    H_ov_theme_fg(vcolor);
+                }
+            }
+            else
+            {
+                H_ov_theme_fg(is_sel ? OV_FG_BRIGHT : OV_FG_TEXT);
+            }
+            
             int n2 = snprintf(NULL, 0,
                 " = %s",
                 f->disp_param_value[dp]);
             H_ov_buf_printf(
                 " = %s",
                 f->disp_param_value[dp]);
+                
+            if ((is_sel || is_hover) && (pt == FPTYPE_STREAMNAME || pt == FPTYPE_ONOFF)) {
+                H_ov_buf_reset_attr();
+                H_ov_theme_bg(row_bg); // Restore background after reset
+            }
 
             /* Pad remainder */
             /* 2 (icon) + 8 (badge) + 1 (sp)

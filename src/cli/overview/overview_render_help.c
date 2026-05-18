@@ -97,6 +97,7 @@ static const help_line_t HELP[] =
     { "  FPS:  MEM (RSS)",                      HF_CHILD,   HS_COLUMNS },
     /* --- Mouse --- */
     { "Mouse",                                  HF_SECTION, HS_MOUSE },
+    { "  m  Toggle hover tracking (ON/OFF)",    HF_CHILD,   HS_MOUSE },
     { "  Click=select  DblClick=detail",        HF_CHILD,   HS_MOUSE },
     { "  Scroll wheel=navigate list",           HF_CHILD,   HS_MOUSE },
     { "  Click column headers to sort",         HF_CHILD,   HS_MOUSE },
