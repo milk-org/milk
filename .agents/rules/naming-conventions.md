@@ -155,6 +155,15 @@ for vectorization (see §3.8).
   float *restrict pix_in  = imgin.im->array.F;
   float *restrict pix_out = imgout.im->array.F;
   ```
+- **GPU device pointers**: prefix with `d_` to distinguish
+  device memory from host memory:
+  ```c
+  float *d_modes  = NULL;  /* GPU device memory */
+  float *d_in     = NULL;  /* GPU input buffer  */
+  float *d_wfsVec = NULL;  /* GPU WFS vector    */
+  ```
+  This convention is already established in `linalgebra`,
+  `ImageStreamIO`, and `cudacomp` modules.
 - Raw pointers (`void *`): `raw`, `buf`, `ptr`
 - IMGID variables (`IMGID`): `img`, `imgptr`, `img_input`
 - Stream metadata (`IMAGE_METADATA *`): `md`
