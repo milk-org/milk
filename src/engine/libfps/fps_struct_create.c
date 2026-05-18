@@ -158,16 +158,16 @@ errno_t function_parameter_struct_create(
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;
 #ifdef MILK_MODULE
-    for(int m = 0; m < data.NBmodule; m++)
+    for(int mm = 0; mm < data.NBmodule; mm++)
     {
-        if(data.module[m].type != MODULE_TYPE_UNUSED)
+        if(data.module[mm].type != MODULE_TYPE_UNUSED)
         {
-            char *mname = data.module[m].name;
-            if(data.module[m].type == MODULE_TYPE_CUSTOMLOAD)
+            char *mname = data.module[mm].name;
+            if(data.module[mm].type == MODULE_TYPE_CUSTOMLOAD)
             {
-                if(strlen(data.module[m].loadname) > 0)
+                if(strlen(data.module[mm].loadname) > 0)
                 {
-                    mname = data.module[m].loadname;
+                    mname = data.module[mm].loadname;
                 }
             }
 

@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
 
     // Initialize global arrays for scan
     fpsarray = (FPS *) calloc(NB_FPS_MAX, sizeof(FPS));
-    for(int i = 0; i < NB_FPS_MAX; i++) fpsarray[i].SMfd = -1;
+    for(int ii = 0; ii < NB_FPS_MAX; ii++) fpsarray[ii].SMfd = -1;
 
     KEYWORD_TREE_NODE *keywnode = (KEYWORD_TREE_NODE *) calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE));
 
@@ -179,19 +179,19 @@ int main(int argc, char *argv[])
         functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, 0);
 
         // Mark all tracked as inactive
-        for(int i = 0; i < track_list_cnt; i++) track_list[i].active = 0;
+        for(int ii = 0; ii < track_list_cnt; ii++) track_list[ii].active = 0;
 
-        for(int i = 0; i < NBfps; i++) {
+        for(int ii = 0; ii < NBfps; ii++) {
             // Check regex
-            if (regexec(&regex, fpsarray[i].md->name, 0, NULL, 0) != 0) {
+            if (regexec(&regex, fpsarray[ii].md->name, 0, NULL, 0) != 0) {
                 continue;
             }
 
             int track_idx = -1;
             // Find existing tracker
-            for(int j = 0; j < track_list_cnt; j++) {
-                if(strcmp(track_list[j].name, fpsarray[i].md->name) == 0) {
-                    track_idx = j;
+            for(int jj = 0; jj < track_list_cnt; jj++) {
+                if(strcmp(track_list[jj].name, fpsarray[ii].md->name) == 0) {
+                    track_idx = jj;
                     break;
                 }
             }
@@ -200,10 +200,10 @@ int main(int argc, char *argv[])
                 // New FPS found
                 track_idx = track_list_cnt++;
                 strncpy(track_list[track_idx].name,
-                    fpsarray[i].md->name,
+                    fpsarray[ii].md->name,
                     STRINGMAXLEN_FPS_NAME - 1);
-                track_list[track_idx].NBparam = fpsarray[i].md->NBparamMAX;
-                track_list[track_idx].params = (PARAM_TRACK *) calloc(fpsarray[i].md->NBparamMAX, sizeof(PARAM_TRACK));
+                track_list[track_idx].NBparam = fpsarray[ii].md->NBparamMAX;
+                track_list[track_idx].params = (PARAM_TRACK *) calloc(fpsarray[ii].md->NBparamMAX, sizeof(PARAM_TRACK));
                 
                 if (first_scan) {
                     printf("  - %s\n", track_list[track_idx].name);
@@ -213,28 +213,28 @@ int main(int argc, char *argv[])
                 }
 
                 // Initialize values
-                for(int p = 0; p < fpsarray[i].md->NBparamMAX; p++) {
-                    if (fpsarray[i].parray[p].fpflag & FPFLAG_ACTIVE) {
-                        strncpy(track_list[track_idx].params[p].keywordfull,
-                            fpsarray[i].parray[p].keywordfull,
+                for(int pp = 0; pp < fpsarray[ii].md->NBparamMAX; pp++) {
+                    if (fpsarray[ii].parray[pp].fpflag & FPFLAG_ACTIVE) {
+                        strncpy(track_list[track_idx].params[pp].keywordfull,
+                            fpsarray[ii].parray[pp].keywordfull,
                             sizeof(track_list[0].params[0].keywordfull)-1);
-                        track_list[track_idx].params[p].cnt0 = fpsarray[i].parray[p].cnt0;
+                        track_list[track_idx].params[pp].cnt0 = fpsarray[ii].parray[pp].cnt0;
                         functionparameter_GetParamValueString(
-                            &fpsarray[i].parray[p],
-                            track_list[track_idx].params[p].value,
+                            &fpsarray[ii].parray[pp],
+                            track_list[track_idx].params[pp].value,
                             VALSTR_LEN);
                     } else {
-                        track_list[track_idx].params[p].cnt0 = -1;
-                        track_list[track_idx].params[p].keywordfull[0] = '\0';
+                        track_list[track_idx].params[pp].cnt0 = -1;
+                        track_list[track_idx].params[pp].keywordfull[0] = '\0';
                     }
                 }
             }
             track_list[track_idx].active = 1;
 
-            if(fpsarray[i].md->NBparamMAX != track_list[track_idx].NBparam) {
+            if(fpsarray[ii].md->NBparamMAX != track_list[track_idx].NBparam) {
                 PARAM_TRACK *tmp = (PARAM_TRACK *) realloc(
                     track_list[track_idx].params,
-                    fpsarray[i].md->NBparamMAX
+                    fpsarray[ii].md->NBparamMAX
                     * sizeof(PARAM_TRACK));
                 if (tmp == NULL) {
                     PRINT_ERROR("realloc failed for %s params", track_list[track_idx].name);
@@ -242,54 +242,54 @@ int main(int argc, char *argv[])
                 }
                 track_list[track_idx].params = tmp;
                 // Initialize new ones if any
-                for(int p = track_list[track_idx].NBparam; p < fpsarray[i].md->NBparamMAX; p++) {
-                    if (fpsarray[i].parray[p].fpflag & FPFLAG_ACTIVE) {
-                        strncpy(track_list[track_idx].params[p].keywordfull,
-                            fpsarray[i].parray[p].keywordfull,
+                for(int pp = track_list[track_idx].NBparam; pp < fpsarray[ii].md->NBparamMAX; pp++) {
+                    if (fpsarray[ii].parray[pp].fpflag & FPFLAG_ACTIVE) {
+                        strncpy(track_list[track_idx].params[pp].keywordfull,
+                            fpsarray[ii].parray[pp].keywordfull,
                             sizeof(track_list[0].params[0].keywordfull)-1);
-                        track_list[track_idx].params[p].cnt0 = fpsarray[i].parray[p].cnt0;
+                        track_list[track_idx].params[pp].cnt0 = fpsarray[ii].parray[pp].cnt0;
                         functionparameter_GetParamValueString(
-                            &fpsarray[i].parray[p],
-                            track_list[track_idx].params[p].value,
+                            &fpsarray[ii].parray[pp],
+                            track_list[track_idx].params[pp].value,
                             VALSTR_LEN);
                     } else {
-                        track_list[track_idx].params[p].keywordfull[0] = '\0';
-                        track_list[track_idx].params[p].cnt0 = -1;
+                        track_list[track_idx].params[pp].keywordfull[0] = '\0';
+                        track_list[track_idx].params[pp].cnt0 = -1;
                     }
                 }
-                track_list[track_idx].NBparam = fpsarray[i].md->NBparamMAX;
+                track_list[track_idx].NBparam = fpsarray[ii].md->NBparamMAX;
             }
 
-            for(int p = 0; p < fpsarray[i].md->NBparamMAX; p++) {
-                if (!(fpsarray[i].parray[p].fpflag & FPFLAG_ACTIVE)) {
+            for(int pp = 0; pp < fpsarray[ii].md->NBparamMAX; pp++) {
+                if (!(fpsarray[ii].parray[pp].fpflag & FPFLAG_ACTIVE)) {
                     continue;
                 }
                 
-                if(fpsarray[i].parray[p].cnt0 != track_list[track_idx].params[p].cnt0) {
+                if(fpsarray[ii].parray[pp].cnt0 != track_list[track_idx].params[pp].cnt0) {
                     char current_val[VALSTR_LEN];
                     functionparameter_GetParamValueString(
-                        &fpsarray[i].parray[p],
+                        &fpsarray[ii].parray[pp],
                         current_val,
                         VALSTR_LEN);
                     
-                    if (track_list[track_idx].params[p].cnt0 != -1) {
+                    if (track_list[track_idx].params[pp].cnt0 != -1) {
                          print_ut_timestamp();
                          printf(" %s %s : %s -> %s  (cnt: %ld)\n", 
                                 track_list[track_idx].name, 
-                                fpsarray[i].parray[p].keywordfull,
-                                track_list[track_idx].params[p].value,
+                                fpsarray[ii].parray[pp].keywordfull,
+                                track_list[track_idx].params[pp].value,
                                 current_val,
-                                fpsarray[i].parray[p].cnt0);
+                                fpsarray[ii].parray[pp].cnt0);
                          fflush(stdout);
                     }
                     
-                    strncpy(track_list[track_idx].params[p].keywordfull,
-                        fpsarray[i].parray[p].keywordfull,
+                    strncpy(track_list[track_idx].params[pp].keywordfull,
+                        fpsarray[ii].parray[pp].keywordfull,
                         sizeof(track_list[0].params[0].keywordfull)-1);
-                    strncpy(track_list[track_idx].params[p].value,
+                    strncpy(track_list[track_idx].params[pp].value,
                         current_val,
                         VALSTR_LEN - 1);
-                    track_list[track_idx].params[p].cnt0 = fpsarray[i].parray[p].cnt0;
+                    track_list[track_idx].params[pp].cnt0 = fpsarray[ii].parray[pp].cnt0;
                 }
             }
         }
@@ -300,20 +300,20 @@ int main(int argc, char *argv[])
         }
 
         // Detect deleted FPS
-        for(int j = 0; j < track_list_cnt; j++) {
-            if(!track_list[j].active &&
-               track_list[j].name[0] != '\0')
+        for(int jj = 0; jj < track_list_cnt; jj++) {
+            if(!track_list[jj].active &&
+               track_list[jj].name[0] != '\0')
             {
                 print_ut_timestamp();
                 printf(" DEL_FPS %s\n",
-                       track_list[j].name);
+                       track_list[jj].name);
                 fflush(stdout);
-                if (track_list[j].params != NULL) {
-                    free(track_list[j].params);
-                    track_list[j].params = NULL;
+                if (track_list[jj].params != NULL) {
+                    free(track_list[jj].params);
+                    track_list[jj].params = NULL;
                 }
-                track_list[j].NBparam = 0;
-                track_list[j].name[0] = '\0';
+                track_list[jj].NBparam = 0;
+                track_list[jj].name[0] = '\0';
             }
         }
 
@@ -322,8 +322,8 @@ int main(int argc, char *argv[])
 
     // Final cleanup
     regfree(&regex);
-    for(int j = 0; j < track_list_cnt; j++) {
-        if(track_list[j].params) free(track_list[j].params);
+    for(int jj = 0; jj < track_list_cnt; jj++) {
+        if(track_list[jj].params) free(track_list[jj].params);
     }
     free(track_list);
     free(keywnode);

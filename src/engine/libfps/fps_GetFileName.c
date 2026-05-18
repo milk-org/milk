@@ -20,16 +20,16 @@ int functionparameter_GetFileName(
 {
     char ffname[STRINGMAXLEN_FULLFILENAME];
     char fname1[STRINGMAXLEN_FILENAME];
-    int  l;
+    int  ll;
     //char fpsdatadirname[STRINGMAXLEN_DIRNAME];
 
     WRITE_DIRNAME(ffname, "%s/%s/fps/", fps->md->workdir, fps->md->datadir);
     EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", ffname);
 
     // build up directory name
-    for(l = 0; l < fparam->keywordlevel - 1; l++)
+    for(ll = 0; ll < fparam->keywordlevel - 1; ll++)
     {
-        if(snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.", fparam->keyword[l]) <
+        if(snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.", fparam->keyword[ll]) <
                 0)
         {
             PRINT_ERROR("snprintf error");
@@ -40,7 +40,7 @@ int functionparameter_GetFileName(
     if(snprintf(fname1,
                 STRINGMAXLEN_FILENAME,
                 "%s.%s.txt",
-                fparam->keyword[l],
+                fparam->keyword[ll],
                 tagname) < 0)
     {
         PRINT_ERROR("snprintf error");

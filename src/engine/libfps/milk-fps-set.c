@@ -109,11 +109,11 @@ void do_completion_scan(const char *word) {
 
         functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, 0);
 
-        for(int i=0; i<NBfps; i++) {
-            if(starts_with(word, fpsarray[i].md->name)) {
-                printf("%s.\n", fpsarray[i].md->name);
+        for(int ii=0; ii<NBfps; ii++) {
+            if(starts_with(word, fpsarray[ii].md->name)) {
+                printf("%s.\n", fpsarray[ii].md->name);
             }
-            fps_disconnect(&fpsarray[i]);
+            fps_disconnect(&fpsarray[ii]);
         }
         free(fpsarray);
         free(keywnode);
@@ -133,10 +133,10 @@ void do_completion_scan(const char *word) {
             FPSCONNECT_SIMPLE);
         if(NBparam != -1) {
             fps.NBparam = NBparam;
-            for(int i=0; i<fps.NBparam; i++) {
-                if (!(fps.parray[i].fpflag & FPFLAG_ACTIVE)) continue;
+            for(int ii=0; ii<fps.NBparam; ii++) {
+                if (!(fps.parray[ii].fpflag & FPFLAG_ACTIVE)) continue;
 
-                const char *kw = fps.parray[i].keywordfull;
+                const char *kw = fps.parray[ii].keywordfull;
                 // kw is typically "FPSname.keyword"
                 
                 // We want to match param_prefix against the part AFTER FPSname.

@@ -36,7 +36,7 @@ void qs2(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     double                 y1;
 
@@ -105,7 +105,7 @@ void qs3(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     double                 y1, y2;
 
@@ -177,7 +177,7 @@ void qs3_float(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     float                  x, y;
     float                  y1, y2;
 
@@ -249,7 +249,7 @@ void qs3_double(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     double                 y1, y2;
 
@@ -320,7 +320,7 @@ void qs2l(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     long                   l1;
 
@@ -383,7 +383,7 @@ void qs2ul(
     unsigned long  left,
     unsigned long  right)
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     unsigned long          l1;
 
@@ -448,7 +448,7 @@ void qs2l_double(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     long                   l1;
 
@@ -514,7 +514,7 @@ void qs2ul_double(
     unsigned long  right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     unsigned long          l1;
 
@@ -580,7 +580,7 @@ void qs3ll_double(
     unsigned long right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     long                   l1, l2;
 
@@ -649,7 +649,7 @@ void qs3ulul_double(
     unsigned long  right
 )
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
     unsigned long          l1, l2;
 

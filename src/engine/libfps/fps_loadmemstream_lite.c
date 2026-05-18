@@ -56,14 +56,14 @@ static imageID find_in_local(const char *sname)
         return -1;
     }
 
-    for (long i = 0; i < nb_max; i++)
+    for (long ii = 0; ii < nb_max; ii++)
     {
-        if (imarray[i].used == 1 &&
-            strncmp(imarray[i].name, sname,
+        if (imarray[ii].used == 1 &&
+            strncmp(imarray[ii].name, sname,
                     STRINGMAXLEN_IMAGE_NAME)
                 == 0)
         {
-            return i;
+            return ii;
         }
     }
     return -1;
@@ -207,27 +207,27 @@ imageID COREMOD_IOFITS_LoadMemStream(
     if (sp.loc != 'S')
     {
         /* Default: check local first */
-        for (long i = 0; i < nb_max; i++)
+        for (long ii = 0; ii < nb_max; ii++)
         {
-            if (imarray[i].used == 1 &&
-                strncmp(imarray[i].name, name,
+            if (imarray[ii].used == 1 &&
+                strncmp(imarray[ii].name, name,
                         STRINGMAXLEN_IMAGE_NAME)
                     == 0)
             {
                 *imLOC =
                     STREAM_LOAD_SOURCE_SHAREMEM;
-                return i;
+                return ii;
             }
         }
     }
 
     /* Find a free slot */
     long slot = -1;
-    for (long i = 0; i < nb_max; i++)
+    for (long ii = 0; ii < nb_max; ii++)
     {
-        if (imarray[i].used == 0)
+        if (imarray[ii].used == 0)
         {
-            slot = i;
+            slot = ii;
             break;
         }
     }

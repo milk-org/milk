@@ -127,8 +127,8 @@ int main(int argc, char *argv[]) {
         PRINT_ERROR("Error: cannot allocate fpsarray");
         return 1;
     }
-    for(int i=0; i<NB_FPS_MAX; i++) {
-        fpsarray[i].SMfd = -1;
+    for(int ii=0; ii<NB_FPS_MAX; ii++) {
+        fpsarray[ii].SMfd = -1;
     }
 
     struct option long_options[] = {

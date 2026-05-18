@@ -57,9 +57,9 @@ imageID functionparameter_LoadStream(
 
     if (sp.error)
     {
-        printf("\033[1;31mFAILURE\033[0m:"
-               " invalid stream modifier "
-               "prefix in \"%s\"\n", rawname);
+        PRINT_ERROR(
+               "invalid stream modifier "
+               "prefix in \"%s\"", rawname);
         return -1;
     }
     /* Apply location modifier to flags */
@@ -93,10 +93,10 @@ imageID functionparameter_LoadStream(
 
         if (probeID != -1)
         {
-            printf("\033[1;31mFAILURE\033[0m:"
-                   " @N modifier — "
+            PRINT_ERROR(
+                   "@N modifier — "
                    "stream \"%s\" already "
-                   "exists (ID %ld)\n",
+                   "exists (ID %ld)",
                    sp.name, (long) probeID);
             fps->parray[pindex].fpflag =
                 saved_flags;
@@ -163,20 +163,20 @@ imageID functionparameter_LoadStream(
     if (sp.loc == 'L' && ID >= 0 &&
         imLOC == STREAM_LOAD_SOURCE_SHAREMEM)
     {
-        printf("\033[1;31mFAILURE\033[0m:"
-               " @L modifier — "
+        PRINT_ERROR(
+               "@L modifier — "
                "stream \"%s\" is in shared"
-               " memory, not local\n",
+               " memory, not local",
                sp.name);
         return -1;
     }
     if (sp.loc == 'S' && ID >= 0 &&
         imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
     {
-        printf("\033[1;31mFAILURE\033[0m:"
-               " @S modifier — "
+        PRINT_ERROR(
+               "@S modifier — "
                "stream \"%s\" is in local"
-               " memory, not shared\n",
+               " memory, not shared",
                sp.name);
         return -1;
     }
@@ -184,10 +184,10 @@ imageID functionparameter_LoadStream(
     /* must-exist check */
     if (sp.must_exist && ID == -1)
     {
-        printf("\033[1;31mFAILURE\033[0m:"
-               " @E modifier — "
+        PRINT_ERROR(
+               "@E modifier — "
                "stream \"%s\""
-               " not found\n",
+               " not found",
                sp.name);
         return -1;
     }

@@ -93,15 +93,15 @@ imageID image_ID(
     long        NB_images __attribute__((unused))
 )
 {
-    for (long i = 0; i < NB_images; i++)
+    for (long ii = 0; ii < NB_images; ii++)
     {
-        if (imagearray[i].used == 1 &&
-            strncmp(imagearray[i].name,
+        if (imagearray[ii].used == 1 &&
+            strncmp(imagearray[ii].name,
                     name,
                     STRINGMAXLEN_IMAGE_NAME)
                 == 0)
         {
-            return i;
+            return ii;
         }
     }
     return -1;

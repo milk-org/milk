@@ -225,73 +225,73 @@ void fps_fill_farg_examples(
     int              nb_b
 )
 {
-    for (int i = 0; i < nb_b; i++) {
-        switch (bindings[i].type) {
+    for (int ii = 0; ii < nb_b; ii++) {
+        switch (bindings[ii].type) {
         case FPTYPE_INT32:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%d",
-                *(int32_t *) bindings[i].ptr);
+                *(int32_t *) bindings[ii].ptr);
             break;
         case FPTYPE_UINT32:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%u",
-                *(uint32_t *) bindings[i].ptr);
+                *(uint32_t *) bindings[ii].ptr);
             break;
         case FPTYPE_INT64:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%ld",
-                *(int64_t *) bindings[i].ptr);
+                *(int64_t *) bindings[ii].ptr);
             break;
         case FPTYPE_UINT64:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%lu",
-                *(uint64_t *) bindings[i].ptr);
+                *(uint64_t *) bindings[ii].ptr);
             break;
         case FPTYPE_FLOAT32:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%f",
-                *(float *) bindings[i].ptr);
+                *(float *) bindings[ii].ptr);
             break;
         case FPTYPE_FLOAT64:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%lf",
-                *(double *) bindings[i].ptr);
+                *(double *) bindings[ii].ptr);
             break;
         case FPTYPE_ONOFF:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%ld",
-                *(uint64_t *) bindings[i].ptr);
+                *(uint64_t *) bindings[ii].ptr);
             break;
         case FPTYPE_PID:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%d",
-                *(pid_t *) bindings[i].ptr);
+                *(pid_t *) bindings[ii].ptr);
             break;
         case FPTYPE_TIMESPEC:
             snprintf(
-                farg[i].example,
+                farg[ii].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%ld.%09ld",
                 ((struct timespec *)
-                    bindings[i].ptr)->tv_sec,
+                    bindings[ii].ptr)->tv_sec,
                 ((struct timespec *)
-                    bindings[i].ptr)->tv_nsec);
+                    bindings[ii].ptr)->tv_nsec);
             break;
         case FPTYPE_STRING:
         case FPTYPE_STREAMNAME:
@@ -303,8 +303,8 @@ void fps_fill_farg_examples(
         case FPTYPE_PROCESS:
         case FPTYPE_STRING_NOT_STREAM:
             strncpy(
-                farg[i].example,
-                (char *) bindings[i].ptr,
+                farg[ii].example,
+                (char *) bindings[ii].ptr,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE
                     - 1);
             break;

@@ -401,10 +401,10 @@ int main(int argc, char *argv[])
         char **names = calloc(count,
                               sizeof(char *));
 
-        for (int i = 0; i < count; i++) {
+        for (int ii = 0; ii < count; ii++) {
             char *base =
-                strrchr(gl.gl_pathv[i], '/');
-            base = base ? base + 1 : gl.gl_pathv[i];
+                strrchr(gl.gl_pathv[ii], '/');
+            base = base ? base + 1 : gl.gl_pathv[ii];
             /* strip .fps.shm suffix */
             char *dot = strstr(base, ".fps.shm");
             int len = dot ? (int)(dot - base)
@@ -445,10 +445,10 @@ int main(int argc, char *argv[])
              * remove without interactive prompt */
             int rc = remove_fps(
                 names[0], verbose, force);
-            for (int i = 0;
-                 i < matched_count; i++)
+            for (int ii = 0;
+                 ii < matched_count; ii++)
             {
-                free(names[i]);
+                free(names[ii]);
             }
             free(names);
             if (use_regex) {
@@ -459,11 +459,11 @@ int main(int argc, char *argv[])
 
         /* Interactive multi-select */
         printf("\n  FPS instances:\n\n");
-        for (int i = 0;
-             i < matched_count; i++)
+        for (int ii = 0;
+             ii < matched_count; ii++)
         {
             printf("  %3d  %s\n",
-                   i + 1, names[i]);
+                   ii + 1, names[ii]);
         }
 
         printf("\n  Enter number(s) to remove"
@@ -497,10 +497,10 @@ int main(int argc, char *argv[])
 
         if (!fgets_ok) {
             printf("Cancelled.\n");
-            for (int i = 0;
-                 i < matched_count; i++)
+            for (int ii = 0;
+                 ii < matched_count; ii++)
             {
-                free(names[i]);
+                free(names[ii]);
             }
             free(names);
             if (use_regex) {
@@ -530,10 +530,10 @@ int main(int argc, char *argv[])
         if (nsel <= 0) {
             printf("Cancelled.\n");
             free(selected);
-            for (int i = 0;
-                 i < matched_count; i++)
+            for (int ii = 0;
+                 ii < matched_count; ii++)
             {
-                free(names[i]);
+                free(names[ii]);
             }
             free(names);
             if (use_regex) {
@@ -544,20 +544,20 @@ int main(int argc, char *argv[])
 
         int errors = 0;
 
-        for (int i = 0;
-             i < matched_count; i++)
+        for (int ii = 0;
+             ii < matched_count; ii++)
         {
-            if (selected[i]) {
+            if (selected[ii]) {
                 errors += remove_fps(
-                    names[i], verbose, force);
+                    names[ii], verbose, force);
             }
         }
 
         free(selected);
-        for (int i = 0;
-             i < matched_count; i++)
+        for (int ii = 0;
+             ii < matched_count; ii++)
         {
-            free(names[i]);
+            free(names[ii]);
         }
         free(names);
 

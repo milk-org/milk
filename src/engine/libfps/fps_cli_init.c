@@ -36,23 +36,23 @@ errno_t fps_init_from_bindings(
 
     int current_cli_index = 0;
 
-    for (int i = 0; i < nb_b; i++) {
+    for (int bind_idx = 0; bind_idx < nb_b; bind_idx++) {
         long pindex;
-        uint64_t fpflag = bindings[i].fpflag;
+        uint64_t fpflag = bindings[bind_idx].fpflag;
         int cli_index = -1;
 
-        if (bindings[i].is_primary) {
+        if (bindings[bind_idx].is_primary) {
             fpflag |= FPFLAG_PRIMARY_CLI_INPUT;
             cli_index = current_cli_index++;
         }
 
         function_parameter_add_entry(
             fps,
-            bindings[i].fpskeyword,
-            bindings[i].descr,
-            bindings[i].type,
+            bindings[bind_idx].fpskeyword,
+            bindings[bind_idx].descr,
+            bindings[bind_idx].type,
             fpflag,
-            bindings[i].ptr,
+            bindings[bind_idx].ptr,
             &pindex
         );
         functionparameter_SetParamCLIindex(

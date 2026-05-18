@@ -20,9 +20,8 @@
 #include "processinfo_shm_create.h"
 
 
-#define FILEMODE 0666
 
-extern PROCESSINFOLIST *pinfolist;
+#define FILEMODE 0666
 
 #ifndef CLOCK_MILK
 #define CLOCK_MILK CLOCK_REALTIME

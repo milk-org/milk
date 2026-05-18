@@ -67,13 +67,13 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
     int  must_new = 0;
     int  nloc = 0;
 
-    for (int i = 1; i <= modlen; i++)
+    for (int ii = 1; ii <= modlen; ii++)
     {
-        switch (raw[i])
+        switch (raw[ii])
         {
         case 'L':
         case 'S':
-            loc = raw[i];
+            loc = raw[ii];
             nloc++;
             break;
 

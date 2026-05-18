@@ -170,23 +170,23 @@ int main(int argc, char *argv[])
     int use_tmux = 0;
     const char *fpsname = NULL;
 
-    for (int i = 1; i < argc; i++)
+    for (int ii = 1; ii < argc; ii++)
     {
-        if (strcmp(argv[i], "-tmux") == 0)
+        if (strcmp(argv[ii], "-tmux") == 0)
         {
             use_tmux = 1;
         }
         else if (fpsname == NULL)
         {
-            fpsname = argv[i];
+            fpsname = argv[ii];
         }
         else
         {
-            printf("\n\033[1;31mERROR\033[0m unexpected argument '%s'\n\n", argv[i]);
+            printf("\n\033[1;31mERROR\033[0m unexpected argument '%s'\n\n", argv[ii]);
             print_help(progname, 1);
             return 1;
         }
-    } // for i
+    } // for ii
 
     if (fpsname == NULL)
     {

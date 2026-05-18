@@ -20,8 +20,6 @@
 
 #define FILEMODE 0666
 
-extern PROCESSINFOLIST *pinfolist;
-
 
 /**
  * @brief Create or attach to the processinfo list SHM and reserve a slot.

@@ -46,11 +46,22 @@ typedef struct {
 } procctrl_context_t;
 
 // Render function
-void procctrl_render_frame(procctrl_context_t *ctx, int NBactive);
+void procctrl_render_frame(
+    procctrl_context_t *ctx,
+    int NBactive);
 
 // Input handling function
-void procctrl_handle_keyboard_event(procctrl_context_t *ctx, int ch, int NBactive);
+void procctrl_handle_keyboard_event(
+    procctrl_context_t *ctx,
+    int ch,
+    int NBactive);
 
-#endif
+/* Sort context (defined in procCTRL_TUI_sort.c) */
+extern int sort_ctx_m;
+extern int sort_ctx_col;
+extern int sort_ctx_dir;
+extern PROCSCAN_SHM *sort_ctx_scan_shm;
+extern PROCESSINFOLIST *sort_ctx_pinfolist;
+int proc_comp(const void *a, const void *b);
 
-extern PROCESSINFOLIST *pinfolist;
+#endif // _PROCCTRL_TUI_INTERNAL_H
