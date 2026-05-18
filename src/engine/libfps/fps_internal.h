@@ -17,4 +17,17 @@
 errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 errno_t function_parameter_struct_realloc(FPS *fps, int NBparamMAX_new);
 
-#endif
+/* Forward declarations for cross-file libfps functions */
+imageID COREMOD_IOFITS_LoadMemStream(
+    const char *sname,
+    uint64_t   *streamflag,
+    uint32_t   *imLOC);
+
+int file_exists(const char *filename);
+int is_fits_file(const char *filename);
+int functionparameter_ConnectExternalFPS(
+    FPS *fpsentry,
+    int  pindex,
+    FPS *fpstest);
+
+#endif // FPS_INTERNAL_H

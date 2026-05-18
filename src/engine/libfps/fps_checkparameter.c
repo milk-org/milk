@@ -15,12 +15,6 @@
 #include "fps_outlog.h"
 #include "fps_streamname_parse.h"
 
-// Prototypes for functions provided by fps_loadmemstream_lite.c or other libfps files
-imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, uint32_t *imLOC);
-int file_exists(const char *filename);
-int is_fits_file(const char *filename);
-int functionparameter_ConnectExternalFPS(FPS *fpsentry, int pindex, FPS *fpstest);
-
 
 int functionparameter_CheckParameter(
     FPS *fpsentry,
@@ -380,7 +374,7 @@ int functionparameter_CheckParameter(
         FPS_STREAMNAME_PARSED sp =
             fps_streamname_parse(
                 fpsentry->parray[pindex]
-                    .val.string[0]);
+                .val.string[0]);
 
         long     ID =
             COREMOD_IOFITS_LoadMemStream(
@@ -388,56 +382,56 @@ int functionparameter_CheckParameter(
                 &(fpsentry->parray[pindex].fpflag),
                 &imLOC);
         fpsentry->parray[pindex]
-            .info.stream.streamID = ID;
+        .info.stream.streamID = ID;
 
         if(ID > -1)
         {
             fpsentry->parray[pindex]
-                .info.stream
-                .stream_sourceLocation = imLOC;
-            
+            .info.stream
+            .stream_sourceLocation = imLOC;
+
             // Use ImageStreamIO to get metadata
             IMAGE tmpimg;
-            if (ImageStreamIO_openIm(
-                    &tmpimg, sp.name)
-                == IMAGESTREAMIO_SUCCESS)
+            if(ImageStreamIO_openIm(
+                        &tmpimg, sp.name)
+                    == IMAGESTREAMIO_SUCCESS)
             {
                 fpsentry->parray[pindex]
-                    .info.stream.stream_atype =
+                .info.stream.stream_atype =
                     tmpimg.md->datatype;
                 fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_naxis[0] =
+                .info.stream
+                .stream_naxis[0] =
                     tmpimg.md->naxis;
                 fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_xsize[0] =
+                .info.stream
+                .stream_xsize[0] =
                     tmpimg.md->size[0];
                 if(tmpimg.md->naxis > 1)
                 {
                     fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_ysize[0] =
+                    .info.stream
+                    .stream_ysize[0] =
                         tmpimg.md->size[1];
                 }
                 else
                 {
                     fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_ysize[0] = 1;
+                    .info.stream
+                    .stream_ysize[0] = 1;
                 }
                 if(tmpimg.md->naxis > 2)
                 {
                     fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_zsize[0] =
+                    .info.stream
+                    .stream_zsize[0] =
                         tmpimg.md->size[2];
                 }
                 else
                 {
                     fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_zsize[0] = 1;
+                    .info.stream
+                    .stream_zsize[0] = 1;
                 }
                 ImageStreamIO_closeIm(&tmpimg);
             }
