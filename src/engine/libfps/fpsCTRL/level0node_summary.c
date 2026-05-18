@@ -16,11 +16,11 @@
 
 void fpsCTRLscreen_level0node_summary(
     FPS *fps,
-    int fpsindex)
+    int fps_idx)
 {
     pid_t pid;
 
-    pid = fps[fpsindex].md->confpid;
+    pid = fps[fps_idx].md->confpid;
     if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
@@ -29,7 +29,7 @@ void fpsCTRLscreen_level0node_summary(
     }
     else     // PID not active
     {
-        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+        if(fps[fps_idx].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
         {
             // not clean exit
             screenprint_setcolor(4);
@@ -44,26 +44,26 @@ void fpsCTRLscreen_level0node_summary(
     }
 
 
-    if(fps[fpsindex].md->conferrcnt > 99)
+    if(fps[fps_idx].md->conferrcnt > 99)
     {
         screenprint_setcolor(4);
         TUI_printfw("[XX]");
         screenprint_unsetcolor(4);
     }
-    else if(fps[fpsindex].md->conferrcnt > 0)
+    else if(fps[fps_idx].md->conferrcnt > 0)
     {
         screenprint_setcolor(4);
-        TUI_printfw("[%02d]", (int) fps[fpsindex].md->conferrcnt);
+        TUI_printfw("[%02d]", (int) fps[fps_idx].md->conferrcnt);
         screenprint_unsetcolor(4);
     }
-    else if(fps[fpsindex].md->conferrcnt == 0)
+    else if(fps[fps_idx].md->conferrcnt == 0)
     {
         screenprint_setcolor(2);
-        TUI_printfw("[%02d]", (int) fps[fpsindex].md->conferrcnt);
+        TUI_printfw("[%02d]", (int) fps[fps_idx].md->conferrcnt);
         screenprint_unsetcolor(2);
     }
 
-    pid = fps[fpsindex].md->runpid;
+    pid = fps[fps_idx].md->runpid;
     if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
@@ -72,7 +72,7 @@ void fpsCTRLscreen_level0node_summary(
     }
     else
     {
-        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+        if(fps[fps_idx].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
         {
             // not clean exit
             screenprint_setcolor(4);
