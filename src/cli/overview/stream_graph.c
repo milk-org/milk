@@ -720,3 +720,216 @@ int sg_compute_render_nodes(
 
     return nb_nodes;
 }
+static void sg_dfs_tree(
+    const OV_MODEL *m,
+    int current_stream,
+    int target_stream,
+    int target_proc,
+    const uint64_t *S_words,
+    sg_mode_t mode,
+    const char *prefix,
+    int is_last,
+    int is_root,
+    int depth,
+    int *path,
+    int path_len,
+    SG_TREE_NODE *out_nodes,
+    int *nb_out_nodes)
+{
+    if (*nb_out_nodes >= OV_MAX_NODES) return;
+
+    /* Cycle detection */
+    int is_cycle = 0;
+    for (int i = 0; i < path_len; i++) {
+        if (path[i] == current_stream) {
+            is_cycle = 1;
+            break;
+        }
+    }
+
+    SG_TREE_NODE *node = &out_nodes[*nb_out_nodes];
+    node->stream_idx = current_stream;
+    node->is_target = (current_stream == target_stream);
+    node->depth = depth;
+    strncpy(node->name, m->streams[current_stream].name, sizeof(node->name)-1);
+    node->name[sizeof(node->name)-1] = '\0';
+    
+    /* Find writer proc */
+    node->writer_name[0] = '\0';
+    node->is_target_proc = 0;
+    pid_t wpid = m->streams[current_stream].write_pid;
+    if (wpid > 0) {
+        int pidx = ov_find_proc_by_pid(m, wpid);
+        if (pidx >= 0) {
+            strncpy(node->writer_name, m->procs[pidx].name, sizeof(node->writer_name)-1);
+            node->writer_name[sizeof(node->writer_name)-1] = '\0';
+            if (pidx == target_proc) {
+                node->is_target_proc = 1;
+            }
+        }
+    }
+
+    /* Build prefix */
+    if (is_root) {
+        node->tree_prefix[0] = '\0';
+    } else {
+        snprintf(node->tree_prefix, sizeof(node->tree_prefix), "%s%s", 
+                 prefix, is_last ? "\xe2\x94\x94\xe2\x94\x80\xe2\x94\x80 " : "\xe2\x94\x9c\xe2\x94\x80\xe2\x94\x80 "); /* └──  and ├──  */
+    }
+    
+    if (is_cycle) {
+        /* Append cycle indicator to name */
+        strncat(node->name, " (loop)", sizeof(node->name) - strlen(node->name) - 1);
+        (*nb_out_nodes)++;
+        return;
+    }
+
+    (*nb_out_nodes)++;
+
+    path[path_len] = current_stream;
+
+    /* Find children in S */
+    int children[OV_MAX_STREAMS];
+    int nb_children = 0;
+
+    int n_node = m->streams[current_stream].node_idx;
+    if (n_node >= 0) {
+        for (int ei = 0; ei < m->nb_edges; ei++) {
+            const OV_EDGE *e1 = &m->edges[ei];
+            if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode)) {
+                int p_node = e1->tgt_node;
+                for (int ej = 0; ej < m->nb_edges; ej++) {
+                    const OV_EDGE *e2 = &m->edges[ej];
+                    if (e2->src_node == p_node) {
+                        int c_node = e2->tgt_node;
+                        if (c_node >= 0 && c_node < m->nb_nodes && m->nodes[c_node].type == OV_NODE_STREAM) {
+                            int c_stream = m->nodes[c_node].index;
+                            if (sg_bget(S_words, c_stream)) {
+                                int duplicate = 0;
+                                for (int k=0; k<nb_children; k++) if (children[k] == c_stream) duplicate = 1;
+                                if (!duplicate) children[nb_children++] = c_stream;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* Recurse */
+    char child_prefix[128];
+    if (is_root) {
+        child_prefix[0] = '\0';
+    } else {
+        snprintf(child_prefix, sizeof(child_prefix), "%s%s", 
+                 prefix, is_last ? "    " : "\xe2\x94\x82   "); /* "    " and "│   " */
+    }
+
+    for (int i = 0; i < nb_children; i++) {
+        sg_dfs_tree(m, children[i], target_stream, target_proc, S_words, mode, child_prefix, (i == nb_children - 1), 0, depth + 1, path, path_len + 1, out_nodes, nb_out_nodes);
+    }
+}
+
+int sg_compute_render_tree(
+    const OV_MODEL *m,
+    int             start_node,
+    sg_mode_t       mode,
+    SG_TREE_NODE   *out_nodes)
+{
+    int nb_out = 0;
+    if (start_node < 0 || start_node >= m->nb_nodes) return 0;
+    
+    const OV_NODE *sn = &m->nodes[start_node];
+    int target_stream = -1;
+    int target_proc = -1;
+    
+    if (sn->type == OV_NODE_STREAM) {
+        target_stream = sn->index;
+    } else if (sn->type == OV_NODE_PROC) {
+        target_proc = sn->index;
+    }
+
+    uint64_t S_words[SG_BSET_WORDS(OV_MAX_STREAMS)];
+    memset(S_words, 0, sizeof(S_words));
+
+    if (target_stream != -1) {
+        SG_LINEAGE lin;
+        memset(&lin, 0, sizeof(lin));
+        sg_compute_lineage(m, target_stream, mode, &lin);
+
+        sg_bset(S_words, target_stream);
+        for (int i=0; i<lin.nb_ancestors; i++) sg_bset(S_words, lin.ancestors[i].stream_idx);
+        for (int i=0; i<lin.nb_descendants; i++) sg_bset(S_words, lin.descendants[i].stream_idx);
+    } else if (target_proc != -1) {
+        int8_t depths[OV_MAX_NODES];
+        memset(depths, 127, sizeof(depths));
+        sg_compute_node_depths(m, start_node, mode, depths);
+        depths[start_node] = 0;
+        
+        for (int i=0; i<m->nb_nodes; i++) {
+            if (depths[i] < 127 || depths[i] > -127) {
+                if (m->nodes[i].type == OV_NODE_STREAM) {
+                    sg_bset(S_words, m->nodes[i].index);
+                }
+            }
+        }
+    } else {
+        return 0;
+    }
+
+    /* Find parents for everyone in S */
+    int has_parent[OV_MAX_STREAMS];
+    memset(has_parent, 0, sizeof(has_parent));
+
+    for (int i=0; i<m->nb_streams; i++) {
+        if (!sg_bget(S_words, i)) continue;
+        
+        int n_node = m->streams[i].node_idx;
+        if (n_node < 0) continue;
+        
+        for (int ei = 0; ei < m->nb_edges; ei++) {
+            const OV_EDGE *e1 = &m->edges[ei];
+            if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode)) {
+                int p_node = e1->tgt_node;
+                for (int ej = 0; ej < m->nb_edges; ej++) {
+                    const OV_EDGE *e2 = &m->edges[ej];
+                    if (e2->src_node == p_node) {
+                        int c_node = e2->tgt_node;
+                        if (c_node >= 0 && c_node < m->nb_nodes && m->nodes[c_node].type == OV_NODE_STREAM) {
+                            int c_stream = m->nodes[c_node].index;
+                            if (sg_bget(S_words, c_stream)) {
+                                has_parent[c_stream] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* Find roots */
+    int roots[OV_MAX_STREAMS];
+    int nb_roots = 0;
+    for (int i=0; i<m->nb_streams; i++) {
+        if (sg_bget(S_words, i) && !has_parent[i]) {
+            roots[nb_roots++] = i;
+        }
+    }
+
+    if (nb_roots == 0) {
+        /* Cycle graph with no absolute root. Use first available as root. */
+        for (int i=0; i<m->nb_streams; i++) {
+            if (sg_bget(S_words, i)) {
+                roots[nb_roots++] = i;
+                break;
+            }
+        }
+    }
+
+    int path[OV_MAX_STREAMS];
+    for (int i=0; i<nb_roots; i++) {
+        sg_dfs_tree(m, roots[i], target_stream, target_proc, S_words, mode, "", (i == nb_roots - 1), 1, 0, path, 0, out_nodes, &nb_out);
+    }
+
+    return nb_out;
+}

@@ -40,6 +40,8 @@ int            ov__color_level = 0;
 int ov_mouse_row = 0;
 int ov_mouse_col = 0;
 int ov_mouse_btn = 0;
+int ov_hover_row = 0;
+int ov_hover_col = 0;
 
 char ov__screenbuf[OV_SCREENBUF_SIZE];
 int  ov__screenbuf_len = 0;

@@ -69,37 +69,84 @@ void ov_compute_related(
     memset(out, 0, sizeof(*out));
     /* fps_param_mask initialised to 0 by memset — no matches yet */
 
-    /* Use frozen selection when freeze is active */
-    ov_focus_t focus   = lay->freeze
-                         ? lay->freeze_focus
-                         : lay->focus;
-    int sel_stream_idx = lay->freeze
-                         ? lay->freeze_sel_stream
-                         : lay->sel_stream;
-    int sel_proc_idx   = lay->freeze
-                         ? lay->freeze_sel_proc
-                         : lay->sel_proc;
-    int sel_fps_idx    = lay->freeze
-                         ? lay->freeze_sel_fps
-                         : lay->sel_fps;
+    ov_focus_t focus;
+    int sel_stream_idx;
+    int sel_proc_idx;
+    int sel_fps_idx;
+
+    if (lay->mouse_hover && lay->hover_idx >= 0 && lay->hover_view != -1)
+    {
+        focus = lay->hover_view;
+        sel_stream_idx = (focus == OV_FOCUS_STREAMS) ? lay->hover_idx : -1;
+        sel_proc_idx   = (focus == OV_FOCUS_PROCS)   ? lay->hover_idx : -1;
+        sel_fps_idx    = (focus == OV_FOCUS_FPS)     ? lay->hover_idx : -1;
+    }
+    else
+    {
+        focus = lay->freeze
+                             ? lay->freeze_focus
+                             : lay->focus;
+        sel_stream_idx = lay->freeze
+                             ? lay->freeze_sel_stream
+                             : lay->sel_stream;
+        sel_proc_idx   = lay->freeze
+                             ? lay->freeze_sel_proc
+                             : lay->sel_proc;
+        sel_fps_idx    = lay->freeze
+                             ? lay->freeze_sel_fps
+                             : lay->sel_fps;
+    }
 
     /* Determine the graph node index of the selected item */
     int sel_node = -1;
-    if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0
-        && sel_stream_idx < m->nb_streams)
+    if (focus == OV_FOCUS_STREAMS && sel_stream_idx >= 0)
     {
-        sel_node = m->streams[sel_stream_idx].node_idx;
+        int model_idx = sel_stream_idx;
+        if (lay->filter_stream[0] != '\0')
+        {
+            const char *names[OV_MAX_STREAMS];
+            for (int i = 0; i < m->nb_streams; i++) names[i] = m->streams[i].name;
+            int fidx[OV_MAX_STREAMS];
+            int n = ov_filter_build(lay->filter_stream, names, m->nb_streams, fidx, OV_MAX_STREAMS);
+            model_idx = (sel_stream_idx < n) ? fidx[sel_stream_idx] : -1;
+        }
+        if (model_idx >= 0 && model_idx < m->nb_streams)
+        {
+            sel_node = m->streams[model_idx].node_idx;
+        }
     }
-    else if (focus == OV_FOCUS_FPS && sel_fps_idx >= 0
-             && sel_fps_idx < m->nb_fps)
+    else if (focus == OV_FOCUS_FPS && sel_fps_idx >= 0)
     {
-        sel_node = m->fps[sel_fps_idx].node_idx;
+        int model_idx = sel_fps_idx;
+        if (lay->filter_fps[0] != '\0')
+        {
+            const char *names[OV_MAX_FPS];
+            for (int i = 0; i < m->nb_fps; i++) names[i] = m->fps[i].name;
+            int fidx[OV_MAX_FPS];
+            int n = ov_filter_build(lay->filter_fps, names, m->nb_fps, fidx, OV_MAX_FPS);
+            model_idx = (sel_fps_idx < n) ? fidx[sel_fps_idx] : -1;
+        }
+        if (model_idx >= 0 && model_idx < m->nb_fps)
+        {
+            sel_node = m->fps[model_idx].node_idx;
+        }
     }
-    else if (focus == OV_FOCUS_PROCS && sel_proc_idx >= 0
-             && sel_proc_idx < m->nb_procs)
+    else if (focus == OV_FOCUS_PROCS && sel_proc_idx >= 0)
     {
-        sel_node = m->procs[sel_proc_idx].node_idx;
-        out->sel_pid = m->procs[sel_proc_idx].PID;
+        int model_idx = sel_proc_idx;
+        if (lay->filter_proc[0] != '\0')
+        {
+            const char *names[OV_MAX_PROCS];
+            for (int i = 0; i < m->nb_procs; i++) names[i] = m->procs[i].name;
+            int fidx[OV_MAX_PROCS];
+            int n = ov_filter_build(lay->filter_proc, names, m->nb_procs, fidx, OV_MAX_PROCS);
+            model_idx = (sel_proc_idx < n) ? fidx[sel_proc_idx] : -1;
+        }
+        if (model_idx >= 0 && model_idx < m->nb_procs)
+        {
+            sel_node = m->procs[model_idx].node_idx;
+            out->sel_pid = m->procs[model_idx].PID;
+        }
     }
 
     if (sel_node < 0)

@@ -31,6 +31,10 @@
 #include "fps_types.h"
 
 /* EXECUTE_SYSTEM_COMMAND_NOCHECK macro */
+#undef STRINGMAXLEN_DIRNAME
+#undef STRINGMAXLEN_FULLFILENAME
+#undef STRINGMAXLEN_COMMAND
+#undef PRINT_ERROR
 #include "milkDebugTools.h"
 
 errno_t functionparameter_CONFstart(FPS *fps);
