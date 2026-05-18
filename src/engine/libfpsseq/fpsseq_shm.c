@@ -22,16 +22,38 @@
 #define SHM_PREFIX "/milkseq."
 #define FIFO_PREFIX "/tmp/milkseq."
 
+/**
+ * build_shm_name - Format the POSIX SHM path for a sequencer
+ * @dest:  Destination buffer
+ * @size:  Buffer size
+ * @name:  Sequencer name
+ */
 static void build_shm_name(char *dest, size_t size, const char *name)
 {
     snprintf(dest, size, "%s%s.shm", SHM_PREFIX, name);
 }
 
+/**
+ * build_fifo_name - Format the FIFO path for a sequencer
+ * @dest:  Destination buffer
+ * @size:  Buffer size
+ * @name:  Sequencer name
+ */
 static void build_fifo_name(char *dest, size_t size, const char *name)
 {
     snprintf(dest, size, "%s%s.fifo", FIFO_PREFIX, name);
 }
 
+/**
+ * milkseq_create - Create a new sequencer instance in shared memory
+ * @name:  Sequencer name (used to derive SHM and FIFO paths)
+ *
+ * Allocates a POSIX shared memory segment for the MILKSEQ_STATE
+ * struct, initializes all fields to zero, sets the default queue
+ * priority, and creates the command FIFO in /tmp/.
+ *
+ * Return: Pointer to the mapped state, or NULL on error
+ */
 MILKSEQ_STATE *milkseq_create(const char *name)
 {
     if (!name || strlen(name) == 0) return NULL;
@@ -88,6 +110,15 @@ MILKSEQ_STATE *milkseq_create(const char *name)
     return state;
 }
 
+/**
+ * milkseq_connect - Attach to an existing sequencer's shared memory
+ * @name:  Sequencer name
+ *
+ * Opens the named SHM segment in read-write mode and maps it.
+ * Does not create the segment if it does not exist.
+ *
+ * Return: Pointer to the mapped state, or NULL if not found
+ */
 MILKSEQ_STATE *milkseq_connect(const char *name)
 {
     if (!name || strlen(name) == 0) return NULL;
@@ -111,12 +142,26 @@ MILKSEQ_STATE *milkseq_connect(const char *name)
     return state;
 }
 
+/**
+ * milkseq_disconnect - Unmap a sequencer's shared memory
+ * @state:  Mapped pointer obtained from milkseq_create/connect
+ *
+ * Return: 0 on success, -1 if state is NULL
+ */
 int milkseq_disconnect(MILKSEQ_STATE *state)
 {
     if (!state) return -1;
     return munmap(state, sizeof(MILKSEQ_STATE));
 }
 
+/**
+ * milkseq_destroy - Remove a sequencer's SHM segment and FIFO
+ * @name:  Sequencer name
+ *
+ * Unlinks both the POSIX shared memory object and the /tmp/ FIFO.
+ *
+ * Return: 0 if both were removed, -1 otherwise
+ */
 int milkseq_destroy(const char *name)
 {
     if (!name || strlen(name) == 0) return -1;
@@ -132,6 +177,16 @@ int milkseq_destroy(const char *name)
     return (err1 == 0 && err2 == 0) ? 0 : -1;
 }
 
+/**
+ * milkseq_list - Enumerate active sequencer instances
+ * @names:     Array of name buffers to fill
+ * @maxcount:  Maximum entries to return
+ *
+ * Scans /dev/shm/ for files matching "milkseq.*.shm" and
+ * extracts the sequencer name from each filename.
+ *
+ * Return: Number of sequencers found (<= maxcount)
+ */
 int milkseq_list(char names[][FPSSEQ_NAME_MAX], int maxcount)
 {
     int count = 0;

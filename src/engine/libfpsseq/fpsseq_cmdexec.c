@@ -60,6 +60,26 @@
  *
  */
 
+/**
+ * milkseq_cmd_handle_sys - Handle system-level sequencer commands
+ * @FPScommand:   Command verb (first word of the command line)
+ * @FPScmdline:   Full command line string
+ * @nbword:       Number of words in the command line
+ * @FPSarg0:      First argument token
+ * @FPSarg1:      Second argument token
+ * @cmdindex:     Task index in the sequencer task list
+ * @state:        Sequencer state
+ * @fpsCTRLvar:   TUI-level process variables
+ * @fps:          Array of all FPS entries
+ * @keywnode:     Keyword tree root
+ * @cmdFOUND:     Set to 1 if this handler matched the command
+ * @cmdOK:        Set to 1 on success, 0 on failure
+ * @taskstatus:   OR-ed with error/status flags
+ * @testcnt:      Counter incremented by the "cntinc" command
+ *
+ * Dispatches: exit, rescan, cntinc, logsymlink, queueprio,
+ * seq_send, wait_seq.
+ */
 static void milkseq_cmd_handle_sys(
     const char                *FPScommand,
     const char                *FPScmdline,
@@ -264,6 +284,18 @@ static void milkseq_cmd_handle_sys(
 }
 
 
+/**
+ * milkseq_cmd_handle_tmux - Handle tmux start/stop commands
+ * @FPScommand:  Command verb
+ * @nbword:      Word count
+ * @fps:         FPS array
+ * @fpsindex:    Index of the target FPS entry
+ * @cmdFOUND:    Set to 1 if matched
+ * @cmdOK:       Set to 1 on success
+ * @taskstatus:  OR-ed with error flags
+ *
+ * Dispatches: tmuxstart, tmuxstop.
+ */
 static void milkseq_cmd_handle_tmux(
     const char                *FPScommand,
     int                        nbword,
@@ -327,6 +359,20 @@ static void milkseq_cmd_handle_tmux(
     }
 }
 
+/**
+ * milkseq_cmd_handle_conf - Handle configuration commands
+ * @FPScommand:  Command verb
+ * @nbword:      Word count
+ * @fps:         FPS array
+ * @fpsindex:    Index of the target FPS entry
+ * @cmdFOUND:    Set to 1 if matched
+ * @cmdOK:       Set to 1 on success
+ * @taskstatus:  OR-ed with error flags
+ *
+ * Dispatches: confstart, confstop, confupdate, confwupdate.
+ * confwupdate polls until the FPS acknowledges the update
+ * or a timeout is reached.
+ */
 static void milkseq_cmd_handle_conf(
     const char                *FPScommand,
     int                        nbword,
@@ -480,6 +526,20 @@ static void milkseq_cmd_handle_conf(
     }
 }
 
+/**
+ * milkseq_cmd_handle_run - Handle run lifecycle commands
+ * @FPScommand:  Command verb
+ * @nbword:      Word count
+ * @fps:         FPS array
+ * @fpsindex:    Index of the target FPS entry
+ * @cmdFOUND:    Set to 1 if matched
+ * @cmdOK:       Set to 1 on success
+ * @taskstatus:  OR-ed with error flags
+ *
+ * Dispatches: runstart, runwait, runstop.
+ * runwait polls FPS status flags until CMDRUN clears
+ * or a timeout is reached.
+ */
 static void milkseq_cmd_handle_run(
     const char                *FPScommand,
     int                        nbword,
@@ -575,6 +635,23 @@ static void milkseq_cmd_handle_run(
     }
 }
 
+/**
+ * milkseq_exec_cmd - Parse and execute one sequencer command
+ * @cmdindex:    Task index in state->tasklist
+ * @state:       Sequencer state mapped from SHM
+ * @fps:         Array of all FPS entries
+ * @keywnode:    Keyword tree root for FPS name resolution
+ * @fpsCTRLvar:  TUI-level process variables (exitloop, scan state)
+ * @taskstatus:  Output flags OR-ed with task status/error bits
+ *
+ * Tokenizes the command string into words, resolves the FPS
+ * entry name (arg0) via the keyword tree, then dispatches to
+ * one of the handler groups: system commands (exit, rescan,
+ * queueprio), tmux lifecycle, configuration, run lifecycle,
+ * or parameter access (setval, getval, fwrval, exec, fpswfile).
+ *
+ * Return: FPS index of the parameter accessed, or -1 if none
+ */
 int milkseq_exec_cmd(
     uint32_t                 cmdindex,
     MILKSEQ_STATE            *state,
