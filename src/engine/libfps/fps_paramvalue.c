@@ -141,7 +141,7 @@ errno_t function_parameter_SetValue_int64(char *keywordfull, int64_t val)
 {
     FPS fps;
     char                      tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                                        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+                                                                             FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char                      keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL]
     [FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int   keywordlevel = 0;
