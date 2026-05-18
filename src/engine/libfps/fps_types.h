@@ -7,7 +7,7 @@
  * flags, constants) without pulling in the 35+ API
  * sub-headers and convenience macros from fps.h.
  *
- * This is a subset of fps.h — anything that includes
+ * This is a subset of fps.h -- anything that includes
  * fps.h already has everything in this file.
  */
 
@@ -542,7 +542,7 @@ typedef struct
 /**
  * @brief Alias for FUNCTION_PARAMETER_STRUCT
  *
- * Both names are valid — use whichever reads better
+ * Both names are valid -- use whichever reads better
  * in context.
  */
 typedef FUNCTION_PARAMETER_STRUCT FPS;

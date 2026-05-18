@@ -2,7 +2,7 @@
  * @file milk-fps-cmd.c
  * @brief FPS lifecycle command dispatcher.
  *
- * Compiled 5× with different binary names:
+ * Compiled 5x with different binary names:
  *   milk-fps-confstart, milk-fps-confstop, milk-fps-confstep,
  *   milk-fps-runstart, milk-fps-runstop.
  */
@@ -17,9 +17,9 @@
 #include "fps_globals.h"
 #include "milk_help.h"
 
-/* ─────────────────────────────────────────────────────────
+/* ---------------------------------------------------------
  * Per-variant descriptions
- * ───────────────────────────────────────────────────────── */
+ * --------------------------------------------------------- */
 
 static const char *cmd_desc(const char *prog)
 {
@@ -74,11 +74,11 @@ static const char *cmd_desc_long(const char *prog)
         "runstop) to a Function Parameter Structure (FPS).";
 }
 
-/* ─────────────────────────────────────────────────────────
+/* ---------------------------------------------------------
  * print_help() - Full formatted help output.
  * @progname:  Executable name.
  * @mh_color:  Non-zero to emit ANSI color.
- * ───────────────────────────────────────────────────────── */
+ * --------------------------------------------------------- */
 
 static void print_help(const char *progname, int mh_color)
 {
@@ -136,9 +136,9 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 5, mh_color);
 }
 
-/* ─────────────────────────────────────────────────────────
+/* ---------------------------------------------------------
  * main()
- * ───────────────────────────────────────────────────────── */
+ * --------------------------------------------------------- */
 
 int main(int argc, char *argv[])
 {

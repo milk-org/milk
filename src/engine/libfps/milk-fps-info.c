@@ -89,7 +89,7 @@ static void print_connections(const char *fpsname)
 
     int found_any = 0;
 
-    /* FPS → process (runs) */
+    /* FPS -> process (runs) */
     for (int ee = 0; ee < model.nb_edges; ee++)
     {
         if (model.edges[ee].src_node != fni)
@@ -118,7 +118,7 @@ static void print_connections(const char *fpsname)
         found_any = 1;
     }
 
-    /* stream → FPS (input) */
+    /* stream -> FPS (input) */
     for (int ee = 0; ee < model.nb_edges; ee++)
     {
         if (model.edges[ee].tgt_node != fni)
@@ -146,7 +146,7 @@ static void print_connections(const char *fpsname)
         found_any = 1;
     }
 
-    /* FPS → stream (output) */
+    /* FPS -> stream (output) */
     for (int ee = 0; ee < model.nb_edges; ee++)
     {
         if (model.edges[ee].src_node != fni)

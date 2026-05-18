@@ -347,7 +347,7 @@ static int fuzzy_score(
     } // for ti
 
     if ((size_t)qi < qlen) {
-        /* Full query not consumed — no match */
+        /* Full query not consumed -- no match */
         if (n_pos_out) {
             *n_pos_out = 0;
         }
@@ -372,7 +372,7 @@ static void print_highlighted(
 {
     /* Build a quick lookup set */
     int slen = (int)strlen(s);
-    /* Use a bitset — max COL_NAME+FEL_DESC_MAX chars */
+    /* Use a bitset -- max COL_NAME+FEL_DESC_MAX chars */
     static char is_hl[COL_NAME + FEL_DESC_MAX + 4];
     memset(is_hl, 0, sizeof(is_hl));
 

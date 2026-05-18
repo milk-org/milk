@@ -8,11 +8,11 @@
  * every satellite array are swapped as well.
  *
  * Naming convention:
- *  - qs<N>[l|ul]_*()   — recursive Hoare-partition
+ *  - qs<N>[l|ul]_*()   -- recursive Hoare-partition
  *                        quicksort with N satellite
  *                        arrays.  'l' = long, 'ul' =
  *                        unsigned long satellites.
- *  - quick_sort<N>*()  — public entry points.
+ *  - quick_sort<N>*()  -- public entry points.
  *
  * All sort functions sort in ascending order.
  *
@@ -703,7 +703,7 @@ void qs3ulul_double(
 }
 
 /* ============================================================
- * Public entry points — multi-array variants
+ * Public entry points -- multi-array variants
  *
  * Convert (array, count) to (array, 0, count-1) and
  * delegate to the recursive qs_ variant.

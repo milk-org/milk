@@ -7,7 +7,7 @@
  * are extracted and returned in a parsed struct.
  *
  * The parser is intentionally stateless and does not
- * allocate memory — it returns a pointer into the
+ * allocate memory -- it returns a pointer into the
  * original string for the bare name.
  */
 
@@ -20,9 +20,9 @@
  * @brief Parse a raw stream name for @X: modifiers.
  *
  * Looks for the pattern "@<letters>:<name>".
- * Valid letters: L, S (location — at most one),
- * E, N (existence — mutually exclusive).
- * Unknown letters → treat entire string as bare name.
+ * Valid letters: L, S (location -- at most one),
+ * E, N (existence -- mutually exclusive).
+ * Unknown letters -> treat entire string as bare name.
  *
  * @param raw  Raw stream name string
  * @return     Parsed result with modifier flags
@@ -50,11 +50,11 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
     const char *colon = strchr(raw, ':');
     if (colon == NULL)
     {
-        /* No colon → not a valid prefix */
+        /* No colon -> not a valid prefix */
         return p;
     }
 
-    /* Empty modifier block "@:" → no modifiers */
+    /* Empty modifier block "@:" -> no modifiers */
     int modlen = (int)(colon - raw - 1);
     if (modlen <= 0)
     {
@@ -86,7 +86,7 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
             break;
 
         default:
-            /* Unknown letter → error */
+            /* Unknown letter -> error */
             memset(&p, 0, sizeof(p));
             p.name  = raw;
             p.error = 1;

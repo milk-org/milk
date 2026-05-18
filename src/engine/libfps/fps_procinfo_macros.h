@@ -175,7 +175,7 @@ typedef struct
     }
 
 
-/* INSERT_STD_* macros — stub versions
+/* INSERT_STD_* macros -- stub versions
  * for standalone compilation. The real
  * versions are in CLIcore_utils.h and
  * reference CLI functions. */
@@ -193,7 +193,7 @@ typedef struct
 
 #define INSERT_STD_CLIREGISTERFUNC {}
 
-/* Process info macros — these are used by
+/* Process info macros -- these are used by
  * standalone code so we provide the real
  * versions via CLIcore_utils.h-compatible
  * macros that reference CLIcmddata. */

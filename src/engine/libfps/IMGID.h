@@ -192,7 +192,7 @@ static inline void imgid_free(
  *   "c20>im1"   20-sized circular buffer
  *
  * The legacy "s>" prefix has been removed.
- * Use @S: instead (or omit — shared is default).
+ * Use @S: instead (or omit -- shared is default).
 */
 static inline IMGID imgid_make_from_name(CONST_WORD name)
 {
@@ -243,7 +243,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
             pch1 = pch;
             //printf("[%2d] %s\n", nbword, pch);
 
-            /* "s>" prefix removed — use @S:
+            /* "s>" prefix removed -- use @S:
              * instead (shared is default).
              */
 
@@ -325,7 +325,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     img.md = NULL;
 
     /* Parse bracket slice from the final name.
-     * e.g. "im[0:19,10:29]" → bare name "im"
+     * e.g. "im[0:19,10:29]" -> bare name "im"
      *   + slice {0:19, 10:29}.
      */
     {

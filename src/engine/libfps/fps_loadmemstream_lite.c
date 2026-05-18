@@ -11,8 +11,8 @@
  * Supports @X: prefix modifiers on stream names:
  *   L  Only search local imarray (no SHM)
  *   S  Force shared memory (default behavior)
- *   E  Must exist (return -1 → caller error)
- *   N  Must not exist (return -1 → caller error)
+ *   E  Must exist (return -1 -> caller error)
+ *   N  Must not exist (return -1 -> caller error)
  */
 
 #include <string.h>
@@ -149,7 +149,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
-    /* @L: local-only — skip SHM */
+    /* @L: local-only -- skip SHM */
     if (sp.loc == 'L')
     {
         imageID id = find_in_local(name);

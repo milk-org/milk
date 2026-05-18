@@ -8,9 +8,9 @@
  * reordering throughout the framework.
  *
  * Naming convention:
- *  - qs_<type>()       — recursive Hoare-partition
+ *  - qs_<type>()       -- recursive Hoare-partition
  *                        quicksort on a single array.
- *  - quick_sort_*()    — public entry points that
+ *  - quick_sort_*()    -- public entry points that
  *                        convert (array, count) to
  *                        (array, 0, count-1) and call
  *                        the recursive qs_ variant.
@@ -275,7 +275,7 @@ void qs_ushort(
 }
 
 /* ============================================================
- * Public entry points — single-array variants
+ * Public entry points -- single-array variants
  *
  * Convert (array, count) to (array, 0, count-1) and
  * delegate to the recursive qs_ variant.

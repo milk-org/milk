@@ -72,7 +72,7 @@ static int daemonize(
     const char *pidpath,
     const char *logpath)
 {
-    /* First fork — parent exits */
+    /* First fork -- parent exits */
     pid_t pid = fork();
     if (pid < 0) {
         return -1;
@@ -86,7 +86,7 @@ static int daemonize(
         return -1;
     }
 
-    /* Second fork — prevent re-acquiring tty */
+    /* Second fork -- prevent re-acquiring tty */
     pid = fork();
     if (pid < 0) {
         return -1;

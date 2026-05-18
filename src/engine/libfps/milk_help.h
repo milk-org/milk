@@ -7,7 +7,7 @@
  * `-h1`, and `-hm` help output across all milk
  * and cacao executables.
  *
- * Engine tier — no CLI dependency.
+ * Engine tier -- no CLI dependency.
  *
  * Usage:
  * @code
@@ -38,12 +38,12 @@
 #include <string.h>
 #include <unistd.h>
 
-/* ───────────────────────────────────────────
+/* -------------------------------------------
  * ANSI Color Palette
  *
  * Semantic names map to a curated palette that
  * is readable on both dark and light terminals.
- * ─────────────────────────────────────────── */
+ * ------------------------------------------- */
 
 /** @brief Reset all attributes */
 #define MH_RST    "\033[0m"
@@ -52,31 +52,31 @@
 /** @brief Dim gray */
 #define MH_DIM    "\033[2m"
 
-/** @brief Cyan bold — program name, primary params */
+/** @brief Cyan bold -- program name, primary params */
 #define MH_TITLE  "\033[1;36m"
-/** @brief Blue bold — section headers */
+/** @brief Blue bold -- section headers */
 #define MH_HDR    "\033[1;34m"
-/** @brief Green bold — commands, executables */
+/** @brief Green bold -- commands, executables */
 #define MH_CMD    "\033[1;32m"
-/** @brief Yellow — option flags */
+/** @brief Yellow -- option flags */
 #define MH_OPT    "\033[33m"
-/** @brief Magenta bold — required arguments */
+/** @brief Magenta bold -- required arguments */
 #define MH_ARG    "\033[1;35m"
-/** @brief Cyan — default values */
+/** @brief Cyan -- default values */
 #define MH_DFLT   "\033[36m"
-/** @brief Yellow bold — notes, see-also intro */
+/** @brief Yellow bold -- notes, see-also intro */
 #define MH_NOTE   "\033[1;33m"
-/** @brief Red bold — error messages */
+/** @brief Red bold -- error messages */
 #define MH_ERR    "\033[1;31m"
 
-/* ───────────────────────────────────────────
+/* -------------------------------------------
  * Color Dispatch Macro
  *
  * MH(color, text) emits color+text+reset when
  * mh_color is true, or just text when false.
  *
  * Requires a local `int mh_color` in scope.
- * ─────────────────────────────────────────── */
+ * ------------------------------------------- */
 
 /**
  * @brief Conditionally wrap text in color.
@@ -90,11 +90,11 @@
 #define MH(c, t) \
     (mh_color ? (c t MH_RST) : (t))
 
-/* ───────────────────────────────────────────
+/* -------------------------------------------
  * Return values from milk_help_init()
- * ─────────────────────────────────────────── */
+ * ------------------------------------------- */
 
-/** @brief No help flag found — continue */
+/** @brief No help flag found -- continue */
 #define MH_ACTION_NONE  0
 /** @brief -h1 was printed, caller should return 0 */
 #define MH_ACTION_H1    1
@@ -105,12 +105,12 @@
 /** @brief -h2 was printed, caller should return 0 */
 #define MH_ACTION_H2    4
 
-/* ───────────────────────────────────────────
+/* -------------------------------------------
  * Initialization
  *
  * Scans argv for -h1, -h, -hm BEFORE getopt
  * runs, so -h1 is never split into -h + 1.
- * ─────────────────────────────────────────── */
+ * ------------------------------------------- */
 
 /**
  * @brief Scan argv for help flags.
@@ -191,14 +191,14 @@ static inline int milk_help_init(
     return MH_ACTION_MONO;
 }
 
-/* ───────────────────────────────────────────
+/* -------------------------------------------
  * Section Printing Helpers
- * ─────────────────────────────────────────── */
+ * ------------------------------------------- */
 
 /**
  * @brief Print the help banner line.
  *
- * Format: "<progname> — <description>"
+ * Format: "<progname> -- <description>"
  *
  * @param progname    Executable name (argv[0] basename).
  * @param description One-line description.
@@ -223,12 +223,12 @@ static inline void milk_help_banner(
     if (color)
     {
         printf("\n" MH_TITLE "%s" MH_RST
-               " — %s\n\n",
+               " -- %s\n\n",
                base, description);
     }
     else
     {
-        printf("\n%s — %s\n\n",
+        printf("\n%s -- %s\n\n",
                base, description);
     }
 }
@@ -283,12 +283,12 @@ static inline void milk_help_see_also(
             int cmd_len = colon - cmd;
             if (color)
             {
-                printf("  " MH_CMD "%-24.*s" MH_RST " — %s\n",
+                printf("  " MH_CMD "%-24.*s" MH_RST " -- %s\n",
                        cmd_len, cmd, colon + 1);
             }
             else
             {
-                printf("  %-24.*s — %s\n", cmd_len, cmd, colon + 1);
+                printf("  %-24.*s -- %s\n", cmd_len, cmd, colon + 1);
             }
         }
         else

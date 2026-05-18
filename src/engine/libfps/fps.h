@@ -88,7 +88,7 @@ uint16_t function_parameter_RUNexit(
  * @{
  */
 
-/* Legacy color aliases — map to milk_help.h palette.
+/* Legacy color aliases -- map to milk_help.h palette.
  * Used by non-help code (e.g. runtime status lines).
  * New code should use MH_* macros instead.
  */
@@ -120,7 +120,7 @@ uint16_t function_parameter_RUNexit(
 
 /*
  * ================================================================
- * FPS_MAIN_STANDALONE_V2 — uses generic library functions
+ * FPS_MAIN_STANDALONE_V2 -- uses generic library functions
  *
  * Usage (new binding format):
  *     FPS_MAIN_STANDALONE_V2(
@@ -351,7 +351,7 @@ uint16_t function_parameter_RUNexit(
 
 /*
  * ================================================================
- * MILK_EMBED_BUILD_TAG — compile-time build metadata
+ * MILK_EMBED_BUILD_TAG -- compile-time build metadata
  *
  * Embeds a sentinel string in every fpsexec binary
  * so milk-perfbench can detect PGO/LTO status at
@@ -361,11 +361,11 @@ uint16_t function_parameter_RUNexit(
  *   \x1fMILK_BUILD:<flags>END
  *
  * where <flags> is a comma-separated list of:
- *   OPT=1        — optimised (-O2/-O3)
- *   PGO=GENERATE — pass-1 instrumented binary
- *   PGO=USE      — pass-2 profile-optimised binary
- *   LTO=1        — link-time optimisation enabled
- *   STATIC=1     — static LTO archives used
+ *   OPT=1        -- optimised (-O2/-O3)
+ *   PGO=GENERATE -- pass-1 instrumented binary
+ *   PGO=USE      -- pass-2 profile-optimised binary
+ *   LTO=1        -- link-time optimisation enabled
+ *   STATIC=1     -- static LTO archives used
  *
  * The \x1f (ASCII unit-separator) prefix ensures
  * the sentinel is not confused with other strings.

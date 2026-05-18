@@ -83,7 +83,7 @@ static int parse_one_axis(
 
     if (ncolon == 0)
     {
-        /* Single index: "N" → start=N, end=N */
+        /* Single index: "N" -> start=N, end=N */
         int32_t idx = (int32_t) strtol(buf, NULL, 10);
         s->start[axis] = idx;
         s->end[axis]   = idx;
@@ -522,7 +522,7 @@ void imgid_slice_shmname(
  *
  * Given "im[0:19,10:29]", writes "im" into
  * name_buf and "0:19,10:29" into slice_buf.
- * Handles nested @X: prefixes — the split
+ * Handles nested @X: prefixes -- the split
  * is done on the leftmost '['.
  *
  * @param raw       Full stream name string

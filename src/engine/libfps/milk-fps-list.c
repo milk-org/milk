@@ -16,7 +16,7 @@
 #include "fps_scan.h"
 #include "milk_help.h"
 
-/* local color aliases — keep for table rendering, map to MH_* */
+/* local color aliases -- keep for table rendering, map to MH_* */
 #define C_TITLE MH_TITLE
 #define C_HDR   MH_HDR
 #define C_NAME  MH_CMD

@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        /* Match found — open and map to inspect */
+        /* Match found -- open and map to inspect */
         char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
         snprintf(fullpath, sizeof(fullpath),
                  "%s/%s", procdname, entry->d_name);
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
         if (pid_alive)
         {
             fprintf(stderr,
-                    "Skipping %s — PID %ld is still alive\n",
+                    "Skipping %s -- PID %ld is still alive\n",
                     fullpath, (long) pid);
             skipped_alive++;
             continue;
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
             {
                 if (verbose)
                 {
-                    printf("Skipping %s — not crashed/stopped\n",
+                    printf("Skipping %s -- not crashed/stopped\n",
                            fullpath);
                 }
                 continue;
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
            removed_count, pattern);
     if (skipped_alive > 0)
     {
-        printf(" (%d skipped — PID still alive)",
+        printf(" (%d skipped -- PID still alive)",
                skipped_alive);
     }
     printf(".\n");
