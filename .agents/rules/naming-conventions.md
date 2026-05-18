@@ -434,5 +434,3 @@ Macros:       UPPER_CASE_WITH_UNDERSCORES
 FPS keywords: .snake_case
 Scripts:      milk-subsys-verb
 ```
-
-
