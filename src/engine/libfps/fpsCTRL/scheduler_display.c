@@ -39,8 +39,8 @@ errno_t fpsCTRL_scheduler_display(
                         sizeof(fpsCTRLvar->milkseq_name)
                         - 1);
                 fpsCTRLvar->milkseq_name[
-                    sizeof(fpsCTRLvar->milkseq_name)
-                    - 1] = '\0';
+                sizeof(fpsCTRLvar->milkseq_name)
+                - 1] = '\0';
             }
         }
     }

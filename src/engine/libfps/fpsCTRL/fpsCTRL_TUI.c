@@ -408,12 +408,12 @@ errno_t functionparameter_CTRLscreen(
     strncpy(fpsCTRLvar.fpsnamemask, fpsnamemask,
             sizeof(fpsCTRLvar.fpsnamemask) - 1);
     fpsCTRLvar.fpsnamemask[
-        sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
+     sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
     strncpy(fpsCTRLvar.fpsCTRLfifoname,
             fpsCTRLfifoname,
             sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1);
     fpsCTRLvar.fpsCTRLfifoname[
-        sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
+     sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
         = '\0';
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
