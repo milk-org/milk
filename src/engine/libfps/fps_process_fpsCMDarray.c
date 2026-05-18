@@ -158,17 +158,9 @@ int function_parameter_process_fpsCMDarray(
 
     // Remove old tasks
     //
-    double         *completion_age; // completion time
     long            oldest_index = 0;
     struct timespec tnow;
     double          tnowd;
-
-    completion_age = (double *) malloc(sizeof(double) * NB_FPSCTRL_TASK_MAX);
-    if(completion_age == NULL)
-    {
-        PRINT_ERROR("malloc returns NULL pointer");
-        abort();
-    }
 
     clock_gettime(CLOCK_MILK, &tnow);
     tnowd = 1.0 * tnow.tv_sec + 1.0e-9 * tnow.tv_nsec;
@@ -184,15 +176,14 @@ int function_parameter_process_fpsCMDarray(
             // how many tasks are candidates for removal (completed) ?
             if(fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_COMPLETED)
             {
-
-                completion_age[taskcnt] =
+                double current_age =
                     tnowd -
                     (1.0 * fpsctrltasklist[cmdindex].completiontime.tv_sec +
                      1.0e-9 * fpsctrltasklist[cmdindex].completiontime.tv_nsec);
 
-                if(completion_age[taskcnt] > oldest_age)
+                if(current_age > oldest_age)
                 {
-                    oldest_age   = completion_age[taskcnt];
+                    oldest_age   = current_age;
                     oldest_index = cmdindex;
                 }
                 taskcnt++;
@@ -204,7 +195,6 @@ int function_parameter_process_fpsCMDarray(
         }
     }
 
-    free(completion_age);
 
     // find out which task to run among the ones pre-selected above
 
