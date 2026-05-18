@@ -412,11 +412,11 @@ int fpsCTRL_TUI_process_user_key(
                     int current_idx = -1;
                     if(fpsCTRLvar->milkseq_state != NULL)
                     {
-                        for(int i = 0; i < count; i++)
+                        for(int seq_idx = 0; seq_idx < count; seq_idx++)
                         {
-                            if(strcmp(names[i], fpsCTRLvar->milkseq_name) == 0)
+                            if(strcmp(names[seq_idx], fpsCTRLvar->milkseq_name) == 0)
                             {
-                                current_idx = i;
+                                current_idx = seq_idx;
                                 break;
                             }
                         }

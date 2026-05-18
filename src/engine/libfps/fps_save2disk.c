@@ -365,7 +365,7 @@ static errno_t filecopy(char *sourcefilename, char *destfilename)
 
     if((fp1 = fopen(sourcefilename, "r")) == NULL)
     {
-        printf("Cannot open file \"%s\" \n", sourcefilename);
+        PRINT_ERROR("Cannot open file \"%s\"", sourcefilename);
         return RETURN_FAILURE;
     }
 
@@ -402,14 +402,14 @@ errno_t fps_datadir_to_confdir(FPS *fps)
     DIR *indir = opendir(fps->md->datadir);
     if(indir == NULL)  // opendir returns NULL if couldn't open directory
     {
-        printf("Cannot open directory \"%s\"\n", fps->md->datadir);
+        PRINT_ERROR("Cannot open directory \"%s\"", fps->md->datadir);
         return RETURN_FAILURE;
     }
 
     DIR *outdir = opendir(fps->md->confdir);
     if(outdir == NULL)  // opendir returns NULL if couldn't open directory
     {
-        printf("Cannot open directory\"%s\"", fps->md->confdir);
+        PRINT_ERROR("Cannot open directory\"%s\"", fps->md->confdir);
         return RETURN_FAILURE;
     }
 

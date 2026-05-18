@@ -8,10 +8,7 @@
 
 #include "timeutils.h"
 
-// Basic error macro if not defined
-#ifndef PRINT_ERROR
-#define PRINT_ERROR(...) fprintf(stderr, "ERROR: " __VA_ARGS__)
-#endif
+#include "milkDebugTools.h"
 
 #ifndef RETURN_SUCCESS
 #define RETURN_SUCCESS 0
@@ -48,11 +45,13 @@ errno_t mkUTtimestring_nanosec(
                        uttime->tm_min,
                        uttime->tm_sec,
                        tnow.tv_nsec);
-        if(slen<1) {
+        if(slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if(slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
@@ -96,11 +95,13 @@ errno_t mkUTtimestring_microsec(
                        uttime->tm_min,
                        uttime->tm_sec,
                        (long)(tnow.tv_nsec / 1000));
-        if(slen<1) {
+        if(slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if(slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
@@ -146,11 +147,13 @@ errno_t mkUTtimestring_millisec(
                        uttime->tm_min,
                        uttime->tm_sec,
                        (long)(tnow.tv_nsec / 1000000));
-        if(slen<1) {
+        if(slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if(slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
@@ -192,11 +195,13 @@ errno_t mkUTtimestring_sec(
                             uttime->tm_hour,
                             uttime->tm_min,
                             uttime->tm_sec);
-        if(slen<1) {
+        if(slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if(slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }

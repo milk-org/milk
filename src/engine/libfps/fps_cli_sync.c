@@ -48,43 +48,52 @@ static void set_fps_value_from_string(
     const char                *str
 )
 {
-    if (type == FPTYPE_FLOAT64) {
+    if(type == FPTYPE_FLOAT64)
+    {
         fps->parray[pindex].val.f64[0] =
             atof(str);
     }
-    else if (type == FPTYPE_FLOAT32) {
+    else if(type == FPTYPE_FLOAT32)
+    {
         fps->parray[pindex].val.f32[0] =
             (float) atof(str);
     }
-    else if (type == FPTYPE_INT64) {
+    else if(type == FPTYPE_INT64)
+    {
         fps->parray[pindex].val.i64[0] =
             atoll(str);
     }
-    else if (type == FPTYPE_UINT64) {
+    else if(type == FPTYPE_UINT64)
+    {
         fps->parray[pindex].val.ui64[0] =
             (uint64_t) atoll(str);
     }
-    else if (type == FPTYPE_INT32
-             || type == FPTYPE_ONOFF) {
+    else if(type == FPTYPE_INT32
+            || type == FPTYPE_ONOFF)
+    {
         fps->parray[pindex].val.i32[0] =
             atoi(str);
     }
-    else if (type == FPTYPE_UINT32) {
+    else if(type == FPTYPE_UINT32)
+    {
         fps->parray[pindex].val.ui32[0] =
             (uint32_t) atoi(str);
     }
-    else if (type == FPTYPE_PID) {
+    else if(type == FPTYPE_PID)
+    {
         fps->parray[pindex].val.pid[0] =
             (pid_t) atoi(str);
     }
-    else if (type == FPTYPE_TIMESPEC) {
+    else if(type == FPTYPE_TIMESPEC)
+    {
         double val = atof(str);
         fps->parray[pindex].val.ts[0].tv_sec =
             (long) val;
         fps->parray[pindex].val.ts[0].tv_nsec =
-            (long) ((val - (long) val) * 1e9);
+            (long)((val - (long) val) * 1e9);
     }
-    else if (FPTYPE_IS_STRING(type)) {
+    else if(FPTYPE_IS_STRING(type))
+    {
         strncpy(
             fps->parray[pindex].val.string[0],
             str,
@@ -103,46 +112,55 @@ static void sync_fps_to_local(
     FPS_CLI_BINDING           *b
 )
 {
-    if (b->type == FPTYPE_FLOAT64) {
+    if(b->type == FPTYPE_FLOAT64)
+    {
         *((double *) b->ptr) =
             fps->parray[pindex].val.f64[0];
     }
-    else if (b->type == FPTYPE_FLOAT32) {
+    else if(b->type == FPTYPE_FLOAT32)
+    {
         *((float *) b->ptr) =
             fps->parray[pindex].val.f32[0];
     }
-    else if (b->type == FPTYPE_INT64) {
+    else if(b->type == FPTYPE_INT64)
+    {
         *((int64_t *) b->ptr) =
             fps->parray[pindex].val.i64[0];
     }
-    else if (b->type == FPTYPE_UINT64) {
+    else if(b->type == FPTYPE_UINT64)
+    {
         *((uint64_t *) b->ptr) =
             fps->parray[pindex].val.ui64[0];
     }
-    else if (b->type == FPTYPE_INT32
-             || b->type == FPTYPE_ONOFF) {
+    else if(b->type == FPTYPE_INT32
+            || b->type == FPTYPE_ONOFF)
+    {
         *((int32_t *) b->ptr) =
             fps->parray[pindex].val.i32[0];
     }
-    else if (b->type == FPTYPE_UINT32) {
+    else if(b->type == FPTYPE_UINT32)
+    {
         *((uint32_t *) b->ptr) =
             fps->parray[pindex].val.ui32[0];
     }
-    else if (b->type == FPTYPE_PID) {
+    else if(b->type == FPTYPE_PID)
+    {
         *((pid_t *) b->ptr) =
             fps->parray[pindex].val.pid[0];
     }
-    else if (b->type == FPTYPE_TIMESPEC) {
+    else if(b->type == FPTYPE_TIMESPEC)
+    {
         *((struct timespec *) b->ptr) =
             fps->parray[pindex].val.ts[0];
     }
-    else if (FPTYPE_IS_STRING(b->type)) {
+    else if(FPTYPE_IS_STRING(b->type))
+    {
         strncpy(
             (char *) b->ptr,
             fps->parray[pindex].val.string[0],
             FUNCTION_PARAMETER_STRMAXLEN - 1);
         ((char *) b->ptr)[
-            FUNCTION_PARAMETER_STRMAXLEN - 1]
+        FUNCTION_PARAMETER_STRMAXLEN - 1]
             = '\0';
     }
 }
@@ -156,30 +174,34 @@ errno_t fps_process_cli_and_sync(
 )
 {
     /* ---- Step 1: CLI → FPS ---- */
-    if (standalone_argv != NULL) {
+    if(standalone_argv != NULL)
+    {
         /*
          * MODE B: standalone executable.
          * Find the subcommand position, then map
          * positional args after it to primary bindings.
          */
         int cmd_pos = -1;
-        for (int jj = 1; jj < standalone_argc; jj++) {
+        for(int jj = 1; jj < standalone_argc; jj++)
+        {
             /* Extract command part after optional
              * 'name:' prefix */
             const char *arg = standalone_argv[jj];
             const char *cmd_part = arg;
             {
                 const char *cp = strchr(arg, ':');
-                if (cp != NULL)
+                if(cp != NULL)
+                {
                     cmd_part = cp + 1;
+                }
             }
-            if (strcmp(cmd_part, "runstart") == 0 ||
-                strcmp(cmd_part, "run") == 0 ||
-                strcmp(cmd_part, "exec") == 0 ||
-                strcmp(cmd_part, "set") == 0 ||
-                strcmp(cmd_part, "confstart") == 0 ||
-                strcmp(cmd_part, "confstep") == 0 ||
-                strcmp(cmd_part, "fpsinit") == 0)
+            if(strcmp(cmd_part, "runstart") == 0 ||
+                    strcmp(cmd_part, "run") == 0 ||
+                    strcmp(cmd_part, "exec") == 0 ||
+                    strcmp(cmd_part, "set") == 0 ||
+                    strcmp(cmd_part, "confstart") == 0 ||
+                    strcmp(cmd_part, "confstep") == 0 ||
+                    strcmp(cmd_part, "fpsinit") == 0)
             {
                 cmd_pos = jj;
                 break;
@@ -188,41 +210,51 @@ errno_t fps_process_cli_and_sync(
 
         /* If no explicit command, try implicit run
          * (first non-flag arg) */
-        if (cmd_pos == -1) {
-            for (int jj = 1;
-                 jj < standalone_argc; jj++)
+        if(cmd_pos == -1)
+        {
+            for(int jj = 1;
+                    jj < standalone_argc; jj++)
             {
-                if (standalone_argv[jj][0] != '-') {
+                if(standalone_argv[jj][0] != '-')
+                {
                     cmd_pos = jj;
                     break;
                 }
             }
         }
 
-        if (cmd_pos != -1) {
+        if(cmd_pos != -1)
+        {
             int cli_idx = 0;
-            for (int aa = cmd_pos + 1;
-                 aa < standalone_argc; aa++)
+            for(int aa = cmd_pos + 1;
+                    aa < standalone_argc; aa++)
             {
                 /* Skip -flag arguments */
-                if (standalone_argv[aa][0] == '-')
+                if(standalone_argv[aa][0] == '-')
+                {
                     continue;
+                }
 
                 /* Map to next primary binding */
-                while (cli_idx < nb_b &&
-                       !bindings[cli_idx].is_primary)
+                while(cli_idx < nb_b &&
+                        !bindings[cli_idx].is_primary)
+                {
                     cli_idx++;
-                if (cli_idx >= nb_b)
+                }
+                if(cli_idx >= nb_b)
+                {
                     break;
+                }
 
                 long pindex =
                     functionparameter_GetParamIndex(
                         fps,
                         bindings[cli_idx]
-                            .fpskeyword);
-                if (pindex != -1 &&
-                    strcmp(standalone_argv[aa],
-                           ".") != 0) {
+                        .fpskeyword);
+                if(pindex != -1 &&
+                        strcmp(standalone_argv[aa],
+                               ".") != 0)
+                {
                     set_fps_value_from_string(
                         fps, pindex,
                         bindings[cli_idx].type,
@@ -232,7 +264,8 @@ errno_t fps_process_cli_and_sync(
             }
         }
     }
-    else {
+    else
+    {
         /*
          * MODE A: running as module in milk CLI.
          * Sync from CLI argdata filled by
@@ -243,19 +276,19 @@ errno_t fps_process_cli_and_sync(
             farg, nb_b, fps);
 #else
         (void) farg;
-        fprintf(stderr,
-            "ERROR: CLI sync not available"
-            " in standalone mode\n");
+        PRINT_ERROR("CLI sync not available in standalone mode");
 #endif
     }
 
     /* ---- Step 2: FPS → local C variables ---- */
-    for (int ii = 0; ii < nb_b; ii++) {
+    for(int ii = 0; ii < nb_b; ii++)
+    {
         long pindex =
             functionparameter_GetParamIndex(
                 fps, bindings[ii].fpskeyword);
 
-        if (pindex != -1) {
+        if(pindex != -1)
+        {
             sync_fps_to_local(
                 fps, pindex, &bindings[ii]);
         }
