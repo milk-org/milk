@@ -14,6 +14,19 @@
 #include "fpsseq.h"
 #include "timeutils.h"
 
+/**
+ * milkseq_fifo_read - Read commands from the sequencer FIFO
+ * @state:    Sequencer state (tasks appended to state->tasklist)
+ * @fifo_fd:  File descriptor of the FIFO (must be O_NONBLOCK)
+ *
+ * Reads the FIFO byte-by-byte until EAGAIN, assembling complete
+ * newline-terminated lines. Each line is either a meta-command
+ * (taskcntzero, setqindex, setqprio, waitonrun/conf toggles)
+ * that updates sequencer state directly, or a regular command
+ * string that is enqueued as a new task in the first free slot.
+ *
+ * Return: Number of regular tasks enqueued (excludes meta-commands)
+ */
 int milkseq_fifo_read(MILKSEQ_STATE *state, int fifo_fd)
 {
     if (!state || fifo_fd < 0) return 0;

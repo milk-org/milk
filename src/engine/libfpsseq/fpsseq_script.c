@@ -20,6 +20,13 @@ typedef struct {
     int num_vars;
 } SCRIPT_CTX;
 
+/**
+ * trim_whitespace - Strip leading and trailing whitespace in-place
+ * @str:  NUL-terminated string to trim
+ *
+ * Advances past leading spaces/tabs and NUL-terminates after the
+ * last non-whitespace character. Operates in-place on the buffer.
+ */
 static void trim_whitespace(char *str) {
     char *end;
     while(isspace((unsigned char)*str)) str++;
@@ -29,6 +36,16 @@ static void trim_whitespace(char *str) {
     end[1] = '\0';
 }
 
+/**
+ * expand_vars - Substitute $VARNAME tokens in a script line
+ * @ctx:   Script context holding the variable table
+ * @line:  Line buffer (modified in-place, max MAX_LINE_LEN)
+ *
+ * Scans the line for '$' followed by alphanumeric/underscore
+ * characters, looks up the variable in ctx->vars[], and
+ * replaces the token with its value. Undefined variables
+ * expand to the empty string.
+ */
 static void expand_vars(SCRIPT_CTX *ctx, char *line) {
     char result[MAX_LINE_LEN] = {0};
     char *p = line;
@@ -72,7 +89,23 @@ static void expand_vars(SCRIPT_CTX *ctx, char *line) {
 
 #include "fps_GetParamIndex.h"
 
-// Recursively load script, handle includes, unroll loops
+/**
+ * load_and_preprocess - Recursively load and preprocess a .seq script
+ * @ctx:       Script context accumulating preprocessed lines
+ * @filename:  Path to the script file to load
+ * @depth:     Current include recursion depth (max 10)
+ *
+ * Reads the script line by line, processing directives:
+ *   - "include <file>" -- recursively load another script
+ *   - "set <var> <val>" -- define a script variable
+ *   - All other lines undergo variable expansion and are
+ *     appended to ctx->lines[] for later task injection.
+ *
+ * Blank lines and lines starting with '#' are skipped.
+ *
+ * Return: 0 on success, -1 on error (max depth, open failure,
+ *         or script exceeding MAX_SCRIPT_LINES)
+ */
 static int load_and_preprocess(SCRIPT_CTX *ctx, const char *filename, int depth) {
     if (depth > 10) {
         printf("Error: Max include depth exceeded\n");
@@ -140,6 +173,22 @@ static int load_and_preprocess(SCRIPT_CTX *ctx, const char *filename, int depth)
     return 0;
 }
 
+/**
+ * milkseq_load_script - Load a .seq script into the sequencer task array
+ * @state:     Sequencer state (tasks are appended to state->tasklist)
+ * @filename:  Path to the .seq script file
+ * @fps:       Array of all FPS entries (used by if_fps_status)
+ * @keywnode:  Keyword tree root (used by if_fps_status lookups)
+ *
+ * Preprocesses the script (includes, variables), then iterates
+ * the resulting command lines. Recognized directives:
+ *   - "on_error <policy>" -- set abort/skip/retry for subsequent tasks
+ *   - "if_fps_status <name> <status>" ... "endif" -- conditional block
+ *   - "repeat <N>" ... "endrepeat" -- repeat a block N times
+ *   - All other lines are enqueued as sequencer tasks
+ *
+ * Return: 0 on success, -1 on preprocessing error
+ */
 errno_t milkseq_load_script(
     MILKSEQ_STATE             *state,
     const char                *filename,
