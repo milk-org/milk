@@ -45,14 +45,10 @@ long fps_connect(
 {
     DEBUG_TRACEPOINT("Launching fps_connect for %s", name);
 
-    int  stringmaxlen = 500;
-    char SM_fname[stringmaxlen];
+    char SM_fname[500];
     int  SM_fd; // shared memory file descriptor
     long NBparamMAX;
-    //    long NBparamActive;
     char *mapv;
-
-    char shmdname[stringmaxlen];
 
 
     if(FPS_TIMESTAMP == 0)
@@ -94,11 +90,13 @@ long fps_connect(
         fps->SMfd = 0;
     }
 
-    function_parameter_struct_shmdirname(shmdname);
-
-    if(snprintf(SM_fname, stringmaxlen, "%s/%s.fps.shm", shmdname, name) < 0)
     {
-        PRINT_ERROR("snprintf error");
+        char shmdname[500];
+        function_parameter_struct_shmdirname(shmdname);
+        if(snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
     }
     DEBUG_TRACEPOINT("File: %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
@@ -150,41 +148,43 @@ long fps_connect(
     DEBUG_TRACEPOINT("File: %s - successful connect.\n", SM_fname);
 
     // decompose full name into pname and indices
-    int   NBi = 0;
-    char  tmpstring[stringmaxlen];
-    char  tmpstring1[stringmaxlen];
-    char *pch;
-
-    strncpy(tmpstring, name, stringmaxlen - 1);
-    NBi = -1;
-    pch = strtok(tmpstring, "-");
-    while(pch != NULL)
+    int NBi = 0;
     {
-        strncpy(tmpstring1, pch, stringmaxlen - 1);
+        char  tmpstring[500];
+        char  tmpstring1[500];
+        char *pch;
 
-        if(NBi == -1)
+        strncpy(tmpstring, name, sizeof(tmpstring) - 1);
+        tmpstring[sizeof(tmpstring) - 1] = '\0';
+        NBi = -1;
+        pch = strtok(tmpstring, "-");
+        while(pch != NULL)
         {
-            //            strncpy(fps->md->pname, tmpstring1, stringmaxlen);
-            if(snprintf(fps->md->pname,
-                        FPS_PNAME_STRMAXLEN,
-                        "%s",
-                        tmpstring1) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-        }
+            strncpy(tmpstring1, pch, sizeof(tmpstring1) - 1);
+            tmpstring1[sizeof(tmpstring1) - 1] = '\0';
 
-        if((NBi >= 0) && (NBi < 10))
-        {
-            if(snprintf(fps->md->nameindexW[NBi], 16, "%s", tmpstring1) < 0)
+            if(NBi == -1)
             {
-                PRINT_ERROR("snprintf error");
+                if(snprintf(fps->md->pname,
+                            FPS_PNAME_STRMAXLEN,
+                            "%s",
+                            tmpstring1) < 0)
+                {
+                    PRINT_ERROR("snprintf error");
+                }
             }
-            //strncpy(fps->md->nameindexW[NBi], tmpstring1, 16);
-        }
 
-        NBi++;
-        pch = strtok(NULL, "-");
+            if((NBi >= 0) && (NBi < 10))
+            {
+                if(snprintf(fps->md->nameindexW[NBi], 16, "%s", tmpstring1) < 0)
+                {
+                    PRINT_ERROR("snprintf error");
+                }
+            }
+
+            NBi++;
+            pch = strtok(NULL, "-");
+        }
     }
 
     DEBUG_TRACEPOINT("File: %s - Successful fps parse.\n", SM_fname);

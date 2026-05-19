@@ -100,12 +100,6 @@ imageID COREMOD_TOOLS_statusStat(
     const char *IDstat_name,
     long       indexmax)
 {
-    int RT_priority = 91;
-    struct sched_param schedpar;
-    float usec0 = 50.0;
-    float usec1 = 150.0;
-    long long NBkiter = 2000000000;
-
     IMGID imgstat = imgid_make_from_name(IDstat_name);
     resolveIMGID(&imgstat, ERRMODE_ABORT, dcimg, dcnimg);
 
@@ -124,53 +118,63 @@ imageID COREMOD_TOOLS_statusStat(
         imgout.im->array.SI64[st] = 0;
     }
 
-    schedpar.sched_priority = RT_priority;
-    sched_setscheduler(0, SCHED_FIFO, &schedpar);
-
-    printf("Measuring status" " distribution \n");
-    fflush(stdout);
-
-    struct timespec t1;
-    clock_gettime(CLOCK_MILK, &t1);
-    double tdiffv1 = 0.0;
-    double tdisplay = 1.0;
-
-    for(long long k = 0;
-        k < NBkiter; k++)
     {
-        usleep((long)(usec0 + usec1 * ((double) k / NBkiter)));
-        unsigned short st = imgstat.im->array.UI16[0];
-        if(st < indexmax)
-        {
-            imgout.im ->array.SI64[st]++;
-        }
+        int RT_priority = 91;
+        struct sched_param schedpar;
+        schedpar.sched_priority = RT_priority;
+        sched_setscheduler(0, SCHED_FIFO, &schedpar);
+    }
 
-        struct timespec t2;
-        clock_gettime(CLOCK_MILK, &t2);
-        struct timespec tdiff = timespec_diff(t1, t2);
-        double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+    {
+        float usec0 = 50.0;
+        float usec1 = 150.0;
+        long long NBkiter = 2000000000;
 
-        if(tdiffv > tdiffv1)
+        printf("Measuring status distribution \n");
+        fflush(stdout);
+
+        struct timespec t1;
+        clock_gettime(CLOCK_MILK, &t1);
+        double tdiffv1 = 0.0;
+        double tdisplay = 1.0;
+
+        for(long long k = 0;
+            k < NBkiter; k++)
         {
-            tdiffv1 += tdisplay;
-            printf("\n");
-            printf("==============" " %10lld  %d  " "==================\n", k, st);
-            printf("\n");
-            long cnttot = 0;
-            for(st = 0;
-                st < indexmax; st++)
+            usleep((long)(usec0 + usec1 * ((double) k / NBkiter)));
+            unsigned short st = imgstat.im->array.UI16[0];
+            if(st < indexmax)
             {
-                cnttot += imgout.im ->array .SI64[st];
+                imgout.im->array.SI64[st]++;
             }
 
-            for(st = 0;
-                st < indexmax; st++)
+            struct timespec t2;
+            clock_gettime(CLOCK_MILK, &t2);
+            struct timespec tdiff = timespec_diff(t1, t2);
+            double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+
+            if(tdiffv > tdiffv1)
             {
-                printf(
-                    "STATUS  %5d"
-                    "    %20ld"
-                    "   %6.3f  \n",
-                    st, imgout.im ->array .SI64[st], 100.0 * imgout.im ->array .SI64[st] / cnttot);
+                tdiffv1 += tdisplay;
+                printf("\n");
+                printf("============== %10lld  %d  ==================\n", k, st);
+                printf("\n");
+                long cnttot = 0;
+                for(unsigned short st_idx = 0;
+                    st_idx < indexmax; st_idx++)
+                {
+                    cnttot += imgout.im->array.SI64[st_idx];
+                }
+
+                for(unsigned short st_idx = 0;
+                    st_idx < indexmax; st_idx++)
+                {
+                    printf(
+                        "STATUS  %5d"
+                        "    %20ld"
+                        "   %6.3f  \n",
+                        st_idx, imgout.im->array.SI64[st_idx], 100.0 * imgout.im->array.SI64[st_idx] / cnttot);
+                }
             }
         }
     }
@@ -179,7 +183,7 @@ imageID COREMOD_TOOLS_statusStat(
     for(unsigned short st = 0;
         st < indexmax; st++)
     {
-        printf("STATUS  %5d" "    %10ld\n", st, imgout.im ->array.SI64[st]);
+        printf("STATUS  %5d    %10ld\n", st, imgout.im->array.SI64[st]);
     }
 
     printf("\n");

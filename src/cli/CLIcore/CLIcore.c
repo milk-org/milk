@@ -665,17 +665,11 @@ errno_t runCLI(
     int fdmax;
     int n;
 
-    ssize_t bytes __attribute__((unused));
-    size_t  total_bytes __attribute__((unused));
-    char    buf0[1] __attribute__((unused));
-    char    buf1[1024] __attribute__((unused));
-
     int initstartup = 0; /// becomes 1 after startup
 
     int            blockCLIinput = 0;
     int            cliwaitus     = 100;
     struct timeval tv; // sleep 100 us after reading FIFO
-
 
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
@@ -684,12 +678,14 @@ errno_t runCLI(
     runCLI_prompt(promptstring, prompt);
 
     // Call shared script engine init
-    int ms_status = milkscript_init(argc, argv);
-    if(ms_status != 0)
     {
-        PRINT_ERROR("ERROR: milkscript_init() failed with code %d", ms_status);
-        DEBUG_TRACE_FEXIT();
-        return ms_status;
+        int ms_status = milkscript_init(argc, argv);
+        if(ms_status != 0)
+        {
+            PRINT_ERROR("ERROR: milkscript_init() failed with code %d", ms_status);
+            DEBUG_TRACE_FEXIT();
+            return ms_status;
+        }
     }
 
     // CLI interactive overlay (signals, autocomplete)
@@ -737,31 +733,30 @@ errno_t runCLI(
     // (Module loading is now handled centrally by milkscript_init)
 
     // load other libs specified by environment variable MILKCLI_ADD_LIBS
-    char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
-    if(CLI_ADD_LIBS != NULL)
     {
-        if(dcquiet == 0)
+        char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
+        if(CLI_ADD_LIBS != NULL)
         {
-            printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
-        }
+            if(dcquiet == 0)
+            {
+                printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
+            }
 
-        char *libname;
-        libname = strtok(CLI_ADD_LIBS, " ,;");
-
-        while(libname != NULL)
-        {
-            DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
-            // load_sharedobj(libname);
-            load_module_shared(libname);
-            libname = strtok(NULL, " ,;");
+            char *libname = strtok(CLI_ADD_LIBS, " ,;");
+            while(libname != NULL)
+            {
+                DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
+                load_module_shared(libname);
+                libname = strtok(NULL, " ,;");
+            }
+            printf("\n");
         }
-        printf("\n");
-    }
-    else
-    {
-        if(dcquiet == 0)
+        else
         {
-            printf("        MILKCLI_ADD_LIBS not set -> no additional " "module loaded\n");
+            if(dcquiet == 0)
+            {
+                printf("        MILKCLI_ADD_LIBS not set -> no additional module loaded\n");
+            }
         }
     }
 

@@ -143,113 +143,115 @@ int main(
         return 1;
     }
 
-    char procdname[STRINGMAXLEN_DIRNAME];
-    processinfo_procdirname(procdname);
-
-    if(verbose)
-    {
-        printf("Scanning directory '%s' to remove processes matching '%s'...\n", procdname, pattern);
-    }
-
-    DIR *dir = opendir(procdname);
-    if(!dir)
-    {
-        PRINT_ERROR("opendir: %s", strerror(errno));
-        return 1;
-    }
-
-    struct dirent *entry;
-
     int removed_count = 0;
     int skipped_alive = 0;
 
-    while((entry = readdir(dir)) != NULL)
     {
-        if(strncmp(entry->d_name, "proc.", 5) != 0)
-        {
-            continue;
-        }
-        if(strstr(entry->d_name, ".shm") == NULL)
-        {
-            continue;
-        }
-
-        /* Extract pname from proc.PNAME.XXXXXX.shm */
-        char ext_pname[256];
-        strncpy(ext_pname, entry->d_name + 5, sizeof(ext_pname) - 1);
-        ext_pname[sizeof(ext_pname) - 1] = '\0';
-        char *dot = strchr(ext_pname, '.');
-        if(dot)
-        {
-            *dot = '\0';
-        }
-
-        if(regexec(&regex, ext_pname, 0, NULL, 0) != 0)
-        {
-            continue;
-        }
-
-        /* Match found -- open and map to inspect */
-        char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
-        snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, entry->d_name);
-
-        pid_t pid       = 0;
-        int   loopstat  = -1;
-        int   pid_alive = 0;
-
-        int fd = open(fullpath, O_RDONLY);
-        if(fd != -1)
-        {
-            PROCESSINFO *pinfo =
-                (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
-            if(pinfo != MAP_FAILED)
-            {
-                pid      = pinfo->PID;
-                loopstat = pinfo->loopstat;
-                /* alive = kill succeeds, or EPERM (process
-                 * exists but we lack permission to signal) */
-                pid_alive = (kill(pid, 0) == 0 || errno == EPERM);
-                munmap(pinfo, sizeof(PROCESSINFO));
-            }
-            close(fd);
-        }
-
-        /* Liveness guard: always block removal of alive procs */
-        if(pid_alive)
-        {
-            fprintf(stderr, "Skipping %s -- PID %ld is still alive\n", fullpath, (long) pid);
-            skipped_alive++;
-            continue;
-        }
-
-        /* --clean-dead: additionally require crashed/stopped */
-        if(clean_dead)
-        {
-            if(loopstat != PROCESSINFO_LOOPSTAT_CRASHED &&
-                    loopstat != PROCESSINFO_LOOPSTAT_STOP)
-            {
-                if(verbose)
-                {
-                    printf("Skipping %s -- not crashed/stopped\n", fullpath);
-                }
-                continue;
-            }
-        }
+        char procdname[STRINGMAXLEN_DIRNAME];
+        processinfo_procdirname(procdname);
 
         if(verbose)
         {
-            printf("Removing %s\n", fullpath);
+            printf("Scanning directory '%s' to remove processes matching '%s'...\n", procdname, pattern);
         }
-        if(unlink(fullpath) == 0)
+
+        DIR *dir = opendir(procdname);
+        if(!dir)
         {
-            removed_count++;
+            PRINT_ERROR("opendir: %s", strerror(errno));
+            return 1;
         }
-        else
+
+        struct dirent *entry;
+
+        while((entry = readdir(dir)) != NULL)
         {
-            PRINT_ERROR("unlink: %s", strerror(errno));
+            if(strncmp(entry->d_name, "proc.", 5) != 0)
+            {
+                continue;
+            }
+            if(strstr(entry->d_name, ".shm") == NULL)
+            {
+                continue;
+            }
+
+            /* Extract pname from proc.PNAME.XXXXXX.shm */
+            char ext_pname[256];
+            strncpy(ext_pname, entry->d_name + 5, sizeof(ext_pname) - 1);
+            ext_pname[sizeof(ext_pname) - 1] = '\0';
+            char *dot = strchr(ext_pname, '.');
+            if(dot)
+            {
+                *dot = '\0';
+            }
+
+            if(regexec(&regex, ext_pname, 0, NULL, 0) != 0)
+            {
+                continue;
+            }
+
+            /* Match found -- open and map to inspect */
+            char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
+            snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, entry->d_name);
+
+            pid_t pid       = 0;
+            int   loopstat  = -1;
+            int   pid_alive = 0;
+
+            int fd = open(fullpath, O_RDONLY);
+            if(fd != -1)
+            {
+                PROCESSINFO *pinfo =
+                    (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
+                if(pinfo != MAP_FAILED)
+                {
+                    pid      = pinfo->PID;
+                    loopstat = pinfo->loopstat;
+                    /* alive = kill succeeds, or EPERM (process
+                     * exists but we lack permission to signal) */
+                    pid_alive = (kill(pid, 0) == 0 || errno == EPERM);
+                    munmap(pinfo, sizeof(PROCESSINFO));
+                }
+                close(fd);
+            }
+
+            /* Liveness guard: always block removal of alive procs */
+            if(pid_alive)
+            {
+                fprintf(stderr, "Skipping %s -- PID %ld is still alive\n", fullpath, (long) pid);
+                skipped_alive++;
+                continue;
+            }
+
+            /* --clean-dead: additionally require crashed/stopped */
+            if(clean_dead)
+            {
+                if(loopstat != PROCESSINFO_LOOPSTAT_CRASHED &&
+                        loopstat != PROCESSINFO_LOOPSTAT_STOP)
+                {
+                    if(verbose)
+                    {
+                        printf("Skipping %s -- not crashed/stopped\n", fullpath);
+                    }
+                    continue;
+                }
+            }
+
+            if(verbose)
+            {
+                printf("Removing %s\n", fullpath);
+            }
+            if(unlink(fullpath) == 0)
+            {
+                removed_count++;
+            }
+            else
+            {
+                PRINT_ERROR("unlink: %s", strerror(errno));
+            }
         }
+        closedir(dir);
     }
-    closedir(dir);
 
     printf("Removed %d shared memory segment(s)" " matching '%s'", removed_count, pattern);
     if(skipped_alive > 0)

@@ -24,28 +24,19 @@ int functionparameter_read_fpsCMD_fifo(
     FPSCTRL_TASK_ENTRY *fpsctrltasklist,
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist)
 {
-    int   cmdcnt     = 0;
-    char *FPScmdline = NULL;
-    char  buff[200];
-    int   total_bytes = 0;
-    int   bytes;
-    char  buf0[1];
-
-    // toggles
-    static uint32_t queue      = 0;
-    static int      waitonrun  = 0;
-    static int      waitonconf = 0;
-
-    static uint16_t cmdinputcnt = 0;
-
+    int cmdcnt = 0;
     int lineOK = 1; // keep reading
 
     DEBUG_TRACEPOINT(" ");
 
     while(lineOK == 1)
     {
-        total_bytes = 0;
-        lineOK      = 0;
+        char buff[200];
+        int  total_bytes = 0;
+        int  bytes;
+        char buf0[1];
+
+        lineOK = 0;
         for(;;)
         {
             bytes = read(fpsCTRLfifofd, buf0, 1); // read one char at a time
@@ -77,7 +68,13 @@ int functionparameter_read_fpsCMD_fifo(
                 //
 
                 buff[total_bytes - 1] = '\0';
-                FPScmdline            = buff;
+                char *FPScmdline = buff;
+
+                // toggles
+                static uint32_t queue      = 0;
+                static int      waitonrun  = 0;
+                static int      waitonconf = 0;
+                static uint16_t cmdinputcnt = 0;
 
                 // find next index
                 int cmdindex   = 0;

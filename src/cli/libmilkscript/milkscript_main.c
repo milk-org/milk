@@ -212,71 +212,73 @@ int main(
     int opt_echo    = 0;
     int opt_quiet   = 0;
     int opt_debug   = 0;
-
-    /* Pre-scan for -q/--quiet BEFORE getopt so that MILK_QUIET is set
-     * before any module constructors run (they check getenv("MILK_QUIET"))
-     * and before milkscript_init() prints its startup banner. */
-    for(int i = 1; i < argc; i++)
-    {
-        if(strcmp(argv[i], "-q") == 0
-                || strcmp(argv[i], "--quiet") == 0)
-        {
-            setenv("MILK_QUIET", "1", 0);
-            break;
-        }
-        /* Stop scanning at first non-option argument */
-        if(argv[i][0] != '-' || argv[i][1] == '\0')
-        {
-            break;
-        }
-    }
     const char *opt_name = NULL;
 
-    static const struct option long_options[] =
     {
-        { "help",    no_argument,       NULL, 'h' },
-        { "errexit", no_argument,       NULL, 'e' },
-        { "xtrace",  no_argument,       NULL, 'x' },
-        { "echo",    no_argument,       NULL, 'E' },
-        { "quiet",   no_argument,       NULL, 'q' },
-        { NULL,      0,                 NULL,  0  }
-    };
-
-    int option_index = 0;
-    int c;
-    while((c = getopt_long(argc, argv,
-                           "+hexEqd:n:",
-                           long_options,
-                           &option_index)) != -1)
-    {
-        switch(c)
+        /* Pre-scan for -q/--quiet BEFORE getopt so that MILK_QUIET is set
+         * before any module constructors run (they check getenv("MILK_QUIET"))
+         * and before milkscript_init() prints its startup banner. */
+        for(int i = 1; i < argc; i++)
         {
-        case 'h': milkscript_main_usage(argv[0]);
-            return 0;
-
-        case 'e': opt_errexit = 1;
-            break;
-
-        case 'x': opt_xtrace = 1;
-            break;
-
-        case 'E': opt_echo = 1;
-            break;
-
-        case 'q': opt_quiet = 1;
-            break;
-
-        case 'd': opt_debug = (int) strtol(optarg, NULL, 10);
-            break;
-
-        case 'n': opt_name = optarg;
-            break;
-
-        default:
-            /* getopt already printed an error */
-            return 1;
+            if(strcmp(argv[i], "-q") == 0
+                    || strcmp(argv[i], "--quiet") == 0)
+            {
+                setenv("MILK_QUIET", "1", 0);
+                break;
+            }
+            /* Stop scanning at first non-option argument */
+            if(argv[i][0] != '-' || argv[i][1] == '\0')
+            {
+                break;
+            }
         }
-    } // while options
+
+        static const struct option long_options[] =
+        {
+            { "help",    no_argument,       NULL, 'h' },
+            { "errexit", no_argument,       NULL, 'e' },
+            { "xtrace",  no_argument,       NULL, 'x' },
+            { "echo",    no_argument,       NULL, 'E' },
+            { "quiet",   no_argument,       NULL, 'q' },
+            { NULL,      0,                 NULL,  0  }
+        };
+
+        int option_index = 0;
+        int c;
+        while((c = getopt_long(argc, argv,
+                               "+hexEqd:n:",
+                               long_options,
+                               &option_index)) != -1)
+        {
+            switch(c)
+            {
+            case 'h': milkscript_main_usage(argv[0]);
+                return 0;
+
+            case 'e': opt_errexit = 1;
+                break;
+
+            case 'x': opt_xtrace = 1;
+                break;
+
+            case 'E': opt_echo = 1;
+                break;
+
+            case 'q': opt_quiet = 1;
+                break;
+
+            case 'd': opt_debug = (int) strtol(optarg, NULL, 10);
+                break;
+
+            case 'n': opt_name = optarg;
+                break;
+
+            default:
+                /* getopt already printed an error */
+                return 1;
+            }
+        } // while options
+    }
 
     /* Apply quiet flag before milkscript_init so the banner,
      * SHM dir messages, and module-load lines are suppressed */
@@ -290,15 +292,17 @@ int main(
     char **script_argv = argv + optind; /* remaining arg vector */
 
     /* Build a synthetic argv for milkscript_init */
-    char *init_argv[2] =
     {
-        opt_name ? (char *) opt_name : argv[0],
-        NULL
-    };
-    if(milkscript_init(1, init_argv) != 0)
-    {
-        PRINT_ERROR("milk-script: engine initialization failed");
-        return 1;
+        char *init_argv[2] =
+        {
+            opt_name ? (char *) opt_name : argv[0],
+            NULL
+        };
+        if(milkscript_init(1, init_argv) != 0)
+        {
+            PRINT_ERROR("milk-script: engine initialization failed");
+            return 1;
+        }
     }
 
     /* Apply flags after init (init resets most globals to defaults) */
@@ -327,24 +331,26 @@ int main(
      * explicitly (POSIX convention), allowing:
      *   milk-script -q - arg1 arg2
      * The trailing args are still passed as $1 $2. */
-    int use_stdin = (script_argc == 0) || (strcmp(script_argv[0], "-") == 0);
+    {
+        int use_stdin = (script_argc == 0) || (strcmp(script_argv[0], "-") == 0);
 
-    if(!use_stdin)
-    {
-        FILE *fp = fopen(script_argv[0], "r");
-        if(!fp)
+        if(!use_stdin)
         {
-            PRINT_ERROR("milk-script: cannot open '%s': %s", script_argv[0], strerror(errno));
-            return 1;
+            FILE *fp = fopen(script_argv[0], "r");
+            if(!fp)
+            {
+                PRINT_ERROR("milk-script: cannot open '%s': %s", script_argv[0], strerror(errno));
+                return 1;
+            }
+            milkscript_run(fp);
+            fclose(fp);
         }
-        milkscript_run(fp);
-        fclose(fp);
-    }
-    else
-    {
-        /* When stdin is the source, $0 is either the explicit "-"
-         * placeholder or the program name, not a real file path. */
-        milkscript_run(stdin);
+        else
+        {
+            /* When stdin is the source, $0 is either the explicit "-"
+             * placeholder or the program name, not a real file path. */
+            milkscript_run(stdin);
+        }
     }
 
     milkscript_cleanup();

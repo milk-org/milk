@@ -44,7 +44,6 @@ PROCESSINFO *processinfo_shm_create(
 
     sharedsize = sizeof(PROCESSINFO);
 
-    char  SM_fname[STRINGMAXLEN_FULLFILENAME];
     pid_t PID;
 
     PID = getpid();
@@ -64,44 +63,47 @@ PROCESSINFO *processinfo_shm_create(
 
     strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
 
-    DEBUG_TRACEPOINT("getting procdname");
-    char procdname[STRINGMAXLEN_DIRNAME];
-    processinfo_procdirname(procdname);
-
-
-    WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
-
-    DEBUG_TRACEPOINT("SM_fname = %s", SM_fname);
-
-    umask(0);
-    SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
-    if(SM_fd == -1)
     {
-        PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
-        goto fail;
-    }
+        DEBUG_TRACEPOINT("getting procdname");
+        char procdname[STRINGMAXLEN_DIRNAME];
+        processinfo_procdirname(procdname);
 
-    if(lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
-    {
-        PRINT_ERROR("lseek failed: %s", strerror(errno));
-        goto fail;
-    }
 
-    if(write(SM_fd, "", 1) != 1)
-    {
-        PRINT_ERROR("write last byte failed: %s", strerror(errno));
-        goto fail;
-    }
+        char SM_fname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
 
-    pinfo = (PROCESSINFO *) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if(pinfo == MAP_FAILED)
-    {
-        PRINT_ERROR("mmap(%s) failed: %s", SM_fname, strerror(errno));
-        pinfo = NULL;
-        goto fail;
-    }
+        DEBUG_TRACEPOINT("SM_fname = %s", SM_fname);
 
-    DEBUG_TRACEPOINT("created processinfo entry at %s\n", SM_fname);
+        umask(0);
+        SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
+        if(SM_fd == -1)
+        {
+            PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
+            goto fail;
+        }
+
+        if(lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
+        {
+            PRINT_ERROR("lseek failed: %s", strerror(errno));
+            goto fail;
+        }
+
+        if(write(SM_fd, "", 1) != 1)
+        {
+            PRINT_ERROR("write last byte failed: %s", strerror(errno));
+            goto fail;
+        }
+
+        pinfo = (PROCESSINFO *) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+        if(pinfo == MAP_FAILED)
+        {
+            PRINT_ERROR("mmap(%s) failed: %s", SM_fname, strerror(errno));
+            pinfo = NULL;
+            goto fail;
+        }
+
+        DEBUG_TRACEPOINT("created processinfo entry at %s\n", SM_fname);
+    }
     DEBUG_TRACEPOINT("shared memory space = %ld bytes\n", sharedsize);
 
     clock_gettime(CLOCK_MILK, &pinfo->createtime);

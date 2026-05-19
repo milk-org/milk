@@ -74,12 +74,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     int32_t n_input = ptr_n_input;
 
     IMGID *img_in_arr = (IMGID *) malloc(n_input * sizeof(IMGID));
-    char input_name[200];
-    for(int ii = 0; ii < n_input; ++ii)
     {
-        snprintf(input_name, sizeof(input_name), "%s_%d", stream_basename, ii);
-        img_in_arr[ii] = imgid_make_from_name(input_name);
-        resolveIMGID(&img_in_arr[ii], ERRMODE_ABORT, dcimg,           dcnimg);
+        char input_name[200];
+        for(int ii = 0; ii < n_input; ++ii)
+        {
+            snprintf(input_name, sizeof(input_name), "%s_%d", stream_basename, ii);
+            img_in_arr[ii] = imgid_make_from_name(input_name);
+            resolveIMGID(&img_in_arr[ii], ERRMODE_ABORT, dcimg,           dcnimg);
+        }
     }
 
     IMGID img_out = imgid_make_from_name(stream_basename);
@@ -103,19 +105,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         abort();
     }
 
-    int acc = 0;
-    for(int kk = 0; kk < n_input; ++kk)
     {
-        offset_bytes[kk] = acc;
-        size_bytes[kk] =
-            img_in_arr[kk].mdt->size[0] * ImageStreamIO_typesize(img_in_arr[kk].mdt->datatype);
-        acc += size_bytes[kk];
+        int acc = 0;
+        for(int kk = 0; kk < n_input; ++kk)
+        {
+            offset_bytes[kk] = acc;
+            size_bytes[kk] =
+                img_in_arr[kk].mdt->size[0] * ImageStreamIO_typesize(img_in_arr[kk].mdt->datatype);
+            acc += size_bytes[kk];
 
-        sem_idxs[kk] = ImageStreamIO_getsemwaitindex(img_in_arr[kk].im, 0);
+            sem_idxs[kk] = ImageStreamIO_getsemwaitindex(img_in_arr[kk].im, 0);
+        }
     }
-
-    struct timespec t_spec1;
-    struct timespec t_spec2;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
@@ -123,6 +124,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
+        struct timespec t_spec1;
+        struct timespec t_spec2;
+
         milk_clock_gettime(&t_spec1);
         t_spec2.tv_sec = t_spec1.tv_sec + 1;
         t_spec2.tv_nsec = t_spec1.tv_nsec;

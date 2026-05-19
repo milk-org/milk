@@ -726,22 +726,6 @@ static void termview_handle_mouse_event(tv_context_t *ctx)
     int mx = last_mouse_event.x;
     int my = last_mouse_event.y;
 
-    uint32_t xsize = ctx->img->md[0].size[0];
-    uint32_t ysize = ctx->img->md[0].size[1];
-    int bar_width = 12;
-    int disp_char_rows = wrow - 4; // info bar is 4 rows
-    int disp_cols = wcol - bar_width - 1;
-    int disp_img_rows = disp_char_rows * 2;
-
-    // Calculate mapping constants identically to the render loop
-    double view_w_img = (double)xsize / view_zoom;
-    double view_h_img = (double)ysize / view_zoom;
-    double step = fmax(view_w_img / disp_cols, view_h_img / disp_img_rows);
-    double center_img_x = view_center_x * xsize;
-    double center_img_y = view_center_y * ysize;
-    double center_disp_x = disp_cols / 2.0;
-    double center_disp_y = disp_img_rows / 2.0;
-
     if(last_mouse_event.button == 64)
     {
         // Scroll Up -> Zoom in
@@ -766,6 +750,16 @@ static void termview_handle_mouse_event(tv_context_t *ctx)
         }
         else if(last_mouse_event.is_press && last_mouse_event.is_drag && ctx->mouse_is_dragging)
         {
+            uint32_t xsize = ctx->img->md[0].size[0];
+            uint32_t ysize = ctx->img->md[0].size[1];
+            int bar_width = 12;
+            int disp_char_rows = wrow - 4; // info bar is 4 rows
+            int disp_cols = wcol - bar_width - 1;
+            int disp_img_rows = disp_char_rows * 2;
+            double view_w_img = (double)xsize / view_zoom;
+            double view_h_img = (double)ysize / view_zoom;
+            double step = fmax(view_w_img / disp_cols, view_h_img / disp_img_rows);
+
             int dx = mx - ctx->last_mouse_x;
             int dy = my - ctx->last_mouse_y;
 
@@ -828,6 +822,20 @@ static void termview_handle_mouse_event(tv_context_t *ctx)
 
             if(max_x - min_x >= 2 && max_y - min_y >= 2)
             {
+                uint32_t xsize = ctx->img->md[0].size[0];
+                uint32_t ysize = ctx->img->md[0].size[1];
+                int bar_width = 12;
+                int disp_char_rows = wrow - 4; // info bar is 4 rows
+                int disp_cols = wcol - bar_width - 1;
+                int disp_img_rows = disp_char_rows * 2;
+                double view_w_img = (double)xsize / view_zoom;
+                double view_h_img = (double)ysize / view_zoom;
+                double step = fmax(view_w_img / disp_cols, view_h_img / disp_img_rows);
+                double center_img_x = view_center_x * xsize;
+                double center_img_y = view_center_y * ysize;
+                double center_disp_x = disp_cols / 2.0;
+                double center_disp_y = disp_img_rows / 2.0;
+
                 double roi_center_mx = (min_x + max_x) / 2.0;
                 double roi_center_my = (min_y + max_y) / 2.0;
 

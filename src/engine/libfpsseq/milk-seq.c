@@ -222,8 +222,7 @@ int main(
     char logpath[256] = {0};
 
     // Parse arguments
-    int i = 1;
-    while(i < argc)
+    for(int i = 1; i < argc;)
     {
         if(strcmp(argv[i], "-h") == 0 ||
                 strcmp(argv[i], "--help") == 0)
@@ -292,123 +291,126 @@ int main(
         }
     }
 
+        {
     // Set up signals
-    struct sigaction action;
-    memset(&action, 0, sizeof(struct sigaction));
-    action.sa_handler = sigterm_handler;
-    sigaction(SIGTERM, &action, NULL);
-    sigaction(SIGINT, &action, NULL);
+        struct sigaction action;
+        memset(&action, 0, sizeof(struct sigaction));
+        action.sa_handler = sigterm_handler;
+        sigaction(SIGTERM, &action, NULL);
+        sigaction(SIGINT, &action, NULL);
 
-    // Initialize milk process info (required for fps library tracking)
-    // we name ourselves milk-seq.<name>
-    char procname[64];
-    snprintf(procname, sizeof(procname), "milk-seq.%s", seq_name);
-    processinfo_setup(procname, "milk-seq", "FPS Sequencer", "main", __FILE__, __LINE__);
+        // Initialize milk process info (required for fps library tracking)
+        // we name ourselves milk-seq.<name>
+        char procname[64];
+        snprintf(procname, sizeof(procname), "milk-seq.%s", seq_name);
+        processinfo_setup(procname, "milk-seq", "FPS Sequencer", "main", __FILE__, __LINE__);
 
-    // Create sequencer state
-    MILKSEQ_STATE *state = milkseq_create(seq_name);
-    if(!state)
-    {
-        PRINT_ERROR("Failed to create sequencer state '%s'", seq_name);
-        return 1;
-    }
-
-    if(custom_fifo[0] != '\0')
-    {
-        strncpy(state->fifo_path, custom_fifo, sizeof(state->fifo_path) - 1);
-        // Destroy default fifo and make custom
-        char default_fifo[FPSSEQ_FIFO_PATH_MAX];
-        snprintf(default_fifo, sizeof(default_fifo), "/tmp/milkseq.%s.fifo", seq_name);
-        if(strcmp(default_fifo, custom_fifo) != 0)
+        // Create sequencer state
+        MILKSEQ_STATE *state = milkseq_create(seq_name);
+        if(!state)
         {
-            unlink(default_fifo);
+            PRINT_ERROR("Failed to create sequencer state '%s'", seq_name);
+            return 1;
         }
-        mkfifo(state->fifo_path, 0666);
-    }
 
-    int fifo_fd = open(state->fifo_path, O_RDONLY | O_NONBLOCK);
-    if(fifo_fd == -1)
-    {
-        PRINT_ERROR("Failed to open FIFO %s", state->fifo_path);
+        if(custom_fifo[0] != '\0')
+        {
+            strncpy(state->fifo_path, custom_fifo, sizeof(state->fifo_path) - 1);
+            // Destroy default fifo and make custom
+            char default_fifo[FPSSEQ_FIFO_PATH_MAX];
+            snprintf(default_fifo, sizeof(default_fifo), "/tmp/milkseq.%s.fifo", seq_name);
+            if(strcmp(default_fifo, custom_fifo) != 0)
+            {
+                unlink(default_fifo);
+            }
+            mkfifo(state->fifo_path, 0666);
+        }
+
+        int fifo_fd = open(state->fifo_path, O_RDONLY | O_NONBLOCK);
+        if(fifo_fd == -1)
+        {
+            PRINT_ERROR("Failed to open FIFO %s", state->fifo_path);
+            milkseq_destroy(seq_name);
+            return 1;
+        }
+
+        // We need to keep track of the local fps list to feed to the scheduler
+        FPS fps[NB_FPS_MAX];
+        memset(fps, 0, sizeof(FPS) * NB_FPS_MAX);
+        KEYWORD_TREE_NODE *keywnode = calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE));
+        FPSCTRL_PROCESS_VARS fpsCTRLvar = {0};
+
+        // Scan initial FPS tree
+        int NBkwn = 0;
+        int fpsindex = 0;
+        long pindex = 0;
+        functionparameter_scan_fps(1, "_ALL", fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
+
+        // Load initial script if provided
+        if(script_file[0] != '\0')
+        {
+            strncpy(state->script_path, script_file, sizeof(state->script_path) - 1);
+            if(milkseq_load_script(state, script_file, fps, keywnode) != 0)
+            {
+                PRINT_ERROR("Failed to load script: %s", script_file);
+            }
+        }
+
+        printf("milk-seq started: %s\n", seq_name);
+        state->status = MILKSEQ_STATUS_RUNNING;
+
+        long iter = 0;
+        time_t last_idle_time = time(NULL);
+
+        // Main Run Loop
+        while(keep_running)
+        {
+            // Read FIFO
+            int cmds_read = milkseq_fifo_read(state, fifo_fd);
+
+            // Periodically rescan the FPS tree (like fpsCTRL does)
+            if(iter % 100 == 0)
+            {
+                functionparameter_scan_fps(1, "_ALL", fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
+            }
+
+            // Run scheduler step
+            int launched = milkseq_scheduler_step(state, fps, keywnode, &fpsCTRLvar);
+
+            if(cmds_read > 0 || launched > 0 || state->NBtasks_active > 0)
+            {
+                last_idle_time = time(NULL);
+            }
+            else if(timeout_sec > 0 && (time(NULL) - last_idle_time) > timeout_sec)
+            {
+                printf("Idle timeout reached. Exiting.\n");
+                break;
+            }
+
+            if(fpsCTRLvar.exitloop)
+            {
+                printf("Exit command received. Shutting down.\n");
+                break;
+            }
+
+            usleep(10000); // 10ms tick
+            iter++;
+        }
+
+        state->status = MILKSEQ_STATUS_STOPPING;
+        printf("Shutting down milk-seq...\n");
+
+        close(fifo_fd);
         milkseq_destroy(seq_name);
-        return 1;
+
+        /* Clean up PID file */
+        if(do_daemon && pidpath[0] != '\0')
+        {
+            unlink(pidpath);
+        }
+
+        free(keywnode);
+        return 0;
+
     }
-
-    // We need to keep track of the local fps list to feed to the scheduler
-    FPS fps[NB_FPS_MAX];
-    memset(fps, 0, sizeof(FPS) * NB_FPS_MAX);
-    KEYWORD_TREE_NODE *keywnode = calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE));
-    FPSCTRL_PROCESS_VARS fpsCTRLvar = {0};
-
-    // Scan initial FPS tree
-    int NBkwn = 0;
-    int fpsindex = 0;
-    long pindex = 0;
-    functionparameter_scan_fps(1, "_ALL", fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
-
-    // Load initial script if provided
-    if(script_file[0] != '\0')
-    {
-        strncpy(state->script_path, script_file, sizeof(state->script_path) - 1);
-        if(milkseq_load_script(state, script_file, fps, keywnode) != 0)
-        {
-            PRINT_ERROR("Failed to load script: %s", script_file);
-        }
-    }
-
-    printf("milk-seq started: %s\n", seq_name);
-    state->status = MILKSEQ_STATUS_RUNNING;
-
-    long iter = 0;
-    time_t last_idle_time = time(NULL);
-
-    // Main Run Loop
-    while(keep_running)
-    {
-        // Read FIFO
-        int cmds_read = milkseq_fifo_read(state, fifo_fd);
-
-        // Periodically rescan the FPS tree (like fpsCTRL does)
-        if(iter % 100 == 0)
-        {
-            functionparameter_scan_fps(1, "_ALL", fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
-        }
-
-        // Run scheduler step
-        int launched = milkseq_scheduler_step(state, fps, keywnode, &fpsCTRLvar);
-
-        if(cmds_read > 0 || launched > 0 || state->NBtasks_active > 0)
-        {
-            last_idle_time = time(NULL);
-        }
-        else if(timeout_sec > 0 && (time(NULL) - last_idle_time) > timeout_sec)
-        {
-            printf("Idle timeout reached. Exiting.\n");
-            break;
-        }
-
-        if(fpsCTRLvar.exitloop)
-        {
-            printf("Exit command received. Shutting down.\n");
-            break;
-        }
-
-        usleep(10000); // 10ms tick
-        iter++;
-    }
-
-    state->status = MILKSEQ_STATUS_STOPPING;
-    printf("Shutting down milk-seq...\n");
-
-    close(fifo_fd);
-    milkseq_destroy(seq_name);
-
-    /* Clean up PID file */
-    if(do_daemon && pidpath[0] != '\0')
-    {
-        unlink(pidpath);
-    }
-
-    free(keywnode);
-    return 0;
 }

@@ -778,85 +778,89 @@ errno_t arith_image_function_2_1_IMGID(
 
 
     // slow path with broadcasting
-    uint64_t *__restrict inpix1 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
-    uint64_t *__restrict inpix2 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
-
-    for(uint32_t ii = 0; ii < outimg->mdt->size[0]; ii++)
     {
-        uint32_t ii1 = ii * in1expand[0];
-        uint32_t ii2 = ii * in2expand[0];
+        uint64_t *__restrict inpix1 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
+        uint64_t *__restrict inpix2 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
 
-        for(uint32_t jj = 0; jj < outimg->mdt->size[1]; jj++)
+        for(uint32_t ii = 0; ii < outimg->mdt->size[0]; ii++)
         {
-            uint32_t jj1 = jj * in1expand[1];
-            uint32_t jj2 = jj * in2expand[1];
+            uint32_t ii1 = ii * in1expand[0];
+            uint32_t ii2 = ii * in2expand[0];
 
-            for(uint32_t kk = 0; kk < outimg->mdt->size[2]; kk++)
+            for(uint32_t jj = 0; jj < outimg->mdt->size[1]; jj++)
             {
-                uint64_t outpixi = ii;
-                outpixi +=  jj * outimg->mdt->size[0];
-                outpixi +=  kk * outimg->mdt->size[1] * outimg->mdt->size[0];
+                uint32_t jj1 = jj * in1expand[1];
+                uint32_t jj2 = jj * in2expand[1];
 
-                uint32_t kk1 = kk * in1expand[2];
-                uint32_t kk2 = kk * in2expand[2];
+                for(uint32_t kk = 0; kk < outimg->mdt->size[2]; kk++)
+                {
+                    uint64_t outpixi = ii;
+                    outpixi +=  jj * outimg->mdt->size[0];
+                    outpixi +=  kk * outimg->mdt->size[1] * outimg->mdt->size[0];
 
-                inpix1[outpixi] =  kk1 * inimg1->md->size[1] * inimg1->md->size[0] + jj1 * inimg1->md->size[0] +
-                                   ii1;
-                inpix2[outpixi] =  kk2 * inimg2->md->size[1] * inimg2->md->size[0] + jj2 * inimg2->md->size[0] +
-                                   ii2;
+                    uint32_t kk1 = kk * in1expand[2];
+                    uint32_t kk2 = kk * in2expand[2];
+
+                    inpix1[outpixi] =  kk1 * inimg1->md->size[1] * inimg1->md->size[0] + jj1 * inimg1->md->size[0] +
+                                       ii1;
+                    inpix2[outpixi] =  kk2 * inimg2->md->size[1] * inimg2->md->size[0] + jj2 * inimg2->md->size[0] +
+                                       ii2;
+                }
             }
         }
-    }
 
-    double *ptr1array;
-    int ptr1allocate = 0;
-    if(inimg1->md->datatype == _DATATYPE_DOUBLE)
-    {
-        ptr1array = inimg1->im->array.D;
-    }
-    else
-    {
-        ptr1allocate = 1;
-        ptr1array = (double *) malloc(sizeof(double) * nbpix1);
-        for(uint64_t ii = 0; ii < nbpix1; ii++) ptr1array[ii] = get_pixel_double(inimg1->im, ii);
-    }
+        double *ptr1array;
+        int ptr1allocate = 0;
+        if(inimg1->md->datatype == _DATATYPE_DOUBLE)
+        {
+            ptr1array = inimg1->im->array.D;
+        }
+        else
+        {
+            ptr1allocate = 1;
+            ptr1array = (double *) malloc(sizeof(double) * nbpix1);
+            for(uint64_t ii = 0; ii < nbpix1; ii++) ptr1array[ii] = get_pixel_double(inimg1->im, ii);
+        }
 
-    double *ptr2array;
-    int ptr2allocate = 0;
-    if(inimg2->md->datatype == _DATATYPE_DOUBLE)
-    {
-        ptr2array = inimg2->im->array.D;
-    }
-    else
-    {
-        ptr2allocate = 1;
-        ptr2array = (double *) malloc(sizeof(double) * nbpix2);
-        for(uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im, ii);
-    }
+        double *ptr2array;
+        int ptr2allocate = 0;
+        if(inimg2->md->datatype == _DATATYPE_DOUBLE)
+        {
+            ptr2array = inimg2->im->array.D;
+        }
+        else
+        {
+            ptr2allocate = 1;
+            ptr2array = (double *) malloc(sizeof(double) * nbpix2);
+            for(uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im, ii);
+        }
 
-    if(outimg->mdt->datatype == _DATATYPE_FLOAT)
-    {
-        for(uint64_t ii = 0; ii < nbpix;
-            ii++) outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]],
-                                                ptr2array[inpix2[ii]]);
-    }
-    else if(outimg->mdt->datatype == _DATATYPE_DOUBLE)
-    {
-        for(
-            uint64_t ii = 0; ii < nbpix; ii++) outimg->im->array.D[ii] = pt2function(ptr1array[inpix1[ii]],
-                        ptr2array[inpix2[ii]]);
-    }
+        if(outimg->mdt->datatype == _DATATYPE_FLOAT)
+        {
+            for(uint64_t ii = 0; ii < nbpix; ii++)
+            {
+                outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]], ptr2array[inpix2[ii]]);
+            }
+        }
+        else if(outimg->mdt->datatype == _DATATYPE_DOUBLE)
+        {
+            for(uint64_t ii = 0; ii < nbpix; ii++)
+            {
+                outimg->im->array.D[ii] = pt2function(ptr1array[inpix1[ii]], ptr2array[inpix2[ii]]);
+            }
+        }
 
-    if(ptr1allocate == 1)
-    {
-        free(ptr1array);
+        if(ptr1allocate == 1)
+        {
+            free(ptr1array);
+        }
+        if(ptr2allocate == 1)
+        {
+            free(ptr2array);
+        }
+        free(inpix1);
+        free(inpix2);
     }
-    if(ptr2allocate == 1)
-    {
-        free(ptr2array);
-    }
-    free(inpix1);
-    free(inpix2);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

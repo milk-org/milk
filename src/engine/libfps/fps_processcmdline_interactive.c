@@ -506,32 +506,11 @@ int functionparameter_FPSprocess_cmdline(
     int  fpsindex;
     long pindex;
 
-    // break FPScmdline in words
-    // [FPScommand] [FPSentryname]
-    //
-    char *pch;
-    int   nbword = 0;
-    int commandstringmaxlen = 200;
-    char  FPScommand[commandstringmaxlen];
-
     int cmdOK    = 2; // 0 : failed, 1: OK
     int cmdFOUND = 0; // toggles to 1 when command has been found
 
-    // first arg is always an FPS entry name
-    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
-
-    char FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    char FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
-    char FPSarg2[FUNCTION_PARAMETER_STRMAXLEN];
-    char FPSarg3[FUNCTION_PARAMETER_STRMAXLEN];
-
-    char msgstring[STRINGMAXLEN_FPS_LOGMSG];
-    char errmsgstring[STRINGMAXLEN_FPS_LOGMSG];
     char inputcmd[STRINGMAXLEN_FPS_CMDLINE];
-
-    int inputcmdOK = 0; // 1 if command should be processed
-
+    int  inputcmdOK = 0; // 1 if command should be processed
     static int testcnt; // test counter to be incremented by cntinc command
 
     if(strlen(FPScmdline) > 0)  // only send command if non-empty
@@ -559,88 +538,47 @@ int functionparameter_FPSprocess_cmdline(
 
     DEBUG_TRACEPOINT(" ");
 
-    if(strlen(inputcmd) > 1)
+    int   nbword = 0;
+    char  FPScommand[200] = {0};
+    char  FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL] = {0};
+    char  FPSarg1[FUNCTION_PARAMETER_STRMAXLEN] = {0};
+
     {
-        pch = strtok(inputcmd, " \t");
-        snprintf(FPScommand, commandstringmaxlen, "%s", pch);
-    }
-    else
-    {
-        pch = NULL;
-    }
-
-    DEBUG_TRACEPOINT(" ");
-
-    // Break command line into words
-    //
-    // output words are:
-    //
-    // FPScommand
-    // FPSarg0
-    // FPSarg1
-    // FPSarg2
-    // FPSarg3
-
-    while(pch != NULL)
-    {
-
-        nbword++;
-        pch = strtok(NULL, " \t");
-
-        if(nbword == 1)  // first arg (0)
+        if(strlen(inputcmd) > 1)
         {
-            char *pos;
-            snprintf(FPSarg0,
-                     FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL,
-                     "%s", pch);
-            if((pos = strchr(FPSarg0, '\n')) != NULL)
-            {
-                *pos = '\0';
-            }
-        }
+            char *pch = strtok(inputcmd, " \t");
+            snprintf(FPScommand, sizeof(FPScommand), "%s", pch);
 
-        if(nbword == 2)
-        {
-            char *pos;
-            if(snprintf(FPSarg1, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >=
-                    FUNCTION_PARAMETER_STRMAXLEN)
-            {
-                printf("WARNING: string truncated\n");
-                printf("STRING: %s\n", pch);
-            }
-            if((pos = strchr(FPSarg1, '\n')) != NULL)
-            {
-                *pos = '\0';
-            }
-        }
+            DEBUG_TRACEPOINT(" ");
 
-        if(nbword == 3)
-        {
-            char *pos;
-            if(snprintf(FPSarg2, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >=
-                    FUNCTION_PARAMETER_STRMAXLEN)
+            while(pch != NULL)
             {
-                printf("WARNING: string truncated\n");
-                printf("STRING: %s\n", pch);
-            }
-            if((pos = strchr(FPSarg2, '\n')) != NULL)
-            {
-                *pos = '\0';
-            }
-        }
+                nbword++;
+                pch = strtok(NULL, " \t");
 
-        if(nbword == 4)
-        {
-            char *pos;
-            if(snprintf(FPSarg3, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >=
-                    FUNCTION_PARAMETER_STRMAXLEN)
-            {
-                printf("WARNING: string truncated\n");
-                printf("STRING: %s\n", pch);
-            }
-            if((pos = strchr(FPSarg3, '\n')) != NULL)
-            {
-                *pos = '\0';
+                if(nbword == 1 && pch != NULL)
+                {
+                    char *pos;
+                    snprintf(FPSarg0, sizeof(FPSarg0), "%s", pch);
+                    if((pos = strchr(FPSarg0, '\n')) != NULL)
+                    {
+                        *pos = '\0';
+                    }
+                }
+
+                if(nbword == 2 && pch != NULL)
+                {
+                    char *pos;
+                    if(snprintf(FPSarg1, sizeof(FPSarg1), "%s", pch) >= (int)sizeof(FPSarg1))
+                    {
+                        printf("WARNING: string truncated\n");
+                        printf("STRING: %s\n", pch);
+                    }
+                    if((pos = strchr(FPSarg1, '\n')) != NULL)
+                    {
+                        *pos = '\0';
+                    }
+                }
             }
         }
     }
@@ -661,16 +599,20 @@ int functionparameter_FPSprocess_cmdline(
     // From this point on, FPSarg0 is expected to be a FPS entry
     // so we resolve it and look for fps
     int kwnindex = -1;
+    char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
+    char msgstring[STRINGMAXLEN_FPS_LOGMSG];
+    char errmsgstring[STRINGMAXLEN_FPS_LOGMSG] = "";
+
     if(cmdFOUND == 0)
     {
+        char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+        
         snprintf(FPSentryname, sizeof(FPSentryname), "%s", FPSarg0);
         snprintf(FPScmdarg1, sizeof(FPScmdarg1), "%s", FPSarg1);
 
         // look for entry, if found, kwnindex points to it
         if(nbword > 1)
         {
-            //                printf("Looking for entry for %s\n", FPSentryname);
-
             int kwnindexscan = 0;
             while((kwnindex == -1) && (kwnindexscan < fpsCTRLvar->NBkwn))
             {
@@ -852,6 +794,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
+                char msgstring[STRINGMAXLEN_FPS_LOGMSG];
                 errno_t ret;
                 ret = functionparameter_PrintParameter_ValueString(
                           &fps[fpsindex].parray[pindex], msgstring, STRINGMAXLEN_FPS_LOGMSG);

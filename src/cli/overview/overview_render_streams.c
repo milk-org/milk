@@ -40,28 +40,21 @@ void ov_render_streams_panel(
         filt_n = new_filt_n;
     }
 
-    int has_re = 0;
-    regex_t re;
-    if(lay->filter_stream[0] != '\0')
-    {
-        if(regcomp(&re, lay->filter_stream, REG_EXTENDED | REG_ICASE) == 0)
-        {
-            has_re = 1;
-        }
-    }
 
     /* Panel title with filter indicator */
-    char title[80];
-    if(lay->filter_stream[0] != '\0')
     {
-        snprintf(title, sizeof(title), "STREAMS /%s/", lay->filter_stream);
+        char title[80];
+        if(lay->filter_stream[0] != '\0')
+        {
+            snprintf(title, sizeof(title), "STREAMS /%s/", lay->filter_stream);
+        }
+        else
+        {
+            snprintf(title, sizeof(title), "STREAMS");
+        }
+        ov_draw_panel_border(
+            r.row, r.col, r.height, r.width, title, OV_FG_STREAM, lay->focus == OV_FOCUS_STREAMS, 0);
     }
-    else
-    {
-        snprintf(title, sizeof(title), "STREAMS");
-    }
-    ov_draw_panel_border(
-        r.row, r.col, r.height, r.width, title, OV_FG_STREAM, lay->focus == OV_FOCUS_STREAMS, 0);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_stream;
@@ -111,8 +104,6 @@ void ov_render_streams_panel(
     /* Separator between header and data rows */
     render_separator(hrow +    1, r.col + 1, r.width - 2, OV_FG_STREAM_HDR);
 
-    int max_rows = r.height - 4;
-    int start = lay->scroll_stream;
 
     /* Compute lineage depths when a stream
      * is selected.  sel_stream is a position in
@@ -267,6 +258,9 @@ void ov_render_streams_panel(
             }
         }
     }
+
+    int max_rows = r.height - 4;
+    int start = lay->scroll_stream;
 
     for(int i = 0; i < max_rows; i++)
     {
@@ -650,11 +644,5 @@ void ov_render_streams_panel(
             }
         }
     }
-
     ov_buf_reset_attr();
-
-    if(has_re)
-    {
-        regfree(&re);
-    }
 }
