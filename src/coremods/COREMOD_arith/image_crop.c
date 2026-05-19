@@ -268,7 +268,7 @@ imageID arith_image_crop(const char *ID_name,
                          int64_t        cropdim)
 {
     int64_t      naxis;
-    int64_t      i;
+
     uint32_t *naxes    = NULL;
     uint32_t *naxesout = NULL;
     uint8_t   datatype;
@@ -276,7 +276,7 @@ imageID arith_image_crop(const char *ID_name,
     int64_t start_c[3];
     int64_t end_c[3];
 
-    for(i = 0; i < 3; i++)
+    for( int i = 0; i < 3; i++)
     {
         start_c[i] = 0;
         end_c[i]   = 0;
@@ -317,7 +317,7 @@ imageID arith_image_crop(const char *ID_name,
 
     naxes[0]    = 0;
     naxesout[0] = 0;
-    for(i = 0; i < naxis; i++)
+    for(int i = 0; i < naxis; i++)
     {
         naxes[i] =
             imgin.md->size[i];
@@ -328,7 +328,7 @@ imageID arith_image_crop(const char *ID_name,
     IMGID imgout =
         imgid_make_from_name(ID_out);
     imgout.mdt->naxis = naxis;
-    for(i = 0; i < naxis; i++)
+    for(int i = 0; i < naxis; i++)
     {
         imgout.mdt->size[i] =
             naxesout[i];
@@ -379,7 +379,7 @@ imageID arith_image_crop(const char *ID_name,
     }
 
     printf("CROP: \n");
-    for(i = 0; i < 3; i++)
+    for(int i = 0; i < 3; i++)
     {
         printf("axis %ld: %ld -> %ld\n", i, start_c[i], end_c[i]);
     }
@@ -526,7 +526,7 @@ imageID arith_image_extract2D(
     int64_t        *start = NULL;
     int64_t        *end   = NULL;
     imageID      IDout;
-    uint_fast8_t k;
+
 
     IMGID img =
         imgid_make_from_name(in_name);
@@ -552,7 +552,7 @@ imageID arith_image_extract2D(
         return -1;
     }
 
-    for(k = 0; k < naxis; k++)
+    for(uint_fast8_t k = 0; k < naxis; k++)
     {
         start[k] = 0;
         end[k]   = img.md->size[k];

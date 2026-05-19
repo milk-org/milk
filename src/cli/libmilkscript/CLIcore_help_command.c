@@ -733,7 +733,7 @@ errno_t help_module()
     }
     else
     {
-        long i;
+
         printf("\n");
         printf("%2s  %10s %32s %10s %7s    %20s %s\n",
                "#",
@@ -747,7 +747,7 @@ errno_t help_module()
             "--------------------------------------------------------------"
             "-----------------------------------------"
             "-------\n");
-        for(i = 0; i < data.NBmodule; i++)
+        for(long i = 0; i < data.NBmodule; i++)
         {
             printf(
                 "%2ld %10s \033[1m%32s\033[0m %10s %2d.%02d.%02d    "

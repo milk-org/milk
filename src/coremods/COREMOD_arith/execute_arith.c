@@ -227,7 +227,7 @@ arith_image_dy_wrap(
 int execute_arith(const char *cmd1)
 {
     char word[100][100];
-    int  w, l, j;
+    int w, l;
     int  nbword;
     int  word_type[100];
     int  par_level[100];
@@ -269,7 +269,7 @@ int execute_arith(const char *cmd1)
        - remove any spaces in cmd1
        - replace "=-" by "=0-" and "=+" by "="
        copy result into cmd */
-    j = 0;
+    int j = 0;
 
     for(int i = 0; i < (int)(strlen(cmd1)); i++)
     {
@@ -702,7 +702,7 @@ int execute_arith(const char *cmd1)
                 {
                     snprintf(word[i], sizeof(word[i]), "%s", word[i + 1]);
                     word_type[i] = word_type[i + 1];
-                    for(j = i + 1; j < nbword - 2; j++)
+                    for(int j = i + 1; j < nbword - 2; j++)
                     {
                         snprintf(word[j], sizeof(word[j]), "%s", word[j + 2]);
                         word_type[j] = word_type[j + 2];
@@ -719,7 +719,7 @@ int execute_arith(const char *cmd1)
                         -dcvar[variable_ID(word[i + 2])].value.f;
                     snprintf(word[i], sizeof(word[i]), "%s", word[i + 2]);
                     word_type[i] = word_type[i + 2];
-                    for(j = i + 2; j < nbword - 3; j++)
+                    for(int j = i + 2; j < nbword - 3; j++)
                     {
                         snprintf(word[j], sizeof(word[j]), "%s", word[j + 3]);
                         word_type[j] = word_type[j + 3];

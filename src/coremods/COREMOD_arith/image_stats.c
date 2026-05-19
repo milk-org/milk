@@ -152,9 +152,11 @@ double arith_image_max(const char *ID_name)
     return arith_image_max_IMGID(&imgin);
 }
 
-double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
+double arith_image_percentile_IMGID(
+    IMGID *imgin,
+    double fraction)
 {
-    uint64_t        ii;
+
     double          value  = 0;
     long           *arrayL = NULL;
     float          *arrayF = NULL;
@@ -205,7 +207,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayU[ii] = imgin->im->array.UI8[ii];
         }
@@ -221,7 +223,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayU[ii] = imgin->im->array.UI16[ii];
         }
@@ -237,7 +239,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = imgin->im->array.UI32[ii];
         }
@@ -253,7 +255,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = imgin->im->array.UI64[ii];
         }
@@ -269,7 +271,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI8[ii];
         }
@@ -285,7 +287,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI16[ii];
         }
@@ -301,7 +303,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI32[ii];
         }
@@ -317,7 +319,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for(ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI64[ii];
         }
@@ -348,7 +350,9 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
  * Sorts pixel values and returns the value at
  * the specified fractional position.
  */
-double arith_image_percentile(const char *ID_name, double fraction)
+double arith_image_percentile(
+    const char *ID_name,
+    double fraction)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_percentile_IMGID(&imgin, fraction);
@@ -372,7 +376,9 @@ double arith_image_median(const char *ID_name)
     return arith_image_median_IMGID(&imgin);
 }
 
-double MILK_HOT arith_image_dot_IMGID(IMGID *imgin1, IMGID *imgin2)
+double MILK_HOT arith_image_dot_IMGID(
+    IMGID *imgin1,
+    IMGID *imgin2)
 {
     uint64_t nelement;
     uint8_t  datatype1, datatype2;
@@ -484,7 +490,9 @@ double MILK_HOT arith_image_dot_IMGID(IMGID *imgin1, IMGID *imgin2)
     return value;
 }
 
-double arith_image_dot(const char *ID1_name, const char *ID2_name)
+double arith_image_dot(
+    const char *ID1_name,
+    const char *ID2_name)
 {
     IMGID imgin1 = imgid_make_from_name(ID1_name);
     IMGID imgin2 = imgid_make_from_name(ID2_name);

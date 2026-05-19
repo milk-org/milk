@@ -264,7 +264,9 @@ void rl_cb_linehandler(char *linein)
  * environment. Falls back to the default colored
  * prompt with the process name.
  */
-errno_t runCLI_prompt(char *promptstring, char *prompt)
+errno_t runCLI_prompt(
+    char *promptstring,
+    char *prompt)
 {
     /* Use PS1 only from CLI vars (set inside
      * milk-cli).  Do NOT fall back to

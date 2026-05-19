@@ -50,14 +50,14 @@ long fps_ID(const char *name)
 /* next available ID number */
 long next_avail_fps_ID()
 {
-    long i;
+
     long ID = -1;
 
 #ifdef _OPENMP
     #pragma omp critical
     {
 #endif
-        for(i = 0; i < dcnfps; i++)
+        for(long i = 0; i < dcnfps; i++)
         {
             if(dcfpsarr[i].SMfd < 0)
             {

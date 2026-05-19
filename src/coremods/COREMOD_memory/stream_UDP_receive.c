@@ -84,7 +84,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     int             semval;
     int             semnb;
     int             OKim;
-    int             axis;
+
 
     imgmd = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
 
@@ -253,7 +253,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         }
         if(OKim == 1)
         {
-            for(axis = 0; axis < imgmd[0].naxis; axis++)
+            for(int axis = 0; axis < imgmd[0].naxis; axis++)
                 if(imgmd[0].size[axis] != dcimg[ID].md[0].size[axis])
                 {
                     OKim = 0;

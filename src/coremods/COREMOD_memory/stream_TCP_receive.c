@@ -73,7 +73,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     int             semval __attribute__((unused));
     int             semnb __attribute__((unused));
     int             OKim;
-    int             axis;
+
 
     imgmd = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
 
@@ -279,7 +279,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         }
         if(OKim == 1)
         {
-            for(axis = 0; axis < imgmd->naxis; axis++)
+            for(int axis = 0; axis < imgmd->naxis; axis++)
                 if(imgmd->size[axis] != img_p->md->size[axis])
                 {
                     OKim = 0;

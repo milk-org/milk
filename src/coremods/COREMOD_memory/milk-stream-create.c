@@ -129,7 +129,9 @@ void print_help(const char *progname)
            progname);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* One-line help — before getopt so it works without any positional args */
     for (int i = 1; i < argc; i++) {

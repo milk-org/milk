@@ -141,7 +141,9 @@ void *create_scan_shm(const char *name, size_t size, int *fd)
  * Scans all processinfo SHM files and updates
  * the scanner shared memory with current data.
  */
-void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm)
+void rebuild_process_list(
+    const char *procdname,
+    PROCSCAN_SHM *scan_shm)
 {
     printf("Rebuilding process list from %s...\n", procdname);
     for(long i = 0; i < PROCESSINFOLISTSIZE; i++)
@@ -228,7 +230,9 @@ void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm)
     }
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* One-line help — before daemon check and SHM init */
     for(int i = 1; i < argc; i++)

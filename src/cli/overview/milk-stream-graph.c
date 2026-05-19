@@ -141,7 +141,9 @@ static void sg_raw_exit(void)
  * Usage
  * ========================================================= */
 
-static void print_usage(const char *prog, int mh_color)
+static void print_usage(
+    const char *prog,
+    int mh_color)
 {
     milk_help_banner(prog, SG_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -764,7 +766,9 @@ static void sg_interactive(
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 SG_ONELINE, SG_DESC_LONG);

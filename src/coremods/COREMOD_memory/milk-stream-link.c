@@ -56,7 +56,9 @@ static const char *get_shmdir(void)
  * @progname: argv[0]
  * @color:    non-zero for ANSI color
  */
-static void print_help(const char *progname, int color)
+static void print_help(
+    const char *progname,
+    int color)
 {
     milk_help_banner(progname, LSL_DESC, color);
     milk_help_section("Usage", color);
@@ -154,7 +156,9 @@ static void write_imsize(
     printf("  imsize written → %s\n", outfile);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(
         argc, argv, LSL_DESC, LSL_DESC_LONG);

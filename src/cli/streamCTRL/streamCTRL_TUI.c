@@ -88,7 +88,9 @@ int g_sort_dir = 0;
  * g_sort_col. Uses g_sort_dir to flip order.
  * Elements a,b are pointers to long (sindex values).
  */
-int cmp_stream_col(const void *a, const void *b)
+int cmp_stream_col(
+    const void *a,
+    const void *b)
 {
     long idxA = *(const long *)a;
     long idxB = *(const long *)b;

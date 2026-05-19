@@ -25,7 +25,9 @@ PROCESSINFOLIST *sort_ctx_pinfolist = NULL;
  *
  * Sort key depends on the current column selection.
  */
-int proc_comp(const void *a, const void *b)
+int proc_comp(
+    const void *a,
+    const void *b)
 {
     int idx1 = *(const int *)a;
     int idx2 = *(const int *)b;

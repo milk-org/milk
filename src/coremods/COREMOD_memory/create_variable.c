@@ -16,7 +16,9 @@
 #include "variable_ID.h"
 
 /* creates floating point variable */
-variableID create_variable_ID(const char *name, double value)
+variableID create_variable_ID(
+    const char *name,
+    double value)
 {
     variableID ID;
     long       i2;
@@ -55,7 +57,9 @@ variableID create_variable_ID(const char *name, double value)
 }
 
 /* creates long variable */
-variableID create_variable_long_ID(const char *name, long value)
+variableID create_variable_long_ID(
+    const char *name,
+    long value)
 {
     variableID ID;
     long       i2;
@@ -94,7 +98,9 @@ variableID create_variable_long_ID(const char *name, long value)
 }
 
 /* creates long variable */
-variableID create_variable_string_ID(const char *name, const char *value)
+variableID create_variable_string_ID(
+    const char *name,
+    const char *value)
 {
     variableID ID;
     long       i2;

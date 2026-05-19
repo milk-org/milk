@@ -114,7 +114,9 @@ static inline void ov_set_mouse_hover(int enable)
     }
 }
 
-static inline void ov_get_terminal_size(int *rows, int *cols)
+static inline void ov_get_terminal_size(
+    int *rows,
+    int *cols)
 {
     struct winsize ws;
     *rows = 24;
@@ -195,7 +197,9 @@ static inline void ov_buf_reset(void)
     }
 }
 
-static inline void ov_buf_append(const char *data, int len)
+static inline void ov_buf_append(
+    const char *data,
+    int len)
 {
     if (ov__screenbuf_len + len < OV_SCREENBUF_SIZE) {
         memcpy(ov__screenbuf + ov__screenbuf_len, data, (size_t) len);
@@ -226,7 +230,9 @@ static inline void ov_buf_flush_internal(void)
     }
 }
 
-static inline void ov_buf_flush_delta(int term_rows, int term_cols)
+static inline void ov_buf_flush_delta(
+    int term_rows,
+    int term_cols)
 {
     int emit_cursor_r = -1;
     int emit_cursor_c = -1;
@@ -365,9 +371,9 @@ static inline int utf8_char_length(unsigned char c) {
     return 1;
 }
 
-static inline void ov_buf_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-
-static inline void ov_buf_printf(const char *fmt, ...)
+static inline void ov_buf_printf(
+    const char *fmt,
+    ...)
 {
     char tmp[4096];
     va_list ap;

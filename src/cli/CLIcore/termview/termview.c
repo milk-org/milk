@@ -220,7 +220,9 @@ static void tv_exit_alt_screen(void)
     if(write(STDOUT_FILENO, "\033[?1006l\033[?1002l\033[?1049l\033[?25h", 30) < 0) {} // exit alt screen + show cursor + no mouse track
 }
 
-static void tv_get_size(unsigned short *rows, unsigned short *cols)
+static void tv_get_size(
+    unsigned short *rows,
+    unsigned short *cols)
 {
     struct winsize ws;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
@@ -962,7 +964,9 @@ static void termview_flush_ansi(tv_context_t *ctx) {
     }
 }
 
-errno_t termview_screen(const char *imagename, termview_options_t options)
+errno_t termview_screen(
+    const char *imagename,
+    termview_options_t options)
 {
     IMAGE img;
     ImageStreamIO_read_sharedmem_image_toIMAGE(imagename, &img);

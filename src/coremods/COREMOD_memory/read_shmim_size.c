@@ -79,7 +79,7 @@ imageID read_sharedmem_image_size(
     char            SM_fname[
         STRINGMAXLEN_FULLFILENAME];
     IMAGE_METADATA *map;
-    int             i;
+
     FILE           *fp;
 
     IMGID img = imgid_make_from_name(name);
@@ -119,7 +119,7 @@ imageID read_sharedmem_image_size(
             }
 
             fp = fopen(fname, "w");
-            for(i = 0; i < map[0].naxis; i++)
+            for( int i = 0; i < map[0].naxis; i++)
             {
                 fprintf(fp, "%ld ",
                         (long) map[0].size[i]);
@@ -143,7 +143,7 @@ imageID read_sharedmem_image_size(
     else
     {
         fp = fopen(fname, "w");
-        for(i = 0;
+        for(int i = 0;
              i < img.im->md[0].naxis;
              i++)
         {

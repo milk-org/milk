@@ -26,8 +26,8 @@ functionparameter_PrintParameterInfo(
     printf("------------- FUNCTION PARAMETER STRUCTURE\n");
     printf("FPS name       : %s\n", fpsentry->md->name);
     printf("   %s ", fpsentry->md->pname);
-    int i;
-    for(i = 0; i < fpsentry->md->NBnameindex; i++)
+
+    for (int i = 0; i < fpsentry->md->NBnameindex; i++)
     {
         printf(" [%s]", fpsentry->md->nameindexW[i]);
     }
@@ -39,13 +39,13 @@ functionparameter_PrintParameterInfo(
     }
     else
     {
-        int msgi;
+
 
         printf("%s [%ld] %d ERROR(s)\n",
                fpsentry->md->name,
                fpsentry->md->msgcnt,
                fpsentry->md->conferrcnt);
-        for(msgi = 0; msgi < fpsentry->md->msgcnt; msgi++)
+        for(int msgi = 0; msgi < fpsentry->md->msgcnt; msgi++)
         {
             printf("%s [%3d] %s\n",
                    fpsentry->md->name,

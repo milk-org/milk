@@ -48,7 +48,9 @@
  * @progname: argv[0]
  * @mh_color: non-zero for ANSI color output
  */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, SP_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -132,7 +134,9 @@ static const char *get_shmdir(void)
  * Scans /proc/<pid>/fd/ symlinks for a stat inode match.
  * Returns 1 if the process has the inode open, 0 otherwise.
  */
-static int pid_has_inode_open(pid_t pid, ino_t inode)
+static int pid_has_inode_open(
+    pid_t pid,
+    ino_t inode)
 {
     char fddir[64];
     snprintf(fddir, sizeof(fddir), "/proc/%d/fd", (int)pid);
@@ -171,7 +175,9 @@ static int pid_has_inode_open(pid_t pid, ino_t inode)
  *
  * Returns 1 if orphan (no live holder), 0 if live.
  */
-static int is_stream_orphan(const char *fullpath, int verbose)
+static int is_stream_orphan(
+    const char *fullpath,
+    int verbose)
 {
     struct stat st;
     if (stat(fullpath, &st) != 0) {
@@ -247,7 +253,9 @@ static int read_confirm(void)
  *
  * Returns 0 on success, 1 on error.
  */
-static int remove_orphan(const char *shmdir, const char *sname)
+static int remove_orphan(
+    const char *shmdir,
+    const char *sname)
 {
     char fullpath[512];
     snprintf(fullpath, sizeof(fullpath),
@@ -273,7 +281,9 @@ static int remove_orphan(const char *shmdir, const char *sname)
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv, SP_DESC, SP_DESC_LONG);
 

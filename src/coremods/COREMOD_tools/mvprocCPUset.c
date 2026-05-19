@@ -406,7 +406,9 @@ int COREMOD_TOOLS_mvProcTset(const char *tsetspec)
     return COREMOD_TOOLS_mvProcTsetExt(getpid(), tsetspec);
 }
 
-int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
+int COREMOD_TOOLS_mvProcTsetExt(
+    const int pid,
+    const char *tsetspec)
 {
     char command[200];
 

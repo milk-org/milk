@@ -271,7 +271,9 @@ static int CLI_checkarg0(
  * @param funcargtype
  * @return int
  */
-int CLI_checkarg(int CLIargnum, uint32_t funcargtype)
+int CLI_checkarg(
+    int CLIargnum,
+    uint32_t funcargtype)
 {
     DEBUG_TRACE_FSTART();
 
@@ -302,7 +304,9 @@ int CLI_checkarg(int CLIargnum, uint32_t funcargtype)
  * @param funcargtype
  * @return int
  */
-int CLI_checkarg_noerrmsg(int CLIargnum, uint32_t funcargtype)
+int CLI_checkarg_noerrmsg(
+    int CLIargnum,
+    uint32_t funcargtype)
 {
     DEBUG_TRACE_FSTART();
 

@@ -486,7 +486,9 @@ static void print_stream_info(
  * Help
  * ========================================================= */
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, SI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -525,7 +527,9 @@ static void print_help(const char *progname, int mh_color)
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 SI_ONELINE, SI_DESC_LONG);

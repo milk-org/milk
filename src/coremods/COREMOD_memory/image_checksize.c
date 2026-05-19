@@ -16,7 +16,10 @@
 /**
  * @brief Verify that an image has the expected 2D size.
  */
-int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
+int check_2Dsize(
+    const char *ID_name,
+    uint32_t xsize,
+    uint32_t ysize)
 {
     int     retval;
     IMGID img = imgid_make_from_name(ID_name);

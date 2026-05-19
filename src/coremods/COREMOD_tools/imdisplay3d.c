@@ -100,11 +100,13 @@ CLIADDCMD_COREMOD_tools__imdisplay3d()
 
 // displays 2D image in 3D using gnuplot
 //
-errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
+errno_t COREMOD_TOOLS_imgdisplay3D(
+    const char *IDname,
+    long step)
 {
     imageID ID;
     long    xsize, ysize;
-    long    ii, jj;
+    long ii;
     char    cmd[512];
     FILE   *fp;
 
@@ -135,7 +137,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fprintf(fpgnuplot, "splot \"-\" w d notitle\n");
     for(ii = 0; ii < xsize; ii += step)
     {
-        for(jj = 0; jj < xsize; jj += step)
+        for(long jj = 0; jj < xsize; jj += step)
         {
             fprintf(fpgnuplot,
                     "%ld %ld %f\n",

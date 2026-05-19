@@ -137,7 +137,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     imageID            IDout = -1;
     imageID            IDin;
     imageID            IDmap;
-    long               slice, sliceii;
+    long sliceii;
     long               oldslice = 0;
     long               NBslice;
     long              *nbpixslice;
@@ -147,13 +147,13 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     FILE              *fp;
     uint32_t          *sizearray;
     imageID            IDout_pixslice;
-    long               ii;
+
     unsigned long long cnt = 0;
     //    int RT_priority = 80; //any number from 0-99
 
     //    struct sched_param schedpar;
     struct timespec ts;
-    long            scnt;
+
     int             semval;
     //    long long iter;
     //    int r;
@@ -348,7 +348,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         return RETURN_FAILURE;
     }
 
-    for(slice = 0; slice < NBslice; slice++)
+    for(long slice = 0; slice < NBslice; slice++)
     {
         int fscanfcnt =
             fscanf(fp, "%ld %ld %ld\n", &tmpl0, &nbpixslice[slice], &tmpl1);
@@ -377,7 +377,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     }
     fclose(fp);
 
-    for(slice = 0; slice < NBslice; slice++)
+    for(long slice = 0; slice < NBslice; slice++)
     {
         printf("Slice %5ld   : %5ld pix\n", slice, nbpixslice[slice]);
     }
@@ -400,11 +400,11 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         imgid_mkimage(&imgpixsl);
         IDout_pixslice = imgpixsl.ID;
 
-        for(slice = 0; slice < NBslice; slice++)
+        for(long slice = 0; slice < NBslice; slice++)
         {
             sliceii = slice * dcimg[IDmap].md[0].size[0] *
                       dcimg[IDmap].md[0].size[1];
-            for(ii = 0; ii < nbpixslice[slice]; ii++)
+            for(long ii = 0; ii < nbpixslice[slice]; ii++)
             {
                 // ocam2kpixi files MUST now be in int32 - otherwise we'll overflow in 240x240
                 dcimg[IDout_pixslice]
@@ -467,7 +467,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
             if(processinfo->loopcnt == 0)
             {
                 semval = ImageStreamIO_semvalue(dcimg + IDin, in_semwaitindex);
-                for(scnt = 0; scnt < semval; scnt++)
+                for(long scnt = 0; scnt < semval; scnt++)
                 {
                     ImageStreamIO_semtrywait(dcimg + IDin, in_semwaitindex);
                 }
@@ -480,7 +480,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         {
             if(semr == 0)
             {
-                slice = dcimg[IDin].md[0].cnt1;
+                long slice = dcimg[IDin].md[0].cnt1;
                 if(slice > oldslice + 1)
                 {
                     slice = oldslice + 1;
@@ -501,7 +501,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                     {
                         sliceii = slice * dcimg[IDmap].md[0].size[0] *
                                   dcimg[IDmap].md[0].size[1];
-                        for(ii = 0; ii < nbpixslice[slice]; ii++)
+                        for(long ii = 0; ii < nbpixslice[slice]; ii++)
                         {
                             dcimg[IDout].array.UI16
                             [dcimg[IDmap].array.UI32[sliceii + ii]] =
@@ -511,7 +511,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                 }
                 else // reverse == 1, full image assumed (at least given how ocam is scrambled)
                 {
-                    for(ii = 0; ii < nbpixout; ++ii)
+                    for(long ii = 0; ii < nbpixout; ++ii)
                     {
                         dcimg[IDout].array.UI16[ii] =
                             dcimg[IDin]

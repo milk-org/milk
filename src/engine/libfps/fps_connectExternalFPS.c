@@ -25,8 +25,8 @@ int functionparameter_ConnectExternalFPS(
 
     fps->parray[pindex].info.fps.FPSNBparamActive = 0;
     fps->parray[pindex].info.fps.FPSNBparamUsed   = 0;
-    int pindexext;
-    for(pindexext = 0; pindexext < fps->parray[pindex].info.fps.FPSNBparamMAX;
+
+    for(int pindexext = 0; pindexext < fps->parray[pindex].info.fps.FPSNBparamMAX;
             pindexext++)
     {
         if(FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE)

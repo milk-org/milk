@@ -24,7 +24,9 @@
     "  -r         Regex match: list matches then confirm.\n" \
     "  (no args)  Interactive: list all streams, select to remove."
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, SR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -275,7 +277,9 @@ static int read_confirmation(void)
  * Handles terminal mode setup and strips
  * trailing whitespace.  Returns 1 on success.
  */
-static int read_line(char *buf, int size)
+static int read_line(
+    char *buf,
+    int size)
 {
     struct termios old_term;
     int is_tty = isatty(STDIN_FILENO);
@@ -317,7 +321,9 @@ static int read_line(char *buf, int size)
     return 1;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 SR_DESC, SR_DESC_LONG);

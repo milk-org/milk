@@ -38,7 +38,9 @@
     "and write counter. Use -a for full details including semaphores.\n" \
     "An optional regex pattern filters which streams are listed."
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, SL_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -79,7 +81,9 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 3, mh_color);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 SL_DESC, SL_DESC_LONG);

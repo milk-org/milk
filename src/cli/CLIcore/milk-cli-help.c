@@ -15,7 +15,9 @@
 #include <stdio.h>
 #include "CLIcore.h"
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* One-line help — before CLI_startup() to avoid initialization */
     for (int i = 1; i < argc; i++) {

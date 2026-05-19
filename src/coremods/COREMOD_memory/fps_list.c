@@ -50,14 +50,14 @@ static FPS_APP_INFO FPS_app_info = {
 
 errno_t fps_list()
 {
-    long fpsID;
+
     long fpscnt = 0;
 
     int NBchar_fpsID   = 5;
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-    for(fpsID = 0; fpsID < dcnfps; fpsID++)
+    for(long fpsID = 0; fpsID < dcnfps; fpsID++)
     {
         if(dcfpsarr[fpsID].SMfd > -1)
         {

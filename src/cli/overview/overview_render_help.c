@@ -374,7 +374,9 @@ int ov_help_visible_count(const OV_LAYOUT *lay)
  * bit and returns the section index.  Otherwise
  * returns -1.
  */
-int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row)
+int ov_help_toggle_at(
+    OV_LAYOUT *lay,
+    int vis_row)
 {
     int map[128];
     int nvis = help_visible_rows(lay, map);

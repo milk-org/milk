@@ -64,7 +64,9 @@
  * @progname: argv[0]
  * @mh_color: non-zero for ANSI color output
  */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, LSC_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -180,7 +182,9 @@ static const char *get_shmdir(void)
  * The FIFO is at $MILK_SHM_DIR/milkFITSlogger.fifo,
  * matching the path used by milk-streamFITSlog.
  */
-static void fifo_path(char *buf, size_t bufsz)
+static void fifo_path(
+    char *buf,
+    size_t bufsz)
 {
     snprintf(buf, bufsz,
              "%s/milkFITSlogger.fifo", get_shmdir());
@@ -194,7 +198,9 @@ static void fifo_path(char *buf, size_t bufsz)
  * Opens the FIFO in non-blocking write-only mode, writes the
  * command, then closes. Returns 0 on success, 1 on error.
  */
-static int fifo_write(const char *fifo, const char *cmd)
+static int fifo_write(
+    const char *fifo,
+    const char *cmd)
 {
     /* Check FIFO exists */
     struct stat st;
@@ -522,7 +528,9 @@ static int action_start(
     return system(cmd) == 0 ? 0 : 1;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(
         argc, argv, LSC_DESC, LSC_DESC_LONG);

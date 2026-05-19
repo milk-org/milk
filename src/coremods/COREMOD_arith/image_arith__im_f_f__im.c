@@ -96,7 +96,10 @@ int arith_image_trunc(const char *ID_name,
     return (0);
 }
 
-int arith_image_trunc_inplace(const char *ID_name, double f1, double f2)
+int arith_image_trunc_inplace(
+    const char *ID_name,
+    double f1,
+    double f2)
 {
     arith_image_function_1ff_1_inplace(ID_name, f1, f2, &Ptrunc);
     return (0);
