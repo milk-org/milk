@@ -28,8 +28,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
             processinfo->timingbuffercnt++;
         }
 
-        clock_gettime(CLOCK_MILK,
-                      &processinfo->texecstart[processinfo->timerindex]);
+        clock_gettime(CLOCK_MILK, &processinfo->texecstart[processinfo->timerindex]);
 
         if(processinfo->dtiter_limit_enable != 0)
         {
@@ -62,8 +61,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
                                  "dtiter %4ld  %4d %6.1f us  > %6.1f us",
                                  processinfo->dtiter_limit_cnt,
                                  processinfo->timerindex,
-                                 0.001 * dtiter,
-                                 0.001 * processinfo->dtiter_limit_value);
+                                 0.001 * dtiter, 0.001 * processinfo->dtiter_limit_value);
                     if(slen < 1)
                     {
                         PRINT_ERROR("snprintf wrote <1 char");

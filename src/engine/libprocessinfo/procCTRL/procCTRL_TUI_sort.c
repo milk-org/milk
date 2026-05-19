@@ -100,8 +100,7 @@ int proc_comp(
                       (p1->VmRSSarray[0] > p2->VmRSSarray[0]) ? 1 : 0;
                 break;
             case 8: // thr
-                res = (p1->threads < p2->threads) ? -1 :
-                      (p1->threads > p2->threads) ? 1 : 0;
+                res = (p1->threads < p2->threads) ? -1 : (p1->threads > p2->threads) ? 1 : 0;
                 break;
             }
         }

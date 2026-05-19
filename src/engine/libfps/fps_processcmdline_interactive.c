@@ -88,8 +88,7 @@ static void fps_cmd_handle_sys(
         *cmdFOUND = 1;
         if(nbword != 1)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND rescan takes NBARGS = 0");
+            functionparameter_outlog("ERROR", "COMMAND rescan takes NBARGS = 0");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -100,9 +99,7 @@ static void fps_cmd_handle_sys(
                                        fps,
                                        keywnode,
                                        &fpsCTRLvar->NBkwn,
-                                       &fpsCTRLvar->NBfps,
-                                       &fpsCTRLvar->NBindex,
-                                       0);
+                                       &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex, 0);
             functionparameter_outlog("DEBUG", "RESCAN");
         }
         return;
@@ -114,18 +111,14 @@ static void fps_cmd_handle_sys(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND cntinc takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
         else
         {
             (*testcnt)++;
-            functionparameter_outlog("DEBUG",
-                                     "TEST [%d] counter = %d",
-                                     atoi(FPSarg0),
-                                     *testcnt);
+            functionparameter_outlog("DEBUG", "TEST [%d] counter = %d", atoi(FPSarg0), *testcnt);
         }
         return;
     }
@@ -137,8 +130,7 @@ static void fps_cmd_handle_sys(
         if(nbword != 2)
         {
 
-            functionparameter_outlog("ERROR",
-                                     "COMMAND logsymlink takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND logsymlink takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -147,10 +139,7 @@ static void fps_cmd_handle_sys(
             char logfname[STRINGMAXLEN_FULLFILENAME];
             getFPSlogfname(logfname);
 
-            functionparameter_outlog("DEBUG",
-                                     "CREATE SYM LINK %s <- %s",
-                                     FPSarg0,
-                                     logfname);
+            functionparameter_outlog("DEBUG", "CREATE SYM LINK %s <- %s", FPSarg0, logfname);
 
             if(symlink(logfname, FPSarg0) != 0)
             {
@@ -166,8 +155,7 @@ static void fps_cmd_handle_sys(
         *cmdFOUND = 1;
         if(nbword != 3)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND queueprio takes NBARGS = 2");
+            functionparameter_outlog("ERROR", "COMMAND queueprio takes NBARGS = 2");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -179,11 +167,7 @@ static void fps_cmd_handle_sys(
             if((queue >= 0) && (queue < NB_FPSCTRL_TASKQUEUE_MAX))
             {
                 fpsctrlqueuelist[queue].priority = prio;
-                functionparameter_outlog("FPSCTRL",
-                                         "%s",
-                                         "QUEUE %d PRIO = %d",
-                                         queue,
-                                         prio);
+                functionparameter_outlog("FPSCTRL", "%s", "QUEUE %d PRIO = %d", queue, prio);
             }
         }
         return;
@@ -216,9 +200,7 @@ static void fps_cmd_handle_tmux(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "%s",
-                                     "COMMAND tmuxstart takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "%s", "COMMAND tmuxstart takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -227,9 +209,7 @@ static void fps_cmd_handle_tmux(
             DEBUG_TRACEPOINT(" ");
             functionparameter_FPS_tmux_init(&fps[fpsindex]);
 
-            functionparameter_outlog("FPSCTRL",
-                                     "TMUXSTART %s",
-                                     fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "TMUXSTART %s", fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -241,9 +221,7 @@ static void fps_cmd_handle_tmux(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "%s",
-                                     "COMMAND tmuxstop takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "%s", "COMMAND tmuxstop takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -252,9 +230,7 @@ static void fps_cmd_handle_tmux(
             DEBUG_TRACEPOINT(" ");
             functionparameter_FPS_tmux_kill(&fps[fpsindex]);
 
-            functionparameter_outlog("FPSCTRL",
-                                     "TMUXSTOP %s",
-                                     fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "TMUXSTOP %s", fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -288,9 +264,7 @@ static void fps_cmd_handle_conf(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "%s",
-                                     "COMMAND confstart takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "%s", "COMMAND confstart takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -299,9 +273,7 @@ static void fps_cmd_handle_conf(
             DEBUG_TRACEPOINT(" ");
             functionparameter_CONFstart(&fps[fpsindex]);
 
-            functionparameter_outlog("FPSCTRL",
-                                     "CONFSTART %s",
-                                     fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "CONFSTART %s", fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -313,8 +285,7 @@ static void fps_cmd_handle_conf(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND confstop takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND confstop takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -322,9 +293,7 @@ static void fps_cmd_handle_conf(
         {
             DEBUG_TRACEPOINT(" ");
             functionparameter_CONFstop(&fps[fpsindex]);
-            functionparameter_outlog("FPSCTRL",
-                                     "CONFSTOP %s",
-                                     fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "CONFSTOP %s", fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -336,22 +305,17 @@ static void fps_cmd_handle_conf(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND confupdate takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND confupdate takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
         else
         {
             DEBUG_TRACEPOINT(" ");
-            fps[fpsindex].md->signal |=
-                FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED;
-            fps[fpsindex].md->signal |=
-                FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+            fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED;
+            fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
-            functionparameter_outlog("FPSCTRL",
-                                     "CONFUPDATE %s",
-                                     fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "CONFUPDATE %s", fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -363,9 +327,7 @@ static void fps_cmd_handle_conf(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog(
-                "ERROR",
-                "COMMAND confwupdate takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND confwupdate takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -380,10 +342,8 @@ static void fps_cmd_handle_conf(
             while(looptry == 1)
             {
                 DEBUG_TRACEPOINT(" ");
-                fps[fpsindex].md->signal |=
-                    FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED;
-                fps[fpsindex].md->signal |=
-                    FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+                fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED;
+                fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
                 while(((fps[fpsindex].md->signal &
                         FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)) &&
@@ -401,8 +361,7 @@ static void fps_cmd_handle_conf(
                                          looptrycnt,
                                          dt * timercnt,
                                          fpsindex,
-                                         fps[fpsindex].md->name,
-                                         fps[fpsindex].md->conferrcnt);
+                                         fps[fpsindex].md->name, fps[fpsindex].md->conferrcnt);
 
                 looptrycnt++;
 
@@ -450,8 +409,7 @@ static void fps_cmd_handle_run(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND runstart takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND runstart takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -460,9 +418,7 @@ static void fps_cmd_handle_run(
             DEBUG_TRACEPOINT(" ");
             functionparameter_RUNstart(&fps[fpsindex]);
 
-            functionparameter_outlog("FPSCTRL",
-                                     "RUNSTART %s",
-                                     fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "RUNSTART %s", fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -474,8 +430,7 @@ static void fps_cmd_handle_run(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND runwait takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND runwait takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -496,8 +451,7 @@ static void fps_cmd_handle_run(
             }
             functionparameter_outlog("FPSCTRL",
                                      "RUNWAIT waited %d us on FPS %s",
-                                     dt * timercnt,
-                                     fps[fpsindex].md->name);
+                                     dt * timercnt, fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -509,8 +463,7 @@ static void fps_cmd_handle_run(
         *cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR",
-                                     "COMMAND runstop takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND runstop takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
         }
@@ -518,9 +471,7 @@ static void fps_cmd_handle_run(
         {
             DEBUG_TRACEPOINT(" ");
             functionparameter_RUNstop(&fps[fpsindex]);
-            functionparameter_outlog("FPSCTRL",
-                                     "RUNSTOP %s",
-                                     fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "RUNSTOP %s", fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
@@ -567,12 +518,10 @@ int functionparameter_FPSprocess_cmdline(
     int cmdFOUND = 0; // toggles to 1 when command has been found
 
     // first arg is always an FPS entry name
-    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                                                           FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
 
-    char FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                                                      FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
     char FPSarg2[FUNCTION_PARAMETER_STRMAXLEN];
     char FPSarg3[FUNCTION_PARAMETER_STRMAXLEN];
@@ -714,12 +663,8 @@ int functionparameter_FPSprocess_cmdline(
     int kwnindex = -1;
     if(cmdFOUND == 0)
     {
-        snprintf(FPSentryname,
-                 sizeof(FPSentryname),
-                 "%s", FPSarg0);
-        snprintf(FPScmdarg1,
-                 sizeof(FPScmdarg1),
-                 "%s", FPSarg1);
+        snprintf(FPSentryname, sizeof(FPSentryname), "%s", FPSarg0);
+        snprintf(FPScmdarg1, sizeof(FPScmdarg1), "%s", FPSarg1);
 
         // look for entry, if found, kwnindex points to it
         if(nbword > 1)
@@ -744,15 +689,11 @@ int functionparameter_FPSprocess_cmdline(
             pindex   = keywnode[kwnindex].pindex;
             functionparameter_outlog("DEBUG",
                                      "FPS ENTRY FOUND : %-40s  %d %ld",
-                                     FPSentryname,
-                                     fpsindex,
-                                     pindex);
+                                     FPSentryname, fpsindex, pindex);
         }
         else
         {
-            functionparameter_outlog("ERROR",
-                                     "FPS ENTRY NOT FOUND : %-40s",
-                                     FPSentryname);
+            functionparameter_outlog("ERROR", "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
             *taskstatus |= FPSTASK_STATUS_ERR_NOFPS;
             cmdOK = 0;
         }
@@ -773,8 +714,7 @@ int functionparameter_FPSprocess_cmdline(
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                functionparameter_outlog("ERROR",
-                                         "COMMAND fpswfile takes NBARGS = 1");
+                functionparameter_outlog("ERROR", "COMMAND fpswfile takes NBARGS = 1");
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
                 cmdOK = 0;
             }
@@ -782,9 +722,7 @@ int functionparameter_FPSprocess_cmdline(
             {
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_SaveFPS2disk(&fps[fpsindex]);
-                functionparameter_outlog("FPSCTRL",
-                                         "FPSWFILE %s",
-                                         fps[fpsindex].md->name);
+                functionparameter_outlog("FPSCTRL", "FPSWFILE %s", fps[fpsindex].md->name);
                 cmdOK = 1;
             }
         }
@@ -797,8 +735,7 @@ int functionparameter_FPSprocess_cmdline(
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                functionparameter_outlog("ERROR",
-                                         "COMMAND fpsrm takes NBARGS = 1");
+                functionparameter_outlog("ERROR", "COMMAND fpsrm takes NBARGS = 1");
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
                 cmdOK = 0;
             }
@@ -806,11 +743,8 @@ int functionparameter_FPSprocess_cmdline(
             {
                 DEBUG_TRACEPOINT("Removing fps number %d", fpsindex);
                 functionparameter_FPSremove(&fps[fpsindex]);
-                DEBUG_TRACEPOINT("Posting to fps log %s",
-                                 fps[fpsindex].md->name);
-                functionparameter_outlog("FPSCTRL",
-                                         "FPSRM %s",
-                                         fps[fpsindex].md->name);
+                DEBUG_TRACEPOINT("Posting to fps log %s", fps[fpsindex].md->name);
+                functionparameter_outlog("FPSCTRL", "FPSRM %s", fps[fpsindex].md->name);
                 cmdOK = 1;
             }
         }
@@ -824,8 +758,7 @@ int functionparameter_FPSprocess_cmdline(
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                functionparameter_outlog("ERROR",
-                                         "COMMAND exec takes NBARGS = 1");
+                functionparameter_outlog("ERROR", "COMMAND exec takes NBARGS = 1");
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
                 cmdOK = 0;
             }
@@ -836,23 +769,18 @@ int functionparameter_FPSprocess_cmdline(
                 {
                     EXECUTE_SYSTEM_COMMAND_NOCHECK(
                         "tmux send-keys -t %s:run \"cd %s\" "
-                        "C-m",
-                        fps[fpsindex].md->name,
-                        fps[fpsindex].md->workdir);
+                        "C-m", fps[fpsindex].md->name, fps[fpsindex].md->workdir);
                     EXECUTE_SYSTEM_COMMAND_NOCHECK(
                         "tmux send-keys -t %s:run \"%s %s\" "
                         "C-m",
                         fps[fpsindex].md->name,
-                        fps[fpsindex].parray[pindex].val.string[0],
-                        fps[fpsindex].md->name);
+                        fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
                     cmdOK = 1;
                 }
                 else
                 {
                     functionparameter_outlog(
-                        "ERROR",
-                        "COMMAND exec requires EXECFILENAME "
-                        "type parameter");
+                        "ERROR", "COMMAND exec requires EXECFILENAME " "type parameter");
                     *taskstatus |= FPSTASK_STATUS_ERR_ARGTYPE;
                     cmdOK = 0;
                 }
@@ -868,8 +796,7 @@ int functionparameter_FPSprocess_cmdline(
             if(nbword != 3)
             {
                 SNPRINTF_CHECK(errmsgstring,
-                               STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND setval takes NBARGS = 2");
+                               STRINGMAXLEN_FPS_LOGMSG, "COMMAND setval takes NBARGS = 2");
                 functionparameter_outlog("ERROR", "%s", errmsgstring);
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
                 cmdOK = 0;
@@ -896,11 +823,8 @@ int functionparameter_FPSprocess_cmdline(
                 {
                     cmdOK = 1;
                     functionparameter_WriteParameterToDisk(&fps[fpsindex],
-                                                           pindex,
-                                                           "setval",
-                                                           "InputCommandFile");
-                    fps[fpsindex].md->signal |=
-                        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+                                                           pindex, "setval", "InputCommandFile");
+                    fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
                 }
                 else
                 {
@@ -930,9 +854,7 @@ int functionparameter_FPSprocess_cmdline(
             {
                 errno_t ret;
                 ret = functionparameter_PrintParameter_ValueString(
-                          &fps[fpsindex].parray[pindex],
-                          msgstring,
-                          STRINGMAXLEN_FPS_LOGMSG);
+                          &fps[fpsindex].parray[pindex], msgstring, STRINGMAXLEN_FPS_LOGMSG);
 
                 if(ret == RETURN_SUCCESS)
                 {
@@ -954,17 +876,13 @@ int functionparameter_FPSprocess_cmdline(
                     {
 
                         FILE *fpouttmp = fopen(FPScmdarg1, "a");
-                        functionparameter_outlog_file("FWRVAL",
-                                                      msgstring,
-                                                      fpouttmp);
+                        functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
                         fclose(fpouttmp);
 
                         functionparameter_outlog("FWRVAL", "%s", msgstring);
                         char msgstring1[STRINGMAXLEN_FPS_LOGMSG];
                         SNPRINTF_CHECK(msgstring1,
-                                       STRINGMAXLEN_FPS_LOGMSG,
-                                       "WROTE to file %s",
-                                       FPScmdarg1);
+                                       STRINGMAXLEN_FPS_LOGMSG, "WROTE to file %s", FPScmdarg1);
                         functionparameter_outlog("FWRVAL", "%s", msgstring1);
                     }
                 }
@@ -975,30 +893,21 @@ int functionparameter_FPSprocess_cmdline(
     if(cmdOK == 0)
     {
         SNPRINTF_CHECK(msgstring,
-                       STRINGMAXLEN_FPS_LOGMSG,
-                       "\"%s\" > %s",
-                       FPScmdline,
-                       errmsgstring);
+                       STRINGMAXLEN_FPS_LOGMSG, "\"%s\" > %s", FPScmdline, errmsgstring);
         functionparameter_outlog("CMDFAIL", "%s", msgstring);
         *taskstatus |= FPSTASK_STATUS_CMDFAIL;
     }
 
     if(cmdOK == 1)
     {
-        SNPRINTF_CHECK(msgstring,
-                       STRINGMAXLEN_FPS_LOGMSG,
-                       "\"%s\"",
-                       FPScmdline);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
         functionparameter_outlog("DEBUG", "CMDOK %s", msgstring);
         *taskstatus |= FPSTASK_STATUS_CMDOK;
     }
 
     if(cmdFOUND == 0)
     {
-        SNPRINTF_CHECK(msgstring,
-                       STRINGMAXLEN_FPS_LOGMSG,
-                       "COMMAND NOT FOUND: %s",
-                       FPScommand);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND NOT FOUND: %s", FPScommand);
         functionparameter_outlog("ERROR", "%s", msgstring);
         *taskstatus |= FPSTASK_STATUS_CMDNOTFOUND;
     }

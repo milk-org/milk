@@ -15,8 +15,7 @@
  */
 void ov_layout_compute(OV_LAYOUT *lay)
 {
-    ov_get_terminal_size(&lay->term_rows,
-                         &lay->term_cols);
+    ov_get_terminal_size(&lay->term_rows, &lay->term_cols);
 
     int W = lay->term_cols;
     int H = lay->term_rows;

@@ -71,18 +71,14 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
     {
         switch(raw[ii])
         {
-        case 'L':
-        case 'S':
-            loc = raw[ii];
+        case 'L': case 'S': loc = raw[ii];
             nloc++;
             break;
 
-        case 'E':
-            must_exist = 1;
+        case 'E': must_exist = 1;
             break;
 
-        case 'N':
-            must_new = 1;
+        case 'N': must_new = 1;
             break;
 
         default:
@@ -181,8 +177,7 @@ int fps_streamname_is_shared(
     const char *raw
 )
 {
-    FPS_STREAMNAME_PARSED p =
-        fps_streamname_parse(raw);
+    FPS_STREAMNAME_PARSED p = fps_streamname_parse(raw);
 
     if(p.loc == 'L')
     {

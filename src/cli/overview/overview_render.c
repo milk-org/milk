@@ -200,18 +200,12 @@ static const char *view_label(ov_view_t v)
 {
     switch(v)
     {
-    case OV_VIEW_DASHBOARD:
-        return "DASH";
-    case OV_VIEW_STREAMS:
-        return "STRM";
-    case OV_VIEW_PROCS:
-        return "PROC";
-    case OV_VIEW_FPS:
-        return "FPS";
-    case OV_VIEW_GRAPH:
-        return "CONN";
-    default:
-        return "";
+    case OV_VIEW_DASHBOARD: return "DASH";
+    case OV_VIEW_STREAMS: return "STRM";
+    case OV_VIEW_PROCS: return "PROC";
+    case OV_VIEW_FPS: return "FPS";
+    case OV_VIEW_GRAPH: return "CONN";
+    default: return "";
     }
 }
 
@@ -574,24 +568,14 @@ void ov_render_frame(
 
         if(sel_node >= 0)
         {
-            sg_mode_t smode =
-                (focus == OV_FOCUS_FPS)
-                ? SG_MODE_FPS : SG_MODE_FULL;
-            sg_compute_node_depths(
-                mm, sel_node, smode, depths);
+            sg_mode_t smode = (focus == OV_FOCUS_FPS) ? SG_MODE_FPS : SG_MODE_FULL;
+            sg_compute_node_depths(mm, sel_node, smode, depths);
         }
         ov_sort_set_depths(depths);
 
-        ov_sort_streams(mm,
-                        lay->sort_key_stream,
-
-                        lay->sort_dir_stream);
-        ov_sort_procs(mm,
-                      lay->sort_key_proc,
-                      lay->sort_dir_proc);
-        ov_sort_fps(mm,
-                    lay->sort_key_fps,
-                    lay->sort_dir_fps);
+        ov_sort_streams(mm, lay->sort_key_stream,  lay->sort_dir_stream);
+        ov_sort_procs(mm, lay->sort_key_proc, lay->sort_dir_proc);
+        ov_sort_fps(mm, lay->sort_key_fps, lay->sort_dir_fps);
 
         g_nb_stream_order = mm->nb_streams;
         for(int i = 0; i < mm->nb_streams; i++)
@@ -937,8 +921,7 @@ void ov_render_frame(
     {
         switch(lay->view)
         {
-        case OV_VIEW_DASHBOARD:
-            ov_render_preview_line(lay, m);
+        case OV_VIEW_DASHBOARD: ov_render_preview_line(lay, m);
             ov_render_streams_panel(lay, m, &rel);
             ov_render_procs_panel(lay, m, &rel);
             ov_render_fps_panel(lay, m, &rel);
@@ -957,17 +940,13 @@ void ov_render_frame(
                 ov_render_graph_panel(lay, m);
             }
             break;
-        case OV_VIEW_GRAPH:
-            ov_render_graph_panel(lay, m);
+        case OV_VIEW_GRAPH: ov_render_graph_panel(lay, m);
             break;
-        case OV_VIEW_STREAMS:
-            ov_render_streams_panel(lay, m, &rel);
+        case OV_VIEW_STREAMS: ov_render_streams_panel(lay, m, &rel);
             break;
-        case OV_VIEW_PROCS:
-            ov_render_procs_panel(lay, m, &rel);
+        case OV_VIEW_PROCS: ov_render_procs_panel(lay, m, &rel);
             break;
-        case OV_VIEW_FPS:
-            ov_render_fps_panel(lay, m, &rel);
+        case OV_VIEW_FPS: ov_render_fps_panel(lay, m, &rel);
             if(lay->sel_fps >= 0
                     && lay->sel_fps < m->nb_fps
                     && m->fps[lay->sel_fps].nb_disp_params > 0)
@@ -980,13 +959,10 @@ void ov_render_frame(
                 ov_draw_panel_border(
                     lay->r_fps_params.row,
                     lay->r_fps_params.col,
-                    lay->r_fps_params.height,
-                    lay->r_fps_params.width,
-                    "PARAMS", OV_FG_DIM, 0, 0);
+                    lay->r_fps_params.height, lay->r_fps_params.width, "PARAMS", OV_FG_DIM, 0, 0);
             }
             break;
-        default:
-            break;
+        default: break;
         }
     }
 

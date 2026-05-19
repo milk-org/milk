@@ -74,10 +74,7 @@ errno_t getFPSlogfname(
 
         WRITE_FULLFILENAME(logfname,
                            "%s/fpslog.%ld.%07d.%s",
-                           shmdname,
-                           FPS_TIMESTAMP,
-                           getpid(),
-                           FPS_PROCESS_TYPE);
+                           shmdname, FPS_TIMESTAMP, getpid(), FPS_PROCESS_TYPE);
     }
 
     return RETURN_SUCCESS;
@@ -119,11 +116,7 @@ errno_t functionparameter_outlog_file(
                    "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
                    1900 + uttime->tm_year,
                    1 + uttime->tm_mon,
-                   uttime->tm_mday,
-                   uttime->tm_hour,
-                   uttime->tm_min,
-                   uttime->tm_sec,
-                   tnow.tv_nsec);
+                   uttime->tm_mday, uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
 
     fprintf(fpout, "%s %ld.%09ld  %-12s %s\n", timestring, tnow.tv_sec, tnow.tv_nsec, keyw, msgstring);
     fflush(fpout);
@@ -163,8 +156,7 @@ errno_t functionparameter_outlog(
             fpout = fopen(logfname, "a");
             if(fpout == NULL)
             {
-                FUNC_RETURN_FAILURE(
-                    "fopen(%s, \"a\") failed", logfname);
+                FUNC_RETURN_FAILURE("fopen(%s, \"a\") failed", logfname);
             }
             LogOutOpen = 1;
         }
@@ -186,10 +178,7 @@ errno_t functionparameter_outlog(
                        1900 + uttime->tm_year,
                        1 + uttime->tm_mon,
                        uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       tnow.tv_nsec);
+                       uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
 
         fprintf(fpout, "%s %ld.%09ld  %-12s ", timestring, tnow.tv_sec, tnow.tv_nsec, keyw);
 
@@ -243,10 +232,7 @@ errno_t functionparameter_outlog_namelink()
         getFPSlogfname(logfname);
 
         char linkfname[STRINGMAXLEN_FULLFILENAME];
-        WRITE_FULLFILENAME(linkfname,
-                           "%s/fpslog.%s",
-                           shmdname,
-                           FPS_PROCESS_TYPE);
+        WRITE_FULLFILENAME(linkfname, "%s/fpslog.%s", shmdname, FPS_PROCESS_TYPE);
 
         if(access(linkfname, F_OK) == 0)  // link already exists, remove
         {

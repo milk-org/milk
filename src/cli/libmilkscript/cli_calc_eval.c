@@ -25,46 +25,21 @@ static inline int get_prec(cli_token_type t)
 {
     switch(t)
     {
-    case TOK_OP_QUESTION:
-        return -1;
-    case TOK_OP_OR:
-        return 1;
-    case TOK_OP_AND:
-        return 2;
-    case TOK_OP_BOR:
-        return 3;
-    case TOK_OP_BXOR:
-        return 4;
-    case TOK_OP_BAND:
-        return 5;
-    case TOK_OP_EQ:
-    case TOK_OP_NEQ:
-        return 6;
-    case TOK_OP_LT:
-    case TOK_OP_LE:
-    case TOK_OP_GT:
-    case TOK_OP_GE:
-        return 7;
-    case TOK_OP_LSHIFT:
-    case TOK_OP_RSHIFT:
-        return 8;
-    case TOK_OP_PLUS:
-    case TOK_OP_MINUS:
-        return 9;
-    case TOK_OP_STAR:
-    case TOK_OP_SLASH:
-    case TOK_OP_MOD:
-        return 10;
-    case TOK_OP_CARET:
-        return 11;
+    case TOK_OP_QUESTION: return -1;
+    case TOK_OP_OR: return 1;
+    case TOK_OP_AND: return 2;
+    case TOK_OP_BOR: return 3;
+    case TOK_OP_BXOR: return 4;
+    case TOK_OP_BAND: return 5;
+    case TOK_OP_EQ: case TOK_OP_NEQ: return 6;
+    case TOK_OP_LT: case TOK_OP_LE: case TOK_OP_GT: case TOK_OP_GE: return 7;
+    case TOK_OP_LSHIFT: case TOK_OP_RSHIFT: return 8;
+    case TOK_OP_PLUS: case TOK_OP_MINUS: return 9;
+    case TOK_OP_STAR: case TOK_OP_SLASH: case TOK_OP_MOD: return 10;
+    case TOK_OP_CARET: return 11;
     case TOK_EQUAL:
-    case TOK_OP_PLUS_EQ:
-    case TOK_OP_MINUS_EQ:
-    case TOK_OP_STAR_EQ:
-    case TOK_OP_SLASH_EQ:
-        return 0;
-    default:
-        return -1;
+    case TOK_OP_PLUS_EQ: case TOK_OP_MINUS_EQ: case TOK_OP_STAR_EQ: case TOK_OP_SLASH_EQ: return 0;
+    default: return -1;
     }
 }
 
@@ -79,9 +54,7 @@ static inline int is_right_assoc(cli_token_type t)
            || (t == TOK_EQUAL)
            || (t == TOK_OP_PLUS_EQ)
            || (t == TOK_OP_MINUS_EQ)
-           || (t == TOK_OP_STAR_EQ)
-           || (t == TOK_OP_SLASH_EQ)
-           || (t == TOK_OP_QUESTION);
+           || (t == TOK_OP_STAR_EQ) || (t == TOK_OP_SLASH_EQ) || (t == TOK_OP_QUESTION);
 }
 /**
  * @brief Evaluate a binary operation
@@ -174,9 +147,7 @@ val_t parse_primary(void)
             arith_image_cstsubm(v.sval, 0.0, tmpn);
             return mk_string(tmpn);
         }
-        parse_errmsg(
-            "Cannot negate expression"
-        );
+        parse_errmsg("Cannot negate expression");
         return mk_double(0);
     }
 
@@ -189,8 +160,7 @@ val_t parse_primary(void)
         {
             return mk_long(0);
         }
-        long iv = (v.type == VAL_LONG)
-                  ? v.lval : (long) v.dval;
+        long iv = (v.type == VAL_LONG) ? v.lval : (long) v.dval;
         return mk_long(~iv);
     }
 
@@ -254,49 +224,37 @@ val_t parse_primary(void)
                 long vid = variable_ID(t->sval);
                 if(vid == -1)
                 {
-                    parse_errmsg(
-                        "Variable not found"
-                        " for compound assign"
-                    );
+                    parse_errmsg("Variable not found" " for compound assign");
                     return mk_double(0);
                 }
                 double old;
                 if(data.core.variable[vid]
                         .type == 1)
                 {
-                    old = (double)
-                          data.core.variable[vid]
-                          .value.l;
+                    old = (double) data.core.variable[vid] .value.l;
                 }
                 else
                 {
-                    old = data.core.variable[vid]
-                          .value.f;
+                    old = data.core.variable[vid] .value.f;
                 }
                 double nv = to_double(v);
                 switch(aop)
                 {
-                case TOK_OP_PLUS_EQ:
-                    nv = old + nv;
+                case TOK_OP_PLUS_EQ: nv = old + nv;
                     break;
-                case TOK_OP_MINUS_EQ:
-                    nv = old - nv;
+                case TOK_OP_MINUS_EQ: nv = old - nv;
                     break;
-                case TOK_OP_STAR_EQ:
-                    nv = old * nv;
+                case TOK_OP_STAR_EQ: nv = old * nv;
                     break;
                 case TOK_OP_SLASH_EQ:
                     if(nv == 0.0)
                     {
-                        parse_errmsg(
-                            "Division by zero"
-                        );
+                        parse_errmsg("Division by zero");
                         return mk_double(0);
                     }
                     nv = old / nv;
                     break;
-                default:
-                    break;
+                default: break;
                 }
                 /* check if result is integer */
                 if(v.type == VAL_LONG
@@ -315,9 +273,7 @@ val_t parse_primary(void)
             if(v.type == VAL_STRING)
             {
                 /* var = image -> rename */
-                chname_image_ID(
-                    v.sval, t->sval
-                );
+                chname_image_ID(v.sval, t->sval);
                 if(data.core.Debug > 0)
                 {
                     printf("changing name\n");
@@ -326,14 +282,10 @@ val_t parse_primary(void)
             }
             if(v.type == VAL_LONG)
             {
-                create_variable_long_ID(
-                    t->sval, v.lval
-                );
+                create_variable_long_ID(t->sval, v.lval);
                 return mk_long(v.lval);
             }
-            create_variable_ID(
-                t->sval, to_double(v)
-            );
+            create_variable_ID(t->sval, to_double(v));
             return mk_double(to_double(v));
         }
         /* just a variable reference */
@@ -341,21 +293,15 @@ val_t parse_primary(void)
         if(vID == -1)
         {
             char msg[2048];
-            snprintf(msg, sizeof(msg),
-                     "Variable '%s' not found",
-                     t->sval);
+            snprintf(msg, sizeof(msg), "Variable '%s' not found", t->sval);
             parse_errmsg(msg);
             return mk_double(0);
         }
         if(data.core.variable[vID].type == 1)
         {
-            return mk_long(
-                       data.core.variable[vID].value.l
-                   );
+            return mk_long(data.core.variable[vID].value.l);
         }
-        return mk_double(
-                   data.core.variable[vID].value.f
-               );
+        return mk_double(data.core.variable[vID].value.f);
     }
 
     /* new variable: must be assignment, or it's
@@ -378,9 +324,7 @@ val_t parse_primary(void)
                     parse_errmsg("Source image does not exist");
                     return mk_double(0);
                 }
-                chname_image_ID(
-                    v.sval, t->sval
-                );
+                chname_image_ID(v.sval, t->sval);
                 if(data.core.Debug > 0)
                 {
                     printf("changing name\n");
@@ -403,29 +347,19 @@ val_t parse_primary(void)
             }
             if(v.type == VAL_LONG)
             {
-                create_variable_long_ID(
-                    t->sval, v.lval
-                );
+                create_variable_long_ID(t->sval, v.lval);
                 char numv[64];
-                snprintf(
-                    numv, 64, "%ld", v.lval
-                );
+                snprintf(numv, 64, "%ld", v.lval);
                 if(parse_mode == 1)
                 {
                     cli_var_set(t->sval, numv);
                 }
                 return mk_long(v.lval);
             }
-            create_variable_ID(
-                t->sval, to_double(v)
-            );
+            create_variable_ID(t->sval, to_double(v));
             {
                 char numv[64];
-                snprintf(
-                    numv, 64, "%.*g",
-                    cli_float_digits,
-                    to_double(v)
-                );
+                snprintf(numv, 64, "%.*g", cli_float_digits, to_double(v));
                 if(parse_mode == 1)
                 {
                     cli_var_set(t->sval, numv);
@@ -437,14 +371,10 @@ val_t parse_primary(void)
         // This path is only for cli_parse, not cli_calc_eval_line
         if(parse_mode == 0)    // If not in eval_line context
         {
-            data.cmdargtoken[data.cmdNBarg].type =
-                CMDARGTOKEN_TYPE_STRING;
+            data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_STRING;
             if(data.core.Debug > 0)
             {
-                printf(
-                    "this is a string "
-                    "(new variable/image)\n"
-                );
+                printf("this is a string " "(new variable/image)\n");
             }
         }
         return mk_string(t->sval);
@@ -469,35 +399,24 @@ val_t parse_primary(void)
                     parse_errmsg("Source image does not exist");
                     return mk_double(0);
                 }
-                delete_image_ID(
-                    t->sval,
-                    1
-                );
-                chname_image_ID(
-                    v.sval, t->sval
-                );
+                delete_image_ID(t->sval, 1);
+                chname_image_ID(v.sval, t->sval);
                 if(data.core.Debug > 0)
                 {
                     printf("changing name\n");
                 }
                 return mk_string(t->sval);
             }
-            parse_errmsg(
-                "Cannot assign scalar to image"
-            );
+            parse_errmsg("Cannot assign scalar to image");
             return mk_double(0);
         }
         // This path is only for cli_parse, not cli_calc_eval_line
         if(!eval_error)    // If not in eval_line context
         {
-            data.cmdargtoken[data.cmdNBarg].type =
-                CMDARGTOKEN_TYPE_EXISTINGIMAGE;
+            data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
             if(data.core.Debug > 0)
             {
-                printf(
-                    "this is a string "
-                    "(existing image)\n"
-                );
+                printf("this is a string " "(existing image)\n");
             }
         }
         /* Check for slice bracket syntax.
@@ -510,50 +429,36 @@ val_t parse_primary(void)
             char btext[200];
             int has_brk =
                 imgid_slice_split_name(
-                    t->sval,
-                    bare, (int) sizeof(bare),
-                    btext,
-                    (int) sizeof(btext));
+                    t->sval, bare, (int) sizeof(bare), btext, (int) sizeof(btext));
             if(has_brk)
             {
-                imageID srcid = image_ID(
-                                    bare,
-                                    data.core.image,
-                                    data.core.NB_MAX_IMAGE);
+                imageID srcid = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
                 if(srcid == -1)
                 {
-                    parse_errmsg(
-                        "Source image "
-                        "not found");
+                    parse_errmsg("Source image " "not found");
                     return mk_double(0);
                 }
-                IMAGE *srcim =
-                    &data.core.image[srcid];
-                IMGID_SLICE slc =
-                    imgid_slice_parse(btext);
+                IMAGE *srcim = &data.core.image[srcid];
+                IMGID_SLICE slc = imgid_slice_parse(btext);
                 if(slc.error)
                 {
-                    parse_errmsg(
-                        slc.errmsg);
+                    parse_errmsg(slc.errmsg);
                     return mk_double(0);
                 }
                 uint32_t outsz[3] = {0};
-                int snax =
-                    srcim->md[0].naxis;
+                int snax = srcim->md[0].naxis;
                 uint32_t ssz[3];
                 for(int a = 0;
                         a < snax && a < 3;
                         a++)
                 {
-                    ssz[a] =
-                        srcim->md[0].size[a];
+                    ssz[a] = srcim->md[0].size[a];
                 }
                 if(imgid_slice_output_size(
                             &slc, snax,
                             ssz,  outsz) != 0)
                 {
-                    parse_errmsg(
-                        "Bad slice dims");
+                    parse_errmsg("Bad slice dims");
                     return mk_double(0);
                 }
                 /* Count output axes */
@@ -569,28 +474,19 @@ val_t parse_primary(void)
                 {
                     onax = 1;
                 }
-                const char *tmpn =
-                    alloc_tmpname();
+                const char *tmpn = alloc_tmpname();
                 imageID tid =
-                    create_image_ID(
-                        tmpn,
-                        onax,
-                        outsz,
-                        srcim->md[0].datatype,
-                        0, 10, 0, NULL);
+                    create_image_ID(tmpn, onax, outsz, srcim->md[0].datatype, 0, 10, 0, NULL);
                 if(tid != -1)
                 {
                     IMGID simg;
-                    memset(&simg, 0,
-                           sizeof(simg));
+                    memset(&simg, 0, sizeof(simg));
                     simg.ID = srcid;
                     simg.im = srcim;
                     simg.md = srcim->md;
                     simg.slice = slc;
-                    simg.slice_im =
-                        &data.core.image[tid];
-                    imgid_slice_materialize(
-                        &simg);
+                    simg.slice_im = &data.core.image[tid];
+                    imgid_slice_materialize(&simg);
                 }
                 return mk_string(tmpn);
             }
@@ -605,13 +501,10 @@ val_t parse_primary(void)
         // This path is only for cli_parse, not cli_calc_eval_line
         if(parse_mode == 0)    // If not in eval_line context
         {
-            data.cmdargtoken[data.cmdNBarg].type =
-                CMDARGTOKEN_TYPE_COMMAND;
+            data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_COMMAND;
             if(data.core.Debug > 0)
             {
-                printf(
-                    "this is a string (command)\n"
-                );
+                printf("this is a string (command)\n");
             }
         }
         return mk_string(t->sval);
@@ -686,9 +579,7 @@ val_t parse_expr(int min_prec)
             if(cur_func()->type
                     != TOK_OP_COLON)
             {
-                parse_errmsg(
-                    "Expected ':' in ternary"
-                );
+                parse_errmsg("Expected ':' in ternary");
                 return mk_double(0);
             }
             advance_func();
@@ -701,8 +592,7 @@ val_t parse_expr(int min_prec)
             if(left.type != VAL_STRING)
             {
                 double c = to_double(left);
-                left = (c != 0.0)
-                       ? true_val : false_val;
+                left = (c != 0.0) ? true_val : false_val;
             }
             else
             {
@@ -711,24 +601,13 @@ val_t parse_expr(int min_prec)
                 {
                     return mk_string("");
                 }
-                const char *tmask =
-                    alloc_tmpname();
-                const char *timask =
-                    alloc_tmpname();
-                const char *tpart =
-                    alloc_tmpname();
-                const char *fpart =
-                    alloc_tmpname();
-                const char *tmpn =
-                    alloc_tmpname();
-                arith_image_csttestne(
-                    left.sval, 0.0,
-                    tmask
-                );
-                arith_image_cstteste(
-                    left.sval, 0.0,
-                    timask
-                );
+                const char *tmask = alloc_tmpname();
+                const char *timask = alloc_tmpname();
+                const char *tpart = alloc_tmpname();
+                const char *fpart = alloc_tmpname();
+                const char *tmpn = alloc_tmpname();
+                arith_image_csttestne(left.sval, 0.0, tmask);
+                arith_image_cstteste(left.sval, 0.0, timask);
                 if(true_val.type
                         == VAL_STRING)
                 {
@@ -737,18 +616,11 @@ val_t parse_expr(int min_prec)
                     {
                         return mk_string("");
                     }
-                    arith_image_mult(
-                        true_val.sval,
-                        tmask, tpart
-                    );
+                    arith_image_mult(true_val.sval, tmask, tpart);
                 }
                 else
                 {
-                    arith_image_cstmult(
-                        tmask,
-                        to_double(true_val),
-                        tpart
-                    );
+                    arith_image_cstmult(tmask, to_double(true_val), tpart);
                 }
                 if(false_val.type
                         == VAL_STRING)
@@ -758,30 +630,19 @@ val_t parse_expr(int min_prec)
                     {
                         return mk_string("");
                     }
-                    arith_image_mult(
-                        false_val.sval,
-                        timask, fpart
-                    );
+                    arith_image_mult(false_val.sval, timask, fpart);
                 }
                 else
                 {
-                    arith_image_cstmult(
-                        timask,
-                        to_double(false_val),
-                        fpart
-                    );
+                    arith_image_cstmult(timask, to_double(false_val), fpart);
                 }
-                arith_image_add(
-                    tpart, fpart, tmpn
-                );
+                arith_image_add(tpart, fpart, tmpn);
                 left = mk_string(tmpn);
             }
             continue;
         }
 
-        int next_min = is_right_assoc(op)
-                       ? prec
-                       : prec + 1;
+        int next_min = is_right_assoc(op) ? prec : prec + 1;
         val_t right = parse_expr(next_min);
         if(parse_error || eval_error)
         {

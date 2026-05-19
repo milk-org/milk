@@ -45,8 +45,7 @@ static int ov_ready_idx   = 1;
 static int ov_display_idx = 2;
 static atomic_int ov_new_data = 0;
 
-static pthread_mutex_t ov_model_mutex =
-    PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t ov_model_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* =========================================================
@@ -90,8 +89,7 @@ void ov_scan_set_interval(float interval_s)
  */
 int ov_scan_has_new_data(void)
 {
-    return atomic_load_explicit(
-        &ov_new_data, memory_order_acquire);
+    return atomic_load_explicit(&ov_new_data, memory_order_acquire);
 }
 
 
@@ -108,8 +106,7 @@ static void *ov_scan_thread_func(
     {
         /* Scan into our private write slot
          * (no lock needed — display never touches it) */
-        ov_model_full_scan(
-            &ov_model_slots[ov_write_idx]);
+        ov_model_full_scan(&ov_model_slots[ov_write_idx]);
 
         /* Publish: swap write → ready.
          * The old ready slot becomes our new write slot. */
@@ -118,9 +115,7 @@ static void *ov_scan_thread_func(
             int tmp       = ov_ready_idx;
             ov_ready_idx  = ov_write_idx;
             ov_write_idx  = tmp;
-            atomic_store_explicit(
-                &ov_new_data, 1,
-                memory_order_release);
+            atomic_store_explicit(&ov_new_data, 1, memory_order_release);
         }
         pthread_mutex_unlock(&ov_model_mutex);
 

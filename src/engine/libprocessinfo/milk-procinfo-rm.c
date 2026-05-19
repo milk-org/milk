@@ -44,8 +44,7 @@ static void print_help(
            mh_color ? MH_OPT : "", "-c, --clean-dead",
            mh_color ? MH_RST : "", "Remove all CRASHED or STOPPED entries");
     printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-v, --verbose",
-           mh_color ? MH_RST : "", "Verbose output");
+           mh_color ? MH_OPT : "", "-v, --verbose", mh_color ? MH_RST : "", "Verbose output");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
            mh_color ? MH_RST : "", "Show this help and exit");
@@ -74,8 +73,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                PI_RM_DESC, PI_RM_DESC_LONG);
+    int action = milk_help_init(argc, argv, PI_RM_DESC, PI_RM_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -104,17 +102,13 @@ int main(
     {
         switch(opt)
         {
-        case 'c':
-            clean_dead = 1;
+        case 'c': clean_dead = 1;
             break;
-        case 'v':
-            verbose = 1;
+        case 'v': verbose = 1;
             break;
         case 'h':
             break; /* handled above */
-        case '?':
-        default:
-            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+        case '?': default: printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -182,8 +176,7 @@ int main(
 
         /* Extract pname from proc.PNAME.XXXXXX.shm */
         char ext_pname[256];
-        strncpy(ext_pname, entry->d_name + 5,
-                sizeof(ext_pname) - 1);
+        strncpy(ext_pname, entry->d_name + 5, sizeof(ext_pname) - 1);
         ext_pname[sizeof(ext_pname) - 1] = '\0';
         char *dot = strchr(ext_pname, '.');
         if(dot)
@@ -198,8 +191,7 @@ int main(
 
         /* Match found -- open and map to inspect */
         char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
-        snprintf(fullpath, sizeof(fullpath),
-                 "%s/%s", procdname, entry->d_name);
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, entry->d_name);
 
         pid_t pid       = 0;
         int   loopstat  = -1;
@@ -209,21 +201,14 @@ int main(
         if(fd != -1)
         {
             PROCESSINFO *pinfo =
-                (PROCESSINFO *) mmap(
-                    NULL,
-                    sizeof(PROCESSINFO),
-                    PROT_READ,
-                    MAP_SHARED,
-                    fd,
-                    0);
+                (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
             if(pinfo != MAP_FAILED)
             {
                 pid      = pinfo->PID;
                 loopstat = pinfo->loopstat;
                 /* alive = kill succeeds, or EPERM (process
                  * exists but we lack permission to signal) */
-                pid_alive =
-                    (kill(pid, 0) == 0 || errno == EPERM);
+                pid_alive = (kill(pid, 0) == 0 || errno == EPERM);
                 munmap(pinfo, sizeof(PROCESSINFO));
             }
             close(fd);
@@ -232,9 +217,7 @@ int main(
         /* Liveness guard: always block removal of alive procs */
         if(pid_alive)
         {
-            fprintf(stderr,
-                    "Skipping %s -- PID %ld is still alive\n",
-                    fullpath, (long) pid);
+            fprintf(stderr, "Skipping %s -- PID %ld is still alive\n", fullpath, (long) pid);
             skipped_alive++;
             continue;
         }
@@ -247,8 +230,7 @@ int main(
             {
                 if(verbose)
                 {
-                    printf("Skipping %s -- not crashed/stopped\n",
-                           fullpath);
+                    printf("Skipping %s -- not crashed/stopped\n", fullpath);
                 }
                 continue;
             }
@@ -269,13 +251,10 @@ int main(
     }
     closedir(dir);
 
-    printf("Removed %d shared memory segment(s)"
-           " matching '%s'",
-           removed_count, pattern);
+    printf("Removed %d shared memory segment(s)" " matching '%s'", removed_count, pattern);
     if(skipped_alive > 0)
     {
-        printf(" (%d skipped -- PID still alive)",
-               skipped_alive);
+        printf(" (%d skipped -- PID still alive)", skipped_alive);
     }
     printf(".\n");
 

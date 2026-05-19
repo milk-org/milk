@@ -45,10 +45,7 @@ PROCESSINFO *processinfo_setup(
 
         char pinfoname0[STRINGMAXLEN_PROCESSINFO_NAME];
         {
-            int slen = snprintf(pinfoname0,
-                                STRINGMAXLEN_PROCESSINFO_NAME,
-                                "%s",
-                                pinfoname);
+            int slen = snprintf(pinfoname0, STRINGMAXLEN_PROCESSINFO_NAME, "%s", pinfoname);
             if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
@@ -66,8 +63,7 @@ PROCESSINFO *processinfo_setup(
         processinfo = processinfo_shm_create(pinfoname0, 0);
         if(processinfo == NULL)
         {
-            PRINT_ERROR(
-                "processinfo_shm_create(%s) failed", pinfoname0);
+            PRINT_ERROR("processinfo_shm_create(%s) failed", pinfoname0);
             DEBUG_TRACE_FEXIT();
             return NULL;
         }
@@ -78,22 +74,13 @@ PROCESSINFO *processinfo_setup(
     DEBUG_TRACEPOINT(" ");
 
     processinfo->loopstat = 0; // loop initialization
-    strncpy(processinfo->source_FUNCTION,
-            functionname,
-            STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1);
-    processinfo->source_FUNCTION[
-     STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0';
-    strncpy(processinfo->source_FILE,
-            filename,
-            STRINGMAXLEN_PROCESSINFO_SRCFILE - 1);
-    processinfo->source_FILE[
-     STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0';
+    strncpy(processinfo->source_FUNCTION, functionname, STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1);
+    processinfo->source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0';
+    strncpy(processinfo->source_FILE, filename, STRINGMAXLEN_PROCESSINFO_SRCFILE - 1);
+    processinfo->source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0';
     processinfo->source_LINE = linenumber;
-    strncpy(processinfo->description,
-            descriptionstring,
-            STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1);
-    processinfo->description[
-     STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0';
+    strncpy(processinfo->description, descriptionstring, STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1);
+    processinfo->description[STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0';
     processinfo_WriteMessage(processinfo, msgstring);
     processinfoActive = 1;
 

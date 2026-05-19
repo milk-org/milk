@@ -53,8 +53,7 @@ static void print_help(
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-a, --all",
-           mh_color ? MH_RST : "",
-           "Show all details (verbose, includes semaphores)");
+           mh_color ? MH_RST : "", "Show all details (verbose, includes semaphores)");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
            mh_color ? MH_RST : "", "Show this help and exit");
@@ -68,8 +67,7 @@ static void print_help(
            mh_color ? MH_OPT : "", "-hm, --help-mono",
            mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
-    printf("  %s$ milk-stream-list%s\n",
-           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-stream-list%s\n", mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
     printf("  %s$ milk-stream-list%s %sdm.*%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
@@ -86,8 +84,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                SL_DESC, SL_DESC_LONG);
+    int action = milk_help_init(argc, argv, SL_DESC, SL_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -113,13 +110,11 @@ int main(
     {
         switch(opt)
         {
-        case 'a':
-            show_all = 1;
+        case 'a': show_all = 1;
             break;
         case 'h':
             break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -161,16 +156,10 @@ int main(
     if(d)
     {
         // Header
-        printf(C_TITLE "%-30s %-12s %-20s %-12s"
-               C_RST,
-               "Stream Name",
-               "Type",
-               "Size",
-               "Cnt0");
+        printf(C_TITLE "%-30s %-12s %-20s %-12s" C_RST, "Stream Name", "Type", "Size", "Cnt0");
         if(show_all)
         {
-            printf(C_TITLE " %-40s" C_RST,
-                   "Semaphores (up to 10)");
+            printf(C_TITLE " %-40s" C_RST, "Semaphores (up to 10)");
         }
         printf("\n");
 
@@ -211,9 +200,7 @@ int main(
                     if(S_ISLNK(buf.st_mode))
                     {
                         char linktarget[STRINGMAXLEN_FULLFILENAME];
-                        ssize_t len = readlink(fullname,
-                                               linktarget,
-                                               sizeof(linktarget) - 1);
+                        ssize_t len = readlink(fullname, linktarget, sizeof(linktarget) - 1);
                         if(len != -1)
                         {
                             linktarget[len] = '\0';
@@ -222,29 +209,20 @@ int main(
                             int target_exists = (stat(fullname, &target_stat) == 0);
 
                             printf(C_LINK "%-30s" C_RST
-                                   " " C_DIM "%-12s" C_RST
-                                   " -> ",
-                                   sname, "LINK");
+                                   " " C_DIM "%-12s" C_RST " -> ", sname, "LINK");
                             if(!target_exists)
                             {
-                                printf(C_ERR "%s"
-                                       C_RST "\n",
-                                       linktarget);
+                                printf(C_ERR "%s" C_RST "\n", linktarget);
                             }
                             else
                             {
-                                printf("%s\n",
-                                       linktarget);
+                                printf("%s\n", linktarget);
                             }
                         }
                         else
                         {
                             printf(C_LINK "%-30s"
-                                   C_RST " "
-                                   C_ERR "%-12s"
-                                   C_RST "\n",
-                                   sname,
-                                   "LINK (err)");
+                                   C_RST " " C_ERR "%-12s" C_RST "\n", sname, "LINK (err)");
                         }
                     }
                     else
@@ -252,9 +230,7 @@ int main(
                         // Try to open image to get details
                         IMAGE image = {0};
 
-                        errno_t ret = ImageStreamIO_read_sharedmem_image_toIMAGE(
-                                          sname,
-                                          &image);
+                        errno_t ret = ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &image);
 
                         if(ret == IMAGESTREAMIO_SUCCESS)
                         {
@@ -279,8 +255,7 @@ int main(
                                    " " C_CNT "%-12lu" C_RST,
                                    sname,
                                    typestr ? typestr : "???",
-                                   size_str,
-                                   (unsigned long)image.md->cnt0);
+                                   size_str, (unsigned long)image.md->cnt0);
 
                             if(show_all)
                             {
@@ -292,20 +267,16 @@ int main(
                                 }
                                 for(int i = 0; i < nbsem; i++)
                                 {
-                                    long sval =
-                                        ImageStreamIO_semvalue(
-                                            &image, i);
+                                    long sval = ImageStreamIO_semvalue(&image, i);
                                     char valbuf[16];
-                                    snprintf(valbuf, 16,
-                                             "%ld", sval);
+                                    snprintf(valbuf, 16, "%ld", sval);
                                     if(i > 0)
                                     {
                                         strcat(sem_str, ":");
                                     }
                                     strcat(sem_str, valbuf);
                                 }
-                                printf(" " C_SEM "%-40s"
-                                       C_RST, sem_str);
+                                printf(" " C_SEM "%-40s" C_RST, sem_str);
                             }
                             printf("\n");
 
@@ -314,10 +285,7 @@ int main(
                         else
                         {
                             printf(C_NAME "%-30s" C_RST
-                                   " " C_ERR "%-12s"
-                                   C_RST "\n",
-                                   sname,
-                                   "ERROR_OPEN");
+                                   " " C_ERR "%-12s" C_RST "\n", sname, "ERROR_OPEN");
                         }
                     }
                 }

@@ -82,10 +82,7 @@ static void fpsCTRL__filter_and_sort_children(
                                 keywnode[ki].keyword[
                                     fpsCTRLvar
                                     ->currentlevel],
-                                keywnode[kj].keyword[
-                                    fpsCTRLvar
-                                    ->currentlevel])
-                            > 0);
+                                keywnode[kj].keyword[fpsCTRLvar ->currentlevel]) > 0);
                 }
                 else
                 {
@@ -98,24 +95,20 @@ static void fpsCTRL__filter_and_sort_children(
                     if(fi >= 0
                             && fpsarray[fi].md)
                     {
-                        si = fpsarray[fi]
-                             .md->status;
+                        si = fpsarray[fi] .md->status;
                     }
                     if(fj >= 0
                             && fpsarray[fj].md)
                     {
-                        sj = fpsarray[fj]
-                             .md->status;
+                        sj = fpsarray[fj] .md->status;
                     }
                     swap = (si < sj);
                 }
 
                 if(swap)
                 {
-                    int tmp =
-                        filtered_children[curr_idx];
-                    filtered_children[curr_idx] =
-                        filtered_children[next_idx];
+                    int tmp = filtered_children[curr_idx];
+                    filtered_children[curr_idx] = filtered_children[next_idx];
                     filtered_children[next_idx] = tmp;
                 }
             }
@@ -235,9 +228,7 @@ static void fpsCTRL__calculate_widths_and_layout(
             else
             {
                 functionparameter_GetParamValueString(
-                    &fpsarray[fpsindex].parray[pindex],
-                    valstring,
-                    200);
+                    &fpsarray[fpsindex].parray[pindex], valstring, 200);
             }
             int val_len = strlen(valstring);
             if(val_len > (*max_val_width))
@@ -319,9 +310,7 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
                 (ImageStreamIO_filename(
                      shmpath_sum,
                      sizeof(shmpath_sum),
-                     sp_sum.name)
-                 == IMAGESTREAMIO_SUCCESS)
-                && (access(shmpath_sum, F_OK) == 0);
+                     sp_sum.name) == IMAGESTREAMIO_SUCCESS) && (access(shmpath_sum, F_OK) == 0);
             if(shm_sum_ok
                     && ImageStreamIO_openIm(
                         &tmpimg, sp_sum.name)
@@ -349,9 +338,7 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
 
                 snprintf(stream_info, 256, "STREAM [%s]: %s %s cnt=%lu",
                          fpsarray[fpsidx].parray[pidx].val.string[0],
-                         ImageStreamIO_typename(tmpimg.md->datatype),
-                         size_str,
-                         tmpimg.md->cnt0);
+                         ImageStreamIO_typename(tmpimg.md->datatype), size_str, tmpimg.md->cnt0);
 
                 int sumcolor = 2;
                 if(sp_sum.must_new)
@@ -374,9 +361,7 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
         /* Trigger mode description */
         if(!(*summary_printed))
         {
-            const char *kfull =
-                fpsarray[fpsidx]
-                .parray[pidx].keywordfull;
+            const char *kfull = fpsarray[fpsidx] .parray[pidx].keywordfull;
             const char *needle = "triggermode";
             int nlen = strlen(needle);
             int klen = strlen(kfull);
@@ -385,57 +370,29 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
                     && strcmp(kfull + klen - nlen,
                               needle) == 0)
             {
-                long tval =
-                    fpsarray[fpsidx]
-                    .parray[pidx]
-                    .val.i64[0];
+                long tval = fpsarray[fpsidx] .parray[pidx] .val.i64[0];
                 const char *tdesc;
                 switch(tval)
                 {
-                case 0:
-                    tdesc = "IMMEDIATE"
-                            " -- run without"
-                            " waiting";
+                case 0: tdesc = "IMMEDIATE" " -- run without" " waiting";
                     break;
-                case 1:
-                    tdesc = "CNT0"
-                            " -- wait for cnt0"
-                            " increment";
+                case 1: tdesc = "CNT0" " -- wait for cnt0" " increment";
                     break;
-                case 2:
-                    tdesc = "CNT1"
-                            " -- wait for cnt1"
-                            " increment";
+                case 2: tdesc = "CNT1" " -- wait for cnt1" " increment";
                     break;
-                case 3:
-                    tdesc = "SEMAPHORE"
-                            " -- wait for"
-                            " semaphore post";
+                case 3: tdesc = "SEMAPHORE" " -- wait for" " semaphore post";
                     break;
-                case 4:
-                    tdesc = "DELAY"
-                            " -- wait for"
-                            " fixed time delay";
+                case 4: tdesc = "DELAY" " -- wait for" " fixed time delay";
                     break;
-                case 5:
-                    tdesc = "SEMAPHORE+"
-                            "TIMEOUT"
-                            " -- semaphore with"
-                            " timeout propagation";
+                case 5: tdesc = "SEMAPHORE+" "TIMEOUT" " -- semaphore with" " timeout propagation";
                     break;
-                case 6:
-                    tdesc = "CNT2"
-                            " -- demand-driven"
-                            " (cnt0 < cnt2)";
+                case 6: tdesc = "CNT2" " -- demand-driven" " (cnt0 < cnt2)";
                     break;
-                default:
-                    tdesc = "UNKNOWN";
+                default: tdesc = "UNKNOWN";
                     break;
                 }
                 screenprint_setcolor(2);
-                TUI_printfw(
-                    "TRIGGER %ld: %s",
-                    tval, tdesc);
+                TUI_printfw("TRIGGER %ld: %s", tval, tdesc);
                 screenprint_unsetcolor(2);
                 TUI_newline();
                 (*summary_printed) = 1;
@@ -622,8 +579,7 @@ static void fpsCTRL__render_parameter_rows(
             if(c_idx >= 0
                     && c_idx < keywnode[nodechain[level]].NBchild)
             {
-                int v1 = keywnode[nodechain[level]]
-                         .child[c_idx];
+                int v1 = keywnode[nodechain[level]] .child[c_idx];
                 int v2 = nodechain[level + 1];
                 if(v1 == v2)
                 {
@@ -785,8 +741,7 @@ static void fpsCTRL__render_parameter_rows(
                             & FPFLAG_TRIGGER_STREAM))
                 {
                     isTRIGGER = 1;
-                    screenprint_setcolor(
-                        COLOR_TRIGGER_BG);
+                    screenprint_setcolor(COLOR_TRIGGER_BG);
                 }
 
                 if(GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
@@ -815,9 +770,7 @@ static void fpsCTRL__render_parameter_rows(
                         screenprint_setblink();
                         TUI_printfw("W "); // writable
                         screenprint_unsetcolor(10);
-                        if(isTRIGGER)
-                            screenprint_setcolor(
-                                COLOR_TRIGGER_BG);
+                        if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                         screenprint_unsetblink();
                     }
                     else
@@ -826,9 +779,7 @@ static void fpsCTRL__render_parameter_rows(
                         screenprint_setblink();
                         TUI_printfw("NW"); // non writable
                         screenprint_unsetcolor(4);
-                        if(isTRIGGER)
-                            screenprint_setcolor(
-                                COLOR_TRIGGER_BG);
+                        if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                         screenprint_unsetblink();
                     }
                 }
@@ -874,30 +825,22 @@ static void fpsCTRL__render_parameter_rows(
                 if(is_resolved_stream)
                 {
                     screenprint_unsetcolor(2);
-                    if(isTRIGGER)
-                        screenprint_setcolor(
-                            COLOR_TRIGGER_BG);
+                    if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                 }
 
                 if(isVISIBLE == 1 && fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME)
                 {
                     screenprint_unsetcolor(COLOR_OK);
-                    if(isTRIGGER)
-                        screenprint_setcolor(
-                            COLOR_TRIGGER_BG);
+                    if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                 }
 
                 if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
                 {
                     screenprint_unsetcolor(10);
-                    if(isTRIGGER)
-                        screenprint_setcolor(
-                            COLOR_TRIGGER_BG);
+                    if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                     TUI_printfw("> ");
                     screenprint_unsetbgcolor();
-                    if(isTRIGGER)
-                        screenprint_setcolor(
-                            COLOR_TRIGGER_BG);
+                    if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                 }
                 else
                 {
@@ -946,9 +889,7 @@ static void fpsCTRL__render_parameter_rows(
                 else
                 {
                     functionparameter_GetParamValueString(
-                        &fpsarray[fpsindex].parray[pindex],
-                        valstring,
-                        200);
+                        &fpsarray[fpsindex].parray[pindex], valstring, 200);
                 }
 
                 /* Color path-like values green/red */
@@ -956,24 +897,16 @@ static void fpsCTRL__render_parameter_rows(
                 if(isVISIBLE == 1 &&
                         valstring[0] != '\0')
                 {
-                    int ptype = fpsarray[fpsindex]
-                                .parray[pindex].type;
+                    int ptype = fpsarray[fpsindex] .parray[pindex].type;
                     struct stat st;
                     int do_check = 0;
 
                     if(ptype == FPTYPE_STREAMNAME)
                     {
-                        FPS_STREAMNAME_PARSED sp_v =
-                            fps_streamname_parse(
-                                valstring);
+                        FPS_STREAMNAME_PARSED sp_v = fps_streamname_parse(valstring);
                         char shmpath[512];
-                        snprintf(shmpath,
-                                 sizeof(shmpath),
-                                 "/milk/shm/%s.im.shm",
-                                 sp_v.name);
-                        int exists =
-                            (stat(shmpath,
-                                  &st) == 0);
+                        snprintf(shmpath, sizeof(shmpath), "/milk/shm/%s.im.shm", sp_v.name);
+                        int exists = (stat(shmpath, &st) == 0);
                         if(sp_v.loc == 'L')
                         {
                             path_val_color = 3;
@@ -1053,8 +986,7 @@ static void fpsCTRL__render_parameter_rows(
                     if(do_check &&
                             path_val_color != 0)
                     {
-                        screenprint_setcolor(
-                            path_val_color);
+                        screenprint_setcolor(path_val_color);
                     }
                 }
                 /* Highlight ONOFF ON state */
@@ -1124,25 +1056,18 @@ static void fpsCTRL__render_parameter_rows(
                 }
                 if(path_val_color != 0)
                 {
-                    screenprint_unsetcolor(
-                        path_val_color);
-                    if(isTRIGGER)
-                        screenprint_setcolor(
-                            COLOR_TRIGGER_BG);
+                    screenprint_unsetcolor(path_val_color);
+                    if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                 }
                 if(paramsync == 0 && isVISIBLE == 1)
                 {
                     screenprint_unsetcolor(3);
-                    if(isTRIGGER)
-                        screenprint_setcolor(
-                            COLOR_TRIGGER_BG);
+                    if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                 }
                 if(fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR && isVISIBLE == 1)
                 {
                     screenprint_unsetcolor(4);
-                    if(isTRIGGER)
-                        screenprint_setcolor(
-                            COLOR_TRIGGER_BG);
+                    if(isTRIGGER) screenprint_setcolor(COLOR_TRIGGER_BG);
                 }
 
                 TUI_printfw("    %-s", fpsarray[fpsindex].parray[pindex].description);
@@ -1282,8 +1207,7 @@ errno_t fpsCTRL_FPSdisplay(
                 fpsarray,
                 keywnode,
                 fpsCTRLvar->nodeSelected,
-                fpsCTRLvar->fpsindexSelected,
-                fpsCTRLvar->pindexSelected);
+                fpsCTRLvar->fpsindexSelected, fpsCTRLvar->pindexSelected);
         }
 
         int nodechain[MAXNBLEVELS];
@@ -1330,18 +1254,13 @@ errno_t fpsCTRL_FPSdisplay(
         TUI_newline();
         TUI_newline();
         screenprint_setbold();
-        TUI_printfw(
-            "  NO FPS LOADED");
+        TUI_printfw("  NO FPS LOADED");
         screenprint_unsetbold();
         TUI_newline();
         TUI_newline();
-        TUI_printfw(
-            "  Waiting for FPS shared"
-            " memory files ...");
+        TUI_printfw("  Waiting for FPS shared" " memory files ...");
         TUI_newline();
-        TUI_printfw(
-            "  Press [s] to rescan,"
-            " [x] to exit");
+        TUI_printfw("  Press [s] to rescan," " [x] to exit");
         TUI_newline();
     }
 

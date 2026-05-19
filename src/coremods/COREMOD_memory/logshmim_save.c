@@ -66,159 +66,92 @@ void *save_telemetry_fits_function(
     {
         PRINT_ERROR("seteuid error");
     }
-    sched_setscheduler(0,
-                       SCHED_FIFO,
-                       &schedpar);
+    sched_setscheduler(0, SCHED_FIFO, &schedpar);
     if(seteuid(dcruid) != 0)
     {
         PRINT_ERROR("seteuid error");
     }
 
     int NBcustomKW = 9;
-    IMAGE_KEYWORD *imkwarray =
-        (IMAGE_KEYWORD *)
-        malloc(sizeof(IMAGE_KEYWORD)
-               * NBcustomKW);
+    IMAGE_KEYWORD *imkwarray = (IMAGE_KEYWORD *) malloc(sizeof(IMAGE_KEYWORD) * NBcustomKW);
 
-    snprintf(imkwarray->name,
-             KEYWORD_MAX_STRING, "UT");
+    snprintf(imkwarray->name, KEYWORD_MAX_STRING, "UT");
     imkwarray->type = 'S';
 
     snprintf(imkwarray->value.valstr,
              KEYWORD_MAX_STRING, "%s",
              timedouble_to_UTC_timeofdaystring(
-                 0.5 * tmsg->arraytime[0]
-                 + 0.5 * tmsg->arraytime[
-                     tmsg->cubesize - 1]));
-    snprintf(imkwarray->comment,
-             KEYWORD_MAX_COMMENT,
-             "HH:MM:SS.SS typical UTC"
-             " at exposure");
+                 0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
+    snprintf(imkwarray->comment, KEYWORD_MAX_COMMENT, "HH:MM:SS.SS typical UTC" " at exposure");
 
-    snprintf(imkwarray[1].name,
-             KEYWORD_MAX_STRING, "UT-STR");
+    snprintf(imkwarray[1].name, KEYWORD_MAX_STRING, "UT-STR");
     imkwarray[1].type = 'S';
     snprintf(imkwarray[1].value.valstr,
-             KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(
-                 tmsg->arraytime[0]));
-    snprintf(imkwarray[1].comment,
-             KEYWORD_MAX_COMMENT,
-             "HH:MM:SS.SS UTC at"
-             " exposure start");
+             KEYWORD_MAX_STRING, "%s", timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0]));
+    snprintf(imkwarray[1].comment, KEYWORD_MAX_COMMENT, "HH:MM:SS.SS UTC at" " exposure start");
 
-    snprintf(imkwarray[2].name,
-             KEYWORD_MAX_STRING, "UT-END");
+    snprintf(imkwarray[2].name, KEYWORD_MAX_STRING, "UT-END");
     imkwarray[2].type = 'S';
     snprintf(imkwarray[2].value.valstr,
              KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(
-                 tmsg->arraytime[
-                     tmsg->cubesize - 1]));
-    snprintf(imkwarray[2].comment,
-             KEYWORD_MAX_COMMENT,
-             "HH:MM:SS.SS UTC at"
-             " exposure end");
+             timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
+    snprintf(imkwarray[2].comment, KEYWORD_MAX_COMMENT, "HH:MM:SS.SS UTC at" " exposure end");
 
-    snprintf(imkwarray[3].name,
-             KEYWORD_MAX_STRING, "MJD");
+    snprintf(imkwarray[3].name, KEYWORD_MAX_STRING, "MJD");
     imkwarray[3].type = 'D';
     imkwarray[3].value.numf =
-        (0.5 * tmsg->arraytime[0]
-         + 0.5 * tmsg->arraytime[
-             tmsg->cubesize - 1])
-        / 86400.0 + 40587.0;
-    snprintf(imkwarray[3].comment,
-             KEYWORD_MAX_COMMENT,
-             "Modified Julian Day"
-             " at exposure");
+        (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) / 86400.0 + 40587.0;
+    snprintf(imkwarray[3].comment, KEYWORD_MAX_COMMENT, "Modified Julian Day" " at exposure");
 
-    snprintf(imkwarray[4].name,
-             KEYWORD_MAX_STRING, "MJD-STR");
+    snprintf(imkwarray[4].name, KEYWORD_MAX_STRING, "MJD-STR");
     imkwarray[4].type = 'D';
-    imkwarray[4].value.numf =
-        tmsg->arraytime[0]
-        / 86400.0 + 40587.0;
+    imkwarray[4].value.numf = tmsg->arraytime[0] / 86400.0 + 40587.0;
     snprintf(imkwarray[4].comment,
-             KEYWORD_MAX_COMMENT,
-             "Modified Julian Day at"
-             " exposure start");
+             KEYWORD_MAX_COMMENT, "Modified Julian Day at" " exposure start");
 
-    snprintf(imkwarray[5].name,
-             KEYWORD_MAX_STRING, "MJD-END");
+    snprintf(imkwarray[5].name, KEYWORD_MAX_STRING, "MJD-END");
     imkwarray[5].type = 'D';
-    imkwarray[5].value.numf =
-        (tmsg->arraytime[tmsg->cubesize - 1]
-         / 86400.0) + 40587.0;
-    snprintf(imkwarray[5].comment,
-             KEYWORD_MAX_COMMENT,
-             "Modified Julian Day at"
-             " exposure end");
+    imkwarray[5].value.numf = (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) + 40587.0;
+    snprintf(imkwarray[5].comment, KEYWORD_MAX_COMMENT, "Modified Julian Day at" " exposure end");
 
-    snprintf(imkwarray[6].name,
-             KEYWORD_MAX_STRING, "%s",
-             TZ_MILK_STR);
+    snprintf(imkwarray[6].name, KEYWORD_MAX_STRING, "%s", TZ_MILK_STR);
     imkwarray[6].type = 'S';
     snprintf(imkwarray[6].value.valstr,
              KEYWORD_MAX_STRING, "%s",
              timedouble_to_UTC_timeofdaystring(
                  (0.5 * tmsg->arraytime[0]
-                  + 0.5 * tmsg->arraytime[
-                      tmsg->cubesize - 1])
-                 + TZ_MILK_UTC_OFF));
+                  + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) + TZ_MILK_UTC_OFF));
     snprintf(imkwarray[6].comment,
-             KEYWORD_MAX_COMMENT,
-             "HH:MM:SS.SS typical %s"
-             " at exposure",
-             TZ_MILK_STR);
+             KEYWORD_MAX_COMMENT, "HH:MM:SS.SS typical %s" " at exposure", TZ_MILK_STR);
 
-    snprintf(imkwarray[7].name,
-             KEYWORD_MAX_STRING, "%s-STR",
-             TZ_MILK_STR);
+    snprintf(imkwarray[7].name, KEYWORD_MAX_STRING, "%s-STR", TZ_MILK_STR);
     imkwarray[7].type = 'S';
     snprintf(imkwarray[7].value.valstr,
              KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(
-                 tmsg->arraytime[0]
-                 + TZ_MILK_UTC_OFF));
+             timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF));
     snprintf(imkwarray[7].comment,
-             KEYWORD_MAX_COMMENT,
-             "HH:MM:SS.SS typical %s"
-             " at exposure start",
-             TZ_MILK_STR);
+             KEYWORD_MAX_COMMENT, "HH:MM:SS.SS typical %s" " at exposure start", TZ_MILK_STR);
 
-    snprintf(imkwarray[8].name,
-             KEYWORD_MAX_STRING, "%s-END",
-             TZ_MILK_STR);
+    snprintf(imkwarray[8].name, KEYWORD_MAX_STRING, "%s-END", TZ_MILK_STR);
     imkwarray[8].type = 'S';
     snprintf(imkwarray[8].value.valstr,
              KEYWORD_MAX_STRING, "%s",
              timedouble_to_UTC_timeofdaystring(
-                 tmsg->arraytime[
-                     tmsg->cubesize - 1]
-                 + TZ_MILK_UTC_OFF));
+                 tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
     snprintf(imkwarray[8].comment,
-             KEYWORD_MAX_COMMENT,
-             "HH:MM:SS.SS typical %s"
-             " at exposure end",
-             TZ_MILK_STR);
+             KEYWORD_MAX_COMMENT, "HH:MM:SS.SS typical %s" " at exposure end", TZ_MILK_STR);
 
 #ifdef USE_CFITSIO
     saveFITS_opt_trunc(tmsg->iname,
                        tmsg->partial
                        ? tmsg->cubesize : -1,
                        tmsg->fname,
-                       0,
-                       tmsg->fname_auxFITSheader,
-                       imkwarray,
-                       NBcustomKW,
-                       tmsg->compress_string);
+                       0, tmsg->fname_auxFITSheader, imkwarray, NBcustomKW, tmsg->compress_string);
 #else
     (void) tmsg->fname;
     (void) tmsg->fname_auxFITSheader;
     (void) tmsg->compress_string;
-    printf("WARNING: FITS save disabled"
-           " (built without cfitsio)\n");
+    printf("WARNING: FITS save disabled" " (built without cfitsio)\n");
 #endif
 
     free(imkwarray);
@@ -230,40 +163,20 @@ void *save_telemetry_fits_function(
         if((fp = fopen(tmsg->fnameascii, "w"))
             == NULL)
         {
-            PRINT_ERROR(
-                "cannot create file \"%s\"",
-                tmsg->fnameascii);
+            PRINT_ERROR("cannot create file \"%s\"", tmsg->fnameascii);
         }
         else
         {
-            fprintf(fp,
-                    "# Telemetry stream"
-                    " timing data \n");
-            fprintf(fp,
-                    "# File written by"
-                    " function %s in file %s\n",
-                    __FUNCTION__, __FILE__);
+            fprintf(fp, "# Telemetry stream" " timing data \n");
+            fprintf(fp, "# File written by" " function %s in file %s\n", __FUNCTION__, __FILE__);
             fprintf(fp, "# \n");
-            fprintf(fp,
-                    "# col1 : datacube"
-                    " frame index\n");
-            fprintf(fp,
-                    "# col2 : Main index\n");
-            fprintf(fp,
-                    "# col3 : Time since cube"
-                    " origin (logging)\n");
-            fprintf(fp,
-                    "# col4 : Absolute time"
-                    " (logging)\n");
-            fprintf(fp,
-                    "# col5 : Absolute time"
-                    " (acquisition)\n");
-            fprintf(fp,
-                    "# col6 : stream cnt0"
-                    " index\n");
-            fprintf(fp,
-                    "# col7 : stream cnt1"
-                    " index\n");
+            fprintf(fp, "# col1 : datacube" " frame index\n");
+            fprintf(fp, "# col2 : Main index\n");
+            fprintf(fp, "# col3 : Time since cube" " origin (logging)\n");
+            fprintf(fp, "# col4 : Absolute time" " (logging)\n");
+            fprintf(fp, "# col5 : Absolute time" " (acquisition)\n");
+            fprintf(fp, "# col6 : stream cnt0" " index\n");
+            fprintf(fp, "# col7 : stream cnt1" " index\n");
             fprintf(fp, "# \n");
 
             double t0;
@@ -279,9 +192,7 @@ void *save_telemetry_fits_function(
                         tmsg->arrayindex[k],
                         tmsg->arraytime[k] - t0,
                         tmsg->arraytime[k],
-                        tmsg->arrayaqtime[k],
-                        tmsg->arraycnt0[k],
-                        tmsg->arraycnt1[k]);
+                        tmsg->arrayaqtime[k], tmsg->arraycnt0[k], tmsg->arraycnt1[k]);
             }
             fclose(fp);
         }
@@ -297,9 +208,7 @@ void *save_telemetry_fits_function(
     clock_gettime(CLOCK_MILK, &tend);
 
     double timediff =
-        1.0 * (tend.tv_sec - tstart.tv_sec)
-        + 1.0e-9 * (tend.tv_nsec
-                     - tstart.tv_nsec);
+        1.0 * (tend.tv_sec - tstart.tv_sec) + 1.0e-9 * (tend.tv_nsec - tstart.tv_nsec);
     tmsg->timespan = timediff;
 
     pthread_exit(&tret);

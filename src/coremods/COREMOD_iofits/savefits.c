@@ -86,16 +86,11 @@ errno_t saveFITS_opt_trunc_IMGID(
 
     char fnametmp[STRINGMAXLEN_FILENAME];
     char fnametmpext[STRINGMAXLEN_FILENAME];
-    WRITE_FILENAME(fnametmp, "%s.%d.%ld.tmp",
-                   outputFITSname,
-                   (int) getpid(),
-                   (long) self_id);
-    WRITE_FILENAME(fnametmpext, "%s%s",
-                   fnametmp, FITSIOext);
+    WRITE_FILENAME(fnametmp, "%s.%d.%ld.tmp", outputFITSname, (int) getpid(), (long) self_id);
+    WRITE_FILENAME(fnametmpext, "%s%s", fnametmp, FITSIOext);
 
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-    resolveIMGID(imgin, ERRMODE_WARN,
-                 dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 #endif
     if(imgin->ID == -1)
     {
@@ -103,17 +98,14 @@ errno_t saveFITS_opt_trunc_IMGID(
     }
 
     int bitpix = (outputbitpix != 0)
-                 ? outputbitpix
-                 : ImageStreamIO_FITSIObitpix(
-                     imgin->md->datatype);
+                 ? outputbitpix : ImageStreamIO_FITSIObitpix(imgin->md->datatype);
     if(bitpix == -1)
     {
         bitpix = FLOAT_IMG;
     }
 
     fitsfile *fptr;
-    fits_create_file(&fptr, fnametmpext,
-                     &COREMOD_iofits_data.FITSIO_status);
+    fits_create_file(&fptr, fnametmpext, &COREMOD_iofits_data.FITSIO_status);
     if(check_FITSIO_status(__FILE__, __func__,
                            __LINE__, 1) != 0)
     {
@@ -133,9 +125,7 @@ errno_t saveFITS_opt_trunc_IMGID(
         nelements *= naxesl[i];
     }
 
-    fits_create_img(fptr, bitpix, naxis,
-                    naxesl,
-                    &COREMOD_iofits_data.FITSIO_status);
+    fits_create_img(fptr, bitpix, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
     if(check_FITSIO_status(__FILE__, __func__,
                            __LINE__, 1) != 0)
     {
@@ -146,11 +136,8 @@ errno_t saveFITS_opt_trunc_IMGID(
     fits_write_img(fptr,
                    ImageStreamIO_FITSIOdatatype(
                        imgin->md->datatype),
-                   1, nelements,
-                   imgin->im->array.raw,
-                   &COREMOD_iofits_data.FITSIO_status);
-    fits_close_file(fptr,
-                    &COREMOD_iofits_data.FITSIO_status);
+                   1, nelements, imgin->im->array.raw, &COREMOD_iofits_data.FITSIO_status);
+    fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
     rename(fnametmp, outputFITSname);
     return RETURN_SUCCESS;
 }
@@ -176,8 +163,7 @@ errno_t saveFITS_opt_trunc(
     IMGID id = imgid_make_from_name(inputimname);
     return saveFITS_opt_trunc_IMGID(
                &id,          truncate, outputFITSname,
-               outputbitpix, importheaderfile,
-               kwarray,      kwarraysize, FITSIOext);
+               outputbitpix, importheaderfile, kwarray,      kwarraysize, FITSIOext);
 }
 
 /**
@@ -187,9 +173,7 @@ errno_t save_fl_fits(
     const char *inputimname,
     const char *outputFITSname)
 {
-    return saveFITS_opt_trunc(
-               inputimname, -1, outputFITSname,
-               -32,             NULL, NULL, 0, "");
+    return saveFITS_opt_trunc(inputimname, -1, outputFITSname, -32,             NULL, NULL, 0, "");
 }
 
 /**
@@ -207,8 +191,7 @@ errno_t saveFITS(
 {
     return saveFITS_opt_trunc(
                inputimname, -1, outputFITSname,
-               outputbitpix, importheaderfile,
-               kwarray, kwarraysize, "");
+               outputbitpix, importheaderfile, kwarray, kwarraysize, "");
 }
 
 errno_t saveall_fits(const char *savedirname)
@@ -218,11 +201,8 @@ errno_t saveall_fits(const char *savedirname)
         if(dcimg[i].used == 1)
         {
             char fname[STRINGMAXLEN_FILENAME];
-            WRITE_FILENAME(fname, "%s/%s.fits",
-                           savedirname,
-                           dcimg[i].name);
-            saveFITS(dcimg[i].name,
-                     fname, 0, NULL, NULL, 0);
+            WRITE_FILENAME(fname, "%s/%s.fits", savedirname, dcimg[i].name);
+            saveFITS(dcimg[i].name, fname, 0, NULL, NULL, 0);
         }
     }
     return RETURN_SUCCESS;
@@ -232,8 +212,7 @@ errno_t save_fits(
     const char *inputimname,
     const char *outputFITSname)
 {
-    return saveFITS(inputimname,
-                    outputFITSname, 0, NULL, NULL, 0);
+    return saveFITS(inputimname, outputFITSname, 0, NULL, NULL, 0);
 }
 #endif
 
@@ -251,9 +230,7 @@ static MILK_HOT errno_t fpsexec(IMGID *imgin)
 
     return saveFITS_opt_trunc_IMGID(
                imgin, -1, savefits_outfname,
-               savefits_outbitpix,
-               savefits_inheader[0] ? savefits_inheader : NULL,
-               NULL, 0, "");
+               savefits_outbitpix, savefits_inheader[0] ? savefits_inheader : NULL, NULL, 0, "");
 }
 
 
@@ -296,20 +273,12 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    IMGID in =
-        imgid_make_from_name(
-            savefits_inimname);
-    resolveIMGID(
-        &in,   ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID in = imgid_make_from_name(savefits_inimname);
+    resolveIMGID(&in,   ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(&in);
 
-    fpsexec(&in);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
 }
 
 
@@ -321,17 +290,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

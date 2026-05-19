@@ -42,8 +42,7 @@ void pid_cache_reset(void)
 int pid_check_zombie(pid_t pid)
 {
     char path[64];
-    snprintf(path, sizeof(path), "/proc/%d/stat",
-             (int) pid);
+    snprintf(path, sizeof(path), "/proc/%d/stat", (int) pid);
     FILE *fp = fopen(path, "r");
     if(fp == NULL)
     {
@@ -100,8 +99,7 @@ ov_pid_status_t pid_get_status(pid_t pid)
     ov_pid_status_t st = OV_PID_DEAD;
     if(kill(pid, 0) == 0)
     {
-        st = pid_check_zombie(pid)
-             ? OV_PID_ZOMBIE : OV_PID_ALIVE;
+        st = pid_check_zombie(pid) ? OV_PID_ZOMBIE : OV_PID_ALIVE;
     }
 
     if(s_pid_cache_nb < PID_CACHE_MAX)
@@ -139,8 +137,7 @@ int pid_get_cpu_ticks(
     uint64_t *stime)
 {
     char path[64];
-    snprintf(path, sizeof(path),
-             "/proc/%d/stat", (int) pid);
+    snprintf(path, sizeof(path), "/proc/%d/stat", (int) pid);
     FILE *fp = fopen(path, "r");
     if(fp == NULL)
     {
@@ -153,8 +150,7 @@ int pid_get_cpu_ticks(
      * cmajflt utime stime */
     int rc = fscanf(fp,
                     "%*d %*s %*c %*d %*d %*d %*d %*d "
-                    "%*u %*u %*u %*u %*u %" SCNu64 " %" SCNu64,
-                    utime, stime);
+                    "%*u %*u %*u %*u %*u %" SCNu64 " %" SCNu64, utime, stime);
     fclose(fp);
 
     return (rc == 2) ? 0 : -1;
@@ -550,37 +546,23 @@ const char *ov_datatype_name(uint8_t dt)
 {
     switch(dt)
     {
-    case _DATATYPE_UINT8:
-        return "UI8";
-    case _DATATYPE_INT8:
-        return "SI8";
-    case _DATATYPE_UINT16:
-        return "U16";
-    case _DATATYPE_INT16:
-        return "S16";
-    case _DATATYPE_UINT32:
-        return "U32";
-    case _DATATYPE_INT32:
-        return "S32";
-    case _DATATYPE_UINT64:
-        return "U64";
-    case _DATATYPE_INT64:
-        return "S64";
-    case _DATATYPE_FLOAT:
-        return "F32";
-    case _DATATYPE_DOUBLE:
-        return "F64";
-    case _DATATYPE_COMPLEX_FLOAT:
-        return "CF";
-    case _DATATYPE_COMPLEX_DOUBLE:
-        return "CD";
-    default:
-        return "???";
+    case _DATATYPE_UINT8: return "UI8";
+    case _DATATYPE_INT8: return "SI8";
+    case _DATATYPE_UINT16: return "U16";
+    case _DATATYPE_INT16: return "S16";
+    case _DATATYPE_UINT32: return "U32";
+    case _DATATYPE_INT32: return "S32";
+    case _DATATYPE_UINT64: return "U64";
+    case _DATATYPE_INT64: return "S64";
+    case _DATATYPE_FLOAT: return "F32";
+    case _DATATYPE_DOUBLE: return "F64";
+    case _DATATYPE_COMPLEX_FLOAT: return "CF";
+    case _DATATYPE_COMPLEX_DOUBLE: return "CD";
+    default: return "???";
     }
 }
 /* suppress unused-function warning when header is
  * included but ov_datatype_name is only used by
  * the render code */
 __attribute__((unused))
-static const char *ov_datatype_name_ref =
-    (const char *)(uintptr_t) ov_datatype_name;
+static const char *ov_datatype_name_ref = (const char *)(uintptr_t) ov_datatype_name;

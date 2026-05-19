@@ -35,8 +35,7 @@ errno_t mk_reim_from_amph_IMGID(
 
     FUNC_CHECK_RETURN(mk_complex_from_amph_IMGID(imgam, imgph, &imgC));
 
-    FUNC_CHECK_RETURN(
-        mk_reim_from_complex_IMGID(&imgC, imgre, imgim));
+    FUNC_CHECK_RETURN(mk_reim_from_complex_IMGID(&imgC, imgre, imgim));
 
     FUNC_CHECK_RETURN(delete_image_IMGID(&imgC, DELETE_IMAGE_ERRMODE_WARNING));
     imgid_free(&imgC);
@@ -80,8 +79,7 @@ errno_t mk_amph_from_reim_IMGID(
 
     FUNC_CHECK_RETURN(mk_complex_from_reim_IMGID(imgre, imgim, &imgC));
 
-    FUNC_CHECK_RETURN(
-        mk_amph_from_complex_IMGID(&imgC, imgam, imgph));
+    FUNC_CHECK_RETURN(mk_amph_from_complex_IMGID(&imgC, imgam, imgph));
 
     FUNC_CHECK_RETURN(delete_image_IMGID(&imgC, DELETE_IMAGE_ERRMODE_WARNING));
     imgid_free(&imgC);

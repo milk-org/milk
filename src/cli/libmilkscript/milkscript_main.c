@@ -251,32 +251,25 @@ int main(
     {
         switch(c)
         {
-        case 'h':
-            milkscript_main_usage(argv[0]);
+        case 'h': milkscript_main_usage(argv[0]);
             return 0;
 
-        case 'e':
-            opt_errexit = 1;
+        case 'e': opt_errexit = 1;
             break;
 
-        case 'x':
-            opt_xtrace = 1;
+        case 'x': opt_xtrace = 1;
             break;
 
-        case 'E':
-            opt_echo = 1;
+        case 'E': opt_echo = 1;
             break;
 
-        case 'q':
-            opt_quiet = 1;
+        case 'q': opt_quiet = 1;
             break;
 
-        case 'd':
-            opt_debug = (int) strtol(optarg, NULL, 10);
+        case 'd': opt_debug = (int) strtol(optarg, NULL, 10);
             break;
 
-        case 'n':
-            opt_name = optarg;
+        case 'n': opt_name = optarg;
             break;
 
         default:
@@ -334,8 +327,7 @@ int main(
      * explicitly (POSIX convention), allowing:
      *   milk-script -q - arg1 arg2
      * The trailing args are still passed as $1 $2. */
-    int use_stdin = (script_argc == 0)
-                    || (strcmp(script_argv[0], "-") == 0);
+    int use_stdin = (script_argc == 0) || (strcmp(script_argv[0], "-") == 0);
 
     if(!use_stdin)
     {

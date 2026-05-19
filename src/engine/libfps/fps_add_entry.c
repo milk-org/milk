@@ -104,9 +104,7 @@ errno_t function_parameter_add_entry(
             else
             {
                 FUNC_RETURN_FAILURE(
-                    "NBparamMAX %ld limit reached and "
-                    "realloc failed",
-                    NBparamMAX);
+                    "NBparamMAX %ld limit reached and " "realloc failed", NBparamMAX);
             }
         }
 
@@ -116,30 +114,24 @@ errno_t function_parameter_add_entry(
         // break full keyword into keywords
         strncpy(funcparamarray[pindex].keywordfull,
                 keywordstringC,
-                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                FUNCTION_PARAMETER_KEYWORD_MAXLEVEL -
-                1);
+                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL - 1);
         strncpy(tmpstring,
                 keywordstringC,
-                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                FUNCTION_PARAMETER_KEYWORD_MAXLEVEL -
-                1);
+                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL - 1);
         funcparamarray[pindex].keywordlevel = 0;
         pch                                 = strtok(tmpstring, ".");
         while(pch != NULL)
         {
             strncpy(funcparamarray[pindex]
                     .keyword[funcparamarray[pindex].keywordlevel],
-                    pch,
-                    FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
+                    pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
             funcparamarray[pindex].keywordlevel++;
             pch = strtok(NULL, ".");
         }
 
         // Write description
         strncpy(funcparamarray[pindex].description,
-                descriptionstring,
-                FUNCTION_PARAMETER_DESCR_STRMAXLEN - 1);
+                descriptionstring, FUNCTION_PARAMETER_DESCR_STRMAXLEN - 1);
 
         // type
         funcparamarray[pindex].type = type;
@@ -150,55 +142,47 @@ errno_t function_parameter_add_entry(
         // Default values
         switch(funcparamarray[pindex].type)
         {
-        case FPTYPE_INT32:
-            funcparamarray[pindex].val.i32[0] = 0;
+        case FPTYPE_INT32: funcparamarray[pindex].val.i32[0] = 0;
             funcparamarray[pindex].val.i32[1] = 0;
             funcparamarray[pindex].val.i32[2] = 0;
             funcparamarray[pindex].val.i32[3] = 0;
             break;
 
-        case FPTYPE_UINT32:
-            funcparamarray[pindex].val.ui32[0] = 0;
+        case FPTYPE_UINT32: funcparamarray[pindex].val.ui32[0] = 0;
             funcparamarray[pindex].val.ui32[1] = 0;
             funcparamarray[pindex].val.ui32[2] = 0;
             funcparamarray[pindex].val.ui32[3] = 0;
             break;
 
-        case FPTYPE_INT64:
-            funcparamarray[pindex].val.i64[0] = 0;
+        case FPTYPE_INT64: funcparamarray[pindex].val.i64[0] = 0;
             funcparamarray[pindex].val.i64[1] = 0;
             funcparamarray[pindex].val.i64[2] = 0;
             funcparamarray[pindex].val.i64[3] = 0;
             break;
 
-        case FPTYPE_UINT64:
-            funcparamarray[pindex].val.ui64[0] = 0;
+        case FPTYPE_UINT64: funcparamarray[pindex].val.ui64[0] = 0;
             funcparamarray[pindex].val.ui64[1] = 0;
             funcparamarray[pindex].val.ui64[2] = 0;
             funcparamarray[pindex].val.ui64[3] = 0;
             break;
 
-        case FPTYPE_FLOAT64:
-            funcparamarray[pindex].val.f64[0] = 0.0;
+        case FPTYPE_FLOAT64: funcparamarray[pindex].val.f64[0] = 0.0;
             funcparamarray[pindex].val.f64[1] = 0.0;
             funcparamarray[pindex].val.f64[2] = 0.0;
             funcparamarray[pindex].val.f64[3] = 0.0;
             break;
 
-        case FPTYPE_FLOAT32:
-            funcparamarray[pindex].val.f32[0] = 0.0;
+        case FPTYPE_FLOAT32: funcparamarray[pindex].val.f32[0] = 0.0;
             funcparamarray[pindex].val.f32[1] = 0.0;
             funcparamarray[pindex].val.f32[2] = 0.0;
             funcparamarray[pindex].val.f32[3] = 0.0;
             break;
 
-        case FPTYPE_PID:
-            funcparamarray[pindex].val.pid[0] = 0;
+        case FPTYPE_PID: funcparamarray[pindex].val.pid[0] = 0;
             funcparamarray[pindex].val.pid[1] = 0;
             break;
 
-        case FPTYPE_TIMESPEC:
-            funcparamarray[pindex].val.ts[0].tv_sec  = 0;
+        case FPTYPE_TIMESPEC: funcparamarray[pindex].val.ts[0].tv_sec  = 0;
             funcparamarray[pindex].val.ts[0].tv_nsec = 0;
             funcparamarray[pindex].val.ts[1].tv_sec  = 0;
             funcparamarray[pindex].val.ts[1].tv_nsec = 0;
@@ -206,56 +190,44 @@ errno_t function_parameter_add_entry(
 
         case FPTYPE_FILENAME:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLFNAME");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLFNAME");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLFNAME");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLFNAME");
             break;
 
         case FPTYPE_FITSFILENAME:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLFITS");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLFITS");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLFITS");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLFITS");
             break;
 
         case FPTYPE_EXECFILENAME:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLEXEC");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLEXEC");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLEXEC");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLEXEC");
             break;
 
         case FPTYPE_DIRNAME:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLDIR");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLDIR");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLDIR");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLDIR");
             break;
 
         case FPTYPE_STREAMNAME:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLSTREAM");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLSTREAM");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLSTREAM");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLSTREAM");
             break;
 
         case FPTYPE_STRING:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLSTRING");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLSTRING");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLSTRING");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLSTRING");
             break;
 
         case FPTYPE_ONOFF:
@@ -266,29 +238,23 @@ errno_t function_parameter_add_entry(
 
         case FPTYPE_FPSNAME:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULL");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULL");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
 
         case FPTYPE_PROCESS:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLPROC");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLPROC");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLPROC");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLPROC");
             break;
 
         case FPTYPE_STRING_NOT_STREAM:
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLSTR");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLSTR");
             SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                           FUNCTION_PARAMETER_STRMAXLEN,
-                           "NULLSTR");
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULLSTR");
             break;
         }
 
@@ -297,111 +263,90 @@ errno_t function_parameter_add_entry(
             switch(funcparamarray[pindex].type)
             {
 
-            case FPTYPE_INT32:
-                funcparamarray[pindex].val.i32[0] =
-                    *((int32_t *) valueptr);
+            case FPTYPE_INT32: funcparamarray[pindex].val.i32[0] = *((int32_t *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
-            case FPTYPE_UINT32:
-                funcparamarray[pindex].val.ui32[0] =
-                    *((uint32_t *) valueptr);
+            case FPTYPE_UINT32: funcparamarray[pindex].val.ui32[0] = *((uint32_t *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
-            case FPTYPE_INT64:
-                funcparamarray[pindex].val.i64[0] =
-                    *((int64_t *) valueptr);
+            case FPTYPE_INT64: funcparamarray[pindex].val.i64[0] = *((int64_t *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
-            case FPTYPE_UINT64:
-                funcparamarray[pindex].val.ui64[0] =
-                    *((uint64_t *) valueptr);
+            case FPTYPE_UINT64: funcparamarray[pindex].val.ui64[0] = *((uint64_t *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
-            case FPTYPE_FLOAT64:
-                funcparamarray[pindex].val.f64[0] =
-                    *((double *) valueptr);
+            case FPTYPE_FLOAT64: funcparamarray[pindex].val.f64[0] = *((double *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
-            case FPTYPE_FLOAT32:
-                funcparamarray[pindex].val.f32[0] =
-                    *((float *) valueptr);
+            case FPTYPE_FLOAT32: funcparamarray[pindex].val.f32[0] = *((float *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
-            case FPTYPE_PID:
-                funcparamarray[pindex].val.pid[0] = *((pid_t *) valueptr);
+            case FPTYPE_PID: funcparamarray[pindex].val.pid[0] = *((pid_t *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_TIMESPEC:
-                funcparamarray[pindex].val.ts[0] =
-                    *((struct timespec *) valueptr);
+                funcparamarray[pindex].val.ts[0] = *((struct timespec *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_FILENAME:
                 strncpy(funcparamarray[pindex].val.string[0],
-                        (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        (char *) valueptr, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_FITSFILENAME:
                 strncpy(funcparamarray[pindex].val.string[0],
-                        (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        (char *) valueptr, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_EXECFILENAME:
                 strncpy(funcparamarray[pindex].val.string[0],
-                        (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        (char *) valueptr, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_DIRNAME:
                 strncpy(funcparamarray[pindex].val.string[0],
-                        (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        (char *) valueptr, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_STREAMNAME:
                 strncpy(funcparamarray[pindex].val.string[0],
-                        (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        (char *) valueptr, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_STRING:
                 strncpy(funcparamarray[pindex].val.string[0],
-                        (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        (char *) valueptr, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
 
-            case FPTYPE_ONOFF:
-                funcparamarray[pindex].val.ui64[0] = *((uint64_t *) valueptr);
+            case FPTYPE_ONOFF: funcparamarray[pindex].val.ui64[0] = *((uint64_t *) valueptr);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;
@@ -410,8 +355,7 @@ errno_t function_parameter_add_entry(
             case FPTYPE_PROCESS:
             case FPTYPE_STRING_NOT_STREAM:
                 strncpy(funcparamarray[pindex].val.string[0],
-                        (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        (char *) valueptr, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
                 break;

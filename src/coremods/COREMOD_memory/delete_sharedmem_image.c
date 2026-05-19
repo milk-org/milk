@@ -37,8 +37,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char imname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im";
+static char imname[FUNCTION_PARAMETER_STRMAXLEN] = "im";
 
 
 /* ================================================================
@@ -73,10 +72,7 @@ errno_t destroy_shared_image_ID(
                 "%c[%d;%dm WARNING: shared image"
                 " %s does not exist [ %s  "
                 "%s  %d ] %c[%d;m\n",
-                (char) 27, 1, 31,
-                imname,
-                __FILE__, __func__, __LINE__,
-                (char) 27, 0);
+                (char) 27, 1, 31, imname, __FILE__, __func__, __LINE__, (char) 27, 0);
     }
 
     return RETURN_SUCCESS;
@@ -98,14 +94,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  FUNC_CHECK_RETURN(destroy_shared_image_ID(imname));
 
-    FUNC_CHECK_RETURN(
-        destroy_shared_image_ID(imname));
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -118,21 +109,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__delete_sharedmem_image()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }

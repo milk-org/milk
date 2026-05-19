@@ -278,38 +278,31 @@ static rgb_t get_colormap_color(
             float q = 1.0f - f;
             switch(i)
             {
-            case 0:
-                r = 1.0f;
+            case 0: r = 1.0f;
                 g = f;
                 b = 0.0f;
                 break;
-            case 1:
-                r = q;
+            case 1: r = q;
                 g = 1.0f;
                 b = 0.0f;
                 break;
-            case 2:
-                r = 0.0f;
+            case 2: r = 0.0f;
                 g = 1.0f;
                 b = f;
                 break;
-            case 3:
-                r = 0.0f;
+            case 3: r = 0.0f;
                 g = q;
                 b = 1.0f;
                 break;
-            case 4:
-                r = f;
+            case 4: r = f;
                 g = 0.0f;
                 b = 1.0f;
                 break;
-            case 5:
-                r = 1.0f;
+            case 5: r = 1.0f;
                 g = 0.0f;
                 b = 1.0f;
                 break;
-            default:
-                r = 1.0f;
+            default: r = 1.0f;
                 g = 0.0f;
                 b = 1.0f;
                 break;
@@ -592,17 +585,13 @@ static int tv_read_key(long timeout_us)
             {
                 switch(seq[2])
                 {
-                case 'A':
-                    force_redraw = 1;
+                case 'A': force_redraw = 1;
                     return TV_KEY_UP;
-                case 'B':
-                    force_redraw = 1;
+                case 'B': force_redraw = 1;
                     return TV_KEY_DOWN;
-                case 'C':
-                    force_redraw = 1;
+                case 'C': force_redraw = 1;
                     return TV_KEY_RIGHT;
-                case 'D':
-                    force_redraw = 1;
+                case 'D': force_redraw = 1;
                     return TV_KEY_LEFT;
                 }
             }
@@ -630,28 +619,17 @@ static inline double get_pixel_value(
     }
     switch(img->md[0].datatype)
     {
-    case _DATATYPE_UINT8:
-        return (double) img->array.UI8[idx];
-    case _DATATYPE_INT8:
-        return (double) img->array.SI8[idx];
-    case _DATATYPE_UINT16:
-        return (double) img->array.UI16[idx];
-    case _DATATYPE_INT16:
-        return (double) img->array.SI16[idx];
-    case _DATATYPE_UINT32:
-        return (double) img->array.UI32[idx];
-    case _DATATYPE_INT32:
-        return (double) img->array.SI32[idx];
-    case _DATATYPE_UINT64:
-        return (double) img->array.UI64[idx];
-    case _DATATYPE_INT64:
-        return (double) img->array.SI64[idx];
-    case _DATATYPE_FLOAT:
-        return (double) img->array.F[idx];
-    case _DATATYPE_DOUBLE:
-        return (double) img->array.D[idx];
-    default:
-        return 0.0;
+    case _DATATYPE_UINT8: return (double) img->array.UI8[idx];
+    case _DATATYPE_INT8: return (double) img->array.SI8[idx];
+    case _DATATYPE_UINT16: return (double) img->array.UI16[idx];
+    case _DATATYPE_INT16: return (double) img->array.SI16[idx];
+    case _DATATYPE_UINT32: return (double) img->array.UI32[idx];
+    case _DATATYPE_INT32: return (double) img->array.SI32[idx];
+    case _DATATYPE_UINT64: return (double) img->array.UI64[idx];
+    case _DATATYPE_INT64: return (double) img->array.SI64[idx];
+    case _DATATYPE_FLOAT: return (double) img->array.F[idx];
+    case _DATATYPE_DOUBLE: return (double) img->array.D[idx];
+    default: return 0.0;
     }
 }
 
@@ -903,33 +881,28 @@ static void termview_handle_keyboard_event(
             force_redraw = 1;
         }
         break;
-    case 'q':
-        force_redraw = 1;
+    case 'q': force_redraw = 1;
         loop = 0;
         break;
-    case 'c':
-        force_redraw = 1;
+    case 'c': force_redraw = 1;
         current_options.colormap = (current_options.colormap + 1) % COLORMAP_NB;
         ctx->popup_type = 1;
         clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
         ctx->popup_expiry_time.tv_sec += 2;
         break;
-    case 's':
-        force_redraw = 1;
+    case 's': force_redraw = 1;
         current_options.scale = (current_options.scale + 1) % SCALE_NB;
         ctx->popup_type = 2;
         clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
         ctx->popup_expiry_time.tv_sec += 2;
         break;
-    case 'r':
-        force_redraw = 1;
+    case 'r': force_redraw = 1;
         current_options.range = (current_options.range + 1) % RANGE_NB;
         ctx->popup_type = 3;
         clock_gettime(CLOCK_MONOTONIC, &ctx->popup_expiry_time);
         ctx->popup_expiry_time.tv_sec += 2;
         break;
-    case 'l':
-        force_redraw = 1;
+    case 'l': force_redraw = 1;
         current_options.range_locked = !current_options.range_locked;
         if(current_options.range_locked)
         {
@@ -937,66 +910,54 @@ static void termview_handle_keyboard_event(
             current_options.manual_max = current_max_val;
         }
         break;
-    case 'm':
-        force_redraw = 1;
+    case 'm': force_redraw = 1;
         ctx->input_mode = 1;
         ctx->input_len = 0;
         ctx->input_buf[0] = '\0';
         break;
-    case 'M':
-        force_redraw = 1;
+    case 'M': force_redraw = 1;
         ctx->input_mode = 2;
         ctx->input_len = 0;
         ctx->input_buf[0] = '\0';
         break;
-    case 'h':
-        force_redraw = 1;
+    case 'h': force_redraw = 1;
         current_options.flip_h = !current_options.flip_h;
         break;
-    case 'v':
-        force_redraw = 1;
+    case 'v': force_redraw = 1;
         current_options.flip_v = !current_options.flip_v;
         break;
-    case '+':
-        force_redraw = 1;
-    case '=':
-        force_redraw = 1;
+    case '+': force_redraw = 1;
+    case '=': force_redraw = 1;
         view_zoom *= 1.2;
         break;
-    case '-':
-        force_redraw = 1;
-    case '_':
-        force_redraw = 1;
+    case '-': force_redraw = 1;
+    case '_': force_redraw = 1;
         view_zoom /= 1.2;
         if(view_zoom < 0.1)
         {
             view_zoom = 0.1;
         }
         break;
-    case '0':
-        force_redraw = 1;
+    case '0': force_redraw = 1;
         view_zoom = 1.0;
         view_center_x = 0.5;
         view_center_y = 0.5;
         break;
-    case TV_KEY_LEFT:
-        force_redraw = 1;
+    case TV_KEY_LEFT: force_redraw = 1;
         view_center_x -= 0.1 / view_zoom;
         if(view_center_x < 0.0)
         {
             view_center_x = 0.0;
         }
         break;
-    case TV_KEY_RIGHT:
-        force_redraw = 1;
+    case TV_KEY_RIGHT: force_redraw = 1;
         view_center_x += 0.1 / view_zoom;
         if(view_center_x > 1.0)
         {
             view_center_x = 1.0;
         }
         break;
-    case TV_KEY_UP:
-        force_redraw = 1;
+    case TV_KEY_UP: force_redraw = 1;
         if(ctx->popup_type == 1)
         {
             current_options.colormap = (current_options.colormap + COLORMAP_NB - 1) % COLORMAP_NB;
@@ -1024,8 +985,7 @@ static void termview_handle_keyboard_event(
             }
         }
         break;
-    case TV_KEY_DOWN:
-        force_redraw = 1;
+    case TV_KEY_DOWN: force_redraw = 1;
         if(ctx->popup_type == 1)
         {
             current_options.colormap = (current_options.colormap + 1) % COLORMAP_NB;
@@ -1053,28 +1013,23 @@ static void termview_handle_keyboard_event(
             }
         }
         break;
-    case '<':
-        force_redraw = 1;
-    case ',':
-        force_redraw = 1;
+    case '<': force_redraw = 1;
+    case ',': force_redraw = 1;
         ctx->target_fps -= 1;
         if(ctx->target_fps < 1)
         {
             ctx->target_fps = 1;
         }
         break;
-    case '>':
-        force_redraw = 1;
-    case '.':
-        force_redraw = 1;
+    case '>': force_redraw = 1;
+    case '.': force_redraw = 1;
         ctx->target_fps += 1;
         if(ctx->target_fps > 120)
         {
             ctx->target_fps = 120;
         }
         break;
-    case TV_KEY_MOUSE:
-        termview_handle_mouse_event(ctx);
+    case TV_KEY_MOUSE: termview_handle_mouse_event(ctx);
         break;
     }
 }
@@ -1321,110 +1276,77 @@ static void termview_render_infobar(
     const char *cmap_str = "GREYSCALE";
     switch(current_options.colormap)
     {
-    case COLORMAP_HEAT:
-        cmap_str = "HEAT";
+    case COLORMAP_HEAT: cmap_str = "HEAT";
         break;
-    case COLORMAP_COLD:
-        cmap_str = "COLD";
+    case COLORMAP_COLD: cmap_str = "COLD";
         break;
-    case COLORMAP_JET:
-        cmap_str = "JET";
+    case COLORMAP_JET: cmap_str = "JET";
         break;
-    case COLORMAP_INFERNO:
-        cmap_str = "INFERNO";
+    case COLORMAP_INFERNO: cmap_str = "INFERNO";
         break;
-    case COLORMAP_VIRIDIS:
-        cmap_str = "VIRIDIS";
+    case COLORMAP_VIRIDIS: cmap_str = "VIRIDIS";
         break;
-    case COLORMAP_MAGMA:
-        cmap_str = "MAGMA";
+    case COLORMAP_MAGMA: cmap_str = "MAGMA";
         break;
-    case COLORMAP_PLASMA:
-        cmap_str = "PLASMA";
+    case COLORMAP_PLASMA: cmap_str = "PLASMA";
         break;
-    case COLORMAP_BONE:
-        cmap_str = "BONE";
+    case COLORMAP_BONE: cmap_str = "BONE";
         break;
-    case COLORMAP_RAINBOW:
-        cmap_str = "RAINBOW";
+    case COLORMAP_RAINBOW: cmap_str = "RAINBOW";
         break;
-    case COLORMAP_TURBO:
-        cmap_str = "TURBO";
+    case COLORMAP_TURBO: cmap_str = "TURBO";
         break;
-    case COLORMAP_OCEAN:
-        cmap_str = "OCEAN";
+    case COLORMAP_OCEAN: cmap_str = "OCEAN";
         break;
-    case COLORMAP_COPPER:
-        cmap_str = "COPPER";
+    case COLORMAP_COPPER: cmap_str = "COPPER";
         break;
-    case COLORMAP_SPRING:
-        cmap_str = "SPRING";
+    case COLORMAP_SPRING: cmap_str = "SPRING";
         break;
-    case COLORMAP_SUMMER:
-        cmap_str = "SUMMER";
+    case COLORMAP_SUMMER: cmap_str = "SUMMER";
         break;
-    case COLORMAP_AUTUMN:
-        cmap_str = "AUTUMN";
+    case COLORMAP_AUTUMN: cmap_str = "AUTUMN";
         break;
-    case COLORMAP_WINTER:
-        cmap_str = "WINTER";
+    case COLORMAP_WINTER: cmap_str = "WINTER";
         break;
-    default:
-        break;
+    default: break;
     }
     const char *scale_str = "LIN";
     switch(current_options.scale)
     {
-    case SCALE_SQRT:
-        scale_str = "SQRT";
+    case SCALE_SQRT: scale_str = "SQRT";
         break;
-    case SCALE_LOG:
-        scale_str = "LOG";
+    case SCALE_LOG: scale_str = "LOG";
         break;
-    case SCALE_LOG_STRONG:
-        scale_str = "LOG_STR";
+    case SCALE_LOG_STRONG: scale_str = "LOG_STR";
         break;
-    case SCALE_LOG_EXTREME:
-        scale_str = "LOG_EXT";
+    case SCALE_LOG_EXTREME: scale_str = "LOG_EXT";
         break;
-    case SCALE_ASINH:
-        scale_str = "ASINH";
+    case SCALE_ASINH: scale_str = "ASINH";
         break;
-    case SCALE_SQUARED:
-        scale_str = "SQUARED";
+    case SCALE_SQUARED: scale_str = "SQUARED";
         break;
-    case SCALE_CUBED:
-        scale_str = "CUBED";
+    case SCALE_CUBED: scale_str = "CUBED";
         break;
-    default:
-        break;
+    default: break;
     }
     const char *range_str = "MINMAX";
     switch(current_options.range)
     {
-    case RANGE_001_999:
-        range_str = "0.1-99.9%";
+    case RANGE_001_999: range_str = "0.1-99.9%";
         break;
-    case RANGE_005_995:
-        range_str = "0.5-99.5%";
+    case RANGE_005_995: range_str = "0.5-99.5%";
         break;
-    case RANGE_01_99:
-        range_str = "1-99%";
+    case RANGE_01_99: range_str = "1-99%";
         break;
-    case RANGE_05_95:
-        range_str = "5-95%";
+    case RANGE_05_95: range_str = "5-95%";
         break;
-    case RANGE_10_90:
-        range_str = "10-90%";
+    case RANGE_10_90: range_str = "10-90%";
         break;
-    case RANGE_15_85:
-        range_str = "15-85%";
+    case RANGE_15_85: range_str = "15-85%";
         break;
-    case RANGE_20_80:
-        range_str = "20-80%";
+    case RANGE_20_80: range_str = "20-80%";
         break;
-    default:
-        break;
+    default: break;
     }
 
     char info[256];
@@ -2055,36 +1977,28 @@ errno_t termview_screen(
             double p_low = 0.0, p_high = 1.0;
             switch(current_options.range)
             {
-            case RANGE_001_999:
-                p_low = 0.001;
+            case RANGE_001_999: p_low = 0.001;
                 p_high = 0.999;
                 break;
-            case RANGE_005_995:
-                p_low = 0.005;
+            case RANGE_005_995: p_low = 0.005;
                 p_high = 0.995;
                 break;
-            case RANGE_01_99:
-                p_low = 0.01;
+            case RANGE_01_99: p_low = 0.01;
                 p_high = 0.99;
                 break;
-            case RANGE_05_95:
-                p_low = 0.05;
+            case RANGE_05_95: p_low = 0.05;
                 p_high = 0.95;
                 break;
-            case RANGE_10_90:
-                p_low = 0.10;
+            case RANGE_10_90: p_low = 0.10;
                 p_high = 0.90;
                 break;
-            case RANGE_15_85:
-                p_low = 0.15;
+            case RANGE_15_85: p_low = 0.15;
                 p_high = 0.85;
                 break;
-            case RANGE_20_80:
-                p_low = 0.20;
+            case RANGE_20_80: p_low = 0.20;
                 p_high = 0.80;
                 break;
-            default:
-                break;
+            default: break;
             }
             min_val = sorted_buf[(int)(p_low * (num_pixels - 1))];
             max_val = sorted_buf[(int)(p_high * (num_pixels - 1))];

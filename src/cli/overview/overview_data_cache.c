@@ -78,8 +78,7 @@ int fcache_find(const char *name)
  */
 void fcache_evict(int ci)
 {
-    fps_disconnect(
-        &s_fcache[ci].fps);
+    fps_disconnect(&s_fcache[ci].fps);
     s_fcache_nb--;
     if(ci < s_fcache_nb)
     {

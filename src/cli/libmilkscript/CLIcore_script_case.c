@@ -53,11 +53,7 @@ void cli_func_define(
             cli_funcs[i].nbody = nbody;
             for(int j = 0; j < nbody; j++)
             {
-                strncpy(
-                    cli_funcs[i].body[j],
-                    body[j],
-                    STRINGMAXLEN_CLICMDLINE - 1
-                );
+                strncpy(cli_funcs[i].body[j], body[j], STRINGMAXLEN_CLICMDLINE - 1);
             }
             return;
         }
@@ -67,25 +63,18 @@ void cli_func_define(
     {
         if(!cli_funcs[i].used)
         {
-            strncpy(cli_funcs[i].name, name,
-                    CLI_FUNC_NAMELEN - 1);
-            cli_funcs[i].name[
-                CLI_FUNC_NAMELEN - 1] = '\0';
+            strncpy(cli_funcs[i].name, name, CLI_FUNC_NAMELEN - 1);
+            cli_funcs[i].name[CLI_FUNC_NAMELEN - 1] = '\0';
             cli_funcs[i].nbody = nbody;
             cli_funcs[i].used = 1;
             for(int j = 0; j < nbody; j++)
             {
-                strncpy(
-                    cli_funcs[i].body[j],
-                    body[j],
-                    STRINGMAXLEN_CLICMDLINE - 1
-                );
+                strncpy(cli_funcs[i].body[j], body[j], STRINGMAXLEN_CLICMDLINE - 1);
             }
             return;
         }
     }
-    printf("Error: function table full "
-           "(max %d)\n", CLI_MAX_FUNCS);
+    printf("Error: function table full " "(max %d)\n", CLI_MAX_FUNCS);
 }
 
 
@@ -141,8 +130,7 @@ void cli_exec_block_case(
     /* Scan patterns: "pat) body ;;" */
     for(int i = 1; i < nlines; i++)
     {
-        const char *lp =
-            strip_ws(lines[i]);
+        const char *lp = strip_ws(lines[i]);
         /* Find closing ')' */
         const char *cp = strchr(lp, ')');
         if(cp == NULL)
@@ -164,13 +152,10 @@ void cli_exec_block_case(
         int matched = 0;
         {
             char ptmp[256];
-            strncpy(ptmp, pat,
-                    sizeof(ptmp) - 1);
+            strncpy(ptmp, pat, sizeof(ptmp) - 1);
             ptmp[sizeof(ptmp) - 1] = '\0';
             char *psave = NULL;
-            char *pp =
-                strtok_r(ptmp, "|",
-                         &psave);
+            char *pp = strtok_r(ptmp, "|", &psave);
             while(pp != NULL)
             {
                 /* strip ws */
@@ -186,9 +171,7 @@ void cli_exec_block_case(
                     matched = 1;
                     break;
                 }
-                pp = strtok_r(NULL,
-                              "|",
-                              &psave);
+                pp = strtok_r(NULL, "|", &psave);
             }
         }
         if(!matched)
@@ -208,14 +191,10 @@ void cli_exec_block_case(
         {
             /* Strip ;; from end */
             char cmdline[STRINGMAXLEN_CLICMDLINE];
-            strncpy(cmdline, body_start,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-            cmdline[STRINGMAXLEN_CLICMDLINE
-                    - 1] = '\0';
+            strncpy(cmdline, body_start, STRINGMAXLEN_CLICMDLINE - 1);
+            cmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             {
-                int cl =
-                    (int) strlen(cmdline);
+                int cl = (int) strlen(cmdline);
                 while(cl > 1
                         && cmdline[cl - 1]
                         == ';'
@@ -237,11 +216,7 @@ void cli_exec_block_case(
             }
             if(strlen(cmdline) > 0)
             {
-                strncpy(
-                    data.CLIcmdline,
-                    cmdline,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
+                strncpy(data.CLIcmdline, cmdline, STRINGMAXLEN_CLICMDLINE - 1);
                 CLI_execute_line();
             }
         }
@@ -251,24 +226,17 @@ void cli_exec_block_case(
             for(int j = i + 1;
                     j < nlines; j++)
             {
-                const char *bl =
-                    strip_ws(lines[j]);
+                const char *bl = strip_ws(lines[j]);
                 if(strcmp(bl, ";;") == 0)
                 {
                     break;
                 }
                 /* Strip trailing ;; */
-                char cmd2[
-                    STRINGMAXLEN_CLICMDLINE];
-                strncpy(cmd2, bl,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                cmd2[
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1] = '\0';
+                char cmd2[STRINGMAXLEN_CLICMDLINE];
+                strncpy(cmd2, bl, STRINGMAXLEN_CLICMDLINE - 1);
+                cmd2[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
                 {
-                    int c2l =
-                        (int) strlen(cmd2);
+                    int c2l = (int) strlen(cmd2);
                     int ends_dsemi = 0;
                     while(c2l > 1
                             && cmd2[c2l - 1]
@@ -276,8 +244,7 @@ void cli_exec_block_case(
                             && cmd2[c2l - 2]
                             == ';')
                     {
-                        cmd2[c2l - 2] =
-                            '\0';
+                        cmd2[c2l - 2] = '\0';
                         c2l -= 2;
                         ends_dsemi = 1;
                     }
@@ -292,11 +259,7 @@ void cli_exec_block_case(
                     }
                     if(strlen(cmd2) > 0)
                     {
-                        strncpy(
-                            data.CLIcmdline,
-                            cmd2,
-                            STRINGMAXLEN_CLICMDLINE
-                            - 1);
+                        strncpy(data.CLIcmdline, cmd2, STRINGMAXLEN_CLICMDLINE - 1);
                         CLI_execute_line();
                     }
                     if(ends_dsemi)

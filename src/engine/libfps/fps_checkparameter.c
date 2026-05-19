@@ -34,10 +34,7 @@ int functionparameter_CheckParameter(
     else
     {
         char msg[STRINGMAXLEN_FPS_LOGMSG];
-        SNPRINTF_CHECK(msg,
-                       STRINGMAXLEN_FPS_LOGMSG,
-                       "%s",
-                       fpsentry->parray[pindex].keywordfull);
+        SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s", fpsentry->parray[pindex].keywordfull);
         functionparameter_outlog("CHECKPARAM", "%s", msg);
     }
 
@@ -241,8 +238,7 @@ int functionparameter_CheckParameter(
             if(file_exists(fpsentry->parray[pindex].val.string[0]) == 0)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "File %s does not exist",
@@ -270,8 +266,7 @@ int functionparameter_CheckParameter(
             if(is_fits_file(fpsentry->parray[pindex].val.string[0]) == 0)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "FITS file %s does not exist",
@@ -303,8 +298,7 @@ int functionparameter_CheckParameter(
                     sb.st_mode & S_IXUSR))
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "File %s cannot be executed",
@@ -332,9 +326,7 @@ int functionparameter_CheckParameter(
         functionparameter_ConnectExternalFPS(fpsentry, pindex, &fpstest);
 
         long NBparamMAX = fpsentry->parray[pindex].info.fps.FPSNBparamMAX;
-        printf("%s NBparamMAX = %ld\n",
-               fpsentry->parray[pindex].val.string[0],
-               NBparamMAX);
+        printf("%s NBparamMAX = %ld\n", fpsentry->parray[pindex].val.string[0], NBparamMAX);
 
 
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED)
@@ -342,8 +334,7 @@ int functionparameter_CheckParameter(
             if(NBparamMAX < 1)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "FPS %s: no connection %lu",
@@ -372,24 +363,15 @@ int functionparameter_CheckParameter(
         uint32_t imLOC;
 
         /* Strip @X: modifier prefix */
-        FPS_STREAMNAME_PARSED sp =
-            fps_streamname_parse(
-                fpsentry->parray[pindex]
-                .val.string[0]);
+        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(fpsentry->parray[pindex] .val.string[0]);
 
         long     ID =
-            COREMOD_IOFITS_LoadMemStream(
-                sp.name,
-                &(fpsentry->parray[pindex].fpflag),
-                &imLOC);
-        fpsentry->parray[pindex]
-        .info.stream.streamID = ID;
+            COREMOD_IOFITS_LoadMemStream(sp.name, &(fpsentry->parray[pindex].fpflag), &imLOC);
+        fpsentry->parray[pindex] .info.stream.streamID = ID;
 
         if(ID > -1)
         {
-            fpsentry->parray[pindex]
-            .info.stream
-            .stream_sourceLocation = imLOC;
+            fpsentry->parray[pindex] .info.stream .stream_sourceLocation = imLOC;
 
             // Use ImageStreamIO to get metadata
             IMAGE tmpimg;
@@ -397,42 +379,24 @@ int functionparameter_CheckParameter(
                         &tmpimg, sp.name)
                     == IMAGESTREAMIO_SUCCESS)
             {
-                fpsentry->parray[pindex]
-                .info.stream.stream_atype =
-                    tmpimg.md->datatype;
-                fpsentry->parray[pindex]
-                .info.stream
-                .stream_naxis[0] =
-                    tmpimg.md->naxis;
-                fpsentry->parray[pindex]
-                .info.stream
-                .stream_xsize[0] =
-                    tmpimg.md->size[0];
+                fpsentry->parray[pindex] .info.stream.stream_atype = tmpimg.md->datatype;
+                fpsentry->parray[pindex] .info.stream .stream_naxis[0] = tmpimg.md->naxis;
+                fpsentry->parray[pindex] .info.stream .stream_xsize[0] = tmpimg.md->size[0];
                 if(tmpimg.md->naxis > 1)
                 {
-                    fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_ysize[0] =
-                        tmpimg.md->size[1];
+                    fpsentry->parray[pindex] .info.stream .stream_ysize[0] = tmpimg.md->size[1];
                 }
                 else
                 {
-                    fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_ysize[0] = 1;
+                    fpsentry->parray[pindex] .info.stream .stream_ysize[0] = 1;
                 }
                 if(tmpimg.md->naxis > 2)
                 {
-                    fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_zsize[0] =
-                        tmpimg.md->size[2];
+                    fpsentry->parray[pindex] .info.stream .stream_zsize[0] = tmpimg.md->size[2];
                 }
                 else
                 {
-                    fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_zsize[0] = 1;
+                    fpsentry->parray[pindex] .info.stream .stream_zsize[0] = 1;
                 }
                 ImageStreamIO_closeIm(&tmpimg);
             }
@@ -442,16 +406,13 @@ int functionparameter_CheckParameter(
         {
             int msglen = 200;
             char msg[msglen];
-            snprintf(msg, msglen,
-                     "Loading stream %s",
-                     fpsentry->parray[pindex].val.string[0]);
+            snprintf(msg, msglen, "Loading stream %s", fpsentry->parray[pindex].val.string[0]);
             functionparameter_outlog("LOADMEMSTREAM", "%s", msg);
 
             if(imLOC == STREAM_LOAD_SOURCE_NOTFOUND)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "cannot load stream %s",

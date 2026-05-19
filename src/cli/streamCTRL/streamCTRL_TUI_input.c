@@ -42,40 +42,34 @@ errno_t streamCTRL_keyinput_process(
         sTUIparam.loopOK = 0;
         break;
 
-    case ANSI_KEY_UP:
-        sTUIparam.dindexSelected--;
+    case ANSI_KEY_UP: sTUIparam.dindexSelected--;
         if(sTUIparam.dindexSelected < 0)
         {
             sTUIparam.dindexSelected = 0;
         }
         break;
 
-    case ANSI_KEY_DOWN:
-        sTUIparam.dindexSelected++;
+    case ANSI_KEY_DOWN: sTUIparam.dindexSelected++;
         if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1)
         {
             sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;
         }
         break;
 
-    case ANSI_KEY_PGUP:
-        sTUIparam.dindexSelected -= 10;
+    case ANSI_KEY_PGUP: sTUIparam.dindexSelected -= 10;
         if(sTUIparam.dindexSelected < 0)
         {
             sTUIparam.dindexSelected = 0;
         }
         break;
 
-    case ANSI_KEY_LEFT:
-        sTUIparam.DisplayDetailLevel = 0;
+    case ANSI_KEY_LEFT: sTUIparam.DisplayDetailLevel = 0;
         break;
 
-    case ANSI_KEY_RIGHT:
-        sTUIparam.DisplayDetailLevel = 1;
+    case ANSI_KEY_RIGHT: sTUIparam.DisplayDetailLevel = 1;
         break;
 
-    case ANSI_KEY_PGDN:
-        sTUIparam.dindexSelected += 10;
+    case ANSI_KEY_PGDN: sTUIparam.dindexSelected += 10;
         if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1)
         {
             sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;
@@ -121,9 +115,7 @@ errno_t streamCTRL_keyinput_process(
     case ctrl('e'): // erase stream
         if(sTUIparam.dindexSelected >= 0)
         {
-            sindex =
-                sTUIparam.ssindex[
-            sTUIparam.dindexSelected];
+            sindex = sTUIparam.ssindex[sTUIparam.dindexSelected];
             // Flag for removal by scan thread
             // Actual destroy happens in scan
             // thread to avoid race condition
@@ -281,9 +273,7 @@ errno_t streamCTRL_keyinput_process(
         int body_row  = state->body_start_row;
         if(body_row > 0 && click_row >= body_row)
         {
-            int new_sel =
-                (int) state->doffsetindex
-                + (click_row - body_row);
+            int new_sel = (int) state->doffsetindex + (click_row - body_row);
             if(new_sel >= 0
                     && new_sel < sTUIparam.NBsindex)
             {
@@ -293,16 +283,14 @@ errno_t streamCTRL_keyinput_process(
         break;
     }
 
-    case ANSI_KEY_SCROLL_UP:
-        sTUIparam.dindexSelected -= 3;
+    case ANSI_KEY_SCROLL_UP: sTUIparam.dindexSelected -= 3;
         if(sTUIparam.dindexSelected < 0)
         {
             sTUIparam.dindexSelected = 0;
         }
         break;
 
-    case ANSI_KEY_SCROLL_DN:
-        sTUIparam.dindexSelected += 3;
+    case ANSI_KEY_SCROLL_DN: sTUIparam.dindexSelected += 3;
         if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1)
         {
             sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;

@@ -26,9 +26,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(
  *  PARAMS
  * ============================================================= */
 
-static char p_imname[
-     FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
+static char p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static long long p_step = 5;
 
 static FPS_APP_INFO FPS_app_info =
@@ -75,8 +73,7 @@ FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    COREMOD_TOOLS_imgdisplay3D(
-        p_imname, p_step);
+    COREMOD_TOOLS_imgdisplay3D(p_imname, p_step);
     return RETURN_SUCCESS;
 }
 
@@ -84,20 +81,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_tools__imdisplay3d()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    int cmdi = RegisterCLIcmd(
-                   CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     return RETURN_SUCCESS;
 }
 #endif
@@ -143,16 +135,8 @@ errno_t COREMOD_TOOLS_imgdisplay3D(
     {
         for(long jj = 0; jj < xsize; jj += step)
         {
-            fprintf(fpgnuplot,
-                    "%ld %ld %f\n",
-                    ii,
-                    jj,
-                    dcimg[ID].array.F[jj * xsize + ii]);
-            fprintf(fp,
-                    "%ld %ld %f\n",
-                    ii,
-                    jj,
-                    dcimg[ID].array.F[jj * xsize + ii]);
+            fprintf(fpgnuplot, "%ld %ld %f\n", ii, jj, dcimg[ID].array.F[jj * xsize + ii]);
+            fprintf(fp, "%ld %ld %f\n", ii, jj, dcimg[ID].array.F[jj * xsize + ii]);
         }
         fprintf(fpgnuplot, "\n");
         fprintf(fp, "\n");

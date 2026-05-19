@@ -37,9 +37,7 @@ static int sort_stream_by_name(
     const void *a,
     const void *b)
 {
-    return ov_sort_dir_mul * strcmp(
-               ((const OV_STREAM *) a)->name,
-               ((const OV_STREAM *) b)->name);
+    return ov_sort_dir_mul * strcmp(((const OV_STREAM *) a)->name, ((const OV_STREAM *) b)->name);
 }
 
 /**
@@ -108,22 +106,11 @@ static int dtype_bytes(uint8_t dt)
 {
     switch(dt)
     {
-    case _DATATYPE_UINT8:
-    case _DATATYPE_INT8:
-        return 1;
-    case _DATATYPE_UINT16:
-    case _DATATYPE_INT16:
-        return 2;
-    case _DATATYPE_UINT32:
-    case _DATATYPE_INT32:
-    case _DATATYPE_FLOAT:
-        return 4;
-    case _DATATYPE_UINT64:
-    case _DATATYPE_INT64:
-    case _DATATYPE_DOUBLE:
-        return 8;
-    default:
-        return 1;
+    case _DATATYPE_UINT8: case _DATATYPE_INT8: return 1;
+    case _DATATYPE_UINT16: case _DATATYPE_INT16: return 2;
+    case _DATATYPE_UINT32: case _DATATYPE_INT32: case _DATATYPE_FLOAT: return 4;
+    case _DATATYPE_UINT64: case _DATATYPE_INT64: case _DATATYPE_DOUBLE: return 8;
+    default: return 1;
     }
 }
 
@@ -133,12 +120,8 @@ static int sort_stream_by_throughput(
 {
     const OV_STREAM *sa = (const OV_STREAM *) a;
     const OV_STREAM *sb = (const OV_STREAM *) b;
-    double ta = sa->update_hz
-                * (double) sa->nelement
-                * dtype_bytes(sa->datatype);
-    double tb = sb->update_hz
-                * (double) sb->nelement
-                * dtype_bytes(sb->datatype);
+    double ta = sa->update_hz * (double) sa->nelement * dtype_bytes(sa->datatype);
+    double tb = sb->update_hz * (double) sb->nelement * dtype_bytes(sb->datatype);
     if(ta < tb)
     {
         return -ov_sort_dir_mul;
@@ -225,34 +208,24 @@ void ov_sort_streams(
     int (*cmp)(const void *, const void *);
     switch(key)
     {
-    case 1:
-        cmp = sort_stream_by_type;
+    case 1: cmp = sort_stream_by_type;
         break;
-    case 2:
-        cmp = sort_stream_by_size;
+    case 2: cmp = sort_stream_by_size;
         break;
-    case 3:
-        cmp = sort_stream_by_hz;
+    case 3: cmp = sort_stream_by_hz;
         break;
-    case 4:
-        cmp = sort_stream_by_throughput;
+    case 4: cmp = sort_stream_by_throughput;
         break;
-    case 5:
-        cmp = sort_stream_by_inode;
+    case 5: cmp = sort_stream_by_inode;
         break;
-    case 6:
-        cmp = sort_stream_by_count;
+    case 6: cmp = sort_stream_by_count;
         break;
-    case 7:
-        cmp = sort_stream_by_ancestry;
+    case 7: cmp = sort_stream_by_ancestry;
         break;
-    default:
-        cmp = sort_stream_by_name;
+    default: cmp = sort_stream_by_name;
         break;
     }
-    qsort(model->streams,
-          (size_t) model->nb_streams,
-          sizeof(OV_STREAM), cmp);
+    qsort(model->streams, (size_t) model->nb_streams, sizeof(OV_STREAM), cmp);
 }
 
 
@@ -262,9 +235,7 @@ static int sort_proc_by_name(
     const void *a,
     const void *b)
 {
-    return ov_sort_dir_mul * strcmp(
-               ((const OV_PROC *) a)->name,
-               ((const OV_PROC *) b)->name);
+    return ov_sort_dir_mul * strcmp(((const OV_PROC *) a)->name, ((const OV_PROC *) b)->name);
 }
 
 static int sort_proc_by_pid(
@@ -376,28 +347,20 @@ void ov_sort_procs(
     int (*cmp)(const void *, const void *);
     switch(key)
     {
-    case 1:
-        cmp = sort_proc_by_pid;
+    case 1: cmp = sort_proc_by_pid;
         break;
-    case 2:
-        cmp = sort_proc_by_stat;
+    case 2: cmp = sort_proc_by_stat;
         break;
-    case 3:
-        cmp = sort_proc_by_hz;
+    case 3: cmp = sort_proc_by_hz;
         break;
-    case 4:
-        cmp = sort_proc_by_mem;
+    case 4: cmp = sort_proc_by_mem;
         break;
-    case 5:
-        cmp = sort_proc_by_ancestry;
+    case 5: cmp = sort_proc_by_ancestry;
         break;
-    default:
-        cmp = sort_proc_by_name;
+    default: cmp = sort_proc_by_name;
         break;
     }
-    qsort(model->procs,
-          (size_t) model->nb_procs,
-          sizeof(OV_PROC), cmp);
+    qsort(model->procs, (size_t) model->nb_procs, sizeof(OV_PROC), cmp);
 }
 
 
@@ -407,9 +370,7 @@ static int sort_fps_by_name(
     const void *a,
     const void *b)
 {
-    return ov_sort_dir_mul * strcmp(
-               ((const OV_FPS *) a)->name,
-               ((const OV_FPS *) b)->name);
+    return ov_sort_dir_mul * strcmp(((const OV_FPS *) a)->name, ((const OV_FPS *) b)->name);
 }
 
 static int sort_fps_by_cpid(
@@ -504,23 +465,16 @@ void ov_sort_fps(
     int (*cmp)(const void *, const void *);
     switch(key)
     {
-    case 1:
-        cmp = sort_fps_by_cpid;
+    case 1: cmp = sort_fps_by_cpid;
         break;
-    case 2:
-        cmp = sort_fps_by_mem;
+    case 2: cmp = sort_fps_by_mem;
         break;
-    case 3:
-        cmp = sort_fps_by_ancestry;
+    case 3: cmp = sort_fps_by_ancestry;
         break;
-    case 4:
-        cmp = sort_fps_by_rpid;
+    case 4: cmp = sort_fps_by_rpid;
         break;
-    default:
-        cmp = sort_fps_by_name;
+    default: cmp = sort_fps_by_name;
         break;
     }
-    qsort(model->fps,
-          (size_t) model->nb_fps,
-          sizeof(OV_FPS), cmp);
+    qsort(model->fps, (size_t) model->nb_fps, sizeof(OV_FPS), cmp);
 }

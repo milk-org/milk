@@ -24,17 +24,14 @@ int function_parameter_printlist(
     {
         if(funcparamarray[pindex].fpflag & FPFLAG_ACTIVE)
         {
-            printf("Parameter %4ld : %s\n",
-                   pindex,
-                   funcparamarray[pindex].keywordfull);
+            printf("Parameter %4ld : %s\n", pindex, funcparamarray[pindex].keywordfull);
             /*for(int kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
             	printf("  %s", funcparamarray[pindex].keyword[kl]);
             printf("\n");*/
             printf("    %s\n", funcparamarray[pindex].description);
 
             // STATUS FLAGS
-            printf("    STATUS FLAGS (0x%02hhx) :",
-                   (int) funcparamarray[pindex].fpflag);
+            printf("    STATUS FLAGS (0x%02hhx) :", (int) funcparamarray[pindex].fpflag);
             if(funcparamarray[pindex].fpflag & FPFLAG_ACTIVE)
             {
                 printf(" ACTIVE");
@@ -110,8 +107,7 @@ int function_parameter_printlist(
             if(funcparamarray[pindex].type & FPTYPE_INT64)
             {
                 printf("    TYPE  = INT64\n");
-                printf("    VALUE = %ld\n",
-                       (long) funcparamarray[pindex].val.i64[0]);
+                printf("    VALUE = %ld\n", (long) funcparamarray[pindex].val.i64[0]);
             }
             if(funcparamarray[pindex].type & FPTYPE_FLOAT64)
             {

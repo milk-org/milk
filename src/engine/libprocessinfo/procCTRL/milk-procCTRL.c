@@ -44,8 +44,7 @@ static void print_help(
            "  - READS/WRITES: %s (Process Control Block)\n"
            "                  Reads detailed status (loopstat), counters, timing, and triggers.\n"
            "                  Writes control signals (CTRLval) to Pause/Resume/Step/Exit.\n\n",
-           MH(MH_BOLD, "processinfo.list.shm"),
-           MH(MH_BOLD, "proc.<process_name>.<PID>.shm"));
+           MH(MH_BOLD, "processinfo.list.shm"), MH(MH_BOLD, "proc.<process_name>.<PID>.shm"));
 
     milk_help_section("Options", mh_color);
     printf("  %s             Show this help message and exit\n", MH(MH_OPT, "-h, --help"));
@@ -141,8 +140,7 @@ int main(
         case 'h':
             // Handled by milk_help_init
             return 0;
-        case 'd':
-            procCTRL_debug_mode = 1;
+        case 'd': procCTRL_debug_mode = 1;
             break;
         case 'c':
         {
@@ -204,12 +202,9 @@ int main(
                 return 1;
             }
         }
-        case 'l':
-            strncpy(procCTRL_logfile, optarg, 1023);
+        case 'l': strncpy(procCTRL_logfile, optarg, 1023);
             break;
-        case '?':
-        default:
-            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+        case '?': default: printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(argv[0], 1);
             return 1;
         }

@@ -27,8 +27,7 @@ imageID shmim_setowner_creator(const char *name)
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
     if(img.ID != -1)
     {
-        img.im->md[0].ownerPID =
-            img.im->md[0].creatorPID;
+        img.im->md[0].ownerPID = img.im->md[0].creatorPID;
     }
 
     return img.ID;
@@ -69,8 +68,7 @@ imageID shmim_setowner_init(const char *name)
  *  COMMON PARAMETER (1 stream arg)
  * ============================================================= */
 
-static char p_sname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "stream0";
+static char p_sname[FUNCTION_PARAMETER_STRMAXLEN] = "stream0";
 
 #define FPS_PARAMS_1STREAM(X) \
     X(".sname", p_sname, \
@@ -140,10 +138,8 @@ FPS_CMDSETTINGS_INIT(cms2, CLIcmddata, FPS_app_info)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    shmim_setowner_current(p_sname);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START shmim_setowner_current(p_sname);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -185,55 +181,39 @@ static errno_t CLIfunction_creator(void)
 {
     return safe_fps_generic_CLIfunction(
         &FPS_app_info_creator,
-        farg, &CLIcmddata_creator,
-        my_bindings, nb_bindings,
-        compute_creator);
+        farg, &CLIcmddata_creator, my_bindings, nb_bindings, compute_creator);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 static errno_t CLIfunction_init(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_init,
-        farg, &CLIcmddata_init,
-        my_bindings, nb_bindings,
-        compute_init);
+        &FPS_app_info_init, farg, &CLIcmddata_init, my_bindings, nb_bindings, compute_init);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__shmim_setowner()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     {
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata_creator,
-            CLIfunction_creator);
-        CLIcmddata_creator.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_creator, CLIfunction_creator);
+        CLIcmddata_creator.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata_init,
-            CLIfunction_init);
-        CLIcmddata_init.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_init, CLIfunction_init);
+        CLIcmddata_init.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;

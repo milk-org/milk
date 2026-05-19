@@ -45,9 +45,7 @@ errno_t function_parameter_struct_create(
 
     if(getenv("FPS_DEBUG"))
         printf("DEBUG: [%s:%d] Creating file %s, "
-               "NBparamMAX = %d\n",
-               __FILE__, __LINE__,
-               SM_fname, NBparamMAX);
+               "NBparamMAX = %d\n", __FILE__, __LINE__, SM_fname, NBparamMAX);
     fflush(stdout);
 
     sharedsize = sizeof(FUNCTION_PARAMETER_STRUCT_MD);
@@ -56,8 +54,7 @@ errno_t function_parameter_struct_create(
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
     if(SM_fd == -1)
     {
-        PRINT_ERROR("open(%s) failed: %s",
-                    SM_fname, strerror(errno));
+        PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
         goto fail;
     }
 
@@ -71,8 +68,7 @@ errno_t function_parameter_struct_create(
 
     if(write(SM_fd, "", 1) != 1)
     {
-        PRINT_ERROR("write last byte failed: %s",
-                    strerror(errno));
+        PRINT_ERROR("write last byte failed: %s", strerror(errno));
         goto fail;
     }
 
@@ -80,8 +76,7 @@ errno_t function_parameter_struct_create(
              mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
     if(fps.md == MAP_FAILED)
     {
-        PRINT_ERROR("mmap(%s) failed: %s",
-                    SM_fname, strerror(errno));
+        PRINT_ERROR("mmap(%s) failed: %s", SM_fname, strerror(errno));
         goto fail;
     }
 
@@ -96,13 +91,9 @@ errno_t function_parameter_struct_create(
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
 
     // Use global defaults
-    strncpy(fps.md->callprogname,
-            FPS_callprogname,
-            FPS_CALLPROGNAME_STRMAXLEN - 1);
+    strncpy(fps.md->callprogname, FPS_callprogname, FPS_CALLPROGNAME_STRMAXLEN - 1);
 
-    strncpy(fps.md->callfuncname,
-            FPS_callfuncname,
-            FPS_CALLFUNCNAME_STRMAXLEN - 1);
+    strncpy(fps.md->callfuncname, FPS_callfuncname, FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
     {
         char path[512];
@@ -146,15 +137,11 @@ errno_t function_parameter_struct_create(
     char *kwarray = getenv("FPS_KEYWORDARRAY");
     if(kwarray)
     {
-        strncpy(fps.md->keywordarray,
-                kwarray,
-                FPS_KEYWORDARRAY_STRMAXLEN - 1);
+        strncpy(fps.md->keywordarray, kwarray, FPS_KEYWORDARRAY_STRMAXLEN - 1);
     }
     else
     {
-        strncpy(fps.md->keywordarray,
-                ":",
-                FPS_KEYWORDARRAY_STRMAXLEN - 1);
+        strncpy(fps.md->keywordarray, ":", FPS_KEYWORDARRAY_STRMAXLEN - 1);
     }
 
     // write currently loaded modules to fps
@@ -175,9 +162,7 @@ errno_t function_parameter_struct_create(
 
             if(strlen(mname) > 0)
             {
-                strncpy(fps.md->modulename[fps.md->NBmodule],
-                        mname,
-                        FPS_MODULE_STRMAXLEN - 1);
+                strncpy(fps.md->modulename[fps.md->NBmodule], mname, FPS_MODULE_STRMAXLEN - 1);
                 fps.md->NBmodule++;
             }
         }
@@ -243,12 +228,7 @@ errno_t function_parameter_struct_realloc(
 
     // 3. Remap
     fps->md = (FUNCTION_PARAMETER_STRUCT_MD *)
-              mmap(0,
-                   sharedsize_new,
-                   PROT_READ | PROT_WRITE,
-                   MAP_SHARED,
-                   fps->SMfd,
-                   0);
+              mmap(0, sharedsize_new, PROT_READ | PROT_WRITE, MAP_SHARED, fps->SMfd, 0);
     if(fps->md == MAP_FAILED)
     {
         PRINT_ERROR("Error re-mmapping the file: %s", strerror(errno));
@@ -261,8 +241,7 @@ errno_t function_parameter_struct_realloc(
 
     // 4. Initialize new part
     memset(&fps->parray[fps->md->NBparamMAX],
-           0,
-           (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FPS_PARAM));
+           0, (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FPS_PARAM));
 
     fps->md->NBparamMAX = NBparamMAX_new;
 

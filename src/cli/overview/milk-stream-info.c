@@ -63,32 +63,19 @@ static const char *dtype_name(uint8_t dt)
 {
     switch(dt)
     {
-    case _DATATYPE_UINT8:
-        return "UINT8";
-    case _DATATYPE_INT8:
-        return "INT8";
-    case _DATATYPE_UINT16:
-        return "UINT16";
-    case _DATATYPE_INT16:
-        return "INT16";
-    case _DATATYPE_UINT32:
-        return "UINT32";
-    case _DATATYPE_INT32:
-        return "INT32";
-    case _DATATYPE_UINT64:
-        return "UINT64";
-    case _DATATYPE_INT64:
-        return "INT64";
-    case _DATATYPE_FLOAT:
-        return "FLOAT";
-    case _DATATYPE_DOUBLE:
-        return "DOUBLE";
-    case _DATATYPE_COMPLEX_FLOAT:
-        return "COMPLEX_FLOAT";
-    case _DATATYPE_COMPLEX_DOUBLE:
-        return "COMPLEX_DOUBLE";
-    default:
-        return "UNKNOWN";
+    case _DATATYPE_UINT8: return "UINT8";
+    case _DATATYPE_INT8: return "INT8";
+    case _DATATYPE_UINT16: return "UINT16";
+    case _DATATYPE_INT16: return "INT16";
+    case _DATATYPE_UINT32: return "UINT32";
+    case _DATATYPE_INT32: return "INT32";
+    case _DATATYPE_UINT64: return "UINT64";
+    case _DATATYPE_INT64: return "INT64";
+    case _DATATYPE_FLOAT: return "FLOAT";
+    case _DATATYPE_DOUBLE: return "DOUBLE";
+    case _DATATYPE_COMPLEX_FLOAT: return "COMPLEX_FLOAT";
+    case _DATATYPE_COMPLEX_DOUBLE: return "COMPLEX_DOUBLE";
+    default: return "UNKNOWN";
     }
 }
 
@@ -96,25 +83,13 @@ static unsigned int dtype_bytes(uint8_t dt)
 {
     switch(dt)
     {
-    case _DATATYPE_UINT8:
-    case _DATATYPE_INT8:
-        return 1;
-    case _DATATYPE_UINT16:
-    case _DATATYPE_INT16:
-        return 2;
-    case _DATATYPE_UINT32:
-    case _DATATYPE_INT32:
-    case _DATATYPE_FLOAT:
-        return 4;
+    case _DATATYPE_UINT8: case _DATATYPE_INT8: return 1;
+    case _DATATYPE_UINT16: case _DATATYPE_INT16: return 2;
+    case _DATATYPE_UINT32: case _DATATYPE_INT32: case _DATATYPE_FLOAT: return 4;
     case _DATATYPE_UINT64:
-    case _DATATYPE_INT64:
-    case _DATATYPE_DOUBLE:
-    case _DATATYPE_COMPLEX_FLOAT:
-        return 8;
-    case _DATATYPE_COMPLEX_DOUBLE:
-        return 16;
-    default:
-        return 0;
+    case _DATATYPE_INT64: case _DATATYPE_DOUBLE: case _DATATYPE_COMPLEX_FLOAT: return 8;
+    case _DATATYPE_COMPLEX_DOUBLE: return 16;
+    default: return 0;
     }
 }
 
@@ -131,12 +106,9 @@ static const char *pid_status_str(pid_t pid)
     ov_pid_status_t st = pid_get_status(pid);
     switch(st)
     {
-    case OV_PID_ALIVE:
-        return C_ALIVE "ALIVE" C_RST;
-    case OV_PID_ZOMBIE:
-        return C_WARN "ZOMBIE" C_RST;
-    default:
-        return C_DEAD "DEAD" C_RST;
+    case OV_PID_ALIVE: return C_ALIVE "ALIVE" C_RST;
+    case OV_PID_ZOMBIE: return C_WARN "ZOMBIE" C_RST;
+    default: return C_DEAD "DEAD" C_RST;
     }
 }
 
@@ -167,113 +139,74 @@ static void print_stream_info(
     const OV_STREAM *s = &m->streams[si];
 
     /* ---- Header ---- */
-    printf(C_TITLE
-           "========================================"
-           "================\n" C_RST);
+    printf(C_TITLE "========================================" "================\n" C_RST);
+    printf(C_LABEL " %-20s" C_RST ": " C_NAME "%s" C_RST "\n", "Stream Name", s->name);
     printf(C_LABEL " %-20s" C_RST ": "
-           C_NAME "%s" C_RST "\n",
-           "Stream Name", s->name);
-    printf(C_LABEL " %-20s" C_RST ": "
-           C_VAL "%s (%d)" C_RST "\n",
-           "Data Type",
-           dtype_name(s->datatype),
-           s->datatype);
+           C_VAL "%s (%d)" C_RST "\n", "Data Type", dtype_name(s->datatype), s->datatype);
 
     /* Dimensions */
     {
         char dimstr[64];
         if(s->naxis == 1)
         {
-            snprintf(dimstr, sizeof(dimstr),
-                     "1D  %u",
-                     (unsigned) s->size[0]);
+            snprintf(dimstr, sizeof(dimstr), "1D  %u", (unsigned) s->size[0]);
         }
         else if(s->naxis == 2)
         {
             snprintf(dimstr, sizeof(dimstr),
-                     "2D  %u x %u",
-                     (unsigned) s->size[0],
-                     (unsigned) s->size[1]);
+                     "2D  %u x %u", (unsigned) s->size[0], (unsigned) s->size[1]);
         }
         else
         {
             snprintf(dimstr, sizeof(dimstr),
                      "3D  %u x %u x %u",
-                     (unsigned) s->size[0],
-                     (unsigned) s->size[1],
-                     (unsigned) s->size[2]);
+                     (unsigned) s->size[0], (unsigned) s->size[1], (unsigned) s->size[2]);
         }
-        printf(C_LABEL " %-20s" C_RST ": "
-               C_VAL "%s" C_RST "\n",
-               "Dimensions", dimstr);
+        printf(C_LABEL " %-20s" C_RST ": " C_VAL "%s" C_RST "\n", "Dimensions", dimstr);
     }
 
     printf(C_LABEL " %-20s" C_RST ": "
-           C_VAL "%" PRIu64 C_RST "\n",
-           "Elements",
-           (uint64_t) s->nelement);
+           C_VAL "%" PRIu64 C_RST "\n", "Elements", (uint64_t) s->nelement);
 
     {
-        uint64_t bytes =
-            (uint64_t) s->nelement
-            * dtype_bytes(s->datatype);
-        printf(C_LABEL " %-20s" C_RST ": "
-               C_VAL "%" PRIu64 " bytes" C_RST "\n",
-               "Memory", bytes);
+        uint64_t bytes = (uint64_t) s->nelement * dtype_bytes(s->datatype);
+        printf(C_LABEL " %-20s" C_RST ": " C_VAL "%" PRIu64 " bytes" C_RST "\n", "Memory", bytes);
     }
 
-    printf(C_LABEL " %-20s" C_RST ": "
-           C_VAL "%" PRIu64 C_RST "\n",
-           "Inode",
-           (uint64_t) s->inode);
-    printf(C_TITLE
-           "========================================"
-           "================\n" C_RST);
+    printf(C_LABEL " %-20s" C_RST ": " C_VAL "%" PRIu64 C_RST "\n", "Inode", (uint64_t) s->inode);
+    printf(C_TITLE "========================================" "================\n" C_RST);
 
     /* ---- Ownership ---- */
     printf("\n" C_HDR " Ownership" C_RST "\n");
     {
-        const char *cname =
-            proc_name_by_pid(m, s->creatorPID);
-        printf("   %-18s: " C_PROC "%d" C_RST,
-               "Creator PID",
-               (int) s->creatorPID);
+        const char *cname = proc_name_by_pid(m, s->creatorPID);
+        printf("   %-18s: " C_PROC "%d" C_RST, "Creator PID", (int) s->creatorPID);
         if(cname)
         {
             printf(" (%s)", cname);
         }
-        printf(" [%s]\n",
-               pid_status_str(s->creatorPID));
+        printf(" [%s]\n", pid_status_str(s->creatorPID));
     }
     {
-        const char *oname =
-            proc_name_by_pid(m, s->ownerPID);
-        printf("   %-18s: " C_PROC "%d" C_RST,
-               "Owner PID",
-               (int) s->ownerPID);
+        const char *oname = proc_name_by_pid(m, s->ownerPID);
+        printf("   %-18s: " C_PROC "%d" C_RST, "Owner PID", (int) s->ownerPID);
         if(oname)
         {
             printf(" (%s)", oname);
         }
-        printf(" [%s]\n",
-               pid_status_str(s->ownerPID));
+        printf(" [%s]\n", pid_status_str(s->ownerPID));
     }
 
     /* ---- Counters ---- */
     printf("\n" C_HDR " Counters" C_RST "\n");
-    printf("   %-18s: " C_VAL "%" PRIu64 C_RST "\n",
-           "cnt0",
-           (uint64_t) s->cnt0);
+    printf("   %-18s: " C_VAL "%" PRIu64 C_RST "\n", "cnt0", (uint64_t) s->cnt0);
     if(s->update_hz > 0.01)
     {
-        printf("   %-18s: " C_VAL "%.1f Hz"
-               C_RST "\n",
-               "Update rate", s->update_hz);
+        printf("   %-18s: " C_VAL "%.1f Hz" C_RST "\n", "Update rate", s->update_hz);
     }
 
     /* ---- Semaphores ---- */
-    printf("\n" C_HDR " Semaphores" C_RST
-           " (%d active)\n", s->nb_sem);
+    printf("\n" C_HDR " Semaphores" C_RST " (%d active)\n", s->nb_sem);
     if(s->nb_sem > 0)
     {
         printf("   ");
@@ -285,15 +218,12 @@ static void print_stream_info(
     }
 
     /* ---- Connections (from graph) ---- */
-    printf("\n" C_HDR " Connections"
-           C_RST " (from system graph)\n");
+    printf("\n" C_HDR " Connections" C_RST " (from system graph)\n");
 
     int sni = s->node_idx;
     if(sni < 0)
     {
-        printf("   " C_DIM
-               "(stream not in graph)"
-               C_RST "\n");
+        printf("   " C_DIM "(stream not in graph)" C_RST "\n");
     }
     else
     {
@@ -321,10 +251,7 @@ static void print_stream_info(
             }
             int pi = m->nodes[ni].index;
             printf("   %-18s: " C_PROC "%s"
-                   C_RST " (PID %d)\n",
-                   "Written by",
-                   m->procs[pi].name,
-                   (int) m->procs[pi].PID);
+                   C_RST " (PID %d)\n", "Written by", m->procs[pi].name, (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -352,10 +279,7 @@ static void print_stream_info(
             }
             int pi = m->nodes[ni].index;
             printf("   %-18s: " C_PROC "%s"
-                   C_RST " (PID %d)\n",
-                   "Triggers",
-                   m->procs[pi].name,
-                   (int) m->procs[pi].PID);
+                   C_RST " (PID %d)\n", "Triggers", m->procs[pi].name, (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -382,9 +306,7 @@ static void print_stream_info(
             int pi = m->nodes[ni].index;
             printf("   %-18s: " C_PROC "%s"
                    C_RST " (PID %d)\n",
-                   "Read by (sem)",
-                   m->procs[pi].name,
-                   (int) m->procs[pi].PID);
+                   "Read by (sem)", m->procs[pi].name, (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -409,10 +331,7 @@ static void print_stream_info(
                 continue;
             }
             int fi = m->nodes[ni].index;
-            printf("   %-18s: " C_FPS "%s"
-                   C_RST "\n",
-                   "FPS input to",
-                   m->fps[fi].name);
+            printf("   %-18s: " C_FPS "%s" C_RST "\n", "FPS input to", m->fps[fi].name);
             found_any = 1;
         }
 
@@ -437,40 +356,30 @@ static void print_stream_info(
                 continue;
             }
             int fi = m->nodes[ni].index;
-            printf("   %-18s: " C_FPS "%s"
-                   C_RST "\n",
-                   "FPS output of",
-                   m->fps[fi].name);
+            printf("   %-18s: " C_FPS "%s" C_RST "\n", "FPS output of", m->fps[fi].name);
             found_any = 1;
         }
 
         if(!found_any)
         {
-            printf("   " C_DIM
-                   "(no connections found)"
-                   C_RST "\n");
+            printf("   " C_DIM "(no connections found)" C_RST "\n");
         }
     }
 
     /* ---- Process trace ---- */
     if(s->nb_proctrace > 0)
     {
-        printf("\n" C_HDR " Process Trace"
-               C_RST " (STREAM_PROC_TRACE)\n");
+        printf("\n" C_HDR " Process Trace" C_RST " (STREAM_PROC_TRACE)\n");
         for(int t = 0;
                 t < s->nb_proctrace; t++)
         {
-            const char *pn =
-                proc_name_by_pid(
-                    m, s->proctrace_pid[t]);
+            const char *pn = proc_name_by_pid(m, s->proctrace_pid[t]);
             printf("   [%d] PID=%-6d"
                    "  trig_inode=%-8" PRIu64
                    "  mode=%d",
                    t,
                    (int) s->proctrace_pid[t],
-                   (uint64_t)
-                   s->proctrace_inode[t],
-                   s->proctrace_trigmode[t]);
+                   (uint64_t) s->proctrace_inode[t], s->proctrace_trigmode[t]);
             if(pn)
             {
                 printf("  (%s)", pn);
@@ -532,8 +441,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                SI_ONELINE, SI_DESC_LONG);
+    int action = milk_help_init(argc, argv, SI_ONELINE, SI_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -560,8 +468,7 @@ int main(
         {
         case 'h':
             break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -582,13 +489,10 @@ int main(
     ov_model_full_scan(&model);
 
     /* Find the requested stream */
-    int si = ov_find_stream_by_name(
-                 &model, stream_name);
+    int si = ov_find_stream_by_name(&model, stream_name);
     if(si < 0)
     {
-        PRINT_ERROR(
-            "stream '%s' not found in shared memory",
-            stream_name);
+        PRINT_ERROR("stream '%s' not found in shared memory", stream_name);
         ov_scan_cache_cleanup();
         return 1;
     }

@@ -41,8 +41,7 @@ imageID image_ID(
             {
                 loopOK = 0;
                 tmpID  = i;
-                clock_gettime(CLOCK_MILK,
-                              &imagearray[i].md[0].lastaccesstime);
+                clock_gettime(CLOCK_MILK, &imagearray[i].md[0].lastaccesstime);
             }
         }
         i++;
@@ -140,9 +139,7 @@ imageID next_avail_image_ID(
 #endif
     if(ID == -1)
     {
-        PRINT_ERROR("ran out of image IDs"
-                    " (NB_MAX_IMAGE=%ld)",
-                    dcnimg);
+        PRINT_ERROR("ran out of image IDs" " (NB_MAX_IMAGE=%ld)", dcnimg);
     }
 
     DEBUG_TRACEPOINT("FOUT ID : %ld", ID);

@@ -82,8 +82,7 @@ void processinfo_scan_step(PROCINFOPROC *pinfop)
             if(pinfop->pinfommapped[pindex] == 1)
             {
                 if(pinfop->pinfoarray[pindex] != NULL)
-                    processinfo_shm_close(pinfop->pinfoarray[pindex],
-                                          pinfop->fdarray[pindex]);
+                    processinfo_shm_close(pinfop->pinfoarray[pindex], pinfop->fdarray[pindex]);
                 pinfop->pinfommapped[pindex] = 0;
                 pinfop->pinfoarray[pindex] = NULL;
             }
@@ -101,8 +100,7 @@ void processinfo_scan_step(PROCINFOPROC *pinfop)
             WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex],
                                (int) pinfolist->PIDarray[pindex]);
 
-            pinfop->pinfoarray[pindex] = processinfo_shm_link(SM_fname,
-                                         &pinfop->fdarray[pindex]);
+            pinfop->pinfoarray[pindex] = processinfo_shm_link(SM_fname, &pinfop->fdarray[pindex]);
 
             if(pinfop->pinfoarray[pindex] == (PROCESSINFO *) MAP_FAILED)
             {

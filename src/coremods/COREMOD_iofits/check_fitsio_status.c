@@ -38,13 +38,7 @@ int check_FITSIO_status(
                     (char) 27,
                     1,
                     31,
-                    COREMOD_iofits_data.FITSIO_status,
-                    cfile,
-                    cfunc,
-                    cline,
-                    errstr,
-                    (char) 27,
-                    0);
+                    COREMOD_iofits_data.FITSIO_status, cfile, cfunc, cline, errstr, (char) 27, 0);
         }
         Ferr = COREMOD_iofits_data.FITSIO_status;
     }

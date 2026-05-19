@@ -62,20 +62,14 @@ PROCESSINFO *processinfo_shm_create(
 
     DEBUG_TRACEPOINT(" ");
 
-    strncpy(pinfolist->pnamearray[pindex],
-            pname,
-            STRINGMAXLEN_PROCESSINFO_NAME - 1);
+    strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
 
     DEBUG_TRACEPOINT("getting procdname");
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
 
-    WRITE_FULLFILENAME(SM_fname,
-                       "%s/proc.%s.%06d.shm",
-                       procdname,
-                       pname,
-                       (int) PID);
+    WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
 
     DEBUG_TRACEPOINT("SM_fname = %s", SM_fname);
 
@@ -83,8 +77,7 @@ PROCESSINFO *processinfo_shm_create(
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
     if(SM_fd == -1)
     {
-        PRINT_ERROR("open(%s) failed: %s",
-                    SM_fname, strerror(errno));
+        PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
         goto fail;
     }
 
@@ -96,17 +89,14 @@ PROCESSINFO *processinfo_shm_create(
 
     if(write(SM_fd, "", 1) != 1)
     {
-        PRINT_ERROR("write last byte failed: %s",
-                    strerror(errno));
+        PRINT_ERROR("write last byte failed: %s", strerror(errno));
         goto fail;
     }
 
-    pinfo = (PROCESSINFO *)
-            mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+    pinfo = (PROCESSINFO *) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
     if(pinfo == MAP_FAILED)
     {
-        PRINT_ERROR("mmap(%s) failed: %s",
-                    SM_fname, strerror(errno));
+        PRINT_ERROR("mmap(%s) failed: %s", SM_fname, strerror(errno));
         pinfo = NULL;
         goto fail;
     }
@@ -118,8 +108,7 @@ PROCESSINFO *processinfo_shm_create(
     pinfolist->createtime[pindex] =
         1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
 
-    strncpy(pinfo->name, pname,
-            STRINGMAXLEN_PROCESSINFO_NAME - 1);
+    strncpy(pinfo->name, pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
     pinfo->name[STRINGMAXLEN_PROCESSINFO_NAME - 1] = '\0';
 
     pinfolist->active[pindex] = 1;
@@ -207,10 +196,7 @@ PROCESSINFO *processinfo_shm_create(
         int slen = snprintf(pinfo->logfilename,
                             STRINGMAXLEN_PROCESSINFO_LOGFILENAME,
                             "%s/proc.%s.%06d.%09ld.logfile",
-                            procdname,
-                            pinfo->name,
-                            (int) pinfo->PID,
-                            tnow.tv_sec);
+                            procdname, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");

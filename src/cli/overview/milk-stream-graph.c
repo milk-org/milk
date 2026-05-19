@@ -129,8 +129,7 @@ static void sg_raw_exit(void)
     {
         return;
     }
-    tcsetattr(STDIN_FILENO, TCSAFLUSH,
-              &sg_orig_termios);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &sg_orig_termios);
     /* Show cursor, reset attrs */
     printf("\033[?25h" SGC_RESET "\n");
     fflush(stdout);
@@ -170,8 +169,7 @@ static void print_usage(
            mh_color ? MH_OPT : "", "-i, --interactive",
            mh_color ? MH_RST : "", "Interactive navigation");
     printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-d DIR",
-           mh_color ? MH_RST : "", "Override SHM directory");
+           mh_color ? MH_OPT : "", "-d DIR", mh_color ? MH_RST : "", "Override SHM directory");
     printf("  %s%-25s%s %s (default: %d)\n",
            mh_color ? MH_OPT : "", "--depth N",
            mh_color ? MH_RST : "", "Max traversal depth", SG_MAX_DEPTH);
@@ -245,18 +243,13 @@ static void sg_print_text(
     printf("# milk-stream-graph v%s\n", SG_VERSION);
     printf("# stream: %s\n", stream_name);
     printf("# mode: %s\n", sg_mode_label(mode));
-    printf("# has_loop: %s\n",
-           lin->has_loop ? "yes" : "no");
+    printf("# has_loop: %s\n", lin->has_loop ? "yes" : "no");
 
     for(int i = 0; i < lin->nb_ancestors; i++)
     {
-        const SG_LINEAGE_ENTRY *e =
-            &lin->ancestors[i];
-        const char *sn =
-            m->streams[e->stream_idx].name;
-        printf("ANCESTOR  depth=%d  stream=%s"
-               "  via=%s",
-               e->depth, sn, e->via_name);
+        const SG_LINEAGE_ENTRY *e = &lin->ancestors[i];
+        const char *sn = m->streams[e->stream_idx].name;
+        printf("ANCESTOR  depth=%d  stream=%s" "  via=%s", e->depth, sn, e->via_name);
         if(e->is_loop)
         {
             printf("  LOOP");
@@ -266,13 +259,9 @@ static void sg_print_text(
 
     for(int i = 0; i < lin->nb_descendants; i++)
     {
-        const SG_LINEAGE_ENTRY *e =
-            &lin->descendants[i];
-        const char *sn =
-            m->streams[e->stream_idx].name;
-        printf("DESCENDANT  depth=%d  stream=%s"
-               "  via=%s",
-               e->depth, sn, e->via_name);
+        const SG_LINEAGE_ENTRY *e = &lin->descendants[i];
+        const char *sn = m->streams[e->stream_idx].name;
+        printf("DESCENDANT  depth=%d  stream=%s" "  via=%s", e->depth, sn, e->via_name);
         if(e->is_loop)
         {
             printf("  LOOP");
@@ -289,9 +278,7 @@ static void sg_print_text(
             {
                 printf(" -> ");
             }
-            printf("%s",
-                   m->streams[
-                       lin->cycle_path[i]].name);
+            printf("%s", m->streams[lin->cycle_path[i]].name);
         }
         printf("\n");
     }
@@ -309,17 +296,14 @@ static void sg_print_json(
 {
     printf("{\n");
     printf("  \"stream\": \"%s\",\n", stream_name);
-    printf("  \"mode\": \"%s\",\n",
-           sg_mode_label(mode));
-    printf("  \"has_loop\": %s,\n",
-           lin->has_loop ? "true" : "false");
+    printf("  \"mode\": \"%s\",\n", sg_mode_label(mode));
+    printf("  \"has_loop\": %s,\n", lin->has_loop ? "true" : "false");
 
     /* ancestors */
     printf("  \"ancestors\": [");
     for(int i = 0; i < lin->nb_ancestors; i++)
     {
-        const SG_LINEAGE_ENTRY *e =
-            &lin->ancestors[i];
+        const SG_LINEAGE_ENTRY *e = &lin->ancestors[i];
         if(i > 0)
         {
             printf(",");
@@ -329,8 +313,7 @@ static void sg_print_json(
                " \"via\": \"%s\","
                " \"is_loop\": %s}",
                m->streams[e->stream_idx].name,
-               e->depth, e->via_name,
-               e->is_loop ? "true" : "false");
+               e->depth, e->via_name, e->is_loop ? "true" : "false");
     }
     printf("\n  ],\n");
 
@@ -338,8 +321,7 @@ static void sg_print_json(
     printf("  \"descendants\": [");
     for(int i = 0; i < lin->nb_descendants; i++)
     {
-        const SG_LINEAGE_ENTRY *e =
-            &lin->descendants[i];
+        const SG_LINEAGE_ENTRY *e = &lin->descendants[i];
         if(i > 0)
         {
             printf(",");
@@ -349,8 +331,7 @@ static void sg_print_json(
                " \"via\": \"%s\","
                " \"is_loop\": %s}",
                m->streams[e->stream_idx].name,
-               e->depth, e->via_name,
-               e->is_loop ? "true" : "false");
+               e->depth, e->via_name, e->is_loop ? "true" : "false");
     }
     printf("\n  ],\n");
 
@@ -365,9 +346,7 @@ static void sg_print_json(
             {
                 printf(", ");
             }
-            printf("\"%s\"",
-                   m->streams[
-                       lin->cycle_path[i]].name);
+            printf("\"%s\"", m->streams[lin->cycle_path[i]].name);
         }
     }
     printf("]\n");
@@ -388,9 +367,7 @@ static void sg_print_pretty(
            "Stream Graph" SGC_RESET
            SGC_TEXT "  stream: "
            SGC_BOLD SGC_STREAM "%s" SGC_RESET
-           SGC_TEXT "  mode: "
-           SGC_FPS "%s" SGC_RESET "\n\n",
-           stream_name, sg_mode_label(mode));
+           SGC_TEXT "  mode: " SGC_FPS "%s" SGC_RESET "\n\n", stream_name, sg_mode_label(mode));
 
     if(lin->nb_ancestors == 0 && lin->nb_descendants == 0)
     {
@@ -446,19 +423,15 @@ static void sg_print_pretty(
     /* Cycle info */
     if(lin->has_loop && lin->cycle_len > 0)
     {
-        printf(SGC_BOLD SGC_LOOP
-               " Cycle detected:" SGC_RESET " ");
+        printf(SGC_BOLD SGC_LOOP " Cycle detected:" SGC_RESET " ");
         for(int i = 0;
                 i < lin->cycle_len; i++)
         {
             if(i > 0)
             {
-                printf(SGC_ARROW " -> "
-                       SGC_RESET);
+                printf(SGC_ARROW " -> " SGC_RESET);
             }
-            printf(SGC_STREAM "%s" SGC_RESET,
-                   m->streams[
-                       lin->cycle_path[i]].name);
+            printf(SGC_STREAM "%s" SGC_RESET, m->streams[lin->cycle_path[i]].name);
         }
         printf("\n\n");
     }
@@ -483,10 +456,8 @@ static void sg_interactive(
     sigaction(SIGTERM, &sa, NULL);
 
     char current_stream[STRINGMAXLEN_IMAGE_NAME];
-    strncpy(current_stream, initial_stream,
-            sizeof(current_stream) - 1);
-    current_stream[
-     sizeof(current_stream) - 1] = '\0';
+    strncpy(current_stream, initial_stream, sizeof(current_stream) - 1);
+    current_stream[sizeof(current_stream) - 1] = '\0';
 
     int sel = 0;
     int need_scan = 1;
@@ -501,18 +472,15 @@ static void sg_interactive(
             need_scan = 0;
         }
 
-        int si = ov_find_stream_by_name(
-                     model, current_stream);
+        int si = ov_find_stream_by_name(model, current_stream);
 
         memset(&lin, 0, sizeof(lin));
         if(si >= 0)
         {
-            sg_compute_lineage(
-                model, si, mode, &lin);
+            sg_compute_lineage(model, si, mode, &lin);
         }
 
-        total_items = lin.nb_ancestors
-                      + lin.nb_descendants + 1;
+        total_items = lin.nb_ancestors + lin.nb_descendants + 1;
         if(sel >= total_items && total_items > 0)
         {
             sel = total_items - 1;
@@ -530,19 +498,12 @@ static void sg_interactive(
                "  stream: " SGC_BOLD SGC_STREAM
                "%s" SGC_RESET
                SGC_TEXT "  mode: " SGC_FPS "%s"
-               SGC_RESET "\n",
-               current_stream,
-               sg_mode_label(mode));
-        printf(SGC_DIM
-               " q:quit r:rescan t/i/f:mode"
-               " ENTER:re-root g:goto"
-               SGC_RESET "\n\n");
+               SGC_RESET "\n", current_stream, sg_mode_label(mode));
+        printf(SGC_DIM " q:quit r:rescan t/i/f:mode" " ENTER:re-root g:goto" SGC_RESET "\n\n");
 
         if(si < 0)
         {
-            printf(SGC_LOOP
-                   "  Stream '%s' not found\n"
-                   SGC_RESET, current_stream);
+            printf(SGC_LOOP "  Stream '%s' not found\n" SGC_RESET, current_stream);
         }
         else
         {
@@ -620,21 +581,15 @@ static void sg_interactive(
             if(lin.has_loop
                     && lin.cycle_len > 0)
             {
-                printf("\n" SGC_BOLD SGC_LOOP
-                       " Cycle:" SGC_RESET " ");
+                printf("\n" SGC_BOLD SGC_LOOP " Cycle:" SGC_RESET " ");
                 for(int c = 0;
                         c < lin.cycle_len; c++)
                 {
                     if(c > 0)
                     {
-                        printf(SGC_ARROW " -> "
-                               SGC_RESET);
+                        printf(SGC_ARROW " -> " SGC_RESET);
                     }
-                    printf(SGC_STREAM "%s"
-                           SGC_RESET,
-                           model->streams[
-                               lin.cycle_path[c]]
-                           .name);
+                    printf(SGC_STREAM "%s" SGC_RESET, model->streams[lin.cycle_path[c]] .name);
                 }
                 printf("\n");
             }
@@ -652,8 +607,7 @@ static void sg_interactive(
         }
 
         char buf[8];
-        int n = (int) read(
-                    STDIN_FILENO, buf, sizeof(buf));
+        int n = (int) read(STDIN_FILENO, buf, sizeof(buf));
         if(n <= 0)
         {
             continue;
@@ -701,10 +655,7 @@ static void sg_interactive(
 
                 if(idx >= 0)
                 {
-                    strncpy(current_stream,
-                            model->streams[idx].name,
-                            sizeof(current_stream)
-                            - 1);
+                    strncpy(current_stream, model->streams[idx].name, sizeof(current_stream) - 1);
                     sel = 0;
                     need_scan = 1;
                 }
@@ -728,9 +679,7 @@ static void sg_interactive(
                 }
                 if(name[0] != '\0')
                 {
-                    strncpy(current_stream, name,
-                            sizeof(current_stream)
-                            - 1);
+                    strncpy(current_stream, name, sizeof(current_stream) - 1);
                     sel = 0;
                     need_scan = 1;
                 }
@@ -770,8 +719,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                SG_ONELINE, SG_DESC_LONG);
+    int action = milk_help_init(argc, argv, SG_ONELINE, SG_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -831,8 +779,7 @@ int main(
         if(strcmp(argv[i], "-d") == 0
                 && i + 1 < argc)
         {
-            setenv("MILK_SHM_DIR",
-                   argv[++i], 1);
+            setenv("MILK_SHM_DIR", argv[++i], 1);
             continue;
         }
         if(strcmp(argv[i], "--depth") == 0
@@ -879,12 +826,10 @@ int main(
     /* One-shot mode */
     sg_scan_model(model);
 
-    int si = ov_find_stream_by_name(
-                 model, stream_name);
+    int si = ov_find_stream_by_name(model, stream_name);
     if(si < 0)
     {
-        PRINT_ERROR("stream '%s' not found",
-                    stream_name);
+        PRINT_ERROR("stream '%s' not found", stream_name);
         free(model);
         return 1;
     }
@@ -894,17 +839,11 @@ int main(
 
     switch(output)
     {
-    case OUT_TEXT:
-        sg_print_text(
-            model, stream_name, mode, &lin);
+    case OUT_TEXT: sg_print_text(model, stream_name, mode, &lin);
         break;
-    case OUT_PRETTY:
-        sg_print_pretty(
-            model, stream_name, mode, &lin);
+    case OUT_PRETTY: sg_print_pretty(model, stream_name, mode, &lin);
         break;
-    case OUT_JSON:
-        sg_print_json(
-            model, stream_name, mode, &lin);
+    case OUT_JSON: sg_print_json(model, stream_name, mode, &lin);
         break;
     }
 

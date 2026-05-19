@@ -37,8 +37,7 @@ void *streamCTRL_scan(
     static int  firstIter = 1;
 
     // get input pointers
-    streamCTRLarg_struct *streamCTRLdata =
-        (streamCTRLarg_struct *) argptr;
+    streamCTRLarg_struct *streamCTRLdata = (streamCTRLarg_struct *) argptr;
 
     STREAMINFOPROC *streaminfoproc = streamCTRLdata->streaminfoproc;
     IMAGE          *images         = streamCTRLdata->images;
@@ -84,9 +83,7 @@ void *streamCTRL_scan(
         // look for streams on filesystem
         // NBsindex is total nymber of streams found
         //
-        NBsindex = find_streams(streaminfo,
-                                streaminfoproc->filter,
-                                streaminfoproc->namefilter);
+        NBsindex = find_streams(streaminfo, streaminfoproc->filter, streaminfoproc->namefilter);
 
         /* Publish immediately: TUI can render stream names right away.
          * IDs from the previous scan are still valid for already-open
@@ -105,9 +102,7 @@ void *streamCTRL_scan(
             fpfscan = fopen("streamCTRL_filescan.dat", "w");
             fprintf(fpfscan, "# stream scan result\n");
             fprintf(fpfscan,
-                    "filter: %d %s\n",
-                    streaminfoproc->filter,
-                    streaminfoproc->namefilter);
+                    "filter: %d %s\n", streaminfoproc->filter, streaminfoproc->namefilter);
             fprintf(fpfscan, "NBsindex = %ld\n", NBsindex);
 
             for(long sindex = 0; sindex < NBsindex; sindex++)
@@ -118,15 +113,11 @@ void *streamCTRL_scan(
                 {
                     fprintf(fpfscan,
                             "| %12s -> [ %12s ] ",
-                            streaminfo[sindex].sname,
-                            streaminfo[sindex].linkname);
+                            streaminfo[sindex].sname, streaminfo[sindex].linkname);
                 }
                 else
                 {
-                    fprintf(fpfscan,
-                            "| %12s -> [ %12s ] ",
-                            streaminfo[sindex].sname,
-                            " ");
+                    fprintf(fpfscan, "| %12s -> [%12s] ", streaminfo[sindex].sname, " ");
                 }
                 fprintf(fpfscan, "\n");
             }
@@ -187,16 +178,14 @@ void *streamCTRL_scan(
 
                     streaminfo[sindex].ISIOretval =
                         ImageStreamIO_read_sharedmem_image_toIMAGE(
-                            streaminfo[sindex].sname,
-                            &images[ID]);
+                            streaminfo[sindex].sname, &images[ID]);
 
                     // images[ID] used to keep track of each stream, even if not successfully loaded
                     // force used to be 1 even if load fails, so we can keep track of attempted loads
                     images[ID].used = 1;
                     // keep track of name
                     strncpy(images[ID].name,
-                            streaminfo[sindex].sname,
-                            STRINGMAXLEN_IMAGE_NAME - 1);
+                            streaminfo[sindex].sname, STRINGMAXLEN_IMAGE_NAME - 1);
                     images[ID].name[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
 
                     streaminfo[sindex].deltacnt0          = 1;
@@ -229,8 +218,7 @@ void *streamCTRL_scan(
                             images[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
                         streaminfo[sindex].updatevalue =
                             (1.0 - gainv) * streaminfo[sindex].updatevalue +
-                            gainv *
-                            (1.0 * streaminfo[sindex].deltacnt0 / tdiffv);
+                            gainv * (1.0 * streaminfo[sindex].deltacnt0 / tdiffv);
                     }
 
                     // keep memory of cnt0
@@ -259,18 +247,14 @@ void *streamCTRL_scan(
                     if(streaminfo[sindex].ISIOretval
                             == IMAGESTREAMIO_SUCCESS)
                     {
-                        ImageStreamIO_destroyIm(
-                            &images[ID]);
+                        ImageStreamIO_destroyIm(&images[ID]);
                     }
                     else
                     {
                         char fname[512];
-                        ImageStreamIO_filename(
-                            fname, sizeof(fname),
-                            streaminfo[sindex].sname);
+                        ImageStreamIO_filename(fname, sizeof(fname), streaminfo[sindex].sname);
                         remove(fname);
-                        ImageStreamIO_closeIm(
-                            &images[ID]);
+                        ImageStreamIO_closeIm(&images[ID]);
                     }
                 }
                 // Reset so flag does not persist
@@ -314,8 +298,7 @@ void *streamCTRL_scan(
                                             STRINGMAXLEN_COMMAND,
                                             "/bin/fuser %s/%s.im.shm "
                                             "2>/dev/null",
-                                            SHAREDSHMDIR,
-                                            streaminfo[sindexscan1].sname);
+                                            SHAREDSHMDIR, streaminfo[sindexscan1].sname);
                         if(slen < 1)
                         {
                             PRINT_ERROR("snprintf wrote <1 char");
@@ -323,9 +306,7 @@ void *streamCTRL_scan(
                         }
                         if(slen >= STRINGMAXLEN_COMMAND)
                         {
-                            PRINT_ERROR(
-                                "snprintf string "
-                                "truncation");
+                            PRINT_ERROR("snprintf string " "truncation");
                             abort(); // can't handle this error any other way
                         }
                     }
@@ -354,8 +335,7 @@ void *streamCTRL_scan(
                     char plistfname[STRINGMAXLEN_FULLFILENAME];
                     WRITE_FULLFILENAME(plistfname,
                                        "%s/%s.shmplist",
-                                       SHAREDSHMDIR,
-                                       streaminfo[sindexscan1].sname);
+                                       SHAREDSHMDIR, streaminfo[sindexscan1].sname);
 
                     {
                         int slen = snprintf(command,
@@ -363,8 +343,7 @@ void *streamCTRL_scan(
                                             "/bin/fuser %s/%s.im.shm "
                                             "2>/dev/null > %s",
                                             SHAREDSHMDIR,
-                                            streaminfo[sindexscan1].sname,
-                                            plistfname);
+                                            streaminfo[sindexscan1].sname, plistfname);
                         if(slen < 1)
                         {
                             PRINT_ERROR("snprintf wrote <1 char");
@@ -372,9 +351,7 @@ void *streamCTRL_scan(
                         }
                         if(slen >= STRINGMAXLEN_COMMAND)
                         {
-                            PRINT_ERROR(
-                                "snprintf string "
-                                "truncation");
+                            PRINT_ERROR("snprintf string " "truncation");
                             abort(); // can't handle this error any other way
                         }
                     }
@@ -412,8 +389,7 @@ void *streamCTRL_scan(
                     {
                         if(NBpid < streamOpenNBpid_MAX)
                         {
-                            streaminfo[sindexscan1].streamOpenPID[NBpid] =
-                                atoi(pch);
+                            streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
                             if(getpgid(streaminfo[sindexscan1]
                                        .streamOpenPID[NBpid]) >= 0)
                             {

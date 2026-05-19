@@ -35,12 +35,7 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
     sharedsize = SM_stat.st_size;
 
     PROCESSINFO *pinfo = (PROCESSINFO *)
-                         mmap(0,
-                              sharedsize,
-                              PROT_READ | PROT_WRITE,
-                              MAP_SHARED,
-                              SM_fd,
-                              0);
+                         mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
 
     if(pinfo == MAP_FAILED)
     {

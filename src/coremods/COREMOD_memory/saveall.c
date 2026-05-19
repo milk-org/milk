@@ -48,8 +48,7 @@ static FPS_APP_INFO FPS_app_info_snap =
     "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
 };
 
-static char p_dirname_snap[
-     FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
+static char p_dirname_snap[FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
 
 #define FPS_PARAMS_snap(X) \
     X(".dirname", p_dirname_snap, \
@@ -82,8 +81,7 @@ FPS_CMDSETTINGS_INIT(snap, CLIcmddata_snap, FPS_app_info_snap)
 
 static errno_t __attribute__((unused)) compute_snap()
 {
-    COREMOD_MEMORY_SaveAll_snapshot(
-        p_dirname_snap);
+    COREMOD_MEMORY_SaveAll_snapshot(p_dirname_snap);
     return RETURN_SUCCESS;
 }
 
@@ -102,10 +100,8 @@ static FPS_APP_INFO FPS_app_info =
     "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
 };
 
-static char p_dirname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
-static char p_trigname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_dirname[FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
+static char p_trigname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static long long p_semtrig = 3;
 static long long p_nbframes = 20;
 
@@ -154,11 +150,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    COREMOD_MEMORY_SaveAll_sequ(
-        p_dirname, p_trigname,
-        p_semtrig, p_nbframes);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    COREMOD_MEMORY_SaveAll_sequ(p_dirname, p_trigname, p_semtrig, p_nbframes);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -173,41 +166,29 @@ static errno_t CLIfunction_snap(void)
 {
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_snap,
-               farg_snap, &CLIcmddata_snap,
-               bindings_snap, nb_bindings_snap,
-               compute_snap);
+               farg_snap, &CLIcmddata_snap, bindings_snap, nb_bindings_snap, compute_snap);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_memory__saveall()
 {
     {
-        safe_fps_fill_farg_examples(
-            farg_snap, bindings_snap,
-            nb_bindings_snap);
+        safe_fps_fill_farg_examples(farg_snap, bindings_snap, nb_bindings_snap);
 
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_snap,
-                       CLIfunction_snap);
-        CLIcmddata_snap.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_snap, CLIfunction_snap);
+        CLIcmddata_snap.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        safe_fps_fill_farg_examples(
-            farg, my_bindings, nb_bindings);
+        safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -236,10 +217,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
             imcnt++;
         }
 
-    IDarray   =
-        (long *) malloc(sizeof(long) * imcnt);
-    IDarraycp =
-        (long *) malloc(sizeof(long) * imcnt);
+    IDarray   = (long *) malloc(sizeof(long) * imcnt);
+    IDarraycp = (long *) malloc(sizeof(long) * imcnt);
 
     imcnt = 0;
     for(int i = 0; i < dcnimg; i++)
@@ -251,17 +230,13 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
         }
     }
 
-    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-        "mkdir -p %s", dirname);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", dirname);
 
     for(int i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        WRITE_IMAGENAME(imnamecp,
-                        "%s_cp",
-                        dcimg[ID].name);
-        IDarraycp[i] = copy_image_ID(
-                           dcimg[ID].name, imnamecp, 0);
+        WRITE_IMAGENAME(imnamecp, "%s_cp", dcimg[ID].name);
+        IDarraycp[i] = copy_image_ID(dcimg[ID].name, imnamecp, 0);
     }
 
     list_image_ID();
@@ -270,19 +245,13 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
     for(int i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        WRITE_IMAGENAME(imnamecp,
-                        "%s_cp",
-                        dcimg[ID].name);
-        WRITE_FULLFILENAME(fnamecp,
-                           "./%s/%s.fits",
-                           dirname,
-                           dcimg[ID].name);
+        WRITE_IMAGENAME(imnamecp, "%s_cp", dcimg[ID].name);
+        WRITE_FULLFILENAME(fnamecp, "./%s/%s.fits", dirname, dcimg[ID].name);
         save_fits(imnamecp, fnamecp);
     }
 #else
     (void) fnamecp;
-    printf("WARNING: FITS save disabled"
-           " (built without cfitsio)\n");
+    printf("WARNING: FITS save disabled" " (built without cfitsio)\n");
 #endif
 
     free(IDarray);
@@ -317,12 +286,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
             imcnt++;
         }
 
-    IDarray    =
-        (imageID *) malloc(
-            sizeof(imageID) * imcnt);
-    IDarrayout =
-        (imageID *) malloc(
-            sizeof(imageID) * imcnt);
+    IDarray    = (imageID *) malloc(sizeof(imageID) * imcnt);
+    IDarrayout = (imageID *) malloc(sizeof(imageID) * imcnt);
 
     imcnt = 0;
     for(int i = 0; i < dcnimg; i++)
@@ -331,25 +296,17 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
             IDarray[imcnt] = i;
             imcnt++;
         }
-    imsizearray =
-        (uint32_t *) malloc(
-            sizeof(uint32_t) * imcnt);
+    imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * imcnt);
 
-    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-        "mkdir -p %s", dirname);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", dirname);
 
     {
-        IMGID imgtrig =
-            imgid_make_from_name(IDtrig_name);
-        resolveIMGID(
-            &imgtrig, ERRMODE_NULL,
-            dcimg,    dcnimg);
+        IMGID imgtrig = imgid_make_from_name(IDtrig_name);
+        resolveIMGID(&imgtrig, ERRMODE_NULL, dcimg,    dcnimg);
         IDtrig = imgtrig.ID;
         if(IDtrig == -1)
         {
-            fprintf(stderr,
-                    "ERROR: trigger stream \"%s\" not found\n",
-                    IDtrig_name);
+            fprintf(stderr, "ERROR: trigger stream \"%s\" not found\n", IDtrig_name);
             free(IDarray);
             free(IDarrayout);
             free(imsizearray);
@@ -362,28 +319,18 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
 
     for(int i = 0; i < imcnt; i++)
     {
-        snprintf(imnameout,
-                 sizeof(imnameout),
-                 "%s_out",
-                 dcimg[IDarray[i]].name);
+        snprintf(imnameout, sizeof(imnameout), "%s_out", dcimg[IDarray[i]].name);
         imsizearray[i] =
-            sizeof(float)
-            * dcimg[IDarray[i]].md[0].size[0]
-            * dcimg[IDarray[i]].md[0].size[1];
+            sizeof(float) * dcimg[IDarray[i]].md[0].size[0] * dcimg[IDarray[i]].md[0].size[1];
         printf(
             "Creating image %s"
             "  size %d x %d x %ld\n",
-            imnameout,
-            dcimg[IDarray[i]].md[0].size[0],
-            dcimg[IDarray[i]].md[0].size[1],
-            NBframes);
+            imnameout, dcimg[IDarray[i]].md[0].size[0], dcimg[IDarray[i]].md[0].size[1], NBframes);
         fflush(stdout);
         create_3Dimage_ID(
             imnameout,
             dcimg[IDarray[i]].md[0].size[0],
-            dcimg[IDarray[i]].md[0].size[1],
-            NBframes,
-            &(IDarrayout[i]));
+            dcimg[IDarray[i]].md[0].size[1], NBframes, &(IDarrayout[i]));
     }
     list_image_ID();
 
@@ -398,18 +345,13 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     frame = 0;
     while(frame < NBframes)
     {
-        ImageStreamIO_semwait(
-            dcimg + IDtrig, semtrig);
+        ImageStreamIO_semwait(dcimg + IDtrig, semtrig);
         for(int i = 0; i < imcnt; i++)
         {
             ID   = IDarray[i];
-            ptr0 = (char *)
-                   dcimg[IDarrayout[i]].array.F;
-            ptr1 =
-                ptr0 + imsizearray[i] * frame;
-            memcpy(ptr1,
-                   dcimg[ID].array.F,
-                   imsizearray[i]);
+            ptr0 = (char *) dcimg[IDarrayout[i]].array.F;
+            ptr1 = ptr0 + imsizearray[i] * frame;
+            memcpy(ptr1, dcimg[ID].array.F, imsizearray[i]);
         }
         frame++;
     }
@@ -423,20 +365,13 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     for(int i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        snprintf(imnameout,
-                 sizeof(imnameout),
-                 "%s_out",
-                 dcimg[ID].name);
-        snprintf(fnameout,
-                 sizeof(fnameout),
-                 "./%s/%s_out.fits",
-                 dirname, dcimg[ID].name);
+        snprintf(imnameout, sizeof(imnameout), "%s_out", dcimg[ID].name);
+        snprintf(fnameout, sizeof(fnameout), "./%s/%s_out.fits", dirname, dcimg[ID].name);
         save_fits(imnameout, fnameout);
     }
 #else
     (void) fnameout;
-    printf("WARNING: FITS save disabled"
-           " (built without cfitsio)\n");
+    printf("WARNING: FITS save disabled" " (built without cfitsio)\n");
 #endif
 
     free(IDarray);

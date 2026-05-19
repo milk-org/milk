@@ -49,8 +49,7 @@ static FPS_APP_INFO FPS_app_info_listkw =
     "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
 };
 
-static char p_listkw_imname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_listkw_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
 #define FPS_PARAMS_listkw(X) \
     X(".imname", p_listkw_imname, \
@@ -102,14 +101,10 @@ static FPS_APP_INFO FPS_app_info =
     "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
 };
 
-static char p_imname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "im1";
-static char p_kname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "kw2";
+static char p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_kname[FUNCTION_PARAMETER_STRMAXLEN] = "kw2";
 static long long p_kwval = 34;
-static char p_comment[
-     FUNCTION_PARAMETER_STRMAXLEN]
-    = "my_keyword_comment";
+static char p_comment[FUNCTION_PARAMETER_STRMAXLEN] = "my_keyword_comment";
 
 #define FPS_PARAMS(X) \
     X(".imname", p_imname, \
@@ -156,11 +151,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    image_write_keyword_L(
-        p_imname, p_kname,
-        p_kwval, p_comment);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    image_write_keyword_L(p_imname, p_kname, p_kwval, p_comment);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -176,41 +168,30 @@ static errno_t CLIfunction_listkw(void)
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_listkw,
                farg_listkw, &CLIcmddata_listkw,
-               bindings_listkw, nb_bindings_listkw,
-               compute_listkw);
+               bindings_listkw, nb_bindings_listkw, compute_listkw);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__image_keyword()
 {
     {
-        safe_fps_fill_farg_examples(
-            farg_listkw, bindings_listkw,
-            nb_bindings_listkw);
+        safe_fps_fill_farg_examples(farg_listkw, bindings_listkw, nb_bindings_listkw);
 
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_listkw,
-                       CLIfunction_listkw);
-        CLIcmddata_listkw.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_listkw, CLIfunction_listkw);
+        CLIcmddata_listkw.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        safe_fps_fill_farg_examples(
-            farg, my_bindings, nb_bindings);
+        safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -402,34 +383,27 @@ imageID image_list_keywords(
         case 'L' :
             printf(
                 "%18s  %20ld %s\n",
-                dcimg[ID].kw[kw].name,
-                dcimg[ID].kw[kw].value.numl,
-                dcimg[ID].kw[kw].comment);
+                dcimg[ID].kw[kw].name, dcimg[ID].kw[kw].value.numl, dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
 
         case 'D' :
             printf(
                 "%18s  %20lf %s\n",
-                dcimg[ID].kw[kw].name,
-                dcimg[ID].kw[kw].value.numf,
-                dcimg[ID].kw[kw].comment);
+                dcimg[ID].kw[kw].name, dcimg[ID].kw[kw].value.numf, dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
 
         case 'S' :
             printf(
                 "%18s  %20s %s\n",
-                dcimg[ID].kw[kw].name,
-                dcimg[ID].kw[kw].value.valstr,
-                dcimg[ID].kw[kw].comment);
+                dcimg[ID].kw[kw].name, dcimg[ID].kw[kw].value.valstr, dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
         }
     }
 
-    printf("%d / %d keywords set\n",
-           kwcnt, dcimg[ID].md->NBkw);
+    printf("%d / %d keywords set\n", kwcnt, dcimg[ID].md->NBkw);
 
     return ID;
 }
@@ -471,8 +445,7 @@ long image_read_keyword_D(
                         strlen(kname)) == 0))
         {
             kw0  = kw;
-            *val =
-                dcimg[ID].kw[kw].value.numf;
+            *val = dcimg[ID].kw[kw].value.numf;
         }
     }
 
@@ -514,8 +487,7 @@ long image_read_keyword_L(
                         strlen(kname)) == 0))
         {
             kw0  = kw;
-            *val =
-                dcimg[ID].kw[kw].value.numl;
+            *val = dcimg[ID].kw[kw].value.numl;
         }
     }
 

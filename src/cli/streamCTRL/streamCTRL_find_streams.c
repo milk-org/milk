@@ -65,9 +65,7 @@ int find_streams(
                 char        fullname[STRINGMAXLEN_FULLFILENAME];
 
                 snprintf(fullname, STRINGMAXLEN_FULLFILENAME,
-                         "%.700s/%.255s",
-                         SHAREDSHMDIR,
-                         dir->d_name);
+                         "%.700s/%.255s", SHAREDSHMDIR, dir->d_name);
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
@@ -85,9 +83,7 @@ int find_streams(
 
                     streaminfo[sindex].SymLink = 1;
                     snprintf(fullname_lnk, sizeof(fullname_lnk),
-                             "%.700s/%.255s",
-                             SHAREDSHMDIR,
-                             dir->d_name);
+                             "%.700s/%.255s", SHAREDSHMDIR, dir->d_name);
 
                     /* stat() follows the symlink: one syscall to check
                      * reachability, avoiding the expensive realpath(). */
@@ -100,9 +96,7 @@ int find_streams(
                     if(pathOK == 1)
                     {
                         /* readlink() gives the raw target — one syscall. */
-                        ssize_t llen = readlink(fullname_lnk,
-                                                linkbuf,
-                                                sizeof(linkbuf) - 1);
+                        ssize_t llen = readlink(fullname_lnk, linkbuf, sizeof(linkbuf) - 1);
                         if(llen <= 0)
                         {
                             pathOK = 0;
@@ -125,10 +119,8 @@ int find_streams(
                                 ii++;
                             }
                             strncpy(streaminfo[sindex].linkname,
-                                    bn,
-                                    STRINGMAXLEN_STREAMINFO_NAME - 1);
-                            streaminfo[sindex].linkname[
-                                STRINGMAXLEN_STREAMINFO_NAME - 1] = '\0';
+                                    bn, STRINGMAXLEN_STREAMINFO_NAME - 1);
+                            streaminfo[sindex].linkname[STRINGMAXLEN_STREAMINFO_NAME - 1] = '\0';
                         }
                     }
 

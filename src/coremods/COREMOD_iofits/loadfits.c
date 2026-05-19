@@ -124,9 +124,7 @@ errno_t load_fits_IMGID(
                                 FITSIO_CHECK_ERROR(status,
                                                    errmode,
                                                    "can't load %s "
-                                                   "(tried %d times)",
-                                                   file_name,
-                                                   NBtry);
+                                                   "(tried %d times)", file_name, NBtry);
                             }
                         }
                         if(tr != NBtry - 1)  // don't wait on last try
@@ -160,9 +158,7 @@ errno_t load_fits_IMGID(
             if(errmode == 1)
             {
                 PRINT_WARNING(
-                    "Image \"%s\" could not be loaded from file \"%s\"",
-                    imgout->name,
-                    file_name);
+                    "Image \"%s\" could not be loaded from file \"%s\"", imgout->name, file_name);
                 DEBUG_TRACE_FEXIT();
                 return RETURN_SUCCESS;
             }
@@ -170,9 +166,7 @@ errno_t load_fits_IMGID(
             if(errmode == 2)
             {
                 FUNC_RETURN_FAILURE(
-                    "Image \"%s\" could not be loaded from file \"%s\"",
-                    imgout->name,
-                    file_name);
+                    "Image \"%s\" could not be loaded from file \"%s\"", imgout->name, file_name);
             }
 
             if(errmode == 3)
@@ -198,10 +192,7 @@ errno_t load_fits_IMGID(
     {
         int status = 0;
         fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
-        FITSIO_CHECK_ERROR(status,
-                           errmode,
-                           "fits_get_hdrspace error on %s",
-                           file_name);
+        FITSIO_CHECK_ERROR(status, errmode, "fits_get_hdrspace error on %s", file_name);
         //printf("    nbFITSkeys = %d\n", nbFITSkeys);
     }
 
@@ -220,11 +211,7 @@ errno_t load_fits_IMGID(
         {
             int status = 0;
             fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &status);
-            FITSIO_CHECK_ERROR(status,
-                               errmode,
-                               "File %s has no NAXIS%ld",
-                               file_name,
-                               i);
+            FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS%ld", file_name, i);
             //printf("    naxis%ld = %u\n", i, naxes[i]);
         }
     }
@@ -274,13 +261,10 @@ errno_t load_fits_IMGID(
         {
             imgout->mdt->size[i] = naxes[i];
         }
-        imgout->mdt->datatype =
-            _DATATYPE_FLOAT;
+        imgout->mdt->datatype = _DATATYPE_FLOAT;
         imgout->mdt->shared = dcshareddft;
-        imgout->mdt->NBkw =
-            NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         {
@@ -288,16 +272,8 @@ errno_t load_fits_IMGID(
             fits_read_img(
                 fptr,
                 data_type_code(bitpix),
-                fpixel,
-                nelements,
-                &nulval,
-                imgout->im->array.F,
-                &anynul,
-                &status);
-            FITSIO_CHECK_ERROR(
-                status, errmode,
-                "fits_read_img bitpix=%d",
-                bitpix);
+                fpixel, nelements, &nulval, imgout->im->array.F, &anynul, &status);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
     }
 
@@ -309,13 +285,10 @@ errno_t load_fits_IMGID(
         {
             imgout->mdt->size[i] = naxes[i];
         }
-        imgout->mdt->datatype =
-            _DATATYPE_DOUBLE;
+        imgout->mdt->datatype = _DATATYPE_DOUBLE;
         imgout->mdt->shared = dcshareddft;
-        imgout->mdt->NBkw =
-            NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         {
@@ -323,16 +296,8 @@ errno_t load_fits_IMGID(
             fits_read_img(
                 fptr,
                 data_type_code(bitpix),
-                fpixel,
-                nelements,
-                &nulval,
-                imgout->im->array.D,
-                &anynul,
-                &status);
-            FITSIO_CHECK_ERROR(
-                status, errmode,
-                "fits_read_img bitpix=%d",
-                bitpix);
+                fpixel, nelements, &nulval, imgout->im->array.D, &anynul, &status);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
     }
 
@@ -344,29 +309,17 @@ errno_t load_fits_IMGID(
         {
             imgout->mdt->size[i] = naxes[i];
         }
-        imgout->mdt->datatype =
-            _DATATYPE_UINT16;
+        imgout->mdt->datatype = _DATATYPE_UINT16;
         imgout->mdt->shared = dcshareddft;
-        imgout->mdt->NBkw =
-            NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         {
             int status = 0;
             fits_read_img(
-                fptr, 20,
-                fpixel,
-                nelements,
-                &nulval,
-                imgout->im->array.UI16,
-                &anynul,
-                &status);
-            FITSIO_CHECK_ERROR(
-                status, errmode,
-                "fits_read_img bitpix=%d",
-                bitpix);
+                fptr, 20, fpixel, nelements, &nulval, imgout->im->array.UI16, &anynul, &status);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
     }
 
@@ -378,17 +331,13 @@ errno_t load_fits_IMGID(
         {
             imgout->mdt->size[i] = naxes[i];
         }
-        imgout->mdt->datatype =
-            _DATATYPE_INT32;
+        imgout->mdt->datatype = _DATATYPE_INT32;
         imgout->mdt->shared = dcshareddft;
-        imgout->mdt->NBkw =
-            NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
-        larray = (long *) malloc(
-                     sizeof(long) * nelements);
+        larray = (long *) malloc(sizeof(long) * nelements);
         if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -398,17 +347,8 @@ errno_t load_fits_IMGID(
             int status = 0;
             fits_read_img(
                 fptr,
-                data_type_code(bitpix),
-                fpixel,
-                nelements,
-                &nulval,
-                larray,
-                &anynul,
-                &status);
-            FITSIO_CHECK_ERROR(
-                status, errmode,
-                "fits_read_img bitpix=%d",
-                bitpix);
+                data_type_code(bitpix), fpixel, nelements, &nulval, larray, &anynul, &status);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
 
         bzero = 0.0;
@@ -416,8 +356,7 @@ errno_t load_fits_IMGID(
                 ii < (uint_fast64_t) nelements;
                 ii++)
         {
-            imgout->im->array.SI32[ii] =
-                larray[ii] * bscale + bzero;
+            imgout->im->array.SI32[ii] = larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -431,17 +370,13 @@ errno_t load_fits_IMGID(
         {
             imgout->mdt->size[i] = naxes[i];
         }
-        imgout->mdt->datatype =
-            _DATATYPE_INT64;
+        imgout->mdt->datatype = _DATATYPE_INT64;
         imgout->mdt->shared = dcshareddft;
-        imgout->mdt->NBkw =
-            NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
-        larray = (long *) malloc(
-                     sizeof(long) * nelements);
+        larray = (long *) malloc(sizeof(long) * nelements);
         if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -452,17 +387,8 @@ errno_t load_fits_IMGID(
             int status = 0;
             fits_read_img(
                 fptr,
-                data_type_code(bitpix),
-                fpixel,
-                nelements,
-                &nulval,
-                larray,
-                &anynul,
-                &status);
-            FITSIO_CHECK_ERROR(
-                status, errmode,
-                "fits_read_img bitpix=%d",
-                bitpix);
+                data_type_code(bitpix), fpixel, nelements, &nulval, larray, &anynul, &status);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
 
         bzero = 0.0;
@@ -470,8 +396,7 @@ errno_t load_fits_IMGID(
                 ii < (uint_fast64_t) nelements;
                 ii++)
         {
-            imgout->im->array.SI64[ii] =
-                larray[ii] * bscale + bzero;
+            imgout->im->array.SI64[ii] = larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -485,18 +410,13 @@ errno_t load_fits_IMGID(
         {
             imgout->mdt->size[i] = naxes[i];
         }
-        imgout->mdt->datatype =
-            _DATATYPE_FLOAT;
+        imgout->mdt->datatype = _DATATYPE_FLOAT;
         imgout->mdt->shared = dcshareddft;
-        imgout->mdt->NBkw =
-            NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
-        barray = (unsigned char *) malloc(
-                     sizeof(unsigned char)
-                     * naxes[1] * naxes[0]);
+        barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] * naxes[0]);
         if(barray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -507,26 +427,15 @@ errno_t load_fits_IMGID(
             int status = 0;
             fits_read_img(
                 fptr,
-                data_type_code(bitpix),
-                fpixel,
-                nelements,
-                &nulval,
-                barray,
-                &anynul,
-                &status);
-            FITSIO_CHECK_ERROR(
-                status, errmode,
-                "fits_read_img bitpix=%d",
-                bitpix);
+                data_type_code(bitpix), fpixel, nelements, &nulval, barray, &anynul, &status);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
 
         for(uint_fast64_t ii = 0;
                 ii < (uint_fast64_t) nelements;
                 ii++)
         {
-            imgout->im->array.F[ii] =
-                (1.0 * barray[ii]
-                 * bscale + bzero);
+            imgout->im->array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
         }
         free(barray);
         barray = NULL;
@@ -555,12 +464,7 @@ errno_t load_fits_IMGID(
         char kwcomment[81];
         {
             int status = 0;
-            fits_read_keyn(fptr,
-                           kwnum + 1,
-                           keyname,
-                           kwvaluestr,
-                           kwcomment,
-                           &status);
+            fits_read_keyn(fptr, kwnum + 1, keyname, kwvaluestr, kwcomment, &status);
         }
 
         //printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
@@ -598,10 +502,7 @@ errno_t load_fits_IMGID(
                 if(strlen(tailstr) == 0)
                 {
                     kwtypeOK = 1;
-                    image_keyword_addD(*imgout,
-                                       keyname,
-                                       kwdoubleval,
-                                       kwcomment);
+                    image_keyword_addD(*imgout, keyname, kwdoubleval, kwcomment);
                 }
 
                 if(kwtypeOK == 0)
@@ -611,10 +512,7 @@ errno_t load_fits_IMGID(
                     kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
                     char *kwvaluestr1;
                     kwvaluestr1 = kwvaluestr + 1;
-                    image_keyword_addS(*imgout,
-                                       keyname,
-                                       kwvaluestr1,
-                                       kwcomment);
+                    image_keyword_addS(*imgout, keyname, kwvaluestr1, kwcomment);
                 }
             }
         }
@@ -623,10 +521,7 @@ errno_t load_fits_IMGID(
     {
         int status = 0;
         fits_close_file(fptr, &status);
-        FITSIO_CHECK_ERROR(status,
-                           errmode,
-                           "fits_close_file error in image %s",
-                           file_name);
+        FITSIO_CHECK_ERROR(status, errmode, "fits_close_file error in image %s", file_name);
     }
 
     DEBUG_TRACEPOINT("FOUT IDout %ld", imgout->ID);
@@ -662,14 +557,10 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
-    IMGID imgout = imgid_make_from_name(outimname);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  IMGID imgout = imgid_make_from_name(outimname);
     FUNC_CHECK_RETURN(load_fits_IMGID(infilename, &imgout, FITSIOerrmode));
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -678,17 +569,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMOD_iofits__loadfits()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;

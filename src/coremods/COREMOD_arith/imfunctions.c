@@ -103,28 +103,17 @@ static inline double get_pixel_double(
 {
     switch(im->md[0].datatype)
     {
-    case _DATATYPE_UINT8:
-        return (double)im->array.UI8[index];
-    case _DATATYPE_INT8:
-        return (double)im->array.SI8[index];
-    case _DATATYPE_UINT16:
-        return (double)im->array.UI16[index];
-    case _DATATYPE_INT16:
-        return (double)im->array.SI16[index];
-    case _DATATYPE_UINT32:
-        return (double)im->array.UI32[index];
-    case _DATATYPE_INT32:
-        return (double)im->array.SI32[index];
-    case _DATATYPE_UINT64:
-        return (double)im->array.UI64[index];
-    case _DATATYPE_INT64:
-        return (double)im->array.SI64[index];
-    case _DATATYPE_FLOAT:
-        return (double)im->array.F[index];
-    case _DATATYPE_DOUBLE:
-        return (double)im->array.D[index];
-    default:
-        return 0.0;
+    case _DATATYPE_UINT8: return (double)im->array.UI8[index];
+    case _DATATYPE_INT8: return (double)im->array.SI8[index];
+    case _DATATYPE_UINT16: return (double)im->array.UI16[index];
+    case _DATATYPE_INT16: return (double)im->array.SI16[index];
+    case _DATATYPE_UINT32: return (double)im->array.UI32[index];
+    case _DATATYPE_INT32: return (double)im->array.SI32[index];
+    case _DATATYPE_UINT64: return (double)im->array.UI64[index];
+    case _DATATYPE_INT64: return (double)im->array.SI64[index];
+    case _DATATYPE_FLOAT: return (double)im->array.F[index];
+    case _DATATYPE_DOUBLE: return (double)im->array.D[index];
+    default: return 0.0;
     }
 }
 
@@ -562,8 +551,7 @@ errno_t arith_image_function_1_1_IMGID(
     IMGID *imgout,
     double (*pt2function)(double))
 {
-    return arith_image_function_im_im__d_d_IMGID(
-               imgin, imgout, pt2function);
+    return arith_image_function_im_im__d_d_IMGID(imgin, imgout, pt2function);
 }
 
 /**
@@ -577,8 +565,7 @@ errno_t arith_image_function_1_1(
     const char *ID_out,
     double (*pt2function)(double))
 {
-    return arith_image_function_im_im__d_d(
-               ID_name, ID_out, pt2function);
+    return arith_image_function_im_im__d_d(ID_name, ID_out, pt2function);
 }
 
 // imagein -> imagein (in place)
@@ -831,9 +818,7 @@ errno_t arith_image_function_2_1_IMGID(
     {
         ptr1allocate = 1;
         ptr1array = (double *) malloc(sizeof(double) * nbpix1);
-        for(
-            uint64_t ii = 0; ii < nbpix1; ii++) ptr1array[ii] = get_pixel_double(inimg1->im,
-                        ii);
+        for(uint64_t ii = 0; ii < nbpix1; ii++) ptr1array[ii] = get_pixel_double(inimg1->im, ii);
     }
 
     double *ptr2array;
@@ -846,15 +831,12 @@ errno_t arith_image_function_2_1_IMGID(
     {
         ptr2allocate = 1;
         ptr2array = (double *) malloc(sizeof(double) * nbpix2);
-        for(
-            uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im,
-                        ii);
+        for(uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im, ii);
     }
 
     if(outimg->mdt->datatype == _DATATYPE_FLOAT)
     {
-        for(
-            uint64_t ii = 0; ii < nbpix;
+        for(uint64_t ii = 0; ii < nbpix;
             ii++) outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]],
                                                 ptr2array[inpix2[ii]]);
     }
@@ -921,10 +903,7 @@ errno_t arith_image_function_2_1(
         outimg.mdt->NBkw = NB_KEYWNODE_MAX;
     }
 
-    errno_t ret = arith_image_function_2_1_IMGID(&inimg1,
-                  &inimg2,
-                  &outimg,
-                  pt2function);
+    errno_t ret = arith_image_function_2_1_IMGID(&inimg1, &inimg2, &outimg, pt2function);
 
     if(outimg.ID == -1 && outimg.im != NULL)
     {
@@ -944,10 +923,8 @@ errno_t arith_image_function_2_1_inplace(
     IMGID img1 = imgid_make_from_name(ID_name1);
     IMGID img2 = imgid_make_from_name(ID_name2);
 
-    resolveIMGID(
-        &img1, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(
-        &img2, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
 
     if(img1.im == NULL || img2.im == NULL)
     {
@@ -959,10 +936,7 @@ errno_t arith_image_function_2_1_inplace(
     long nelement = img1.md->nelement;
     if(nelement != img2.md->nelement)
     {
-        PRINT_ERROR(
-            "images %s and %s have different nelement\n",
-            ID_name1,
-            ID_name2);
+        PRINT_ERROR("images %s and %s have different nelement\n", ID_name1, ID_name2);
         imgid_free(&img1);
         imgid_free(&img2);
         return RETURN_FAILURE;
@@ -978,19 +952,15 @@ errno_t arith_image_function_2_1_inplace(
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            double v1 =
-                get_pixel_double(img1.im, ii);
-            double v2 =
-                get_pixel_double(img2.im, ii);
+            double v1 = get_pixel_double(img1.im, ii);
+            double v2 = get_pixel_double(img2.im, ii);
             if(dt1 == _DATATYPE_FLOAT)
             {
-                img1.im->array.F[ii] =
-                    (float) pt2function(v1, v2);
+                img1.im->array.F[ii] = (float) pt2function(v1, v2);
             }
             else if(dt1 == _DATATYPE_DOUBLE)
             {
-                img1.im->array.D[ii] =
-                    pt2function(v1, v2);
+                img1.im->array.D[ii] = pt2function(v1, v2);
             }
         }
 #ifdef _OPENMP

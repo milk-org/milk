@@ -43,10 +43,7 @@ int functionparameter_FPSprocess_cmdfile(
             printf("Processing line : %s\n", FPScmdline);
             functionparameter_FPSprocess_cmdline(FPScmdline,
                                                  fpsctrlqueuelist,
-                                                 keywnode,
-                                                 fpsCTRLvar,
-                                                 fps,
-                                                 &taskstatus);
+                                                 keywnode, fpsCTRLvar, fps, &taskstatus);
         }
         free(FPScmdline);
         fclose(fpinputcmd);

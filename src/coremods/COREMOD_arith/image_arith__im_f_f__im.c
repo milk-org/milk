@@ -199,9 +199,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, imgout.im, imgin.im);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&imgin);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&imgin);
     imgid_free(&imgout);
 
     return RETURN_SUCCESS;
@@ -216,19 +214,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t image_arith__im_f_f__im_addCLIcmd()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

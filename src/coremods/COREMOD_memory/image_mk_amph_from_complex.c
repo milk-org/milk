@@ -34,12 +34,9 @@ static FPS_APP_INFO FPS_app_info =
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "imc";
-static char outampimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "imamp";
-static char outphaimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "impha";
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN] = "imc";
+static char outampimname[FUNCTION_PARAMETER_STRMAXLEN] = "imamp";
+static char outphaimname[FUNCTION_PARAMETER_STRMAXLEN] = "impha";
 
 
 /* ================================================================
@@ -72,18 +69,14 @@ errno_t mk_amph_from_complex_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(
-        imgin, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
     uint8_t datatype = imgin->md[0].datatype;
     uint8_t naxis    = imgin->md[0].naxis;
 
     for(uint8_t i = 0; i < naxis; i++)
     {
-        imgamp->mdt->size[i] =
-            imgin->md[0].size[i];
-        imgpha->mdt->size[i] =
-            imgin->md[0].size[i];
+        imgamp->mdt->size[i] = imgin->md[0].size[i];
+        imgpha->mdt->size[i] = imgin->md[0].size[i];
     }
     imgamp->mdt->naxis = naxis;
     imgpha->mdt->naxis = naxis;
@@ -146,17 +139,13 @@ errno_t mk_amph_from_complex(
     const char *ph_name,
     int        sharedmem)
 {
-    IMGID imgin =
-        imgid_make_from_name(in_name);
-    IMGID imgamp =
-        imgid_make_from_name(am_name);
-    IMGID imgpha =
-        imgid_make_from_name(ph_name);
+    IMGID imgin = imgid_make_from_name(in_name);
+    IMGID imgamp = imgid_make_from_name(am_name);
+    IMGID imgpha = imgid_make_from_name(ph_name);
     imgamp.mdt->shared = sharedmem;
     imgpha.mdt->shared = sharedmem;
 
-    errno_t ret = mk_amph_from_complex_IMGID(
-                      &imgin, &imgamp, &imgpha);
+    errno_t ret = mk_amph_from_complex_IMGID(&imgin, &imgamp, &imgpha);
     imgid_free(&imgin);
     imgid_free(&imgamp);
     imgid_free(&imgpha);
@@ -179,21 +168,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgin =
-        imgid_make_from_name(inimname);
-    IMGID imgamp =
-        imgid_make_from_name(outampimname);
-    IMGID imgpha =
-        imgid_make_from_name(outphaimname);
+    IMGID imgin = imgid_make_from_name(inimname);
+    IMGID imgamp = imgid_make_from_name(outampimname);
+    IMGID imgpha = imgid_make_from_name(outphaimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  mk_amph_from_complex_IMGID(&imgin, &imgamp, &imgpha);
 
-    mk_amph_from_complex_IMGID(
-        &imgin, &imgamp, &imgpha);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&imgin);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&imgin);
     imgid_free(&imgamp);
     imgid_free(&imgpha);
 
@@ -210,18 +191,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD__mk_amph_from_complex()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

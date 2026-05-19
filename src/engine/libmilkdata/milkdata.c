@@ -48,8 +48,7 @@ errno_t milk_data_init(void)
     milk_data.NB_MAX_IMAGE = STATIC_NB_MAX_IMAGE;
 #else
     {
-        milk_data.image = (IMAGE *) calloc(
-                              milk_data.NB_MAX_IMAGE, sizeof(IMAGE));
+        milk_data.image = (IMAGE *) calloc(milk_data.NB_MAX_IMAGE, sizeof(IMAGE));
         if(milk_data.image == NULL)
         {
             PRINT_ERROR("image array alloc failed");
@@ -69,8 +68,7 @@ errno_t milk_data_init(void)
     milk_data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
 #else
     {
-        milk_data.variable = (VARIABLE *) calloc(
-                                 milk_data.NB_MAX_VARIABLE, sizeof(VARIABLE));
+        milk_data.variable = (VARIABLE *) calloc(milk_data.NB_MAX_VARIABLE, sizeof(VARIABLE));
         if(milk_data.variable == NULL)
         {
             PRINT_ERROR("variable array alloc failed");
@@ -81,13 +79,10 @@ errno_t milk_data_init(void)
         milk_data.image[0].shmfd = -1;
 
         long tmplong = milk_data.NB_MAX_VARIABLE;
-        milk_data.NB_MAX_VARIABLE +=
-            NB_VARIABLES_BUFFER_REALLOC;
+        milk_data.NB_MAX_VARIABLE += NB_VARIABLES_BUFFER_REALLOC;
 
         milk_data.variable = (VARIABLE *) realloc(
-                                 milk_data.variable,
-                                 milk_data.NB_MAX_VARIABLE
-                                 * sizeof(VARIABLE));
+                                 milk_data.variable, milk_data.NB_MAX_VARIABLE * sizeof(VARIABLE));
 
         for(long i = tmplong;
                 i < milk_data.NB_MAX_VARIABLE; i++)
@@ -106,9 +101,7 @@ errno_t milk_data_init(void)
 
     /* Allocate FPS array */
     {
-        milk_data.fpsarray = (FPS *)
-                             malloc(sizeof(FPS)
-                                    * milk_data.NB_MAX_FPS);
+        milk_data.fpsarray = (FPS *) malloc(sizeof(FPS) * milk_data.NB_MAX_FPS);
         if(milk_data.fpsarray == NULL)
         {
             PRINT_ERROR("FPS array alloc failed");
@@ -158,8 +151,7 @@ typedef struct
  */
 void milk_rng_init(uint64_t seed)
 {
-    MILK_RNG *rng = (MILK_RNG *)
-                    calloc(1, sizeof(MILK_RNG));
+    MILK_RNG *rng = (MILK_RNG *) calloc(1, sizeof(MILK_RNG));
     if(rng == NULL)
     {
         PRINT_ERROR("MILK_RNG alloc failed");
@@ -210,8 +202,7 @@ double milk_rng_uniform(void)
 {
     MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
     /* 53-bit mantissa -> [0, 1) */
-    return (xorshift64star(rng) >> 11)
-           * (1.0 / 9007199254740992.0);
+    return (xorshift64star(rng) >> 11) * (1.0 / 9007199254740992.0);
 }
 
 
@@ -272,8 +263,7 @@ long milk_rng_poisson(double mu)
     else
     {
         /* Gaussian approximation for large mu */
-        double val = mu
-                     + milk_rng_gaussian(1.0) * sqrt(mu);
+        double val = mu + milk_rng_gaussian(1.0) * sqrt(mu);
         if(val < 0.0)
         {
             val = 0.0;

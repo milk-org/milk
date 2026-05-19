@@ -78,8 +78,7 @@ static errno_t alloc_slice_buffer(
         return 1;
     }
 
-    sim->md = (IMAGE_METADATA *) calloc(
-                  1, sizeof(IMAGE_METADATA));
+    sim->md = (IMAGE_METADATA *) calloc(1, sizeof(IMAGE_METADATA));
     if(sim->md == NULL)
     {
         free(sim);
@@ -142,12 +141,8 @@ static void copy_crop_2d(
 
     for(int32_t y = y0; y <= y1; y++)
     {
-        const char *srow =
-            src + ((uint64_t) y * src_xsz + x0)
-            * esize;
-        char *drow =
-            dst + ((uint64_t)(y - y0) * out_xsz)
-            * esize;
+        const char *srow = src + ((uint64_t) y * src_xsz + x0) * esize;
+        char *drow = dst + ((uint64_t)(y - y0) * out_xsz) * esize;
 
         __builtin_memcpy(drow, srow, row_bytes);
     }
@@ -186,8 +181,7 @@ static void copy_general(
     }
     if(naxis >= 3)
     {
-        src_stride[2] =
-            (uint64_t) src_size[0] * src_size[1];
+        src_stride[2] = (uint64_t) src_size[0] * src_size[1];
     }
 
     /* Compute dest strides (elements) */
@@ -198,8 +192,7 @@ static void copy_general(
     }
     if(naxis >= 3)
     {
-        dst_stride[2] =
-            (uint64_t) out_size[0] * out_size[1];
+        dst_stride[2] = (uint64_t) out_size[0] * out_size[1];
     }
 
     /* Number of output elements per axis */
@@ -234,34 +227,26 @@ static void copy_general(
     /* Triple loop over output elements */
     for(uint32_t oz = 0; oz < cnt[2]; oz++)
     {
-        int32_t sz = astart[2]
-                     + (int32_t) oz * astep[2];
+        int32_t sz = astart[2] + (int32_t) oz * astep[2];
 
         for(uint32_t oy = 0; oy < cnt[1]; oy++)
         {
-            int32_t sy = astart[1]
-                         + (int32_t) oy * astep[1];
+            int32_t sy = astart[1] + (int32_t) oy * astep[1];
 
             for(uint32_t ox = 0;
                     ox < cnt[0]; ox++)
             {
-                int32_t sx = astart[0]
-                             + (int32_t) ox * astep[0];
+                int32_t sx = astart[0] + (int32_t) ox * astep[0];
 
                 uint64_t si =
                     (uint64_t) sx * src_stride[0]
-                    + (uint64_t) sy * src_stride[1]
-                    + (uint64_t) sz * src_stride[2];
+                    + (uint64_t) sy * src_stride[1] + (uint64_t) sz * src_stride[2];
 
                 uint64_t di =
                     (uint64_t) ox * dst_stride[0]
-                    + (uint64_t) oy * dst_stride[1]
-                    + (uint64_t) oz * dst_stride[2];
+                    + (uint64_t) oy * dst_stride[1] + (uint64_t) oz * dst_stride[2];
 
-                __builtin_memcpy(
-                    dst + di * esize,
-                    src + si * esize,
-                    esize);
+                __builtin_memcpy(dst + di * esize, src + si * esize, esize);
             }
         }
     }
@@ -292,8 +277,7 @@ static void writeback_general(
     }
     if(naxis >= 3)
     {
-        src_stride[2] =
-            (uint64_t) src_size[0] * src_size[1];
+        src_stride[2] = (uint64_t) src_size[0] * src_size[1];
     }
 
     uint64_t dst_stride[3] = {1, 0, 0};
@@ -303,8 +287,7 @@ static void writeback_general(
     }
     if(naxis >= 3)
     {
-        dst_stride[2] =
-            (uint64_t) out_size[0] * out_size[1];
+        dst_stride[2] = (uint64_t) out_size[0] * out_size[1];
     }
 
     uint32_t cnt[3] = {1, 1, 1};
@@ -334,34 +317,26 @@ static void writeback_general(
 
     for(uint32_t oz = 0; oz < cnt[2]; oz++)
     {
-        int32_t sz = astart[2]
-                     + (int32_t) oz * astep[2];
+        int32_t sz = astart[2] + (int32_t) oz * astep[2];
 
         for(uint32_t oy = 0; oy < cnt[1]; oy++)
         {
-            int32_t sy = astart[1]
-                         + (int32_t) oy * astep[1];
+            int32_t sy = astart[1] + (int32_t) oy * astep[1];
 
             for(uint32_t ox = 0;
                     ox < cnt[0]; ox++)
             {
-                int32_t sx = astart[0]
-                             + (int32_t) ox * astep[0];
+                int32_t sx = astart[0] + (int32_t) ox * astep[0];
 
                 uint64_t si =
                     (uint64_t) sx * src_stride[0]
-                    + (uint64_t) sy * src_stride[1]
-                    + (uint64_t) sz * src_stride[2];
+                    + (uint64_t) sy * src_stride[1] + (uint64_t) sz * src_stride[2];
 
                 uint64_t di =
                     (uint64_t) ox * dst_stride[0]
-                    + (uint64_t) oy * dst_stride[1]
-                    + (uint64_t) oz * dst_stride[2];
+                    + (uint64_t) oy * dst_stride[1] + (uint64_t) oz * dst_stride[2];
 
-                __builtin_memcpy(
-                    dst_src + si * esize,
-                    src_slice + di * esize,
-                    esize);
+                __builtin_memcpy(dst_src + si * esize, src_slice + di * esize, esize);
             }
         }
     }
@@ -416,9 +391,7 @@ errno_t imgid_slice_materialize(IMGID *img)
     }
     if(img->im == NULL)
     {
-        fprintf(stderr,
-                "ERROR: imgid_slice_materialize: "
-                "source IMAGE not resolved\n");
+        fprintf(stderr, "ERROR: imgid_slice_materialize: " "source IMAGE not resolved\n");
         return 1;
     }
 
@@ -442,9 +415,7 @@ errno_t imgid_slice_materialize(IMGID *img)
     if(imgid_slice_output_size(
                 &rs, naxis, src_size, out_size) != 0)
     {
-        fprintf(stderr,
-                "ERROR: slice output size: %s\n",
-                rs.errmsg);
+        fprintf(stderr, "ERROR: slice output size: %s\n", rs.errmsg);
         return 1;
     }
 
@@ -455,8 +426,7 @@ errno_t imgid_slice_materialize(IMGID *img)
                     img, out_size, naxis,
                     datatype) != 0)
         {
-            fprintf(stderr,
-                    "ERROR: slice buffer alloc\n");
+            fprintf(stderr, "ERROR: slice buffer alloc\n");
             return 1;
         }
     }
@@ -469,20 +439,14 @@ errno_t imgid_slice_materialize(IMGID *img)
     {
         /* Fast path: memcpy per row */
         int32_t y0 = (naxis >= 2) ? rs.start[1] : 0;
-        int32_t y1 = (naxis >= 2)
-                     ? rs.end[1] : 0;
+        int32_t y1 = (naxis >= 2) ? rs.end[1] : 0;
 
-        copy_crop_2d(src, dst, esize_val,
-                     src_size[0],
-                     rs.start[0], rs.end[0],
-                     y0, y1);
+        copy_crop_2d(src, dst, esize_val, src_size[0], rs.start[0], rs.end[0], y0, y1);
     }
     else
     {
         /* General path */
-        copy_general(src, dst, esize_val,
-                     &rs, src_size,
-                     out_size, naxis);
+        copy_general(src, dst, esize_val, &rs, src_size, out_size, naxis);
     }
 
     return 0;
@@ -508,9 +472,7 @@ errno_t imgid_slice_writeback(IMGID *img)
     }
     if(img->im == NULL || img->slice_im == NULL)
     {
-        fprintf(stderr,
-                "ERROR: imgid_slice_writeback: "
-                "source or slice not ready\n");
+        fprintf(stderr, "ERROR: imgid_slice_writeback: " "source or slice not ready\n");
         return 1;
     }
 
@@ -533,12 +495,9 @@ errno_t imgid_slice_writeback(IMGID *img)
     }
 
     char *dst_src = img->im->array.raw;
-    const char *src_slice =
-        img->slice_im->array.raw;
+    const char *src_slice = img->slice_im->array.raw;
 
-    writeback_general(dst_src, src_slice,
-                      esize_val, &rs,
-                      src_size, out_size, naxis);
+    writeback_general(dst_src, src_slice, esize_val, &rs, src_size, out_size, naxis);
 
     return 0;
 }

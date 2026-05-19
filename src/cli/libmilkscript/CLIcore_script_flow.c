@@ -78,8 +78,7 @@ void cli_exec_block_if(
     /* Skip standalone "then" */
     if(body_s < nlines)
     {
-        const char *ts =
-            strip_ws(lines[body_s]);
+        const char *ts = strip_ws(lines[body_s]);
         if(strcmp(ts, "then") == 0)
         {
             body_s++;
@@ -120,13 +119,11 @@ void cli_exec_block_if(
         if(starts_with(ln, "elif ")
            || starts_with(ln, "elif\t"))
         {
-            branches[nbranch - 1].body_end
-                = i;
+            branches[nbranch - 1].body_end = i;
             int bs = i + 1;
             if(bs < nlines)
             {
-                const char *t2 =
-                    strip_ws(lines[bs]);
+                const char *t2 = strip_ws(lines[bs]);
                 if(strcmp(t2, "then") == 0)
                 {
                     bs++;
@@ -134,10 +131,8 @@ void cli_exec_block_if(
             }
             if(nbranch < 64)
             {
-                branches[nbranch].cond_idx
-                    = i;
-                branches[nbranch].body_start
-                    = bs;
+                branches[nbranch].cond_idx = i;
+                branches[nbranch].body_start = bs;
                 branches[nbranch].body_end
                     = nlines; /* Will be updated if else found */
                 nbranch++;
@@ -145,16 +140,13 @@ void cli_exec_block_if(
         }
         else if(strcmp(ln, "else") == 0)
         {
-            branches[nbranch - 1].body_end
-                = i;
+            branches[nbranch - 1].body_end = i;
             if(nbranch < 64)
             {
                 branches[nbranch].cond_idx
                     = -1; /* else */
-                branches[nbranch].body_start
-                    = i + 1;
-                branches[nbranch].body_end
-                    = nlines;
+                branches[nbranch].body_start = i + 1;
+                branches[nbranch].body_end = nlines;
                 nbranch++;
             }
             break;
@@ -172,16 +164,13 @@ void cli_exec_block_if(
         }
         else
         {
-            const char *cl2 = strip_ws(
-                lines[branches[b].cond_idx]);
+            const char *cl2 = strip_ws(lines[branches[b].cond_idx]);
             int skip = 2; /* "if" */
             if(starts_with(cl2, "elif"))
             {
                 skip = 4;
             }
-            run = eval_cond_line(
-                lines[branches[b].cond_idx],
-                skip);
+            run = eval_cond_line(lines[branches[b].cond_idx], skip);
         }
         if(run)
         {
@@ -189,8 +178,7 @@ void cli_exec_block_if(
             int be = branches[b].body_end;
             if(be > bs)
             {
-                cli_exec_lines(
-                    lines + bs, be - bs);
+                cli_exec_lines(lines + bs, be - bs);
             }
             break;
         }
@@ -226,8 +214,7 @@ void cli_exec_block_while(
      * semicolon-split */
     if(body_start < body_end)
     {
-        const char *ds =
-            strip_ws(lines[body_start]);
+        const char *ds = strip_ws(lines[body_start]);
         if(strcmp(ds, "do") == 0)
         {
             body_start++;
@@ -238,21 +225,13 @@ void cli_exec_block_while(
     {
         /* Re-expand condition each iteration */
         char condline[STRINGMAXLEN_CLICMDLINE];
-        strncpy(condline, lines[0],
-                STRINGMAXLEN_CLICMDLINE - 1);
-        condline[
-            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        strncpy(condline, lines[0], STRINGMAXLEN_CLICMDLINE - 1);
+        condline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
         /* Run expansion on condition */
-        cli_expand_fpsvar(
-            condline,
-            STRINGMAXLEN_CLICMDLINE);
-        cli_expand_env(
-            condline,
-            STRINGMAXLEN_CLICMDLINE);
-        cli_expand_arith(
-            condline,
-            STRINGMAXLEN_CLICMDLINE);
+        cli_expand_fpsvar(condline, STRINGMAXLEN_CLICMDLINE);
+        cli_expand_env(condline, STRINGMAXLEN_CLICMDLINE);
+        cli_expand_arith(condline, STRINGMAXLEN_CLICMDLINE);
 
         /* Parse condition */
         const char *cl = strip_ws(condline);
@@ -270,13 +249,11 @@ void cli_exec_block_while(
                 int clen = (int)(end - cl);
                 if(clen >= (int) sizeof(cs))
                 {
-                    clen =
-                        (int) sizeof(cs) - 1;
+                    clen = (int) sizeof(cs) - 1;
                 }
                 memcpy(cs, cl, (size_t) clen);
                 cs[clen] = '\0';
-                cond_result =
-                    cli_eval_test(cs);
+                cond_result = cli_eval_test(cs);
             }
         }
         else
@@ -313,9 +290,7 @@ void cli_exec_block_while(
 
         /* Execute body */
         cli_continue_flag = 0;
-        cli_exec_lines(
-            lines +    body_start,
-            body_end - body_start);
+        cli_exec_lines(lines +    body_start, body_end - body_start);
 
         if(cli_break_flag)
         {
@@ -352,8 +327,7 @@ void cli_exec_block_until(
 
     if(body_start < body_end)
     {
-        const char *ds =
-            strip_ws(lines[body_start]);
+        const char *ds = strip_ws(lines[body_start]);
         if(strcmp(ds, "do") == 0)
         {
             body_start++;
@@ -363,26 +337,15 @@ void cli_exec_block_until(
     for(int iter = 0;
         iter < max_iter; iter++)
     {
-        char condline[
-            STRINGMAXLEN_CLICMDLINE];
-        strncpy(condline, lines[0],
-                STRINGMAXLEN_CLICMDLINE - 1);
-        condline[
-            STRINGMAXLEN_CLICMDLINE - 1]
-            = '\0';
+        char condline[STRINGMAXLEN_CLICMDLINE];
+        strncpy(condline, lines[0], STRINGMAXLEN_CLICMDLINE - 1);
+        condline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
-        cli_expand_fpsvar(
-            condline,
-            STRINGMAXLEN_CLICMDLINE);
-        cli_expand_env(
-            condline,
-            STRINGMAXLEN_CLICMDLINE);
-        cli_expand_arith(
-            condline,
-            STRINGMAXLEN_CLICMDLINE);
+        cli_expand_fpsvar(condline, STRINGMAXLEN_CLICMDLINE);
+        cli_expand_env(condline, STRINGMAXLEN_CLICMDLINE);
+        cli_expand_arith(condline, STRINGMAXLEN_CLICMDLINE);
 
-        const char *cl =
-            strip_ws(condline);
+        const char *cl = strip_ws(condline);
         cl += 5; /* skip "until" */
         cl = strip_ws(cl);
 
@@ -390,40 +353,30 @@ void cli_exec_block_until(
         if(*cl == '[')
         {
             cl++;
-            const char *end =
-                strrchr(cl, ']');
+            const char *end = strrchr(cl, ']');
             if(end != NULL)
             {
                 char cs[512];
-                int clen =
-                    (int)(end - cl);
+                int clen = (int)(end - cl);
                 if(clen
                    >= (int) sizeof(cs))
                 {
-                    clen =
-                        (int) sizeof(cs)
-                        - 1;
+                    clen = (int) sizeof(cs) - 1;
                 }
-                memcpy(cs, cl,
-                       (size_t) clen);
+                memcpy(cs, cl, (size_t) clen);
                 cs[clen] = '\0';
-                cond_result =
-                    cli_eval_test(cs);
+                cond_result = cli_eval_test(cs);
             }
         }
         else
         {
-            char ccmd[
-                STRINGMAXLEN_CLICMDLINE];
-            strncpy(ccmd, cl,
-                    sizeof(ccmd) - 1);
+            char ccmd[STRINGMAXLEN_CLICMDLINE];
+            strncpy(ccmd, cl, sizeof(ccmd) - 1);
             ccmd[sizeof(ccmd) - 1] = '\0';
-            char *sc =
-                strstr(ccmd, ";");
+            char *sc = strstr(ccmd, ";");
             if(sc)
             {
-                char *dp =
-                    strstr(sc, "do");
+                char *dp = strstr(sc, "do");
                 if(dp)
                 {
                     *sc = '\0';
@@ -440,9 +393,7 @@ void cli_exec_block_until(
                 ccmd[--len] = '\0';
             }
             CLI_execute_string(ccmd);
-            cond_result =
-                (cli_last_retval == 0)
-                ? 1 : 0;
+            cond_result = (cli_last_retval == 0) ? 1 : 0;
         }
 
         /* until: loop while FALSE */
@@ -452,9 +403,7 @@ void cli_exec_block_until(
         }
 
         cli_continue_flag = 0;
-        cli_exec_lines(
-            lines +    body_start,
-            body_end - body_start);
+        cli_exec_lines(lines +    body_start, body_end - body_start);
 
         if(cli_break_flag)
         {
@@ -552,8 +501,7 @@ void cli_exec_block_select(
         for(int i = 0;
             i < nsv; i++)
         {
-            printf("%d) %s\n",
-                   i + 1, sv[i]);
+            printf("%d) %s\n", i + 1, sv[i]);
         }
         printf("#? ");
         fflush(stdout);
@@ -563,21 +511,16 @@ void cli_exec_block_select(
         {
             break;
         }
-        int ch =
-            (int) strtol(rb,
-                         NULL, 10);
+        int ch = (int) strtol(rb, NULL, 10);
         if(ch >= 1 && ch <= nsv)
         {
-            cli_var_set(
-                vn, sv[ch - 1]);
+            cli_var_set(vn, sv[ch - 1]);
         }
         else
         {
             cli_var_set(vn, "");
         }
-        cli_exec_lines(
-            lines +  1,
-            nlines - 1);
+        cli_exec_lines(lines +  1, nlines - 1);
     }
 }
 
@@ -601,110 +544,61 @@ void cli_exec_block_for(
     /* Check for arithmetic for:
      * for ((init; cond; step)); do */
     {
-        const char *af =
-            strip_ws(lines[0]);
+        const char *af = strip_ws(lines[0]);
         af += 3; /* skip "for" */
         af = strip_ws(af);
         if(af[0] == '(' && af[1] == '(')
         {
             af += 2; /* skip "((" */
             /* Find closing )) */
-            const char *ce =
-                strstr(af, "))");
+            const char *ce = strstr(af, "))");
             if(ce != NULL)
             {
-                char abuf[
-                    STRINGMAXLEN_CLICMDLINE
-                ];
-                int alen =
-                    (int)(ce - af);
-                memcpy(abuf, af,
-                       (size_t) alen);
+                char abuf[STRINGMAXLEN_CLICMDLINE];
+                int alen = (int)(ce - af);
+                memcpy(abuf, af, (size_t) alen);
                 abuf[alen] = '\0';
                 /* Split on ; */
                 char ainit[256] = "";
                 char acond[256] = "";
                 char astep[256] = "";
-                char *s1 =
-                    strchr(abuf, ';');
+                char *s1 = strchr(abuf, ';');
                 if(s1 != NULL)
                 {
                     *s1 = '\0';
-                    strncpy(ainit,
-                            abuf, 255);
-                    char *s2 =
-                        strchr(
-                            s1 + 1,
-                            ';');
+                    strncpy(ainit, abuf, 255);
+                    char *s2 = strchr(s1 + 1, ';');
                     if(s2 != NULL)
                     {
                         *s2 = '\0';
-                        strncpy(
-                            acond,
-                            s1 + 1,
-                            255);
-                        strncpy(
-                            astep,
-                            s2 + 1,
-                            255);
+                        strncpy(acond, s1 + 1, 255);
+                        strncpy(astep, s2 + 1, 255);
                     }
                 }
                 /* Execute init */
                 {
-                    char einit[
-                        STRINGMAXLEN_CLICMDLINE
-                    ];
-                    snprintf(
-                        einit,
-                        sizeof(einit),
-                        "$(( %s ))",
-                        ainit);
-                    cli_expand_arith(
-                        einit,
-                        STRINGMAXLEN_CLICMDLINE
-                    );
+                    char einit[STRINGMAXLEN_CLICMDLINE];
+                    snprintf(einit, sizeof(einit), "$((%s))", ainit);
+                    cli_expand_arith(einit, STRINGMAXLEN_CLICMDLINE);
                 }
                 /* Loop: eval cond,
                  * exec body, eval step */
                 for(;;)
                 {
-                    char econd[
-                        STRINGMAXLEN_CLICMDLINE
-                    ];
-                    snprintf(
-                        econd,
-                        sizeof(econd),
-                        "$(( %s ))",
-                        acond);
-                    cli_expand_arith(
-                        econd,
-                        STRINGMAXLEN_CLICMDLINE
-                    );
-                    long cv =
-                        strtol(econd,
-                               NULL,
-                               10);
+                    char econd[STRINGMAXLEN_CLICMDLINE];
+                    snprintf(econd, sizeof(econd), "$((%s))", acond);
+                    cli_expand_arith(econd, STRINGMAXLEN_CLICMDLINE);
+                    long cv = strtol(econd, NULL, 10);
                     if(cv == 0)
                     {
                         break;
                     }
-                    cli_exec_lines(
-                        lines +  1,
-                        nlines - 1);
+                    cli_exec_lines(lines +  1, nlines - 1);
                     /* step */
                     {
-                        char estep[
-                            STRINGMAXLEN_CLICMDLINE
-                        ];
-                        snprintf(
-                            estep,
-                            sizeof(estep),
-                            "$(( %s ))",
-                            astep);
-                        cli_expand_arith(
-                            estep,
-                            STRINGMAXLEN_CLICMDLINE
-                        );
+                        char estep[STRINGMAXLEN_CLICMDLINE];
+                        snprintf(estep, sizeof(estep), "$((%s))", astep);
+                        cli_expand_arith(estep, STRINGMAXLEN_CLICMDLINE);
                     }
                 }
                 return;
@@ -741,10 +635,8 @@ void cli_exec_block_for(
 
     /* Collect values (strip trailing ;do) */
     char vallist[STRINGMAXLEN_CLICMDLINE];
-    strncpy(vallist, fl,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    vallist[
-        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    strncpy(vallist, fl, STRINGMAXLEN_CLICMDLINE - 1);
+    vallist[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     /* Remove trailing "; do" or ";do" */
     {
@@ -773,8 +665,7 @@ void cli_exec_block_for(
     /* Skip standalone 'do' line */
     if(body_start < body_end)
     {
-        const char *ds =
-            strip_ws(lines[body_start]);
+        const char *ds = strip_ws(lines[body_start]);
         if(strcmp(ds, "do") == 0)
         {
             body_start++;
@@ -783,16 +674,13 @@ void cli_exec_block_for(
 
     /* Iterate over values */
     char *saveptr = NULL;
-    char *val = strtok_r(vallist, " \t",
-                         &saveptr);
+    char *val = strtok_r(vallist, " \t", &saveptr);
     while(val != NULL)
     {
         cli_var_set(varname, val);
 
         cli_continue_flag = 0;
-        cli_exec_lines(
-            lines +    body_start,
-            body_end - body_start);
+        cli_exec_lines(lines +    body_start, body_end - body_start);
 
         if(cli_break_flag)
         {

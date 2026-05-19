@@ -105,8 +105,7 @@ void ov_add_edge(
     e->tgt_node = tgt;
     e->type     = type;
     e->active   = 1;
-    strncpy(e->label, label,
-            sizeof(e->label) - 1);
+    strncpy(e->label, label, sizeof(e->label) - 1);
     e->label[sizeof(e->label) - 1] = '\0';
     model->nb_edges++;
 }
@@ -144,8 +143,7 @@ static int add_node(
     n->active = active;
     n->gx     = 0;
     n->gy     = 0;
-    strncpy(n->name, name,
-            sizeof(n->name) - 1);
+    strncpy(n->name, name, sizeof(n->name) - 1);
     n->name[sizeof(n->name) - 1] = '\0';
     model->nb_nodes++;
     return ni;
@@ -173,8 +171,7 @@ void ov_build_graph(OV_MODEL *model)
         }
         model->streams[i].node_idx = add_node(
                                          model, OV_NODE_STREAM, i,
-                                         model->streams[i].name,
-                                         model->streams[i].active);
+                                         model->streams[i].name, model->streams[i].active);
     }
 
     for(int i = 0; i < model->nb_fps; i++)
@@ -185,8 +182,7 @@ void ov_build_graph(OV_MODEL *model)
         }
         model->fps[i].node_idx = add_node(
                                      model, OV_NODE_FPS, i,
-                                     model->fps[i].name,
-                                     model->fps[i].run_alive);
+                                     model->fps[i].name, model->fps[i].run_alive);
     }
 
     for(int i = 0; i < model->nb_procs; i++)
@@ -197,8 +193,7 @@ void ov_build_graph(OV_MODEL *model)
         }
         model->procs[i].node_idx = add_node(
                                        model, OV_NODE_PROC, i,
-                                       model->procs[i].name,
-                                       model->procs[i].active);
+                                       model->procs[i].name, model->procs[i].active);
     }
 
     /* ---- Build edges from process trace ---- */
@@ -233,21 +228,16 @@ void ov_build_graph(OV_MODEL *model)
                 /* proc → stream (writes) */
                 ov_add_edge(
                     model,
-                    model->procs[pi].node_idx,
-                    s->node_idx,
-                    OV_EDGE_PROC_WRITES_STREAM,
-                    "writes");
+                    model->procs[pi].node_idx, s->node_idx, OV_EDGE_PROC_WRITES_STREAM, "writes");
             }
 
             /* Find the trigger stream */
-            ino_t trig_inode =
-                s->proctrace_inode[t];
+            ino_t trig_inode = s->proctrace_inode[t];
             if(trig_inode != 0
                     && pi >= 0
                     && model->procs[pi].node_idx >= 0)
             {
-                int tsi = ov_find_stream_by_inode(
-                              model, trig_inode);
+                int tsi = ov_find_stream_by_inode(model, trig_inode);
                 if(tsi >= 0
                         && model->streams[tsi].node_idx
                         >= 0)
@@ -256,9 +246,7 @@ void ov_build_graph(OV_MODEL *model)
                     ov_add_edge(
                         model,
                         model->streams[tsi].node_idx,
-                        model->procs[pi].node_idx,
-                        OV_EDGE_STREAM_TRIGGERS_PROC,
-                        "triggers");
+                        model->procs[pi].node_idx, OV_EDGE_STREAM_TRIGGERS_PROC, "triggers");
                 }
             }
         }
@@ -276,9 +264,7 @@ void ov_build_graph(OV_MODEL *model)
                     ov_add_edge(
                         model,
                         s->node_idx,
-                        model->procs[rpi].node_idx,
-                        OV_EDGE_STREAM_READ_BY_PROC,
-                        "reads");
+                        model->procs[rpi].node_idx, OV_EDGE_STREAM_READ_BY_PROC, "reads");
                 }
             }
         }
@@ -297,17 +283,12 @@ void ov_build_graph(OV_MODEL *model)
         /* FPS → Process (via runpid match) */
         if(f->run_alive && f->runpid > 0)
         {
-            int pi = ov_find_proc_by_pid(
-                         model, f->runpid);
+            int pi = ov_find_proc_by_pid(model, f->runpid);
             if(pi >= 0
                     && model->procs[pi].node_idx >= 0)
             {
                 ov_add_edge(
-                    model,
-                    f->node_idx,
-                    model->procs[pi].node_idx,
-                    OV_EDGE_FPS_RUNS_PROC,
-                    "runs");
+                    model, f->node_idx, model->procs[pi].node_idx, OV_EDGE_FPS_RUNS_PROC, "runs");
             }
         }
 
@@ -316,23 +297,20 @@ void ov_build_graph(OV_MODEL *model)
                 sp < f->nb_stream_params;
                 sp++)
         {
-            const char *sval =
-                f->stream_param_value[sp];
+            const char *sval = f->stream_param_value[sp];
             if(sval[0] == '\0')
             {
                 continue;
             }
 
-            int si = ov_find_stream_by_name(
-                         model, sval);
+            int si = ov_find_stream_by_name(model, sval);
             if(si < 0
                     || model->streams[si].node_idx < 0)
             {
                 continue;
             }
 
-            const char *pname =
-                f->stream_param_name[sp];
+            const char *pname = f->stream_param_name[sp];
 
             /* Skip procinfo trigger stream —
              * already handled by
@@ -358,20 +336,14 @@ void ov_build_graph(OV_MODEL *model)
                 /* FPS → stream (output) */
                 ov_add_edge(
                     model,
-                    f->node_idx,
-                    model->streams[si].node_idx,
-                    OV_EDGE_FPS_OUTPUT_STREAM,
-                    "output");
+                    f->node_idx, model->streams[si].node_idx, OV_EDGE_FPS_OUTPUT_STREAM, "output");
             }
             else
             {
                 /* stream → FPS (input) */
                 ov_add_edge(
                     model,
-                    model->streams[si].node_idx,
-                    f->node_idx,
-                    OV_EDGE_FPS_INPUT_STREAM,
-                    "input");
+                    model->streams[si].node_idx, f->node_idx, OV_EDGE_FPS_INPUT_STREAM, "input");
             }
         }
     }
@@ -388,17 +360,14 @@ void ov_build_graph(OV_MODEL *model)
 
         if(p->trigstreamname[0] != '\0')
         {
-            int si = ov_find_stream_by_name(
-                         model, p->trigstreamname);
+            int si = ov_find_stream_by_name(model, p->trigstreamname);
             if(si >= 0
                     && model->streams[si].node_idx >= 0)
             {
                 ov_add_edge(
                     model,
                     model->streams[si].node_idx,
-                    p->node_idx,
-                    OV_EDGE_PROC_TRIGGER_STREAM,
-                    "trigger");
+                    p->node_idx, OV_EDGE_PROC_TRIGGER_STREAM, "trigger");
             }
         }
     }

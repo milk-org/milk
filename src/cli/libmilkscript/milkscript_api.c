@@ -137,9 +137,7 @@ errno_t milkscript_run(FILE *fp)
         if(data.echo_input && len > 0)
         {
             static int first_line = 1;
-            int is_shebang = (first_line
-                              && line[0] == '#'
-                              && line[1] == '!');
+            int is_shebang = (first_line && line[0] == '#' && line[1] == '!');
             first_line = 0;
 
             if(!is_shebang)

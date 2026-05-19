@@ -39,16 +39,13 @@ void streamCTRL__render_header_streams(
         (int)(sTUIparam.frequ + 0.5),
         1.0 / streaminfoproc.dtscan,
         1000000.0 / streaminfoproc.twaitus,
-        100.0 *
-        (streaminfoproc.dtscan - 1.0e-6 * streaminfoproc.twaitus) /
-        streaminfoproc.dtscan);
+        100.0 * (streaminfoproc.dtscan - 1.0e-6 * streaminfoproc.twaitus) / streaminfoproc.dtscan);
 
     if(streaminfoproc.fuserUpdate == 1)
     {
         screenprint_setcolor(9);
         TUI_printfw("fuser scan ongoing  %4d  / %4d   ",
-                    streaminfoproc.sindexscan,
-                    sTUIparam.NBsindex);
+                    streaminfoproc.sindexscan, sTUIparam.NBsindex);
         screenprint_unsetcolor(9);
     }
     if(sTUIparam.DisplayMode == DISPLAY_MODE_FUSER)
@@ -60,16 +57,14 @@ void streamCTRL__render_header_streams(
                 "F6 again to re-scan    C-c to stop "
                 "scan",
                 sTUIparam.uttime_lastScan->tm_hour,
-                sTUIparam.uttime_lastScan->tm_min,
-                sTUIparam.uttime_lastScan->tm_sec);
+                sTUIparam.uttime_lastScan->tm_min, sTUIparam.uttime_lastScan->tm_sec);
             TUI_newline();
         }
         else
         {
             TUI_printfw(
                 "Last scan on  XX:XX:XX  - Press F6 "
-                "again to scan             C-c to stop "
-                "scan");
+                "again to scan             C-c to stop " "scan");
             TUI_newline();
         }
     }
@@ -89,18 +84,13 @@ void streamCTRL__render_header_streams(
             screenprint_setcolor(6);
             TUI_printfw(
                 "[SORT: %s %s]  ",
-                sort_col_names[
-                    sTUIparam.sort_col],
-                sTUIparam.sort_dir
-                ? "DESC" : "ASC");
+                sort_col_names[sTUIparam.sort_col], sTUIparam.sort_dir ? "DESC" : "ASC");
             screenprint_unsetcolor(6);
         }
         else if(sTUIparam.SORTING > 0)
         {
             screenprint_setcolor(6);
-            TUI_printfw(
-                "[SORT: mode %d]  ",
-                sTUIparam.SORTING);
+            TUI_printfw("[SORT: mode %d]  ", sTUIparam.SORTING);
             screenprint_unsetcolor(6);
         }
 
@@ -139,10 +129,7 @@ void streamCTRL__render_header_streams(
             "Selected %d  ID = %d  inode = %d",
             sTUIparam.NBsindex,
             (long)doffsetindex,
-            (long)lastindex,
-            sTUIparam.dindexSelected,
-            ssIDselected,
-            (int) inodeselected);
+            (long)lastindex, sTUIparam.dindexSelected, ssIDselected, (int) inodeselected);
     }
 
     if(streaminfoproc.filter == 1)
@@ -165,44 +152,32 @@ void streamCTRL__render_header_streams(
                 "type",
                 Dispcnt0_NBchar,
                 "cnt0",
-                DispPID_NBchar,
-                "creaPID",
-                DispPID_NBchar,
-                "ownPID",
-                Dispfreq_NBchar,
-                "   frequ ");
+                DispPID_NBchar, "creaPID", DispPID_NBchar, "ownPID", Dispfreq_NBchar, "   frequ ");
 
     switch(sTUIparam.DisplayMode)
     {
-    case DISPLAY_MODE_SUMMARY:
-        TUI_printfw("     Semaphore values ....");
+    case DISPLAY_MODE_SUMMARY: TUI_printfw("     Semaphore values ....");
         TUI_newline();
         break;
 
-    case DISPLAY_MODE_WRITE:
-        TUI_printfw("     write PIDs ....");
+    case DISPLAY_MODE_WRITE: TUI_printfw("     write PIDs ....");
         TUI_newline();
         break;
 
-    case DISPLAY_MODE_READ:
-        TUI_printfw("     read PIDs ....");
+    case DISPLAY_MODE_READ: TUI_printfw("     read PIDs ....");
         TUI_newline();
         break;
 
     case DISPLAY_MODE_SPTRACE:
-        TUI_printfw(
-            "     stream process traces:   \"(INODE "
-            "TYPE/SEM PID)>\"");
+        TUI_printfw("     stream process traces:   \"(INODE " "TYPE/SEM PID)>\"");
         TUI_newline();
         break;
 
-    case DISPLAY_MODE_FUSER:
-        TUI_printfw("     connected processes");
+    case DISPLAY_MODE_FUSER: TUI_printfw("     connected processes");
         TUI_newline();
         break;
 
-    default:
-        TUI_newline();
+    default: TUI_newline();
         break;
     }
 
@@ -274,10 +249,7 @@ void streamCTRL__render_header_streams(
         g_sort_col = sTUIparam.sort_col;
         g_sort_dir = sTUIparam.sort_dir;
 
-        qsort(sTUIparam.ssindex,
-              sTUIparam.NBsindex,
-              sizeof(long),
-              cmp_stream_col);
+        qsort(sTUIparam.ssindex, sTUIparam.NBsindex, sizeof(long), cmp_stream_col);
     }
 
     /* ---- Legacy sort mode 1: alphabetical ---- */
@@ -288,10 +260,7 @@ void streamCTRL__render_header_streams(
         g_sort_col = STREAM_SORT_NAME;
         g_sort_dir = 0;
 
-        qsort(sTUIparam.ssindex,
-              sTUIparam.NBsindex,
-              sizeof(long),
-              cmp_stream_col);
+        qsort(sTUIparam.ssindex, sTUIparam.NBsindex, sizeof(long), cmp_stream_col);
     }
 
     /* ---- Legacy sort modes 2/3: update recency ---- */
@@ -300,10 +269,8 @@ void streamCTRL__render_header_streams(
     {
         long   *larray;
         double *varray;
-        larray = (long *) malloc(
-                     sizeof(long) * sTUIparam.NBsindex);
-        varray = (double *) malloc(
-                     sizeof(double) * sTUIparam.NBsindex);
+        larray = (long *) malloc(sizeof(long) * sTUIparam.NBsindex);
+        varray = (double *) malloc(sizeof(double) * sTUIparam.NBsindex);
 
         if(sTUIparam.SORT_TOGGLE == 1)
         {
@@ -311,9 +278,7 @@ void streamCTRL__render_header_streams(
                     i < sTUIparam.NBsindex; i++)
             {
                 long si = sTUIparam.ssindex[i];
-                streaminfo[si]
-                .updatevalue_frozen =
-                    streaminfo[si].updatevalue;
+                streaminfo[si] .updatevalue_frozen = streaminfo[si].updatevalue;
             }
 
             if(sTUIparam.SORTING == 3)
@@ -321,13 +286,9 @@ void streamCTRL__render_header_streams(
                 for(long i = 0;
                         i < sTUIparam.NBsindex; i++)
                 {
-                    long si =
-                        sTUIparam.ssindex[i];
+                    long si = sTUIparam.ssindex[i];
                     streaminfo[si]
-                    .updatevalue_frozen +=
-                        10000.0 *
-                        streaminfo[si]
-                        .streamOpenPID_cnt1;
+                    .updatevalue_frozen += 10000.0 * streaminfo[si] .streamOpenPID_cnt1;
                 }
             }
 
@@ -339,23 +300,18 @@ void streamCTRL__render_header_streams(
         {
             long si = sTUIparam.ssindex[i];
             larray[i] = si;
-            varray[i] =
-                streaminfo[si]
-                .updatevalue_frozen;
+            varray[i] = streaminfo[si] .updatevalue_frozen;
         }
 
         if(sTUIparam.NBsindex > 1)
         {
-            quick_sort2l(varray, larray,
-                         sTUIparam.NBsindex);
+            quick_sort2l(varray, larray, sTUIparam.NBsindex);
         }
 
         for(long i = 0;
                 i < sTUIparam.NBsindex; i++)
         {
-            sTUIparam.ssindex[
-            sTUIparam.NBsindex - i - 1] =
-                    larray[i];
+            sTUIparam.ssindex[sTUIparam.NBsindex - i - 1] = larray[i];
         }
 
         free(larray);
@@ -408,8 +364,7 @@ void streamCTRL__render_header_streams(
     if(sTUIparam.dindexSelected >=
             doffsetindex + NBsinfodisp)
     {
-        doffsetindex =
-            sTUIparam.dindexSelected - NBsinfodisp + 1;
+        doffsetindex = sTUIparam.dindexSelected - NBsinfodisp + 1;
     }
 
     {
@@ -460,9 +415,7 @@ void streamCTRL__render_header_streams(
 
         for(int ci = 0; ci < ncols; ci++)
         {
-            int is_active =
-                (cols[ci].col_id ==
-                 sTUIparam.sort_col);
+            int is_active = (cols[ci].col_id == sTUIparam.sort_col);
 
             if(is_active)
             {
@@ -473,15 +426,10 @@ void streamCTRL__render_header_streams(
             char arrow = ' ';
             if(is_active)
             {
-                arrow = sTUIparam.sort_dir
-                        ? '\x19' : '\x18';
+                arrow = sTUIparam.sort_dir ? '\x19' : '\x18';
             }
 
-            TUI_printfw("%-*.*s%c",
-                        cols[ci].width - 1,
-                        cols[ci].width - 1,
-                        cols[ci].label,
-                        arrow);
+            TUI_printfw("%-*.*s%c", cols[ci].width - 1, cols[ci].width - 1, cols[ci].label, arrow);
 
             if(is_active)
             {

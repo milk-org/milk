@@ -35,11 +35,9 @@ static FPS_APP_INFO FPS_app_info =
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char p_instream[FUNCTION_PARAMETER_STRMAXLEN]
-    = "stream";
+static char p_instream[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 
-static char p_outstream[FUNCTION_PARAMETER_STRMAXLEN]
-    = "outstream";
+static char p_outstream[FUNCTION_PARAMETER_STRMAXLEN] = "outstream";
 
 static long long p_semtrig = 3;
 
@@ -110,8 +108,7 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
     long       semtrig)
 {
     IMGID img0 = imgid_make_from_name(IDstream_name);
-    resolveIMGID(&img0, ERRMODE_WARN,
-                 dcimg, dcnimg);
+    resolveIMGID(&img0, ERRMODE_WARN, dcimg, dcnimg);
     if(img0.ID == -1)
     {
         return RETURN_FAILURE;
@@ -133,21 +130,15 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
 
     switch(datatype)
     {
-        HALFDIFF_TYPES(HALFDIFF_OUTTYPE)
-    default:
-        break;
+        HALFDIFF_TYPES(HALFDIFF_OUTTYPE) default: break;
     }
 #undef HALFDIFF_OUTTYPE
 
-    IMGID imgout =
-        imgid_make_from_name(IDstreamout_name);
-    resolveIMGID(&imgout, ERRMODE_NULL,
-                 dcimg, dcnimg);
+    IMGID imgout = imgid_make_from_name(IDstreamout_name);
+    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
     if(imgout.ID == -1)
     {
-        imgout = stream_connect_create_2D(
-                     IDstreamout_name,
-                     xsize, ysize, datatypeout);
+        imgout = stream_connect_create_2D(IDstreamout_name, xsize, ysize, datatypeout);
     }
 
     unsigned long long cnt = 0;
@@ -164,8 +155,7 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
         }
         else
         {
-            ImageStreamIO_semwait(
-                img0.im, semtrig);
+            ImageStreamIO_semwait(img0.im, semtrig);
         }
 
         imgout.md->write = 1;
@@ -193,15 +183,12 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
 
         switch(datatype)
         {
-            HALFDIFF_TYPES(HALFDIFF_CASE)
-        default:
-            PRINT_ERROR("unsupported datatype");
+            HALFDIFF_TYPES(HALFDIFF_CASE) default: PRINT_ERROR("unsupported datatype");
             break;
         }
 #undef HALFDIFF_CASE
 
-        COREMOD_MEMORY_image_set_sempost_byID(
-            imgout.ID, -1);
+        COREMOD_MEMORY_image_set_sempost_byID(imgout.ID, -1);
         imgout.md->cnt0++;
         imgout.md->write = 0;
     }
@@ -227,12 +214,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    COREMOD_MEMORY_stream_halfimDiff(
-        p_instream, p_outstream, p_semtrig);
+    COREMOD_MEMORY_stream_halfimDiff(p_instream, p_outstream, p_semtrig);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -245,21 +229,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__stream_halfimdiff()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi = RegisterCLIcmd(
-                   CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }
