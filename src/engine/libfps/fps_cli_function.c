@@ -55,14 +55,15 @@ errno_t fps_generic_CLIfunction(
     function_parameter_getFPSargs_from_CLIfunc(
         fpsname_with_session);
 
-    if (dcfpscode == FPSCMDCODE_IGNORE) {
+    if(dcfpscode == FPSCMDCODE_IGNORE)
+    {
         return RETURN_SUCCESS;
     }
 
     /* Handle "?" query */
-    if (data.cmdNBarg >= 2 &&
-        strcmp(data.cmdargtoken[1].val.string,
-               "?") == 0)
+    if(data.cmdNBarg >= 2 &&
+            strcmp(data.cmdargtoken[1].val.string,
+                   "?") == 0)
     {
         fps_print_query_info(
             app_info, bindings, nb_b);
@@ -70,9 +71,9 @@ errno_t fps_generic_CLIfunction(
     }
 
     /* Initialization action */
-    if (dcfpscode == FPSCMDCODE_FPSINIT ||
-        dcfpscode
-        == FPSCMDCODE_FPSINITCREATE)
+    if(dcfpscode == FPSCMDCODE_FPSINIT ||
+            dcfpscode
+            == FPSCMDCODE_FPSINITCREATE)
     {
         fps_generic_init(
             dcfpsname, app_info,
@@ -80,7 +81,8 @@ errno_t fps_generic_CLIfunction(
         return RETURN_SUCCESS;
     }
 
-    if (dcfpscode == FPSCMDCODE_IGNORE) {
+    if(dcfpscode == FPSCMDCODE_IGNORE)
+    {
         return RETURN_SUCCESS;
     }
 
@@ -89,32 +91,36 @@ errno_t fps_generic_CLIfunction(
            sizeof(FPS));
     fps.SMfd = -1;
 
-    if (dcfpsname[0] == '_') {
+    if(dcfpsname[0] == '_')
+    {
         FPS *lfps =
             fps_local_get_or_create(
                 dcfpsname,
                 FUNCTION_PARAMETER_NBPARAM_DEFAULT);
-        if (lfps == NULL) {
+        if(lfps == NULL)
+        {
             return RETURN_FAILURE;
         }
-        if (lfps->NBparam == 0) {
+        if(lfps->NBparam == 0)
+        {
             fps_generic_init(
                 dcfpsname, app_info,
                 bindings, nb_b, 0);
         }
         fps = *lfps;
     }
-    else {
-        if (fps_connect(
-                dcfpsname, &fps,
-                FPSCONNECT_SIMPLE) == -1)
+    else
+    {
+        if(fps_connect(
+                    dcfpsname, &fps,
+                    FPSCONNECT_SIMPLE) == -1)
         {
             fps_generic_init(
                 dcfpsname, app_info,
                 bindings, nb_b, 0);
-            if (fps_connect(
-                    dcfpsname, &fps,
-                    FPSCONNECT_SIMPLE) == -1)
+            if(fps_connect(
+                        dcfpsname, &fps,
+                        FPSCONNECT_SIMPLE) == -1)
             {
                 printf("Failed to connect to "
                        "FPS %s\n",
@@ -125,7 +131,8 @@ errno_t fps_generic_CLIfunction(
     }
 
     /* Print FPS name and type in color */
-    if (dcfpsname[0] == '_') {
+    if(dcfpsname[0] == '_')
+    {
         printf("\033[36mFPS \033[1m%s\033[22m"
                " \033[33m[LOCAL]\033[0m\n",
                dcfpsname);
@@ -133,7 +140,8 @@ errno_t fps_generic_CLIfunction(
             dcfpsname,
             app_info->fps_name);
     }
-    else {
+    else
+    {
         printf("\033[36mFPS \033[1m%s\033[22m"
                " \033[32m[SHARED]\033[0m\n",
                dcfpsname);
@@ -147,25 +155,26 @@ errno_t fps_generic_CLIfunction(
             dcfpsname,
             sizeof(fps_last_used_name) - 1);
     fps_last_used_name[
-        sizeof(fps_last_used_name) - 1] = '\0';
+     sizeof(fps_last_used_name) - 1] = '\0';
     strncpy(fps_last_used_cmdkey,
             app_info->fps_name,
             sizeof(fps_last_used_cmdkey) - 1);
     fps_last_used_cmdkey[
-        sizeof(fps_last_used_cmdkey) - 1] = '\0';
+     sizeof(fps_last_used_cmdkey) - 1] = '\0';
 
     dcfpsptr = &fps;
     errno_t retval =
         CLI_checkarg_array(farg, cmdata->nbarg);
 
-    if (retval == RETURN_SUCCESS ||
-        retval
-        == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    if(retval == RETURN_SUCCESS ||
+            retval
+            == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
     {
         fps_process_cli_and_sync(
             &fps, farg, bindings, nb_b);
 
-        if (dcfpsname[0] == '\0') {
+        if(dcfpsname[0] == '\0')
+        {
             strncpy(dcfpsname,
                     fpsname_with_session,
                     STRINGMAXLEN_FPS_NAME - 1);
@@ -176,34 +185,34 @@ errno_t fps_generic_CLIfunction(
         cmdata->cmdsettings =
             &data.cmd[data.cmdindex].cmdsettings;
 
-        if (cmdata->cmdsettings->flags
-            & CLICMDFLAG_PROCINFO)
+        if(cmdata->cmdsettings->flags
+                & CLICMDFLAG_PROCINFO)
         {
             memset(&fps.cmdset, 0,
                    sizeof(fps.cmdset));
             fps.cmdset.procinfo_loopcntMax =
                 cmdata->cmdsettings
-                    ->procinfo_loopcntMax;
+                ->procinfo_loopcntMax;
             fps.cmdset.triggermode =
                 cmdata->cmdsettings->triggermode;
             strncpy(
                 fps.cmdset.triggerstreamname,
                 cmdata->cmdsettings
-                    ->triggerstreamname,
+                ->triggerstreamname,
                 STRINGMAXLEN_IMAGE_NAME - 1);
             fps.cmdset.triggerdelay =
                 cmdata->cmdsettings->triggerdelay;
             fps.cmdset.triggertimeout =
                 cmdata->cmdsettings
-                    ->triggertimeout;
+                ->triggertimeout;
             fps.cmdset.semindexrequested =
                 cmdata->cmdsettings
-                    ->semindexrequested;
+                ->semindexrequested;
             fps.cmdset.RT_priority =
                 cmdata->cmdsettings->RT_priority;
             fps.cmdset.procinfo_MeasureTiming =
                 cmdata->cmdsettings
-                    ->procinfo_MeasureTiming;
+                ->procinfo_MeasureTiming;
 
             fps_add_processinfo_entries(&fps);
         }
@@ -211,13 +220,14 @@ errno_t fps_generic_CLIfunction(
         compute_fn();
         retval = RETURN_SUCCESS;
     }
-    else if (retval == RETURN_CLICHECKARGARRAY_HELP)
+    else if(retval == RETURN_CLICHECKARGARRAY_HELP)
     {
         retval = RETURN_SUCCESS;
     }
 
     dcfpsptr = NULL;
-    if (dcfpsname[0] != '_') {
+    if(dcfpsname[0] != '_')
+    {
         fps_disconnect(&fps);
     }
     return retval;
@@ -242,8 +252,10 @@ void fps_fill_farg_examples(
     int              nb_b
 )
 {
-    for (int ii = 0; ii < nb_b; ii++) {
-        switch (bindings[ii].type) {
+    for(int ii = 0; ii < nb_b; ii++)
+    {
+        switch(bindings[ii].type)
+        {
         case FPTYPE_INT32:
             snprintf(
                 farg[ii].example,
@@ -306,9 +318,9 @@ void fps_fill_farg_examples(
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%ld.%09ld",
                 ((struct timespec *)
-                    bindings[ii].ptr)->tv_sec,
+                 bindings[ii].ptr)->tv_sec,
                 ((struct timespec *)
-                    bindings[ii].ptr)->tv_nsec);
+                 bindings[ii].ptr)->tv_nsec);
             break;
         case FPTYPE_STRING:
         case FPTYPE_STREAMNAME:
@@ -323,7 +335,7 @@ void fps_fill_farg_examples(
                 farg[ii].example,
                 (char *) bindings[ii].ptr,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE
-                    - 1);
+                - 1);
             break;
         }
     }

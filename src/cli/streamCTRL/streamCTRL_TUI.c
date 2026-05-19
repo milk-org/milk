@@ -101,18 +101,36 @@ int cmp_stream_col(const void *a, const void *b)
     imageID IDB = siB->ID;
 
     /* Streams with no valid ID sort to the bottom */
-    if (IDA < 0 && IDB < 0) return 0;
-    if (IDA < 0) return 1;
-    if (IDB < 0) return -1;
+    if(IDA < 0 && IDB < 0)
+    {
+        return 0;
+    }
+    if(IDA < 0)
+    {
+        return 1;
+    }
+    if(IDB < 0)
+    {
+        return -1;
+    }
 
     IMAGE_METADATA *mdA = g_sort_images[IDA].md;
     IMAGE_METADATA *mdB = g_sort_images[IDB].md;
 
-    if (mdA == NULL && mdB == NULL) return 0;
-    if (mdA == NULL) return 1;
-    if (mdB == NULL) return -1;
+    if(mdA == NULL && mdB == NULL)
+    {
+        return 0;
+    }
+    if(mdA == NULL)
+    {
+        return 1;
+    }
+    if(mdB == NULL)
+    {
+        return -1;
+    }
 
-    switch (g_sort_col)
+    switch(g_sort_col)
     {
     case STREAM_SORT_NAME:
         res = strcmp(siA->sname, siB->sname);
@@ -122,7 +140,7 @@ int cmp_stream_col(const void *a, const void *b)
         res = (siA->datatype < siB->datatype)
               ? -1
               : (siA->datatype > siB->datatype)
-                ? 1 : 0;
+              ? 1 : 0;
         break;
 
     case STREAM_SORT_SIZE:
@@ -147,25 +165,25 @@ int cmp_stream_col(const void *a, const void *b)
         res = (mdA->creatorPID < mdB->creatorPID)
               ? -1
               : (mdA->creatorPID > mdB->creatorPID)
-                ? 1 : 0;
+              ? 1 : 0;
         break;
 
     case STREAM_SORT_OPID:
         res = (mdA->ownerPID < mdB->ownerPID)
               ? -1
               : (mdA->ownerPID > mdB->ownerPID)
-                ? 1 : 0;
+              ? 1 : 0;
         break;
 
     case STREAM_SORT_FREQ:
         res = (siA->frequ_disp < siB->frequ_disp)
               ? -1
               : (siA->frequ_disp > siB->frequ_disp)
-                ? 1 : 0;
+              ? 1 : 0;
         break;
     }
 
-    if (g_sort_dir == 1)
+    if(g_sort_dir == 1)
     {
         res = -res;
     }
@@ -406,8 +424,8 @@ errno_t streamCTRL_CTRLscreen(void)
 
         TUI_clearscreen(&wrow, &wcol);
 
-        
-        
+
+
         state.doffsetindex = doffsetindex;
         state.monstrlen = monstrlen;
         state.monstring = monstring;
@@ -474,4 +492,3 @@ errno_t streamCTRL_CTRLscreen(void)
 
     return EXIT_SUCCESS;
 }
-

@@ -49,11 +49,11 @@ typedef struct
     int  sparam_idx[OV_FPS_MAX_STREAM_PARAMS];
     char sparam_key[OV_FPS_MAX_STREAM_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
     int  sparam_nb;
-    
+
     int  dparam_idx[OV_FPS_MAX_DISP_PARAMS];
     char dparam_key[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
     int  dparam_nb;
-    
+
     int  sparam_cached;
 } ov_fps_cache_t;
 

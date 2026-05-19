@@ -43,7 +43,7 @@ int processinfo_WriteMessage(
                 msgstring,
                 STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
         processinfo->statusmsg[
-            STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1] = '\0';
+        STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1] = '\0';
     }
 
 #ifdef PROCESSINFO_LOGFILE

@@ -20,13 +20,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "streamhalfdiff",
     .cmdkey      = "streamhalfdiff",
     .description =
-        "half-image difference",
+    "half-image difference",
     .description_long =
-        "Compute the difference between the left and right halves of an image stream. Produces a half-width output. Used for differential measurements in optical systems."
+    "Compute the difference between the left and right halves of an image stream. Produces a half-width output. Used for differential measurements in optical systems."
 };
 
 
@@ -111,7 +112,8 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
     IMGID img0 = imgid_make_from_name(IDstream_name);
     resolveIMGID(&img0, ERRMODE_WARN,
                  dcimg, dcnimg);
-    if (img0.ID == -1) {
+    if(img0.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -131,7 +133,7 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
 
     switch(datatype)
     {
-    HALFDIFF_TYPES(HALFDIFF_OUTTYPE)
+        HALFDIFF_TYPES(HALFDIFF_OUTTYPE)
     default:
         break;
     }
@@ -144,8 +146,8 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
     if(imgout.ID == -1)
     {
         imgout = stream_connect_create_2D(
-            IDstreamout_name,
-            xsize, ysize, datatypeout);
+                     IDstreamout_name,
+                     xsize, ysize, datatypeout);
     }
 
     unsigned long long cnt = 0;
@@ -168,11 +170,11 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
 
         imgout.md->write = 1;
 
-/*
- * Typed half-difference loop.
- * Casts operands to OCT before subtraction to
- * avoid unsigned wrap for UINT32/UINT64 inputs.
- */
+        /*
+         * Typed half-difference loop.
+         * Casts operands to OCT before subtraction to
+         * avoid unsigned wrap for UINT32/UINT64 inputs.
+         */
 #define HALFDIFF_CASE(DT_IN, IACC, ICT,              \
                       DT_OUT, OACC, OCT)             \
     case DT_IN:                                      \
@@ -191,7 +193,7 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
 
         switch(datatype)
         {
-        HALFDIFF_TYPES(HALFDIFF_CASE)
+            HALFDIFF_TYPES(HALFDIFF_CASE)
         default:
             PRINT_ERROR("unsupported datatype");
             break;
@@ -243,9 +245,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -255,7 +257,7 @@ CLIADDCMD_COREMOD_memory__stream_halfimdiff()
         farg, my_bindings, nb_bindings);
 
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 

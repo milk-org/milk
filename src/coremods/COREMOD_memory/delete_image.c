@@ -35,12 +35,13 @@ errno_t delete_image_ID(
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "rmimg",
     .cmdkey      = "rm",
     .description = "remove image",
     .description_long =
-        "Remove a single image from the current process memory. Frees the local buffer. If the image is shared, only the local mapping is removed."
+    "Remove a single image from the current process memory. Frees the local buffer. If the image is shared, only the local mapping is removed."
 };
 
 
@@ -112,9 +113,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -124,7 +125,7 @@ CLIADDCMD_COREMOD_memory__delete_image()
         farg, my_bindings, nb_bindings);
 
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 
@@ -275,7 +276,7 @@ errno_t delete_image(
         else
         {
             if(dcimg[ID].md[0].datatype
-                == _DATATYPE_UINT8)
+                    == _DATATYPE_UINT8)
             {
                 if(dcimg[ID].array.UI8 == NULL)
                 {
@@ -286,7 +287,7 @@ errno_t delete_image(
                 dcimg[ID].array.UI8 = NULL;
             }
             else if(dcimg[ID].md[0].datatype
-                == _DATATYPE_INT32)
+                    == _DATATYPE_INT32)
             {
                 if(dcimg[ID].array.SI32 == NULL)
                 {
@@ -297,7 +298,7 @@ errno_t delete_image(
                 dcimg[ID].array.SI32 = NULL;
             }
             else if(dcimg[ID].md[0].datatype
-                == _DATATYPE_FLOAT)
+                    == _DATATYPE_FLOAT)
             {
                 if(dcimg[ID].array.F == NULL)
                 {
@@ -308,7 +309,7 @@ errno_t delete_image(
                 dcimg[ID].array.F = NULL;
             }
             else if(dcimg[ID].md[0].datatype
-                == _DATATYPE_DOUBLE)
+                    == _DATATYPE_DOUBLE)
             {
                 if(dcimg[ID].array.D == NULL)
                 {
@@ -319,7 +320,7 @@ errno_t delete_image(
                 dcimg[ID].array.D = NULL;
             }
             else if(dcimg[ID].md[0].datatype
-                == _DATATYPE_COMPLEX_FLOAT)
+                    == _DATATYPE_COMPLEX_FLOAT)
             {
                 if(dcimg[ID].array.CF == NULL)
                 {
@@ -330,7 +331,7 @@ errno_t delete_image(
                 dcimg[ID].array.CF = NULL;
             }
             else if(dcimg[ID].md[0].datatype
-                == _DATATYPE_COMPLEX_DOUBLE)
+                    == _DATATYPE_COMPLEX_DOUBLE)
             {
                 if(dcimg[ID].array.CD == NULL)
                 {
@@ -384,8 +385,8 @@ errno_t delete_image_ID(
 
     IMGID   img = imgid_make_from_name(imname);
     imageID ID  = resolveIMGID(
-        &img, errmode,
-        dcimg, dcnimg);
+                      &img, errmode,
+                      dcimg, dcnimg);
 
     if(ID != -1)
     {

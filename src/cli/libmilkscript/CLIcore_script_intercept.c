@@ -282,16 +282,18 @@ int eval_cond_line(
         }
         return 0;
     }
-    
+
     char pcopy[STRINGMAXLEN_CLICMDLINE];
     strncpy(pcopy, p, STRINGMAXLEN_CLICMDLINE - 1);
     pcopy[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     char *sc = strchr(pcopy, ';');
-    if (sc != NULL) {
+    if(sc != NULL)
+    {
         *sc = '\0';
     }
     int len = (int) strlen(pcopy);
-    while(len > 0 && (pcopy[len-1] == ' ' || pcopy[len-1] == '\t')) {
+    while(len > 0 && (pcopy[len - 1] == ' ' || pcopy[len - 1] == '\t'))
+    {
         pcopy[--len] = '\0';
     }
 
@@ -363,7 +365,7 @@ int cli_script_intercept(const char *line)
             /* Append line + newline */
             int llen = (int) strlen(p);
             if(heredoc_pos + llen + 1
-               < (int) sizeof(heredoc_buf))
+                    < (int) sizeof(heredoc_buf))
             {
                 memcpy(
                     heredoc_buf + heredoc_pos,
@@ -385,14 +387,14 @@ int cli_script_intercept(const char *line)
         {
             int nlen = (int)(eq - p);
             if(nlen > 0
-               && nlen < CLI_VAR_NAMELEN)
+                    && nlen < CLI_VAR_NAMELEN)
             {
                 memcpy(heredoc_var, p,
                        (size_t) nlen);
                 heredoc_var[nlen] = '\0';
                 const char *d = eq + 3;
                 while(*d == ' '
-                      || *d == '\t')
+                        || *d == '\t')
                 {
                     d++;
                 }
@@ -417,24 +419,24 @@ int cli_script_intercept(const char *line)
     {
         CLI_BLOCK *blk =
             &cli_block_stack[
-                cli_block_level - 1];
+         cli_block_level - 1];
 
         /* Check for nested openers */
         if(starts_with(p, "if ")
-           || starts_with(p, "if\t")
-           || starts_with(p, "while ")
-           || starts_with(p, "while\t")
-           || starts_with(p, "until ")
-           || starts_with(p, "until\t")
-           || starts_with(p, "for ")
-           || starts_with(p, "for\t")
-           || starts_with(p, "select ")
-           || starts_with(p,
-                          "select\t")
-           || starts_with(p, "function ")
-           || starts_with(p, "function\t")
-           || starts_with(p, "case ")
-           || starts_with(p, "case\t"))
+                || starts_with(p, "if\t")
+                || starts_with(p, "while ")
+                || starts_with(p, "while\t")
+                || starts_with(p, "until ")
+                || starts_with(p, "until\t")
+                || starts_with(p, "for ")
+                || starts_with(p, "for\t")
+                || starts_with(p, "select ")
+                || starts_with(p,
+                               "select\t")
+                || starts_with(p, "function ")
+                || starts_with(p, "function\t")
+                || starts_with(p, "case ")
+                || starts_with(p, "case\t"))
         {
             blk->depth++;
         }
@@ -458,7 +460,7 @@ int cli_script_intercept(const char *line)
              * depth and buffer */
             blk->depth--;
             if(blk->nlines
-               < CLI_BLOCK_MAXLINES)
+                    < CLI_BLOCK_MAXLINES)
             {
                 strncpy(
                     blk->lines[
@@ -473,24 +475,24 @@ int cli_script_intercept(const char *line)
 
         /* Check outer block closer */
         if(blk->type == CLI_BLOCK_IF
-           && strcmp(p, "fi") == 0)
+                && strcmp(p, "fi") == 0)
         {
             is_close = 1;
         }
         if((blk->type == CLI_BLOCK_WHILE
-            || blk->type == CLI_BLOCK_FOR
-            || blk->type == CLI_BLOCK_UNTIL)
-           && strcmp(p, "done") == 0)
+                || blk->type == CLI_BLOCK_FOR
+                || blk->type == CLI_BLOCK_UNTIL)
+                && strcmp(p, "done") == 0)
         {
             is_close = 1;
         }
         if(blk->type == CLI_BLOCK_FUNC
-           && strcmp(p, "}") == 0)
+                && strcmp(p, "}") == 0)
         {
             is_close = 1;
         }
         if(blk->type == CLI_BLOCK_CASE
-           && strcmp(p, "esac") == 0)
+                && strcmp(p, "esac") == 0)
         {
             is_close = 1;
         }
@@ -506,10 +508,10 @@ int cli_script_intercept(const char *line)
             int saved_type = blk->type;
             int saved_nlines = blk->nlines;
             char (*saved_lines)[
-                STRINGMAXLEN_CLICMDLINE] =
-                malloc(
-                    (size_t) saved_nlines
-                    * STRINGMAXLEN_CLICMDLINE);
+            STRINGMAXLEN_CLICMDLINE] =
+                    malloc(
+                        (size_t) saved_nlines
+                        * STRINGMAXLEN_CLICMDLINE);
             if(saved_lines == NULL)
             {
                 printf("Error: malloc failed "
@@ -518,7 +520,7 @@ int cli_script_intercept(const char *line)
                 return 1;
             }
             for(int si = 0;
-                si < saved_nlines; si++)
+                    si < saved_nlines; si++)
             {
                 strncpy(
                     saved_lines[si],
@@ -582,12 +584,12 @@ int cli_script_intercept(const char *line)
                 {
                     int fn = 0;
                     while(*fl != '\0'
-                          && *fl != ' '
-                          && *fl != '\t'
-                          && *fl != '{'
-                          && fn
-                             < CLI_FUNC_NAMELEN
-                               - 1)
+                            && *fl != ' '
+                            && *fl != '\t'
+                            && *fl != '{'
+                            && fn
+                            < CLI_FUNC_NAMELEN
+                            - 1)
                     {
                         fname[fn++] = *fl++;
                     }
@@ -627,71 +629,224 @@ int cli_script_intercept(const char *line)
     /* ---- Not in a block: check openers ---- */
 
     /* break / continue / return */
-    if(cli_intercept_cmd_exit(p)) return 1;
-    if(cli_intercept_cmd_return(p)) return 1;
-    if(cli_intercept_cmd_shift(p)) return 1;
-    if(cli_intercept_cmd_procctl(p)) return 1;
-    if(cli_intercept_cmd_procwait(p)) return 1;
-    if(cli_intercept_cmd_procstat(p)) return 1;
-    if(cli_intercept_cmd_time(p)) return 1;
-    if(cli_intercept_cmd_assert(p)) return 1;
-    if(cli_intercept_cmd_assigncheck(p)) return 1;
-    if(cli_intercept_cmd_dpdigits(p)) return 1;
-    if(cli_intercept_cmd_watch(p)) return 1;
-    if(cli_intercept_cmd_trap(p)) return 1;
-    if(cli_intercept_cmd_set(p)) return 1;
-    if(cli_intercept_cmd_export(p)) return 1;
-    if(cli_intercept_cmd_source(p)) return 1;
-    if(cli_intercept_cmd_readonly(p)) return 1;
-    if(cli_intercept_cmd_break(p)) return 1;
-    if(cli_intercept_cmd_continue(p)) return 1;
-    if(cli_intercept_cmd_printf(p)) return 1;
-    if(cli_intercept_cmd_getopts(p)) return 1;
-    if(cli_intercept_cmd_local(p)) return 1;
-    if(cli_intercept_cmd_declare(p)) return 1;
-    if(cli_intercept_cmd_let(p)) return 1;
-    if(cli_intercept_cmd_eval(p)) return 1;
-    if(cli_intercept_cmd_type(p)) return 1;
-    if(cli_intercept_cmd_command(p)) return 1;
-    if(cli_intercept_cmd_timeout(p)) return 1;
-    if(cli_intercept_cmd_mapfile(p)) return 1;
-    if(cli_intercept_cmd_wait(p)) return 1;
-    if(cli_intercept_cmd_wait_any(p)) return 1;
-    if(cli_intercept_cmd_double_bracket(p)) return 1;
+    if(cli_intercept_cmd_exit(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_return(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_shift(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_procctl(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_procwait(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_procstat(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_time(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_assert(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_assigncheck(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_dpdigits(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_watch(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_trap(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_set(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_export(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_source(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_readonly(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_break(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_continue(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_printf(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_getopts(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_local(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_declare(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_let(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_eval(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_type(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_command(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_timeout(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_mapfile(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_wait(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_wait_any(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_double_bracket(p))
+    {
+        return 1;
+    }
 
-    if(cli_intercept_cmd_if(p)) return 1;
-    if(cli_intercept_cmd_while(p)) return 1;
-    if(cli_intercept_cmd_until(p)) return 1;
-    if(cli_intercept_cmd_for(p)) return 1;
-    if(cli_intercept_cmd_select(p)) return 1;
-    if(cli_intercept_cmd_function(p)) return 1;
-    if(cli_intercept_cmd_case(p)) return 1;
-    if(cli_intercept_cmd_true(p)) return 1;
-    if(cli_intercept_cmd_false(p)) return 1;
-    if(cli_intercept_cmd_double_bracket(p)) return 1;
-    if(cli_intercept_cmd_alias(p)) return 1;
-    if(cli_intercept_cmd_unalias(p)) return 1;
-    if(cli_intercept_cmd_basename(p)) return 1;
-    if(cli_intercept_cmd_dirname(p)) return 1;
-    if(cli_intercept_cmd_pushd(p)) return 1;
-    if(cli_intercept_cmd_popd(p)) return 1;
-    if(cli_intercept_cmd_dirs(p)) return 1;
-    if(cli_intercept_cmd_seq(p)) return 1;
-    if(cli_intercept_cmd_waitfor_stream(p)) return 1;
-    if(cli_intercept_cmd_waitfor_fps(p)) return 1;
+    if(cli_intercept_cmd_if(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_while(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_until(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_for(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_select(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_function(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_case(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_true(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_false(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_double_bracket(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_alias(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_unalias(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_basename(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_dirname(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_pushd(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_popd(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_dirs(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_seq(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_waitfor_stream(p))
+    {
+        return 1;
+    }
+    if(cli_intercept_cmd_waitfor_fps(p))
+    {
+        return 1;
+    }
 
     /* Try alias expansion before
      * user-defined function call */
     {
         char firstword[
-            CLI_FUNC_NAMELEN];
+        CLI_FUNC_NAMELEN];
         int fw = 0;
         const char *pp = p;
         while(*pp != '\0'
-              && *pp != ' '
-              && *pp != '\t'
-              && fw
-              < CLI_FUNC_NAMELEN - 1)
+                && *pp != ' '
+                && *pp != '\t'
+                && fw
+                < CLI_FUNC_NAMELEN - 1)
         {
             firstword[fw++] = *pp++;
         }
@@ -699,13 +854,13 @@ int cli_script_intercept(const char *line)
 
         /* Check aliases first */
         for(int k = 0;
-            k < data.NBalias;
-            k++)
+                k < data.NBalias;
+                k++)
         {
             if(strcmp(
-                   data.alias[k]
-                   .name,
-                   firstword) == 0)
+                        data.alias[k]
+                        .name,
+                        firstword) == 0)
             {
                 /* Build expanded
                  * command */
@@ -726,7 +881,7 @@ int cli_script_intercept(const char *line)
 
         /* Then try user function */
         if(cli_func_find(firstword)
-           != NULL)
+                != NULL)
         {
             p = strip_ws(line);
             cli_try_func_call(p);

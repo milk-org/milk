@@ -60,17 +60,17 @@ COREMOD_MEMORY_image_streamupdateloop_semtrig(
  * ============================================================= */
 
 static char p_inname[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "imcube";
 static char p_outname[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "outstream";
 static long long p_usperiod = 1000;
 static long long p_NBcubes = 3;
 static long long p_period = 3;
 static long long p_offsetus = 154;
 static char p_syncname[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "ircam1";
 static long long p_semtrig = 3;
 static long long p_timingmode = 0;
@@ -80,13 +80,14 @@ static long long p_timingmode = 0;
  *  CMD 1: streamburst (3 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_burst = {
+static FPS_APP_INFO FPS_app_info_burst =
+{
     .fps_name    = "streamburst",
     .cmdkey      = "streamburst",
     .description =
-        "send burst of frames to stream",
+    "send burst of frames to stream",
     .description_long =
-        "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
+    "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
 };
 
 #define FPS_PARAMS_BURST(X) \
@@ -103,7 +104,8 @@ static FPS_APP_INFO FPS_app_info_burst = {
       FPFLAG_DEFAULT_INPUT, \
       "period [us]")
 
-static CLICMDDATA CLIcmddata_burst = {
+static CLICMDDATA CLIcmddata_burst =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(burst, CLIcmddata_burst, FPS_app_info_burst)
@@ -120,13 +122,14 @@ static errno_t __attribute__((unused)) compute_burst()
  *  CMD 2: creaimstream (9 args, primary)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "creaimstream",
     .cmdkey      = "creaimstream",
     .description =
-        "create 2D stream from 3D cube",
+    "create 2D stream from 3D cube",
     .description_long =
-        "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
+    "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
 };
 
 #define FPS_PARAMS(X) \
@@ -167,7 +170,8 @@ static FPS_APP_INFO FPS_app_info = {
       FPFLAG_DEFAULT_INPUT, \
       "timing mode")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
@@ -175,11 +179,13 @@ static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
@@ -205,17 +211,19 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  *  CMD 3: creaimstreamstrig (7 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_strig = {
+static FPS_APP_INFO FPS_app_info_strig =
+{
     .fps_name    = "creaimstreamstrig",
     .cmdkey      = "creaimstreamstrig",
     .description =
-        "create 2D stream from 3D cube "
-        "(sem-triggered)",
+    "create 2D stream from 3D cube "
+    "(sem-triggered)",
     .description_long =
-        "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
+    "Continuously update a shared memory stream by re-posting its semaphores at a configurable rate. Keeps downstream consumers active even when no new data arrives."
 };
 
-static CLICMDDATA CLIcmddata_strig = {
+static CLICMDDATA CLIcmddata_strig =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(strig, CLIcmddata_strig, FPS_app_info_strig)
@@ -238,40 +246,42 @@ static errno_t __attribute__((unused)) compute_strig()
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 /* separate bindings for burst (3 args) */
-static FPS_CLI_BINDING bindings_burst[] = {
+static FPS_CLI_BINDING bindings_burst[] =
+{
     FPS_PARAMS_BURST(FPS_X_BINDING)
 };
 static const int nb_bindings_burst =
     sizeof(bindings_burst) /
     sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_burst[] = {
+static CLICMDARGDEF farg_burst[] =
+{
     FPS_PARAMS_BURST(FPS_X_FARG)
 };
 
 static errno_t CLIfunction_burst(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_burst,
-        farg_burst, &CLIcmddata_burst,
-        bindings_burst, nb_bindings_burst,
-        compute_burst);
+               &FPS_app_info_burst,
+               farg_burst, &CLIcmddata_burst,
+               bindings_burst, nb_bindings_burst,
+               compute_burst);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 static errno_t CLIfunction_strig(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_strig,
-        farg, &CLIcmddata_strig,
-        my_bindings, nb_bindings,
-        compute_strig);
+               &FPS_app_info_strig,
+               farg, &CLIcmddata_strig,
+               my_bindings, nb_bindings,
+               compute_strig);
 }
 
 errno_t
@@ -285,21 +295,21 @@ CLIADDCMD_COREMOD_memory__stream_updateloop()
 
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_burst,
-            CLIfunction_burst);
+                       CLIcmddata_burst,
+                       CLIfunction_burst);
         CLIcmddata_burst.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
+                       CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_strig,
-            CLIfunction_strig);
+                       CLIcmddata_strig,
+                       CLIfunction_strig);
         CLIcmddata_strig.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -334,7 +344,7 @@ errno_t COREMOD_MEMORY_image_streamburst(
 
     {
         IMGID img = imgid_make_from_name(
-            IDin_name);
+                        IDin_name);
         resolveIMGID(
             &img, ERRMODE_ABORT,
             dcimg, dcnimg);
@@ -358,7 +368,7 @@ errno_t COREMOD_MEMORY_image_streamburst(
     // check that IDout has same format
     {
         IMGID img = imgid_make_from_name(
-            IDout_name);
+                        IDout_name);
         resolveIMGID(
             &img, ERRMODE_ABORT,
             dcimg, dcnimg);
@@ -493,7 +503,7 @@ COREMOD_MEMORY_image_streamupdateloop(
 
         char msgstring[200];
         snprintf(msgstring, 200, "%s->%s", IDinname, IDoutname);
-        
+
         PROCESSINFO_AUX_SETUP(processinfo, pinfoname, "", msgstring);
     }
 
@@ -510,7 +520,7 @@ COREMOD_MEMORY_image_streamupdateloop(
     {
         {
             IMGID img = imgid_make_from_name(
-                IDinname);
+                            IDinname);
             resolveIMGID(
                 &img, ERRMODE_ABORT,
                 dcimg, dcnimg);
@@ -520,7 +530,7 @@ COREMOD_MEMORY_image_streamupdateloop(
         // in single cube mode, optional sync stream drives updates to next slice within cube
         {
             IMGID img = imgid_make_from_name(
-                IDsync_name);
+                            IDsync_name);
             resolveIMGID(
                 &img, ERRMODE_NULL,
                 dcimg, dcnimg);
@@ -537,7 +547,7 @@ COREMOD_MEMORY_image_streamupdateloop(
     {
         {
             IMGID img = imgid_make_from_name(
-                IDsync_name);
+                            IDsync_name);
             resolveIMGID(
                 &img, ERRMODE_NULL,
                 dcimg, dcnimg);
@@ -548,13 +558,13 @@ COREMOD_MEMORY_image_streamupdateloop(
                 &dcimg[IDsync], semtrig);
 
         for(cubeindex = 0;
-            cubeindex < NBcubes;
-            cubeindex++)
+                cubeindex < NBcubes;
+                cubeindex++)
         {
             snprintf(imname,
-                sizeof(imname),
-                "%s_%03ld",
-                IDinname, cubeindex);
+                     sizeof(imname),
+                     "%s_%03ld",
+                     IDinname, cubeindex);
             {
                 IMGID img =
                     imgid_make_from_name(
@@ -591,7 +601,7 @@ COREMOD_MEMORY_image_streamupdateloop(
 
     {
         IMGID img = imgid_make_from_name(
-            IDoutname);
+                        IDoutname);
         resolveIMGID(
             &img, ERRMODE_NULL,
             dcimg, dcnimg);
@@ -741,7 +751,7 @@ COREMOD_MEMORY_image_streamupdateloop(
         }
         else
         {
-            ImageStreamIO_semwait(dcimg+IDsync, sync_semwaitindex);
+            ImageStreamIO_semwait(dcimg + IDsync, sync_semwaitindex);
         }
 
         if(loopCTRLexit == 1)
@@ -757,14 +767,14 @@ COREMOD_MEMORY_image_streamupdateloop(
                 tstoptm = gmtime(&tstop.tv_sec);
 
                 snprintf(msgstring,
-                        sizeof(msgstring),
-                        "CTRLexit at"
-                        " %02d:%02d:%02d.%03d",
-                        tstoptm->tm_hour,
-                        tstoptm->tm_min,
-                        tstoptm->tm_sec,
-                        (int)(0.000001
-                              * (tstop.tv_nsec)));
+                         sizeof(msgstring),
+                         "CTRLexit at"
+                         " %02d:%02d:%02d.%03d",
+                         tstoptm->tm_hour,
+                         tstoptm->tm_min,
+                         tstoptm->tm_sec,
+                         (int)(0.000001
+                               * (tstop.tv_nsec)));
                 strncpy(processinfo->statusmsg,
                         msgstring,
                         STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
@@ -824,7 +834,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     {
         IMGID img = imgid_make_from_name(
-            IDinname);
+                        IDinname);
         resolveIMGID(
             &img, ERRMODE_ABORT,
             dcimg, dcnimg);
@@ -846,7 +856,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     {
         IMGID img = imgid_make_from_name(
-            IDoutname);
+                        IDoutname);
         resolveIMGID(
             &img, ERRMODE_NULL,
             dcimg, dcnimg);
@@ -880,7 +890,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     {
         IMGID img = imgid_make_from_name(
-            IDsync_name);
+                        IDsync_name);
         resolveIMGID(
             &img, ERRMODE_NULL,
             dcimg, dcnimg);
@@ -896,7 +906,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     while(1)
     {
-        ImageStreamIO_semwait(dcimg+IDsync, sync_semwaitindex);
+        ImageStreamIO_semwait(dcimg + IDsync, sync_semwaitindex);
 
         kk++;
         if(kk == period)  // UPDATE
@@ -922,4 +932,3 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     return IDout;
 }
-

@@ -21,7 +21,8 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     uint8_t   datatype = imgin->md[0].datatype;
-    if (imgin->ID == -1) {
+    if(imgin->ID == -1)
+    {
         return RETURN_FAILURE;
     }
     uint8_t   naxis    = imgin->md[0].naxis;
@@ -85,7 +86,8 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     uint8_t   datatype = imgin->md[0].datatype;
-    if (imgin->ID == -1) {
+    if(imgin->ID == -1)
+    {
         return RETURN_FAILURE;
     }
     uint8_t   naxis    = imgin->md[0].naxis;

@@ -18,9 +18,16 @@
 void processinfo_scan_step(PROCINFOPROC *pinfop)
 {
     FILE *flog = NULL;
-    if (strlen(procCTRL_logfile) > 0) flog = fopen(procCTRL_logfile, "a");
+    if(strlen(procCTRL_logfile) > 0)
+    {
+        flog = fopen(procCTRL_logfile, "a");
+    }
 
-    if (flog) { fprintf(flog, "  scan_step: start\n"); fflush(flog); }
+    if(flog)
+    {
+        fprintf(flog, "  scan_step: start\n");
+        fflush(flog);
+    }
 
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
@@ -47,10 +54,19 @@ void processinfo_scan_step(PROCINFOPROC *pinfop)
     clock_gettime(CLOCK_REALTIME, &t0);
     pinfop->dtscan = tdiffv;
 
-    if (flog) { fprintf(flog, "  scan_step: loop over %d entries\n", PROCESSINFOLISTSIZE); fflush(flog); }
+    if(flog)
+    {
+        fprintf(flog, "  scan_step: loop over %d entries\n", PROCESSINFOLISTSIZE);
+        fflush(flog);
+    }
 
-    if (pinfolist == NULL) {
-        if (flog) { fprintf(flog, "  scan_step: ERROR pinfolist is NULL\n"); fclose(flog); }
+    if(pinfolist == NULL)
+    {
+        if(flog)
+        {
+            fprintf(flog, "  scan_step: ERROR pinfolist is NULL\n");
+            fclose(flog);
+        }
         return;
     }
 
@@ -65,9 +81,9 @@ void processinfo_scan_step(PROCINFOPROC *pinfop)
             pinfop->updatearray[pindex] = 0;
             if(pinfop->pinfommapped[pindex] == 1)
             {
-                if (pinfop->pinfoarray[pindex] != NULL)
+                if(pinfop->pinfoarray[pindex] != NULL)
                     processinfo_shm_close(pinfop->pinfoarray[pindex],
-                        pinfop->fdarray[pindex]);
+                                          pinfop->fdarray[pindex]);
                 pinfop->pinfommapped[pindex] = 0;
                 pinfop->pinfoarray[pindex] = NULL;
             }
@@ -82,11 +98,12 @@ void processinfo_scan_step(PROCINFOPROC *pinfop)
 
         if(pinfop->updatearray[pindex] == 1)
         {
-            WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+            WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex],
+                               (int) pinfolist->PIDarray[pindex]);
 
             pinfop->pinfoarray[pindex] = processinfo_shm_link(SM_fname,
-                &pinfop->fdarray[pindex]);
-            
+                                         &pinfop->fdarray[pindex]);
+
             if(pinfop->pinfoarray[pindex] == (PROCESSINFO *) MAP_FAILED)
             {
                 pinfop->pinfommapped[pindex] = 0;
@@ -101,5 +118,9 @@ void processinfo_scan_step(PROCINFOPROC *pinfop)
     }
 
     pinfop->loopcnt++;
-    if (flog) { fprintf(flog, "  scan_step: done\n"); fclose(flog); }
+    if(flog)
+    {
+        fprintf(flog, "  scan_step: done\n");
+        fclose(flog);
+    }
 }

@@ -20,13 +20,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "streamdiff",
     .cmdkey      = "streamdiff",
     .description =
-        "compute stream difference",
+    "compute stream difference",
     .description_long =
-        "Compute the pixel-wise difference between two image streams in real-time. Output stream = stream_A - stream_B. Operates as a continuous stream processor triggered by semaphore."
+    "Compute the pixel-wise difference between two image streams in real-time. Output stream = stream_A - stream_B. Operates as a continuous stream processor triggered by semaphore."
 };
 
 
@@ -94,14 +95,16 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
     IMGID img0 = imgid_make_from_name(IDstream0_name);
     resolveIMGID(&img0, ERRMODE_WARN,
                  dcimg, dcnimg);
-    if (img0.ID == -1) {
+    if(img0.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
     IMGID img1 = imgid_make_from_name(IDstream1_name);
     resolveIMGID(&img1, ERRMODE_WARN,
                  dcimg, dcnimg);
-    if (img1.ID == -1) {
+    if(img1.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -121,20 +124,20 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
     if(imgout.ID == -1)
     {
         imgout = stream_connect_create_2D(
-            IDstreamout_name,
-            xsize, ysize,
-            _DATATYPE_FLOAT);
+                     IDstreamout_name,
+                     xsize, ysize,
+                     _DATATYPE_FLOAT);
     }
 
-    float * MILK_RESTRICT ptr0 =
+    float *MILK_RESTRICT ptr0 =
         MILK_ASSUME_ALIGNED(img0.im->array.F);
-    float * MILK_RESTRICT ptr1 =
+    float *MILK_RESTRICT ptr1 =
         MILK_ASSUME_ALIGNED(img1.im->array.F);
-    float * MILK_RESTRICT ptrm =
+    float *MILK_RESTRICT ptrm =
         (imgmask.ID != -1)
         ? MILK_ASSUME_ALIGNED(imgmask.im->array.F)
         : NULL;
-    float * MILK_RESTRICT ptro =
+    float *MILK_RESTRICT ptro =
         MILK_ASSUME_ALIGNED(imgout.im->array.F);
 
     unsigned long long cnt = 0;
@@ -222,9 +225,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -234,7 +237,7 @@ CLIADDCMD_COREMOD_memory__stream_diff()
         farg, my_bindings, nb_bindings);
 
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 

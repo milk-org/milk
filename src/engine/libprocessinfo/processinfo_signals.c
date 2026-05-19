@@ -21,33 +21,33 @@ void processinfo_sig_handler(int signo)
 {
     switch(signo)
     {
-        case SIGUSR1:
-            processinfo_signal_USR1 = 1;
-            break;
-        case SIGUSR2:
-            processinfo_signal_USR2 = 1;
-            break;
-        case SIGINT:
-            processinfo_signal_INT = 1;
-            break;
-        case SIGTERM:
-            processinfo_signal_TERM = 1;
-            break;
-        case SIGSEGV:
-            processinfo_signal_SEGV = 1;
-            break;
-        case SIGABRT:
-            processinfo_signal_ABRT = 1;
-            break;
-        case SIGBUS:
-            processinfo_signal_BUS = 1;
-            break;
-        case SIGHUP:
-            processinfo_signal_HUP = 1;
-            break;
-        case SIGPIPE:
-            processinfo_signal_PIPE = 1;
-            break;
+    case SIGUSR1:
+        processinfo_signal_USR1 = 1;
+        break;
+    case SIGUSR2:
+        processinfo_signal_USR2 = 1;
+        break;
+    case SIGINT:
+        processinfo_signal_INT = 1;
+        break;
+    case SIGTERM:
+        processinfo_signal_TERM = 1;
+        break;
+    case SIGSEGV:
+        processinfo_signal_SEGV = 1;
+        break;
+    case SIGABRT:
+        processinfo_signal_ABRT = 1;
+        break;
+    case SIGBUS:
+        processinfo_signal_BUS = 1;
+        break;
+    case SIGHUP:
+        processinfo_signal_HUP = 1;
+        break;
+    case SIGPIPE:
+        processinfo_signal_PIPE = 1;
+        break;
     }
 }
 
@@ -61,13 +61,34 @@ int processinfo_CatchSignals()
     sigact.sa_flags = 0;
     sigact.sa_handler = processinfo_sig_handler;
 
-    if(sigaction(SIGTERM, &sigact, NULL) == -1) printf("\ncan't catch SIGTERM\n");
-    if(sigaction(SIGINT, &sigact, NULL) == -1) printf("\ncan't catch SIGINT\n");
-    if(sigaction(SIGABRT, &sigact, NULL) == -1) printf("\ncan't catch SIGABRT\n");
-    if(sigaction(SIGBUS, &sigact, NULL) == -1) printf("\ncan't catch SIGBUS\n");
-    if(sigaction(SIGSEGV, &sigact, NULL) == -1) printf("\ncan't catch SIGSEGV\n");
-    if(sigaction(SIGHUP, &sigact, NULL) == -1) printf("\ncan't catch SIGHUP\n");
-    if(sigaction(SIGPIPE, &sigact, NULL) == -1) printf("\ncan't catch SIGPIPE\n");
+    if(sigaction(SIGTERM, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGTERM\n");
+    }
+    if(sigaction(SIGINT, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGINT\n");
+    }
+    if(sigaction(SIGABRT, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGABRT\n");
+    }
+    if(sigaction(SIGBUS, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGBUS\n");
+    }
+    if(sigaction(SIGSEGV, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGSEGV\n");
+    }
+    if(sigaction(SIGHUP, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGHUP\n");
+    }
+    if(sigaction(SIGPIPE, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGPIPE\n");
+    }
 
     return 0;
 }

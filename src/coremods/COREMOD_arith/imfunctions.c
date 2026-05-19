@@ -102,17 +102,28 @@ static inline double get_pixel_double(
 {
     switch(im->md[0].datatype)
     {
-        case _DATATYPE_UINT8:   return (double)im->array.UI8[index];
-        case _DATATYPE_INT8:    return (double)im->array.SI8[index];
-        case _DATATYPE_UINT16:  return (double)im->array.UI16[index];
-        case _DATATYPE_INT16:   return (double)im->array.SI16[index];
-        case _DATATYPE_UINT32:  return (double)im->array.UI32[index];
-        case _DATATYPE_INT32:   return (double)im->array.SI32[index];
-        case _DATATYPE_UINT64:  return (double)im->array.UI64[index];
-        case _DATATYPE_INT64:   return (double)im->array.SI64[index];
-        case _DATATYPE_FLOAT:   return (double)im->array.F[index];
-        case _DATATYPE_DOUBLE:  return (double)im->array.D[index];
-        default: return 0.0;
+    case _DATATYPE_UINT8:
+        return (double)im->array.UI8[index];
+    case _DATATYPE_INT8:
+        return (double)im->array.SI8[index];
+    case _DATATYPE_UINT16:
+        return (double)im->array.UI16[index];
+    case _DATATYPE_INT16:
+        return (double)im->array.SI16[index];
+    case _DATATYPE_UINT32:
+        return (double)im->array.UI32[index];
+    case _DATATYPE_INT32:
+        return (double)im->array.SI32[index];
+    case _DATATYPE_UINT64:
+        return (double)im->array.UI64[index];
+    case _DATATYPE_INT64:
+        return (double)im->array.SI64[index];
+    case _DATATYPE_FLOAT:
+        return (double)im->array.F[index];
+    case _DATATYPE_DOUBLE:
+        return (double)im->array.D[index];
+    default:
+        return 0.0;
     }
 }
 
@@ -131,39 +142,40 @@ static inline void do_math_2_1_fastpath(
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
 #endif
-        if (datatype == _DATATYPE_FLOAT && datatype1 == _DATATYPE_FLOAT && datatype2 == _DATATYPE_FLOAT)
+        if(datatype == _DATATYPE_FLOAT && datatype1 == _DATATYPE_FLOAT && datatype2 == _DATATYPE_FLOAT)
         {
-            float * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.F);
-            const float * MILK_RESTRICT in1ptr = MILK_ASSUME_ALIGNED(inimg1->im->array.F);
-            const float * MILK_RESTRICT in2ptr = MILK_ASSUME_ALIGNED(inimg2->im->array.F);
+            float *MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.F);
+            const float *MILK_RESTRICT in1ptr = MILK_ASSUME_ALIGNED(inimg1->im->array.F);
+            const float *MILK_RESTRICT in2ptr = MILK_ASSUME_ALIGNED(inimg2->im->array.F);
 #ifdef _OPENMP
             #pragma omp for simd
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 outptr[ii] = (float)pt2function((double)in1ptr[ii], (double)in2ptr[ii]);
             }
         }
-        else if (datatype == _DATATYPE_DOUBLE && datatype1 == _DATATYPE_DOUBLE && datatype2 == _DATATYPE_DOUBLE)
+        else if(datatype == _DATATYPE_DOUBLE && datatype1 == _DATATYPE_DOUBLE
+                && datatype2 == _DATATYPE_DOUBLE)
         {
-            double * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.D);
-            const double * MILK_RESTRICT in1ptr = MILK_ASSUME_ALIGNED(inimg1->im->array.D);
-            const double * MILK_RESTRICT in2ptr = MILK_ASSUME_ALIGNED(inimg2->im->array.D);
+            double *MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.D);
+            const double *MILK_RESTRICT in1ptr = MILK_ASSUME_ALIGNED(inimg1->im->array.D);
+            const double *MILK_RESTRICT in2ptr = MILK_ASSUME_ALIGNED(inimg2->im->array.D);
 #ifdef _OPENMP
             #pragma omp for simd
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 outptr[ii] = pt2function(in1ptr[ii], in2ptr[ii]);
             }
         }
-        else if (datatype == _DATATYPE_FLOAT)
+        else if(datatype == _DATATYPE_FLOAT)
         {
-            float * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.F);
+            float *MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.F);
 #ifdef _OPENMP
             #pragma omp for simd
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 double v1 = (datatype1 == _DATATYPE_DOUBLE) ? inimg1->im->array.D[ii] :
                             (datatype1 == _DATATYPE_FLOAT) ? inimg1->im->array.F[ii] :
@@ -174,13 +186,13 @@ static inline void do_math_2_1_fastpath(
                 outptr[ii] = (float)pt2function(v1, v2);
             }
         }
-        else if (datatype == _DATATYPE_DOUBLE)
+        else if(datatype == _DATATYPE_DOUBLE)
         {
-            double * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.D);
+            double *MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(outimg->im->array.D);
 #ifdef _OPENMP
             #pragma omp for simd
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 double v1 = (datatype1 == _DATATYPE_DOUBLE) ? inimg1->im->array.D[ii] :
                             (datatype1 == _DATATYPE_FLOAT) ? inimg1->im->array.F[ii] :
@@ -225,7 +237,10 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     IMGID *imgout,
     double (*pt2function)(double))
 {
-    if (imgin->im == NULL) { return RETURN_FAILURE; }
+    if(imgin->im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
     DEBUG_TRACEPOINT("arith_image_function_d_d  %s %s\n", imgin->name, imgout->name);
 
@@ -240,11 +255,21 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     {
         imgout->mdt->datatype = _DATATYPE_DOUBLE;
     }
-    
-    if (imgout->im == NULL) {
-        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
-    } else {
-        if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im);
+
+    if(imgout->im == NULL)
+    {
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+    }
+    else
+    {
+        if(imgout->im->md && imgout->im->md->shared == 1)
+        {
+            ImageStreamIO_closeIm(imgout->im);
+        }
+        else
+        {
+            ImageStreamIO_destroyIm(imgout->im);
+        }
     }
     imgid_mkimage(imgout);
 
@@ -273,7 +298,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
             pt2function(imgin->im->array.D[ii]);      \
     }
 
-    MILK_FOR_EACH_DATATYPE(datatype, UNARY_BODY, UNARY_BODY_D)
+        MILK_FOR_EACH_DATATYPE(datatype, UNARY_BODY, UNARY_BODY_D)
 
 #undef UNARY_BODY
 #undef UNARY_BODY_D
@@ -304,7 +329,7 @@ errno_t arith_image_function_im_im__d_d(
     double (*pt2function)(double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
-        arith_image_function_im_im__d_d_IMGID(&_in, &_out, pt2function));
+                         arith_image_function_im_im__d_d_IMGID(&_in, &_out, pt2function));
 }
 
 /**
@@ -325,7 +350,10 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     double (*pt2function)(double, double))
 {
 
-    if (imgin->im == NULL) { return RETURN_FAILURE; }
+    if(imgin->im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
     imgout->mdt->naxis = imgin->md->naxis;
     for(uint8_t i = 0; i < imgin->md->naxis; i++)
@@ -338,11 +366,21 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     {
         imgout->mdt->datatype = _DATATYPE_DOUBLE;
     }
-    
-    if (imgout->im == NULL) {
-        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
-    } else {
-        if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im);
+
+    if(imgout->im == NULL)
+    {
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+    }
+    else
+    {
+        if(imgout->im->md && imgout->im->md->shared == 1)
+        {
+            ImageStreamIO_closeIm(imgout->im);
+        }
+        else
+        {
+            ImageStreamIO_destroyIm(imgout->im);
+        }
     }
     imgid_mkimage(imgout);
 
@@ -372,7 +410,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
             pt2function(imgin->im->array.D[ii], v0);  \
     }
 
-    MILK_FOR_EACH_DATATYPE(datatype, CST1_BODY, CST1_BODY_D)
+        MILK_FOR_EACH_DATATYPE(datatype, CST1_BODY, CST1_BODY_D)
 
 #undef CST1_BODY
 #undef CST1_BODY_D
@@ -402,7 +440,7 @@ errno_t arith_image_function_imd_im__dd_d(
     double (*pt2function)(double, double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
-        arith_image_function_imd_im__dd_d_IMGID(&_in, v0, &_out, pt2function));
+                         arith_image_function_imd_im__dd_d_IMGID(&_in, v0, &_out, pt2function));
 }
 
 /**
@@ -428,7 +466,10 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
                           double))
 {
 
-    if (imgin->im == NULL) { return RETURN_FAILURE; }
+    if(imgin->im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
     imgout->mdt->naxis = imgin->md->naxis;
     for(uint8_t i = 0; i < imgin->md->naxis; i++)
@@ -441,11 +482,21 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
     {
         imgout->mdt->datatype = _DATATYPE_DOUBLE;
     }
-    
-    if (imgout->im == NULL) {
-        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
-    } else {
-        if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im);
+
+    if(imgout->im == NULL)
+    {
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+    }
+    else
+    {
+        if(imgout->im->md && imgout->im->md->shared == 1)
+        {
+            ImageStreamIO_closeIm(imgout->im);
+        }
+        else
+        {
+            ImageStreamIO_destroyIm(imgout->im);
+        }
     }
     imgid_mkimage(imgout);
 
@@ -476,7 +527,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
                 imgin->im->array.D[_ii], v0, v1);     \
     }
 
-    MILK_FOR_EACH_DATATYPE(datatype, CST2_BODY, CST2_BODY_D)
+        MILK_FOR_EACH_DATATYPE(datatype, CST2_BODY, CST2_BODY_D)
 
 #undef CST2_BODY
 #undef CST2_BODY_D
@@ -503,7 +554,7 @@ errno_t arith_image_function_imdd_im__ddd_d(
                           double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
-        arith_image_function_imdd_im__ddd_d_IMGID(&_in, v0, v1, &_out, pt2function));
+                         arith_image_function_imdd_im__ddd_d_IMGID(&_in, v0, v1, &_out, pt2function));
 
 }
 
@@ -515,7 +566,7 @@ errno_t arith_image_function_1_1_IMGID(
     double (*pt2function)(double))
 {
     return arith_image_function_im_im__d_d_IMGID(
-        imgin, imgout, pt2function);
+               imgin, imgout, pt2function);
 }
 
 /**
@@ -530,7 +581,7 @@ errno_t arith_image_function_1_1(
     double (*pt2function)(double))
 {
     return arith_image_function_im_im__d_d(
-        ID_name, ID_out, pt2function);
+               ID_name, ID_out, pt2function);
 }
 
 // imagein -> imagein (in place)
@@ -565,8 +616,8 @@ errno_t arith_image_function_1_1_inplace_IMGID(
                 (double)(imgin->im->array.D[_ii]));   \
     }
 
-    MILK_FOR_EACH_DATATYPE(datatype,
-        INPLACE_BODY, INPLACE_BODY_D)
+        MILK_FOR_EACH_DATATYPE(datatype,
+                               INPLACE_BODY, INPLACE_BODY_D)
 
 #undef INPLACE_BODY
 #undef INPLACE_BODY_D
@@ -589,7 +640,8 @@ errno_t arith_image_function_1_1_inplace(
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     errno_t ret = arith_image_function_1_1_inplace_IMGID(&img, pt2function);
-    if (img.ID == -1) {
+    if(img.ID == -1)
+    {
         return RETURN_FAILURE;
     }
     imgid_free(&img);
@@ -609,16 +661,19 @@ errno_t arith_image_function_2_1_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    if (inimg1->im == NULL || inimg2->im == NULL) { return RETURN_FAILURE; }
+    if(inimg1->im == NULL || inimg2->im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
-    if( outimg->im == NULL)
+    if(outimg->im == NULL)
     {
         imgid_copy(inimg1, outimg);
     }
 
     // output naxis is max of inputs
     outimg->mdt->naxis = inimg1->md->naxis;
-    if ( inimg2->md->naxis > inimg1->md->naxis )
+    if(inimg2->md->naxis > inimg1->md->naxis)
     {
         outimg->mdt->naxis = inimg2->md->naxis;
     }
@@ -632,7 +687,7 @@ errno_t arith_image_function_2_1_IMGID(
     uint64_t nbpix = 1;
     uint64_t nbpix1 = 1;
     uint64_t nbpix2 = 1;
-    for ( uint8_t axis = 0; axis < outimg->mdt->naxis; axis++)
+    for(uint8_t axis = 0; axis < outimg->mdt->naxis; axis++)
     {
         in1expand[axis] = 1;
         in2expand[axis] = 1;
@@ -659,15 +714,15 @@ errno_t arith_image_function_2_1_IMGID(
         }
         nbpix2 *= size2;
 
-        if( size1 != size2 )
+        if(size1 != size2)
         {
-            if( size1 == 1 )
+            if(size1 == 1)
             {
                 in1expand[axis] = 0;
                 outimg->mdt->size[axis] = size2;
 
             }
-            else if ( size2 == 1)
+            else if(size2 == 1)
             {
                 in2expand[axis] = 0;
                 outimg->mdt->size[axis] = size1;
@@ -680,7 +735,7 @@ errno_t arith_image_function_2_1_IMGID(
         }
         nbpix *= outimg->mdt->size[axis];
     }
-    for ( uint8_t axis = outimg->mdt->naxis; axis<3; axis++)
+    for(uint8_t axis = outimg->mdt->naxis; axis < 3; axis++)
     {
         outimg->mdt->size[axis] = 1;
         in1expand[axis] = 1;
@@ -697,9 +752,12 @@ errno_t arith_image_function_2_1_IMGID(
         outimg->mdt->datatype = _DATATYPE_DOUBLE;
     }
 
-    if (outimg->im == NULL) {
-        outimg->im = (IMAGE*) calloc(1, sizeof(IMAGE));
-    } else {
+    if(outimg->im == NULL)
+    {
+        outimg->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+    }
+    else
+    {
         ImageStreamIO_closeIm(outimg->im);
     }
     imgid_mkimage(outimg);
@@ -712,15 +770,15 @@ errno_t arith_image_function_2_1_IMGID(
 
     // Fast path: images have same size and layout
     int fastpath = 1;
-    if (inimg1->md->naxis != inimg2->md->naxis)
+    if(inimg1->md->naxis != inimg2->md->naxis)
     {
         fastpath = 0;
     }
     else
     {
-        for (uint8_t axis = 0; axis < outimg->mdt->naxis; axis++)
+        for(uint8_t axis = 0; axis < outimg->mdt->naxis; axis++)
         {
-            if (inimg1->md->size[axis] != inimg2->md->size[axis])
+            if(inimg1->md->size[axis] != inimg2->md->size[axis])
             {
                 fastpath = 0;
                 break;
@@ -728,7 +786,7 @@ errno_t arith_image_function_2_1_IMGID(
         }
     }
 
-    if (fastpath)
+    if(fastpath)
     {
         do_math_2_1_fastpath(inimg1, inimg2, outimg, pt2function);
         DEBUG_TRACE_FEXIT();
@@ -737,20 +795,20 @@ errno_t arith_image_function_2_1_IMGID(
 
 
     // slow path with broadcasting
-    uint64_t * __restrict inpix1 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
-    uint64_t * __restrict inpix2 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t *__restrict inpix1 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t *__restrict inpix2 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
 
-    for ( uint32_t ii = 0; ii < outimg->mdt->size[0]; ii++ )
+    for(uint32_t ii = 0; ii < outimg->mdt->size[0]; ii++)
     {
         uint32_t ii1 = ii * in1expand[0];
         uint32_t ii2 = ii * in2expand[0];
 
-        for ( uint32_t jj = 0; jj < outimg->mdt->size[1]; jj++ )
+        for(uint32_t jj = 0; jj < outimg->mdt->size[1]; jj++)
         {
             uint32_t jj1 = jj * in1expand[1];
             uint32_t jj2 = jj * in2expand[1];
 
-            for ( uint32_t kk = 0; kk < outimg->mdt->size[2]; kk++ )
+            for(uint32_t kk = 0; kk < outimg->mdt->size[2]; kk++)
             {
                 uint64_t outpixi = ii;
                 outpixi +=  jj * outimg->mdt->size[0];
@@ -759,49 +817,66 @@ errno_t arith_image_function_2_1_IMGID(
                 uint32_t kk1 = kk * in1expand[2];
                 uint32_t kk2 = kk * in2expand[2];
 
-                inpix1[outpixi] =  kk1 * inimg1->md->size[1] * inimg1->md->size[0] + jj1 * inimg1->md->size[0] + ii1;
-                inpix2[outpixi] =  kk2 * inimg2->md->size[1] * inimg2->md->size[0] + jj2 * inimg2->md->size[0] + ii2;
+                inpix1[outpixi] =  kk1 * inimg1->md->size[1] * inimg1->md->size[0] + jj1 * inimg1->md->size[0] +
+                                   ii1;
+                inpix2[outpixi] =  kk2 * inimg2->md->size[1] * inimg2->md->size[0] + jj2 * inimg2->md->size[0] +
+                                   ii2;
             }
         }
     }
 
-    double * ptr1array;
+    double *ptr1array;
     int ptr1allocate = 0;
-    if ( inimg1->md->datatype == _DATATYPE_DOUBLE ) { ptr1array = inimg1->im->array.D; }
-    else {
+    if(inimg1->md->datatype == _DATATYPE_DOUBLE)
+    {
+        ptr1array = inimg1->im->array.D;
+    }
+    else
+    {
         ptr1allocate = 1;
         ptr1array = (double *) malloc(sizeof(double) * nbpix1);
         for(
             uint64_t ii = 0; ii < nbpix1; ii++) ptr1array[ii] = get_pixel_double(inimg1->im,
-            ii);
+                        ii);
     }
 
-    double * ptr2array;
+    double *ptr2array;
     int ptr2allocate = 0;
-    if ( inimg2->md->datatype == _DATATYPE_DOUBLE ) { ptr2array = inimg2->im->array.D; }
-    else {
+    if(inimg2->md->datatype == _DATATYPE_DOUBLE)
+    {
+        ptr2array = inimg2->im->array.D;
+    }
+    else
+    {
         ptr2allocate = 1;
         ptr2array = (double *) malloc(sizeof(double) * nbpix2);
         for(
             uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im,
-            ii);
+                        ii);
     }
 
-    if ( outimg->mdt->datatype == _DATATYPE_FLOAT )
+    if(outimg->mdt->datatype == _DATATYPE_FLOAT)
     {
         for(
-            uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]],
-            ptr2array[inpix2[ii]]);
+            uint64_t ii = 0; ii < nbpix;
+            ii++) outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]],
+                                                ptr2array[inpix2[ii]]);
     }
-    else if ( outimg->mdt->datatype == _DATATYPE_DOUBLE )
+    else if(outimg->mdt->datatype == _DATATYPE_DOUBLE)
     {
         for(
-            uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.D[ii] = pt2function(ptr1array[inpix1[ii]],
-            ptr2array[inpix2[ii]]);
+            uint64_t ii = 0; ii < nbpix; ii++) outimg->im->array.D[ii] = pt2function(ptr1array[inpix1[ii]],
+                        ptr2array[inpix2[ii]]);
     }
 
-    if(ptr1allocate == 1) free(ptr1array);
-    if(ptr2allocate == 1) free(ptr2array);
+    if(ptr1allocate == 1)
+    {
+        free(ptr1array);
+    }
+    if(ptr2allocate == 1)
+    {
+        free(ptr2array);
+    }
     free(inpix1);
     free(inpix2);
 
@@ -836,25 +911,29 @@ errno_t arith_image_function_2_1(
 
     resolveIMGID(&inimg1, ERRMODE_WARN, dcimg, dcnimg);
     resolveIMGID(&inimg2, ERRMODE_WARN, dcimg, dcnimg);
-    if (inimg1.ID == -1) {
+    if(inimg1.ID == -1)
+    {
         return RETURN_FAILURE;
     }
-    if (inimg2.ID == -1) {
+    if(inimg2.ID == -1)
+    {
         return RETURN_FAILURE;
     }
     resolveIMGID(&outimg, ERRMODE_NULL, dcimg, dcnimg);
 
-    if (outimg.ID == -1) {
+    if(outimg.ID == -1)
+    {
         outimg.mdt->shared = dcshareddft;
         outimg.mdt->NBkw = NB_KEYWNODE_MAX;
     }
 
     errno_t ret = arith_image_function_2_1_IMGID(&inimg1,
-        &inimg2,
-        &outimg,
-        pt2function);
-    
-    if (outimg.ID == -1 && outimg.im != NULL) {
+                  &inimg2,
+                  &outimg,
+                  pt2function);
+
+    if(outimg.ID == -1 && outimg.im != NULL)
+    {
         RegisterIMGID(&outimg, dcimg, dcnimg);
     }
     imgid_free(&inimg1);
@@ -876,7 +955,7 @@ errno_t arith_image_function_2_1_inplace(
     resolveIMGID(
         &img2, ERRMODE_ABORT, dcimg, dcnimg);
 
-    if (img1.im == NULL || img2.im == NULL)
+    if(img1.im == NULL || img2.im == NULL)
     {
         imgid_free(&img1);
         imgid_free(&img2);
@@ -884,7 +963,7 @@ errno_t arith_image_function_2_1_inplace(
     }
 
     long nelement = img1.md->nelement;
-    if (nelement != img2.md->nelement)
+    if(nelement != img2.md->nelement)
     {
         PRINT_ERROR(
             "images %s and %s have different nelement\n",
@@ -903,18 +982,18 @@ errno_t arith_image_function_2_1_inplace(
     {
         #pragma omp for simd
 #endif
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             double v1 =
                 get_pixel_double(img1.im, ii);
             double v2 =
                 get_pixel_double(img2.im, ii);
-            if (dt1 == _DATATYPE_FLOAT)
+            if(dt1 == _DATATYPE_FLOAT)
             {
                 img1.im->array.F[ii] =
                     (float) pt2function(v1, v2);
             }
-            else if (dt1 == _DATATYPE_DOUBLE)
+            else if(dt1 == _DATATYPE_DOUBLE)
             {
                 img1.im->array.D[ii] =
                     pt2function(v1, v2);
@@ -938,70 +1017,96 @@ errno_t arith_image_function_2_1_inplace(
 /* ------------------------------------------------------------------------- */
 // Migrated to im_complex.c
 
-int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, double (*pt2function)(double, double))
+int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout,
+                                    double (*pt2function)(double, double))
 {
-    if (imgin->im == NULL) { return RETURN_FAILURE; }
+    if(imgin->im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
     imgout->mdt->naxis = imgin->md->naxis;
-    for(uint8_t i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
-    imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-    
-    if (imgout->im == NULL) {
-        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
-    } else {
-        if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im);
+    for(uint8_t i = 0; i < imgin->md->naxis; i++)
+    {
+        imgout->mdt->size[i] = imgin->md->size[i];
+    }
+    imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE :
+                            _DATATYPE_FLOAT;
+
+    if(imgout->im == NULL)
+    {
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+    }
+    else
+    {
+        if(imgout->im->md && imgout->im->md->shared == 1)
+        {
+            ImageStreamIO_closeIm(imgout->im);
+        }
+        else
+        {
+            ImageStreamIO_destroyIm(imgout->im);
+        }
     }
     imgid_mkimage(imgout);
 
     uint64_t nelement = imgin->md->nelement;
 
-    if (imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)
+    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)
     {
-        float * restrict ptr = imgin->im->array.F;
+        float *restrict ptr = imgin->im->array.F;
         float *out = imgout->im->array.F;
 #ifdef _OPENMP
-    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-             out[ii] = (float)pt2function((double)ptr[ii], f1);
+            out[ii] = (float)pt2function((double)ptr[ii], f1);
         }
     }
-    else if (imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE)
+    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE)
     {
-        double * restrict ptr = imgin->im->array.D;
+        double *restrict ptr = imgin->im->array.D;
         double *out = imgout->im->array.D;
 #ifdef _OPENMP
-    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-             out[ii] = pt2function(ptr[ii], f1);
+            out[ii] = pt2function(ptr[ii], f1);
         }
     }
     else
     {
 #ifdef _OPENMP
-    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
             double v = get_pixel_double(imgin->im, ii);
-            if (imgout->mdt->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1);
-            else imgout->im->array.D[ii] = pt2function(v, f1);
+            if(imgout->mdt->datatype == _DATATYPE_FLOAT)
+            {
+                imgout->im->array.F[ii] = (float)pt2function(v, f1);
+            }
+            else
+            {
+                imgout->im->array.D[ii] = pt2function(v, f1);
+            }
         }
     }
     return EXIT_SUCCESS;
 }
 
-int arith_image_function_1f_1(const char *ID_name, double f1, const char *ID_out, double (*pt2function)(double, double))
+int arith_image_function_1f_1(const char *ID_name, double f1, const char *ID_out,
+                              double (*pt2function)(double, double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
-        arith_image_function_1f_1_IMGID(&_in, f1, &_out, pt2function));
+                         arith_image_function_1f_1_IMGID(&_in, f1, &_out, pt2function));
 
 }
 
-int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt2function)(double, double))
+int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt2function)(double,
+        double))
 {
     uint64_t nelement = imgin->im->md[0].nelement;
 #ifdef _OPENMP
@@ -1010,36 +1115,62 @@ int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt
     for(uint64_t ii = 0; ii < nelement; ii++)
     {
         double v = get_pixel_double(imgin->im, ii);
-        if (imgin->im->md[0].datatype == _DATATYPE_FLOAT) imgin->im->array.F[ii] = (float)pt2function(v, f1);
-        else if (imgin->im->md[0].datatype == _DATATYPE_DOUBLE) imgin->im->array.D[ii] = pt2function(v, f1);
+        if(imgin->im->md[0].datatype == _DATATYPE_FLOAT)
+        {
+            imgin->im->array.F[ii] = (float)pt2function(v, f1);
+        }
+        else if(imgin->im->md[0].datatype == _DATATYPE_DOUBLE)
+        {
+            imgin->im->array.D[ii] = pt2function(v, f1);
+        }
     }
     return EXIT_SUCCESS;
 }
 
-int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*pt2function)(double, double))
+int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*pt2function)(double,
+                                      double))
 {
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     int ret = arith_image_function_1f_1_inplace_IMGID(&img, f1, pt2function);
-    if (img.ID == -1) {
+    if(img.ID == -1)
+    {
         return RETURN_FAILURE;
     }
     imgid_free(&img);
     return ret;
 }
 
-int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout, double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout,
+                                     double (*pt2function)(double, double, double))
 {
-    if (imgin->im == NULL) { return RETURN_FAILURE; }
+    if(imgin->im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
     imgout->mdt->naxis = imgin->md->naxis;
-    for(uint8_t i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
-    imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-    
-    if (imgout->im == NULL) {
-        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
-    } else {
-        if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im);
+    for(uint8_t i = 0; i < imgin->md->naxis; i++)
+    {
+        imgout->mdt->size[i] = imgin->md->size[i];
+    }
+    imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE :
+                            _DATATYPE_FLOAT;
+
+    if(imgout->im == NULL)
+    {
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+    }
+    else
+    {
+        if(imgout->im->md && imgout->im->md->shared == 1)
+        {
+            ImageStreamIO_closeIm(imgout->im);
+        }
+        else
+        {
+            ImageStreamIO_destroyIm(imgout->im);
+        }
     }
     imgid_mkimage(imgout);
 
@@ -1050,20 +1181,28 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
     for(uint64_t ii = 0; ii < nelement; ii++)
     {
         double v = get_pixel_double(imgin->im, ii);
-        if (imgout->mdt->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1, f2);
-        else imgout->im->array.D[ii] = pt2function(v, f1, f2);
+        if(imgout->mdt->datatype == _DATATYPE_FLOAT)
+        {
+            imgout->im->array.F[ii] = (float)pt2function(v, f1, f2);
+        }
+        else
+        {
+            imgout->im->array.D[ii] = pt2function(v, f1, f2);
+        }
     }
     return (0);
 }
 
-int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const char *ID_out, double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const char *ID_out,
+                               double (*pt2function)(double, double, double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
-        arith_image_function_1ff_1_IMGID(&_in, f1, f2, &_out, pt2function));
+                         arith_image_function_1ff_1_IMGID(&_in, f1, f2, &_out, pt2function));
 
 }
 
-int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2, double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2,
+        double (*pt2function)(double, double, double))
 {
     uint64_t nelement = imgin->im->md[0].nelement;
 #ifdef _OPENMP
@@ -1072,18 +1211,26 @@ int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2,
     for(uint64_t ii = 0; ii < nelement; ii++)
     {
         double v = get_pixel_double(imgin->im, ii);
-        if (imgin->im->md[0].datatype == _DATATYPE_FLOAT) imgin->im->array.F[ii] = (float)pt2function(v, f1, f2);
-        else if (imgin->im->md[0].datatype == _DATATYPE_DOUBLE) imgin->im->array.D[ii] = pt2function(v, f1, f2);
+        if(imgin->im->md[0].datatype == _DATATYPE_FLOAT)
+        {
+            imgin->im->array.F[ii] = (float)pt2function(v, f1, f2);
+        }
+        else if(imgin->im->md[0].datatype == _DATATYPE_DOUBLE)
+        {
+            imgin->im->array.D[ii] = pt2function(v, f1, f2);
+        }
     }
     return (0);
 }
 
-int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2, double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2,
+                                       double (*pt2function)(double, double, double))
 {
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     int ret = arith_image_function_1ff_1_inplace_IMGID(&img, f1, f2, pt2function);
-    if (img.ID == -1) {
+    if(img.ID == -1)
+    {
         return RETURN_FAILURE;
     }
     imgid_free(&img);

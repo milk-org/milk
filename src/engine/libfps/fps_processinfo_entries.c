@@ -139,7 +139,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.loopcntMax",
                                  "max loop cnt",
                                  FPTYPE_INT64,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &loopcntMax_default,
                                  NULL);
 
@@ -148,7 +148,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggermode",
                                  "trigger mode",
                                  FPTYPE_INT64,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &triggermode_default,
                                  NULL);
 
@@ -166,7 +166,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.MeasureTiming",
                                  "Measure timing",
                                  FPTYPE_ONOFF,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  NULL,
                                  &fp_measuretiming);
     fps->parray[fp_measuretiming].fpflag |= FPFLAG_ONOFF;
@@ -192,7 +192,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggerdelay",
                                  "trigger delay",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &triggerdelay_default,
                                  NULL);
 
@@ -203,7 +203,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggertimeout",
                                  "trigger timeout",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &triggertimeout_default,
                                  NULL);
 

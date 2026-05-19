@@ -16,4 +16,3 @@ errno_t streamCTRL_print_SPTRACE_details(
 );
 
 #endif
-

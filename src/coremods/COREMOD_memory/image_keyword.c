@@ -38,16 +38,17 @@ imageID image_list_keywords(
  *  CMD 1: imlistkw (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_listkw = {
+static FPS_APP_INFO FPS_app_info_listkw =
+{
     .fps_name    = "imlistkw",
     .cmdkey      = "imlistkw",
     .description = "list image keywords",
     .description_long =
-        "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
+    "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
 };
 
 static char p_listkw_imname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+     FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
 #define FPS_PARAMS_listkw(X) \
     X(".imname", p_listkw_imname, \
@@ -55,7 +56,8 @@ static char p_listkw_imname[
       FPFLAG_DEFAULT_INPUT, \
       "image name")
 
-static FPS_CLI_BINDING bindings_listkw[] = {
+static FPS_CLI_BINDING bindings_listkw[] =
+{
     FPS_PARAMS_listkw(FPS_X_BINDING)
 };
 
@@ -63,11 +65,13 @@ static const int __attribute__((unused)) nb_bindings_listkw =
     sizeof(bindings_listkw) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF __attribute__((unused)) farg_listkw[] = {
+static CLICMDARGDEF __attribute__((unused)) farg_listkw[] =
+{
     FPS_PARAMS_listkw(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata_listkw = {
+static CLICMDDATA CLIcmddata_listkw =
+{
     "",
     "",
     CLICMD_FIELDS_NOPARAM
@@ -86,22 +90,23 @@ static errno_t __attribute__((unused)) compute_listkw()
  *  CMD 2: imwritekwL (4 args, primary)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "imwritekwL",
     .cmdkey      = "imwritekwL",
     .description =
-        "write long type keyword",
+    "write long type keyword",
     .description_long =
-        "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
+    "List, read, or modify FITS-style keywords attached to a shared memory image stream. Keywords are stored in the stream metadata header."
 };
 
 static char p_imname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+     FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static char p_kname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "kw2";
+     FUNCTION_PARAMETER_STRMAXLEN] = "kw2";
 static long long p_kwval = 34;
 static char p_comment[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "my_keyword_comment";
 
 #define FPS_PARAMS(X) \
@@ -122,7 +127,8 @@ static char p_comment[
       FPFLAG_DEFAULT_INPUT, \
       "comment")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
@@ -130,11 +136,13 @@ static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "",
     "",
     CLICMD_FIELDS_DEFAULTS
@@ -164,18 +172,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction_listkw(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_listkw,
-        farg_listkw, &CLIcmddata_listkw,
-        bindings_listkw, nb_bindings_listkw,
-        compute_listkw);
+               &FPS_app_info_listkw,
+               farg_listkw, &CLIcmddata_listkw,
+               bindings_listkw, nb_bindings_listkw,
+               compute_listkw);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -187,8 +195,8 @@ CLIADDCMD_COREMOD_memory__image_keyword()
             nb_bindings_listkw);
 
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_listkw,
-            CLIfunction_listkw);
+                       CLIcmddata_listkw,
+                       CLIfunction_listkw);
         CLIcmddata_listkw.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -198,7 +206,7 @@ CLIADDCMD_COREMOD_memory__image_keyword()
             farg, my_bindings, nb_bindings);
 
         int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
+                       CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -226,7 +234,8 @@ static long _image_write_keyword(
 {
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     long ID = img.ID;
-    if (ID == -1) {
+    if(ID == -1)
+    {
         return RETURN_FAILURE;
     }
     long NBkw = dcimg[ID].md[0].NBkw;
@@ -247,11 +256,16 @@ static long _image_write_keyword(
     {
         snprintf(dcimg[ID].kw[kw].name, KEYWORD_MAX_STRING, "%s", kname);
         dcimg[ID].kw[kw].type = type;
-        if (type == 'L') {
+        if(type == 'L')
+        {
             dcimg[ID].kw[kw].value.numl = numl;
-        } else if (type == 'D') {
+        }
+        else if(type == 'D')
+        {
             dcimg[ID].kw[kw].value.numf = numf;
-        } else if (type == 'S') {
+        }
+        else if(type == 'S')
+        {
             snprintf(dcimg[ID].kw[kw].value.valstr, KEYWORD_MAX_STRING, "%s", valstr);
         }
         snprintf(dcimg[ID].kw[kw].comment, KEYWORD_MAX_COMMENT, "%s", comment);
@@ -357,18 +371,19 @@ imageID image_list_keywords(
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     long ID = img.ID;
-    if (img.ID == -1) {
+    if(img.ID == -1)
+    {
         return RETURN_FAILURE;
     }
     long    kw;
 
     int kwcnt = 0;
     for(kw = 0;
-        kw < dcimg[ID].md->NBkw;
-        kw++)
+            kw < dcimg[ID].md->NBkw;
+            kw++)
     {
 
-        switch (dcimg[ID].kw[kw].type)
+        switch(dcimg[ID].kw[kw].type)
         {
         case 'L' :
             printf(
@@ -422,21 +437,24 @@ long image_read_keyword_D(
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
-    if(img.ID == -1) return -1;
+    if(img.ID == -1)
+    {
+        return -1;
+    }
     long ID = img.ID;
     long       kw;
     long       kw0;
-    
+
     kw0 = -1;
     for(kw = 0;
-        kw < dcimg[ID].md[0].NBkw;
-        kw++)
+            kw < dcimg[ID].md[0].NBkw;
+            kw++)
     {
         if((dcimg[ID].kw[kw].type == 'D')
-           && (strncmp(
-                   kname,
-                   dcimg[ID].kw[kw].name,
-                   strlen(kname)) == 0))
+                && (strncmp(
+                        kname,
+                        dcimg[ID].kw[kw].name,
+                        strlen(kname)) == 0))
         {
             kw0  = kw;
             *val =
@@ -462,21 +480,24 @@ long image_read_keyword_L(
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
-    if(img.ID == -1) return -1;
+    if(img.ID == -1)
+    {
+        return -1;
+    }
     long ID = img.ID;
     long       kw;
     long       kw0;
-    
+
     kw0 = -1;
     for(kw = 0;
-        kw < dcimg[ID].md[0].NBkw;
-        kw++)
+            kw < dcimg[ID].md[0].NBkw;
+            kw++)
     {
         if((dcimg[ID].kw[kw].type == 'L')
-           && (strncmp(
-                   kname,
-                   dcimg[ID].kw[kw].name,
-                   strlen(kname)) == 0))
+                && (strncmp(
+                        kname,
+                        dcimg[ID].kw[kw].name,
+                        strlen(kname)) == 0))
         {
             kw0  = kw;
             *val =

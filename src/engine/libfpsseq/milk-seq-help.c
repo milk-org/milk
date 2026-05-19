@@ -16,9 +16,10 @@ int main(
     int argc,
     char *argv[])
 {
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i], "--help-oneline") == 0)
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-h1") == 0 ||
+                strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("FPS sequencer scripting guide\n");
             return 0;
@@ -33,9 +34,12 @@ int main(
     printf("  execute commands deterministically and headlessly. It is designed for strict\n");
     printf("  timing orchestration, such as hardware calibration or adaptive optics loops.\n\n");
     printf("  Key features:\n");
-    printf("  - " COLOR_GREEN "Zero-Copy State:" COLOR_RESET " Exposes execution state via `/dev/shm/milkseq.<name>.shm`.\n");
-    printf("  - " COLOR_GREEN "Cross-Process Injection:" COLOR_RESET " Accepts commands injected via a named FIFO pipe.\n");
-    printf("  - " COLOR_GREEN "Deterministic Lock-Stepping:" COLOR_RESET " Provides `wait_fps` and `wait_seq` primitives.\n\n");
+    printf("  - " COLOR_GREEN "Zero-Copy State:" COLOR_RESET
+           " Exposes execution state via `/dev/shm/milkseq.<name>.shm`.\n");
+    printf("  - " COLOR_GREEN "Cross-Process Injection:" COLOR_RESET
+           " Accepts commands injected via a named FIFO pipe.\n");
+    printf("  - " COLOR_GREEN "Deterministic Lock-Stepping:" COLOR_RESET
+           " Provides `wait_fps` and `wait_seq` primitives.\n\n");
 
     printf(COLOR_BOLD "2. BASIC USAGE\n" COLOR_RESET);
     printf("  " COLOR_CYAN "milk-seq -n <name> -f <script.seq> --daemon\n" COLOR_RESET);
@@ -48,10 +52,13 @@ int main(
     printf("  - Stopped via SIGTERM (seq.stop reads PID file).\n\n");
 
     printf("  CLI commands (from milk-cli):\n");
-    printf("    " COLOR_YELLOW "seq.list" COLOR_RESET "                 List all active sequencer instances\n");
-    printf("    " COLOR_YELLOW "seq.start <name>" COLOR_RESET "         Start a daemonized sequencer\n");
+    printf("    " COLOR_YELLOW "seq.list" COLOR_RESET
+           "                 List all active sequencer instances\n");
+    printf("    " COLOR_YELLOW "seq.start <name>" COLOR_RESET
+           "         Start a daemonized sequencer\n");
     printf("    " COLOR_YELLOW "seq.stop  <name>" COLOR_RESET "         Stop via SIGTERM (PID file)\n");
-    printf("    " COLOR_YELLOW "seq.status <name>" COLOR_RESET "        View task status and error counts\n");
+    printf("    " COLOR_YELLOW "seq.status <name>" COLOR_RESET
+           "        View task status and error counts\n");
     printf("    " COLOR_YELLOW "seq.submit <name> <cmd>" COLOR_RESET "  Inject a command via FIFO\n");
     printf("    " COLOR_YELLOW "seq.log <name>" COLOR_RESET "           Show tail of daemon log\n\n");
 

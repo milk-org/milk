@@ -4,7 +4,7 @@
  *
  * This file contains the initialization and main loop logic for the milk-cli.
  * It is responsible for setting up the environment, loading persistent state
- * (history, aliases, configurations), initializing core modules, and 
+ * (history, aliases, configurations), initializing core modules, and
  * entering the main Read-Eval-Print Loop (REPL) in `runCLI()`.
  */
 
@@ -163,7 +163,7 @@ errno_t exitCLI()
     CLI_cleanup_scroll_region();
 
     if(data.fifoON == 1
-       || data.fifofd >= 0)
+            || data.fifofd >= 0)
     {
         cli_fifo_close();
     }
@@ -333,8 +333,8 @@ int cli_fifo_open(const char *path)
     }
 
     data.fifofd = open(
-        data.fifoname,
-        O_RDWR | O_NONBLOCK);
+                      data.fifoname,
+                      O_RDWR | O_NONBLOCK);
     if(data.fifofd == -1)
     {
         PRINT_ERROR("open: %s", strerror(errno));
@@ -366,7 +366,7 @@ void cli_fifo_close(void)
         data.fifofd = -1;
     }
     if(data.fifoON == 1
-       && data.fifoname[0] != '\0')
+            && data.fifoname[0] != '\0')
     {
         unlink(data.fifoname);
     }
@@ -598,8 +598,8 @@ static void readline_lazy_init(
 static int handle_fifo_input(const char *prompt)
 {
     if(!(data.fifoON == 1
-         && data.fifofd >= 0
-         && FD_ISSET(data.fifofd, &cli_fdin_set)))
+            && data.fifofd >= 0
+            && FD_ISSET(data.fifofd, &cli_fdin_set)))
     {
         return 0;
     }
@@ -728,7 +728,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Enable syntax highlighting by default based on terminal capabilities
     // (level 2 = 256-color tree-sitter, level 1 = 16-color legacy)
     data.syntax_highlight = (cli_ts_detect_color_level() >= 2) ? 2 : 1;
-    
+
     // Disable command timing by default
     data.print_cmd_timing = 0;
 
@@ -894,12 +894,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             else if(data.fifoON == 1)
             {
                 EXECUTE_SYSTEM_COMMAND_NOCHECK("file %s",
-                                       CLIstartupfilename); //TEST
+                                               CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s",
-                                       CLIstartupfilename); //TEST
+                                               CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null",
-                                       CLIstartupfilename,
-                                       data.fifoname);
+                                               CLIstartupfilename,
+                                               data.fifoname);
 
                 if(dcquiet == 0)
                 {
@@ -918,7 +918,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     strncpy(data.cmdargtoken[1].val.string, CLIstartupfilename, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
                     data.cmdNBarg = 2;
                     cli_source();
-                    
+
                     // Exit the interactive loop, as shebang scripts should terminate upon completion
                     if(strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
                     {
@@ -938,7 +938,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         FD_ZERO(
             &cli_fdin_set); // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
         if(data.fifoON == 1
-           && data.fifofd >= 0)
+                && data.fifofd >= 0)
         {
             FD_SET(
                 data.fifofd,
@@ -993,7 +993,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
              * was opened dynamically */
             fdmax = fileno(stdin);
             if(data.fifoON == 1
-               && data.fifofd > fdmax)
+                    && data.fifofd > fdmax)
             {
                 fdmax = data.fifofd;
             }
@@ -1007,7 +1007,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
                 FD_ZERO(&cli_fdin_set);
                 if(data.fifoON == 1
-                   && data.fifofd >= 0)
+                        && data.fifofd >= 0)
                 {
                     FD_SET(
                         data.fifofd,
@@ -1068,12 +1068,15 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     rl_callback_read_char();
 #else
                     // Fallback: no readline
-                    if (fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin)) {
+                    if(fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin))
+                    {
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
                         cli_history_log_prompt(
                             data.CLIcmdline);
                         CLI_execute_line();
-                    } else {
+                    }
+                    else
+                    {
                         data.CLIloopON = 0;
                     }
 #endif
@@ -1349,8 +1352,8 @@ static int command_line_process_options(int argc, char **argv)
 
         case 's':
             strncpy(CLIstartupfilename,
-                optarg,
-                STRINGMAXLEN_CLISTARTUPFILENAME - 1);
+                    optarg,
+                    STRINGMAXLEN_CLISTARTUPFILENAME - 1);
             if(dcquiet == 0)
             {
                 printf("Startup file : %s\n", CLIstartupfilename);
@@ -1390,4 +1393,3 @@ static int command_line_process_options(int argc, char **argv)
 
     return RETURN_SUCCESS;
 }
-

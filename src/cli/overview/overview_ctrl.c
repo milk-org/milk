@@ -87,7 +87,7 @@ static int ov_ctrl_fps_action(
 
     long rc = fps_connect(
                   fps_name, &fps, FPSCONNECT_SIMPLE);
-    if (rc == -1)
+    if(rc == -1)
     {
         return -1;
     }
@@ -95,7 +95,7 @@ static int ov_ctrl_fps_action(
     /* Suppress stderr from tmux commands to avoid TUI corruption */
     int saved_stderr = dup(STDERR_FILENO);
     int devnull = open("/dev/null", O_WRONLY);
-    if (devnull >= 0)
+    if(devnull >= 0)
     {
         dup2(devnull, STDERR_FILENO);
         close(devnull);
@@ -104,7 +104,7 @@ static int ov_ctrl_fps_action(
     action(&fps);
 
     /* Restore stderr */
-    if (saved_stderr >= 0)
+    if(saved_stderr >= 0)
     {
         dup2(saved_stderr, STDERR_FILENO);
         close(saved_stderr);
@@ -134,21 +134,21 @@ void ov_ctrl_fps_run_toggle(
     const OV_FPS *f,
     OV_CMDLOG    *log)
 {
-    if (f == NULL || !f->valid)
+    if(f == NULL || !f->valid)
     {
         return;
     }
 
-    if (f->run_alive)
+    if(f->run_alive)
     {
         /* --- RUN stop (no CHECKOK gate) --- */
         int rc = ov_ctrl_fps_action(
                      f->name, functionparameter_RUNstop);
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log,
                            rc == 0 ? OV_CMDLOG_OK
-                                   : OV_CMDLOG_FAIL,
+                           : OV_CMDLOG_FAIL,
                            "⏹️ FPS \"%s\" — RUN stop",
                            f->name);
         }
@@ -161,9 +161,9 @@ void ov_ctrl_fps_run_toggle(
 
     long rc = fps_connect(
                   f->name, &fps, FPSCONNECT_SIMPLE);
-    if (rc == -1)
+    if(rc == -1)
     {
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "▶️ FPS \"%s\" — RUN start"
@@ -177,7 +177,7 @@ void ov_ctrl_fps_run_toggle(
     int saved_stderr = dup(STDERR_FILENO);
     {
         int devnull = open("/dev/null", O_WRONLY);
-        if (devnull >= 0)
+        if(devnull >= 0)
         {
             dup2(devnull, STDERR_FILENO);
             close(devnull);
@@ -197,10 +197,10 @@ void ov_ctrl_fps_run_toggle(
         const char *ep = fps.md->execfullpath;
         char *bn = strrchr(ep, '/');
         const char *base = bn ? bn + 1 : ep;
-        if (strlen(ep) > 0
-            && strcmp(base, "unknown") != 0
-            && strcmp(base, "milk") != 0
-            && strcmp(base, "cacao") != 0)
+        if(strlen(ep) > 0
+                && strcmp(base, "unknown") != 0
+                && strcmp(base, "milk") != 0
+                && strcmp(base, "cacao") != 0)
         {
             strncpy(progexec, ep, sizeof(progexec) - 1);
             progexec[sizeof(progexec) - 1] = '\0';
@@ -225,7 +225,7 @@ void ov_ctrl_fps_run_toggle(
         FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
     /* Restore stderr */
-    if (saved_stderr >= 0)
+    if(saved_stderr >= 0)
     {
         dup2(saved_stderr, STDERR_FILENO);
         close(saved_stderr);
@@ -233,7 +233,7 @@ void ov_ctrl_fps_run_toggle(
 
     fps_disconnect(&fps);
 
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
                        "▶️ FPS \"%s\" — RUN start",
@@ -250,7 +250,7 @@ void ov_ctrl_fps_conf_toggle(
     const OV_FPS *f,
     OV_CMDLOG    *log)
 {
-    if (f == NULL || !f->valid)
+    if(f == NULL || !f->valid)
     {
         return;
     }
@@ -262,11 +262,11 @@ void ov_ctrl_fps_conf_toggle(
                          ? "CONF stop" : "CONF start";
 
     int rc = ov_ctrl_fps_action(f->name, action_fn);
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
-                               : OV_CMDLOG_FAIL,
+                       : OV_CMDLOG_FAIL,
                        "%s FPS \"%s\" — %s",
                        f->conf_alive ? "⏹️" : "▶️",
                        f->name, action);
@@ -282,7 +282,7 @@ void ov_ctrl_stream_delete(
     const OV_STREAM *s,
     OV_CMDLOG       *log)
 {
-    if (s == NULL || !s->valid)
+    if(s == NULL || !s->valid)
     {
         return;
     }
@@ -290,9 +290,9 @@ void ov_ctrl_stream_delete(
     IMAGE im;
     memset(&im, 0, sizeof(im));
 
-    if (ImageStreamIO_read_sharedmem_image_toIMAGE(s->name, &im) != 0)
+    if(ImageStreamIO_read_sharedmem_image_toIMAGE(s->name, &im) != 0)
     {
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Stream \"%s\" — delete"
@@ -303,7 +303,7 @@ void ov_ctrl_stream_delete(
     }
 
     /* Destroy semaphores */
-    for (int si = 0; si < im.md->sem; si++)
+    for(int si = 0; si < im.md->sem; si++)
     {
         sem_destroy(im.semptr[si]);
     }
@@ -314,9 +314,9 @@ void ov_ctrl_stream_delete(
     char fullpath[512];
     ImageStreamIO_filename(fullpath, sizeof(fullpath), s->name);
 
-    if (unlink(fullpath) != 0)
+    if(unlink(fullpath) != 0)
     {
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Stream \"%s\" — delete"
@@ -326,7 +326,7 @@ void ov_ctrl_stream_delete(
         return;
     }
 
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
                        "🗑️ Stream \"%s\" — deleted",
@@ -343,17 +343,17 @@ void ov_ctrl_proc_kill(
     const OV_PROC *p,
     OV_CMDLOG     *log)
 {
-    if (p == NULL || p->PID <= 0)
+    if(p == NULL || p->PID <= 0)
     {
         return;
     }
 
     int rc = kill(p->PID, SIGTERM);
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
-                               : OV_CMDLOG_FAIL,
+                       : OV_CMDLOG_FAIL,
                        "💀 Process \"%s\" (PID %d)"
                        " — SIGTERM",
                        p->name, p->PID);
@@ -369,16 +369,16 @@ void ov_ctrl_proc_sigkill(
     const OV_PROC *p,
     OV_CMDLOG     *log)
 {
-    if (p == NULL || p->PID <= 0)
+    if(p == NULL || p->PID <= 0)
     {
         return;
     }
     int rc = kill(p->PID, SIGKILL);
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
-                               : OV_CMDLOG_FAIL,
+                       : OV_CMDLOG_FAIL,
                        "Process \"%s\" (PID %d)"
                        " — SIGKILL",
                        p->name, p->PID);
@@ -398,7 +398,7 @@ void ov_ctrl_proc_set_ctrlval(
     int           val,
     OV_CMDLOG     *log)
 {
-    if (p == NULL || p->PID <= 0 || !p->valid)
+    if(p == NULL || p->PID <= 0 || !p->valid)
     {
         return;
     }
@@ -408,9 +408,9 @@ void ov_ctrl_proc_set_ctrlval(
              ov_get_shmdir(), p->name, (int)p->PID);
 
     int fd = open(fname, O_RDWR);
-    if (fd < 0)
+    if(fd < 0)
     {
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Process \"%s\" — ctrl failed (open)", p->name);
@@ -419,10 +419,10 @@ void ov_ctrl_proc_set_ctrlval(
     }
 
     struct stat st;
-    if (fstat(fd, &st) < 0 || st.st_size < (off_t)sizeof(PROCESSINFO))
+    if(fstat(fd, &st) < 0 || st.st_size < (off_t)sizeof(PROCESSINFO))
     {
         close(fd);
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
@@ -431,11 +431,11 @@ void ov_ctrl_proc_set_ctrlval(
     }
 
     PROCESSINFO *pinfo = (PROCESSINFO *)mmap(NULL, sizeof(PROCESSINFO),
-                                             PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (pinfo == MAP_FAILED)
+                         PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if(pinfo == MAP_FAILED)
     {
         close(fd);
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
@@ -450,15 +450,34 @@ void ov_ctrl_proc_set_ctrlval(
     munmap(pinfo, sizeof(PROCESSINFO));
     close(fd);
 
-    if (log != NULL)
+    if(log != NULL)
     {
         const char *action;
         const char *emoji = "⚡";
-        if (new_val == 0) { action = "Resume"; emoji = "⏯️"; }
-        else if (new_val == 1) { action = "Pause"; emoji = "⏸️"; }
-        else if (new_val == 2) { action = "Step"; emoji = "⏭️"; }
-        else if (new_val == 3) { action = "Exit request"; emoji = "⏹️"; }
-        else { action = "CTRLval updated"; }
+        if(new_val == 0)
+        {
+            action = "Resume";
+            emoji = "⏯️";
+        }
+        else if(new_val == 1)
+        {
+            action = "Pause";
+            emoji = "⏸️";
+        }
+        else if(new_val == 2)
+        {
+            action = "Step";
+            emoji = "⏭️";
+        }
+        else if(new_val == 3)
+        {
+            action = "Exit request";
+            emoji = "⏹️";
+        }
+        else
+        {
+            action = "CTRLval updated";
+        }
 
         ov_cmdlog_push(log, OV_CMDLOG_OK,
                        "%s Process \"%s\" — %s", emoji, p->name, action);
@@ -474,7 +493,7 @@ void ov_ctrl_proc_zero_counters(
     const OV_PROC *p,
     OV_CMDLOG     *log)
 {
-    if (p == NULL || p->PID <= 0 || !p->valid)
+    if(p == NULL || p->PID <= 0 || !p->valid)
     {
         return;
     }
@@ -484,9 +503,9 @@ void ov_ctrl_proc_zero_counters(
              ov_get_shmdir(), p->name, (int)p->PID);
 
     int fd = open(fname, O_RDWR);
-    if (fd < 0)
+    if(fd < 0)
     {
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Process \"%s\" — zero failed (open)", p->name);
@@ -495,10 +514,10 @@ void ov_ctrl_proc_zero_counters(
     }
 
     struct stat st;
-    if (fstat(fd, &st) < 0 || st.st_size < (off_t)sizeof(PROCESSINFO))
+    if(fstat(fd, &st) < 0 || st.st_size < (off_t)sizeof(PROCESSINFO))
     {
         close(fd);
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Process \"%s\" — zero failed (stat)", p->name);
@@ -507,11 +526,11 @@ void ov_ctrl_proc_zero_counters(
     }
 
     PROCESSINFO *pinfo = (PROCESSINFO *)mmap(NULL, sizeof(PROCESSINFO),
-                                             PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (pinfo == MAP_FAILED)
+                         PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if(pinfo == MAP_FAILED)
     {
         close(fd);
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "🚫 Process \"%s\" — zero failed (mmap)", p->name);
@@ -524,7 +543,7 @@ void ov_ctrl_proc_zero_counters(
     munmap(pinfo, sizeof(PROCESSINFO));
     close(fd);
 
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
                        "0️⃣ Process \"%s\" — Counters zeroed", p->name);
@@ -540,14 +559,14 @@ void ov_ctrl_proc_remove(
     const OV_PROC *p,
     OV_CMDLOG     *log)
 {
-    if (p == NULL || p->PID <= 0)
+    if(p == NULL || p->PID <= 0)
     {
         return;
     }
 
-    if (kill(p->PID, 0) == 0 || errno == EPERM)
+    if(kill(p->PID, 0) == 0 || errno == EPERM)
     {
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log,
                            OV_CMDLOG_FAIL,
@@ -562,10 +581,10 @@ void ov_ctrl_proc_remove(
              ov_get_shmdir(), p->name, (int)p->PID);
 
     int rc = unlink(fname);
-    
-    if (log != NULL)
+
+    if(log != NULL)
     {
-        if (rc == 0)
+        if(rc == 0)
         {
             ov_cmdlog_push(log,
                            OV_CMDLOG_OK,
@@ -592,21 +611,21 @@ void ov_ctrl_proc_remove(
  */
 static int pid_is_stopped(pid_t pid)
 {
-    if (pid <= 0)
+    if(pid <= 0)
     {
         return 0;
     }
     char path[64];
     snprintf(path, sizeof(path), "/proc/%d/stat", pid);
     FILE *fp = fopen(path, "r");
-    if (fp == NULL)
+    if(fp == NULL)
     {
         return 0;
     }
     int p;
     char comm[256];
     char state = '?';
-    if (fscanf(fp, "%d %s %c", &p, comm, &state) != 3)
+    if(fscanf(fp, "%d %s %c", &p, comm, &state) != 3)
     {
         state = '?';
     }
@@ -623,23 +642,23 @@ void ov_ctrl_proc_pause_toggle(
     const OV_PROC *p,
     OV_CMDLOG     *log)
 {
-    if (p == NULL || p->PID <= 0)
+    if(p == NULL || p->PID <= 0)
     {
         return;
     }
     int stopped = pid_is_stopped(p->PID);
     int sig = stopped ? SIGCONT : SIGSTOP;
     int rc = kill(p->PID, sig);
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
-                               : OV_CMDLOG_FAIL,
+                       : OV_CMDLOG_FAIL,
                        "%s Process \"%s\" (PID %d) — %s",
                        stopped ? "⏯️" : "⏸️",
                        p->name, p->PID,
                        stopped ? "resumed"
-                               : "paused");
+                       : "paused");
     }
 }
 
@@ -654,26 +673,26 @@ void ov_ctrl_fps_signal_pid(
     int          sig,
     OV_CMDLOG    *log)
 {
-    if (f == NULL)
+    if(f == NULL)
     {
         return;
     }
     int ok = 0;
-    if (f->run_alive && f->runpid > 0)
+    if(f->run_alive && f->runpid > 0)
     {
-        if (kill(f->runpid, sig) == 0)
+        if(kill(f->runpid, sig) == 0)
         {
             ok = 1;
         }
     }
-    if (f->conf_alive && f->confpid > 0)
+    if(f->conf_alive && f->confpid > 0)
     {
-        if (kill(f->confpid, sig) == 0)
+        if(kill(f->confpid, sig) == 0)
         {
             ok = 1;
         }
     }
-    if (log != NULL)
+    if(log != NULL)
     {
         const char *signame =
             (sig == SIGTERM) ? "SIGTERM"
@@ -681,7 +700,7 @@ void ov_ctrl_fps_signal_pid(
             : "signal";
         ov_cmdlog_push(log,
                        ok ? OV_CMDLOG_OK
-                          : OV_CMDLOG_FAIL,
+                       : OV_CMDLOG_FAIL,
                        "FPS \"%s\" — %s sent",
                        f->name, signame);
     }
@@ -697,33 +716,33 @@ void ov_ctrl_fps_pause_toggle(
     const OV_FPS *f,
     OV_CMDLOG    *log)
 {
-    if (f == NULL)
+    if(f == NULL)
     {
         return;
     }
     /* Use runpid state to decide direction */
     int stopped = 0;
-    if (f->run_alive && f->runpid > 0)
+    if(f->run_alive && f->runpid > 0)
     {
         stopped = pid_is_stopped(f->runpid);
     }
     int sig = stopped ? SIGCONT : SIGSTOP;
-    if (f->run_alive && f->runpid > 0)
+    if(f->run_alive && f->runpid > 0)
     {
         kill(f->runpid, sig);
     }
-    if (f->conf_alive && f->confpid > 0)
+    if(f->conf_alive && f->confpid > 0)
     {
         kill(f->confpid, sig);
     }
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
                        "%s FPS \"%s\" — %s",
                        stopped ? "⏯️" : "⏸️",
                        f->name,
                        stopped ? "resumed"
-                               : "paused");
+                       : "paused");
     }
 }
 
@@ -741,7 +760,7 @@ void ov_ctrl_fps_remove(
     const OV_FPS *f,
     OV_CMDLOG    *log)
 {
-    if (f == NULL || !f->valid)
+    if(f == NULL || !f->valid)
     {
         return;
     }
@@ -751,9 +770,9 @@ void ov_ctrl_fps_remove(
 
     long rc = fps_connect(
                   f->name, &fps, FPSCONNECT_SIMPLE);
-    if (rc == -1)
+    if(rc == -1)
     {
-        if (log != NULL)
+        if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
                            "FPS \"%s\" — erase"
@@ -769,7 +788,7 @@ void ov_ctrl_fps_remove(
     int saved_stderr = dup(STDERR_FILENO);
     {
         int devnull = open("/dev/null", O_WRONLY);
-        if (devnull >= 0)
+        if(devnull >= 0)
         {
             dup2(devnull, STDERR_FILENO);
             close(devnull);
@@ -781,7 +800,7 @@ void ov_ctrl_fps_remove(
     functionparameter_FPSremove(&fps);
 
     /* Restore stderr */
-    if (saved_stderr >= 0)
+    if(saved_stderr >= 0)
     {
         dup2(saved_stderr, STDERR_FILENO);
         close(saved_stderr);
@@ -789,7 +808,7 @@ void ov_ctrl_fps_remove(
 
     fps_disconnect(&fps);
 
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
                        "🗑️ FPS \"%s\" — erased",
@@ -806,7 +825,7 @@ void ov_ctrl_procs_cleanup(
 {
     /* Silently remove crashed/stopped procinfo entries */
     int rc = system("milk-procinfo-rm -c >/dev/null 2>&1");
-    if (log != NULL)
+    if(log != NULL)
     {
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
@@ -823,24 +842,24 @@ void ov_ctrl_inspect_item(
     ov_focus_t panel,
     const void *item)
 {
-    if (item == NULL)
+    if(item == NULL)
     {
         return;
     }
 
     char cmd[512] = {0};
 
-    if (panel == OV_FOCUS_STREAMS)
+    if(panel == OV_FOCUS_STREAMS)
     {
         const OV_STREAM *s = (const OV_STREAM *)item;
         snprintf(cmd, sizeof(cmd), "milk-stream-info %s | less -R", s->name);
     }
-    else if (panel == OV_FOCUS_PROCS)
+    else if(panel == OV_FOCUS_PROCS)
     {
         const OV_PROC *p = (const OV_PROC *)item;
         snprintf(cmd, sizeof(cmd), "milk-procinfo-info %s | less -R", p->name);
     }
-    else if (panel == OV_FOCUS_FPS)
+    else if(panel == OV_FOCUS_FPS)
     {
         const OV_FPS *f = (const OV_FPS *)item;
         snprintf(cmd, sizeof(cmd), "milk-fps-info %s | less -R", f->name);
@@ -854,13 +873,12 @@ void ov_ctrl_inspect_item(
     ov_raw_mode_exit();
     int rc_clear = system("clear");
     (void)rc_clear;
-    
+
     /* Spawn interactive diagnostic tool */
     int rc_cmd = system(cmd);
     (void)rc_cmd;
-    
+
     /* Resume TUI */
     ov_raw_mode_enter();
     ov_buf_force_clear();
 }
-

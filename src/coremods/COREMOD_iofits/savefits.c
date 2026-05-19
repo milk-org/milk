@@ -29,12 +29,13 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "savefits",
     .cmdkey      = "saveFITS",
     .description = "save image as FITS",
     .description_long =
-        "Save a shared memory image stream to a FITS file on disk. Preserves keywords, data type, and multi-dimensional structure."
+    "Save a shared memory image stream to a FITS file on disk. Preserves keywords, data type, and multi-dimensional structure."
 };
 
 
@@ -97,23 +98,25 @@ errno_t saveFITS_opt_trunc_IMGID(
     resolveIMGID(imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
 #endif
-    if (imgin->ID == -1) {
+    if(imgin->ID == -1)
+    {
         return RETURN_SUCCESS;
     }
 
     int bitpix = (outputbitpix != 0)
-        ? outputbitpix
-        : ImageStreamIO_FITSIObitpix(
-            imgin->md->datatype);
-    if (bitpix == -1) {
+                 ? outputbitpix
+                 : ImageStreamIO_FITSIObitpix(
+                     imgin->md->datatype);
+    if(bitpix == -1)
+    {
         bitpix = FLOAT_IMG;
     }
 
     fitsfile *fptr;
     fits_create_file(&fptr, fnametmpext,
-        &COREMOD_iofits_data.FITSIO_status);
-    if (check_FITSIO_status(__FILE__, __func__,
-                            __LINE__, 1) != 0)
+                     &COREMOD_iofits_data.FITSIO_status);
+    if(check_FITSIO_status(__FILE__, __func__,
+                           __LINE__, 1) != 0)
     {
         return RETURN_FAILURE;
     }
@@ -121,32 +124,34 @@ errno_t saveFITS_opt_trunc_IMGID(
     int naxis = imgin->md->naxis;
     long naxesl[3];
     long nelements = 1;
-    for (int i = 0; i < naxis; i++) {
+    for(int i = 0; i < naxis; i++)
+    {
         naxesl[i] = (long) imgin->md->size[i];
-        if (truncate >= 0 && i == naxis - 1) {
+        if(truncate >= 0 && i == naxis - 1)
+        {
             naxesl[naxis - 1] = truncate;
         }
         nelements *= naxesl[i];
     }
 
     fits_create_img(fptr, bitpix, naxis,
-        naxesl,
-        &COREMOD_iofits_data.FITSIO_status);
-    if (check_FITSIO_status(__FILE__, __func__,
-                            __LINE__, 1) != 0)
+                    naxesl,
+                    &COREMOD_iofits_data.FITSIO_status);
+    if(check_FITSIO_status(__FILE__, __func__,
+                           __LINE__, 1) != 0)
     {
         remove(fnametmp);
         return RETURN_FAILURE;
     }
 
     fits_write_img(fptr,
-        ImageStreamIO_FITSIOdatatype(
-            imgin->md->datatype),
-        1, nelements,
-        imgin->im->array.raw,
-        &COREMOD_iofits_data.FITSIO_status);
+                   ImageStreamIO_FITSIOdatatype(
+                       imgin->md->datatype),
+                   1, nelements,
+                   imgin->im->array.raw,
+                   &COREMOD_iofits_data.FITSIO_status);
     fits_close_file(fptr,
-        &COREMOD_iofits_data.FITSIO_status);
+                    &COREMOD_iofits_data.FITSIO_status);
     rename(fnametmp, outputFITSname);
     return RETURN_SUCCESS;
 }
@@ -172,9 +177,9 @@ errno_t saveFITS_opt_trunc(
 {
     IMGID id = imgid_make_from_name(inputimname);
     return saveFITS_opt_trunc_IMGID(
-        &id, truncate, outputFITSname,
-        outputbitpix, importheaderfile,
-        kwarray, kwarraysize, FITSIOext);
+               &id, truncate, outputFITSname,
+               outputbitpix, importheaderfile,
+               kwarray, kwarraysize, FITSIOext);
 }
 
 /**
@@ -186,8 +191,8 @@ errno_t save_fl_fits(
 )
 {
     return saveFITS_opt_trunc(
-        inputimname, -1, outputFITSname,
-        -32, NULL, NULL, 0, "");
+               inputimname, -1, outputFITSname,
+               -32, NULL, NULL, 0, "");
 }
 
 /**
@@ -205,20 +210,21 @@ errno_t saveFITS(
 )
 {
     return saveFITS_opt_trunc(
-        inputimname, -1, outputFITSname,
-        outputbitpix, importheaderfile,
-        kwarray, kwarraysize, "");
+               inputimname, -1, outputFITSname,
+               outputbitpix, importheaderfile,
+               kwarray, kwarraysize, "");
 }
 
 errno_t saveall_fits(const char *savedirname)
 {
-    for (int i = 0; i < dcnimg; i++)
+    for(int i = 0; i < dcnimg; i++)
     {
-        if (dcimg[i].used == 1) {
+        if(dcimg[i].used == 1)
+        {
             char fname[STRINGMAXLEN_FILENAME];
             WRITE_FILENAME(fname, "%s/%s.fits",
-                savedirname,
-                dcimg[i].name);
+                           savedirname,
+                           dcimg[i].name);
             saveFITS(dcimg[i].name,
                      fname, 0, NULL, NULL, 0);
         }
@@ -232,7 +238,7 @@ errno_t save_fits(
 )
 {
     return saveFITS(inputimname,
-        outputFITSname, 0, NULL, NULL, 0);
+                    outputFITSname, 0, NULL, NULL, 0);
 }
 #endif
 
@@ -243,16 +249,16 @@ errno_t save_fits(
 
 static MILK_HOT errno_t fpsexec(IMGID *imgin)
 {
-    if (savefits_outfname[0] == '\0')
+    if(savefits_outfname[0] == '\0')
     {
         return RETURN_FAILURE;
     }
 
     return saveFITS_opt_trunc_IMGID(
-        imgin, -1, savefits_outfname,
-        savefits_outbitpix,
-        savefits_inheader[0] ? savefits_inheader : NULL,
-        NULL, 0, "");
+               imgin, -1, savefits_outfname,
+               savefits_outbitpix,
+               savefits_inheader[0] ? savefits_inheader : NULL,
+               NULL, 0, "");
 }
 
 
@@ -260,7 +266,8 @@ static MILK_HOT errno_t fpsexec(IMGID *imgin)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
@@ -268,14 +275,17 @@ static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings)
     / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
+CLICMDDATA CLIcmddata =
+{
 #else
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
 #endif
     "",
     "",
@@ -316,9 +326,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS()

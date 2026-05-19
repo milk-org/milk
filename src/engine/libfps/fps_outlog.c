@@ -17,9 +17,9 @@ static char *fps_customfilename;
 int get_FLAG_FPSOUTLOG()
 {
 
-    if( FLAG_FPSOUTLOG == -1 )
+    if(FLAG_FPSOUTLOG == -1)
     {
-        if( getenv("MILK_FPS_LOGOUTPUT") )
+        if(getenv("MILK_FPS_LOGOUTPUT"))
         {
             FLAG_FPSOUTLOG = 1;
         }
@@ -29,7 +29,7 @@ int get_FLAG_FPSOUTLOG()
         }
 
 
-        if( getenv("MILK_FPS_LOGFILE") )
+        if(getenv("MILK_FPS_LOGFILE"))
         {
             FLAG_FPSOUTLOG = 2;
             fps_customfilename = getenv("MILK_FPS_LOGFILE");
@@ -62,7 +62,7 @@ errno_t getFPSlogfname(
 {
     get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG == 2 )
+    if(FLAG_FPSOUTLOG == 2)
     {
         WRITE_FULLFILENAME(logfname, "%s", fps_customfilename);
 
@@ -147,7 +147,7 @@ errno_t functionparameter_outlog(
 {
     get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG )
+    if(FLAG_FPSOUTLOG)
     {
 
         // identify logfile and open file
@@ -214,7 +214,7 @@ errno_t functionparameter_outlog(
                 fclose(fpout);
                 LogOutOpen = 0;
             }
-            if ( FLAG_FPSOUTLOG == 1 )
+            if(FLAG_FPSOUTLOG == 1)
             {
                 remove(logfname);
             }
@@ -234,7 +234,7 @@ errno_t functionparameter_outlog_namelink()
 {
     //get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG == 1 )
+    if(FLAG_FPSOUTLOG == 1)
     {
         char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);

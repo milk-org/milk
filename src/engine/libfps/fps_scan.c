@@ -285,8 +285,8 @@ errno_t functionparameter_scan_fps(
 
                 long NBparamMAX =
                     fps_connect(fpsname,
-                                                      &fps[fpsindex],
-                                                      FPSCONNECT_SIMPLE);
+                                &fps[fpsindex],
+                                FPSCONNECT_SIMPLE);
 
                 if(NBparamMAX == -1)
                 {
@@ -302,7 +302,7 @@ errno_t functionparameter_scan_fps(
                 if(fps_filtstring_name)
                 {
                     char *ptr = strstr(fps[fpsindex].md->name,
-                        fps_filtstring_name);
+                                       fps_filtstring_name);
                     if(ptr == NULL)  // string not found
                     {
                         fpskeep = 0;
@@ -315,7 +315,7 @@ errno_t functionparameter_scan_fps(
                 if(fps_filtstring_keyword)
                 {
                     char *ptr = strstr(fps[fpsindex].md->keywordarray,
-                        fps_filtstring_keyword);
+                                       fps_filtstring_keyword);
                     if(ptr == NULL)  // string not found
                     {
                         fpskeep = 0;
@@ -328,7 +328,7 @@ errno_t functionparameter_scan_fps(
                 if(fps_filtstring_callfunc)
                 {
                     char *ptr = strstr(fps[fpsindex].md->callfuncname,
-                        fps_filtstring_callfunc);
+                                       fps_filtstring_callfunc);
                     if(ptr == NULL)  // string not found
                     {
                         fpskeep = 0;
@@ -385,7 +385,7 @@ errno_t functionparameter_scan_fps(
                                 // scan existing nodes looking for match
                                 for(kwnindex = 0; kwnindex < NBkwn; kwnindex++)
                                 {
-                                    
+
                                     if(keywnode[kwnindex].keywordlevel ==
                                             level) // levels have to match
                                     {
@@ -416,7 +416,8 @@ errno_t functionparameter_scan_fps(
                                     kwnindex = NBkwn;
                                     if(NBkwn >= NB_KEYWNODE_MAX)
                                     {
-                                        PRINT_ERROR("WARNING: Maximum number of keyword nodes reached (%d). Skipping further parameters.", NB_KEYWNODE_MAX);
+                                        PRINT_ERROR("WARNING: Maximum number of keyword nodes reached (%d). Skipping further parameters.",
+                                                    NB_KEYWNODE_MAX);
                                         break;
                                     }
 
@@ -472,7 +473,8 @@ errno_t functionparameter_scan_fps(
                                         }
                                         else
                                         {
-                                            PRINT_ERROR("WARNING: Maximum number of children reached for node %d (%d). Skipping child.", keywnode[kwnindex].parent_index, MAX_NB_CHILD);
+                                            PRINT_ERROR("WARNING: Maximum number of children reached for node %d (%d). Skipping child.",
+                                                        keywnode[kwnindex].parent_index, MAX_NB_CHILD);
                                         }
                                     }
 
@@ -488,28 +490,28 @@ errno_t functionparameter_scan_fps(
                                         char tmpstring[200];
                                         strncpy(
                                             keywnode[kwnindex]
-                                                .keyword[ll],
+                                            .keyword[ll],
                                             fps[fpsindex]
-                                                .parray[pindex0]
-                                                .keyword[ll],
+                                            .parray[pindex0]
+                                            .keyword[ll],
                                             FUNCTION_PARAMETER_KEYWORD_STRMAXLEN
                                             - 1);
                                         keywnode[kwnindex]
-                                            .keyword[ll][
+                                        .keyword[ll][
                                             FUNCTION_PARAMETER_KEYWORD_STRMAXLEN
                                             - 1] = '\0';
                                         if(ll == 0)
                                         {
                                             strncpy(
                                                 keywnode[kwnindex]
-                                                    .keywordfull,
+                                                .keywordfull,
                                                 keywnode[kwnindex]
-                                                    .keyword[ll],
+                                                .keyword[ll],
                                                 sizeof(keywnode[kwnindex]
                                                        .keywordfull)
                                                 - 1);
                                             keywnode[kwnindex]
-                                                .keywordfull[
+                                            .keywordfull[
                                                 sizeof(keywnode[kwnindex]
                                                        .keywordfull)
                                                 - 1] = '\0';
@@ -521,16 +523,16 @@ errno_t functionparameter_scan_fps(
                                                 sizeof(tmpstring),
                                                 ".%s",
                                                 keywnode[kwnindex]
-                                                    .keyword[ll]);
+                                                .keyword[ll]);
                                             strncat(
                                                 keywnode[kwnindex]
-                                                    .keywordfull,
+                                                .keywordfull,
                                                 tmpstring,
                                                 sizeof(keywnode[kwnindex]
                                                        .keywordfull)
                                                 - strlen(
                                                     keywnode[kwnindex]
-                                                        .keywordfull)
+                                                    .keywordfull)
                                                 - 1);
                                         }
                                     }
@@ -538,9 +540,9 @@ errno_t functionparameter_scan_fps(
                                     if(verbose > 0)
                                     {
                                         printf("   %d %d -- %s\n",
-                                            keywnode[kwnindex].keywordlevel,
-                                            fps[fpsindex].parray[pindex0].keywordlevel,
-                                            keywnode[kwnindex].keywordfull);
+                                               keywnode[kwnindex].keywordlevel,
+                                               fps[fpsindex].parray[pindex0].keywordlevel,
+                                               keywnode[kwnindex].keywordfull);
                                     }
 
                                     if(keywnode[kwnindex].keywordlevel ==

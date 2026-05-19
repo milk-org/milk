@@ -73,10 +73,10 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
  * ============================================================= */
 
 static char p_imname[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "im1";
 static char p_ipaddr[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "127.0.0.1";
 static long long p_port = 8888;
 static long long p_mode = 0;
@@ -89,13 +89,14 @@ static long long p_testmode = 0;
  *  CMD 1: testfuncsem (3 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_tsem = {
+static FPS_APP_INFO FPS_app_info_tsem =
+{
     .fps_name    = "testfuncsem",
     .cmdkey      = "testfuncsem",
     .description =
-        "test semaphore loop",
+    "test semaphore loop",
     .description_long =
-        "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
+    "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
 };
 
 #define FPS_PARAMS_TSEM(X) \
@@ -112,7 +113,8 @@ static FPS_APP_INFO FPS_app_info_tsem = {
       FPFLAG_DEFAULT_INPUT, \
       "test mode")
 
-static CLICMDDATA CLIcmddata_tsem = {
+static CLICMDDATA CLIcmddata_tsem =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(tsem, CLIcmddata_tsem, FPS_app_info_tsem)
@@ -130,13 +132,14 @@ static errno_t __attribute__((unused)) compute_tsem()
  *  CMD 2: imnetwtransmit (5 args, primary)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "imnetwtransmit",
     .cmdkey      = "imnetwtransmit",
     .description =
-        "transmit image over network",
+    "transmit image over network",
     .description_long =
-        "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
+    "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
 };
 
 #define FPS_PARAMS(X) \
@@ -161,7 +164,8 @@ static FPS_APP_INFO FPS_app_info = {
       FPFLAG_DEFAULT_INPUT, \
       "RT priority")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
@@ -169,11 +173,13 @@ static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
@@ -196,13 +202,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  *  CMD 3: imnetwreceive (3 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_rx = {
+static FPS_APP_INFO FPS_app_info_rx =
+{
     .fps_name    = "imnetwreceive",
     .cmdkey      = "imnetwreceive",
     .description =
-        "receive image(s) over network",
+    "receive image(s) over network",
     .description_long =
-        "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
+    "Transmit or receive image stream data over a TCP network connection. Enables sharing shared memory streams between machines for distributed processing."
 };
 
 #define FPS_PARAMS_RX(X) \
@@ -219,7 +226,8 @@ static FPS_APP_INFO FPS_app_info_rx = {
       FPFLAG_DEFAULT_INPUT, \
       "RT priority")
 
-static CLICMDDATA CLIcmddata_rx = {
+static CLICMDDATA CLIcmddata_rx =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(rx, CLIcmddata_rx, FPS_app_info_rx)
@@ -238,50 +246,54 @@ static errno_t __attribute__((unused)) compute_rx()
 
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
-static FPS_CLI_BINDING bindings_tsem[] = {
+static FPS_CLI_BINDING bindings_tsem[] =
+{
     FPS_PARAMS_TSEM(FPS_X_BINDING)
 };
 static const int nb_bindings_tsem =
     sizeof(bindings_tsem) /
     sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_tsem[] = {
+static CLICMDARGDEF farg_tsem[] =
+{
     FPS_PARAMS_TSEM(FPS_X_FARG)
 };
 
-static FPS_CLI_BINDING bindings_rx[] = {
+static FPS_CLI_BINDING bindings_rx[] =
+{
     FPS_PARAMS_RX(FPS_X_BINDING)
 };
 static const int nb_bindings_rx =
     sizeof(bindings_rx) /
     sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_rx[] = {
+static CLICMDARGDEF farg_rx[] =
+{
     FPS_PARAMS_RX(FPS_X_FARG)
 };
 
 static errno_t CLIfunction_tsem(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_tsem,
-        farg_tsem, &CLIcmddata_tsem,
-        bindings_tsem, nb_bindings_tsem,
-        compute_tsem);
+               &FPS_app_info_tsem,
+               farg_tsem, &CLIcmddata_tsem,
+               bindings_tsem, nb_bindings_tsem,
+               compute_tsem);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 static errno_t CLIfunction_rx(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_rx,
-        farg_rx, &CLIcmddata_rx,
-        bindings_rx, nb_bindings_rx,
-        compute_rx);
+               &FPS_app_info_rx,
+               farg_rx, &CLIcmddata_rx,
+               bindings_rx, nb_bindings_rx,
+               compute_rx);
 }
 
 errno_t
@@ -298,21 +310,21 @@ CLIADDCMD_COREMOD_memory__stream_TCP()
 
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_tsem,
-            CLIfunction_tsem);
+                       CLIcmddata_tsem,
+                       CLIfunction_tsem);
         CLIcmddata_tsem.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
+                       CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_rx,
-            CLIfunction_rx);
+                       CLIcmddata_rx,
+                       CLIfunction_rx);
         CLIcmddata_rx.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -622,8 +634,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     }
 
     UseSem = stream_net_decide_sync(
-        img_p->md->sem, mode, semtrig,
-        processinfo);
+                 img_p->md->sem, mode, semtrig,
+                 processinfo);
 
     long frameincr = 0;
     long cnt0previous = 0;
@@ -650,7 +662,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         else
         {
             semr = stream_net_sem_wait(
-                img_p, semtrig);
+                       img_p, semtrig);
 
             stream_net_sem_drain(
                 img_p, semtrig,
@@ -668,8 +680,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 frame_md.cnt1 = img_p->md->cnt1;
 
                 slice = stream_net_clamp_slice(
-                    img_p->md->cnt1,
-                    oldslice, NBslices);
+                            img_p->md->cnt1,
+                            oldslice, NBslices);
 
                 frame_md.cnt1 = slice;
 
@@ -684,8 +696,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 if(TCPTRANSFERKW == 1)
                 {
                     __builtin_memcpy(buff + framesize1,
-                           (char *) dcimg[ID].kw,
-                           dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
+                                     (char *) dcimg[ID].kw,
+                                     dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
                 rs = send(fds_client, buff, framesizeall, 0);
@@ -742,4 +754,3 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     return ID;
 }
-

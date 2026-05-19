@@ -60,7 +60,9 @@ static void fps_cmd_handle_sys(
     int                  *testcnt)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // exit
     if(strcmp(FPScommand, "exit") == 0)
@@ -204,7 +206,9 @@ static void fps_cmd_handle_tmux(
     uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // tmuxstart
     if(strcmp(FPScommand, "tmuxstart") == 0)
@@ -274,7 +278,9 @@ static void fps_cmd_handle_conf(
     uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // confstart
     if(strcmp(FPScommand, "confstart") == 0)
@@ -434,7 +440,9 @@ static void fps_cmd_handle_run(
     uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // runstart
     if(strcmp(FPScommand, "runstart") == 0)
@@ -872,7 +880,7 @@ int functionparameter_FPSprocess_cmdline(
                 int updated = 0;
 
                 // Use the new consolidated API for parameter conversion, setting, and logging
-                if (functionparameter_SetParamValue_fromString(&fps[fpsindex], pindex, FPScmdarg1) == 0)
+                if(functionparameter_SetParamValue_fromString(&fps[fpsindex], pindex, FPScmdarg1) == 0)
                 {
                     updated = 1;
                 }
@@ -1000,5 +1008,3 @@ int functionparameter_FPSprocess_cmdline(
 
     return fpsindex;
 }
-
-

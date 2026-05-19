@@ -20,24 +20,26 @@ errno_t functionparameter_CONFstart(FPS *fps)
     // Move to correct launch directory
     //
     EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" cd %s\" C-m",
-                           fps->md->name,
-                           fps->md->workdir);
+                                   fps->md->name,
+                                   fps->md->workdir);
 
-    char * exec_basename = strrchr(fps->md->execfullpath, '/');
+    char *exec_basename = strrchr(fps->md->execfullpath, '/');
     exec_basename = (exec_basename != NULL) ? exec_basename + 1 : fps->md->execfullpath;
 
-    if (strcmp(exec_basename, "milk") != 0 && 
-        strcmp(exec_basename, "cacao") != 0 && 
-        strlen(exec_basename) > 0 && 
-        strcmp(exec_basename, "unknown") != 0) 
+    if(strcmp(exec_basename, "milk") != 0 &&
+            strcmp(exec_basename, "cacao") != 0 &&
+            strlen(exec_basename) > 0 &&
+            strcmp(exec_basename, "unknown") != 0)
     {
         EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" %s %s:confstart\" C-m",
-                               fps->md->name,
-                               fps->md->execfullpath,
-                               fps->md->name);
-    } else {
+                                       fps->md->name,
+                                       fps->md->execfullpath,
+                                       fps->md->name);
+    }
+    else
+    {
         EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" fpsconfstart\" C-m",
-                               fps->md->name);
+                                       fps->md->name);
     }
 
     fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;

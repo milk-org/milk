@@ -28,7 +28,10 @@ int milkseq_fifo_read(
     MILKSEQ_STATE *state,
     int fifo_fd)
 {
-    if (!state || fifo_fd < 0) return 0;
+    if(!state || fifo_fd < 0)
+    {
+        return 0;
+    }
 
     int cmdcnt = 0;
     char buff[512];
@@ -38,40 +41,55 @@ int milkseq_fifo_read(
 
     int lineOK = 1;
 
-    while (lineOK == 1) {
+    while(lineOK == 1)
+    {
         total_bytes = 0;
         lineOK = 0;
-        for (;;) {
+        for(;;)
+        {
             bytes = read(fifo_fd, buf0, 1);
-            if (bytes > 0) {
-                if (total_bytes < (int)sizeof(buff) - 1) {
+            if(bytes > 0)
+            {
+                if(total_bytes < (int)sizeof(buff) - 1)
+                {
                     buff[total_bytes] = buf0[0];
                     total_bytes++;
                 }
-            } else {
-                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+            }
+            else
+            {
+                if(errno == EWOULDBLOCK || errno == EAGAIN)
+                {
                     break;
-                } else {
+                }
+                else
+                {
                     return cmdcnt;
                 }
             }
 
-            if (buf0[0] == '\n') {
+            if(buf0[0] == '\n')
+            {
                 buff[total_bytes - 1] = '\0';
                 char *FPScmdline = buff;
 
                 // Find next free task index
                 uint32_t cmdindex = 0;
                 int cmdindexOK = 0;
-                while (cmdindexOK == 0 && cmdindex < state->NBtasks_max) {
-                    if (state->tasklist[cmdindex].status == 0) {
+                while(cmdindexOK == 0 && cmdindex < state->NBtasks_max)
+                {
+                    if(state->tasklist[cmdindex].status == 0)
+                    {
                         cmdindexOK = 1;
-                    } else {
+                    }
+                    else
+                    {
                         cmdindex++;
                     }
                 }
 
-                if (cmdindex == state->NBtasks_max) {
+                if(cmdindex == state->NBtasks_max)
+                {
                     printf("ERROR: fpscmdarray is full. Reached max tasks.\n");
                     // cannot accept more right now.
                     break;
@@ -79,55 +97,70 @@ int milkseq_fifo_read(
 
                 int cmdFOUND = 0;
 
-                if (FPScmdline[0] == '#' || FPScmdline[0] == ' ' || total_bytes < 2) {
+                if(FPScmdline[0] == '#' || FPScmdline[0] == ' ' || total_bytes < 2)
+                {
                     cmdFOUND = 1;
                 }
 
-                if (cmdFOUND == 0 && strncmp(FPScmdline, "taskcntzero", 11) == 0) {
+                if(cmdFOUND == 0 && strncmp(FPScmdline, "taskcntzero", 11) == 0)
+                {
                     cmdFOUND = 1;
                     state->task_input_counter = 0;
                 }
 
-                if (cmdFOUND == 0 && strncmp(FPScmdline, "setqindex", 9) == 0) {
+                if(cmdFOUND == 0 && strncmp(FPScmdline, "setqindex", 9) == 0)
+                {
                     cmdFOUND = 1;
                     char stringtmp[200];
                     int queue_index;
-                    if (sscanf(FPScmdline, "%s %d", stringtmp, &queue_index) == 2) {
-                        if (queue_index > -1 && queue_index < NB_FPSCTRL_TASKQUEUE_MAX) {
+                    if(sscanf(FPScmdline, "%s %d", stringtmp, &queue_index) == 2)
+                    {
+                        if(queue_index > -1 && queue_index < NB_FPSCTRL_TASKQUEUE_MAX)
+                        {
                             state->current_queue = queue_index;
                         }
                     }
                 }
 
-                if (cmdFOUND == 0 && strncmp(FPScmdline, "setqprio", 8) == 0) {
+                if(cmdFOUND == 0 && strncmp(FPScmdline, "setqprio", 8) == 0)
+                {
                     cmdFOUND = 1;
                     char stringtmp[200];
                     int queue_priority;
-                    if (sscanf(FPScmdline, "%s %d", stringtmp, &queue_priority) == 2) {
-                        if (queue_priority < 0) queue_priority = 0;
+                    if(sscanf(FPScmdline, "%s %d", stringtmp, &queue_priority) == 2)
+                    {
+                        if(queue_priority < 0)
+                        {
+                            queue_priority = 0;
+                        }
                         state->queuelist[state->current_queue].priority = queue_priority;
                     }
                 }
 
-                if (cmdFOUND == 0 && strncmp(FPScmdline, "waitonrunON", 11) == 0) {
+                if(cmdFOUND == 0 && strncmp(FPScmdline, "waitonrunON", 11) == 0)
+                {
                     cmdFOUND = 1;
                     state->current_waitonrun = 1;
                 }
-                if (cmdFOUND == 0 && strncmp(FPScmdline, "waitonrunOFF", 12) == 0) {
+                if(cmdFOUND == 0 && strncmp(FPScmdline, "waitonrunOFF", 12) == 0)
+                {
                     cmdFOUND = 1;
                     state->current_waitonrun = 0;
                 }
-                if (cmdFOUND == 0 && strncmp(FPScmdline, "waitonconfON", 12) == 0) {
+                if(cmdFOUND == 0 && strncmp(FPScmdline, "waitonconfON", 12) == 0)
+                {
                     cmdFOUND = 1;
                     state->current_waitonconf = 1;
                 }
-                if (cmdFOUND == 0 && strncmp(FPScmdline, "waitonconfOFF", 13) == 0) {
+                if(cmdFOUND == 0 && strncmp(FPScmdline, "waitonconfOFF", 13) == 0)
+                {
                     cmdFOUND = 1;
                     state->current_waitonconf = 0;
                 }
 
                 // If not handled above, treat as normal task
-                if (cmdFOUND == 0) {
+                if(cmdFOUND == 0)
+                {
                     strncpy(state->tasklist[cmdindex].cmdstring, FPScmdline, STRINGMAXLEN_FPS_CMDLINE - 1);
                     state->tasklist[cmdindex].cmdstring[STRINGMAXLEN_FPS_CMDLINE - 1] = '\0';
 
@@ -138,15 +171,21 @@ int milkseq_fifo_read(
 
                     state->tasklist[cmdindex].status |= FPSTASK_STATUS_WAITING;
 
-                    if (state->current_waitonrun == 1) {
+                    if(state->current_waitonrun == 1)
+                    {
                         state->tasklist[cmdindex].flag |= FPSTASK_FLAG_WAITONRUN;
-                    } else {
+                    }
+                    else
+                    {
                         state->tasklist[cmdindex].flag &= ~FPSTASK_FLAG_WAITONRUN;
                     }
 
-                    if (state->current_waitonconf == 1) {
+                    if(state->current_waitonconf == 1)
+                    {
                         state->tasklist[cmdindex].flag |= FPSTASK_FLAG_WAITONCONF;
-                    } else {
+                    }
+                    else
+                    {
                         state->tasklist[cmdindex].flag &= ~FPSTASK_FLAG_WAITONCONF;
                     }
 

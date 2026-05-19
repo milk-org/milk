@@ -67,7 +67,8 @@ errno_t memory_monitor(const char *termttyname);
  *  STANDALONE REGISTRATION
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "mmon",
     .cmdkey      = "mmon",
     .description = "monitor memory content"
@@ -78,17 +79,20 @@ static char p_ttyname[FUNCTION_PARAMETER_STRMAXLEN] = "/dev/pts/4";
 #define FPS_PARAMS(X) \
     X(".ttyname", p_ttyname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "terminal tty name")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
 static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
@@ -171,22 +175,34 @@ errno_t list_image_ID_ncurses()
                        ImageStreamIO_typesize(datatype);
 
             if(dcimg[i].md[0].shared == 1)
+            {
                 printw("%4ldS", i);
+            }
             else
+            {
                 printw("%4ld ", i);
+            }
 
             if(dcimg[i].md[0].shared == 1)
+            {
                 attron(A_BOLD | COLOR_PAIR(9));
+            }
             else
+            {
                 attron(A_BOLD | COLOR_PAIR(6));
+            }
 
             snprintf(str, strmaxlen, "%10s ", dcimg[i].name);
             printw("%s", str);
 
             if(dcimg[i].md[0].shared == 1)
+            {
                 attroff(A_BOLD | COLOR_PAIR(9));
+            }
             else
+            {
                 attroff(A_BOLD | COLOR_PAIR(6));
+            }
 
             snprintf(str, strmaxlen, "[ %6ld", (long) dcimg[i].md[0].size[0]);
 
@@ -204,7 +220,9 @@ errno_t list_image_ID_ncurses()
             attroff(COLOR_PAIR(3));
 
             if(n >= STYPESIZE)
+            {
                 PRINT_ERROR("Attempted to write string buffer with too many characters");
+            }
 
             printw("%10ld Kb %6.2f   ",
                    (long)(tmp_long / 1024),
@@ -222,25 +240,59 @@ errno_t list_image_ID_ncurses()
                 attroff(COLOR_PAIR(4));
             }
             else
+            {
                 printw("%15.9f\n", timediff);
+            }
 
         }
         else
+        {
             printw("\n");
+        }
     }
 
-    sizeGb = 0; sizeMb = 0; sizeKb = 0;
+    sizeGb = 0;
+    sizeMb = 0;
+    sizeKb = 0;
     sizeb  = compute_image_memory();
 
-    if(sizeb > 1024 - 1) { sizeKb = sizeb / 1024; sizeb  = sizeb - 1024 * sizeKb; }
-    if(sizeKb > 1024 - 1) { sizeMb = sizeKb / 1024; sizeKb = sizeKb - 1024 * sizeMb; }
-    if(sizeMb > 1024 - 1) { sizeGb = sizeMb / 1024; sizeMb = sizeMb - 1024 * sizeGb; }
+    if(sizeb > 1024 - 1)
+    {
+        sizeKb = sizeb / 1024;
+        sizeb  = sizeb - 1024 * sizeKb;
+    }
+    if(sizeKb > 1024 - 1)
+    {
+        sizeMb = sizeKb / 1024;
+        sizeKb = sizeKb - 1024 * sizeMb;
+    }
+    if(sizeMb > 1024 - 1)
+    {
+        sizeGb = sizeMb / 1024;
+        sizeMb = sizeMb - 1024 * sizeGb;
+    }
 
     snprintf(str, strmaxlen, "%ld image(s)      ", compute_nb_image());
-    if(sizeGb > 0) { snprintf(str1, str1maxlen, "%s %ld GB", str, (long)(sizeGb)); strcpy(str, str1); }
-    if(sizeMb > 0) { snprintf(str1, str1maxlen, "%s %ld MB", str, (long)(sizeMb)); strcpy(str, str1); }
-    if(sizeKb > 0) { snprintf(str1, str1maxlen, "%s %ld KB", str, (long)(sizeKb)); strcpy(str, str1); }
-    if(sizeb > 0)  { snprintf(str1, str1maxlen, "%s %ld B", str, (long)(sizeb)); strcpy(str, str1); }
+    if(sizeGb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld GB", str, (long)(sizeGb));
+        strcpy(str, str1);
+    }
+    if(sizeMb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld MB", str, (long)(sizeMb));
+        strcpy(str, str1);
+    }
+    if(sizeKb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld KB", str, (long)(sizeKb));
+        strcpy(str, str1);
+    }
+    if(sizeb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld B", str, (long)(sizeb));
+        strcpy(str, str1);
+    }
 
     mvprintw(listim_scr_wrow - 1, 0, "%s\n", str);
 
@@ -259,16 +311,29 @@ void close_list_image_ID_ncurses(void)
     printf("Closing monitor cleanly\n");
     set_term(listim_scr);
     endwin();
-    if(listim_scr_fpo) fclose(listim_scr_fpo);
-    if(listim_scr_fpi) fclose(listim_scr_fpi);
+    if(listim_scr_fpo)
+    {
+        fclose(listim_scr_fpo);
+    }
+    if(listim_scr_fpi)
+    {
+        fclose(listim_scr_fpi);
+    }
     dcmemmon = 0;
 }
 #else
-errno_t init_list_image_ID_ncurses(const char *termttyname) { (void)termttyname; return 0; }
+errno_t init_list_image_ID_ncurses(const char *termttyname)
+{
+    (void)termttyname;
+    return 0;
+}
 /**
  * @brief Display image list in ncurses mode.
  */
-errno_t list_image_ID_ncurses() { return 0; }
+errno_t list_image_ID_ncurses()
+{
+    return 0;
+}
 /**
  * @brief Close ncurses memory monitor display.
  */
@@ -311,8 +376,8 @@ errno_t memory_monitor(const char *termttyname)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings, compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_streamCTRL_mmon_ui()

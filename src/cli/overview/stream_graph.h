@@ -69,7 +69,8 @@ typedef struct
 /**
  * SG_RENDER_NODE - flattened graph node for vertical rendering.
  */
-typedef struct {
+typedef struct
+{
     int node_idx;
     int depth;
     int order;
@@ -81,7 +82,8 @@ typedef struct {
 /**
  * SG_TREE_NODE - flattened tree node for lineage rendering.
  */
-typedef struct {
+typedef struct
+{
     int stream_idx;          /* Index in m->streams */
     int is_target;           /* 1 if this is the target root stream */
     int is_target_proc;      /* 1 if the writer_name matches the target process */

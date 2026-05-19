@@ -54,16 +54,18 @@ errno_t list_variable_ID_file(
  *  CMD 2: listim (0 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_listim = {
+static FPS_APP_INFO FPS_app_info_listim =
+{
     .fps_name    = "listim",
     .cmdkey      = "listim",
     .description =
-        "list images in memory",
+    "list images in memory",
     .description_long =
-        "List all images currently loaded in the process memory space, showing name, dimensions, data type, and shared memory status."
+    "List all images currently loaded in the process memory space, showing name, dimensions, data type, and shared memory status."
 };
 
-static CLICMDDATA CLIcmddata_listim = {
+static CLICMDDATA CLIcmddata_listim =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 
@@ -78,7 +80,8 @@ static errno_t __attribute__((unused)) compute_listim()
     long arg;
     for(arg = 1; arg < data.cmdNBarg; arg++)
     {
-        if(data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+        if(data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING
+                || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
         {
             if(strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
             {
@@ -117,10 +120,10 @@ static errno_t __attribute__((unused)) compute_listim()
 static errno_t CLIfunction_listim(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_listim,
-        NULL, &CLIcmddata_listim,
-        NULL, 0,
-        compute_listim);
+               &FPS_app_info_listim,
+               NULL, &CLIcmddata_listim,
+               NULL, 0,
+               compute_listim);
 }
 
 errno_t
@@ -129,8 +132,8 @@ CLIADDCMD_COREMOD_memory__list_image()
 
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_listim,
-            CLIfunction_listim);
+                       CLIcmddata_listim,
+                       CLIfunction_listim);
         CLIcmddata_listim.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -349,12 +352,13 @@ errno_t list_image_ID_ofp_json(FILE *fo)
     for(i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
-            if (!first) {
+            if(!first)
+            {
                 fprintf(fo, ",\n");
             }
             first = 0;
             datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+            tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo, "    {\n");
             fprintf(fo, "      \"index\": %ld,\n", i);
@@ -399,7 +403,7 @@ errno_t list_image_ID_ofp_porcelain(FILE *fo)
         if(dcimg[i].used == 1)
         {
             datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+            tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo, "%ld\t%s\t%ld\t", i, dcimg[i].name, (long) dcimg[i].md[0].naxis);
             for(j = 0; j < dcimg[i].md[0].naxis; j++)
@@ -469,4 +473,3 @@ errno_t list_image_ID_file(const char *fname)
 
     return RETURN_SUCCESS;
 }
-

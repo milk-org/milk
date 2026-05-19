@@ -75,7 +75,7 @@ int functionparameter_UserInputSetParamValue(
                     stringindex = 0;
                 }
 
-            c = getchar();
+                c = getchar();
             }
             buff[stringindex] = '\0';
             inputOK           = 1;
@@ -85,7 +85,7 @@ int functionparameter_UserInputSetParamValue(
         if(esc_toggle == 0)  // update value if escape key has not been pressed
         {
 
-            if (functionparameter_SetParamValue_fromString(fpsentry, pindex, buff) != 0)
+            if(functionparameter_SetParamValue_fromString(fpsentry, pindex, buff) != 0)
             {
                 printf("\n%s Error: could not convert argument %s\n", AECBOLDHIRED, AECNORMAL);
                 sleep(1);

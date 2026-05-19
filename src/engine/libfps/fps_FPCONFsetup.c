@@ -39,7 +39,7 @@ FPS function_parameter_FPCONFsetup_sized(
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
     {
-        if (getenv("FPS_DEBUG"))
+        if(getenv("FPS_DEBUG"))
             printf("=== FPSINITCREATE "
                    "NBparamMAX = %ld\n",
                    NBparamMAX);
@@ -59,13 +59,13 @@ FPS function_parameter_FPCONFsetup_sized(
         if(fps_connect(fpsname, &fps, FPSCONNECTFLAG) ==
                 -1)
         {
-            if (getenv("FPS_DEBUG"))
+            if(getenv("FPS_DEBUG"))
                 printf("DEBUG: [%s:%d] "
                        "FPS DOES NOT EXIST "
                        "-> CREATE\n",
                        __FILE__, __LINE__);
             int ret = function_parameter_struct_create(NBparamMAX, fpsname);
-            if (getenv("FPS_DEBUG"))
+            if(getenv("FPS_DEBUG"))
                 printf("DEBUG: [%s:%d] "
                        "CREATE RETURNED %d\n",
                        __FILE__, __LINE__, ret);
@@ -73,8 +73,10 @@ FPS function_parameter_FPCONFsetup_sized(
         }
         else
         {
-            if (getenv("FPS_DEBUG"))
+            if(getenv("FPS_DEBUG"))
+            {
                 printf("DEBUG: FPS EXISTS\n");
+            }
         }
     }
 

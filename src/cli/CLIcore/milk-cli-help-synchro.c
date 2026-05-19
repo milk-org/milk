@@ -95,9 +95,10 @@ void print_milk_synchro_help(void)
 int main(int argc, char *argv[])
 {
     /* One-line help - before CLI_startup() */
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i], "--help-oneline") == 0)
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-h1") == 0 ||
+                strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("milk synchronization overview\n");
             return 0;

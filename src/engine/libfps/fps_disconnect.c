@@ -18,16 +18,20 @@
 int fps_disconnect(
     FPS *funcparamstruct)
 {
-    if (funcparamstruct == NULL) {
+    if(funcparamstruct == NULL)
+    {
         return RETURN_SUCCESS;
     }
 
     funcparamstruct->parray = NULL;
 
-    if (funcparamstruct->SMfd > -1) {
-        if (funcparamstruct->md != NULL && funcparamstruct->md != MAP_FAILED) {
+    if(funcparamstruct->SMfd > -1)
+    {
+        if(funcparamstruct->md != NULL && funcparamstruct->md != MAP_FAILED)
+        {
             struct stat file_stat;
-            if (fstat(funcparamstruct->SMfd, &file_stat) == 0) {
+            if(fstat(funcparamstruct->SMfd, &file_stat) == 0)
+            {
                 munmap(funcparamstruct->md, file_stat.st_size);
             }
             funcparamstruct->md = NULL;

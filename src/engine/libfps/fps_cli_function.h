@@ -61,7 +61,8 @@ safe_fps_generic_CLIfunction(
     fps_compute_fn   compute_fn
 )
 {
-    if (fps_generic_CLIfunction_ptr) {
+    if(fps_generic_CLIfunction_ptr)
+    {
         fps_generic_CLIfunction_fn fn =
             (fps_generic_CLIfunction_fn)
             fps_generic_CLIfunction_ptr;
@@ -81,7 +82,8 @@ safe_fps_fill_farg_examples(
     int              nb_b
 )
 {
-    if (fps_fill_farg_examples_ptr) {
+    if(fps_fill_farg_examples_ptr)
+    {
         fps_fill_farg_examples_fn fn =
             (fps_fill_farg_examples_fn)
             fps_fill_farg_examples_ptr;

@@ -80,7 +80,7 @@ errno_t functionparameter_FPSremove(FPS *fps)
         snprintf(chkcmd, sizeof(chkcmd),
                  "tmux has-session -t %s 2>/dev/null",
                  fps->md->name);
-        if (system(chkcmd) == 0)
+        if(system(chkcmd) == 0)
         {
             EXECUTE_SYSTEM_COMMAND_NOCHECK(
                 "tmux send-keys -t %s:ctrl"

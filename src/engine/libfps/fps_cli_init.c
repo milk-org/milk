@@ -36,12 +36,14 @@ errno_t fps_init_from_bindings(
 
     int current_cli_index = 0;
 
-    for (int bind_idx = 0; bind_idx < nb_b; bind_idx++) {
+    for(int bind_idx = 0; bind_idx < nb_b; bind_idx++)
+    {
         long pindex;
         uint64_t fpflag = bindings[bind_idx].fpflag;
         int cli_index = -1;
 
-        if (bindings[bind_idx].is_primary) {
+        if(bindings[bind_idx].is_primary)
+        {
             fpflag |= FPFLAG_PRIMARY_CLI_INPUT;
             cli_index = current_cli_index++;
         }

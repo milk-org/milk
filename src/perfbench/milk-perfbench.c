@@ -73,117 +73,171 @@ typedef struct
 } perf_ev_t;
 
 /* All events we open.  Must stay in sync with idx_* enums. */
-static const perf_ev_t PERF_EVS[] = {
-    {"cycles",            "cycles",
-        PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES},
-    {"bus-cycles",        "bus_cycles",
-        PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES},
-    {"instructions",      "instructions",
-        PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS},
+static const perf_ev_t PERF_EVS[] =
+{
+    {
+        "cycles",            "cycles",
+        PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES
+    },
+    {
+        "bus-cycles",        "bus_cycles",
+        PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES
+    },
+    {
+        "instructions",      "instructions",
+        PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS
+    },
     /* L1d */
-    {"L1-dcache-loads",   "L1_dcache_loads",
+    {
+        "L1-dcache-loads",   "L1_dcache_loads",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_L1D)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)},
-    {"L1-dcache-load-misses", "L1_dcache_misses",
+        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)
+    },
+    {
+        "L1-dcache-load-misses", "L1_dcache_misses",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_L1D)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
-    {"L1-dcache-stores",  "L1_dcache_stores",
+        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
+    },
+    {
+        "L1-dcache-stores",  "L1_dcache_stores",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_L1D)
         | (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)},
+        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)
+    },
     /* L1i */
-    {"L1-icache-loads",   "L1_icache_loads",
+    {
+        "L1-icache-loads",   "L1_icache_loads",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_L1I)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)},
-    {"L1-icache-load-misses", "L1_icache_misses",
+        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)
+    },
+    {
+        "L1-icache-load-misses", "L1_icache_misses",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_L1I)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
+        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
+    },
     /* iTLB */
-    {"iTLB-load-misses",  "iTLB_misses",
+    {
+        "iTLB-load-misses",  "iTLB_misses",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_ITLB)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
+        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
+    },
     /* LLC */
-    {"LLC-loads",         "LLC_loads",
+    {
+        "LLC-loads",         "LLC_loads",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_LL)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)},
-    {"LLC-load-misses",   "LLC_misses",
+        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)
+    },
+    {
+        "LLC-load-misses",   "LLC_misses",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_LL)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
-    {"LLC-stores",        "LLC_stores",
+        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
+    },
+    {
+        "LLC-stores",        "LLC_stores",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_LL)
         | (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)},
-    {"LLC-store-misses",  "LLC_store_misses",
+        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)
+    },
+    {
+        "LLC-store-misses",  "LLC_store_misses",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_LL)
         | (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
+        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
+    },
     /* dTLB */
-    {"dTLB-loads",        "dTLB_loads",
+    {
+        "dTLB-loads",        "dTLB_loads",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_DTLB)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)},
-    {"dTLB-load-misses",  "dTLB_misses",
+        | (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)
+    },
+    {
+        "dTLB-load-misses",  "dTLB_misses",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_DTLB)
         | (PERF_COUNT_HW_CACHE_OP_READ << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
-    {"dTLB-store-misses", "dTLB_store_misses",
+        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
+    },
+    {
+        "dTLB-store-misses", "dTLB_store_misses",
         PERF_TYPE_HW_CACHE,
         (PERF_COUNT_HW_CACHE_DTLB)
         | (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
-        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
+        | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)
+    },
     /* stalls */
-    {"stalled-cycles-frontend",
+    {
+        "stalled-cycles-frontend",
         "stalled_cycles_frontend",
         PERF_TYPE_HARDWARE,
-        PERF_COUNT_HW_STALLED_CYCLES_FRONTEND},
-    {"stalled-cycles-backend",
+        PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
+    },
+    {
+        "stalled-cycles-backend",
         "stalled_cycles_backend",
         PERF_TYPE_HARDWARE,
-        PERF_COUNT_HW_STALLED_CYCLES_BACKEND},
+        PERF_COUNT_HW_STALLED_CYCLES_BACKEND
+    },
     /* branch */
-    {"branches",          "branches",
-        PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS},
-    {"branch-misses",     "branch_misses",
-        PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES},
+    {
+        "branches",          "branches",
+        PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS
+    },
+    {
+        "branch-misses",     "branch_misses",
+        PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES
+    },
     /* software */
-    {"page-faults",       "page_faults",
-        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS},
-    {"minor-faults",      "minor_faults",
-        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN},
-    {"major-faults",      "major_faults",
-        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ},
-    {"cpu-migrations",    "cpu_migrations",
-        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS},
-    {"context-switches",  "context_switches",
-        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES},
-    {"task-clock",        "task_clock_ns",
-        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK},
+    {
+        "page-faults",       "page_faults",
+        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS
+    },
+    {
+        "minor-faults",      "minor_faults",
+        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN
+    },
+    {
+        "major-faults",      "major_faults",
+        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ
+    },
+    {
+        "cpu-migrations",    "cpu_migrations",
+        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS
+    },
+    {
+        "context-switches",  "context_switches",
+        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES
+    },
+    {
+        "task-clock",        "task_clock_ns",
+        PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK
+    },
 };
 
 #define N_PERF_EVS \
     ((int)(sizeof(PERF_EVS) / sizeof(PERF_EVS[0])))
 
 /* Named indices into PERF_EVS[] */
-enum {
+enum
+{
     IDX_CYCLES = 0, IDX_BUS_CYCLES, IDX_INSTRUCTIONS,
     IDX_L1D_LOADS, IDX_L1D_MISSES, IDX_L1D_STORES,
     IDX_L1I_LOADS, IDX_L1I_MISSES,
@@ -310,7 +364,8 @@ static void usage(const char *prog)
 static int parse_args(
     int argc, char *argv[], bench_cfg_t *cfg)
 {
-    static const struct option long_opts[] = {
+    static const struct option long_opts[] =
+    {
         {"warmup",  required_argument, 0, 'w'},
         {"outdir",  required_argument, 0, 'o'},
         {"fpsargs", required_argument, 0, 'a'},
@@ -320,36 +375,36 @@ static int parse_args(
     };
 
     int c;
-    while ((c = getopt_long(argc, argv,
-                             "w:o:a:s:h",
-                             long_opts, NULL)) != -1)
+    while((c = getopt_long(argc, argv,
+                           "w:o:a:s:h",
+                           long_opts, NULL)) != -1)
     {
-        switch (c)
+        switch(c)
         {
-            case 'w':
-                cfg->warmup = atoi(optarg);
-                break;
-            case 'o':
-                strncpy(cfg->outdir, optarg,
-                        sizeof(cfg->outdir) - 1);
-                break;
-            case 'a':
-                strncpy(cfg->fpsargs, optarg,
-                        sizeof(cfg->fpsargs) - 1);
-                break;
-            case 's':
-                strncpy(cfg->setupcmd, optarg,
-                        sizeof(cfg->setupcmd) - 1);
-                break;
-            case 'h':
-                usage(argv[0]);
-                exit(0);
-            default:
-                return 1;
+        case 'w':
+            cfg->warmup = atoi(optarg);
+            break;
+        case 'o':
+            strncpy(cfg->outdir, optarg,
+                    sizeof(cfg->outdir) - 1);
+            break;
+        case 'a':
+            strncpy(cfg->fpsargs, optarg,
+                    sizeof(cfg->fpsargs) - 1);
+            break;
+        case 's':
+            strncpy(cfg->setupcmd, optarg,
+                    sizeof(cfg->setupcmd) - 1);
+            break;
+        case 'h':
+            usage(argv[0]);
+            exit(0);
+        default:
+            return 1;
         }
     }
 
-    if (optind + 2 > argc)
+    if(optind + 2 > argc)
     {
         fprintf(stderr,
                 "Error: fpsexec and nbiter required\n");
@@ -361,13 +416,13 @@ static int parse_args(
             sizeof(cfg->fpsexec) - 1);
     cfg->nbiter = atoi(argv[optind + 1]);
 
-    if (cfg->nbiter <= 0)
+    if(cfg->nbiter <= 0)
     {
         fprintf(stderr,
                 "Error: nbiter must be positive\n");
         return 1;
     }
-    if (cfg->warmup >= cfg->nbiter)
+    if(cfg->warmup >= cfg->nbiter)
     {
         fprintf(stderr,
                 "Error: warmup must be < nbiter\n");
@@ -389,7 +444,7 @@ static int parse_args(
 static void resolve_procdir(bench_cfg_t *cfg)
 {
     const char *env = getenv("MILK_SHM_DIR");
-    if (env && strlen(env) > 0)
+    if(env && strlen(env) > 0)
     {
         strncpy(cfg->procdir, env,
                 sizeof(cfg->procdir) - 1);
@@ -397,8 +452,8 @@ static void resolve_procdir(bench_cfg_t *cfg)
     }
 
     struct stat st;
-    if (stat("/milk/shm", &st) == 0
-        && S_ISDIR(st.st_mode))
+    if(stat("/milk/shm", &st) == 0
+            && S_ISDIR(st.st_mode))
     {
         strncpy(cfg->procdir, "/milk/shm",
                 sizeof(cfg->procdir) - 1);
@@ -415,15 +470,15 @@ static void resolve_procdir(bench_cfg_t *cfg)
 static void resolve_shmdir(char *shmdir, size_t sz)
 {
     const char *env = getenv("MILK_SHM_DIR");
-    if (env && strlen(env) > 0)
+    if(env && strlen(env) > 0)
     {
         strncpy(shmdir, env, sz - 1);
         return;
     }
 
     struct stat st;
-    if (stat("/milk/shm", &st) == 0
-        && S_ISDIR(st.st_mode))
+    if(stat("/milk/shm", &st) == 0
+            && S_ISDIR(st.st_mode))
     {
         strncpy(shmdir, "/milk/shm", sz - 1);
         return;
@@ -438,16 +493,16 @@ static void resolve_shmdir(char *shmdir, size_t sz)
 static void resolve_git_commit(bench_cfg_t *cfg)
 {
     FILE *fp = popen(
-        "git rev-parse --short HEAD 2>/dev/null",
-        "r");
-    if (!fp)
+                   "git rev-parse --short HEAD 2>/dev/null",
+                   "r");
+    if(!fp)
     {
         strncpy(cfg->git_commit, "unknown",
                 sizeof(cfg->git_commit) - 1);
         return;
     }
-    if (!fgets(cfg->git_commit,
-               sizeof(cfg->git_commit) - 1, fp))
+    if(!fgets(cfg->git_commit,
+              sizeof(cfg->git_commit) - 1, fp))
     {
         strncpy(cfg->git_commit, "unknown",
                 sizeof(cfg->git_commit) - 1);
@@ -456,7 +511,7 @@ static void resolve_git_commit(bench_cfg_t *cfg)
     {
         /* strip trailing newline */
         cfg->git_commit[strcspn(
-            cfg->git_commit, "\n")] = '\0';
+                            cfg->git_commit, "\n")] = '\0';
     }
     pclose(fp);
 }
@@ -471,10 +526,12 @@ static long exe_size(const char *exe)
     snprintf(cmd, sizeof(cmd),
              "command -v %s 2>/dev/null", exe);
     FILE *fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return 0;
+    }
     char path[MAX_PATH] = {0};
-    if (!fgets(path, sizeof(path) - 1, fp))
+    if(!fgets(path, sizeof(path) - 1, fp))
     {
         pclose(fp);
         return 0;
@@ -482,12 +539,16 @@ static long exe_size(const char *exe)
     pclose(fp);
     path[strcspn(path, "\n")] = '\0';
 
-    if (strlen(path) == 0)
+    if(strlen(path) == 0)
+    {
         return 0;
+    }
 
     struct stat st;
-    if (stat(path, &st) != 0)
+    if(stat(path, &st) != 0)
+    {
         return 0;
+    }
     return (long) st.st_size;
 }
 
@@ -514,29 +575,35 @@ static void read_build_tags(
     snprintf(cmd, sizeof(cmd),
              "command -v '%s' 2>/dev/null", exe);
     FILE *fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
     char path[MAX_PATH] = {0};
-    if (!fgets(path, sizeof(path) - 1, fp))
+    if(!fgets(path, sizeof(path) - 1, fp))
     {
         pclose(fp);
         return;
     }
     pclose(fp);
     path[strcspn(path, "\n")] = '\0';
-    if (strlen(path) == 0)
+    if(strlen(path) == 0)
+    {
         return;
+    }
 
     /* Extract the sentinel via strings(1) */
     snprintf(cmd, sizeof(cmd),
-        "strings '%s' 2>/dev/null"
-        " | grep 'MILK_BUILD:'",
-        path);
+             "strings '%s' 2>/dev/null"
+             " | grep 'MILK_BUILD:'",
+             path);
     fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
     char raw[512] = {0};
-    if (!fgets(raw, sizeof(raw) - 1, fp))
+    if(!fgets(raw, sizeof(raw) - 1, fp))
     {
         pclose(fp);
         out[0] = '\0';
@@ -547,64 +614,70 @@ static void read_build_tags(
 
     /* Locate payload after "MILK_BUILD:" prefix */
     char *payload = strstr(raw, "MILK_BUILD:");
-    if (!payload)
+    if(!payload)
+    {
         return;
+    }
     payload += strlen("MILK_BUILD:");
 
     /* Build a compact human-readable summary */
     char summary[256] = {0};
     size_t slen = 0;
 
-    if (strstr(payload, "OPT=3"))
+    if(strstr(payload, "OPT=3"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "O3 ");
-    if (strstr(payload, "PGO=USE"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "O3 ");
+    if(strstr(payload, "PGO=USE"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "PGO ");
-    else if (strstr(payload, "PGO=GENERATE"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "PGO ");
+    else if(strstr(payload, "PGO=GENERATE"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "PGO-instr ");
-    if (strstr(payload, "LTO=STATIC"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "PGO-instr ");
+    if(strstr(payload, "LTO=STATIC"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "LTO-static ");
-    else if (strstr(payload, "LTO=1"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "LTO-static ");
+    else if(strstr(payload, "LTO=1"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "LTO ");
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "LTO ");
 
     /* Extract architecture field */
     {
         char *ap = strstr(payload, "ARCH=");
-        if (ap)
+        if(ap)
         {
             ap += 5;
             char arch[32] = {0};
             size_t ai = 0;
-            while (*ap && *ap != ',' && ai < 31)
+            while(*ap && *ap != ',' && ai < 31)
+            {
                 arch[ai++] = *ap++;
+            }
             slen += (size_t) snprintf(
-                summary + slen,
-                sizeof(summary) - slen,
-                "[%s]", arch);
+                        summary + slen,
+                        sizeof(summary) - slen,
+                        "[%s]", arch);
         }
     }
 
-    if (slen == 0)
+    if(slen == 0)
         snprintf(summary, sizeof(summary),
                  "default (no PGO/LTO)");
 
     /* Trim trailing space */
-    while (slen > 0 && summary[slen - 1] == ' ')
+    while(slen > 0 && summary[slen - 1] == ' ')
+    {
         summary[--slen] = '\0';
+    }
 
     snprintf(out, outsz, "%s", summary);
 }
@@ -671,7 +744,7 @@ static void fps_setup(const bench_cfg_t *cfg)
             "procinfo.triggermode", "0");
 
     /* apply extra positional args if any */
-    if (cfg->fpsargs[0] != '\0')
+    if(cfg->fpsargs[0] != '\0')
     {
         run_cmd("%s %s:set %s"
                 " >/dev/null 2>&1",
@@ -693,29 +766,33 @@ static void fps_create_streams(const bench_cfg_t *cfg)
 
     char cmd[MAX_CMD];
     snprintf(cmd, sizeof(cmd),
-        "%s %s:fps 2>/dev/null"
-        " | sed 's/\\x1b\\[[0-9;]*m//g'"
-        " | awk '$3==\"STREAMNAME\" && NF>=8"
+             "%s %s:fps 2>/dev/null"
+             " | sed 's/\\x1b\\[[0-9;]*m//g'"
+             " | awk '$3==\"STREAMNAME\" && NF>=8"
              " {print $4}'",
-        cfg->fpsexec, cfg->fpsname);
+             cfg->fpsexec, cfg->fpsname);
 
     FILE *fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
 
     char sname[256];
-    while (fgets(sname, sizeof(sname), fp))
+    while(fgets(sname, sizeof(sname), fp))
     {
         sname[strcspn(sname, "\n")] = '\0';
-        if (strlen(sname) == 0)
+        if(strlen(sname) == 0)
+        {
             continue;
+        }
 
         char impath[MAX_PATH + 256 + 32];
         snprintf(impath, sizeof(impath),
                  "%s/%s.im.shm", shmdir, sname);
 
         struct stat st;
-        if (stat(impath, &st) != 0)
+        if(stat(impath, &st) != 0)
         {
             printf("  Creating stream: %s (32x32)\n",
                    sname);
@@ -789,39 +866,55 @@ static int find_proc_shm(
     size_t     outsz)
 {
     DIR *d = opendir(procdir);
-    if (!d)
+    if(!d)
+    {
         return 0;
+    }
 
     int found = 0;
     struct dirent *de;
-    while ((de = readdir(d)) != NULL)
+    while((de = readdir(d)) != NULL)
     {
-        if (strncmp(de->d_name, "proc.", 5) != 0)
+        if(strncmp(de->d_name, "proc.", 5) != 0)
+        {
             continue;
-        if (!strstr(de->d_name, ".shm"))
+        }
+        if(!strstr(de->d_name, ".shm"))
+        {
             continue;
+        }
 
-        if (pid != 0)
+        if(pid != 0)
         {
             /* extract PID field: proc.NAME.PID.shm */
             const char *p = strrchr(de->d_name, '.');
-            if (!p)
+            if(!p)
+            {
                 continue;
+            }
             /* step back over ".shm" */
             /* format: proc.<name>.<pid>.shm */
             /* find second-to-last dot */
             char tmp[256];
-            strncpy(tmp, de->d_name, sizeof(tmp)-1);
+            strncpy(tmp, de->d_name, sizeof(tmp) - 1);
             /* remove trailing ".shm" */
             char *dot = strrchr(tmp, '.');
-            if (!dot) continue;
+            if(!dot)
+            {
+                continue;
+            }
             *dot = '\0';
             /* now find the PID field */
             dot = strrchr(tmp, '.');
-            if (!dot) continue;
-            pid_t fpid = (pid_t) atoi(dot + 1);
-            if (fpid != pid)
+            if(!dot)
+            {
                 continue;
+            }
+            pid_t fpid = (pid_t) atoi(dot + 1);
+            if(fpid != pid)
+            {
+                continue;
+            }
         }
 
         snprintf(out, outsz, "%s/%s",
@@ -856,26 +949,38 @@ static void read_proc_mem(
              "/proc/%d/status", (int) pid);
 
     FILE *fp = fopen(path, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
 
     char line[256];
-    while (fgets(line, sizeof(line), fp))
+    while(fgets(line, sizeof(line), fp))
     {
-        if (strncmp(line, "VmPeak:", 7) == 0)
+        if(strncmp(line, "VmPeak:", 7) == 0)
+        {
             sscanf(line + 7, " %ld", vmpeak_kb);
-        else if (strncmp(line, "VmHWM:", 6) == 0)
+        }
+        else if(strncmp(line, "VmHWM:", 6) == 0)
+        {
             sscanf(line + 6, " %ld", vmhwm_kb);
-        else if (strncmp(line, "VmRSS:", 6) == 0)
+        }
+        else if(strncmp(line, "VmRSS:", 6) == 0)
+        {
             sscanf(line + 6, " %ld", vmrss_kb);
-        else if (strncmp(line,
-                         "voluntary_ctxt_switches:",
-                         24) == 0)
+        }
+        else if(strncmp(line,
+                        "voluntary_ctxt_switches:",
+                        24) == 0)
+        {
             sscanf(line + 24, " %ld", vol_ctxt);
-        else if (strncmp(line,
-                         "nonvoluntary_ctxt_switches:",
-                         27) == 0)
+        }
+        else if(strncmp(line,
+                        "nonvoluntary_ctxt_switches:",
+                        27) == 0)
+        {
             sscanf(line + 27, " %ld", nvol_ctxt);
+        }
     }
     fclose(fp);
 }
@@ -894,13 +999,15 @@ static long read_smaps_huge(pid_t pid)
     snprintf(path, sizeof(path),
              "/proc/%d/smaps_rollup", (int) pid);
     FILE *fp = fopen(path, "r");
-    if (!fp)
+    if(!fp)
+    {
         return 0;
+    }
     char line[256];
     long val = 0;
-    while (fgets(line, sizeof(line), fp))
+    while(fgets(line, sizeof(line), fp))
     {
-        if (strncmp(line, "AnonHugePages:", 14) == 0)
+        if(strncmp(line, "AnonHugePages:", 14) == 0)
         {
             sscanf(line + 14, " %ld", &val);
             break;
@@ -928,41 +1035,47 @@ static void read_cpu_freq(
     long fmax = 0;
     int  found = 0;
 
-    for (int cpu = 0; cpu < 1024; cpu++)
+    for(int cpu = 0; cpu < 1024; cpu++)
     {
         char path[160];
         snprintf(path, sizeof(path),
-            "/sys/devices/system/cpu/"
-            "cpu%d/cpufreq/scaling_cur_freq",
-            cpu);
+                 "/sys/devices/system/cpu/"
+                 "cpu%d/cpufreq/scaling_cur_freq",
+                 cpu);
         FILE *fp = fopen(path, "r");
-        if (!fp)
+        if(!fp)
         {
             /* Try cpuinfo_cur_freq */
             snprintf(path, sizeof(path),
-                "/sys/devices/system/cpu/"
-                "cpu%d/cpufreq/cpuinfo_cur_freq",
-                cpu);
+                     "/sys/devices/system/cpu/"
+                     "cpu%d/cpufreq/cpuinfo_cur_freq",
+                     cpu);
             fp = fopen(path, "r");
         }
-        if (!fp)
+        if(!fp)
         {
-            if (found)
-                break; /* no more CPUs */
+            if(found)
+            {
+                break;    /* no more CPUs */
+            }
             continue;
         }
         long f = 0;
-        if (fscanf(fp, "%ld", &f) == 1 && f > 0)
+        if(fscanf(fp, "%ld", &f) == 1 && f > 0)
         {
             found = 1;
-            if (f < fmin)
+            if(f < fmin)
+            {
                 fmin = f;
-            if (f > fmax)
+            }
+            if(f > fmax)
+            {
                 fmax = f;
+            }
         }
         fclose(fp);
     }
-    if (found)
+    if(found)
     {
         *freq_min_khz = fmin;
         *freq_max_khz = fmax;
@@ -984,8 +1097,10 @@ static long long read_rapl_energy(void)
         "/sys/class/powercap/intel-rapl/"
         "intel-rapl:0/energy_uj";
     FILE *fp = fopen(rapl, "r");
-    if (!fp)
+    if(!fp)
+    {
         return -1LL;
+    }
     long long val = -1LL;
     IGNORE_RESULT(fscanf(fp, "%lld", &val));
     fclose(fp);
@@ -1007,20 +1122,22 @@ static void read_procinfo_stats(
     out->valid = 0;
 
     int fd = open(shm_path, O_RDONLY);
-    if (fd < 0)
+    if(fd < 0)
+    {
         return;
+    }
 
     struct stat st;
-    if (fstat(fd, &st) < 0)
+    if(fstat(fd, &st) < 0)
     {
         close(fd);
         return;
     }
 
     PROCESSINFO *pi = (PROCESSINFO *) mmap(
-        NULL, (size_t) st.st_size,
-        PROT_READ, MAP_SHARED, fd, 0);
-    if (pi == MAP_FAILED)
+                          NULL, (size_t) st.st_size,
+                          PROT_READ, MAP_SHARED, fd, 0);
+    if(pi == MAP_FAILED)
     {
         close(fd);
         return;
@@ -1034,18 +1151,24 @@ static void read_procinfo_stats(
      * timerindex is the number of entries written so far.
      */
     int nbsam;
-    if (pi->timingbuffercnt > 0)
+    if(pi->timingbuffercnt > 0)
+    {
         nbsam = PROCESSINFO_NBtimer;
+    }
     else
+    {
         nbsam = pi->timerindex;
-    if (nbsam > PROCESSINFO_NBtimer)
+    }
+    if(nbsam > PROCESSINFO_NBtimer)
+    {
         nbsam = PROCESSINFO_NBtimer;
+    }
 
     long iter_ns[PROCESSINFO_NBtimer];
     long exec_ns[PROCESSINFO_NBtimer];
     int  nv = 0;
 
-    for (int i = 1; i < nbsam; i++)
+    for(int i = 1; i < nbsam; i++)
     {
         long dt_exec =
             (pi->texecend[i].tv_sec
@@ -1055,16 +1178,16 @@ static void read_procinfo_stats(
                - pi->texecstart[i].tv_nsec);
         long dt_iter =
             (pi->texecstart[i].tv_sec
-             - pi->texecstart[i-1].tv_sec)
+             - pi->texecstart[i - 1].tv_sec)
             * 1000000000L
             + (pi->texecstart[i].tv_nsec
-               - pi->texecstart[i-1].tv_nsec);
+               - pi->texecstart[i - 1].tv_nsec);
         /* Reject negative, zero, or implausibly
          * large values (stale ring buffer entries
          * from a previous FPS session). */
-        if (dt_exec > 0 && dt_iter > 0
-            && dt_exec < 10000000000L
-            && dt_iter < 10000000000L)
+        if(dt_exec > 0 && dt_iter > 0
+                && dt_exec < 10000000000L
+                && dt_iter < 10000000000L)
         {
             exec_ns[nv] = dt_exec;
             iter_ns[nv] = dt_iter;
@@ -1092,7 +1215,7 @@ static void read_procinfo_stats(
     /* RAPL energy delta */
     {
         long long rapl_end = read_rapl_energy();
-        if (rapl_start >= 0 && rapl_end >= 0)
+        if(rapl_start >= 0 && rapl_end >= 0)
         {
             /* Handle counter wrap (max_energy_range_uj)
              * by taking absolute diff */
@@ -1110,19 +1233,21 @@ static void read_procinfo_stats(
     munmap(pi, (size_t) st.st_size);
     close(fd);
 
-    if (nv == 0)
+    if(nv == 0)
+    {
         return;
+    }
 
     qsort(exec_ns, (size_t) nv,
           sizeof(long), cmp_long);
-    qsort(iter_ns,  (size_t) nv,
+    qsort(iter_ns, (size_t) nv,
           sizeof(long), cmp_long);
 
     /* Compute percentile index, clamped to [0,nv-1] */
 #define PCTILE(arr, pct) \
     (arr)[((nv * (pct) / 100) < nv \
            ? (nv * (pct) / 100) : (nv - 1))]
-/* p99.9: need 1000-based arithmetic */
+    /* p99.9: need 1000-based arithmetic */
 #define PCTILE999(arr) \
     (arr)[((nv * 999 / 1000) < nv \
            ? (nv * 999 / 1000) : (nv - 1))]
@@ -1168,7 +1293,7 @@ static void read_procinfo_stats(
 static int perf_open_all(pid_t pid, int *fds)
 {
     int nok = 0;
-    for (int i = 0; i < N_PERF_EVS; i++)
+    for(int i = 0; i < N_PERF_EVS; i++)
     {
         struct perf_event_attr attr;
         memset(&attr, 0, sizeof(attr));
@@ -1181,8 +1306,8 @@ static int perf_open_all(pid_t pid, int *fds)
         attr.inherit        = 1;
 
         fds[i] = (int) perf_event_open(
-            &attr, pid, -1, -1, 0);
-        if (fds[i] >= 0)
+                     &attr, pid, -1, -1, 0);
+        if(fds[i] >= 0)
         {
             ioctl(fds[i],
                   PERF_EVENT_IOC_RESET, 0);
@@ -1204,11 +1329,13 @@ static void perf_read_close(
     int *fds, hw_phase_t *phase)
 {
     phase->valid = 0;
-    for (int i = 0; i < N_PERF_EVS; i++)
+    for(int i = 0; i < N_PERF_EVS; i++)
     {
         phase->v[i] = 0;
-        if (fds[i] < 0)
+        if(fds[i] < 0)
+        {
             continue;
+        }
         ioctl(fds[i], PERF_EVENT_IOC_DISABLE, 0);
         IGNORE_RESULT(
             read(fds[i], &phase->v[i],
@@ -1267,20 +1394,23 @@ static void run_phase(
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
     pid_t child = fork();
-    if (child < 0)
+    if(child < 0)
     {
         PRINT_ERROR("fork: %s", strerror(errno));
         *wall_ns = 0;
         phase->valid = 0;
-        if (pi) pi->valid = 0;
+        if(pi)
+        {
+            pi->valid = 0;
+        }
         return;
     }
 
-    if (child == 0)
+    if(child == 0)
     {
         /* Child: redirect stdout+stderr to /dev/null */
         int devnull = open("/dev/null", O_WRONLY);
-        if (devnull >= 0)
+        if(devnull >= 0)
         {
             dup2(devnull, STDOUT_FILENO);
             dup2(devnull, STDERR_FILENO);
@@ -1297,25 +1427,25 @@ static void run_phase(
     perf_open_all(child, fds);
 
     /* Monitor proc SHM while child runs */
-    if (collect_pi && pi)
+    if(collect_pi && pi)
     {
         pi->valid = 0;
         char shm_path[MAX_PATH];
         struct timespec poll_ts;
         long total_poll_ms = 0;
 
-        while (total_poll_ms < POLL_TIMEOUT_MS)
+        while(total_poll_ms < POLL_TIMEOUT_MS)
         {
             /* Check if child is still running */
             int status;
             pid_t ret = waitpid(
-                child, &status, WNOHANG);
-            if (ret == child)
+                            child, &status, WNOHANG);
+            if(ret == child)
             {
                 /* Child exited: do a final read */
-                if (find_proc_shm(
-                        cfg->procdir, child,
-                        shm_path, sizeof(shm_path)))
+                if(find_proc_shm(
+                            cfg->procdir, child,
+                            shm_path, sizeof(shm_path)))
                 {
                     read_procinfo_stats(
                         shm_path, child,
@@ -1326,7 +1456,7 @@ static void run_phase(
                               &ts_end);
                 *wall_ns =
                     (long long)(ts_end.tv_sec
-                       - ts_start.tv_sec)
+                                - ts_start.tv_sec)
                     * 1000000000LL
                     + (ts_end.tv_nsec
                        - ts_start.tv_nsec);
@@ -1334,9 +1464,9 @@ static void run_phase(
             }
 
             /* Poll proc SHM */
-            if (find_proc_shm(
-                    cfg->procdir, child,
-                    shm_path, sizeof(shm_path)))
+            if(find_proc_shm(
+                        cfg->procdir, child,
+                        shm_path, sizeof(shm_path)))
             {
                 /* snapshot the most recent state */
                 pi_stats_t tmp;
@@ -1344,8 +1474,10 @@ static void run_phase(
                 read_procinfo_stats(
                     shm_path, child,
                     &tmp, rapl_start);
-                if (tmp.valid)
+                if(tmp.valid)
+                {
                     *pi = tmp;
+                }
             }
 
             poll_ts.tv_sec  = 0;
@@ -1378,19 +1510,23 @@ static void run_phase(
 static double ipc(
     const hw_phase_t *p)
 {
-    if (!p->valid || p->v[IDX_CYCLES] == 0)
+    if(!p->valid || p->v[IDX_CYCLES] == 0)
+    {
         return 0.0;
+    }
     return (double) p->v[IDX_INSTRUCTIONS]
-         / (double) p->v[IDX_CYCLES];
+           / (double) p->v[IDX_CYCLES];
 }
 
 static double miss_rate(
     long long misses, long long loads)
 {
-    if (loads == 0)
+    if(loads == 0)
+    {
         return 0.0;
+    }
     return 100.0 * (double) misses
-                 / (double) loads;
+           / (double) loads;
 }
 
 /**
@@ -1406,8 +1542,10 @@ static void sub_phase(
     const hw_phase_t *w)
 {
     m->valid = t->valid;
-    for (int i = 0; i < N_PERF_EVS; i++)
+    for(int i = 0; i < N_PERF_EVS; i++)
+    {
         m->v[i] = t->v[i] - w->v[i];
+    }
 }
 
 /* ================================================================
@@ -1439,7 +1577,7 @@ static void write_json(
     long              exe_sz)
 {
     FILE *fp = fopen(cfg->result_file, "w");
-    if (!fp)
+    if(!fp)
     {
         fprintf(stderr,
                 "ERROR: cannot write %s: %s\n",
@@ -1465,8 +1603,8 @@ static void write_json(
             cfg->git_commit);
     fprintf(fp, "  \"build_tags\": \"%s\",\n",
             cfg->build_tags[0]
-                ? cfg->build_tags
-                : "default");
+            ? cfg->build_tags
+            : "default");
     fprintf(fp, "  \"iterations\": %d,\n",
             cfg->nbiter);
     fprintf(fp, "  \"warmup_iterations\": %d,\n",
@@ -1482,22 +1620,22 @@ static void write_json(
 
     /* hw_counters */
     fprintf(fp, "  \"hw_counters\": {\n");
-    if (t->valid)
+    if(t->valid)
     {
-        for (int i = 0; i < N_PERF_EVS; i++)
+        for(int i = 0; i < N_PERF_EVS; i++)
         {
             fprintf(fp,
                     "    \"%s\": %lld%s\n",
                     PERF_EVS[i].json,
                     t->v[i],
                     (i < N_PERF_EVS - 1)
-                        ? "," : "");
+                    ? "," : "");
         }
     }
     fprintf(fp, "  },\n");
 
     /* warmup_counters */
-    if (cfg->warmup > 0 && w->valid)
+    if(cfg->warmup > 0 && w->valid)
     {
         fprintf(fp, "  \"warmup_counters\": {\n");
         fprintf(fp,
@@ -1517,49 +1655,49 @@ static void write_json(
     }
 
     /* processinfo - total */
-    if (pi && pi->valid)
+    if(pi && pi->valid)
     {
         fprintf(fp,
-            "  \"processinfo\": {\n"
-            "    \"loopcnt\": %ld,\n"
-            "    \"p50_iter_ns\": %ld,\n"
-            "    \"p95_iter_ns\": %ld,\n"
-            "    \"p99_iter_ns\": %ld,\n"
-            "    \"p999_iter_ns\": %ld,\n"
-            "    \"max_iter_ns\": %ld,\n"
-            "    \"jitter_iter_ns\": %ld,\n"
-            "    \"p50_exec_ns\": %ld,\n"
-            "    \"p95_exec_ns\": %ld,\n"
-            "    \"p99_exec_ns\": %ld,\n"
-            "    \"p999_exec_ns\": %ld,\n"
-            "    \"max_exec_ns\": %ld,\n"
-            "    \"jitter_exec_ns\": %ld,\n"
-            "    \"vmpeak_kb\": %ld,\n"
-            "    \"vmhwm_kb\": %ld,\n"
-            "    \"vmrss_kb\": %ld,\n"
-            "    \"anon_huge_kb\": %ld,\n"
-            "    \"vol_ctxt_switches\": %ld,\n"
-            "    \"nvol_ctxt_switches\": %ld,\n"
-            "    \"cpu_freq_min_khz\": %ld,\n"
-            "    \"cpu_freq_max_khz\": %ld,\n"
-            "    \"rapl_energy_uj\": %lld\n"
-            "  },\n",
-            pi->loopcnt,
-            pi->p50_iter, pi->p95_iter,
-            pi->p99_iter,
-            pi->p999_iter, pi->max_iter,
-            pi->jitter_iter,
-            pi->p50_exec, pi->p95_exec,
-            pi->p99_exec,
-            pi->p999_exec, pi->max_exec,
-            pi->jitter_exec,
-            pi->vmpeak_kb, pi->vmhwm_kb,
-            pi->vmrss_kb,
-            pi->anon_huge_kb,
-            pi->vol_ctxt, pi->nvol_ctxt,
-            pi->cpu_freq_min_khz,
-            pi->cpu_freq_max_khz,
-            pi->rapl_uj);
+                "  \"processinfo\": {\n"
+                "    \"loopcnt\": %ld,\n"
+                "    \"p50_iter_ns\": %ld,\n"
+                "    \"p95_iter_ns\": %ld,\n"
+                "    \"p99_iter_ns\": %ld,\n"
+                "    \"p999_iter_ns\": %ld,\n"
+                "    \"max_iter_ns\": %ld,\n"
+                "    \"jitter_iter_ns\": %ld,\n"
+                "    \"p50_exec_ns\": %ld,\n"
+                "    \"p95_exec_ns\": %ld,\n"
+                "    \"p99_exec_ns\": %ld,\n"
+                "    \"p999_exec_ns\": %ld,\n"
+                "    \"max_exec_ns\": %ld,\n"
+                "    \"jitter_exec_ns\": %ld,\n"
+                "    \"vmpeak_kb\": %ld,\n"
+                "    \"vmhwm_kb\": %ld,\n"
+                "    \"vmrss_kb\": %ld,\n"
+                "    \"anon_huge_kb\": %ld,\n"
+                "    \"vol_ctxt_switches\": %ld,\n"
+                "    \"nvol_ctxt_switches\": %ld,\n"
+                "    \"cpu_freq_min_khz\": %ld,\n"
+                "    \"cpu_freq_max_khz\": %ld,\n"
+                "    \"rapl_energy_uj\": %lld\n"
+                "  },\n",
+                pi->loopcnt,
+                pi->p50_iter, pi->p95_iter,
+                pi->p99_iter,
+                pi->p999_iter, pi->max_iter,
+                pi->jitter_iter,
+                pi->p50_exec, pi->p95_exec,
+                pi->p99_exec,
+                pi->p999_exec, pi->max_exec,
+                pi->jitter_exec,
+                pi->vmpeak_kb, pi->vmhwm_kb,
+                pi->vmrss_kb,
+                pi->anon_huge_kb,
+                pi->vol_ctxt, pi->nvol_ctxt,
+                pi->cpu_freq_min_khz,
+                pi->cpu_freq_max_khz,
+                pi->rapl_uj);
     }
     else
     {
@@ -1567,42 +1705,42 @@ static void write_json(
                 "  \"processinfo\": null,\n");
     }
     /* processinfo - warmup */
-    if (pi_w && pi_w->valid)
+    if(pi_w && pi_w->valid)
     {
         fprintf(fp,
-            "  \"processinfo_warmup\": {\n"
-            "    \"loopcnt\": %ld,\n"
-            "    \"p50_iter_ns\": %ld,\n"
-            "    \"p95_iter_ns\": %ld,\n"
-            "    \"p99_iter_ns\": %ld,\n"
-            "    \"p999_iter_ns\": %ld,\n"
-            "    \"max_iter_ns\": %ld,\n"
-            "    \"jitter_iter_ns\": %ld,\n"
-            "    \"p50_exec_ns\": %ld,\n"
-            "    \"p95_exec_ns\": %ld,\n"
-            "    \"p99_exec_ns\": %ld,\n"
-            "    \"p999_exec_ns\": %ld,\n"
-            "    \"max_exec_ns\": %ld,\n"
-            "    \"jitter_exec_ns\": %ld,\n"
-            "    \"vol_ctxt_switches\": %ld,\n"
-            "    \"nvol_ctxt_switches\": %ld,\n"
-            "    \"cpu_freq_min_khz\": %ld,\n"
-            "    \"cpu_freq_max_khz\": %ld,\n"
-            "    \"rapl_energy_uj\": %lld\n"
-            "  }\n",
-            pi_w->loopcnt,
-            pi_w->p50_iter, pi_w->p95_iter,
-            pi_w->p99_iter,
-            pi_w->p999_iter, pi_w->max_iter,
-            pi_w->jitter_iter,
-            pi_w->p50_exec, pi_w->p95_exec,
-            pi_w->p99_exec,
-            pi_w->p999_exec, pi_w->max_exec,
-            pi_w->jitter_exec,
-            pi_w->vol_ctxt, pi_w->nvol_ctxt,
-            pi_w->cpu_freq_min_khz,
-            pi_w->cpu_freq_max_khz,
-            pi_w->rapl_uj);
+                "  \"processinfo_warmup\": {\n"
+                "    \"loopcnt\": %ld,\n"
+                "    \"p50_iter_ns\": %ld,\n"
+                "    \"p95_iter_ns\": %ld,\n"
+                "    \"p99_iter_ns\": %ld,\n"
+                "    \"p999_iter_ns\": %ld,\n"
+                "    \"max_iter_ns\": %ld,\n"
+                "    \"jitter_iter_ns\": %ld,\n"
+                "    \"p50_exec_ns\": %ld,\n"
+                "    \"p95_exec_ns\": %ld,\n"
+                "    \"p99_exec_ns\": %ld,\n"
+                "    \"p999_exec_ns\": %ld,\n"
+                "    \"max_exec_ns\": %ld,\n"
+                "    \"jitter_exec_ns\": %ld,\n"
+                "    \"vol_ctxt_switches\": %ld,\n"
+                "    \"nvol_ctxt_switches\": %ld,\n"
+                "    \"cpu_freq_min_khz\": %ld,\n"
+                "    \"cpu_freq_max_khz\": %ld,\n"
+                "    \"rapl_energy_uj\": %lld\n"
+                "  }\n",
+                pi_w->loopcnt,
+                pi_w->p50_iter, pi_w->p95_iter,
+                pi_w->p99_iter,
+                pi_w->p999_iter, pi_w->max_iter,
+                pi_w->jitter_iter,
+                pi_w->p50_exec, pi_w->p95_exec,
+                pi_w->p99_exec,
+                pi_w->p999_exec, pi_w->max_exec,
+                pi_w->jitter_exec,
+                pi_w->vol_ctxt, pi_w->nvol_ctxt,
+                pi_w->cpu_freq_min_khz,
+                pi_w->cpu_freq_max_khz,
+                pi_w->rapl_uj);
     }
     else
     {
@@ -1672,8 +1810,10 @@ static int g_use_color = 0;
 static void print_heavy_sep(void)
 {
     printf("%s  ", CB);
-    for (int i = 0; i < 54; i++)
+    for(int i = 0; i < 54; i++)
+    {
         printf("%s", BOX_HEAVY);
+    }
     printf("%s\n", CR);
 }
 
@@ -1724,16 +1864,16 @@ static void print_row(
     double per_iter =
         (measured > 0 && total > warmup_v)
         ? (double)(total - warmup_v)
-          / (double) measured
+        / (double) measured
         : 0.0;
 
-    if (has_warmup)
+    if(has_warmup)
     {
-        if (mux_out)
+        if(mux_out)
         {
             /* Warmup column: show "n/a" to flag multiplexed-out
              * PMU counter rather than a misleading zero. */
-            if (decimals == 6)
+            if(decimals == 6)
                 printf("  %s%-*s%s %*lld %s%*s%s %s%*.6f%s/iter\n",
                        CD, COL1W, label, CR,
                        COL2W, total,
@@ -1748,7 +1888,7 @@ static void print_row(
         }
         else
         {
-            if (decimals == 6)
+            if(decimals == 6)
                 printf("  %s%-*s%s %*lld %*lld %s%*.6f%s/iter\n",
                        CD, COL1W, label, CR,
                        COL2W, total,
@@ -1764,7 +1904,7 @@ static void print_row(
     }
     else
     {
-        if (decimals == 6)
+        if(decimals == 6)
             printf("  %s%-*s%s %*lld %s%*.6f%s/iter\n",
                    CD, COL1W, label, CR,
                    COL2W, total,
@@ -1792,9 +1932,9 @@ static void print_rate(
     int        has_warmup,
     int        loads_mux_out)
 {
-    if (has_warmup)
+    if(has_warmup)
     {
-        if (loads_mux_out)
+        if(loads_mux_out)
             printf("  %s%-*s%s %s%*.3f%%%s "
                    "%s%*s%s %s%*.3f%%%s\n",
                    CD, COL1W, label, CR,
@@ -1841,26 +1981,26 @@ static void print_summary(
            CB, COL1W, "", CR,
            CB, COL2W, "Total", CR,
            (hw ? CB : CD), COL2W,
-               (hw ? "Warmup" : ""), CR);
+           (hw ? "Warmup" : ""), CR);
     printf("  %s%-*s%s %s%-*s%s %s%-*s%s\n",
            CB, COL1W,
-               "Benchmark Results", CR,
+           "Benchmark Results", CR,
            CD, COL2W,
-               "", CR,
+           "", CR,
            CB, COL2W,
-               "Measured", CR);
+           "Measured", CR);
     printf("  %s%-*s%s  %s%d iter%s, "
            "%sBuild:%s %s\n",
            CD, COL1W,
-               cfg->fpsexec[0] == '/' || cfg->fpsexec[0] == '.'
-                   ? (strrchr(cfg->fpsexec, '/') + 1)
-                   : cfg->fpsexec,
+           cfg->fpsexec[0] == '/' || cfg->fpsexec[0] == '.'
+           ? (strrchr(cfg->fpsexec, '/') + 1)
+           : cfg->fpsexec,
            CR,
            CD, measured, CR,
            CD, CR,
            cfg->build_tags[0]
-               ? cfg->build_tags
-               : "default");
+           ? cfg->build_tags
+           : "default");
     print_heavy_sep();
 
     /* Column header */
@@ -1883,64 +2023,64 @@ static void print_summary(
         double scale = use_us ? 1e3 : 1.0;
         const char *unit = use_us ? "µs" : "ns";
 
-        if (hw)
+        if(hw)
             printf("  %s%-*s%s %*.3f s %*.3f s "
                    "%s%*.1f %s/iter%s\n",
                    CB, COL1W, "Wall clock", CR,
                    COL2W - 2,
-                       (double) t_ns / 1e9,
+                   (double) t_ns / 1e9,
                    COL2W - 2,
-                       (double) w_ns / 1e9,
+                   (double) w_ns / 1e9,
                    CWH,
                    COL2W - 2,
-                       meas_pi / scale,
+                   meas_pi / scale,
                    unit, CR);
         else
             printf("  %s%-*s%s %*.3f s %s%*.1f %s/iter%s\n",
                    CB, COL1W, "Wall clock", CR,
                    COL2W - 2,
-                       (double) t_ns / 1e9,
+                   (double) t_ns / 1e9,
                    CWH,
                    COL2W - 2,
-                       (double) t_ns / measured / scale,
+                   (double) t_ns / measured / scale,
                    unit, CR);
     }
 
 #define C_VAL(idx) t->v[idx], w->v[idx]
     print_row("Cycles",
-        C_VAL(IDX_CYCLES), measured, hw, 1, 0);
+              C_VAL(IDX_CYCLES), measured, hw, 1, 0);
     print_row("Instructions",
-        C_VAL(IDX_INSTRUCTIONS), measured, hw, 1, 0);
+              C_VAL(IDX_INSTRUCTIONS), measured, hw, 1, 0);
 
     /* IPC */
     {
         double ipc_t = ipc(t);
         double ipc_w = ipc(w);
         double ipc_m = ipc(&m);
-        if (hw)
+        if(hw)
             printf("  %s%-*s%s %*.3f %*.3f %s%*.3f%s\n",
                    CD, COL1W,
-                       "Instr per Cycle (IPC)", CR,
+                   "Instr per Cycle (IPC)", CR,
                    COL2W, ipc_t,
                    COL2W, ipc_w,
                    CGR, COL2W, ipc_m, CR);
         else
             printf("  %s%-*s%s %s%*.3f%s\n",
                    CD, COL1W,
-                       "Instr per Cycle (IPC)", CR,
+                   "Instr per Cycle (IPC)", CR,
                    CGR, COL2W, ipc_t, CR);
     }
     print_row("Branch misses",
-        C_VAL(IDX_BRANCH_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_BRANCH_MISSES), measured, hw, 1, 0);
     {
         long long stall_fe = t->v[IDX_STALL_FE];
         long long stall_be = t->v[IDX_STALL_BE];
-        if (stall_fe > 0 || stall_be > 0)
+        if(stall_fe > 0 || stall_be > 0)
         {
             print_row("Stalled cyc (FE)",
-                C_VAL(IDX_STALL_FE), measured, hw, 1, 0);
+                      C_VAL(IDX_STALL_FE), measured, hw, 1, 0);
             print_row("Stalled cyc (BE)",
-                C_VAL(IDX_STALL_BE), measured, hw, 1, 0);
+                      C_VAL(IDX_STALL_BE), measured, hw, 1, 0);
         }
     }
 
@@ -1949,66 +2089,66 @@ static void print_summary(
     /* L1 Data */
     printf("    %sL1 Data%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_L1D_LOADS), measured, hw, 1,
-        w->v[IDX_L1D_MISSES]);
+              C_VAL(IDX_L1D_LOADS), measured, hw, 1,
+              w->v[IDX_L1D_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_L1D_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_L1D_MISSES), measured, hw, 1, 0);
     {
         int l1d_mux = hw && (w->v[IDX_L1D_LOADS] == 0)
-                          && (w->v[IDX_L1D_MISSES] > 0);
+                      && (w->v[IDX_L1D_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_L1D_MISSES],
-            t->v[IDX_L1D_LOADS]);
+                          t->v[IDX_L1D_MISSES],
+                          t->v[IDX_L1D_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_L1D_MISSES],
-            w->v[IDX_L1D_LOADS]);
+                          w->v[IDX_L1D_MISSES],
+                          w->v[IDX_L1D_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_L1D_MISSES],
-            m.v[IDX_L1D_LOADS]);
+                          m.v[IDX_L1D_MISSES],
+                          m.v[IDX_L1D_LOADS]);
         print_rate("        miss rate",
                    mr_t, mr_w, mr_m, hw, l1d_mux);
     }
     /* L1 Instruction */
     printf("    %sL1 Instruction%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_L1I_LOADS), measured, hw, 1,
-        w->v[IDX_L1I_MISSES]);
+              C_VAL(IDX_L1I_LOADS), measured, hw, 1,
+              w->v[IDX_L1I_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_L1I_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_L1I_MISSES), measured, hw, 1, 0);
     {
         int l1i_mux = hw && (w->v[IDX_L1I_LOADS] == 0)
-                          && (w->v[IDX_L1I_MISSES] > 0);
+                      && (w->v[IDX_L1I_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_L1I_MISSES],
-            t->v[IDX_L1I_LOADS]);
+                          t->v[IDX_L1I_MISSES],
+                          t->v[IDX_L1I_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_L1I_MISSES],
-            w->v[IDX_L1I_LOADS]);
+                          w->v[IDX_L1I_MISSES],
+                          w->v[IDX_L1I_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_L1I_MISSES],
-            m.v[IDX_L1I_LOADS]);
+                          m.v[IDX_L1I_MISSES],
+                          m.v[IDX_L1I_LOADS]);
         print_rate("        miss rate",
                    mr_t, mr_w, mr_m, hw, l1i_mux);
     }
     /* LLC */
     printf("    %sLast Level Cache%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_LLC_LOADS), measured, hw, 1,
-        w->v[IDX_LLC_MISSES]);
+              C_VAL(IDX_LLC_LOADS), measured, hw, 1,
+              w->v[IDX_LLC_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_LLC_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_LLC_MISSES), measured, hw, 1, 0);
     {
         int llc_mux = hw && (w->v[IDX_LLC_LOADS] == 0)
-                          && (w->v[IDX_LLC_MISSES] > 0);
+                      && (w->v[IDX_LLC_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_LLC_MISSES],
-            t->v[IDX_LLC_LOADS]);
+                          t->v[IDX_LLC_MISSES],
+                          t->v[IDX_LLC_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_LLC_MISSES],
-            w->v[IDX_LLC_LOADS]);
+                          w->v[IDX_LLC_MISSES],
+                          w->v[IDX_LLC_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_LLC_MISSES],
-            m.v[IDX_LLC_LOADS]);
+                          m.v[IDX_LLC_MISSES],
+                          m.v[IDX_LLC_LOADS]);
         print_rate("        load miss rate",
                    mr_t, mr_w, mr_m, hw, llc_mux);
     }
@@ -2017,43 +2157,43 @@ static void print_summary(
     print_sep();
     printf("    %sData TLB%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_DTLB_LOADS), measured, hw, 1,
-        w->v[IDX_DTLB_MISSES]);
+              C_VAL(IDX_DTLB_LOADS), measured, hw, 1,
+              w->v[IDX_DTLB_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_DTLB_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_DTLB_MISSES), measured, hw, 1, 0);
     {
         int dtlb_mux = hw && (w->v[IDX_DTLB_LOADS] == 0)
-                           && (w->v[IDX_DTLB_MISSES] > 0);
+                       && (w->v[IDX_DTLB_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_DTLB_MISSES],
-            t->v[IDX_DTLB_LOADS]);
+                          t->v[IDX_DTLB_MISSES],
+                          t->v[IDX_DTLB_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_DTLB_MISSES],
-            w->v[IDX_DTLB_LOADS]);
+                          w->v[IDX_DTLB_MISSES],
+                          w->v[IDX_DTLB_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_DTLB_MISSES],
-            m.v[IDX_DTLB_LOADS]);
+                          m.v[IDX_DTLB_MISSES],
+                          m.v[IDX_DTLB_LOADS]);
         print_rate("        load miss rate",
                    mr_t, mr_w, mr_m, hw, dtlb_mux);
     }
     printf("    %sInstruction TLB%s\n", CD, CR);
     print_row("      Load misses",
-        C_VAL(IDX_ITLB_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_ITLB_MISSES), measured, hw, 1, 0);
 
     print_section("OS Events");
     print_sep();
     print_row("  Page faults (minor)",
-        C_VAL(IDX_MINOR_FAULTS), measured, hw, 6, 0);
+              C_VAL(IDX_MINOR_FAULTS), measured, hw, 6, 0);
     print_row("  Page faults (major)",
-        C_VAL(IDX_MAJOR_FAULTS), measured, hw, 6, 0);
+              C_VAL(IDX_MAJOR_FAULTS), measured, hw, 6, 0);
     print_row("  CPU migrations",
-        C_VAL(IDX_CPU_MIGRATIONS), measured, hw, 6, 0);
+              C_VAL(IDX_CPU_MIGRATIONS), measured, hw, 6, 0);
     print_row("  Context switches",
-        C_VAL(IDX_CTX_SWITCHES), measured, hw, 6, 0);
+              C_VAL(IDX_CTX_SWITCHES), measured, hw, 6, 0);
 #undef C_VAL
 
     /* Processinfo timing */
-    if (pi && pi->valid)
+    if(pi && pi->valid)
     {
         /*
          * print_pi_row — one processinfo timing row.
@@ -2102,7 +2242,7 @@ static void print_summary(
                        CWH, COL2W, _t, CR, tunit); \
         } while (0)
 
-               /* Column header for timing table */
+        /* Column header for timing table */
         printf("  %s  %-28s %14s %14s %s%14s%s\n",
                CD, "", "p50", "p95",
                CWH, "p99", CR);
@@ -2149,7 +2289,7 @@ static void print_summary(
                      pi->vmhwm_kb, 0L, "kB");
         print_pi_row("  Virtual peak",
                      pi->vmpeak_kb, 0L, "kB");
-        if (pi->anon_huge_kb > 0)
+        if(pi->anon_huge_kb > 0)
             print_pi_row("  Anon huge pages",
                          pi->anon_huge_kb, 0L, "kB");
         print_pi_row("  Vol ctx switches",
@@ -2160,28 +2300,28 @@ static void print_summary(
                      pi->nvol_ctxt,
                      (pi_w ? pi_w->nvol_ctxt : 0L),
                      "");
-        if (pi->cpu_freq_min_khz > 0)
+        if(pi->cpu_freq_min_khz > 0)
         {
             print_pi_row(
                 "  CPU freq (min)",
                 pi->cpu_freq_min_khz / 1000L,
                 (pi_w ? pi_w->cpu_freq_min_khz
-                            / 1000L : 0L),
+                 / 1000L : 0L),
                 "MHz");
             print_pi_row(
                 "  CPU freq (max)",
                 pi->cpu_freq_max_khz / 1000L,
                 (pi_w ? pi_w->cpu_freq_max_khz
-                            / 1000L : 0L),
+                 / 1000L : 0L),
                 "MHz");
         }
-        if (pi->rapl_uj >= 0)
+        if(pi->rapl_uj >= 0)
             print_pi_row(
                 "  RAPL (package)",
                 (long)(pi->rapl_uj / 1000LL),
                 (pi_w && pi_w->rapl_uj >= 0
-                    ? (long)(pi_w->rapl_uj / 1000LL)
-                    : 0L),
+                 ? (long)(pi_w->rapl_uj / 1000LL)
+                 : 0L),
                 "mJ");
         else
             printf("  %s%-*s%s %sN/A%s "
@@ -2211,8 +2351,10 @@ static void print_summary(
 
 static void cleanup(void)
 {
-    if (g_initialized)
+    if(g_initialized)
+    {
         fps_cleanup(&g_cfg);
+    }
 }
 
 static void sig_handler(int sig)
@@ -2242,8 +2384,10 @@ int main(int argc, char *argv[])
     strncpy(cfg->outdir, "./perfresults",
             sizeof(cfg->outdir) - 1);
 
-    if (parse_args(argc, argv, cfg) != 0)
+    if(parse_args(argc, argv, cfg) != 0)
+    {
         return 1;
+    }
 
     /* Resolve environment */
     resolve_procdir(cfg);
@@ -2264,7 +2408,7 @@ int main(int argc, char *argv[])
                 sizeof(exe_base) - 1);
         /* basename in-place */
         char *slash = strrchr(exe_base, '/');
-        if (slash)
+        if(slash)
             memmove(exe_base, slash + 1,
                     strlen(slash));
         snprintf(cfg->result_file,
@@ -2294,10 +2438,10 @@ int main(int argc, char *argv[])
     printf("  FPS name  : %s\n", cfg->fpsname);
     printf("  Build     : %s\n",
            cfg->build_tags[0]
-               ? cfg->build_tags
-               : "default (no PGO/LTO)");
+           ? cfg->build_tags
+           : "default (no PGO/LTO)");
     printf("  Iterations: %d\n", cfg->nbiter);
-    if (cfg->warmup > 0)
+    if(cfg->warmup > 0)
     {
         printf("  Warmup    : %d\n", cfg->warmup);
         printf("  Measured  : %d\n", measured);
@@ -2328,7 +2472,7 @@ int main(int argc, char *argv[])
     fps_create_streams(cfg);
 
     /* Setup command */
-    if (cfg->setupcmd[0] != '\0')
+    if(cfg->setupcmd[0] != '\0')
     {
         printf("[5/5] Setup: %s\n",
                cfg->setupcmd);
@@ -2345,7 +2489,7 @@ int main(int argc, char *argv[])
     memset(&pi,         0, sizeof(pi));
     memset(&pi_warmup,  0, sizeof(pi_warmup));
 
-    if (cfg->warmup > 0)
+    if(cfg->warmup > 0)
     {
         printf("[6/7] Running benchmark ...\n");
         printf("  [warmup] %d iterations ...\n",

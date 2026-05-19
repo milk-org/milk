@@ -85,7 +85,7 @@ errno_t streamCTRL_print_SPTRACE_details(
         int IDfound = -1;
         while((IDfound == -1) && (IDscan < streamNBID_MAX))
         {
-            if( (streamCTRLimages[IDscan].used == 1) && (streamCTRLimages[IDscan].md != NULL) )
+            if((streamCTRLimages[IDscan].used == 1) && (streamCTRLimages[IDscan].md != NULL))
             {
                 if(streamCTRLimages[IDscan].md->inode == inode)
                 {
@@ -233,5 +233,3 @@ errno_t streamCTRL_print_SPTRACE_details(
 
     return RETURN_SUCCESS;
 }
-
-

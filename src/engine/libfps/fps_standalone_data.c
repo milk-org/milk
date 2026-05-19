@@ -63,7 +63,8 @@ errno_t RegisterModule(
     int versionmajor __attribute__((unused)),
     int versionminor __attribute__((unused)),
     int versionpatch __attribute__((unused))
-) {
+)
+{
     return RETURN_SUCCESS;
 }
 
@@ -78,7 +79,8 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLIsyntax __attribute__((unused)),
     const char *restrict CLIexample __attribute__((unused)),
     const char *restrict CLICcall __attribute__((unused))
-) {
+)
+{
     return 0;
 }
 
@@ -88,7 +90,8 @@ uint32_t RegisterCLIcommand(
 uint32_t RegisterCLIcmd(
     CLICMDDATA CLIcmddata __attribute__((unused)),
     errno_t (*CLIfptr)() __attribute__((unused))
-) {
+)
+{
     return 0;
 }
 
@@ -108,12 +111,12 @@ imageID image_ID(
     long        NB_images __attribute__((unused))
 )
 {
-    for (long ii = 0; ii < NB_images; ii++)
+    for(long ii = 0; ii < NB_images; ii++)
     {
-        if (imagearray[ii].used == 1 &&
-            strncmp(imagearray[ii].name,
-                    name,
-                    STRINGMAXLEN_IMAGE_NAME)
+        if(imagearray[ii].used == 1 &&
+                strncmp(imagearray[ii].name,
+                        name,
+                        STRINGMAXLEN_IMAGE_NAME)
                 == 0)
         {
             return ii;
@@ -188,4 +191,7 @@ get_singlechar_nonblock(void)
 }
 
 /** @brief No-op stub: restore terminal (standalone). */
-errno_t TUI_exit(void) { return 0; }
+errno_t TUI_exit(void)
+{
+    return 0;
+}

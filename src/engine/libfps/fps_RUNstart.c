@@ -25,8 +25,8 @@ errno_t functionparameter_RUNstart(
 
         // Move to correct launch directory
         EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" cd %s\" C-m",
-                               fps->md->name,
-                               fps->md->workdir);
+                                       fps->md->name,
+                                       fps->md->workdir);
 
         // set cset if applicable
         //
@@ -98,26 +98,28 @@ errno_t functionparameter_RUNstart(
 
         // create output directory if it does not already exit
         EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" mkdir %s\" C-m",
-                               fps->md->name,
-                               fps->md->datadir);
+                                       fps->md->name,
+                                       fps->md->datadir);
 
         // Send run command
         //
-        char * exec_basename = strrchr(fps->md->execfullpath, '/');
+        char *exec_basename = strrchr(fps->md->execfullpath, '/');
         exec_basename = (exec_basename != NULL) ? exec_basename + 1 : fps->md->execfullpath;
 
-        if (strcmp(exec_basename, "milk") != 0 && 
-            strcmp(exec_basename, "cacao") != 0 && 
-            strlen(exec_basename) > 0 && 
-            strcmp(exec_basename, "unknown") != 0) 
+        if(strcmp(exec_basename, "milk") != 0 &&
+                strcmp(exec_basename, "cacao") != 0 &&
+                strlen(exec_basename) > 0 &&
+                strcmp(exec_basename, "unknown") != 0)
         {
             EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" %s %s:runstart\" C-m",
-                                   fps->md->name,
-                                   fps->md->execfullpath,
-                                   fps->md->name);
-        } else {
+                                           fps->md->name,
+                                           fps->md->execfullpath,
+                                           fps->md->name);
+        }
+        else
+        {
             EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \" fpsrunstart\" C-m",
-                                   fps->md->name);
+                                           fps->md->name);
         }
 
         fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;

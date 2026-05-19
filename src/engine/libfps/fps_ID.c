@@ -14,7 +14,8 @@ long fps_ID(const char *name)
     int  loopOK;
     long tmpID = 0;
 
-    if(fpsarray == NULL) {
+    if(fpsarray == NULL)
+    {
         return -1;
     }
 
@@ -53,7 +54,8 @@ long next_avail_fps_ID()
     long i;
     long ID = -1;
 
-    if(fpsarray == NULL) {
+    if(fpsarray == NULL)
+    {
         return -1;
     }
 

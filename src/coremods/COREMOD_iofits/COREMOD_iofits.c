@@ -56,7 +56,8 @@ static errno_t init_module_CLI()
  * Empty function referenced externally to prevent
  * the linker from discarding this module.
  */
-void COREMOD_iofits_export_dummy() {
+void COREMOD_iofits_export_dummy()
+{
     saveFITS_opt_trunc(NULL, 0, NULL, 0, NULL, NULL, 0, NULL);
     save_fl_fits(NULL, NULL);
 }

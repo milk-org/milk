@@ -80,8 +80,8 @@ errno_t create_image_ID_IMGID(
 
         int mismatch = 0;
 
-        if (dcimg[img->ID].md->datatype
-            != img->mdt->datatype)
+        if(dcimg[img->ID].md->datatype
+                != img->mdt->datatype)
         {
             printf("\033[33mWARNING:\033[0m"
                    " image \"%s\" type mismatch"
@@ -90,9 +90,9 @@ errno_t create_image_ID_IMGID(
             mismatch = 1;
         }
 
-        if (!mismatch &&
-            dcimg[img->ID].md->naxis
-            != img->mdt->naxis)
+        if(!mismatch &&
+                dcimg[img->ID].md->naxis
+                != img->mdt->naxis)
         {
             printf("\033[33mWARNING:\033[0m"
                    " image \"%s\" naxis mismatch"
@@ -100,19 +100,19 @@ errno_t create_image_ID_IMGID(
                    " -> re-creating\n",
                    img->name,
                    (long) dcimg[img->ID]
-                       .md->naxis,
+                   .md->naxis,
                    (long) img->mdt->naxis);
             mismatch = 1;
         }
 
-        if (!mismatch)
+        if(!mismatch)
         {
-            for (int i = 0;
-                 i < img->mdt->naxis; i++)
+            for(int i = 0;
+                    i < img->mdt->naxis; i++)
             {
-                if (dcimg[img->ID].md
+                if(dcimg[img->ID].md
                         ->size[i]
-                    != img->mdt->size[i])
+                        != img->mdt->size[i])
                 {
                     printf(
                         "\033[33mWARNING:"
@@ -124,22 +124,22 @@ errno_t create_image_ID_IMGID(
                         img->name, i,
                         (long) dcimg[
                             img->ID]
-                            .md->size[i],
+                        .md->size[i],
                         (long) img->mdt
-                            ->size[i]);
+                        ->size[i]);
                     mismatch = 1;
                     break;
                 }
             }
         }
 
-        if (mismatch)
+        if(mismatch)
         {
             delete_image_ID(
                 img->name,
                 DELETE_IMAGE_ERRMODE_WARNING);
             img->ID = next_avail_image_ID(
-                img->ID);
+                          img->ID);
             ImageStreamIO_createIm(
                 &dcimg[img->ID],
                 img->name,

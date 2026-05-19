@@ -27,9 +27,10 @@ int main(
     int argc,
     char *argv[])
 {
-    for (int ii = 1; ii < argc; ii++) {
-        if (strcmp(argv[ii], "-h1") == 0 ||
-            strcmp(argv[ii], "--help-oneline") == 0)
+    for(int ii = 1; ii < argc; ii++)
+    {
+        if(strcmp(argv[ii], "-h1") == 0 ||
+                strcmp(argv[ii], "--help-oneline") == 0)
         {
             printf("guide to standalone FPS executables\n");
             return 0;

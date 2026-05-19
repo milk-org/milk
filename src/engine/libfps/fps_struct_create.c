@@ -44,7 +44,7 @@ errno_t function_parameter_struct_create(
     }
     remove(SM_fname);
 
-    if (getenv("FPS_DEBUG"))
+    if(getenv("FPS_DEBUG"))
         printf("DEBUG: [%s:%d] Creating file %s, "
                "NBparamMAX = %d\n",
                __FILE__, __LINE__,
@@ -98,20 +98,23 @@ errno_t function_parameter_struct_create(
 
     // Use global defaults
     strncpy(fps.md->callprogname,
-        FPS_callprogname,
-        FPS_CALLPROGNAME_STRMAXLEN - 1);
+            FPS_callprogname,
+            FPS_CALLPROGNAME_STRMAXLEN - 1);
 
     strncpy(fps.md->callfuncname,
-        FPS_callfuncname,
-        FPS_CALLFUNCNAME_STRMAXLEN - 1);
+            FPS_callfuncname,
+            FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
     {
         char path[512];
         ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-        if (len != -1) {
+        if(len != -1)
+        {
             path[len] = '\0';
             strncpy(fps.md->execfullpath, path, 511);
-        } else {
+        }
+        else
+        {
             strncpy(fps.md->execfullpath, "unknown", 511);
         }
     }
@@ -199,11 +202,11 @@ errno_t function_parameter_struct_create(
     rv = RETURN_SUCCESS;
 
 fail:
-    if (fps.md != MAP_FAILED)
+    if(fps.md != MAP_FAILED)
     {
         munmap(fps.md, sharedsize);
     }
-    if (SM_fd != -1)
+    if(SM_fd != -1)
     {
         close(SM_fd);
     }
@@ -226,7 +229,8 @@ errno_t function_parameter_struct_realloc(
     function_parameter_struct_shmdirname(shmdname);
     snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, fps->md->name);
 
-    size_t sharedsize_old = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FPS_PARAM) * fps->md->NBparamMAX;
+    size_t sharedsize_old = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(
+                                FPS_PARAM) * fps->md->NBparamMAX;
     size_t sharedsize_new = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FPS_PARAM) * NBparamMAX_new;
 
     // 1. Unmap old
@@ -242,11 +246,11 @@ errno_t function_parameter_struct_realloc(
     // 3. Remap
     fps->md = (FUNCTION_PARAMETER_STRUCT_MD *)
               mmap(0,
-                  sharedsize_new,
-                  PROT_READ | PROT_WRITE,
-                  MAP_SHARED,
-                  fps->SMfd,
-                  0);
+                   sharedsize_new,
+                   PROT_READ | PROT_WRITE,
+                   MAP_SHARED,
+                   fps->SMfd,
+                   0);
     if(fps->md == MAP_FAILED)
     {
         PRINT_ERROR("Error re-mmapping the file: %s", strerror(errno));
@@ -259,28 +263,44 @@ errno_t function_parameter_struct_realloc(
 
     // 4. Initialize new part
     memset(&fps->parray[fps->md->NBparamMAX],
-        0,
-        (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FPS_PARAM));
+           0,
+           (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FPS_PARAM));
 
     fps->md->NBparamMAX = NBparamMAX_new;
 
     // 5. Update pointers in cmdset (if they were set)
     // These pointers point into parray, which changed location
-    if (fps->cmdset.procinfo_loopcntMax_ptr != NULL) {
+    if(fps->cmdset.procinfo_loopcntMax_ptr != NULL)
+    {
         int pindex = functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
-        if(pindex > -1) fps->cmdset.procinfo_loopcntMax_ptr = fps->parray[pindex].val.i64;
+        if(pindex > -1)
+        {
+            fps->cmdset.procinfo_loopcntMax_ptr = fps->parray[pindex].val.i64;
+        }
     }
-    if (fps->cmdset.triggermodeptr != NULL) {
+    if(fps->cmdset.triggermodeptr != NULL)
+    {
         int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
-        if(pindex > -1) fps->cmdset.triggermodeptr = fps->parray[pindex].val.i64;
+        if(pindex > -1)
+        {
+            fps->cmdset.triggermodeptr = fps->parray[pindex].val.i64;
+        }
     }
-    if (fps->cmdset.triggerdelayptr != NULL) {
+    if(fps->cmdset.triggerdelayptr != NULL)
+    {
         int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
-        if(pindex > -1) fps->cmdset.triggerdelayptr = fps->parray[pindex].val.ts;
+        if(pindex > -1)
+        {
+            fps->cmdset.triggerdelayptr = fps->parray[pindex].val.ts;
+        }
     }
-    if (fps->cmdset.triggertimeoutptr != NULL) {
+    if(fps->cmdset.triggertimeoutptr != NULL)
+    {
         int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggertimeout");
-        if(pindex > -1) fps->cmdset.triggertimeoutptr = fps->parray[pindex].val.ts;
+        if(pindex > -1)
+        {
+            fps->cmdset.triggertimeoutptr = fps->parray[pindex].val.ts;
+        }
     }
 
     return RETURN_SUCCESS;

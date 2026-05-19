@@ -64,7 +64,7 @@ PROCESSINFO *processinfo_setup(
         DEBUG_TRACEPOINT(" ");
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
-        if (processinfo == NULL)
+        if(processinfo == NULL)
         {
             PRINT_ERROR(
                 "processinfo_shm_create(%s) failed", pinfoname0);
@@ -82,18 +82,18 @@ PROCESSINFO *processinfo_setup(
             functionname,
             STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1);
     processinfo->source_FUNCTION[
-        STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0';
+     STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0';
     strncpy(processinfo->source_FILE,
             filename,
             STRINGMAXLEN_PROCESSINFO_SRCFILE - 1);
     processinfo->source_FILE[
-        STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0';
+     STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0';
     processinfo->source_LINE = linenumber;
     strncpy(processinfo->description,
             descriptionstring,
             STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1);
     processinfo->description[
-        STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0';
+     STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0';
     processinfo_WriteMessage(processinfo, msgstring);
     processinfoActive = 1;
 
@@ -143,7 +143,8 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
         struct sched_param schedpar;
         schedpar.sched_priority = processinfo->RT_priority;
 
-        if (sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0) {
+        if(sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0)
+        {
             // PRINT_ERROR("sched_setscheduler: %s", strerror(errno));
         }
     }

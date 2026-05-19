@@ -87,13 +87,13 @@ int cli_intercept_cmd_dirname(const char *p)
 int cli_intercept_cmd_pushd(const char *p)
 {
     if(starts_with(p, "pushd ")
-       || starts_with(p, "pushd\t"))
+            || starts_with(p, "pushd\t"))
     {
         p += 5;
         p = strip_ws(p);
         char cwd[1024];
         if(getcwd(cwd, sizeof(cwd))
-           != NULL)
+                != NULL)
         {
             /* Push current dir as
              * cli var */
@@ -102,14 +102,14 @@ int cli_intercept_cmd_pushd(const char *p)
              * _dirstack entries */
             int dcnt = 0;
             for(int k = 0;
-                k < CLI_MAX_VARS; k++)
+                    k < CLI_MAX_VARS; k++)
             {
                 if(cli_vars[k].used
-                   && strncmp(
-                       cli_vars[k]
-                       .name,
-                       "_ds_",
-                       4) == 0)
+                        && strncmp(
+                            cli_vars[k]
+                            .name,
+                            "_ds_",
+                            4) == 0)
                 {
                     dcnt++;
                 }
@@ -143,16 +143,16 @@ int cli_intercept_cmd_popd(const char *p)
         int maxn = -1;
         int maxk = -1;
         for(int k = 0;
-            k < CLI_MAX_VARS; k++)
+                k < CLI_MAX_VARS; k++)
         {
             if(cli_vars[k].used
-               && strncmp(
-                   cli_vars[k].name,
-                   "_ds_", 4) == 0)
+                    && strncmp(
+                        cli_vars[k].name,
+                        "_ds_", 4) == 0)
             {
                 int n = atoi(
-                    cli_vars[k].name
-                    + 4);
+                            cli_vars[k].name
+                            + 4);
                 if(n > maxn)
                 {
                     maxn = n;
@@ -163,8 +163,8 @@ int cli_intercept_cmd_popd(const char *p)
         if(maxk >= 0)
         {
             if(chdir(
-                cli_vars[maxk].val)
-               != 0)
+                        cli_vars[maxk].val)
+                    != 0)
             {
                 printf("popd: %s\n",
                        strerror(
@@ -189,12 +189,12 @@ int cli_intercept_cmd_dirs(const char *p)
     {
         char cwd[1024];
         if(getcwd(cwd, sizeof(cwd))
-           != NULL)
+                != NULL)
         {
             printf("%s", cwd);
         }
         for(int n = 0;
-            n < CLI_MAX_VARS; n++)
+                n < CLI_MAX_VARS; n++)
         {
             char idx[32];
             snprintf(idx,
@@ -228,7 +228,7 @@ int cli_intercept_cmd_seq(const char *p)
         char *end1 = NULL;
         s1 = strtod(p, &end1);
         if(end1 != NULL
-           && *end1 != '\0')
+                && *end1 != '\0')
         {
             const char *p2 =
                 strip_ws(end1);
@@ -236,7 +236,7 @@ int cli_intercept_cmd_seq(const char *p)
             double v2 =
                 strtod(p2, &end2);
             if(end2 != NULL
-               && *end2 != '\0')
+                    && *end2 != '\0')
             {
                 const char *p3 =
                     strip_ws(end2);
@@ -261,8 +261,8 @@ int cli_intercept_cmd_seq(const char *p)
         if(step > 0.0)
         {
             for(double v = s1;
-                v <= s2 + 1e-12;
-                v += step)
+                    v <= s2 + 1e-12;
+                    v += step)
             {
                 printf("%g\n", v);
             }
@@ -270,8 +270,8 @@ int cli_intercept_cmd_seq(const char *p)
         else if(step < 0.0)
         {
             for(double v = s1;
-                v >= s2 - 1e-12;
-                v += step)
+                    v >= s2 - 1e-12;
+                    v += step)
             {
                 printf("%g\n", v);
             }
@@ -291,10 +291,10 @@ int cli_intercept_cmd_waitfor_stream(const char *p)
         char sname[CLI_VAR_NAMELEN];
         int si = 0;
         while(*p != '\0'
-              && *p != ' '
-              && *p != '\t'
-              && si
-              < CLI_VAR_NAMELEN - 1)
+                && *p != ' '
+                && *p != '\t'
+                && si
+                < CLI_VAR_NAMELEN - 1)
         {
             sname[si++] = *p++;
         }
@@ -332,7 +332,7 @@ int cli_intercept_cmd_waitfor_stream(const char *p)
                 &wnow);
             double elapsed =
                 (double)(wnow.tv_sec
-                    - wstart.tv_sec)
+                         - wstart.tv_sec)
                 + (double)(
                     wnow.tv_nsec
                     - wstart.tv_nsec)
@@ -359,10 +359,10 @@ int cli_intercept_cmd_waitfor_fps(const char *p)
         char fname[CLI_VAR_NAMELEN];
         int fi = 0;
         while(*p != '\0'
-              && *p != ' '
-              && *p != '\t'
-              && fi
-              < CLI_VAR_NAMELEN - 1)
+                && *p != ' '
+                && *p != '\t'
+                && fi
+                < CLI_VAR_NAMELEN - 1)
         {
             fname[fi++] = *p++;
         }
@@ -399,7 +399,7 @@ int cli_intercept_cmd_waitfor_fps(const char *p)
                 &wnow);
             double elapsed =
                 (double)(wnow.tv_sec
-                    - wstart.tv_sec)
+                         - wstart.tv_sec)
                 + (double)(
                     wnow.tv_nsec
                     - wstart.tv_nsec)
@@ -416,4 +416,3 @@ int cli_intercept_cmd_waitfor_fps(const char *p)
     }
     return 0;
 }
-

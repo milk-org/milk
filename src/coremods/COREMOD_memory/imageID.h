@@ -28,11 +28,11 @@ static inline imageID RegisterIMGID(
 {
     imageID ID = -1;
 
-    if (imagearray == NULL)
+    if(imagearray == NULL)
     {
         // If no array provided, we close the image and return 0 (success) or -1 (fail)
         // This corresponds to non-CLI mode check
-        if (img->ID != -1)
+        if(img->ID != -1)
         {
             ImageStreamIO_closeIm(img->im);
             free(img->im);
@@ -47,7 +47,7 @@ static inline imageID RegisterIMGID(
     if(ID != -1)
     {
         // Already loaded: close the one we just opened and point to the existing one
-        if (img->im != NULL)
+        if(img->im != NULL)
         {
             ImageStreamIO_closeIm(img->im);
             free(img->im);
@@ -62,7 +62,7 @@ static inline imageID RegisterIMGID(
     {
         // Not loaded: find slot and move it
         ID = next_avail_image_ID(-1);
-        if (ID != -1)
+        if(ID != -1)
         {
             // We assume imagearray has enough space and ID is valid index
             // Move content
@@ -76,14 +76,15 @@ static inline imageID RegisterIMGID(
             // img.createcnt = dcimg[img.ID].createcnt; // Should be set? ImageStreamIO doesn't set createcnt?
             // Actually createcnt is in IMAGE struct, so it was copied.
 
-            imagearray[ID].used = 1; // next_avail_image_ID sets this, but just to be sure if we used different logic
+            imagearray[ID].used =
+                1; // next_avail_image_ID sets this, but just to be sure if we used different logic
 
             imgid_update_creationparams(img);
         }
         else
         {
             // No space available
-            if (img->im != NULL)
+            if(img->im != NULL)
             {
                 ImageStreamIO_closeIm(img->im);
                 free(img->im);
@@ -148,7 +149,7 @@ static inline imageID _resolveIMGID_impl(
     {
         if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
-            if (img->name[0] == '\0')
+            if(img->name[0] == '\0')
             {
                 const char *fpskey =
                     (img->fpskeyword[0] != '\0')
@@ -158,38 +159,38 @@ static inline imageID _resolveIMGID_impl(
                 if(img->fpskeyword[0] != '\0')
                 {
                     fprintf(stderr,
-                        "\n\033[1;31mABORT\033[0m "
-                        "resolveIMGID: stream name "
-                        "is empty.\n"
-                        "  FPS parameter : %s\n"
-                        "  Called from   : %s:%d"
-                        " in %s()\n"
-                        "  Fix: set the missing "
-                        "parameter, e.g.:\n"
-                        "    milk-fps-set %s"
-                        " <stream_name>\n",
-                        fpskey,
-                        caller_file, caller_line,
-                        caller_func,
-                        fpskey);
+                            "\n\033[1;31mABORT\033[0m "
+                            "resolveIMGID: stream name "
+                            "is empty.\n"
+                            "  FPS parameter : %s\n"
+                            "  Called from   : %s:%d"
+                            " in %s()\n"
+                            "  Fix: set the missing "
+                            "parameter, e.g.:\n"
+                            "    milk-fps-set %s"
+                            " <stream_name>\n",
+                            fpskey,
+                            caller_file, caller_line,
+                            caller_func,
+                            fpskey);
                 }
                 else
                 {
                     fprintf(stderr,
-                        "\n\033[1;31mABORT\033[0m "
-                        "resolveIMGID: stream name "
-                        "is empty.\n"
-                        "  FPS parameter : %s\n"
-                        "  Called from   : %s:%d"
-                        " in %s()\n"
-                        "  Fix: set the missing "
-                        "parameter and tag this "
-                        "IMGID with imgid_setfpskeyword() "
-                        "to enable a specific "
-                        "milk-fps-set suggestion.\n",
-                        fpskey,
-                        caller_file, caller_line,
-                        caller_func);
+                            "\n\033[1;31mABORT\033[0m "
+                            "resolveIMGID: stream name "
+                            "is empty.\n"
+                            "  FPS parameter : %s\n"
+                            "  Called from   : %s:%d"
+                            " in %s()\n"
+                            "  Fix: set the missing "
+                            "parameter and tag this "
+                            "IMGID with imgid_setfpskeyword() "
+                            "to enable a specific "
+                            "milk-fps-set suggestion.\n",
+                            fpskey,
+                            caller_file, caller_line,
+                            caller_func);
                 }
                 fflush(stderr);
                 abort();
@@ -350,9 +351,9 @@ static inline imageID imcreatelikewiseIMGID(
          * re-use after the create_image_ID call.
          */
         imageID old_id = image_ID(
-            target_img->name,
-            dcimg,
-            dcnimg);
+                             target_img->name,
+                             dcimg,
+                             dcnimg);
         uint64_t old_createcnt = 0;
         int existed = 0;
 
@@ -384,8 +385,8 @@ static inline imageID imcreatelikewiseIMGID(
          * (re-)created by comparing createcnt.
          */
         int reused = (existed
-            && target_img->createcnt
-               == old_createcnt);
+                      && target_img->createcnt
+                      == old_createcnt);
 
         if(reused)
         {
@@ -469,7 +470,7 @@ static inline IMGID _stream_connect_create_2D_impl(
      * which module variable was empty — look it up in source to
      * find the associated FPS parameter key.
      */
-    if (imname == NULL || imname[0] == '\0')
+    if(imname == NULL || imname[0] == '\0')
     {
         fprintf(stderr,
                 "\n\033[1;31mABORT\033[0m stream_connect_create_2D: "

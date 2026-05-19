@@ -29,12 +29,13 @@ errno_t images_to_cube(const char *restrict img_name,
 // FPS V2
 // ==========================================
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "imgs2cube",
     .cmdkey      = "imgs2cube",
     .description = "combine individual images into cube",
     .description_long =
-        "Assemble multiple 2D FITS files into a single 3D cube. Input files must have identical dimensions. The z-axis corresponds to the file sequence."
+    "Assemble multiple 2D FITS files into a single 3D cube. Input files must have identical dimensions. The z-axis corresponds to the file sequence."
 };
 
 static char    *imgname;
@@ -66,9 +67,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 // Register CLI command(s)
@@ -118,7 +119,8 @@ errno_t images_to_cube(
         imgid_make_from_name(imname);
     resolveIMGID(&img1, ERRMODE_WARN,
                  dcimg, dcnimg);
-    if (img1.ID == -1) {
+    if(img1.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -135,16 +137,16 @@ errno_t images_to_cube(
             xsize, ysize, nbframes);
     imgcube.mdt->shared = 0;
     imgcube.im = (IMAGE *) calloc(
-        1, sizeof(IMAGE));
+                     1, sizeof(IMAGE));
     imgid_mkimage(&imgcube);
 
     for(uint32_t ii = 0; ii < xsize; ii++)
         for(uint32_t jj = 0; jj < ysize; jj++)
         {
             imgcube.im->array.F[
-                jj * xsize + ii] =
-                img1.im->array.F[
-                    jj * xsize + ii];
+            jj * xsize + ii] =
+                    img1.im->array.F[
+             jj * xsize + ii];
         }
 
     for(frame = 1; frame < nbframes; frame++)
@@ -169,23 +171,23 @@ errno_t images_to_cube(
         else
         {
             if((xsize != img1.md->size[0])
-                || (ysize
-                    != img1.md->size[1]))
+                    || (ysize
+                        != img1.md->size[1]))
             {
                 PRINT_ERROR(
                     "Image has wrong size");
                 return RETURN_FAILURE;
             }
             for(uint32_t ii = 0;
-                ii < xsize; ii++)
+                    ii < xsize; ii++)
                 for(uint32_t jj = 0;
-                    jj < ysize; jj++)
+                        jj < ysize; jj++)
                 {
                     imgcube.im->array.F[
                         frame * xsize * ysize
                         + jj * xsize + ii] =
-                        img1.im->array.F[
-                            jj * xsize + ii];
+                            img1.im->array.F[
+                                jj * xsize + ii];
                 }
         }
         printf("Done\n");

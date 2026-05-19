@@ -87,7 +87,7 @@ void fps_loop_override_delay(
 int fps_generic_conf_cb(
     const char *fps_name,
     int         loop,
-    errno_t   (*confcheck_fn)(void)
+    errno_t (*confcheck_fn)(void)
 );
 
 

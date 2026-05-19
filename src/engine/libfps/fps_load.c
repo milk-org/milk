@@ -53,8 +53,8 @@ long function_parameter_structure_load(char *fpsname)
         {
             fpsarray[fpsID].NBparam =
                 fps_connect(fpsname,
-                                                  &fpsarray[fpsID],
-                                                  FPSCONNECT_SIMPLE);
+                            &fpsarray[fpsID],
+                            FPSCONNECT_SIMPLE);
             if(fpsarray[fpsID].NBparam < 1)
             {
                 printf("--- cannot load FPS %s\n", fpsname);

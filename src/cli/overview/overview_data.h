@@ -57,7 +57,8 @@ ov_pid_status_t pid_get_status(pid_t pid);
  */
 int pid_get_core_utilization(pid_t pid, int *cores, int max_cores);
 
-typedef struct {
+typedef struct
+{
     uint64_t minflt;
     uint64_t majflt;
     uint64_t threads;
@@ -71,14 +72,15 @@ typedef struct {
  */
 int pid_get_advanced_stats(pid_t pid, ov_advanced_stats_t *out);
 
-typedef struct {
+typedef struct
+{
     uint64_t instructions;
     uint64_t cache_misses;
     uint64_t branch_misses;
     uint64_t l1d_misses;
     uint64_t llc_misses;
     uint64_t dtlb_misses;
-    
+
     double inst_per_loop;
     double cache_miss_per_loop;
     double branch_miss_per_loop;
@@ -194,7 +196,7 @@ typedef struct
     uint32_t md_status;
     pid_t    confpid;
     pid_t    runpid;
-    
+
     int64_t  mem_rss_kb;
     int      conf_alive;
     int      run_alive;
@@ -208,18 +210,18 @@ typedef struct
     /* stream-type parameters (for edges) */
     int      nb_stream_params;
     char     stream_param_name[OV_FPS_MAX_STREAM_PARAMS]
-             [FUNCTION_PARAMETER_STRMAXLEN];
+    [FUNCTION_PARAMETER_STRMAXLEN];
     char     stream_param_value[OV_FPS_MAX_STREAM_PARAMS]
-             [FUNCTION_PARAMETER_STRMAXLEN];
+    [FUNCTION_PARAMETER_STRMAXLEN];
     uint64_t stream_param_flags[OV_FPS_MAX_STREAM_PARAMS];
 
 #define OV_FPS_MAX_DISP_PARAMS 100
     /* display parameters */
     int      nb_disp_params;
     char     disp_param_name[OV_FPS_MAX_DISP_PARAMS]
-             [FUNCTION_PARAMETER_STRMAXLEN];
+    [FUNCTION_PARAMETER_STRMAXLEN];
     char     disp_param_value[OV_FPS_MAX_DISP_PARAMS]
-             [FUNCTION_PARAMETER_STRMAXLEN];
+    [FUNCTION_PARAMETER_STRMAXLEN];
     uint32_t disp_param_type[OV_FPS_MAX_DISP_PARAMS];
     uint64_t disp_param_flags[OV_FPS_MAX_DISP_PARAMS];
 
@@ -234,13 +236,15 @@ typedef struct
     int      is_new;
 } OV_FPS;
 
-typedef struct {
+typedef struct
+{
     char name[80];
     int is_dir;
     int param_idx;
 } fps_tree_item_t;
 
-int ov_get_fps_tree_items(const OV_FPS *fps, const char *path, fps_tree_item_t *items, int max_items);
+int ov_get_fps_tree_items(const OV_FPS *fps, const char *path, fps_tree_item_t *items,
+                          int max_items);
 
 
 

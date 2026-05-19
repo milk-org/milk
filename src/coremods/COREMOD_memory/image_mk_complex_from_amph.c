@@ -20,12 +20,13 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "ap2c",
     .cmdkey      = "ap2c",
     .description = "amplitude, phase -> complex",
     .description_long =
-        "Construct a complex image from separate amplitude and phase images. Computes real = amp * cos(pha), imag = amp * sin(pha)."
+    "Construct a complex image from separate amplitude and phase images. Computes real = amp * cos(pha), imag = amp * sin(pha)."
 };
 
 
@@ -34,11 +35,11 @@ static FPS_APP_INFO FPS_app_info = {
  * ============================================================= */
 
 static char inampimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imamp";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imamp";
 static char inphaimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "impha";
+     FUNCTION_PARAMETER_STRMAXLEN] = "impha";
 static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imc";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imc";
 
 
 /* ================================================================
@@ -75,14 +76,16 @@ errno_t mk_complex_from_amph_IMGID(
     resolveIMGID(
         imginamp, ERRMODE_WARN,
         dcimg, dcnimg);
-    if(imginamp->ID == -1) {
+    if(imginamp->ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
     resolveIMGID(
         imginpha, ERRMODE_WARN,
         dcimg, dcnimg);
-    if(imginpha->ID == -1) {
+    if(imginpha->ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -112,14 +115,17 @@ errno_t mk_complex_from_amph_IMGID(
     uint32_t zsize    = 1;
     uint32_t zsizeamp = 1;
     uint32_t zsizepha = 1;
-    if(naxisamp > 2) {
+    if(naxisamp > 2)
+    {
         zsizeamp = imginamp->md->size[2];
     }
-    if(naxispha > 2) {
+    if(naxispha > 2)
+    {
         zsizepha = imginpha->md->size[2];
     }
     zsize = zsizeamp;
-    if(zsizepha > zsizeamp) {
+    if(zsizepha > zsizeamp)
+    {
         zsize = zsizepha;
     }
 
@@ -160,7 +166,7 @@ _Pragma("omp for simd") \
     }
 
     if((datatype_am == _DATATYPE_FLOAT)
-        && (datatype_ph == _DATATYPE_FLOAT))
+            && (datatype_ph == _DATATYPE_FLOAT))
     {
         MK_COMPLEX_LOOP(_DATATYPE_COMPLEX_FLOAT, float, float, complex_float, F, F, CF, cosf, sinf)
     }
@@ -206,7 +212,7 @@ errno_t mk_complex_from_amph(
     imgoutC.mdt->shared = sharedmem;
 
     errno_t ret = mk_complex_from_amph_IMGID(
-        &imgamp, &imgpha, &imgoutC);
+                      &imgamp, &imgpha, &imgoutC);
     imgid_free(&imgamp);
     imgid_free(&imgpha);
     imgid_free(&imgoutC);
@@ -262,9 +268,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t

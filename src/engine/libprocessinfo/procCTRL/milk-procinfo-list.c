@@ -70,7 +70,8 @@ static void print_help(
     printf("  %s$ milk-procinfo-list%s %smyproc.*%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-procinfo-info:inspect processinfo memory contents",
         "milk-procinfo-rm:remove a processinfo instance",
         "milk-procCTRL:launch the processinfo dashboard TUI"
@@ -84,30 +85,34 @@ int main(
 {
     int action = milk_help_init(argc, argv,
                                 PIL_DESC, PIL_DESC_LONG);
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
+    }
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
     }
 
     int opt;
-    static struct option long_options[] = {
+    static struct option long_options[] =
+    {
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
-    while ((opt = getopt_long(argc, argv, "h",
-                              long_options, NULL)) != -1)
+    while((opt = getopt_long(argc, argv, "h",
+                             long_options, NULL)) != -1)
     {
-        switch (opt)
+        switch(opt)
         {
-            case 'h': break; /* handled above */
-            default:
-                printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
-                print_help(argv[0], 1);
-                return 1;
+        case 'h':
+            break; /* handled above */
+        default:
+            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+            print_help(argv[0], 1);
+            return 1;
         }
     }
 
@@ -116,12 +121,12 @@ int main(
     regex_t regex;
     int use_regex = 0;
 
-    if (optind < argc)
+    if(optind < argc)
     {
         pattern = argv[optind];
         int ret = regcomp(&regex, pattern,
                           REG_EXTENDED | REG_NOSUB);
-        if (ret != 0)
+        if(ret != 0)
         {
             char errbuf[128];
             regerror(ret, &regex, errbuf, sizeof(errbuf));
@@ -137,10 +142,10 @@ int main(
     processinfo_procdirname(procdname);
 
     DIR *dir = opendir(procdname);
-    if (dir == NULL)
+    if(dir == NULL)
     {
         PRINT_ERROR("opendir: %s", strerror(errno));
-        if (use_regex)
+        if(use_regex)
         {
             regfree(&regex);
         }
@@ -150,24 +155,24 @@ int main(
     printf(C_TITLE "%-30s %-10s %-10s" C_RST "\n",
            "Process Name", "PID", "Status");
     printf(C_DIM);
-    for (int i = 0; i < 60; i++)
+    for(int i = 0; i < 60; i++)
     {
         putchar('-');
     }
     printf(C_RST "\n");
 
     struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL)
+    while((entry = readdir(dir)) != NULL)
     {
         const char *fname = entry->d_name;
 
         /* Match proc.NAME.PID.shm */
-        if (strncmp(fname, "proc.", 5) != 0)
+        if(strncmp(fname, "proc.", 5) != 0)
         {
             continue;
         }
         int flen = (int) strlen(fname);
-        if (flen < 10 || strcmp(fname + flen - 4, ".shm") != 0)
+        if(flen < 10 || strcmp(fname + flen - 4, ".shm") != 0)
         {
             continue;
         }
@@ -175,26 +180,26 @@ int main(
         /* Find the dot separating NAME and PID:
          * walk backward from before .shm to find last '.' */
         const char *q = fname + flen - 5; /* last char before .shm */
-        while (q > fname + 5 && *q != '.')
+        while(q > fname + 5 && *q != '.')
         {
             q--;
         }
-        if (*q != '.')
+        if(*q != '.')
         {
             continue;
         }
 
         /* Parse PID */
         pid_t pid = (pid_t) atoi(q + 1);
-        if (pid <= 0)
+        if(pid <= 0)
         {
             continue;
         }
 
         /* Extract process name: fname+5 .. q-1 */
         int pname_len = (int)(q - (fname + 5));
-        if (pname_len <= 0 ||
-            pname_len >= STRINGMAXLEN_PROCESSINFO_NAME)
+        if(pname_len <= 0 ||
+                pname_len >= STRINGMAXLEN_PROCESSINFO_NAME)
         {
             continue;
         }
@@ -204,8 +209,8 @@ int main(
         pname[pname_len] = '\0';
 
         /* Apply optional regex filter */
-        if (use_regex &&
-            regexec(&regex, pname, 0, NULL, 0) != 0)
+        if(use_regex &&
+                regexec(&regex, pname, 0, NULL, 0) != 0)
         {
             continue;
         }
@@ -217,7 +222,7 @@ int main(
 
         int loopstat = -1; /* unknown */
         int fd = open(fullpath, O_RDONLY);
-        if (fd != -1)
+        if(fd != -1)
         {
             PROCESSINFO *pinfo =
                 (PROCESSINFO *) mmap(
@@ -227,11 +232,11 @@ int main(
                     MAP_SHARED,
                     fd,
                     0);
-            if (pinfo != MAP_FAILED)
+            if(pinfo != MAP_FAILED)
             {
                 loopstat = pinfo->loopstat;
                 /* Prefer the name stored inside the struct */
-                if (pinfo->name[0] != '\0')
+                if(pinfo->name[0] != '\0')
                 {
                     strncpy(pname, pinfo->name,
                             sizeof(pname) - 1);
@@ -249,9 +254,9 @@ int main(
 
         int alive = (kill(pid, 0) == 0 || errno == EPERM);
 
-        if (alive)
+        if(alive)
         {
-            if (loopstat == PROCESSINFO_LOOPSTAT_STOP)
+            if(loopstat == PROCESSINFO_LOOPSTAT_STOP)
             {
                 status_str = C_TYPE "STOPPED" C_RST;
             }
@@ -264,7 +269,7 @@ int main(
         }
         else
         {
-            if (loopstat == PROCESSINFO_LOOPSTAT_STOP)
+            if(loopstat == PROCESSINFO_LOOPSTAT_STOP)
             {
                 status_str = C_TYPE "STOPPED" C_RST;
             }
@@ -281,7 +286,7 @@ int main(
     }
 
     closedir(dir);
-    if (use_regex)
+    if(use_regex)
     {
         regfree(&regex);
     }

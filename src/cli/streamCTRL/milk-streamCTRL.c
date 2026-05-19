@@ -56,7 +56,8 @@ static void print_help(const char *progname, int mh_color)
            "  managing shared memory streams in real-time.\n\n");
 
     milk_help_section("Options", mh_color);
-    printf("  %s %s                   Override SHM directory (default: /dev/shm)\n", MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
+    printf("  %s %s                   Override SHM directory (default: /dev/shm)\n", MH(MH_OPT, "-d"),
+           MH(MH_ARG, "DIR"));
     printf("  %s             Enable wave background animation\n", MH(MH_OPT, "-w, --wave"));
     printf("  %s             Show this help and exit\n", MH(MH_OPT, "-h, --help"));
     printf("  %s             One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
@@ -74,7 +75,8 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s                           Click to select stream entry\n", MH(MH_CMD, "Mouse"));
     printf("  %s                          Scroll selection up/down\n\n", MH(MH_CMD, "Scroll"));
 
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-stream-info:inspect stream metadata and data",
         "milk-stream-list:list active shared memory streams",
         "milk-streamCTRL-cli:command-line stream control"
@@ -91,13 +93,13 @@ int main(int argc, char *argv[])
                                 "interactive stream monitor TUI",
                                 "Launches the interactive Terminal User Interface (TUI) for monitoring and\n"
                                 "managing shared memory streams in real-time.");
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
     }
 
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(progname, mh_color);
         return 0;
@@ -107,7 +109,7 @@ int main(int argc, char *argv[])
     for(int i = 1; i < argc; i++)
     {
         if((strcmp(argv[i], "-w") == 0) ||
-           (strcmp(argv[i], "--wave") == 0))
+                (strcmp(argv[i], "--wave") == 0))
         {
             setenv("MILK_STREAMCTRL_WAVE", "1", 1);
         }
