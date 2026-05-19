@@ -21,11 +21,17 @@ typedef int errno_t;
 
 
 
+/**
+ * @brief Print stream processing trace details.
+ *
+ * Shows the semaphore post chain for debugging
+ * stream propagation paths.
+ */
 errno_t streamCTRL_print_SPTRACE_details(
     IMAGE   *streamCTRLimages,
-    imageID  ID,
+    imageID ID,
     pid_t   *upstreamproc,
-    int      NBupstreamproc,
+    int     NBupstreamproc,
     uint32_t print_pid_mode
 )
 {

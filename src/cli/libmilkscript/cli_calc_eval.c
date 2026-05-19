@@ -68,6 +68,11 @@ static inline int get_prec(cli_token_type t)
     }
 }
 
+/**
+ * @brief Check if an operator is right-associative.
+ *
+ * Used by the expression parser for precedence.
+ */
 static inline int is_right_assoc(cli_token_type t)
 {
     return (t == TOK_OP_CARET)

@@ -7,31 +7,36 @@
  * any FPS-based module.
  */
 
-#include <stdio.h>
-#include <string.h>
 
 #include "CLIcore.h"
-#include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "fps_cli_init.h"
-#include "fps_cli_query.h"
-#include "fps_cli_sync.h"
-#include "fps_connect.h"
-#include "fps_disconnect.h"
-#include "fps_getFPSargs.h"
-#include "fps_lifecycle.h"
-#include "fps_local_store.h"
-#include "fps_processinfo_entries.h"
-#include "libmilkdata/milkdata_clicmd.h"
 
 
+/**
+ * @brief Generic CLIfunction for FPS-based modules.
+ *
+ * Implements the full milk CLI lifecycle for any FPS module:
+ * parses the FPS name (local vs shared), connects or creates
+ * the FPS, syncs CLI arguments into FPS parameters, sets up
+ * processinfo if requested, and calls the compute function.
+ *
+ * Handles special cases: fpsinit, "?" query, ignore codes.
+ * Local FPS names (prefixed '_') operate in-process; shared
+ * FPS names use shared memory.
+ *
+ * @param app_info    FPS application identity
+ * @param farg        CLI argument definitions
+ * @param cmdata      CLI command metadata
+ * @param bindings    Parameter bindings (C var <-> FPS)
+ * @param nb_b        Number of bindings
+ * @param compute_fn  Compute function to invoke
+ * @return RETURN_SUCCESS on completion
+ */
 errno_t fps_generic_CLIfunction(
     FPS_APP_INFO    *app_info,
     CLICMDARGDEF    *farg,
     CLICMDDATA      *cmdata,
     FPS_CLI_BINDING *bindings,
-    int              nb_b,
+    int             nb_b,
     fps_compute_fn   compute_fn
 )
 {
@@ -219,6 +224,18 @@ errno_t fps_generic_CLIfunction(
 }
 
 
+/**
+ * @brief Fill CLI argument example strings from binding
+ *        default values.
+ *
+ * For each binding, formats its current C variable value
+ * into the corresponding farg[ii].example string.  This
+ * provides meaningful defaults in help output.
+ *
+ * @param farg      CLI argument definitions (examples filled)
+ * @param bindings  Parameter bindings with current values
+ * @param nb_b      Number of bindings
+ */
 void fps_fill_farg_examples(
     CLICMDARGDEF    *farg,
     FPS_CLI_BINDING *bindings,
@@ -320,6 +337,13 @@ void fps_fill_farg_examples(
  * Runs when libmilkfpsCLI.so is loaded.
  */
 __attribute__((constructor))
+/**
+ * @brief Register an FPS CLI command at library load time.
+ *
+ * Called via __attribute__((constructor)) from
+ * generated registration functions. Populates the
+ * CLIcmddata fields and calls RegisterCLIcmd.
+ */
 static void fps_cli_register(void)
 {
     fps_generic_CLIfunction_ptr =

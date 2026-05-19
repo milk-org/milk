@@ -6,22 +6,22 @@
 #include <fcntl.h> // for open
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <unistd.h> // for close
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
-#include "fps_shmdirname.h"
 
 #ifdef MILK_MODULE
-#include "CLIcore.h"
 #endif
 
 
+/**
+ * @brief Create an FPS shared memory segment.
+ *
+ * Allocates or opens the SHM file, maps the FPS
+ * metadata and parameter array, and initializes
+ * the structure. If the FPS already exists, connects
+ * to it instead.
+ */
 errno_t function_parameter_struct_create(
     int NBparamMAX,
     const char *name
@@ -210,6 +210,12 @@ fail:
     return rv;
 }
 
+/**
+ * @brief Reallocate the FPS parameter array.
+ *
+ * Grows the shared memory segment to hold more
+ * parameters. Existing parameter data is preserved.
+ */
 errno_t function_parameter_struct_realloc(
     FPS *fps,
     int NBparamMAX_new

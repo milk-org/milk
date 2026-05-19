@@ -25,6 +25,9 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
+/**
+ * @brief Handler: evaluate an arithmetic expression.
+ */
 int cli_intercept_cmd_let(const char *p)
 {
     if(starts_with(p, "let ")
@@ -134,6 +137,9 @@ int cli_intercept_cmd_let(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: evaluate a string as a command.
+ */
 int cli_intercept_cmd_eval(const char *p)
 {
     if(starts_with(p, "eval ")
@@ -168,6 +174,9 @@ int cli_intercept_cmd_eval(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: display the type of a variable.
+ */
 int cli_intercept_cmd_type(const char *p)
 {
     if(starts_with(p, "type ")

@@ -42,6 +42,12 @@
 #define RL_COLORRESET  "\001\033[0m\002"
 
 
+/**
+ * @brief Dispatch shell built-in commands.
+ *
+ * Handles cd, echo, printf, and other standard
+ * shell builtins within the milk interpreter.
+ */
 int cli_handle_shell_builtins(void)
 {
     if(data.CLIcmdline[0] == '!')

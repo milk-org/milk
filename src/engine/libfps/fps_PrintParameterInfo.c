@@ -5,10 +5,7 @@
 
 #include <limits.h> // CHAR_BIT
 
-#include <stdio.h>
 
-#include "milkDebugTools.h"
-#include "fps.h"
 #define AECBOLDHIGREEN ""
 #define AECNORMAL      ""
 #define TUI_printfw(...) printf(__VA_ARGS__)

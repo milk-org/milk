@@ -7,27 +7,17 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <signal.h>
-#include <errno.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <string.h>
 #include <getopt.h>
 #include <dirent.h>
-#include <time.h>
 
-#include "processinfo.h"
 #include "processtools.h"
 #include "processinfo_procdirname.h"
 #include "processinfo_shm_list_create.h"
-#include "processinfo_shm_link.h"
-#include "processinfo_shm_close.h"
-#include "processinfo_shm_create.h"
 #include "milkDebugTools.h"
 #include "procCTRL_PIDcollectSystemInfo.h"
 #include "processinfo_scan_shm.h"
@@ -35,6 +25,11 @@
 
 static int loopOK = 1;
 
+/**
+ * @brief Signal handler for the process scanner daemon.
+ *
+ * Sets the exit flag on SIGINT/SIGTERM.
+ */
 void handle_signal(int sig) {
     (void)sig;
     loopOK = 0;
@@ -45,6 +40,12 @@ static PROCESSINFO *pinfo_mappings[PROCESSINFOLISTSIZE];
 static int          pinfo_fds[PROCESSINFOLISTSIZE];
 
 // Inline simplified CPU load collector
+/**
+ * @brief Read per-CPU load from /proc/stat.
+ *
+ * Computes user/system/idle percentages for
+ * each online CPU.
+ */
 void Scan_GetCPUloads(PROCSCAN_SHM *scan_shm) {
     static long long prev_user[MAXNBCPU], prev_nice[MAXNBCPU], prev_system[MAXNBCPU];
     static long long prev_idle[MAXNBCPU], prev_iowait[MAXNBCPU], prev_irq[MAXNBCPU], prev_softirq[MAXNBCPU], prev_steal[MAXNBCPU];
@@ -86,6 +87,12 @@ void Scan_GetCPUloads(PROCSCAN_SHM *scan_shm) {
     fclose(fp);
 }
 
+/**
+ * @brief Create the scanner shared memory segment.
+ *
+ * Allocates the SHM file for communicating process
+ * listing data to procCTRL TUI clients.
+ */
 void *create_scan_shm(const char *name, size_t size, int *fd) {
     *fd = open(name, O_RDWR | O_CREAT, 0666);
     if (*fd == -1) return MAP_FAILED;
@@ -102,6 +109,12 @@ void *create_scan_shm(const char *name, size_t size, int *fd) {
     return ptr;
 }
 
+/**
+ * @brief Rebuild the process list from /proc.
+ *
+ * Scans all processinfo SHM files and updates
+ * the scanner shared memory with current data.
+ */
 void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm) {
     printf("Rebuilding process list from %s...\n", procdname);
     for (long i = 0; i < PROCESSINFOLISTSIZE; i++) {

@@ -8,18 +8,23 @@
 #include <sys/syscall.h> // needed for tid = syscall(SYS_gettid);
 
 #include "fps.h"
-#include "fps_internal.h"
 
-#include "timeutils.h"
 
-#include "fps_GetParamIndex.h"
-#include "fps_WriteParameterToDisk.h"
-#include "fps_printparameter_valuestring.h"
 
 // Prototype for ported or stubbed function
 int save_fits(const char *imname, const char *filename);
 
 
+/**
+ * @brief Save a single FPS parameter to disk.
+ *
+ * Writes the current value of the named parameter to the
+ * FPS data directory as a text file.
+ *
+ * @param fpsentry   Connected FPS
+ * @param paramname  Dot-separated parameter keyword
+ * @return RETURN_SUCCESS
+ */
 int functionparameter_SaveParam2disk(
     FPS *fpsentry,
     const char                *paramname
@@ -39,6 +44,16 @@ int functionparameter_SaveParam2disk(
 }
 
 
+/**
+ * @brief Save all FPS parameters to a directory.
+ *
+ * Writes a .fps file with all parameter values,
+ * timestamped with PID/TID metadata.
+ *
+ * @param fpsentry  Connected FPS
+ * @param dirname   Target directory (created if absent)
+ * @return RETURN_SUCCESS
+ */
 int functionparameter_SaveFPS2disk_dir(FPS *fpsentry,
                                        char                      *dirname)
 {
@@ -337,6 +352,13 @@ static char *get_filename_ext(const char *filename)
 }
 
 
+/**
+ * @brief Strip the file extension from a filename.
+ *
+ * Returns a malloc'd copy of the filename with
+ * everything after (and including) the last '.' removed.
+ * Caller must free the returned string.
+ */
 static char *remove_filename_ext(const char *filename)
 {
     char *tmpstring;
@@ -357,7 +379,9 @@ static char *remove_filename_ext(const char *filename)
 
 /** @brief Copy file
  */
-static errno_t filecopy(char *sourcefilename, char *destfilename)
+static errno_t filecopy(
+    char *sourcefilename,
+    char *destfilename)
 {
     FILE *fp1, *fp2;
     char  ch;

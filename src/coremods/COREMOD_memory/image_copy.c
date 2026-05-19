@@ -36,6 +36,11 @@ imageID copy_image_ID(
     const char *newname, int shared);
 imageID copy_image_ID_IMGID(
     IMGID *imgin, IMGID *imgout, int shared);
+/**
+ * @brief Rename an image in the image array.
+ *
+ * Updates the name field without copying data.
+ */
 imageID chname_image_ID(
     const char *ID_name,
     const char *new_name);
@@ -384,6 +389,11 @@ imageID chname_image_ID_IMGID(
     return imgin->ID;
 }
 
+/**
+ * @brief Rename an image in the image array.
+ *
+ * Updates the name field without copying data.
+ */
 imageID chname_image_ID(
     const char *restrict ID_name,
     const char *restrict new_name

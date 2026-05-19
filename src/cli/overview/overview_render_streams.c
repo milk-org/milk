@@ -7,9 +7,12 @@
 
 #include "overview_render_internal.h"
 
+/**
+ * @brief Render the streams panel in the overview.
+ */
 void ov_render_streams_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
     const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_streams;

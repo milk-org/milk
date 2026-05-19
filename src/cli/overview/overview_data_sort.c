@@ -23,6 +23,9 @@ static int ov_sort_dir_mul = 1;
  */
 static int8_t g_sort_depths[OV_MAX_NODES];
 
+/**
+ * @brief Compute graph depth for topological sorting.
+ */
 void ov_sort_set_depths(const int8_t *depths)
 {
     memcpy(g_sort_depths, depths, sizeof(g_sort_depths));
@@ -38,6 +41,9 @@ static int sort_stream_by_name(
         ((const OV_STREAM *) b)->name);
 }
 
+/**
+ * @brief Sort streams by data type.
+ */
 static int sort_stream_by_type(
     const void *a, const void *b)
 {
@@ -48,6 +54,9 @@ static int sort_stream_by_type(
     return 0;
 }
 
+/**
+ * @brief Sort streams by total element count.
+ */
 static int sort_stream_by_size(
     const void *a, const void *b)
 {

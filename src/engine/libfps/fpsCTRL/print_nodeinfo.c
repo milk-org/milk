@@ -3,13 +3,15 @@
  * @brief Print nodeinfo module
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "fps.h"
 #include "fpsCTRL_TUIcompat.h"
-#include "print_nodeinfo.h"
 
+/**
+ * @brief Print detailed info for the selected tree node.
+ *
+ * Displays the node's full keyword path, type,
+ * description, and value history.
+ */
 void fpsCTRLscreen_print_nodeinfo(
     FPS *fps,
     KEYWORD_TREE_NODE *keywnode,

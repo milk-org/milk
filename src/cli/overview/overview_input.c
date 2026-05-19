@@ -66,10 +66,10 @@ extern int ov_help_toggle_at(
  * Return: tab index [0..num_tabs-1], or -1 if no tab hit.
  */
 static int hit_panel_tab(
-    int         mc,
-    int         panel_col,
+    int        mc,
+    int        panel_col,
     const char **tabs,
-    int         num_tabs)
+    int        num_tabs)
 {
     int cur = panel_col + 2;
     for (int ii = 0; ii < num_tabs; ii++)
@@ -225,10 +225,16 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
 static const OV_PROC *ov_input_get_sel_proc(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m);
+/**
+ * @brief Get the currently selected FPS entry.
+ */
 static const OV_FPS *ov_input_get_sel_fps(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m);
 
+/**
+ * @brief Count visible items after filtering.
+ */
 static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int count = 0;
@@ -393,9 +399,9 @@ static void ov_input__fps_header_click(
 }
 
 static void ov_input__exec_preview_btn(
-    int              btn_id,
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+    int            btn_id,
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
@@ -2062,6 +2068,9 @@ static const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL
     return NULL;
 }
 
+/**
+ * @brief Get the currently selected FPS entry.
+ */
 static const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (lay->sel_name_fps[0] == '\0') return NULL;
@@ -2874,9 +2883,9 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
 }
 
 int ov_handle_key(
-    int              key,
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+    int            key,
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     if (key == OV_KEY_NONE)
     {

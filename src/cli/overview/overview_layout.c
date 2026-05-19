@@ -7,6 +7,12 @@
 #include "overview_ansi.h"
 #include "overview_layout.h"
 
+/**
+ * @brief Compute panel layout from terminal dimensions.
+ *
+ * Calculates column widths and row counts for
+ * the overview dashboard panels.
+ */
 void ov_layout_compute(OV_LAYOUT *lay)
 {
     ov_get_terminal_size(&lay->term_rows,

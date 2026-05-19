@@ -10,21 +10,17 @@
  * (app_info->fps_name) of the queried command.
  */
 
-#include <stdio.h>
-#include <string.h>
 
 #include "CLIcore.h"
-#include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function_registry.h"
-#include "fps_cli_init.h"
-#include "fps_cli_query.h"
-#include "fps_connect.h"
-#include "fps_disconnect.h"
-#include "fps_local_store.h"
-#include "fps_print_info.h"
 
 
+/**
+ * @brief Print FPS query information ("?" mode).
+ *
+ * Lists all parameters, their types, defaults,
+ * and current values. Used when the CLI receives
+ * "?" as the FPS name.
+ */
 void fps_print_query_info(
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,

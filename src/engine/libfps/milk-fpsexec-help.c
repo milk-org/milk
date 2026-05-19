@@ -23,7 +23,9 @@
  * Complements milk-fps-help which covers FPS
  * concepts, inspection, and management tools.
  */
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     for (int ii = 1; ii < argc; ii++) {
         if (strcmp(argv[ii], "-h1") == 0 ||

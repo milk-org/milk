@@ -3,15 +3,8 @@
  * @brief   Print content of a Function Parameter Structure (FPS)
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 
-#include "fps.h"
-#include "fps_print_info.h"
 #include "fps_printparameter_valuestring.h"
-#include "ImageStreamIO/ImageStreamIO.h"
 
 #define C_TITLE  "\033[1;36m"
 #define C_HDR    "\033[1;35m"
@@ -19,6 +12,13 @@
 #define C_NOTE   "\033[1;33m"
 #define C_BOLD   "\033[1m"
 
+/**
+ * @brief Print detailed information about a single FPS
+ * parameter to stdout.
+ *
+ * Displays type, current value, range, flags,
+ * and keyword path.
+ */
 int function_parameter_print_info(
     FPS *fps,
     int verbose,

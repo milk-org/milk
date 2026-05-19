@@ -24,6 +24,11 @@
 #include "streamCTRL_utilfuncs.h"
 
 
+/**
+ * @brief Scan shared memory directory for streams.
+ *
+ * Builds the stream list from SHM files.
+ */
 void *streamCTRL_scan(
     void *argptr
 )

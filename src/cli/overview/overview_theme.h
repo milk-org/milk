@@ -309,11 +309,11 @@ static inline void ov_buf_printf_gradient(
  * @color:   foreground color
  */
 static inline void ov_buf_sparkline(
-    int            row,
-    int            col,
-    const float   *vals,
-    int            len,
-    ov_rgb_t       color)
+    int         row,
+    int         col,
+    const float *vals,
+    int         len,
+    ov_rgb_t    color)
 {
     ov_buf_pos(row, col);
     ov_theme_bg(OV_BG_PANEL);
@@ -352,14 +352,14 @@ static inline void ov_buf_sparkline(
  * @tcolor: title text color
  */
 static inline void ov_draw_panel_border(
-    int         row,
-    int         col,
-    int         height,
-    int         width,
+    int        row,
+    int        col,
+    int        height,
+    int        width,
     const char *title,
-    ov_rgb_t    tcolor,
-    int         is_focused,
-    int         drop_shadow)
+    ov_rgb_t   tcolor,
+    int        is_focused,
+    int        drop_shadow)
 {
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);
@@ -437,15 +437,15 @@ static inline void ov_draw_panel_border(
  * ov_draw_panel_tabs - draw a panel frame with multiple tabs.
  */
 static inline void ov_draw_panel_tabs(
-    int         row,
-    int         col,
-    int         height,
-    int         width,
+    int        row,
+    int        col,
+    int        height,
+    int        width,
     const char **tabs,
-    int         num_tabs,
-    int         active_tab,
-    ov_rgb_t    tcolor,
-    int         is_focused)
+    int        num_tabs,
+    int        active_tab,
+    ov_rgb_t   tcolor,
+    int        is_focused)
 {
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);

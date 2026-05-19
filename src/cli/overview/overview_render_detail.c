@@ -7,12 +7,12 @@
 static int ov_fps__render_detail_stream_lineage(
     OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int             ssel,
-    OV_RECT         r,
+    int            ssel,
+    OV_RECT        r,
     int            *ri,
     int            *line_idx,
-    int             row,
-    int             max_rows);
+    int            row,
+    int            max_rows);
 
 #define H_ov_buf_pos(r, c)       if (!(skip_draw)) ov_buf_pos(r, c)
 #define H_ov_theme_bg(c)         if (!(skip_draw)) ov_theme_bg(c)
@@ -48,13 +48,16 @@ static int ov_fps__render_detail_stream_lineage(
         (line_idx)++; \
     } while (0)
 
+/**
+ * @brief Render detailed stream info in the panel.
+ */
 static int ov_fps__render_detail_stream(
-    OV_LAYOUT       *lay,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int ssel,
-    OV_RECT r,
-    int max_rows,
-    int row)
+    int            ssel,
+    OV_RECT        r,
+    int            max_rows,
+    int            row)
 {
     const OV_STREAM *s = &m->streams[ssel];
 
@@ -279,14 +282,14 @@ static void render_lineage_group(
     OV_LAYOUT              *lay,
     const OV_MODEL         *m,
     const SG_LINEAGE_ENTRY *entries,
-    int                     nb,
+    int                    nb,
     const char             *label,
-    char                    sign,
+    char                   sign,
     int                    *ri,
     int                    *line_idx,
-    OV_RECT                 r,
-    int                     row,
-    int                     max_rows)
+    OV_RECT                r,
+    int                    row,
+    int                    max_rows)
 {
     /* Local skip predicate: pointer-safe version of the file-level skip_draw.
      * skip_draw uses bare 'ri'/'line_idx' names which don't work with
@@ -363,15 +366,18 @@ static void render_lineage_group(
 #undef _LG_SKIP
 } // render_lineage_group
 
+/**
+ * @brief Render stream lineage (ancestry) info.
+ */
 static int ov_fps__render_detail_stream_lineage(
     OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int             ssel,
-    OV_RECT         r,
+    int            ssel,
+    OV_RECT        r,
     int            *ri,
     int            *line_idx,
-    int             row,
-    int             max_rows)
+    int            row,
+    int            max_rows)
 {
     SG_LINEAGE lin;
     sg_compute_lineage(
@@ -412,13 +418,16 @@ static int ov_fps__render_detail_stream_lineage(
     return 1;
 } // ov_fps__render_detail_stream_lineage
 
+/**
+ * @brief Render detailed process info in the panel.
+ */
 static int ov_fps__render_detail_proc(
     OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int             psel,
-    OV_RECT         r,
-    int             max_rows,
-    int             row)
+    int            psel,
+    OV_RECT        r,
+    int            max_rows,
+    int            row)
 {
     const OV_PROC *p = &m->procs[psel];
 
@@ -578,10 +587,10 @@ static int ov_fps__render_detail_proc(
 static int ov_fps__render_detail_fps(
     OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int             fsel,
-    OV_RECT         r,
-    int             max_rows,
-    int             row)
+    int            fsel,
+    OV_RECT        r,
+    int            max_rows,
+    int            row)
 {
     const OV_FPS *f = &m->fps[fsel];
 
@@ -881,8 +890,8 @@ static int ov_fps__render_detail_fps(
 } // ov_fps__render_detail_fps
 
 int ov_render_detail_panel(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     OV_RECT r = lay->r_graph;
     int max_rows = r.height - 2;

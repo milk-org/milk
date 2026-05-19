@@ -3,19 +3,21 @@
  * @brief Procctrl pidcollectsysteminfo module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <time.h>
 #include <math.h>
 
-#include "processinfo.h"
 #include "procCTRL_PIDcollectSystemInfo.h"
 
-int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int mode)
+/**
+ * @brief Collect system-level info for a PID.
+ *
+ * Reads /proc/<pid>/status and /proc/<pid>/stat
+ * to gather memory usage, CPU time, and scheduling
+ * data.
+ */
+int PIDcollectSystemInfo(
+    PROCESSINFODISP *pinfodisp,
+    int mode)
 {
     char procfname[200];
     FILE *fp;

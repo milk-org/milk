@@ -3,14 +3,9 @@
  * @brief Processinfo exec end module
  */
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_signals.h"
-#include "processinfo_exec_end.h"
 #include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
@@ -18,6 +13,9 @@
 #endif
 
 
+/**
+ * @brief Signals the end of execution for a process in the process info system.
+ */
 int processinfo_exec_end(PROCESSINFO *processinfo)
 {
     int loopOK = 1;

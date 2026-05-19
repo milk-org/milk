@@ -20,7 +20,7 @@ double s_scan_dt_sec = 0.0;
  */
 static void scache_rate_update(
     OV_STREAM *s,
-    int        ci)
+    int       ci)
 {
     ov_stream_cache_t *ce = &s_scache[ci];
 
@@ -78,10 +78,10 @@ static void scache_rate_update(
  * @inode: inode value
  */
 static void fill_stream_from_img(
-    OV_STREAM   *s,
-    IMAGE       *imgp,
-    const char  *name,
-    ino_t        inode)
+    OV_STREAM  *s,
+    IMAGE      *imgp,
+    const char *name,
+    ino_t      inode)
 {
     memset(s, 0, sizeof(OV_STREAM));
     strncpy(s->name, name,
@@ -201,6 +201,9 @@ static void fill_stream_from_img(
     s->node_idx = -1;
 }
 
+/**
+ * @brief Scan shared memory for active streams.
+ */
 void ov_scan_streams(OV_MODEL *model)
 {
     const char *shmdir = SHAREDSHMDIR;
@@ -460,8 +463,8 @@ static void fcache_build_params(
  * @ce:  FPS cache entry (includes param index cache)
  */
 static void fill_fps_from_struct(
-    OV_FPS          *f,
-    ov_fps_cache_t  *ce)
+    OV_FPS         *f,
+    ov_fps_cache_t *ce)
 {
     FPS *fpsp = &ce->fps;
 
@@ -559,6 +562,9 @@ static void fill_fps_from_struct(
     f->node_idx = -1;
 }
 
+/**
+ * @brief Scan shared memory for active FPS instances.
+ */
 void ov_scan_fps(OV_MODEL *model)
 {
     char shmdir[OV_SHMDIR_MAXLEN];
@@ -701,6 +707,9 @@ void ov_scan_fps(OV_MODEL *model)
 /* Directory mtime for proc readdir skip */
 static struct timespec s_proc_mtime = {0, 0};
 
+/**
+ * @brief Scan processinfo for active processes.
+ */
 void ov_scan_procs(OV_MODEL *model)
 {
     char shmdir[OV_SHMDIR_MAXLEN];
@@ -1301,8 +1310,8 @@ static int64_t pid_get_start_time(pid_t pid)
 static int name_in_list(
     const char *name,
     const char *list,
-    int         count,
-    int         width)
+    int        count,
+    int        width)
 {
     for (int ii = 0; ii < count; ii++)
     {

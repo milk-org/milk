@@ -4,15 +4,8 @@
  *
  */
 
-#include <sched.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <time.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processtools_trigger.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -33,8 +26,8 @@
  */
 errno_t processinfo_waitoninputstream_init(
     PROCESSINFO *processinfo,
-    IMAGE        *image,
-    int          triggermode,
+    IMAGE       *image,
+    int         triggermode,
     int          semindexrequested
 )
 {

@@ -27,6 +27,9 @@ long image_write_keyword_L(
     const char *IDname, const char *kname,
     long value, const char *comment);
 
+/**
+ * @brief Print all keywords attached to an image.
+ */
 imageID image_list_keywords(
     const char *restrict IDname);
 
@@ -273,7 +276,7 @@ static long _image_write_keyword(
 long image_write_keyword_L(
     const char *IDname,
     const char *kname,
-    long        value,
+    long       value,
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);
@@ -292,7 +295,7 @@ long image_write_keyword_L(
 long image_write_keyword_D(
     const char *IDname,
     const char *kname,
-    double      value,
+    double     value,
     const char *comment)
 {
     IMGID img = imgid_make_from_name(IDname);

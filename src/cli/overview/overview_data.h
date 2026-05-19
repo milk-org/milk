@@ -536,11 +536,11 @@ void ov_sort_fps(
  * Return: number of matching indices written to @out.
  */
 int ov_filter_build(
-    const char  *pattern,
+    const char *pattern,
     const char **names,
-    int          count,
-    int         *out,
-    int          max_out);
+    int        count,
+    int        *out,
+    int        max_out);
 /**
  * ov_model_export_snapshot - dump model to a text file.
  * @m: model to export

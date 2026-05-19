@@ -3,15 +3,13 @@
  * @brief Procctrl getcpuloads module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
-#include "processinfo.h"
 #include "processtools.h"
-#include "procCTRL_GetCPUloads.h"
 
+/**
+ * @brief Collects system CPU load statistics and updates the process info structure.
+ */
 int GetCPUloads(PROCINFOPROC *pinfop)
 {
     FILE *fp;

@@ -36,7 +36,7 @@
 static inline int parse_multiselect(
     const char *input,
     int        *selected,
-    int         count)
+    int        count)
 {
     /* Clear selection array */
     memset(selected, 0,

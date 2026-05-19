@@ -397,7 +397,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
  */
 errno_t arith_image_function_imd_im__dd_d(
     const char *__restrict ID_name,
-    double      v0,
+    double                 v0,
     const char *__restrict ID_out,
     double (*pt2function)(double, double))
 {
@@ -518,6 +518,12 @@ errno_t arith_image_function_1_1_IMGID(
         imgin, imgout, pt2function);
 }
 
+/**
+ * @brief Apply a unary function to an image.
+ *
+ * Creates a new output image with the given
+ * function applied element-wise (e.g. cos, asin).
+ */
 errno_t arith_image_function_1_1(
     const char *ID_name,
     const char *ID_out,
@@ -576,8 +582,9 @@ errno_t arith_image_function_1_1_inplace_IMGID(
 }
 
 // imagein -> imagein (in place)
-errno_t arith_image_function_1_1_inplace(const char *ID_name,
-        double (*pt2function)(double))
+errno_t arith_image_function_1_1_inplace(
+    const char *ID_name,
+    double (*pt2function)(double))
 {
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);

@@ -11,16 +11,10 @@
 #define _GNU_SOURCE
 
 #include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <fnmatch.h>
 #include <glob.h>
 #include <regex.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "milk_help.h"
 
@@ -66,7 +60,9 @@ static int             g_n_entries;
 /* ----------------------------------------------------------------
  * print_help
  * -------------------------------------------------------------- */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, FEL_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -140,7 +136,7 @@ static void print_help(const char *progname, int mh_color)
 static int fetch_description(
     const char *cmd,
     char       *desc,
-    size_t      descsz)
+    size_t     descsz)
 {
     char cmdline[256];
     snprintf(cmdline, sizeof(cmdline), "%s -h1 2>/dev/null", cmd);
@@ -177,6 +173,9 @@ static const char *g_skip[] =
     NULL
 };
 
+/**
+ * @brief Checks if a given fps name should be skipped from listing.
+ */
 static int should_skip(const char *name)
 {
     for(int skpi = 0; g_skip[skpi] != NULL; skpi++)
@@ -189,6 +188,9 @@ static int should_skip(const char *name)
     return 0;
 }
 
+/**
+ * @brief Discovers and prints installed fps executables by scanning the PATH.
+ */
 static void discover_commands(void)
 {
     const char *path_env = getenv("PATH");
@@ -286,14 +288,23 @@ static void discover_commands(void)
 /* ----------------------------------------------------------------
  * Comparison functions for qsort
  * -------------------------------------------------------------- */
-static int cmp_name(const void *a, const void *b)
+static int cmp_name(
+    const void *a,
+    const void *b)
 {
     const struct felentry *ea = (const struct felentry *)a;
     const struct felentry *eb = (const struct felentry *)b;
     return strcmp(ea->name, eb->name);
 }
 
-static int cmp_score_desc(const void *a, const void *b)
+/**
+ * @brief Compare two entries by search score (descending).
+ *
+ * Used by qsort for fuzzy-match result ranking.
+ */
+static int cmp_score_desc(
+    const void *a,
+    const void *b)
 {
     const struct felentry *ea = (const struct felentry *)a;
     const struct felentry *eb = (const struct felentry *)b;
@@ -316,7 +327,7 @@ static int fuzzy_score(
     const char *query,
     const char *text,
     int        *positions,
-    int         posmax,
+    int        posmax,
     int        *n_pos_out)
 {
     size_t qlen = strlen(query);
@@ -395,7 +406,7 @@ static int fuzzy_score(
 static void print_highlighted(
     const char *s,
     const int  *hl_pos,
-    int         hl_n)
+    int        hl_n)
 {
     /* Build a quick lookup set */
     int slen = (int)strlen(s);
@@ -457,7 +468,7 @@ static void print_header(void)
  * -------------------------------------------------------------- */
 static void output_json(
     const struct felentry *entries,
-    int                    n)
+    int                   n)
 {
     printf("[\n");
     for(int ent_idx = 0; ent_idx < n; ent_idx++)
@@ -481,7 +492,9 @@ static void output_json(
 /* ----------------------------------------------------------------
  * main
  * -------------------------------------------------------------- */
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(
                      argc, argv, FEL_DESC, FEL_DESC_LONG);

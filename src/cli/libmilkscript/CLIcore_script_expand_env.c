@@ -52,9 +52,9 @@
  * Writes characters until NUL or the buffer is full.
  */
 static void emit_str_local(
-    char       *out,
-    int        *opos,
-    int         maxlen,
+    char *out,
+    int  *opos,
+    int  maxlen,
     const char *s
 )
 {
@@ -83,7 +83,7 @@ static void emit_str_local(
  */
 static void expand_env_array_all(
     const char *varname,
-    int         is_length,
+    int        is_length,
     char       *out_buf,
     const char **out_val
 )
@@ -194,8 +194,8 @@ static void expand_env_array_all(
  * arrays (by numeric index).
  */
 static void expand_env_array_index(
-    const char  *varname,
-    const char  *idx_val,
+    const char *varname,
+    const char *idx_val,
     const char **out_val
 )
 {
@@ -272,11 +272,11 @@ static void expand_env_array_index(
  *   :   substring ${VAR:off} or ${VAR:off:len}
  */
 static void apply_modifier(
-    const char  *varname,
-    const char  *mod_op,
-    char        *mod_arg,
-    char        *val_buf,
-    int          val_buf_size,
+    const char *varname,
+    const char *mod_op,
+    char       *mod_arg,
+    char       *val_buf,
+    int        val_buf_size,
     const char **val
 )
 {

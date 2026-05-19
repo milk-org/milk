@@ -51,7 +51,7 @@ static inline void streamCTRL_set_sem_color(int val) {
 
 static inline void streamCTRL_render_active_bg(
     const char *str,
-    int         len,
+    int        len,
     int         color_level
 ) {
     if(color_level >= 3)

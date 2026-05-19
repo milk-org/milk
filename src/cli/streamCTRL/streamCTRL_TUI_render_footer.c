@@ -1,5 +1,8 @@
 #include "streamCTRL_TUI_render_internal.h"
 
+/**
+ * @brief Render the streamCTRL footer status bar.
+ */
 void streamCTRL__render_footer(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int NBsinfodisp) {
 /* ---- Scroll indicator footer ---- */
         if(sTUIparam.DisplayMode != DISPLAY_MODE_HELP)

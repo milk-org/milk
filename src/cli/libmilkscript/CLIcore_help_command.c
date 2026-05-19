@@ -55,6 +55,9 @@
 
 extern int help_format_mode;
 
+/**
+ * @brief Check if a 64-bit flag contains a specific bit.
+ */
 static int checkFlag64(
     uint64_t flags,
     uint64_t testflag,

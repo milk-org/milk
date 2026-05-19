@@ -29,8 +29,8 @@
 static inline void tv_move(
     char   *buf,
     size_t *pos,
-    int     row,
-    int     col)
+    int    row,
+    int    col)
 {
     /* Hand-rolled integer serialization avoids printf overhead */
     buf[(*pos)++] = '\033';
@@ -58,9 +58,9 @@ static inline void tv_move(
 static inline void tv_bg(
     char    *buf,
     size_t  *pos,
-    uint8_t  r,
-    uint8_t  g,
-    uint8_t  b)
+    uint8_t r,
+    uint8_t g,
+    uint8_t b)
 {
     /* Static prefix bytes */
     buf[(*pos)++] = '\033';
@@ -98,9 +98,9 @@ static inline void tv_bg(
 static inline void tv_fg(
     char    *buf,
     size_t  *pos,
-    uint8_t  r,
-    uint8_t  g,
-    uint8_t  b)
+    uint8_t r,
+    uint8_t g,
+    uint8_t b)
 {
     buf[(*pos)++] = '\033';
     buf[(*pos)++] = '[';

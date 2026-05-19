@@ -4,9 +4,6 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_processinfo_entries.h"
-#include <processinfo.h>
 
 /** @brief Add parameters to FPS for real-time process settings
  *
@@ -215,6 +212,13 @@ errno_t fps_add_processinfo_entries(
 }
 
 
+/**
+ * @brief Populate processinfo fields from FPS metadata.
+ *
+ * Copies timing, trigger, and loop-rate metrics
+ * from the FPS into the corresponding processinfo
+ * structure for monitoring.
+ */
 errno_t fps_to_processinfo(
     FPS *fps,
     PROCESSINFO               *procinfo

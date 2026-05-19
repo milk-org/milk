@@ -66,12 +66,21 @@ static void handle_sigint(int sig)
     ov_sigINT = 1;
 }
 
+/**
+ * @brief SIGTERM handler for milkCTRL exit.
+ */
 static void handle_sigterm(int sig)
 {
     (void) sig;
     ov_sigTERM = 1;
 }
 
+/**
+ * @brief Crash signal handler for milkCTRL.
+ *
+ * Captures SIGSEGV/SIGABRT, restores terminal,
+ * and prints a diagnostic message.
+ */
 static void crash_handler(int sig)
 {
     static const char reset[] =
@@ -106,9 +115,9 @@ extern void ov_render_frame(
 
 /* External API from overview_input.c */
 extern int ov_handle_key(
-    int              key,
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m);
+    int            key,
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m);
 
 
 #include "milk_help.h"

@@ -1,20 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
 #include <getopt.h>
 #include <signal.h>
-#include <errno.h>
 #include <glob.h>
 #include <termios.h>
 #include <regex.h>
 
 #include "libmilkcommon/multiselect_parse.h"
 
-#include "fps.h"
 #include "fps_FPSremove.h"
-#include "milk_help.h"
 
 #define FR_DESC \
     "remove Function Parameter Structure (FPS) from shared memory"
@@ -25,7 +17,12 @@
     "matching instances directly. Use -f to kill running processes\n" \
     "before removal (otherwise running FPSes are left untouched)."
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * @brief Print help message for milk-fps-rm.
+ */
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, FR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -91,10 +88,10 @@ static void print_help(const char *progname, int mh_color)
  * is still running after SIGKILL.
  */
 static int kill_proc(
-    pid_t       pid,
+    pid_t      pid,
     const char *label,
     const char *name,
-    int         verbose)
+    int        verbose)
 {
     /*
      * An invalid or non-existent PID means there is nothing to
@@ -187,8 +184,8 @@ static int kill_proc(
  */
 static int remove_fps(
     const char *name,
-    int         verbose,
-    int         force)
+    int        verbose,
+    int        force)
 {
     FPS fps;
 
@@ -342,7 +339,9 @@ static int remove_fps(
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 FR_DESC, FR_DESC_LONG);

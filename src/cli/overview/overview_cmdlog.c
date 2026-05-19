@@ -25,9 +25,9 @@
  * ring is full.
  */
 void ov_cmdlog_push(
-    OV_CMDLOG          *log,
-    ov_cmdlog_level_t   level,
-    const char         *fmt, ...)
+    OV_CMDLOG         *log,
+    ov_cmdlog_level_t level,
+    const char        *fmt, ...)
 {
     if (log == NULL || fmt == NULL)
     {

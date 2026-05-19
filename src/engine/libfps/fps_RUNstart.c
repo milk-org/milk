@@ -4,12 +4,7 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
-#include "timeutils.h"
-#include "fps_tmux.h"
 
-#include "fps_GetParamIndex.h"
 
 /** @brief FPS start RUN process
  *

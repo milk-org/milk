@@ -7,25 +7,25 @@
  * CLI argument indexing.
  */
 
-#include <string.h>
 
 #ifndef FPS_STANDALONE
-#include "CLIcore.h"
 #else
-#include "libmilkdata/milkdata.h"
 #endif
 #include "fps.h"
-#include "fps_add_entry.h"
-#include "fps_SetParamCLIindex.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_init.h"
 
 
+/**
+ * @brief Initialize FPS parameters from CLI bindings.
+ *
+ * Creates each parameter in the FPS using the type,
+ * description, and flags specified in the binding
+ * array. Called during fpsinit.
+ */
 errno_t fps_init_from_bindings(
-    FPS *fps,
-    const char                *cmdkey,
-    const char                *description,
-    FPS_CLI_BINDING           *bindings,
+    FPS             *fps,
+    const char      *cmdkey,
+    const char      *description,
+    FPS_CLI_BINDING *bindings,
     int                        nb_b
 )
 {

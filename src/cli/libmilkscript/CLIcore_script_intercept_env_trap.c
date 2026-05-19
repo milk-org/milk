@@ -19,6 +19,9 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
+/**
+ * @brief List all active trap handlers.
+ */
 static int cli_trap_list_active(void)
 {
     printf("POSIX traps:\n");
@@ -81,6 +84,9 @@ static int cli_trap_list_active(void)
     return 1;
 }
 
+/**
+ * @brief Process stream-based trap events.
+ */
 static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_interval_ms, int opt_max_fires)
 {
     /* Find or alloc slot */
@@ -154,6 +160,9 @@ static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_i
     }
 }
 
+/**
+ * @brief Process FPS-based trap events.
+ */
 static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_interval_ms, int opt_max_fires)
 {
     /* Split fpsname.param

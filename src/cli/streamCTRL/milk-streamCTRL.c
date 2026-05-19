@@ -23,12 +23,18 @@
 volatile sig_atomic_t sc_sigINT  = 0;
 volatile sig_atomic_t sc_sigTERM = 0;
 
+/**
+ * @brief SIGINT handler for streamCTRL exit.
+ */
 static void handle_sigint(int sig)
 {
     (void) sig;
     sc_sigINT = 1;
 }
 
+/**
+ * @brief SIGTERM handler for streamCTRL exit.
+ */
 static void handle_sigterm(int sig)
 {
     (void) sig;
@@ -36,6 +42,9 @@ static void handle_sigterm(int sig)
 }
 
 
+/**
+ * @brief Print help message for milk-streamCTRL.
+ */
 static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, "interactive stream monitor TUI", mh_color);

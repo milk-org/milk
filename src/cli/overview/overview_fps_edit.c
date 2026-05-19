@@ -96,7 +96,7 @@ static const char *ov_fps_type_short_label(
 int ov_fps_inline_edit(
     OV_LAYOUT  *lay,
     const char *fps_name,
-    int         disp_idx)
+    int        disp_idx)
 {
     (void) lay;
 

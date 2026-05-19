@@ -26,6 +26,9 @@ extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
 
+/**
+ * @brief Handler: set a shell variable.
+ */
 int cli_intercept_cmd_set(const char *p)
 {
     if(starts_with(p, "set ")
@@ -67,6 +70,9 @@ int cli_intercept_cmd_set(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: export a variable to child processes.
+ */
 int cli_intercept_cmd_export(const char *p)
 {
     if(starts_with(p, "export ")
@@ -136,6 +142,9 @@ int cli_intercept_cmd_export(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: source (execute) a script file.
+ */
 int cli_intercept_cmd_source(const char *p)
 {
     if(starts_with(p, "source ")

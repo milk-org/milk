@@ -338,6 +338,12 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
     return (value);
 }
 
+/**
+ * @brief Compute a percentile value from an image.
+ *
+ * Sorts pixel values and returns the value at
+ * the specified fractional position.
+ */
 double arith_image_percentile(const char *ID_name, double fraction)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
@@ -353,6 +359,9 @@ double arith_image_median_IMGID(IMGID *imgin)
     return (value);
 }
 
+/**
+ * @brief Compute the median pixel value of an image.
+ */
 double arith_image_median(const char *ID_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);

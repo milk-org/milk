@@ -27,6 +27,12 @@ errno_t COREMOD_MEMORY_image_streamburst(
     const char *IDout_name,
     long periodus);
 
+/**
+ * @brief Continuous stream update loop.
+ *
+ * Monitors an input stream and triggers output
+ * updates on each new frame.
+ */
 imageID COREMOD_MEMORY_image_streamupdateloop(
     const char *IDinname,
     const char *IDoutname,
@@ -305,9 +311,10 @@ CLIADDCMD_COREMOD_memory__stream_updateloop()
  *
  */
 
-errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
-        const char *IDout_name,
-        long        periodus)
+errno_t COREMOD_MEMORY_image_streamburst(
+    const char *IDin_name,
+    const char *IDout_name,
+    long        periodus)
 {
     imageID IDin;
     imageID IDout;
@@ -427,15 +434,16 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
  *
  */
 imageID
-COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
-                                      const char                 *IDoutname,
-                                      long                        usperiod,
-                                      long                        NBcubes,
-                                      long                        period,
-                                      long                        offsetus,
-                                      const char                 *IDsync_name,
-                                      int                         semtrig,
-                                      __attribute__((unused)) int timingmode)
+COREMOD_MEMORY_image_streamupdateloop(
+    const char                 *IDinname,
+    const char                 *IDoutname,
+    long                        usperiod,
+    long                        NBcubes,
+    long                        period,
+    long                        offsetus,
+    const char                 *IDsync_name,
+    int                         semtrig,
+    __attribute__((unused)) int timingmode)
 {
     imageID           *IDin;
     long               cubeindex;
@@ -779,13 +787,13 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
 
 // takes a 3Dimage (circular buffer) and writes slices to a 2D image synchronized with an image semaphore
 imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
-    const char                 *IDinname,
-    const char                 *IDoutname,
-    long                        period,
-    long                        offsetus,
-    const char                 *IDsync_name,
-    int                         semtrig,
-    __attribute__((unused)) int timingmode)
+    const char                  *IDinname,
+    const char                  *IDoutname,
+    long                         period,
+    long                         offsetus,
+    const char                  *IDsync_name,
+    int                          semtrig,
+    __attribute__((unused)) int  timingmode)
 {
     imageID IDin;
     imageID IDout;

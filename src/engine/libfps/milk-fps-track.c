@@ -3,19 +3,11 @@
  * @brief Milk fps track module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <getopt.h>
-#include <time.h>
 #include <signal.h>
 #include <regex.h>
 
-#include "fps.h"
 #include "fps_globals.h"
-#include "fps_scan.h"
-#include "milk_help.h"
 
 #define FT_DESC "track and display FPS parameter values in real time"
 #define FT_DESC_LONG \
@@ -24,7 +16,12 @@
     "An optional POSIX extended regex filters which FPS names are tracked.\n" \
     "Output is one line per change: timestamp, FPS, parameter, value."
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * @brief Print help message for milk-fps-track.
+ */
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, FT_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -83,6 +80,11 @@ typedef struct {
 FPS_TRACK *track_list = NULL;
 int track_list_cnt = 0;
 
+/**
+ * @brief Print the current UTC timestamp.
+ *
+ * Formats as ISO 8601 with microsecond precision.
+ */
 void print_ut_timestamp() {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -94,12 +96,17 @@ void print_ut_timestamp() {
 }
 
 static volatile int keep_running = 1;
+/**
+ * @brief SIGINT handler for graceful exit.
+ */
 void sigint_handler(int sig) {
     (void)sig;
     keep_running = 0;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 FT_DESC, FT_DESC_LONG);

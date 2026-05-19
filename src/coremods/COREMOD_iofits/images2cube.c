@@ -15,6 +15,12 @@
 // Forward declaration(s)
 // ==========================================
 
+/**
+ * @brief Assemble multiple 2D images into a 3D FITS cube.
+ *
+ * Reads a list of FITS filenames and stacks them
+ * along the third axis.
+ */
 errno_t images_to_cube(const char *restrict img_name,
                        long nbframes,
                        const char *restrict cube_name);
@@ -90,6 +96,12 @@ FPS_MAIN_STANDALONE_V2(
 // Compute code
 // ==========================================
 
+/**
+ * @brief Assemble multiple 2D images into a 3D FITS cube.
+ *
+ * Reads a list of FITS filenames and stacks them
+ * along the third axis.
+ */
 errno_t images_to_cube(
     const char *restrict img_name,
     long nbframes,

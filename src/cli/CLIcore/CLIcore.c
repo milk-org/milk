@@ -115,8 +115,23 @@ static fd_set cli_fdin_set;
 *       Forward References
 */
 int         user_function();
+/**
+ * @brief atexit handler: performs CLI cleanup on exit.
+ */
 void        fnExit1(void);
+/**
+ * @brief Initialize CLI command subsystem.
+ *
+ * Sets up readline, signal handlers, and module
+ * loading infrastructure.
+ */
 void        runCLI_cmd_init();
+/**
+ * @brief Free CLI resources on shutdown.
+ *
+ * Releases command tables, module handles, and
+ * process state.
+ */
 static void runCLI_free();
 
 static volatile sig_atomic_t sigwinch_received = 0;
@@ -1125,6 +1140,9 @@ int user_function()
     return (0);
 }
 
+/**
+ * @brief atexit handler: performs CLI cleanup on exit.
+ */
 void fnExit1(void)
 {
     //

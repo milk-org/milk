@@ -236,7 +236,7 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo);
  */
 errno_t processinfo_update_output_stream(
     PROCESSINFO *processinfo,
-    IMAGE        *output_image,
+    IMAGE       *output_image,
     IMAGE        *input_image
 );
 

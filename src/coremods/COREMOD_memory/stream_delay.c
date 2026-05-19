@@ -142,9 +142,9 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 }
 
 static errno_t streamdelay(
-    IMGID            inimg,
-    IMGID            outimg,
-    IMGID            bufferimg,
+    IMGID           inimg,
+    IMGID           outimg,
+    IMGID           bufferimg,
     struct timespec *tarray,
     int             *warray,
     int             *status)

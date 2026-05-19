@@ -6,18 +6,13 @@
  * mapped state structs used by sequencer instances.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include "milkDebugTools.h"
 #include "fpsseq.h"
-#include "fps_types.h"
 
 #define SHM_PREFIX "/milkseq."
 #define FIFO_PREFIX "/tmp/milkseq."
@@ -28,7 +23,10 @@
  * @size:  Buffer size
  * @name:  Sequencer name
  */
-static void build_shm_name(char *dest, size_t size, const char *name)
+static void build_shm_name(
+    char *dest,
+    size_t size,
+    const char *name)
 {
     snprintf(dest, size, "%s%s.shm", SHM_PREFIX, name);
 }
@@ -39,7 +37,10 @@ static void build_shm_name(char *dest, size_t size, const char *name)
  * @size:  Buffer size
  * @name:  Sequencer name
  */
-static void build_fifo_name(char *dest, size_t size, const char *name)
+static void build_fifo_name(
+    char *dest,
+    size_t size,
+    const char *name)
 {
     snprintf(dest, size, "%s%s.fifo", FIFO_PREFIX, name);
 }
@@ -187,7 +188,9 @@ int milkseq_destroy(const char *name)
  *
  * Return: Number of sequencers found (<= maxcount)
  */
-int milkseq_list(char names[][FPSSEQ_NAME_MAX], int maxcount)
+int milkseq_list(
+    char names[][FPSSEQ_NAME_MAX],
+    int maxcount)
 {
     int count = 0;
     DIR *d;

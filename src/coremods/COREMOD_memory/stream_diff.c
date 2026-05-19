@@ -89,7 +89,7 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
     const char *IDstream1_name,
     const char *IDstreammask_name,
     const char *IDstreamout_name,
-    long        semtrig)
+    long       semtrig)
 {
     IMGID img0 = imgid_make_from_name(IDstream0_name);
     resolveIMGID(&img0, ERRMODE_WARN,

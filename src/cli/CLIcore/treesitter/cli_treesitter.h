@@ -40,7 +40,7 @@ int cli_ts_init(void);
  */
 void cli_ts_highlight_line(
     const char *line,
-    int         len,
+    int        len,
     FILE       *out
 );
 

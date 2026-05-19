@@ -7,9 +7,12 @@
 
 #include "overview_render_internal.h"
 
+/**
+ * @brief Render the FPS panel in the overview dashboard.
+ */
 void ov_render_fps_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
     const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_fps;

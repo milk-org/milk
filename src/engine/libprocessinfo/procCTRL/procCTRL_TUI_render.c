@@ -1,10 +1,13 @@
-#include <stdio.h>
 #include <sys/stat.h>
 
 #include "procCTRL_TUI_internal.h"
 #include "procCTRL_TUIcompat.h"
-#include "procCTRL_ansi.h"
 
+/**
+ * @brief Render the procCTRL header bar.
+ *
+ * Shows title, timestamp, and system CPU load.
+ */
 static void procctrl_render_header(procctrl_context_t *ctx) {
     struct stat shm_stat;
     char shm_list_fname[STRINGMAXLEN_FULLFILENAME];
@@ -19,6 +22,12 @@ static void procctrl_render_header(procctrl_context_t *ctx) {
     }
 }
 
+/**
+ * @brief Render the mode selection tabs.
+ *
+ * Highlights the active display mode (ctrl,
+ * resources, trigger, timing, info).
+ */
 static void procctrl_render_mode_tabs(procctrl_context_t *ctx) {
     if (ctx->procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_HELP) screenprint_setcolor(2);
     TUI_printfw("[h] Help");
@@ -51,6 +60,11 @@ static void procctrl_render_mode_tabs(procctrl_context_t *ctx) {
     TUI_newline();
 }
 
+/**
+ * @brief Render column headers for the process list.
+ *
+ * Adapts columns to the current display mode.
+ */
 static void procctrl_render_column_headers(procctrl_context_t *ctx) {
     const char *colnames[10] = {NULL};
     int nbcol = 0;
@@ -121,6 +135,12 @@ static void procctrl_render_column_headers(procctrl_context_t *ctx) {
     TUI_newline();
 }
 
+/**
+ * @brief Render the help overlay.
+ *
+ * Shows available key bindings and navigation
+ * commands.
+ */
 static void procctrl_render_help(void) {
     TUI_printfw("MILK Process Control (procCTRL) - HELP");
     TUI_newline();
@@ -154,6 +174,11 @@ static void procctrl_render_help(void) {
     TUI_newline();
 }
 
+/**
+ * @brief Render a process row in ctrl mode.
+ *
+ * Shows PID, name, loop state, and control actions.
+ */
 static void procctrl_render_row_ctrl(procctrl_context_t *ctx, int m, int pindex) {
     // 4: tstart
     if (ctx->procinfoproc->col_visible[m][4]) {
@@ -212,6 +237,11 @@ static void procctrl_render_row_ctrl(procctrl_context_t *ctx, int m, int pindex)
     }
 }
 
+/**
+ * @brief Render a process row in resources mode.
+ *
+ * Shows memory, CPU affinity, and thread count.
+ */
 static void procctrl_render_row_resources(procctrl_context_t *ctx, int m, int pindex) {
     // 4: pname
     if (ctx->procinfoproc->col_visible[m][4]) {
@@ -245,6 +275,12 @@ static void procctrl_render_row_resources(procctrl_context_t *ctx, int m, int pi
     }
 }
 
+/**
+ * @brief Render a process row in trigger mode.
+ *
+ * Shows trigger stream, semaphore index, and
+ * timeout settings.
+ */
 static void procctrl_render_row_trigger(procctrl_context_t *ctx, int m, int pindex) {
     // 4: pname
     if (ctx->procinfoproc->col_visible[m][4]) {
@@ -284,6 +320,11 @@ static void procctrl_render_row_trigger(procctrl_context_t *ctx, int m, int pind
     }
 }
 
+/**
+ * @brief Render a process row in timing mode.
+ *
+ * Shows loop rate, latency, and jitter metrics.
+ */
 static void procctrl_render_row_timing(procctrl_context_t *ctx, int m, int pindex) {
     // 4: pname
     if (ctx->procinfoproc->col_visible[m][4]) {
@@ -320,6 +361,12 @@ static void procctrl_render_row_timing(procctrl_context_t *ctx, int m, int pinde
     }
 }
 
+/**
+ * @brief Render a process row in procinfo mode.
+ *
+ * Shows executable path, start time, and
+ * status message.
+ */
 static void procctrl_render_row_procinfo(procctrl_context_t *ctx, int m, int pindex) {
     // 4: pname
     if (ctx->procinfoproc->col_visible[m][4]) {
@@ -360,6 +407,12 @@ static void procctrl_render_row_procinfo(procctrl_context_t *ctx, int m, int pin
     }
 }
 
+/**
+ * @brief Render the full process list.
+ *
+ * Iterates visible processes and dispatches to
+ * the mode-specific row renderer.
+ */
 static void procctrl_render_process_list(procctrl_context_t *ctx, int NBactive) {
     int dispindexMax = wrow - 6;
 
@@ -502,6 +555,12 @@ static void procctrl_render_process_list(procctrl_context_t *ctx, int NBactive) 
     }
 }
 
+/**
+ * @brief Render one complete procCTRL frame.
+ *
+ * Composes header, tabs, column headers, process
+ * list, and status bar into a single screen update.
+ */
 void procctrl_render_frame(procctrl_context_t *ctx, int NBactive) {
     if (ctx->freeze == 0) {
         sc_frame_clear();

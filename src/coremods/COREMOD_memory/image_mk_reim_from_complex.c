@@ -142,7 +142,7 @@ errno_t mk_reim_from_complex(
     const char *in_name,
     const char *re_name,
     const char *im_name,
-    int         sharedmem)
+    int        sharedmem)
 {
     IMGID imgin =
         imgid_make_from_name(in_name);

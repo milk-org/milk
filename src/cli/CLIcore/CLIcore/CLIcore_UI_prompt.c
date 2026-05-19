@@ -117,6 +117,12 @@ void cli_build_prompt(
     out[pos] = '\0';
 }
 
+/**
+ * @brief Update the CLI prompt string.
+ *
+ * Reflects current directory, session name, and
+ * script nesting level.
+ */
 errno_t cli_setprompt(void)
 {
     if(data.cmdNBarg < 2)
@@ -153,11 +159,16 @@ errno_t cli_setprompt(void)
  * and {0..10..2} with "0 2 4 6 8 10".
  */
 void emit_str(
-    char       *out,
-    int        *opos,
-    int         maxlen,
+    char *out,
+    int  *opos,
+    int  maxlen,
     const char *s
 );
+/**
+ * @brief Expand brace expressions in a command line.
+ *
+ * Supports {a,b,c} expansion like bash.
+ */
 void cli_expand_braces(
     char *line,
     int   maxlen
@@ -274,7 +285,7 @@ void cli_expand_braces(
 void emit_str(
     char *out,
     int  *opos,
-    int   maxlen,
+    int  maxlen,
     const char *s
 )
 {

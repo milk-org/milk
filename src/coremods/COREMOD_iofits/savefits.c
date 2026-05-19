@@ -153,14 +153,20 @@ errno_t saveFITS_opt_trunc_IMGID(
 
 
 #ifndef FPS_STANDALONE
+/**
+ * @brief Save a FITS file with optional truncation.
+ *
+ * Writes an image to FITS with optional precision
+ * reduction for smaller file sizes.
+ */
 errno_t saveFITS_opt_trunc(
-    const char     *inputimname,
-    int             truncate,
-    const char     *outputFITSname,
-    int             outputbitpix,
-    const char     *importheaderfile,
-    IMAGE_KEYWORD  *kwarray,
-    int             kwarraysize,
+    const char    *inputimname,
+    int           truncate,
+    const char    *outputFITSname,
+    int           outputbitpix,
+    const char    *importheaderfile,
+    IMAGE_KEYWORD *kwarray,
+    int           kwarraysize,
     const char     *FITSIOext
 )
 {
@@ -171,6 +177,9 @@ errno_t saveFITS_opt_trunc(
         kwarray, kwarraysize, FITSIOext);
 }
 
+/**
+ * @brief Save a float image to FITS.
+ */
 errno_t save_fl_fits(
     const char *inputimname,
     const char *outputFITSname
@@ -181,12 +190,17 @@ errno_t save_fl_fits(
         -32, NULL, NULL, 0, "");
 }
 
+/**
+ * @brief Save an image to a FITS file.
+ *
+ * Standard save with automatic type detection.
+ */
 errno_t saveFITS(
-    const char     *inputimname,
-    const char     *outputFITSname,
-    int             outputbitpix,
-    const char     *importheaderfile,
-    IMAGE_KEYWORD  *kwarray,
+    const char    *inputimname,
+    const char    *outputFITSname,
+    int           outputbitpix,
+    const char    *importheaderfile,
+    IMAGE_KEYWORD *kwarray,
     int             kwarraysize
 )
 {

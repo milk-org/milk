@@ -21,6 +21,12 @@ extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
 struct wa_event;
+/**
+ * @brief Evaluate FPS conditions for waitany.
+ *
+ * Checks if any FPS parameter meets the
+ * specified condition.
+ */
 static int eval_waitany_fps(struct wa_event *ev, const char *vstr);
 
 enum
@@ -62,6 +68,12 @@ struct wa_event
     int fps_open;
 };
 
+/**
+ * @brief Parse waitany command arguments.
+ *
+ * Extracts stream/FPS names and timeout values
+ * from the argument list.
+ */
 static int parse_waitany_args(const char *p, struct wa_event *events, double *timeout_v)
 {
     char argbuf[STRINGMAXLEN_CLICMDLINE];
@@ -200,6 +212,12 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
     return nevents;
 }
 
+/**
+ * @brief Open shared memory handles for waitany.
+ *
+ * Connects to all specified streams/FPS instances
+ * for event monitoring.
+ */
 static int open_waitany_handles(struct wa_event *events, int nevents)
 {
     int any_open = 0;
@@ -338,6 +356,12 @@ static int poll_waitany_events(struct wa_event *events, int nevents, double time
     return 1;
 }
 
+/**
+ * @brief Evaluate FPS conditions for waitany.
+ *
+ * Checks if any FPS parameter meets the
+ * specified condition.
+ */
 static int eval_waitany_fps(struct wa_event *ev, const char *vstr)
 {
     int fired = 0;

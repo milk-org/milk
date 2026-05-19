@@ -4,7 +4,6 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
 
 /** @brief get parameter file name
@@ -13,10 +12,10 @@
  *
  */
 int functionparameter_GetFileName(
-    FPS *fps,
-    FPS_PARAM        *fparam,
-    char                      *outfname,
-    char                      *tagname)
+    FPS       *fps,
+    FPS_PARAM *fparam,
+    char      *outfname,
+    char      *tagname)
 {
     char ffname[STRINGMAXLEN_FULLFILENAME];
     char fname1[STRINGMAXLEN_FILENAME];

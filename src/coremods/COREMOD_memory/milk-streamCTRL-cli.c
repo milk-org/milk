@@ -83,9 +83,9 @@ static const char *get_shmdir(void)
 static int scan_streams(
     const char   *shmdir,
     stream_entry *entries,
-    int           max_entries,
+    int          max_entries,
     regex_t      *regex,
-    int           use_regex)
+    int          use_regex)
 {
     DIR           *d = opendir(shmdir);
     int            n = 0;

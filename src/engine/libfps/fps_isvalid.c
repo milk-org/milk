@@ -5,7 +5,6 @@
 
 #include <sys/stat.h>
 
-#include "fps.h"
 #include "fps_isvalid.h"
 
 /**

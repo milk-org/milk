@@ -13,6 +13,9 @@
 #include "COREMOD_memory/imageID.h"
 
 //  check only is size > 0
+/**
+ * @brief Verify that an image has the expected 2D size.
+ */
 int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
 {
     int     retval;
@@ -40,6 +43,9 @@ int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
     return retval;
 }
 
+/**
+ * @brief Verify that an image has the expected 3D size.
+ */
 int check_3Dsize(const char *ID_name,
                  uint32_t    xsize,
                  uint32_t    ysize,

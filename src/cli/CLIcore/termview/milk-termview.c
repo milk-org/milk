@@ -15,6 +15,9 @@
 
 #include "milk_help.h"
 
+/**
+ * @brief Print help message for milk-termview.
+ */
 static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, "TrueColor terminal image viewer", mh_color);

@@ -67,12 +67,12 @@ void write_json(
     const bench_cfg_t *cfg,
     const hw_phase_t  *t,
     const hw_phase_t  *w,
-    int                measured,
-    long long          t_ns,
-    long long          w_ns,
+    int               measured,
+    long long         t_ns,
+    long long         w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    int64_t            exe_sz)
+    int64_t           exe_sz)
 {
     FILE *fp = fopen(cfg->result_file, "w");
     if (!fp)
@@ -345,12 +345,12 @@ static void print_section(
  */
 static void print_row(
     const char *label,
-    long long   total,
-    long long   warmup_v,
-    int         measured,
-    int         has_warmup,
-    int         decimals,
-    long long   paired_warmup_misses)
+    long long  total,
+    long long  warmup_v,
+    int        measured,
+    int        has_warmup,
+    int        decimals,
+    long long  paired_warmup_misses)
 {
     /* Detect PMU multiplexing: loads counter got zero samples
      * during warmup while its companion misses counter did not. */
@@ -423,11 +423,11 @@ static void print_row(
  */
 static void print_rate(
     const char *label,
-    double      rate_t,
-    double      rate_w,
-    double      rate_m,
-    int         has_warmup,
-    int         loads_mux_out)
+    double     rate_t,
+    double     rate_w,
+    double     rate_m,
+    int        has_warmup,
+    int        loads_mux_out)
 {
     if (has_warmup)
     {
@@ -457,14 +457,14 @@ static void print_rate(
  */
 void print_summary(
     const bench_cfg_t *cfg,
-    int                measured,
+    int               measured,
     const hw_phase_t  *t,
     const hw_phase_t  *w,
-    long long          t_ns,
-    long long          w_ns,
+    long long         t_ns,
+    long long         w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    int64_t            exe_sz)
+    int64_t           exe_sz)
 {
     /* detect color support once */
     g_use_color = isatty(STDOUT_FILENO);

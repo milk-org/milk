@@ -134,9 +134,9 @@ int pid_is_alive(pid_t pid)
  * Return: 0 on success, -1 on failure.
  */
 int pid_get_cpu_ticks(
-    pid_t          pid,
-    uint64_t      *utime,
-    uint64_t      *stime)
+    pid_t    pid,
+    uint64_t *utime,
+    uint64_t *stime)
 {
     char path[64];
     snprintf(path, sizeof(path),
@@ -360,6 +360,12 @@ static long _perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu, i
     return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
 }
 
+/**
+ * @brief Open a perf_event file descriptor.
+ *
+ * Configures hardware performance counters for
+ * the specified event type.
+ */
 static int open_perf_fd(pid_t pid, uint32_t type, uint64_t config) {
     struct perf_event_attr attr;
     memset(&attr, 0, sizeof(attr));

@@ -53,6 +53,9 @@ static int ov_procs__filter(
     return filt_n;
 }
 
+/**
+ * @brief Render the process panel column headers.
+ */
 static void ov_procs__render_header(
     const OV_LAYOUT *lay,
     int hrow, int hs, OV_RECT r)
@@ -108,6 +111,9 @@ static void ov_procs__render_header(
         r.width - 2, OV_FG_PROC_HDR);
 }
 
+/**
+ * @brief Render process rows in the overview.
+ */
 static void ov_procs__render_rows(
     const OV_LAYOUT *lay,
     const OV_MODEL *m,
@@ -1022,9 +1028,12 @@ static void ov_procs__render_rows(
 
 }
 
+/**
+ * @brief Render the processes panel in the overview.
+ */
 void ov_render_procs_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
     const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_procs;

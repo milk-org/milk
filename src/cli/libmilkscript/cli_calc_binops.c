@@ -19,6 +19,11 @@
 #include "CLIcore_script.h"
 #include "cli_calc_internal.h"
 
+/**
+ * @brief Check if a token refers to an image.
+ *
+ * Returns 1 if the name matches an active image.
+ */
 int check_image(const char *name);
 
 /**

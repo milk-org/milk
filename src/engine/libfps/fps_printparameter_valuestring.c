@@ -4,12 +4,14 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "ImageStreamIO/ImageStreamIO.h"
 
-#include <unistd.h>
-#include <string.h>
 
+/**
+ * @brief Extract the bare stream name from a parameter value.
+ *
+ * Strips any @X: prefix modifiers and bracket
+ * slice specifications from the string value.
+ */
 static void fps_printparameter_bare_stream_name(
     const char *streamspec,
     char *streamname,
@@ -33,6 +35,12 @@ static void fps_printparameter_bare_stream_name(
     }
 }
 
+/**
+ * @brief Format an FPS parameter as a human-readable string.
+ *
+ * Writes type, keyword, and current value into a
+ * single line suitable for .fps file output.
+ */
 errno_t functionparameter_PrintParameter_ValueString(
     FPS_PARAM *fpsentry,
     char *outstring,
@@ -143,6 +151,14 @@ errno_t functionparameter_PrintParameter_ValueString(
     }
 }
 
+/**
+ * @brief Get just the value portion of a parameter as a
+ * string.
+ *
+ * Simpler than PrintParameter_ValueString; returns
+ * only the formatted value, not the full keyword
+ * line.
+ */
 errno_t functionparameter_GetParamValueString(
     FPS_PARAM *fpsentry,
     char *outstring,

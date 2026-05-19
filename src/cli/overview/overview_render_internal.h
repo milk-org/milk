@@ -60,9 +60,9 @@ typedef struct
 void render_pad_spaces(int chars_written, int panel_width);
 int ov_render_header_text(
     const char *text,
-    int         hs,
-    int         max_vis_width,
-    ov_rgb_t    base_fg);
+    int        hs,
+    int        max_vis_width,
+    ov_rgb_t   base_fg);
 
 void render_scroll_indicators(
     OV_RECT  r,
@@ -91,15 +91,15 @@ const char *render_dtype(uint8_t dt);
 int         dtype_bytesize(uint8_t dt);
 
 void ov_compute_related(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    OV_RELATED       *rel);
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m,
+    OV_RELATED      *rel);
 
 void ov_hittest(
     OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int             mr,
-    int             mc);
+    int            mr,
+    int            mc);
 
 void ov_hittest_resolve_globals(
     OV_LAYOUT      *lay,
@@ -107,11 +107,11 @@ void ov_hittest_resolve_globals(
 
 void render_highlighted_name(
     const char *name,
-    int         max_len,
+    int        max_len,
     regex_t    *re,
-    int         has_re,
-    ov_rgb_t    normal_fg,
-    ov_rgb_t    row_bg);
+    int        has_re,
+    ov_rgb_t   normal_fg,
+    ov_rgb_t   row_bg);
 
 /* Inline trigger-mode short label */
 static inline const char *render_trigmode_label(
@@ -151,12 +151,12 @@ static inline void format_mem_kb(
 /* Inline sort column label builder */
 static inline int sort_col_label(
     char       *buf,
-    int         bufsz,
+    int        bufsz,
     const char *label,
-    int         col_key,
-    int         cur_key,
-    int         desc,
-    int         visual_width)
+    int        col_key,
+    int        cur_key,
+    int        desc,
+    int        visual_width)
 {
     if (col_key == cur_key)
     {
@@ -322,10 +322,10 @@ extern float ov_scan_get_interval(void);
  */
 static inline void render_sparkline(
     const float *hist,
-    int          hidx,
-    int          len,
-    int          width,
-    ov_rgb_t     fg)
+    int         hidx,
+    int         len,
+    int         width,
+    ov_rgb_t    fg)
 {
     /* Unicode block elements: 1/8 to 8/8 */
     static const char *bars[] = {
@@ -370,8 +370,8 @@ static inline void render_sparkline(
  */
 static inline void format_uptime(
     char    *buf,
-    int      sz,
-    int64_t  secs)
+    int     sz,
+    int64_t secs)
 {
     if (secs < 0) { secs = 0; }
     if (secs < 60)

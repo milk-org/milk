@@ -101,7 +101,7 @@ FPS *ov_fcache_get_fps(const char *name);
 /** Get raw parameter index by display index */
 int ov_fcache_get_param_index(
     const char *fps_name,
-    int         disp_idx);
+    int        disp_idx);
 /** Post-scan enrichment: sparklines, uptime, stale, new-item */
 void ov_post_scan_enrich(OV_MODEL *model);
 

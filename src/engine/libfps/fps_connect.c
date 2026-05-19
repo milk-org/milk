@@ -6,18 +6,10 @@
 #include <fcntl.h>    // for open
 #include <sys/mman.h> // mmap
 #include <sys/stat.h> // fstat
-#include <unistd.h>   // for close
-#include <string.h>   // for strerror
-#include <errno.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
-#include "timeutils.h"
 
-#include "fps_GetParamIndex.h"
-#include "fps_loadstream.h"
-#include "fps_shmdirname.h"
 
 
 // #include "timeutils.h"
@@ -47,8 +39,8 @@
  *     ".procinfo.RTprio", etc.).
  */
 long fps_connect(
-    const char                *name,
-    FPS *fps,
+    const char *name,
+    FPS        *fps,
     int fpsconnectmode
 )
 {

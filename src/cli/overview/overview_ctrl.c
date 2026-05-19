@@ -37,8 +37,17 @@
 #undef PRINT_ERROR
 #include "milkDebugTools.h"
 
+/**
+ * @brief Forward declaration: start FPS configuration.
+ */
 errno_t functionparameter_CONFstart(FPS *fps);
+/**
+ * @brief Forward declaration: stop FPS configuration.
+ */
 errno_t functionparameter_CONFstop(FPS *fps);
+/**
+ * @brief Forward declaration: start FPS run process.
+ */
 errno_t functionparameter_RUNstart(FPS *fps);
 errno_t functionparameter_RUNstop(FPS *fps);
 errno_t functionparameter_FPSremove(FPS *fps);
@@ -49,9 +58,9 @@ int functionparameter_FPS_tmux_ensure(FPS *fps);
 
 /* Forward-declare FPS connect/disconnect */
 long fps_connect(
-    const char               *name,
-    FPS *fps,
-    int                        fpsconnectmode);
+    const char *name,
+    FPS        *fps,
+    int        fpsconnectmode);
 int fps_disconnect(
     FPS *fps);
 
@@ -386,7 +395,7 @@ void ov_ctrl_proc_sigkill(
  */
 void ov_ctrl_proc_set_ctrlval(
     const OV_PROC *p,
-    int            val,
+    int           val,
     OV_CMDLOG     *log)
 {
     if (p == NULL || p->PID <= 0 || !p->valid)
@@ -642,7 +651,7 @@ void ov_ctrl_proc_pause_toggle(
  */
 void ov_ctrl_fps_signal_pid(
     const OV_FPS *f,
-    int           sig,
+    int          sig,
     OV_CMDLOG    *log)
 {
     if (f == NULL)
@@ -811,8 +820,8 @@ void ov_ctrl_procs_cleanup(
  * @item:  pointer to the selected item (OV_STREAM, OV_PROC, or OV_FPS)
  */
 void ov_ctrl_inspect_item(
-    ov_focus_t     panel,
-    const void    *item)
+    ov_focus_t panel,
+    const void *item)
 {
     if (item == NULL)
     {

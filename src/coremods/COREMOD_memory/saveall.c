@@ -30,8 +30,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 errno_t COREMOD_MEMORY_SaveAll_sequ(
     const char *dirname,
     const char *IDtrig_name,
-    long        semtrig,
-    long        NBframes);
+    long       semtrig,
+    long       NBframes);
 
 
 /* ================================================================
@@ -286,8 +286,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 errno_t COREMOD_MEMORY_SaveAll_sequ(
     const char *dirname,
     const char *IDtrig_name,
-    long        semtrig,
-    long        NBframes)
+    long       semtrig,
+    long       NBframes)
 {
     long   *IDarray;
     long   *IDarrayout;

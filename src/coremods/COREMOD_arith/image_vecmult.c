@@ -70,9 +70,9 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 
 errno_t image_vect_multiply(
-    IMGID    imgin,
-    IMGID    imgvec,
-    IMGID    *imgout,
+    IMGID imgin,
+    IMGID imgvec,
+    IMGID *imgout,
     uint32_t multaxis
 )
 {

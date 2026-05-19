@@ -67,9 +67,9 @@ typedef struct {
 } OV_CMDLOG;
 
 void ov_cmdlog_push(
-    OV_CMDLOG          *log,
-    ov_cmdlog_level_t   level,
-    const char         *fmt, ...);
+    OV_CMDLOG         *log,
+    ov_cmdlog_level_t level,
+    const char        *fmt, ...);
 
 /* Layout state */
 typedef struct {

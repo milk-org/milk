@@ -1,5 +1,8 @@
 #include "streamCTRL_TUI_render_internal.h"
 
+/**
+ * @brief Render the streamCTRL column headers.
+ */
 void streamCTRL__render_header_streams(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state, int *NBsinfodisp_out, int *lastindex_out, double *frame_t_sec_out, int *frame_color_level_out) {
     int NBsinfodisp = 10;
     double frame_t_sec = 0.0;

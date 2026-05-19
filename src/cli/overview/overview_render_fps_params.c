@@ -100,7 +100,7 @@ static ov_rgb_t fps_param_type_color(uint32_t type)
 static void render_param_breadcrumb(
     const OV_LAYOUT *lay,
     const OV_FPS    *fps,
-    OV_RECT          r)
+    OV_RECT         r)
 {
     int focused = (lay->fps_param_focus == 1);
     ov_rgb_t border_fg = focused
@@ -233,8 +233,8 @@ int ov_get_fps_tree_items(const OV_FPS *fps, const char *path, fps_tree_item_t *
  * as a virtual hierarchical tree.
  */
 void ov_render_fps_params_panel(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     OV_RECT r = lay->r_fps_params;
 

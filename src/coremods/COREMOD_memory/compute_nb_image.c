@@ -14,6 +14,9 @@
 #include "libmilkdata/milkdata.h"
 #endif
 
+/**
+ * @brief Count the number of active images.
+ */
 long compute_nb_image()
 {
     long image_count = 0;

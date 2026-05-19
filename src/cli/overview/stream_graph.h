@@ -133,8 +133,8 @@ typedef struct
  */
 void sg_compute_lineage(
     const OV_MODEL *m,
-    int             stream_idx,
-    sg_mode_t       mode,
+    int            stream_idx,
+    sg_mode_t      mode,
     SG_LINEAGE     *out);
 
 /**
@@ -149,8 +149,8 @@ void sg_compute_lineage(
  */
 void sg_compute_node_depths(
     const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
+    int            start_node,
+    sg_mode_t      mode,
     int8_t         *node_depths);
 
 /**
@@ -172,8 +172,8 @@ const char *sg_mode_label(sg_mode_t mode);
  */
 int sg_compute_render_nodes(
     const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
+    int            start_node,
+    sg_mode_t      mode,
     SG_RENDER_NODE *out_nodes);
 
 /**
@@ -187,8 +187,8 @@ int sg_compute_render_nodes(
  */
 int sg_compute_render_tree(
     const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
+    int            start_node,
+    sg_mode_t      mode,
     SG_TREE_NODE   *out_nodes);
 
 #endif /* STREAM_GRAPH_H */

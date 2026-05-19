@@ -33,6 +33,11 @@ errno_t COREMOD_MEMORY_image_set_status(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Set the write counter (cnt0) of a shared stream.
+ *
+ * Directly overwrites the counter in SHM metadata.
+ */
 errno_t COREMOD_MEMORY_image_set_cnt0(
     const char *IDname, int cnt0)
 {
@@ -46,6 +51,9 @@ errno_t COREMOD_MEMORY_image_set_cnt0(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Set the auxiliary counter (cnt1) of a shared stream.
+ */
 errno_t COREMOD_MEMORY_image_set_cnt1(
     const char *IDname, int cnt1)
 {

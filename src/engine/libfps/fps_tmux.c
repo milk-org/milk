@@ -7,11 +7,6 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
-#include <errno.h>
-#include <unistd.h>
-#include <string.h>
 
 
 /** @brief Kill FPS tmux session
@@ -40,6 +35,16 @@ int functionparameter_FPS_tmux_kill(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Attach to an FPS tmux session interactively.
+ *
+ * Blocks until the user detaches from the session
+ * (Ctrl-b d).  Used by fpsCTRL to let operators
+ * inspect tmux windows directly.
+ *
+ * @param fps  Connected FPS with valid md->name
+ * @return RETURN_SUCCESS
+ */
 int functionparameter_FPS_tmux_attach(
     FPS *fps
 )
@@ -311,7 +316,9 @@ int functionparameter_FPS_tmux_send_dispatch(
 
 /** @brief Get path to current executable
  */
-char* functionparameter_FPS_get_executable_path(char *buffer, size_t size)
+char* functionparameter_FPS_get_executable_path(
+    char *buffer,
+    size_t size)
 {
     if (!buffer || size == 0) return NULL;
     

@@ -27,6 +27,9 @@ extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
 
+/**
+ * @brief Handler: return from a function call.
+ */
 int cli_intercept_cmd_return(const char *p)
 {
     if(strcmp(p, "return") == 0
@@ -49,6 +52,9 @@ int cli_intercept_cmd_return(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: exit the interpreter.
+ */
 int cli_intercept_cmd_exit(const char *p)
 {
     if(strcmp(p, "exit") == 0
@@ -88,6 +94,9 @@ int cli_intercept_cmd_exit(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: shift positional args left.
+ */
 int cli_intercept_cmd_shift(const char *p)
 {
     if(strcmp(p, "shift") == 0
@@ -633,7 +642,7 @@ static const char *cli_cmp_sym(
  */
 static void cli_assert_trim(
     char       *dst,
-    size_t      sz,
+    size_t     sz,
     const char *src,
     int         len
 )

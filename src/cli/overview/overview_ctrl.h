@@ -80,7 +80,7 @@ void ov_ctrl_proc_pause_toggle(
  */
 void ov_ctrl_proc_set_ctrlval(
     const OV_PROC *p,
-    int            val,
+    int           val,
     OV_CMDLOG     *log);
 
 /**
@@ -100,7 +100,7 @@ void ov_ctrl_proc_zero_counters(
  */
 void ov_ctrl_fps_signal_pid(
     const OV_FPS *f,
-    int           sig,
+    int          sig,
     OV_CMDLOG    *log);
 
 /**
@@ -136,7 +136,7 @@ void ov_ctrl_procs_cleanup(
  * @item:  pointer to the selected item (OV_STREAM, OV_PROC, or OV_FPS)
  */
 void ov_ctrl_inspect_item(
-    ov_focus_t     panel,
-    const void    *item);
+    ov_focus_t panel,
+    const void *item);
 
 #endif /* OVERVIEW_CTRL_H */

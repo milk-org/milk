@@ -106,7 +106,7 @@ static long long p_semtrig = 3;
 imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
     const char *IDstream_name,
     const char *IDstreamout_name,
-    long        semtrig)
+    long       semtrig)
 {
     IMGID img0 = imgid_make_from_name(IDstream_name);
     resolveIMGID(&img0, ERRMODE_WARN,

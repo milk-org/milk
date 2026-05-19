@@ -1,10 +1,7 @@
 #include <stdarg.h>
-#include <unistd.h> // access()
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
-#include "timeutils.h"
 
 
 // set to 1 if logging
@@ -14,6 +11,9 @@ static int FLAG_FPSOUTLOG = -1;
 static char *fps_customfilename;
 
 
+/**
+ * @brief Gets the flag indicating whether FPS output logging is enabled.
+ */
 int get_FLAG_FPSOUTLOG()
 {
 
@@ -40,6 +40,9 @@ int get_FLAG_FPSOUTLOG()
 }
 
 
+/**
+ * @brief Sets the FPS output logging flag.
+ */
 errno_t set_FLAG_FPSOUTLOG(int val)
 {
     FLAG_FPSOUTLOG = val;
@@ -81,6 +84,18 @@ errno_t getFPSlogfname(
 }
 
 
+/**
+ * @brief Write one timestamped log entry to a file pointer.
+ *
+ * Formats the current UTC time with nanosecond precision and
+ * appends a single log line:
+ *   TIMESTAMP EPOCH.NSEC  KEYWORD MSG
+ *
+ * @param keyw       Log entry keyword (e.g., "SETVAL")
+ * @param msgstring  Free-form message text
+ * @param fpout      Open file pointer to write to
+ * @return RETURN_SUCCESS
+ */
 errno_t functionparameter_outlog_file(
     char *keyw,
     char *msgstring,

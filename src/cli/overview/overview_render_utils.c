@@ -1,11 +1,16 @@
 #include "overview_render_internal.h"
+/**
+ * @brief Render a name with search-match highlighting.
+ *
+ * Colors matching substring in the display.
+ */
 void render_highlighted_name(
     const char *name,
-    int         max_len,
+    int        max_len,
     regex_t    *re,
-    int         has_re,
-    ov_rgb_t    normal_fg,
-    ov_rgb_t    row_bg)
+    int        has_re,
+    ov_rgb_t   normal_fg,
+    ov_rgb_t   row_bg)
 {
     int len = (int) strlen(name);
     if (len > max_len) len = max_len;
@@ -52,6 +57,9 @@ void render_highlighted_name(
 }
 
 
+/**
+ * @brief Render a data type badge with color coding.
+ */
 const char *render_dtype(uint8_t dt)
 {
     switch (dt)
@@ -91,6 +99,9 @@ int dtype_bytesize(uint8_t dt)
     }
 }
 
+/**
+ * @brief Clear a screen row to blank.
+ */
 void clear_row(
     int row,
     int col,

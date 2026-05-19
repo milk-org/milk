@@ -8,16 +8,19 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
-#include "timeutils.h"
 
 // fill up task list from fifo submissions
 //
 
 
+/**
+ * @brief Read and process commands from the fpsCMD FIFO.
+ *
+ * Non-blocking read from the named pipe. Each line
+ * is dispatched to the command processor.
+ */
 int functionparameter_read_fpsCMD_fifo(
-    int                 fpsCTRLfifofd,
+    int                fpsCTRLfifofd,
     FPSCTRL_TASK_ENTRY *fpsctrltasklist,
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist
 )

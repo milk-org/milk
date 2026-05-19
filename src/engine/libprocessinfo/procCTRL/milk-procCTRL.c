@@ -3,21 +3,25 @@
  * @brief Milk procctrl module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <getopt.h>
 
-#include "ImageStreamIO/ImageStreamIO.h"
 #include "processinfo.h"
 #include "procCTRL_TUI.h"
 
 #include "milk_help.h"
 
 // Prototypes for functions defined in other procCTRL files
+/**
+ * @brief Forward declaration stub for procCTRL screen.
+ *
+ * Implemented in the TUI module; declared here
+ * for the standalone main entry point.
+ */
 errno_t processinfo_CTRLscreen();
 
+/**
+ * @brief Print help message for milk-procCTRL.
+ */
 static void print_help(const char *progname, int mh_color) {
     milk_help_banner(progname, "interactive TUI for monitoring and controlling milk processes", mh_color);
 
@@ -79,7 +83,9 @@ static void print_help(const char *progname, int mh_color) {
     printf("  %s                           Zero counter for selected / all process(es)\n\n", MH(MH_CMD, "z / Z"));
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 "interactive TUI for monitoring and controlling milk processes",

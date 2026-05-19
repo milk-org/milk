@@ -8,14 +8,9 @@
  * the live PID via kill(pid, 0).
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <errno.h>
 #include <regex.h>
 #include <getopt.h>
 #include <sys/mman.h>
@@ -41,7 +36,12 @@
     "process file — does not require milk-procCTRL-scan to be running.\n" \
     "An optional POSIX regex filters which process names are shown."
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * @brief Print help message for milk-procinfo-list.
+ */
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, PIL_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -78,7 +78,9 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 3, mh_color);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 PIL_DESC, PIL_DESC_LONG);

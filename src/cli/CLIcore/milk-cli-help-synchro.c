@@ -13,6 +13,9 @@
 #define C_NOTE   "\033[1;35m"
 #define C_BOLD   "\033[1m"
 
+/**
+ * @brief Print help for the milk synchro debug tool.
+ */
 void print_milk_synchro_help(void)
 {
     printf("\n");

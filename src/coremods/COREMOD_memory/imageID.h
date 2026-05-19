@@ -6,6 +6,20 @@
 #include <string.h>
 #include <stdlib.h>
 
+/**
+ * @brief Register an IMGID in the CLI image array.
+ *
+ * If the image is already in the array (by name), the
+ * temporary IMAGE is closed and the IMGID is pointed at
+ * the existing entry.  Otherwise, the image is moved into
+ * the first available slot.  When imagearray is NULL
+ * (standalone / non-CLI mode), the image is simply closed.
+ *
+ * @param img         IMGID to register (img->im is consumed)
+ * @param imagearray  Global IMAGE array (NULL in standalone)
+ * @param NB_images   Size of the image array
+ * @return Slot index in imagearray, or -1 on failure
+ */
 static inline imageID RegisterIMGID(
     IMGID *img,
     IMAGE *imagearray,
@@ -202,6 +216,17 @@ static inline imageID _resolveIMGID_impl(
     return img->ID;
 }
 
+/**
+ * @brief Check whether a named stream is currently loaded.
+ *
+ * Performs a resolve attempt in ERRMODE_NULL (silent).
+ * Returns 1 if the image exists in the CLI image array,
+ * 0 otherwise.  Does not open shared memory — only checks
+ * the in-process image table.
+ *
+ * @param name  Stream name to look up
+ * @return 1 if found, 0 if not found or name is empty/NULL
+ */
 static inline int imgid_exists(const char *name)
 {
     if(name == NULL || name[0] == '\0')
@@ -223,6 +248,17 @@ static inline int imgid_exists(const char *name)
 }
 
 
+/**
+ * @brief Build an IMGID from a known image array slot.
+ *
+ * Initializes an IMGID that points directly at
+ * dcimg[ID], bypassing name resolution.  Used when
+ * the caller already knows the slot index.
+ *
+ * @param name  Image name to store in the IMGID
+ * @param ID    Index into the global dcimg[] array
+ * @return Fully populated IMGID
+ */
 static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
 {
     IMGID img;
@@ -267,6 +303,18 @@ stream_connect(
 
 
 
+/**
+ * @brief Create a shared-memory image from IMGID template
+ *        parameters and register it in the CLI array.
+ *
+ * Uses the metadata template (mdt) fields — naxis, size,
+ * datatype, shared, NBkw, CBsize — to call
+ * create_image_ID().  After creation, img->im, img->md,
+ * and img->createcnt are updated.
+ *
+ * @param img  IMGID with name and mdt populated
+ * @return Image slot ID, or -1 on failure
+ */
 static inline imageID createimagefromIMGID(IMGID *img)
 {
     create_image_ID(img->name,
@@ -404,11 +452,11 @@ static inline imageID imcreateIMGID(IMGID *img)
  */
 static inline IMGID _stream_connect_create_2D_impl(
     const char *__restrict imname,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint8_t  datatype,
-    const char *caller_file,
-    int        caller_line,
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint8_t                datatype,
+    const char             *caller_file,
+    int                    caller_line,
     const char *caller_func
 )
 {
@@ -515,6 +563,23 @@ static inline IMGID _stream_connect_create_2D_impl(
     _stream_connect_create_2D_impl(imname, xsize, ysize, _DATATYPE_FLOAT, \
                                    __FILE__, __LINE__, __FUNCTION__)
 
+/**
+ * @brief Connect to a 3D stream, creating it if missing
+ *        or mismatched.
+ *
+ * Tries to resolve the stream in local memory, then in
+ * shared memory.  If found, validates datatype, naxis,
+ * and size against the requested parameters.  A mismatch
+ * deletes the existing stream and re-creates it.  If not
+ * found at all, creates a new shared 3D stream.
+ *
+ * @param imname    Stream name
+ * @param xsize     Width in pixels
+ * @param ysize     Height in pixels
+ * @param zsize     Depth (number of slices)
+ * @param datatype  Image datatype (_DATATYPE_*)
+ * @return IMGID with connection established
+ */
 static inline IMGID stream_connect_create_3D(
     const char *__restrict imname,
     uint32_t xsize,

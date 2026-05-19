@@ -49,8 +49,17 @@ static int listim_scr_wcol;
 
 /* forward decls */
 errno_t init_list_image_ID_ncurses(const char *termttyname);
+/**
+ * @brief Close ncurses memory monitor display.
+ */
 void close_list_image_ID_ncurses();
+/**
+ * @brief Display image list in ncurses mode.
+ */
 errno_t list_image_ID_ncurses();
+/**
+ * @brief Main memory monitor loop.
+ */
 errno_t memory_monitor(const char *termttyname);
 
 
@@ -121,6 +130,9 @@ errno_t init_list_image_ID_ncurses(const char *termttyname)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Display image list in ncurses mode.
+ */
 errno_t list_image_ID_ncurses()
 {
     int strmaxlen = 300;
@@ -239,6 +251,9 @@ errno_t list_image_ID_ncurses()
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Close ncurses memory monitor display.
+ */
 void close_list_image_ID_ncurses(void)
 {
     printf("Closing monitor cleanly\n");
@@ -250,12 +265,21 @@ void close_list_image_ID_ncurses(void)
 }
 #else
 errno_t init_list_image_ID_ncurses(const char *termttyname) { (void)termttyname; return 0; }
+/**
+ * @brief Display image list in ncurses mode.
+ */
 errno_t list_image_ID_ncurses() { return 0; }
+/**
+ * @brief Close ncurses memory monitor display.
+ */
 void close_list_image_ID_ncurses(void) {}
 #endif
 
 static int mmon_initialized = 0;
 
+/**
+ * @brief Main memory monitor loop.
+ */
 errno_t memory_monitor(const char *termttyname)
 {
     if(mmon_initialized == 0)

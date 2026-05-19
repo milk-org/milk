@@ -62,7 +62,7 @@ static inline int elem_size(uint8_t datatype)
 static errno_t alloc_slice_buffer(
     IMGID          *img,
     const uint32_t *out_sz,
-    int             naxis,
+    int            naxis,
     uint8_t         datatype
 )
 {
@@ -131,11 +131,11 @@ static errno_t alloc_slice_buffer(
 static void copy_crop_2d(
     const char *restrict src,
     char       *restrict dst,
-    int         esize,
-    uint32_t    src_xsz,
-    int32_t     x0,
-    int32_t     x1,
-    int32_t     y0,
+    int                  esize,
+    uint32_t             src_xsz,
+    int32_t              x0,
+    int32_t              x1,
+    int32_t              y0,
     int32_t     y1
 )
 {
@@ -174,10 +174,10 @@ static void copy_crop_2d(
 static void copy_general(
     const char *restrict src,
     char       *restrict dst,
-    int         esize,
-    const IMGID_SLICE   *s,
-    const uint32_t      *src_size,
-    const uint32_t      *out_size,
+    int                  esize,
+    const IMGID_SLICE    *s,
+    const uint32_t       *src_size,
+    const uint32_t       *out_size,
     int                  naxis
 )
 {
@@ -282,10 +282,10 @@ static void copy_general(
 static void writeback_general(
     char       *restrict dst_src,
     const char *restrict src_slice,
-    int         esize,
-    const IMGID_SLICE   *s,
-    const uint32_t      *src_size,
-    const uint32_t      *out_size,
+    int                  esize,
+    const IMGID_SLICE    *s,
+    const uint32_t       *src_size,
+    const uint32_t       *out_size,
     int                  naxis
 )
 {

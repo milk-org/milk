@@ -57,6 +57,10 @@ trigger: always_on
   headers it relies on, rather than implicitly relying on
   another header to include them (e.g. relying on
   `CLIcore.h` to provide `math.h` or `stdlib.h`).
+- Conversely, do not include headers that the file does
+  not use. Remove redundant `#include` directives —
+  headers already provided transitively by a required
+  include should not be listed again.
 - Add a closing comment to any scope longer than
   ~10 lines:
   ```c

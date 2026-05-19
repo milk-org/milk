@@ -13,7 +13,9 @@
 #define C_BOLD  "\033[1m"      /* White Bold  -> Emphasize specific words */
 #define C_RST   "\033[0m"      /* Reset */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h1") == 0 ||

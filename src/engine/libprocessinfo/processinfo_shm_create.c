@@ -4,20 +4,12 @@
  */
 
 #include <sys/mman.h> // mmap()
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <time.h>
-#include <string.h>
-#include <errno.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_shm_list_create.h"
 #include "processinfo_procdirname.h"
-#include "processinfo_WriteMessage.h"
-#include "processinfo_shm_create.h"
 
 
 

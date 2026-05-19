@@ -67,8 +67,8 @@ extern int cli_last_retval;
  */
 int cli_find_unquoted_op(
     const char *line,
-    char        primary,
-    char        reject,
+    char       primary,
+    char       reject,
     char        accept
 )
 {

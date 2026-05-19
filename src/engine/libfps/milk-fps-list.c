@@ -3,18 +3,11 @@
  * @brief Milk fps list module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <getopt.h>
 #include <signal.h>
 #include <regex.h>
 
-#include "fps.h"
 #include "fps_globals.h"
-#include "fps_scan.h"
-#include "milk_help.h"
 
 /* local color aliases -- keep for table rendering, map to MH_* */
 #define C_TITLE MH_TITLE
@@ -36,7 +29,12 @@
     "tmux status, and short description.\n" \
     "An optional regex pattern filters which FPS names are shown."
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * @brief Print help message for milk-fps-list.
+ */
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, FL_DESC, mh_color);
 
@@ -95,7 +93,9 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 4, mh_color);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 FL_DESC, FL_DESC_LONG);

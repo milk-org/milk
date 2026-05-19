@@ -3,29 +3,18 @@
  * @brief   FPS process command line
  */
 
-#include <stdlib.h>
 
 #include "fpsseq.h"
-#include "fps_globals.h"
 
-#include "fps_scan.h"
 
 #include "fps_CONFstart.h"
-#include "fps_CONFstop.h"
 
 #include "fps_RUNstart.h"
-#include "fps_RUNstop.h"
 
-#include "fps_tmux.h"
 
 #include "fps_FPSremove.h"
 
-#include "fps_outlog.h"
-#include "fps_paramvalue.h"
-#include "fps_save2disk.h"
 
-#include "fps_WriteParameterToDisk.h"
-#include "fps_printparameter_valuestring.h"
 
 
 /** @brief process command line
@@ -81,20 +70,20 @@
  * seq_send, wait_seq.
  */
 static void milkseq_cmd_handle_sys(
-    const char                *FPScommand,
-    const char                *FPScmdline,
-    int                        nbword,
-    const char                *FPSarg0,
-    const char                *FPSarg1,
-    uint32_t                   cmdindex,
-    MILKSEQ_STATE             *state,
-    FPSCTRL_PROCESS_VARS      *fpsCTRLvar,
-    FPS *fps,
-    KEYWORD_TREE_NODE         *keywnode,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus,
-    int                       *testcnt)
+    const char           *FPScommand,
+    const char           *FPScmdline,
+    int                  nbword,
+    const char           *FPSarg0,
+    const char           *FPSarg1,
+    uint32_t             cmdindex,
+    MILKSEQ_STATE        *state,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
+    int                  *cmdFOUND,
+    int                  *cmdOK,
+    uint64_t             *taskstatus,
+    int                  *testcnt)
 {
     if(*cmdFOUND)
         return;
@@ -297,13 +286,13 @@ static void milkseq_cmd_handle_sys(
  * Dispatches: tmuxstart, tmuxstop.
  */
 static void milkseq_cmd_handle_tmux(
-    const char                *FPScommand,
-    int                        nbword,
-    FPS *fps,
-    int                        fpsindex,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus)
+    const char *FPScommand,
+    int        nbword,
+    FPS        *fps,
+    int        fpsindex,
+    int        *cmdFOUND,
+    int        *cmdOK,
+    uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
         return;
@@ -374,13 +363,13 @@ static void milkseq_cmd_handle_tmux(
  * or a timeout is reached.
  */
 static void milkseq_cmd_handle_conf(
-    const char                *FPScommand,
-    int                        nbword,
-    FPS *fps,
-    int                        fpsindex,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus)
+    const char *FPScommand,
+    int        nbword,
+    FPS        *fps,
+    int        fpsindex,
+    int        *cmdFOUND,
+    int        *cmdOK,
+    uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
         return;
@@ -541,13 +530,13 @@ static void milkseq_cmd_handle_conf(
  * or a timeout is reached.
  */
 static void milkseq_cmd_handle_run(
-    const char                *FPScommand,
-    int                        nbword,
-    FPS *fps,
-    int                        fpsindex,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus)
+    const char *FPScommand,
+    int        nbword,
+    FPS        *fps,
+    int        fpsindex,
+    int        *cmdFOUND,
+    int        *cmdOK,
+    uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
         return;
@@ -653,11 +642,11 @@ static void milkseq_cmd_handle_run(
  * Return: FPS index of the parameter accessed, or -1 if none
  */
 int milkseq_exec_cmd(
-    uint32_t                 cmdindex,
-    MILKSEQ_STATE            *state,
-    FPS *fps,
-    KEYWORD_TREE_NODE        *keywnode,
-    FPSCTRL_PROCESS_VARS     *fpsCTRLvar,
+    uint32_t             cmdindex,
+    MILKSEQ_STATE        *state,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
     uint64_t                 *taskstatus
 )
 {

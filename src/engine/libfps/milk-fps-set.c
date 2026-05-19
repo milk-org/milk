@@ -3,29 +3,26 @@
  * @brief Milk fps set module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <getopt.h>
-#include <time.h>
 
-#include "fps.h"
-#include "fps_globals.h"
-#include "fps_scan.h"
-#include "fps_connect.h"
 #include "fps_disconnect.h"
-#include "fps_paramvalue.h"
 #include "fps_GetParamIndex.h"
-#include "milk_help.h"
 
 /* Helper to check if string starts with prefix */
-static int starts_with(const char *pre, const char *str)
+static int starts_with(
+    const char *pre,
+    const char *str)
 {
     size_t lenpre = strlen(pre);
     size_t lenstr = strlen(str);
     return lenstr < lenpre ? 0 : strncmp(pre, str, lenpre) == 0;
 }
 
+/**
+ * @brief Map FPS type code to a short name string.
+ *
+ * Returns "INT64", "FLOAT32", etc.
+ */
 static const char *get_type_name(uint32_t type)
 {
     if (type & FPTYPE_INT32) return "INT32";
@@ -56,7 +53,12 @@ static const char *get_type_name(uint32_t type)
     "STRING, FILENAME, STREAMNAME, ONOFF, TIMESPEC, PID.\n" \
     "TIMESPEC parameters accept a float value in seconds (e.g. 0.001)."
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * @brief Print help message for milk-fps-set.
+ */
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, FSET_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -96,6 +98,12 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 3, mh_color);
 }
 
+/**
+ * @brief Scan FPS entries for tab completion.
+ *
+ * Builds a list of matching parameter keywords
+ * for readline tab completion.
+ */
 void do_completion_scan(const char *word) {
     char *dot = strchr(word, '.');
     
@@ -162,7 +170,9 @@ void do_completion_scan(const char *word) {
     }
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 FSET_DESC, FSET_DESC_LONG);

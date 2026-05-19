@@ -56,6 +56,12 @@ FPS_V2_SECTION5(FPS_PARAMS)
 /// LOADFITS_ERRMODE_ERROR   (2) return error
 /// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
+/**
+ * @brief Load a FITS file and return an IMGID.
+ *
+ * Reads a FITS file from disk into the image array
+ * and returns the IMGID handle.
+ */
 errno_t load_fits_IMGID(
     const char *__restrict file_name,
     IMGID *imgout,
@@ -629,10 +635,15 @@ errno_t load_fits_IMGID(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Load a FITS file into the image array.
+ *
+ * Legacy interface returning an imageID integer.
+ */
 errno_t load_fits(
     const char *__restrict file_name,
     const char *__restrict ID_name,
-    int      errmode,
+    int                    errmode,
     imageID *IDout
 )
 {

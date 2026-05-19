@@ -31,7 +31,7 @@ typedef errno_t (*fps_generic_CLIfunction_fn)(
     CLICMDARGDEF    *farg,
     CLICMDDATA      *CLIcmddata,
     FPS_CLI_BINDING *bindings,
-    int              nb_b,
+    int             nb_b,
     fps_compute_fn   compute_fn
 );
 
@@ -57,7 +57,7 @@ safe_fps_generic_CLIfunction(
     CLICMDARGDEF    *farg,
     CLICMDDATA      *cd,
     FPS_CLI_BINDING *bindings,
-    int              nb_b,
+    int             nb_b,
     fps_compute_fn   compute_fn
 )
 {

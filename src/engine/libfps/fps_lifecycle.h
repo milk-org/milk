@@ -35,7 +35,7 @@ int fps_generic_init(
     const char      *fps_name,
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,
-    int              nb_b,
+    int             nb_b,
     int              procinfo
 );
 
@@ -52,8 +52,8 @@ int fps_generic_init(
  * @param nb_b      Number of bindings
  */
 void fps_loop_override_trigger(
-    FPS *fps,
-    FPS_CLI_BINDING           *bindings,
+    FPS             *fps,
+    FPS_CLI_BINDING *bindings,
     int                        nb_b
 );
 
@@ -126,7 +126,7 @@ int fps_generic_run(
     FPS_APP_INFO    *app_info,
     CLICMDARGDEF    *farg,
     FPS_CLI_BINDING *bindings,
-    int              nb_b,
+    int             nb_b,
     fps_compute_fn   compute_fn
 );
 

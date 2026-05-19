@@ -175,12 +175,12 @@ errno_t create_image_ID_IMGID(
  */
 errno_t create_image_ID(
     const char *__restrict name,
-    long        naxis,
-    uint32_t   *size,
-    uint8_t     datatype,
-    int         shared,
-    int         NBkw,
-    int         CBsize,
+    long                   naxis,
+    uint32_t               *size,
+    uint8_t                datatype,
+    int                    shared,
+    int                    NBkw,
+    int                    CBsize,
     imageID    *outID
 )
 {
@@ -320,9 +320,9 @@ errno_t create_2Dimage_ID_IMGID(
 
 errno_t create_2Dimage_ID(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -352,9 +352,9 @@ errno_t create_2Dimage_ID_double_IMGID(
 
 errno_t create_2Dimage_ID_double(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -392,9 +392,9 @@ errno_t create_2DCimage_ID_IMGID(
 /* 2D complex image */
 errno_t create_2DCimage_ID(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -425,9 +425,9 @@ errno_t create_2DCimage_ID_double_IMGID(
 /* 2D complex image */
 errno_t create_2DCimage_ID_double(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -458,10 +458,10 @@ errno_t create_3Dimage_ID_float_IMGID(
 /* 3D image, single precision */
 errno_t create_3Dimage_ID_float(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    uint32_t    zsize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -493,10 +493,10 @@ errno_t create_3Dimage_ID_double_IMGID(
 /* 3D image, double precision */
 errno_t create_3Dimage_ID_double(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    uint32_t    zsize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -535,10 +535,10 @@ errno_t create_3Dimage_ID_IMGID(
 /* 3D image, default precision */
 errno_t create_3Dimage_ID(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    uint32_t    zsize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -577,10 +577,10 @@ errno_t create_3DCimage_ID_IMGID(
 /* 3D complex image */
 errno_t create_3DCimage_ID(
     const char *__restrict ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    uint32_t    zsize,
-    imageID    *outID)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);

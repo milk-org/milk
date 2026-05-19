@@ -83,6 +83,9 @@ typedef enum
 
 static volatile sig_atomic_t sg_quit = 0;
 
+/**
+ * @brief Signal handler for stream graph tool.
+ */
 static void sg_sighandler(int sig)
 {
     (void) sig;
@@ -96,6 +99,9 @@ static void sg_sighandler(int sig)
 static struct termios sg_orig_termios;
 static int sg_raw_active = 0;
 
+/**
+ * @brief Enter raw terminal mode for graph display.
+ */
 static void sg_raw_enter(void)
 {
     if (sg_raw_active)
@@ -114,6 +120,9 @@ static void sg_raw_enter(void)
     sg_raw_active = 1;
 }
 
+/**
+ * @brief Exit raw terminal mode for graph display.
+ */
 static void sg_raw_exit(void)
 {
     if (!sg_raw_active)
@@ -225,9 +234,9 @@ static void sg_scan_model(OV_MODEL *model)
  * ========================================================= */
 
 static void sg_print_text(
-    const OV_MODEL *m,
-    const char     *stream_name,
-    sg_mode_t       mode,
+    const OV_MODEL   *m,
+    const char       *stream_name,
+    sg_mode_t        mode,
     const SG_LINEAGE *lin)
 {
     printf("# milk-stream-graph v%s\n", SG_VERSION);
@@ -290,9 +299,9 @@ static void sg_print_text(
  * ========================================================= */
 
 static void sg_print_json(
-    const OV_MODEL *m,
-    const char     *stream_name,
-    sg_mode_t       mode,
+    const OV_MODEL   *m,
+    const char       *stream_name,
+    sg_mode_t        mode,
     const SG_LINEAGE *lin)
 {
     printf("{\n");
@@ -367,9 +376,9 @@ static void sg_print_json(
  * ========================================================= */
 
 static void sg_print_pretty(
-    const OV_MODEL *m,
-    const char     *stream_name,
-    sg_mode_t       mode,
+    const OV_MODEL   *m,
+    const char       *stream_name,
+    sg_mode_t        mode,
     const SG_LINEAGE *lin)
 {
     printf(SGC_BOLD SGC_HEADER
@@ -457,9 +466,9 @@ static void sg_print_pretty(
  * ========================================================= */
 
 static void sg_interactive(
-    OV_MODEL  *model,
+    OV_MODEL   *model,
     const char *initial_stream,
-    sg_mode_t   mode)
+    sg_mode_t  mode)
 {
     sg_raw_enter();
 

@@ -27,13 +27,14 @@
  * 8.  If `valueptr` is provided, copy the initial values from it into the FPS.
  * 9.  Return the index of the newly added entry.
  */
-errno_t function_parameter_add_entry(FPS *fps,
-                                     const char                *keywordstring,
-                                     const char *descriptionstring,
-                                     uint64_t    type,
-                                     uint64_t    fpflag,
-                                     void       *valueptr,
-                                     long       *pindexptr)
+errno_t function_parameter_add_entry(
+    FPS        *fps,
+    const char *keywordstring,
+    const char *descriptionstring,
+    uint64_t   type,
+    uint64_t   fpflag,
+    void       *valueptr,
+    long       *pindexptr)
 {
     DEBUG_TRACE_FSTART("%s %s", keywordstring, descriptionstring);
 

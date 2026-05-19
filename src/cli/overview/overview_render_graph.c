@@ -11,8 +11,8 @@
  * selected item.
  */
 void ov_render_preview_line(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     int W = lay->term_cols;
 
@@ -372,6 +372,9 @@ static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
     return -1;
 }
 
+/**
+ * @brief Render the stream-process graph panel.
+ */
 void ov_render_graph_panel(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m)

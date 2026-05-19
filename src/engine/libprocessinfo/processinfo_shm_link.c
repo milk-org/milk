@@ -6,13 +6,15 @@
 #include <sys/mman.h> // mmap()
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-#include "processinfo_internal.h"
 #include "processinfo.h"
 
+/**
+ * @brief Open and map a processinfo shared memory file.
+ *
+ * Returns a pointer to the mapped PROCESSINFO struct
+ * and the file descriptor.
+ */
 PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
 {
     size_t sharedsize = 0; // shared memory size in bytes

@@ -58,6 +58,9 @@ void scache_evict(int ci)
 ov_fps_cache_t s_fcache[OV_MAX_FPS];
 int            s_fcache_nb = 0;
 
+/**
+ * @brief Look up an FPS entry in the connection cache.
+ */
 int fcache_find(const char *name)
 {
     for (int i = 0; i < s_fcache_nb; i++)
@@ -70,6 +73,9 @@ int fcache_find(const char *name)
     return -1;
 }
 
+/**
+ * @brief Evict and disconnect an FPS cache entry.
+ */
 void fcache_evict(int ci)
 {
     fps_disconnect(
@@ -89,6 +95,9 @@ ov_proc_cache_t s_pcache[OV_MAX_PROCS];
 int             s_pcache_nb = 0;
 
 
+/**
+ * @brief Look up a process by PID in the cache.
+ */
 int pcache_find_pid(pid_t pid)
 {
     for (int i = 0; i < s_pcache_nb; i++)
@@ -143,7 +152,7 @@ FPS *ov_fcache_get_fps(const char *name)
  */
 int ov_fcache_get_param_index(
     const char *fps_name,
-    int         disp_idx)
+    int        disp_idx)
 {
     int ci = fcache_find(fps_name);
     if (ci < 0

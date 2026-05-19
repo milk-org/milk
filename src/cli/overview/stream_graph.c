@@ -27,12 +27,18 @@
 #define SG_BSET_WORDS(n) \
     (((n) + SG_BITS_PER_WORD - 1) / SG_BITS_PER_WORD)
 
+/**
+ * @brief Set a bit in the stream graph adjacency matrix.
+ */
 static void sg_bset(uint64_t *words, int idx)
 {
     words[idx / SG_BITS_PER_WORD] |=
         (UINT64_C(1) << (idx % SG_BITS_PER_WORD));
 }
 
+/**
+ * @brief Get a bit from the stream graph adjacency matrix.
+ */
 static int sg_bget(const uint64_t *words, int idx)
 {
     return (words[idx / SG_BITS_PER_WORD]
@@ -67,7 +73,7 @@ typedef struct
  */
 static int sg_edge_matches_mode_from_stream(
     const OV_EDGE *e,
-    sg_mode_t      mode)
+    sg_mode_t     mode)
 {
     switch (mode)
     {
@@ -117,9 +123,9 @@ static int sg_edge_matches_mode_from_stream(
 
 static void sg_bfs_downstream(
     const OV_MODEL *m,
-    int             start_node,
-    int             root_stream_idx,
-    sg_mode_t       mode,
+    int            start_node,
+    int            root_stream_idx,
+    sg_mode_t      mode,
     SG_LINEAGE     *out)
 {
     uint64_t visited[SG_BSET_WORDS(OV_MAX_NODES)];
@@ -270,9 +276,9 @@ static void sg_bfs_downstream(
 
 static void sg_bfs_upstream(
     const OV_MODEL *m,
-    int             start_node,
-    int             root_stream_idx,
-    sg_mode_t       mode,
+    int            start_node,
+    int            root_stream_idx,
+    sg_mode_t      mode,
     SG_LINEAGE     *out)
 {
     uint64_t visited[SG_BSET_WORDS(OV_MAX_NODES)];
@@ -418,8 +424,8 @@ static void sg_bfs_upstream(
 
 void sg_compute_lineage(
     const OV_MODEL *m,
-    int             stream_idx,
-    sg_mode_t       mode,
+    int            stream_idx,
+    sg_mode_t      mode,
     SG_LINEAGE     *out)
 {
     memset(out, 0, sizeof(*out));
@@ -474,6 +480,9 @@ void sg_compute_lineage(
 }
 
 
+/**
+ * @brief Get the label string for a graph display mode.
+ */
 const char *sg_mode_label(sg_mode_t mode)
 {
     switch (mode)
@@ -496,8 +505,8 @@ const char *sg_mode_label(sg_mode_t mode)
 
 void sg_compute_node_depths(
     const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
+    int            start_node,
+    sg_mode_t      mode,
     int8_t         *node_depths)
 {
     for (int i = 0; i < OV_MAX_NODES; i++) {
@@ -644,8 +653,8 @@ void sg_compute_node_depths(
 
 int sg_compute_render_nodes(
     const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
+    int            start_node,
+    sg_mode_t      mode,
     SG_RENDER_NODE *out_nodes)
 {
     if (start_node < 0 || start_node >= m->nb_nodes)
@@ -832,8 +841,8 @@ static void sg_dfs_tree(
 
 int sg_compute_render_tree(
     const OV_MODEL *m,
-    int             start_node,
-    sg_mode_t       mode,
+    int            start_node,
+    sg_mode_t      mode,
     SG_TREE_NODE   *out_nodes)
 {
     int nb_out = 0;

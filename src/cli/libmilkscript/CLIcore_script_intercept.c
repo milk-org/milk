@@ -2,8 +2,17 @@
 extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
 extern int processinfo_procdirname(char *procdirname);
 
+/**
+ * @brief Handler: exit the script interpreter.
+ */
 int cli_intercept_cmd_exit(const char *p);
+/**
+ * @brief Handler: return from current function.
+ */
 int cli_intercept_cmd_return(const char *p);
+/**
+ * @brief Handler: shift positional parameters.
+ */
 int cli_intercept_cmd_shift(const char *p);
 int cli_intercept_cmd_procctl(const char *p);
 int cli_intercept_cmd_procwait(const char *p);

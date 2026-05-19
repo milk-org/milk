@@ -41,9 +41,9 @@ static int cmp_int64(const void *a, const void *b)
  */
 void find_proc_shm(
     bench_cfg_t *cfg,
-    pid_t        pid,
+    pid_t       pid,
     char        *out,
-    size_t       outsz)
+    size_t      outsz)
 {
     DIR *d = opendir(cfg->procdir);
     if (!d)
@@ -100,7 +100,7 @@ void find_proc_shm(
  *        /proc/PID/status.
  */
 void read_proc_mem(
-    pid_t       pid,
+    pid_t      pid,
     pi_stats_t *st)
 {
     st->vmpeak_kb = -1;
@@ -256,7 +256,7 @@ int64_t read_rapl_energy(void)
  */
 void read_procinfo_stats(
     bench_cfg_t *cfg,
-    pid_t        child_pid,
+    pid_t       child_pid,
     pi_stats_t  *out)
 {
     out->valid = 0;

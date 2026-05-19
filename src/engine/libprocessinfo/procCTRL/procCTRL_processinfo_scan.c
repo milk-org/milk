@@ -3,31 +3,18 @@
  * @brief Procctrl processinfo scan module
  */
 
-#include <sys/stat.h>
 #include <sys/mman.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <time.h>
 
-#include "processinfo.h"
 #include "processinfo_internal.h"
-#include "milkDebugTools.h"
-#include "processtools.h"
 #include "processinfo_procdirname.h"
-#include "processinfo_shm_link.h"
-#include "processinfo_shm_close.h"
 #include "procCTRL_PIDcollectSystemInfo.h"
-#include "procCTRL_GetCPUloads.h"
-#include "procCTRL_processinfo_scan.h"
 #include "procCTRL_TUI.h"
 #include "timeutils.h"
-#include "quicksort.h"
 
 // Perform one scan step (update data, sort list)
+/**
+ * @brief Performs one scan step to update and sort the process list.
+ */
 void processinfo_scan_step(PROCINFOPROC *pinfop)
 {
     FILE *flog = NULL;

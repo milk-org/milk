@@ -99,6 +99,11 @@ void cli_bookmark_save(void)
     fclose(fp);
 }
 
+/**
+ * @brief Handle bookmark create/goto commands.
+ *
+ * Manages named bookmarks for directory navigation.
+ */
 errno_t cli_bookmark(void)
 {
     if(data.cmdNBarg < 2)

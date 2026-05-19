@@ -1,6 +1,4 @@
 #include "fpsseq.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -87,7 +85,6 @@ static void expand_vars(SCRIPT_CTX *ctx, char *line) {
     snprintf(line, MAX_LINE_LEN, "%s", result);
 }
 
-#include "fps_GetParamIndex.h"
 
 /**
  * load_and_preprocess - Recursively load and preprocess a .seq script
@@ -190,10 +187,10 @@ static int load_and_preprocess(SCRIPT_CTX *ctx, const char *filename, int depth)
  * Return: 0 on success, -1 on preprocessing error
  */
 errno_t milkseq_load_script(
-    MILKSEQ_STATE             *state,
-    const char                *filename,
-    FPS *fps,
-    KEYWORD_TREE_NODE         *keywnode)
+    MILKSEQ_STATE     *state,
+    const char        *filename,
+    FPS               *fps,
+    KEYWORD_TREE_NODE *keywnode)
 {
     SCRIPT_CTX ctx = {0};
     if (load_and_preprocess(&ctx, filename, 0) != 0) return -1;

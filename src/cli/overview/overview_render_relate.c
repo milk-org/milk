@@ -1,10 +1,16 @@
 #include "overview_render_internal.h"
+/**
+ * @brief Build the cross-panel relationship filter.
+ *
+ * Marks related streams/procs/FPS for the
+ * currently selected item.
+ */
 int ov_filter_build(
-    const char  *pattern,
+    const char *pattern,
     const char **names,
-    int          count,
-    int         *out,
-    int          max_out)
+    int        count,
+    int        *out,
+    int        max_out)
 {
     if (pattern[0] == '\0')
     {
@@ -61,6 +67,9 @@ int bget(const uint64_t *words, int idx)
 {
     return (words[idx / BITS_PER_WORD] >> (idx % BITS_PER_WORD)) & 1;
 }
+/**
+ * @brief Compute related items for graph linking.
+ */
 void ov_compute_related(
     const OV_LAYOUT *lay,
     const OV_MODEL  *m,

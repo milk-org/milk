@@ -10,7 +10,7 @@
 
 FPS function_parameter_FPCONFsetup_sized(
         const char *fpsname,
-        uint32_t    CMDmode,
+        uint32_t   CMDmode,
         long        NBparamMAX
         );
 

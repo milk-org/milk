@@ -20,6 +20,12 @@
 #include "list_image.h"
 
 // Forward declaration(s)
+/**
+ * @brief Delete an image from the image array.
+ *
+ * Frees pixel data and marks the slot as unused.
+ * Removes SHM file if applicable.
+ */
 errno_t delete_image_ID(
     const char *__restrict imname,
     int errmode);
@@ -391,6 +397,9 @@ errno_t delete_image_ID(
 }
 
 // delete all images with a prefix
+/**
+ * @brief Delete all images matching a name prefix.
+ */
 errno_t delete_image_ID_prefix(
     const char *prefix
 )

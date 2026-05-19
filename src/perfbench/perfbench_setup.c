@@ -139,7 +139,7 @@ int64_t exe_size(const char *exe)
 void read_build_tags(
     const char *exe,
     char       *out,
-    size_t      outsz)
+    size_t     outsz)
 {
     out[0] = '\0';
 

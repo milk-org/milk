@@ -490,10 +490,10 @@ imageID arith_image_crop(const char *ID_name,
 imageID arith_image_extract2D(
     const char *in_name,
     const char *out_name,
-    int64_t        size_x,
-    int64_t        size_y,
-    int64_t        xstart,
-    int64_t        ystart)
+    int64_t    size_x,
+    int64_t    size_y,
+    int64_t    xstart,
+    int64_t    ystart)
 {
     int64_t        *start = NULL;
     int64_t        *end   = NULL;

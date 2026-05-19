@@ -109,13 +109,13 @@ static long long p_reverse = 0;
 
 imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *inputstream_name,
-    uint32_t    xsizeim,
-    uint32_t    ysizeim,
+    uint32_t   xsizeim,
+    uint32_t   ysizeim,
     const char *NBpix_fname,
     const char *IDmap_name,
     const char *IDout_name,
     const char *IDout_pixslice_fname,
-    uint32_t    reverse);
+    uint32_t   reverse);
 //
 // pixel decode for unsigned short
 // sem0, cnt0 gets updated at each full frame
@@ -124,8 +124,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 //
 imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *inputstream_name,
-    uint32_t    xsizeim,
-    uint32_t    ysizeim,
+    uint32_t   xsizeim,
+    uint32_t   ysizeim,
     const char *NBpix_fname,
     const char *IDmap_name,
     const char *IDout_name,

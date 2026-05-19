@@ -12,49 +12,25 @@ typedef int errno_t;
 #endif
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 
-#include <signal.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <time.h>
 
-#include <sys/types.h>
-#include <unistd.h>
 
-#include <fcntl.h>
 #include <sys/mman.h>
 
-#include <dirent.h>
-
-#include <locale.h>
-#include <wchar.h>
 
 
 
-#include "timeutils.h"
-#include "quicksort.h"
+
 
 #include "procCTRL_TUIcompat.h"
-#include "milkDebugTools.h"
 #include "processinfo_internal.h"
 
 static char local_shmdir[STRINGMAXLEN_DIRNAME];
 #define SHAREDPROCDIR local_shmdir
 
-#include <processtools.h>
 #include "processinfo_signals.h"
 
-#include "processinfo_setup.h"
-#include "processinfo_procdirname.h"
-#include "processinfo_SIGexit.h"
-#include "processinfo_shm_create.h"
 #include "processinfo_shm_list_create.h"
-#include "processinfo_exec_start.h"
-#include "processinfo_exec_end.h"
 
 
 #include "procCTRL_PIDcollectSystemInfo.h"
@@ -62,7 +38,6 @@ static char local_shmdir[STRINGMAXLEN_DIRNAME];
 #include "procCTRL_GetNumberCPUs.h"
 #include "procCTRL_processinfo_scan.h"
 
-#include "procCTRL_TUI.h"
 
 
 int procCTRL_debug_mode = 0;
@@ -72,8 +47,15 @@ short unsigned int wrow, wcol;
 
 
 
-#include "processinfo_scan_shm.h"
-static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList, int has_cset)
+/**
+ * @brief List available CPU sets.
+ *
+ * Scans /dev/cpuset (or cgroup hierarchy) for
+ * available CPU isolation sets.
+ */
+static int processinfo_CPUsets_List(
+    STRINGLISTENTRY *CPUsetList,
+    int has_cset)
 {
     if(has_cset == 0) return 0;
     
@@ -113,7 +95,16 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList, int has_cset)
     return NBset;
 }
 
-static int __attribute__((unused)) processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
+/**
+ * @brief Interactive CLI selector from a string list.
+ *
+ * Prints entries and prompts the user to select one
+ * by number. Currently unused but retained for
+ * potential future interactive mode.
+ */
+static int __attribute__(
+    (unused)) processinfo_SelectFromList(STRINGLISTENTRY *StringList,
+    int NBelem)
 {
     int selected = 0;
     int inputOK = 0;
@@ -141,6 +132,12 @@ static int __attribute__((unused)) processinfo_SelectFromList(STRINGLISTENTRY *S
 
 
 
+/**
+ * @brief Connect to the process scanner shared memory.
+ *
+ * Maps the SHM segment written by milk-procCTRL-scan
+ * to access live process listing data.
+ */
 static inline void *link_scan_shm(const char *name, size_t size) {
     int fd = open(name, O_RDWR);
     if (fd == -1) return MAP_FAILED;
@@ -151,6 +148,12 @@ static inline void *link_scan_shm(const char *name, size_t size) {
 
 #include "procCTRL_TUI_internal.h"
 
+/**
+ * @brief Update per-process statistics.
+ *
+ * Reads timing counters and computes loop rates,
+ * CPU usage percentages, and latency metrics.
+ */
 static void procctrl_update_stats(procctrl_context_t *ctx) {
     clock_gettime(CLOCK_MONOTONIC, &ctx->t_now);
     double elapsed = (ctx->t_now.tv_sec - ctx->t_last_scan.tv_sec) + (ctx->t_now.tv_nsec - ctx->t_last_scan.tv_nsec) * 1e-9;
@@ -174,6 +177,12 @@ static void procctrl_update_stats(procctrl_context_t *ctx) {
     ctx->t_disp_prev = ctx->t_disp_cur;
 }
 
+/**
+ * @brief Initialize the procCTRL TUI.
+ *
+ * Sets up terminal, allocates display buffers, and
+ * connects to scanner SHM.
+ */
 static errno_t procctrl_init(procctrl_context_t *ctx) {
     if (strlen(procCTRL_logfile) > 0) {
         ctx->flog = fopen(procCTRL_logfile, "a");
@@ -298,6 +307,12 @@ static errno_t procctrl_init(procctrl_context_t *ctx) {
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Clean up procCTRL TUI resources.
+ *
+ * Restores terminal settings and frees display
+ * buffers.
+ */
 static void procctrl_cleanup(procctrl_context_t *ctx) {
     ansi_raw_mode_exit();
     if (ctx->scan_shm) munmap(ctx->scan_shm, sizeof(PROCSCAN_SHM));
@@ -313,6 +328,9 @@ static void procctrl_cleanup(procctrl_context_t *ctx) {
 
     if (ctx->flog) { fprintf(ctx->flog, "--- processinfo_CTRLscreen ended ---\n"); fclose(ctx->flog); }
 }
+/**
+ * @brief Main execution loop for the process info TUI control screen.
+ */
 errno_t processinfo_CTRLscreen()
 {
     if (getenv("PROCCTRL_DEBUG")) procCTRL_debug_mode = 1;

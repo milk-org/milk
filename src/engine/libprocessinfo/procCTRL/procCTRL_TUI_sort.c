@@ -11,7 +11,6 @@
 #include <string.h>
 
 #include <processtools.h>
-#include "processinfo_shm_create.h"
 #include "processinfo_scan_shm.h"
 #include "procCTRL_TUI.h"
 
@@ -21,6 +20,11 @@ int sort_ctx_dir = 0;
 PROCSCAN_SHM *sort_ctx_scan_shm = NULL;
 PROCESSINFOLIST *sort_ctx_pinfolist = NULL;
 
+/**
+ * @brief Compare two process entries for sorting.
+ *
+ * Sort key depends on the current column selection.
+ */
 int proc_comp(const void *a, const void *b) {
     int idx1 = *(const int *)a;
     int idx2 = *(const int *)b;

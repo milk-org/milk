@@ -3,16 +3,9 @@
  * @brief   read user input to set parameter value
  */
 
-#include <limits.h>
-#include <math.h>
-#include <string.h>
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
 
-#include "fps_PrintParameterInfo.h"
-#include "fps_WriteParameterToDisk.h"
 
 #define AECBOLDHIRED ""
 #define AECNORMAL    ""

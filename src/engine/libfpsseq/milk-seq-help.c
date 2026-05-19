@@ -5,7 +5,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 #define COLOR_RESET   "\033[0m"
 #define COLOR_BOLD    "\033[1m"
@@ -13,7 +12,9 @@
 #define COLOR_GREEN   "\033[32m"
 #define COLOR_YELLOW  "\033[33m"
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h1") == 0 ||

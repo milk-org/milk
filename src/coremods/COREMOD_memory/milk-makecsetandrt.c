@@ -86,7 +86,7 @@
 static void print_setup_commands(
     const char *cgname,
     const char *cpulist,
-    int         color)
+    int        color)
 {
     const char *cg = (cgname && strcmp(cgname, "NULL") != 0)
                      ? cgname : "milk";
@@ -127,7 +127,7 @@ static void print_setup_commands(
  */
 static void print_help(
     const char *progname,
-    int         mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, MCSR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -312,7 +312,7 @@ static int check_cgroup_setup(const char *cgname, int color)
  */
 static int move_thread_to_cgroup(
     const char *threads_file,
-    pid_t       tid)
+    pid_t      tid)
 {
     FILE *fp = fopen(threads_file, "w");
     if (fp == NULL) {

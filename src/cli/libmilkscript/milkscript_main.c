@@ -70,6 +70,11 @@ extern int cli_flag_xtrace;
  * C runtime (0-100) and before any library constructor.
  */
 __attribute__((constructor(101)))
+/**
+ * @brief Set up quiet mode for script execution.
+ *
+ * Suppresses banner and verbose output.
+ */
 static void milkscript_pre_quiet(void)
 {
     FILE *fp = fopen("/proc/self/cmdline", "r");

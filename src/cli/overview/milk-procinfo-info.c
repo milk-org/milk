@@ -76,6 +76,9 @@ static const char *loopstat_str(int stat)
     }
 }
 
+/**
+ * @brief Map control value to a display string.
+ */
 static const char *ctrlval_str(int val)
 {
     switch (val)
@@ -91,6 +94,9 @@ static const char *ctrlval_str(int val)
     }
 }
 
+/**
+ * @brief Map trigger mode to a display string.
+ */
 static const char *trigmode_str(int mode)
 {
     switch (mode)

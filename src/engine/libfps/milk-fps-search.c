@@ -3,18 +3,10 @@
  * @brief Milk fps search module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <getopt.h>
 #include <regex.h>
 
-#include "fps.h"
 #include "fps_globals.h"
-#include "fps_scan.h"
-#include "fps_printparameter_valuestring.h"
-#include "milk_help.h"
 
 #define C_TITLE MH_TITLE
 #define C_HDR   MH_HDR
@@ -30,7 +22,12 @@
     "POSIX extended regular expression.\n" \
     "Output columns: keyword, type, current value, description."
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * @brief Print help message for milk-fps-search.
+ */
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, FS_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -70,7 +67,9 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 2, mh_color);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 FS_DESC, FS_DESC_LONG);

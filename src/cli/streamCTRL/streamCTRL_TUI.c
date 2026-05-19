@@ -68,6 +68,9 @@ short unsigned int wrow, wcol;
 struct streamCTRL_TUI_parameters sTUIparam;
 
 
+/**
+ * @brief Clean up streamCTRL TUI resources on exit.
+ */
 static void streamCTRL_TUI_exit()
 {
 }

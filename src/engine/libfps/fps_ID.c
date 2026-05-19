@@ -3,12 +3,8 @@
  * @brief   find fps ID(s) from name
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
 
 /* ID number corresponding to a name */

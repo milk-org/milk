@@ -1,17 +1,8 @@
-#include <sys/stat.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sched.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
-#include "processinfo_setup.h"
 #include "processinfo_shm_create.h"
 #include "processinfo_signals.h"
 #include "processinfo_WriteMessage.h"
-#include "processinfo_SIGexit.h"
 
 // High level processinfo function
 
@@ -125,7 +116,9 @@ PROCESSINFO *processinfo_setup(
  * status to ERROR, writes the error message to SHM, and then calls
  * `processinfo_cleanExit` to detach.
  */
-errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
+errno_t processinfo_error(
+    PROCESSINFO *processinfo,
+    char *errmsgstring)
 {
     processinfo->loopstat = 4; // ERROR
     processinfo_WriteMessage(processinfo, errmsgstring);

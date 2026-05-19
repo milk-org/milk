@@ -45,12 +45,24 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(
     const char *IDname,
     int semtrig, int testmode);
 
+/**
+ * @brief Transmit a stream over TCP.
+ *
+ * Sends frames from a shared memory stream to
+ * a remote host.
+ */
 imageID COREMOD_MEMORY_image_NETWORKtransmit(
     const char *IDname,
     const char *IPaddr,
     int port, int mode,
     int RT_priority);
 
+/**
+ * @brief Receive a stream over TCP.
+ *
+ * Listens for frames from a remote sender and
+ * writes them to a local shared memory stream.
+ */
 imageID COREMOD_MEMORY_image_NETWORKreceive(
     int port, int mode,
     int RT_priority);

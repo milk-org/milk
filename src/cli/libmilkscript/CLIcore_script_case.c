@@ -32,6 +32,12 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
 
+/**
+ * @brief Define a new script function.
+ *
+ * Registers a function body for later invocation
+ * by name.
+ */
 void cli_func_define(
     const char *name,
     char body[][STRINGMAXLEN_CLICMDLINE],

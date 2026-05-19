@@ -195,7 +195,7 @@ errno_t mk_complex_from_amph(
     const char *am_name,
     const char *ph_name,
     const char *out_name,
-    int         sharedmem)
+    int        sharedmem)
 {
     IMGID imgamp =
         imgid_make_from_name(am_name);

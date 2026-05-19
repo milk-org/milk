@@ -160,6 +160,9 @@ static int cmp_score_desc(
     return 0;
 }
 
+/**
+ * @brief Print help message for milk-fuzzy-match.
+ */
 static void print_help(const char *prog, int mh_color)
 {
     milk_help_banner(prog, FM_ONELINE, mh_color);

@@ -8,14 +8,16 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-#include "ImageStreamIO/ImageStreamIO.h"
-
-#include "fps_connect.h"
-#include "fps_disconnect.h"
-#include "fps_outlog.h"
-#include "fps_streamname_parse.h"
 
 
+
+/**
+ * @brief Validate an FPS parameter's current value.
+ *
+ * Checks range constraints (min/max), stream
+ * existence, and file path validity depending
+ * on the parameter type and flags.
+ */
 int functionparameter_CheckParameter(
     FPS *fpsentry,
     int                        pindex
@@ -485,6 +487,9 @@ int functionparameter_CheckParameter(
 }
 
 
+/**
+ * @brief Checks all parameters for validity in the specified FPS entry.
+ */
 int functionparameter_CheckParametersAll(FPS *fpsentry)
 {
     long NBparamMAX;

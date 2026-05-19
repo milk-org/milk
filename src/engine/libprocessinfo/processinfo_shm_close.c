@@ -4,14 +4,19 @@
  */
 
 #include <sys/mman.h>
-#include <unistd.h>
-#include <stdio.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 
 
-int processinfo_shm_close(PROCESSINFO *pinfo, int fd)
+/**
+ * @brief Close and unmap a processinfo shared memory file.
+ *
+ * Releases the mapped region and closes the file
+ * descriptor.
+ */
+int processinfo_shm_close(
+    PROCESSINFO *pinfo,
+    int fd)
 {
     if(munmap(pinfo, sizeof(PROCESSINFO)) == -1)
     {

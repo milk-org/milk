@@ -505,7 +505,7 @@ static long exe_size(const char *exe)
 static void read_build_tags(
     const char *exe,
     char       *out,
-    size_t      outsz)
+    size_t     outsz)
 {
     out[0] = '\0';
 
@@ -752,10 +752,10 @@ static void fps_cleanup(const bench_cfg_t *cfg)
 
 static long perf_event_open(
     struct perf_event_attr *attr,
-    pid_t                   pid,
-    int                     cpu,
-    int                     group_fd,
-    unsigned long           flags)
+    pid_t                  pid,
+    int                    cpu,
+    int                    group_fd,
+    unsigned long          flags)
 {
     return syscall(__NR_perf_event_open,
                    attr, pid, cpu, group_fd, flags);
@@ -784,9 +784,9 @@ static int cmp_long(const void *a, const void *b)
  */
 static int find_proc_shm(
     const char *procdir,
-    pid_t       pid,
+    pid_t      pid,
     char       *out,
-    size_t      outsz)
+    size_t     outsz)
 {
     DIR *d = opendir(procdir);
     if (!d)
@@ -838,7 +838,7 @@ static int find_proc_shm(
  *        /proc/PID/status.
  */
 static void read_proc_mem(
-    pid_t  pid,
+    pid_t pid,
     long  *vmpeak_kb,
     long  *vmhwm_kb,
     long  *vmrss_kb,
@@ -1000,9 +1000,9 @@ static long long read_rapl_energy(void)
  */
 static void read_procinfo_stats(
     const char *shm_path,
-    pid_t       child_pid,
+    pid_t      child_pid,
     pi_stats_t *out,
-    long long   rapl_start)
+    long long  rapl_start)
 {
     out->valid = 0;
 
@@ -1241,10 +1241,10 @@ static void perf_read_close(
  */
 static void run_phase(
     const bench_cfg_t *cfg,
-    int                iters,
+    int               iters,
     hw_phase_t        *phase,
     pi_stats_t        *pi,
-    int                collect_pi,
+    int               collect_pi,
     long long         *wall_ns)
 {
     /* Capture RAPL energy baseline for delta */
@@ -1431,12 +1431,12 @@ static void write_json(
     const bench_cfg_t *cfg,
     const hw_phase_t  *t,
     const hw_phase_t  *w,
-    int                measured,
-    long long          t_ns,
-    long long          w_ns,
+    int               measured,
+    long long         t_ns,
+    long long         w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    long               exe_sz)
+    long              exe_sz)
 {
     FILE *fp = fopen(cfg->result_file, "w");
     if (!fp)
@@ -1708,12 +1708,12 @@ static void print_section(
  */
 static void print_row(
     const char *label,
-    long long   total,
-    long long   warmup_v,
-    int         measured,
-    int         has_warmup,
-    int         decimals,
-    long long   paired_warmup_misses)
+    long long  total,
+    long long  warmup_v,
+    int        measured,
+    int        has_warmup,
+    int        decimals,
+    long long  paired_warmup_misses)
 {
     /* Detect PMU multiplexing: loads counter got zero samples
      * during warmup while its companion misses counter did not. */
@@ -1786,11 +1786,11 @@ static void print_row(
  */
 static void print_rate(
     const char *label,
-    double      rate_t,
-    double      rate_w,
-    double      rate_m,
-    int         has_warmup,
-    int         loads_mux_out)
+    double     rate_t,
+    double     rate_w,
+    double     rate_m,
+    int        has_warmup,
+    int        loads_mux_out)
 {
     if (has_warmup)
     {
@@ -1820,14 +1820,14 @@ static void print_rate(
  */
 static void print_summary(
     const bench_cfg_t *cfg,
-    int                measured,
+    int               measured,
     const hw_phase_t  *t,
     const hw_phase_t  *w,
-    long long          t_ns,
-    long long          w_ns,
+    long long         t_ns,
+    long long         w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    long               exe_sz)
+    long              exe_sz)
 {
     /* detect color support once */
     g_use_color = isatty(STDOUT_FILENO);

@@ -746,6 +746,12 @@ void CLI_configure_readline()
 #else
 /* Stubs when readline is not available */
 void CLI_configure_readline() {}
+/**
+ * @brief Set up the hint/completion area below the prompt.
+ */
 void CLI_setup_hint_area(void) {}
+/**
+ * @brief Restore terminal scroll region on exit.
+ */
 void CLI_cleanup_scroll_region(void) {}
 #endif

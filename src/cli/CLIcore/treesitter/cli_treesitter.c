@@ -55,6 +55,12 @@ static const char *get_color_for_capture(const char *capture_name) {
     return NULL;
 }
 
+/**
+ * @brief Detect terminal color capability.
+ *
+ * Checks COLORTERM and TERM environment variables
+ * to determine 256-color or truecolor support.
+ */
 int cli_ts_detect_color_level(void) {
     const char *term = getenv("TERM");
     const char *colorterm = getenv("COLORTERM");
@@ -68,6 +74,12 @@ int cli_ts_detect_color_level(void) {
     return 1;
 }
 
+/**
+ * @brief Initialize treesitter syntax highlighting.
+ *
+ * Loads the milk grammar and sets up the
+ * parser instance.
+ */
 int cli_ts_init(void) {
     if (ts_parser != NULL) {
         return 0; // Already initialized
@@ -232,7 +244,19 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out) {
 #else
 
 // Stubs when USE_TREESITTER is not defined
+/**
+ * @brief Initialize treesitter syntax highlighting.
+ *
+ * Loads the milk grammar and sets up the
+ * parser instance.
+ */
 int cli_ts_init(void) { return 0; }
+/**
+ * @brief Detect terminal color capability.
+ *
+ * Checks COLORTERM and TERM environment variables
+ * to determine 256-color or truecolor support.
+ */
 int cli_ts_detect_color_level(void) { return 1; }
 void cli_ts_cleanup(void) {}
 void cli_ts_highlight_line(const char *line, int len, FILE *out) {

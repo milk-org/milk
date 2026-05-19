@@ -3,15 +3,9 @@
  * @brief Processinfo sigexit module
  */
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <signal.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
-#include "processinfo_SIGexit.h"
 #include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
@@ -19,7 +13,15 @@
 #endif
 
 
-int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
+/**
+ * @brief Handle fatal signal exit for a processinfo process.
+ *
+ * Records the signal number in processinfo metadata,
+ * sets loopstat to error, and performs cleanup.
+ */
+int processinfo_SIGexit(
+    PROCESSINFO *processinfo,
+    int SignalNumber)
 {
     char            timestring[200];
     struct timespec tstop;

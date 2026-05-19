@@ -26,6 +26,9 @@ static int argcheck_process_flag = 1;
 static int functionhelp_called = 0;
 
 
+/**
+ * @brief Convert a CLI argument type enum to string.
+ */
 static const char* CLIargtype_to_string(uint32_t type)
 {
     switch(type)
@@ -52,6 +55,9 @@ static const char* CLIargtype_to_string(uint32_t type)
     }
 }
 
+/**
+ * @brief Convert a command argument token type to string.
+ */
 static const char* CMDARGTOKEN_type_to_string(uint32_t type)
 {
     switch(type)
@@ -77,8 +83,8 @@ static const char* CMDARGTOKEN_type_to_string(uint32_t type)
  * @return int
  */
 static int CLI_checkarg0(
-    int       CLIargnum,
-    uint32_t  funcargtype,
+    int      CLIargnum,
+    uint32_t funcargtype,
     int       errmsg
 )
 {
@@ -361,11 +367,11 @@ static void sync_fps_to_argdata(
  * @param str     String value from CLI token
  */
 static void set_fps_from_clitoken(
-    FPS *fps,
+    FPS        *fps,
     const char *fpstag,
-    uint32_t    ptype,
-    long        numl,
-    double      numf,
+    uint32_t   ptype,
+    long       numl,
+    double     numf,
     const char *str
 )
 {
@@ -423,6 +429,12 @@ static void set_fps_from_clitoken(
 }
 
 
+/**
+ * @brief Validate an array of CLI arguments.
+ *
+ * Checks that each argument matches its expected
+ * type and range.
+ */
 errno_t CLI_checkarg_array(
     CLICMDARGDEF fpscliarg[],
     int nbarg

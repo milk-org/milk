@@ -29,6 +29,11 @@ static int  g_nb_fps_order = 0;
 
 static const OV_MODEL *g_last_model = NULL;
 
+/**
+ * @brief Compute display rank for a stream.
+ *
+ * Returns a score for priority-based ordering.
+ */
 static int get_stream_rank(const char *name)
 {
     for (int i = 0; i < g_nb_stream_order; i++)
@@ -41,6 +46,9 @@ static int get_stream_rank(const char *name)
     return 999999;
 }
 
+/**
+ * @brief Compute display rank for a process.
+ */
 static int get_proc_rank(const char *name)
 {
     for (int i = 0; i < g_nb_proc_order; i++)
@@ -53,6 +61,9 @@ static int get_proc_rank(const char *name)
     return 999999;
 }
 
+/**
+ * @brief Compute display rank for an FPS instance.
+ */
 static int get_fps_rank(const char *name)
 {
     for (int i = 0; i < g_nb_fps_order; i++)
@@ -116,9 +127,9 @@ static void ov_apply_rank_sort(OV_MODEL *mm)
 
 int ov_render_header_text(
     const char *text,
-    int         hs,
-    int         max_vis_width,
-    ov_rgb_t    base_fg)
+    int        hs,
+    int        max_vis_width,
+    ov_rgb_t   base_fg)
 {
     int vis_col = 0;
     int printed = 0;
@@ -250,8 +261,8 @@ static double get_bandwidth_usage(void)
 }
 
 void ov_render_header(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     /* Advance blink counter each frame */
     lay->ctrl_blink++;
@@ -448,8 +459,8 @@ static void ov_draw_tooltip(OV_LAYOUT *lay)
 
 
 void ov_render_frame(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m)
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m)
 {
     ov_buf_reset();
 

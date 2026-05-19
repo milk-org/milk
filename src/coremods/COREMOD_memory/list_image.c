@@ -35,6 +35,12 @@ errno_t list_image_ID_ofp(FILE *fo);
 errno_t list_image_ID_ofp_simple(FILE *fo);
 errno_t list_image_ID_ofp_json(FILE *fo);
 errno_t list_image_ID_ofp_porcelain(FILE *fo);
+/**
+ * @brief Print a summary of all images in the array.
+ *
+ * Lists name, type, size, and memory usage for
+ * each active image.
+ */
 errno_t list_image_ID();
 errno_t list_image_ID_file(
     const char *fname);
@@ -316,6 +322,12 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Print a summary of all images in the array.
+ *
+ * Lists name, type, size, and memory usage for
+ * each active image.
+ */
 errno_t list_image_ID()
 {
     list_image_ID_ofp(stdout);

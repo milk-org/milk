@@ -25,6 +25,9 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
+/**
+ * @brief Handler: while loop control flow.
+ */
 int cli_intercept_cmd_while(const char *p)
 {
     if(starts_with(p, "while ")
@@ -52,6 +55,9 @@ int cli_intercept_cmd_while(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: until loop control flow.
+ */
 int cli_intercept_cmd_until(const char *p)
 {
     if(starts_with(p, "until ")
@@ -79,6 +85,9 @@ int cli_intercept_cmd_until(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: for loop control flow.
+ */
 int cli_intercept_cmd_for(const char *p)
 {
     if(starts_with(p, "for ")

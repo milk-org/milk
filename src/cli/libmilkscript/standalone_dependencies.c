@@ -51,6 +51,9 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
     return temp;
 }
 
+/**
+ * @brief Print the milk script engine header banner.
+ */
 int print_header(const char *str, char c)
 {
     long n;
@@ -73,6 +76,9 @@ int print_header(const char *str, char c)
     return (0);
 }
 
+/**
+ * @brief Quicksort partition for long array.
+ */
 void qs2l(double *array, long *array1, long left, long right)
 {
     register long i, j;
@@ -120,6 +126,9 @@ void qs2l(double *array, long *array1, long left, long right)
     }
 }
 
+/**
+ * @brief Quicksort two parallel long arrays.
+ */
 void quick_sort2l(double *array, long *array1, long count)
 {
     qs2l(array, array1, 0, count - 1);

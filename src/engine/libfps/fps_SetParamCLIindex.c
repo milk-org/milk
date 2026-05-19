@@ -4,7 +4,6 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
 /**
  * @brief Set the CLI index for a parameter in an FPS.

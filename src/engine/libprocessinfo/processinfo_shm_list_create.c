@@ -6,17 +6,10 @@
 #include <sys/mman.h> // mmap()
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_procdirname.h"
 #include "processinfo_shm_link.h"
-#include "processinfo_shm_list_create.h"
 
 #define FILEMODE 0666
 

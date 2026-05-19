@@ -7,8 +7,14 @@
 #include <sys/stat.h> // fstat
 
 #include "fps.h"
-#include "fps_internal.h"
 
+/**
+ * @brief Disconnect from an FPS shared memory segment.
+ *
+ * Unmaps the shared memory region and closes the
+ * file descriptor. Safe to call on an already
+ * disconnected FPS.
+ */
 int fps_disconnect(
     FPS *funcparamstruct)
 {

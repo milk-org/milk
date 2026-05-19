@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <time.h>
 
+/**
+ * @brief Process keyboard input for streamCTRL TUI.
+ *
+ * Dispatches key events to navigation, sorting,
+ * and filter handlers.
+ */
 errno_t streamCTRL_keyinput_process(
     int ch,
     streamCTRLarg_struct *streamCTRLdata,

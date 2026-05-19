@@ -25,6 +25,9 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
+/**
+ * @brief Handler: extract basename from path.
+ */
 int cli_intercept_cmd_basename(const char *p)
 {
     if(starts_with(p, "basename "))
@@ -48,6 +51,9 @@ int cli_intercept_cmd_basename(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: extract directory from path.
+ */
 int cli_intercept_cmd_dirname(const char *p)
 {
     if(starts_with(p, "dirname "))
@@ -75,6 +81,9 @@ int cli_intercept_cmd_dirname(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: push directory onto stack.
+ */
 int cli_intercept_cmd_pushd(const char *p)
 {
     if(starts_with(p, "pushd ")

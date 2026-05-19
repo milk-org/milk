@@ -3,13 +3,10 @@
  * @brief   FPS config setup
  */
 
-#include <stdlib.h>
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"
 
-#include "fps_connect.h"
-#include "fps_disconnect.h"
 
 
 /** @brief FPS config setup
@@ -19,7 +16,7 @@
  */
 FPS function_parameter_FPCONFsetup_sized(
     const char *fpsname,
-    uint32_t    CMDmode,
+    uint32_t   CMDmode,
     long        NBparamMAX
 )
 {
@@ -107,6 +104,13 @@ FPS function_parameter_FPCONFsetup_sized(
 }
 
 
+/**
+ * @brief Set up the FPS configuration process.
+ *
+ * Scans fpslist files, connects to all listed FPS
+ * instances, builds the keyword tree, and opens
+ * the command FIFO. Called once at fpsCTRL startup.
+ */
 FPS function_parameter_FPCONFsetup(
     const char *fpsname,
     uint32_t    CMDmode

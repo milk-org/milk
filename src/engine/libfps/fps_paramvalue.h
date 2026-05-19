@@ -190,8 +190,8 @@ uint64_t *functionparameter_GetParamPtr_fpflag(FPS *fps,
 
 /** Set parameter at @pindex from string @strval */
 int functionparameter_SetParamValue_fromString(
-    FPS *fps,
-    int                        pindex,
-    const char                *strval);
+    FPS        *fps,
+    int        pindex,
+    const char *strval);
 
 #endif

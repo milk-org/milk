@@ -3,23 +3,20 @@
  * @brief Processinfo signals module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <signal.h>
-#include <time.h>
-#include <string.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_signals.h"
 #include "processinfo_SIGexit.h"
 #include "processinfo_procdirname.h"
-#include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
 #define CLOCK_MILK CLOCK_REALTIME
 #endif
 
+/**
+ * @brief Signal handler for process info processes.
+ */
 void processinfo_sig_handler(int signo)
 {
     switch(signo)
@@ -54,6 +51,9 @@ void processinfo_sig_handler(int signo)
     }
 }
 
+/**
+ * @brief Registers signal handlers for the process info system.
+ */
 int processinfo_CatchSignals()
 {
     struct sigaction sigact;
@@ -72,6 +72,9 @@ int processinfo_CatchSignals()
     return 0;
 }
 
+/**
+ * @brief Processes any pending signals for the current process.
+ */
 int processinfo_ProcessSignals(PROCESSINFO *processinfo)
 {
     int loopOK = 1;
@@ -122,6 +125,9 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
     return loopOK;
 }
 
+/**
+ * @brief Performs a clean exit for a process info instance.
+ */
 int processinfo_cleanExit(PROCESSINFO *processinfo)
 {
 

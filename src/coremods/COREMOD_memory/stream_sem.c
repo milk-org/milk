@@ -39,8 +39,14 @@ imageID COREMOD_MEMORY_image_seminfo(
     const char *IDname);
 imageID COREMOD_MEMORY_image_set_sempost(
     const char *IDname, long index);
+/**
+ * @brief Post to all semaphores of a stream (by ID).
+ */
 imageID COREMOD_MEMORY_image_set_sempost_byID(
     imageID ID, long index);
+/**
+ * @brief Post to all semaphores except one (by ID).
+ */
 imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
     imageID ID, long index);
 imageID COREMOD_MEMORY_image_set_sempost_loop(
@@ -620,7 +626,7 @@ void *waitforsemID(void *ID)
  */
 errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
     imageID *IDarray,
-    long     NB_ID)
+    long    NB_ID)
 {
     int t;
     //    int semval;

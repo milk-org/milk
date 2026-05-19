@@ -23,6 +23,9 @@ int ov_find_stream_by_inode(
     return -1;
 }
 
+/**
+ * @brief Find a stream node by name in the graph.
+ */
 int ov_find_stream_by_name(
     const OV_MODEL *model,
     const char *name)
@@ -43,6 +46,9 @@ int ov_find_stream_by_name(
     return -1;
 }
 
+/**
+ * @brief Find a process node by PID in the graph.
+ */
 int ov_find_proc_by_pid(
     const OV_MODEL *model,
     pid_t pid)
@@ -146,6 +152,12 @@ static int add_node(
 }
 
 
+/**
+ * @brief Build the stream-process connectivity graph.
+ *
+ * Analyzes processinfo triggers and stream
+ * semaphore chains to construct the DAG.
+ */
 void ov_build_graph(OV_MODEL *model)
 {
     model->nb_nodes = 0;

@@ -2,15 +2,11 @@
  * @file fps_WriteParameterToDisk.c
  *
  */
-#include "timeutils.h"
 
 #include <sys/syscall.h> // needed for tid = syscall(SYS_gettid);
-#include <unistd.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 
-#include "fps_GetFileName.h"
 
 
 /** @brief Write parameter to disk
@@ -28,9 +24,9 @@
  *
  */
 int functionparameter_WriteParameterToDisk(
-    FPS *fpsentry,
-    int                        pindex,
-    char                      *tagname,
+    FPS  *fpsentry,
+    int  pindex,
+    char *tagname,
     char *commentstr)
 {
     char  fname[STRINGMAXLEN_FULLFILENAME];

@@ -1,9 +1,12 @@
-#include <signal.h>
-#include <time.h>
-#include <stdio.h>
 #include "procCTRL_TUI_internal.h"
 #include "procCTRL_ansi.h"
 
+/**
+ * @brief Handle a keyboard event in the procCTRL TUI.
+ *
+ * Dispatches key presses to navigation, mode
+ * switching, or process control actions.
+ */
 void procctrl_handle_keyboard_event(procctrl_context_t *ctx, int ch, int NBactive) {
     ctx->last_ch = ch;
     if (ctx->flog) {

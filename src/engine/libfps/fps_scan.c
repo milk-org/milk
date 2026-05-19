@@ -4,8 +4,6 @@
  */
 
 #include <dirent.h>
-#include <string.h>
-#include <errno.h>
 
 #include <libgen.h>   // basename
 #include <sys/stat.h> // fstat
@@ -13,25 +11,21 @@
 #include <regex.h>
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
 
 
-#include "fps_connect.h"
-#include "fps_disconnect.h"
 
 /** @brief scan and load FPSs
  *
  */
 
 errno_t functionparameter_scan_fps(
-    uint32_t                   mode,
-    char                      *fpsnamemask,
-    FPS *fps,
-    KEYWORD_TREE_NODE         *keywnode,
-    int                       *ptr_NBkwn,
-    int                       *ptr_fpsindex,
-    long                      *ptr_pindex,
+    uint32_t          mode,
+    char              *fpsnamemask,
+    FPS               *fps,
+    KEYWORD_TREE_NODE *keywnode,
+    int               *ptr_NBkwn,
+    int               *ptr_fpsindex,
+    long              *ptr_pindex,
     int                        verbose
 )
 {

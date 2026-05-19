@@ -24,6 +24,9 @@
  * mode there is no hint area.
  */
 __attribute__((weak))
+/**
+ * @brief Stub: cleanup scroll region in script mode.
+ */
 void CLI_cleanup_scroll_region(void)
 {
     /* no-op: no scroll region in script mode */
@@ -36,6 +39,9 @@ void CLI_cleanup_scroll_region(void)
  * feature.
  */
 __attribute__((weak))
+/**
+ * @brief Stub: save command history in script mode.
+ */
 void cli_history_save(void)
 {
     /* no-op: no readline history in script mode */

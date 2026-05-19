@@ -2,6 +2,11 @@
 
 extern int cmp_stream_col(const void *a, const void *b);
 
+/**
+ * @brief Render one complete streamCTRL TUI frame.
+ *
+ * Composes header, stream rows, and footer.
+ */
 void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state) {
     int NBsinfodisp = 10;
     int lastindex = 0;

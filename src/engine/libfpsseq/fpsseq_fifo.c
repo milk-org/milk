@@ -5,11 +5,8 @@
  * Populates the sequence state task arrays from the named FIFO asynchronously.
  */
 
-#include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "fpsseq.h"
 #include "timeutils.h"
@@ -27,7 +24,9 @@
  *
  * Return: Number of regular tasks enqueued (excludes meta-commands)
  */
-int milkseq_fifo_read(MILKSEQ_STATE *state, int fifo_fd)
+int milkseq_fifo_read(
+    MILKSEQ_STATE *state,
+    int fifo_fd)
 {
     if (!state || fifo_fd < 0) return 0;
 

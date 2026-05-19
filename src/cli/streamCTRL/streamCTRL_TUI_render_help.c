@@ -1,5 +1,8 @@
 #include "streamCTRL_TUI_render_internal.h"
 
+/**
+ * @brief Render the streamCTRL help overlay.
+ */
 void streamCTRL__render_header_help(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state) {
 //int attrval = A_BOLD;
 

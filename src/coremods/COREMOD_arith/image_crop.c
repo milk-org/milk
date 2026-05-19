@@ -21,6 +21,12 @@ imageID arith_image_crop(
     int64_t *start, int64_t *end,
     int64_t cropdim);
 
+/**
+ * @brief Extract a 2D sub-image from an image.
+ *
+ * Centers the extraction at (xc, yc) with the
+ * specified output size.
+ */
 imageID arith_image_extract2D(
     const char *in_name,
     const char *out_name,
@@ -241,6 +247,12 @@ CLIADDCMD_COREMOD_arith__image_crop()
 }
 #endif
 
+/**
+ * @brief Crop an image to a rectangular sub-region.
+ *
+ * Extracts pixels within the specified coordinate
+ * bounds and creates a new image.
+ */
 imageID arith_image_crop(const char *ID_name,
                          const char *ID_out,
                          int64_t       *start,
@@ -489,13 +501,19 @@ imageID arith_image_crop(const char *ID_name,
 }
 
 
+/**
+ * @brief Extract a 2D sub-image from an image.
+ *
+ * Centers the extraction at (xc, yc) with the
+ * specified output size.
+ */
 imageID arith_image_extract2D(
     const char *in_name,
     const char *out_name,
-    int64_t        size_x,
-    int64_t        size_y,
-    int64_t        xstart,
-    int64_t        ystart)
+    int64_t    size_x,
+    int64_t    size_y,
+    int64_t    xstart,
+    int64_t    ystart)
 {
     int64_t        *start = NULL;
     int64_t        *end   = NULL;
