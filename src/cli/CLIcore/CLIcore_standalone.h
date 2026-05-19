@@ -203,7 +203,7 @@ extern DATA data;
 
 static inline int
 CLI_checkarg(
-    int argnum __attribute__((unused)),
+    int      argnum __attribute__((unused)),
     uint32_t argtype __attribute__((unused)))
 {
     return 1; /* always "fail" — prevents
@@ -213,7 +213,7 @@ CLI_checkarg(
 
 static inline int
 CLI_checkarg_noerrmsg(
-    int argnum __attribute__((unused)),
+    int      argnum __attribute__((unused)),
     uint32_t argtype __attribute__((unused)))
 {
     return 1;
@@ -222,7 +222,7 @@ CLI_checkarg_noerrmsg(
 static inline errno_t
 CLI_checkarg_array(
     CLICMDARGDEF *fca __attribute__((unused)),
-    int nbarg __attribute__((unused)))
+    int          nbarg __attribute__((unused)))
 {
     return 1;
 }
@@ -230,7 +230,7 @@ CLI_checkarg_array(
 static inline int
 CLIargs_to_FPSparams_setval(
     CLICMDARGDEF *fca __attribute__((unused)),
-    int n __attribute__((unused)),
+    int          n __attribute__((unused)),
     FPS *fps
     __attribute__((unused)))
 {
@@ -269,9 +269,9 @@ RegisterModule(
     const char *f __attribute__((unused)),
     const char *p __attribute__((unused)),
     const char *i __attribute__((unused)),
-    int ma __attribute__((unused)),
-    int mi __attribute__((unused)),
-    int pa __attribute__((unused)))
+    int        ma __attribute__((unused)),
+    int        mi __attribute__((unused)),
+    int        pa __attribute__((unused)))
 {
     return 0;
 }

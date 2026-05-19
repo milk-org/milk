@@ -256,11 +256,11 @@ static int fpsCTRL_inline_edit_param(
  * or command handlers based on the current mode.
  */
 int fpsCTRL_TUI_process_user_key(
-    int                ch,
-    FPS                *fps,
-    KEYWORD_TREE_NODE  *keywnode,
-    FPSCTRL_TASK_ENTRY *fpsctrltasklist __attribute__((unused)),
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist __attribute__((unused)),
+    int                  ch,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_TASK_ENTRY   *fpsctrltasklist __attribute__((unused)),
+    FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist __attribute__((unused)),
     FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     int loopOK = 1;

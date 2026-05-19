@@ -16,7 +16,7 @@ typedef long variableID;
 
 int function_parameter_printlist(
     FPS_PARAM *funcparamarray,
-    long NBparamMAX);
+    long      NBparamMAX);
 
 #ifdef USE_NCURSES
 errno_t functionparameter_CTRLscreen(
@@ -28,11 +28,11 @@ errno_t functionparameter_CTRLscreen(
 
 FPS function_parameter_FPCONFsetup(
     const char *fpsname,
-    uint32_t mode);
+    uint32_t   mode);
 FPS function_parameter_FPCONFsetup_sized(
     const char *fpsname,
-    uint32_t mode,
-    long NBparamMAX);
+    uint32_t   mode,
+    long       NBparamMAX);
 uint16_t function_parameter_FPCONFloopstep(
     FPS *fps);
 uint16_t function_parameter_FPCONFexit(

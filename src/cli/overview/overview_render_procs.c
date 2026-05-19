@@ -264,9 +264,9 @@ static void ov_procs__render_rows(
                 break;
             }
             rlen += snprintf(
-                        rbuf + rlen,
+                        rbuf +                  rlen,
                         sizeof(rbuf) - (size_t) rlen,
-                        "%4s ", sl);
+                        "%4s ",                 sl);
 
             /* Hz */
             if(p->loop_hz > 0.1)
@@ -294,9 +294,9 @@ static void ov_procs__render_rows(
                         p->start_time_sec);
                 }
                 rlen += snprintf(
-                            rbuf + rlen,
+                            rbuf +                  rlen,
                             sizeof(rbuf) - (size_t) rlen,
-                            "%6s ", uptstr);
+                            "%6s ",                 uptstr);
             }
 
             /* Trigger, exec time, missed (hidden
@@ -336,9 +336,9 @@ static void ov_procs__render_rows(
                         1.0e-6
                         * (double) p->dtmedian_exec_ns;
                     rlen += snprintf(
-                                rbuf + rlen,
+                                rbuf +                  rlen,
                                 sizeof(rbuf) - (size_t) rlen,
-                                "%7.3f", exec_ms);
+                                "%7.3f",                exec_ms);
                 }
                 else
                 {
@@ -354,9 +354,9 @@ static void ov_procs__render_rows(
                     const char *arr =
                         is_write ? " W" : " R";
                     rlen += snprintf(
-                                rbuf + rlen,
+                                rbuf +                  rlen,
                                 sizeof(rbuf) - (size_t) rlen,
-                                "%s", arr);
+                                "%s",                   arr);
                 }
 
                 /* Missed frame badge */

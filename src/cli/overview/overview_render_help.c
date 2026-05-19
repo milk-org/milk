@@ -257,7 +257,7 @@ void ov_render_help(const OV_LAYOUT *lay)
     ov_draw_panel_border(
         pr,                                  pc, ph, pw,
         "HELP  (↑↓ navigate  ENTER expand  h close)",
-        OV_FG_BRIGHT, 1, 0);
+        OV_FG_BRIGHT,                        1, 0);
 
     /* Clear interior */
     for(int r = pr + 1; r < pr + ph - 1; r++)

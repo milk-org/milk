@@ -72,14 +72,14 @@ char savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN]  = "";
  * ========================================= */
 
 errno_t saveFITS_opt_trunc_IMGID(
-    IMGID      *imgin,
-    int        truncate,
-    const char *outputFITSname,
-    int        outputbitpix,
-    const char *importheaderfile __attribute__((unused)),
+    IMGID         *imgin,
+    int           truncate,
+    const char    *outputFITSname,
+    int           outputbitpix,
+    const char    *importheaderfile __attribute__((unused)),
     IMAGE_KEYWORD *kwarray __attribute__((unused)),
-    int kwarraysize __attribute__((unused)),
-    const char *FITSIOext)
+    int           kwarraysize __attribute__((unused)),
+    const char    *FITSIOext)
 {
     COREMOD_iofits_data.FITSIO_status = 0;
     pthread_t self_id = pthread_self();

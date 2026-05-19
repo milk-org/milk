@@ -60,9 +60,9 @@ errno_t RegisterModule(
     const char *restrict FileName __attribute__((unused)),
     const char *restrict PackageName __attribute__((unused)),
     const char *restrict InfoString __attribute__((unused)),
-    int versionmajor __attribute__((unused)),
-    int versionminor __attribute__((unused)),
-    int versionpatch __attribute__((unused)))
+    int                  versionmajor __attribute__((unused)),
+    int                  versionminor __attribute__((unused)),
+    int                  versionpatch __attribute__((unused)))
 {
     return RETURN_SUCCESS;
 }
@@ -105,7 +105,7 @@ uint32_t RegisterCLIcmd(
 imageID image_ID(
     const char *name,
     IMAGE      *imagearray __attribute__((unused)),
-    long NB_images __attribute__((unused)))
+    long       NB_images __attribute__((unused)))
 {
     for(long ii = 0; ii < NB_images; ii++)
     {
@@ -129,9 +129,9 @@ imageID image_ID(
 errno_t
 functionparameter_CTRLscreen(
     uint32_t mode __attribute__((unused)),
-    char *fpsnamemask __attribute__((unused)),
-    char *fpsCTRLfifoname __attribute__((unused)),
-    double timeout_sec __attribute__((unused)))
+    char     *fpsnamemask __attribute__((unused)),
+    char     *fpsCTRLfifoname __attribute__((unused)),
+    double   timeout_sec __attribute__((unused)))
 {
     return 0;
 }

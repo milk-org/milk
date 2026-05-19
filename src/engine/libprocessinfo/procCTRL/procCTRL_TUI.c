@@ -112,7 +112,7 @@ static int processinfo_CPUsets_List(
  */
 static int __attribute__(
     (unused)) processinfo_SelectFromList(STRINGLISTENTRY *StringList,
-    int NBelem)
+    int                                                  NBelem)
 {
     int selected = 0;
     int inputOK = 0;
