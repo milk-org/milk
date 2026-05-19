@@ -2,12 +2,18 @@
 trigger: always_on
 ---
 
-- Use code blocks to reduce the scope of variables as much as possible.
+- Use code blocks (`{ }`) to reduce the scope of variables as much as possible.
+  Use this as an opportunity to add a comment immediately preceding the block
+  explaining what the block is doing.
 - Keep lines short, no more than 100 characters.
   This limit applies to both C source and agent `.md` files.
 - Factorize code as much as possible. Copy-paste coding
   is a red flag — extract shared logic into helper
   functions or macros instead of duplicating it.
+- Loop indices should always be declared within the `for` statement
+  (e.g., `for (int ii = 0; ...)`), unless they are meant to be
+  used outside the loop. If they are used outside the loop,
+  add a comment explaining why they were declared outside.
 - Function prototypes with arguments should be multi-line,
   with one line per argument.
 - Document functions using Kernel-Doc style.
