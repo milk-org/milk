@@ -6,6 +6,7 @@
 #include "CommandLineInterface/CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 // ==========================================
 // Forward declaration(s)
@@ -63,25 +64,13 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     long               k;
     long               tdelay;
     int                RT_priority = 95; //any number from 0-99
-    struct sched_param schedpar;
     int                semval;
     const char        *ptr0;
     const char        *ptr1;
     int                loopOK;
     long               ii;
 
-    schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0,
-                       SCHED_FIFO,
-                       &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    COREMOD_TOOLS_mvProcRTPrio(RT_priority);
 
     ID     = image_ID(IDname);
     xsize  = data.image[ID].md[0].size[0];
@@ -176,10 +165,10 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     }
     if(data.image[IDs].md[0].sem > 0)
     {
-        semval = ImageStreamIO_semvalue(data.image+IDs, 0);
+        semval = ImageStreamIO_semvalue(data.image + IDs, 0);
         if(semval < SEMAPHORE_MAXVAL)
         {
-            ImageStreamIO_sempost(data.image+IDs, 0);
+            ImageStreamIO_sempost(data.image + IDs, 0);
         }
     }
     data.image[IDs].md[0].write = 0;

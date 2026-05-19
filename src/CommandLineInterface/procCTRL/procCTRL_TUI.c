@@ -139,7 +139,9 @@ int processinfo_compute_status(PROCESSINFO *processinfo)
  *
  * ## Description
  *
- * Uses command: cset set -l
+ * Reads cpuset names and CPU lists directly from the cgroup filesystem.
+ * Supports both cgroups v1 (/sys/fs/cgroup/cpuset/) and
+ * cgroups v2 (/sys/fs/cgroup/).
  *
  *
  */
@@ -157,9 +159,70 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
     char fname[STRINGMAXLEN_FILENAME];
     WRITE_FILENAME(fname, "%s/.csetlist.%ld", SHAREDPROCDIR, (long) getpid());
 
-    EXECUTE_SYSTEM_COMMAND(
-        "cset set -l | awk '/root/{stop=1} stop==1{print $0}' > %s",
-        fname);
+    // Detect cgroup version and enumerate cpusets directly from the filesystem.
+    // Writes "name cpu-list" lines to fname — same format sscanf() expects below.
+    {
+        // v1: cpuset controller is a separate mount with a root "tasks" file.
+        // v2: unified hierarchy; cpuset dirs carry "cpuset.cpus.effective".
+        const char *v1root  = "/sys/fs/cgroup/cpuset";
+        const char *v2root  = "/sys/fs/cgroup";
+        char        probe[256];
+        snprintf(probe, sizeof(probe), "%s/tasks", v1root);
+        FILE *test = fopen(probe, "r");
+        int   is_v2;
+        const char *cgroot;
+        if(test != NULL)
+        {
+            fclose(test);
+            cgroot = v1root;
+            is_v2  = 0;
+        }
+        else
+        {
+            cgroot = v2root;
+            is_v2  = 1;
+        }
+
+        FILE *fw = fopen(fname, "w");
+        if(fw != NULL)
+        {
+            DIR *d = opendir(cgroot);
+            if(d != NULL)
+            {
+                struct dirent *ent;
+                while((ent = readdir(d)) != NULL)
+                {
+                    if(ent->d_name[0] == '.')
+                    {
+                        continue;
+                    }
+
+                    // Presence of the CPU list file identifies a cpuset dir.
+                    char cpufile[512];
+                    snprintf(cpufile, sizeof(cpufile), "%s/%s/%s",
+                             cgroot, ent->d_name,
+                             is_v2 ? "cpuset.cpus.effective" : "cpuset.cpus");
+
+                    FILE *fc = fopen(cpufile, "r");
+                    if(fc == NULL)
+                    {
+                        continue;    // not a cpuset directory
+                    }
+
+                    char cpus[64] = "-";
+                    if(fgets(cpus, sizeof(cpus), fc) != NULL)
+                    {
+                        cpus[strcspn(cpus, "\n")] = '\0';
+                    }
+                    fclose(fc);
+
+                    fprintf(fw, "%s %s\n", ent->d_name, cpus);
+                }
+                closedir(d);
+            }
+            fclose(fw);
+        }
+    }
 
     // first scan: get number of entries
     fp = fopen(fname, "r");
@@ -226,7 +289,7 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 
         int  stringindex = 0;
         char c;
-        while(((c = getchar()) != 13) && (stringindex < strlenmax - 1))
+        while(((c = getchar()) != '\n') && (c != '\r') && (stringindex < strlenmax - 1))
         {
             buff[stringindex] = c;
             if(c == 127)  // delete key
@@ -968,10 +1031,12 @@ errno_t processinfo_CTRLscreen()
                 printf("CURRENT cpu set : %s\n",
                        procinfoproc.pinfodisp[pindex].cpuset);
                 listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
-
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s",
-                                       pinfolist->PIDarray[pindex],
-                                       CPUsetList[listindex].name);
+                printf("I'm here A!!\n");
+                fflush(stdout);
+                COREMOD_TOOLS_mvProcCPUsetExt(pinfolist->PIDarray[pindex],
+                                              CPUsetList[listindex].name, -1);
+                printf("I'm here!!\n");
+                fflush(stdout);
 
                 TUI_init_terminal(&wrow, &wcol);
             }
@@ -982,14 +1047,8 @@ errno_t processinfo_CTRLscreen()
             if(pinfolist->active[pindex] == 1)
             {
                 TUI_exit();
-
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
-                                       pinfolist->PIDarray[pindex]);
-                EXECUTE_SYSTEM_COMMAND(
-                    "sudo cset proc --force -m %d %s &> /dev/null",
-                    pinfolist->PIDarray[pindex],
-                    procinfoproc.pinfodisp[pindex].cpuset);
-
+                COREMOD_TOOLS_mvProcCPUsetExt(pinfolist->PIDarray[pindex],
+                                              procinfoproc.pinfodisp[pindex].cpuset, -1);
                 TUI_init_terminal(&wrow, &wcol);
             }
             break;
