@@ -1,0 +1,158 @@
+site_name: milk
+site_url: https://milk-org.github.io/milk/
+site_description: >-
+  High-performance real-time image processing framework
+  for Adaptive Optics and scientific computing.
+repo_url: https://github.com/milk-org/milk
+repo_name: milk-org/milk
+edit_uri: edit/framework-dev/docs/
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    # Navigation
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.indexes
+    - navigation.footer
+    # Search
+    - search.suggest
+    - search.highlight
+    - search.share
+    # Content
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
+    # TOC
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+plugins:
+  - search
+  - tags
+  - glightbox
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - minify:
+      minify_html: true
+
+docs_dir: docs
+
+nav:
+  - Home: index.md
+  - "What's New": whatsnew.md
+  - Tags Index: tags.md
+  - Getting Started:
+    - Installation: install/compile.md
+    - Build Tiers: install/build_tiers.md
+    - CLI Overview: cli/CLI_Overview.md
+    - FAQ & Troubleshooting: faq.md
+  - User Guide:
+    - Streams: streams.md
+    - Stream Slicing: slicing.md
+    - FPS: fps.md
+    - Process Info: procinfo.md
+    - CLI Syntax: cli/CLIcore.md
+    - Scripting: cli/scripting.md
+    - FIFO Command Input: cli/fifo.md
+    - Readline Keys: cli/helpreadline.md
+    - Scripts: scripts.md
+    - Python API: python.md
+    - Valkey Integration: valkey.md
+  - Developer Guide:
+    - Tutorial: developer/tutorial.md
+    - Coding Standards: developer/coding_standards.md
+    - Adding Plugins: developer/plugins.md
+    - Template Source Code: developer/TemplateSourceCode.md
+    - Module Files: developer/ModuleFiles.md
+    - Loading Modules: developer/LoadingModules.md
+    - Documenting Code: developer/DocumentingCode.md
+    - Working with Git: developer/WorkingWithGit.md
+    - Code Assist: code_assist.md
+  - Architecture:
+    - Overview: architecture.md
+    - "Programmer's Guide": programmers_guide.md
+    - Dependency Graph: dependency_graph.md
+    - FPS Standalone Modes: FPS_Standalone_CMD_Modes.md
+  - Operations:
+    - Performance Tuning: performance.md
+    - PGO & LTO: pgo.md
+    - Debugging: debugging.md
+  - API Reference: api/html/index.html
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.snippets:
+      auto_append:
+        - docs/includes/abbreviations.md
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.mark
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/milk-org/milk
+      name: milk on GitHub
+
+extra_css:
+  - stylesheets/extra.css

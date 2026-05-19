@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "execute milk-cli command"
+        exit 0 ;;
+esac
+
+MSdescr="execute milk-cli command"
+
+MSextdescr="Execute command string within milk-cli command line interface (CLI).
+Multiple commands separated by ; character"
+
+source milk-script-std-config
+
+RequiredCommands=(milk-cli)
+RequiredFiles=()
+RequiredDirs=()
+
+
+MSarg+=( "commandstring:string:command string" )
+
+
+MSopt+=( "n:name:set_pname:pname[string]:(n)ame process" )
+function set_pname() {
+    pname="$1"
+}
+
+MSopt+=( "T:testmode:set_testmode::(T)est mode" )
+function set_testmode() {
+    echo "CTEST_FULL_OUTPUT"
+}
+
+
+MSseealso+=( "milk-cli-all:milk-cli with all modules" )
+MSseealso+=( "milk-commands:list milk commands with descriptions" )
+
+source milk-argparse
+
+
+
+
+
+cmdstring="${inputMSargARRAY[0]}"
+
+echo "command string : ${cmdstring}"
+
+
+
+IFS=';' read -r -a array <<< "${cmdstring}"
+
+#fifoname="milkCLIfifo.${pname}"
+
+set +u
+if [ -w "${MILK_SHM_DIR}/" ];
+then
+SFDIR="${MILK_SHM_DIR}/"
+else
+SFDIR="/tmp"
+fi
+set -u
+
+SF="${SFDIR}/milkCLIstartup.${pname}.$$"
+echo "" > $SF
+for cmdstring in "${array[@]}"
+do
+    echo "${cmdstring}" >> $SF
+done
+echo "exitCLI" >> $SF
+#cp ${SF} test.txt
+
+MILK_QUIET=1 milk-cli -n ${pname} -f -s ${SF}
+
+rm ${SF}

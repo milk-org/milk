@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Scan for streams on system"
+        exit 0 ;;
+esac
+
+MSdescr="Scan for streams on system"
+
+# Extended description
+MSextdescr="Scan for streams
+"
+
+source milk-script-std-config
+
+
+RequiredCommands=( milk-cli )
+RequiredFiles=()
+RequiredDirs=()
+
+MSseealso+=( "milk-shmimpurge:purge orphan shared memory streams" )
+MSseealso+=( "milk-commands:list milk commands with descriptions" )
+
+source milk-argparse
+
+fname="_streamscan_$$"
+for f in ${MILK_SHM_DIR}/*.im.shm; do
+  f1=${f%.im.shm}
+  f2=${f1##*/}
+  isio-stream-info $f2 2> /dev/null >> $fname
+done
+
+column -t $fname
+rm $fname
+

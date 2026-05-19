@@ -1,0 +1,38 @@
+#! /bin/bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "merge 3D telemetry FITS cubes"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Merge a sequence of 3D telemetry" \
+             "FITS cubes into a single file."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help)
+        echo "Usage: merge3DfitsTelemetry" \
+             "<dir> <prefix> <count>"
+        echo "Merge 3D telemetry FITS cubes."
+        echo ""
+        echo "See Also:"
+        echo "  milk-images-merge  — merge images"
+        exit 0 ;;
+esac
+EXPECTED_ARGS=3
+if [ $# -ne $EXPECTED_ARGS ]
+then
+    echo
+    echo " ---------- merge 3D telemetry FITS cubes ----------- "
+    echo
+    echo " Usage:  $0 <Directory> <File Prefix> <Number of files>"
+    echo
+    echo "looks for files <File Prefix>.<xxx>, xxx from 000 to number of files"
+fi
+
+pname=$0
+milk-cli -n $pname << EOF
+
+
+
+exit
+EOF

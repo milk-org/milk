@@ -1,0 +1,50 @@
+build
+_build*
+build_local/
+build_debug
+install_debug
+src/config.h
+src/milk_config.h
+local
+lib
+.cache
+
+_tmplist.txt
+.vscode
+
+Testing/
+
+#
+# ignore all plugins by default
+#
+plugins/**
+
+#plugins/cacao-src
+#plugins/coffee-src
+
+#
+# un-ignore milk-extra-src
+#
+!plugins/milk-extra-src/
+!plugins/milk-extra-src/**
+
+plugins/milk-extra-src/AtmosphereModel
+plugins/milk-extra-src/AtmosphericTurbulence
+plugins/milk-extra-src/OpticsMaterials
+plugins/milk-extra-src/WFpropagate
+
+*-code-workspace
+
+
+*.egg-info
+.eggs/
+local-install/
+
+# Documentation build output
+_site/
+site/
+sitemap.xml.gz
+docs/doxygen/
+
+# Performance benchmark results
+perfresults/

@@ -1,0 +1,107 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: >-
+        Which subsystem is affected? See the component
+        table in the
+        [fix-bug workflow](.agents/workflows/fix-bug.md)
+        for guidance.
+      options:
+        - CLI (CLIcore / milk-cli)
+        - ImageStreamIO (shared memory streams)
+        - FPS (function parameter system)
+        - processinfo (heartbeat / telemetry)
+        - COREMOD (arith, memory, tools, iofits)
+        - Standalone fpsexec executable
+        - Plugin module
+        - Build system (CMake)
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: >-
+        Minimal steps to reproduce the bug. Include
+        exact commands.
+      placeholder: |
+        1. Start milk-cli:
+           ```
+           source ~/src/milk/local/bin/milk-setup.bash
+           echo "command" | milk-cli
+           ```
+        2. Or for standalone executables:
+           ```
+           milk-fpsexec-<name> <args>
+           ```
+        3. Observe error / crash / unexpected output
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs Actual Behavior
+      description: What did you expect, and what happened?
+      placeholder: |
+        **Expected:** ...
+        **Actual:** ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        System information. Run `milk-cli -i` for
+        the milk version.
+      placeholder: |
+        - milk version: (output of `milk-cli -i`)
+        - OS: (e.g., Ubuntu 24.04)
+        - Compiler: (e.g., GCC 14.1)
+        - GPU: (if relevant)
+      value: |
+        - milk version:
+        - OS:
+        - Compiler:
+        - GPU:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log Output
+      description: >-
+        Paste any relevant log output or error messages.
+      render: text
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I searched existing issues for duplicates
+          required: true
+        - label: >-
+            I can reproduce this on the latest
+            `framework-dev` branch
+          required: false

@@ -1,0 +1,252 @@
+#include <stdarg.h>
+
+#include "fps.h"
+#include "fps_globals.h"
+
+
+// set to 1 if logging
+// toggles to 0 (don't log), 1 (log to shmdir) or 2 (custom log file)
+//
+static int FLAG_FPSOUTLOG = -1;
+static char *fps_customfilename;
+
+
+/**
+ * @brief Gets the flag indicating whether FPS output logging is enabled.
+ */
+int get_FLAG_FPSOUTLOG()
+{
+
+    if(FLAG_FPSOUTLOG == -1)
+    {
+        if(getenv("MILK_FPS_LOGOUTPUT"))
+        {
+            FLAG_FPSOUTLOG = 1;
+        }
+        else
+        {
+            FLAG_FPSOUTLOG = 0;
+        }
+
+
+        if(getenv("MILK_FPS_LOGFILE"))
+        {
+            FLAG_FPSOUTLOG = 2;
+            fps_customfilename = getenv("MILK_FPS_LOGFILE");
+        }
+    }
+
+    return FLAG_FPSOUTLOG;
+}
+
+
+/**
+ * @brief Sets the FPS output logging flag.
+ */
+errno_t set_FLAG_FPSOUTLOG(int val)
+{
+    FLAG_FPSOUTLOG = val;
+
+    return RETURN_SUCCESS;
+}
+
+
+/** @brief Get FPS log filename
+ *
+ * logfname should be char [STRINGMAXLEN_FULLFILENAME]
+ *
+ */
+errno_t getFPSlogfname(
+    char *logfname
+)
+{
+    get_FLAG_FPSOUTLOG();
+
+    if(FLAG_FPSOUTLOG == 2)
+    {
+        WRITE_FULLFILENAME(logfname, "%s", fps_customfilename);
+
+    }
+    else
+    {
+        char shmdname[STRINGMAXLEN_SHMDIRNAME];
+        function_parameter_struct_shmdirname(shmdname);
+
+        WRITE_FULLFILENAME(logfname,
+                           "%s/fpslog.%ld.%07d.%s",
+                           shmdname, FPS_TIMESTAMP, getpid(), FPS_PROCESS_TYPE);
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+/**
+ * @brief Write one timestamped log entry to a file pointer.
+ *
+ * Formats the current UTC time with nanosecond precision and
+ * appends a single log line:
+ *   TIMESTAMP EPOCH.NSEC  KEYWORD MSG
+ *
+ * @param keyw       Log entry keyword (e.g., "SETVAL")
+ * @param msgstring  Free-form message text
+ * @param fpout      Open file pointer to write to
+ * @return RETURN_SUCCESS
+ */
+errno_t functionparameter_outlog_file(
+    char *keyw,
+    char *msgstring,
+    FILE *fpout)
+{
+    //get_FLAG_FPSOUTLOG();
+
+
+    // Get GMT time
+    struct timespec tnow;
+    time_t          now;
+
+    clock_gettime(CLOCK_MILK, &tnow);
+    now = tnow.tv_sec;
+    struct tm *uttime;
+    uttime = gmtime(&now);
+
+    char timestring[TIMESTRINGLEN];
+    SNPRINTF_CHECK(timestring,
+                   TIMESTRINGLEN,
+                   "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
+                   1900 + uttime->tm_year,
+                   1 + uttime->tm_mon,
+                   uttime->tm_mday, uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
+
+    fprintf(fpout, "%s %ld.%09ld  %-12s %s\n", timestring, tnow.tv_sec, tnow.tv_nsec, keyw, msgstring);
+    fflush(fpout);
+
+    return RETURN_SUCCESS;
+}
+
+
+/**
+ * @brief Add log entry to fps log
+ *
+ * @param keyw     Entry keyword
+ * @param fmt      Format
+ * @param ...      Parameters
+ * @return errno_t Error code
+ */
+errno_t functionparameter_outlog(
+    char *keyw,
+    const char *fmt,
+    ...)
+{
+    get_FLAG_FPSOUTLOG();
+
+    if(FLAG_FPSOUTLOG)
+    {
+
+        // identify logfile and open file
+
+        static int   LogOutOpen = 0;
+        static FILE *fpout;
+        static char  logfname[STRINGMAXLEN_FULLFILENAME];
+
+        if(LogOutOpen == 0)  // file not open
+        {
+            getFPSlogfname(logfname);
+
+            fpout = fopen(logfname, "a");
+            if(fpout == NULL)
+            {
+                FUNC_RETURN_FAILURE("fopen(%s, \"a\") failed", logfname);
+            }
+            LogOutOpen = 1;
+        }
+
+        // Get GMT time and create timestring
+
+        struct timespec tnow;
+        time_t          now;
+
+        clock_gettime(CLOCK_MILK, &tnow);
+        now = tnow.tv_sec;
+        struct tm *uttime;
+        uttime = gmtime(&now);
+
+        char timestring[TIMESTRINGLEN];
+        SNPRINTF_CHECK(timestring,
+                       TIMESTRINGLEN,
+                       "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
+                       1900 + uttime->tm_year,
+                       1 + uttime->tm_mon,
+                       uttime->tm_mday,
+                       uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
+
+        fprintf(fpout, "%s %ld.%09ld  %-12s ", timestring, tnow.tv_sec, tnow.tv_nsec, keyw);
+
+        va_list args;
+        va_start(args, fmt);
+
+        vfprintf(fpout, fmt, args);
+
+        fprintf(fpout, "\n");
+
+        fflush(fpout);
+
+        va_end(args);
+
+        if(strcmp(keyw, "LOGFILECLOSE") == 0)
+        {
+            // Normal exit
+            // close log file and remove it from filesystem
+
+            if(LogOutOpen == 1)
+            {
+                fclose(fpout);
+                LogOutOpen = 0;
+            }
+            if(FLAG_FPSOUTLOG == 1)
+            {
+                remove(logfname);
+            }
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+/** @brief Establish sym link for convenience
+ *
+ * This is a one-time function when running FPS init.\n
+ * Creates a human-readable informative sym link to outlog\n
+ */
+errno_t functionparameter_outlog_namelink()
+{
+    //get_FLAG_FPSOUTLOG();
+
+    if(FLAG_FPSOUTLOG == 1)
+    {
+        char shmdname[STRINGMAXLEN_SHMDIRNAME];
+        function_parameter_struct_shmdirname(shmdname);
+
+        char logfname[STRINGMAXLEN_FULLFILENAME];
+        getFPSlogfname(logfname);
+
+        char linkfname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(linkfname, "%s/fpslog.%s", shmdname, FPS_PROCESS_TYPE);
+
+        if(access(linkfname, F_OK) == 0)  // link already exists, remove
+        {
+            printf("outlog file %s exists -> updating symlink\n", linkfname);
+            remove(linkfname);
+        }
+
+        if(symlink(logfname, linkfname) == -1)
+        {
+            int errnum = errno;
+            PRINT_ERROR("Error symlink: %s", strerror(errnum));
+            PRINT_ERROR("symlink error %s %s", logfname, linkfname);
+        }
+    }
+
+    return RETURN_SUCCESS;
+}

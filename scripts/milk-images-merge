@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# milk-images-merge — merge images along axis
+# Thin wrapper: delegates to milk-fpsexec-arith-immerge
+
+case "${1-}" in
+    -h1|--help-oneline) echo "Merge images"; exit 0 ;;
+    -h2|--help-description) milk-fpsexec-arith-immerge -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-fpsexec-arith-immerge "$1"; exit $? ;;
+esac
+
+exec milk-fpsexec-arith-immerge "$@"

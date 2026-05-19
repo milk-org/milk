@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# milk-shmimave — average stream frames
+# Thin wrapper: delegates to milk-fpsexec-mem-streamave
+
+case "${1-}" in
+    -h1|--help-oneline) echo "average stream frames"; exit 0 ;;
+    -h2|--help-description) milk-fpsexec-mem-streamave -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-fpsexec-mem-streamave "$1"; exit $? ;;
+esac
+
+exec milk-fpsexec-mem-streamave "$@"

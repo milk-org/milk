@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module
+# milk_module_example for template and instructions
+
+# Test semaphore latency
+# Sets up two streams, imA and imB
+#
+
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "measure semaphore latency"
+        exit 0 ;;
+esac
+
+# script 1-line description
+MSdescr="measure semaphore latency"
+
+# Extended description
+MSextdescr="creates 2 streams and 2 processes
+process AB waits on imA, pokes imB
+process BA waits on imB, pokes imA
+"
+
+# standard configuration
+#
+source milk-script-std-config
+
+# prerequisites
+#
+RequiredCommands=( milk-cli tmux )
+RequiredFiles=()
+RequiredDirs=()
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name:type(s)/test(s):description"
+
+MSarg+=( "nbloop:int:number of loop iterations" )
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+DEBUG=0
+MSopt+=( "D:debug:set_debug::enable debug output" )
+function set_debug() {
+	DEBUG=1
+}
+
+# parse arguments
+MSseealso+=( "milk-semtestspeed:test semaphore latency" )
+
+source milk-argparse
+
+NBLOOP="${inputMSargARRAY[0]}"
+
+SEMTRIG="3"
+
+echo ""
+echo "Semaphore loop speed test"
+echo "  Setting up 2 streams (100x100 f32)"
+echo "  Running ${NBLOOP} ping-pong loops ..."
+echo ""
+
+# Redirect output: debug shows it, normal hides it
+if [ "${DEBUG}" -eq 1 ]; then
+    REDIR="/dev/stderr"
+else
+    REDIR="/dev/null"
+fi
+
+milk-cli << EOF > "${REDIR}" 2>&1
+mem.mk2Dim "s>imA" 100 100
+mem.mk2Dim "s>imB" 100 100
+mem.imsetsempost imA -1
+mem.imsetsempost imB -1
+exitCLI
+EOF
+
+set +e
+tmux new-session -d -s loopAB
+
+tmux send-keys -t loopAB "milk-cli" C-M
+tmux send-keys -t loopAB "mem.readshmim imA" C-M
+tmux send-keys -t loopAB "mem.readshmim imB" C-M
+tmux send-keys -t loopAB \
+    "mem.shmimpoke ..procinfo 1" C-M
+
+# set trigger mode to semaphore
+tmux send-keys -t loopAB \
+    "mem.shmimpoke ..triggermode 3" C-M
+
+# set trigger semaphore name
+tmux send-keys -t loopAB \
+    "mem.shmimpoke ..triggersname imA" C-M
+
+# number of loops
+tmux send-keys -t loopAB \
+    "mem.shmimpoke ..loopcntMax ${NBLOOP}" C-M
+
+tmux send-keys -t loopAB "mem.shmimpoke imB" C-M
+tmux send-keys -t loopAB "exitCLI" C-M
+
+TMPOUT=$(mktemp)
+TSTART=$(date +%s%N)
+
+milk-cli << EOF > "${TMPOUT}" 2>&1
+mem.readshmim imA
+mem.readshmim imB
+mem.shmimpoke ..procinfo 1
+mem.shmimpoke ..triggermode 3
+mem.shmimpoke ..triggersname imB
+mem.shmimpoke ..loopcntMax ${NBLOOP}
+mem.shmimpoke imA
+mem.imseminfo imA
+exitCLI
+EOF
+
+TEND=$(date +%s%N)
+
+if [ "${DEBUG}" -eq 1 ]; then
+    echo "=== DEBUG: milk-cli output ==="
+    cat "${TMPOUT}"
+    echo "=== END DEBUG ==="
+fi
+
+# Compute elapsed time and loop speed
+ELAPSED_NS=$(( TEND - TSTART ))
+ELAPSED_S=$(echo "scale=6; ${ELAPSED_NS} / 1000000000" \
+    | bc)
+SPEED=$(echo "scale=1; ${NBLOOP} / ${ELAPSED_S}" \
+    | bc)
+LATENCY_US=$(echo \
+    "scale=3; ${ELAPSED_S} * 1000000 / ${NBLOOP}" \
+    | bc)
+
+echo "==============================="
+echo "  Semaphore loop speed test"
+echo "==============================="
+echo "  Loops       : ${NBLOOP}"
+echo "  Elapsed     : ${ELAPSED_S} sec"
+echo "  Loop speed  : ${SPEED} Hz"
+echo "  Latency     : ${LATENCY_US} us / loop"
+echo "==============================="
+echo ""
+
+# cleanup
+
+tmux kill-session -t loopAB 2>/dev/null
+milk-shmim-rm imA > /dev/null 2>&1
+milk-shmim-rm imB > /dev/null 2>&1
+rm -f "${TMPOUT}"

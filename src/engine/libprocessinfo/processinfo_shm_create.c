@@ -1,0 +1,241 @@
+/**
+ * @file processinfo_shm_create.c
+ * @brief Processinfo shm create module
+ */
+
+#include <sys/mman.h> // mmap()
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include "processinfo_internal.h"
+#include "processinfo_shm_list_create.h"
+#include "processinfo_procdirname.h"
+
+
+
+#define FILEMODE 0666
+
+#ifndef CLOCK_MILK
+#define CLOCK_MILK CLOCK_REALTIME
+#endif
+
+/**
+ * Create PROCESSINFO structure in shared memory
+ *
+ * The structure holds real-time information about a process, so its status can be monitored and controlled
+ * See structure PROCESSINFO in CLLIcore.h for details
+ *
+*/
+
+PROCESSINFO *processinfo_shm_create(
+    const char *pname,
+    int CTRLval
+)
+{
+    DEBUG_TRACE_FSTART();
+
+    size_t       sharedsize = 0;
+    int          SM_fd      = -1;
+    PROCESSINFO *pinfo      = NULL;
+    long         pindex     = 0;
+
+    static int LogFileCreated __attribute__((unused)) = 0;
+    // toggles to 1 when created. To avoid re-creating file on same process
+
+    sharedsize = sizeof(PROCESSINFO);
+
+    pid_t PID;
+
+    PID = getpid();
+
+    DEBUG_TRACEPOINT("create/update pinfolist");
+    if(processinfo_shm_list_create(&pindex) != RETURN_SUCCESS)
+    {
+        PRINT_ERROR("processinfo_shm_list_create failed");
+        goto fail;
+    }
+
+    DEBUG_TRACEPOINT("index = %ld", pindex);
+
+    pinfolist->PIDarray[pindex] = PID;
+
+    DEBUG_TRACEPOINT(" ");
+
+    strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
+
+    {
+        DEBUG_TRACEPOINT("getting procdname");
+        char procdname[STRINGMAXLEN_DIRNAME];
+        processinfo_procdirname(procdname);
+
+
+        char SM_fname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
+
+        DEBUG_TRACEPOINT("SM_fname = %s", SM_fname);
+
+        umask(0);
+        SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
+        if(SM_fd == -1)
+        {
+            PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
+            goto fail;
+        }
+
+        if(lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
+        {
+            PRINT_ERROR("lseek failed: %s", strerror(errno));
+            goto fail;
+        }
+
+        if(write(SM_fd, "", 1) != 1)
+        {
+            PRINT_ERROR("write last byte failed: %s", strerror(errno));
+            goto fail;
+        }
+
+        pinfo = (PROCESSINFO *) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+        if(pinfo == MAP_FAILED)
+        {
+            PRINT_ERROR("mmap(%s) failed: %s", SM_fname, strerror(errno));
+            pinfo = NULL;
+            goto fail;
+        }
+
+        DEBUG_TRACEPOINT("created processinfo entry at %s\n", SM_fname);
+    }
+    DEBUG_TRACEPOINT("shared memory space = %ld bytes\n", sharedsize);
+
+    clock_gettime(CLOCK_MILK, &pinfo->createtime);
+    pinfolist->createtime[pindex] =
+        1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
+
+    strncpy(pinfo->name, pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
+    pinfo->name[STRINGMAXLEN_PROCESSINFO_NAME - 1] = '\0';
+
+    pinfolist->active[pindex] = 1;
+
+    enum { tmuxnamestrlen = 100 };
+    char  tmuxname[tmuxnamestrlen];
+    FILE *fpout;
+    int   notmux = 0;
+
+    fpout = popen("tmuxsessionname", "r");
+    if(fpout == NULL)
+    {
+        // printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+        notmux = 1;
+    }
+    else
+    {
+        if(fgets(tmuxname, tmuxnamestrlen, fpout) == NULL)
+        {
+            //printf("WARNING: fgets error\n");
+            notmux = 1;
+        }
+        pclose(fpout);
+    }
+    // remove line feed
+    if(strlen(tmuxname) > 0)
+    {
+        //  printf("tmux name : %s\n", tmuxname);
+        //  printf("len: %d\n", (int) strlen(tmuxname));
+        fflush(stdout);
+
+        if(tmuxname[strlen(tmuxname) - 1] == '\n')
+        {
+            tmuxname[strlen(tmuxname) - 1] = '\0';
+        }
+        else
+        {
+            // printf("tmux name empty\n");
+        }
+    }
+    else
+    {
+        notmux = 1;
+    }
+
+    if(notmux == 1)
+    {
+        snprintf(tmuxname, tmuxnamestrlen, " ");
+    }
+
+    // force last char to be term, just in case
+    tmuxname[99] = '\0';
+
+    DEBUG_TRACEPOINT("tmux name : %s\n", tmuxname);
+
+    strncpy(pinfo->tmuxname, tmuxname, tmuxnamestrlen - 1);
+
+    // set control value (default 0)
+    // 1 : pause
+    // 2 : increment single step (will go back to 1)
+    // 3 : exit loop
+    pinfo->CTRLval = CTRLval;
+
+    pinfo->MeasureTiming = 1;
+
+    // initialize timer indexes and counters
+    pinfo->timerindex      = 0;
+    pinfo->timingbuffercnt = 0;
+
+    // disable timer limit feature
+    pinfo->dtiter_limit_enable = 0;
+    pinfo->dtexec_limit_enable = 0;
+
+    // dcpinfo = pinfo; // REMOVED
+    pinfo->PID = PID;
+
+    // create logfile
+    //char logfilename[300];
+    struct timespec tnow;
+
+    clock_gettime(CLOCK_MILK, &tnow);
+
+#ifdef PROCESSINFO_LOGFILE
+    {
+        int slen = snprintf(pinfo->logfilename,
+                            STRINGMAXLEN_PROCESSINFO_LOGFILENAME,
+                            "%s/proc.%s.%06d.%09ld.logfile",
+                            procdname, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+        if(slen < 1)
+        {
+            PRINT_ERROR("snprintf wrote <1 char");
+            abort();
+        }
+        if(slen >= STRINGMAXLEN_PROCESSINFO_LOGFILENAME)
+        {
+            PRINT_ERROR("snprintf string truncation");
+            abort();
+        }
+    }
+
+    if(LogFileCreated == 0)
+    {
+        pinfo->logFile = fopen(pinfo->logfilename, "w");
+        LogFileCreated = 1;
+    }
+
+    int msgstrlen = 300;
+    char msgstring[msgstrlen];
+    snprintf(msgstring, msgstrlen, "LOG START %s", pinfo->logfilename);
+    processinfo_WriteMessage(pinfo, msgstring);
+#endif
+
+    DEBUG_TRACE_FEXIT();
+
+    if(SM_fd != -1)
+    {
+        close(SM_fd);
+    }
+    return pinfo;
+
+fail:
+    if(SM_fd != -1)
+    {
+        close(SM_fd);
+    }
+    DEBUG_TRACE_FEXIT();
+    return NULL;
+}

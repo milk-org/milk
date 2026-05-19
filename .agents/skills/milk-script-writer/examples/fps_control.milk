@@ -1,0 +1,59 @@
+#!/usr/bin/env milk-script
+#
+# fps_control.milk
+# Demonstrates FPS parameter read/write and waits.
+#
+# Shows how to:
+#   - Check if an FPS exists
+#   - Read FPS parameters with @fpsname.param
+#   - Write FPS parameters with fpsset
+#   - Wait for a parameter to reach a value
+#
+# Usage: milk-cli -s fps_control.milk [fpsname]
+#
+
+set -e
+
+# --- Configuration ---
+_fps=${1:-myfps}
+
+# --- Check FPS exists ---
+if [ ! -F $_fps ]; then
+    echo "FPS '$_fps' not found."
+    echo "Create one first, e.g.:"
+    echo "  milk-fpsexec-<name> -n $_fps"
+    exit 1
+fi
+echo "Found FPS: $_fps"
+
+# --- Read parameters ---
+# The @fpsname.param syntax expands to the
+# current parameter value from shared memory.
+_gain=@${_fps}.gain
+echo "Current gain: $_gain"
+
+# --- Write a parameter ---
+# Method 1: fpsset command
+fpsset $_fps gain 0.3
+echo "Set gain to 0.3 via fpsset"
+
+# Method 2: @ write syntax
+@${_fps}.gain=0.5
+echo "Set gain to 0.5 via @ syntax"
+
+# --- Verify the write ---
+_new_gain=@${_fps}.gain
+echo "Verified gain: $_new_gain"
+
+# --- Wait for a parameter value ---
+# wait -F blocks until param reaches value
+# (with optional timeout in seconds)
+echo "Waiting for gain=0.5 (5s timeout)..."
+wait -F $_fps gain=0.5 5
+if [ $? -eq 0 ]; then
+    echo "Param reached target value"
+else
+    echo "Timeout waiting for param"
+fi
+
+echo "fps_control: DONE"

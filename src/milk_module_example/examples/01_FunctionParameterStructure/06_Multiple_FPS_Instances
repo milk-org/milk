@@ -1,0 +1,44 @@
+
+examplestring="MULTIPLE FPS INSTANCES"
+
+exampleDescription="
+Create/initialize FPS
+"
+
+CLIinput="
+# Start milk CLI with required modules
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image
+imgen.mkdisk imd1 256 256 128 128 50
+
+# Run function
+modex.imsum2 imd1
+
+# Change non-CLI parameter value
+modex.imsum2 .scaling 0.31
+
+# Save current parameters in FPS named 03
+modex.imsum2 _FPSINIT_ \"03\"
+
+# Change non-CLI parameter value
+modex.imsum2 .scaling 0.5
+
+# Save current parameters in FPS named 05
+modex.imsum2 _FPSINIT_ \"05\"
+
+# Run function with current parameter values
+modex.imsum2 .
+
+# Run function with parameters from FPS 03
+modex.imsum2 _RUNSTART_ \"03\"
+
+# Run function with parameters from FPS 05
+modex.imsum2 _RUNSTART_ \"05\"
+
+# Re-run function with last used parameter values
+modex.imsum2 .
+
+# Exit CLI
+exitCLI
+"

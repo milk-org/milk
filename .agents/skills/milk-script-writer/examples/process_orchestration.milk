@@ -1,0 +1,76 @@
+#!/usr/bin/env milk-script
+#
+# process_orchestration.milk
+# Demonstrates process lifecycle management.
+#
+# Shows how to:
+#   - Check if a process is active with [ -P ]
+#   - Start/pause/stop processes with procctl
+#   - Wait for process state with procwait
+#   - Read process properties with @proc.prop
+#
+# Usage:
+#   milk-cli -s process_orchestration.milk [proc]
+#
+# Note: This script requires a running fpsexec
+# process to control. Without one, only the
+# existence check demo will run.
+#
+
+set -e
+
+_proc=${1:-myprocess}
+
+# --- Check if process is active ---
+echo "Checking process '$_proc'..."
+if [ -P $_proc ]; then
+    echo "Process '$_proc' is active"
+else
+    echo "Process '$_proc' is NOT active"
+    echo ""
+    echo "To test process control, first start"
+    echo "a process, e.g.:"
+    echo "  milk-fpsexec-<name> -n $_proc"
+    echo ""
+    echo "Showing syntax examples only."
+    echo ""
+    echo "# Start a process:"
+    echo "#   procctl $_proc run"
+    echo ""
+    echo "# Wait for it to be active (10s):"
+    echo "#   procwait $_proc ACTIVE 10"
+    echo ""
+    echo "# Read process properties:"
+    echo "#   _pid=@proc.${_proc}.pid"
+    echo "#   _freq=@proc.${_proc}.loopfreq"
+    echo "#   _cnt=@proc.${_proc}.loopcnt"
+    echo "#   _stat=@proc.${_proc}.loopstat"
+    echo ""
+    echo "# Pause the process:"
+    echo "#   procctl $_proc pause"
+    echo ""
+    echo "# Resume:"
+    echo "#   procctl $_proc run"
+    echo ""
+    echo "# Stop the process:"
+    echo "#   procctl $_proc stop"
+    echo "#   procwait $_proc IDLE 10"
+    echo ""
+    echo "process_orchestration: DONE (dry run)"
+    exit 0
+fi
+
+# --- If process exists, demonstrate control ---
+
+# Read process properties
+_pid=@proc.${_proc}.pid
+_freq=@proc.${_proc}.loopfreq
+_stat=@proc.${_proc}.loopstat
+echo "PID:       $_pid"
+echo "Loop freq: $_freq"
+echo "Status:    $_stat"
+
+# Query process status
+procstat $_proc
+
+echo "process_orchestration: DONE"

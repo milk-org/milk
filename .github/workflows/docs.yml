@@ -1,0 +1,84 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - dev
+      - framework-dev
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'Doxyfile'
+      - 'src/**/*.h'
+      - 'plugins/**/*.h'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+      - dev
+      - framework-dev
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'Doxyfile'
+      - 'src/**/*.h'
+      - 'plugins/**/*.h'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install MkDocs Material and plugins
+        run: |
+          pip install "mkdocs-material[plugins]" \
+            mkdocs-glightbox \
+            mkdocs-git-revision-date-localized-plugin \
+            mkdocs-minify-plugin
+
+      - name: Build MkDocs site
+        id: build_strict
+        run: mkdocs build --strict -d _site
+        continue-on-error: true
+
+      - name: Build MkDocs site (lenient)
+        if: steps.build_strict.outcome == 'failure'
+        run: mkdocs build -d _site
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Build Doxygen API reference
+        if: hashFiles('Doxyfile') != ''
+        run: |
+          ( cat Doxyfile; echo "OUTPUT_DIRECTORY=_site/api" ) \
+            | doxygen -
+
+      - name: Deploy to GitHub Pages
+        if: >-
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/framework-dev'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          publish_branch: gh-pages
+          commit_message: "docs: update documentation site"

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# milk-logshimkill — kill shared memory log stream process
+# Thin wrapper: delegates to milk-logshim-ctrl kill
+
+case "${1-}" in
+    -h1|--help-oneline|-h2|--help-description|-h|--help|-hm|--help-mono)
+        exec milk-logshim-ctrl "$1"
+        ;;
+esac
+
+if [ $# -ne 1 ]; then
+    milk-logshim-ctrl --help
+    exit 1
+fi
+
+exec milk-logshim-ctrl kill "$1"

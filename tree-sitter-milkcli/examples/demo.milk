@@ -1,0 +1,141 @@
+#!/usr/bin/env milk
+#
+# Example milk-cli script demonstrating syntax
+# highlighting with tree-sitter
+#
+# This script shows all major language constructs
+# that the grammar recognizes.
+
+# ---- Variable assignment ----
+LOOPNAME="dmcomb-00"
+DMINDEX=0
+NBMODES=100
+GAIN=0.3
+
+# ---- FPS parameter access ----
+# Read FPS parameter value with @ syntax
+
+CURGAIN=@fps.${LOOPNAME}.gain
+LOOPSTAT=@fps.${LOOPNAME}.option.loopON
+
+# ---- Sequencer variable access ----
+SEQSTEP=@seq.mysequence.step
+
+# ---- Stream metadata access ----
+XSIZE=${s.dm${DMINDEX}disp.xsize}
+YSIZE=${s.dm${DMINDEX}disp.ysize}
+FRAMECNT=${s.wfs.cnt0}
+
+# ---- Arithmetic ----
+NUMPIX=$(( XSIZE * YSIZE ))
+HALF=$(( NBMODES / 2 ))
+
+# ---- Conditional flow control ----
+if [ $LOOPSTAT -eq 1 ]; then
+    echo "Loop is running"
+    echo "Current gain: $CURGAIN"
+elif [ $LOOPSTAT -eq 0 ]; then
+    echo "Loop is stopped"
+else
+    echo "Unknown state: $LOOPSTAT"
+fi
+
+# ---- assigncheck: milk-specific test ----
+assigncheck XSIZE 128
+assigncheck -e GAIN 0.3
+
+# ---- assert: test with error ----
+assert [ $NUMPIX -gt 0 ]
+
+# ---- For loop ----
+for mode in $(seq 0 $NBMODES); do
+    echo "Processing mode $mode"
+done
+
+# ---- While loop ----
+CNT=0
+while [ $CNT -lt 10 ]; do
+    CNT=$(( CNT + 1 ))
+done
+
+# ---- Until loop ----
+until [ $CNT -ge 20 ]; do
+    CNT=$(( CNT + 1 ))
+done
+
+# ---- Case statement ----
+case $LOOPSTAT in
+    0)
+        echo "stopped"
+        ;;
+    1)
+        echo "running"
+        ;;
+    *)
+        echo "unknown"
+        ;;
+esac
+
+# ---- Function definition ----
+function set_loop_gain {
+    local lname=$1
+    local gval=$2
+    milk-fps-set fps.${lname}.gain $gval
+    echo "Set gain to $gval"
+}
+
+# ---- Wait for stream/FPS events ----
+waitfor_stream dm0disp
+waitfor_fps ${LOOPNAME}
+
+# ---- Multi-event wait ----
+wait_any -t 5.0 S:wfs F:${LOOPNAME}.gain=0.5
+
+# ---- Stream pipe operator ----
+imgen.mkdisk dm0ref 128 128 |> saveFITS
+
+# ---- Process control ----
+procctl ${LOOPNAME} run
+
+# ---- on_update trigger ----
+on_update wfs echo "WFS frame received"
+
+
+# ---- Source another script ----
+source ./common_setup.milk
+include_once ./hardware_init.milk
+
+# ---- Export and declare ----
+export MILK_SHM_DIR="/dev/shm"
+readonly PI=3.14159
+declare -i COUNTER=0
+local TEMPVAL=0
+
+# ---- Traps ----
+trap 'echo cleanup' EXIT
+
+# ---- dpdigits: display precision ----
+dpdigits 6
+
+# ---- Pipeline with external commands ----
+listim | grep "dm" | wc -l
+
+# ---- Redirection ----
+echo "log entry" >> ./logfile.txt
+saveFITS dm0ref > /dev/null 2>&1
+
+# ---- Background execution ----
+procstat ${LOOPNAME} &
+
+# ---- Logical operators ----
+[ -f ./config.txt ] && source ./config.txt
+[ -z "$GAIN" ] || echo "GAIN is set"
+
+# ---- Here-doc ----
+NOTES=<<EOF
+This is a multi-line
+heredoc assignment
+EOF
+
+echo "Script complete"
+exit 0

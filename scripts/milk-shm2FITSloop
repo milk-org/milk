@@ -1,0 +1,116 @@
+#! /bin/bash
+# milk-shm2FITSloop — periodically save a shared memory stream to FITS
+
+MSdescr="periodically save shared memory stream to FITS file"
+
+# ---------------------------------------------------------------------------
+# Early-exit help flags — checked before any side-effects
+# ---------------------------------------------------------------------------
+for _arg in "$@"; do
+    case "${_arg}" in
+        -h1|--help-oneline)
+            echo "${MSdescr}"
+            exit 0
+            ;;
+        -h2|--help-description)
+            echo "Open a tmux session running milk-cli," \
+                 "read a named stream, then save it to" \
+                 "FITS every N seconds."
+            exit 0
+            ;;
+        -h|--help|-hm|--help-mono)
+            if [ "$_arg" = "-hm" ] \
+                || [ "$_arg" = "--help-mono" ] \
+                || ! [ -t 1 ]; then
+                T="" R="" H="" C="" A="" O=""
+            else
+                T=$'\033[1;36m' R=$'\033[0m'
+                H=$'\033[1;34m' C=$'\033[1;32m'
+                A=$'\033[1;35m' O=$'\033[33m'
+            fi
+            echo "${T}milk-shm2FITSloop${R}" \
+                "— ${MSdescr}"
+            echo ""
+            echo "${H}Usage:${R}"
+            echo "  ${C}milk-shm2FITSloop${R}" \
+                "${A}stream${R} ${A}delay_sec${R}"
+            echo ""
+            echo "${H}Arguments:${R}"
+            echo "  ${A}stream${R}" \
+                "      Stream name (e.g. ircam0)"
+            echo "  ${A}delay_sec${R}" \
+                "   Save interval in seconds"
+            echo ""
+            echo "${H}Description:${R}"
+            echo "  Opens a tmux session running" \
+                 "milk-cli, reads the named stream,"
+            echo "  then saves it to <stream>.fits" \
+                 "every <delay_sec> seconds."
+            echo "  Press CTRL+C to stop."
+            echo ""
+            echo "${H}Options:${R}"
+            echo "  ${O}-h, --help${R}" \
+                "           Show this help"
+            echo "  ${O}-h1, --help-oneline${R}" \
+                "   One-line description"
+            echo "  ${O}-h2${R}" \
+                "                   Verbose description"
+            echo "  ${O}-hm${R}" \
+                "                   Monochrome help"
+            echo ""
+            echo "${H}See Also:${R}"
+            echo "  ${C}milk-shmimlog${R}" \
+                "             — log stream to disk"
+            echo "  ${C}milk-streamFITSlog${R}" \
+                "        — log stream as FITS files"
+            exit 0
+            ;;
+    esac
+done
+unset _arg
+
+# ---------------------------------------------------------------------------
+# Argument validation
+# ---------------------------------------------------------------------------
+if [ $# -ne 2 ]; then
+    echo "Error: expected 2 arguments, got $#" >&2
+    echo "Usage: milk-shm2FITSloop <stream> <delay_sec>" >&2
+    echo "Run 'milk-shm2FITSloop --help' for details." >&2
+    exit 1
+fi
+
+STREAM="$1"
+DELAY="$2"
+
+progname=$(basename "$0")
+tmuxname="${progname}-${STREAM}"
+pname="${tmuxname}"
+
+# ---------------------------------------------------------------------------
+# Cleanup trap — only registered after args are validated
+# ---------------------------------------------------------------------------
+function cleanup {
+    echo "clean exit"
+    tmux send-keys -t "${tmuxname}" "exitCLI" C-m 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+echo "Saving stream ${STREAM} to disk every ${DELAY} sec"
+echo "Running inside tmux session ${tmuxname}"
+echo "Press [CTRL+C] to stop.."
+
+tmux new-session -d -s "${tmuxname}"
+tmux send-keys -t "${tmuxname}" "milk-cli -n ${pname}" C-m
+tmux send-keys -t "${tmuxname}" "readshmim ${STREAM}" C-m
+
+IMCNT=0
+while :
+do
+    echo "saving count ${IMCNT}"
+    tmux send-keys -t "${tmuxname}" "savefits ${STREAM} \"!${STREAM}.fits\"" C-m
+    (( IMCNT++ )) || true
+    sleep "${DELAY}"
+done

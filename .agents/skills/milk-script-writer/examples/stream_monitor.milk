@@ -1,0 +1,51 @@
+#!/usr/bin/env milk-script
+#
+# stream_monitor.milk
+# Demonstrates stream metadata queries and waits.
+#
+# Shows how to:
+#   - Create and query stream metadata
+#   - Read stream dimensions and properties
+#   - Use image statistics functions
+#
+# Usage: milk-cli -s stream_monitor.milk
+#
+
+set -e
+
+# --- Create a test stream ---
+echo "Creating a 64x64 test stream..."
+mem.mk2Dim _mon_img 64 64
+
+# --- Fill with test data ---
+_mon_img = _mon_img * 0.0 + 3.0
+echo "Filled with constant 3.0"
+
+# --- Read stream metadata ---
+# The @s.${name}.property syntax queries SHM
+# image metadata directly from shared memory.
+# $VAR substitution inside @ tokens is supported.
+_ww=@s.${_mon_img}.xsize
+_hh=@s.${_mon_img}.ysize
+_nax=@s.${_mon_img}.naxis
+_dtype=@s.${_mon_img}.typename
+_cnt=@s.${_mon_img}.cnt0
+_nel=@s.${_mon_img}.nelement
+
+echo "Dimensions: ${_ww} x ${_hh}"
+echo "Axes:       ${_nax}"
+echo "Datatype:   ${_dtype}"
+echo "Counter:    ${_cnt}"
+echo "Elements:   ${_nel}"
+
+# --- Compute statistics ---
+_total = itot(_mon_img)
+_avg = imean(_mon_img)
+_lo = imin(_mon_img)
+_hi = imax(_mon_img)
+echo "sum=$_total mean=$_avg min=$_lo max=$_hi"
+
+# --- Cleanup ---
+mem.rm _mon_img 0
+
+echo "stream_monitor: DONE"

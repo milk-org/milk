@@ -1,0 +1,71 @@
+#!/usr/bin/env milk-script
+#
+# basic_image_ops.milk
+# Demonstrates native calculator and image math.
+#
+# Creates images, performs arithmetic, applies
+# masks, and queries statistics.
+#
+# Usage: milk-cli -s basic_image_ops.milk
+#
+
+set -e
+
+# --- Create images ---
+echo "Creating 32x32 test images..."
+mem.mk2Dim _demo_a 32 32
+mem.mk2Dim _demo_b 32 32
+
+# --- Fill with constants ---
+# Spaced = triggers the native calculator
+_demo_a = _demo_a * 0.0 + 3.0
+_demo_b = _demo_b * 0.0 + 7.0
+echo "Filled _demo_a=3.0, _demo_b=7.0"
+
+# --- Element-wise arithmetic ---
+_demo_sum = _demo_a + _demo_b
+_mean1 = imean(_demo_sum)
+echo "mean(a + b) = $_mean1"
+
+# --- Scalar multiplication ---
+_demo_sum = _demo_sum * 0.5
+_mean2 = imean(_demo_sum)
+echo "mean after *0.5 = $_mean2"
+
+# --- Boolean mask ---
+_demo_mask = (_demo_sum > 4.0)
+_mask_total = itot(_demo_mask)
+echo "Pixels > 4.0: $_mask_total"
+
+# --- Ternary where() ---
+_demo_sel = where(_demo_mask, _demo_a, _demo_b)
+_sel_mean = imean(_demo_sel)
+echo "where(mask, a, b) mean = $_sel_mean"
+
+# --- Math functions on scalars ---
+_sinval = sin(3.14159265)
+_cosval = cos(3.14159265)
+echo "sin(pi) = $_sinval"
+echo "cos(pi) = $_cosval"
+
+# --- Image statistics ---
+_total = itot(_demo_a)
+_lo = imin(_demo_a)
+_hi = imax(_demo_a)
+_avg = imean(_demo_a)
+echo "sum=$_total min=$_lo max=$_hi mean=$_avg"
+
+# --- Dot product and norm ---
+_dp = dot(_demo_a, _demo_b)
+_nm = norm(_demo_a)
+echo "dot(a, b) = $_dp"
+echo "norm(a) = $_nm"
+
+# --- Cleanup ---
+mem.rm _demo_a 0
+mem.rm _demo_b 0
+mem.rm _demo_sum 0
+mem.rm _demo_mask 0
+mem.rm _demo_sel 0
+
+echo "basic_image_ops: DONE"

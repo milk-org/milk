@@ -1,0 +1,40 @@
+examplestring="Launching CLI"
+
+exampleDescription="
+Launching Command Line Interpreter.
+
+Demonstrates how milk's CLI processes input command.
+"
+
+CLIinput="
+
+# Launch milk command line interpreter (CLI)
+milk
+
+# exit milk CLI
+# \"exit\" and \"quit\" will also work
+exitCLI
+
+# clear screen
+clear
+
+# Launch milk in quiet mode
+MILK_QUIET=1 milk
+
+# exit milk CLI
+exitCLI
+
+# clear screen
+clear
+
+# Rename milk prompt
+MILK_QUIET=1 MILKCLI_APPNAME=\"milk-example\" milk
+
+# Use ! character to send command to upstream terminal
+# String following ! is executed by C system()
+!date -u
+
+# exit milk CLI
+exitCLI
+
+"

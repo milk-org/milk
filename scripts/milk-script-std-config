@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+
+# Early-exit help flags — only execute when run standalone, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    case "${1-}" in
+        -h1|--help-oneline)
+            echo "standard configuration library sourced by milk shell scripts"
+            exit 0
+            ;;
+    esac
+fi
+
+# do not source if already sourced
+if [ -z ${MILK_SCRIPT_STD_CONFIG_SOURCED+x} ]; then
+MILK_SCRIPT_STD_CONFIG_SOURCED="1"
+
+# Standard Milk Directories
+export MILK_SHM_DIR="${MILK_SHM_DIR:-/dev/shm}"
+export MILK_CONF_DIR="${MILK_CONF_DIR:-${HOME}/.milk}"
+
+MILK_SCRIPT_ARGPARSE=1
+
+# background color using ANSI escape
+
+export bgBlack=$(tput setab 0) # black
+export bgRed=$(tput setab 1) # red
+export bgGreen=$(tput setab 2) # green
+export bgYellow=$(tput setab 3) # yellow
+export bgBlue=$(tput setab 4) # blue
+export bgMagenta=$(tput setab 5) # magenta
+export bgCyan=$(tput setab 6) # cyan
+export bgWhite=$(tput setab 7) # white
+
+# foreground color using ANSI escape
+
+export fgBLack=$(tput setaf 0) # black
+export fgRed=$(tput setaf 1) # red
+export fgGreen=$(tput setaf 2) # green
+export fgYellow=$(tput setaf 3) # yellow
+export fgBlue=$(tput setaf 4) # blue
+export fgMagenta=$(tput setaf 5) # magenta
+export fgCyan=$(tput setaf 6) # cyan
+export fgWhite=$(tput setaf 7) # white
+
+export fgBBLack=$(tput setaf 8) # Bright black
+export fgBRed=$(tput setaf 9) # Bright red
+export fgBGreen=$(tput setaf 10) # Bright green
+export fgBYellow=$(tput setaf 11) # Bright yellow
+export fgBBlue=$(tput setaf 12) # Bright blue
+export fgBMagenta=$(tput setaf 13) # Bright magenta
+export fgBCyan=$(tput setaf 14) # Bright cyan
+export fgBWhite=$(tput setaf 15) # Bright white
+
+# text editing options
+
+export txBold=$(tput bold)   # bold
+export txHalf=$(tput dim)    # half-bright
+export txUnderline=$(tput smul)   # underline
+export txEndUnder=$(tput rmul)   # exit underline
+export txReverse=$(tput rev)    # reverse
+export txStandout=$(tput smso)   # standout
+export txEndStand=$(tput rmso)   # exit standout
+export txReset=$(tput sgr0)   # reset attributes
+
+
+# =========== Standard help color macros ===========
+# Match milk_help.h macros for consistent output
+# across shell scripts and C executables.
+# Suppressed when stdout is not a TTY or when -hm
+# (monochrome) is requested.
+FORCE_MONOCHROME="${FORCE_MONOCHROME:-0}"
+
+if [ -t 1 ] && [ "$FORCE_MONOCHROME" != "1" ]; then
+    export MH_RST=$'\033[0m'
+    export MH_BOLD=$'\033[1m'
+    export MH_DIM=$'\033[2m'
+    export MH_TITLE=$'\033[1;36m'
+    export MH_HDR=$'\033[1;34m'
+    export MH_CMD=$'\033[1;32m'
+    export MH_OPT=$'\033[33m'
+    export MH_ARG=$'\033[1;35m'
+    export MH_DFLT=$'\033[36m'
+    export MH_NOTE=$'\033[1;33m'
+    export MH_ERR=$'\033[1;31m'
+else
+    export MH_RST=""
+    export MH_BOLD=""
+    export MH_DIM=""
+    export MH_TITLE=""
+    export MH_HDR=""
+    export MH_CMD=""
+    export MH_OPT=""
+    export MH_ARG=""
+    export MH_DFLT=""
+    export MH_NOTE=""
+    export MH_ERR=""
+fi
+
+
+MILKSCRIPTMODE=""
+if [ "$#" -ge 1 ]; then
+
+	# Print one line help and exit
+	if [ "$1" = "-h1" ] || [ "$1" = "--help-oneline" ]; then
+		printf "%s\n" "${MSdescr}"
+	exit 0
+	fi
+
+	# Print verbose description and exit
+	if [ "$1" = "-h2" ] || [ "$1" = "--help-description" ]; then
+		set +o nounset
+		if [ -n "${MSextdescr:-}" ]; then
+			printf "%s\n" "${MSextdescr}"
+		else
+			printf "%s\n" "${MSdescr}"
+		fi
+		set -o nounset
+		exit 0
+	fi
+
+	if [ "$1" = "-hm" ] || [ "$1" = "--help-mono" ]; then
+		FORCE_MONOCHROME=1
+		# Re-set MH macros to empty
+		export MH_RST="" MH_BOLD="" MH_DIM=""
+		export MH_TITLE="" MH_HDR="" MH_CMD=""
+		export MH_OPT="" MH_ARG="" MH_DFLT=""
+		export MH_NOTE="" MH_ERR=""
+		MILKSCRIPTMODE="help"
+	fi
+
+	if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+		MILKSCRIPTMODE="help"
+	fi
+
+fi
+
+
+
+
+# ======================= PROCESS NAME =================================
+export pnamefull=`echo "$0" | sed "s/\.\///g"`
+export pname=${pnamefull##*/} 
+
+# Attempt to use undefined variable outputs error message, and forces an exit
+set -o nounset
+set -o errexit
+set -o pipefail
+
+
+
+set -eE -o functrace
+failure() {
+  local lineno=$1
+  local msg=$2
+  echo "SCRIPT $0 ${bgRed}${fgBWhite}${txBold} Failed ${txReset} at line $lineno: $msg"
+}
+trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
+
+onexitfunc() {
+	local exitcode=$?
+	if [ $exitcode = 0 ]; then
+		echo "SCRIPT $0 ${bgGreen}${fgBLack}${txBold} Success ${txReset}"
+	else
+		echo "SCRIPT $0 ${bgRed}${fgBWhite}${txBold} EXIT CODE $exitcode ${txReset}"
+		#echo "SCRIPT $0 ${bgGreen}${fgBLack}${txBold} Success ${txReset} CODE: $?"
+	fi
+}
+trap 'onexitfunc' EXIT
+
+
+
+
+function milkdatestring()
+{
+	# ISO 8601 compliant date string
+	# UNIX time
+	date -u +'%Y-%m-%dT%H:%M:%S.%6NZ %s.%6N'
+}
+
+milkcmdstring="$(basename $0) $@"
+
+
+function milkscriptcmdlog()
+{
+	echo "$(milkdatestring) CMD ${USER}@$(pwd) ${milkcmdstring}" >> milkscriptcmd.log
+}
+
+
+
+
+
+
+
+MSopt+=( "h:help:printHELP::print help and exit" )
+MSopt+=( "h1:help-oneline:printHELPshort::print 1-line help and exit" )
+MSopt+=( "hm:help-monochrome:printHELP::print monochrome help and exit" )
+MSopt+=( "chkp:check-prerequ:checkallprerequisitesExit::check all prerequisites and exit" )
+
+MSarg=( )
+
+
+spin()
+{
+    local CPU=0
+    local cpuprobecntlim=10
+    local cpuprobecnt=0
+    local delay=0.1
+    local spincnt=0
+    spinstr="▏▎▍▌▋▊▉▊▋▌▍▎"
+    #spinstr="▁▃▄▅▆▇▆▅▄▃▁ "
+    #spinstr="/|\\-/|\\-"
+
+    let cpuprobecnt=cpuprobecntlim+1
+    echo -n "STARTED $(date -u)  "
+    while :
+    do
+        if [[ "${cpuprobecnt}" -gt "${cpuprobecntlim}" ]]; then
+            CPU=$( pstree -p $THIS_PID | grep -o '([0-9]\+)' | grep -o '[0-9]\+' |\
+                xargs ps -o %cpu,cmd -p | awk '{cpu+=$1} END {print cpu}' )
+            cpuprobecnt=0
+        fi
+        let cpuprobecnt+=1
+
+        t1=$( echo "scale=2;${spincnt}*${delay}" | bc )
+        local temp=${spinstr#?}
+        local temp1=${temp:0:4}
+
+        printf " [%s CPU %3.0f%%] %5.1f s" "$temp1" "${CPU}" "${t1}"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+        let spincnt+=1
+    done
+}
+
+startspin()
+{
+    tput civis
+    # Start the Spinner:
+    THIS_PID=$$
+    spin &
+    SPIN_PID=$!
+    #echo "SPIN_PID ${SPIN_PID}"
+    #echo "THIS_PID ${THIS_PID}"
+    # Kill the spinner on any signal, including our own exit.
+    trap "kill -9 $SPIN_PID &> /dev/null" `seq 0 15`
+}
+
+stopspin()
+{
+    kill -9 $SPIN_PID &> /dev/null
+    echo ""
+    tput cnorm
+    #settrap
+}
+
+fi

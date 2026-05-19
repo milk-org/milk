@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# milk-setup-worktrees
+# Helper script to set up parallel development worktrees for milk.
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "set up parallel development worktrees"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Create parallel git worktrees for" \
+             "docs, cli, perf, and arch development" \
+             "tracks alongside the main repository."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: milk-setup-worktrees"
+        echo "Set up parallel development worktrees."
+        exit 0 ;;
+esac
+
+set -e
+
+# Default directory where worktrees will be created (parent of milk repository)
+MILK_ROOT=$(git rev-parse --show-toplevel)
+WORKTREE_DIR=$(dirname "$MILK_ROOT")
+
+echo "Setting up parallel development worktrees in $WORKTREE_DIR"
+echo "Main repository: $MILK_ROOT"
+
+cd "$MILK_ROOT"
+
+# Ensure we have the latest framework-dev
+echo "Updating framework-dev..."
+git checkout framework-dev || { echo "Error: framework-dev branch not found"; exit 1; }
+git pull --ff-only origin framework-dev || echo "Warning: could not pull latest framework-dev from origin"
+
+# Function to create a worktree
+create_worktree() {
+    local wt_name=$1
+    local branch_prefix=$2
+    local wt_path="$WORKTREE_DIR/$wt_name"
+    
+    if [ -d "$wt_path" ]; then
+        echo "Worktree $wt_name already exists at $wt_path"
+    else
+        echo "Creating worktree $wt_name..."
+        # Create a placeholder branch so the worktree checkouts successfully
+        local branch_name="${branch_prefix}/setup-$(date +%s)"
+        git worktree add -b "$branch_name" "$wt_path" framework-dev
+        echo "  -> Created at $wt_path (placeholder branch: $branch_name)"
+        
+        # Initialize CMake build directory
+        echo "  -> Initializing CMake build directory..."
+        mkdir -p "$wt_path/_build"
+        (cd "$wt_path/_build" && cmake .. > /dev/null 2>&1 || echo "     (CMake error ignored during setup)")
+    fi
+}
+
+echo ""
+echo "Note: The branch names created initially are just placeholders."
+echo "When you start a real task in one of these worktrees, you should branch off framework-dev cleanly:"
+echo "  1. cd $WORKTREE_DIR/milk-<track>"
+echo "  2. git checkout framework-dev"
+echo "  3. git pull --ff-only origin framework-dev"
+echo "  4. git checkout -b <prefix>/your-real-task"
+echo ""
+
+# Create standard tracking worktrees
+create_worktree "milk-docs" "docs"
+create_worktree "milk-cli" "feat"
+create_worktree "milk-perf" "perf"
+create_worktree "milk-arch" "refactor"
+
+echo ""
+echo "Done! You can now work in parallel across these directories."
+echo "Remember to build from the _build directory in each respective worktree."

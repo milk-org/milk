@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block announce %}
+  <a href="{{ 'whatsnew/' | url }}">
+    <span class="twemoji">{% include ".icons/material/star-four-points.svg" %}</span>
+    <strong>What's New</strong> — see recent features and upgrades
+  </a>
+{% endblock %}

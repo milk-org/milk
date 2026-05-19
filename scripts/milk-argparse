@@ -1,0 +1,527 @@
+#!/usr/bin/env bash
+
+# Early-exit help flags — only execute when run standalone, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    case "${1-}" in
+        -h1|--help-oneline)
+            echo "bash argument parser library for" \
+                 "milk scripts (source this, do not" \
+                 "run directly)"
+            exit 0 ;;
+        -h2|--help-description)
+            echo "Provides MSarg/MSopt arrays," \
+                 "printHELP, and argument parsing." \
+                 "Source from scripts; do not" \
+                 "run directly."
+            exit 0 ;;
+        -h|--help|-hm|--help-mono)
+            echo "Library script; source from your" \
+                 "script, do not run directly."
+            exit 0 ;;
+    esac
+fi
+
+# Simple argument parser for bash scripts
+# To use, include following code in bash script :
+#
+
+# Short script description
+: '
+MSdescr="Example script"
+'
+
+# Extended description
+: '
+MSextdescr="A longer description of the script is included
+here anc can span multiple lines"
+'
+
+
+: '
+source milk-script-std-config
+'
+
+# list prerequisites (optional)
+#
+: '
+RequiredCommands=( milk-cli ls cd )
+RequiredFiles=()
+RequiredDirs=()
+RequiredPipes=()
+'
+
+# list SCRIPT ARGUMENTS
+# syntax: "name;type(s)/test(s);description"
+#
+: '
+MSarg+=( "slambdaum:float:wavelength" )
+'
+
+# SCRIPT OPTIONS (optional)
+# syntax: "short;long;functioncall;args[types];description"
+: '
+MSopt+=( "c:create:confcreate::create configuration file and exit" )
+'
+
+# functions called by options (optional)
+: '
+function confcreate() {
+exit
+}
+'
+
+# argument parsing
+: '
+source milk-argparse
+
+slambdaum="${inputMSargARRAY[0]}"
+'
+
+# Access arguments with :
+# ${inputMSargARRAY[0]}
+# ${inputMSargARRAY[1]}
+
+
+
+########################################################################
+
+
+
+
+
+QUIET=0
+
+
+#echo "Running argparse, $# args"
+
+
+# User scripts can perform custom tests prior to entering this script
+# ... in which case, EXITSTATUS is already set
+# If not, create it an initialize it to 0 (no error)
+if [ -z ${EXITSTATUS+x} ]; then
+EXITSTATUS=0
+fi
+
+
+
+function checkFile {
+    if [ -f $1 ]; then
+        echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+    else
+        echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
+        EXITSTATUS=1
+    fi
+}
+
+function checkPipe {
+    if [ -p $1 ]; then
+        echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Pipe $(tput bold)$1$(tput sgr0) found"
+    else
+        echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Pipe $(tput bold)$1$(tput sgr0) not found"
+        EXITSTATUS=1
+    fi
+}
+
+
+function checkDir {
+    if [ -d $1 ]; then
+        echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) found"
+    else
+        echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) not found"
+        EXITSTATUS=1
+    fi
+}
+
+
+
+function cmdexists()
+{
+    command -v "$1" >/dev/null 2>&1
+}
+
+
+function checkCommand {
+    if cmdexists $1; then
+        if [ ${QUIET} = 0 ]; then
+            echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) found"
+        fi
+        COMMAND_FOUND=1
+    else
+        if [ ${QUIET} = 0 ]; then
+            echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) not installed.  Aborting."
+        fi
+        COMMAND_FOUND=0
+        EXITSTATUS=1;
+    fi
+}
+
+
+
+function printHELP {
+
+    # Build argument list string
+    argliststring=""
+    if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
+        argindex=0
+        while [ $argindex -lt ${NBarg} ]; do
+            argliststring="${argliststring} ${MH_ARG}${inputMSargnameARRAY[$argindex]}${MH_RST}"
+            let argindex+=1
+        done
+    fi
+
+    # Banner
+    echo "${MH_TITLE}${pname}${MH_RST}" \
+        "— ${MSdescr}"
+    echo ""
+
+    # Usage
+    echo "${MH_HDR}Usage:${MH_RST}"
+    echo "  ${MH_CMD}${pname}${MH_RST}" \
+        "[${MH_OPT}OPTIONS${MH_RST}]${argliststring}"
+    echo ""
+
+    # Description
+    set +o nounset
+    if [ -n "${MSextdescr:-}" ]; then
+        echo "${MH_HDR}Description:${MH_RST}"
+        printf "  %s\n" "${MSextdescr}"
+        echo ""
+    fi
+    set -o nounset
+
+    # Arguments
+    if [ $MILK_SCRIPT_ARGPARSE = 1 ] \
+        && [ ${NBarg} -gt 0 ]; then
+        echo "${MH_HDR}Arguments:${MH_RST}"
+        argindex=0
+        while [ $argindex -lt ${NBarg} ]; do
+            def_val="${inputMSargdefaultARRAY[$argindex]:-}"
+            if [ -n "$def_val" ]; then
+                def_str=" (${MH_DFLT}default: ${def_val}${MH_RST})"
+            else
+                def_str=""
+            fi
+            printf "  ${MH_ARG}%-14s${MH_RST}" \
+                "${inputMSargnameARRAY[$argindex]}"
+            printf " [%s]" \
+                "${inputMSargtypeARRAY[$argindex]}"
+            echo ""
+            echo "      ${inputMSargdescrARRAY[$argindex]}${def_str}"
+            let argindex+=1
+        done
+        echo ""
+    fi
+
+    # Options
+    echo "${MH_HDR}Options:${MH_RST}"
+    optindex=0
+    while [ $optindex -lt ${NBopt} ]; do
+        local short="${inputMSoptshortARRAY[$optindex]}"
+        local long="${inputMSoptlongARRAY[$optindex]}"
+        local optarg="${inputMSoptargARRAY[$optindex]}"
+        local descr="${inputMSoptdescrARRAY[$optindex]}"
+        if [ -n "$optarg" ]; then
+            printf "  ${MH_OPT}-%s, --%s${MH_RST}" \
+                "$short" "$long"
+            printf " ${MH_ARG}%s${MH_RST}\n" \
+                "$optarg"
+        else
+            printf "  ${MH_OPT}-%s, --%s${MH_RST}\n" \
+                "$short" "$long"
+        fi
+        echo "      ${descr}"
+        let optindex+=1
+    done
+    echo ""
+
+    # See Also
+    set +o nounset
+    if [ "${MSseealso+set}" = "set" ] \
+        && [ ${#MSseealso[@]} -gt 0 ]; then
+        echo "${MH_HDR}See Also:${MH_RST}"
+        for entry in "${MSseealso[@]}"; do
+            local sacmd="${entry%%:*}"
+            local sadesc="${entry#*:}"
+            printf "  ${MH_CMD}%-24s${MH_RST}" \
+                "${sacmd}"
+            echo " — ${sadesc}"
+        done
+        echo ""
+    fi
+    set -o nounset
+
+    exit 0
+}
+
+
+
+printHELPshort ()
+{
+    printf "%s\n" "${MSdescr}"
+    exit 0
+}
+
+
+
+
+
+
+
+
+
+
+# =================================================
+#   CHECK PREREQUISITES
+# =================================================
+function checkallprerequisites()
+{
+    set +o nounset
+    for cmd in ${RequiredCommands[@]}; do
+        checkCommand $cmd
+    done
+
+    for fname in ${RequiredFiles[@]}; do
+        checkFile $fname
+    done
+
+    for pipename in ${RequiredPipes[@]}; do
+        checkPipe $pipename
+    done
+
+    for dname in ${RequiredDirs[@]}; do
+        checkDir $dname
+    done
+
+    set -o nounset
+}
+
+function checkallprerequisitesExit()
+{
+    checkallprerequisites
+    exit 0
+}
+
+
+
+
+# =================================================
+#   ARGUMENT PARSING
+# =================================================
+
+
+PARAMS=""
+
+
+# Arguments
+inputMSargnameARRAY=( )
+inputMSargtypeARRAY=( )
+inputMSargdescrARRAY=( )
+inputMSargdefaultARRAY=( )
+
+NBarg=0
+if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
+	if (( ${#MSarg[@]} )); then
+	for argdat in "${MSarg[@]}";do
+		#echo "Argument ${NBarg}: $argdat"
+		IFS=':' read -r f1 f2 f3 f4 <<< "$argdat"
+		inputMSargnameARRAY+=( "$f1" )
+		inputMSargtypeARRAY+=( "$f2" )
+		inputMSargdescrARRAY+=( "$f3" )
+		inputMSargdefaultARRAY+=( "$f4" )
+		#echo "    ${inputMSargnameARRAY[$NBarg]}"
+		let NBarg+=1
+	done
+	fi
+#echo "NBarg = ${NBarg}"
+fi
+
+
+
+
+# Options
+inputMSoptshortARRAY=( )
+inputMSoptlongARRAY=( )
+inputMSoptfuncARRAY=( )
+inputMSoptnbargARRAY=( )
+inputMSoptdescrARRAY=( )
+
+# parse options
+# options stored as declarative array using short notation
+declare -A OPTlong
+declare -A OPTfunc
+declare -A OPTarg
+declare -A OPTlong2short
+
+declare -A OPTargstring
+
+# list of active options
+optactlist=( )
+
+NBopt=0
+for optdat in "${MSopt[@]}";do
+    #echo "Option ${NBopt}: $optdat"
+    IFS=':' read -r -a optarray <<< "$optdat"
+    let NBopt+=1
+    inputMSoptshortARRAY+=( ${optarray[0]} )
+    inputMSoptlongARRAY+=( ${optarray[1]} )
+    inputMSoptfuncARRAY+=( ${optarray[2]} )
+    inputMSoptargARRAY+=( "${optarray[3]}" )
+    inputMSoptdescrARRAY+=( "${optarray[4]}" )
+    OPTlong[${optarray[0]}]="${optarray[1]}"
+    OPTfunc[${optarray[0]}]="${optarray[2]}"
+    OPTarg[${optarray[0]}]="${optarray[3]}"
+    OPTlong2short[${OPTlong[${optarray[0]}]}]=${optarray[0]}
+done
+
+
+
+
+
+
+
+#echo "processing arg string; $#"
+shiftcnt=1
+optargstring=""
+inputParamString=( )
+
+function getoptargs {
+    optargstring=""
+    shiftcnt=0
+    nboptarg=$( wc -w <<< "${OPTarg[${shortopt}]}" )
+    #echo "nboptarg = ${nboptarg} from $@"
+    optargindex=0
+    while [ $optargindex -lt ${nboptarg} ]; do
+        let shiftcnt+=1
+        let optargindex+=1
+        optargstring="${optargstring} $1"
+        shift
+    done
+}
+
+
+while (( "$#" )); do
+    case "$1" in
+        -h2|--help-description)
+            # Handled by milk-script-std-config early exit;
+            # guard here in case it reaches argparse.
+            set +o nounset
+            if [ -n "${MSextdescr:-}" ]; then
+                printf "%s\n" "${MSextdescr}"
+            else
+                printf "%s\n" "${MSdescr}"
+            fi
+            set -o nounset
+            exit 0
+            ;;
+        --*) # long option
+            #echo "long option: $1"
+            inputMSoptlongARRAY+=( $1 )
+            longopt=$1
+            longopt="${longopt:2}"
+            shortopt=${OPTlong2short[$longopt]}
+            #echo "func $1 $shortopt : ${OPTfunc[${shortopt}]}"
+            optactlist+=( $shortopt )
+            shift
+            getoptargs $@
+            OPTargstring[${shortopt}]=${optargstring}
+            shift ${shiftcnt}
+            ;;
+        -*) # short option
+            inputMSoptshortARRAY+=( $1 )
+            shortopt=$1
+            shortopt="${shortopt:1}"
+            #echo "func $1 $shortopt : ${OPTfunc[${shortopt}]}"
+            optactlist+=( $shortopt )
+            shift
+            getoptargs $@
+            OPTargstring[${shortopt}]=${optargstring}
+            shift ${shiftcnt}
+            ;;
+        *)
+            #echo "param: $1"
+            inputMSargARRAY+=( "$1" )
+            inputParamString+=( "$1" )
+            shift
+            ;;
+    esac
+done
+
+
+
+set +o nounset
+NBoptact=0
+for MSopt in "${optactlist[@]}";do
+    func_name="${OPTfunc[$MSopt]}"
+    if [ -z "$func_name" ]; then
+        # Auto-export option: OPT_<LONGNAME>=value (or 1 if no arg)
+        long_name="${OPTlong[$MSopt]}"
+        var_name="OPT_${long_name^^}"
+        var_name="${var_name//-/_}"
+        
+        if [ -z "${OPTarg[$MSopt]}" ]; then
+            export "${var_name}"=1
+        else
+            val="${OPTargstring[$MSopt]# }"
+            export "${var_name}"="${val}"
+        fi
+    else
+        # Legacy callback execution
+        ${func_name} ${OPTargstring[$MSopt]}
+    fi
+    let NBoptact+=1
+done
+set -o nounset
+
+
+# set positional arguments in their proper place
+#printf 'args before update  : '; printf '%q ' "$@"; echo
+if (( ${#inputParamString[@]} )); then
+set -- "${inputParamString[@]}"
+fi
+#printf 'args after  update  : '; printf '%q ' "$@"; echo
+
+
+checkallprerequisites
+
+if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
+	NBargin=0
+	if (( ${#inputParamString[@]} )); then
+		for MSarg in "${inputParamString[@]}";do
+			if [[ ${NBargin} -lt ${NBarg} ]]; then
+				# Export argument to environment natively
+				arg_name="${inputMSargnameARRAY[$NBargin]}"
+				var_name="${arg_name^^}"
+				export "${var_name//-/_}"="${MSarg}"
+			fi
+			let NBargin+=1
+		done
+	fi
+
+	# Apply Default Values for Missing Arguments
+	while [[ ${NBargin} -lt ${NBarg} ]]; do
+		def_val="${inputMSargdefaultARRAY[$NBargin]:-}"
+		if [ -n "$def_val" ]; then
+			arg_name="${inputMSargnameARRAY[$NBargin]}"
+			var_name="${arg_name^^}"
+			export "${var_name//-/_}"="${def_val}"
+			let NBargin+=1
+		else
+			break
+		fi
+	done
+
+	if [[ ${NBargin} -ne ${NBarg} ]]; then
+		printHELP
+		echo "${MH_ERR} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${MH_RST}"
+		exit 1
+	fi
+fi
+
+
+if [ ${EXITSTATUS} = 1 ]; then
+	exit 1
+fi
+
+# log command
+milkscriptcmdlog
+

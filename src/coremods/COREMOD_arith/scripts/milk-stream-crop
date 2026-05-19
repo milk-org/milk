@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# milk-stream-crop — crop an existing stream
+# Thin wrapper: delegates to milk-fpsexec-arith-crop2D
+
+case "${1-}" in
+    -h1|--help-oneline) echo "crop stream"; exit 0 ;;
+    -h2|--help-description) milk-fpsexec-arith-crop2D -h2; exit $? ;;
+    -h|--help|-hm|--help-mono) milk-fpsexec-arith-crop2D "$1"; exit $? ;;
+esac
+
+exec milk-fpsexec-arith-crop2D "$@"

@@ -1,0 +1,91 @@
+name: Feature Request
+description: Propose a new feature or enhancement
+title: "[FEAT] "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which subsystem does this affect?
+      options:
+        - CLI (CLIcore / milk-cli)
+        - ImageStreamIO (shared memory streams)
+        - FPS (function parameter system)
+        - processinfo (heartbeat / telemetry)
+        - COREMOD (arith, memory, tools, iofits)
+        - Standalone fpsexec executable
+        - Plugin module
+        - Build system (CMake)
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: >-
+        What capability is needed? Be concise.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: >-
+        Describe the real-world motivation. What problem
+        does this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed Approach
+      description: >-
+        Optional. If you have ideas on implementation,
+        describe them here. For reference, new compute
+        units should follow the
+        [V2 template](src/milk_module_example/examplefunc_fps_cli_poc.c).
+        AI agents can use workflows like `/create-fpsexec`,
+        `/add-function`, `/add-stream-processor`, or
+        `/add-new-module`.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: What kind of change is this?
+      options:
+        - New function in existing module
+        - New standalone fpsexec executable
+        - New module / plugin
+        - CLI command change
+        - Stream processing loop
+        - API / library change
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: >-
+        Other approaches you considered and why they
+        were not preferred.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I searched existing issues for duplicates
+          required: true
+        - label: >-
+            I reviewed the dependency graph before
+            proposing cross-module changes
+          required: false

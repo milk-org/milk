@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "remove stream and associated files"
+        exit 0 ;;
+esac
+
+MSdescr="remove stream and associated files"
+
+MSextdescr=""
+
+source milk-script-std-config
+
+RequiredCommands=(milk-cli)
+RequiredFiles=()
+RequiredDirs=()
+
+
+MSarg+=( "stream:string:stream name" )
+
+
+
+MSseealso+=( "milk-rmshmim:remove shared memory stream and files" )
+MSseealso+=( "milk-shmimpurge:purge orphan shared memory streams" )
+
+source milk-argparse
+
+
+
+
+
+sname="${inputMSargARRAY[0]}"
+
+echo "Removing stream ${sname}"
+
+
+
+
+set +u
+if [ -w "${MILK_SHM_DIR}/" ];
+then
+SFDIR="${MILK_SHM_DIR}/"
+else
+SFDIR="/tmp"
+fi
+set -u
+
+SF="${SFDIR}/milkCLIstartup.${pname}.$$"
+echo "mem.readshmim ${sname}" > $SF
+echo "mem.rmshmim ${sname}" >> $SF
+echo "exitCLI" >> $SF
+
+MILK_QUIET=1 milk-cli -n ${pname} -f -s ${SF}
+
+rm ${SF}

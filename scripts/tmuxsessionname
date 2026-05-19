@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "print current tmux session name"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Print the name of the current tmux" \
+             "session, if any."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: tmuxsessionname"
+        echo "Print current tmux session name."
+        exit 0 ;;
+esac
+[[ -n "${TMUX+set}" ]] && tmux display-message -p "#S"
