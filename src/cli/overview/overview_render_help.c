@@ -198,58 +198,61 @@ void ov_render_help(const OV_LAYOUT *lay)
     int map[128];
     int nvis = help_visible_rows(lay, map);
 
-    /* Compute content width */
-    int content_w = 0;
-    for(int i = 0; i < HELP_TOTAL; i++)
+    int pw, ph, pr, pc;
     {
-        int l = (int) strlen(HELP[i].text);
-        /* Section headers get "▸ " or "▾ " prefix */
-        if(HELP[i].flags & HF_SECTION)
+        /* Compute content width */
+        int content_w = 0;
+        for(int i = 0; i < HELP_TOTAL; i++)
         {
-            l += 4; /* chevron + space + padding */
+            int l = (int) strlen(HELP[i].text);
+            /* Section headers get "▸ " or "▾ " prefix */
+            if(HELP[i].flags & HF_SECTION)
+            {
+                l += 4; /* chevron + space + padding */
+            }
+            if(l > content_w)
+            {
+                content_w = l;
+            }
         }
-        if(l > content_w)
+        /* Color legend row adds extra */
+        int legend_extra = (int) strlen("  stream proc fps");
+        if(legend_extra + 4 > content_w)
         {
-            content_w = l;
+            content_w = legend_extra + 4;
         }
-    }
-    /* Color legend row adds extra */
-    int legend_extra = (int) strlen("  stream proc fps");
-    if(legend_extra + 4 > content_w)
-    {
-        content_w = legend_extra + 4;
-    }
-    if(content_w < 44)
-    {
-        content_w = 44;
-    }
+        if(content_w < 44)
+        {
+            content_w = 44;
+        }
 
-    /* Box dimensions */
-    int pw = content_w + 6;     /* 2 pad + 2 border */
-    int ph = nvis + 5;          /* 2 border + title + spacer */
+        /* Box dimensions */
+        pw = content_w + 6;     /* 2 pad + 2 border */
+        ph = nvis + 5;          /* 2 border + title + spacer */
 
-    int W = lay->term_cols;
-    int H = lay->term_rows;
+        int W = lay->term_cols;
+        int H = lay->term_rows;
 
-    /* Cap to terminal */
-    if(ph > H - 2)
-    {
-        ph = H - 2;
-    }
-    if(pw > W - 2)
-    {
-        pw = W - 2;
-    }
+        /* Cap to terminal */
+        if(ph > H - 2)
+        {
+            ph = H - 2;
+        }
+        if(pw > W - 2)
+        {
+            pw = W - 2;
+        }
 
-    int pr = (H - ph) / 2;
-    int pc = (W - pw) / 2;
-    if(pr < 1)
-    {
-        pr = 1;
-    }
-    if(pc < 1)
-    {
-        pc = 1;
+        pr = (H - ph) / 2;
+        pc = (W - pw) / 2;
+        if(pr < 1)
+        {
+            pr = 1;
+        }
+        if(pc < 1)
+        {
+            pc = 1;
+        }
     }
 
     /* Border */

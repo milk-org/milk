@@ -205,44 +205,32 @@ errno_t streamCTRL_CTRLscreen(void)
     sTUIparam.frequ = 10.0; // Hz
 
 
-    int stringmaxlen = 300;
-
     // Display fields
     STREAMINFO    *streaminfo;
     STREAMINFOPROC streaminfoproc;
-
-
-//    long dindex;           // display index
-    long doffsetindex = 0; // offset index if more entries than can be displayed
-
-
-    int monstrlen = 200;
-    char  monstring[monstrlen];
-
 
     DEBUG_TRACEPOINT("function start ");
 
     pthread_t threadscan;
 
-    // display
-    int DispName_NBchar = 36;
-    int DispSize_NBchar = 20;
-    int Dispcnt0_NBchar = 16;
-    int Dispfreq_NBchar = 8;
-    int DispPID_NBchar  = 8;
+    struct streamCTRL_TUI_state state;
+    state.DispName_NBchar = 36;
+    state.DispSize_NBchar = 20;
+    state.Dispcnt0_NBchar = 16;
+    state.Dispfreq_NBchar = 8;
+    state.DispPID_NBchar  = 8;
+    state.doffsetindex = 0;
+    state.inodeselected = 0;
+    state.monstrlen = 200;
+    state.monstring = (char *)malloc(state.monstrlen);
 
-    // create PID name table
-    char **PIDname_array;
-    int    PIDmax;
+    state.PIDmax = get_PIDmax();
+    DEBUG_TRACEPOINT("PID max = %d ", state.PIDmax);
 
-    PIDmax = get_PIDmax();
-
-    DEBUG_TRACEPOINT("PID max = %d ", PIDmax);
-
-    PIDname_array = (char **) malloc(sizeof(char *) * PIDmax);
-    for(int pidi = 0; pidi < PIDmax; pidi++)
+    state.PIDname_array = (char **) malloc(sizeof(char *) * state.PIDmax);
+    for(int pidi = 0; pidi < state.PIDmax; pidi++)
     {
-        PIDname_array[pidi] = NULL;
+        state.PIDname_array[pidi] = NULL;
     }
 
     streaminfoproc.WriteFlistToFile = 0;
@@ -263,7 +251,7 @@ errno_t streamCTRL_CTRLscreen(void)
         streaminfo[sindex].t_avg_start          = 0.0;
         streaminfo[sindex].cnt0_avg_start       = 0;
     }
-    streaminfoproc.PIDtable = PIDname_array;
+    streaminfoproc.PIDtable = state.PIDname_array;
 
     IMAGE *streamCTRLimages = (IMAGE *) malloc(sizeof(IMAGE) * streamNBID_MAX);
     for(imageID imID = 0; imID < streamNBID_MAX; imID++)
@@ -313,16 +301,14 @@ errno_t streamCTRL_CTRLscreen(void)
     streaminfoproc.fuserUpdate0 = 1;     //update on first instance
 
     // inodes that are upstream of current selection
-    int    NBupstreaminodeMAX = 100;
-    ino_t *upstreaminode;
-    int    NBupstreaminode = 0;
-    upstreaminode = (ino_t *) malloc(sizeof(ino_t) * NBupstreaminodeMAX);
+    state.NBupstreaminodeMAX = 100;
+    state.NBupstreaminode = 0;
+    state.upstreaminode = (ino_t *) malloc(sizeof(ino_t) * state.NBupstreaminodeMAX);
 
     // processes that are upstream of current selection
-    int    NBupstreamprocMAX = 100;
-    pid_t *upstreamproc;
-    int    NBupstreamproc = 0;
-    upstreamproc          = (pid_t *) malloc(sizeof(pid_t) * NBupstreamprocMAX);
+    state.NBupstreamprocMAX = 100;
+    state.NBupstreamproc = 0;
+    state.upstreamproc = (pid_t *) malloc(sizeof(pid_t) * state.NBupstreamprocMAX);
 
     TUI_clearscreen(0, 0);
     DEBUG_TRACEPOINT(" ");
@@ -349,15 +335,12 @@ errno_t streamCTRL_CTRLscreen(void)
     DEBUG_TRACEPOINT("Scan thread started");
 
 
-    loopcnt = 0;
+    state.loopcnt = 0;
 
     DEBUG_TRACEPOINT("get terminal size");
     TUI_init_terminal(&wrow, &wcol);
     //        TUI_get_terminal_size(&wrow, &wcol);
 
-    ino_t inodeselected      = 0;
-
-    struct streamCTRL_TUI_state state;
     state.body_start_row = 0;
     while(sc_sigINT == 0 && sc_sigTERM == 0 && sTUIparam.loopOK == 1)
     {
@@ -407,50 +390,24 @@ errno_t streamCTRL_CTRLscreen(void)
 
         TUI_clearscreen(&wrow, &wcol);
 
-
-
-        state.doffsetindex = doffsetindex;
-        state.monstrlen = monstrlen;
-        state.monstring = monstring;
-        state.DispName_NBchar = DispName_NBchar;
-        state.DispSize_NBchar = DispSize_NBchar;
-        state.Dispcnt0_NBchar = Dispcnt0_NBchar;
-        state.Dispfreq_NBchar = Dispfreq_NBchar;
-        state.DispPID_NBchar = DispPID_NBchar;
-        state.PIDmax = PIDmax;
-        state.PIDname_array = PIDname_array;
-        state.inodeselected = inodeselected;
-        state.NBupstreaminodeMAX = NBupstreaminodeMAX;
-        state.upstreaminode = upstreaminode;
-        state.NBupstreaminode = NBupstreaminode;
-        state.NBupstreamprocMAX = NBupstreamprocMAX;
-        state.upstreamproc = upstreamproc;
-        state.NBupstreamproc = NBupstreamproc;
-        state.loopcnt = loopcnt;
-
         streamCTRL_render_screen(&streamCTRLdata, &state);
-
-        doffsetindex = state.doffsetindex;
-        inodeselected = state.inodeselected;
-        NBupstreaminode = state.NBupstreaminode;
-        NBupstreamproc = state.NBupstreamproc;
 
         DEBUG_TRACEPOINT(" ");
 
-        loopcnt++;
+        state.loopcnt++;
     }
 
     streaminfoproc.loop = 0;
     pthread_join(threadscan, NULL);
 
-    for(int pidi = 0; pidi < PIDmax; pidi++)
+    for(int pidi = 0; pidi < state.PIDmax; pidi++)
     {
-        if(PIDname_array[pidi] != NULL)
+        if(state.PIDname_array[pidi] != NULL)
         {
-            free(PIDname_array[pidi]);
+            free(state.PIDname_array[pidi]);
         }
     }
-    free(PIDname_array);
+    free(state.PIDname_array);
 
     for(imageID ID = 0; ID < streamNBID_MAX; ID++)
     {
@@ -462,8 +419,9 @@ errno_t streamCTRL_CTRLscreen(void)
 
     free(streamCTRLimages);
     free(streaminfo);
-    free(upstreaminode);
-    free(upstreamproc);
+    free(state.upstreaminode);
+    free(state.upstreamproc);
+    free(state.monstring);
 
     fflush(stderr);
     dup2(backstderr, STDERR_FILENO);

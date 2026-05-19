@@ -114,32 +114,33 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
         return RETURN_FAILURE;
     }
 
-    uint32_t xsizein = img0.md->size[0];
-    uint32_t ysizein = img0.md->size[1];
-
-    uint32_t xsize  = xsizein;
-    uint32_t ysize  = ysizein / 2;
-    uint64_t xysize = (uint64_t)xsize * ysize;
-
-    uint8_t datatype    = img0.md->datatype;
-    uint8_t datatypeout = _DATATYPE_FLOAT;
-
-#define HALFDIFF_OUTTYPE(DT_IN, IACC, ICT, \
-                         DT_OUT, OACC, OCT) \
-    case DT_IN: datatypeout = DT_OUT; break;
-
-    switch(datatype)
-    {
-        HALFDIFF_TYPES(HALFDIFF_OUTTYPE) default: break;
-    }
-#undef HALFDIFF_OUTTYPE
-
+    uint8_t datatype = img0.md->datatype;
+    
     IMGID imgout = imgid_make_from_name(IDstreamout_name);
     resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
     if(imgout.ID == -1)
     {
+        uint32_t xsizein = img0.md->size[0];
+        uint32_t ysizein = img0.md->size[1];
+        uint32_t xsize   = xsizein;
+        uint32_t ysize   = ysizein / 2;
+
+        uint8_t datatypeout = _DATATYPE_FLOAT;
+
+#define HALFDIFF_OUTTYPE(DT_IN, IACC, ICT, \
+                         DT_OUT, OACC, OCT) \
+        case DT_IN: datatypeout = DT_OUT; break;
+
+        switch(datatype)
+        {
+            HALFDIFF_TYPES(HALFDIFF_OUTTYPE) default: break;
+        }
+#undef HALFDIFF_OUTTYPE
+
         imgout = stream_connect_create_2D(IDstreamout_name, xsize, ysize, datatypeout);
     }
+
+    uint64_t xysize = (uint64_t)img0.md->size[0] * (img0.md->size[1] / 2);
 
     unsigned long long cnt = 0;
 

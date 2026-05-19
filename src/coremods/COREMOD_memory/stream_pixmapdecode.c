@@ -128,41 +128,9 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *IDout_pixslice_fname,
     uint32_t   reverse)
 {
-    imageID            IDout = -1;
-    imageID            IDin;
-    imageID            IDmap;
-    long               sliceii;
-    long               oldslice = 0;
-    long               NBslice;
-    long              *nbpixslice;
-    uint32_t           xsizein;
-    uint32_t           ysizein;
-    uint32_t           nbpixout = xsizeim * ysizeim;
-    FILE              *fp;
-    uint32_t          *sizearray;
-    imageID            IDout_pixslice;
-
-    unsigned long long cnt = 0;
-    //    int RT_priority = 80; //any number from 0-99
-
-    //    struct sched_param schedpar;
-    struct timespec ts;
-
-    int             semval;
-    //    long long iter;
-    //    int r;
-    long tmpl0, tmpl1;
-    int  semr;
-
-    double          *dtarray;
-    struct timespec *tarray;
-    //    long slice1;
-
-    PROCESSINFO *processinfo;
-
     IMGID img_in = imgid_make_from_name(inputstream_name);
     resolveIMGID(&img_in, ERRMODE_WARN, dcimg, dcnimg);
-    IDin = img_in.ID;
+    imageID IDin = img_in.ID;
     if(img_in.ID == -1)
     {
         return RETURN_FAILURE;
@@ -170,7 +138,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     IMGID img_map = imgid_make_from_name(IDmap_name);
     resolveIMGID(&img_map, ERRMODE_WARN, dcimg, dcnimg);
-    IDmap = img_map.ID;
+    imageID IDmap = img_map.ID;
     if(img_map.ID == -1)
     {
         return RETURN_FAILURE;
@@ -179,9 +147,10 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     // Reverse = 0: same size as IDin
     // Reverse = 1: same size as IDout
 
-    xsizein = dcimg[IDin].md[0].size[0];
-    ysizein = dcimg[IDin].md[0].size[1];
+    uint32_t xsizein = dcimg[IDin].md[0].size[0];
+    uint32_t ysizein = dcimg[IDin].md[0].size[1];
 
+    long NBslice;
     if(dcimg[IDin].md[0].naxis > 2)
     {
         NBslice = dcimg[IDin].md[0].size[2];
@@ -191,20 +160,26 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         NBslice = 1;
     }
 
-    char pinfoname[200]; // short name for the processinfo instance
-    snprintf(pinfoname, sizeof(pinfoname), "decode-%s-to-%s", inputstream_name, IDout_name);
-    char pinfodescr[200];
-    snprintf(pinfodescr, sizeof(pinfodescr),
-             "%ldx%ldx%ld->%ldx%ld",
-             (long) xsizein, (long) ysizein, NBslice, (long) xsizeim, (long) ysizeim);
-    char msgstring[200];
-    snprintf(msgstring, sizeof(msgstring), "%s->%s", inputstream_name, IDout_name);
+    // setup processinfo
+    PROCESSINFO *processinfo;
+    {
+        char pinfoname[200];
+        snprintf(pinfoname, sizeof(pinfoname), "decode-%s-to-%s", inputstream_name, IDout_name);
 
-    processinfo = processinfo_setup(
-                      pinfoname, // short name for the processinfo instance, no spaces, no dot, name should be human-readable
-                      pinfodescr, // description
-                      msgstring,  // message on startup
-                      __FUNCTION__, __FILE__, __LINE__);
+        char pinfodescr[200];
+        snprintf(pinfodescr, sizeof(pinfodescr),
+                 "%ldx%ldx%ld->%ldx%ld",
+                 (long) xsizein, (long) ysizein, NBslice, (long) xsizeim, (long) ysizeim);
+
+        char msgstring[200];
+        snprintf(msgstring, sizeof(msgstring), "%s->%s", inputstream_name, IDout_name);
+
+        processinfo = processinfo_setup(
+                          pinfoname,   // short name, no spaces, no dot
+                          pinfodescr,  // description
+                          msgstring,   // message on startup
+                          __FUNCTION__, __FILE__, __LINE__);
+    }
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
     processinfo->RT_priority =
@@ -214,7 +189,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     processinfo_WriteMessage(processinfo, "Allocating memory");
 
-    sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+    uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(sizearray == NULL)
     {
         PRINT_ERROR("malloc error");
@@ -252,6 +227,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
+    imageID IDout = -1;
     {
         IMGID imgout_tmp = imgid_make_from_name(IDout_name);
         imgout_tmp.mdt->naxis = 2;
@@ -265,8 +241,9 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         IDout = imgout_tmp.ID;
     }
 
-    // Copy the keywords over from IDin to IDout
     int NBkw = dcimg[IDin].md[0].NBkw;
+
+    // Copy the keywords over from IDin to IDout
     for(int kw = 0; kw < NBkw; ++kw)
     {
         snprintf(dcimg[IDout].kw[kw].name, KEYWORD_MAX_STRING, "%s", dcimg[IDin].kw[kw].name);
@@ -276,63 +253,68 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                  KEYWORD_MAX_COMMENT, "%s", dcimg[IDin].kw[kw].comment);
     }
 
-    dtarray = (double *) malloc(sizeof(double) * NBslice);
+    double *dtarray = (double *) malloc(sizeof(double) * NBslice);
     if(dtarray == NULL)
     {
         PRINT_ERROR("malloc error");
         abort();
     }
 
-    tarray = (struct timespec *) malloc(sizeof(struct timespec) * NBslice);
+    struct timespec *tarray = (struct timespec *) malloc(sizeof(struct timespec) * NBslice);
     if(tarray == NULL)
     {
         PRINT_ERROR("malloc error");
         abort();
     }
 
-    nbpixslice = (long *) malloc(sizeof(long) * NBslice);
+    long *nbpixslice = (long *) malloc(sizeof(long) * NBslice);
     if(nbpixslice == NULL)
     {
         PRINT_ERROR("malloc error");
         abort();
     }
 
-    if((fp = fopen(NBpix_fname, "r")) == NULL)
+    /* Parse pixel slice mapping file */
     {
-        PRINT_ERROR("cannot open file \"%s\"", NBpix_fname);
-        free(nbpixslice);
-        free(tarray);
-        free(dtarray);
-        free(sizearray);
-        return RETURN_FAILURE;
-    }
-
-    for(long slice = 0; slice < NBslice; slice++)
-    {
-        int fscanfcnt = fscanf(fp, "%ld %ld %ld\n", &tmpl0, &nbpixslice[slice], &tmpl1);
-        if(fscanfcnt == EOF)
+        FILE *fp = fopen(NBpix_fname, "r");
+        if(fp == NULL)
         {
-            if(ferror(fp))
+            PRINT_ERROR("cannot open file \"%s\"", NBpix_fname);
+            free(nbpixslice);
+            free(tarray);
+            free(dtarray);
+            free(sizearray);
+            return RETURN_FAILURE;
+        }
+
+        for(long slice = 0; slice < NBslice; slice++)
+        {
+            long tmpl0, tmpl1;
+            int fscanfcnt = fscanf(fp, "%ld %ld %ld\n", &tmpl0, &nbpixslice[slice], &tmpl1);
+            if(fscanfcnt == EOF)
             {
-                PRINT_ERROR("fscanf: %s", strerror(errno));
+                if(ferror(fp))
+                {
+                    PRINT_ERROR("fscanf: %s", strerror(errno));
+                }
+                else
+                {
+                    fprintf(stderr,
+                            "Error: fscanf reached end of file, no "
+                            "matching characters, no matching failure\n");
+                }
+                return RETURN_FAILURE;
             }
-            else
+            else if(fscanfcnt != 3)
             {
                 fprintf(stderr,
-                        "Error: fscanf reached end of file, no "
-                        "matching characters, no matching failure\n");
+                        "Error: fscanf successfully matched and assigned "
+                        "%i input items, 2 expected\n", fscanfcnt);
+                return RETURN_FAILURE;
             }
-            return RETURN_FAILURE;
         }
-        else if(fscanfcnt != 3)
-        {
-            fprintf(stderr,
-                    "Error: fscanf successfully matched and assigned "
-                    "%i input items, 2 expected\n", fscanfcnt);
-            return RETURN_FAILURE;
-        }
+        fclose(fp);
     }
-    fclose(fp);
 
     for(long slice = 0; slice < NBslice; slice++)
     {
@@ -348,11 +330,11 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         imgpixsl.mdt->datatype = _DATATYPE_UINT16;
         imgpixsl.im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(&imgpixsl);
-        IDout_pixslice = imgpixsl.ID;
+        imageID IDout_pixslice = imgpixsl.ID;
 
         for(long slice = 0; slice < NBslice; slice++)
         {
-            sliceii = slice * dcimg[IDmap].md[0].size[0] * dcimg[IDmap].md[0].size[1];
+            long sliceii = slice * dcimg[IDmap].md[0].size[0] * dcimg[IDmap].md[0].size[1];
             for(long ii = 0; ii < nbpixslice[slice]; ii++)
             {
                 // ocam2kpixi files MUST now be in int32 - otherwise we'll overflow in 240x240
@@ -382,9 +364,13 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     printf("cnt0: %ld; loopOK %d\n", dcimg[IDin].md[0].cnt0, loopOK);
     fflush(stdout);
 
+    long oldslice = 0;
+    unsigned long long cnt = 0;
+
     // long loopcnt = 0;
     while(loopOK == 1)
     {
+        int semr = 0;
         loopOK = processinfo_loopstep(processinfo);
         //printf("cnt0: %ld; loopOK %d\n", dcimg[IDin].md[0].cnt0, loopOK);
         fflush(stdout);
@@ -400,6 +386,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         }
         else
         {
+            struct timespec ts;
             if(clock_gettime(CLOCK_MILK, &ts) == -1)
             {
                 PRINT_ERROR("clock_gettime: %s", strerror(errno));
@@ -411,7 +398,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
             if(processinfo->loopcnt == 0)
             {
-                semval = ImageStreamIO_semvalue(dcimg + IDin, in_semwaitindex);
+                int semval = ImageStreamIO_semvalue(dcimg + IDin, in_semwaitindex);
                 for(long scnt = 0; scnt < semval; scnt++)
                 {
                     ImageStreamIO_semtrywait(dcimg + IDin, in_semwaitindex);
@@ -444,7 +431,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                 {
                     if(slice < NBslice)
                     {
-                        sliceii = slice * dcimg[IDmap].md[0].size[0] * dcimg[IDmap].md[0].size[1];
+                        long sliceii = slice * dcimg[IDmap].md[0].size[0] * dcimg[IDmap].md[0].size[1];
                         for(long ii = 0; ii < nbpixslice[slice]; ii++)
                         {
                             dcimg[IDout].array.UI16
@@ -455,6 +442,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                 }
                 else // reverse == 1, full image assumed (at least given how ocam is scrambled)
                 {
+                    uint32_t nbpixout = xsizeim * ysizeim;
                     for(long ii = 0; ii < nbpixout; ++ii)
                     {
                         dcimg[IDout].array.UI16[ii] =
@@ -476,14 +464,14 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                 dcimg[IDout].md[0].cnt1 = slice;
 
                 // Whatever hacks these are to manage slicey business?
-                semval = ImageStreamIO_semvalue(dcimg + IDout, 2);
-                if(semval < SEMAPHORE_MAXVAL)
+                int semval_2 = ImageStreamIO_semvalue(dcimg + IDout, 2);
+                if(semval_2 < SEMAPHORE_MAXVAL)
                 {
                     ImageStreamIO_sempost(dcimg + IDout, 2);
                 }
 
-                semval = ImageStreamIO_semvalue(dcimg + IDout, 3);
-                if(semval < SEMAPHORE_MAXVAL)
+                int semval_3 = ImageStreamIO_semvalue(dcimg + IDout, 3);
+                if(semval_3 < SEMAPHORE_MAXVAL)
                 {
                     ImageStreamIO_sempost(dcimg + IDout, 3);
                 }

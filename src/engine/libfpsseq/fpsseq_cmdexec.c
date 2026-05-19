@@ -619,50 +619,37 @@ int milkseq_exec_cmd(
     // break FPScmdline in words
     // [FPScommand] [FPSentryname]
     //
-    char *pch;
-    int   nbword = 0;
-    int commandstringmaxlen = 200;
-    char  FPScommand[commandstringmaxlen];
-
-    int cmdOK    = 2; // 0 : failed, 1: OK
-    int cmdFOUND = 0; // toggles to 1 when command has been found
-
-    // first arg is always an FPS entry name
-    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
-
-    char FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    char FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
-    char FPSarg2[FUNCTION_PARAMETER_STRMAXLEN];
-    char FPSarg3[FUNCTION_PARAMETER_STRMAXLEN];
-
-    char msgstring[STRINGMAXLEN_FPS_LOGMSG];
-    char errmsgstring[STRINGMAXLEN_FPS_LOGMSG];
-    char inputcmd[STRINGMAXLEN_FPS_CMDLINE];
-
-    int inputcmdOK = 0; // 1 if command should be processed
-
     static int testcnt; // test counter to be incremented by cntinc command
 
-    if(strlen(FPScmdline) > 0)  // only send command if non-empty
-    {
-        SNPRINTF_CHECK(inputcmd, STRINGMAXLEN_FPS_CMDLINE, "%s", FPScmdline);
-        inputcmdOK = 1;
-    }
+    int cmdOK    = 2; // 0: failed, 1: OK
+    int cmdFOUND = 0; // toggles to 1 when command has been found
 
-    // don't process lines starting with # (comment)
-    if(inputcmdOK == 1)
+    // Validate and copy command line; reject empty or comment lines
+    char inputcmd[STRINGMAXLEN_FPS_CMDLINE];
     {
-        if(inputcmd[0] == '#')
+        int inputcmdOK = 0;
+        if(strlen(FPScmdline) > 0)
+        {
+            SNPRINTF_CHECK(inputcmd, STRINGMAXLEN_FPS_CMDLINE, "%s", FPScmdline);
+            inputcmdOK = 1;
+        }
+        if(inputcmdOK == 1 && inputcmd[0] == '#')
         {
             inputcmdOK = 0;
         }
+        if(inputcmdOK == 0)
+        {
+            return (-1);
+        }
     }
 
-    if(inputcmdOK == 0)
-    {
-        return (-1);
-    }
+    // Word-parse buffers: command, first arg, second arg
+    char *pch;
+    int   nbword = 0;
+    int   commandstringmaxlen = 200;
+    char  FPScommand[commandstringmaxlen];
+    char  FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char  FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
 
     functionparameter_outlog("DEBUG", "CMDRCV [%s]", inputcmd);
     *taskstatus |= FPSTASK_STATUS_RECEIVED;
@@ -684,12 +671,9 @@ int milkseq_exec_cmd(
     // Break command line into words
     //
     // output words are:
-    //
     // FPScommand
     // FPSarg0
     // FPSarg1
-    // FPSarg2
-    // FPSarg3
 
     while(pch != NULL)
     {
@@ -719,36 +703,6 @@ int milkseq_exec_cmd(
                 printf("STRING: %s\n", pch);
             }
             if((pos = strchr(FPSarg1, '\n')) != NULL)
-            {
-                *pos = '\0';
-            }
-        }
-
-        if(nbword == 3)
-        {
-            char *pos;
-            if(snprintf(FPSarg2, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >=
-                    FUNCTION_PARAMETER_STRMAXLEN)
-            {
-                printf("WARNING: string truncated\n");
-                printf("STRING: %s\n", pch);
-            }
-            if((pos = strchr(FPSarg2, '\n')) != NULL)
-            {
-                *pos = '\0';
-            }
-        }
-
-        if(nbword == 4)
-        {
-            char *pos;
-            if(snprintf(FPSarg3, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >=
-                    FUNCTION_PARAMETER_STRMAXLEN)
-            {
-                printf("WARNING: string truncated\n");
-                printf("STRING: %s\n", pch);
-            }
-            if((pos = strchr(FPSarg3, '\n')) != NULL)
             {
                 *pos = '\0';
             }
@@ -940,8 +894,13 @@ int milkseq_exec_cmd(
     // From this point on, FPSarg0 is expected to be a FPS entry
     // so we resolve it and look for fps
     int kwnindex = -1;
+    char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
+    char msgstring[STRINGMAXLEN_FPS_LOGMSG];
+    char errmsgstring[STRINGMAXLEN_FPS_LOGMSG] = "";
+
     if(cmdFOUND == 0)
     {
+        char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
         snprintf(FPSentryname, sizeof(FPSentryname), "%s", FPSarg0);
         snprintf(FPScmdarg1, sizeof(FPScmdarg1), "%s", FPSarg1);
 

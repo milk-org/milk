@@ -39,16 +39,6 @@ void ov_render_fps_panel(
         filt_n = new_filt_n;
     }
 
-    int has_re = 0;
-    regex_t re;
-    if(lay->filter_fps[0] != '\0')
-    {
-        if(regcomp(&re, lay->filter_fps, REG_EXTENDED | REG_ICASE) == 0)
-        {
-            has_re = 1;
-        }
-    }
-
     char title[80];
     if(lay->filter_fps[0] != '\0')
     {
@@ -68,9 +58,8 @@ void ov_render_fps_panel(
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf("    ");
     ov_theme_fg(OV_FG_FPS_HDR);
-    char htext[256];
-    int hlen;
     {
+        char htext[256];
         int sk = lay->sort_key_fps;
         int sd = lay->sort_dir_fps;
         char c_anc[8], c_name[24];
@@ -81,16 +70,13 @@ void ov_render_fps_panel(
         int w_r = sort_col_label(c_r, sizeof(c_r), "RPID", 4, sk, sd, 7);
         int w_mem = sort_col_label(c_mem, sizeof(c_mem), "MEM", 2, sk, sd, 5);
         int desc_w = (lay->view == OV_VIEW_FPS) ? 30 : 20;
-        hlen = snprintf(
-                   htext, sizeof(htext),
+        snprintf(htext, sizeof(htext),
                    "%-*s %-*s %3s %*s %*s %3s %*s"
                    " %-*s",
                    w_anc, c_anc,
                    w_name, c_name, "TMX", w_c, c_c,
                    w_r, c_r, "STR", w_mem, c_mem, desc_w, "DESCRIPTION");
-    }
 
-    {
         int vis_width = r.width - 4;
         if(vis_width < 0)
         {
@@ -568,11 +554,6 @@ void ov_render_fps_panel(
     }
 
     ov_buf_reset_attr();
-
-    if(has_re)
-    {
-        regfree(&re);
-    }
 }
 
 /* =========================================================

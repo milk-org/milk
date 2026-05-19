@@ -80,8 +80,6 @@ errno_t load_fits_IMGID(
     double         bzero;
     unsigned char *barray = NULL;
     long          *larray = NULL;
-    //    unsigned short *sarray = NULL;
-    //    long      NDR = 1; /* non-destructive reads */
 
     nulval = 0;
     anynul = 0;
@@ -180,11 +178,9 @@ errno_t load_fits_IMGID(
 
     DEBUG_TRACEPOINT("File %s open", file_name);
 
-    char keyword[STRINGMAXLEN_FITSKEYWORDNAME];
-    long fpixel = 1;
-    char comment[STRINGMAXLEN_FITSKEYWCOMMENT];
+    long fpixel   = 1;
+    long naxis    = 0;
     long nelements;
-    long naxis = 0;
 
     // Keywords
     int nbFITSkeys = 0;
@@ -193,39 +189,37 @@ errno_t load_fits_IMGID(
         int status = 0;
         fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
         FITSIO_CHECK_ERROR(status, errmode, "fits_get_hdrspace error on %s", file_name);
-        //printf("    nbFITSkeys = %d\n", nbFITSkeys);
     }
 
     {
         int status = 0;
-
-        fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment, &status);
+        fits_read_key(fptr, TLONG, "NAXIS", &naxis, NULL, &status);
         FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS", file_name);
         DEBUG_TRACEPOINT("naxis = %ld", naxis);
     }
 
     for(long i = 0; i < naxis; i++)
     {
+        char keyword[STRINGMAXLEN_FITSKEYWORDNAME];
         WRITE_FITSKEYWNAME(keyword, "NAXIS%ld", i + 1);
 
         {
             int status = 0;
-            fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &status);
+            fits_read_key(fptr, TLONG, keyword, &naxes[i], NULL, &status);
             FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS%ld", file_name, i);
-            //printf("    naxis%ld = %u\n", i, naxes[i]);
         }
     }
 
     {
         int status = 0;
-        fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, comment, &status);
+        fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, NULL, &status);
         FITSIO_CHECK_ERROR(status, errmode, "File %s has no BITPIX", file_name);
     }
 
     int bitpix = (int) bitpixl;
     {
         int status = 0;
-        fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, comment, &status);
+        fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, NULL, &status);
         if(status != 0)
         {
             bscale = 1.0;
@@ -234,7 +228,7 @@ errno_t load_fits_IMGID(
 
     {
         int status = 0;
-        fits_read_key(fptr, TDOUBLE, "BZERO", &bzero, comment, &status);
+        fits_read_key(fptr, TDOUBLE, "BZERO", &bzero, NULL, &status);
         if(status != 0)
         {
             bzero = 0.0;
@@ -244,7 +238,7 @@ errno_t load_fits_IMGID(
     {
         int status = 0;
         fits_set_bscale(fptr, bscale, bzero, &status);
-        FITSIO_CHECK_ERROR(status, errmode, "bscake set errror");
+        FITSIO_CHECK_ERROR(status, errmode, "bscale set error");
     }
 
     nelements = 1;

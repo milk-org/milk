@@ -301,62 +301,65 @@ int main(
         return 1;
     }
 
-    char *fullkey = argv[optind];
-    char *value_str = argv[optind + 1];
-
-    char *dot = strchr(fullkey, '.');
-    if(dot == NULL)
-    {
-        PRINT_ERROR("Error: Invalid format '%s'. Expected <FPSname>.<parameter>", fullkey);
-        return 1;
-    }
-
-    char fpsname[128];
-    int len = dot - fullkey;
-    if(len >= 128)
-    {
-        len = 127;
-    }
-    strncpy(fpsname, fullkey, len);
-    fpsname[len] = '\0';
-
-    char *keyword = dot; // Includes the dot
-
-    FPS fps;
-    long NBparam = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
-    if(NBparam == -1)
-    {
-        PRINT_ERROR("Error: Could not connect to FPS '%s'", fpsname);
-        return 1;
-    }
-    fps.NBparam = NBparam;
-
-    long pindex = functionparameter_GetParamIndex(&fps, keyword);
-    if(pindex == -1)
-    {
-        pindex = functionparameter_GetParamIndex(&fps, dot + 1);
-        if(pindex == -1)
         {
-            PRINT_ERROR("Error: Parameter '%s' not found in FPS '%s'", keyword, fpsname);
-            fps_disconnect(&fps);
+    char *fullkey = argv[optind];
+        char *value_str = argv[optind + 1];
+
+        char *dot = strchr(fullkey, '.');
+        if(dot == NULL)
+        {
+            PRINT_ERROR("Error: Invalid format '%s'. Expected <FPSname>.<parameter>", fullkey);
             return 1;
         }
-    }
 
-    int type = fps.parray[pindex].type;
-    int vOK = 1;
-    if(functionparameter_SetParamValue_fromString(&fps, pindex, value_str) == RETURN_SUCCESS)
-    {
-        printf("Parameter '%s' set to '%s'\n", fullkey, value_str);
-    }
-    else
-    {
-        vOK = 0;
-        PRINT_ERROR("Error: Failed to set parameter '%s'. Type mismatch or invalid format.", fullkey);
-        PRINT_ERROR("       Parameter Type: %s", get_type_name(type));
-        PRINT_ERROR("       Input Value:    '%s'", value_str);
-    }
+        char fpsname[128];
+        int len = dot - fullkey;
+        if(len >= 128)
+        {
+            len = 127;
+        }
+        strncpy(fpsname, fullkey, len);
+        fpsname[len] = '\0';
 
-    fps_disconnect(&fps);
-    return vOK ? 0 : 1;
+        char *keyword = dot; // Includes the dot
+
+        FPS fps;
+        long NBparam = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
+        if(NBparam == -1)
+        {
+            PRINT_ERROR("Error: Could not connect to FPS '%s'", fpsname);
+            return 1;
+        }
+        fps.NBparam = NBparam;
+
+        long pindex = functionparameter_GetParamIndex(&fps, keyword);
+        if(pindex == -1)
+        {
+            pindex = functionparameter_GetParamIndex(&fps, dot + 1);
+            if(pindex == -1)
+            {
+                PRINT_ERROR("Error: Parameter '%s' not found in FPS '%s'", keyword, fpsname);
+                fps_disconnect(&fps);
+                return 1;
+            }
+        }
+
+        int type = fps.parray[pindex].type;
+        int vOK = 1;
+        if(functionparameter_SetParamValue_fromString(&fps, pindex, value_str) == RETURN_SUCCESS)
+        {
+            printf("Parameter '%s' set to '%s'\n", fullkey, value_str);
+        }
+        else
+        {
+            vOK = 0;
+            PRINT_ERROR("Error: Failed to set parameter '%s'. Type mismatch or invalid format.", fullkey);
+            PRINT_ERROR("       Parameter Type: %s", get_type_name(type));
+            PRINT_ERROR("       Input Value:    '%s'", value_str);
+        }
+
+        fps_disconnect(&fps);
+        return vOK ? 0 : 1;
+
+    }
 }

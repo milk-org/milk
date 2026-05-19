@@ -249,38 +249,24 @@ imageID arith_image_crop(
     int64_t    *end,
     int64_t    cropdim)
 {
-    int64_t      naxis;
-
-    uint32_t *naxes    = NULL;
-    uint32_t *naxesout = NULL;
-    uint8_t   datatype;
-
-    int64_t start_c[3];
-    int64_t end_c[3];
-
-    for(int i = 0; i < 3; i++)
-    {
-        start_c[i] = 0;
-        end_c[i]   = 0;
-    }
-
     IMGID imgin = imgid_make_from_name(ID_name);
     resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
-    naxis = imgin.md->naxis;
+    int64_t naxis = imgin.md->naxis;
     if(naxis < 1)
     {
         PRINT_ERROR("naxis < 1");
         return -1;
     }
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+    
+    uint32_t *naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
         PRINT_ERROR("malloc() error," " naxis = %ld", naxis);
         return -1;
     }
 
-    naxesout = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+    uint32_t *naxesout = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxesout == NULL)
     {
         PRINT_ERROR("malloc() error");
@@ -288,7 +274,7 @@ imageID arith_image_crop(
         return -1;
     }
 
-    datatype = imgin.md->datatype;
+    uint8_t datatype = imgin.md->datatype;
 
     naxes[0]    = 0;
     naxesout[0] = 0;
@@ -310,6 +296,9 @@ imageID arith_image_crop(
     imgout.im = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
     imageID IDout = imgout.ID;
+
+    int64_t start_c[3] = {0, 0, 0};
+    int64_t end_c[3]   = {0, 0, 0};
 
     start_c[0] = start[0];
     if(start_c[0] < 0)
@@ -461,23 +450,18 @@ imageID arith_image_extract2D(
     int64_t    xstart,
     int64_t    ystart)
 {
-    int64_t        *start = NULL;
-    int64_t        *end   = NULL;
-    imageID      IDout;
-
-
     IMGID img = imgid_make_from_name(in_name);
     resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
     int naxis = img.md->naxis;
 
-    start = (int64_t *) malloc(sizeof(int64_t) * naxis);
+    int64_t *start = (int64_t *) malloc(sizeof(int64_t) * naxis);
     if(start == NULL)
     {
         PRINT_ERROR("malloc() error");
         return -1;
     }
 
-    end = (int64_t *) malloc(sizeof(int64_t) * naxis);
+    int64_t *end = (int64_t *) malloc(sizeof(int64_t) * naxis);
     if(end == NULL)
     {
         PRINT_ERROR("malloc() error");
@@ -495,7 +479,7 @@ imageID arith_image_extract2D(
     start[1] = ystart;
     end[0]   = xstart + size_x;
     end[1]   = ystart + size_y;
-    IDout = arith_image_crop(in_name, out_name, start, end, naxis);
+    imageID IDout = arith_image_crop(in_name, out_name, start, end, naxis);
 
     free(start);
     free(end);
@@ -513,11 +497,7 @@ imageID arith_image_extract3D(
     int64_t    ystart,
     int64_t    zstart)
 {
-    imageID IDout;
-    int64_t   *start = NULL;
-    int64_t   *end   = NULL;
-
-    start = (int64_t *) malloc(sizeof(int64_t) * 3);
+    int64_t *start = (int64_t *) malloc(sizeof(int64_t) * 3);
     if(start == NULL)
     {
         PRINT_ERROR(
@@ -527,7 +507,7 @@ imageID arith_image_extract3D(
         return -1;
     }
 
-    end = (int64_t *) malloc(sizeof(int64_t) * 3);
+    int64_t *end = (int64_t *) malloc(sizeof(int64_t) * 3);
     if(end == NULL)
     {
         PRINT_ERROR(
@@ -544,7 +524,7 @@ imageID arith_image_extract3D(
     end[0]   = xstart + size_x;
     end[1]   = ystart + size_y;
     end[2]   = zstart + size_z;
-    IDout    = arith_image_crop(in_name, out_name, start, end, 3);
+    imageID IDout = arith_image_crop(in_name, out_name, start, end, 3);
 
     free(start);
     free(end);

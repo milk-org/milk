@@ -452,23 +452,18 @@ int functionparameter_CheckParameter(
  */
 int functionparameter_CheckParametersAll(FPS *fpsentry)
 {
-    long NBparamMAX;
-    long pindex;
-    int  errcnt = 0;
-
-
     char msg[FUNCTION_PARAMETER_STRUCT_MSG_LEN];
     snprintf(msg, FUNCTION_PARAMETER_STRUCT_MSG_LEN, "%s", fpsentry->md->name);
     functionparameter_outlog("CHECKPARAMALL", "%s", msg);
 
     strncpy(fpsentry->md->message[0], "\0", FUNCTION_PARAMETER_STRUCT_MSG_LEN - 1);
-    NBparamMAX = fpsentry->md->NBparamMAX;
+    long NBparamMAX = fpsentry->md->NBparamMAX;
 
-    // Check if Value is OK
+    int errcnt = 0;
     fpsentry->md->msgcnt     = 0;
     fpsentry->md->conferrcnt = 0;
     //    printf("Checking %d parameter entries\n", NBparam);
-    for(pindex = 0; pindex < NBparamMAX; pindex++)
+    for(long pindex = 0; pindex < NBparamMAX; pindex++)
     {
         errcnt += functionparameter_CheckParameter(fpsentry, pindex);
     }
@@ -487,7 +482,7 @@ int functionparameter_CheckParametersAll(FPS *fpsentry)
 
     // compute write status
 
-    for(pindex = 0; pindex < NBparamMAX; pindex++)
+    for(long pindex = 0; pindex < NBparamMAX; pindex++)
     {
         int writeOK; // do we have write permission ?
 

@@ -364,33 +364,36 @@ void ov_render_header(
         hover_w = 17; /* visual width of "  [m] HOVER: OFF " */
     }
 
+    int chars_left = 17 + ctrl_w + hover_w;
+
     ov_theme_fg(OV_FG_STREAM);
-    int c2 = snprintf(NULL, 0, " %d stm", m->nb_streams);
+    chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);
     ov_buf_printf(" %d stm", m->nb_streams);
 
     ov_theme_fg(OV_FG_PROC);
-    int c3 = snprintf(NULL, 0, " %d prc", m->nb_procs);
+    chars_left += snprintf(NULL, 0, " %d prc", m->nb_procs);
     ov_buf_printf(" %d prc", m->nb_procs);
 
     ov_theme_fg(OV_FG_FPS);
-    int c4 = snprintf(NULL, 0, " %d fps", m->nb_fps);
+    chars_left += snprintf(NULL, 0, " %d fps", m->nb_fps);
     ov_buf_printf(" %d fps", m->nb_fps);
 
     ov_theme_fg(OV_FG_CONN);
-    int c5 = snprintf(NULL, 0, " %d edg", m->nb_edges);
+    chars_left += snprintf(NULL, 0, " %d edg", m->nb_edges);
     ov_buf_printf(" %d edg", m->nb_edges);
 
     ov_theme_fg(OV_FG_DIM);
-    double cpu_pct = get_cpu_usage();
-    int c6 = snprintf(NULL, 0, "  CPU: %4.1f%%", cpu_pct);
-    ov_buf_printf("  CPU: %4.1f%%", cpu_pct);
+    {
+        double cpu_pct = get_cpu_usage();
+        chars_left += snprintf(NULL, 0, "  CPU: %4.1f%%", cpu_pct);
+        ov_buf_printf("  CPU: %4.1f%%", cpu_pct);
+    }
 
-    double bw_kbs = get_bandwidth_usage();
-    int c7 = snprintf(NULL, 0, "  BW: %4.1f kB/s", bw_kbs);
-    ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
-
-    /* c1 visual length: 17 chars for " ● milk-CTRL " */
-    int chars_left = 17 + ctrl_w + hover_w + c2 + c3 + c4 + c5 + c6 + c7;
+    {
+        double bw_kbs = get_bandwidth_usage();
+        chars_left += snprintf(NULL, 0, "  BW: %4.1f kB/s", bw_kbs);
+        ov_buf_printf("  BW: %4.1f kB/s", bw_kbs);
+    }
 
     int tabs_width = 0;
     for(int v = 0; v < OV_VIEW_COUNT; v++)

@@ -203,22 +203,18 @@ errno_t CLIADDCMD_COREMOD_memory__saveall()
 errno_t COREMOD_MEMORY_SaveAll_snapshot(
     const char *dirname)
 {
-    long *IDarray;
-    long *IDarraycp;
-
-    long  imcnt = 0;
-    char  imnamecp[STRINGMAXLEN_IMGNAME];
-    char  fnamecp[STRINGMAXLEN_FULLFILENAME];
-    long  ID;
+    long imcnt = 0;
 
     for(long i = 0; i < dcnimg; i++)
+    {
         if(dcimg[i].used == 1)
         {
             imcnt++;
         }
+    }
 
-    IDarray   = (long *) malloc(sizeof(long) * imcnt);
-    IDarraycp = (long *) malloc(sizeof(long) * imcnt);
+    long *IDarray   = (long *) malloc(sizeof(long) * imcnt);
+    long *IDarraycp = (long *) malloc(sizeof(long) * imcnt);
 
     imcnt = 0;
     for(int i = 0; i < dcnimg; i++)
@@ -234,7 +230,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 
     for(int i = 0; i < imcnt; i++)
     {
-        ID = IDarray[i];
+        long ID = IDarray[i];
+        char imnamecp[STRINGMAXLEN_IMGNAME];
         WRITE_IMAGENAME(imnamecp, "%s_cp", dcimg[ID].name);
         IDarraycp[i] = copy_image_ID(dcimg[ID].name, imnamecp, 0);
     }
@@ -244,13 +241,14 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 #ifdef USE_CFITSIO
     for(int i = 0; i < imcnt; i++)
     {
-        ID = IDarray[i];
+        long ID = IDarray[i];
+        char imnamecp[STRINGMAXLEN_IMGNAME];
+        char fnamecp[STRINGMAXLEN_FULLFILENAME];
         WRITE_IMAGENAME(imnamecp, "%s_cp", dcimg[ID].name);
         WRITE_FULLFILENAME(fnamecp, "./%s/%s.fits", dirname, dcimg[ID].name);
         save_fits(imnamecp, fnamecp);
     }
 #else
-    (void) fnamecp;
     printf("WARNING: FITS save disabled" " (built without cfitsio)\n");
 #endif
 
@@ -266,43 +264,36 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     long       semtrig,
     long       NBframes)
 {
-    long   *IDarray;
-    long   *IDarrayout;
-
-    long    imcnt = 0;
-    char    imnameout[200];
-    char    fnameout[500];
-    imageID ID;
-    imageID IDtrig;
-
-    long      frame = 0;
-    char     *ptr0;
-    char     *ptr1;
-    uint32_t *imsizearray;
+    long imcnt = 0;
 
     for(long i = 0; i < dcnimg; i++)
+    {
         if(dcimg[i].used == 1)
         {
             imcnt++;
         }
+    }
 
-    IDarray    = (imageID *) malloc(sizeof(imageID) * imcnt);
-    IDarrayout = (imageID *) malloc(sizeof(imageID) * imcnt);
+    imageID *IDarray    = (imageID *) malloc(sizeof(imageID) * imcnt);
+    imageID *IDarrayout = (imageID *) malloc(sizeof(imageID) * imcnt);
 
     imcnt = 0;
     for(int i = 0; i < dcnimg; i++)
+    {
         if(dcimg[i].used == 1)
         {
             IDarray[imcnt] = i;
             imcnt++;
         }
-    imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * imcnt);
+    }
+    uint32_t *imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * imcnt);
 
     EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", dirname);
 
+    imageID IDtrig;
     {
         IMGID imgtrig = imgid_make_from_name(IDtrig_name);
-        resolveIMGID(&imgtrig, ERRMODE_NULL, dcimg,    dcnimg);
+        resolveIMGID(&imgtrig, ERRMODE_NULL, dcimg, dcnimg);
         IDtrig = imgtrig.ID;
         if(IDtrig == -1)
         {
@@ -319,6 +310,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
 
     for(int i = 0; i < imcnt; i++)
     {
+        char imnameout[200];
         snprintf(imnameout, sizeof(imnameout), "%s_out", dcimg[IDarray[i]].name);
         imsizearray[i] =
             sizeof(float) * dcimg[IDarray[i]].md[0].size[0] * dcimg[IDarray[i]].md[0].size[1];
@@ -342,15 +334,15 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     {
     }
 
-    frame = 0;
+    long frame = 0;
     while(frame < NBframes)
     {
         ImageStreamIO_semwait(dcimg + IDtrig, semtrig);
         for(int i = 0; i < imcnt; i++)
         {
-            ID   = IDarray[i];
-            ptr0 = (char *) dcimg[IDarrayout[i]].array.F;
-            ptr1 = ptr0 + imsizearray[i] * frame;
+            imageID ID   = IDarray[i];
+            char   *ptr0 = (char *) dcimg[IDarrayout[i]].array.F;
+            char   *ptr1 = ptr0 + imsizearray[i] * frame;
             memcpy(ptr1, dcimg[ID].array.F, imsizearray[i]);
         }
         frame++;
@@ -364,13 +356,14 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
 #ifdef USE_CFITSIO
     for(int i = 0; i < imcnt; i++)
     {
-        ID = IDarray[i];
+        char imnameout[200];
+        char fnameout[500];
+        imageID ID = IDarray[i];
         snprintf(imnameout, sizeof(imnameout), "%s_out", dcimg[ID].name);
         snprintf(fnameout, sizeof(fnameout), "./%s/%s_out.fits", dirname, dcimg[ID].name);
         save_fits(imnameout, fnameout);
     }
 #else
-    (void) fnameout;
     printf("WARNING: FITS save disabled" " (built without cfitsio)\n");
 #endif
 

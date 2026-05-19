@@ -85,42 +85,46 @@ errno_t mk_complex_from_amph_IMGID(
     uint8_t datatype_am = imginamp->md->datatype;
     uint8_t datatype_ph = imginpha->md->datatype;
 
-    uint8_t naxisamp = imginamp->md->naxis;
-    uint8_t naxispha = imginpha->md->naxis;
     uint64_t xysize = imginamp->md->size[0];
-    imgoutC->mdt->size[0] = imginamp->md->size[0];
-    imgoutC->mdt->size[1] = 1;
-
-    uint8_t naxis = naxisamp;
-    if(naxisamp > 1)
-    {
-        xysize *= imginamp->md->size[1];
-        imgoutC->mdt->size[1] = imginamp->md->size[1];
-    }
-    if(naxispha > naxisamp)
-    {
-        naxis = naxispha;
-    }
-
     uint32_t zsize    = 1;
     uint32_t zsizeamp = 1;
     uint32_t zsizepha = 1;
-    if(naxisamp > 2)
-    {
-        zsizeamp = imginamp->md->size[2];
-    }
-    if(naxispha > 2)
-    {
-        zsizepha = imginpha->md->size[2];
-    }
-    zsize = zsizeamp;
-    if(zsizepha > zsizeamp)
-    {
-        zsize = zsizepha;
-    }
 
-    imgoutC->mdt->naxis = naxis;
-    imgoutC->mdt->size[2] = zsize;
+    {
+        uint8_t naxisamp = imginamp->md->naxis;
+        uint8_t naxispha = imginpha->md->naxis;
+
+        imgoutC->mdt->size[0] = imginamp->md->size[0];
+        imgoutC->mdt->size[1] = 1;
+
+        uint8_t naxis = naxisamp;
+        if(naxisamp > 1)
+        {
+            xysize *= imginamp->md->size[1];
+            imgoutC->mdt->size[1] = imginamp->md->size[1];
+        }
+        if(naxispha > naxisamp)
+        {
+            naxis = naxispha;
+        }
+
+        if(naxisamp > 2)
+        {
+            zsizeamp = imginamp->md->size[2];
+        }
+        if(naxispha > 2)
+        {
+            zsizepha = imginpha->md->size[2];
+        }
+        zsize = zsizeamp;
+        if(zsizepha > zsizeamp)
+        {
+            zsize = zsizepha;
+        }
+
+        imgoutC->mdt->naxis = naxis;
+        imgoutC->mdt->size[2] = zsize;
+    }
 
     uint8_t datatype_out;
 

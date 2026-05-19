@@ -1082,48 +1082,6 @@ int ov_render_resources_panel(
     }
     else
     {
-        /* Query core utilization */
-        int active_cores[128];
-        int num_active = pid_get_core_utilization(target_pid, active_cores, 128);
-        uint64_t core_mask = 0;
-        for(int ii = 0; ii < num_active; ii++)
-        {
-            if(active_cores[ii] >= 0 && active_cores[ii] < 64)
-            {
-                core_mask |= (1ULL << active_cores[ii]);
-            }
-        }
-
-        char stat_path[256];
-        snprintf(stat_path, sizeof(stat_path), "/proc/%d/statm", (int) target_pid);
-        FILE *fp = fopen(stat_path, "r");
-        uint64_t vm_size = 0, vm_rss = 0;
-        if(fp)
-        {
-            if(fscanf(fp, "%" SCNu64 " %" SCNu64, &vm_size, &vm_rss) == 2)
-            {
-                /* Scale to MB (assuming 4 KB pages) */
-                vm_size = (vm_size * 4) / 1024;
-                vm_rss  = (vm_rss  * 4) / 1024;
-            }
-            fclose(fp);
-        }
-
-        ov_advanced_stats_t adv_stats;
-        int has_adv = (pid_get_advanced_stats(target_pid, &adv_stats) == 0);
-
-        int64_t target_loopcnt = 0;
-        for(int ii = 0; ii < m->nb_procs; ii++)
-        {
-            if(m->procs[ii].PID == target_pid && m->procs[ii].active)
-            {
-                target_loopcnt = m->procs[ii].loopcnt;
-                break;
-            }
-        }
-
-        ov_perf_counters_t perf_cnt;
-        int has_perf = (pid_read_perf_counters(target_pid, target_loopcnt, &perf_cnt) == 0);
 
         /* Title row */
         {
@@ -1158,6 +1116,23 @@ int ov_render_resources_panel(
 
         /* Memory values */
         {
+            uint64_t vm_size = 0, vm_rss = 0;
+            {
+                char stat_path[256];
+                snprintf(stat_path, sizeof(stat_path), "/proc/%d/statm", (int) target_pid);
+                FILE *fp = fopen(stat_path, "r");
+                if(fp)
+                {
+                    if(fscanf(fp, "%" SCNu64 " %" SCNu64, &vm_size, &vm_rss) == 2)
+                    {
+                        /* Scale to MB (assuming 4 KB pages) */
+                        vm_size = (vm_size * 4) / 1024;
+                        vm_rss  = (vm_rss  * 4) / 1024;
+                    }
+                    fclose(fp);
+                }
+            }
+
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_fg(OV_FG_TEXT);
             char buf[64];
@@ -1187,6 +1162,19 @@ int ov_render_resources_panel(
 
         /* Draw core mask — sysconf cached once per render frame */
         {
+            uint64_t core_mask = 0;
+            {
+                int active_cores[128];
+                int num_active = pid_get_core_utilization(target_pid, active_cores, 128);
+                for(int ii = 0; ii < num_active; ii++)
+                {
+                    if(active_cores[ii] >= 0 && active_cores[ii] < 64)
+                    {
+                        core_mask |= (1ULL << active_cores[ii]);
+                    }
+                }
+            }
+
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_fg(OV_FG_TEXT);
             H_ov_buf_printf("   [");
@@ -1223,7 +1211,8 @@ int ov_render_resources_panel(
             line_idx++;
         }
 
-        if(has_adv)
+        ov_advanced_stats_t adv_stats;
+        if(pid_get_advanced_stats(target_pid, &adv_stats) == 0)
         {
             /* Blank separator */
             {
@@ -1329,6 +1318,19 @@ int ov_render_resources_panel(
 
         /* Hardware counter values */
         {
+            int64_t target_loopcnt = 0;
+            for(int ii = 0; ii < m->nb_procs; ii++)
+            {
+                if(m->procs[ii].PID == target_pid && m->procs[ii].active)
+                {
+                    target_loopcnt = m->procs[ii].loopcnt;
+                    break;
+                }
+            }
+
+            ov_perf_counters_t perf_cnt;
+            int has_perf = (pid_read_perf_counters(target_pid, target_loopcnt, &perf_cnt) == 0);
+
             H_ov_buf_pos(row + ri, r.col + 1);
             if(has_perf)
             {

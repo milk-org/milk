@@ -1008,26 +1008,28 @@ int cli_intercept_cmd_assigncheck(const char *p)
     strncpy(buf, sp, 511);
     buf[511] = '\0';
 
-    int len = (int)strlen(buf);
-    while(len > 0 && (buf[len - 1] == ' ' || buf[len - 1] == '\t' || buf[len - 1] == '\n'
-                      || buf[len - 1] == '\r'))
-    {
-        buf[--len] = '\0';
-    }
-
     char *tol_ptr = NULL;
-    for(int i = len - 1; i >= 0; i--)
     {
-        if(buf[i] == ' ' || buf[i] == '\t')
+        int len = (int)strlen(buf);
+        while(len > 0 && (buf[len - 1] == ' ' || buf[len - 1] == '\t' || buf[len - 1] == '\n'
+                          || buf[len - 1] == '\r'))
         {
-            buf[i] = '\0';
-            tol_ptr = &buf[i + 1];
-            while(i > 0 && (buf[i - 1] == ' ' || buf[i - 1] == '\t'))
+            buf[--len] = '\0';
+        }
+
+        for(int i = len - 1; i >= 0; i--)
+        {
+            if(buf[i] == ' ' || buf[i] == '\t')
             {
-                i--;
                 buf[i] = '\0';
+                tol_ptr = &buf[i + 1];
+                while(i > 0 && (buf[i - 1] == ' ' || buf[i - 1] == '\t'))
+                {
+                    i--;
+                    buf[i] = '\0';
+                }
+                break;
             }
-            break;
         }
     }
 
@@ -1057,66 +1059,74 @@ int cli_intercept_cmd_assigncheck(const char *p)
         goto usage_err;
     }
 
-    int vtype = 0;
-    long vlval = 0;
     double new_val = 0.0;
-    if(!cli_calc_eval_math_to_val(val_ptr, &vtype, &vlval, &new_val))
     {
-        printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate value: %s\033[0m\n", val_ptr);
-        cli_last_retval = 1;
-        if(errexit_local || cli_flag_errexit)
+        int vtype = 0;
+        long vlval = 0;
+        if(!cli_calc_eval_math_to_val(val_ptr, &vtype, &vlval, &new_val))
         {
-            cli_trap_run(-1);
-            cli_trap_run_exit();
-            exit(cli_last_retval);
+            printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate value: %s\033[0m\n", val_ptr);
+            cli_last_retval = 1;
+            if(errexit_local || cli_flag_errexit)
+            {
+                cli_trap_run(-1);
+                cli_trap_run_exit();
+                exit(cli_last_retval);
+            }
+            return 1;
         }
-        return 1;
-    }
-    if(vtype == 1)
-    {
-        new_val = (double)vlval;
+        if(vtype == 1)
+        {
+            new_val = (double)vlval;
+        }
     }
 
-    int ttype = 0;
-    long tlval = 0;
     double tol_val = 0.0;
-    if(!cli_calc_eval_math_to_val(tol_ptr, &ttype, &tlval, &tol_val))
     {
-        printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate tolerance: %s\033[0m\n", tol_ptr);
-        cli_last_retval = 1;
-        if(errexit_local || cli_flag_errexit)
+        int ttype = 0;
+        long tlval = 0;
+        if(!cli_calc_eval_math_to_val(tol_ptr, &ttype, &tlval, &tol_val))
         {
-            cli_trap_run(-1);
-            cli_trap_run_exit();
-            exit(cli_last_retval);
+            printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate tolerance: %s\033[0m\n", tol_ptr);
+            cli_last_retval = 1;
+            if(errexit_local || cli_flag_errexit)
+            {
+                cli_trap_run(-1);
+                cli_trap_run_exit();
+                exit(cli_last_retval);
+            }
+            return 1;
         }
-        return 1;
-    }
-    if(ttype == 1)
-    {
-        tol_val = (double)tlval;
+        if(ttype == 1)
+        {
+            tol_val = (double)tlval;
+        }
     }
 
-    const char *oldv_str = cli_var_lookup(var_ptr);
     double old_val = 0.0;
     int has_old = 0;
-    if(oldv_str)
     {
-        has_old = 1;
-        int otype = 0;
-        long olval = 0;
-        if(cli_calc_eval_math_to_val(oldv_str, &otype, &olval, &old_val))
+        const char *oldv_str = cli_var_lookup(var_ptr);
+        if(oldv_str)
         {
-            if(otype == 1)
+            has_old = 1;
+            int otype = 0;
+            long olval = 0;
+            if(cli_calc_eval_math_to_val(oldv_str, &otype, &olval, &old_val))
             {
-                old_val = (double)olval;
+                if(otype == 1)
+                {
+                    old_val = (double)olval;
+                }
             }
         }
     }
 
-    char obuf[128];
-    snprintf(obuf, sizeof(obuf), "%.*g", cli_float_digits, new_val);
-    cli_var_set(var_ptr, obuf);
+    {
+        char obuf[128];
+        snprintf(obuf, sizeof(obuf), "%.*g", cli_float_digits, new_val);
+        cli_var_set(var_ptr, obuf);
+    }
 
     if(has_old)
     {

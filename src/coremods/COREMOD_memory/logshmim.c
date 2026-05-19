@@ -210,9 +210,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     int VERBOSE = 2;
 
-    STREAMSAVE_THREAD_MESSAGE *tmsg =
-        (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
-
     IMGID inimg = imgid_make_from_name(streamname);
     resolveIMGID(&inimg, ERRMODE_ABORT, dcimg,  dcnimg);
 
@@ -286,7 +283,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     {
     }
 
-    int saveON_last = saveON;
+    /* Logging loop state and execution block */
+    {
+        STREAMSAVE_THREAD_MESSAGE *tmsg =
+            (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+
+        int saveON_last = saveON;
 
     char FITSffilename[STRINGMAXLEN_FULLFILENAME];
     snprintf(FITSffilename, sizeof(FITSffilename), "null");
@@ -706,12 +708,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         saveON_last = saveON;
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END  free(array_time);
-    free(array_aqtime);
-    free(array_cnt0);
-    free(array_cnt1);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    free(tmsg);
+        free(array_time);
+        free(array_aqtime);
+        free(array_cnt0);
+        free(array_cnt1);
+
+        free(tmsg);
+    }
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
