@@ -3,13 +3,8 @@
  * @brief Processinfo exec start module
  */
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
-#include "processinfo_exec_start.h"
 #include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
@@ -17,6 +12,9 @@
 #endif
 
 
+/**
+ * @brief Signals the start of execution for a process.
+ */
 int processinfo_exec_start(PROCESSINFO *processinfo)
 {
     DEBUG_TRACEPOINT(" ");
@@ -30,8 +28,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
             processinfo->timingbuffercnt++;
         }
 
-        clock_gettime(CLOCK_MILK,
-                      &processinfo->texecstart[processinfo->timerindex]);
+        clock_gettime(CLOCK_MILK, &processinfo->texecstart[processinfo->timerindex]);
 
         if(processinfo->dtiter_limit_enable != 0)
         {
@@ -64,8 +61,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
                                  "dtiter %4ld  %4d %6.1f us  > %6.1f us",
                                  processinfo->dtiter_limit_cnt,
                                  processinfo->timerindex,
-                                 0.001 * dtiter,
-                                 0.001 * processinfo->dtiter_limit_value);
+                                 0.001 * dtiter, 0.001 * processinfo->dtiter_limit_value);
                     if(slen < 1)
                     {
                         PRINT_ERROR("snprintf wrote <1 char");

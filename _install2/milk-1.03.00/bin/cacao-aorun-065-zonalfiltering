@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="Zonal filtering and control"
+
+MSextdescr="Zonal filtering and control
+
+on/off: toggles zonal filter on/off
+cal: compute conversion matrix from DM to modes, to be used by CACAO_FPSPROC_MVMGPU_DM2MVAL
+
+
+ACTION = on
+- Change CU dm2mval output from aolX_dmC to aolX_zvalDM
+- start zonal filtering process, input aolX_zvalDM output aolX_dmC
+
+ACTION = off
+- Change CU dm2mval output from aolX_zvalDM to aolX_dmC 
+- stop zonal filtering process
+
+ACTION = cal
+Use CMmodesDM to computes a conversion matrix from DM map to mode values.
+Input:
+FILE conf/CMmodesDM.fits
+	Controm modes, DM space
+Output:
+FILE   conf/modesDMinv.fit
+	pseudo-inverse of DM space control modes
+FILE   conf/matDM2mval_psinvcheck.fits
+	pseudo inverse check. Should be identity
+FILE   conf/matDM2mval.fits
+STREAM aolX_matDM2mval
+	conversion matrix from DM to mode values
+"	
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+
+MSarg+=( "action:string:action (on/off/cal)" )
+
+
+
+calsvdlim="0.01"
+MSopt+=( "svdlim:calsvdlim:set_calsvdlim:calsvdlim[float]:Calibratrion zonal to modal SVD lim [$calsvdlim]" )
+function set_calsvdlim() {
+	calsvdlim="$1"
+}
+
+
+
+
+
+
+
+source milk-argparse
+ACTION="${inputMSargARRAY[0]}"
+
+
+ACTIONOK=0
+
+if [ ${ACTION} == "check" ]; then
+	ACTIONOK=1
+fi
+
+# Checking FPS
+FPScheckOK="OK"
+checkFPSON CACAO_FPSPROC_ZONALFILTERING ${CACAO_FPSPROC_MVMGPU_CMODEVAL2DM}
+checkFPSON CACAO_FPSPROC_ZONALFILTERING ${CACAO_FPSPROC_ZONALFILTERING}
+
+
+if [ ${FPScheckOK} == "FAIL" ]; then
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] FPS check failed"
+	cacaomsglog "ERROR FPScheck"
+	exit 1
+fi
+
+
+
+# COMPUTE ZONAL -> MODAL TRANSLATION MATRIX
+if [ ${ACTION} == "cal" ]; then
+
+ACTIONOK=1
+
+NBmode=$(fitsheader conf/CMmodesDM.fits | grep NAXIS3 | awk '{print $3}' )
+echo "NBmode = ${NBmode}"
+
+
+milk-all << EOF
+loadfits "conf/CMmodesDM.fits" CMmDM
+linalg.compSVD .GPUdevice 0
+linalg.compSVD .compmode 6
+linalg.compSVD CMmDM SVDU SVDS SVDV ${calsvdlim}
+#saveFITS SVDinrec "SVDinrec.fits"
+saveFITS psinvcheck "conf/matDM2mval_psinvcheck.fits"
+saveFITS psinv "conf/modesDMinv.fits"
+imgbasic.imswapaxis2D psinv matDM2mval
+listim
+set3Daxes matDM2mval ${CACAO_DMxsize} ${CACAO_DMxsize} ${NBmode}
+saveFITS matDM2mval "conf/matDM2mval.fits"
+imcpshm matDM2mval aol${CACAO_LOOPNUMBER}_matDM2mval
+listim
+exitCLI
+EOF
+
+fi
+
+
+if [ ${ACTIONOK} == 0 ]; then
+if [ ${ACTION} == "on" ]; then
+	ACTIONOK=1
+	cacaomsglog "ON"
+
+	sendFPScmd "runstop mvalC2dm-${CACAO_LOOPNUMBER}"
+	sendFPScmd "setval mvalC2dm-${CACAO_LOOPNUMBER}.outcoeff aol${CACAO_LOOPNUMBER}_zvalDM"
+	sendFPScmd "confwupdate mvalC2dm-${CACAO_LOOPNUMBER}"
+	sendFPScmd "runstart mvalC2dm-${CACAO_LOOPNUMBER}"
+
+	sendFPScmd "setval zfilt-${CACAO_LOOPNUMBER}.AOloopindex ${CACAO_LOOPNUMBER}"
+	sendFPScmd "setval zfilt-${CACAO_LOOPNUMBER}.inzval aol${CACAO_LOOPNUMBER}_zvalDM"
+	sendFPScmd "setval zfilt-${CACAO_LOOPNUMBER}.procinfo.triggersname aol${CACAO_LOOPNUMBER}_zvalDM"
+	sendFPScmd "setval zfilt-${CACAO_LOOPNUMBER}.outzval aol${CACAO_LOOPNUMBER}_dmC"
+	sendFPScmd "confwupdate zfilt-${CACAO_LOOPNUMBER}"
+	sendFPScmd "runstart zfilt-${CACAO_LOOPNUMBER}"
+
+	sendFPScmd "runstart dm2mval-${CACAO_LOOPNUMBER}"
+
+fi
+fi
+
+
+if [ ${ACTIONOK} == 0 ]; then
+if [ ${ACTION} == "off" ]; then
+	ACTIONOK=1
+	cacaomsglog "OFF"
+	sendFPScmd "runstop zfilt-${CACAO_LOOPNUMBER}"
+	sendFPScmd "runstop dm2mval-${CACAO_LOOPNUMBER}"
+
+	sendFPScmd "runstop mvalC2dm-${CACAO_LOOPNUMBER}"
+	sendFPScmd "setval mvalC2dm-${CACAO_LOOPNUMBER}.outcoeff aol${CACAO_LOOPNUMBER}_dmC"
+	sendFPScmd "confwupdate mvalC2dm-${CACAO_LOOPNUMBER}"
+	sendFPScmd "runstart mvalC2dm-${CACAO_LOOPNUMBER}"
+
+	sleep 1
+	milk-shmim-zero aol${CACAO_LOOPNUMBER}_modevalDMf
+fi
+fi
+
+
+
+if [ ${ACTIONOK} == 0 ]; then
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] ACTION $ACTION undefined"
+	cacaomsglog "ERROR ACTION undefined"
+fi
+
+cacaomsglog "END"

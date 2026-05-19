@@ -65,7 +65,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "permut",
     .cmdkey      = "permut",
     .description =
-        "permut image quadrants"
+        "permut image quadrants",
+    .description_long =
+        "Permute image quadrants to shift the DC component to the center. Swaps the four quadrants of a 2D image for standard FFT display convention."
 };
 
 #define FPS_PARAMS(X) \
@@ -145,6 +147,11 @@ int permut(const char *ID_name)
     // fflush(stdout);
 
     ID    = image_ID(ID_name, dcimg, dcnimg);
+    if(ID == -1)
+    {
+        PRINT_ERROR("Image \"%s\" not found", ID_name);
+        return RETURN_FAILURE;
+    }
     naxis = dcimg[ID].md[0].naxis;
 
     naxes0 = dcimg[ID].md[0].size[0];

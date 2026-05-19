@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mk2Dim",
     .cmdkey      = "mk2Dim",
-    .description = "make 2D image"
+    .description = "make 2D image",
+    .description_long =
+        "Create a new 2D image in shared memory with specified dimensions and data type. Initializes all pixel values to zero."
 };
 
 
@@ -29,8 +31,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     outimname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im2D";
+static char     outimname[FUNCTION_PARAMETER_STRMAXLEN] = "im2D";
 static uint32_t imxsize = 256;
 static uint32_t imysize = 256;
 
@@ -66,11 +67,10 @@ imageID make_2Dimage_IMGID(IMGID *img)
 
 imageID make_2Dimage(
     const char *name,
-    uint32_t xsize,
-    uint32_t ysize)
+    uint32_t   xsize,
+    uint32_t   ysize)
 {
-    IMGID img = imgid_make_from_name_2D(
-        name, xsize, ysize);
+    IMGID img = imgid_make_from_name_2D(name, xsize, ysize);
     return make_2Dimage_IMGID(&img);
 }
 
@@ -90,18 +90,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID img = imgid_make_from_name_2D(
-        outimname, imxsize, imysize);
+    IMGID img = imgid_make_from_name_2D(outimname, imxsize, imysize);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  make_2Dimage_IMGID(&img);
 
-    make_2Dimage_IMGID(&img);
-
-    processinfo_update_output_stream(
-        processinfo, img.im, NULL);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    processinfo_update_output_stream(processinfo, img.im, NULL);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -114,18 +108,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__mk2Dim()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

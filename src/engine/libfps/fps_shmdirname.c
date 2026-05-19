@@ -4,16 +4,17 @@
  */
 
 #include <dirent.h>
-#include <stdlib.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 
 // #define SHAREDSHMDIR dcshmdir
 #ifndef SHAREDSHMDIR
 #define SHAREDSHMDIR "/milk/shm"
 #endif
 
+/**
+ * @brief Gets the directory name for FPS shared memory parameters.
+ */
 errno_t function_parameter_struct_shmdirname(char *shmdname)
 {
     int                  shmdirOK = 0;
@@ -32,10 +33,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             DEBUG_TRACEPOINT("MILK_SHM_DIR is '%s'\n", MILK_SHM_DIR);
 
             {
-                int slen = snprintf(shmdname,
-                                    STRINGMAXLEN_SHMDIRNAME,
-                                    "%s",
-                                    MILK_SHM_DIR);
+                int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", MILK_SHM_DIR);
                 if(slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
@@ -68,10 +66,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             if(tmpdir)  // directory exits
             {
                 {
-                    int slen = snprintf(shmdname,
-                                        STRINGMAXLEN_SHMDIRNAME,
-                                        "%s",
-                                        SHAREDSHMDIR);
+                    int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", SHAREDSHMDIR);
                     if(slen < 1)
                     {
                         PRINT_ERROR("snprintf wrote <1 char");
@@ -95,7 +90,9 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             tmpdir = opendir("/tmp");
             if(!tmpdir)
             {
-                exit(EXIT_FAILURE);
+                FUNC_RETURN_FAILURE(
+                    "could not locate any usable SHM "
+                    "directory (last fallback /tmp also " "failed to open)");
             }
             else
             {
@@ -125,10 +122,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
     else
     {
         {
-            int slen = snprintf(shmdname,
-                                STRINGMAXLEN_SHMDIRNAME,
-                                "%s",
-                                shmdname_static);
+            int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", shmdname_static);
             if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");

@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="Compute control modes by blocks"
+
+set +u
+if [ -z ${CACAO_CONFWDIR+x} ]; then
+	CACAO_CONFWDIR="conf"
+fi
+set -u
+
+
+MSextdescr="Compute CMs by blocks
+
+Marginalization modes:
+1 (recommended): marginalize in DM space for blocks 0 1, and WFS space after
+2: marginalize in WFS space
+3: marginalize in DM space
+
+Calls script cacao-aorun-039-compstrCM
+
+
+INPUT:
+./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits
+./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits
+OUTPUT:
+./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits
+./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits
+
+
+"
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+MSarg+=( "SVDlim:float:SVD limit (example 0.06)" )
+MSarg+=( "marg:integer:marginalization mode" )
+
+
+source milk-argparse
+
+SVDlim="${inputMSargARRAY[0]}"
+MARGMODE="${inputMSargARRAY[1]}"
+
+
+
+cacaomsglog "START"
+
+
+echo "SVDlim = ${SVDlim}"
+
+
+
+WHICH_MARG="-marg"
+MARGTT="-margDM 0:1"
+margstring="margDM01-margWFS"
+
+
+
+if [[ ${MARGMODE} -eq 1 ]]; then
+echo "MARGMODE = 1"
+WHICH_MARG="-marg"
+MARGTT="-margDM 0:1"
+margstring="margDM01-margWFS"
+fi
+
+
+if [[ ${MARGMODE} -eq 2 ]]; then
+echo "MARGMODE = 2"
+WHICH_MARG="-marg"
+margstring="margWFS"
+fi
+
+if [[ ${MARGMODE} -eq 3 ]]; then
+echo "MARGMODE = 2"
+WHICH_MARG="-margDM"
+margstring="margDM"
+fi
+
+
+
+
+NBRMmodes=$( milk-fitsheader ${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits | grep "NAXIS3" | awk '{print $3}' )
+echo "NB modes = ${NBRMmodes}"
+
+
+cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+
+mbstartarray=(1 2 3 13 51 201 1001 5001 10000)
+
+maxi=${#mbstartarray[@]}
+let maxi=maxi-1
+
+echo "MARGMODE MARGTT = ${MARGMODE} ${MARGTT}"
+if [[ ${MARGMODE} -eq 1 ]]; then
+margstring=""
+else
+margstring="0:1"
+fi
+
+for (( i=0; i<$maxi; i++)); do
+  mb0=${mbstartarray[$i]}
+  let i1=i+1
+  mb1=${mbstartarray[$i1]}
+  let mb1=mb1-1
+
+  if [[ $mb0 -lt $NBRMmodes ]]; then
+    echo "OK $mb0 $NBRMmodes"
+
+    if [[ $mb1 -gt $NBRMmodes ]]; then
+      let mb1=NBRMmodes
+    fi
+   printf "MODE BLOCK %02d  : %4d : %4d\n" $i $mb0 $mb1
+  
+
+    if [[ $i -lt 2 ]]; then
+      cacao-aorun-039-compstrCM -mb $i -mr $mb0:$mb1
+    else
+
+      if [[ ${MARGMODE} -eq 1 ]]; then
+	    if [ -z "${margstring}" ]; then
+	      fullmargstr=""
+	    else
+	      fullmargstr=" ${WHICH_MARG} ${margstring}"
+	    fi
+        cacao-aorun-039-compstrCM -mb $i -mr $mb0:$mb1 ${fullmargstr} ${MARGTT}
+      else
+        cacao-aorun-039-compstrCM -mb $i -mr $mb0:$mb1 ${WHICH_MARG} 0:1:${margstring}
+      fi
+      
+      if [[ $i -eq 2 ]]; then
+        margstring="2"
+      else
+        margstring="${margstring}:$i"
+      fi
+      
+    fi
+  fi
+
+done
+
+# merge CMs
+cacao-aorun-039-compstrCM -mbm 0:1:${margstring}
+
+
+
+cacaomsglog "END"
+
+
+
+
+
+
+
+
+
+#cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+
+# Make T CM
+#cacao-aorun-039-compstrCM -mb 0 -mr 1:1
+
+# Make T CM
+#cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+#cacao-aorun-039-compstrCM -mb 1 -mr 2:2
+
+# make LO CM
+#cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+
+#if [[ ${MARGMODE} -eq 1 ]]; then
+#cacao-aorun-039-compstrCM -mb 2 -mr 3:12 ${MARGTT}
+#else
+#cacao-aorun-039-compstrCM -mb 2 -mr 3:12 ${WHICH_MARG} 0:1
+#fi
+
+
+
+
+
+
+
+# make LO CM
+#cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+
+#if [[ ${MARGMODE} -eq 1 ]]; then
+#cacao-aorun-039-compstrCM -mb 3 -mr 13:50 ${WHICH_MARG} 2 ${MARGTT}
+#else
+#cacao-aorun-039-compstrCM -mb 3 -mr 13:50 ${WHICH_MARG} 0:1:2
+#fi
+
+
+
+# make MO CM
+#cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+
+#if [[ ${MARGMODE} -eq 1 ]]; then
+#cacao-aorun-039-compstrCM -mb 4 -mr 51:200 ${WHICH_MARG} 2:3 ${MARGTT}
+#else
+#cacao-aorun-039-compstrCM -mb 4 -mr 51:200 ${WHICH_MARG} 0:1:2:3
+#fi
+
+
+
+# make HO CM
+#cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+
+#if [[ ${MARGMODE} -eq 1 ]]; then
+#cacao-aorun-039-compstrCM -mb 5 -mr 201:1000 ${WHICH_MARG} 2:3:4 ${MARGTT}
+#else
+#cacao-aorun-039-compstrCM -mb 5 -mr 201:1000 ${WHICH_MARG} 0:1:2:3:4
+#fi
+
+
+
+# make HHO CM
+#cacao-fpsctrl setval compstrCM svdlim ${SVDlim}
+
+#if [[ ${MARGMODE} -eq 1 ]]; then
+#cacao-aorun-039-compstrCM -mb 6 -mr 1001:5029 ${WHICH_MARG} 2:3:4:5 ${MARGTT}
+#else
+#cacao-aorun-039-compstrCM -mb 6 -mr 1001:5029 ${WHICH_MARG} 0:1:2:3:4:5
+#fi
+
+
+# merge CMs
+#cacao-aorun-039-compstrCM -mbm 0:1:2:3:4:5:6
+
+
+
+
+
+
+
+
+

@@ -16,20 +16,19 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "pixunmap",
     .cmdkey      = "pixunmap",
-    .description = "pixel unmapping of image to 1D"
+    .description = "pixel unmapping of image to 1D",
+    .description_long =
+        "Reverse-map a 2D image to a 1D array using an index map. Each pixel in the input image is placed at the position specified by the unmap table. Inverse operation of pixremap."
 };
 
 // input image
-static char insname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char insname[FUNCTION_PARAMETER_STRMAXLEN];
 
 // unmapping array to 1D
-static char mapsname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char mapsname[FUNCTION_PARAMETER_STRMAXLEN];
 
 // output image
-static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN];
 static int32_t outshared = 0;
 
 #define FPS_PARAMS(X) \
@@ -54,120 +53,132 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    // connect to input
-    //
-    IMGID imgin = imgid_make_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    int64_t insize = imgin.md->size[0]*imgin.md->size[1];
-
-    IMGID imgmap = imgid_make_from_name(mapsname);
-    resolveIMGID(&imgmap, ERRMODE_ABORT, dcimg, dcnimg);
-
-    // read map size
-    // Note: currently assumes 2D ... to be updated
-    //
-    uint32_t xsize = imgmap.md->size[0];
-    uint32_t ysize = imgmap.md->size[1];
-    uint64_t xysize = (uint64_t) xsize;
-    xysize *= ysize;
-
-    // read output 1D array size from max value of mapping file
+    IMGID imgin;
+    IMGID imgmap;
+    IMGID imgout;
     int x1Dsize = 0;
-        MILK_IVDEP
-    for(uint64_t ii=0; ii<xysize; ii++)
-    {
-        int pixi = imgmap.im->array.SI32[ii];
-        if( pixi > x1Dsize )
-        {
-            x1Dsize = pixi;
-        }
-    }
-    x1Dsize ++;
-
-    printf("output 1D size = %d\n", x1Dsize);
-    fflush(stdout);
-
-    // link/create output image/stream
-    uint8_t outdatatype;
-    switch ( imgin.md->datatype )
-    {
-    case (_DATATYPE_DOUBLE) :
-        outdatatype = _DATATYPE_DOUBLE;
-        break;
-    case (_DATATYPE_INT64) :
-        outdatatype = _DATATYPE_DOUBLE;
-        break;
-    case (_DATATYPE_UINT64) :
-        outdatatype = _DATATYPE_DOUBLE;
-        break;
-    default :
-        outdatatype = _DATATYPE_FLOAT;
-    }
-
-    IMGID imgout = imgid_make_from_name(outimname);
-    imgout.mdt->shared = outshared;
-    if(outshared == 1)
-    {
-        imgid_free(&imgout);
-        imgout = stream_connect_create_2D(outimname, x1Dsize, 1, outdatatype);
-    }
-    else
-    {
-        imgout.mdt->naxis = 2;
-        imgout.mdt->size[0] = x1Dsize;
-        imgout.mdt->size[1] = 1;
-        imgout.mdt->datatype = outdatatype;
-        createimagefromIMGID(&imgout);
-    }
-    imcreateIMGID(&imgout);
-
-    // build mapping table
-    //
     uint64_t nbpix = 0;
-        MILK_IVDEP
-    for(uint64_t ii = 0; ii < xsize*ysize; ii++)
+    uint64_t * __restrict map_2Dpixindex = NULL;
+    uint64_t * __restrict map_1Dpixindex = NULL;
+    uint64_t * __restrict map_pixcnt = NULL;
+
     {
-        int64_t pixindex = imgmap.im->array.SI32[ii];
-        if ( ( pixindex > -1 )
-                && ( pixindex < insize) )
-        {
-            nbpix ++;
+        // connect to input
+        //
+        imgin = imgid_make_from_name(insname);
+        resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
+        int64_t insize = imgin.md->size[0]*imgin.md->size[1];
+        if (imgin.ID == -1) {
+            return RETURN_FAILURE;
         }
-    }
 
-    printf("mapping table has %lu elements\n", nbpix);
+        imgmap = imgid_make_from_name(mapsname);
+        resolveIMGID(&imgmap, ERRMODE_WARN, dcimg, dcnimg);
 
-    uint64_t * __restrict map_2Dpixindex = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
-    uint64_t * __restrict map_1Dpixindex  = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
-
-    uint64_t * __restrict map_pixcnt      = (uint64_t*) malloc(sizeof(uint64_t) * x1Dsize);
-    for(int zone=0; zone<x1Dsize; zone++)
-    {
-        map_pixcnt[zone] = 0;
-    }
-
-    nbpix = 0;
-        MILK_IVDEP
-    for(uint64_t ii = 0; ii < xysize; ii++)
-    {
-        int64_t pixindex = imgmap.im->array.SI32[ii];
-        if ( ( pixindex > -1 )
-                && ( pixindex < x1Dsize) )
-        {
-            map_2Dpixindex[nbpix] = ii;
-            map_1Dpixindex[nbpix] = pixindex;
-
-            map_pixcnt[pixindex] ++;
-            nbpix ++;
+        // read map size
+        // Note: currently assumes 2D ... to be updated
+        //
+        if (imgmap.ID == -1) {
+            imgid_free(&imgin);
+            return RETURN_FAILURE;
         }
-    }
+        uint32_t xsize = imgmap.md->size[0];
+        uint32_t ysize = imgmap.md->size[1];
+        uint64_t xysize = (uint64_t) xsize;
+        xysize *= ysize;
 
-    // avoid division by zero
-    for(int zone=0; zone<x1Dsize; zone++)
-    {
-        if(map_pixcnt[zone] == 0)
+        // read output 1D array size from max value of mapping file
+        MILK_IVDEP
+        for(uint64_t ii=0; ii<xysize; ii++)
         {
-            map_pixcnt[zone] = 1;
+            int pixi = imgmap.im->array.SI32[ii];
+            if( pixi > x1Dsize )
+            {
+                x1Dsize = pixi;
+            }
+        }
+        x1Dsize ++;
+
+        printf("output 1D size = %d\n", x1Dsize);
+        fflush(stdout);
+
+        // link/create output image/stream
+        uint8_t outdatatype;
+        switch ( imgin.md->datatype )
+        {
+        case (_DATATYPE_DOUBLE) : outdatatype = _DATATYPE_DOUBLE;
+            break;
+        case (_DATATYPE_INT64)  : outdatatype = _DATATYPE_DOUBLE;
+            break;
+        case (_DATATYPE_UINT64) : outdatatype = _DATATYPE_DOUBLE;
+            break;
+        default                 : outdatatype = _DATATYPE_FLOAT;
+        }
+
+        imgout = imgid_make_from_name(outimname);
+        imgout.mdt->shared = outshared;
+        if(outshared == 1)
+        {
+            imgid_free(&imgout);
+            imgout = stream_connect_create_2D(outimname, x1Dsize, 1, outdatatype);
+        }
+        else
+        {
+            imgout.mdt->naxis = 2;
+            imgout.mdt->size[0] = x1Dsize;
+            imgout.mdt->size[1] = 1;
+            imgout.mdt->datatype = outdatatype;
+            createimagefromIMGID(&imgout);
+        }
+        imcreateIMGID(&imgout);
+
+        // build mapping table
+        //
+        MILK_IVDEP
+        for(uint64_t ii = 0; ii < xsize*ysize; ii++)
+        {
+            int64_t pixindex = imgmap.im->array.SI32[ii];
+            if ( ( pixindex > -1 )
+                    && ( pixindex < insize) )
+            {
+                nbpix ++;
+            }
+        }
+
+        printf("mapping table has %lu elements\n", nbpix);
+
+        map_2Dpixindex = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
+        map_1Dpixindex = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
+        map_pixcnt     = (uint64_t*) malloc(sizeof(uint64_t) * x1Dsize);
+
+        for(int zone=0; zone<x1Dsize; zone++)
+        {
+            map_pixcnt[zone] = 0;
+        }
+
+        nbpix = 0;
+        MILK_IVDEP
+        for(uint64_t ii = 0; ii < xysize; ii++)
+        {
+            int64_t pixindex = imgmap.im->array.SI32[ii];
+            if ( ( pixindex > -1 )
+                    && ( pixindex < x1Dsize) )
+            {
+                map_2Dpixindex[nbpix] = ii;
+                map_1Dpixindex[nbpix] = pixindex;
+
+                map_pixcnt[pixindex] ++;
+                nbpix ++;
+            }
+        }
+
+        // avoid division by zero
+        for(int zone=0; zone<x1Dsize; zone++)
+        {
+            if(map_pixcnt[zone] == 0)
+            {
+                map_pixcnt[zone] = 1;
+            }
         }
     }
 
@@ -181,12 +192,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * OACC = output accessor (F or D)
  * IACC = input accessor
  */
-#define UNMAP_CASE_(DT, IACC, CT, OACC)             \
+#define UNMAP_CASE_(DT, IACC, CT, OACC)              \
     case DT:                                         \
         for(uint64_t pixi=0; pixi<nbpix; pixi++)     \
         {                                            \
             imgout.im->array.OACC[                   \
-                map_1Dpixindex[pixi]] +=              \
+                map_1Dpixindex[pixi]] +=             \
                 imgin.im->array.IACC[                \
                     map_2Dpixindex[pixi]];           \
         }                                            \
@@ -211,8 +222,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         UNMAP_CASE_(_DATATYPE_DOUBLE, D,    double,   D)
         UNMAP_CASE_(_DATATYPE_INT64,  SI64, int64_t,  D)
         UNMAP_CASE_(_DATATYPE_UINT64, UI64, uint64_t, D)
-        default:
-            PRINT_ERROR("unsupported datatype");
+        default: PRINT_ERROR("unsupported datatype");
             break;
         }
 #undef UNMAP_CASE_
@@ -224,6 +234,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     free(map_2Dpixindex);
     free(map_1Dpixindex);
+    free(map_pixcnt);
 
     DEBUG_TRACE_FEXIT();
     imgid_free(&imgin);
@@ -237,21 +248,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMODE_arith__pixunmap()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

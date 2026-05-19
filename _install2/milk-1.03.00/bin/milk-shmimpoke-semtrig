@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# milk-shmimpoke-semtrig — poke existing stream from stream trigger
+# Thin wrapper: delegates to milk-fpsexec-mem-streampoke
+# (semaphore trigger mode is set via FPS parameters)
+
+case "${1-}" in
+    -h1|--help-oneline) echo "poke existing stream from stream trigger"; exit 0 ;;
+    -h|--help) milk-fpsexec-mem-streampoke --help; exit $? ;;
+esac
+
+exec milk-fpsexec-mem-streampoke "$@"

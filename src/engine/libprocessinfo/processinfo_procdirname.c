@@ -4,17 +4,15 @@
  */
 
 #include <dirent.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
-#include "ImageStreamIO/ImageStruct.h" // For SHAREDMEMDIR
 
 #define SHAREDPROCDIR SHAREDMEMDIR
 
 
+/**
+ * @brief Retrieves the directory name used for process info shared memory.
+ */
 errno_t processinfo_procdirname(char *procdname)
 {
     int  procdirOK = 0;
@@ -27,10 +25,7 @@ errno_t processinfo_procdirname(char *procdname)
         // printf(" [ MILK_PROC_DIR ] '%s'\n", MILK_PROC_DIR);
 
         {
-            int slen = snprintf(procdname,
-                                STRINGMAXLEN_FULLFILENAME,
-                                "%s",
-                                MILK_PROC_DIR);
+            int slen = snprintf(procdname, STRINGMAXLEN_FULLFILENAME, "%s", MILK_PROC_DIR);
             if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");

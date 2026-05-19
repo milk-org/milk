@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+FPSKWname="CACAO_FPSPROC_MLAT"
+
+FPSKWval="NULL"
+if [ ! -z "${CACAO_FPSPROC_MLAT+x}" ]; then
+	FPSKWval="$CACAO_FPSPROC_MLAT"
+fi
+
+
+# FPS name
+fpsname="mlat"
+fpsarg0="${CACAO_LOOPNUMBER}"
+
+# FPS full name
+fpsfname="${fpsname}-${fpsarg0}"
+
+# function call
+fpsfcall="cacao-fpsexec-cacaopt-mlat"
+
+# short description
+fpsdescr="Measure Latency"
+
+
+
+
+function fpsentry_addmodules() {
+	echo "no module to be added"
+}
+
+
+function fpsentry_addcmds() {
+	addfpscmd "setval ${fpsfname}.NBiter 20"
+	addfpscmd "setval ${fpsfname}.dmstream aol${CACAO_LOOPNUMBER}_dmRM"
+	addfpscmd "setval ${fpsfname}.wfsstream aol${CACAO_LOOPNUMBER}_wfsim"
+}
+
+
+
+source milk-fpslist-addentry

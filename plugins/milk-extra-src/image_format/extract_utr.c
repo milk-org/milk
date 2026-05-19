@@ -30,7 +30,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cred_cds_utr",
     .cmdkey      = "cred_cds_utr",
-    .description = "RT compute of CDS/UTR for camera streams"
+    .description = "RT compute of CDS/UTR for camera streams",
+    .description_long =
+        "Compute up-the-ramp (UTR) or correlated double sampling (CDS) readout from IR detector frame sequences in real-time."
 };
 
 
@@ -314,12 +316,15 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID in_img = imgid_make_from_name(in_imname);
-    resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&in_img, ERRMODE_WARN, dcimg, dcnimg);
 
     // Set in_img to be the trigger
     snprintf(CLIcmddata.cmdsettings->triggerstreamname,
              sizeof(CLIcmddata.cmdsettings->triggerstreamname),
              "%s", in_imname);
+    if (in_img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     // for FPS mode:
     if(dcfpsptr != NULL)
     {
@@ -335,13 +340,16 @@ static MILK_HOT errno_t compute_function()
         PRINT_WARNING("WARNING - output image not found and being created");
         in_img.mdt->datatype = _DATATYPE_FLOAT; // To be passed to out_img
         imcreatelikewiseIMGID(&out_img, &in_img);
-        resolveIMGID(&out_img, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&out_img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
     /*
      Keyword setup - initialization
     */
     int ndr_kw_loc = -1;
+        if (out_img.ID == -1) {
+            return RETURN_FAILURE;
+        }
 
     for(int kw = 0; kw < in_img.md->NBkw; ++kw)
     {

@@ -3,14 +3,9 @@
  * @brief Processinfo exec end module
  */
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_signals.h"
-#include "processinfo_exec_end.h"
 #include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
@@ -18,16 +13,17 @@
 #endif
 
 
+/**
+ * @brief Signals the end of execution for a process in the process info system.
+ */
 int processinfo_exec_end(PROCESSINFO *processinfo)
 {
     int loopOK = 1;
 
-    DEBUG_TRACEPOINT("End of execution loop, measure timing = %d",
-                     processinfo->MeasureTiming);
+    DEBUG_TRACEPOINT("End of execution loop, measure timing = %d", processinfo->MeasureTiming);
     if(processinfo->MeasureTiming == 1)
     {
-        clock_gettime(CLOCK_MILK,
-                      &processinfo->texecend[processinfo->timerindex]);
+        clock_gettime(CLOCK_MILK, &processinfo->texecend[processinfo->timerindex]);
 
         if(processinfo->dtexec_limit_enable != 0)
         {
@@ -50,8 +46,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
                                  "dtexec %4ld  %4d %6.1f us  > %6.1f us",
                                  processinfo->dtexec_limit_cnt,
                                  processinfo->timerindex,
-                                 0.001 * dtexec,
-                                 0.001 * processinfo->dtexec_limit_value);
+                                 0.001 * dtexec, 0.001 * processinfo->dtexec_limit_value);
                     if(slen < 1)
                     {
                         PRINT_ERROR("snprintf wrote <1 char");
@@ -80,9 +75,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
                         }
                         if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
                         {
-                            PRINT_ERROR(
-                                "snprintf string "
-                                "truncation");
+                            PRINT_ERROR("snprintf string " "truncation");
                             abort(); // can't handle this error any other way
                         }
                     }

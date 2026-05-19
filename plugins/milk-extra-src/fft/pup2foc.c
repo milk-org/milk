@@ -25,7 +25,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "pup2foc",
     .cmdkey      = "pup2foc",
-    .description = "pupil to focus by FFT"
+    .description = "pupil to focus by FFT",
+    .description_long =
+        "Propagate a wavefront from pupil plane to focal plane using FFT. Applies the Fraunhofer diffraction integral to compute the PSF from a pupil amplitude/phase map."
 };
 
 
@@ -154,12 +156,18 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgamp = imgid_make_from_name(inamp);
-    resolveIMGID(&imgamp, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgamp, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgpha = imgid_make_from_name(inpha);
-    resolveIMGID(&imgpha, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imgamp.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imgpha, ERRMODE_WARN, dcimg, dcnimg);
 
 //    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
+    if (imgpha.ID == -1) {
+        return RETURN_FAILURE;
+    }
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization

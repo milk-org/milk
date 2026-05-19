@@ -6,10 +6,21 @@
 /** @file extrapolate_nearestpixel.c
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -29,13 +40,19 @@ imageID basic_2Dextrapolate_nearestpixel(
 
     IMGID imgin =
         imgid_make_from_name(IDin_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgmask =
         imgid_make_from_name(IDmask_name);
-    resolveIMGID(&imgmask, ERRMODE_ABORT,
+    resolveIMGID(&imgmask, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgmask.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     list_image_ID();
     IMGID imgmask1 =

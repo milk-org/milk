@@ -101,7 +101,9 @@ static FPS_APP_INFO FPS_app_info_phn = {
     .fps_name    = "putphnoise",
     .cmdkey      = "putphnoise",
     .description =
-        "add photon noise to image"
+        "add photon noise to image",
+    .description_long =
+        "Statistical tools for image processing: add Gaussian noise, compute histograms, and generate statistical test images."
 };
 
 #define FPS_PARAMS_PHN(X) \
@@ -185,7 +187,9 @@ static FPS_APP_INFO FPS_app_info_gn = {
     .fps_name    = "putgaussnoise",
     .cmdkey      = "putgaussnoise",
     .description =
-        "add gaussian noise to image"
+        "add gaussian noise to image",
+    .description_long =
+        "Statistical tools for image processing: add Gaussian noise, compute histograms, and generate statistical test images."
 };
 
 #define FPS_PARAMS_GN(X) \

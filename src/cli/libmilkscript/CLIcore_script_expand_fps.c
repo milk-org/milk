@@ -71,8 +71,7 @@ static void expand_fpsvar_write(
     const char *token,
     char       *out,
     int        *opos,
-    int         maxlen
-)
+    int        maxlen)
 {
     char valstr[512];
     int  vlen  = 0;
@@ -143,12 +142,9 @@ static void expand_fpsvar_write(
     }
     valstr[vlen] = '\0';
 
-    cli_expand_fpsvar(
-        valstr, (int) sizeof(valstr));
-    cli_expand_env(
-        valstr, (int) sizeof(valstr));
-    cli_expand_arith(
-        valstr, (int) sizeof(valstr));
+    cli_expand_fpsvar(valstr, (int) sizeof(valstr));
+    cli_expand_env(valstr, (int) sizeof(valstr));
+    cli_expand_arith(valstr, (int) sizeof(valstr));
 
     char tcopy[512];
     strncpy(tcopy, token, sizeof(tcopy) - 1);
@@ -175,36 +171,30 @@ static void expand_fpsvar_write(
             {
                 if(pinfolist == NULL)
                 {
-                    printf("@proc write: "
-                           "process list "
-                           "unavailable\n");
+                    printf("@proc write: " "process list " "unavailable\n");
                     return;
                 }
                 int ctrlval_int = -1;
                 if(strcmp(valstr, "run") == 0)
                 {
-                    ctrlval_int =
-                        PROCESSINFO_CTRLVAL_RUN;
+                    ctrlval_int = PROCESSINFO_CTRLVAL_RUN;
                 }
                 else if(strcmp(valstr,
                                "pause") == 0)
                 {
-                    ctrlval_int =
-                        PROCESSINFO_CTRLVAL_PAUSE;
+                    ctrlval_int = PROCESSINFO_CTRLVAL_PAUSE;
                 }
                 else if(strcmp(valstr,
                                "step") == 0)
                 {
-                    ctrlval_int =
-                        PROCESSINFO_CTRLVAL_INCR;
+                    ctrlval_int = PROCESSINFO_CTRLVAL_INCR;
                 }
                 else if(strcmp(valstr,
                                "stop") == 0
                         || strcmp(valstr,
                                   "exit") == 0)
                 {
-                    ctrlval_int =
-                        PROCESSINFO_CTRLVAL_EXIT;
+                    ctrlval_int = PROCESSINFO_CTRLVAL_EXIT;
                 }
                 else
                 {
@@ -222,37 +212,23 @@ static void expand_fpsvar_write(
                                ->pnamearray[pidx],
                            name) == 0)
                     {
-                        found_pid =
-                            pinfolist
-                                ->PIDarray[pidx];
+                        found_pid = pinfolist ->PIDarray[pidx];
                         break;
                     }
                 }
                 if(found_pid > 0)
                 {
-                    char pfname[
-                        STRINGMAXLEN_FULLFILENAME];
-                    char procdname[
-                        STRINGMAXLEN_DIRNAME];
-                    processinfo_procdirname(
-                        procdname);
-                    snprintf(pfname,
-                             sizeof(pfname),
-                             "%s/proc.%d.shm",
-                             procdname,
-                             (int) found_pid);
+                    char pfname[STRINGMAXLEN_FULLFILENAME];
+                    char procdname[STRINGMAXLEN_DIRNAME];
+                    processinfo_procdirname(procdname);
+                    snprintf(pfname, sizeof(pfname), "%s/proc.%d.shm", procdname, (int) found_pid);
                     int pfd = -1;
-                    PROCESSINFO *pi_shm =
-                        processinfo_shm_link(
-                            pfname, &pfd);
+                    PROCESSINFO *pi_shm = processinfo_shm_link(pfname, &pfd);
                     if(pi_shm != MAP_FAILED
                        && pi_shm != NULL)
                     {
-                        pi_shm->CTRLval =
-                            ctrlval_int;
-                        munmap(pi_shm,
-                               sizeof(
-                                   PROCESSINFO));
+                        pi_shm->CTRLval = ctrlval_int;
+                        munmap(pi_shm, sizeof(PROCESSINFO));
                         close(pfd);
                     }
                     else if(pfd >= 0)
@@ -261,18 +237,12 @@ static void expand_fpsvar_write(
                     }
                     else
                     {
-                        printf("@proc write: "
-                               "cannot map SHM "
-                               "for '%s'\n",
-                               name);
+                        printf("@proc write: " "cannot map SHM " "for '%s'\n", name);
                     }
                 }
                 else
                 {
-                    printf("@proc write: "
-                           "process '%s' "
-                           "not found\n",
-                           name);
+                    printf("@proc write: " "process '%s' " "not found\n", name);
                 }
             }
         }
@@ -281,8 +251,7 @@ static void expand_fpsvar_write(
     {
         /* Legacy: @fpsname.param=val */
         *dot1 = '\0';
-        cli_fps_set_param(
-            tcopy, dot1 + 1, valstr);
+        cli_fps_set_param(tcopy, dot1 + 1, valstr);
     }
 
     /* Insert no-op ":" if this is the full cmd */
@@ -321,8 +290,7 @@ static int expand_fpsvar_seq(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -333,8 +301,7 @@ static int expand_fpsvar_seq(
     const char *seqname = pname;
     const char *seqprop = dot2 + 1;
 
-    MILKSEQ_STATE *seqst =
-        milkseq_connect(seqname);
+    MILKSEQ_STATE *seqst = milkseq_connect(seqname);
     if(seqst == NULL)
     {
         return 1;
@@ -364,24 +331,19 @@ static int expand_fpsvar_seq(
     }
     else if(strcmp(seqprop, "tasks") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%u", seqst->NBtasks_active);
+        snprintf(vstr, sizeof(vstr), "%u", seqst->NBtasks_active);
     }
     else if(strcmp(seqprop, "errors") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%u", seqst->error_count);
+        snprintf(vstr, sizeof(vstr), "%u", seqst->error_count);
     }
     else if(strcmp(seqprop, "pid") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%d", (int) seqst->pid);
+        snprintf(vstr, sizeof(vstr), "%d", (int) seqst->pid);
     }
     else if(strcmp(seqprop, "completed") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%u",
-                 seqst->NBtasks_completed);
+        snprintf(vstr, sizeof(vstr), "%u", seqst->NBtasks_completed);
     }
 
     milkseq_disconnect(seqst);
@@ -414,8 +376,7 @@ static int expand_fpsvar_procinfo(
     const char *pname,
     char       *out,
     int        *opos,
-    int         maxlen
-)
+    int        maxlen)
 {
     if(pinfolist == NULL)
     {
@@ -431,8 +392,7 @@ static int expand_fpsvar_procinfo(
                pinfolist->pnamearray[pi],
                fpsname) == 0)
         {
-            found_pid =
-                pinfolist->PIDarray[pi];
+            found_pid = pinfolist->PIDarray[pi];
             break;
         }
     }
@@ -444,12 +404,9 @@ static int expand_fpsvar_procinfo(
     char pfname[STRINGMAXLEN_FULLFILENAME];
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
-    snprintf(pfname, sizeof(pfname),
-             "%s/proc.%d.shm",
-             procdname, (int) found_pid);
+    snprintf(pfname, sizeof(pfname), "%s/proc.%d.shm", procdname, (int) found_pid);
     int pfd = -1;
-    PROCESSINFO *pi =
-        processinfo_shm_link(pfname, &pfd);
+    PROCESSINFO *pi = processinfo_shm_link(pfname, &pfd);
     if(pi == MAP_FAILED || pi == NULL)
     {
         if(pfd >= 0)
@@ -464,78 +421,61 @@ static int expand_fpsvar_procinfo(
 
     if(strcmp(pname, "pid") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%d", (int) pi->PID);
+        snprintf(vstr, sizeof(vstr), "%d", (int) pi->PID);
     }
     else if(strcmp(pname, "loopstat") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%d", pi->loopstat);
+        snprintf(vstr, sizeof(vstr), "%d", pi->loopstat);
     }
     else if(strcmp(pname, "loopcnt") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%ld", pi->loopcnt);
+        snprintf(vstr, sizeof(vstr), "%ld", pi->loopcnt);
     }
     else if(strcmp(pname, "loopfreq") == 0)
     {
         double hz = 0.0;
         if(pi->dtmedian_iter_ns > 0)
         {
-            hz = 1.0e9
-                 / (double) pi->dtmedian_iter_ns;
+            hz = 1.0e9 / (double) pi->dtmedian_iter_ns;
         }
-        snprintf(vstr, sizeof(vstr),
-                 "%.1f", hz);
+        snprintf(vstr, sizeof(vstr), "%.1f", hz);
     }
     else if(strcmp(pname, "exectime") == 0)
     {
-        double us =
-            (double) pi->dtmedian_exec_ns
-            / 1000.0;
-        snprintf(vstr, sizeof(vstr),
-                 "%.1f", us);
+        double us = (double) pi->dtmedian_exec_ns / 1000.0;
+        snprintf(vstr, sizeof(vstr), "%.1f", us);
     }
     else if(strcmp(pname, "rtprio") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%d", pi->RT_priority);
+        snprintf(vstr, sizeof(vstr), "%d", pi->RT_priority);
     }
     else if(strcmp(pname, "ctrlval") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%d", pi->CTRLval);
+        snprintf(vstr, sizeof(vstr), "%d", pi->CTRLval);
     }
     else if(strcmp(pname, "trigmode") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%d", pi->triggermode);
+        snprintf(vstr, sizeof(vstr), "%d", pi->triggermode);
     }
     else if(strcmp(pname, "statusmsg") == 0)
     {
-        strncpy(vstr, pi->statusmsg,
-                sizeof(vstr) - 1);
+        strncpy(vstr, pi->statusmsg, sizeof(vstr) - 1);
         vstr[sizeof(vstr) - 1] = '\0';
     }
     else if(strcmp(pname, "tmux") == 0)
     {
-        strncpy(vstr, pi->tmuxname,
-                sizeof(vstr) - 1);
+        strncpy(vstr, pi->tmuxname, sizeof(vstr) - 1);
         vstr[sizeof(vstr) - 1] = '\0';
     }
     else if(strcmp(pname, "description") == 0)
     {
-        strncpy(vstr, pi->description,
-                sizeof(vstr) - 1);
+        strncpy(vstr, pi->description, sizeof(vstr) - 1);
         vstr[sizeof(vstr) - 1] = '\0';
     }
     else if(strcmp(pname,
                    "missedframes") == 0)
     {
-        snprintf(vstr, sizeof(vstr),
-                 "%lu",
-                 (unsigned long)
-                 pi->triggermissedframe_cumul);
+        snprintf(vstr, sizeof(vstr), "%lu", (unsigned long) pi->triggermissedframe_cumul);
     }
 
     int vlen = (int) strlen(vstr);
@@ -559,8 +499,7 @@ static int expand_fpsvar_procinfo_strict(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -568,8 +507,7 @@ static int expand_fpsvar_procinfo_strict(
         return 0;
     }
     *dot2 = '\0';
-    return expand_fpsvar_procinfo(
-        pname, dot2 + 1, out, opos, maxlen);
+    return expand_fpsvar_procinfo(pname, dot2 + 1, out, opos, maxlen);
 }
 
 /**
@@ -587,8 +525,7 @@ static int expand_fpsvar_stream(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -602,10 +539,8 @@ static int expand_fpsvar_stream(
     char retbuf[512];
     retbuf[0] = '\0';
 
-    char shmchkpath[STRINGMAXLEN_DIRNAME
-                    + 128 + 16];
-    snprintf(shmchkpath, sizeof(shmchkpath),
-             "%s/%s.im.shm", dcshmdir, sname);
+    char shmchkpath[STRINGMAXLEN_DIRNAME + 128 + 16];
+    snprintf(shmchkpath, sizeof(shmchkpath), "%s/%s.im.shm", dcshmdir, sname);
     if(access(shmchkpath, F_OK) != 0)
     {
         return 0;
@@ -613,123 +548,85 @@ static int expand_fpsvar_stream(
 
     IMAGE img;
     memset(&img, 0, sizeof(IMAGE));
-    errno_t sret =
-        ImageStreamIO_openIm(&img, sname);
+    errno_t sret = ImageStreamIO_openIm(&img, sname);
     if(sret == IMAGESTREAMIO_SUCCESS
        && img.md != NULL)
     {
         int found = 0;
         if(strcmp(prop, "xsize") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%u",
-                     img.md->size[0]);
+            snprintf(retbuf, sizeof(retbuf), "%u", img.md->size[0]);
             found = 1;
         }
         else if(strcmp(prop, "ysize") == 0)
         {
             snprintf(retbuf, sizeof(retbuf),
-                     "%u",
-                     (img.md->naxis > 1
-                      && img.md->size[1] > 0)
-                     ? img.md->size[1] : 1U);
+                     "%u", (img.md->naxis > 1 && img.md->size[1] > 0) ? img.md->size[1] : 1U);
             found = 1;
         }
         else if(strcmp(prop, "zsize") == 0)
         {
             snprintf(retbuf, sizeof(retbuf),
-                     "%u",
-                     (img.md->naxis > 2
-                      && img.md->size[2] > 0)
-                     ? img.md->size[2] : 1U);
+                     "%u", (img.md->naxis > 2 && img.md->size[2] > 0) ? img.md->size[2] : 1U);
             found = 1;
         }
         else if(strcmp(prop, "naxis") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%u",
-                     (unsigned) img.md->naxis);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->naxis);
             found = 1;
         }
         else if(strcmp(prop, "type") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%u",
-                     (unsigned) img.md->datatype);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->datatype);
             found = 1;
         }
         else if(strcmp(prop, "typename") == 0)
         {
-            const char *tn =
-                ImageStreamIO_typename(
-                    img.md->datatype);
+            const char *tn = ImageStreamIO_typename(img.md->datatype);
             if(tn != NULL)
             {
-                strncpy(retbuf, tn,
-                        sizeof(retbuf) - 1);
-                retbuf[sizeof(retbuf) - 1]
-                    = '\0';
+                strncpy(retbuf, tn, sizeof(retbuf) - 1);
+                retbuf[sizeof(retbuf) - 1] = '\0';
             }
             else
             {
-                snprintf(retbuf, sizeof(retbuf),
-                         "%u",
-                         (unsigned)
-                         img.md->datatype);
+                snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->datatype);
             }
             found = 1;
         }
         else if(strcmp(prop, "typeid") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%u",
-                     (unsigned)
-                     img.md->datatype);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->datatype);
             found = 1;
         }
         else if(strcmp(prop, "cnt0") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%lu",
-                     (unsigned long)
-                     img.md->cnt0);
+            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) img.md->cnt0);
             found = 1;
         }
         else if(strcmp(prop, "cnt1") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%lu",
-                     (unsigned long)
-                     img.md->cnt1);
+            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) img.md->cnt1);
             found = 1;
         }
         else if(strcmp(prop, "sem") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%u",
-                     (unsigned) img.md->sem);
+            snprintf(retbuf, sizeof(retbuf), "%u", (unsigned) img.md->sem);
             found = 1;
         }
         else if(strcmp(prop, "pid") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%d",
-                     (int) img.md->creatorPID);
+            snprintf(retbuf, sizeof(retbuf), "%d", (int) img.md->creatorPID);
             found = 1;
         }
         else if(strcmp(prop, "ownerPID") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%d",
-                     (int) img.md->ownerPID);
+            snprintf(retbuf, sizeof(retbuf), "%d", (int) img.md->ownerPID);
             found = 1;
         }
         else if(strcmp(prop, "nelement") == 0)
         {
-            snprintf(retbuf, sizeof(retbuf),
-                     "%lu",
-                     (unsigned long)
-                     img.md->nelement);
+            snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long) img.md->nelement);
             found = 1;
         }
 
@@ -739,10 +636,8 @@ static int expand_fpsvar_stream(
         {
             int vlen = (int) strlen(retbuf);
             int avail = maxlen - 1 - *opos;
-            int clen = vlen < avail
-                       ? vlen : avail;
-            memcpy(out + *opos, retbuf,
-                   (size_t) clen);
+            int clen = vlen < avail ? vlen : avail;
+            memcpy(out + *opos, retbuf, (size_t) clen);
             *opos += clen;
             return 1;
         }
@@ -762,8 +657,7 @@ static int expand_fpsvar_fps_strict(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -774,11 +668,8 @@ static int expand_fpsvar_fps_strict(
     const char *fpsname = pname;
     const char *fprop   = dot2 + 1;
 
-    FUNCTION_PARAMETER_STRUCT fps;
-    int fpsconn =
-        function_parameter_struct_connect(
-            fpsname, &fps,
-            FPSCONNECT_SIMPLE);
+    FPS fps;
+    int fpsconn = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     if(fpsconn == -1 || fps.parray == NULL)
     {
         return 0;
@@ -793,8 +684,7 @@ static int expand_fpsvar_fps_strict(
             if(fps.parray[pi].fpflag
                & FPFLAG_ACTIVE)
             {
-                const char *kw =
-                    fps.parray[pi].keyword[0];
+                const char *kw = fps.parray[pi].keyword[0];
                 int kwlen = (int) strlen(kw);
                 int avail = maxlen - 1 - *opos;
 
@@ -811,36 +701,27 @@ static int expand_fpsvar_fps_strict(
                 }
                 if(kwlen > 0)
                 {
-                    memcpy(out + *opos, kw,
-                           (size_t) kwlen);
+                    memcpy(out + *opos, kw, (size_t) kwlen);
                     *opos += kwlen;
                 }
             }
         }
-        function_parameter_struct_disconnect(
-            &fps);
+        fps_disconnect(&fps);
         return 1;
     }
 
-    int pindex =
-        functionparameter_GetParamIndex(
-            &fps, fprop);
+    int pindex = functionparameter_GetParamIndex(&fps, fprop);
     if(pindex < 0)
     {
         char dotname[512];
-        snprintf(dotname, sizeof(dotname),
-                 ".%s", fprop);
-        pindex =
-            functionparameter_GetParamIndex(
-                &fps, dotname);
+        snprintf(dotname, sizeof(dotname), ".%s", fprop);
+        pindex = functionparameter_GetParamIndex(&fps, dotname);
     }
 
     if(pindex >= 0)
     {
         char vstr[512];
-        functionparameter_GetParamValueString(
-            &fps.parray[pindex],
-            vstr, (int) sizeof(vstr));
+        functionparameter_GetParamValueString(&fps.parray[pindex], vstr, (int) sizeof(vstr));
 
         int vlen  = (int) strlen(vstr);
         int avail = maxlen - 1 - *opos;
@@ -849,7 +730,7 @@ static int expand_fpsvar_fps_strict(
         *opos += clen;
     }
 
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return 1;
 }
 
@@ -883,8 +764,7 @@ static int expand_fpsvar_fps_strict(
  */
 void cli_expand_fpsvar(
     char *line,
-    int   maxlen
-)
+    int  maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos      = 0;
@@ -957,20 +837,17 @@ void cli_expand_fpsvar(
                     token[tlen++] = line[i++];
                     if(line[i] == '{')
                     {
-                        token[tlen++] =
-                            line[i++];
+                        token[tlen++] = line[i++];
                         while(line[i] != '\0'
                               && line[i] != '}'
                               && tlen < 510)
                         {
-                            token[tlen++] =
-                                line[i++];
+                            token[tlen++] = line[i++];
                         }
                         if(line[i] == '}'
                            && tlen < 511)
                         {
-                            token[tlen++] =
-                                line[i++];
+                            token[tlen++] = line[i++];
                         }
                     }
                     else
@@ -984,8 +861,7 @@ void cli_expand_fpsvar(
                                 || line[i]
                                    == '_'))
                         {
-                            token[tlen++] =
-                                line[i++];
+                            token[tlen++] = line[i++];
                         }
                     }
                 }
@@ -999,9 +875,7 @@ void cli_expand_fpsvar(
             /* Expand $VAR embedded in token */
             if(strchr(token, '$') != NULL)
             {
-                cli_expand_env(
-                    token,
-                    (int) sizeof(token));
+                cli_expand_env(token, (int) sizeof(token));
                 tlen = (int) strlen(token);
             }
 
@@ -1010,9 +884,7 @@ void cli_expand_fpsvar(
                && strchr(token, '.') != NULL)
             {
                 i++;
-                expand_fpsvar_write(
-                    line, &i, token,
-                    out, &opos, maxlen);
+                expand_fpsvar_write(line, &i, token, out, &opos, maxlen);
                 continue;
             }
 
@@ -1029,8 +901,7 @@ void cli_expand_fpsvar(
                 {
                     clen = maxlen - 1 - opos;
                 }
-                memcpy(out + opos, token,
-                       (size_t) clen);
+                memcpy(out + opos, token, (size_t) clen);
                 opos += clen;
                 continue;
             }
@@ -1082,19 +953,14 @@ void cli_expand_fpsvar(
             }
 
             /* ---- Legacy fallback ---- */
-            FUNCTION_PARAMETER_STRUCT fps;
-            int fpsconn =
-                function_parameter_struct_connect(
-                    fpsname, &fps,
-                    FPSCONNECT_SIMPLE);
+            FPS fps;
+            int fpsconn = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
 
             if(fpsconn == -1
                || fps.parray == NULL)
             {
                 /* Not an FPS — try procinfo */
-                expand_fpsvar_procinfo(
-                    fpsname, pname,
-                    out, &opos, maxlen);
+                expand_fpsvar_procinfo(fpsname, pname, out, &opos, maxlen);
                 continue;
             }
 
@@ -1109,13 +975,9 @@ void cli_expand_fpsvar(
                     if(fps.parray[pi].fpflag
                        & FPFLAG_ACTIVE)
                     {
-                        const char *kw =
-                            fps.parray[pi]
-                                .keyword[0];
-                        int kwlen =
-                            (int) strlen(kw);
-                        int avail =
-                            maxlen - 1 - opos;
+                        const char *kw = fps.parray[pi] .keyword[0];
+                        int kwlen = (int) strlen(kw);
+                        int avail = maxlen - 1 - opos;
 
                         if(!first
                            && opos < maxlen - 1)
@@ -1131,52 +993,38 @@ void cli_expand_fpsvar(
                         }
                         if(kwlen > 0)
                         {
-                            memcpy(
-                                out + opos,
-                                kw,
-                                (size_t) kwlen);
+                            memcpy(out + opos, kw, (size_t) kwlen);
                             opos += kwlen;
                         }
                     }
                 }
-                function_parameter_struct_disconnect(
-                    &fps);
+                fps_disconnect(&fps);
                 continue;
             }
 
-            int pindex =
-                functionparameter_GetParamIndex(
-                    &fps, pname);
+            int pindex = functionparameter_GetParamIndex(&fps, pname);
 
             if(pindex < 0)
             {
                 char dotname[512];
-                snprintf(dotname,
-                         sizeof(dotname),
-                         ".%s", pname);
-                pindex =
-                    functionparameter_GetParamIndex(
-                        &fps, dotname);
+                snprintf(dotname, sizeof(dotname), ".%s", pname);
+                pindex = functionparameter_GetParamIndex(&fps, dotname);
             }
 
             if(pindex >= 0)
             {
                 char vstr[512];
                 functionparameter_GetParamValueString(
-                    &fps.parray[pindex],
-                    vstr, (int) sizeof(vstr));
+                    &fps.parray[pindex], vstr, (int) sizeof(vstr));
 
                 int vlen = (int) strlen(vstr);
                 int avail = maxlen - 1 - opos;
-                int clen  = vlen < avail
-                            ? vlen : avail;
-                memcpy(out + opos, vstr,
-                       (size_t) clen);
+                int clen  = vlen < avail ? vlen : avail;
+                memcpy(out + opos, vstr, (size_t) clen);
                 opos += clen;
             }
 
-            function_parameter_struct_disconnect(
-                &fps);
+            fps_disconnect(&fps);
         }
         else
         {

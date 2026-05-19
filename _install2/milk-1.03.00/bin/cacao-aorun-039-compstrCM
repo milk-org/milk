@@ -1,0 +1,642 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="Compute control matrix"
+
+set +u
+if [ -z ${CACAO_CONFWDIR+x} ]; then
+	CACAO_CONFWDIR="conf"
+fi
+set -u
+
+
+
+MSextdescr="Compute control matrix by SVD
+
+By default (no parameters), compute control modes by pseudo-inv of RM.
+INPUT:
+./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits
+./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits
+OUTPUT:
+./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits
+./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits
+
+OPTION:
+The ouput can be stored in a modeblock (usually a number). For example,
+with modeblock=01, the ouput will be:
+OUTPUT:
+./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.01.fits
+./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.01.fits
+
+OPTION:
+The input more range is specified by moderange option. For example,
+with moderange=1:3, the first 3 modes (modes 0, 1, 2) will be selected.
+
+The modeblock and moderange are usually used together to compute multiple
+CMs, each for a range of modes.
+
+MERGING:
+With option modeblockmerge, multiple CMs are merged (no computation). For example,
+with modeblockmerge=00:01:03, the CMs with mobeblock 00, 01, and 03 will be merged.
+
+"
+source milk-script-std-config
+source cacao-check-cacaovars
+source cacaofuncs-log
+
+CACAO_CONFSTREAMLOAD=1
+MSopt+=( "nl:noload:set_noload::do not load to shared memory" )
+function set_noload() {
+	CACAO_CONFSTREAMLOAD=0
+}
+
+
+MSopt+=( "mb:modeblock:setmodeblock:modeblock[int]:Set mode block, 00, 01 ... [ALL]" )
+modeblock="ALL"
+function setmodeblock()
+{
+	modeblock=$1
+}
+
+MSopt+=( "mr:moderange:setmoderange:moderange[int,int]:Set mode range first,last [*]" )
+moderange="*"
+function setmoderange()
+{
+	moderange=$1
+}
+
+MSopt+=( "mbm:modeblockmerge:setmodeblockmerge:mergestring[string]:Merge existing CMs, block list sep by col" )
+modeblockmerge="NULL"
+function setmodeblockmerge()
+{
+	modeblockmerge="$1"
+}
+
+
+MSopt+=( "marg:modeblockmarginalizeWFS:setmmodeblockmarginalizeWFS:mergestring[string]:Marginalize against mode blocks in WFS space, sep by col" )
+modeblockmarginalizeWFS=""
+function setmmodeblockmarginalizeWFS()
+{
+	modeblockmarginalizeWFS="$1"
+}
+
+
+MSopt+=( "margDM:modeblockmarginalizeDM:setmmodeblockmarginalizeDM:mergestring[string]:Marginalize against mode blocks in DM space, sep by col" )
+modeblockmarginalizeDM=""
+function setmmodeblockmarginalizeDM()
+{
+	modeblockmarginalizeDM="$1"
+}
+
+
+
+
+MSopt+=( "l:loadonly:setLOADONLY::Load CM modes to shared memory (do not recompute)" )
+LOADONLY=0
+function setLOADONLY()
+{
+	LOADONLY="1"
+}
+
+
+
+
+
+source milk-argparse
+
+cacaomsglog "START"
+
+
+errexit=0
+
+# Checking FPS
+FPScheckOK="OK"
+checkFPSON CACAO_FPSPROC_COMPSTRCM ${CACAO_FPSPROC_COMPSTRCM}
+
+if [ ${FPScheckOK} == "FAIL" ]; then
+echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] FPS check failed"
+errexit=1
+fi
+
+
+if [ $errexit = 1 ]; then
+exit 1
+fi
+
+
+# marginalize input WFS modes (mB) against previous mode blocks CM(s) WFS (mA)
+# remove modes block mA from modes block mB
+# input: mAWFSfile, mADMfile, mBWFSfile, mBDMfile
+# output saved as $1 (WFS) and $2 (DM)
+#
+function modes_marginalizeWFS()
+{
+echo "margWFS ================================="
+echo "margWFS INPUT  : ${mAWFSfile}"
+echo "margWFS INPUT  : ${mADMfile}"
+echo "margWFS INPUT  : ${mBWFSfile}"
+echo "margWFS INPUT  : ${mBDMfile}"
+
+# required to handle long file names
+cp "${mAWFSfile}" _mAWFS.fits
+cp "${mADMfile}" _mADM.fits
+cp "${mBWFSfile}" _mBWFS.fits
+cp "${mBDMfile}" _mBDM.fits
+
+milk-all << EOF
+loadfits "./${CACAO_CONFWDIR}/wfsmask.fits" wfsmask
+loadfits "_mAWFS.fits" mAWFS
+loadfits "_mADM.fits" mADMn
+normalizeslice .auxin mADMn
+normalizeslice mAWFS wfsmask mAWFSn 2
+loadfits "_mBWFS.fits" mBWFS
+loadfits "_mBDM.fits" mBDM
+
+# measure mAWFS content in mBWFS -> xp
+linalg.sgemm .GPUdevice 0
+linalg.sgemm .transpA 1
+linalg.sgemm mAWFSn mBWFS xp
+#saveFITS xp "tmp_xp.fits"
+#listim
+
+# expand
+linalg.sgemm .transpA 0
+linalg.sgemm mAWFSn xp imexpWFS
+linalg.sgemm mADMn xp imexpDM
+#saveFITS imexp "tmp_imexpWFS.fits"
+#listim
+
+mCWFS=mBWFS-imexpWFS
+mCDM=mBDM-imexpDM
+
+#linalg.sgemm .transpA 1
+#linalg.sgemm mAWFSn mC xp2
+#saveFITS xp2 "tmp_xp2.fits"
+#listim
+
+saveFITS mCWFS "_tmpoutCWFS.fits"
+saveFITS mCDM "_tmpoutCM.fits"
+
+exitCLI
+EOF
+
+# cleamup
+rm _mAWFS.fits
+rm _mADM.fits
+rm _mBWFS.fits
+rm _mBDM.fits
+
+mv _tmpoutCWFS.fits "$1"
+mv _tmpoutCM.fits "$2"
+
+echo "margWFS OUTPUT : $1"
+echo "margWFS OUTPUT : $2"
+}
+
+
+# marginalize input DM modes (mB) against previous mode blocks CM(s) DM (mA)
+# remove modes block mA from modes block mB
+# input: mADMfile, mAWFSfile, mBDMfile, mBWFSfile
+# output saved as $1 (DM) and $2 (WFS)
+#
+function modes_marginalizeDM()
+{
+
+echo "margDM  ================================="
+echo "margDM  INPUT  : ${mADMfile}"
+echo "margDM  INPUT  : ${mAWFSfile}"
+echo "margDM  INPUT  : ${mBDMfile}"
+echo "margDM  INPUT  : ${mBWFSfile}"
+
+# required to handle long file names
+cp "${mADMfile}" _mADM.fits
+cp "${mAWFSfile}" _mAWFS.fits
+cp "${mBDMfile}" _mBDM.fits
+cp "${mBWFSfile}" _mBWFS.fits
+
+milk-all << EOF
+loadfits "${CACAO_CONFWDIR}/dmmask.fits" dmmask
+loadfits "${mADMfile}" mADM
+loadfits "${mAWFSfile}" mAWFSn
+normalizeslice .auxin mAWFSn
+normalizeslice mADM dmmask mADMn 2
+loadfits "${mBDMfile}" mBDM
+loadfits "${mBWFSfile}" mBWFS
+
+# measure mADM content in mBDM -> xp
+linalg.sgemm .GPUdevice 0
+linalg.sgemm .transpA 1
+mADMnm=mADMn*dmmask
+mBDMm=mBDM*dmmask
+linalg.sgemm mADMnm mBDMm xp
+#saveFITS xp "tmp_xp.fits"
+#listim
+
+# expand
+linalg.sgemm .transpA 0
+linalg.sgemm mADMn xp imexpDM
+linalg.sgemm mAWFSn xp imexpWFS
+#saveFITS imexpDM "tmp_imexpDM.fits"
+#saveFITS imexpWFS "tmp_imexpWFS.fits"
+#listim
+
+mCDM=mBDM-imexpDM
+mCWFS=mBWFS-imexpWFS
+
+linalg.sgemm .transpA 1
+linalg.sgemm mADMn mCDM xp2
+#saveFITS xp2 "tmp_xp2.fits"
+listim
+
+saveFITS mCDM "_tmpoutCM.fits"
+saveFITS mCWFS "_tmpoutCWFS.fits"
+
+exitCLI
+EOF
+
+# cleamup
+rm _mADM.fits
+rm _mAWFS.fits
+rm _mBDM.fits
+rm _mBWFS.fits
+
+mv _tmpoutCM.fits "$1"
+mv _tmpoutCWFS.fits "$2"
+
+echo "margDM  OUTPUT : $1"
+echo "margDM  OUTPUT : $2"
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if [[ $LOADONLY -eq 1 ]]; then
+# load CM to shared memory
+
+# Load CM to shared memory
+
+cp ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits ${CACAO_CONFWDIR}/CMmodesWFS.fits
+cp ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesDM.fits ${CACAO_CONFWDIR}/CMmodesDM.fits
+cacao-calib-streamupdate CMmodesWFS
+cacao-calib-streamupdate CMmodesDM
+
+#milk-FITS2shm "${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits" aol${CACAO_LOOPNUMBER}_CMmodesWFS
+#cp ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits ./${CACAO_CONFWDIR}/CMmodesWFS.fits
+
+
+# Load CM WFS to shared memory
+#cp ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesDM.fits ${CACAO_CONFWDIR}/CMmodesDM.fits
+
+#milk-FITS2shm "${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits" aol${CACAO_LOOPNUMBER}_CMmodesDM
+#cp ${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits ./${CACAO_CONFWDIR}/CMmodesDM.fits
+
+
+#cacao-calib-logFITSfile CMmodesDM
+#cacao-calib-logFITSfile CMmodesWFS
+
+cacaomsglog "END"
+exit
+
+fi
+
+
+
+
+
+
+
+if [[ "${modeblockmerge}" != "NULL" ]]; then
+
+echo "MERGING BLOCKS ${modeblockmerge}"
+
+blockcnt=0
+
+
+CMmDMname="NULL"
+CMmWFSname="NULL"
+export IFS=":"
+blockloopinit=0
+blocksrc="NULL"
+for block in ${modeblockmerge}; do
+  echo "BLOCK $block"
+  if [[ $blockloopinit -eq 0 ]]; then
+  firstblock="$block"
+  mergesrc="$block"
+  CMmDMname="./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${block}.fits"
+  CMmWFSname="./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${block}.fits"
+  else
+  echo "merge ${mergesrc} + $block -> m${blockcnt}"
+  mbA="${mergesrc}"
+  mbB="${block}"
+  mbC="m${blockcnt}"
+
+milk << EOF
+loadfits "./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${mbA}.fits" mA
+loadfits "./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${mbB}.fits" mB
+immerge mA mB mC 2
+saveFITS mC "./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${mbC}.fits"
+exitCLI
+EOF
+  CMmDMname="./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${mbC}.fits"
+
+milk << EOF
+loadfits "./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${mbA}.fits" mA
+loadfits "./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${mbB}.fits" mB
+immerge mA mB mC 2
+saveFITS mC "./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${mbC}.fits"
+exitCLI
+EOF
+  CMmWFSname="./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${mbC}.fits"
+
+  mergesrc="m${blockcnt}"
+  fi
+  blockloopinit=1
+  blockcnt=$((blockcnt+1))
+done
+
+
+echo "============================================"
+cp ${CMmDMname} "./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits"
+cp "./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits" "./${CACAO_CONFWDIR}/CMmodesDM.fits"
+
+cp ${CMmWFSname} "./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits"
+cp "./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits" "./${CACAO_CONFWDIR}/CMmodesWFS.fits"
+
+echo "============================================"
+echo "PWD = $(pwd)"
+echo "cp COMMAND: .${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits  -> ./${CACAO_CONFWDIR}/CMmodesWFS.fits"
+echo "cp COMMAND: .${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits  -> ./${CACAO_CONFWDIR}/CMmodesDM.fits"
+echo "============================================"
+
+cacao-calib-streamupdate CMmodesWFS
+cacao-calib-streamupdate CMmodesDM
+
+
+# Load CM DM to shared memory
+#milk-FITS2shm "${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits" aol${CACAO_LOOPNUMBER}_CMmodesWFS
+#cp ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits ./${CACAO_CONFWDIR}/CMmodesWFS.fits
+
+
+# Load CM WFS to shared memory
+#milk-FITS2shm "${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits" aol${CACAO_LOOPNUMBER}_CMmodesDM
+#cp ${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits ./${CACAO_CONFWDIR}/CMmodesDM.fits
+
+#source cacaofuncs-log
+#cacao-calib-logFITSfile CMmodesDM
+#cacao-calib-logFITSfile CMmodesWFS
+
+
+
+
+
+
+
+
+
+else
+
+  # ======================================================================
+  # Compute straight CM
+  # ======================================================================
+
+  sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.procinfo.loopcntMax 1"
+
+
+  if [[ "$modeblock" == "ALL" ]]; then
+    echo "no mode selection - keeping ALL"
+  else
+    # select modes for block
+milk << EOF
+loadfits "./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits[*,*,${moderange}]" im
+saveFITS im "./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.${modeblock}.fits"
+exitCLI
+EOF
+
+milk << EOF
+loadfits "./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits[*,*,${moderange}]" im
+saveFITS im "./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.${modeblock}.fits"
+exitCLI
+EOF
+  fi
+
+  if [[ "$modeblock" == "ALL" ]]; then
+    inputRMDMfname="${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.fits"
+    inputRMWFSfname="${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.fits"
+  else
+    inputRMDMfname="${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.${modeblock}.fits"
+    inputRMWFSfname="${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.${modeblock}.fits"
+  fi
+
+
+
+  mB="${modeblock}"
+  mBWFSfile="./${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.${mB}.fits"
+  mBDMfile="./${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.${mB}.fits"
+
+
+  # marginalize input DM modes against previous mode blocks CM(s) DM
+  #
+  export IFS=":"
+  for block in $modeblockmarginalizeDM; do
+    marginalizeDM=1
+    mA="${block}"
+
+    mADMfile="./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${mA}.fits"
+    mAWFSfile="./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${mA}.fits"
+
+    inputRMDMfname="${inputRMDMfname}.mD${block}"
+    inputRMWFSfname="${inputRMWFSfname}.mD${block}"
+
+    modes_marginalizeDM "${inputRMDMfname}" "${inputRMWFSfname}"
+    mBDMfile="${inputRMDMfname}"
+    mBWFSfile="${inputRMWFSfname}"
+  done
+
+
+  # marginalize input WFS modes against previous mode blocks CM(s) WFS
+  #
+  export IFS=":"
+  for block in $modeblockmarginalizeWFS; do
+    marginalizeWFS=1
+    mA="${block}"
+
+	# input for script
+    mAWFSfile="./${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${mA}.fits"
+    mADMfile="./${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${mA}.fits"
+
+    inputRMWFSfname="${inputRMWFSfname}.mW${block}"
+    inputRMDMfname="${inputRMDMfname}.mW${block}"
+
+    modes_marginalizeWFS "${inputRMWFSfname}" "${inputRMDMfname}"
+
+    # input for next iteration of script
+    mBWFSfile="${inputRMWFSfname}"
+    mBDMfile="${inputRMDMfname}"
+  done
+
+  echo "post-marg RMDM  : ${inputRMDMfname}"
+  echo "post-marg RMWFS : ${inputRMWFSfname}"
+  inputRMDMmargfname="${CACAO_CONFWDIR}/RMmodesDM/RMmodesDM.${mB}.marg.fits"
+  cp ${inputRMDMfname} ${inputRMDMmargfname}
+  inputRMWFSmargfname="${CACAO_CONFWDIR}/RMmodesWFS/RMmodesWFS.${mB}.marg.fits"
+  cp ${inputRMWFSfname} ${inputRMWFSmargfname}
+
+
+  # Set Input
+  sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.RMmodesDM ../${inputRMDMmargfname}"
+  sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.RMmodesWFS ../${inputRMWFSmargfname}"
+
+
+  # set ouput files
+  mkdir -p ${CACAO_CONFWDIR}/CMmodesDM/
+  mkdir -p ${CACAO_CONFWDIR}/CMmodesWFS/
+
+  sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.dmmask ../${CACAO_CONFWDIR}/dmmask.fits"
+  sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.wfsmask ../${CACAO_CONFWDIR}/wfsmask.fits"
+
+
+  if [[ "$modeblock" == "ALL" ]]; then
+
+    sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.CMmodesDM ../${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits"
+    sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.CMmodesWFS ../${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits"
+
+  else
+
+    sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.CMmodesDM ../${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${modeblock}.fits"
+    sendFPScmd "setval compstrCM-${CACAO_LOOPNUMBER}.CMmodesWFS ../${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${modeblock}.fits"
+
+  fi
+
+
+
+  # erase output
+  if [[ "$modeblock" == "ALL" ]]; then
+    rm -f ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits
+    rm -f ${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits
+  else
+    rm -f ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${modeblock}.fits
+    rm -f ${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${modeblock}.fits
+  fi
+
+
+  sendFPScmd "confwupdate compstrCM-${CACAO_LOOPNUMBER}"
+  sendFPScmd "runstart compstrCM-${CACAO_LOOPNUMBER}"
+
+
+
+
+  if [[ "$modeblock" == "ALL" ]]; then
+    FileOut="${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits"
+  else
+    FileOut="${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${modeblock}.fits"
+  fi
+  echo "Waiting for file ${FileOut}"
+  until [ -f ${FileOut} ]
+  do
+    sleep 0.1
+  done
+
+  # Load CM DM to shared memory
+  if [[ "$modeblock" == "ALL" ]]; then
+    cp "${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits" "${CACAO_CONFWDIR}/CMmodesWFS.fits"
+	cacao-calib-streamupdate CMmodesWFS
+    #milk-FITS2shm "${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits" aol${CACAO_LOOPNUMBER}_CMmodesWFS
+    #cp ${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.fits ./${CACAO_CONFWDIR}/CMmodesWFS.fits
+  fi
+
+
+
+
+
+  if [[ "$modeblock" == "ALL" ]]; then
+    FileOut="${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits"
+  else
+    FileOut="${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${modeblock}.fits"
+  fi
+  echo "Waiting for file ${FileOut}"
+  until [ -f ${FileOut} ]
+  do
+    sleep 0.1
+  done
+
+
+  # Load CM WFS to shared memory
+  if [[ "$modeblock" == "ALL" ]]; then
+    cp "${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits" "${CACAO_CONFWDIR}/CMmodesDM.fits"
+    cacao-calib-streamupdate CMmodesDM
+    #milk-FITS2shm "${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits" aol${CACAO_LOOPNUMBER}_DMmodes
+    #cp ${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.fits ./${CACAO_CONFWDIR}/CMmodesDM.fits
+  fi
+
+
+  if [[ "$modeblock" == "ALL" ]]; then
+    # LOGGING
+    # see cacaofuncs-log for conventions
+    #
+    cacao-calib-logFITSfile CMmodesDM
+    cacao-calib-logFITSfile CMmodesWFS
+  fi
+
+fi #end of if merge
+
+
+
+# Compute cross-products in WFS and DM spaces
+#
+if [[ "$modeblock" == "ALL" ]]; then
+xpCMDMinput="${CACAO_CONFWDIR}/CMmodesDM.fits"
+xpCMWFSinput="${CACAO_CONFWDIR}/CMmodesWFS.fits"
+xpDMoutput="${CACAO_CONFWDIR}/CMmodesDM.xp.fits"
+xpWFSoutput="${CACAO_CONFWDIR}/CMmodesWFS.xp.fits"
+else
+xpCMDMinput="${CACAO_CONFWDIR}/CMmodesDM/CMmodesDM.${modeblock}.fits"
+xpCMWFSinput="${CACAO_CONFWDIR}/CMmodesWFS/CMmodesWFS.${modeblock}.fits"
+xpDMoutput="${CACAO_CONFWDIR}/CMmodesDM.${modeblock}.xp.fits"
+xpWFSoutput="${CACAO_CONFWDIR}/CMmodesWFS.${modeblock}.xp.fits"
+fi
+
+
+milk-all << EOF
+loadfits "./${CACAO_CONFWDIR}/dmmask.fits" dmmask
+loadfits "${xpCMDMinput}" mDM
+mDMm=mDM*dmmask
+
+linalg.sgemm .GPUdevice 0
+linalg.sgemm .transpA 1
+linalg.sgemm mDMm mDMm xp
+saveFITS xp "${xpDMoutput}"
+
+exitCLI
+EOF
+
+
+milk-all << EOF
+loadfits "./${CACAO_CONFWDIR}/wfsmask.fits" wfsmask
+loadfits "${xpCMWFSinput}" mWFS
+mWFSm=mWFS*wfsmask
+
+linalg.sgemm .GPUdevice 0
+linalg.sgemm .transpA 1
+linalg.sgemm mWFSm mWFSm xp
+saveFITS xp "${xpWFSoutput}"
+
+exitCLI
+EOF
+
+
+cacaomsglog "END"

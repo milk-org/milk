@@ -54,6 +54,20 @@
 #define ANSI_KEY_F12       276
 #define ANSI_KEY_CTRL_LEFT  277
 #define ANSI_KEY_CTRL_RIGHT 278
+#define ANSI_KEY_MOUSE      279
+#define ANSI_KEY_SCROLL_UP  280
+#define ANSI_KEY_SCROLL_DN  281
+
+/* Mouse event data — valid when ansi_get_key() returns
+ * ANSI_KEY_MOUSE, ANSI_KEY_SCROLL_UP, or ANSI_KEY_SCROLL_DN. */
+struct ansi_mouse_event
+{
+    int x;   /* 1-based column */
+    int y;   /* 1-based row    */
+    int btn; /* 0=left, 1=mid, 2=right, 64=scrollup, 65=scrolldn */
+};
+
+extern struct ansi_mouse_event ansi__last_mouse;
 
 /* ctrl(x) helper — same as CLIcore convention */
 #ifndef ctrl
@@ -88,7 +102,7 @@ static inline void ansi_raw_mode_enter(void)
     raw = ansi__orig_termios;
     raw.c_iflag &= ~(unsigned int)(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
     raw.c_oflag &= ~(unsigned int)(OPOST);
-    raw.c_cflag |=  (unsigned int)(CS8);
+    raw.c_cflag |= (unsigned int)(CS8);
     raw.c_lflag &= ~(unsigned int)(ECHO | ICANON | IEXTEN | ISIG);
     raw.c_cc[VMIN]  = 0;
     raw.c_cc[VTIME] = 0;
@@ -100,8 +114,13 @@ static inline void ansi_raw_mode_enter(void)
         fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
     }
 
-    /* hide cursor and disable line wrap */
-    if(write(STDOUT_FILENO, "\033[?25l\033[?7l", 11) < 0) {}
+    /* hide cursor, disable line wrap, enable SGR mouse tracking */
+    if(write(STDOUT_FILENO,
+             "\033[?25l\033[?7l"
+             "\033[?1000h\033[?1006h",
+             11 + 10 + 10) < 0)
+    {
+    }
     ansi__raw_active = 1;
 }
 
@@ -114,10 +133,17 @@ static inline void ansi_raw_mode_exit(void)
     {
         return;
     }
-    /* show cursor and enable line wrap */
-    if(write(STDOUT_FILENO, "\033[?25h\033[?7h", 11) < 0) {}
+    /* disable mouse tracking, show cursor, enable line wrap */
+    if(write(STDOUT_FILENO,
+             "\033[?1006l\033[?1000l"
+             "\033[?25h\033[?7h",
+             10 + 10 + 11) < 0)
+    {
+    }
     /* clear screen, reset attributes, home cursor */
-    if(write(STDOUT_FILENO, "\033[0m\033[2J\033[H", 11) < 0) {}
+    if(write(STDOUT_FILENO, "\033[0m\033[2J\033[H", 11) < 0)
+    {
+    }
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
     ansi__raw_active = 0;
 }
@@ -131,7 +157,9 @@ static inline void ansi_raw_mode_exit(void)
  * @rows: pointer to store row count
  * @cols: pointer to store column count
  */
-static inline void ansi_get_terminal_size(int *rows, int *cols)
+static inline void ansi_get_terminal_size(
+    int *rows,
+    int *cols)
 {
     struct winsize ws;
 
@@ -165,7 +193,9 @@ static inline void ansi_cls(void)
  * @row: target row (1 = top)
  * @col: target column (1 = left)
  */
-static inline void ansi_pos(int row, int col)
+static inline void ansi_pos(
+    int row,
+    int col)
 {
     char buf[32];
     int  n = snprintf(buf, sizeof(buf), "\033[%d;%dH", row, col);
@@ -183,7 +213,7 @@ static int ansi__color_level = 0; // 0=uninit, 1=16-color, 2=256-color, 3=TrueCo
 
 static inline void ansi_detect_color_level(void)
 {
-    if (ansi__color_level > 0)
+    if(ansi__color_level > 0)
     {
         return;
     }
@@ -191,11 +221,11 @@ static inline void ansi_detect_color_level(void)
     const char *term = getenv("TERM");
     const char *colorterm = getenv("COLORTERM");
 
-    if (colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
+    if(colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
     {
         ansi__color_level = 3;
     }
-    else if (term && strstr(term, "256color"))
+    else if(term && strstr(term, "256color"))
     {
         ansi__color_level = 2;
     }
@@ -215,7 +245,10 @@ static inline void ansi_detect_color_level(void)
  * @g: green component
  * @b: blue component
  */
-static inline void ansi_fg(int r, int g, int b)
+static inline void ansi_fg(
+    int r,
+    int g,
+    int b)
 {
     char buf[32];
     int  n = snprintf(buf, sizeof(buf), "\033[38;2;%d;%d;%dm", r, g, b);
@@ -231,7 +264,10 @@ static inline void ansi_fg(int r, int g, int b)
  * @g: green component
  * @b: blue component
  */
-static inline void ansi_bg(int r, int g, int b)
+static inline void ansi_bg(
+    int r,
+    int g,
+    int b)
 {
     char buf[32];
     int  n = snprintf(buf, sizeof(buf), "\033[48;2;%d;%d;%dm", r, g, b);
@@ -318,34 +354,66 @@ static inline void ansi_setcolor(int idx)
 {
     ansi_detect_color_level();
 
-    if (ansi__color_level >= 3)
+    if(ansi__color_level >= 3)
     {
         /* TrueColor (24-bit) */
         switch(idx)
         {
-        case 2:  ansi_fg(80,  220, 80);  break; /* green        */
-        case 3:  ansi_fg(220, 200, 0);   break; /* yellow       */
-        case 4:  ansi_fg(240, 60,  60);  break; /* red          */
-        case 5:  ansi_fg(200, 80,  220); break; /* magenta      */
-        case 7:  ansi_fg(0,   200, 220); break; /* cyan         */
-        case 9:  ansi_fg(255, 140, 0);   break; /* orange       */
-        case 12: ansi_fg(100, 255, 100); break; /* bright-green */
-        default: ansi_reset(); break;
+        case 2:
+            ansi_fg(80,  220, 80);
+            break; /* green        */
+        case 3:
+            ansi_fg(220, 200, 0);
+            break; /* yellow       */
+        case 4:
+            ansi_fg(240, 60,  60);
+            break; /* red          */
+        case 5:
+            ansi_fg(200, 80,  220);
+            break; /* magenta      */
+        case 7:
+            ansi_fg(0,   200, 220);
+            break; /* cyan         */
+        case 9:
+            ansi_fg(255, 140, 0);
+            break; /* orange       */
+        case 12:
+            ansi_fg(100, 255, 100);
+            break; /* bright-green */
+        default:
+            ansi_reset();
+            break;
         }
     }
-    else if (ansi__color_level == 2)
+    else if(ansi__color_level == 2)
     {
         /* 256-color fallback */
         switch(idx)
         {
-        case 2:  ansi_fg_256(114); break; /* green        */
-        case 3:  ansi_fg_256(220); break; /* yellow       */
-        case 4:  ansi_fg_256(203); break; /* red          */
-        case 5:  ansi_fg_256(176); break; /* magenta      */
-        case 7:  ansi_fg_256(44);  break; /* cyan         */
-        case 9:  ansi_fg_256(208); break; /* orange       */
-        case 12: ansi_fg_256(119); break; /* bright-green */
-        default: ansi_reset();     break;
+        case 2:
+            ansi_fg_256(114);
+            break; /* green        */
+        case 3:
+            ansi_fg_256(220);
+            break; /* yellow       */
+        case 4:
+            ansi_fg_256(203);
+            break; /* red          */
+        case 5:
+            ansi_fg_256(176);
+            break; /* magenta      */
+        case 7:
+            ansi_fg_256(44);
+            break; /* cyan         */
+        case 9:
+            ansi_fg_256(208);
+            break; /* orange       */
+        case 12:
+            ansi_fg_256(119);
+            break; /* bright-green */
+        default:
+            ansi_reset();
+            break;
         }
     }
     else
@@ -353,14 +421,30 @@ static inline void ansi_setcolor(int idx)
         /* 16-color (standard ANSI) fallback */
         switch(idx)
         {
-        case 2:  ansi_fg_16(32); break; /* green        */
-        case 3:  ansi_fg_16(33); break; /* yellow       */
-        case 4:  ansi_fg_16(31); break; /* red          */
-        case 5:  ansi_fg_16(35); break; /* magenta      */
-        case 7:  ansi_fg_16(36); break; /* cyan         */
-        case 9:  ansi_fg_16(33); break; /* orange -> yellow */
-        case 12: ansi_fg_16(92); break; /* bright-green */
-        default: ansi_reset();   break;
+        case 2:
+            ansi_fg_16(32);
+            break; /* green        */
+        case 3:
+            ansi_fg_16(33);
+            break; /* yellow       */
+        case 4:
+            ansi_fg_16(31);
+            break; /* red          */
+        case 5:
+            ansi_fg_16(35);
+            break; /* magenta      */
+        case 7:
+            ansi_fg_16(36);
+            break; /* cyan         */
+        case 9:
+            ansi_fg_16(33);
+            break; /* orange -> yellow */
+        case 12:
+            ansi_fg_16(92);
+            break; /* bright-green */
+        default:
+            ansi_reset();
+            break;
         }
     }
 }
@@ -421,15 +505,103 @@ static inline int ansi_get_key(void)
                 int consumed = 0;
                 int key      = 0;
 
+                /* ---- SGR mouse: ESC [ < Btn;X;Y M/m ---- */
+                if(buf[2] == '<')
+                {
+                    /* Find terminator: 'M' (press) or 'm' (release) */
+                    int term_idx = -1;
+                    for(int ii = 3; ii < buf_len && ii < 32; ii++)
+                    {
+                        if(buf[ii] == 'M' || buf[ii] == 'm')
+                        {
+                            term_idx = ii;
+                            break;
+                        }
+                    }
+                    if(term_idx == -1)
+                    {
+                        /* Incomplete — wait for more bytes */
+                        return ANSI_KEY_NONE;
+                    }
+
+                    int mbtn = 0, mx = 1, my = 1;
+                    {
+                        /* Parse "Btn;X;Y" between buf[3..term_idx-1] */
+                        char tmp[64];
+                        int  tlen = term_idx - 3;
+                        if(tlen > 0 && tlen < (int) sizeof(tmp))
+                        {
+                            memcpy(tmp, buf + 3, tlen);
+                            tmp[tlen] = '\0';
+                            sscanf(tmp, "%d;%d;%d", &mbtn, &mx, &my);
+                        }
+                    }
+
+                    /* Save terminator before consume */
+                    unsigned char term_ch = buf[term_idx];
+
+                    consumed = term_idx + 1;
+                    memmove(buf, buf + consumed, buf_len - consumed);
+                    buf_len -= consumed;
+
+                    ansi__last_mouse.btn = mbtn;
+                    ansi__last_mouse.x   = mx;
+                    ansi__last_mouse.y   = my;
+
+                    /* Only act on press ('M'), ignore release ('m') */
+                    if(term_ch == 'm')
+                    {
+                        return ANSI_KEY_NONE;
+                    }
+
+                    /* Scroll wheel: btn 64 = up, 65 = down */
+                    if(mbtn == 64)
+                    {
+                        return ANSI_KEY_SCROLL_UP;
+                    }
+                    if(mbtn == 65)
+                    {
+                        return ANSI_KEY_SCROLL_DN;
+                    }
+
+                    /* Left-click press (btn 0) */
+                    if(mbtn == 0)
+                    {
+                        return ANSI_KEY_MOUSE;
+                    }
+
+                    /* Other buttons — consume but ignore */
+                    return ANSI_KEY_NONE;
+                } /* end SGR mouse */
+
                 switch(buf[2])
                 {
-                case 'A': key = ANSI_KEY_UP; consumed = 3; break;
-                case 'B': key = ANSI_KEY_DOWN; consumed = 3; break;
-                case 'C': key = ANSI_KEY_RIGHT; consumed = 3; break;
-                case 'D': key = ANSI_KEY_LEFT; consumed = 3; break;
-                case 'H': key = ANSI_KEY_HOME; consumed = 3; break;
-                case 'F': key = ANSI_KEY_END; consumed = 3; break;
-                default:  break;
+                case 'A':
+                    key = ANSI_KEY_UP;
+                    consumed = 3;
+                    break;
+                case 'B':
+                    key = ANSI_KEY_DOWN;
+                    consumed = 3;
+                    break;
+                case 'C':
+                    key = ANSI_KEY_RIGHT;
+                    consumed = 3;
+                    break;
+                case 'D':
+                    key = ANSI_KEY_LEFT;
+                    consumed = 3;
+                    break;
+                case 'H':
+                    key = ANSI_KEY_HOME;
+                    consumed = 3;
+                    break;
+                case 'F':
+                    key = ANSI_KEY_END;
+                    consumed = 3;
+                    break;
+                default:
+                    break;
                 }
 
                 if(key)
@@ -460,24 +632,59 @@ static inline int ansi_get_key(void)
                     consumed = tilde_idx + 1;
                     switch(code)
                     {
-                    case 1:  key = ANSI_KEY_HOME; break;
-                    case 3:  key = ANSI_KEY_DEL; break;
-                    case 4:  key = ANSI_KEY_END; break;
-                    case 5:  key = ANSI_KEY_PGUP; break;
-                    case 6:  key = ANSI_KEY_PGDN; break;
-                    case 11: key = ANSI_KEY_F1; break;
-                    case 12: key = ANSI_KEY_F2; break;
-                    case 13: key = ANSI_KEY_F3; break;
-                    case 14: key = ANSI_KEY_F4; break;
-                    case 15: key = ANSI_KEY_F5; break;
-                    case 17: key = ANSI_KEY_F6; break;
-                    case 18: key = ANSI_KEY_F7; break;
-                    case 19: key = ANSI_KEY_F8; break;
-                    case 20: key = ANSI_KEY_F9; break;
-                    case 21: key = ANSI_KEY_F10; break;
-                    case 23: key = ANSI_KEY_F11; break;
-                    case 24: key = ANSI_KEY_F12; break;
-                    default: break;
+                    case 1:
+                        key = ANSI_KEY_HOME;
+                        break;
+                    case 3:
+                        key = ANSI_KEY_DEL;
+                        break;
+                    case 4:
+                        key = ANSI_KEY_END;
+                        break;
+                    case 5:
+                        key = ANSI_KEY_PGUP;
+                        break;
+                    case 6:
+                        key = ANSI_KEY_PGDN;
+                        break;
+                    case 11:
+                        key = ANSI_KEY_F1;
+                        break;
+                    case 12:
+                        key = ANSI_KEY_F2;
+                        break;
+                    case 13:
+                        key = ANSI_KEY_F3;
+                        break;
+                    case 14:
+                        key = ANSI_KEY_F4;
+                        break;
+                    case 15:
+                        key = ANSI_KEY_F5;
+                        break;
+                    case 17:
+                        key = ANSI_KEY_F6;
+                        break;
+                    case 18:
+                        key = ANSI_KEY_F7;
+                        break;
+                    case 19:
+                        key = ANSI_KEY_F8;
+                        break;
+                    case 20:
+                        key = ANSI_KEY_F9;
+                        break;
+                    case 21:
+                        key = ANSI_KEY_F10;
+                        break;
+                    case 23:
+                        key = ANSI_KEY_F11;
+                        break;
+                    case 24:
+                        key = ANSI_KEY_F12;
+                        break;
+                    default:
+                        break;
                     }
                     if(key)
                     {
@@ -534,11 +741,20 @@ static inline int ansi_get_key(void)
                 int consumed = 3;
                 switch(buf[2])
                 {
-                case 'P': key = ANSI_KEY_F1; break;
-                case 'Q': key = ANSI_KEY_F2; break;
-                case 'R': key = ANSI_KEY_F3; break;
-                case 'S': key = ANSI_KEY_F4; break;
-                default:  break;
+                case 'P':
+                    key = ANSI_KEY_F1;
+                    break;
+                case 'Q':
+                    key = ANSI_KEY_F2;
+                    break;
+                case 'R':
+                    key = ANSI_KEY_F3;
+                    break;
+                case 'S':
+                    key = ANSI_KEY_F4;
+                    break;
+                default:
+                    break;
                 }
                 memmove(buf, buf + consumed, buf_len - consumed);
                 buf_len -= consumed;

@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "run milk-cli under valgrind for memory leak detection"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Launch milk-cli under valgrind with" \
+             "full leak checking. Output is written" \
+             "to milk-cli.memcheck.log."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: milk-debug"
+        echo "Run milk-cli under valgrind for" \
+             "memory leak detection."
+        echo ""
+        echo "See Also:"
+        echo "  milk-check" \
+            "  — check milk installation"
+        exit 0 ;;
+esac
 echo ""
 echo "milk-cli running in debug mode"
 echo "check valgrind output file milk-cli.memcheck.log :"

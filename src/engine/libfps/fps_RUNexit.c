@@ -4,15 +4,19 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
 
-uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps)
+/**
+ * @brief Exit the FPS run loop.
+ *
+ * Sets the run loop status to exit and updates
+ * processinfo state.
+ */
+uint16_t function_parameter_RUNexit(FPS *fps)
 {
     //fps->md->confpid = 0;
 
     fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
-    function_parameter_struct_disconnect(fps);
+    fps_disconnect(fps);
 
     return 0;
 }

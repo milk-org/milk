@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# milk-shmimcopy-semtrig — copy stream data content with semaphore trigger
+# Thin wrapper: delegates to milk-fpsexec-mem-streamcopy
+
+case "${1-}" in
+    -h1|--help-oneline) echo "copy stream data content"; exit 0 ;;
+    -h|--help) milk-fpsexec-mem-streamcopy --help; exit $? ;;
+esac
+
+exec milk-fpsexec-mem-streamcopy "$@"

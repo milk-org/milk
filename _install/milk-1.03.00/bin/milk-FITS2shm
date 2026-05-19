@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# milk-FITS2shm — load FITS file to shared memory stream
+# Thin wrapper: delegates to milk-fpsexec-iofits-loadfits
+
+case "${1-}" in
+    -h1|--help-oneline) echo "load FITS file to shared memory stream"; exit 0 ;;
+    -h|--help) milk-fpsexec-iofits-loadfits --help; exit $? ;;
+esac
+
+exec milk-fpsexec-iofits-loadfits "$@"

@@ -78,13 +78,14 @@
  * @warning May slow down code. Only use for debugging. Output file may grow very quickly.
  */
 
-void CORE_logFunctionCall(const int                           funclevel,
-                          const int                           loglevel,
-                          const int                           logfuncMODE,
-                          __attribute__((unused)) const char *FileName,
-                          const char                         *FunctionName,
-                          const long                          line,
-                          char                               *comments)
+void CORE_logFunctionCall(
+    const int                          funclevel,
+    const int                          loglevel,
+    const int                          logfuncMODE,
+    __attribute__((unused)) const char *FileName,
+    const char                         *FunctionName,
+    const long                         line,
+    char                               *comments)
 {
     time_t          tnow;
     struct timespec timenow;
@@ -112,10 +113,7 @@ void CORE_logFunctionCall(const int                           funclevel,
 
         FILE *fp;
 
-        snprintf(fname,
-                 sizeof(fname),
-                 ".%s.funccalls.log",
-                 FunctionName);
+        snprintf(fname, sizeof(fname), ".%s.funccalls.log", FunctionName);
 
         struct tm *uttime;
         tnow   = time(NULL);
@@ -131,13 +129,7 @@ void CORE_logFunctionCall(const int                           funclevel,
                 uttime->tm_hour,
                 uttime->tm_min,
                 timenow.tv_sec % 60,
-                timenow.tv_nsec,
-                getpid(),
-                (int) tid,
-                modechar,
-                FunctionName,
-                line,
-                comments);
+                timenow.tv_nsec, getpid(), (int) tid, modechar, FunctionName, line, comments);
         fclose(fp);
     }
 }

@@ -32,27 +32,28 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
 
+/**
+ * @brief Define a new script function.
+ *
+ * Registers a function body for later invocation
+ * by name.
+ */
 void cli_func_define(
     const char *name,
     char body[][STRINGMAXLEN_CLICMDLINE],
-    int nbody
-)
+    int nbody)
 {
     /* Update existing */
     for(int i = 0; i < CLI_MAX_FUNCS; i++)
     {
         if(cli_funcs[i].used
-           && strcmp(cli_funcs[i].name, name)
-              == 0)
+                && strcmp(cli_funcs[i].name, name)
+                == 0)
         {
             cli_funcs[i].nbody = nbody;
             for(int j = 0; j < nbody; j++)
             {
-                strncpy(
-                    cli_funcs[i].body[j],
-                    body[j],
-                    STRINGMAXLEN_CLICMDLINE - 1
-                );
+                strncpy(cli_funcs[i].body[j], body[j], STRINGMAXLEN_CLICMDLINE - 1);
             }
             return;
         }
@@ -62,25 +63,18 @@ void cli_func_define(
     {
         if(!cli_funcs[i].used)
         {
-            strncpy(cli_funcs[i].name, name,
-                    CLI_FUNC_NAMELEN - 1);
-            cli_funcs[i].name[
-                CLI_FUNC_NAMELEN - 1] = '\0';
+            strncpy(cli_funcs[i].name, name, CLI_FUNC_NAMELEN - 1);
+            cli_funcs[i].name[CLI_FUNC_NAMELEN - 1] = '\0';
             cli_funcs[i].nbody = nbody;
             cli_funcs[i].used = 1;
             for(int j = 0; j < nbody; j++)
             {
-                strncpy(
-                    cli_funcs[i].body[j],
-                    body[j],
-                    STRINGMAXLEN_CLICMDLINE - 1
-                );
+                strncpy(cli_funcs[i].body[j], body[j], STRINGMAXLEN_CLICMDLINE - 1);
             }
             return;
         }
     }
-    printf("Error: function table full "
-           "(max %d)\n", CLI_MAX_FUNCS);
+    printf("Error: function table full " "(max %d)\n", CLI_MAX_FUNCS);
 }
 
 
@@ -112,8 +106,7 @@ void cli_func_define(
  */
 void cli_exec_block_case(
     char (*lines)[STRINGMAXLEN_CLICMDLINE],
-    int    nlines
-)
+    int nlines)
 {
     /* Line 0 = "case <word> in" */
     const char *hdr = strip_ws(lines[0]);
@@ -123,9 +116,9 @@ void cli_exec_block_case(
     {
         int wi = 0;
         while(*hdr != '\0'
-              && *hdr != ' '
-              && *hdr != '\t'
-              && wi < 255)
+                && *hdr != ' '
+                && *hdr != '\t'
+                && wi < 255)
         {
             word[wi++] = *hdr++;
         }
@@ -137,8 +130,7 @@ void cli_exec_block_case(
     /* Scan patterns: "pat) body ;;" */
     for(int i = 1; i < nlines; i++)
     {
-        const char *lp =
-            strip_ws(lines[i]);
+        const char *lp = strip_ws(lines[i]);
         /* Find closing ')' */
         const char *cp = strchr(lp, ')');
         if(cp == NULL)
@@ -160,31 +152,26 @@ void cli_exec_block_case(
         int matched = 0;
         {
             char ptmp[256];
-            strncpy(ptmp, pat,
-                    sizeof(ptmp) - 1);
+            strncpy(ptmp, pat, sizeof(ptmp) - 1);
             ptmp[sizeof(ptmp) - 1] = '\0';
             char *psave = NULL;
-            char *pp =
-                strtok_r(ptmp, "|",
-                         &psave);
+            char *pp = strtok_r(ptmp, "|", &psave);
             while(pp != NULL)
             {
                 /* strip ws */
                 while(*pp == ' '
-                      || *pp == '\t')
+                        || *pp == '\t')
                 {
                     pp++;
                 }
                 if(strcmp(pp, "*") == 0
-                   || strcmp(pp, word)
-                   == 0)
+                        || strcmp(pp, word)
+                        == 0)
                 {
                     matched = 1;
                     break;
                 }
-                pp = strtok_r(NULL,
-                              "|",
-                              &psave);
+                pp = strtok_r(NULL, "|", &psave);
             }
         }
         if(!matched)
@@ -195,7 +182,7 @@ void cli_exec_block_case(
         /* Collect body lines until ;; */
         const char *body_start = cp + 1;
         while(*body_start == ' '
-              || *body_start == '\t')
+                || *body_start == '\t')
         {
             body_start++;
         }
@@ -204,40 +191,32 @@ void cli_exec_block_case(
         {
             /* Strip ;; from end */
             char cmdline[STRINGMAXLEN_CLICMDLINE];
-            strncpy(cmdline, body_start,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-            cmdline[STRINGMAXLEN_CLICMDLINE
-                    - 1] = '\0';
+            strncpy(cmdline, body_start, STRINGMAXLEN_CLICMDLINE - 1);
+            cmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             {
-                int cl =
-                    (int) strlen(cmdline);
+                int cl = (int) strlen(cmdline);
                 while(cl > 1
-                      && cmdline[cl - 1]
-                      == ';'
-                      && cmdline[cl - 2]
-                      == ';')
+                        && cmdline[cl - 1]
+                        == ';'
+                        && cmdline[cl - 2]
+                        == ';')
                 {
                     cmdline[cl - 2] = '\0';
                     cl -= 2;
                 }
                 /* Trim trailing ws */
                 while(cl > 0
-                      && (cmdline[cl - 1]
-                          == ' '
-                          || cmdline[cl - 1]
-                          == '\t'))
+                        && (cmdline[cl - 1]
+                            == ' '
+                            || cmdline[cl - 1]
+                            == '\t'))
                 {
                     cmdline[--cl] = '\0';
                 }
             }
             if(strlen(cmdline) > 0)
             {
-                strncpy(
-                    data.CLIcmdline,
-                    cmdline,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
+                strncpy(data.CLIcmdline, cmdline, STRINGMAXLEN_CLICMDLINE - 1);
                 CLI_execute_line();
             }
         }
@@ -245,54 +224,42 @@ void cli_exec_block_case(
         {
             /* Multi-line body */
             for(int j = i + 1;
-                j < nlines; j++)
+                    j < nlines; j++)
             {
-                const char *bl =
-                    strip_ws(lines[j]);
+                const char *bl = strip_ws(lines[j]);
                 if(strcmp(bl, ";;") == 0)
                 {
                     break;
                 }
                 /* Strip trailing ;; */
-                char cmd2[
-                    STRINGMAXLEN_CLICMDLINE];
-                strncpy(cmd2, bl,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                cmd2[
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1] = '\0';
+                char cmd2[STRINGMAXLEN_CLICMDLINE];
+                strncpy(cmd2, bl, STRINGMAXLEN_CLICMDLINE - 1);
+                cmd2[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
                 {
-                    int c2l =
-                        (int) strlen(cmd2);
+                    int c2l = (int) strlen(cmd2);
                     int ends_dsemi = 0;
                     while(c2l > 1
-                          && cmd2[c2l - 1]
-                          == ';'
-                          && cmd2[c2l - 2]
-                          == ';')
+                            && cmd2[c2l - 1]
+                            == ';'
+                            && cmd2[c2l - 2]
+                            == ';')
                     {
-                        cmd2[c2l - 2] =
-                            '\0';
+                        cmd2[c2l - 2] = '\0';
                         c2l -= 2;
                         ends_dsemi = 1;
                     }
                     while(c2l > 0
-                          && (cmd2[c2l - 1]
-                              == ' '
-                              || cmd2[
-                                  c2l - 1]
-                              == '\t'))
+                            && (cmd2[c2l - 1]
+                                == ' '
+                                || cmd2[
+                                    c2l - 1]
+                                == '\t'))
                     {
                         cmd2[--c2l] = '\0';
                     }
                     if(strlen(cmd2) > 0)
                     {
-                        strncpy(
-                            data.CLIcmdline,
-                            cmd2,
-                            STRINGMAXLEN_CLICMDLINE
-                            - 1);
+                        strncpy(data.CLIcmdline, cmd2, STRINGMAXLEN_CLICMDLINE - 1);
                         CLI_execute_line();
                     }
                     if(ends_dsemi)
@@ -305,5 +272,3 @@ void cli_exec_block_case(
         return; /* first match only */
     }
 }
-
-

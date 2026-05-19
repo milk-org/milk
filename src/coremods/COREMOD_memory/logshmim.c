@@ -1,6 +1,3 @@
-#define _GNU_SOURCE
-#include "ImageStreamIO/ImageStruct.h"
-#define _GNU_SOURCE
 /**
  * @file    logshmim.c
  * @brief   Save telemetry stream data
@@ -10,6 +7,8 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+
+#include "ImageStreamIO/ImageStruct.h"
 
 #include <fcntl.h>
 #include <pthread.h>
@@ -33,8 +32,6 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 
-#include "COREMOD_memory/image_keyword_addD.h"
-#include "COREMOD_memory/image_keyword_addS.h"
 
 #include "create_image.h"
 #include "delete_image.h"
@@ -56,7 +53,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streamFITSlog",
     .cmdkey      = "streamFITSlog",
     .description =
-        "log stream to FITS file(s)"
+        "log stream to FITS file(s)",
+    .description_long =
+        "Log shared memory image stream frames to disk as FITS files. Records every new frame triggered by semaphore posting, with configurable logging duration and file naming."
 };
 
 
@@ -64,21 +63,18 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     streamname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "stream";
+static char     streamname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 static int32_t  saveON        = 0;
 static int32_t  lastcubeON    = 0;
 static int32_t  nextcube      = 0;
 static uint32_t cubesize      = 10000;
-static char     savedirname[
-    FUNCTION_PARAMETER_STRMAXLEN] = ".";
+static char     savedirname[FUNCTION_PARAMETER_STRMAXLEN] = ".";
 static uint64_t frameindex    = 0;
 static uint64_t framecnt      = 0;
 static uint64_t maxframecnt   = 0;
 static uint64_t filecnt       = 0;
 static uint64_t maxfilecnt    = 0;
-static char     outfname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     outfname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 static int32_t  compressON    = 0;
 static float    savetime      = 0.0;
 static uint32_t writerRTprio  = 0;
@@ -161,41 +157,23 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
     {
         long fpi;
 
-        fpi = functionparameter_GetParamIndex(
-            dcfpsptr, ".saveON");
-        if(fpi >= 0)
-            dcfpsptr->parray[fpi].fpflag
-                |= FPFLAG_WRITERUN;
+        fpi = functionparameter_GetParamIndex(dcfpsptr, ".saveON");
+        if(fpi >= 0) dcfpsptr->parray[fpi].fpflag |= FPFLAG_WRITERUN;
 
-        fpi = functionparameter_GetParamIndex(
-            dcfpsptr, ".lastcubeON");
-        if(fpi >= 0)
-            dcfpsptr->parray[fpi].fpflag
-                |= FPFLAG_WRITERUN;
+        fpi = functionparameter_GetParamIndex(dcfpsptr, ".lastcubeON");
+        if(fpi >= 0) dcfpsptr->parray[fpi].fpflag |= FPFLAG_WRITERUN;
 
-        fpi = functionparameter_GetParamIndex(
-            dcfpsptr, ".nextcube");
-        if(fpi >= 0)
-            dcfpsptr->parray[fpi].fpflag
-                |= FPFLAG_WRITERUN;
+        fpi = functionparameter_GetParamIndex(dcfpsptr, ".nextcube");
+        if(fpi >= 0) dcfpsptr->parray[fpi].fpflag |= FPFLAG_WRITERUN;
 
-        fpi = functionparameter_GetParamIndex(
-            dcfpsptr, ".maxfilecnt");
-        if(fpi >= 0)
-            dcfpsptr->parray[fpi].fpflag
-                |= FPFLAG_WRITERUN;
+        fpi = functionparameter_GetParamIndex(dcfpsptr, ".maxfilecnt");
+        if(fpi >= 0) dcfpsptr->parray[fpi].fpflag |= FPFLAG_WRITERUN;
 
-        fpi = functionparameter_GetParamIndex(
-            dcfpsptr, ".maxframecnt");
-        if(fpi >= 0)
-            dcfpsptr->parray[fpi].fpflag
-                |= FPFLAG_WRITERUN;
+        fpi = functionparameter_GetParamIndex(dcfpsptr, ".maxframecnt");
+        if(fpi >= 0) dcfpsptr->parray[fpi].fpflag |= FPFLAG_WRITERUN;
 
-        fpi = functionparameter_GetParamIndex(
-            dcfpsptr, ".writerRTprio");
-        if(fpi >= 0)
-            dcfpsptr->parray[fpi].fpflag
-                |= FPFLAG_WRITERUN;
+        fpi = functionparameter_GetParamIndex(dcfpsptr, ".writerRTprio");
+        if(fpi >= 0) dcfpsptr->parray[fpi].fpflag |= FPFLAG_WRITERUN;
     }
 
     return RETURN_SUCCESS;
@@ -232,22 +210,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     int VERBOSE = 2;
 
-    STREAMSAVE_THREAD_MESSAGE *tmsg =
-        (STREAMSAVE_THREAD_MESSAGE *)
-        malloc(sizeof(
-            STREAMSAVE_THREAD_MESSAGE));
-
-    IMGID inimg =
-        imgid_make_from_name(streamname);
-    resolveIMGID(
-        &inimg, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID inimg = imgid_make_from_name(streamname);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg,  dcnimg);
 
     if(inimg.md->naxis == 3)
     {
-        PRINT_ERROR(
-            "streamFITSlog with 3D data"
-            " is NOT supported");
+        PRINT_ERROR("streamFITSlog with 3D data" " is NOT supported");
     }
 
     uint32_t xsize = inimg.md->size[0];
@@ -260,12 +228,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     uint8_t datatype = inimg.md->datatype;
 
-    int typesize =
-        ImageStreamIO_typesize(datatype);
+    int typesize = ImageStreamIO_typesize(datatype);
     if(typesize == -1)
     {
-        printf("ERROR: WRONG DATA TYPE\n");
-        exit(0);
+        PRINT_ERROR("wrong data type %d", (int) datatype);
+        return RETURN_FAILURE;
     }
 
     int buffindex = 0;
@@ -273,41 +240,24 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID imgbuff0;
     {
         char name[STRINGMAXLEN_STREAMNAME];
-        WRITE_IMAGENAME(name,
-                        "%s_logbuff0",
-                        streamname);
-        imgbuff0 =
-            stream_connect_create_3D(
-                name, xsize, ysize,
-                zsize, datatype);
+        WRITE_IMAGENAME(name, "%s_logbuff0", streamname);
+        imgbuff0 = stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
     }
     IMGID imgbuff1;
     {
         char name[STRINGMAXLEN_STREAMNAME];
-        WRITE_IMAGENAME(name,
-                        "%s_logbuff1",
-                        streamname);
-        imgbuff1 =
-            stream_connect_create_3D(
-                name, xsize, ysize,
-                zsize, datatype);
+        WRITE_IMAGENAME(name, "%s_logbuff1", streamname);
+        imgbuff1 = stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
     }
 
     list_image_ID();
 
     {
-        printf("Cppying %d keywords\n",
-               inimg.md->NBkw);
+        printf("Cppying %d keywords\n", inimg.md->NBkw);
         if(inimg.md->NBkw > 0)
         {
-            memcpy(imgbuff0.im->kw,
-                   inimg.im->kw,
-                   sizeof(IMAGE_KEYWORD)
-                   * inimg.md->NBkw);
-            memcpy(imgbuff1.im->kw,
-                   inimg.im->kw,
-                   sizeof(IMAGE_KEYWORD)
-                   * inimg.md->NBkw);
+            memcpy(imgbuff0.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+            memcpy(imgbuff1.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
         }
     }
 
@@ -323,8 +273,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     }
     if(VERBOSE > 0)
     {
-        printf("[%5d] aqtimekwi = %d\n",
-               __LINE__, aqtimekwi);
+        printf("[%5d] aqtimekwi = %d\n", __LINE__, aqtimekwi);
     }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -334,32 +283,23 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     {
     }
 
-    int saveON_last = saveON;
+    /* Logging loop state and execution block */
+    {
+        STREAMSAVE_THREAD_MESSAGE *tmsg =
+            (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
 
-    char FITSffilename[
-        STRINGMAXLEN_FULLFILENAME];
-    snprintf(FITSffilename,
-             sizeof(FITSffilename),
-             "null");
+        int saveON_last = saveON;
 
-    char ASCIITIMEffilename[
-        STRINGMAXLEN_FULLFILENAME];
-    snprintf(ASCIITIMEffilename,
-             sizeof(ASCIITIMEffilename),
-             "null");
+    char FITSffilename[STRINGMAXLEN_FULLFILENAME];
+    snprintf(FITSffilename, sizeof(FITSffilename), "null");
 
-    double *array_time =
-        (double *) malloc(sizeof(double)
-                          * cubesize * 2);
-    double *array_aqtime =
-        (double *) malloc(sizeof(double)
-                          * cubesize * 2);
-    uint64_t *array_cnt0 =
-        (uint64_t *) malloc(sizeof(uint64_t)
-                            * cubesize * 2);
-    uint64_t *array_cnt1 =
-        (uint64_t *) malloc(sizeof(uint64_t)
-                            * cubesize * 2);
+    char ASCIITIMEffilename[STRINGMAXLEN_FULLFILENAME];
+    snprintf(ASCIITIMEffilename, sizeof(ASCIITIMEffilename), "null");
+
+    double *array_time = (double *) malloc(sizeof(double) * cubesize * 2);
+    double *array_aqtime = (double *) malloc(sizeof(double) * cubesize * 2);
+    uint64_t *array_cnt0 = (uint64_t *) malloc(sizeof(uint64_t) * cubesize * 2);
+    uint64_t *array_cnt1 = (uint64_t *) malloc(sizeof(uint64_t) * cubesize * 2);
 
     int thread_initialized = 0;
 
@@ -380,15 +320,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     if(dcfpsptr != NULL)
     {
-        fpi_saveON =
-            functionparameter_GetParamIndex(
-                dcfpsptr, ".saveON");
-        fpi_lastcubeON =
-            functionparameter_GetParamIndex(
-                dcfpsptr, ".lastcubeON");
-        fpi_nextcube =
-            functionparameter_GetParamIndex(
-                dcfpsptr, ".nextcube");
+        fpi_saveON = functionparameter_GetParamIndex(dcfpsptr, ".saveON");
+        fpi_lastcubeON = functionparameter_GetParamIndex(dcfpsptr, ".lastcubeON");
+        fpi_nextcube = functionparameter_GetParamIndex(dcfpsptr, ".nextcube");
     }
 
     if(VERBOSE > 0)
@@ -436,11 +370,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                     >= maxframecnt)
                 {
                     saveON = 0;
-                    if(fpi_saveON >= 0)
-                        dcfpsptr
-                            ->parray[fpi_saveON]
-                            .fpflag
-                            &= ~FPFLAG_ONOFF;
+                    if(fpi_saveON >= 0) dcfpsptr ->parray[fpi_saveON] .fpflag &= ~FPFLAG_ONOFF;
                 }
 
                 if(filecnt
@@ -455,8 +385,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                     {
                         printf(
                             "========================="
-                            " CONSTRUCT FILE NAMES"
-                            " =========================\n");
+                            " CONSTRUCT FILE NAMES" " =========================\n");
                         fflush(stdout);
 
                         time_t t;
@@ -468,20 +397,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                         snprintf(
                             hrminstring,
                             sizeof(hrminstring),
-                            "%02d:%02d",
-                            uttimeStart->tm_hour,
-                            uttimeStart->tm_min);
+                            "%02d:%02d", uttimeStart->tm_hour, uttimeStart->tm_min);
                         if(VERBOSE > 0)
                         {
-                            printf("hrmin: %s\n",
-                                   hrminstring);
+                            printf("hrmin: %s\n", hrminstring);
                         }
 
-                        struct timespec
-                            timenowStart;
-                        clock_gettime(
-                            CLOCK_MILK,
-                            &timenowStart);
+                        struct timespec timenowStart;
+                        clock_gettime(CLOCK_MILK, &timenowStart);
 
                         WRITE_FULLFILENAME(
                             FITSffilename,
@@ -489,19 +412,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                             ".%09ld.fits",
                             savedirname,
                             streamname,
-                            hrminstring,
-                            timenowStart.tv_sec
-                            % 60,
-                            timenowStart.tv_nsec);
+                            hrminstring, timenowStart.tv_sec % 60, timenowStart.tv_nsec);
 
                         if(VERBOSE > 0)
                         {
                             printf(
                                 "    [%5d]"
-                                " FITSffilename"
-                                "      = %s\n",
-                                __LINE__,
-                                FITSffilename);
+                                " FITSffilename" "      = %s\n", __LINE__, FITSffilename);
                         }
 
                         WRITE_FULLFILENAME(
@@ -510,85 +427,56 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                             ".%09ld.txt",
                             savedirname,
                             streamname,
-                            hrminstring,
-                            timenowStart.tv_sec
-                            % 60,
-                            timenowStart.tv_nsec);
+                            hrminstring, timenowStart.tv_sec % 60, timenowStart.tv_nsec);
 
                         if(VERBOSE > 0)
                         {
                             printf(
                                 "    [%5d]"
-                                " ASCIITIMEffilename"
-                                " = %s\n",
-                                __LINE__,
-                                ASCIITIMEffilename);
+                                " ASCIITIMEffilename" " = %s\n", __LINE__, ASCIITIMEffilename);
                         }
 
                         if(VERBOSE > 0)
                         {
                             printf(
                                 "========================="
-                                " CONSTRUCT FILE NAMES"
-                                " =========================\n");
+                                " CONSTRUCT FILE NAMES" " =========================\n");
                             fflush(stdout);
                         }
                     }
 
                     {
-                        long tindex =
-                            frameindex
-                            + buffindex
-                            * cubesize;
+                        long tindex = frameindex + buffindex * cubesize;
                         {
-                            array_cnt0[tindex] =
-                                inimg.md->cnt0;
-                            array_cnt1[tindex] =
-                                inimg.md->cnt1;
+                            array_cnt0[tindex] = inimg.md->cnt0;
+                            array_cnt1[tindex] = inimg.md->cnt1;
 
-                            struct timespec
-                                timenow;
-                            clock_gettime(
-                                CLOCK_MILK,
-                                &timenow);
-                            array_time[tindex] =
-                                timenow.tv_sec
-                                + 1.0e-9
-                                * timenow.tv_nsec;
+                            struct timespec timenow;
+                            clock_gettime(CLOCK_MILK, &timenow);
+                            array_time[tindex] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
                             if(aqtimekwi != -1)
                             {
                                 array_aqtime[
-                                    tindex] =
-                                    1.0e-6
-                                    * inimg.im
-                                    ->kw[aqtimekwi]
-                                    .value.numl;
+                                    tindex] = 1.0e-6 * inimg.im ->kw[aqtimekwi] .value.numl;
                             }
                             else
                             {
-                                array_aqtime[
-                                    tindex]
-                                    = 0.0;
+                                array_aqtime[tindex] = 0.0;
                             }
                         }
                     }
 
                     {
-                        long framesize =
-                            typesize * xsize
-                            * ysize;
+                        long framesize = typesize * xsize * ysize;
 
                         char *ptr0_0;
                         char *ptr0;
 
-                        ptr0_0 = (char *)
-                            inimg.im->array.raw;
+                        ptr0_0 = (char *) inimg.im->array.raw;
                         if(inimg.md->naxis == 3)
                         {
-                            ptr0 = ptr0_0
-                                + framesize
-                                * inimg.md->cnt1;
+                            ptr0 = ptr0_0 + framesize * inimg.md->cnt1;
                         }
                         else
                         {
@@ -599,42 +487,27 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                         char *ptr1;
                         if(buffindex == 0)
                         {
-                            ptr1_0 = (char *)
-                                imgbuff0.im
-                                ->array.raw;
+                            ptr1_0 = (char *) imgbuff0.im ->array.raw;
                         }
                         else
                         {
-                            ptr1_0 = (char *)
-                                imgbuff1.im
-                                ->array.raw;
+                            ptr1_0 = (char *) imgbuff1.im ->array.raw;
                         }
-                        ptr1 = ptr1_0
-                            + framesize
-                            * frameindex;
+                        ptr1 = ptr1_0 + framesize * frameindex;
 
-                        __builtin_memcpy(
-                               (void *) ptr1,
-                               (void *) ptr0,
-                               framesize);
+                        __builtin_memcpy((void *) ptr1, (void *) ptr0, framesize);
                     }
 
                     processinfo_WriteMessage_fmt(
                         processinfo,
-                        "buff %d file %lu"
-                        " frameindex %lu",
-                        buffindex,
-                        filecnt,
-                        frameindex);
+                        "buff %d file %lu" " frameindex %lu", buffindex, filecnt, frameindex);
 
                     frameindex ++;
                     framecnt ++;
                 }
                 else
                 {
-                    processinfo_WriteMessage(
-                        processinfo,
-                        "save = OFF");
+                    processinfo_WriteMessage(processinfo, "save = OFF");
                 }
             }
         }
@@ -655,10 +528,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         if(nextcube == 1)
         {
             nextcube = 0;
-            if(fpi_nextcube >= 0)
-                dcfpsptr
-                    ->parray[fpi_nextcube]
-                    .fpflag &= ~FPFLAG_ONOFF;
+            if(fpi_nextcube >= 0) dcfpsptr ->parray[fpi_nextcube] .fpflag &= ~FPFLAG_ONOFF;
             SaveCube = 1;
         }
 
@@ -677,50 +547,29 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                     printf(
                         "SAVING %5ld FRAMES"
                         " of BUFFER %d to"
-                        " FILE %s\n",
-                        (long) frameindex,
-                        buffindex,
-                        FITSffilename);
+                        " FILE %s\n", (long) frameindex, buffindex, FITSffilename);
                     fflush(stdout);
                 }
 
                 if(buffindex == 0)
                 {
                     __builtin_memcpy(
-                           imgbuff0.im->kw,
-                           inimg.im->kw,
-                           sizeof(IMAGE_KEYWORD)
-                           * inimg.md->NBkw);
+                           imgbuff0.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
                 }
                 else
                 {
                     __builtin_memcpy(
-                           imgbuff1.im->kw,
-                           inimg.im->kw,
-                           sizeof(IMAGE_KEYWORD)
-                           * inimg.md->NBkw);
+                           imgbuff1.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
                 }
 
                 {
-                    static pthread_t
-                        thread_savefits;
-                    static int
-                        iret_savefits;
+                    static pthread_t thread_savefits;
+                    static int iret_savefits;
 
-                    snprintf(
-                        tmsg->fname,
-                        sizeof(tmsg->fname),
-                        "%s",
-                        FITSffilename);
-                    snprintf(
-                        tmsg->fnameascii,
-                        sizeof(
-                            tmsg->fnameascii),
-                        "%s",
-                        ASCIITIMEffilename);
+                    snprintf(tmsg->fname, sizeof(tmsg->fname), "%s", FITSffilename);
+                    snprintf(tmsg->fnameascii, sizeof(tmsg->fnameascii), "%s", ASCIITIMEffilename);
                     tmsg->saveascii = 1;
-                    tmsg->cubesize =
-                        frameindex;
+                    tmsg->cubesize = frameindex;
 
                     if(frameindex
                         != cubesize)
@@ -734,56 +583,26 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
                     if(buffindex == 0)
                     {
-                        snprintf(
-                            tmsg->iname,
-                            sizeof(
-                                tmsg->iname),
-                            "%s",
-                            imgbuff0.md
-                            ->name);
-                        tmsg->arrayindex =
-                            array_cnt0;
-                        tmsg->arraycnt0 =
-                            array_cnt0;
-                        tmsg->arraycnt1 =
-                            array_cnt1;
-                        tmsg->arraytime =
-                            array_time;
-                        tmsg->arrayaqtime =
-                            array_aqtime;
+                        snprintf(tmsg->iname, sizeof(tmsg->iname), "%s", imgbuff0.md ->name);
+                        tmsg->arrayindex = array_cnt0;
+                        tmsg->arraycnt0 = array_cnt0;
+                        tmsg->arraycnt1 = array_cnt1;
+                        tmsg->arraytime = array_time;
+                        tmsg->arrayaqtime = array_aqtime;
                     }
                     else
                     {
-                        snprintf(
-                            tmsg->iname,
-                            sizeof(
-                                tmsg->iname),
-                            "%s",
-                            imgbuff1.md
-                            ->name);
-                        tmsg->arrayindex =
-                            &array_cnt0[
-                                cubesize];
-                        tmsg->arraycnt0 =
-                            &array_cnt0[
-                                cubesize];
-                        tmsg->arraycnt1 =
-                            &array_cnt1[
-                                cubesize];
-                        tmsg->arraytime =
-                            &array_time[
-                                cubesize];
-                        tmsg->arrayaqtime =
-                            &array_aqtime[
-                                cubesize];
+                        snprintf(tmsg->iname, sizeof(tmsg->iname), "%s", imgbuff1.md ->name);
+                        tmsg->arrayindex = &array_cnt0[cubesize];
+                        tmsg->arraycnt0 = &array_cnt0[cubesize];
+                        tmsg->arraycnt1 = &array_cnt1[cubesize];
+                        tmsg->arraytime = &array_time[cubesize];
+                        tmsg->arrayaqtime = &array_aqtime[cubesize];
                     }
 
                     snprintf(
                         tmsg->fname_auxFITSheader,
-                        sizeof(tmsg->fname_auxFITSheader),
-                        "%s/%s.aux.fits",
-                        dcshmdir,
-                        streamname);
+                        sizeof(tmsg->fname_auxFITSheader), "%s/%s.aux.fits", dcshmdir, streamname);
 
                     if(compressON == 0)
                     {
@@ -794,17 +613,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                         snprintf(
                             tmsg
                             ->compress_string,
-                            sizeof(
-                                tmsg
-                                ->compress_string),
-                            "[compress R"
-                            " 1,1,10000]");
+                            sizeof(tmsg ->compress_string), "[compress R" " 1,1,10000]");
                     }
 
                     if(thread_initialized == 1)
                     {
-                        long cnt0start =
-                            inimg.md->cnt0;
+                        long cnt0start = inimg.md->cnt0;
 
                         if(pthread_tryjoin_np(
                                 thread_savefits,
@@ -815,25 +629,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                             {
                                 printf(
                                     "%5d  PREVIOUS"
-                                    " SAVE THREAD"
-                                    " NOT TERMINATED"
-                                    " -> waiting\n",
-                                    __LINE__);
+                                    " SAVE THREAD" " NOT TERMINATED" " -> waiting\n", __LINE__);
                             }
                             void *tret_ptr = NULL;
-                            pthread_join(
-                                thread_savefits,
-                                &tret_ptr);
+                            pthread_join(thread_savefits, &tret_ptr);
                             free(tret_ptr);
                             if(VERBOSE > 0)
                             {
                                 printf(
                                     "%5d  PREVIOUS"
                                     " SAVE THREAD"
-                                    " NOW COMPLETED"
-                                    " -> continuing"
-                                    "\n",
-                                    __LINE__);
+                                    " NOW COMPLETED" " -> continuing" "\n", __LINE__);
                             }
                         }
                         else
@@ -842,44 +648,28 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                             {
                                 printf(
                                     "%5d  PREVIOUS"
-                                    " SAVE THREAD"
-                                    " ALREADY"
-                                    " COMPLETED"
-                                    " -> OK\n",
-                                    __LINE__);
+                                    " SAVE THREAD" " ALREADY" " COMPLETED" " -> OK\n", __LINE__);
                             }
                         }
-                        savetime =
-                            tmsg->timespan;
+                        savetime = tmsg->timespan;
                         if(VERBOSE > 0)
                         {
                             printf(
                                 "\n **************"
-                                " MISSED  %ld"
-                                " frames\n",
-                                inimg.md->cnt0
-                                - cnt0start);
+                                " MISSED  %ld" " frames\n", inimg.md->cnt0 - cnt0start);
                         }
                     }
 
-                    tmsg->writerRTprio =
-                        writerRTprio;
+                    tmsg->writerRTprio = writerRTprio;
                     iret_savefits =
-                        pthread_create(
-                            &thread_savefits,
-                            NULL,
-                            save_telemetry_fits_function,
-                            tmsg);
+                        pthread_create(&thread_savefits, NULL, save_telemetry_fits_function, tmsg);
 
                     thread_initialized = 1;
                     if(iret_savefits)
                     {
                         fprintf(stderr,
                                 "Error -"
-                                " pthread_create()"
-                                " return code:"
-                                " %d\n",
-                                iret_savefits);
+                                " pthread_create()" " return code:" " %d\n", iret_savefits);
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -891,15 +681,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
             if(buffindex == 0)
             {
-                processinfo_update_output_stream(
-                    processinfo,
-                    imgbuff0.im, NULL);
+                processinfo_update_output_stream(processinfo, imgbuff0.im, NULL);
             }
             else
             {
-                processinfo_update_output_stream(
-                    processinfo,
-                    imgbuff1.im, NULL);
+                processinfo_update_output_stream(processinfo, imgbuff1.im, NULL);
             }
 
             buffindex ++;
@@ -912,18 +698,10 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 || (lastcubeON == 1))
             {
                 saveON = 0;
-                if(fpi_saveON >= 0)
-                    dcfpsptr
-                        ->parray[fpi_saveON]
-                        .fpflag
-                        &= ~FPFLAG_ONOFF;
+                if(fpi_saveON >= 0) dcfpsptr ->parray[fpi_saveON] .fpflag &= ~FPFLAG_ONOFF;
 
                 lastcubeON = 0;
-                if(fpi_lastcubeON >= 0)
-                    dcfpsptr
-                        ->parray[fpi_lastcubeON]
-                        .fpflag
-                        &= ~FPFLAG_ONOFF;
+                if(fpi_lastcubeON >= 0) dcfpsptr ->parray[fpi_lastcubeON] .fpflag &= ~FPFLAG_ONOFF;
             }
         }
 
@@ -932,12 +710,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    free(array_time);
-    free(array_aqtime);
-    free(array_cnt0);
-    free(array_cnt1);
+        free(array_time);
+        free(array_aqtime);
+        free(array_cnt0);
+        free(array_cnt1);
 
-    free(tmsg);
+        free(tmsg);
+    }
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -952,24 +731,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_MEMORY__logshmim()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    CLIcmddata.FPS_customCONFsetup =
-        customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck =
-        customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

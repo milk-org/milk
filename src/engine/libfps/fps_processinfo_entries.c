@@ -4,9 +4,6 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_processinfo_entries.h"
-#include <processinfo.h>
 
 /** @brief Add parameters to FPS for real-time process settings
  *
@@ -17,7 +14,7 @@
  *
  */
 errno_t fps_add_processinfo_entries(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 )
 {
     DEBUG_TRACE_FSTART();
@@ -29,20 +26,11 @@ errno_t fps_add_processinfo_entries(
     // run time string
     function_parameter_add_entry(fps,
                                  ".conf.timestring",
-                                 "runstart time string",
-                                 FPTYPE_STRING,
-                                 FPFLAG,
-                                 "undef",
-                                 NULL);
+                                 "runstart time string", FPTYPE_STRING, FPFLAG, "undef", NULL);
 
     // custom label
     function_parameter_add_entry(fps,
-                                 ".conf.label",
-                                 "custom label",
-                                 FPTYPE_STRING,
-                                 FPFLAG,
-                                 "",
-                                 NULL);
+                                 ".conf.label", "custom label", FPTYPE_STRING, FPFLAG, "", NULL);
 
     // output directory where results are saved
     //
@@ -50,11 +38,7 @@ errno_t fps_add_processinfo_entries(
     //	snprintf(outdir, FPS_DIR_STRLENMAX, "fps.%s", fps->md->name);
     function_parameter_add_entry(fps,
                                  ".conf.datadir",
-                                 "data directory",
-                                 FPTYPE_DIRNAME,
-                                 FPFLAG,
-                                 fps->md->datadir,
-                                 NULL);
+                                 "data directory", FPTYPE_DIRNAME, FPFLAG, fps->md->datadir, NULL);
 
     // input directory, FPS configuration files ready by FPSsync operation
     //
@@ -62,69 +46,42 @@ errno_t fps_add_processinfo_entries(
     //	snprintf(confdir, FPS_DIR_STRLENMAX, "fpsconfdir-%s", fps->md->name);
     function_parameter_add_entry(fps,
                                  ".conf.confdir",
-                                 "conf directory",
-                                 FPTYPE_DIRNAME,
-                                 FPFLAG,
-                                 fps->md->confdir,
-                                 NULL);
+                                 "conf directory", FPTYPE_DIRNAME, FPFLAG, fps->md->confdir, NULL);
 
     // Where results are archived
     //
     function_parameter_add_entry(fps,
                                  ".conf.archivedir",
-                                 "archive directory",
-                                 FPTYPE_DIRNAME,
-                                 FPFLAG,
-                                 NULL,
-                                 NULL);
+                                 "archive directory", FPTYPE_DIRNAME, FPFLAG, NULL, NULL);
 
     // value = -1 indicates no RT priority
     long RTprio_default[4] = {fps->cmdset.RT_priority, -1, 49, 20};
     function_parameter_add_entry(fps,
                                  ".procinfo.RTprio",
-                                 "RTprio",
-                                 FPTYPE_INT64,
-                                 FPFLAG,
-                                 &RTprio_default,
-                                 NULL);
+                                 "RTprio", FPTYPE_INT64, FPFLAG, &RTprio_default, NULL);
 
     // cset
     function_parameter_add_entry(fps,
                                  ".procinfo.cset",
-                                 "CPUs set",
-                                 FPTYPE_STRING,
-                                 FPFLAG,
-                                 "system",
-                                 NULL);
+                                 "CPUs set", FPTYPE_STRING, FPFLAG, "system", NULL);
 
     // taskset
     function_parameter_add_entry(fps,
                                  ".procinfo.taskset",
-                                 "CPUs mask",
-                                 FPTYPE_STRING,
-                                 FPFLAG,
-                                 "1-127",
-                                 NULL);
+                                 "CPUs mask", FPTYPE_STRING, FPFLAG, "1-127", NULL);
 
     // value = 0 indicates process will adjust to available nb cores
     long maxNBthread_default[4] = {1, 0, 50, 1};
     function_parameter_add_entry(fps,
                                  ".procinfo.NBthread",
                                  "max NB threads",
-                                 FPTYPE_INT64,
-                                 FPFLAG,
-                                 &maxNBthread_default,
-                                 NULL);
+                                 FPTYPE_INT64, FPFLAG, &maxNBthread_default, NULL);
 
     // PROCESSINFO
     long fp_pinfoenabled = 0;
     function_parameter_add_entry(fps,
                                  ".procinfo.enabled",
-                                 "procinfo mode",
-                                 FPTYPE_ONOFF,
-                                 FPFLAG,
-                                 NULL,
-                                 &fp_pinfoenabled);
+                                 "procinfo mode", FPTYPE_ONOFF, FPFLAG, NULL, &fp_pinfoenabled);
     fps->parray[fp_pinfoenabled].fpflag |= FPFLAG_ONOFF;
 
     // no max limit
@@ -142,36 +99,26 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.loopcntMax",
                                  "max loop cnt",
                                  FPTYPE_INT64,
-                                 FPFLAG|FPFLAG_WRITERUN,
-                                 &loopcntMax_default,
-                                 NULL);
+                                 FPFLAG | FPFLAG_WRITERUN, &loopcntMax_default, NULL);
 
     long triggermode_default[4] = {fps->cmdset.triggermode, -1, 10, 0};
     function_parameter_add_entry(fps,
                                  ".procinfo.triggermode",
                                  "trigger mode",
                                  FPTYPE_INT64,
-                                 FPFLAG|FPFLAG_WRITERUN,
-                                 &triggermode_default,
-                                 NULL);
+                                 FPFLAG | FPFLAG_WRITERUN, &triggermode_default, NULL);
 
     function_parameter_add_entry(fps,
                                  ".procinfo.triggersname",
                                  "trigger stream name",
-                                 FPTYPE_STREAMNAME,
-                                 FPFLAG,
-                                 fps->cmdset.triggerstreamname,
-                                 NULL);
+                                 FPTYPE_STREAMNAME, FPFLAG, fps->cmdset.triggerstreamname, NULL);
 
     // Timing measurement
     long fp_measuretiming = 0;
     function_parameter_add_entry(fps,
                                  ".procinfo.MeasureTiming",
                                  "Measure timing",
-                                 FPTYPE_ONOFF,
-                                 FPFLAG|FPFLAG_WRITERUN,
-                                 NULL,
-                                 &fp_measuretiming);
+                                 FPTYPE_ONOFF, FPFLAG | FPFLAG_WRITERUN, NULL, &fp_measuretiming);
     fps->parray[fp_measuretiming].fpflag |= FPFLAG_ONOFF;
 
     // -1 : auto (recommended)
@@ -183,10 +130,7 @@ errno_t fps_add_processinfo_entries(
     function_parameter_add_entry(fps,
                                  ".procinfo.semindexrequested",
                                  "trigger requested semaphore index",
-                                 FPTYPE_INT64,
-                                 FPFLAG,
-                                 &semindexrequested_default,
-                                 NULL);
+                                 FPTYPE_INT64, FPFLAG, &semindexrequested_default, NULL);
 
     struct timespec triggerdelay_default[2] = {fps->cmdset.triggerdelay,
         {1, 0}
@@ -195,9 +139,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggerdelay",
                                  "trigger delay",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG|FPFLAG_WRITERUN,
-                                 &triggerdelay_default,
-                                 NULL);
+                                 FPFLAG | FPFLAG_WRITERUN, &triggerdelay_default, NULL);
 
     struct timespec triggertimeout_default[2] = {fps->cmdset.triggertimeout,
         {1, 0}
@@ -206,19 +148,23 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggertimeout",
                                  "trigger timeout",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG|FPFLAG_WRITERUN,
-                                 &triggertimeout_default,
-                                 NULL);
+                                 FPFLAG | FPFLAG_WRITERUN, &triggertimeout_default, NULL);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/**
+ * @brief Populate processinfo fields from FPS metadata.
+ *
+ * Copies timing, trigger, and loop-rate metrics
+ * from the FPS into the corresponding processinfo
+ * structure for monitoring.
+ */
 errno_t fps_to_processinfo(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO               *procinfo
-)
+    FPS         *fps,
+    PROCESSINFO *procinfo)
 {
     DEBUG_TRACE_FSTART();
 
@@ -234,21 +180,17 @@ errno_t fps_to_processinfo(
         long pindex = functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
         if(pindex > -1)
         {
-            long RTprio =
-                functionparameter_GetParamValue_INT64(fps, ".procinfo.RTprio");
+            long RTprio = functionparameter_GetParamValue_INT64(fps, ".procinfo.RTprio");
             procinfo->RT_priority = RTprio;
         }
     }
 
     DEBUG_TRACEPOINT("set loopcntMax if applicable");
     {
-        long pindex =
-            functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
+        long pindex = functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
         if(pindex > -1)
         {
-            long loopcntMax =
-                functionparameter_GetParamValue_INT64(fps,
-                        ".procinfo.loopcntMax");
+            long loopcntMax = functionparameter_GetParamValue_INT64(fps, ".procinfo.loopcntMax");
             procinfo->loopcntMax = loopcntMax;
         }
     }
@@ -256,21 +198,17 @@ errno_t fps_to_processinfo(
     DEBUG_TRACEPOINT("set triggermode if applicable");
     {
 
-        long pindex =
-            functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
+        long pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
         if(pindex > -1)
         {
-            long triggermode =
-                functionparameter_GetParamValue_INT64(fps,
-                        ".procinfo.triggermode");
+            long triggermode = functionparameter_GetParamValue_INT64(fps, ".procinfo.triggermode");
             procinfo->triggermode = triggermode;
         }
     }
 
     DEBUG_TRACEPOINT("set MeasureTiming if applicable");
     {
-        long pindex =
-            functionparameter_GetParamIndex(fps, ".procinfo.MeasureTiming");
+        long pindex = functionparameter_GetParamIndex(fps, ".procinfo.MeasureTiming");
         if(pindex > -1)
         {
             procinfo->MeasureTiming =
@@ -278,36 +216,24 @@ errno_t fps_to_processinfo(
         }
     }
 
-    DEBUG_TRACEPOINT(
-        "set triggerdelay if applicable");
+    DEBUG_TRACEPOINT("set triggerdelay if applicable");
     {
-        long pindex =
-            functionparameter_GetParamIndex(
-                fps,
-                ".procinfo.triggerdelay");
+        long pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
         if(pindex > -1)
         {
             struct timespec *tsptr =
-                functionparameter_GetParamPtr_TIMESPEC(
-                    fps,
-                    ".procinfo.triggerdelay");
+                functionparameter_GetParamPtr_TIMESPEC(fps, ".procinfo.triggerdelay");
             procinfo->triggerdelay = *tsptr;
         }
     }
 
-    DEBUG_TRACEPOINT(
-        "set triggertimeout if applicable");
+    DEBUG_TRACEPOINT("set triggertimeout if applicable");
     {
-        long pindex =
-            functionparameter_GetParamIndex(
-                fps,
-                ".procinfo.triggertimeout");
+        long pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggertimeout");
         if(pindex > -1)
         {
             struct timespec *tsptr =
-                functionparameter_GetParamPtr_TIMESPEC(
-                    fps,
-                    ".procinfo.triggertimeout");
+                functionparameter_GetParamPtr_TIMESPEC(fps, ".procinfo.triggertimeout");
             procinfo->triggertimeout = *tsptr;
         }
     }

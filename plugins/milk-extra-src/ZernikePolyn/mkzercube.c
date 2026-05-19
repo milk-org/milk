@@ -27,7 +27,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkzerc",
     .cmdkey      = "mkzerc",
-    .description = "make Zernike modes cube"
+    .description = "make Zernike modes cube",
+    .description_long =
+        "Generate a 3D cube of Zernike polynomial mode images. Each slice is one Zernike mode evaluated on a circular aperture."
 };
 
 

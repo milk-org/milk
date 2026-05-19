@@ -25,7 +25,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "rmall",
     .cmdkey      = "rmall",
-    .description = "remove all images"
+    .description = "remove all images",
+    .description_long =
+        "Remove all images and variables from the current process memory space. Frees all locally allocated image buffers but does not destroy shared memory segments."
 };
 
 
@@ -56,9 +58,7 @@ errno_t clearall()
     {
         if(dcimg[ID].used == 1)
         {
-            delete_image_ID(
-                dcimg[ID].name,
-                DELETE_IMAGE_ERRMODE_WARNING);
+            delete_image_ID(dcimg[ID].name, DELETE_IMAGE_ERRMODE_WARNING);
         }
     }
 
@@ -75,8 +75,7 @@ errno_t clearall()
     for(int fpsindex = 0;
         fpsindex < dcnfps; fpsindex++)
     {
-        DEBUG_TRACEPOINT(
-            "clear FPS %d", fpsindex);
+        DEBUG_TRACEPOINT("clear FPS %d", fpsindex);
         dcfpsarr[fpsindex].SMfd = -1;
         if(dcfpsarr[fpsindex].parray != NULL)
         {
@@ -132,18 +131,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, NULL, &CLIcmddata,
-        NULL, 0,
-        compute_function);
+        &FPS_app_info, NULL, &CLIcmddata, NULL, 0, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__clearall()
 {
-    int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }

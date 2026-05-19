@@ -26,7 +26,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "multicrop",
     .cmdkey      = "multicrop2D",
     .description =
-        "crop 2D image, multiple crops"
+        "crop 2D image, multiple crops",
+    .description_long =
+        "Extract multiple rectangular sub-regions from a single 2D image, specified by a list of origin coordinates and sizes. Outputs are written as separate shared memory streams or assembled into a 3D cube."
 };
 
 
@@ -41,24 +43,15 @@ static char     *multicrop_outsname = NULL;
 static uint32_t *multicrop_outxsize = NULL;
 static uint32_t *multicrop_outysize = NULL;
 
-static int64_t  *multicrop_wactive[
-    MAXNB_CROPWINDOW];
-static int64_t  *multicrop_waddmode[
-    MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropxstart[
-    MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropxsize[
-    MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropystart[
-    MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropysize[
-    MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wbinfact[
-    MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropxpos[
-    MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropypos[
-    MAXNB_CROPWINDOW];
+static int64_t  *multicrop_wactive[MAXNB_CROPWINDOW];
+static int64_t  *multicrop_waddmode[MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropxstart[MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropxsize[MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropystart[MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropysize[MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wbinfact[MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropxpos[MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropypos[MAXNB_CROPWINDOW];
 
 
 /* ================================================================
@@ -149,11 +142,9 @@ static MILK_HOT errno_t fpsexec(
 {
     uint32_t ox = *multicrop_outxsize;
     uint32_t oy = *multicrop_outysize;
-    size_t ts = ImageStreamIO_typesize(
-        imgin->md[0].datatype);
+    size_t ts = ImageStreamIO_typesize(imgin->md[0].datatype);
 
-    memset(imgout->array.raw, 0,
-           ts * ox * oy);
+    memset(imgout->array.raw, 0, ts * ox * oy);
 
     for (int w = 0;
          w < MAXNB_CROPWINDOW; w++)
@@ -161,20 +152,13 @@ static MILK_HOT errno_t fpsexec(
         if (multicrop_wactive[w]
             && *multicrop_wactive[w] == 1)
         {
-            uint32_t xs =
-                *multicrop_wcropxstart[w];
-            uint32_t ys =
-                *multicrop_wcropystart[w];
-            uint32_t xw =
-                *multicrop_wcropxsize[w];
-            uint32_t yw =
-                *multicrop_wcropysize[w];
-            uint32_t xp =
-                *multicrop_wcropxpos[w];
-            uint32_t yp =
-                *multicrop_wcropypos[w];
-            uint32_t bf =
-                *multicrop_wbinfact[w];
+            uint32_t xs = *multicrop_wcropxstart[w];
+            uint32_t ys = *multicrop_wcropystart[w];
+            uint32_t xw = *multicrop_wcropxsize[w];
+            uint32_t yw = *multicrop_wcropysize[w];
+            uint32_t xp = *multicrop_wcropxpos[w];
+            uint32_t yp = *multicrop_wcropypos[w];
+            uint32_t bf = *multicrop_wbinfact[w];
             if (bf < 1) {
                 bf = 1;
             }
@@ -185,8 +169,7 @@ static MILK_HOT errno_t fpsexec(
             if (xs + cxw
                 > imgin->md[0].size[0])
             {
-                cxw = imgin->md[0].size[0]
-                      - xs;
+                cxw = imgin->md[0].size[0] - xs;
             }
             uint32_t cyw = yw;
             if (yp + cyw / bf > oy) {
@@ -195,30 +178,20 @@ static MILK_HOT errno_t fpsexec(
             if (ys + cyw
                 > imgin->md[0].size[1])
             {
-                cyw = imgin->md[0].size[1]
-                      - ys;
+                cyw = imgin->md[0].size[1] - ys;
             }
             for (uint32_t j = 0;
                  j < cyw; j++)
             {
-                uint64_t ioff =
-                    (uint64_t)(ys + j)
-                    * imgin->md[0].size[0]
-                    + xs;
-                uint64_t ooff =
-                    (uint64_t)(yp + j / bf)
-                    * ox + xp;
+                uint64_t ioff = (uint64_t)(ys + j) * imgin->md[0].size[0] + xs;
+                uint64_t ooff = (uint64_t)(yp + j / bf) * ox + xp;
                 if (*multicrop_waddmode[w]
                     == 0)
                 {
                     memcpy(
                         ((char *)
                          imgout->array.raw)
-                        + ooff * ts,
-                        ((char *)
-                         imgin->array.raw)
-                        + ioff * ts,
-                        ts * (cxw / bf));
+                        + ooff * ts, ((char *) imgin->array.raw) + ioff * ts, ts * (cxw / bf));
                 }
                 else if (
                     imgin->md[0].datatype
@@ -227,10 +200,7 @@ static MILK_HOT errno_t fpsexec(
                     for (uint32_t i = 0;
                          i < cxw; i++)
                     {
-                        imgout->array.F[
-                            ooff + i / bf]
-                            += imgin->array.F[
-                                ioff + i];
+                        imgout->array.F[ooff + i / bf] += imgin->array.F[ioff + i];
                     }
                 }
             }
@@ -268,26 +238,15 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    IMGID in = imgid_make_from_name(
-        multicrop_insname);
-    resolveIMGID(
-        &in, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID in = imgid_make_from_name(multicrop_insname);
+    resolveIMGID(&in,   ERRMODE_ABORT, dcimg, dcnimg);
     IMGID out = stream_connect_create_2D(
-        multicrop_outsname,
-        *multicrop_outxsize,
-        *multicrop_outysize,
-        in.md->datatype);
+        multicrop_outsname, *multicrop_outxsize, *multicrop_outysize, in.md->datatype);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(in.im, out.im);
+    processinfo_update_output_stream(processinfo, out.im, in.im);
 
-    fpsexec(in.im, out.im);
-    processinfo_update_output_stream(
-        processinfo, out.im, in.im);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
 }
 
 
@@ -299,20 +258,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMODE_arith__multicrop2D()
 {
-    CLIcmddata.FPS_customCONFcheck =
-        multicrop2D_validate;
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    CLIcmddata.FPS_customCONFcheck = multicrop2D_validate;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

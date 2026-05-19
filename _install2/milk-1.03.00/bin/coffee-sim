@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+
+
+# exit on error
+#set -e
+
+
+size=1024 # default
+file="./conf/conf_size.txt"
+if [ -f $file ]
+        then
+        size=$(echo "$(cat $file)")
+        echo "size = $size pix"
+fi
+
+
+
+
+pupfile="pup_$size.fits"
+
+
+errorstatus=0 # if 1, stop code, print error message and it in file "errorstatus.txt"
+
+
+
+# save command string to filesystem (useful for debugging)
+mkdir -p log
+echo "$0 $@" > ./log/$(basename $0)_cmdstring.txt
+
+
+
+errorfile="errorstatus.txt"
+checkerrorstatus ()
+{
+if [ -f ${errorfile} ]
+then
+echo ""
+echo "****** [$(date)] FATAL ERROR: script $0 : $(cat ${errorfile})"
+echo "****** exit script $0"
+echo "****** bye !"
+echo ""
+exit
+fi
+}
+
+printhelp ()
+{
+	echo ""
+	echo "------------------------------------------------------------------------------"
+	echo ""
+	echo "         RUN PIAACMC DESIGN / EVALUATION"
+	echo "         this script is called by script runopt"
+	echo ""
+	echo ""
+	echo ""
+	echo "Syntax:"
+	echo " $0 <1:designstep> <2:pscale> <3:coin> <4:coout> <5:fpmrad> <6:lambda> <7:PIAAmaterial> <8:LStransm> <9:NBlyotstop> <10:mlambda> <11:mlambdaB> <12:NBrings> <13:maskradld> <14:ssize> <15:extmode> <16:fpmmaterial> <17:index>"
+	echo "Example : "
+	echo " $0 optsingle    0.00011       0.30     0.29         1.10       650          Mirror         0.75            4           850          10            22           1.60          15           0          Mirror      001"
+	echo ""
+	echo " 1     designstep  : see documentation"
+	echo
+	echo "Arguments specific to PIAACMC design excluding focal plane mask :"
+	echo " 2    pscale       : pixel scale in pupil (Note: should be adjusted to have 200 pix radius beam)"
+	echo " 3    coin         : input central obstruction"
+	echo " 4    coout        : output central obstruction"
+	echo " 5    fpmrad       : nominal PIAACMC focal plane mask radius"
+	echo " 6    lambda       : design wavelength"
+	echo " 7    PIAAmaterial : PIAA optics material"
+	echo " 8    LStransm     : Lyot stops geometric transmission"
+	echo " 9    NBlyotstop   : Number of Lyot stops"
+	echo "Note: other settings are specified as conf_.txt files:"
+	echo "            conf_size.txt            [default = 1024]  : array size                                $size pix"
+	echo "            ./log/conf_MdesignStepMax.txt  [default = 13]    : max design step for monochromatic design  $MdesignStepMax"
+	echo ""
+	echo ""
+	echo "Arguments specific to PIAACMC focal plane mask :"
+	echo " 10   mlambda      : mask wavelength [nm]"
+	echo " 11   mlambdaB     : mask bandwidth [%]"
+	echo " 12   NBrings      : number of rings in the focal plane mask"
+	echo " 13   maskradld    : physical mask radius [l/D]"
+
+	echo " 14   fpmminsag    : Focal plane mask min sag [m]"
+	echo " 15   fpmmaxsag    : Focal plane mask max sag [m]"
+	echo " 16   fpmregsag_coeff  : regularization coefficient"
+	echo " 17   fpmregsag_alpha  : regularization exponent"
+	echo " 18   fpmccnbr     : Center cone number of rings"
+	echo " 19   fpmccz       : center cone sag"
+	echo " 20   fpmocradld   : outer cone radius [l/D]"
+	echo " 21   fpmocz       : outer cone sag [m]"
+
+	echo " 22   ssize        : extended source radius [-10 log(rad)]. 00 if point source"
+	echo " 23   extmode      : extended source mode (0: 3pts, 1: 6pts)"
+	echo " 24   fpmmaterial  : material used for the focal plane mask"
+	echo ""
+	echo " 25   index"
+	echo ""
+	echo "------------------------------------------------------------------------------"
+	echo ""
+}
+
+NBARGS=25
+
+if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
+	printhelp
+if [ "$#" -ne $NBARGS ]; then
+	echo "$0: Illegal number of parameters ($NBARGS params required, $# entered)"
+	echo "Command string: "
+	echo " $0 $@"
+	echo "$0: Illegal number of parameters ($NBARGS params required, $# entered)" > $errorfile
+	checkerrorstatus
+fi
+	exit
+fi
+
+
+# CHECK IF PUPIL EXISTS
+if [ ! -f $pupfile ]
+then
+echo "File $pupfile missing" > $errorfile
+checkerrorstatus
+fi
+
+
+
+
+designstep=$1
+
+# arguments related to PIAACMC optical design, expect focal plane mask
+pscale=$2
+coin=$3   # input central obstruction (linear)
+coout=$4  # output central obstruction (linear)
+fpmrad=$5   # nominal PIAA focal plane mask radius
+tmp=$6
+lambda=$(echo $tmp | sed 's/^0*//')
+PIAAmaterial="$7"
+LStransm=$8
+NBlyotstop=$9
+
+# arguments related to focal plane mask design
+tmp=${10}
+mlambda=$(echo $tmp | sed 's/^0*//')
+
+tmp=${11}
+mlambdaB=$(echo $tmp | sed 's/^0*//')
+
+NBrings=${12}
+maskradld=${13}
+fpmminsag=${14}
+fpmmaxsag=${15}
+fpmregsag_coeff=${16}
+fpmregsag_alpha=${17}
+fpmccnbr=${18}
+fpmccz=${19}
+fpmocradld=${20}
+fpmocz=${21}
+ssize=${22}
+extmode=${23}
+fpmmaterial="${24}"
+
+
+
+
+
+
+# configuration index
+index=${25}
+
+
+
+
+
+#dircode=$(printf "1_coin%5.3f_coout%5.3f_fpmr%5.3f_l%04d_%s_lt%4.2f_ls%d_i%03d" "$coin" "$coout" "$fpmrad" "$lambda" "$PIAAmaterial" "$LStransm" "$NBlyotstop" "$index")
+dircode=$(printf "i%03d" "$index")
+dirname="piaacmcconf_$dircode"
+echo "$dirname" > ./log/dirname.txt
+
+
+
+
+#dirname=piaacmcconf0${maskradcode}
+echo "Directory name: $dirname"
+
+if [ 500 -eq $designstep ]; then
+echo "500: SAVE AS REFERENCE"
+dircode1=$(printf "1_coin%5.3f_coout%5.3f_fpmr%5.3f" "$coin" "$coout" "$fpmrad")
+dirname1="piaacmcconf_$dircode1"
+echo "$dirname1" > ./log/dirname1.txt
+if [ ! -d $dirname1 ]; then
+echo "CREATING DIRECTORY $dirname1"
+mkdir -p $dirname1
+cp $dirname/pupa0_*.fits $dirname1/
+cp $dirname/piaa0Cmodes.fits $dirname1/
+cp $dirname/piaa0Fmodes.fits $dirname1/
+cp $dirname/piaa1Cmodes.fits $dirname1/
+cp $dirname/piaa1Fmodes.fits $dirname1/
+cp $dirname/piaacmcparams.conf $dirname1/
+cp $dirname/LyotStop*.fits $dirname1/
+cp $dirname/PIAA_Mshapes.txt $dirname1/
+cp $dirname/piaam0z.fits $dirname1/
+cp $dirname/piaam1z.fits $dirname1/
+cp $dirname/piaa0z.fits $dirname1/
+cp $dirname/piaa1z.fits $dirname1/
+cp $dirname/APOmodesCos.fits $dirname1/
+cp $dirname/apo2Drad.fits $dirname1/
+cp $dirname/APLCapo.*.info $dirname1/
+cp $dirname/step0*.txt $dirname1/
+cp $dirname/piaacmcparams_idealmonomask.conf $dirname1/
+fi
+exit
+fi
+
+
+# if the directory does not exit, but a reference does exist, then copy reference
+if [ 501 -eq $designstep ]; then
+echo "501: LOAD REFERENCE"
+dircode1=$(printf "1_coin%5.3f_coout%5.3f_fpmr%5.3f" "$coin" "$coout" "$fpmrad")
+dirname1="piaacmcconf_$dircode1"
+echo "$dirname1" > ./log/dirname1.txt
+if [ -d $dirname1 ]; then
+if [ ! -d $dirname ]; then
+echo "IMPORTING MONOCHROMATIC SOLUTION ... "
+sleep 2
+echo "CREATING DIRECTORY $dirname"
+mkdir -p $dirname
+cp $dirname1/pupa0_*.fits $dirname/
+cp $dirname1/piaa0Cmodes.fits $dirname/
+cp $dirname1/piaa0Fmodes.fits $dirname/
+cp $dirname1/piaa1Cmodes.fits $dirname/
+cp $dirname1/piaa1Fmodes.fits $dirname/
+cp $dirname1/piaacmcparams.conf $dirname/
+cp $dirname1/LyotStop*.fits $dirname/
+cp $dirname1/PIAA_Mshapes.txt $dirname/
+cp $dirname1/piaam0z.fits $dirname/
+cp $dirname1/piaam1z.fits $dirname/
+cp $dirname1/piaa0z.fits $dirname/
+cp $dirname1/piaa1z.fits $dirname/
+cp $dirname1/APOmodesCos.fits $dirname/
+cp $dirname1/apo2Drad.fits $dirname/
+cp $dirname1/APLCapo.*.info $dirname/
+cp $dirname1/step0*.txt $dirname/
+cp $dirname1/piaacmcparams_idealmonomask.conf $dirname/
+fi
+fi
+exit
+fi
+
+
+echo "====== EXECUTING: coffee-runPIAACMC $dirname $size $pscale $pupfile $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $ssize $extmode $fpmmaterial $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $index $designstep"
+
+
+
+
+
+# $fpmrad $coin $coout $rmode $emode $sprange $lambda $PIAAmaterial $designstep"
+#echo "----------------$designstep ->  ssize = $ssize"
+
+
+datestr=`date -u +%Y-%m-%d_%H:%M:%S`
+echo "$datestr  coffee-runPIAACMC $dirname $size $pscale $pupfile $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $ssize $extmode $fpmmaterial $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $index $designstep" >> cmdlog.txt
+
+coffee-runPIAACMC $dirname $size $pscale $pupfile $coin $coout $fpmrad $lambda $PIAAmaterial $LStransm $NBlyotstop $mlambda $mlambdaB $NBrings $maskradld $ssize $extmode $fpmmaterial $fpmminsag $fpmmaxsag $fpmregsag_coeff $fpmregsag_alpha $fpmccnbr $fpmccz $fpmocradld $fpmocz $index $designstep
+#$fpmrad $coin $coout ${rmode} ${emode} ${sprange} $lambda $PIAAmaterial $designstep
+
+#cp -rf $dirname ${dirname}_step$designstep
+
+
+
+
+# line 630

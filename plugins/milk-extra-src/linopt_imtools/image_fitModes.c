@@ -23,7 +23,9 @@ static int fmInit = 0;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imfitmodes",
     .cmdkey      = "imfitmodes",
-    .description = "fit image as sum of modes"
+    .description = "fit image as sum of modes",
+    .description_long =
+        "Fit an image as a weighted sum of mode images using least-squares. Returns the best-fit coefficients."
 };
 
 

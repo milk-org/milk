@@ -1,0 +1,9 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "CLIcore.h"
+#include "CLIcore_UI_execute.h"
+#include "CLIcore_script.h"
+#include "CLIcore/cli_calc_parser.h"

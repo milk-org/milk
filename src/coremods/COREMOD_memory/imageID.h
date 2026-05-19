@@ -6,19 +6,32 @@
 #include <string.h>
 #include <stdlib.h>
 
+/**
+ * @brief Register an IMGID in the CLI image array.
+ *
+ * If the image is already in the array (by name), the
+ * temporary IMAGE is closed and the IMGID is pointed at
+ * the existing entry.  Otherwise, the image is moved into
+ * the first available slot.  When imagearray is NULL
+ * (standalone / non-CLI mode), the image is simply closed.
+ *
+ * @param img         IMGID to register (img->im is consumed)
+ * @param imagearray  Global IMAGE array (NULL in standalone)
+ * @param NB_images   Size of the image array
+ * @return Slot index in imagearray, or -1 on failure
+ */
 static inline imageID RegisterIMGID(
     IMGID *img,
     IMAGE *imagearray,
-    long NB_images
-)
+    long  NB_images)
 {
     imageID ID = -1;
 
-    if (imagearray == NULL)
+    if(imagearray == NULL)
     {
         // If no array provided, we close the image and return 0 (success) or -1 (fail)
         // This corresponds to non-CLI mode check
-        if (img->ID != -1)
+        if(img->ID != -1)
         {
             ImageStreamIO_closeIm(img->im);
             free(img->im);
@@ -33,7 +46,7 @@ static inline imageID RegisterIMGID(
     if(ID != -1)
     {
         // Already loaded: close the one we just opened and point to the existing one
-        if (img->im != NULL)
+        if(img->im != NULL)
         {
             ImageStreamIO_closeIm(img->im);
             free(img->im);
@@ -48,7 +61,7 @@ static inline imageID RegisterIMGID(
     {
         // Not loaded: find slot and move it
         ID = next_avail_image_ID(-1);
-        if (ID != -1)
+        if(ID != -1)
         {
             // We assume imagearray has enough space and ID is valid index
             // Move content
@@ -62,14 +75,15 @@ static inline imageID RegisterIMGID(
             // img.createcnt = dcimg[img.ID].createcnt; // Should be set? ImageStreamIO doesn't set createcnt?
             // Actually createcnt is in IMAGE struct, so it was copied.
 
-            imagearray[ID].used = 1; // next_avail_image_ID sets this, but just to be sure if we used different logic
+            imagearray[ID].used =
+                1; // next_avail_image_ID sets this, but just to be sure if we used different logic
 
             imgid_update_creationparams(img);
         }
         else
         {
             // No space available
-            if (img->im != NULL)
+            if(img->im != NULL)
             {
                 ImageStreamIO_closeIm(img->im);
                 free(img->im);
@@ -97,13 +111,12 @@ static inline imageID RegisterIMGID(
 
 static inline imageID _resolveIMGID_impl(
     const char *caller_file,
-    int caller_line,
+    int        caller_line,
     const char *caller_func,
-    IMGID *img,
-    int ERRMODE,
-    IMAGE *imagearray __attribute__((unused)),
-    long NB_images __attribute__((unused))
-)
+    IMGID      *img,
+    int        ERRMODE,
+    IMAGE      *imagearray __attribute__((unused)),
+    long       NB_images __attribute__((unused)))
 {
     // IF:
     // Not resolved before OR create counter mismatch OR not used.
@@ -121,7 +134,10 @@ static inline imageID _resolveIMGID_impl(
             img->createcnt = imagearray[img->ID].createcnt;
 
             // Populate the IMGID from the imageID metadata
-            imgid_update_creationparams(img);
+            if(img->mdt != NULL)
+            {
+                imgid_update_creationparams(img);
+            }
         }
     }
 
@@ -131,7 +147,7 @@ static inline imageID _resolveIMGID_impl(
     {
         if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
-            if (img->name[0] == '\0')
+            if(img->name[0] == '\0')
             {
                 const char *fpskey =
                     (img->fpskeyword[0] != '\0')
@@ -141,38 +157,38 @@ static inline imageID _resolveIMGID_impl(
                 if(img->fpskeyword[0] != '\0')
                 {
                     fprintf(stderr,
-                        "\n\033[1;31mABORT\033[0m "
-                        "resolveIMGID: stream name "
-                        "is empty.\n"
-                        "  FPS parameter : %s\n"
-                        "  Called from   : %s:%d"
-                        " in %s()\n"
-                        "  Fix: set the missing "
-                        "parameter, e.g.:\n"
-                        "    milk-fps-set %s"
-                        " <stream_name>\n",
-                        fpskey,
-                        caller_file, caller_line,
-                        caller_func,
-                        fpskey);
+                            "\n\033[1;31mABORT\033[0m "
+                            "resolveIMGID: stream name "
+                            "is empty.\n"
+                            "  FPS parameter : %s\n"
+                            "  Called from   : %s:%d"
+                            " in %s()\n"
+                            "  Fix: set the missing "
+                            "parameter, e.g.:\n"
+                            "    milk-fps-set %s"
+                            " <stream_name>\n",
+                            fpskey,
+                            caller_file, caller_line,
+                            caller_func,
+                            fpskey);
                 }
                 else
                 {
                     fprintf(stderr,
-                        "\n\033[1;31mABORT\033[0m "
-                        "resolveIMGID: stream name "
-                        "is empty.\n"
-                        "  FPS parameter : %s\n"
-                        "  Called from   : %s:%d"
-                        " in %s()\n"
-                        "  Fix: set the missing "
-                        "parameter and tag this "
-                        "IMGID with imgid_setfpskeyword() "
-                        "to enable a specific "
-                        "milk-fps-set suggestion.\n",
-                        fpskey,
-                        caller_file, caller_line,
-                        caller_func);
+                            "\n\033[1;31mABORT\033[0m "
+                            "resolveIMGID: stream name "
+                            "is empty.\n"
+                            "  FPS parameter : %s\n"
+                            "  Called from   : %s:%d"
+                            " in %s()\n"
+                            "  Fix: set the missing "
+                            "parameter and tag this "
+                            "IMGID with imgid_setfpskeyword() "
+                            "to enable a specific "
+                            "milk-fps-set suggestion.\n",
+                            fpskey,
+                            caller_file, caller_line,
+                            caller_func);
                 }
                 fflush(stderr);
                 abort();
@@ -199,6 +215,17 @@ static inline imageID _resolveIMGID_impl(
     return img->ID;
 }
 
+/**
+ * @brief Check whether a named stream is currently loaded.
+ *
+ * Performs a resolve attempt in ERRMODE_NULL (silent).
+ * Returns 1 if the image exists in the CLI image array,
+ * 0 otherwise.  Does not open shared memory — only checks
+ * the in-process image table.
+ *
+ * @param name  Stream name to look up
+ * @return 1 if found, 0 if not found or name is empty/NULL
+ */
 static inline int imgid_exists(const char *name)
 {
     if(name == NULL || name[0] == '\0')
@@ -206,7 +233,7 @@ static inline int imgid_exists(const char *name)
         return 0;
     }
 
-    IMGID img;
+    IMGID img = {0}; // Zero-initialize so img.mdt is NULL
     img.ID        = -1;
     img.im        = NULL;
     img.md        = NULL;
@@ -220,7 +247,20 @@ static inline int imgid_exists(const char *name)
 }
 
 
-static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
+/**
+ * @brief Build an IMGID from a known image array slot.
+ *
+ * Initializes an IMGID that points directly at
+ * dcimg[ID], bypassing name resolution.  Used when
+ * the caller already knows the slot index.
+ *
+ * @param name  Image name to store in the IMGID
+ * @param ID    Index into the global dcimg[] array
+ * @return Fully populated IMGID
+ */
+static inline IMGID makesetIMGID(
+    CONST_WORD name,
+    imageID    ID)
 {
     IMGID img;
 
@@ -264,6 +304,18 @@ stream_connect(
 
 
 
+/**
+ * @brief Create a shared-memory image from IMGID template
+ *        parameters and register it in the CLI array.
+ *
+ * Uses the metadata template (mdt) fields — naxis, size,
+ * datatype, shared, NBkw, CBsize — to call
+ * create_image_ID().  After creation, img->im, img->md,
+ * and img->createcnt are updated.
+ *
+ * @param img  IMGID with name and mdt populated
+ * @return Image slot ID, or -1 on failure
+ */
 static inline imageID createimagefromIMGID(IMGID *img)
 {
     create_image_ID(img->name,
@@ -289,8 +341,7 @@ static inline imageID createimagefromIMGID(IMGID *img)
  */
 static inline imageID imcreatelikewiseIMGID(
     IMGID *target_img,
-    IMGID *source_img
-)
+    IMGID *source_img)
 {
     if(target_img->ID == -1)
     {
@@ -299,9 +350,9 @@ static inline imageID imcreatelikewiseIMGID(
          * re-use after the create_image_ID call.
          */
         imageID old_id = image_ID(
-            target_img->name,
-            dcimg,
-            dcnimg);
+                             target_img->name,
+                             dcimg,
+                             dcnimg);
         uint64_t old_createcnt = 0;
         int existed = 0;
 
@@ -333,8 +384,8 @@ static inline imageID imcreatelikewiseIMGID(
          * (re-)created by comparing createcnt.
          */
         int reused = (existed
-            && target_img->createcnt
-               == old_createcnt);
+                      && target_img->createcnt
+                      == old_createcnt);
 
         if(reused)
         {
@@ -401,13 +452,12 @@ static inline imageID imcreateIMGID(IMGID *img)
  */
 static inline IMGID _stream_connect_create_2D_impl(
     const char *__restrict imname,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint8_t  datatype,
-    const char *caller_file,
-    int        caller_line,
-    const char *caller_func
-)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint8_t                datatype,
+    const char             *caller_file,
+    int                    caller_line,
+    const char             *caller_func)
 {
     /* Guard: an empty or NULL stream name means a required FPS
      * parameter was never configured.  Detect here and abort with
@@ -418,7 +468,7 @@ static inline IMGID _stream_connect_create_2D_impl(
      * which module variable was empty — look it up in source to
      * find the associated FPS parameter key.
      */
-    if (imname == NULL || imname[0] == '\0')
+    if(imname == NULL || imname[0] == '\0')
     {
         fprintf(stderr,
                 "\n\033[1;31mABORT\033[0m stream_connect_create_2D: "
@@ -455,6 +505,7 @@ static inline IMGID _stream_connect_create_2D_impl(
         imgc.mdt->size[1]    = ysize;
         imgc.mdt->NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = imgid_compare(img, imgc);
+        imgid_free(&imgc);
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
@@ -511,13 +562,29 @@ static inline IMGID _stream_connect_create_2D_impl(
     _stream_connect_create_2D_impl(imname, xsize, ysize, _DATATYPE_FLOAT, \
                                    __FILE__, __LINE__, __FUNCTION__)
 
+/**
+ * @brief Connect to a 3D stream, creating it if missing
+ *        or mismatched.
+ *
+ * Tries to resolve the stream in local memory, then in
+ * shared memory.  If found, validates datatype, naxis,
+ * and size against the requested parameters.  A mismatch
+ * deletes the existing stream and re-creates it.  If not
+ * found at all, creates a new shared 3D stream.
+ *
+ * @param imname    Stream name
+ * @param xsize     Width in pixels
+ * @param ysize     Height in pixels
+ * @param zsize     Depth (number of slices)
+ * @param datatype  Image datatype (_DATATYPE_*)
+ * @return IMGID with connection established
+ */
 static inline IMGID stream_connect_create_3D(
     const char *__restrict imname,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize,
-    uint8_t  datatype
-)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize,
+    uint8_t                datatype)
 {
     IMGID img = imgid_make_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
@@ -542,6 +609,7 @@ static inline IMGID stream_connect_create_3D(
         imgc.mdt->size[2]    = zsize;
         imgc.mdt->NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = imgid_compare(img, imgc);
+        imgid_free(&imgc);
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
@@ -592,9 +660,9 @@ static inline IMGID stream_connect_create_3D(
  */
 static inline IMGID stream_connect_create_3Df32(
     const char *__restrict imname,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize)
 {
     return stream_connect_create_3D(imname, xsize, ysize, zsize, _DATATYPE_FLOAT);
 }

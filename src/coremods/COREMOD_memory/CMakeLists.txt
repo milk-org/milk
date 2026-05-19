@@ -25,9 +25,7 @@ set(SOURCEFILES
     image_copy_shm.c
     image_ID.c
     image_keyword.c
-    image_keyword_addD.c
-    image_keyword_addL.c
-    image_keyword_addS.c
+    image_keyword_add.c
     image_keyword_list.c
     image_make2D.c
     image_make3D.c
@@ -87,9 +85,6 @@ set(INCLUDEFILES
     image_ID.h
     imageID.h
     image_keyword.h
-    image_keyword_addD.h
-    image_keyword_addL.h
-    image_keyword_addS.h
     image_keyword_list.h
     image_make2D.h
     image_make3D.h
@@ -129,13 +124,11 @@ set(INCLUDEFILES
 # list scripts that should be installed on system
 set(SCRIPTFILES
   scripts/milk-nettransmit
-	scripts/milk-rmshmim
-	scripts/milk-shmimave
-	scripts/milk-shmimpurge
-	scripts/milk-shmimcopy-semtrig
-	scripts/milk-shmimpoke
-	scripts/milk-shmimpoke-semtrig
-	scripts/milk-semloopspeed
+  scripts/milk-shmimave
+  scripts/milk-shmimcopy-semtrig
+  scripts/milk-shmimpoke
+  scripts/milk-shmimpoke-semtrig
+  scripts/milk-semloopspeed
   scripts/milk-streamFITSlog
 )
 
@@ -289,6 +282,9 @@ if(USE_STATIC_LTO)
 endif()
 
 add_milk_standalone(mem-streamave stream_ave.c)
+add_milk_standalone(mem-streampoke stream_poke.c)
+add_milk_standalone(mem-streamcopy stream_copy.c)
+add_milk_standalone(imkwadd image_keyword_add.c)
 
 # Standalone executable
 add_executable(milk-fpsexec-cnt2push cnt2push_main.c)
@@ -298,24 +294,74 @@ install(TARGETS milk-fpsexec-cnt2push DESTINATION bin)
 
 add_executable(milk-stream-list milk-stream-list.c)
 target_include_directories(milk-stream-list PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-stream-list ImageStreamIO)
 install(TARGETS milk-stream-list DESTINATION bin)
 
 add_executable(milk-stream-create milk-stream-create.c)
 target_include_directories(milk-stream-create PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-stream-create ImageStreamIO)
 install(TARGETS milk-stream-create DESTINATION bin)
 
 add_executable(milk-stream-rm milk-stream-rm.c)
 target_include_directories(milk-stream-rm PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkscript>)
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkscript>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-stream-rm ImageStreamIO)
 install(TARGETS milk-stream-rm DESTINATION bin)
 
 add_executable(milk-streamCTRL-cli milk-streamCTRL-cli.c)
 target_include_directories(milk-streamCTRL-cli PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-streamCTRL-cli ImageStreamIO)
 install(TARGETS milk-streamCTRL-cli DESTINATION bin)
+
+# ==========================================
+# milk-makecsetandrt
+# Replaces bash script milk-makecsetandrt
+# ==========================================
+add_executable(milk-makecsetandrt milk-makecsetandrt.c)
+target_include_directories(milk-makecsetandrt PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_link_libraries(milk-makecsetandrt PRIVATE milkcommon)
+install(TARGETS milk-makecsetandrt DESTINATION bin)
+
+# ==========================================
+# milk-shmimpurge
+# Replaces bash script milk-shmimpurge
+# ==========================================
+add_executable(milk-shmimpurge milk-shmimpurge.c)
+target_include_directories(milk-shmimpurge PRIVATE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_link_libraries(milk-shmimpurge PRIVATE ImageStreamIO)
+install(TARGETS milk-shmimpurge DESTINATION bin)
+
+# ==========================================
+# milk-logshim-ctrl
+# Unified replacement for the 5 milk-logshim* scripts:
+#   milk-logshim, milk-logshimkill, milk-logshimon,
+#   milk-logshimoff, milk-logshimstat
+# ==========================================
+add_executable(milk-logshim-ctrl milk-logshim-ctrl.c)
+target_include_directories(milk-logshim-ctrl PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+install(TARGETS milk-logshim-ctrl DESTINATION bin)
+
+# ==========================================
+# milk-stream-link
+# C replacement for the milk-streamlink bash script.
+# Reads conf/streamlink.*.name.txt, creates SHM symlink,
+# writes imsize.txt via ImageStreamIO.
+# ==========================================
+add_executable(milk-stream-link milk-stream-link.c)
+target_include_directories(milk-stream-link PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>)
+target_link_libraries(milk-stream-link PRIVATE ImageStreamIO)
+install(TARGETS milk-stream-link DESTINATION bin)

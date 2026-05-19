@@ -31,7 +31,9 @@ static long long p_nbstep = 100;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "profile",
     .cmdkey      = "profile",
-    .description = "radial profile"
+    .description = "radial profile",
+    .description_long =
+        "Compute the azimuthally-averaged radial profile of a 2D image centered on a specified point."
 };
 
 #define FPS_PARAMS(X) \
@@ -126,8 +128,11 @@ errno_t profile(const char *ID_name,
 {
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0]  = imgin.md->size[0];

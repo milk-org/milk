@@ -38,7 +38,7 @@ In this mode, arguments are captured via the CLI parser
 ### Key Characteristics
 
 - **Local Memory FPS:** CLI implementations maintain an
-  entirely local `FUNCTION_PARAMETER_STRUCT` (with
+  entirely local `FPS` (with
   `.SMfd = -1`) preventing the need for shared memory
   allocations if the command executes synchronously in a
   single shot.
@@ -102,6 +102,9 @@ segment.
     and command help.
   - `-h1`, `--help-oneline`: Print one-line description
     and exit.
+  - `-h2`, `--help-description`: Print verbose description
+    only (no color) and exit.
+  - `-hm`, `--help-mono`: Full help, forced monochrome.
   - `-tmux`: Automatically create a `tmux` session and
     dispatch commands isolated from the main terminal.
   - `-n`, `--name <fpsname>`: Override the default FPS

@@ -26,7 +26,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "shmimpoke",
     .cmdkey      = "shmimpoke",
-    .description = "update stream without changing content"
+    .description = "update stream without changing content",
+    .description_long =
+        "Write a test pattern or constant value into a shared memory stream at a configurable rate. Useful for testing downstream consumers and verifying semaphore triggering."
 };
 
 
@@ -34,8 +36,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inimname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "stream";
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 
 
 /* ================================================================
@@ -72,16 +73,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID img = imgid_make_from_name(inimname);
-    resolveIMGID(
-        &img, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    resolveIMGID(&img,  ERRMODE_ABORT, dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    processinfo_update_output_stream(
-        processinfo, img.im, NULL);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    processinfo_update_output_stream(processinfo, img.im, NULL);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -94,18 +90,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__stream_poke()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

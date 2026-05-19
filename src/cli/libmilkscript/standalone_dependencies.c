@@ -35,7 +35,9 @@ int        C_ERRNO = 0;
 /*                                         DUPLICATED CODE */
 /* ===============================================================================================
  */
-struct timespec timespec_diff(struct timespec start, struct timespec end)
+struct timespec timespec_diff(
+    struct timespec start,
+    struct timespec end)
 {
     struct timespec temp;
     if((end.tv_nsec - start.tv_nsec) < 0)
@@ -51,14 +53,19 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
     return temp;
 }
 
-int print_header(const char *str, char c)
+/**
+ * @brief Print the milk script engine header banner.
+ */
+int print_header(
+    const char *str,
+    char       c)
 {
     long n;
-    long i;
+
 
     attron(A_BOLD);
     n = strlen(str);
-    for(i = 0; i < (wcol - n) / 2; i++)
+    for(long i = 0; i < (wcol - n) / 2; i++)
     {
         printw("%c", c);
     }
@@ -73,7 +80,14 @@ int print_header(const char *str, char c)
     return (0);
 }
 
-void qs2l(double *array, long *array1, long left, long right)
+/**
+ * @brief Quicksort partition for long array.
+ */
+void qs2l(
+    double *array,
+    long   *array1,
+    long   left,
+    long   right)
 {
     register long i, j;
     double        x, y;
@@ -120,12 +134,22 @@ void qs2l(double *array, long *array1, long left, long right)
     }
 }
 
-void quick_sort2l(double *array, long *array1, long count)
+/**
+ * @brief Quicksort two parallel long arrays.
+ */
+void quick_sort2l(
+    double *array,
+    long   *array1,
+    long   count)
 {
     qs2l(array, array1, 0, count - 1);
 }
 
-void qs2l_double(double *array, long *array1, long left, long right)
+void qs2l_double(
+    double *array,
+    long   *array1,
+    long   left,
+    long   right)
 {
     register long i, j;
     double        x, y;
@@ -172,12 +196,18 @@ void qs2l_double(double *array, long *array1, long left, long right)
     }
 }
 
-void quick_sort2l_double(double *array, long *array1, long count)
+void quick_sort2l_double(
+    double *array,
+    long   *array1,
+    long   count)
 {
     qs2l_double(array, array1, 0, count - 1);
 }
 
-void qs_long(long *array, long left, long right)
+void qs_long(
+    long *array,
+    long left,
+    long right)
 {
     register long i, j;
     long          x, y;
@@ -218,7 +248,9 @@ void qs_long(long *array, long left, long right)
     }
 }
 
-void quick_sort_long(long *array, long count)
+void quick_sort_long(
+    long *array,
+    long count)
 {
     qs_long(array, 0, count - 1);
 }
@@ -247,43 +279,33 @@ void quick_sort_long(long *array, long count)
  * 			error message to be printed
  *
  */
-int printERROR(const char *file, const char *func, int line, char *errmessage)
+int printERROR(
+    const char *file,
+    const char *func,
+    int        line,
+    char       *errmessage)
 {
     fprintf(stderr,
             "%c[%d;%dm ERROR [ %s:%d: %s ]  %c[%d;m\n",
-            (char) 27,
-            1,
-            31,
-            file,
-            line,
-            func,
-            (char) 27,
-            0);
+            (char) 27, 1, 31, file, line, func, (char) 27, 0);
     if(C_ERRNO != 0)
     {
         char buff[256];
         if(strerror_r(errno, buff, 256) == 0)
         {
-            fprintf(stderr, "C Error: %s\n", buff);
+            PRINT_ERROR("C Error: %s", buff);
         }
         else
         {
-            fprintf(stderr, "Unknown C Error\n");
+            PRINT_ERROR("Unknown C Error");
         }
     }
     else
     {
-        fprintf(stderr, "No C error (errno = 0)\n");
+        PRINT_ERROR("No C error (errno = 0)");
     }
 
-    fprintf(stderr,
-            "%c[%d;%dm %s  %c[%d;m\n",
-            (char) 27,
-            1,
-            31,
-            errmessage,
-            (char) 27,
-            0);
+    fprintf(stderr, "%c[%d;%dm %s  %c[%d;m\n", (char) 27, 1, 31, errmessage, (char) 27, 0);
 
     C_ERRNO = 0;
 

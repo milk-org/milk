@@ -21,8 +21,7 @@
 void fps_print_query_info(
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,
-    int              nb_b
-);
+    int             nb_b);
 
 
 #endif /* FPS_CLI_QUERY_H */

@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+
+MSdescr="Apply AO calibration"
+
+MSextdescr="Load calibration to shared memory from filesystem
+To be executed from loop rootdir"
+
+source milk-script-std-config
+
+# check and load cacaovars
+source cacao-check-cacaovars
+RequiredCommands=(milk)
+RequiredPipes=()
+RequiredFiles=()
+
+MSarg+=( "calibname:string:calibration name" )
+
+
+source milk-argparse
+
+set +u
+if [ "${EXITSTATUS}" = "1" ]; then
+exit 1
+fi
+set -u
+
+
+
+calib="${inputMSargARRAY[0]}"
+echo "Calibration : ${calib}"
+
+#Directory name
+BASEARCHDIR="../${CACAO_LOOPNAME}-calibs/"
+ARCHDIR="${BASEARCHDIR}${calib}/"
+
+
+echo "Loop ${CACAO_LOOPNUMBER}: Loading calibration from ${ARCHDIR}"
+
+if [[ -d "${ARCHDIR}" ]]; then
+
+# Load CM to shared memory
+milk-FITS2shm "${ARCHDIR}/CMmodesWFS/CMmodesWFS.fits" aol${CACAO_LOOPNUMBER}_modesWFS
+milk-FITS2shm "${ARCHDIR}/CMmodesDM/CMmodesDM.fits" aol${CACAO_LOOPNUMBER}_DMmodes
+
+
+milk-FITS2shm "${ARCHDIR}/shmim.aol${CACAO_LOOPNUMBER}_wfsref.fits" aol${CACAO_LOOPNUMBER}_wfsref
+milk-FITS2shm "${ARCHDIR}/shmim.aol${CACAO_LOOPNUMBER}_wfsrefc.fits" aol${CACAO_LOOPNUMBER}_wfsrefc
+
+milk-FITS2shm "${ARCHDIR}/shmim.aol${CACAO_LOOPNUMBER}_wfsmask.fits" aol${CACAO_LOOPNUMBER}_wfsmask
+milk-FITS2shm "${ARCHDIR}/shmim.aol${CACAO_LOOPNUMBER}_wfsmap.fits" aol${CACAO_LOOPNUMBER}_wfsmap
+
+milk-FITS2shm "${ARCHDIR}/shmim.aol${CACAO_LOOPNUMBER}_dmmask.fits" aol${CACAO_LOOPNUMBER}_dmmask
+milk-FITS2shm "${ARCHDIR}/shmim.aol${CACAO_LOOPNUMBER}_dmmap.fits" aol${CACAO_LOOPNUMBER}_dmmap
+
+
+# record this calib as applied
+echo $(pwd)/../${ARCHDIR} > $MILK_SHM_DIR/aol${CACAO_LOOPNUMBER}_calib_source.txt
+
+DATESTRING="$(date -u --iso-8601=seconds)"
+
+echo ${DATESTRING} > $MILK_SHM_DIR/aol${CACAO_LOOPNUMBER}_calib_loaded.txt
+
+echo "${DATESTRING} APPLY ${calib}" >> ${BASEARCHDIR}/aol${CACAO_LOOPNUMBER}_archive-log.txt
+
+
+else
+    echo "DIRECTORY DOES NOT EXIST"
+fi

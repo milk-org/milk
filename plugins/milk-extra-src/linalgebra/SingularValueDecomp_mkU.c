@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "SVDmkU",
     .cmdkey      = "SVDmkU",
-    .description = "compute SVD U"
+    .description = "compute SVD U",
+    .description_long =
+        "Compute only the U matrix of the SVD decomposition for large matrices where the full SVD is memory-prohibitive."
 };
 
 
@@ -73,9 +75,15 @@ errno_t compute_SVDU(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imgM, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgV, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgS, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgM, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(&imgV, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgM.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (imgV.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imgS, ERRMODE_WARN, dcimg, dcnimg);
 
     computeSGEMM(
         imgM,
@@ -85,6 +93,9 @@ errno_t compute_SVDU(
         0,
         GPUdev
     );
+    if (imgS.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     printf("SGEMM DONE\n");
     fflush(stdout);
@@ -142,16 +153,25 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginM = imgid_make_from_name(inmatM);
-    resolveIMGID(&imginM, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginM, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginV = imgid_make_from_name(inmatV);
-    resolveIMGID(&imginV, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imginM.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imginV, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginS = imgid_make_from_name(invecS);
-    resolveIMGID(&imginS, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imginV.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imginS, ERRMODE_WARN, dcimg, dcnimg);
 
 
     IMGID imgoutU  = imgid_make_from_name(outmatU);
+    if (imginS.ID == -1) {
+        return RETURN_FAILURE;
+    }
     IMGID imgoutUS  = imgid_make_from_name(outmatUS);
 
 

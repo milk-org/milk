@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+CACAOTASK_SCRIPT_FNAME=$0
+source cacaotask-check # check environment
+
+# ======================================================================
+# PERFORM ACTIONS FOR THIS TASK
+# ======================================================================
+cacaotask_RETURNCODE=${CACAOTASK_RUN_SUCCESS}
+cd ${CACAO_LOOPROOTDIR}
+cacao-setup -t ${CACAO_LOOPNAME}
+
+# check if successful
+if [ "$?" = 0 ]; then
+    cacaotask_RETURNCODE=${CACAOTASK_RUN_SUCCESS}
+else
+    cacaotask_RETURNCODE=${CACAOTASK_RUN_FAIL}
+fi
+
+cd ${CURRENTDIR}
+
+# ======================================================================
+# WRITE CLEANUP SCRIPT FOR THIS TASK
+# ======================================================================
+
+# Inside cat <<EOT section :
+# ${VAR} will be resolved prior to writing to destination
+# \${VAR} will not be resolved, and will appear as ${VAR} in the destination
+
+cat <<EOT >>  ${CLEANSCRIPT}
+#!/usr/bin/env bash
+source milk-script-std-config
+
+rm -f ${CACAO_LOOPROOTDIR}/log/*.log
+rmdir ${CACAO_LOOPROOTDIR}/log || :
+
+cd ${CURRENTDIR}
+
+EOT
+
+
+# ======================================================================
+# STORE OUTPUT ENVIRONMENT VARIABLES
+# ======================================================================

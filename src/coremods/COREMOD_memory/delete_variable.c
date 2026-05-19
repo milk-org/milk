@@ -29,15 +29,7 @@ errno_t delete_variable_ID(const char *varname)
         fprintf(stderr,
                 "%c[%d;%dm WARNING: variable %s does not exist [ %s  %s  %d ] "
                 "%c[%d;m\n",
-                (char) 27,
-                1,
-                31,
-                varname,
-                __FILE__,
-                __func__,
-                __LINE__,
-                (char) 27,
-                0);
+                (char) 27, 1, 31, varname, __FILE__, __func__, __LINE__, (char) 27, 0);
 
     return RETURN_SUCCESS;
 }

@@ -211,13 +211,11 @@ double arith_shift(ArithParser *p)
         arith_skip_ws(p);
         if(op == '<')
         {
-            left = (double)((long)left
-                            << (long)right);
+            left = (double)((long)left << (long)right);
         }
         else
         {
-            left = (double)((long)left
-                            >> (long)right);
+            left = (double)((long)left >> (long)right);
         }
     }
     return left;
@@ -345,8 +343,7 @@ double arith_expr(ArithParser *p)
  */
 void cli_expand_arith(
     char *line,
-    int   maxlen
-)
+    int  maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos = 0;
@@ -401,21 +398,17 @@ void cli_expand_arith(
             if(result == floor(result)
                     && fabs(result) < 1e15)
             {
-                snprintf(rbuf, sizeof(rbuf),
-                         "%ld", (long) result);
+                snprintf(rbuf, sizeof(rbuf), "%ld", (long) result);
             }
             else
             {
-                snprintf(rbuf, sizeof(rbuf),
-                         "%g", result);
+                snprintf(rbuf, sizeof(rbuf), "%g", result);
             }
 
             int rlen = (int) strlen(rbuf);
             int avail = maxlen - 1 - opos;
-            int clen = rlen < avail
-                       ? rlen : avail;
-            memcpy(out + opos, rbuf,
-                   (size_t) clen);
+            int clen = rlen < avail ? rlen : avail;
+            memcpy(out + opos, rbuf, (size_t) clen);
             opos += clen;
         }
         else

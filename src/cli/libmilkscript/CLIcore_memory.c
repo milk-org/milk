@@ -44,18 +44,14 @@ errno_t memory_re_alloc()
 
         //   if(dcdebug>0)
         //    {
-        printf("%p IMAGE STRUCT SIZE = %ld\n",
-               dcimg,
-               (long) sizeof(IMAGE));
+        printf("%p IMAGE STRUCT SIZE = %ld\n", dcimg, (long) sizeof(IMAGE));
         printf("REALLOCATING IMAGE DATA BUFFER: %ld -> %ld\n",
-               dcnimg,
-               dcnimg + NB_IMAGES_BUFFER_REALLOC);
+               dcnimg, dcnimg + NB_IMAGES_BUFFER_REALLOC);
         fflush(stdout);
         //    }
         tmplong           = dcnimg;
         dcnimg = dcnimg + NB_IMAGES_BUFFER_REALLOC;
-        ptrtmp =
-            (IMAGE *) realloc(dcimg, sizeof(IMAGE) * dcnimg);
+        ptrtmp = (IMAGE *) realloc(dcimg, sizeof(IMAGE) * dcnimg);
         if(dcdebug > 0)
         {
             printf("NEW POINTER = %p\n", ptrtmp);
@@ -64,9 +60,7 @@ errno_t memory_re_alloc()
         dcimg = ptrtmp;
         if(dcimg == NULL)
         {
-            PRINT_ERROR(
-                "Reallocation of dcimg has failed - exiting "
-                "program");
+            PRINT_ERROR("Reallocation of dcimg has failed - exiting " "program");
             return -1; //  exit(0);
         }
         if(dcdebug > 0)
@@ -105,16 +99,11 @@ errno_t memory_re_alloc()
             fflush(stdout);
         }
         tmplong = dcnvar;
-        dcnvar =
-            dcnvar + NB_VARIABLES_BUFFER_REALLOC;
-        dcvar =
-            (VARIABLE *) realloc(dcvar,
-                                 sizeof(VARIABLE) * dcnvar);
+        dcnvar = dcnvar + NB_VARIABLES_BUFFER_REALLOC;
+        dcvar = (VARIABLE *) realloc(dcvar, sizeof(VARIABLE) * dcnvar);
         if(dcvar == NULL)
         {
-            PRINT_ERROR(
-                "Reallocation of dcvar has failed - exiting "
-                "program");
+            PRINT_ERROR("Reallocation of dcvar has failed - exiting " "program");
             return -1; // exit(0);
         }
 

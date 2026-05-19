@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "crop2D",
     .cmdkey      = "crop2D",
-    .description = "crop 2D image"
+    .description = "crop 2D image",
+    .description_long =
+        "Extract a rectangular sub-region from a 2D image stream. Specify origin coordinates (x0, y0) and output dimensions (xsize, ysize). The cropped output is written to a shared memory stream."
 };
 
 
@@ -32,12 +34,12 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *cropinsname = NULL;
-static char     *outsname    = NULL;
-static uint32_t *cropxstart  = NULL;
-static uint32_t *cropxsize   = NULL;
-static uint32_t *cropystart  = NULL;
-static uint32_t *cropysize   = NULL;
+static char     cropinsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     outsname[FUNCTION_PARAMETER_STRMAXLEN]    = "out";
+static uint32_t cropxstart  = 0;
+static uint32_t cropxsize   = 100;
+static uint32_t cropystart  = 0;
+static uint32_t cropysize   = 100;
 
 
 /* ================================================================
@@ -45,11 +47,11 @@ static uint32_t *cropysize   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".insname", &cropinsname, \
+    X(".insname", cropinsname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "Input stream name") \
-    X(".outsname", &outsname, \
+    X(".outsname", outsname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "Output stream name") \
@@ -79,19 +81,13 @@ static MILK_HOT errno_t fpsexec(
     IMAGE *input_image,
     IMAGE *output_image)
 {
-    if (!cropxstart || !cropxsize
-        || !cropystart || !cropysize)
-    {
-        return RETURN_FAILURE;
-    }
-    uint32_t xs = *cropxstart;
-    uint32_t xw = *cropxsize;
-    uint32_t ys = *cropystart;
-    uint32_t yw = *cropysize;
+    uint32_t xs = cropxstart;
+    uint32_t xw = cropxsize;
+    uint32_t ys = cropystart;
+    uint32_t yw = cropysize;
     uint32_t iw = input_image->md[0].size[0];
     uint32_t ih = input_image->md[0].size[1];
-    size_t ts = ImageStreamIO_typesize(
-        input_image->md[0].datatype);
+    size_t ts = ImageStreamIO_typesize(input_image->md[0].datatype);
 
     for (uint32_t j = 0; j < yw; j++) {
         uint32_t oj = j + ys;
@@ -101,11 +97,7 @@ static MILK_HOT errno_t fpsexec(
         __builtin_memcpy(
             ((char *)
              output_image->array.raw)
-            + j * xw * ts,
-            ((char *)
-             input_image->array.raw)
-            + (oj * iw + xs) * ts,
-            xw * ts);
+            + j * xw * ts, ((char *) input_image->array.raw) + (oj * iw + xs) * ts, xw * ts);
     }
     return RETURN_SUCCESS;
 }
@@ -116,32 +108,26 @@ static MILK_HOT errno_t fpsexec(
  */
 static errno_t __attribute__((unused)) crop2D_validate()
 {
-    if (!cropinsname || !cropxstart
-        || !cropxsize || !cropystart
-        || !cropysize)
-    {
-        return RETURN_SUCCESS;
-    }
     IMAGE im;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(
             cropinsname, &im) == 0)
     {
         uint32_t w = im.md[0].size[0];
         uint32_t h = im.md[0].size[1];
-        if (*cropxstart + *cropxsize > w) {
-            if (*cropxstart >= w) {
-                *cropxstart = 0;
+        if (cropxstart + cropxsize > w) {
+            if (cropxstart >= w) {
+                cropxstart = 0;
             }
-            if (*cropxstart + *cropxsize > w) {
-                *cropxsize = w - *cropxstart;
+            if (cropxstart + cropxsize > w) {
+                cropxsize = w - cropxstart;
             }
         }
-        if (*cropystart + *cropysize > h) {
-            if (*cropystart >= h) {
-                *cropystart = 0;
+        if (cropystart + cropysize > h) {
+            if (cropystart >= h) {
+                cropystart = 0;
             }
-            if (*cropystart + *cropysize > h) {
-                *cropysize = h - *cropystart;
+            if (cropystart + cropysize > h) {
+                cropysize = h - cropystart;
             }
         }
         ImageStreamIO_closeIm(&im);
@@ -163,24 +149,14 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    IMGID iin =
-        imgid_make_from_name(cropinsname);
-    resolveIMGID(
-        &iin, ERRMODE_ABORT,
-        dcimg, dcnimg);
-    IMGID iout = stream_connect_create_2D(
-        outsname, *cropxsize, *cropysize,
-        iin.md->datatype);
+    IMGID iin = imgid_make_from_name(cropinsname);
+    resolveIMGID(&iin,  ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID iout = stream_connect_create_2D(outsname, cropxsize, cropysize, iin.md->datatype);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(iin.im, iout.im);
+    processinfo_update_output_stream(processinfo, iout.im, iin.im);
 
-    fpsexec(iin.im, iout.im);
-    processinfo_update_output_stream(
-        processinfo, iout.im, iin.im);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
 }
 
 
@@ -192,19 +168,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_COREMODE_arith__crop2D()
 {
-    CLIcmddata.FPS_customCONFcheck =
-        crop2D_validate;
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    CLIcmddata.FPS_customCONFcheck = crop2D_validate;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

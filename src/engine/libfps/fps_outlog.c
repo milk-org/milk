@@ -1,10 +1,7 @@
 #include <stdarg.h>
-#include <unistd.h> // access()
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
-#include "timeutils.h"
 
 
 // set to 1 if logging
@@ -14,12 +11,15 @@ static int FLAG_FPSOUTLOG = -1;
 static char *fps_customfilename;
 
 
+/**
+ * @brief Gets the flag indicating whether FPS output logging is enabled.
+ */
 int get_FLAG_FPSOUTLOG()
 {
 
-    if( FLAG_FPSOUTLOG == -1 )
+    if(FLAG_FPSOUTLOG == -1)
     {
-        if( getenv("MILK_FPS_LOGOUTPUT") )
+        if(getenv("MILK_FPS_LOGOUTPUT"))
         {
             FLAG_FPSOUTLOG = 1;
         }
@@ -29,7 +29,7 @@ int get_FLAG_FPSOUTLOG()
         }
 
 
-        if( getenv("MILK_FPS_LOGFILE") )
+        if(getenv("MILK_FPS_LOGFILE"))
         {
             FLAG_FPSOUTLOG = 2;
             fps_customfilename = getenv("MILK_FPS_LOGFILE");
@@ -40,6 +40,9 @@ int get_FLAG_FPSOUTLOG()
 }
 
 
+/**
+ * @brief Sets the FPS output logging flag.
+ */
 errno_t set_FLAG_FPSOUTLOG(int val)
 {
     FLAG_FPSOUTLOG = val;
@@ -59,7 +62,7 @@ errno_t getFPSlogfname(
 {
     get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG == 2 )
+    if(FLAG_FPSOUTLOG == 2)
     {
         WRITE_FULLFILENAME(logfname, "%s", fps_customfilename);
 
@@ -71,21 +74,29 @@ errno_t getFPSlogfname(
 
         WRITE_FULLFILENAME(logfname,
                            "%s/fpslog.%ld.%07d.%s",
-                           shmdname,
-                           FPS_TIMESTAMP,
-                           getpid(),
-                           FPS_PROCESS_TYPE);
+                           shmdname, FPS_TIMESTAMP, getpid(), FPS_PROCESS_TYPE);
     }
 
     return RETURN_SUCCESS;
 }
 
 
+/**
+ * @brief Write one timestamped log entry to a file pointer.
+ *
+ * Formats the current UTC time with nanosecond precision and
+ * appends a single log line:
+ *   TIMESTAMP EPOCH.NSEC  KEYWORD MSG
+ *
+ * @param keyw       Log entry keyword (e.g., "SETVAL")
+ * @param msgstring  Free-form message text
+ * @param fpout      Open file pointer to write to
+ * @return RETURN_SUCCESS
+ */
 errno_t functionparameter_outlog_file(
     char *keyw,
     char *msgstring,
-    FILE *fpout
-)
+    FILE *fpout)
 {
     //get_FLAG_FPSOUTLOG();
 
@@ -105,11 +116,7 @@ errno_t functionparameter_outlog_file(
                    "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
                    1900 + uttime->tm_year,
                    1 + uttime->tm_mon,
-                   uttime->tm_mday,
-                   uttime->tm_hour,
-                   uttime->tm_min,
-                   uttime->tm_sec,
-                   tnow.tv_nsec);
+                   uttime->tm_mday, uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
 
     fprintf(fpout, "%s %ld.%09ld  %-12s %s\n", timestring, tnow.tv_sec, tnow.tv_nsec, keyw, msgstring);
     fflush(fpout);
@@ -128,11 +135,12 @@ errno_t functionparameter_outlog_file(
  */
 errno_t functionparameter_outlog(
     char *keyw,
-    const char *fmt, ...)
+    const char *fmt,
+    ...)
 {
     get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG )
+    if(FLAG_FPSOUTLOG)
     {
 
         // identify logfile and open file
@@ -148,8 +156,7 @@ errno_t functionparameter_outlog(
             fpout = fopen(logfname, "a");
             if(fpout == NULL)
             {
-                printf("ERROR: cannot open file\n");
-                exit(EXIT_FAILURE);
+                FUNC_RETURN_FAILURE("fopen(%s, \"a\") failed", logfname);
             }
             LogOutOpen = 1;
         }
@@ -171,10 +178,7 @@ errno_t functionparameter_outlog(
                        1900 + uttime->tm_year,
                        1 + uttime->tm_mon,
                        uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       tnow.tv_nsec);
+                       uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
 
         fprintf(fpout, "%s %ld.%09ld  %-12s ", timestring, tnow.tv_sec, tnow.tv_nsec, keyw);
 
@@ -199,7 +203,7 @@ errno_t functionparameter_outlog(
                 fclose(fpout);
                 LogOutOpen = 0;
             }
-            if ( FLAG_FPSOUTLOG == 1 )
+            if(FLAG_FPSOUTLOG == 1)
             {
                 remove(logfname);
             }
@@ -219,7 +223,7 @@ errno_t functionparameter_outlog_namelink()
 {
     //get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG == 1 )
+    if(FLAG_FPSOUTLOG == 1)
     {
         char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
@@ -228,10 +232,7 @@ errno_t functionparameter_outlog_namelink()
         getFPSlogfname(logfname);
 
         char linkfname[STRINGMAXLEN_FULLFILENAME];
-        WRITE_FULLFILENAME(linkfname,
-                           "%s/fpslog.%s",
-                           shmdname,
-                           FPS_PROCESS_TYPE);
+        WRITE_FULLFILENAME(linkfname, "%s/fpslog.%s", shmdname, FPS_PROCESS_TYPE);
 
         if(access(linkfname, F_OK) == 0)  // link already exists, remove
         {
@@ -242,7 +243,7 @@ errno_t functionparameter_outlog_namelink()
         if(symlink(logfname, linkfname) == -1)
         {
             int errnum = errno;
-            fprintf(stderr, "Error symlink: %s\n", strerror(errnum));
+            PRINT_ERROR("Error symlink: %s", strerror(errnum));
             PRINT_ERROR("symlink error %s %s", logfname, linkfname);
         }
     }

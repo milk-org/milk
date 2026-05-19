@@ -7,56 +7,50 @@
  * CLI argument indexing.
  */
 
-#include <string.h>
 
 #ifndef FPS_STANDALONE
-#include "CLIcore.h"
 #else
-#include "libmilkdata/milkdata.h"
 #endif
 #include "fps.h"
-#include "fps_add_entry.h"
-#include "fps_SetParamCLIindex.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_init.h"
 
 
+/**
+ * @brief Initialize FPS parameters from CLI bindings.
+ *
+ * Creates each parameter in the FPS using the type,
+ * description, and flags specified in the binding
+ * array. Called during fpsinit.
+ */
 errno_t fps_init_from_bindings(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    const char                *cmdkey,
-    const char                *description,
-    FPS_CLI_BINDING           *bindings,
-    int                        nb_b
-)
+    FPS             *fps,
+    const char      *cmdkey,
+    const char      *description,
+    FPS_CLI_BINDING *bindings,
+    int             nb_b)
 {
-    strncpy(fps->md->callprogname, cmdkey,
-            FPS_CALLPROGNAME_STRMAXLEN - 1);
-    strncpy(fps->md->description, description,
-            FPS_DESCR_STRMAXLEN - 1);
+    strncpy(fps->md->callprogname, cmdkey, FPS_CALLPROGNAME_STRMAXLEN - 1);
+    strncpy(fps->md->description, description, FPS_DESCR_STRMAXLEN - 1);
 
     int current_cli_index = 0;
 
-    for (int i = 0; i < nb_b; i++) {
+    for(int bind_idx = 0; bind_idx < nb_b; bind_idx++)
+    {
         long pindex;
-        uint64_t fpflag = bindings[i].fpflag;
+        uint64_t fpflag = bindings[bind_idx].fpflag;
         int cli_index = -1;
 
-        if (bindings[i].is_primary) {
+        if(bindings[bind_idx].is_primary)
+        {
             fpflag |= FPFLAG_PRIMARY_CLI_INPUT;
             cli_index = current_cli_index++;
         }
 
         function_parameter_add_entry(
             fps,
-            bindings[i].fpskeyword,
-            bindings[i].descr,
-            bindings[i].type,
-            fpflag,
-            bindings[i].ptr,
-            &pindex
-        );
-        functionparameter_SetParamCLIindex(
-            fps, pindex, cli_index);
+            bindings[bind_idx].fpskeyword,
+            bindings[bind_idx].descr,
+            bindings[bind_idx].type, fpflag, bindings[bind_idx].ptr, &pindex);
+        functionparameter_SetParamCLIindex(fps, pindex, cli_index);
     }
     return RETURN_SUCCESS;
 }

@@ -19,7 +19,7 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
-
+#include "milk_type_dispatch.h"
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "stream_av_std",
     .cmdkey      = "stream_av_std",
-    .description = "RT compute of ave/std of image streams"
+    .description = "RT compute of ave/std of image streams",
+    .description_long =
+        "Compute running temporal statistics (mean, standard deviation) of a shared memory stream in real-time."
 };
 
 
@@ -107,87 +109,36 @@ ave_std_accumulate(IMGID in_img, void *sum_x, void *sum_xx, int reset)
 
     if(reset)
     {
-        switch(in_img.md->datatype)
+#define ACCUM_RESET_BODY_F(MBR) FOREACH_CAST(0, n_pixels, MBR, float)
+#define ACCUM_RESET_BODY_D(MBR) FOREACH_CAST(0, n_pixels, MBR, double)
+
+        uint8_t datatype = in_img.md->datatype;
+        MILK_FOR_EACH_DATATYPE(datatype, ACCUM_RESET_BODY_F, ACCUM_RESET_BODY_D(D))
+        else
         {
-            case _DATATYPE_UINT8:
-                FOREACH_CAST(0, n_pixels, UI8, float);
-                break;
-            case _DATATYPE_INT8:
-                FOREACH_CAST(0, n_pixels, SI8, float);
-                break;
-            case _DATATYPE_UINT16:
-                FOREACH_CAST(0, n_pixels, UI16, float);
-                break;
-            case _DATATYPE_INT16:
-                FOREACH_CAST(0, n_pixels, SI16, float);
-                break;
-            case _DATATYPE_UINT32:
-                FOREACH_CAST(0, n_pixels, UI32, float);
-                break;
-            case _DATATYPE_INT32:
-                FOREACH_CAST(0, n_pixels, SI32, float);
-                break;
-            case _DATATYPE_UINT64:
-                FOREACH_CAST(0, n_pixels, UI64, double);
-                break;
-            case _DATATYPE_INT64:
-                FOREACH_CAST(0, n_pixels, SI64, double);
-                break;
-            case _DATATYPE_FLOAT:
-                FOREACH_CAST(0, n_pixels, F, float);
-                break;
-            case _DATATYPE_DOUBLE:
-                FOREACH_CAST(0, n_pixels, D, double);
-                break;
-            case _DATATYPE_COMPLEX_FLOAT:
-            case _DATATYPE_COMPLEX_DOUBLE:
-            default:
-                PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
-                return RETURN_FAILURE;
+            PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
+            return RETURN_FAILURE;
         }
+
+#undef ACCUM_RESET_BODY_F
+#undef ACCUM_RESET_BODY_D
     }
     else
     {
-        switch(in_img.md->datatype)
-        {
-            case _DATATYPE_UINT8:
-                FOREACH_CASTADD(0, n_pixels, UI8, float);
-                break;
-            case _DATATYPE_INT8:
-                FOREACH_CASTADD(0, n_pixels, SI8, float);
-                break;
-            case _DATATYPE_UINT16:
-                FOREACH_CASTADD(0, n_pixels, UI16, float);
-                break;
-            case _DATATYPE_INT16:
-                FOREACH_CASTADD(0, n_pixels, SI16, float);
-                break;
-            case _DATATYPE_UINT32:
-                FOREACH_CASTADD(0, n_pixels, UI32, float);
-                break;
-            case _DATATYPE_INT32:
-                FOREACH_CASTADD(0, n_pixels, SI32, float);
-                break;
-            case _DATATYPE_UINT64:
-                FOREACH_CASTADD(0, n_pixels, UI64, double);
-                break;
-            case _DATATYPE_INT64:
-                FOREACH_CASTADD(0, n_pixels, SI64, double);
-                break;
-            case _DATATYPE_FLOAT:
-                FOREACH_CASTADD(0, n_pixels, F, float);
-                break;
-            case _DATATYPE_DOUBLE:
-                FOREACH_CASTADD(0, n_pixels, D, double);
-                break;
-            case _DATATYPE_COMPLEX_FLOAT:
-            case _DATATYPE_COMPLEX_DOUBLE:
-            default:
-                PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
-                return RETURN_FAILURE;
-        }
-    }
+#define ACCUM_ADD_BODY_F(MBR) FOREACH_CASTADD(0, n_pixels, MBR, float)
+#define ACCUM_ADD_BODY_D(MBR) FOREACH_CASTADD(0, n_pixels, MBR, double)
 
+        uint8_t datatype = in_img.md->datatype;
+        MILK_FOR_EACH_DATATYPE(datatype, ACCUM_ADD_BODY_F, ACCUM_ADD_BODY_D(D))
+        else
+        {
+            PRINT_ERROR("COMPLEX TYPES UNSUPPORTED");
+            return RETURN_FAILURE;
+        }
+
+#undef ACCUM_ADD_BODY_F
+#undef ACCUM_ADD_BODY_D
+    }
 
     return RETURN_SUCCESS;
 }
@@ -273,12 +224,15 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID in_img = imgid_make_from_name(in_name);
-    resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&in_img, ERRMODE_WARN, dcimg, dcnimg);
 
     // Set in_img to be the trigger
     snprintf(CLIcmddata.cmdsettings->triggerstreamname,
              sizeof(CLIcmddata.cmdsettings->triggerstreamname),
              "%s", in_name);
+    if (in_img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     // for FPS mode:
     if(dcfpsptr != NULL)
     {
@@ -309,7 +263,7 @@ static MILK_HOT errno_t compute_function()
         in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
         imcreatelikewiseIMGID(&out_ave_img, &in_img);
         in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_ave_img, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&out_ave_img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
     IMGID out_std_img = imgid_make_from_name(out_std_name);
@@ -319,12 +273,15 @@ static MILK_HOT errno_t compute_function()
         in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
         imcreatelikewiseIMGID(&out_std_img, &in_img);
         in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_std_img, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&out_std_img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
-    /*
-     Keyword setup - initialization
-    */
+    if (out_ave_img.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (out_std_img.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     for(int kw = 0; kw < in_img.md->NBkw; ++kw)
     {

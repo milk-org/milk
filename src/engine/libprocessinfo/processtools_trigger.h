@@ -42,10 +42,11 @@
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStruct.h"
 
-errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
-        IMAGE        *image,
-        int          triggermode,
-        int          semindexrequested);
+errno_t processinfo_waitoninputstream_init(
+    PROCESSINFO *processinfo,
+    IMAGE       *image,
+    int         triggermode,
+    int         semindexrequested);
 
 errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo);
 

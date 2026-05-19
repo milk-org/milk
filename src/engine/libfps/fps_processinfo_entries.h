@@ -10,12 +10,11 @@
 #include <processinfo.h>
 
 errno_t fps_add_processinfo_entries(
-    FUNCTION_PARAMETER_STRUCT *fps
+    FPS *fps
 );
 
 errno_t fps_to_processinfo(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO               *procinfo
-);
+    FPS         *fps,
+    PROCESSINFO *procinfo);
 
 #endif

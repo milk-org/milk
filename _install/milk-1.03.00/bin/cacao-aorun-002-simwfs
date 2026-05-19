@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="Simulate WFS stream"
+# Extended description
+MSextdescr="Run linear simulator from DM to WFS"
+source milk-script-std-config
+source cacao-check-cacaovars
+
+MSarg+=( "action:string:action (start/stop/check)" )
+
+
+WaitForCompletion=0
+MSopt+=( "w:waitfcomp:set_WaitForCompletion::wait for process to complete to exist script" )
+function set_WaitForCompletion() {
+	WaitForCompletion=1
+}
+
+
+source milk-argparse
+
+ACTION="${inputMSargARRAY[0]}"
+
+
+ACTIONOK=0
+
+
+
+if [ ${ACTION} == "check" ]; then
+	ACTIONOK=1
+fi
+
+# Checking FPS
+FPScheckOK="OK"
+checkFPSON CACAO_FPSPROC_DMCH2DISP ${CACAO_FPSPROC_DMCH2DISPSIM}
+checkFPSON CACAO_FPSPROC_DMSIMDELAY ${CACAO_FPSPROC_DMSIMDELAY}
+checkFPSON CACAO_FPSPROC_SIMMVMGPU ${CACAO_FPSPROC_SIMMVMGPU}
+
+if [ "$CACAO_WFSSTREAM_PROCESSED" = "ON" ]; then
+	echo "Processed WFS stream -> no scaling"
+else
+	checkFPSON CACAO_FPSPROC_WFSCAMSIM ${CACAO_FPSPROC_WFSCAMSIM}
+fi
+
+echo "FPScheckOK = ${FPScheckOK}"
+
+if [ ${FPScheckOK} == "FAIL" ]; then
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] FPS check failed"
+	exit 1
+fi
+
+
+
+
+if [ ${ACTION} == "start" ]; then
+	ACTIONOK=1
+	cacaomsglog "START"
+	# ======================================================================
+	# Starting DM hardware delay simulator
+	# ======================================================================
+
+	sendFPScmd "confwupdate DMstreamDelay-${CACAO_DMSIMINDEX}"
+	sendFPScmd "runstart DMstreamDelay-${CACAO_DMSIMINDEX}"
+
+
+	# ======================================================================
+	# Starting MVM simulator
+	# ======================================================================
+	#sendFPScmd "setval simmvmgpu-${CACAO_LOOPNUMBER}.procinfo.triggerdelay ${TRIGDELAY}"
+	sendFPScmd "confwupdate simmvmgpu-${CACAO_LOOPNUMBER}"
+	sendFPScmd "runstart simmvmgpu-${CACAO_LOOPNUMBER}"
+
+
+	# WAIT for aolX_linsimWFS to appear
+	filename="${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_linsimWFS.im.shm"
+	echo "Waiting for file ${filename} ..."
+	until [ -f "$filename" ]
+	do
+		sleep 0.1
+	done
+
+
+	if [ "$CACAO_WFSSTREAM_PROCESSED" = "ON" ]; then
+		echo "Processed WFS stream -> no scaling"
+
+		rm -f ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_wfsim.im.shm
+		echo "linking aol${CACAO_LOOPNUMBER}_linsimWFS -> aol${CACAO_LOOPNUMBER}_wfsim"
+		ln -s ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_linsimWFS.im.shm ${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_wfsim.im.shm
+	else
+		# ======================================================================
+		# Starting WFC camera simulator
+		# ======================================================================
+
+		if [ -f "simLHS/wfsdark.fits" ]; then
+			milk-FITS2shm "simLHS/wfsdark.fits" aol${CACAO_LOOPNUMBER}_simwfsdark
+		fi
+
+		sendFPScmd "setval wfscamsim-${CACAO_LOOPNUMBER}.wfscamim ${CACAO_WFSSTREAMSIM}"
+
+		FLUX=${CACAO_FPS_wfscamsim_fluxtotal:-10000000}
+		sendFPScmd "setval wfscamsim-${CACAO_LOOPNUMBER}.fluxtotal ${FLUX}"
+
+		camRON=${CACAO_FPS_wfscamsim_camRON:-3}
+		sendFPScmd "setval wfscamsim-${CACAO_LOOPNUMBER}.camRON ${camRON}"
+
+		sendFPScmd "confwupdate wfscamsim-${CACAO_LOOPNUMBER}"
+		sendFPScmd "runstart wfscamsim-${CACAO_LOOPNUMBER}"
+
+
+		if [ $WaitForCompletion == "1" ]; then
+		# WAIT for aolX_wfsim to appear
+		filename="${MILK_SHM_DIR}/aol${CACAO_LOOPNUMBER}_wfsim.im.shm"
+		echo "Waiting for file ${filename} ..."
+		until [ -f "$filename" ]
+		do
+			sleep 0.1
+		done
+		fi
+	fi # end of if [ "$CACAO_WFSSTREAM_PROCESSED" = "ON" ]
+
+fi # end of if [ ${ACTION} == "start" ]
+
+
+if [ ${ACTION} == "stop" ]; then
+	ACTIONOK=1
+	cacaomsglog "STOP"
+	sendFPScmd "runstop wfscamsim-${CACAO_LOOPNUMBER}"
+	sendFPScmd "runstop simmvmgpu-${CACAO_LOOPNUMBER}"
+	sendFPScmd "runstop DMstreamDelay-${CACAO_DMSIMINDEX}"
+fi
+
+
+
+
+if [ ${ACTIONOK} == 0 ]; then
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] ACTION $ACTION undefined"
+	exit 1
+fi
+
+
+cacaomsglog "END"

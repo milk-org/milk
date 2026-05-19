@@ -2,10 +2,16 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "purge orphan shared memory streams and files"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-shmimpurge [-f <filter>]  -- remove orphan shmim streams"
+    -h1|--help-oneline)
+        echo "purge orphan shared memory streams and files"
         exit 0 ;;
+    -h2|--help-description)
+        echo "Remove orphan shared memory image" \
+             "streams and associated files. An" \
+             "optional filter string can be" \
+             "specified to match stream names."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through
 esac
 
 # number of arguments to script
@@ -29,6 +35,9 @@ function printHELP {
     echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
     echo "     $(tput bold)-f$(tput sgr0)          only purge streams matching (f)ilter"
     echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-rmshmim       remove shared memory stream"
+    echo "     milk-shmim-rm      remove stream and files"
     echo "------------------------------------------------------------------------"
 }
 
@@ -68,8 +77,9 @@ while getopts :hf: FLAG; do
             echo "using filter ${FILTERSTRING}"
             ;;
         \?)
-            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            echo -e "\n\033[1;31mERROR\033[0m Option -${OPTARG} not allowed."
             printHELP
+            exit 1
             ;;
     esac
 done
@@ -80,10 +90,10 @@ shift $((OPTIND-1))
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     if [ "$#" -ne $NBARGS ]; then
-        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+        echo -e "\n\033[1;31mERROR\033[0m Illegal number of parameters ($NBARGS params required, $# entered)"
     fi
     printHELP
-    exit
+    exit 1
 fi
 
 milk -n ${pname} << EOF

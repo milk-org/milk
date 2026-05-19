@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "PCAmatch",
     .cmdkey      = "PCAmatch",
-    .description = "find matching linear combination across two modal bases"
+    .description = "find matching linear combination across two modal bases",
+    .description_long =
+        "Find the best matching linear combination between two modal bases using Principal Component Analysis cross-matching."
 };
 
 
@@ -323,12 +325,18 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgmodesA = imgid_make_from_name(modesA);
-    resolveIMGID(&imgmodesA, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgmodesA, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgmodesB = imgid_make_from_name(modesB);
-    resolveIMGID(&imgmodesB, ERRMODE_ABORT, dcimg, dcnimg);
+    if (imgmodesA.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imgmodesB, ERRMODE_WARN, dcimg, dcnimg);
 
     printf("Modes images IDs : %ld %ld\n", imgmodesA.ID, imgmodesB.ID);
+    if (imgmodesB.ID == -1) {
+        return RETURN_FAILURE;
+    }
     fflush(stdout);
 
 

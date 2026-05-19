@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="cacao-cli control"
+
+MSextdescr="cacao-cli control
+interface to fpsCTRL
+
+Examples:
+cacao-fpsctrl setval mfilt loopON ON
+cacao-fpsctrl runstop mfilt 0
+"
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+MSarg+=( "cmd:string:FPS command (setval etc..)" )
+MSarg+=( "fpsname:string:FPS name" )
+MSarg+=( "key:string:key" )
+MSarg+=( "val:string:value" )
+
+append_loopnumber="1"
+MSopt+=( "n:noappend:set_noappend::dont append -CACAO_LOOPNUMBER to fpsname" )
+function set_noappend() {
+	append_loopnumber="0"
+}
+
+source milk-argparse
+fpscmd="${inputMSargARRAY[0]}"
+fpsname="${inputMSargARRAY[1]}"
+key="${inputMSargARRAY[2]}"
+val="${inputMSargARRAY[3]}"
+
+
+fpsfullname="$fpsname"
+if [ ${append_loopnumber} == "1" ]; then
+fpsfullname="${fpsname}-${CACAO_LOOPNUMBER}"
+fi
+
+
+if [ ${fpscmd} == "setval" ]; then
+sendFPScmd "${fpscmd} ${fpsfullname}.${key} ${val}"
+else
+sendFPScmd "${fpscmd} ${fpsfullname}"
+fi

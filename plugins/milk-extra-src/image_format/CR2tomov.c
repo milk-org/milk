@@ -8,8 +8,22 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#endif
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -233,7 +247,7 @@ errno_t CR2tomov()
         load_fits("badpix.fits", "badpix", 1, NULL);
         load_fits("flat.fits", "flat", 1, NULL);
 
-        EXECUTE_SYSTEM_COMMAND("ls ./CR2/*.CR2 > flist.tmp");
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("ls ./CR2/*.CR2 > flist.tmp");
 
         if((fp = fopen("flist.tmp", "r")) == NULL)
         {
@@ -917,11 +931,11 @@ errno_t CR2tomov()
                         delete_image_ID("imb", DELETE_IMAGE_ERRMODE_WARNING);
                         //		  WRITE_FULLFILENAME(fnamejpg,"./JPEG/im%05ld.jpg",i);
 
-                        EXECUTE_SYSTEM_COMMAND(
+                        EXECUTE_SYSTEM_COMMAND_NOCHECK(
                             "bmptoppm imrgb.bmp | ppmtojpeg --quality 95 > "
                             "_tmpjpeg.jpg; mv _tmpjpeg.jpg %s",
                             fnamejpg);
-                        EXECUTE_SYSTEM_COMMAND("rm imrgb.bmp");
+                        EXECUTE_SYSTEM_COMMAND_NOCHECK("rm imrgb.bmp");
                     }
                     SKIPcnt_FITStoJPEG++;
                     if(SKIPcnt_FITStoJPEG > SKIP_FITStoJPEG - 1)

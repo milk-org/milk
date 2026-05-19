@@ -53,6 +53,7 @@ requiring you to remember every checklist.
 | fpsexec conventions | [`fpsexec-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/fpsexec-conventions.md) | V2 template, 8-section layout, `-h1` requirement. |
 | Git workflow | [`git-workflow.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/git-workflow.md) | PRs from feature branches into `framework-dev`; commit conventions. |
 | Help consistency | [`help-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
+| Help message standard | [`help-message-standard.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/help-message-standard.md) | Unified help format, flags (`-h`/`-h1`/`-hm`), ANSI color palette via `milk_help.h`. |
 | Local install/test | [`local-install-test.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/local-install-test.md) | Install to `_build/_install` via `--prefix`; never use `sudo` or system paths. |
 | Programmer's Guide | [`maintain-programmers-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
 | Module dependencies | [`module-deps-declaration.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/module-deps-declaration.md) | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros. |
@@ -61,8 +62,10 @@ requiring you to remember every checklist.
 | README updates | [`readme-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/readme-update.md) | Update module README when source files are added/removed. |
 | Running commands | [`run-milk-commands.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/run-milk-commands.md) | Environment setup, SHM cleanup, tmux session management. |
 | Script documentation | [`script-docs.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/script-docs.md) | Update `docs/scripts.md` and add `--help` when scripts change. |
+| Script naming | [`script-naming.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/script-naming.md) | `milk-*` for OS executables, `.milk` for CLI scripts. |
 | Shared memory safety | [`shared-memory-safety.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/shared-memory-safety.md) | SHM cleanup, stale detection, stream creation. |
 | Testing practices | [`testing-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/testing-practices.md) | Run tests after changes; add regression tests. |
+| TUI browser testing | [`tui-browser-testing.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/tui-browser-testing.md) | milk TUIs cannot be tested using browser testing tools. |
 | Workspace layout | [`files-directories.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/files-directories.md) | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
 | What's New | [`whatsnew-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/whatsnew-update.md) | Add entry to `docs/whatsnew.md` for significant features. |
 
@@ -108,6 +111,7 @@ step-by-step checklists for common tasks.
 | `/review-pr` | [`review-pr.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/review-pr.md) | Review a PR for coding standards compliance. |
 | `/setup-dev-environment` | [`setup-dev-environment.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/setup-dev-environment.md) | First-time development environment setup. |
 | `/update-programmers-guide` | [`update-programmers-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md) | Scan recent commits and refresh `docs/programmers_guide.md`. |
+| `/audit-code-quality` | [`audit-code-quality.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/audit-code-quality.md) | Audit code for readability, simplicity, duplication, file length, and removable dependencies. |
 | `/audit-help-consistency` | [`audit-help-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/audit-help-consistency.md) | Cross-check all help sources for drift or contradictions. |
 | `/check-type-consistency` | [`check-type-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/check-type-consistency.md) | Audit `switch` blocks for incomplete type handling. |
 | `/cli-robustness-test` | [`cli-robustness-test.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/cli-robustness-test.md) | Run the CLI robustness test suite. |

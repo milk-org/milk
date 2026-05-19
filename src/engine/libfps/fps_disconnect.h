@@ -1,14 +1,8 @@
-/**
- * @file    fps_disconnect.h
- * @brief   Disconnect from FPS
- */
-
 #ifndef FPS_DISCONNECT_H
 #define FPS_DISCONNECT_H
 
-#include "fps.h"
+#include "fps_types.h"
 
-int function_parameter_struct_disconnect(
-    FUNCTION_PARAMETER_STRUCT *funcparamstruct);
+int fps_disconnect(FPS *fps);
 
-#endif
+#endif // FPS_DISCONNECT_H

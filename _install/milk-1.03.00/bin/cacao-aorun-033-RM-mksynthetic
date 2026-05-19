@@ -1,0 +1,330 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
+MSdescr="make synthetic DM modes for RM"
+
+MSextdescr="
+Computes modal response matrix (RM) from zonal RM.
+
+Input: conf/RMmodesWFS/zrespM-H.fits
+Zonal response matrix, one actuator poke response per slice
+
+Ouput: conf/RMmodesDM/RMsyn_modesDM.fits
+synthetic DM modes, one mode per slice
+
+Output: conf/RMmodesWFS/RMsyn_modesWFS.fits
+synthetic WFS modes, one mode per slice
+
+Spatial frequency range specified in cycles per aperture (CPA).
+The radial CPA range goes from rCPAmin (-c0 option) to rCPAmax (-c1 option).
+Max CPA per single axis is CPAmax (-c option). To control a square with
+maximum CPA=10 in the (u,v) plane, use:
+-c0 0 -c1 20 -c 10
+To control a disk of radius 10 CPA in the (u,v) plane, use:
+-c0 0 -c1 10 -c 20
+To control a donut:
+-c0 5 -c1 10 -c 20
+Note that if rCPAmin=0, the first 5 Zernike will be added (TTF+Astig).
+
+Parameter radmaskfact sets the radial extension factor beyond the beam radius CACAO_DM_beam_rad.
+Zernike and Fourier modes are computed over this extended domain before edge blurring.
+
+The scripts main steps are:
+[1] Compute DM-space Fourier modes: conf/RMmodesDM/RMsyn_modesDM0.fits, over disk
+defined by (CACAO_DM_beam_xcent, CACAO_DM_beam_ycent, CACAO_DM_beam_rad).
+[2] Edge blurring, preserving response for actuators within ./conf/dmmask.fits,
+and blurring actuators within  CACAO_DM_beam_rad*radmaskfact outside of dmmask.fits
+
+
+Upon completion, set RM to output of this sctipt:
+  ln -s $(pwd)/conf/RMmodesDM/RMsyn_modesDM.fits ./conf/RMmodesDM/RMmodesDM.fits
+  ln -s $(pwd)/conf/RMmodesWFS/RMsyn_modesWFS.fits ./conf/RMmodesWFS/RMmodesWFS.fits
+
+"
+
+source milk-script-std-config
+source cacao-check-cacaovars
+
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+MSopt+=( "c0:rCPAmin:setrCPAmin:rcpamin[float]:Set radial minimum cycles per aperture (rCPA) [0]" )
+rCPAmin="0"
+function setrCPAmin()
+{
+	rCPAmin=$1
+}
+
+MSopt+=( "c1:rCPAmax:setrCPAmax:rcpamax[float]:Set radial maximum cycles per aperture (rCPA) [100]" )
+rCPAmax="100"
+function setrCPAmax()
+{
+	rCPAmax=$1
+}
+
+MSopt+=( "c:CPAmax:setCPAmax:cpamax[float]:Set maximum cycles per aperture (CPA) [8]" )
+CPAmax="8"
+function setCPAmax()
+{
+	CPAmax=$1
+}
+
+
+radmaskfact="1.1"
+MSopt+=( "rfact:radmaskfact:set_radmaskfact:radmaskfact[float]:Set proportional radius extension factor [${radmaskfact}]" )
+function set_radmaskfact()
+{
+	radmaskfact=$1
+}
+
+
+
+MSopt+=( "ea:edgeapo:setedgeapo:edgeapo[float]:Set edge apodization strength [1.0]" )
+edgeapo="1.0"
+function setedgeapo()
+{
+	edgeapo=$1
+}
+
+
+
+
+
+MSopt+=( "z:NBzer:setNBzer:NBzer[int]:Set number of Zernike polynomials [5]" )
+NBzer=5
+function setNBzer()
+{
+	NBzer=$1
+}
+
+
+MSopt+=( "a:alpha:setalpha:alpha[float]:Set power law index [0.5]" )
+alpha="0.5"
+function setalpha()
+{
+	alpha=$1
+}
+
+
+TTfactor="8.0"
+MSopt+=( "t:ttf:setTTfactor:TTfactor[float]:Tip-Tilt amplification factor [${TTfactor}]" )
+function setTTfactor()
+{
+	TTfactor=$1
+}
+
+source milk-argparse
+
+
+cacaomsglog "START"
+
+echo "DM size  : $CACAO_DMxsize x $CACAO_DMysize"
+
+
+DMMODEDIR="conf/RMmodesDM"
+mkdir -p ${DMMODEDIR}
+
+
+
+x0default=$(echo "scale=3; $CACAO_DMxsize/2" | bc)
+y0default=$(echo "scale=3; $CACAO_DMysize/2" | bc)
+r0default=$(echo "scale=3; 0.450*$CACAO_DMxsize" | bc)
+
+
+SAMPLING1Dmode=128
+
+# 2D defaults
+DMsizex=${CACAO_DMxsize}
+DMsizey=${CACAO_DMysize}
+DMx0=${CACAO_DM_beam_xcent:-$x0default}
+DMy0=${CACAO_DM_beam_ycent:-$y0default}
+DMr0=${CACAO_DM_beam_rad:-$r0default}
+
+# if DM is 1D
+#
+if [ $CACAO_DMysize -eq 1 ]; then
+echo "Deformable mirror is 1D"
+echo "Using sampling size $SAMPLING1Dmode"
+DMsizex=${SAMPLING1Dmode}
+DMsizey=${SAMPLING1Dmode}
+DMx0=$(( $DMsizex / 2 ))
+DMy0=$(( $DMsizey / 2 ))
+DMr0=$(( $DMsizex / 2 ))
+
+# create DM mask
+milk-all << EOF
+imgen.mkdisk dmmask2D ${DMsizex} ${DMsizey} ${DMx0} ${DMy0} ${DMr0}
+saveFITS dmmask2D "conf/dmmask2D.fits"
+exitCLI
+EOF
+
+fi
+
+
+
+echo "using DMx0 = ${DMx0}"
+cacaomsglog "using DMx0 = ${DMx0}"
+
+echo "using DMy0 = ${DMy0}"
+cacaomsglog "using DMy0 = ${DMy0}"
+
+echo "using DMr0 = ${DMr0}"
+cacaomsglog "using DMr0 = ${DMr0}"
+
+cacaomsglog "using alpha = ${alpha}"
+
+
+
+
+# Zernike modes
+# Fourier modes
+
+deltaCPA="0.8"
+
+
+
+
+# Create synthetic DM modes
+# These modes are NOT extrapolated and extend beyond beam size by factor radmaskfact
+
+if [[ $rCPAmin -eq 0 ]]; then
+
+milk-all << EOF
+mload cacaocomputeCalib
+zern.mkzerc .TTfactor ${TTfactor}
+zern.mkzerc .radmaskfact ${radmaskfact}
+zern.mkzerc zerc ${DMsizex} ${DMsizey} ${DMx0} ${DMy0} ${DMr0} ${NBzer}
+zercm=zerc*3
+lintools.mkFouriermodes .fpowerlaw -${alpha}
+lintools.mkFouriermodes .fpowerlaw_minf 1.0
+lintools.mkFouriermodes .fpowerlaw_maxf 100.0
+lintools.mkFouriermodes ?
+lintools.mkFouriermodes .rCPAmin 0.0
+lintools.mkFouriermodes .rCPAmax ${rCPAmax}
+lintools.mkFouriermodes Fmodes ${DMsizex} ${DMsizey} ${CPAmax} ${deltaCPA} ${DMr0} ${radmaskfact} 0
+immerge zerc Fmodes RMsyn_modesDM 2
+listim
+saveFITS RMsyn_modesDM "conf/RMmodesDM/RMsyn_modesDM0.fits"
+exitCLI
+EOF
+
+else
+
+milk-all << EOF
+mload cacaocomputeCalib
+lintools.mkFouriermodes .fpowerlaw -${alpha}
+lintools.mkFouriermodes .fpowerlaw_minf 1.0
+lintools.mkFouriermodes .fpowerlaw_maxf 100.0
+lintools.mkFouriermodes .rCPAmin ${rCPAmin}
+lintools.mkFouriermodes .rCPAmax ${rCPAmax}
+lintools.mkFouriermodes Fmodes ${DMsizex} ${DMsizey} ${CPAmax} ${deltaCPA} ${DMr0} ${radmaskfact} 0
+saveFITS Fmodes "conf/RMmodesDM/RMsyn_modesDM0.fits"
+exitCLI
+EOF
+
+fi
+
+
+
+
+
+# Edge apodization
+
+if [ $CACAO_DMysize -eq 1 ]; then
+	# 1D case
+	ln -sf $(pwd)/conf/dmmask2D.fits ./conf/dmmask-syn.fits
+else
+	# 2D case
+	ln -sf $(pwd)/conf/dmmask.fits ./conf/dmmask-syn.fits
+fi
+
+
+
+milk-all << EOF
+mload cacaocomputeCalib
+radext=${DMr0}*${radmaskfact}
+imgen.mkdisk dmmaskext ${DMsizex} ${DMsizey} ${DMx0} ${DMy0} radext
+loadfits "conf/RMmodesDM/RMsyn_modesDM0.fits" RMsyn_modesDM
+loadfits "conf/dmmask-syn.fits" dmmask
+cacaocc.maskextrapolate .edgeapo ${edgeapo}
+cacaocc.maskextrapolate RMsyn_modesDM dmmask dmmaskext RMsyn_modesDMm
+
+#RMsyn_modesDMm=RMsyn_modesDM*dmmask
+saveFITS RMsyn_modesDMm "conf/RMmodesDM/RMsyn_modesDM2D.fits"
+listim
+exitCLI
+EOF
+
+
+echo "OUTPUT : conf/RMmodesDM/RMsyn_modesDM.fits"
+
+
+if [ $CACAO_DMysize -eq 1 ]; then
+  # Project 2D modes to 1D actuators
+  # link to 2D pos file
+  ln -sf $(pwd)/data/act2Dpos.txt mapcoord2D.txt
+
+cacao-cli << EOF
+loadfits "conf/RMmodesDM/RMsyn_modesDM2D.fits" RMsyn_modesDM2D
+cacaocc.sample2DWF RMsyn_modesDM2D map2D RMsyn_modesDM1D
+listim
+saveFITS RMsyn_modesDM1D "conf/RMmodesDM/RMsyn_modesDM1D.fits"
+exitCLI
+EOF
+
+	ln -sf $(pwd)/conf/RMmodesDM/RMsyn_modesDM1D.fits conf/RMmodesDM/RMsyn_modesDM.fits
+else
+	ln -sf $(pwd)/conf/RMmodesDM/RMsyn_modesDM2D.fits conf/RMmodesDM/RMsyn_modesDM.fits
+fi
+
+cp $(pwd)/conf/RMmodesDM/RMsyn_modesDM.fits ./conf/RMsyn_modesDM.fits
+
+
+
+
+
+# Compute WFS response of synthetic modes
+#
+
+cacao-cli << EOF
+loadfits "conf/RMmodesWFS/zrespM-H.fits" zrespM
+loadfits "conf/RMmodesDM/RMsyn_modesDM.fits" dmC
+cacaocc.generateRMWFS zrespM dmC wfsC
+saveFITS wfsC "conf/RMmodesWFS/RMsyn_modesWFS.fits"
+listim
+exitCLI
+EOF
+
+
+cp $(pwd)/conf/RMmodesWFS/RMsyn_modesWFS.fits ./conf/RMsyn_modesWFS.fits
+
+
+
+echo "Set default to syn files"
+
+rm -f ./conf/RMmodesDM/RMmodesDM.fits
+ln -s $(pwd)/conf/RMmodesDM/RMsyn_modesDM.fits ./conf/RMmodesDM/RMmodesDM.fits
+echo "ln -s $(pwd)/conf/RMmodesDM/RMsyn_modesDM.fits ./conf/RMmodesDM/RMmodesDM.fits"
+cacaomsglog "USING RMsyn_modesDM as RMmodesDM"
+
+rm -f ./conf/RMmodesWFS/RMmodesWFS.fits
+ln -s $(pwd)/conf/RMmodesWFS/RMsyn_modesWFS.fits ./conf/RMmodesWFS/RMmodesWFS.fits
+echo "ln -s $(pwd)/conf/RMmodesWFS/RMsyn_modesWFS.fits ./conf/RMmodesWFS/RMmodesWFS.fits"
+cacaomsglog "USING RMsyn_modesWFS as RMmodesWFS"
+
+
+
+# LOGGING
+# see cacaofuncs-log for conventions
+#
+source cacaofuncs-log
+cacao-calib-logFITSfile RMsyn_modesDM
+cacao-calib-logFITSfile RMsyn_modesWFS
+
+
+
+cacaomsglog "END"

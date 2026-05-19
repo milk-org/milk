@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+FPSKWname="CACAO_FPSPROC_MEASURELINRESP"
+
+FPSKWval="NULL"
+if [ ! -z "${CACAO_FPSPROC_MEASURELINRESP+x}" ]; then
+	FPSKWval="$CACAO_FPSPROC_MEASURELINRESP"
+fi
+
+
+# FPS name
+fpsname="measlinresp"
+fpsarg0="${CACAO_LOOPNUMBER}"
+
+# FPS full name
+fpsfname="${fpsname}-${fpsarg0}"
+
+# function call
+fpsfcall="cacao-fpsexec-cacaoac-measlinresp"
+
+# short description
+fpsdescr="Measure linear response"
+
+
+
+function fpsentry_addmodules() {
+	echo "no module to be added"
+}
+
+function fpsentry_addcmds() {
+	addfpscmd "setval ${fpsfname}.procinfo.loopcntMax 10"
+	addfpscmd "setval ${fpsfname}.streamin aol${CACAO_LOOPNUMBER}_dmRM"
+	addfpscmd "setval ${fpsfname}.streamout aol${CACAO_LOOPNUMBER}_imWFS2"
+}
+
+
+
+
+source milk-fpslist-addentry

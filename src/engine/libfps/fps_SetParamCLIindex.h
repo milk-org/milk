@@ -14,8 +14,9 @@
  * @param cli_index The CLI argument index (1-indexed usually).
  * @return errno_t RETURN_SUCCESS on success, error code otherwise.
  */
-int functionparameter_SetParamCLIindex(FUNCTION_PARAMETER_STRUCT *fps,
-                                     long                       pindex,
-                                     int                        cli_index);
+int functionparameter_SetParamCLIindex(
+    FPS  *fps,
+    long pindex,
+    int  cli_index);
 
 #endif

@@ -8,6 +8,8 @@
 
 errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image_size();
 
-imageID read_sharedmem_image_size(const char *name, const char *fname);
+imageID read_sharedmem_image_size(
+    const char *name,
+    const char *fname);
 
 #endif

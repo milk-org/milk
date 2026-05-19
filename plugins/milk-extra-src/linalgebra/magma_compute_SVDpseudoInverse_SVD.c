@@ -12,8 +12,22 @@
 #include "magma_lapack.h"
 #include "magma_v2.h"
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifndef max
@@ -49,7 +63,9 @@ static FPS_APP_INFO FPS_app_info_ps = {
     .fps_name = "linalgebrapsinvSVD",
     .cmdkey   = "linalgebrapsinvSVD",
     .description =
-        "pseudo inverse via direct SVD"
+        "pseudo inverse via direct SVD",
+    .description_long =
+        "Compute SVD for pseudo-inverse using MAGMA. Low-level SVD computation step with GPU acceleration."
 };
 #define FPS_PARAMS_PS(X) \
     X(".inmat", ps_r, \

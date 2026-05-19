@@ -1,0 +1,6 @@
+#ifndef PIAACMCSIMUL_EXEC_OPTIMIZE_PIAAA_SHAPES_H
+#define PIAACMCSIMUL_EXEC_OPTIMIZE_PIAAA_SHAPES_H
+
+errno_t exec_optimize_PIAA_shapes();
+
+#endif

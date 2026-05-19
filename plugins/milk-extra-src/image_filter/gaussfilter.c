@@ -10,10 +10,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "gaussfilter.h"
 #include "fps.h"
@@ -28,7 +39,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "gaussfilt",
     .cmdkey      = "gaussfilt",
-    .description = "gaussian 2D filtering"
+    .description = "gaussian 2D filtering",
+    .description_long =
+        "Apply a 2D Gaussian convolution filter to an image. The kernel width is specified as a standard deviation (sigma) in pixels. Implemented via FFT for efficiency."
 };
 
 
@@ -36,10 +49,10 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char  *gaussfilt_inimname   = NULL;
-static char  *gaussfilt_outimname  = NULL;
-static float *gaussfilt_sigma      = NULL;
-static int   *gaussfilt_filtersize = NULL;
+static char  gaussfilt_inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char  gaussfilt_outimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static float gaussfilt_sigma = 0.0;
+static int32_t gaussfilt_filtersize = 0;
 
 
 /* ================================================================
@@ -47,11 +60,11 @@ static int   *gaussfilt_filtersize = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &gaussfilt_inimname, \
+    X(".in_name", gaussfilt_inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "input image") \
-    X(".out_name", &gaussfilt_outimname, \
+    X(".out_name", gaussfilt_outimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output image") \
@@ -194,18 +207,27 @@ static MILK_HOT errno_t compute_function()
         imgid_make_from_name(
             gaussfilt_inimname);
     resolveIMGID(
-        &in, ERRMODE_ABORT,
+        &in, ERRMODE_NULL,
         dcimg, dcnimg);
+
+    if (in.im == NULL) {
+        return RETURN_FAILURE;
+    }
+
     IMGID out = stream_connect_create_2Df32(
         gaussfilt_outimname,
         in.md->size[0], in.md->size[1]);
+
+    if (out.im == NULL) {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     gauss_filter_step(
         in.im, out.im,
-        *gaussfilt_sigma,
-        *gaussfilt_filtersize);
+        gaussfilt_sigma,
+        gaussfilt_filtersize);
     processinfo_update_output_stream(
         processinfo, out.im, in.im);
 

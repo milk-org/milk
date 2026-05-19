@@ -20,11 +20,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "streamhalfdiff",
     .cmdkey      = "streamhalfdiff",
     .description =
-        "half-image difference"
+    "half-image difference",
+    .description_long =
+    "Compute the difference between the left and right halves of an image stream. Produces a half-width output. Used for differential measurements in optical systems."
 };
 
 
@@ -32,11 +35,9 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char p_instream[FUNCTION_PARAMETER_STRMAXLEN]
-    = "stream";
+static char p_instream[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 
-static char p_outstream[FUNCTION_PARAMETER_STRMAXLEN]
-    = "outstream";
+static char p_outstream[FUNCTION_PARAMETER_STRMAXLEN] = "outstream";
 
 static long long p_semtrig = 3;
 
@@ -65,67 +66,81 @@ static long long p_semtrig = 3;
  * ============================================================= */
 
 /**
+ * @brief Input→output type mapping for half-image difference.
+ *
+ * X(DT_IN, IACC, ICT, DT_OUT, OACC, OCT)
+ *   DT_IN   _DATATYPE_* constant for input
+ *   IACC    input union accessor
+ *   ICT     input C type
+ *   DT_OUT  _DATATYPE_* constant for output
+ *   OACC    output union accessor
+ *   OCT     output C type
+ */
+#define HALFDIFF_TYPES(X)                           \
+    X(_DATATYPE_UINT8,  UI8,  uint8_t,              \
+      _DATATYPE_INT16,  SI16, int16_t)              \
+    X(_DATATYPE_INT8,   SI8,  int8_t,               \
+      _DATATYPE_INT16,  SI16, int16_t)              \
+    X(_DATATYPE_UINT16, UI16, uint16_t,             \
+      _DATATYPE_INT32,  SI32, int32_t)              \
+    X(_DATATYPE_INT16,  SI16, int16_t,              \
+      _DATATYPE_INT32,  SI32, int32_t)              \
+    X(_DATATYPE_UINT32, UI32, uint32_t,             \
+      _DATATYPE_INT64,  SI64, int64_t)              \
+    X(_DATATYPE_INT32,  SI32, int32_t,              \
+      _DATATYPE_INT64,  SI64, int64_t)              \
+    X(_DATATYPE_UINT64, UI64, uint64_t,             \
+      _DATATYPE_INT64,  SI64, int64_t)              \
+    X(_DATATYPE_INT64,  SI64, int64_t,              \
+      _DATATYPE_INT64,  SI64, int64_t)              \
+    X(_DATATYPE_FLOAT,  F,    float,                \
+      _DATATYPE_FLOAT,  F,    float)                \
+    X(_DATATYPE_DOUBLE, D,    double,               \
+      _DATATYPE_DOUBLE, D,    double)
+
+/**
  * Compute difference between two halves of an
  * image stream. Triggers on instream.
  */
 imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
     const char *IDstream_name,
     const char *IDstreamout_name,
-    long        semtrig)
+    long       semtrig)
 {
     IMGID img0 = imgid_make_from_name(IDstream_name);
-    resolveIMGID(&img0, ERRMODE_ABORT,
-                 dcimg, dcnimg);
-
-    uint32_t xsizein = img0.md->size[0];
-    uint32_t ysizein = img0.md->size[1];
-
-    uint32_t xsize  = xsizein;
-    uint32_t ysize  = ysizein / 2;
-    uint64_t xysize = (uint64_t)xsize * ysize;
-
-    uint8_t datatype    = img0.md->datatype;
-    uint8_t datatypeout = _DATATYPE_FLOAT;
-
-    switch(datatype)
+    resolveIMGID(&img0, ERRMODE_WARN, dcimg, dcnimg);
+    if(img0.ID == -1)
     {
-    case _DATATYPE_UINT8:
-        datatypeout = _DATATYPE_INT16;
-        break;
-    case _DATATYPE_UINT16:
-        datatypeout = _DATATYPE_INT32;
-        break;
-    case _DATATYPE_UINT32:
-    case _DATATYPE_UINT64:
-        datatypeout = _DATATYPE_INT64;
-        break;
-    case _DATATYPE_INT8:
-        datatypeout = _DATATYPE_INT16;
-        break;
-    case _DATATYPE_INT16:
-        datatypeout = _DATATYPE_INT32;
-        break;
-    case _DATATYPE_INT32:
-    case _DATATYPE_INT64:
-        datatypeout = _DATATYPE_INT64;
-        break;
-    case _DATATYPE_DOUBLE:
-        datatypeout = _DATATYPE_DOUBLE;
-        break;
-    default:
-        break;
+        return RETURN_FAILURE;
     }
 
-    IMGID imgout =
-        imgid_make_from_name(IDstreamout_name);
-    resolveIMGID(&imgout, ERRMODE_NULL,
-                 dcimg, dcnimg);
+    uint8_t datatype = img0.md->datatype;
+    
+    IMGID imgout = imgid_make_from_name(IDstreamout_name);
+    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
     if(imgout.ID == -1)
     {
-        imgout = stream_connect_create_2D(
-            IDstreamout_name,
-            xsize, ysize, datatypeout);
+        uint32_t xsizein = img0.md->size[0];
+        uint32_t ysizein = img0.md->size[1];
+        uint32_t xsize   = xsizein;
+        uint32_t ysize   = ysizein / 2;
+
+        uint8_t datatypeout = _DATATYPE_FLOAT;
+
+#define HALFDIFF_OUTTYPE(DT_IN, IACC, ICT, \
+                         DT_OUT, OACC, OCT) \
+        case DT_IN: datatypeout = DT_OUT; break;
+
+        switch(datatype)
+        {
+            HALFDIFF_TYPES(HALFDIFF_OUTTYPE) default: break;
+        }
+#undef HALFDIFF_OUTTYPE
+
+        imgout = stream_connect_create_2D(IDstreamout_name, xsize, ysize, datatypeout);
     }
+
+    uint64_t xysize = (uint64_t)img0.md->size[0] * (img0.md->size[1] / 2);
 
     unsigned long long cnt = 0;
 
@@ -141,121 +156,40 @@ imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
         }
         else
         {
-            ImageStreamIO_semwait(
-                img0.im, semtrig);
+            ImageStreamIO_semwait(img0.im, semtrig);
         }
 
         imgout.md->write = 1;
 
+        /*
+         * Typed half-difference loop.
+         * Casts operands to OCT before subtraction to
+         * avoid unsigned wrap for UINT32/UINT64 inputs.
+         */
+#define HALFDIFF_CASE(DT_IN, IACC, ICT,              \
+                      DT_OUT, OACC, OCT)             \
+    case DT_IN:                                      \
+    {                                                \
+        ICT * MILK_RESTRICT pin =                    \
+            MILK_ASSUME_ALIGNED(                     \
+                img0.im->array.IACC);                \
+        OCT * MILK_RESTRICT pout =                   \
+            MILK_ASSUME_ALIGNED(                     \
+                imgout.im->array.OACC);              \
+        for (uint64_t ii = 0; ii < xysize; ii++)     \
+            pout[ii] = (OCT) pin[ii]                 \
+                     - (OCT) pin[xysize + ii];       \
+        break;                                       \
+    }
+
         switch(datatype)
         {
-        case _DATATYPE_UINT8:
-        {
-            uint8_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.UI8);
-            int16_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI16);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
+            HALFDIFF_TYPES(HALFDIFF_CASE) default: PRINT_ERROR("unsupported datatype");
             break;
         }
-        case _DATATYPE_UINT16:
-        {
-            uint16_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.UI16);
-            int32_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI32);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_UINT32:
-        {
-            uint32_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.UI32);
-            int64_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_UINT64:
-        {
-            uint64_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.UI64);
-            int64_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = (int64_t)pin[ii] - (int64_t)pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_INT8:
-        {
-            int8_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.SI8);
-            int16_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI16);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_INT16:
-        {
-            int16_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.SI16);
-            int32_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI32);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_INT32:
-        {
-            int32_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.SI32);
-            int64_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_INT64:
-        {
-            int64_t * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.SI64);
-            int64_t * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_FLOAT:
-        {
-            float * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.F);
-            float * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.F);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        case _DATATYPE_DOUBLE:
-        {
-            double * MILK_RESTRICT pin =
-                MILK_ASSUME_ALIGNED(img0.im->array.D);
-            double * MILK_RESTRICT pout =
-                MILK_ASSUME_ALIGNED(imgout.im->array.D);
-            for(uint64_t ii = 0; ii < xysize; ii++)
-                pout[ii] = pin[ii] - pin[xysize + ii];
-            break;
-        }
-        default:
-            PRINT_ERROR("unsupported datatype");
-            break;
-        }
+#undef HALFDIFF_CASE
 
-        COREMOD_MEMORY_image_set_sempost_byID(
-            imgout.ID, -1);
+        COREMOD_MEMORY_image_set_sempost_byID(imgout.ID, -1);
         imgout.md->cnt0++;
         imgout.md->write = 0;
     }
@@ -281,12 +215,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    COREMOD_MEMORY_stream_halfimDiff(
-        p_instream, p_outstream, p_semtrig);
+    COREMOD_MEMORY_stream_halfimDiff(p_instream, p_outstream, p_semtrig);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -299,21 +230,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__stream_halfimdiff()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }

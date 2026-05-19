@@ -61,7 +61,7 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  *
  */
 static errno_t example_compute_2Dimage_total(
-    IMGID *imgptr,
+    IMGID  *imgptr,
     double scalingcoeff)
 {
     DEBUG_TRACE_FSTART();
@@ -69,9 +69,12 @@ static errno_t example_compute_2Dimage_total(
     // Ensure the input image is in memory.
     // No harm calling this here and in the upstream function,
     // as the overhead is very small if the image is already resolved
-    resolveIMGID(imgptr, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgptr, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t xsize  = imgptr->md->size[0];
+    if (imgptr->ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t ysize  = imgptr->md->size[1];
     uint64_t xysize = xsize * ysize;
 
@@ -105,11 +108,14 @@ static MILK_HOT errno_t compute_function()
     // Check that the input image is in memory,
     // and link it to img if it is
     IMGID img = imgid_make_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     example_compute_2Dimage_total(&img, *scoeff);
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

@@ -2,10 +2,16 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "move PID to CPU set and assign real-time priority"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-makecsetandrt <PID> <cpuset> <prio>"
+    -h1|--help-oneline)
+        echo "move PID to CPU set and assign real-time priority"
         exit 0 ;;
+    -h2|--help-description)
+        echo "Move a process to a named CPU set and" \
+             "optionally assign real-time scheduling" \
+             "priority using cset and chrt."
+        exit 0 ;;
+    -hm|--help-mono) ;; # fall through to usage below
+    -h|--help) ;;       # fall through to usage below
 esac
 
 EXPECTED_ARGS=3

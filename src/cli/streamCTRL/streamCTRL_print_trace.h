@@ -8,12 +8,10 @@
 
 
 errno_t streamCTRL_print_SPTRACE_details(
-    IMAGE   *streamCTRLimages,
+    IMAGE    *streamCTRLimages,
     imageID  ID,
-    pid_t   *upstreamproc,
+    pid_t    *upstreamproc,
     int      NBupstreamproc,
-    uint32_t print_pid_mode
-);
+    uint32_t print_pid_mode);
 
 #endif
-
