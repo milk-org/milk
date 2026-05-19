@@ -4,19 +4,20 @@
  */
 
 #include <stdarg.h>
-#include <time.h>
-#include <string.h>
-#include <stdio.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
-#include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
 #define CLOCK_MILK CLOCK_REALTIME
 #endif
 
 
+/**
+ * @brief Write a status message into processinfo.
+ *
+ * Copies the message string into the processinfo
+ * status message buffer.
+ */
 int processinfo_WriteMessage(
     PROCESSINFO *processinfo,
     const char  *msgstring
@@ -42,7 +43,7 @@ int processinfo_WriteMessage(
                 msgstring,
                 STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
         processinfo->statusmsg[
-            STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1] = '\0';
+        STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1] = '\0';
     }
 
 #ifdef PROCESSINFO_LOGFILE
@@ -65,6 +66,11 @@ int processinfo_WriteMessage(
 }
 
 
+/**
+ * @brief Write a formatted status message into processinfo.
+ *
+ * Printf-style wrapper around processinfo_WriteMessage.
+ */
 int processinfo_WriteMessage_fmt(
     PROCESSINFO *processinfo,
     const char *format,

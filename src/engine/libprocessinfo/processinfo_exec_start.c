@@ -3,13 +3,8 @@
  * @brief Processinfo exec start module
  */
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
-#include "processinfo_exec_start.h"
 #include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
@@ -17,6 +12,9 @@
 #endif
 
 
+/**
+ * @brief Signals the start of execution for a process.
+ */
 int processinfo_exec_start(PROCESSINFO *processinfo)
 {
     DEBUG_TRACEPOINT(" ");

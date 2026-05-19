@@ -24,6 +24,11 @@
 #include "streamCTRL_utilfuncs.h"
 
 
+/**
+ * @brief Scan shared memory directory for streams.
+ *
+ * Builds the stream list from SHM files.
+ */
 void *streamCTRL_scan(
     void *argptr
 )
@@ -190,8 +195,8 @@ void *streamCTRL_scan(
                     images[ID].used = 1;
                     // keep track of name
                     strncpy(images[ID].name,
-                        streaminfo[sindex].sname,
-                        STRINGMAXLEN_IMAGE_NAME - 1);
+                            streaminfo[sindex].sname,
+                            STRINGMAXLEN_IMAGE_NAME - 1);
                     images[ID].name[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
 
                     streaminfo[sindex].deltacnt0          = 1;

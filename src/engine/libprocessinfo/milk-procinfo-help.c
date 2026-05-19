@@ -13,11 +13,14 @@
 #define C_BOLD  "\033[1m"      /* White Bold  -> Emphasize specific words */
 #define C_RST   "\033[0m"      /* Reset */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i], "--help-oneline") == 0)
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-h1") == 0 ||
+                strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("processinfo and real-time setup guide\n");
             return 0;
@@ -62,7 +65,7 @@ int main(int argc, char *argv[])
     printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.enabled 1\n" C_RST);
     printf("  $ " C_CMD "milk-fps-runstart myfps00\n" C_RST);
     printf("\n");
-    
+
     printf(C_TITLE "========================================================\n" C_RST);
     printf(C_TITLE "             Processinfo Utilities                      \n" C_RST);
     printf(C_TITLE "========================================================\n" C_RST);

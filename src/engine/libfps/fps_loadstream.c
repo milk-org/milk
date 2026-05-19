@@ -14,11 +14,9 @@
  *   N  Must not exist (error if found)
  */
 
-#include <stdio.h>
 
 #include "fps.h"
 #include "fps_internal.h"
-#include "fps_streamname_parse.h"
 
 
 /**
@@ -36,7 +34,7 @@
  */
 imageID functionparameter_LoadStream(
     FPS *fps,
-    int                        pindex,
+    int pindex,
     int                        fpsconnectmode
 )
 {

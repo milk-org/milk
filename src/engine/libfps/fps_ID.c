@@ -3,12 +3,8 @@
  * @brief   find fps ID(s) from name
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
 
 /* ID number corresponding to a name */
@@ -18,7 +14,8 @@ long fps_ID(const char *name)
     int  loopOK;
     long tmpID = 0;
 
-    if(fpsarray == NULL) {
+    if(fpsarray == NULL)
+    {
         return -1;
     }
 
@@ -57,7 +54,8 @@ long next_avail_fps_ID()
     long i;
     long ID = -1;
 
-    if(fpsarray == NULL) {
+    if(fpsarray == NULL)
+    {
         return -1;
     }
 

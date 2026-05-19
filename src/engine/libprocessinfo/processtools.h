@@ -64,7 +64,7 @@ typedef struct
     int subprocPIDarray[MAXNBSUBPROCESS];
 
     double sampletimearray
-    [MAXNBSUBPROCESS]; // time at which sampling was performed [sec] 
+    [MAXNBSUBPROCESS]; // time at which sampling was performed [sec]
     double sampletimearray_prev[MAXNBSUBPROCESS];
 
     long ctxtsw_voluntary[MAXNBSUBPROCESS];
@@ -236,7 +236,7 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo);
  */
 errno_t processinfo_update_output_stream(
     PROCESSINFO *processinfo,
-    IMAGE        *output_image,
+    IMAGE       *output_image,
     IMAGE        *input_image
 );
 
@@ -252,7 +252,7 @@ errno_t processinfo_CTRLscreen();
         processinfo_waitoninputstream(processinfo);                            \
         processinfo_exec_start(processinfo);                                   \
         if (processinfo_compute_status(processinfo) == 1)                      \
-        {                                                                      
+        {
 
 #define PROCINFOLOOP_END                                                       \
     }                                                                          \

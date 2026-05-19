@@ -8,21 +8,12 @@
  * log file redirect).
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
 #include <signal.h>
-#include <time.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
 
 #include "fpsseq.h"
-#include "fps.h"
 #include "fps_scan.h"
-#include "milk_help.h"
 
 #define SEQ_ONELINE "FPS sequencer daemon"
 #define SEQ_DESC_LONG \
@@ -33,6 +24,9 @@
 
 static int keep_running = 1;
 
+/**
+ * @brief Handles SIGTERM by terminating the main execution loop.
+ */
 static void sigterm_handler(int signum)
 {
     (void)signum;
@@ -154,7 +148,12 @@ static int daemonize(
     return 0;
 }
 
-static void print_help(const char *prog, int mh_color)
+/**
+ * @brief Print help message for milk-seq.
+ */
+static void print_help(
+    const char *prog,
+    int mh_color)
 {
     milk_help_banner(prog, SEQ_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -201,7 +200,9 @@ static void print_help(const char *prog, int mh_color)
 }
 
 
-int main(int argc, char **argv)
+int main(
+    int argc,
+    char **argv)
 {
     int help_action = milk_help_init(argc, argv,
                                      SEQ_ONELINE, SEQ_DESC_LONG);

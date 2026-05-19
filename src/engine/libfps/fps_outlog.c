@@ -1,10 +1,7 @@
 #include <stdarg.h>
-#include <unistd.h> // access()
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
-#include "timeutils.h"
 
 
 // set to 1 if logging
@@ -14,12 +11,15 @@ static int FLAG_FPSOUTLOG = -1;
 static char *fps_customfilename;
 
 
+/**
+ * @brief Gets the flag indicating whether FPS output logging is enabled.
+ */
 int get_FLAG_FPSOUTLOG()
 {
 
-    if( FLAG_FPSOUTLOG == -1 )
+    if(FLAG_FPSOUTLOG == -1)
     {
-        if( getenv("MILK_FPS_LOGOUTPUT") )
+        if(getenv("MILK_FPS_LOGOUTPUT"))
         {
             FLAG_FPSOUTLOG = 1;
         }
@@ -29,7 +29,7 @@ int get_FLAG_FPSOUTLOG()
         }
 
 
-        if( getenv("MILK_FPS_LOGFILE") )
+        if(getenv("MILK_FPS_LOGFILE"))
         {
             FLAG_FPSOUTLOG = 2;
             fps_customfilename = getenv("MILK_FPS_LOGFILE");
@@ -40,6 +40,9 @@ int get_FLAG_FPSOUTLOG()
 }
 
 
+/**
+ * @brief Sets the FPS output logging flag.
+ */
 errno_t set_FLAG_FPSOUTLOG(int val)
 {
     FLAG_FPSOUTLOG = val;
@@ -59,7 +62,7 @@ errno_t getFPSlogfname(
 {
     get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG == 2 )
+    if(FLAG_FPSOUTLOG == 2)
     {
         WRITE_FULLFILENAME(logfname, "%s", fps_customfilename);
 
@@ -81,6 +84,18 @@ errno_t getFPSlogfname(
 }
 
 
+/**
+ * @brief Write one timestamped log entry to a file pointer.
+ *
+ * Formats the current UTC time with nanosecond precision and
+ * appends a single log line:
+ *   TIMESTAMP EPOCH.NSEC  KEYWORD MSG
+ *
+ * @param keyw       Log entry keyword (e.g., "SETVAL")
+ * @param msgstring  Free-form message text
+ * @param fpout      Open file pointer to write to
+ * @return RETURN_SUCCESS
+ */
 errno_t functionparameter_outlog_file(
     char *keyw,
     char *msgstring,
@@ -132,7 +147,7 @@ errno_t functionparameter_outlog(
 {
     get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG )
+    if(FLAG_FPSOUTLOG)
     {
 
         // identify logfile and open file
@@ -199,7 +214,7 @@ errno_t functionparameter_outlog(
                 fclose(fpout);
                 LogOutOpen = 0;
             }
-            if ( FLAG_FPSOUTLOG == 1 )
+            if(FLAG_FPSOUTLOG == 1)
             {
                 remove(logfname);
             }
@@ -219,7 +234,7 @@ errno_t functionparameter_outlog_namelink()
 {
     //get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG == 1 )
+    if(FLAG_FPSOUTLOG == 1)
     {
         char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);

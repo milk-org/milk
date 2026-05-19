@@ -102,6 +102,12 @@
 //
 INIT_MODULE_LIB(COREMOD_memory)
 
+/**
+ * @brief Register COREMOD_memory CLI commands.
+ *
+ * Called during module loading to add all memory
+ * management operations to the CLI command table.
+ */
 static errno_t init_module_CLI()
 {
 

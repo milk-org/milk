@@ -55,6 +55,9 @@
 
 extern int help_format_mode;
 
+/**
+ * @brief Check if a 64-bit flag contains a specific bit.
+ */
 static int checkFlag64(
     uint64_t flags,
     uint64_t testflag,
@@ -609,15 +612,16 @@ errno_t help()
     int porcelain_mode = 0;
     const char *topic = NULL;
 
-    for (int arg = 1; arg < data.cmdNBarg; arg++)
+    for(int arg = 1; arg < data.cmdNBarg; arg++)
     {
-        if (data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+        if(data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING
+                || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
         {
-            if (strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
+            if(strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
             {
                 json_mode = 1;
             }
-            else if (strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
+            else if(strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
             {
                 porcelain_mode = 1;
             }
@@ -630,11 +634,12 @@ errno_t help()
 
     help_format_mode = json_mode ? 1 : (porcelain_mode ? 2 : 0);
 
-    if (topic != NULL)
+    if(topic != NULL)
     {
-        if (help_topic_dispatch(topic) != 0)
+        if(help_topic_dispatch(topic) != 0)
         {
-            if (help_format_mode == 0) {
+            if(help_format_mode == 0)
+            {
                 printf(C_ERR "Unknown help topic: \"%s\"" C_RST "\n\n", topic);
                 print_help_topic_list();
             }
@@ -767,5 +772,3 @@ errno_t help_module()
 
     return RETURN_SUCCESS;
 }
-
-

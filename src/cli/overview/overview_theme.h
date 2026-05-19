@@ -163,16 +163,19 @@ static inline void ov_theme_ul(ov_rgb_t c)
  */
 static inline ov_rgb_t ov_pid_color(pid_t pid)
 {
-    if (pid <= 0)
+    if(pid <= 0)
     {
         return OV_FG_DIM;
     }
     ov_pid_status_t st = pid_get_status(pid);
-    switch (st)
+    switch(st)
     {
-    case OV_PID_ALIVE:  return OV_FG_ACTIVE;
-    case OV_PID_ZOMBIE: return OV_FG_ZOMBIE;
-    default:            return OV_FG_DIM;
+    case OV_PID_ALIVE:
+        return OV_FG_ACTIVE;
+    case OV_PID_ZOMBIE:
+        return OV_FG_ZOMBIE;
+    default:
+        return OV_FG_DIM;
     }
 }
 
@@ -191,18 +194,19 @@ static inline ov_rgb_t ov_rgb_lerp(
     ov_rgb_t b,
     float    t)
 {
-    if (t < 0.0f)
+    if(t < 0.0f)
     {
         t = 0.0f;
     }
-    if (t > 1.0f)
+    if(t > 1.0f)
     {
         t = 1.0f;
     }
-    return (ov_rgb_t) {
+    return (ov_rgb_t)
+    {
         a.r + (int)((float)(b.r - a.r) * t),
-        a.g + (int)((float)(b.g - a.g) * t),
-        a.b + (int)((float)(b.b - a.b) * t),
+            a.g + (int)((float)(b.g - a.g) * t),
+            a.b + (int)((float)(b.b - a.b) * t),
     };
 }
 
@@ -223,20 +227,20 @@ static inline void ov_buf_gradient_bar(
     ov_rgb_t lo,
     ov_rgb_t hi)
 {
-    if (fill < 0.0f)
+    if(fill < 0.0f)
     {
         fill = 0.0f;
     }
-    if (fill > 1.0f)
+    if(fill > 1.0f)
     {
         fill = 1.0f;
     }
     int filled = (int)(fill * (float) len + 0.5f);
 
     ov_buf_pos(row, col);
-    for (int i = 0; i < len; i++)
+    for(int i = 0; i < len; i++)
     {
-        if (i < filled)
+        if(i < filled)
         {
             float t = (len > 1)
                       ? (float) i / (float)(len - 1)
@@ -272,27 +276,39 @@ static inline void ov_buf_printf_gradient(
     int n = vsnprintf(tmp, sizeof(tmp), fmt, ap);
     va_end(ap);
 
-    if (n > 0) {
-        if (n >= (int)sizeof(tmp)) n = (int)sizeof(tmp) - 1;
-        
+    if(n > 0)
+    {
+        if(n >= (int)sizeof(tmp))
+        {
+            n = (int)sizeof(tmp) - 1;
+        }
+
         int total_chars = 0;
         int i = 0;
-        while (i < n) {
+        while(i < n)
+        {
             int char_len = utf8_char_length((unsigned char)tmp[i]);
-            if (i + char_len > n) char_len = n - i;
+            if(i + char_len > n)
+            {
+                char_len = n - i;
+            }
             total_chars++;
             i += char_len;
         }
 
         i = 0;
         int char_idx = 0;
-        while (i < n) {
+        while(i < n)
+        {
             int char_len = utf8_char_length((unsigned char)tmp[i]);
-            if (i + char_len > n) char_len = n - i;
-            
+            if(i + char_len > n)
+            {
+                char_len = n - i;
+            }
+
             float t = (total_chars > 1) ? (float)char_idx / (float)(total_chars - 1) : 0.0f;
             ov_theme_fg(ov_rgb_lerp(a, b, t));
-            
+
             ov_buf_append_char(&tmp[i], char_len);
             i += char_len;
             char_idx++;
@@ -309,24 +325,24 @@ static inline void ov_buf_printf_gradient(
  * @color:   foreground color
  */
 static inline void ov_buf_sparkline(
-    int            row,
-    int            col,
-    const float   *vals,
-    int            len,
-    ov_rgb_t       color)
+    int         row,
+    int         col,
+    const float *vals,
+    int         len,
+    ov_rgb_t    color)
 {
     ov_buf_pos(row, col);
     ov_theme_bg(OV_BG_PANEL);
     ov_theme_fg(color);
 
-    for (int i = 0; i < len; i++)
+    for(int i = 0; i < len; i++)
     {
         float v = vals[i];
-        if (v < 0.0f)
+        if(v < 0.0f)
         {
             v = 0.0f;
         }
-        if (v > 1.0f)
+        if(v > 1.0f)
         {
             v = 1.0f;
         }
@@ -352,14 +368,14 @@ static inline void ov_buf_sparkline(
  * @tcolor: title text color
  */
 static inline void ov_draw_panel_border(
-    int         row,
-    int         col,
-    int         height,
-    int         width,
+    int        row,
+    int        col,
+    int        height,
+    int        width,
     const char *title,
-    ov_rgb_t    tcolor,
-    int         is_focused,
-    int         drop_shadow)
+    ov_rgb_t   tcolor,
+    int        is_focused,
+    int        drop_shadow)
 {
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);
@@ -378,15 +394,18 @@ static inline void ov_draw_panel_border(
     ov_buf_printf("%s", tr);
 
     /* title overlay */
-    if (title && title[0])
+    if(title && title[0])
     {
         ov_buf_pos(row, col + 2);
         ov_buf_bold();
-        if (is_focused) {
+        if(is_focused)
+        {
             ov_theme_bg(tcolor);
             ov_theme_fg(OV_BG_TERMINAL);
             ov_buf_printf(" %s ", title);
-        } else {
+        }
+        else
+        {
             ov_theme_fg(OV_FG_MUTED);
             ov_theme_bg(OV_BG_TERMINAL);
             ov_buf_printf(" %s ", title);
@@ -395,7 +414,7 @@ static inline void ov_draw_panel_border(
     }
 
     /* sides */
-    for (int r = row + 1; r < row + height - 1; r++)
+    for(int r = row + 1; r < row + height - 1; r++)
     {
         ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
         ov_theme_bg(OV_BG_TERMINAL);
@@ -413,7 +432,7 @@ static inline void ov_draw_panel_border(
     ov_buf_printf("%s", br);
 
     /* drop shadow */
-    if (drop_shadow)
+    if(drop_shadow)
     {
         ov_theme_fg(OV_FG_DIM);
         ov_theme_bg(OV_BG_TERMINAL);
@@ -421,7 +440,7 @@ static inline void ov_draw_panel_border(
         ov_buf_pos(row + height, col + 1);
         ov_buf_hline_utf8("▒", width);
         /* right shadow */
-        for (int r = row + 1; r < row + height; r++)
+        for(int r = row + 1; r < row + height; r++)
         {
             ov_buf_pos(r, col + width);
             ov_buf_printf("▒");
@@ -437,15 +456,15 @@ static inline void ov_draw_panel_border(
  * ov_draw_panel_tabs - draw a panel frame with multiple tabs.
  */
 static inline void ov_draw_panel_tabs(
-    int         row,
-    int         col,
-    int         height,
-    int         width,
+    int        row,
+    int        col,
+    int        height,
+    int        width,
     const char **tabs,
-    int         num_tabs,
-    int         active_tab,
-    ov_rgb_t    tcolor,
-    int         is_focused)
+    int        num_tabs,
+    int        active_tab,
+    ov_rgb_t   tcolor,
+    int        is_focused)
 {
     ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
     ov_theme_bg(OV_BG_TERMINAL);
@@ -465,32 +484,39 @@ static inline void ov_draw_panel_tabs(
 
     /* title overlay: rendering tabs */
     int current_col = col + 2;
-    for (int i = 0; i < num_tabs; i++)
+    for(int i = 0; i < num_tabs; i++)
     {
         ov_buf_pos(row, current_col);
         ov_buf_bold();
-        if (i == active_tab) {
-            if (is_focused) {
+        if(i == active_tab)
+        {
+            if(is_focused)
+            {
                 ov_theme_bg(tcolor);
                 ov_theme_fg(OV_BG_TERMINAL);
-            } else {
+            }
+            else
+            {
                 ov_theme_bg(OV_FG_DIM);
                 ov_theme_fg(OV_BG_TERMINAL);
             }
-        } else {
+        }
+        else
+        {
             ov_theme_fg(OV_FG_MUTED);
             ov_theme_bg(OV_BG_TERMINAL);
         }
-        
+
         char tab_text[64];
         snprintf(tab_text, sizeof(tab_text), " %s ", tabs[i]);
         ov_buf_printf("%s", tab_text);
-        
+
         ov_buf_reset_attr();
         current_col += strlen(tab_text) + 1; // 1 space between tabs
     }
 
-    if (current_col + 15 < col + width) {
+    if(current_col + 15 < col + width)
+    {
         ov_buf_pos(row, current_col + 1);
         ov_theme_fg(OV_FG_MUTED);
         ov_theme_bg(OV_BG_TERMINAL);
@@ -498,7 +524,7 @@ static inline void ov_draw_panel_tabs(
     }
 
     /* sides */
-    for (int r = row + 1; r < row + height - 1; r++)
+    for(int r = row + 1; r < row + height - 1; r++)
     {
         ov_theme_fg(is_focused ? tcolor : OV_FG_DIM);
         ov_theme_bg(OV_BG_TERMINAL);

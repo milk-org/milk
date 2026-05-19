@@ -1,12 +1,5 @@
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
-#include "processinfo_update_output_stream.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
 #ifndef CLOCK_MILK
@@ -18,7 +11,7 @@
  */
 errno_t processinfo_update_output_stream(
     PROCESSINFO *processinfo,
-    IMAGE        *output_image,
+    IMAGE       *output_image,
     IMAGE        *input_image
 )
 {

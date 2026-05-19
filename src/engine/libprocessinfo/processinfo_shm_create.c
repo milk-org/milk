@@ -4,20 +4,12 @@
  */
 
 #include <sys/mman.h> // mmap()
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <time.h>
-#include <string.h>
-#include <errno.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_shm_list_create.h"
 #include "processinfo_procdirname.h"
-#include "processinfo_WriteMessage.h"
-#include "processinfo_shm_create.h"
 
 
 
@@ -58,7 +50,7 @@ PROCESSINFO *processinfo_shm_create(
     PID = getpid();
 
     DEBUG_TRACEPOINT("create/update pinfolist");
-    if (processinfo_shm_list_create(&pindex) != RETURN_SUCCESS)
+    if(processinfo_shm_list_create(&pindex) != RETURN_SUCCESS)
     {
         PRINT_ERROR("processinfo_shm_list_create failed");
         goto fail;
@@ -245,14 +237,14 @@ PROCESSINFO *processinfo_shm_create(
 
     DEBUG_TRACE_FEXIT();
 
-    if (SM_fd != -1)
+    if(SM_fd != -1)
     {
         close(SM_fd);
     }
     return pinfo;
 
 fail:
-    if (SM_fd != -1)
+    if(SM_fd != -1)
     {
         close(SM_fd);
     }

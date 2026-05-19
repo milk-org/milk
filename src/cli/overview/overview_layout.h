@@ -10,7 +10,8 @@
 #include <time.h>
 
 /* View modes */
-typedef enum {
+typedef enum
+{
     OV_VIEW_DASHBOARD = 0,
     OV_VIEW_STREAMS,
     OV_VIEW_PROCS,
@@ -20,12 +21,14 @@ typedef enum {
 } ov_view_t;
 
 /* Panel rectangle */
-typedef struct {
+typedef struct
+{
     int row, col, height, width;
 } OV_RECT;
 
 /* Panel focus */
-typedef enum {
+typedef enum
+{
     OV_FOCUS_STREAMS = 0,
     OV_FOCUS_PROCS,
     OV_FOCUS_FPS,
@@ -47,32 +50,36 @@ typedef enum {
 #define OV_CMDLOG_MAX  32  /* ring buffer capacity */
 #define OV_CMDLOG_MSG  96  /* max message length   */
 
-typedef enum {
+typedef enum
+{
     OV_CMDLOG_INFO = 0, /* neutral informational */
     OV_CMDLOG_OK,       /* action succeeded      */
     OV_CMDLOG_FAIL,     /* action failed         */
     OV_CMDLOG_WARN,     /* warning / partial     */
 } ov_cmdlog_level_t;
 
-typedef struct {
+typedef struct
+{
     struct timespec    ts;
     char               msg[OV_CMDLOG_MSG];
     ov_cmdlog_level_t  level;
 } OV_CMDLOG_ENTRY;
 
-typedef struct {
+typedef struct
+{
     OV_CMDLOG_ENTRY entries[OV_CMDLOG_MAX];
     int  head;   /* next write position     */
     int  count;  /* entries currently stored */
 } OV_CMDLOG;
 
 void ov_cmdlog_push(
-    OV_CMDLOG          *log,
-    ov_cmdlog_level_t   level,
-    const char         *fmt, ...);
+    OV_CMDLOG         *log,
+    ov_cmdlog_level_t level,
+    const char        *fmt, ...);
 
 /* Layout state */
-typedef struct {
+typedef struct
+{
     int          term_rows;
     int          term_cols;
     ov_view_t    view;
@@ -172,7 +179,8 @@ typedef struct {
     OV_RECT      r_fps_list;       /* left: FPS list  */
     OV_RECT      r_fps_params;     /* right: param tree */
     /* Preview-bar action buttons (row 2) */
-    struct {
+    struct
+    {
         int col;   /* 1-based start column (0 = unused) */
         int width; /* visible width in columns */
         int id;    /* action ID: OV_BTN_* */

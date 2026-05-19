@@ -7,6 +7,12 @@
 #include "overview_ansi.h"
 #include "overview_layout.h"
 
+/**
+ * @brief Compute panel layout from terminal dimensions.
+ *
+ * Calculates column widths and row counts for
+ * the overview dashboard panels.
+ */
 void ov_layout_compute(OV_LAYOUT *lay)
 {
     ov_get_terminal_size(&lay->term_rows,
@@ -16,38 +22,48 @@ void ov_layout_compute(OV_LAYOUT *lay)
     int H = lay->term_rows;
 
     /* Header: 1 row at top */
-    lay->r_header = (OV_RECT){1, 1, 1, W};
+    lay->r_header = (OV_RECT)
+    {
+        1, 1, 1, W
+    };
 
     /* Status: 1 row at bottom */
-    lay->r_status = (OV_RECT){H, 1, 1, W};
+    lay->r_status = (OV_RECT)
+    {
+        H, 1, 1, W
+    };
 
     /* Command log strip above status bar */
     int log_h = lay->cmdlog_rows;
-    if (log_h < 0)
+    if(log_h < 0)
     {
         log_h = 0;
     }
-    if (log_h > 0)
+    if(log_h > 0)
     {
-        lay->r_cmdlog = (OV_RECT){
+        lay->r_cmdlog = (OV_RECT)
+        {
             H - log_h, 1, log_h, W
         };
     }
     else
     {
-        lay->r_cmdlog = (OV_RECT){0, 0, 0, 0};
+        lay->r_cmdlog = (OV_RECT)
+        {
+            0, 0, 0, 0
+        };
     }
 
     /* Usable height excludes header + status + log */
     int body_top;
     int body_h;
 
-    if (lay->view == OV_VIEW_DASHBOARD)
+    if(lay->view == OV_VIEW_DASHBOARD)
     {
         /* Row 2 = preview bar for selected item */
         body_top = 3;
         body_h   = H - 3 - log_h;
-        if (body_h < 4)
+        if(body_h < 4)
         {
             body_h = 4;
         }
@@ -55,51 +71,56 @@ void ov_layout_compute(OV_LAYOUT *lay)
         int dash_w = (int)(W * lay->dash_split_v_ratio);
         int dash_h = (int)(body_h * lay->dash_split_h_ratio);
 
-        if (dash_w < 20)
+        if(dash_w < 20)
         {
             dash_w = 20;
         }
-        if (dash_w > W - 20)
+        if(dash_w > W - 20)
         {
             dash_w = W - 20;
         }
 
-        if (dash_h < 4)
+        if(dash_h < 4)
         {
             dash_h = 4;
         }
-        if (dash_h > body_h - 4)
+        if(dash_h > body_h - 4)
         {
             dash_h = body_h - 4;
         }
 
-        lay->r_streams = (OV_RECT){
+        lay->r_streams = (OV_RECT)
+        {
             body_top, 1,
-            dash_h, dash_w
+                      dash_h, dash_w
         };
-        lay->r_procs = (OV_RECT){
+        lay->r_procs = (OV_RECT)
+        {
             body_top, dash_w + 1,
-            dash_h, W - dash_w
+                      dash_h, W - dash_w
         };
-        lay->r_fps = (OV_RECT){
+        lay->r_fps = (OV_RECT)
+        {
             body_top + dash_h, 1,
-            body_h - dash_h, dash_w
+                     body_h - dash_h, dash_w
         };
-        lay->r_graph = (OV_RECT){
+        lay->r_graph = (OV_RECT)
+        {
             body_top + dash_h, dash_w + 1,
-            body_h - dash_h, W - dash_w
+                     body_h - dash_h, W - dash_w
         };
     }
     else
     {
         body_top = 2;
         body_h   = H - 2 - log_h;
-        if (body_h < 4)
+        if(body_h < 4)
         {
             body_h = 4;
         }
         /* Full-screen for single-view modes */
-        lay->r_streams = (OV_RECT){
+        lay->r_streams = (OV_RECT)
+        {
             body_top, 1, body_h, W
         };
         lay->r_procs   = lay->r_streams;
@@ -107,21 +128,23 @@ void ov_layout_compute(OV_LAYOUT *lay)
         lay->r_graph   = lay->r_streams;
 
         /* F5 split */
-        if (lay->view == OV_VIEW_FPS)
+        if(lay->view == OV_VIEW_FPS)
         {
             int lw = (int)(W * lay->fps_split_ratio);
-            if (lw < 20)
+            if(lw < 20)
             {
                 lw = 20;
             }
-            if (lw > W - 20)
+            if(lw > W - 20)
             {
                 lw = W - 20;
             }
-            lay->r_fps_list   = (OV_RECT){
+            lay->r_fps_list   = (OV_RECT)
+            {
                 body_top, 1, body_h, lw
             };
-            lay->r_fps_params = (OV_RECT){
+            lay->r_fps_params = (OV_RECT)
+            {
                 body_top, lw + 1, body_h, W - lw
             };
             /* Keep r_fps pointing to list for panel rendering */

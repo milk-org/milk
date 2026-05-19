@@ -6,18 +6,13 @@
  * mapped state structs used by sequencer instances.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include "milkDebugTools.h"
 #include "fpsseq.h"
-#include "fps_types.h"
 
 #define SHM_PREFIX "/milkseq."
 #define FIFO_PREFIX "/tmp/milkseq."
@@ -28,7 +23,10 @@
  * @size:  Buffer size
  * @name:  Sequencer name
  */
-static void build_shm_name(char *dest, size_t size, const char *name)
+static void build_shm_name(
+    char *dest,
+    size_t size,
+    const char *name)
 {
     snprintf(dest, size, "%s%s.shm", SHM_PREFIX, name);
 }
@@ -39,7 +37,10 @@ static void build_shm_name(char *dest, size_t size, const char *name)
  * @size:  Buffer size
  * @name:  Sequencer name
  */
-static void build_fifo_name(char *dest, size_t size, const char *name)
+static void build_fifo_name(
+    char *dest,
+    size_t size,
+    const char *name)
 {
     snprintf(dest, size, "%s%s.fifo", FIFO_PREFIX, name);
 }
@@ -56,7 +57,10 @@ static void build_fifo_name(char *dest, size_t size, const char *name)
  */
 MILKSEQ_STATE *milkseq_create(const char *name)
 {
-    if (!name || strlen(name) == 0) return NULL;
+    if(!name || strlen(name) == 0)
+    {
+        return NULL;
+    }
 
     char shm_name[256];
     build_shm_name(shm_name, sizeof(shm_name), name);
@@ -65,12 +69,14 @@ MILKSEQ_STATE *milkseq_create(const char *name)
     shm_unlink(shm_name);
 
     int fd = shm_open(shm_name, O_CREAT | O_RDWR | O_EXCL, 0666);
-    if (fd == -1) {
+    if(fd == -1)
+    {
         PRINT_ERROR("shm_open milkseq: %s", strerror(errno));
         return NULL;
     }
 
-    if (ftruncate(fd, sizeof(MILKSEQ_STATE)) == -1) {
+    if(ftruncate(fd, sizeof(MILKSEQ_STATE)) == -1)
+    {
         PRINT_ERROR("ftruncate milkseq: %s", strerror(errno));
         close(fd);
         shm_unlink(shm_name);
@@ -80,7 +86,8 @@ MILKSEQ_STATE *milkseq_create(const char *name)
     MILKSEQ_STATE *state = mmap(NULL, sizeof(MILKSEQ_STATE), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
 
-    if (state == MAP_FAILED) {
+    if(state == MAP_FAILED)
+    {
         PRINT_ERROR("mmap milkseq: %s", strerror(errno));
         shm_unlink(shm_name);
         return NULL;
@@ -102,7 +109,8 @@ MILKSEQ_STATE *milkseq_create(const char *name)
     // Create FIFO
     build_fifo_name(state->fifo_path, sizeof(state->fifo_path), name);
     unlink(state->fifo_path); // remove stale
-    if (mkfifo(state->fifo_path, 0666) == -1) {
+    if(mkfifo(state->fifo_path, 0666) == -1)
+    {
         PRINT_ERROR("mkfifo milkseq: %s", strerror(errno));
         // Non-fatal, but warn
     }
@@ -121,20 +129,25 @@ MILKSEQ_STATE *milkseq_create(const char *name)
  */
 MILKSEQ_STATE *milkseq_connect(const char *name)
 {
-    if (!name || strlen(name) == 0) return NULL;
+    if(!name || strlen(name) == 0)
+    {
+        return NULL;
+    }
 
     char shm_name[256];
     build_shm_name(shm_name, sizeof(shm_name), name);
 
     int fd = shm_open(shm_name, O_RDWR, 0); // Allow write for status updates
-    if (fd == -1) {
+    if(fd == -1)
+    {
         return NULL; // Not found
     }
 
     MILKSEQ_STATE *state = mmap(NULL, sizeof(MILKSEQ_STATE), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
 
-    if (state == MAP_FAILED) {
+    if(state == MAP_FAILED)
+    {
         PRINT_ERROR("mmap milkseq connect: %s", strerror(errno));
         return NULL;
     }
@@ -150,7 +163,10 @@ MILKSEQ_STATE *milkseq_connect(const char *name)
  */
 int milkseq_disconnect(MILKSEQ_STATE *state)
 {
-    if (!state) return -1;
+    if(!state)
+    {
+        return -1;
+    }
     return munmap(state, sizeof(MILKSEQ_STATE));
 }
 
@@ -164,7 +180,10 @@ int milkseq_disconnect(MILKSEQ_STATE *state)
  */
 int milkseq_destroy(const char *name)
 {
-    if (!name || strlen(name) == 0) return -1;
+    if(!name || strlen(name) == 0)
+    {
+        return -1;
+    }
 
     char shm_name[256];
     char fifo_name[256];
@@ -187,26 +206,36 @@ int milkseq_destroy(const char *name)
  *
  * Return: Number of sequencers found (<= maxcount)
  */
-int milkseq_list(char names[][FPSSEQ_NAME_MAX], int maxcount)
+int milkseq_list(
+    char names[][FPSSEQ_NAME_MAX],
+    int maxcount)
 {
     int count = 0;
     DIR *d;
     struct dirent *dir;
     d = opendir("/dev/shm");
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
+    if(d)
+    {
+        while((dir = readdir(d)) != NULL)
+        {
             // Match milkseq.*.shm
-            if (strncmp(dir->d_name, "milkseq.", 8) == 0) {
+            if(strncmp(dir->d_name, "milkseq.", 8) == 0)
+            {
                 char *ext = strstr(dir->d_name, ".shm");
-                if (ext) {
-                    if (count < maxcount) {
+                if(ext)
+                {
+                    if(count < maxcount)
+                    {
                         size_t namelen = ext - (dir->d_name + 8);
-                        if (namelen < FPSSEQ_NAME_MAX) {
+                        if(namelen < FPSSEQ_NAME_MAX)
+                        {
                             strncpy(names[count], dir->d_name + 8, namelen);
                             names[count][namelen] = '\0';
                             count++;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         break; // Array full
                     }
                 }

@@ -27,13 +27,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "streamdelay",
     .cmdkey      = "streamdelay",
     .description =
-        "delay input stream to output stream",
+    "delay input stream to output stream",
     .description_long =
-        "Introduce a configurable frame delay on an image stream. Buffers incoming frames in a circular buffer and outputs frames from N steps earlier. Useful for simulating latency."
+    "Introduce a configurable frame delay on an image stream. Buffers incoming frames in a circular buffer and outputs frames from N steps earlier. Useful for simulating latency."
 };
 
 
@@ -117,23 +118,23 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
         if(fpi_avemode >= 0 && fpi_dtns >= 0)
         {
             if(dcfpsptr->parray[fpi_avemode]
-                .val.i32[0] == 0)
+                    .val.i32[0] == 0)
             {
                 dcfpsptr
-                    ->parray[fpi_dtns]
-                    .fpflag &= ~FPFLAG_USED;
+                ->parray[fpi_dtns]
+                .fpflag &= ~FPFLAG_USED;
                 dcfpsptr
-                    ->parray[fpi_dtns]
-                    .fpflag &= ~FPFLAG_VISIBLE;
+                ->parray[fpi_dtns]
+                .fpflag &= ~FPFLAG_VISIBLE;
             }
             else
             {
                 dcfpsptr
-                    ->parray[fpi_dtns]
-                    .fpflag |= FPFLAG_USED;
+                ->parray[fpi_dtns]
+                .fpflag |= FPFLAG_USED;
                 dcfpsptr
-                    ->parray[fpi_dtns]
-                    .fpflag |= FPFLAG_VISIBLE;
+                ->parray[fpi_dtns]
+                .fpflag |= FPFLAG_VISIBLE;
             }
         }
     }
@@ -142,9 +143,9 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 }
 
 static errno_t streamdelay(
-    IMGID            inimg,
-    IMGID            outimg,
-    IMGID            bufferimg,
+    IMGID           inimg,
+    IMGID           outimg,
+    IMGID           bufferimg,
     struct timespec *tarray,
     int             *warray,
     int             *status)
@@ -167,19 +168,19 @@ static errno_t streamdelay(
 
         char *destptr;
         destptr = (char *)
-            bufferimg.im->array.raw;
+                  bufferimg.im->array.raw;
         destptr +=
             inimg.md->imdatamemsize
             * bufferindex_input;
         __builtin_memcpy(destptr,
-               inimg.im->array.raw,
-               inimg.md->imdatamemsize);
+                         inimg.im->array.raw,
+                         inimg.md->imdatamemsize);
 
         warray[bufferindex_input] = 0;
 
         bufferindex_input++;
         if(bufferindex_input
-            == (timebuffsize))
+                == (timebuffsize))
         {
             bufferindex_input = 0;
         }
@@ -195,7 +196,7 @@ static errno_t streamdelay(
     int  updateflag = 0;
     long bufferindex_output_last = 0;
     while((warray[bufferindex_output] == 0)
-          && (tdiffv > (delaysec)))
+            && (tdiffv > (delaysec)))
     {
         updateflag = 1;
         warray[bufferindex_output] = 1;
@@ -204,13 +205,13 @@ static errno_t streamdelay(
             bufferindex_output;
         bufferindex_output++;
         if(bufferindex_output
-            == (timebuffsize))
+                == (timebuffsize))
         {
             bufferindex_output = 0;
         }
 
         tdiff = timespec_diff(
-            tarray[bufferindex_output], tnow);
+                    tarray[bufferindex_output], tnow);
         tdiffv =
             1.0 * tdiff.tv_sec
             + 1.0e-9 * tdiff.tv_nsec;
@@ -226,13 +227,13 @@ static errno_t streamdelay(
                inimg.md->imdatamemsize);
         char *srcptr;
         srcptr = (char *)
-            bufferimg.im->array.raw;
+                 bufferimg.im->array.raw;
         srcptr +=
             inimg.md->imdatamemsize
             * bufferindex_output_last;
         __builtin_memcpy(outimg.im->array.raw,
-               srcptr,
-               inimg.md->imdatamemsize);
+                         srcptr,
+                         inimg.md->imdatamemsize);
 
         *status = 1;
     }
@@ -282,12 +283,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     struct timespec *timeinarray;
     timeinarray = (struct timespec *)
-        malloc(sizeof(struct timespec)
-               * (timebuffsize));
+                  malloc(sizeof(struct timespec)
+                         * (timebuffsize));
     struct timespec tnow;
     clock_gettime(CLOCK_MILK, &tnow);
     for(uint64_t i = 0;
-         i < timebuffsize; i++)
+            i < timebuffsize; i++)
     {
         timeinarray[i].tv_sec  = tnow.tv_sec;
         timeinarray[i].tv_nsec = tnow.tv_nsec;
@@ -295,9 +296,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     int *warray;
     warray = (int *)
-        malloc(sizeof(int) * (timebuffsize));
+             malloc(sizeof(int) * (timebuffsize));
     for(uint64_t i = 0;
-         i < timebuffsize; i++)
+            i < timebuffsize; i++)
     {
         warray[i] = 1;
     }
@@ -337,9 +338,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t

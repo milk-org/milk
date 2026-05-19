@@ -19,12 +19,13 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "ri2c",
     .cmdkey      = "ri2c",
     .description = "real, imaginary -> complex",
     .description_long =
-        "Construct a complex image from separate real and imaginary component images. Combines two real-valued streams into one complex stream."
+    "Construct a complex image from separate real and imaginary component images. Combines two real-valued streams into one complex stream."
 };
 
 
@@ -33,11 +34,11 @@ static FPS_APP_INFO FPS_app_info = {
  * ============================================================= */
 
 static char inreimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imre";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imre";
 static char inimimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imim";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imim";
 static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imc";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imc";
 
 
 /* ================================================================
@@ -87,7 +88,7 @@ errno_t mk_complex_from_reim_IMGID(
 
     imgout->mdt->naxis = imgre->md[0].naxis;
     for(int8_t i = 0;
-         i < imgout->mdt->naxis; i++)
+            i < imgout->mdt->naxis; i++)
     {
         imgout->mdt->size[i] =
             imgre->md[0].size[i];
@@ -114,7 +115,7 @@ _Pragma("omp for simd") \
     }
 
     if((datatype_re == _DATATYPE_FLOAT)
-        && (datatype_im == _DATATYPE_FLOAT))
+            && (datatype_im == _DATATYPE_FLOAT))
     {
         MK_COMPLEX_LOOP(_DATATYPE_COMPLEX_FLOAT, float, float, complex_float, F, F, CF)
     }
@@ -149,7 +150,7 @@ errno_t mk_complex_from_reim(
     const char *re_name,
     const char *im_name,
     const char *out_name,
-    int         sharedmem)
+    int        sharedmem)
 {
     IMGID imgre =
         imgid_make_from_name(re_name);
@@ -160,7 +161,7 @@ errno_t mk_complex_from_reim(
     imgout.mdt->shared = sharedmem;
 
     errno_t ret = mk_complex_from_reim_IMGID(
-        &imgre, &imgim, &imgout);
+                      &imgre, &imgim, &imgout);
     imgid_free(&imgre);
     imgid_free(&imgim);
     imgid_free(&imgout);
@@ -214,9 +215,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t

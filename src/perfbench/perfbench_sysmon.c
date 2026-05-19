@@ -41,45 +41,61 @@ static int cmp_int64(const void *a, const void *b)
  */
 void find_proc_shm(
     bench_cfg_t *cfg,
-    pid_t        pid,
+    pid_t       pid,
     char        *out,
-    size_t       outsz)
+    size_t      outsz)
 {
     DIR *d = opendir(cfg->procdir);
-    if (!d)
+    if(!d)
+    {
         return;
+    }
 
     int found = 0;
     struct dirent *de;
-    while ((de = readdir(d)) != NULL)
+    while((de = readdir(d)) != NULL)
     {
-        if (strncmp(de->d_name, "proc.", 5) != 0)
+        if(strncmp(de->d_name, "proc.", 5) != 0)
+        {
             continue;
-        if (!strstr(de->d_name, ".shm"))
+        }
+        if(!strstr(de->d_name, ".shm"))
+        {
             continue;
+        }
 
-        if (pid != 0)
+        if(pid != 0)
         {
             /* extract PID field: proc.NAME.PID.shm */
             const char *p = strrchr(de->d_name, '.');
-            if (!p)
+            if(!p)
+            {
                 continue;
+            }
             /* step back over ".shm" */
             /* format: proc.<name>.<pid>.shm */
             /* find second-to-last dot */
             char tmp[256];
-            strncpy(tmp, de->d_name, sizeof(tmp)-1);
-            tmp[sizeof(tmp)-1] = '\0';
+            strncpy(tmp, de->d_name, sizeof(tmp) - 1);
+            tmp[sizeof(tmp) - 1] = '\0';
             /* remove trailing ".shm" */
             char *dot = strrchr(tmp, '.');
-            if (!dot) continue;
+            if(!dot)
+            {
+                continue;
+            }
             *dot = '\0';
             /* now find the PID field */
             dot = strrchr(tmp, '.');
-            if (!dot) continue;
-            pid_t fpid = (pid_t) atoi(dot + 1);
-            if (fpid != pid)
+            if(!dot)
+            {
                 continue;
+            }
+            pid_t fpid = (pid_t) atoi(dot + 1);
+            if(fpid != pid)
+            {
+                continue;
+            }
         }
 
         snprintf(out, outsz, "%s/%s",
@@ -88,9 +104,10 @@ void find_proc_shm(
         break;
     }
     closedir(d);
-    
+
     // In order to make it return something, since I changed the prototype:
-    if (!found) {
+    if(!found)
+    {
         out[0] = '\0';
     }
 }
@@ -100,7 +117,7 @@ void find_proc_shm(
  *        /proc/PID/status.
  */
 void read_proc_mem(
-    pid_t       pid,
+    pid_t      pid,
     pi_stats_t *st)
 {
     st->vmpeak_kb = -1;
@@ -114,26 +131,38 @@ void read_proc_mem(
              "/proc/%d/status", (int) pid);
 
     FILE *fp = fopen(path, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
 
     char line[256];
-    while (fgets(line, sizeof(line), fp))
+    while(fgets(line, sizeof(line), fp))
     {
-        if (strncmp(line, "VmPeak:", 7) == 0)
+        if(strncmp(line, "VmPeak:", 7) == 0)
+        {
             sscanf(line + 7, " %" SCNd64, &st->vmpeak_kb);
-        else if (strncmp(line, "VmHWM:", 6) == 0)
+        }
+        else if(strncmp(line, "VmHWM:", 6) == 0)
+        {
             sscanf(line + 6, " %" SCNd64, &st->vmhwm_kb);
-        else if (strncmp(line, "VmRSS:", 6) == 0)
+        }
+        else if(strncmp(line, "VmRSS:", 6) == 0)
+        {
             sscanf(line + 6, " %" SCNd64, &st->vmrss_kb);
-        else if (strncmp(line,
-                         "voluntary_ctxt_switches:",
-                         24) == 0)
+        }
+        else if(strncmp(line,
+                        "voluntary_ctxt_switches:",
+                        24) == 0)
+        {
             sscanf(line + 24, " %" SCNd64, &st->vol_ctxt);
-        else if (strncmp(line,
-                         "nonvoluntary_ctxt_switches:",
-                         27) == 0)
+        }
+        else if(strncmp(line,
+                        "nonvoluntary_ctxt_switches:",
+                        27) == 0)
+        {
             sscanf(line + 27, " %" SCNd64, &st->nvol_ctxt);
+        }
     }
     fclose(fp);
 }
@@ -152,13 +181,15 @@ void read_smaps_huge(pid_t pid, pi_stats_t *st)
     snprintf(path, sizeof(path),
              "/proc/%d/smaps_rollup", (int) pid);
     FILE *fp = fopen(path, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
     char line[256];
     int64_t val = 0;
-    while (fgets(line, sizeof(line), fp))
+    while(fgets(line, sizeof(line), fp))
     {
-        if (strncmp(line, "AnonHugePages:", 14) == 0)
+        if(strncmp(line, "AnonHugePages:", 14) == 0)
         {
             sscanf(line + 14, " %" SCNd64, &val);
             break;
@@ -184,41 +215,47 @@ void read_cpu_freq(pi_stats_t *st)
     int64_t fmax = 0;
     int  found = 0;
 
-    for (int cpu = 0; cpu < 1024; cpu++)
+    for(int cpu = 0; cpu < 1024; cpu++)
     {
         char path[160];
         snprintf(path, sizeof(path),
-            "/sys/devices/system/cpu/"
-            "cpu%d/cpufreq/scaling_cur_freq",
-            cpu);
+                 "/sys/devices/system/cpu/"
+                 "cpu%d/cpufreq/scaling_cur_freq",
+                 cpu);
         FILE *fp = fopen(path, "r");
-        if (!fp)
+        if(!fp)
         {
             /* Try cpuinfo_cur_freq */
             snprintf(path, sizeof(path),
-                "/sys/devices/system/cpu/"
-                "cpu%d/cpufreq/cpuinfo_cur_freq",
-                cpu);
+                     "/sys/devices/system/cpu/"
+                     "cpu%d/cpufreq/cpuinfo_cur_freq",
+                     cpu);
             fp = fopen(path, "r");
         }
-        if (!fp)
+        if(!fp)
         {
-            if (found)
-                break; /* no more CPUs */
+            if(found)
+            {
+                break;    /* no more CPUs */
+            }
             continue;
         }
         int64_t f = 0;
-        if (fscanf(fp, "%" SCNd64, &f) == 1 && f > 0)
+        if(fscanf(fp, "%" SCNd64, &f) == 1 && f > 0)
         {
             found = 1;
-            if (f < fmin)
+            if(f < fmin)
+            {
                 fmin = f;
-            if (f > fmax)
+            }
+            if(f > fmax)
+            {
                 fmax = f;
+            }
         }
         fclose(fp);
     }
-    if (found)
+    if(found)
     {
         st->cpu_freq_min_khz = fmin;
         st->cpu_freq_max_khz = fmax;
@@ -240,8 +277,10 @@ int64_t read_rapl_energy(void)
         "/sys/class/powercap/intel-rapl/"
         "intel-rapl:0/energy_uj";
     FILE *fp = fopen(rapl, "r");
-    if (!fp)
+    if(!fp)
+    {
         return -1LL;
+    }
     int64_t val = -1LL;
     IGNORE_RESULT(fscanf(fp, "%" SCNd64, &val));
     fclose(fp);
@@ -256,35 +295,38 @@ int64_t read_rapl_energy(void)
  */
 void read_procinfo_stats(
     bench_cfg_t *cfg,
-    pid_t        child_pid,
+    pid_t       child_pid,
     pi_stats_t  *out)
 {
     out->valid = 0;
-    
+
     char shm_path[MAX_PATH];
     find_proc_shm(cfg, child_pid, shm_path, sizeof(shm_path));
-    if (shm_path[0] == '\0') {
+    if(shm_path[0] == '\0')
+    {
         return;
     }
-    
+
     /* Capture RAPL energy baseline for delta */
     long long rapl_start = read_rapl_energy();
 
     int fd = open(shm_path, O_RDONLY);
-    if (fd < 0)
+    if(fd < 0)
+    {
         return;
+    }
 
     struct stat st;
-    if (fstat(fd, &st) < 0)
+    if(fstat(fd, &st) < 0)
     {
         close(fd);
         return;
     }
 
     PROCESSINFO *pi = (PROCESSINFO *) mmap(
-        NULL, (size_t) st.st_size,
-        PROT_READ, MAP_SHARED, fd, 0);
-    if (pi == MAP_FAILED)
+                          NULL, (size_t) st.st_size,
+                          PROT_READ, MAP_SHARED, fd, 0);
+    if(pi == MAP_FAILED)
     {
         close(fd);
         return;
@@ -298,37 +340,43 @@ void read_procinfo_stats(
      * timerindex is the number of entries written so far.
      */
     int nbsam;
-    if (pi->timingbuffercnt > 0)
+    if(pi->timingbuffercnt > 0)
+    {
         nbsam = PROCESSINFO_NBtimer;
+    }
     else
+    {
         nbsam = pi->timerindex;
-    if (nbsam > PROCESSINFO_NBtimer)
+    }
+    if(nbsam > PROCESSINFO_NBtimer)
+    {
         nbsam = PROCESSINFO_NBtimer;
+    }
 
     int64_t iter_ns[PROCESSINFO_NBtimer];
     int64_t exec_ns[PROCESSINFO_NBtimer];
     int  nv = 0;
 
-    for (int i = 1; i < nbsam; i++)
+    for(int i = 1; i < nbsam; i++)
     {
         int64_t dt_exec =
             (int64_t)(pi->texecend[i].tv_sec
-             - pi->texecstart[i].tv_sec)
+                      - pi->texecstart[i].tv_sec)
             * 1000000000LL
             + (int64_t)(pi->texecend[i].tv_nsec
-               - pi->texecstart[i].tv_nsec);
+                        - pi->texecstart[i].tv_nsec);
         int64_t dt_iter =
             (int64_t)(pi->texecstart[i].tv_sec
-             - pi->texecstart[i-1].tv_sec)
+                      - pi->texecstart[i - 1].tv_sec)
             * 1000000000LL
             + (int64_t)(pi->texecstart[i].tv_nsec
-               - pi->texecstart[i-1].tv_nsec);
+                        - pi->texecstart[i - 1].tv_nsec);
         /* Reject negative, zero, or implausibly
          * large values (stale ring buffer entries
          * from a previous FPS session). */
-        if (dt_exec > 0 && dt_iter > 0
-            && dt_exec < 10000000000LL
-            && dt_iter < 10000000000LL)
+        if(dt_exec > 0 && dt_iter > 0
+                && dt_exec < 10000000000LL
+                && dt_iter < 10000000000LL)
         {
             exec_ns[nv] = dt_exec;
             iter_ns[nv] = dt_iter;
@@ -350,7 +398,7 @@ void read_procinfo_stats(
     /* RAPL energy delta */
     {
         int64_t rapl_end = read_rapl_energy();
-        if (rapl_start >= 0 && rapl_end >= 0)
+        if(rapl_start >= 0 && rapl_end >= 0)
         {
             /* Handle counter wrap (max_energy_range_uj)
              * by taking absolute diff */
@@ -368,19 +416,21 @@ void read_procinfo_stats(
     munmap(pi, (size_t) st.st_size);
     close(fd);
 
-    if (nv == 0)
+    if(nv == 0)
+    {
         return;
+    }
 
     qsort(exec_ns, (size_t) nv,
           sizeof(int64_t), cmp_int64);
-    qsort(iter_ns,  (size_t) nv,
+    qsort(iter_ns, (size_t) nv,
           sizeof(int64_t), cmp_int64);
 
     /* Compute percentile index, clamped to [0,nv-1] */
 #define PCTILE(arr, pct) \
     (arr)[((nv * (pct) / 100) < nv \
            ? (nv * (pct) / 100) : (nv - 1))]
-/* p99.9: need 1000-based arithmetic */
+    /* p99.9: need 1000-based arithmetic */
 #define PCTILE999(arr) \
     (arr)[((nv * 999 / 1000) < nv \
            ? (nv * 999 / 1000) : (nv - 1))]

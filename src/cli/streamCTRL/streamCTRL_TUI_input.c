@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <time.h>
 
+/**
+ * @brief Process keyboard input for streamCTRL TUI.
+ *
+ * Dispatches key events to navigation, sorting,
+ * and filter handlers.
+ */
 errno_t streamCTRL_keyinput_process(
     int ch,
     streamCTRLarg_struct *streamCTRLdata,
@@ -18,14 +24,18 @@ errno_t streamCTRL_keyinput_process(
     {
     case ANSI_KEY_CTRL_LEFT: // CTRL+LEFT
         sTUIparam.DisplayMode--;
-        if (sTUIparam.DisplayMode < DISPLAY_MODE_HELP)
+        if(sTUIparam.DisplayMode < DISPLAY_MODE_HELP)
+        {
             sTUIparam.DisplayMode = TAB_COUNT;
+        }
         break;
 
     case ANSI_KEY_CTRL_RIGHT: // CTRL+RIGHT
         sTUIparam.DisplayMode++;
-        if (sTUIparam.DisplayMode > TAB_COUNT)
+        if(sTUIparam.DisplayMode > TAB_COUNT)
+        {
             sTUIparam.DisplayMode = DISPLAY_MODE_HELP;
+        }
         break;
 
     case 3:   // Ctrl+C
@@ -114,7 +124,7 @@ errno_t streamCTRL_keyinput_process(
         {
             sindex =
                 sTUIparam.ssindex[
-                    sTUIparam.dindexSelected];
+            sTUIparam.dindexSelected];
             // Flag for removal by scan thread
             // Actual destroy happens in scan
             // thread to avoid race condition
@@ -200,16 +210,20 @@ errno_t streamCTRL_keyinput_process(
 
     case ']': // next sort column
         sTUIparam.sort_col++;
-        if (sTUIparam.sort_col > STREAM_NB_SORT_COLS)
+        if(sTUIparam.sort_col > STREAM_NB_SORT_COLS)
+        {
             sTUIparam.sort_col = STREAM_SORT_NONE;
+        }
         sTUIparam.sort_dir = 0;
         // Disable legacy sort modes
         sTUIparam.SORTING = 0;
         break;
 
     case '[': // toggle sort direction
-        if (sTUIparam.sort_col > STREAM_SORT_NONE)
+        if(sTUIparam.sort_col > STREAM_SORT_NONE)
+        {
             sTUIparam.sort_dir = !sTUIparam.sort_dir;
+        }
         break;
 
     case 'f': // stream name filter toggle
@@ -272,7 +286,7 @@ errno_t streamCTRL_keyinput_process(
                 (int) state->doffsetindex
                 + (click_row - body_row);
             if(new_sel >= 0
-               && new_sel < sTUIparam.NBsindex)
+                    && new_sel < sTUIparam.NBsindex)
             {
                 sTUIparam.dindexSelected = new_sel;
             }

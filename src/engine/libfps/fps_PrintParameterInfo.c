@@ -5,10 +5,7 @@
 
 #include <limits.h> // CHAR_BIT
 
-#include <stdio.h>
 
-#include "milkDebugTools.h"
-#include "fps.h"
 #define AECBOLDHIGREEN ""
 #define AECNORMAL      ""
 #define TUI_printfw(...) printf(__VA_ARGS__)
@@ -64,7 +61,9 @@ functionparameter_PrintParameterInfo(
 
     const char *display_keyword = fpsentry->parray[pindex].keywordfull;
     int prefix_len = strlen(fpsentry->md->name);
-    if (strncmp(display_keyword, fpsentry->md->name, prefix_len) == 0 && display_keyword[prefix_len] == '.') {
+    if(strncmp(display_keyword, fpsentry->md->name, prefix_len) == 0
+            && display_keyword[prefix_len] == '.')
+    {
         display_keyword += prefix_len + 1;
     }
 
@@ -242,7 +241,7 @@ functionparameter_PrintParameterInfo(
 
     printf("\n");
     printf("\n");
-    #undef PRINT_FPFLAG
+#undef PRINT_FPFLAG
 
     printf("cnt0 = %ld\n", fpsentry->parray[pindex].cnt0);
 

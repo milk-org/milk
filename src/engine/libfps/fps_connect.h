@@ -6,6 +6,6 @@
 long fps_connect(
     const char *fpsname,
     FPS        *fps,
-    int         mode);
+    int        mode);
 
 #endif // FPS_CONNECT_H

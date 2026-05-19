@@ -7,13 +7,14 @@
 #ifndef FPS_ADD_ENTRY_H
 #define FPS_ADD_ENTRY_H
 
-int function_parameter_add_entry(FPS *fps,
-                                 const char                *keywordstring,
-                                 const char                *descriptionstring,
-                                 uint64_t                   type,
-                                 uint64_t                   fpflag,
-                                 void                      *valueptr,
-                                 long                      *pindexptr);
+int function_parameter_add_entry(
+    FPS        *fps,
+    const char *keywordstring,
+    const char *descriptionstring,
+    uint64_t   type,
+    uint64_t   fpflag,
+    void       *valueptr,
+    long       *pindexptr);
 
 // =====================================================================
 // INPUT

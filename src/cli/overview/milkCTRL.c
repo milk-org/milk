@@ -66,19 +66,28 @@ static void handle_sigint(int sig)
     ov_sigINT = 1;
 }
 
+/**
+ * @brief SIGTERM handler for milkCTRL exit.
+ */
 static void handle_sigterm(int sig)
 {
     (void) sig;
     ov_sigTERM = 1;
 }
 
+/**
+ * @brief Crash signal handler for milkCTRL.
+ *
+ * Captures SIGSEGV/SIGABRT, restores terminal,
+ * and prints a diagnostic message.
+ */
 static void crash_handler(int sig)
 {
     static const char reset[] =
         "\033[?1049l\033[?25h\033[0m\n";
-    if (write(STDERR_FILENO,
-              reset, sizeof(reset) - 1) < 0) {}
-    if (ov__raw_active)
+    if(write(STDERR_FILENO,
+             reset, sizeof(reset) - 1) < 0) {}
+    if(ov__raw_active)
     {
         tcsetattr(STDIN_FILENO, TCSAFLUSH,
                   &ov__orig_termios);
@@ -106,9 +115,9 @@ extern void ov_render_frame(
 
 /* External API from overview_input.c */
 extern int ov_handle_key(
-    int              key,
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m);
+    int            key,
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m);
 
 
 #include "milk_help.h"
@@ -121,7 +130,8 @@ extern int ov_handle_key(
 
 static void print_help(const char *prog, int mh_color)
 {
-    milk_help_banner(prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
+    milk_help_banner(prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
+                     mh_color);
 
     milk_help_section("Usage", mh_color);
     printf("  $ %s [%s %s]\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
@@ -162,45 +172,61 @@ static void print_help(const char *prog, int mh_color)
     printf("  %s                      Show this help\n", MH(MH_OPT, "-h, --help"));
     printf("  %s             One-line description\n", MH(MH_OPT, "-h1, --help-oneline"));
     printf("  %s                Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
-    printf("  %s %s                         Override SHM directory\n\n", MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
+    printf("  %s %s                         Override SHM directory\n\n", MH(MH_OPT, "-d"), MH(MH_ARG,
+            "DIR"));
 
     milk_help_section("Navigation", mh_color);
-    printf("  %s, %s             Switch views (Dashboard, Streams, Procs, FPS, Graph)\n", MH(MH_OPT, "F2-F6"), MH(MH_OPT, "^Left/^Right"));
+    printf("  %s, %s             Switch views (Dashboard, Streams, Procs, FPS, Graph)\n", MH(MH_OPT,
+            "F2-F6"), MH(MH_OPT, "^Left/^Right"));
     printf("  %s                             Cycle focus between active panels\n", MH(MH_OPT, "TAB"));
     printf("  %s                           Navigate rows in focused list\n", MH(MH_OPT, "UP/DN"));
-    printf("  %s                       Ancestry navigation (jump to prev/next connected node)\n", MH(MH_OPT, "SHIFT+UP/DN"));
-    printf("  %s                      Scroll panel horizontally (or cycle focus on F2)\n", MH(MH_OPT, "Left/Right"));
+    printf("  %s                       Ancestry navigation (jump to prev/next connected node)\n",
+           MH(MH_OPT, "SHIFT+UP/DN"));
+    printf("  %s                      Scroll panel horizontally (or cycle focus on F2)\n", MH(MH_OPT,
+            "Left/Right"));
     printf("  %s                         Scroll page up/down\n", MH(MH_OPT, "PgUp/Dn"));
     printf("  %s                        Jump to top/bottom of list\n", MH(MH_OPT, "Home/End"));
-    printf("  %s                               Filter (regex search) in focused panel\n\n", MH(MH_OPT, "/"));
+    printf("  %s                               Filter (regex search) in focused panel\n\n", MH(MH_OPT,
+            "/"));
 
     milk_help_section("Sorting", mh_color);
-    printf("  %s, %s                        Cycle sort column backward/forward\n", MH(MH_OPT, "<"), MH(MH_OPT, ">/]"));
+    printf("  %s, %s                        Cycle sort column backward/forward\n", MH(MH_OPT, "<"),
+           MH(MH_OPT, ">/]"));
     printf("  %s                               Sort by Name\n", MH(MH_OPT, "s"));
     printf("  %s                               Sort by Frequency/Status\n", MH(MH_OPT, "S"));
     printf("  %s                               Sort by Ancestry/Topology\n", MH(MH_OPT, "A"));
-    printf("  %s                               Toggle sort direction (Ascending/Descending)\n\n", MH(MH_OPT, "["));
+    printf("  %s                               Toggle sort direction (Ascending/Descending)\n\n",
+           MH(MH_OPT, "["));
 
     milk_help_section("Display & Layout", mh_color);
-    printf("  %s, %s                        Adjust F5:FPS vertical split panel size\n", MH(MH_OPT, "{"), MH(MH_OPT, "}"));
-    printf("  %s, %s                        Adjust F2:Dashboard vertical split\n", MH(MH_OPT, "{"), MH(MH_OPT, "}"));
-    printf("  %s, %s                        Adjust F2:Dashboard horizontal split\n", MH(MH_OPT, "("), MH(MH_OPT, ")"));
-    printf("  %s                             Adjust scan rate (increase/decrease speed)\n", MH(MH_OPT, "+/-"));
-    printf("  %s                         Toggle detail pane / Graph jump (on selected item)\n", MH(MH_OPT, "ENTER/D"));
-    printf("  %s                               Cycle graph lineage mode (on Graph view)\n", MH(MH_OPT, "L"));
+    printf("  %s, %s                        Adjust F5:FPS vertical split panel size\n", MH(MH_OPT, "{"),
+           MH(MH_OPT, "}"));
+    printf("  %s, %s                        Adjust F2:Dashboard vertical split\n", MH(MH_OPT, "{"),
+           MH(MH_OPT, "}"));
+    printf("  %s, %s                        Adjust F2:Dashboard horizontal split\n", MH(MH_OPT, "("),
+           MH(MH_OPT, ")"));
+    printf("  %s                             Adjust scan rate (increase/decrease speed)\n", MH(MH_OPT,
+            "+/-"));
+    printf("  %s                         Toggle detail pane / Graph jump (on selected item)\n",
+           MH(MH_OPT, "ENTER/D"));
+    printf("  %s                               Cycle graph lineage mode (on Graph view)\n", MH(MH_OPT,
+            "L"));
     printf("  %s                               Pause/resume display updates\n", MH(MH_OPT, "F"));
-    printf("  %s                           Freeze selection highlight (prevent jumping)\n", MH(MH_OPT, "SPACE"));
+    printf("  %s                           Freeze selection highlight (prevent jumping)\n", MH(MH_OPT,
+            "SPACE"));
     printf("  %s                               Export current snapshot to file\n", MH(MH_OPT, "W"));
     printf("  %s                               Toggle command log panel visibility\n", MH(MH_OPT, "G"));
-    printf("  %s                               Spawn interactive CLI diagnostic tool\n", MH(MH_OPT, "i"));
+    printf("  %s                               Spawn interactive CLI diagnostic tool\n", MH(MH_OPT,
+            "i"));
     printf("  %s                               Show help overlay\n\n", MH(MH_OPT, "h"));
 
     milk_help_section("Control Mode Actions (press 'c' to toggle mode)", mh_color);
     printf("  Global: %s=Delete selected (STRM/FPS/PROC)\n", MH(MH_OPT, "CTRL+e"));
     printf("  STRM:   %s=Delete stream\n", MH(MH_OPT, "DEL"));
-    printf("  PROCS:  %s=Kill %s=SIGKILL %s=Ctrl(-1) %s=Ctrl(2) %s=Ctrl(3) %s=Zero %s=Cleanup\n", 
-           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "p"), MH(MH_OPT, "^s"), MH(MH_OPT, "e"), MH(MH_OPT, "z"), MH(MH_OPT, "C"));
-    printf("  FPS:    %s=SIGTERM %s=SIGKILL %s=Pause %s=Run %s=Conf\n\n", 
+    printf("  PROCS:  %s=Kill %s=SIGKILL %s=Ctrl(-1) %s=Ctrl(2) %s=Ctrl(3) %s=Zero %s=Cleanup\n",
+           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "p"), MH(MH_OPT, "^s"), MH(MH_OPT, "e"), MH(MH_OPT,
+                   "z"), MH(MH_OPT, "C"));
+    printf("  FPS:    %s=SIGTERM %s=SIGKILL %s=Pause %s=Run %s=Conf\n\n",
            MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "x"), MH(MH_OPT, "r"), MH(MH_OPT, "s"));
 
     milk_help_section("Columns", mh_color);
@@ -226,30 +252,30 @@ int main(int argc, char *argv[])
 {
     /* --- Help handling --- */
     int action = milk_help_init(argc, argv,
-        "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
-        NULL);
+                                "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
+                                NULL);
 
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
     }
 
     int mh_color = (action == MH_ACTION_HELP);
 
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
     }
 
     /* --- Custom options parsing ---*/
-    for (int i = 1; i < argc; i++)
+    for(int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
+        if(strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
         {
             setenv("MILK_SHM_DIR", argv[++i], 1);
         }
-        else if (argv[i][0] == '-')
+        else if(argv[i][0] == '-')
         {
             fprintf(stderr, "%s Invalid option: %s%s%s\n"
                     "Run %s%s%s %s for usage.\n",
@@ -285,7 +311,7 @@ int main(int argc, char *argv[])
     ov_raw_mode_enter();
 
     /* --- Start background scanner --- */
-    if (ov_scan_start() != 0)
+    if(ov_scan_start() != 0)
     {
         ov_raw_mode_exit();
         PRINT_ERROR("failed to start scan thread");
@@ -298,9 +324,9 @@ int main(int argc, char *argv[])
         wts.tv_sec  = 0;
         wts.tv_nsec = 10000000L; /* 10 ms */
         int w_iters = 0;
-        while (!OV_SIG_ANY_SET() && w_iters < 100) /* max 1 sec wait */
+        while(!OV_SIG_ANY_SET() && w_iters < 100)  /* max 1 sec wait */
         {
-            if (ov_scan_has_new_data())
+            if(ov_scan_has_new_data())
             {
                 break;
             }
@@ -327,8 +353,8 @@ int main(int argc, char *argv[])
     /* Clear screen once on startup */
     {
         const char cls[] = "\033[2J\033[H";
-        if (write(STDOUT_FILENO,
-                  cls, sizeof(cls) - 1) < 0) {}
+        if(write(STDOUT_FILENO,
+                 cls, sizeof(cls) - 1) < 0) {}
     }
 
     int last_rows = -1;
@@ -336,18 +362,18 @@ int main(int argc, char *argv[])
     const OV_MODEL *m = NULL;
     int need_render = 1; /* force first frame */
 
-    while (!OV_SIG_ANY_SET())
+    while(!OV_SIG_ANY_SET())
     {
         /* Recompute layout (handles resize) */
         ov_layout_compute(&lay);
 
-        if (lay.term_rows != last_rows
-            || lay.term_cols != last_cols)
+        if(lay.term_rows != last_rows
+                || lay.term_cols != last_cols)
         {
             /* Size changed, force clear */
             const char cls[] = "\033[2J\033[H";
-            if (write(STDOUT_FILENO,
-                      cls, sizeof(cls) - 1) < 0) {}
+            if(write(STDOUT_FILENO,
+                     cls, sizeof(cls) - 1) < 0) {}
             ov_buf_force_clear();
             last_rows = lay.term_rows;
             last_cols = lay.term_cols;
@@ -355,11 +381,11 @@ int main(int argc, char *argv[])
         }
 
         /* Pick up new model if available */
-        if (!lay.paused || m == NULL)
+        if(!lay.paused || m == NULL)
         {
             const OV_MODEL *prev = m;
             m = ov_scan_get_model();
-            if (m != prev)
+            if(m != prev)
             {
                 need_render = 1;
             }
@@ -369,24 +395,24 @@ int main(int argc, char *argv[])
         {
             int quit = 0;
             int key;
-            while ((key = ov_get_key())
-                   != OV_KEY_NONE)
+            while((key = ov_get_key())
+                    != OV_KEY_NONE)
             {
                 need_render = 1;
-                if (ov_handle_key(key, &lay, m))
+                if(ov_handle_key(key, &lay, m))
                 {
                     quit = 1;
                     break;
                 }
             }
-            if (quit)
+            if(quit)
             {
                 break;
             }
         }
 
         /* Render only when something changed */
-        if (need_render)
+        if(need_render)
         {
             ov_render_frame(&lay, m);
             need_render = 0;
@@ -400,19 +426,19 @@ int main(int argc, char *argv[])
             pfd.events = POLLIN;
             int quit_now = 0;
 
-            for (int i = 0; i < 10; i++)
+            for(int i = 0; i < 10; i++)
             {
-                if (poll(&pfd, 1, 10) > 0)
+                if(poll(&pfd, 1, 10) > 0)
                 {
-                    if (pfd.revents & POLLIN)
+                    if(pfd.revents & POLLIN)
                     {
                         int pk = ov_get_key();
-                        if (pk == 'q')
+                        if(pk == 'q')
                         {
                             quit_now = 1;
                         }
-                        else if (pk
-                                 != OV_KEY_NONE)
+                        else if(pk
+                                != OV_KEY_NONE)
                         {
                             ov_handle_key(
                                 pk, &lay, m);
@@ -421,13 +447,13 @@ int main(int argc, char *argv[])
                         break;
                     }
                 }
-                if (ov_scan_has_new_data())
+                if(ov_scan_has_new_data())
                 {
                     need_render = 1;
                     break;
                 }
             }
-            if (quit_now)
+            if(quit_now)
             {
                 break;
             }

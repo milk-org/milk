@@ -15,13 +15,8 @@
  *   N  Must not exist (return -1 -> caller error)
  */
 
-#include <string.h>
-#include <unistd.h>
-#include <stdio.h>
 
 #include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#include "fps_streamname_parse.h"
 
 /*
  * Module-local image array storage.
@@ -31,6 +26,17 @@
 static IMAGE *milkfps_imarray  = NULL;
 static long   milkfps_nb_max   = 0;
 
+/**
+ * @brief Set the module-local image array for standalone
+ *        stream loading.
+ *
+ * Called by FPS_MAIN_STANDALONE_V2 after CLI_data_init()
+ * to provide the image array and its capacity.  Must be
+ * called before any COREMOD_IOFITS_LoadMemStream() call.
+ *
+ * @param imarray  Image array allocated by CLI_data_init()
+ * @param nb_max   Maximum number of images in the array
+ */
 void milkfps_set_image_array(
     IMAGE *imarray,
     long   nb_max
@@ -290,6 +296,12 @@ imageID COREMOD_IOFITS_LoadMemStream(
  * shadowing of the real symbols from
  * libmilkCOREMODiofits.so at runtime.
  */
+/**
+ * @brief Weak stub: check file existence.
+ *
+ * Overridden at link time by the real implementation
+ * in COREMOD_iofits when building the full CLI.
+ */
 __attribute__((weak, visibility("hidden")))
 int file_exists(const char *filename)
 {
@@ -297,6 +309,9 @@ int file_exists(const char *filename)
 }
 
 __attribute__((weak, visibility("hidden")))
+/**
+ * @brief Checks if a given file name corresponds to a FITS file.
+ */
 int is_fits_file(const char *filename)
 {
     const char *ext = strrchr(filename, '.');
@@ -307,6 +322,12 @@ int is_fits_file(const char *filename)
     return 0;
 }
 
+/**
+ * @brief Weak stub: save image to FITS file.
+ *
+ * Returns -1 (no-op) unless overridden by
+ * COREMOD_iofits at link time.
+ */
 __attribute__((weak, visibility("hidden")))
 int save_fits(
     const char *imname,
@@ -318,11 +339,17 @@ int save_fits(
     return -1;
 }
 
+/**
+ * @brief Weak stub: load FITS file into image array.
+ *
+ * Returns -1 (no-op) unless overridden by
+ * COREMOD_iofits at link time.
+ */
 __attribute__((weak, visibility("hidden")))
 int load_fits(
     const char *filename,
     const char *imname,
-    int         verbose,
+    int        verbose,
     imageID    *ID
 )
 {
@@ -333,6 +360,12 @@ int load_fits(
     return -1;
 }
 
+/**
+ * @brief Weak stub: copy an image by name.
+ *
+ * Returns -1 (no-op) unless overridden by
+ * COREMOD_memory at link time.
+ */
 __attribute__((weak, visibility("hidden")))
 int copy_image_ID(
     const char *name1,

@@ -21,9 +21,9 @@ int function_parameter_printlist(
 #ifdef USE_NCURSES
 errno_t functionparameter_CTRLscreen(
     uint32_t mode,
-    char    *fpsnamemask,
-    char    *fpsCTRLfifoname,
-    double  timeout_sec);
+    char     *fpsnamemask,
+    char     *fpsCTRLfifoname,
+    double   timeout_sec);
 #endif
 
 FPS function_parameter_FPCONFsetup(
