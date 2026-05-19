@@ -74,7 +74,6 @@
 #include "shmim_purge.h"
 #include "shmim_setowner.h"
 #include "stream_TCP.h"
-#include "stream_UDP.h"
 #include "stream_ave.h"
 #include "stream_copy.h"
 #include "stream_delay.h"
@@ -158,8 +157,7 @@ static errno_t init_module_CLI()
     stream_updateloop_addCLIcmd();
     CLIADDCMD_COREMOD_memory__streamdelay();
     saveall_addCLIcmd();
-    stream__TCP_addCLIcmd();
-    stream__UDP_addCLIcmd();
+    stream__NETW_addCLIcmd();
     stream_pixmapdecode_addCLIcmd();
 
     CLIADDCMD_COREMOD_memory__stream_copy();
