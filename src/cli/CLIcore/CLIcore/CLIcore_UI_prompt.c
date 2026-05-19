@@ -91,7 +91,7 @@ void cli_build_prompt(
                 pos += (int) strftime(
                            out +             pos,
                            (size_t)(maxlen - pos),
-                           "%H:%M:%S", tm);
+                           "%H:%M:%S",       tm);
                 break;
             }
             case 'n':

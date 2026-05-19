@@ -248,7 +248,7 @@ void read_build_tags(
             slen += (size_t) snprintf(
                         summary +         slen,
                         sizeof(summary) - slen,
-                        "[%s]", arch);
+                        "[%s]",           arch);
         }
     }
 

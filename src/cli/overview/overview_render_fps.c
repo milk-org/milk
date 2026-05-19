@@ -567,16 +567,16 @@ void ov_render_fps_panel(
         if(tot_crash > 0)
         {
             roff += snprintf(
-                        rbuf + roff,
+                        rbuf +                  roff,
                         sizeof(rbuf) - (size_t) roff,
-                        " \u2502 %d crash", tot_crash);
+                        " \u2502 %d crash",     tot_crash);
         }
         if(tot_idle > 0)
         {
             roff += snprintf(
-                        rbuf + roff,
+                        rbuf +                  roff,
                         sizeof(rbuf) - (size_t) roff,
-                        " \u2502 %d idle", tot_idle);
+                        " \u2502 %d idle",      tot_idle);
         }
         snprintf(rbuf + roff,
                  sizeof(rbuf) - (size_t) roff,

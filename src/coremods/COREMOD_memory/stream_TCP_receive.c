@@ -48,7 +48,7 @@ extern long FRAME_MD_MAGIC;
 imageID COREMOD_MEMORY_image_NETWORKreceive(
     int                         port,
     __attribute__((unused)) int mode,
-    int RT_priority)
+    int                         RT_priority)
 {
     struct sockaddr_in sock_server;
     struct sockaddr_in sock_client;

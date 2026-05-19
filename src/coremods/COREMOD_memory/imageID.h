@@ -116,7 +116,7 @@ static inline imageID _resolveIMGID_impl(
     IMGID      *img,
     int        ERRMODE,
     IMAGE      *imagearray __attribute__((unused)),
-    long NB_images __attribute__((unused)))
+    long       NB_images __attribute__((unused)))
 {
     // IF:
     // Not resolved before OR create counter mismatch OR not used.

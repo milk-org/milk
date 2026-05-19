@@ -41,7 +41,7 @@ static int DGRAM_CHUNK_SIZE = 62 *
 imageID COREMOD_MEMORY_image_NETUDPreceive(
     int                         port,
     __attribute__((unused)) int do_counter_sync,
-    int RT_priority)
+    int                         RT_priority)
 {
     struct sockaddr_in sock_server;
     struct sockaddr_in sock_client;
