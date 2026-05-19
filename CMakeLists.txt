@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.17)
 project(milk LANGUAGES C)
 
 
-# Examples : 
+# Examples :
 # cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON
 # cmake .. -DUSE_CUDA=ON -DUSE_MAGMA=ON
 # cmake .. -DCMAKE_BUILD_TYPE=Debug
@@ -308,6 +308,11 @@ set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
 # cmake -DCMAKE_BUILD_TYPE=Release
 set(CMAKE_C_FLAGS_RELEASE     "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
 
+# Set Coverage build flags
+# cmake -DCMAKE_BUILD_TYPE=Coverage
+set(CMAKE_C_FLAGS_COVERAGE     "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS_COVERAGE     "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
+
 
 # =======================================
 # PROFILE-GUIDED OPTIMIZATION (PGO)
@@ -367,7 +372,14 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "${default_build_type}")
 endif()
 
-message("CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
+# =======================================
+# COVERAGE BUILD — global propagation
+# =======================================
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+  add_compile_definitions(COVERAGE_BUILD=1)
+  add_link_options(--coverage)
+  link_libraries(gcov)
+endif()
 
 
 # =======================================
@@ -532,6 +544,7 @@ endif(USE_CUDA)
 
 message("====================================================")
 get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)
+message("CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
 message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
 message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
 message("COMPILE_OPTIONS         :  ${milkcompopts}")
@@ -539,6 +552,7 @@ message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
 message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
 message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
 message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
+message("CMAKE_C_FLAGS_COVERAGE        : ${CMAKE_C_FLAGS_COVERAGE}")
 message("====================================================")
 
 install(TARGETS milk-cli
@@ -659,7 +673,7 @@ install(PROGRAMS
                         scripts/milk-exec
                                                 scripts/milk-fpslist-addentry
                                                 scripts/milk-cr2tofits
-      
+
                         scripts/milk-FITS2shm
       scripts/milk-fitsheader
                         scripts/milk-fpsmkcmd
