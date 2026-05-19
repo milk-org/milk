@@ -39,7 +39,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/prctl.h>
-#include <sched.h>
 #include <signal.h>
 
 #include <readline/history.h>
@@ -66,6 +65,7 @@
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 #include "CommandLineInterface/CLIcore/CLIcore_UI.h"
 #include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"
@@ -334,16 +334,6 @@ errno_t CLI_startup()
             openACC_devtype);
     }
 #endif
-
-    // to take advantage of kernel priority:
-    // owner=root mode=4755
-
-    getresuid(&data.ruid, &data.euid, &data.suid);
-    //This sets it to the privileges of the normal user
-    if(seteuid(data.ruid) != 0)
-    {
-        PRINT_ERROR("seteuid error");
-    }
 
     // Initialize random-number generator
     //
@@ -1079,7 +1069,6 @@ void fnExit1(void)
 static int command_line_process_options(int argc, char **argv)
 {
     int                option_index = 0;
-    struct sched_param schedpar;
     char               command[STRINGMAXLEN_COMMAND];
 
     static struct option long_options[] =
@@ -1203,22 +1192,10 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'p':
-            schedpar.sched_priority = atoi(optarg);
-            printf("RUNNING WITH RT PRIORITY = %d\n", schedpar.sched_priority);
+            printf("RUNNING WITH RT PRIORITY = %d\n", atoi(optarg));
 
-            if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-            {
-                PRINT_ERROR("seteuid() returns non-zero value");
-            }
-            sched_setscheduler(
-                0,
-                SCHED_FIFO,
-                &schedpar); //other option is SCHED_RR, might be faster
+            COREMOD_TOOLS_mvProcRTPrio(atoi(optarg));
 
-            if(seteuid(data.ruid) != 0)  //Go back to normal privileges
-            {
-                PRINT_ERROR("seteuid() returns non-zero value");
-            }
             break;
 
         case 'f':

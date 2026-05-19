@@ -81,3 +81,12 @@ target_link_libraries(${LIBNAME} PUBLIC ${CFITSIO_LIBRARIES})
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+
+# Standalone SUID-root helper: escalate/drop privileges for RT scheduling
+add_executable(milk-rtsched exec_mvprovCPUset.c)
+target_include_directories(milk-rtsched PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:include>)
+install(TARGETS milk-rtsched DESTINATION bin
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                GROUP_READ             GROUP_EXECUTE
+                WORLD_READ             WORLD_EXECUTE
+                SETUID)
