@@ -15,6 +15,7 @@
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 // set to 1 if transfering keywords
 static int SEND_KEYWORDS = 1;

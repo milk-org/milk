@@ -314,15 +314,12 @@ int templatemodule_examplefunc00(int mode)
 /**
  * ## Purpose
  *
- * This function demonstrates use of seteuid, sched_setscheduler \n
- * Note that fields "Use", "return", "not" and "warning" are optional
+ * This function demonstrates priority escalation with the milk API.
  *
  * ## Arguments
  *
  * Brief description of arguments is in .h file \n
  * A more detailed description of arguments in provided here \n
- *
- *
  *
  * ## Use
  *
@@ -355,33 +352,10 @@ int templatemodule_examplefunc01(const char *namein,
     ///
     int Niteration;
 
-    int RT_priority =
-        95; // any number from 0-99. Higher number = higher priority
-    struct sched_param schedpar;
-
+    int RT_priority = 95; // any number from 0-99. Higher number = higher priority
     int retval;
 
-    schedpar.sched_priority = RT_priority;
-
-    /// ## Set up priviledges
-
-    iretval = seteuid(euid_called); //This goes up to maximum privileges
-    if(retval != 0)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "seteuid() returns non-zero value");
-
-    sched_setscheduler(0,
-                       SCHED_FIFO,
-                       &schedpar); //other option is SCHED_RR, might be faster
-
-    retval = seteuid(euid_real); //Go back to normal privileges
-    if(retval != 0)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "seteuid() returns non-zero value");
+    COREMOD_TOOLS_mvProcRTPrio(RT_priority);
 
     /// ## Execute loop
 
