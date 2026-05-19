@@ -28,7 +28,7 @@ int functionparameter_GetFileName(
     // Build up directory name, construct final filename, and copy to output buffer
     {
         char fname1[STRINGMAXLEN_FILENAME];
-        
+
         // Loop index `ll` is declared outside the loop because it is needed
         // after the loop to access the final keyword level for the filename.
         int  ll;
