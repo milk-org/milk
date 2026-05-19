@@ -25,10 +25,7 @@ errno_t processinfo_procdirname(char *procdname)
         // printf(" [ MILK_PROC_DIR ] '%s'\n", MILK_PROC_DIR);
 
         {
-            int slen = snprintf(procdname,
-                                STRINGMAXLEN_FULLFILENAME,
-                                "%s",
-                                MILK_PROC_DIR);
+            int slen = snprintf(procdname, STRINGMAXLEN_FULLFILENAME, "%s", MILK_PROC_DIR);
             if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");

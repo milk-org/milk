@@ -33,8 +33,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char imsetzero_imname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "stream";
+static char imsetzero_imname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 
 
 /* ================================================================
@@ -66,9 +65,7 @@ static errno_t imsetzero_computation(
 {
     memset(
         inimg->array.raw, 0,
-        ImageStreamIO_typesize(
-            inimg->md[0].datatype)
-        * inimg->md[0].nelement);
+        ImageStreamIO_typesize(inimg->md[0].datatype) * inimg->md[0].nelement);
     return RETURN_SUCCESS;
 }
 
@@ -123,21 +120,13 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  */
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    IMGID in =
-        imgid_make_from_name(imsetzero_imname);
-    resolveIMGID(
-        &in,   ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID in = imgid_make_from_name(imsetzero_imname);
+    resolveIMGID(&in,   ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  imsetzero_computation(in.im);
+    processinfo_update_output_stream(processinfo, in.im, NULL);
 
-    imsetzero_computation(in.im);
-    processinfo_update_output_stream(
-        processinfo, in.im, NULL);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
 }
 
 
@@ -152,12 +141,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info,
-        farg,
-        &CLIcmddata,
-        my_bindings,
-        nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 /**
@@ -165,12 +149,9 @@ static errno_t CLIfunction(void)
  */
 errno_t CLIADDCMD_COREMOD_arith__imsetzero()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

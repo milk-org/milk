@@ -87,47 +87,29 @@ static MILK_HOT errno_t fpsexec(
         imgid_copy(id0, idout);
     }
     if (mergeaxis < 3) {
-        uint32_t s0 =
-            (id0->md->size[mergeaxis] == 0)
-            ? 1 : id0->md->size[mergeaxis];
-        uint32_t s1 =
-            (id1->md->size[mergeaxis] == 0)
-            ? 1 : id1->md->size[mergeaxis];
+        uint32_t s0 = (id0->md->size[mergeaxis] == 0) ? 1 : id0->md->size[mergeaxis];
+        uint32_t s1 = (id1->md->size[mergeaxis] == 0) ? 1 : id1->md->size[mergeaxis];
         idout->mdt->size[mergeaxis] = s0 + s1;
     } else {
         return RETURN_FAILURE;
     }
-    idout->mdt->naxis =
-        (idout->mdt->size[2] > 1) ? 3
-        : ((idout->mdt->size[1] > 1) ? 2
-           : 1);
+    idout->mdt->naxis = (idout->mdt->size[2] > 1) ? 3 : ((idout->mdt->size[1] > 1) ? 2 : 1);
 
     /* Create output stream */
-    idout->im =
-        (IMAGE *) malloc(sizeof(IMAGE));
-    strncpy(idout->name,
-            immerge_outimname, 79);
+    idout->im = (IMAGE *) malloc(sizeof(IMAGE));
+    strncpy(idout->name, immerge_outimname, 79);
     ImageStreamIO_createIm_gpu(
         idout->im, idout->name,
-        idout->mdt->naxis,
-        idout->mdt->size,
-        idout->mdt->datatype,
-        -1, 1, 10, 0, 0, 0);
+        idout->mdt->naxis, idout->mdt->size, idout->mdt->datatype, -1, 1, 10, 0, 0, 0);
     idout->md = idout->im->md;
 
-    size_t ts = ImageStreamIO_typesize(
-        idout->mdt->datatype);
+    size_t ts = ImageStreamIO_typesize(idout->mdt->datatype);
 
     if (mergeaxis == idout->mdt->naxis - 1) {
-        size_t sz0 =
-            ts * id0->md->nelement;
-        __builtin_memcpy(idout->im->array.raw,
-               id0->im->array.raw, sz0);
+        size_t sz0 = ts * id0->md->nelement;
+        __builtin_memcpy(idout->im->array.raw, id0->im->array.raw, sz0);
         __builtin_memcpy(
-            ((char *)
-             idout->im->array.raw) + sz0,
-            id1->im->array.raw,
-            ts * id1->md->nelement);
+            ((char *) idout->im->array.raw) + sz0, id1->im->array.raw, ts * id1->md->nelement);
     } else {
         uint64_t b0 = id0->mdt->size[0];
         uint64_t b1 = id1->mdt->size[0];
@@ -140,21 +122,13 @@ static MILK_HOT errno_t fpsexec(
             __builtin_memcpy(
                 ((char *)
                  idout->im->array.raw)
-                + po * ts,
-                ((char *)
-                 id0->im->array.raw)
-                + p0 * ts,
-                ts * b0);
+                + po * ts, ((char *) id0->im->array.raw) + p0 * ts, ts * b0);
             p0 += b0;
             po += b0;
             __builtin_memcpy(
                 ((char *)
                  idout->im->array.raw)
-                + po * ts,
-                ((char *)
-                 id1->im->array.raw)
-                + p1 * ts,
-                ts * b1);
+                + po * ts, ((char *) id1->im->array.raw) + p1 * ts, ts * b1);
             p1 += b1;
             po += b1;
         }
@@ -176,28 +150,16 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    IMGID id0 = imgid_make_from_name(
-        immerge_inimname0);
-    resolveIMGID(
-        &id0,  ERRMODE_ABORT,
-        dcimg, dcnimg);
-    IMGID id1 = imgid_make_from_name(
-        immerge_inimname1);
-    resolveIMGID(
-        &id1,  ERRMODE_ABORT,
-        dcimg, dcnimg);
-    IMGID idout = imgid_make_from_name(
-        immerge_outimname);
+    IMGID id0 = imgid_make_from_name(immerge_inimname0);
+    resolveIMGID(&id0,  ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID id1 = imgid_make_from_name(immerge_inimname1);
+    resolveIMGID(&id1,  ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID idout = imgid_make_from_name(immerge_outimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(&id0, &id1, &idout);
+    processinfo_update_output_stream(processinfo, idout.im, id0.im);
 
-    fpsexec(&id0, &id1, &idout);
-    processinfo_update_output_stream(
-        processinfo, idout.im, id0.im);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&id0);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&id0);
     imgid_free(&id1);
     imgid_free(&idout);
     return RETURN_SUCCESS;
@@ -212,18 +174,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_arith__image_merge()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

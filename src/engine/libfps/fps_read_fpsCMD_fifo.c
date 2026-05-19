@@ -24,34 +24,23 @@ int functionparameter_read_fpsCMD_fifo(
     FPSCTRL_TASK_ENTRY *fpsctrltasklist,
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist)
 {
-    int   cmdcnt     = 0;
-    char *FPScmdline = NULL;
-    char  buff[200];
-    int   total_bytes = 0;
-    int   bytes;
-    char  buf0[1];
-
-    // toggles
-    static uint32_t queue      = 0;
-    static int      waitonrun  = 0;
-    static int      waitonconf = 0;
-
-    static uint16_t cmdinputcnt = 0;
-
+    int cmdcnt = 0;
     int lineOK = 1; // keep reading
 
     DEBUG_TRACEPOINT(" ");
 
     while(lineOK == 1)
     {
-        total_bytes = 0;
-        lineOK      = 0;
+        char buff[200];
+        int  total_bytes = 0;
+        int  bytes;
+        char buf0[1];
+
+        lineOK = 0;
         for(;;)
         {
             bytes = read(fpsCTRLfifofd, buf0, 1); // read one char at a time
-            DEBUG_TRACEPOINT("ERRROR: BUFFER OVERFLOW %d %d\n",
-                             bytes,
-                             total_bytes);
+            DEBUG_TRACEPOINT("ERRROR: BUFFER OVERFLOW %d %d\n", bytes, total_bytes);
             if(bytes > 0)
             {
                 buff[total_bytes] = buf0[0];
@@ -79,7 +68,13 @@ int functionparameter_read_fpsCMD_fifo(
                 //
 
                 buff[total_bytes - 1] = '\0';
-                FPScmdline            = buff;
+                char *FPScmdline = buff;
+
+                // toggles
+                static uint32_t queue      = 0;
+                static int      waitonrun  = 0;
+                static int      waitonconf = 0;
+                static uint16_t cmdinputcnt = 0;
 
                 // find next index
                 int cmdindex   = 0;
@@ -100,9 +95,7 @@ int functionparameter_read_fpsCMD_fifo(
                 {
                     PRINT_ERROR(
                         "fpscmdarray is full, "
-                        "NB_FPSCTRL_TASK_MAX limit (%d) "
-                        "reached",
-                        NB_FPSCTRL_TASK_MAX);
+                        "NB_FPSCTRL_TASK_MAX limit (%d) " "reached", NB_FPSCTRL_TASK_MAX);
                     return cmdcnt;
                 }
 
@@ -205,39 +198,32 @@ int functionparameter_read_fpsCMD_fifo(
                 if(cmdFOUND == 0)
                 {
                     strncpy(fpsctrltasklist[cmdindex].cmdstring,
-                            FPScmdline,
-                            STRINGMAXLEN_FPS_CMDLINE - 1);
+                            FPScmdline, STRINGMAXLEN_FPS_CMDLINE - 1);
 
-                    fpsctrltasklist[cmdindex].status =
-                        FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_SHOW;
+                    fpsctrltasklist[cmdindex].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_SHOW;
                     fpsctrltasklist[cmdindex].inputindex = cmdinputcnt;
                     fpsctrltasklist[cmdindex].queue      = queue;
-                    clock_gettime(CLOCK_MILK,
-                                  &fpsctrltasklist[cmdindex].creationtime);
+                    clock_gettime(CLOCK_MILK, &fpsctrltasklist[cmdindex].creationtime);
 
                     // waiting to be processed
                     fpsctrltasklist[cmdindex].status |= FPSTASK_STATUS_WAITING;
 
                     if(waitonrun == 1)
                     {
-                        fpsctrltasklist[cmdindex].flag |=
-                            FPSTASK_FLAG_WAITONRUN;
+                        fpsctrltasklist[cmdindex].flag |= FPSTASK_FLAG_WAITONRUN;
                     }
                     else
                     {
-                        fpsctrltasklist[cmdindex].flag &=
-                            ~FPSTASK_FLAG_WAITONRUN;
+                        fpsctrltasklist[cmdindex].flag &= ~FPSTASK_FLAG_WAITONRUN;
                     }
 
                     if(waitonconf == 1)
                     {
-                        fpsctrltasklist[cmdindex].flag |=
-                            FPSTASK_FLAG_WAITONCONF;
+                        fpsctrltasklist[cmdindex].flag |= FPSTASK_FLAG_WAITONCONF;
                     }
                     else
                     {
-                        fpsctrltasklist[cmdindex].flag &=
-                            ~FPSTASK_FLAG_WAITONCONF;
+                        fpsctrltasklist[cmdindex].flag &= ~FPSTASK_FLAG_WAITONCONF;
                     }
 
                     cmdinputcnt++;

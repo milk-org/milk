@@ -139,21 +139,7 @@ errno_t init_list_image_ID_ncurses(const char *termttyname)
  */
 errno_t list_image_ID_ncurses()
 {
-    int strmaxlen = 300;
-    char      str[strmaxlen];
-    int str1maxlen = 500;
-    char      str1[500];
-    int str2maxlen = 512;
-    char      str2[512];
-
-    long long tmp_long;
-    char      type[STYPESIZE];
-    uint8_t   datatype;
-    int       n;
-    uint64_t  sizeb, sizeKb, sizeMb, sizeGb;
-
     struct timespec timenow;
-    double          timediff;
 
     clock_gettime(CLOCK_MILK, &timenow);
 
@@ -162,7 +148,7 @@ errno_t list_image_ID_ncurses()
     clear();
 #endif
 
-    sizeb = compute_image_memory();
+    uint64_t sizeb = compute_image_memory();
 
     printw("INDEX    NAME         SIZE                    TYPE        SIZE  [percent]    LAST ACCESS\n\n");
 
@@ -170,9 +156,8 @@ errno_t list_image_ID_ncurses()
     {
         if(dcimg[i].used == 1)
         {
-            datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long)(dcimg[i].md[0].nelement)) *
-                       ImageStreamIO_typesize(datatype);
+            uint8_t datatype = dcimg[i].md[0].datatype;
+            long long tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             if(dcimg[i].md[0].shared == 1)
             {
@@ -192,6 +177,8 @@ errno_t list_image_ID_ncurses()
                 attron(A_BOLD | COLOR_PAIR(6));
             }
 
+            int strmaxlen = 300;
+            char str[300];
             snprintf(str, strmaxlen, "%10s ", dcimg[i].name);
             printw("%s", str);
 
@@ -206,16 +193,22 @@ errno_t list_image_ID_ncurses()
 
             snprintf(str, strmaxlen, "[ %6ld", (long) dcimg[i].md[0].size[0]);
 
+            int str1maxlen = 500;
+            char str1[500];
             for(long j = 1; j < dcimg[i].md[0].naxis; j++)
             {
                 snprintf(str1, str1maxlen, "%s x %6ld", str, (long) dcimg[i].md[0].size[j]);
             }
+            
+            int str2maxlen = 512;
+            char str2[512];
             snprintf(str2, str2maxlen, "%s]", str1);
 
             printw("%-28s", str2);
 
             attron(COLOR_PAIR(3));
-            n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
+            char type[STYPESIZE];
+            int n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
             printw("%7s ", type);
             attroff(COLOR_PAIR(3));
 
@@ -225,10 +218,9 @@ errno_t list_image_ID_ncurses()
             }
 
             printw("%10ld Kb %6.2f   ",
-                   (long)(tmp_long / 1024),
-                   (float)(100.0 * tmp_long / sizeb));
+                   (long)(tmp_long / 1024), (float)(100.0 * tmp_long / sizeb));
 
-            timediff =
+            double timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
                 (1.0 * dcimg[i].md[0].lastaccesstime.tv_sec +
                  0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
@@ -251,9 +243,9 @@ errno_t list_image_ID_ncurses()
         }
     }
 
-    sizeGb = 0;
-    sizeMb = 0;
-    sizeKb = 0;
+    uint64_t sizeGb = 0;
+    uint64_t sizeMb = 0;
+    uint64_t sizeKb = 0;
     sizeb  = compute_image_memory();
 
     if(sizeb > 1024 - 1)
@@ -272,7 +264,12 @@ errno_t list_image_ID_ncurses()
         sizeMb = sizeMb - 1024 * sizeGb;
     }
 
+    int strmaxlen = 300;
+    char str[300];
     snprintf(str, strmaxlen, "%ld image(s)      ", compute_nb_image());
+    
+    int str1maxlen = 500;
+    char str1[500];
     if(sizeGb > 0)
     {
         snprintf(str1, str1maxlen, "%s %ld GB", str, (long)(sizeGb));
@@ -376,8 +373,7 @@ errno_t memory_monitor(const char *termttyname)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings,   nb_bindings, compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings,   nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_streamCTRL_mmon_ui()

@@ -44,34 +44,24 @@ errno_t image_keywords_list(IMGID img)
         {
             case 'L':
                 printf("[L] %-8s= %20ld / %s\n",
-                       img.im->kw[kw].name,
-                       img.im->kw[kw].value.numl,
-                       img.im->kw[kw].comment);
+                       img.im->kw[kw].name, img.im->kw[kw].value.numl, img.im->kw[kw].comment);
                 kwcnt++;
                 break;
 
             case 'D':
                 printf("[D] %-8s= %20g / %s\n",
-                       img.im->kw[kw].name,
-                       img.im->kw[kw].value.numf,
-                       img.im->kw[kw].comment);
+                       img.im->kw[kw].name, img.im->kw[kw].value.numf, img.im->kw[kw].comment);
                 kwcnt++;
                 break;
 
             case 'S':
-                snprintf(tmpkwvalstr,
-                         sizeof(tmpkwvalstr),
-                         "'%s'",
-                         img.im->kw[kw].value.valstr);
+                snprintf(tmpkwvalstr, sizeof(tmpkwvalstr), "'%s'", img.im->kw[kw].value.valstr);
                 printf("[S] %-8s= %-20s / %s\n",
-                       img.im->kw[kw].name,
-                       tmpkwvalstr,
-                       img.im->kw[kw].comment);
+                       img.im->kw[kw].name, tmpkwvalstr, img.im->kw[kw].comment);
                 kwcnt++;
                 break;
 
-            default:
-                break;
+            default: break;
         }
     }
 
@@ -91,7 +81,5 @@ INSERT_STD_CLIfunction
 errno_t
 CLIADDCMD_COREMOD_memory__image_keyword_list()
 {
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }

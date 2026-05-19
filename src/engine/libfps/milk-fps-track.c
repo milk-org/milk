@@ -34,8 +34,7 @@ static void print_help(
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-i, --interval SEC",
-           mh_color ? MH_RST : "",
-           "Polling interval in seconds (default: 0.1)");
+           mh_color ? MH_RST : "", "Polling interval in seconds (default: 0.1)");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
            mh_color ? MH_RST : "", "Show this help and exit");
@@ -49,8 +48,7 @@ static void print_help(
            mh_color ? MH_OPT : "", "-hm, --help-mono",
            mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
-    printf("  %s$ milk-fps-track%s\n",
-           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-fps-track%s\n", mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
     printf("  %s$ milk-fps-track%s -i 0.5 %smyfps.*%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
@@ -95,8 +93,7 @@ void print_ut_timestamp()
     struct tm *ut_tm = gmtime(&ts.tv_sec);
     printf("%04d%02d%02dT%02d:%02d:%02d.%03ld",
            ut_tm->tm_year + 1900, ut_tm->tm_mon + 1, ut_tm->tm_mday,
-           ut_tm->tm_hour, ut_tm->tm_min, ut_tm->tm_sec,
-           ts.tv_nsec / 1000000);
+           ut_tm->tm_hour, ut_tm->tm_min, ut_tm->tm_sec, ts.tv_nsec / 1000000);
 }
 
 static volatile int keep_running = 1;
@@ -113,8 +110,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                FT_DESC, FT_DESC_LONG);
+    int action = milk_help_init(argc, argv, FT_DESC, FT_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -143,14 +139,12 @@ int main(
     {
         switch(opt)
         {
-        case 'i':
-            interval = atof(optarg);
+        case 'i': interval = atof(optarg);
             break;
         case 'h':
         case '1':
             break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -233,8 +227,7 @@ int main(
                 // New FPS found
                 track_idx = track_list_cnt++;
                 strncpy(track_list[track_idx].name,
-                        fpsarray[ii].md->name,
-                        STRINGMAXLEN_FPS_NAME - 1);
+                        fpsarray[ii].md->name, STRINGMAXLEN_FPS_NAME - 1);
                 track_list[track_idx].NBparam = fpsarray[ii].md->NBparamMAX;
                 track_list[track_idx].params = (PARAM_TRACK *) calloc(fpsarray[ii].md->NBparamMAX,
                                                sizeof(PARAM_TRACK));
@@ -260,8 +253,7 @@ int main(
                         track_list[track_idx].params[pp].cnt0 = fpsarray[ii].parray[pp].cnt0;
                         functionparameter_GetParamValueString(
                             &fpsarray[ii].parray[pp],
-                            track_list[track_idx].params[pp].value,
-                            VALSTR_LEN);
+                            track_list[track_idx].params[pp].value, VALSTR_LEN);
                     }
                     else
                     {
@@ -276,8 +268,7 @@ int main(
             {
                 PARAM_TRACK *tmp = (PARAM_TRACK *) realloc(
                                        track_list[track_idx].params,
-                                       fpsarray[ii].md->NBparamMAX
-                                       * sizeof(PARAM_TRACK));
+                                       fpsarray[ii].md->NBparamMAX * sizeof(PARAM_TRACK));
                 if(tmp == NULL)
                 {
                     PRINT_ERROR("realloc failed for %s params", track_list[track_idx].name);
@@ -295,8 +286,7 @@ int main(
                         track_list[track_idx].params[pp].cnt0 = fpsarray[ii].parray[pp].cnt0;
                         functionparameter_GetParamValueString(
                             &fpsarray[ii].parray[pp],
-                            track_list[track_idx].params[pp].value,
-                            VALSTR_LEN);
+                            track_list[track_idx].params[pp].value, VALSTR_LEN);
                     }
                     else
                     {
@@ -318,9 +308,7 @@ int main(
                 {
                     char current_val[VALSTR_LEN];
                     functionparameter_GetParamValueString(
-                        &fpsarray[ii].parray[pp],
-                        current_val,
-                        VALSTR_LEN);
+                        &fpsarray[ii].parray[pp], current_val, VALSTR_LEN);
 
                     if(track_list[track_idx].params[pp].cnt0 != -1)
                     {
@@ -329,17 +317,14 @@ int main(
                                track_list[track_idx].name,
                                fpsarray[ii].parray[pp].keywordfull,
                                track_list[track_idx].params[pp].value,
-                               current_val,
-                               fpsarray[ii].parray[pp].cnt0);
+                               current_val, fpsarray[ii].parray[pp].cnt0);
                         fflush(stdout);
                     }
 
                     strncpy(track_list[track_idx].params[pp].keywordfull,
                             fpsarray[ii].parray[pp].keywordfull,
                             sizeof(track_list[0].params[0].keywordfull) - 1);
-                    strncpy(track_list[track_idx].params[pp].value,
-                            current_val,
-                            VALSTR_LEN - 1);
+                    strncpy(track_list[track_idx].params[pp].value, current_val, VALSTR_LEN - 1);
                     track_list[track_idx].params[pp].cnt0 = fpsarray[ii].parray[pp].cnt0;
                 }
             }
@@ -358,8 +343,7 @@ int main(
                     track_list[jj].name[0] != '\0')
             {
                 print_ut_timestamp();
-                printf(" DEL_FPS %s\n",
-                       track_list[jj].name);
+                printf(" DEL_FPS %s\n", track_list[jj].name);
                 fflush(stdout);
                 if(track_list[jj].params != NULL)
                 {

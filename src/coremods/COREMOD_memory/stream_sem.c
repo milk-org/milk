@@ -75,8 +75,7 @@ imageID COREMOD_MEMORY_image_set_semflush(
  *  COMMON PARAMS (image + semindex)
  * ============================================================= */
 
-static char p_imname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
+static char p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static long long p_semindex = 0;
 
 #define FPS_PARAMS_IMSEM(X) \
@@ -100,9 +99,7 @@ static FPS_CLI_BINDING bindings_imsem_info[] =
 {
     FPS_PARAMS_IMSEM_INFO(FPS_X_BINDING)
 };
-static const int nb_bindings_imsem_info =
-    sizeof(bindings_imsem_info) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_imsem_info = sizeof(bindings_imsem_info) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_imsem_info[] =
 {
     FPS_PARAMS_IMSEM_INFO(FPS_X_FARG)
@@ -114,9 +111,7 @@ static FPS_CLI_BINDING bindings_imsem[] =
 {
     FPS_PARAMS_IMSEM(FPS_X_BINDING)
 };
-static const int nb_bindings_imsem =
-    sizeof(bindings_imsem) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_imsem = sizeof(bindings_imsem) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_imsem[] =
 {
     FPS_PARAMS_IMSEM(FPS_X_FARG)
@@ -180,8 +175,7 @@ FPS_CMDSETTINGS_INIT(cms2, CLIcmddata_sempost, FPS_app_info_sempost)
 
 static errno_t __attribute__((unused)) compute_sempost()
 {
-    COREMOD_MEMORY_image_set_sempost(
-        p_imname, p_semindex);
+    COREMOD_MEMORY_image_set_sempost(p_imname, p_semindex);
     return RETURN_SUCCESS;
 }
 
@@ -234,10 +228,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    COREMOD_MEMORY_image_set_sempost_loop(
-        p_imname, p_semindex, p_dtus);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    COREMOD_MEMORY_image_set_sempost_loop(p_imname, p_semindex, p_dtus);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -264,8 +256,7 @@ FPS_CMDSETTINGS_INIT(cms4, CLIcmddata_semwait, FPS_app_info_semwait)
 
 static errno_t __attribute__((unused)) compute_semwait()
 {
-    COREMOD_MEMORY_image_set_semwait(
-        p_imname, p_semindex);
+    COREMOD_MEMORY_image_set_semwait(p_imname, p_semindex);
     return RETURN_SUCCESS;
 }
 
@@ -292,8 +283,7 @@ FPS_CMDSETTINGS_INIT(cms5, CLIcmddata_semflush, FPS_app_info_semflush)
 
 static errno_t __attribute__((unused)) compute_semflush()
 {
-    COREMOD_MEMORY_image_set_semflush(
-        p_imname, p_semindex);
+    COREMOD_MEMORY_image_set_semflush(p_imname, p_semindex);
     return RETURN_SUCCESS;
 }
 
@@ -309,8 +299,7 @@ static errno_t CLIfunction_seminfo(void)
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_seminfo,
                farg_imsem_info, &CLIcmddata_seminfo,
-               bindings_imsem_info, nb_bindings_imsem_info,
-               compute_seminfo);
+               bindings_imsem_info, nb_bindings_imsem_info, compute_seminfo);
 }
 
 static errno_t CLIfunction_sempost(void)
@@ -318,16 +307,13 @@ static errno_t CLIfunction_sempost(void)
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_sempost,
                farg_imsem, &CLIcmddata_sempost,
-               bindings_imsem, nb_bindings_imsem,
-               compute_sempost);
+               bindings_imsem, nb_bindings_imsem, compute_sempost);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 static errno_t CLIfunction_semwait(void)
@@ -335,8 +321,7 @@ static errno_t CLIfunction_semwait(void)
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_semwait,
                farg_imsem, &CLIcmddata_semwait,
-               bindings_imsem, nb_bindings_imsem,
-               compute_semwait);
+               bindings_imsem, nb_bindings_imsem, compute_semwait);
 }
 
 static errno_t CLIfunction_semflush(void)
@@ -344,52 +329,34 @@ static errno_t CLIfunction_semflush(void)
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_semflush,
                farg_imsem, &CLIcmddata_semflush,
-               bindings_imsem, nb_bindings_imsem,
-               compute_semflush);
+               bindings_imsem, nb_bindings_imsem, compute_semflush);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__stream_sem()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(
-        farg_imsem, bindings_imsem,
-        nb_bindings_imsem);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg_imsem, bindings_imsem, nb_bindings_imsem);
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_seminfo,
-                       CLIfunction_seminfo);
-        CLIcmddata_seminfo.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_seminfo, CLIfunction_seminfo);
+        CLIcmddata_seminfo.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_sempost,
-                       CLIfunction_sempost);
-        CLIcmddata_sempost.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_sempost, CLIfunction_sempost);
+        CLIcmddata_sempost.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_semwait,
-                       CLIfunction_semwait);
-        CLIcmddata_semwait.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_semwait, CLIfunction_semwait);
+        CLIcmddata_semwait.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_semflush,
-                       CLIfunction_semflush);
-        CLIcmddata_semflush.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_semflush, CLIfunction_semflush);
+        CLIcmddata_semflush.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -410,14 +377,11 @@ imageID COREMOD_MEMORY_image_seminfo(
     const char *IDname)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(
-        &img, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     imageID ID = img.ID;
     if(ID == -1)
     {
-        PRINT_WARNING(
-            "image \"%s\" not found",
-            IDname);
+        PRINT_WARNING("image \"%s\" not found", IDname);
         return -1;
     }
 
@@ -437,10 +401,7 @@ imageID COREMOD_MEMORY_image_seminfo(
         semval = ImageStreamIO_semvalue(dcimg + ID, s);
 
         printf("  %2d   %6d   %8d  %8d\n",
-               s,
-               semval,
-               (int) dcimg[ID].semWritePID[s],
-               (int) dcimg[ID].semReadPID[s]);
+               s, semval, (int) dcimg[ID].semWritePID[s], (int) dcimg[ID].semReadPID[s]);
     }
     printf("----------------------------------\n");
     int semval;
@@ -466,19 +427,15 @@ imageID COREMOD_MEMORY_image_set_sempost(
     long       index)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(
-        &img, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
     imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(
-                 IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
     if(ID == -1)
     {
-        PRINT_WARNING(
-            "image \"%s\" not found",
-            IDname);
+        PRINT_WARNING("image \"%s\" not found", IDname);
         return -1;
     }
 
@@ -545,24 +502,19 @@ COREMOD_MEMORY_image_set_sempost_loop(
     long       dtus)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(
-        &img, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
     imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(
-                 IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
     if(ID == -1)
     {
-        PRINT_WARNING(
-            "image \"%s\" not found",
-            IDname);
+        PRINT_WARNING("image \"%s\" not found", IDname);
         return -1;
     }
 
-    ImageStreamIO_sempost_loop(
-        &dcimg[ID], index, dtus);
+    ImageStreamIO_sempost_loop(&dcimg[ID], index, dtus);
 
     return ID;
 }
@@ -581,19 +533,15 @@ imageID COREMOD_MEMORY_image_set_semwait(
     long       index)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(
-        &img, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
     imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(
-                 IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
     if(ID == -1)
     {
-        PRINT_WARNING(
-            "image \"%s\" not found",
-            IDname);
+        PRINT_WARNING("image \"%s\" not found", IDname);
         return -1;
     }
 
@@ -669,10 +617,7 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
     {
         //      printf("thread %d create, ID = %ld\n", t, IDarray[t]);
         //      fflush(stdout);
-        pthread_create(&thrarray_semwait[t],
-                       NULL,
-                       waitforsemID,
-                       (void *) IDarray[t]);
+        pthread_create(&thrarray_semwait[t], NULL, waitforsemID, (void *) IDarray[t]);
     }
 
     for(int t = 0; t < NB_ID; t++)
@@ -715,11 +660,7 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
         {
             semval = ImageStreamIO_semvalue(dcimg + IDarray[i], s);
             printf("sem %d/%d of %s [%ld] = %d\n",
-                   s,
-                   dcimg[IDarray[i]].md[0].sem,
-                   dcimg[IDarray[i]].name,
-                   IDarray[i],
-                   semval);
+                   s, dcimg[IDarray[i]].md[0].sem, dcimg[IDarray[i]].name, IDarray[i], semval);
             fflush(stdout);
             for(long cnt = 0; cnt < semval; cnt++)
             {
@@ -746,19 +687,15 @@ imageID COREMOD_MEMORY_image_set_semflush(
     long       index)
 {
     IMGID img = imgid_make_from_name(IDname);
-    resolveIMGID(
-        &img, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
     imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(
-                 IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
     if(ID == -1)
     {
-        PRINT_WARNING(
-            "image \"%s\" not found",
-            IDname);
+        PRINT_WARNING("image \"%s\" not found", IDname);
         return -1;
     }
 

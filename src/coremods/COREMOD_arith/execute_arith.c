@@ -178,8 +178,7 @@ arith_make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double sx, dou
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                sx * ii + sy * jj - coeff;
+            dcimg[ID].array.F[jj * naxes[0] + ii] = sx * ii + sy * jj - coeff;
         }
 
     DEBUG_TRACE_FEXIT();
@@ -231,32 +230,14 @@ arith_image_dy_wrap(
 int execute_arith(const char *cmd1)
 {
     char word[100][100];
-    int w, l;
-    int  nbword;
+    int  nbword = 0;
     int  word_type[100];
     int  par_level[100];
-    int  parlevel;
     int  intr_priority[100]; /* 0 (+,-)  1 (*,/)  2 (functions) */
 
-    int    found_word_type;
-    int    highest_parlevel;
-    int    highest_intr_priority;
-    int    highest_priority_index;
-    int    passedequ;
-    int    tmp_name_index;
-    double tmp_prec;
-    int    nb_tbp_word;
-    int    type = 0;
-    int    nbvarinput;
-
-    int  CMDBUFFSIZE = 1000;
-    char cmd[CMDBUFFSIZE];
-    long cntP;
     int  OKea = 1;
 
-    int Debug = 0;
-    char name[STRINGMAXLEN_IMGNAME];
-    char name1[STRINGMAXLEN_IMGNAME];
+    int  Debug = 0;
 
     //  if( Debug > 0 )   fprintf(stdout, "[execute_arith]\n");
     //  if( Debug > 0 )   fprintf(stdout, "[execute_arith] str: [%s]\n", cmd1);
@@ -273,9 +254,12 @@ int execute_arith(const char *cmd1)
        - remove any spaces in cmd1
        - replace "=-" by "=0-" and "=+" by "="
        copy result into cmd */
-    int j = 0;
+    {
+        int  CMDBUFFSIZE = 1000;
+        char cmd[CMDBUFFSIZE];
+        int j = 0;
 
-    for(int i = 0; i < (int)(strlen(cmd1)); i++)
+        for(int i = 0; i < (int)(strlen(cmd1)); i++)
     {
         if((cmd1[i] == '=') && (cmd1[i + 1] == '-'))
         {
@@ -297,17 +281,17 @@ int execute_arith(const char *cmd1)
         }
     }
     cmd[j] = '\0';
-    //  if( Debug > 0 )   fprintf(stdout, "[execute_arith] preprocessed str %s -> %s\n", cmd1, cmd);
+        //  if( Debug > 0 )   fprintf(stdout, "[execute_arith] preprocessed str %s -> %s\n", cmd1, cmd);
 
-    /*
-    * cmd is first broken into words.
-    * The spacing between words is operands (+,-,/,*), equal (=),
-    * space ,comma and braces
-    */
-    w = 0;
-    l = 0;
-    int bracket_depth = 0; /* track [...] nesting */
-    for(int i = 0; i < (signed) strlen(cmd); i++)
+        /*
+        * cmd is first broken into words.
+        * The spacing between words is operands (+,-,/,*), equal (=),
+        * space ,comma and braces
+        */
+        int w = 0;
+        int l = 0;
+        int bracket_depth = 0; /* track [...] nesting */
+        for(int i = 0; i < (signed) strlen(cmd); i++)
     {
         /* Inside brackets: everything is part of
          * the current word. Used for slice syntax
@@ -388,8 +372,7 @@ int execute_arith(const char *cmd1)
             l = 0;
             break;
 
-        case ' ':
-            word[w][l] = '\0';
+        case ' ': word[w][l] = '\0';
             w++;
             l = 0;
 
@@ -398,18 +381,18 @@ int execute_arith(const char *cmd1)
                                               l = 0;*/
             break;
 
-        default:
-            word[w][l] = cmd[i];
+        default: word[w][l] = cmd[i];
             l++;
             break;
         }
     }
 
-    if(l > 0)
-    {
-        word[w][l] = '\0';
+        if(l > 0)
+        {
+            word[w][l] = '\0';
+        }
+        nbword = w + 1;
     }
-    nbword = w + 1;
 
     //  printf("number of words is %d\n",nbword);
 
@@ -420,7 +403,7 @@ int execute_arith(const char *cmd1)
             printf("TESTING WORD %d = %s\n", i, word[i]);
         }
         word_type[i]    = ARITHTOKENTYPE_UNKNOWN;
-        found_word_type = 0;
+        int found_word_type = 0;
         if((isanumber(word[i]) == 1) && (found_word_type == 0))
         {
             word_type[i]    = ARITHTOKENTYPE_NUMBER;
@@ -485,16 +468,13 @@ int execute_arith(const char *cmd1)
         }
         if(Debug > 0)
         {
-            printf("word %d is  \"%s\" word type is %d\n",
-                   i,
-                   word[i],
-                   word_type[i]);
+            printf("word %d is  \"%s\" word type is %d\n", i, word[i], word_type[i]);
         }
     }
 
     /* checks for obvious errors */
 
-    passedequ = 0;
+    int passedequ = 0;
     for(int i = (nbword - 1); i > -1; i--)
     {
         if(passedequ == 1)
@@ -548,14 +528,12 @@ int execute_arith(const char *cmd1)
                    (word_type[i] == ARITHTOKENTYPE_EQUAL) ||
                    (word_type[i] == ARITHTOKENTYPE_OPERAND))))
         {
-            PRINT_WARNING(
-                "\"(\" should be preceeded by \"=\", \"(\", operand or "
-                "function");
+            PRINT_WARNING("\"(\" should be preceeded by \"=\", \"(\", operand or " "function");
             OKea = 0;
         }
     }
 
-    cntP = 0;
+    long cntP = 0;
     for(int i = 0; i < nbword; i++)
     {
         if(word_type[i] == ARITHTOKENTYPE_OPENPAR)
@@ -580,21 +558,18 @@ int execute_arith(const char *cmd1)
 
     if(OKea == 1)
     {
+        int tmp_name_index = 0;
+
         /* numbers are saved into variables */
-        tmp_name_index = 0;
         for(int i = 0; i < nbword; i++)
         {
             if(word_type[i] == ARITHTOKENTYPE_NUMBER)
             {
-                CREATE_IMAGENAME(name,
-                                 "_tmp%d_%d",
-                                 tmp_name_index,
-                                 (int) getpid());
+                char name[STRINGMAXLEN_IMGNAME];
+                CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
 
                 create_variable_ID(name, 1.0 * strtod(word[i], NULL));
-                snprintf(word[i],
-                         sizeof(word[i]),
-                         "%s", name);
+                snprintf(word[i], sizeof(word[i]), "%s", name);
                 word_type[i] = ARITHTOKENTYPE_VARIABLE;
                 tmp_name_index++;
             }
@@ -614,8 +589,7 @@ int execute_arith(const char *cmd1)
                 continue;
             }
 
-            IMGID simg =
-                imgid_make_from_name(word[i]);
+            IMGID simg = imgid_make_from_name(word[i]);
             resolveIMGID(&simg, ERRMODE_NULL, dcimg, dcnimg);
             if(simg.ID < 0)
             {
@@ -627,16 +601,13 @@ int execute_arith(const char *cmd1)
             if(imgid_slice_materialize(
                         &simg) != 0)
             {
-                PRINT_WARNING(
-                    "slice materialize failed"
-                    " for %s", word[i]);
+                PRINT_WARNING("slice materialize failed" " for %s", word[i]);
                 imgid_free(&simg);
                 continue;
             }
 
             IMAGE *slc = simg.slice_im;
-            int snaxis =
-                (int) slc->md[0].naxis;
+            int snaxis = (int) slc->md[0].naxis;
             uint32_t ssz[3] = {1, 1, 1};
             for(int a = 0; a < snaxis; a++)
             {
@@ -645,11 +616,8 @@ int execute_arith(const char *cmd1)
 
             /* Create temp image with slice
              * dimensions */
-            CREATE_IMAGENAME(
-                name,
-                "_slice%d_%d",
-                tmp_name_index,
-                (int) getpid());
+            char name[STRINGMAXLEN_IMGNAME];
+            CREATE_IMAGENAME(name, "_slice%d_%d", tmp_name_index, (int) getpid());
 
             imageID tid = -1;
             create_image_ID(
@@ -665,14 +633,8 @@ int execute_arith(const char *cmd1)
             if(tid >= 0)
             {
                 uint64_t nbytes =
-                    slc->md[0].nelement
-                    * (uint64_t)
-                    ImageStreamIO_typesize(
-                        slc->md[0].datatype);
-                __builtin_memcpy(
-                    dcimg[tid].array.raw,
-                    slc->array.raw,
-                    nbytes);
+                    slc->md[0].nelement * (uint64_t) ImageStreamIO_typesize(slc->md[0].datatype);
+                __builtin_memcpy(dcimg[tid].array.raw, slc->array.raw, nbytes);
             }
 
             snprintf(word[i], sizeof(word[i]), "%s", name);
@@ -681,8 +643,8 @@ int execute_arith(const char *cmd1)
         }
 
         /* computing the number of to-be-processed words */
-        passedequ   = 0;
-        nb_tbp_word = 0;
+        int passedequ   = 0;
+        int nb_tbp_word = 0;
         for(int i = (nbword - 1); i > -1; i--)
         {
             if(word_type[i] == ARITHTOKENTYPE_EQUAL)
@@ -733,7 +695,7 @@ int execute_arith(const char *cmd1)
 
             /* now the priorities are given */
 
-            parlevel = 0;
+            int parlevel = 0;
             for(int i = 0; i < nbword; i++)
             {
                 if(word_type[i] == ARITHTOKENTYPE_OPENPAR)
@@ -773,9 +735,9 @@ int execute_arith(const char *cmd1)
             }
 
             /* the highest priority operation is executed */
-            highest_parlevel       = 0;
-            highest_intr_priority  = -1;
-            highest_priority_index = -1;
+            int highest_parlevel       = 0;
+            int highest_intr_priority  = -1;
+            int highest_priority_index = -1;
 
             for(int i = 0; i < nbword; i++)
             {
@@ -819,11 +781,10 @@ int execute_arith(const char *cmd1)
             if(word_type[highest_priority_index] == ARITHTOKENTYPE_OPERAND)
             {
                 int hpi = highest_priority_index;
-                CREATE_IMAGENAME(name,
-                                 "_tmp%d_%d",
-                                 tmp_name_index,
-                                 (int) getpid());
+                char name[STRINGMAXLEN_IMGNAME];
+                CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
 
+                int type = 0;
                 if(exec_arith_binary(word[hpi],
                                      word_type[hpi - 1], word[hpi - 1],
                                      word_type[hpi + 1], word[hpi + 1],
@@ -834,7 +795,7 @@ int execute_arith(const char *cmd1)
 
                 snprintf(word[hpi - 1], sizeof(word[hpi - 1]), "%s", name);
                 word_type[hpi - 1] = type;
-                for(j = hpi; j < nbword - 2; j++)
+                for(int j = hpi; j < nbword - 2; j++)
                 {
                     snprintf(word[j], sizeof(word[j]), "%s", word[j + 2]);
                     word_type[j] = word_type[j + 2];
@@ -847,12 +808,11 @@ int execute_arith(const char *cmd1)
 
             if(word_type[highest_priority_index] == ARITHTOKENTYPE_FUNCTION)
             {
-                CREATE_IMAGENAME(name,
-                                 "_tmp%d_%d",
-                                 tmp_name_index,
-                                 (int) getpid());
+                char name[STRINGMAXLEN_IMGNAME];
+                CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
 
                 int hpi = highest_priority_index;
+                int type = 0;
                 if(exec_arith_unary(word[hpi], word_type[hpi + 1], word[hpi + 1],
                                     name, &type, &tmp_name_index) != 0)
                 {
@@ -861,7 +821,7 @@ int execute_arith(const char *cmd1)
 
                 snprintf(word[highest_priority_index], sizeof(word[highest_priority_index]), "%s", name);
                 word_type[highest_priority_index] = type;
-                for(j = highest_priority_index + 1;
+                for(int j = highest_priority_index + 1;
                         j < nbword - 1;
                         j++)
                 {
@@ -876,12 +836,9 @@ int execute_arith(const char *cmd1)
 
             if(word_type[highest_priority_index] == ARITHTOKENTYPE_MULTFUNC)
             {
-                nbvarinput = isfunction_sev_var(
-                                 word[highest_priority_index]);
-                CREATE_IMAGENAME(name,
-                                 "_tmp%d_%d",
-                                 tmp_name_index,
-                                 (int) getpid());
+                int nbvarinput = isfunction_sev_var(word[highest_priority_index]);
+                char name[STRINGMAXLEN_IMGNAME];
+                CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
 
                 int hpi = highest_priority_index;
                 int a1t = 0, a2t = 0, a3t = 0;
@@ -903,6 +860,7 @@ int execute_arith(const char *cmd1)
                     a3w = word[hpi + 6];
                 }
 
+                int type = 0;
                 if(exec_arith_multfunc(word[hpi], nbvarinput,
                                        a1t, a1w,
                                        a2t, a2w,
@@ -914,16 +872,12 @@ int execute_arith(const char *cmd1)
 
                 snprintf(word[highest_priority_index], sizeof(word[highest_priority_index]), "%s", name);
                 word_type[highest_priority_index] = type;
-                for(j = highest_priority_index + 1;
+                for(int j = highest_priority_index + 1;
                         j < nbword - (nbvarinput * 2 + 1);
                         j++)
                 {
-                    snprintf(word[j],
-                             sizeof(word[j]),
-                             "%s",
-                             word[j + (nbvarinput * 2 + 1)]);
-                    word_type[j] =
-                        word_type[j + (nbvarinput * 2 + 1)];
+                    snprintf(word[j], sizeof(word[j]), "%s", word[j + (nbvarinput * 2 + 1)]);
+                    word_type[j] = word_type[j + (nbvarinput * 2 + 1)];
                 }
                 nbword = nbword - nbvarinput * 2 - 1;
             }
@@ -940,7 +894,7 @@ int execute_arith(const char *cmd1)
               printf("\n");
             */
             /* computing the number of to-be-processed words */
-            passedequ   = 0;
+            int passedequ   = 0;
             nb_tbp_word = 0;
             for(int i = (nbword - 1); i > -1; i--)
             {
@@ -970,11 +924,8 @@ int execute_arith(const char *cmd1)
 
                 if(word_type[2] == ARITHTOKENTYPE_VARIABLE)
                 {
-                    create_variable_ID(
-                        word[0],
-                        dcvar[variable_ID(word[2])].value.f);
-                    printf("%.20g\n",
-                           dcvar[variable_ID(word[2])].value.f);
+                    create_variable_ID(word[0], dcvar[variable_ID(word[2])].value.f);
+                    printf("%.20g\n", dcvar[variable_ID(word[2])].value.f);
                 }
                 if(word_type[2] == ARITHTOKENTYPE_IMAGE)
                 {
@@ -989,6 +940,7 @@ int execute_arith(const char *cmd1)
 
         for(int i = 0; i < tmp_name_index; i++)
         {
+            char name[STRINGMAXLEN_IMGNAME];
             CREATE_IMAGENAME(name, "_tmp%d_%d", i, (int) getpid());
             if(variable_ID(name) != -1)
             {

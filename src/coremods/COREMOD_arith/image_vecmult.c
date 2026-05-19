@@ -22,12 +22,9 @@ static FPS_APP_INFO FPS_app_info =
     "Multiply each slice of a 3D image cube by the corresponding element of a 1D vector. Applies element-wise scaling across the z-axis. Useful for applying modal coefficients to a mode cube."
 };
 
-static char iminname[
-     FUNCTION_PARAMETER_STRMAXLEN];
-static char vecname[
-     FUNCTION_PARAMETER_STRMAXLEN];
-static char imoutname[
-     FUNCTION_PARAMETER_STRMAXLEN];
+static char iminname[FUNCTION_PARAMETER_STRMAXLEN];
+static char vecname[FUNCTION_PARAMETER_STRMAXLEN];
+static char imoutname[FUNCTION_PARAMETER_STRMAXLEN];
 static uint32_t multaxis = 0;
 
 
@@ -53,8 +50,7 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
         long fpi = functionparameter_GetParamIndex(dcfpsptr, ".iminname");
         if(fpi >= 0)
         {
-            dcfpsptr->parray[fpi].fpflag |=
-                FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
+            dcfpsptr->parray[fpi].fpflag |= FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
         }
     }
 
@@ -97,10 +93,7 @@ errno_t image_vect_multiply(
     //
     if((*imgout).ID == -1)
     {
-        imcreatelikewiseIMGID(
-            imgout,
-            &imgin
-        );
+        imcreatelikewiseIMGID(imgout, &imgin);
     }
 
     uint32_t size0 = imgin.md->size[0];
@@ -217,9 +210,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         image_vect_multiply(imgimin, imgvec, &imgout, multaxis);
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -228,23 +219,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMODE_arith__image_vecmult()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

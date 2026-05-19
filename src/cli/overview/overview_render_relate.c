@@ -96,18 +96,10 @@ void ov_compute_related(
     }
     else
     {
-        focus = lay->freeze
-                ? lay->freeze_focus
-                : lay->focus;
-        sel_stream_idx = lay->freeze
-                         ? lay->freeze_sel_stream
-                         : lay->sel_stream;
-        sel_proc_idx   = lay->freeze
-                         ? lay->freeze_sel_proc
-                         : lay->sel_proc;
-        sel_fps_idx    = lay->freeze
-                         ? lay->freeze_sel_fps
-                         : lay->sel_fps;
+        focus = lay->freeze ? lay->freeze_focus : lay->focus;
+        sel_stream_idx = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+        sel_proc_idx   = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+        sel_fps_idx    = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
     }
 
     /* Determine the graph node index of the selected item */
@@ -230,16 +222,14 @@ void ov_compute_related(
                     && sel_stream_idx >= 0
                     && sel_stream_idx < m->nb_streams)
             {
-                const char *sname =
-                    m->streams[sel_stream_idx].name;
+                const char *sname = m->streams[sel_stream_idx].name;
                 const OV_FPS *f = &m->fps[fi];
                 for(int sp = 0; sp < f->nb_stream_params; sp++)
                 {
                     if(strcmp(f->stream_param_value[sp],
                               sname) == 0)
                     {
-                        out->fps_param_mask[fi] |=
-                            (UINT32_C(1) << sp);
+                        out->fps_param_mask[fi] |= (UINT32_C(1) << sp);
                     }
                 } /* for sp */
             } /* if FOCUS_STREAMS */

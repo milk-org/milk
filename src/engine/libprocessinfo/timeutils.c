@@ -50,10 +50,7 @@ errno_t mkUTtimestring_nanosec(
                        1900 + uttime->tm_year,
                        1 + uttime->tm_mon,
                        uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       tnow.tv_nsec);
+                       uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
@@ -113,9 +110,7 @@ errno_t mkUTtimestring_microsec(
                        1 + uttime->tm_mon,
                        uttime->tm_mday,
                        uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       (long)(tnow.tv_nsec / 1000));
+                       uttime->tm_min, uttime->tm_sec, (long)(tnow.tv_nsec / 1000));
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
@@ -177,9 +172,7 @@ errno_t mkUTtimestring_millisec(
                        1 + uttime->tm_mon,
                        uttime->tm_mday,
                        uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       (long)(tnow.tv_nsec / 1000000));
+                       uttime->tm_min, uttime->tm_sec, (long)(tnow.tv_nsec / 1000000));
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
@@ -235,10 +228,7 @@ errno_t mkUTtimestring_sec(
                             "%04d-%02d-%02dT%02d:%02d:%02dZ",
                             1900 + uttime->tm_year,
                             1 + uttime->tm_mon,
-                            uttime->tm_mday,
-                            uttime->tm_hour,
-                            uttime->tm_min,
-                            uttime->tm_sec);
+                            uttime->tm_mday, uttime->tm_hour, uttime->tm_min, uttime->tm_sec);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
@@ -357,11 +347,7 @@ char *timedouble_to_UTC_timeofdaystring(double timedouble)
     printf("DATE from timedouble_to_UTC_timeofdaystring: %04d-%02d-%02d  %02d:%02d:%02d  %05.2f\n",
            1900 + timetm->tm_year,
            1 + timetm->tm_mon,
-           1 + timetm->tm_mday,
-           timetm->tm_hour,
-           timetm->tm_min,
-           timetm->tm_sec,
-           sec);
+           1 + timetm->tm_mday, timetm->tm_hour, timetm->tm_min, timetm->tm_sec, sec);
 
     snprintf(tstring, 12, "%02d:%02d:%05.2f", timetm->tm_hour, timetm->tm_min, sec);
 

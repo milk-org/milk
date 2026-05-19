@@ -148,8 +148,7 @@ retry_fuzzy:
         }
 
         /* Phase 2: built-in keywords */
-        unsigned int bi =
-            list_index - data.NBcmd;
+        unsigned int bi = list_index - data.NBcmd;
         while(bi < nbuiltins)
         {
             name = (char *) builtins[bi];
@@ -194,22 +193,18 @@ retry_fuzzy:
             while((ent = readdir(img_dirp))
                   != NULL)
             {
-                char *ext = strstr(
-                    ent->d_name, ".im.shm");
+                char *ext = strstr(ent->d_name, ".im.shm");
                 if(ext != NULL
                    && strcmp(ext, ".im.shm")
                    == 0)
                 {
                     char imgname[256];
-                    int namelen =
-                        ext - ent->d_name;
+                    int namelen = ext - ent->d_name;
                     if(namelen > 255)
                     {
                         namelen = 255;
                     }
-                    strncpy(imgname,
-                            ent->d_name,
-                            namelen);
+                    strncpy(imgname, ent->d_name, namelen);
                     imgname[namelen] = '\0';
 
                     if(generator_fuzzy_pass
@@ -219,8 +214,7 @@ retry_fuzzy:
                                    text,
                                    len) == 0)
                         {
-                            return (dupstr(
-                                imgname));
+                            return (dupstr(imgname));
                         }
                     }
                     else
@@ -229,8 +223,7 @@ retry_fuzzy:
                                   text)
                            != NULL)
                         {
-                            return (dupstr(
-                                imgname));
+                            return (dupstr(imgname));
                         }
                     }
                 }
@@ -247,9 +240,7 @@ retry_fuzzy:
               < data.cmd[data.cmdindex]
                     .nbarg)
         {
-            name = data.cmd[data.cmdindex]
-                       .argdata[list_index]
-                       .fpstag;
+            name = data.cmd[data.cmdindex] .argdata[list_index] .fpstag;
             list_index++;
             if(strncmp(name, text, len) == 0)
             {
@@ -274,35 +265,26 @@ retry_fuzzy:
                 dirp = NULL;
             }
 
-            const char *slash =
-                strrchr(text, '/');
+            const char *slash = strrchr(text, '/');
             if(slash != NULL)
             {
-                int dlen =
-                    (int)(slash - text) + 1;
+                int dlen = (int)(slash - text) + 1;
                 if(dlen
                    > (int) sizeof(dirpart)
                      - 1)
                 {
-                    dlen =
-                        (int) sizeof(dirpart)
-                        - 1;
+                    dlen = (int) sizeof(dirpart) - 1;
                 }
                 memcpy(dirpart, text, dlen);
                 dirpart[dlen] = '\0';
-                strncpy(prefix, slash + 1,
-                        sizeof(prefix) - 1);
-                prefix[sizeof(prefix) - 1] =
-                    '\0';
+                strncpy(prefix, slash + 1, sizeof(prefix) - 1);
+                prefix[sizeof(prefix) - 1] = '\0';
             }
             else
             {
-                snprintf(dirpart,
-                         sizeof(dirpart), ".");
-                strncpy(prefix, text,
-                        sizeof(prefix) - 1);
-                prefix[sizeof(prefix) - 1] =
-                    '\0';
+                snprintf(dirpart, sizeof(dirpart), ".");
+                strncpy(prefix, text, sizeof(prefix) - 1);
+                prefix[sizeof(prefix) - 1] = '\0';
             }
             preflen = strlen(prefix);
 
@@ -328,31 +310,17 @@ retry_fuzzy:
                            preflen) == 0)
                 {
                     char fullpath[1024];
-                    snprintf(
-                        fullpath,
-                        sizeof(fullpath),
-                        "%s/%s",
-                        dirpart,
-                        ent->d_name);
+                    snprintf(fullpath, sizeof(fullpath), "%s/%s", dirpart, ent->d_name);
 
                     char result[1024];
                     if(strcmp(dirpart, ".")
                        == 0)
                     {
-                        snprintf(
-                            result,
-                            sizeof(result),
-                            "%s",
-                            ent->d_name);
+                        snprintf(result, sizeof(result), "%s", ent->d_name);
                     }
                     else
                     {
-                        snprintf(
-                            result,
-                            sizeof(result),
-                            "%s%s",
-                            dirpart,
-                            ent->d_name);
+                        snprintf(result, sizeof(result), "%s%s", dirpart, ent->d_name);
                     }
 
                     struct stat st;
@@ -361,11 +329,7 @@ retry_fuzzy:
                         && S_ISDIR(
                                st.st_mode))
                     {
-                        strncat(
-                            result, "/",
-                            sizeof(result)
-                            - strlen(result)
-                            - 1);
+                        strncat(result, "/", sizeof(result) - strlen(result) - 1);
                     }
 
                     return dupstr(result);
@@ -402,23 +366,18 @@ retry_fuzzy:
                 {
                     continue;
                 }
-                char *ext = strstr(
-                    ent->d_name, ".datadir");
+                char *ext = strstr(ent->d_name, ".datadir");
                 if(ext != NULL
                    && strcmp(ext, ".datadir")
                    == 0)
                 {
                     char fpsname[256];
-                    int namelen =
-                        ext
-                        - (ent->d_name + 4);
+                    int namelen = ext - (ent->d_name + 4);
                     if(namelen > 255)
                     {
                         namelen = 255;
                     }
-                    strncpy(fpsname,
-                            ent->d_name + 4,
-                            namelen);
+                    strncpy(fpsname, ent->d_name + 4, namelen);
                     fpsname[namelen] = '\0';
 
                     if(generator_fuzzy_pass
@@ -428,8 +387,7 @@ retry_fuzzy:
                                fpsname, text,
                                len) == 0)
                         {
-                            return dupstr(
-                                fpsname);
+                            return dupstr(fpsname);
                         }
                     }
                     else
@@ -438,8 +396,7 @@ retry_fuzzy:
                                   text)
                            != NULL)
                         {
-                            return dupstr(
-                                fpsname);
+                            return dupstr(fpsname);
                         }
                     }
                 }
@@ -471,29 +428,19 @@ retry_fuzzy:
                 if(strncmp(ent->d_name,
                            "fps.", 4) == 0)
                 {
-                    char *ext = strstr(
-                        ent->d_name,
-                        ".datadir");
+                    char *ext = strstr(ent->d_name, ".datadir");
                     if(ext != NULL
                        && strcmp(ext,
                                 ".datadir")
                           == 0)
                     {
                         char fpsname[256];
-                        int namelen =
-                            ext
-                            - (ent->d_name
-                               + 4);
+                        int namelen = ext - (ent->d_name + 4);
                         if(namelen > 240)
                         {
                             namelen = 240;
                         }
-                        snprintf(
-                            fpsname,
-                            sizeof(fpsname),
-                            "@fps.%.*s.",
-                            namelen,
-                            ent->d_name + 4);
+                        snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.", namelen, ent->d_name + 4);
 
                         if(generator_fuzzy_pass
                            == 0)
@@ -503,8 +450,7 @@ retry_fuzzy:
                                    text,
                                    len) == 0)
                             {
-                                return dupstr(
-                                    fpsname);
+                                return dupstr(fpsname);
                             }
                         }
                         else
@@ -514,8 +460,7 @@ retry_fuzzy:
                                    text)
                                != NULL)
                             {
-                                return dupstr(
-                                    fpsname);
+                                return dupstr(fpsname);
                             }
                         }
                     }
@@ -548,27 +493,18 @@ retry_fuzzy:
                 if(strncmp(ent->d_name,
                            "seq.", 4) == 0)
                 {
-                    char *ext = strstr(
-                        ent->d_name, ".shm");
+                    char *ext = strstr(ent->d_name, ".shm");
                     if(ext != NULL
                        && strcmp(ext, ".shm")
                           == 0)
                     {
                         char seqname[256];
-                        int namelen =
-                            ext
-                            - (ent->d_name
-                               + 4);
+                        int namelen = ext - (ent->d_name + 4);
                         if(namelen > 240)
                         {
                             namelen = 240;
                         }
-                        snprintf(
-                            seqname,
-                            sizeof(seqname),
-                            "@seq.%.*s.",
-                            namelen,
-                            ent->d_name + 4);
+                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.", namelen, ent->d_name + 4);
 
                         if(generator_fuzzy_pass
                            == 0)
@@ -578,8 +514,7 @@ retry_fuzzy:
                                    text,
                                    len) == 0)
                             {
-                                return dupstr(
-                                    seqname);
+                                return dupstr(seqname);
                             }
                         }
                         else
@@ -589,8 +524,7 @@ retry_fuzzy:
                                    text)
                                != NULL)
                             {
-                                return dupstr(
-                                    seqname);
+                                return dupstr(seqname);
                             }
                         }
                     }
@@ -620,25 +554,18 @@ retry_fuzzy:
             while((ent = readdir(vstream_dirp))
                   != NULL)
             {
-                char *ext = strstr(
-                    ent->d_name, ".im.shm");
+                char *ext = strstr(ent->d_name, ".im.shm");
                 if(ext != NULL
                    && strcmp(ext, ".im.shm")
                       == 0)
                 {
                     char sname[256];
-                    int namelen =
-                        ext - ent->d_name;
+                    int namelen = ext - ent->d_name;
                     if(namelen > 240)
                     {
                         namelen = 240;
                     }
-                    snprintf(
-                        sname,
-                        sizeof(sname),
-                        "${s.%.*s.",
-                        namelen,
-                        ent->d_name);
+                    snprintf(sname, sizeof(sname), "${s.%.*s.", namelen, ent->d_name);
 
                     if(generator_fuzzy_pass
                        == 0)
@@ -647,8 +574,7 @@ retry_fuzzy:
                                sname, text,
                                len) == 0)
                         {
-                            return dupstr(
-                                sname);
+                            return dupstr(sname);
                         }
                     }
                     else
@@ -657,8 +583,7 @@ retry_fuzzy:
                                sname, text)
                            != NULL)
                         {
-                            return dupstr(
-                                sname);
+                            return dupstr(sname);
                         }
                     }
                 }
@@ -706,30 +631,25 @@ CLI_completion(
        || (strncmp(rl_line_buffer, "cmd?",
                    strlen("cmd?")) == 0))
     {
-        data.CLImatchMode =
-            CLICOMPLETIONMODE_COMMANDS;
+        data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;
     }
     else if(strncmp(text, "@fps.", 5) == 0)
     {
-        data.CLImatchMode =
-            CLICOMPLETIONMODE_VARS_FPS;
+        data.CLImatchMode = CLICOMPLETIONMODE_VARS_FPS;
     }
     else if(strncmp(text, "@seq.", 5) == 0)
     {
-        data.CLImatchMode =
-            CLICOMPLETIONMODE_VARS_SEQ;
+        data.CLImatchMode = CLICOMPLETIONMODE_VARS_SEQ;
     }
     else if(strncmp(text, "${s.", 4) == 0)
     {
-        data.CLImatchMode =
-            CLICOMPLETIONMODE_VARS_STREAM;
+        data.CLImatchMode = CLICOMPLETIONMODE_VARS_STREAM;
     }
     else
     {
         char  str[200];
         char *firstword;
-        strncpy(str, rl_line_buffer,
-                sizeof(str) - 1);
+        strncpy(str, rl_line_buffer, sizeof(str) - 1);
         str[sizeof(str) - 1] = '\0';
         firstword = strtok(str, " ");
         if (firstword == NULL) {
@@ -753,15 +673,13 @@ CLI_completion(
         if((cmdimatch != -1)
            && (text[0] == '.'))
         {
-            data.CLImatchMode =
-                CLICOMPLETIONMODE_CMDARGS;
+            data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
         }
         else if(cmdimatch != -1)
         {
             int argpos = 0;
             {
-                const char *p =
-                    rl_line_buffer;
+                const char *p = rl_line_buffer;
                 while(*p && *p != ' ')
                 {
                     p++;
@@ -798,8 +716,7 @@ CLI_completion(
             int cli_ai = 0;
             int matched_file = 0;
             for(int ai = 0;
-                ai < data.cmd[cmdimatch]
-                         .nbparam;
+                ai < data.cmd[cmdimatch] .nbparam;
                 ai++)
             {
                 if(data.cmd[cmdimatch]
@@ -808,11 +725,7 @@ CLI_completion(
                 {
                     if(cli_ai == argpos)
                     {
-                        uint64_t atype =
-                            data.cmd[
-                                cmdimatch]
-                            .argdata[ai]
-                            .type;
+                        uint64_t atype = data.cmd[cmdimatch] .argdata[ai] .type;
                         if(atype
                                == CLIARG_FILENAME
                             || atype
@@ -823,8 +736,7 @@ CLI_completion(
                         if(atype
                            == CLIARG_FPSNAME)
                         {
-                            data.CLImatchMode =
-                                CLICOMPLETIONMODE_FPSPARAMS;
+                            data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
                         }
                         break;
                     }
@@ -834,10 +746,8 @@ CLI_completion(
 
             if(matched_file)
             {
-                data.CLImatchMode =
-                    CLICOMPLETIONMODE_FILES;
-                rl_completion_append_character
-                    = '\0';
+                data.CLImatchMode = CLICOMPLETIONMODE_FILES;
+                rl_completion_append_character = '\0';
             }
             else if(data.CLImatchMode
                     != CLICOMPLETIONMODE_FPSPARAMS)
@@ -862,20 +772,17 @@ CLI_completion(
                               .key,
                           "dpsingle") == 0)
                 {
-                    data.CLImatchMode =
-                        CLICOMPLETIONMODE_FPSPARAMS;
+                    data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
                 }
                 else
                 {
-                    data.CLImatchMode =
-                        CLICOMPLETIONMODE_IMAGES;
+                    data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
                 }
             }
         }
         else
         {
-            data.CLImatchMode =
-                CLICOMPLETIONMODE_IMAGES;
+            data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
         }
     }
 
@@ -888,8 +795,7 @@ CLI_completion(
     else
     {
         /* Use custom generator for commands, images, fps parameters, etc. */
-        matches = rl_completion_matches(
-            (char *) text, &CLI_generator);
+        matches = rl_completion_matches((char *) text, &CLI_generator);
     }
 
     /* Prevent readline from falling back to default filename completion 
@@ -906,13 +812,11 @@ CLI_completion(
        || data.CLImatchMode
            == CLICOMPLETIONMODE_VARS_STREAM)
     {
-        rl_completion_append_character
-            = '\0';
+        rl_completion_append_character = '\0';
     }
     else
     {
-        rl_completion_append_character
-            = ' ';
+        rl_completion_append_character = ' ';
     }
 
     return (matches);

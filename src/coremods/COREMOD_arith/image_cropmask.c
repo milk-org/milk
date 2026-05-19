@@ -20,12 +20,9 @@ static FPS_APP_INFO FPS_app_info = {
         "Extract a sub-region from an image and apply a binary mask. Pixels outside the mask are set to zero. Combines cropping and masking in a single operation for efficient region-of-interest extraction."
 };
 
-static char cminsname[
-    FUNCTION_PARAMETER_STRMAXLEN];
-static char masksname[
-    FUNCTION_PARAMETER_STRMAXLEN];
-static char outsname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char cminsname[FUNCTION_PARAMETER_STRMAXLEN];
+static char masksname[FUNCTION_PARAMETER_STRMAXLEN];
+static char outsname[FUNCTION_PARAMETER_STRMAXLEN];
 static uint32_t cropxstart = 0;
 static uint32_t cropxsize  = 64;
 static uint32_t cropystart = 0;
@@ -61,8 +58,7 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
         long fpi = functionparameter_GetParamIndex(dcfpsptr, ".insname");
         if(fpi >= 0)
         {
-            dcfpsptr->parray[fpi].fpflag |=
-                FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
+            dcfpsptr->parray[fpi].fpflag |= FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
         }
     }
     return RETURN_SUCCESS;
@@ -90,9 +86,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     //long m = imgin.md->size[0] * imgin.md->size[1];
 
     // CONNNECT TO OR CREATE MASK STREAM
-    IMGID imgmask = stream_connect_create_2Df32(masksname,
-        cropxsize,
-        cropysize);
+    IMGID imgmask = stream_connect_create_2Df32(masksname, cropxsize, cropysize);
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2Df32(outsname, cropxsize, cropysize);
@@ -123,9 +117,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -133,23 +125,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMODE_arith__cropmask()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

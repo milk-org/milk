@@ -42,10 +42,8 @@ static FPS_APP_INFO FPS_app_info =
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     inimname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "imin";
-static char     outimname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "imout";
+static char     inimname[FUNCTION_PARAMETER_STRMAXLEN] = "imin";
+static char     outimname[FUNCTION_PARAMETER_STRMAXLEN] = "imout";
 static float    delaysec       = 0.001;
 static uint64_t timebuffsize   = 1000;
 static int32_t  avemode        = 0;
@@ -106,35 +104,21 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 {
     if(dcfpsptr != NULL)
     {
-        long fpi_avemode =
-            functionparameter_GetParamIndex(
-                dcfpsptr,
-                ".option.timeavemode");
-        long fpi_dtns =
-            functionparameter_GetParamIndex(
-                dcfpsptr,
-                ".option.timeavedtns");
+        long fpi_avemode = functionparameter_GetParamIndex(dcfpsptr, ".option.timeavemode");
+        long fpi_dtns = functionparameter_GetParamIndex(dcfpsptr, ".option.timeavedtns");
 
         if(fpi_avemode >= 0 && fpi_dtns >= 0)
         {
             if(dcfpsptr->parray[fpi_avemode]
                     .val.i32[0] == 0)
             {
-                dcfpsptr
-                ->parray[fpi_dtns]
-                .fpflag &= ~FPFLAG_USED;
-                dcfpsptr
-                ->parray[fpi_dtns]
-                .fpflag &= ~FPFLAG_VISIBLE;
+                dcfpsptr ->parray[fpi_dtns] .fpflag &= ~FPFLAG_USED;
+                dcfpsptr ->parray[fpi_dtns] .fpflag &= ~FPFLAG_VISIBLE;
             }
             else
             {
-                dcfpsptr
-                ->parray[fpi_dtns]
-                .fpflag |= FPFLAG_USED;
-                dcfpsptr
-                ->parray[fpi_dtns]
-                .fpflag |= FPFLAG_VISIBLE;
+                dcfpsptr ->parray[fpi_dtns] .fpflag |= FPFLAG_USED;
+                dcfpsptr ->parray[fpi_dtns] .fpflag |= FPFLAG_VISIBLE;
             }
         }
     }
@@ -161,20 +145,13 @@ static errno_t streamdelay(
     {
         cnt0prev = inimg.md->cnt0;
 
-        tarray[bufferindex_input].tv_sec
-            = tnow.tv_sec;
-        tarray[bufferindex_input].tv_nsec
-            = tnow.tv_nsec;
+        tarray[bufferindex_input].tv_sec = tnow.tv_sec;
+        tarray[bufferindex_input].tv_nsec = tnow.tv_nsec;
 
         char *destptr;
-        destptr = (char *)
-                  bufferimg.im->array.raw;
-        destptr +=
-            inimg.md->imdatamemsize
-            * bufferindex_input;
-        __builtin_memcpy(destptr,
-                         inimg.im->array.raw,
-                         inimg.md->imdatamemsize);
+        destptr = (char *) bufferimg.im->array.raw;
+        destptr += inimg.md->imdatamemsize * bufferindex_input;
+        __builtin_memcpy(destptr, inimg.im->array.raw, inimg.md->imdatamemsize);
 
         warray[bufferindex_input] = 0;
 
@@ -186,12 +163,8 @@ static errno_t streamdelay(
         }
     }
 
-    struct timespec tdiff =
-        timespec_diff(
-            tarray[bufferindex_output], tnow);
-    double tdiffv =
-        1.0 * tdiff.tv_sec
-        + 1.0e-9 * tdiff.tv_nsec;
+    struct timespec tdiff = timespec_diff(tarray[bufferindex_output], tnow);
+    double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
     int  updateflag = 0;
     long bufferindex_output_last = 0;
@@ -201,8 +174,7 @@ static errno_t streamdelay(
         updateflag = 1;
         warray[bufferindex_output] = 1;
 
-        bufferindex_output_last =
-            bufferindex_output;
+        bufferindex_output_last = bufferindex_output;
         bufferindex_output++;
         if(bufferindex_output
                 == (timebuffsize))
@@ -210,30 +182,19 @@ static errno_t streamdelay(
             bufferindex_output = 0;
         }
 
-        tdiff = timespec_diff(
-                    tarray[bufferindex_output], tnow);
-        tdiffv =
-            1.0 * tdiff.tv_sec
-            + 1.0e-9 * tdiff.tv_nsec;
+        tdiff = timespec_diff(tarray[bufferindex_output], tnow);
+        tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }
 
     if(updateflag == 1)
     {
         printf("     WRITE %8ld %8ld  :  "
                "%ld bytes\n",
-               bufferindex_input,
-               bufferindex_output_last,
-               (long)
-               inimg.md->imdatamemsize);
+               bufferindex_input, bufferindex_output_last, (long) inimg.md->imdatamemsize);
         char *srcptr;
-        srcptr = (char *)
-                 bufferimg.im->array.raw;
-        srcptr +=
-            inimg.md->imdatamemsize
-            * bufferindex_output_last;
-        __builtin_memcpy(outimg.im->array.raw,
-                         srcptr,
-                         inimg.md->imdatamemsize);
+        srcptr = (char *) bufferimg.im->array.raw;
+        srcptr += inimg.md->imdatamemsize * bufferindex_output_last;
+        __builtin_memcpy(outimg.im->array.raw, srcptr, inimg.md->imdatamemsize);
 
         *status = 1;
     }
@@ -261,30 +222,20 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg =
-        imgid_make_from_name(inimname);
-    resolveIMGID(
-        &inimg, ERRMODE_ABORT,
-        dcimg,  dcnimg);
+    IMGID inimg = imgid_make_from_name(inimname);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg,  dcnimg);
 
-    IMGID outimg =
-        imgid_make_from_name(outimname);
+    IMGID outimg = imgid_make_from_name(outimname);
     imcreatelikewiseIMGID(&outimg, &inimg);
 
     IMGID bufferimg =
         imgid_make_from_name_3D(
-            "streamdelaybuff",
-            inimg.mdt->size[0],
-            inimg.mdt->size[1],
-            timebuffsize);
-    bufferimg.mdt->datatype =
-        inimg.mdt->datatype;
+            "streamdelaybuff", inimg.mdt->size[0], inimg.mdt->size[1], timebuffsize);
+    bufferimg.mdt->datatype = inimg.mdt->datatype;
     imcreateIMGID(&bufferimg);
 
     struct timespec *timeinarray;
-    timeinarray = (struct timespec *)
-                  malloc(sizeof(struct timespec)
-                         * (timebuffsize));
+    timeinarray = (struct timespec *) malloc(sizeof(struct timespec) * (timebuffsize));
     struct timespec tnow;
     clock_gettime(CLOCK_MILK, &tnow);
     for(uint64_t i = 0;
@@ -295,8 +246,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     }
 
     int *warray;
-    warray = (int *)
-             malloc(sizeof(int) * (timebuffsize));
+    warray = (int *) malloc(sizeof(int) * (timebuffsize));
     for(uint64_t i = 0;
             i < timebuffsize; i++)
     {
@@ -309,17 +259,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
-    streamdelay(inimg, outimg, bufferimg,
-                timeinarray, warray, &status);
+    streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
     if(status != 0)
     {
-        processinfo_update_output_stream(
-            processinfo, outimg.im, NULL);
+        processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    free(timeinarray);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  free(timeinarray);
     free(warray);
     imgid_free(&inimg);
     imgid_free(&outimg);
@@ -338,22 +284,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__streamdelay()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    CLIcmddata.FPS_customCONFcheck =
-        customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

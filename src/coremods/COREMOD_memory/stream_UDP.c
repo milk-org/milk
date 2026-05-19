@@ -29,8 +29,7 @@
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
 static int MULTIGRAM_MAGIC = 0x3E;
-static int DGRAM_CHUNK_SIZE = 62 *
-    1024;
+static int DGRAM_CHUNK_SIZE = 62 * 1024;
 
 /* forward decls */
 imageID COREMOD_MEMORY_image_NETUDPtransmit(
@@ -50,12 +49,8 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
  *  PARAMS
  * ============================================================= */
 
-static char p_imname[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
-static char p_ipaddr[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "127.0.0.1";
+static char p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_ipaddr[FUNCTION_PARAMETER_STRMAXLEN] = "127.0.0.1";
 static long long p_port = 8888;
 static long long p_csync = 0;
 static long long p_rtprio = 80;
@@ -118,11 +113,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    COREMOD_MEMORY_image_NETUDPtransmit(
-        p_imname, p_ipaddr,
-        p_port, p_csync, p_rtprio);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    COREMOD_MEMORY_image_NETUDPtransmit(p_imname, p_ipaddr, p_port, p_csync, p_rtprio);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -162,8 +154,7 @@ FPS_CMDSETTINGS_INIT(rx, CLIcmddata_rx, FPS_app_info_rx)
 
 static errno_t __attribute__((unused)) compute_rx()
 {
-    COREMOD_MEMORY_image_NETUDPreceive(
-        p_port, p_csync, p_rtprio);
+    COREMOD_MEMORY_image_NETUDPreceive(p_port, p_csync, p_rtprio);
     return RETURN_SUCCESS;
 }
 
@@ -177,9 +168,7 @@ static errno_t __attribute__((unused)) compute_rx()
 static FPS_CLI_BINDING bindings_rx[] = {
     FPS_PARAMS_RX(FPS_X_BINDING)
 };
-static const int nb_bindings_rx =
-    sizeof(bindings_rx) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_rx = sizeof(bindings_rx) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_rx[] = {
     FPS_PARAMS_RX(FPS_X_FARG)
 };
@@ -187,41 +176,28 @@ static CLICMDARGDEF farg_rx[] = {
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 static errno_t CLIfunction_rx(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_rx,
-        farg_rx, &CLIcmddata_rx,
-        bindings_rx, nb_bindings_rx,
-        compute_rx);
+        &FPS_app_info_rx, farg_rx, &CLIcmddata_rx, bindings_rx, nb_bindings_rx, compute_rx);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__stream_UDP()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(
-        farg_rx, bindings_rx,
-        nb_bindings_rx);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg_rx, bindings_rx, nb_bindings_rx);
 
     {
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata_rx,
-            CLIfunction_rx);
-        CLIcmddata_rx.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_rx, CLIfunction_rx);
+        CLIcmddata_rx.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -239,41 +215,9 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
     int        RT_priority)
 {
     imageID            ID;
-    struct sockaddr_in sock_server;
-    int                fds_client;
-    int                flag = 1;
-    //int                result;
-    unsigned long long cnt  = 0;
-    long long          iter = 0;
-    long               framesize; // pixel data only
-    uint32_t           xsize, ysize;
-    char              *ptr_img_data; // source
-    char              *ptr_img_data_slice; // source - offset by slice
-    int                res; // Return status for socket ops
-    int                byte_sock_count;
-    int             semr;
-    int             slice, oldslice;
-    int             NBslices;
-
-    long            framesize1; // pixel data + metadata
-    long            framesizeall; // total frame size : pixel data + metadata + kw
-
-    char           *buff; // socket-side buffer (magic and metadata at beginning)
-    char           *ptr_buff_metadata; // socket-side buffer at metadata offset
-    char           *ptr_buff_data; // socket-side buffer at data offset
-    char           *ptr_buff_keywords; // socket-side buffer at keyword offset
-
-    // Datagrams
-    long            n_udp_dgrams;
-    long            last_dgram_chunk;
-    char           *ptr_this_dgram;
-    long            this_dgram_size;
-
-    int semtrig = 6; // TODO - scan for available sem
-    // IMPORTANT: do not use semtrig 0
-    int use_sem = 1;
-
-    char errmsg[200];
+    char              *buff = NULL; // socket-side buffer (magic and metadata at beginning)
+    int                fds_client = -1;
+    int             oldslice = 0;
 
     printf("Transmit stream %s over UDP/IP %s port %d\n", IDname, IPaddr, port);
     fflush(stdout);
@@ -285,23 +229,24 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
     // ===========================
     PROCESSINFO *processinfo;
 
-    char pinfoname[STRINGMAXLEN_FILENAME];
-    snprintf(pinfoname, STRINGMAXLEN_FILENAME, "ntw-tx-%s", IDname);
+    // setup processinfo
+    {
+        char pinfoname[STRINGMAXLEN_FILENAME];
+        snprintf(pinfoname, STRINGMAXLEN_FILENAME, "ntw-tx-%s", IDname);
 
-    char descr[200];
-    snprintf(descr, 200, "%s->%s/%d", IDname, IPaddr, port);
+        char descr[200];
+        snprintf(descr, 200, "%s->%s/%d", IDname, IPaddr, port);
 
-    char pinfomsg[200];
-    snprintf(pinfomsg, 200, "setup");
+        char pinfomsg[200];
+        snprintf(pinfomsg, 200, "setup");
 
-    printf("Setup processinfo ...");
-    fflush(stdout);
-    processinfo = processinfo_setup(pinfoname,
-                                    descr,    // description
-                                    pinfomsg, // message on startup
-                                    __FUNCTION__,
-                                    __FILE__,
-                                    __LINE__);
+        printf("Setup processinfo ...");
+        fflush(stdout);
+        processinfo = processinfo_setup(pinfoname,
+                                        descr,    // description
+                                        pinfomsg, // message on startup
+                                        __FUNCTION__, __FILE__, __LINE__);
+    }
     printf(" done\n");
     fflush(stdout);
 
@@ -314,9 +259,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
 
     {
         IMGID img = imgid_make_from_name(IDname);
-        resolveIMGID(
-            &img,  ERRMODE_ABORT,
-            dcimg, dcnimg);
+        resolveIMGID(&img,  ERRMODE_ABORT, dcimg, dcnimg);
         ID = img.ID;
     }
 
@@ -326,22 +269,15 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
         return -1;
     }
 
-    setsockopt(fds_client,
-        SOL_SOCKET,
-        SO_REUSEADDR,
-        (char *) & flag,
-        sizeof(flag));
-    setsockopt(fds_client,
-        SOL_SOCKET,
-        SO_REUSEPORT,
-        (char *) & flag,
-        sizeof(flag));
+    int flag = 1;
+    setsockopt(fds_client, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
+    setsockopt(fds_client, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
 
 #ifdef SO_ATTACH_REUSEPORT_CBPF
-    setsockopt(fds_client, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
-               sizeof(flag));
+    setsockopt(fds_client, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag, sizeof(flag));
 #endif
 
+    struct sockaddr_in sock_server;
     if(loopOK == 1)
     {
         memset((char *) &sock_server, 0, sizeof(sock_server));
@@ -350,39 +286,42 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
         sock_server.sin_addr.s_addr = inet_addr(IPaddr);
     }
 
+    uint32_t xsize    = 0;
+    uint32_t ysize    = 0;
+    int      NBslices = 1;
+    long     framesize    = 0;
+    long     framesizeall = 0;
+    long     n_udp_dgrams    = 0;
+    long     last_dgram_chunk = 0;
+    char    *ptr_img_data     = NULL;
+    char    *ptr_buff_metadata = NULL;
+    char    *ptr_buff_data     = NULL;
+    char    *ptr_buff_keywords = NULL;
+
+    // Setup image dimensions and transmit buffer
     if(loopOK == 1)
     {
-        xsize    = dcimg[ID].md[0].size[0];
-        ysize    = dcimg[ID].md[0].size[1];
-        NBslices = 1;
+        xsize = dcimg[ID].md[0].size[0];
+        ysize = dcimg[ID].md[0].size[1];
         if(dcimg[ID].md[0].naxis > 2 && dcimg[ID].md[0].size[2] > 1)
         {
             NBslices = dcimg[ID].md[0].size[2];
         }
-    }
 
-    if(loopOK == 1)
-    {
-        framesize = ImageStreamIO_typesize(dcimg[ID].md[0].datatype) * xsize *
-                    ysize;
+        framesize = ImageStreamIO_typesize(dcimg[ID].md[0].datatype) * xsize * ysize;
         printf("IMAGE FRAME SIZE = %ld\n", framesize);
         fflush(stdout);
-    }
 
-    if(loopOK == 1)
-    {
         ptr_img_data = (char *) ImageStreamIO_get_image_d_ptr(&dcimg[ID]);
 
-        framesize1 = framesize + sizeof(IMAGE_METADATA);
-
+        long framesize1 = framesize + sizeof(IMAGE_METADATA);
         if(TCPTRANSFERKW == 0)
         {
             framesizeall = framesize1;
         }
         else
         {
-            framesizeall =
-                framesize1 + dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD);
+            framesizeall = framesize1 + dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD);
         }
 
         // Prepare segmentation into 62k datagrams
@@ -400,14 +339,14 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
         fflush(stdout);
 
         oldslice = 0;
-        //sockOK = 1;
         printf("sem = %d\n", dcimg[ID].md[0].sem);
         fflush(stdout);
     }
 
-    use_sem = stream_net_decide_sync(
-        dcimg[ID].md[0].sem, do_counter_sync,
-        semtrig,             processinfo);
+    int semtrig = 6; // TODO - scan for available sem
+    // IMPORTANT: do not use semtrig 0
+    int use_sem = stream_net_decide_sync(
+        dcimg[ID].md[0].sem, do_counter_sync, semtrig,             processinfo);
 
     // ===========================
     // Start loop
@@ -419,8 +358,10 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
     {
         loopOK = processinfo_loopstep(processinfo);
 
+        int semr = 0;
         if(use_sem == 0)  // use counter
         {
+            static unsigned long long cnt = 0;
             while(dcimg[ID].md[0].cnt0 == cnt)  // test if new frame exists
             {
                 usleep(5);
@@ -430,12 +371,10 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
         }
         else
         {
-            semr = stream_net_sem_wait(
-                dcimg + ID, semtrig);
+            semr = stream_net_sem_wait(dcimg + ID, semtrig);
 
-            stream_net_sem_drain(
-                dcimg + ID, semtrig,
-                &iter,  processinfo);
+            long long iter = 0;
+            stream_net_sem_drain(dcimg + ID, semtrig, &iter,  processinfo);
         }
 
         processinfo_exec_start(processinfo);
@@ -445,31 +384,26 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
             if(semr == 0)
             {
 
-                slice = stream_net_clamp_slice(
-                    dcimg[ID].md[0].cnt1,
-                    oldslice, NBslices);
+                int slice = stream_net_clamp_slice(dcimg[ID].md[0].cnt1, oldslice, NBslices);
 
                 // Fill up the transmission buffer
-                __builtin_memcpy(ptr_buff_metadata,
-                    &dcimg[ID].md[0],
-                    sizeof(IMAGE_METADATA));
+                __builtin_memcpy(ptr_buff_metadata, &dcimg[ID].md[0], sizeof(IMAGE_METADATA));
 
-                ptr_img_data_slice = ptr_img_data + framesize * slice;
+                char *ptr_img_data_slice = ptr_img_data + framesize * slice;
                 __builtin_memcpy(ptr_buff_data, ptr_img_data_slice, framesize);
 
                 if(TCPTRANSFERKW == 1)
                 {
                     __builtin_memcpy(ptr_buff_keywords,
-                           (char *) dcimg[ID].kw,
-                           dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
+                           (char *) dcimg[ID].kw, dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
                 // Send the datagrams
-                byte_sock_count = 0;
-                ptr_this_dgram = ptr_buff_metadata - 2;
+                int byte_sock_count = 0;
+                char *ptr_this_dgram = ptr_buff_metadata - 2;
                 for(int dgram = 0; dgram < n_udp_dgrams; ++dgram)
                 {
-                    this_dgram_size = dgram == n_udp_dgrams - 1 ? last_dgram_chunk + 2 :
+                    long this_dgram_size = dgram == n_udp_dgrams - 1 ? last_dgram_chunk + 2 :
                                       DGRAM_CHUNK_SIZE + 2;
                     // Using the extra 2 bytes at the beginning for the first dgram
                     // Overwriting the 2 last bytes of previous dgrams for subsequent ones
@@ -477,7 +411,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
                     ptr_this_dgram[1] = dgram;
 
                     //printf("This dgram id: %d, size: %ld\n", dgram, this_dgram_size);
-                    res = sendto(fds_client, ptr_this_dgram, this_dgram_size, 0,
+                    int res = sendto(fds_client, ptr_this_dgram, this_dgram_size, 0,
                                  (const struct sockaddr *)&sock_server, sizeof(sock_server));
                     byte_sock_count += res;
 
@@ -487,13 +421,12 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(
                 if(byte_sock_count != framesizeall + 2 * n_udp_dgrams)
                 {
                     PRINT_ERROR("socket send error: %s", strerror(errno));
+                    char errmsg[200];
                     snprintf(errmsg,
                              200,
                              "ERROR: send() sent a different "
                              "number of bytes (%d) than "
-                             "expected %ld",
-                             byte_sock_count,
-                             framesizeall + 2 * n_udp_dgrams);
+                             "expected %ld", byte_sock_count, framesizeall + 2 * n_udp_dgrams);
                     printf("%s\n", errmsg);
                     fflush(stdout);
                     processinfo_WriteMessage(processinfo, errmsg);

@@ -25,8 +25,7 @@ void ov_render_streams_panel(
     }
     int filt_idx[OV_MAX_STREAMS];
     int filt_n = ov_filter_build(
-                     lay->filter_stream, names,
-                     m->nb_streams,      filt_idx, OV_MAX_STREAMS);
+                     lay->filter_stream, names, m->nb_streams,      filt_idx, OV_MAX_STREAMS);
 
     if(lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
     {
@@ -41,31 +40,21 @@ void ov_render_streams_panel(
         filt_n = new_filt_n;
     }
 
-    int has_re = 0;
-    regex_t re;
-    if(lay->filter_stream[0] != '\0')
-    {
-        if(regcomp(&re, lay->filter_stream, REG_EXTENDED | REG_ICASE) == 0)
-        {
-            has_re = 1;
-        }
-    }
 
     /* Panel title with filter indicator */
-    char title[80];
-    if(lay->filter_stream[0] != '\0')
     {
-        snprintf(title, sizeof(title),
-                 "STREAMS /%s/", lay->filter_stream);
+        char title[80];
+        if(lay->filter_stream[0] != '\0')
+        {
+            snprintf(title, sizeof(title), "STREAMS /%s/", lay->filter_stream);
+        }
+        else
+        {
+            snprintf(title, sizeof(title), "STREAMS");
+        }
+        ov_draw_panel_border(
+            r.row, r.col, r.height, r.width, title, OV_FG_STREAM, lay->focus == OV_FOCUS_STREAMS, 0);
     }
-    else
-    {
-        snprintf(title, sizeof(title), "STREAMS");
-    }
-    ov_draw_panel_border(
-        r.row, r.col, r.height, r.width,
-        title, OV_FG_STREAM,
-        lay->focus == OV_FOCUS_STREAMS, 0);
 
     int hrow = r.row + 1;
     int hs   = lay->hscroll_stream;
@@ -83,22 +72,14 @@ void ov_render_streams_panel(
         char c_anc[8], c_name[20], c_typ[10];
         char c_size[16];
         char c_hz[10], c_mbps[12], c_ino[16], c_cnt[16];
-        int w_anc = sort_col_label(c_anc, sizeof(c_anc),
-                                   "A", 7, sk, sd, 3);
-        int w_name = sort_col_label(c_name, sizeof(c_name),
-                                    "NAME", 0, sk, sd, 14);
-        int w_typ = sort_col_label(c_typ, sizeof(c_typ),
-                                   "TYP", 1, sk, sd, 4);
-        int w_size = sort_col_label(c_size, sizeof(c_size),
-                                    "SIZE", 2, sk, sd, 11);
-        int w_hz = sort_col_label(c_hz, sizeof(c_hz),
-                                  "Hz", 3, sk, sd, 6);
-        int w_mbps = sort_col_label(c_mbps, sizeof(c_mbps),
-                                    "MB/s", 4, sk, sd, 7);
-        int w_ino = sort_col_label(c_ino, sizeof(c_ino),
-                                   "INODE", 5, sk, sd, 10);
-        int w_cnt = sort_col_label(c_cnt, sizeof(c_cnt),
-                                   "COUNT", 6, sk, sd, 10);
+        int w_anc = sort_col_label(c_anc, sizeof(c_anc), "A", 7, sk, sd, 3);
+        int w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
+        int w_typ = sort_col_label(c_typ, sizeof(c_typ), "TYP", 1, sk, sd, 4);
+        int w_size = sort_col_label(c_size, sizeof(c_size), "SIZE", 2, sk, sd, 11);
+        int w_hz = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
+        int w_mbps = sort_col_label(c_mbps, sizeof(c_mbps), "MB/s", 4, sk, sd, 7);
+        int w_ino = sort_col_label(c_ino, sizeof(c_ino), "INODE", 5, sk, sd, 10);
+        int w_cnt = sort_col_label(c_cnt, sizeof(c_cnt), "COUNT", 6, sk, sd, 10);
         hlen = snprintf(
                    htext, sizeof(htext),
                    "%-*s %-*s %*s %*s %*s"
@@ -107,9 +88,7 @@ void ov_render_streams_panel(
                    w_anc, c_anc,
                    w_name, c_name, w_typ, c_typ,
                    w_size, c_size, w_hz, c_hz,
-                   w_mbps, c_mbps, w_ino, c_ino,
-                   "OWNER", w_cnt, c_cnt, "SEMS",
-                   "WPID", "RPID");
+                   w_mbps, c_mbps, w_ino, c_ino, "OWNER", w_cnt, c_cnt, "SEMS", "WPID", "RPID");
     }
 
     {
@@ -118,18 +97,13 @@ void ov_render_streams_panel(
         {
             vis_width = 0;
         }
-        int printed = ov_render_header_text(
-                          htext, hs, vis_width, OV_FG_STREAM_HDR);
+        int printed = ov_render_header_text(htext, hs, vis_width, OV_FG_STREAM_HDR);
         render_pad_spaces(4 + printed, r.width);
     }
 
     /* Separator between header and data rows */
-    render_separator(
-        hrow +    1, r.col + 1,
-        r.width - 2, OV_FG_STREAM_HDR);
+    render_separator(hrow +    1, r.col + 1, r.width - 2, OV_FG_STREAM_HDR);
 
-    int max_rows = r.height - 4;
-    int start = lay->scroll_stream;
 
     /* Compute lineage depths when a stream
      * is selected.  sel_stream is a position in
@@ -168,46 +142,36 @@ void ov_render_streams_panel(
         {
             int root_si = filt_idx[eff_sel];
             SG_LINEAGE lin;
-            sg_compute_lineage(
-                m, root_si,
-                SG_MODE_FULL, &lin);
+            sg_compute_lineage(m, root_si, SG_MODE_FULL, &lin);
 
             for(int a = 0;
                     a < lin.nb_ancestors; a++)
             {
-                int si =
-                    lin.ancestors[a].stream_idx;
+                int si = lin.ancestors[a].stream_idx;
                 if(si >= 0
                         && si < m->nb_streams)
                 {
-                    int d =
-                        lin.ancestors[a].depth;
+                    int d = lin.ancestors[a].depth;
                     if(d > 127)
                     {
                         d = 127;
                     }
-                    local_depth[si] =
-                        (int8_t)(-d);
+                    local_depth[si] = (int8_t)(-d);
                 }
             }
             for(int di = 0;
                     di < lin.nb_descendants; di++)
             {
-                int si =
-                    lin.descendants[di]
-                    .stream_idx;
+                int si = lin.descendants[di] .stream_idx;
                 if(si >= 0
                         && si < m->nb_streams)
                 {
-                    int dp =
-                        lin.descendants[di]
-                        .depth;
+                    int dp = lin.descendants[di] .depth;
                     if(dp > 127)
                     {
                         dp = 127;
                     }
-                    local_depth[si] =
-                        (int8_t) dp;
+                    local_depth[si] = (int8_t) dp;
                 }
             }
             /* DEBUG: dump to file once */
@@ -216,24 +180,14 @@ void ov_render_streams_panel(
                 if(!dbg_done)
                 {
                     dbg_done = 1;
-                    FILE *df = fopen(
-                                   "/tmp/lineage_debug.txt",
-                                   "w");
+                    FILE *df = fopen("/tmp/lineage_debug.txt", "w");
                     if(df)
                     {
                         fprintf(df,
                                 "root_si=%d name=%s "
                                 "node=%d\n",
-                                root_si,
-                                m->streams[root_si]
-                                .name,
-                                m->streams[root_si]
-                                .node_idx);
-                        fprintf(df,
-                                "nb_edges=%d "
-                                "nb_nodes=%d\n",
-                                m->nb_edges,
-                                m->nb_nodes);
+                                root_si, m->streams[root_si] .name, m->streams[root_si] .node_idx);
+                        fprintf(df, "nb_edges=%d " "nb_nodes=%d\n", m->nb_edges, m->nb_nodes);
                         const char *etnames[] =
                         {
                             "PROC_WRITES_STREAM",
@@ -248,37 +202,19 @@ void ov_render_streams_panel(
                                 ei < m->nb_edges;
                                 ei++)
                         {
-                            const OV_EDGE *e =
-                                &m->edges[ei];
+                            const OV_EDGE *e = &m->edges[ei];
                             const char *sn =
                                 (e->src_node >= 0
                                  && e->src_node
-                                 < m->nb_nodes)
-                                ? m->nodes[
-                                    e->src_node]
-                                .name
-                                : "??";
+                                 < m->nb_nodes) ? m->nodes[e->src_node] .name : "??";
                             const char *tn =
                                 (e->tgt_node >= 0
                                  && e->tgt_node
-                                 < m->nb_nodes)
-                                ? m->nodes[
-                                    e->tgt_node]
-                                .name
-                                : "??";
-                            const char *et =
-                                (e->type <= 6)
-                                ? etnames[e->type]
-                                : "??";
-                            fprintf(df,
-                                    "EDGE[%d] "
-                                    "%-20s -> "
-                                    "%-20s %s\n",
-                                    ei, sn, tn, et);
+                                 < m->nb_nodes) ? m->nodes[e->tgt_node] .name : "??";
+                            const char *et = (e->type <= 6) ? etnames[e->type] : "??";
+                            fprintf(df, "EDGE[%d] " "%-20s -> " "%-20s %s\n", ei, sn, tn, et);
                         }
-                        fprintf(df,
-                                "\nAncestors: %d\n",
-                                lin.nb_ancestors);
+                        fprintf(df, "\nAncestors: %d\n", lin.nb_ancestors);
                         for(int a = 0;
                                 a < lin.nb_ancestors;
                                 a++)
@@ -295,17 +231,11 @@ void ov_render_streams_panel(
                                     .stream_idx,
                                     m->streams[
                                         lin.ancestors[a]
-                                        .stream_idx]
-                                    .name,
-                                    lin.ancestors[a]
-                                    .via_name);
+                                        .stream_idx] .name, lin.ancestors[a] .via_name);
                         }
-                        fprintf(df,
-                                "\nDescendants: %d\n",
-                                lin.nb_descendants);
+                        fprintf(df, "\nDescendants: %d\n", lin.nb_descendants);
                         for(int di = 0;
-                                di < lin
-                                .nb_descendants;
+                                di < lin .nb_descendants;
                                 di++)
                         {
                             fprintf(df,
@@ -320,11 +250,7 @@ void ov_render_streams_panel(
                                     .stream_idx,
                                     m->streams[
                                         lin.descendants
-                                        [di]
-                                        .stream_idx]
-                                    .name,
-                                    lin.descendants[di]
-                                    .via_name);
+                                        [di] .stream_idx] .name, lin.descendants[di] .via_name);
                         }
                         fclose(df);
                     }
@@ -332,6 +258,9 @@ void ov_render_streams_panel(
             }
         }
     }
+
+    int max_rows = r.height - 4;
+    int start = lay->scroll_stream;
 
     for(int i = 0; i < max_rows; i++)
     {
@@ -343,18 +272,14 @@ void ov_render_streams_panel(
             const OV_STREAM *s = &m->streams[si];
             int is_sel =
                 (fi == lay->sel_stream
-                 && (lay->focus == OV_FOCUS_STREAMS
-                     || lay->focus == OV_FOCUS_GRAPH));
+                 && (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_GRAPH));
             int is_frozen = (lay->freeze
                              && lay->freeze_focus
-                             == OV_FOCUS_STREAMS
-                             && fi == lay->freeze_sel_stream);
+                             == OV_FOCUS_STREAMS && fi == lay->freeze_sel_stream);
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int is_rel =
                 (!is_sel && !is_frozen
-                 && eff_focus != OV_FOCUS_STREAMS
-                 && rel != NULL
-                 && bget(rel->streams, si));
+                 && eff_focus != OV_FOCUS_STREAMS && rel != NULL && bget(rel->streams, si));
             ov_rgb_t row_bg = OV_BG_PANEL;
             if(is_sel)
             {
@@ -386,12 +311,8 @@ void ov_render_streams_panel(
             ov_theme_bg(row_bg);
 
             /* Focus ring accent strip (#10) */
-            int panel_focused =
-                (lay->focus == OV_FOCUS_STREAMS);
-            render_focus_strip(
-                row, r.col + 1,
-                panel_focused,
-                OV_FG_STREAM, row_bg);
+            int panel_focused = (lay->focus == OV_FOCUS_STREAMS);
+            render_focus_strip(row, r.col + 1, panel_focused, OV_FG_STREAM, row_bg);
 
 #define STRM_FIELD(color, fmt, ...)        \
             do {                                       \
@@ -438,8 +359,7 @@ void ov_render_streams_panel(
                 }                                      \
             } while(0)
 
-            pid_t _spid = (rel != NULL)
-                          ? rel->sel_pid : 0;
+            pid_t _spid = (rel != NULL) ? rel->sel_pid : 0;
 
             /* Ancestry column — rendered raw (UTF-8
              * arrows are 3 bytes / 1 display char).
@@ -447,8 +367,7 @@ void ov_render_streams_panel(
             int8_t sdepth = local_depth[si];
             if(sdepth != 0 && !is_sel && !is_frozen)
             {
-                int abs_d = sdepth < 0
-                            ? -sdepth : sdepth;
+                int abs_d = sdepth < 0 ? -sdepth : sdepth;
                 if(abs_d > 99)
                 {
                     abs_d = 99;
@@ -456,21 +375,13 @@ void ov_render_streams_panel(
                 ov_theme_fg(OV_FG_WARN);
                 if(sdepth < 0)
                 {
-                    if(abs_d < 10)
-                        ov_buf_printf(
-                            "\xe2\x97\x80%d  ", abs_d);
-                    else
-                        ov_buf_printf(
-                            "\xe2\x97\x80%d ", abs_d);
+                    if(abs_d < 10) ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
+                    else ov_buf_printf("\xe2\x97\x80%d ", abs_d);
                 }
                 else
                 {
-                    if(abs_d < 10)
-                        ov_buf_printf(
-                            "%d\xe2\x96\xb6  ", abs_d);
-                    else
-                        ov_buf_printf(
-                            "%d\xe2\x96\xb6 ", abs_d);
+                    if(abs_d < 10) ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
+                    else ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
                 }
             }
             else
@@ -491,8 +402,7 @@ void ov_render_streams_panel(
                         || eff_focus == OV_FOCUS_FPS)
                         && is_rel && rel != NULL)
                 {
-                    int is_written =
-                        bget(rel->stream_written, si);
+                    int is_written = bget(rel->stream_written, si);
                     if(is_written)
                     {
                         ov_theme_fg(OV_FG_ERROR);
@@ -511,11 +421,9 @@ void ov_render_streams_panel(
             }
             printed += 4;
 
-            ov_rgb_t base_color = s->active
-                                  ? OV_FG_STREAM : OV_FG_DIM;
+            ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
 
-            STRM_FIELD(base_color,
-                       "%-14.14s ", s->name);
+            STRM_FIELD(base_color, "%-14.14s ", s->name);
             STRM_FIELD(OV_FG_MUTED, "%4s ", render_dtype(s->datatype));
 
             STRM_FIELD(OV_FG_TEXT, "%11s ", s->size_str);
@@ -534,17 +442,14 @@ void ov_render_streams_panel(
             {
                 double mbps = s->update_hz
                               * (double) s->nelement
-                              * dtype_bytesize(s->datatype)
-                              / (1024.0 * 1024.0);
+                              * dtype_bytesize(s->datatype) / (1024.0 * 1024.0);
                 if(mbps >= 1000.0)
                 {
-                    STRM_FIELD(OV_FG_ACTIVE,
-                               "%6.1fG ", mbps / 1024.0);
+                    STRM_FIELD(OV_FG_ACTIVE, "%6.1fG ", mbps / 1024.0);
                 }
                 else
                 {
-                    STRM_FIELD(OV_FG_ACTIVE,
-                               "%6.1fM ", mbps);
+                    STRM_FIELD(OV_FG_ACTIVE, "%6.1fM ", mbps);
                 }
             }
             else
@@ -557,9 +462,7 @@ void ov_render_streams_panel(
                 STRM_FIELD(OV_FG_DIM, "%10" PRIu64 " ", (uint64_t) s->inode);
             }
 
-            STRM_PID_FIELD(
-                s->ownerPID,
-                "%7d ", (int) s->ownerPID);
+            STRM_PID_FIELD(s->ownerPID, "%7d ", (int) s->ownerPID);
             if(!lay->compact_mode)
             {
                 STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM,
@@ -596,10 +499,7 @@ void ov_render_streams_panel(
             /* Write PID */
             if(s->write_pid > 0)
             {
-                STRM_PID_FIELD(
-                    s->write_pid,
-                    "%7d ",
-                    (int) s->write_pid);
+                STRM_PID_FIELD(s->write_pid, "%7d ", (int) s->write_pid);
             }
             else
             {
@@ -616,10 +516,7 @@ void ov_render_streams_panel(
                     {
                         STRM_FIELD(OV_FG_DIM, ":");
                     }
-                    STRM_PID_FIELD(
-                        s->read_pids[rp],
-                        "%d",
-                        (int) s->read_pids[rp]);
+                    STRM_PID_FIELD(s->read_pids[rp], "%d", (int) s->read_pids[rp]);
                 }
                 STRM_FIELD(OV_FG_DIM, " ");
             }
@@ -656,14 +553,10 @@ void ov_render_streams_panel(
         }
         else
         {
-            clear_row(
-                row, r.col + 1,
-                r.width -    2, OV_BG_PANEL);
+            clear_row(row, r.col + 1, r.width -    2, OV_BG_PANEL);
         }
     }
-    render_scroll_indicators(
-        r, lay->scroll_stream, max_rows,
-        filt_n, OV_FG_STREAM);
+    render_scroll_indicators(r, lay->scroll_stream, max_rows, filt_n, OV_FG_STREAM);
 
     /* Total MB/s footer on bottom border */
     {
@@ -674,9 +567,7 @@ void ov_render_streams_panel(
             const OV_STREAM *s = &m->streams[i];
             if(s->update_hz > 0.1)
             {
-                total_all_bps += s->update_hz
-                                 * (double) s->nelement
-                                 * dtype_bytesize(s->datatype);
+                total_all_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
             }
         }
 
@@ -688,31 +579,23 @@ void ov_render_streams_panel(
             const OV_STREAM *s = &m->streams[si];
             if(s->update_hz > 0.1)
             {
-                total_flt_bps += s->update_hz
-                                 * (double) s->nelement
-                                 * dtype_bytesize(s->datatype);
+                total_flt_bps += s->update_hz * (double) s->nelement * dtype_bytesize(s->datatype);
             }
         }
 
         int  brow = r.row + r.height - 1;
-        int  is_subset =
-            (filt_n < m->nb_streams);
+        int  is_subset = (filt_n < m->nb_streams);
 
         /* Right side: total (always) */
-        double total_all_mb =
-            total_all_bps / (1024.0 * 1024.0);
+        double total_all_mb = total_all_bps / (1024.0 * 1024.0);
         char rbuf[40];
         if(total_all_mb >= 1000.0)
         {
-            snprintf(rbuf, sizeof(rbuf),
-                     " %.1f GB/s ",
-                     total_all_mb / 1024.0);
+            snprintf(rbuf, sizeof(rbuf), " %.1f GB/s ", total_all_mb / 1024.0);
         }
         else
         {
-            snprintf(rbuf, sizeof(rbuf),
-                     " %.1f MB/s ",
-                     total_all_mb);
+            snprintf(rbuf, sizeof(rbuf), " %.1f MB/s ", total_all_mb);
         }
         int rlen = (int) strlen(rbuf);
         int below = filt_n - lay->scroll_stream - max_rows;
@@ -740,21 +623,15 @@ void ov_render_streams_panel(
          * filter is active) */
         if(is_subset)
         {
-            double flt_mb =
-                total_flt_bps
-                / (1024.0 * 1024.0);
+            double flt_mb = total_flt_bps / (1024.0 * 1024.0);
             char lbuf[40];
             if(flt_mb >= 1000.0)
             {
-                snprintf(lbuf, sizeof(lbuf),
-                         " %.1f GB/s ",
-                         flt_mb / 1024.0);
+                snprintf(lbuf, sizeof(lbuf), " %.1f GB/s ", flt_mb / 1024.0);
             }
             else
             {
-                snprintf(lbuf, sizeof(lbuf),
-                         " %.1f MB/s ",
-                         flt_mb);
+                snprintf(lbuf, sizeof(lbuf), " %.1f MB/s ", flt_mb);
             }
             int llen = (int) strlen(lbuf);
             int lcol = r.col + 2;
@@ -767,11 +644,5 @@ void ov_render_streams_panel(
             }
         }
     }
-
     ov_buf_reset_attr();
-
-    if(has_re)
-    {
-        regfree(&re);
-    }
 }

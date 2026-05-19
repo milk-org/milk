@@ -39,9 +39,7 @@ errno_t setSHMdir()
         else
         {
             printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
-            printf("    ERROR: Directory %s : %s\n",
-                   shmdirname,
-                   strerror(errno));
+            printf("    ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
             printf("%c[%d;m", (char) 27, 0); // unset color red
             exit(EXIT_FAILURE);
         }
@@ -53,23 +51,18 @@ errno_t setSHMdir()
             printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
             printf(
                 "    WARNING: Environment variable MILK_SHM_DIR not "
-                "specified -> falling back to default %s\n",
-                SHAREDMEMDIR);
+                "specified -> falling back to default %s\n", SHAREDMEMDIR);
             printf(
                 "    BEWARE : Other milk users may be using the same "
                 "SHM directory on this machine, and could see "
                 "your milk session data and temporary files\n");
             printf(
                 "    BEWARE : Some scripts may rely on MILK_SHM_DIR to "
-                "find/access shared memory and temporary "
-                "files, and WILL not run.\n");
+                "find/access shared memory and temporary " "files, and WILL not run.\n");
             printf(
                 "             Please set MILK_SHM_DIR and restart CLI "
-                "to set up user-specific shared memory and "
-                "temporary files\n");
-            printf(
-                "             Example: Add \"export "
-                "MILK_SHM_DIR=/milk/shm\" to .bashrc\n");
+                "to set up user-specific shared memory and " "temporary files\n");
+            printf("             Example: Add \"export " "MILK_SHM_DIR=/milk/shm\" to .bashrc\n");
             printf("%c[%d;m", (char) 27, 0); // unset color red
         }
     }
@@ -92,9 +85,7 @@ errno_t setSHMdir()
         {
             if(dcquiet == 0)
             {
-                printf("        Directory %s : %s\n",
-                       SHAREDMEMDIR,
-                       strerror(errno));
+                printf("        Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
             }
         }
     }
@@ -105,9 +96,7 @@ errno_t setSHMdir()
         tmpdir = opendir("/tmp");
         if(!tmpdir)
         {
-            printf("        ERROR: Directory %s : %s\n",
-                   shmdirname,
-                   strerror(errno));
+            printf("        ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
             exit(EXIT_FAILURE);
         }
         else
@@ -121,12 +110,10 @@ errno_t setSHMdir()
                 printf(
                     "        NOTE: Consider creating tmpfs "
                     "directory and setting env var MILK_SHM_DIR "
-                    "for improved "
-                    "performance :\n");
+                    "for improved " "performance :\n");
                 printf(
                     "        $ echo \"tmpfs %s tmpfs "
-                    "rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n",
-                    SHAREDMEMDIR);
+                    "rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n", SHAREDMEMDIR);
                 printf("        $ sudo mkdir -p %s\n", SHAREDMEMDIR);
                 printf("        $ sudo mount %s\n", SHAREDMEMDIR);
             }

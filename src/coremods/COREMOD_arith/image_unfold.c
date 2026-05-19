@@ -22,10 +22,8 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // input image names
-static char inimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
-static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN];
 static uint32_t axisA   = 0;
 static uint32_t axisB   = 0;
 static uint32_t colsize = 1;
@@ -208,19 +206,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        image_unfold(
-            inimg,
-            &outimg,
-            axisA,
-            axisB,
-            colsize
-        );
+        image_unfold(inimg, &outimg, axisA, axisB, colsize);
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&inimg);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&inimg);
     imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
@@ -231,21 +221,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMOD_arith__image_unfold()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

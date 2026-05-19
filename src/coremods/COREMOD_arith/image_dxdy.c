@@ -51,11 +51,9 @@ imageID arith_image_dx_IMGID(
         for(uint32_t ii = 1; ii < xsize - 1; ii++)
             imgout->im->array.F[jj * xsize + ii] =
                 (imgin->im->array.F[jj * xsize + ii + 1] -
-                 imgin->im->array.F[jj * xsize + ii - 1]) /
-                2.0;
+                 imgin->im->array.F[jj * xsize + ii - 1]) / 2.0;
         imgout->im->array.F[jj * xsize] =
-            imgin->im->array.F[jj * xsize + 1] -
-            imgin->im->array.F[jj * xsize];
+            imgin->im->array.F[jj * xsize + 1] - imgin->im->array.F[jj * xsize];
         imgout->im->array.F[jj * xsize + xsize - 1] =
             imgin->im->array.F[jj * xsize + xsize - 1] -
             imgin->im->array.F[jj * xsize + xsize - 2];
@@ -121,13 +119,10 @@ imageID arith_image_dy_IMGID(
         {
             imgout->im->array.F[jj * xsize + ii] =
                 (imgin->im->array.F[(jj + 1) * xsize + ii] -
-                 imgin->im->array.F[(jj - 1) * xsize + ii]) /
-                2.0;
+                 imgin->im->array.F[(jj - 1) * xsize + ii]) / 2.0;
         }
 
-        imgout->im->array.F[ii] =
-            imgin->im->array.F[1 * xsize + ii] -
-            imgin->im->array.F[ii];
+        imgout->im->array.F[ii] = imgin->im->array.F[1 * xsize + ii] - imgin->im->array.F[ii];
 
         imgout->im->array.F[(ysize - 1) * xsize + ii] =
             imgin->im->array.F[(ysize - 1) * xsize + ii] -

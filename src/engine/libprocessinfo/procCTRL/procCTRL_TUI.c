@@ -86,15 +86,11 @@ static int processinfo_CPUsets_List(
     while(NBset < 1000 && fgets(line, 199, fp) != NULL)
     {
         sscanf(line, "%199s %199s", word, word1);
-        strncpy(CPUsetList[setindex].name, word,
-                sizeof(CPUsetList[setindex].name) - 1);
-        CPUsetList[setindex].name[
-            sizeof(CPUsetList[setindex].name) - 1] = '\0';
+        strncpy(CPUsetList[setindex].name, word, sizeof(CPUsetList[setindex].name) - 1);
+        CPUsetList[setindex].name[sizeof(CPUsetList[setindex].name) - 1] = '\0';
         strncpy(CPUsetList[setindex].description, word1,
                 sizeof(CPUsetList[setindex].description) - 1);
-        CPUsetList[setindex].description[
-            sizeof(CPUsetList[setindex].description) - 1]
-            = '\0';
+        CPUsetList[setindex].description[sizeof(CPUsetList[setindex].description) - 1] = '\0';
         setindex++;
         NBset++;
     }
@@ -236,8 +232,7 @@ static errno_t procctrl_init(procctrl_context_t *ctx)
     }
     if(system("pgrep \"milk-procCTRL-s\" > /dev/null") != 0)
     {
-        PRINT_WARNING(
-            "milk-procCTRL-scan daemon is not running");
+        PRINT_WARNING("milk-procCTRL-scan daemon is not running");
         printf("Start it now in tmux session 'milk-procCTRL-scan'? [y/n] ");
         fflush(stdout);
         char response = 'n';
@@ -312,8 +307,7 @@ static errno_t procctrl_init(procctrl_context_t *ctx)
 
     ctx->CPUsetList = (STRINGLISTENTRY *) malloc(sizeof(STRINGLISTENTRY) * 1000);
     int NBCPUset __attribute__(
-    (unused)) = processinfo_CPUsets_List(ctx->CPUsetList,
-    ctx->procinfoproc->has_cset);
+    (unused)) = processinfo_CPUsets_List(ctx->CPUsetList, ctx->procinfoproc->has_cset);
 
     if(ctx->flog)
     {

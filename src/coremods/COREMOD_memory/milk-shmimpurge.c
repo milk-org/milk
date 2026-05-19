@@ -56,42 +56,33 @@ static void print_help(
     milk_help_section("Usage", mh_color);
     printf("  %s%s%s [%soptions%s]\n\n",
            mh_color ? MH_CMD : "", progname,
-           mh_color ? MH_RST : "",
-           mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
+           mh_color ? MH_RST : "", mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
     milk_help_section("Description", mh_color);
     printf("  %s\n\n", SP_DESC_LONG);
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-f, --filter <str>",
-           mh_color ? MH_RST : "",
-           "Only consider streams whose name contains <str>");
+           mh_color ? MH_RST : "", "Only consider streams whose name contains <str>");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-y, --force",
-           mh_color ? MH_RST : "",
-           "Skip confirmation prompt");
+           mh_color ? MH_RST : "", "Skip confirmation prompt");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-n, --dry-run",
-           mh_color ? MH_RST : "",
-           "List orphans without removing them");
+           mh_color ? MH_RST : "", "List orphans without removing them");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-v, --verbose",
-           mh_color ? MH_RST : "",
-           "Show which PIDs hold each live stream");
+           mh_color ? MH_RST : "", "Show which PIDs hold each live stream");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
-           mh_color ? MH_RST : "",
-           "Show this help and exit");
+           mh_color ? MH_RST : "", "Show this help and exit");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h1, --help-oneline",
-           mh_color ? MH_RST : "",
-           "One-line description and exit");
+           mh_color ? MH_RST : "", "One-line description and exit");
     printf("  %s%-25s%s %s\n\n",
            mh_color ? MH_OPT : "", "-hm, --help-mono",
-           mh_color ? MH_RST : "",
-           "Full help, no ANSI color");
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
-    printf("  %s$ milk-shmimpurge%s\n",
-           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-shmimpurge%s\n", mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
     printf("  %s$ milk-shmimpurge%s %s-f dm -v%s\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
@@ -161,8 +152,7 @@ static int pid_has_inode_open(
         }
 
         char fdpath[128];
-        snprintf(fdpath, sizeof(fdpath),
-                 "/proc/%d/fd/%s", (int)pid, de->d_name);
+        snprintf(fdpath, sizeof(fdpath), "/proc/%d/fd/%s", (int)pid, de->d_name);
 
         struct stat st;
         if(stat(fdpath, &st) == 0 && st.st_ino == inode)
@@ -275,12 +265,10 @@ static int remove_orphan(
     const char *sname)
 {
     char fullpath[512];
-    snprintf(fullpath, sizeof(fullpath),
-             "%s/%s.im.shm", shmdir, sname);
+    snprintf(fullpath, sizeof(fullpath), "%s/%s.im.shm", shmdir, sname);
 
     IMAGE image = {0};
-    errno_t ret =
-        ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &image);
+    errno_t ret = ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &image);
 
     if(ret == IMAGESTREAMIO_SUCCESS)
     {
@@ -351,9 +339,7 @@ int main(
         }
         else
         {
-            fprintf(stderr,
-                    "\n\033[1;31mERROR\033[0m:"
-                    " unknown option '%s'.\n\n", argv[i]);
+            fprintf(stderr, "\n\033[1;31mERROR\033[0m:" " unknown option '%s'.\n\n", argv[i]);
             print_help(argv[0], 1);
             return 1;
         }
@@ -365,8 +351,7 @@ int main(
     DIR *d = opendir(shmdir);
     if(d == NULL)
     {
-        PRINT_ERROR("\033[1;31mERROR\033[0m:"
-                    " cannot open '%s': %s", shmdir, strerror(errno));
+        PRINT_ERROR("\033[1;31mERROR\033[0m:" " cannot open '%s': %s", shmdir, strerror(errno));
         return 1;
     }
 
@@ -424,8 +409,7 @@ int main(
     for(int i = 0; i < total; i++)
     {
         char fullpath[512];
-        snprintf(fullpath, sizeof(fullpath),
-                 "%s/%s.im.shm", shmdir, names[i]);
+        snprintf(fullpath, sizeof(fullpath), "%s/%s.im.shm", shmdir, names[i]);
 
         if(verbose)
         {

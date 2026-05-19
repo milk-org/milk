@@ -28,10 +28,8 @@ errno_t fps_init_from_bindings(
     FPS_CLI_BINDING *bindings,
     int             nb_b)
 {
-    strncpy(fps->md->callprogname, cmdkey,
-            FPS_CALLPROGNAME_STRMAXLEN - 1);
-    strncpy(fps->md->description, description,
-            FPS_DESCR_STRMAXLEN - 1);
+    strncpy(fps->md->callprogname, cmdkey, FPS_CALLPROGNAME_STRMAXLEN - 1);
+    strncpy(fps->md->description, description, FPS_DESCR_STRMAXLEN - 1);
 
     int current_cli_index = 0;
 
@@ -51,13 +49,8 @@ errno_t fps_init_from_bindings(
             fps,
             bindings[bind_idx].fpskeyword,
             bindings[bind_idx].descr,
-            bindings[bind_idx].type,
-            fpflag,
-            bindings[bind_idx].ptr,
-            &pindex
-        );
-        functionparameter_SetParamCLIindex(
-            fps, pindex, cli_index);
+            bindings[bind_idx].type, fpflag, bindings[bind_idx].ptr, &pindex);
+        functionparameter_SetParamCLIindex(fps, pindex, cli_index);
     }
     return RETURN_SUCCESS;
 }

@@ -56,8 +56,7 @@ int functionparameter_GetFileName(
         snprintf(ffname1, STRINGMAXLEN_FULLFILENAME, "%s", ffname);
         strncat(ffname1, fname1, STRINGMAXLEN_FULLFILENAME - strlen(ffname1) - 1);
 
-        strncpy(outfname, ffname1,
-                STRINGMAXLEN_FULLFILENAME - 1);
+        strncpy(outfname, ffname1, STRINGMAXLEN_FULLFILENAME - 1);
         outfname[STRINGMAXLEN_FULLFILENAME - 1] = '\0';
     }
 

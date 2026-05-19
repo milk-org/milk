@@ -40,8 +40,7 @@ errno_t CLI_data_init()
     /* Sync: data.core shares milk_data's arrays */
     data.core = milk_data;
 
-    create_variable_ID("_PI",
-        3.14159265358979323846264338328);
+    create_variable_ID("_PI", 3.14159265358979323846264338328);
     create_variable_ID("_e", exp(1));
     create_variable_ID("_gamma", 0.5772156649);
     create_variable_ID("_c", 299792458.0);

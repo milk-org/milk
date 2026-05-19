@@ -34,12 +34,9 @@ static FPS_APP_INFO FPS_app_info =
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inampimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "imamp";
-static char inphaimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "impha";
-static char outimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "imc";
+static char inampimname[FUNCTION_PARAMETER_STRMAXLEN] = "imamp";
+static char inphaimname[FUNCTION_PARAMETER_STRMAXLEN] = "impha";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN] = "imc";
 
 
 /* ================================================================
@@ -72,17 +69,13 @@ errno_t mk_complex_from_amph_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(
-        imginamp, ERRMODE_WARN,
-        dcimg, dcnimg);
+    resolveIMGID(imginamp, ERRMODE_WARN, dcimg, dcnimg);
     if(imginamp->ID == -1)
     {
         return RETURN_FAILURE;
     }
 
-    resolveIMGID(
-        imginpha, ERRMODE_WARN,
-        dcimg, dcnimg);
+    resolveIMGID(imginpha, ERRMODE_WARN, dcimg, dcnimg);
     if(imginpha->ID == -1)
     {
         return RETURN_FAILURE;
@@ -92,44 +85,46 @@ errno_t mk_complex_from_amph_IMGID(
     uint8_t datatype_am = imginamp->md->datatype;
     uint8_t datatype_ph = imginpha->md->datatype;
 
-    uint8_t naxisamp = imginamp->md->naxis;
-    uint8_t naxispha = imginpha->md->naxis;
     uint64_t xysize = imginamp->md->size[0];
-    imgoutC->mdt->size[0] =
-        imginamp->md->size[0];
-    imgoutC->mdt->size[1] = 1;
-
-    uint8_t naxis = naxisamp;
-    if(naxisamp > 1)
-    {
-        xysize *= imginamp->md->size[1];
-        imgoutC->mdt->size[1] =
-            imginamp->md->size[1];
-    }
-    if(naxispha > naxisamp)
-    {
-        naxis = naxispha;
-    }
-
     uint32_t zsize    = 1;
     uint32_t zsizeamp = 1;
     uint32_t zsizepha = 1;
-    if(naxisamp > 2)
-    {
-        zsizeamp = imginamp->md->size[2];
-    }
-    if(naxispha > 2)
-    {
-        zsizepha = imginpha->md->size[2];
-    }
-    zsize = zsizeamp;
-    if(zsizepha > zsizeamp)
-    {
-        zsize = zsizepha;
-    }
 
-    imgoutC->mdt->naxis = naxis;
-    imgoutC->mdt->size[2] = zsize;
+    {
+        uint8_t naxisamp = imginamp->md->naxis;
+        uint8_t naxispha = imginpha->md->naxis;
+
+        imgoutC->mdt->size[0] = imginamp->md->size[0];
+        imgoutC->mdt->size[1] = 1;
+
+        uint8_t naxis = naxisamp;
+        if(naxisamp > 1)
+        {
+            xysize *= imginamp->md->size[1];
+            imgoutC->mdt->size[1] = imginamp->md->size[1];
+        }
+        if(naxispha > naxisamp)
+        {
+            naxis = naxispha;
+        }
+
+        if(naxisamp > 2)
+        {
+            zsizeamp = imginamp->md->size[2];
+        }
+        if(naxispha > 2)
+        {
+            zsizepha = imginpha->md->size[2];
+        }
+        zsize = zsizeamp;
+        if(zsizepha > zsizeamp)
+        {
+            zsize = zsizepha;
+        }
+
+        imgoutC->mdt->naxis = naxis;
+        imgoutC->mdt->size[2] = zsize;
+    }
 
     uint8_t datatype_out;
 
@@ -202,16 +197,12 @@ errno_t mk_complex_from_amph(
     const char *out_name,
     int        sharedmem)
 {
-    IMGID imgamp =
-        imgid_make_from_name(am_name);
-    IMGID imgpha =
-        imgid_make_from_name(ph_name);
-    IMGID imgoutC =
-        imgid_make_from_name(out_name);
+    IMGID imgamp = imgid_make_from_name(am_name);
+    IMGID imgpha = imgid_make_from_name(ph_name);
+    IMGID imgoutC = imgid_make_from_name(out_name);
     imgoutC.mdt->shared = sharedmem;
 
-    errno_t ret = mk_complex_from_amph_IMGID(
-                      &imgamp, &imgpha, &imgoutC);
+    errno_t ret = mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
     imgid_free(&imgamp);
     imgid_free(&imgpha);
     imgid_free(&imgoutC);
@@ -234,23 +225,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgamp =
-        imgid_make_from_name(inampimname);
-    IMGID imgpha =
-        imgid_make_from_name(inphaimname);
-    IMGID imgoutC =
-        imgid_make_from_name(outimname);
+    IMGID imgamp = imgid_make_from_name(inampimname);
+    IMGID imgpha = imgid_make_from_name(inphaimname);
+    IMGID imgoutC = imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        mk_complex_from_amph_IMGID(
-            &imgamp, &imgpha, &imgoutC);
+        mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&imgamp);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&imgamp);
     imgid_free(&imgpha);
     imgid_free(&imgoutC);
 
@@ -267,18 +252,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD__mk_complex_from_amph()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

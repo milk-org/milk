@@ -35,9 +35,7 @@ int processinfo_SIGexit(
              200,
              "%02d:%02d:%02d.%03d",
              tstoptm->tm_hour,
-             tstoptm->tm_min,
-             tstoptm->tm_sec,
-             (int)(0.000001 * (tstop.tv_nsec)));
+             tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
     processinfo->loopstat = 3; // clean exit
 
     char SIGstr[12];
@@ -189,10 +187,7 @@ int processinfo_SIGexit(
     if(SIGflag == 1)
     {
         int slen = snprintf(msgstring,
-                            STRINGMAXLEN_PROCESSINFO_STATUSMSG,
-                            "%s at %s",
-                            SIGstr,
-                            timestring);
+                            STRINGMAXLEN_PROCESSINFO_STATUSMSG, "%s at %s", SIGstr, timestring);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");

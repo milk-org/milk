@@ -36,10 +36,7 @@ int functionparameter_SaveParam2disk(
     pindex = functionparameter_GetParamIndex(fpsentry, paramname);
 
 
-    functionparameter_WriteParameterToDisk(fpsentry,
-                                           pindex,
-                                           "setval",
-                                           "SaveParam2disk");
+    functionparameter_WriteParameterToDisk(fpsentry, pindex, "setval", "SaveParam2disk");
 
     return RETURN_SUCCESS;
 }
@@ -59,10 +56,7 @@ int functionparameter_SaveFPS2disk_dir(
     FPS  *fpsentry,
     char *dirname)
 {
-    char  fname[STRINGMAXLEN_FULLFILENAME];
     FILE *fpoutval;
-    int   stringmaxlen = 500;
-    char  outfpstring[stringmaxlen];
 
     struct stat st = {0};
     if(stat(dirname, &st) == -1)
@@ -70,9 +64,11 @@ int functionparameter_SaveFPS2disk_dir(
         mkdir(dirname, 0700);
     }
 
-    snprintf(fname, STRINGMAXLEN_FULLFILENAME, "%s/%s.fps", dirname,
-             fpsentry->md->name);
-    fpoutval = fopen(fname, "w");
+    {
+        char fname[STRINGMAXLEN_FULLFILENAME];
+        snprintf(fname, STRINGMAXLEN_FULLFILENAME, "%s/%s.fps", dirname, fpsentry->md->name);
+        fpoutval = fopen(fname, "w");
+    }
 
     pid_t tid;
     tid = syscall(SYS_gettid);
@@ -92,11 +88,7 @@ int functionparameter_SaveFPS2disk_dir(
                    "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
                    1900 + uttime->tm_year,
                    1 + uttime->tm_mon,
-                   uttime->tm_mday,
-                   uttime->tm_hour,
-                   uttime->tm_min,
-                   uttime->tm_sec,
-                   tnow.tv_nsec);
+                   uttime->tm_mday, uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
 
     fprintf(fpoutval, "# TIMESTRING %s\n", timestring);
     fprintf(fpoutval, "# PID        %d\n", getpid());
@@ -106,10 +98,10 @@ int functionparameter_SaveFPS2disk_dir(
 
     for(int pindex = 0; pindex < fpsentry->md->NBparamMAX; pindex++)
     {
+        int   stringmaxlen = 500;
+        char  outfpstring[stringmaxlen];
         errno_t ret = functionparameter_PrintParameter_ValueString(
-                          &fpsentry->parray[pindex],
-                          outfpstring,
-                          stringmaxlen);
+                          &fpsentry->parray[pindex], outfpstring, stringmaxlen);
         if(ret == RETURN_SUCCESS)
         {
             fprintf(fpoutval, "%s\n", outfpstring);
@@ -127,9 +119,11 @@ int functionparameter_SaveFPS2disk_dir(
  */
 int functionparameter_SaveFPS2disk(FPS *fps)
 {
-    char outdir[STRINGMAXLEN_FULLFILENAME];
-    WRITE_FULLFILENAME(outdir, "%s/%s", fps->md->workdir, fps->md->datadir);
-    functionparameter_SaveFPS2disk_dir(fps, outdir);
+    {
+        char outdir[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(outdir, "%s/%s", fps->md->workdir, fps->md->datadir);
+        functionparameter_SaveFPS2disk_dir(fps, outdir);
+    }
 
     char timestring[TIMESTRINGLEN];
     char timestringnow[TIMESTRINGLEN];
@@ -138,21 +132,16 @@ int functionparameter_SaveFPS2disk(FPS *fps)
     mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
     mkUTtimestring_microsec_now(timestringnow);
 
-    char  ffname[STRINGMAXLEN_FULLFILENAME];
     FILE *fpout;
-    WRITE_FULLFILENAME(ffname,
-                       "%s/%s/%s.fps.outlog",
-                       fps->md->workdir,
-                       fps->md->datadir,
-                       fps->md->name);
-    fpout = fopen(ffname, "w");
+    {
+        char ffname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(ffname,
+                           "%s/%s/%s.fps.outlog", fps->md->workdir, fps->md->datadir, fps->md->name);
+        fpout = fopen(ffname, "w");
+    }
     fprintf(fpout,
             "%s %s %s fps %s %s fps\n",
-            timestring,
-            timestringnow,
-            fps->md->name,
-            fps->md->name,
-            fps->md->name);
+            timestring, timestringnow, fps->md->name, fps->md->name, fps->md->name);
     fclose(fpout);
 
     return RETURN_SUCCESS;
@@ -202,23 +191,19 @@ errno_t functionparameter_write_archivescript(FPS *fps)
 
     // save FPS
     WRITE_DIRNAME(datadirname,
-                  "../datadir/%s/%s/fps.%s",
-                  datestring,
-                  fps->md->name,
-                  fps->md->name);
+                  "../datadir/%s/%s/fps.%s", datestring, fps->md->name, fps->md->name);
     fprintf(fplogscript, "mkdir -p %s\n", datadirname);
     fprintf(fplogscript,
             "cp fps.%s.dat %s/fps.%s.%s.dat\n",
-            fps->md->name,
-            datadirname,
-            fps->md->name,
-            timestring);
+            fps->md->name, datadirname, fps->md->name, timestring);
 
     // save files listed in loglist.dat
     FILE *fploglist;
-    char  loglistfname[STRINGMAXLEN_FULLFILENAME];
-    WRITE_FULLFILENAME(loglistfname, "loglist.dat");
-    fploglist = fopen(loglistfname, "r");
+    {
+        char loglistfname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(loglistfname, "loglist.dat");
+        fploglist = fopen(loglistfname, "r");
+    }
     if(fploglist != NULL)
     {
         char  *line = NULL;
@@ -228,18 +213,10 @@ errno_t functionparameter_write_archivescript(FPS *fps)
         while(getline(&line, &llen, fploglist) != -1)
         {
             sscanf(line, "%s", logfname);
-            WRITE_DIRNAME(datadirname,
-                          "../datadir/%s/%s/%s",
-                          datestring,
-                          fps->md->name,
-                          logfname);
+            WRITE_DIRNAME(datadirname, "../datadir/%s/%s/%s", datestring, fps->md->name, logfname);
             fprintf(fplogscript, "mkdir -p %s\n", datadirname);
             fprintf(fplogscript,
-                    "cp -r %s %s/%s.%s\n",
-                    logfname,
-                    datadirname,
-                    logfname,
-                    timestring);
+                    "cp -r %s %s/%s.%s\n", logfname, datadirname, logfname, timestring);
         }
         fclose(fploglist);
     }
@@ -266,7 +243,6 @@ errno_t fps_write_RUNoutput_image(
     const char *imagename,
     const char *outname)
 {
-    char ffname[STRINGMAXLEN_FULLFILENAME];
     char timestring[TIMESTRINGLEN];
     char timestringnow[TIMESTRINGLEN];
 
@@ -274,19 +250,21 @@ errno_t fps_write_RUNoutput_image(
     mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
     mkUTtimestring_microsec_now(timestringnow);
 
-    WRITE_FULLFILENAME(ffname, "%s/%s.fits", fps->md->datadir, outname);
-    save_fits(imagename, ffname);
+    {
+        char ffname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(ffname, "%s/%s.fits", fps->md->datadir, outname);
+        save_fits(imagename, ffname);
+    }
 
     FILE *fpout;
-    WRITE_FULLFILENAME(ffname, "%s/%s.fits.outlog", fps->md->datadir, outname);
-    fpout = fopen(ffname, "w");
+    {
+        char ffname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(ffname, "%s/%s.fits.outlog", fps->md->datadir, outname);
+        fpout = fopen(ffname, "w");
+    }
     fprintf(fpout,
             "%s %s %s fits %s %s fits\n",
-            timestring,
-            timestringnow,
-            outname,
-            fps->md->name,
-            outname);
+            timestring, timestringnow, outname, fps->md->name, outname);
     fclose(fpout);
 
     return RETURN_SUCCESS;
@@ -305,7 +283,6 @@ FILE *fps_write_RUNoutput_file(FPS *fps,
 {
     FILE *fp;
 
-    char ffname[STRINGMAXLEN_FULLFILENAME];
     char timestring[TIMESTRINGLEN];
     char timestringnow[TIMESTRINGLEN];
 
@@ -313,29 +290,21 @@ FILE *fps_write_RUNoutput_file(FPS *fps,
     mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
     mkUTtimestring_microsec_now(timestringnow);
 
-    WRITE_FULLFILENAME(ffname,
-                       "%s/%s.%s",
-                       fps->md->datadir,
-                       filename,
-                       extension);
-    fp = fopen(ffname, "w");
+    {
+        char ffname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(ffname, "%s/%s.%s", fps->md->datadir, filename, extension);
+        fp = fopen(ffname, "w");
+    }
 
     FILE *fpout;
-    WRITE_FULLFILENAME(ffname,
-                       "%s/%s.%s.outlog",
-                       fps->md->datadir,
-                       filename,
-                       extension);
-    fpout = fopen(ffname, "w");
+    {
+        char ffname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(ffname, "%s/%s.%s.outlog", fps->md->datadir, filename, extension);
+        fpout = fopen(ffname, "w");
+    }
     fprintf(fpout,
             "%s %s %s %s %s %s %s\n",
-            timestring,
-            timestringnow,
-            filename,
-            extension,
-            fps->md->name,
-            filename,
-            extension);
+            timestring, timestringnow, filename, extension, fps->md->name, filename, extension);
     fclose(fpout);
 
     return fp;
@@ -447,28 +416,28 @@ errno_t fps_datadir_to_confdir(FPS *fps)
 
         if(strcmp(file_ext, "outlog") == 0)
         {
-            char ffnamein[STRINGMAXLEN_FULLFILENAME];
-            char ffnameout[STRINGMAXLEN_FULLFILENAME];
+            {
+                char ffnamein[STRINGMAXLEN_FULLFILENAME];
+                char ffnameout[STRINGMAXLEN_FULLFILENAME];
 
-            WRITE_FULLFILENAME(ffnamein,
-                               "%s/%s",
-                               fps->md->datadir,
-                               indirentry->d_name);
-            WRITE_FULLFILENAME(ffnameout,
-                               "%s/%s",
-                               fps->md->confdir,
-                               indirentry->d_name);
-            filecopy(ffnamein, ffnameout);
+                WRITE_FULLFILENAME(ffnamein, "%s/%s", fps->md->datadir, indirentry->d_name);
+                WRITE_FULLFILENAME(ffnameout, "%s/%s", fps->md->confdir, indirentry->d_name);
+                filecopy(ffnamein, ffnameout);
+            }
 
             char *fnamenoext;
             fnamenoext = remove_filename_ext(indirentry->d_name);
 
-            WRITE_FULLFILENAME(ffnamein, "%s/%s", fps->md->datadir, fnamenoext);
-            WRITE_FULLFILENAME(ffnameout,
-                               "%s/%s",
-                               fps->md->confdir,
-                               fnamenoext);
-            filecopy(ffnamein, ffnameout);
+            if (fnamenoext)
+            {
+                char ffnamein[STRINGMAXLEN_FULLFILENAME];
+                char ffnameout[STRINGMAXLEN_FULLFILENAME];
+                
+                WRITE_FULLFILENAME(ffnamein, "%s/%s", fps->md->datadir, fnamenoext);
+                WRITE_FULLFILENAME(ffnameout, "%s/%s", fps->md->confdir, fnamenoext);
+                filecopy(ffnamein, ffnameout);
+                free(fnamenoext); // Added missing free!
+            }
         }
     }
 

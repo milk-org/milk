@@ -103,10 +103,7 @@ int functionparameter_UserInputSetParamValue(
                 if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
                 {
                     functionparameter_WriteParameterToDisk(
-                        fpsentry,
-                        pindex,
-                        "setval",
-                        "UserInputSetParamValue");
+                        fpsentry, pindex, "setval", "UserInputSetParamValue");
 
                     functionparameter_SaveFPS2disk(fpsentry);
                 }

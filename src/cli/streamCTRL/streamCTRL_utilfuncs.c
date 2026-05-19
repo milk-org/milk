@@ -71,8 +71,7 @@ imageID image_get_first_ID_available_from_images(
     }
     while(i != streamNBID_MAX);
     printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
-    printf("NB_MAX_IMAGE should be increased above current value (%d)\n",
-           streamNBID_MAX);
+    printf("NB_MAX_IMAGE should be increased above current value (%d)\n", streamNBID_MAX);
 
     return -1;
 }
@@ -145,8 +144,7 @@ int get_PIDmax()
     {
         fprintf(stderr,
                 "Error: fscanf successfully matched and assigned %i input "
-                "items, 1 expected\n",
-                fscanfcnt);
+                "items, 1 expected\n", fscanfcnt);
         exit(EXIT_FAILURE);
     }
 

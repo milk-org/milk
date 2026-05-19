@@ -106,8 +106,7 @@ int ov_fps_inline_edit(
         return -1;
     }
 
-    int pindex = ov_fcache_get_param_index(
-                     fps_name, disp_idx);
+    int pindex = ov_fcache_get_param_index(fps_name, disp_idx);
     if(pindex < 0)
     {
         return -1;
@@ -117,12 +116,10 @@ int ov_fps_inline_edit(
 
     /* Get current value as string */
     char curval[200];
-    functionparameter_GetParamValueString(
-        fp, curval, (int) sizeof(curval));
+    functionparameter_GetParamValueString(fp, curval, (int) sizeof(curval));
 
     /* Short type label */
-    const char *tlabel =
-        ov_fps_type_short_label(fp->type);
+    const char *tlabel = ov_fps_type_short_label(fp->type);
 
     /* Strip FPS name prefix from keyword */
     const char *display_kw = fp->keywordfull;
@@ -146,8 +143,7 @@ int ov_fps_inline_edit(
     /* Position at bottom row and clear it */
     {
         char posbuf[32];
-        int n = snprintf(posbuf, sizeof(posbuf),
-                         "\033[%d;1H\033[2K", trows);
+        int n = snprintf(posbuf, sizeof(posbuf), "\033[%d;1H\033[2K", trows);
         if(n > 0)
         {
             if(write(STDOUT_FILENO,
@@ -161,9 +157,7 @@ int ov_fps_inline_edit(
         char prompt[512];
         int n = snprintf(prompt, sizeof(prompt),
                          "\033[1;31m"
-                         " [%s] %s = %s  (read-only)"
-                         "\033[0m",
-                         tlabel, display_kw, curval);
+                         " [%s] %s = %s  (read-only)" "\033[0m", tlabel, display_kw, curval);
         if(n > 0)
         {
             if(write(STDOUT_FILENO,
@@ -186,14 +180,11 @@ int ov_fps_inline_edit(
         int64_t newval = fp->val.i64[0] ? 0 : 1;
         fp->val.i64[0] = newval;
 
-        fps->md->signal |=
-            FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
         if(fp->fpflag & FPFLAG_SAVEONCHANGE)
         {
-            functionparameter_WriteParameterToDisk(
-                fps, pindex,
-                "setval", "milk-CTRL_toggle");
+            functionparameter_WriteParameterToDisk(fps, pindex, "setval", "milk-CTRL_toggle");
             functionparameter_SaveFPS2disk(fps);
         }
 
@@ -202,10 +193,7 @@ int ov_fps_inline_edit(
             char msg[256];
             int n = snprintf(msg, sizeof(msg),
                              "\033[1;32m"
-                             " [ON/OFF] %s => %s"
-                             "\033[0m",
-                             display_kw,
-                             newval ? "ON" : "OFF");
+                             " [ON/OFF] %s => %s" "\033[0m", display_kw, newval ? "ON" : "OFF");
             if(n > 0)
             {
                 if(write(STDOUT_FILENO,
@@ -229,9 +217,7 @@ int ov_fps_inline_edit(
                          " [%s] %s"
                          "\033[0m"
                          " (was: "
-                         "\033[33m%s\033[0m"
-                         ") new value: ",
-                         tlabel, display_kw, curval);
+                         "\033[33m%s\033[0m" ") new value: ", tlabel, display_kw, curval);
         if(n > 0)
         {
             if(write(STDOUT_FILENO,
@@ -320,9 +306,7 @@ int ov_fps_inline_edit(
                     fps, pindex, buf) != 0)
         {
             /* Show error briefly */
-            const char errmsg[] =
-                "\033[1;31m  ERROR: invalid value"
-                "\033[0m";
+            const char errmsg[] = "\033[1;31m  ERROR: invalid value" "\033[0m";
             if(write(STDOUT_FILENO,
                      errmsg, sizeof(errmsg) - 1)
                     < 0) {}
@@ -331,8 +315,7 @@ int ov_fps_inline_edit(
         else
         {
             /* Signal update */
-            fps->md->signal |=
-                FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+            fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
             /* Processinfo change tracking */
             if(strncmp(
@@ -346,9 +329,7 @@ int ov_fps_inline_edit(
             if(fp->fpflag & FPFLAG_SAVEONCHANGE)
             {
                 functionparameter_WriteParameterToDisk(
-                    fps, pindex,
-                    "setval",
-                    "milk-CTRL_SetParamValue");
+                    fps, pindex, "setval", "milk-CTRL_SetParamValue");
                 functionparameter_SaveFPS2disk(fps);
             }
         }

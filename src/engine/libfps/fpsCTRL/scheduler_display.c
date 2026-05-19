@@ -33,13 +33,8 @@ errno_t fpsCTRL_scheduler_display(
             fpsCTRLvar->milkseq_state = milkseq_connect(names[0]);
             if(fpsCTRLvar->milkseq_state)
             {
-                strncpy(fpsCTRLvar->milkseq_name,
-                        names[0],
-                        sizeof(fpsCTRLvar->milkseq_name)
-                        - 1);
-                fpsCTRLvar->milkseq_name[
-                sizeof(fpsCTRLvar->milkseq_name)
-                - 1] = '\0';
+                strncpy(fpsCTRLvar->milkseq_name, names[0], sizeof(fpsCTRLvar->milkseq_name) - 1);
+                fpsCTRLvar->milkseq_name[sizeof(fpsCTRLvar->milkseq_name) - 1] = '\0';
             }
         }
     }
@@ -58,10 +53,8 @@ errno_t fpsCTRL_scheduler_display(
     {
         free(fpsCTRLvar->sched_sort_eval);
         free(fpsCTRLvar->sched_sort_index);
-        fpsCTRLvar->sched_sort_eval =
-            (double *) malloc(sizeof(double) * need_cap);
-        fpsCTRLvar->sched_sort_index =
-            (long *) malloc(sizeof(long) * need_cap);
+        fpsCTRLvar->sched_sort_eval = (double *) malloc(sizeof(double) * need_cap);
+        fpsCTRLvar->sched_sort_index = (long *) malloc(sizeof(long) * need_cap);
         fpsCTRLvar->sched_sort_cap = need_cap;
     }
     double *sort_evalarray = fpsCTRLvar->sched_sort_eval;
@@ -113,16 +106,13 @@ errno_t fpsCTRL_scheduler_display(
             }
 
             // measure age since submission
-            tdiff =  timespec_diff(state->tasklist[fpscmd_idx].creationtime,
-                                   tnow);
+            tdiff =  timespec_diff(state->tasklist[fpscmd_idx].creationtime, tnow);
             double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             TUI_printfw("%6.2f s ", tdiffv);
 
             if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_RUNNING)
             {
-                tdiff =  timespec_diff(
-                             state->tasklist[fpscmd_idx].activationtime,
-                             tnow);
+                tdiff =  timespec_diff(state->tasklist[fpscmd_idx].activationtime, tnow);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                 TUI_printfw(" %6.2f s ", tdiffv);
             }
@@ -169,8 +159,7 @@ errno_t fpsCTRL_scheduler_display(
 
             TUI_printfw("[Q:%02d P:%02d] %4d",
                         state->tasklist[fpscmd_idx].queue,
-                        state->queuelist[state->tasklist[fpscmd_idx].queue].priority,
-                        fpscmd_idx);
+                        state->queuelist[state->tasklist[fpscmd_idx].queue].priority, fpscmd_idx);
 
             if(state->tasklist[fpscmd_idx].status & FPSTASK_STATUS_RECEIVED)
             {

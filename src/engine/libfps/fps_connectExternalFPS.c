@@ -19,9 +19,7 @@ int functionparameter_ConnectExternalFPS(
     FPS *FPSext)
 {
     fps->parray[pindex].info.fps.FPSNBparamMAX =
-        fps_connect(fps->parray[pindex].val.string[0],
-                    FPSext,
-                    FPSCONNECT_SIMPLE);
+        fps_connect(fps->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE);
 
     fps->parray[pindex].info.fps.FPSNBparamActive = 0;
     fps->parray[pindex].info.fps.FPSNBparamUsed   = 0;

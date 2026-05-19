@@ -93,10 +93,7 @@ static void json_escape_str(
         }
         else if(c < 0x20)
         {
-            int n = snprintf(buf + bi,
-                             bufsz - bi,
-                             "\\u%04x",
-                             (unsigned int)c);
+            int n = snprintf(buf + bi, bufsz - bi, "\\u%04x", (unsigned int)c);
             if(n > 0)
             {
                 bi += (size_t)n;
@@ -134,8 +131,7 @@ static int emit_fps_json_body(
     int        indent)
 {
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
-    function_parameter_struct_shmdirname(
-        shmdname);
+    function_parameter_struct_shmdirname(shmdname);
 
     DIR *d = opendir(shmdname);
     if(d == NULL)
@@ -158,16 +154,14 @@ static int emit_fps_json_body(
     struct dirent *de;
     while((de = readdir(d)) != NULL)
     {
-        char *sfx = strstr(de->d_name,
-                           ".fps.shm");
+        char *sfx = strstr(de->d_name, ".fps.shm");
         if(sfx == NULL)
         {
             continue;
         }
 
         char fpsname[STRINGMAXLEN_FPS_NAME];
-        size_t nlen = (size_t)(sfx
-                               - de->d_name);
+        size_t nlen = (size_t)(sfx - de->d_name);
         if(nlen >= sizeof(fpsname))
         {
             continue;
@@ -183,10 +177,7 @@ static int emit_fps_json_body(
 
         FPS fps;
         fps.SMfd = -1;
-        int rc =
-            fps_connect(
-                fpsname, &fps,
-                FPSCONNECT_SIMPLE);
+        int rc = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
         if(rc == -1 || fps.md == NULL)
         {
             continue;
@@ -207,29 +198,21 @@ static int emit_fps_json_body(
 
         char nesc[STRINGMAXLEN_FPS_NAME];
         char desc_esc[512];
-        json_escape_str(nesc,
-                        sizeof(nesc),
-                        fpsname);
-        json_escape_str(desc_esc,
-                        sizeof(desc_esc),
-                        fps.md->description);
+        json_escape_str(nesc, sizeof(nesc), fpsname);
+        json_escape_str(desc_esc, sizeof(desc_esc), fps.md->description);
 
         if(count > 0)
         {
             printf(",\n");
         }
         printf("%s{\n", pad);
-        printf("%s  \"name\": \"%s\",\n",
-               pad, nesc);
-        printf("%s  \"status\": \"%s\",\n",
-               pad, ststr);
-        printf("%s  \"description\": \"%s\"\n",
-               pad, desc_esc);
+        printf("%s  \"name\": \"%s\",\n", pad, nesc);
+        printf("%s  \"status\": \"%s\",\n", pad, ststr);
+        printf("%s  \"description\": \"%s\"\n", pad, desc_esc);
         printf("%s}", pad);
 
         count++;
-        fps_disconnect(
-            &fps);
+        fps_disconnect(&fps);
     }
     closedir(d);
     return count;
@@ -253,8 +236,7 @@ errno_t cli_cmd_fpslist(void)
 
     for(int a = 1; a < data.cmdNBarg; a++)
     {
-        const char *tok =
-            data.cmdargtoken[a].val.string;
+        const char *tok = data.cmdargtoken[a].val.string;
         if(strcmp(tok, "--json") == 0)
         {
             jsonmode = 1;
@@ -275,40 +257,32 @@ errno_t cli_cmd_fpslist(void)
 
     /* Table mode (default) */
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
-    function_parameter_struct_shmdirname(
-        shmdname);
+    function_parameter_struct_shmdirname(shmdname);
 
-    printf("%-24s %-12s %s\n",
-           "FPS NAME", "STATUS",
-           "DESCRIPTION");
+    printf("%-24s %-12s %s\n", "FPS NAME", "STATUS", "DESCRIPTION");
     printf("%-24s %-12s %s\n",
            "------------------------",
-           "------------",
-           "--------------------"
-           "--------------------");
+           "------------", "--------------------" "--------------------");
 
     DIR           *d;
     struct dirent *de;
     d = opendir(shmdname);
     if(d == NULL)
     {
-        printf("Cannot open SHM dir: %s\n",
-               shmdname);
+        printf("Cannot open SHM dir: %s\n", shmdname);
         return RETURN_FAILURE;
     }
 
     while((de = readdir(d)) != NULL)
     {
-        char *sfx = strstr(de->d_name,
-                           ".fps.shm");
+        char *sfx = strstr(de->d_name, ".fps.shm");
         if(sfx == NULL)
         {
             continue;
         }
 
         char fpsname[STRINGMAXLEN_FPS_NAME];
-        size_t nlen = (size_t)(sfx
-                               - de->d_name);
+        size_t nlen = (size_t)(sfx - de->d_name);
         if(nlen >= sizeof(fpsname))
         {
             continue;
@@ -324,14 +298,10 @@ errno_t cli_cmd_fpslist(void)
 
         FPS fps;
         fps.SMfd = -1;
-        int rc =
-            fps_connect(
-                fpsname, &fps,
-                FPSCONNECT_SIMPLE);
+        int rc = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
         if(rc == -1 || fps.md == NULL)
         {
-            printf("%-24s %-12s %s\n",
-                   fpsname, "UNAVAIL", "");
+            printf("%-24s %-12s %s\n", fpsname, "UNAVAIL", "");
             continue;
         }
 
@@ -340,28 +310,22 @@ errno_t cli_cmd_fpslist(void)
         if(st &
            FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
         {
-            strncpy(ststr, "RUN",
-                    sizeof(ststr) - 1);
+            strncpy(ststr, "RUN", sizeof(ststr) - 1);
         }
         else if(st &
                 FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
         {
-            strncpy(ststr, "CONF_ON",
-                    sizeof(ststr) - 1);
+            strncpy(ststr, "CONF_ON", sizeof(ststr) - 1);
         }
         else
         {
-            strncpy(ststr, "IDLE",
-                    sizeof(ststr) - 1);
+            strncpy(ststr, "IDLE", sizeof(ststr) - 1);
         }
         ststr[sizeof(ststr) - 1] = '\0';
 
-        printf("%-24s %-12s %s\n",
-               fpsname, ststr,
-               fps.md->description);
+        printf("%-24s %-12s %s\n", fpsname, ststr, fps.md->description);
 
-        fps_disconnect(
-            &fps);
+        fps_disconnect(&fps);
     }
     closedir(d);
 
@@ -393,15 +357,13 @@ errno_t cli_cmd_fpsdump(void)
 
     if(data.cmdNBarg < 2)
     {
-        printf("Usage: fpsdump [-t] [--json] "
-               "<fpsname>\n");
+        printf("Usage: fpsdump [-t] [--json] " "<fpsname>\n");
         return RETURN_FAILURE;
     }
 
     for(int a = 1; a < data.cmdNBarg; a++)
     {
-        const char *tok =
-            data.cmdargtoken[a].val.string;
+        const char *tok = data.cmdargtoken[a].val.string;
         if(strcmp(tok, "-t") == 0)
         {
             tabmode = 1;
@@ -418,33 +380,25 @@ errno_t cli_cmd_fpsdump(void)
 
     if(tabmode && jsonmode)
     {
-        printf("fpsdump: -t and --json are "
-               "mutually exclusive\n");
+        printf("fpsdump: -t and --json are " "mutually exclusive\n");
         return RETURN_FAILURE;
     }
 
     if(arg_fpsname < 0)
     {
-        printf("Usage: fpsdump [-t] [--json] "
-               "<fpsname>\n");
+        printf("Usage: fpsdump [-t] [--json] " "<fpsname>\n");
         return RETURN_FAILURE;
     }
 
-    const char *fpsname =
-        data.cmdargtoken[arg_fpsname]
-            .val.string;
+    const char *fpsname = data.cmdargtoken[arg_fpsname] .val.string;
 
     FPS fps;
     fps.SMfd = -1;
-    int rc =
-        fps_connect(
-            fpsname, &fps,
-            FPSCONNECT_SIMPLE);
+    int rc = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     if(rc == -1 || fps.md == NULL
        || fps.parray == NULL)
     {
-        printf("fpsdump: cannot connect "
-               "to FPS '%s'\n", fpsname);
+        printf("fpsdump: cannot connect " "to FPS '%s'\n", fpsname);
         return RETURN_FAILURE;
     }
 
@@ -460,55 +414,35 @@ errno_t cli_cmd_fpsdump(void)
             continue;
         }
         char vstr[512];
-        functionparameter_GetParamValueString(
-            &fps.parray[pi],
-            vstr,
-            (int) sizeof(vstr));
+        functionparameter_GetParamValueString(&fps.parray[pi], vstr, (int) sizeof(vstr));
 
         if(tabmode)
         {
             const char *tname = "UNKNOWN";
             switch(fps.parray[pi].type)
             {
-            case FPTYPE_INT64:
-                tname = "INT64"; break;
-            case FPTYPE_FLOAT64:
-                tname = "FLOAT64"; break;
-            case FPTYPE_FLOAT32:
-                tname = "FLOAT32"; break;
-            case FPTYPE_STRING:
-                tname = "STRING"; break;
-            case FPTYPE_ONOFF:
-                tname = "ONOFF"; break;
-            case FPTYPE_FILENAME:
-                tname = "FILENAME"; break;
-            case FPTYPE_FITSFILENAME:
-                tname = "FITSFILENAME"; break;
-            case FPTYPE_EXECFILENAME:
-                tname = "EXECFILENAME"; break;
-            case FPTYPE_DIRNAME:
-                tname = "DIRNAME"; break;
-            case FPTYPE_STREAMNAME:
-                tname = "STREAMNAME"; break;
-            case FPTYPE_FPSNAME:
-                tname = "FPSNAME"; break;
-            case FPTYPE_TIMESPEC:
-                tname = "TIMESPEC"; break;
-            case FPTYPE_PID:
-                tname = "PID"; break;
-            default:
-                break;
+            case FPTYPE_INT64: tname = "INT64"; break;
+            case FPTYPE_FLOAT64: tname = "FLOAT64"; break;
+            case FPTYPE_FLOAT32: tname = "FLOAT32"; break;
+            case FPTYPE_STRING: tname = "STRING"; break;
+            case FPTYPE_ONOFF: tname = "ONOFF"; break;
+            case FPTYPE_FILENAME: tname = "FILENAME"; break;
+            case FPTYPE_FITSFILENAME: tname = "FITSFILENAME"; break;
+            case FPTYPE_EXECFILENAME: tname = "EXECFILENAME"; break;
+            case FPTYPE_DIRNAME: tname = "DIRNAME"; break;
+            case FPTYPE_STREAMNAME: tname = "STREAMNAME"; break;
+            case FPTYPE_FPSNAME: tname = "FPSNAME"; break;
+            case FPTYPE_TIMESPEC: tname = "TIMESPEC"; break;
+            case FPTYPE_PID: tname = "PID"; break;
+            default: break;
             }
-            printf("%s\t%s\t%s\n",
-                   fps.parray[pi].keyword[0],
-                   tname, vstr);
+            printf("%s\t%s\t%s\n", fps.parray[pi].keyword[0], tname, vstr);
         }
         else if(jsonmode)
         {
             char kesc[128];
             char sesc[1024];
-            json_escape_str(kesc, sizeof(kesc),
-                fps.parray[pi].keyword[0]);
+            json_escape_str(kesc, sizeof(kesc), fps.parray[pi].keyword[0]);
             if(!first_json_item)
             {
                 printf(",\n");
@@ -517,62 +451,44 @@ errno_t cli_cmd_fpsdump(void)
             switch(fps.parray[pi].type)
             {
             case FPTYPE_INT64:
-                printf("  \"%s\": %lld",
-                    kesc,
-                    (long long)
-                    fps.parray[pi].val.i64[0]);
+                printf("  \"%s\": %lld", kesc, (long long) fps.parray[pi].val.i64[0]);
                 break;
             case FPTYPE_FLOAT64:
             {
-                double v =
-                    fps.parray[pi].val.f64[0];
+                double v = fps.parray[pi].val.f64[0];
                 if(isfinite(v))
                 {
-                    printf("  \"%s\": %g",
-                           kesc, v);
+                    printf("  \"%s\": %g", kesc, v);
                 }
                 else
                 {
-                    printf("  \"%s\": null",
-                           kesc);
+                    printf("  \"%s\": null", kesc);
                 }
                 break;
             }
             case FPTYPE_FLOAT32:
             {
-                float v =
-                    fps.parray[pi].val.f32[0];
+                float v = fps.parray[pi].val.f32[0];
                 if(isfinite(v))
                 {
-                    printf("  \"%s\": %g",
-                           kesc, (double)v);
+                    printf("  \"%s\": %g", kesc, (double)v);
                 }
                 else
                 {
-                    printf("  \"%s\": null",
-                           kesc);
+                    printf("  \"%s\": null", kesc);
                 }
                 break;
             }
-            case FPTYPE_ONOFF:
-                printf("  \"%s\": %d",
-                    kesc,
-                    (int)
-                    fps.parray[pi].val.i64[0]);
+            case FPTYPE_ONOFF: printf("  \"%s\": %d", kesc, (int) fps.parray[pi].val.i64[0]);
                 break;
-            default:
-                json_escape_str(sesc,
-                    sizeof(sesc), vstr);
-                printf("  \"%s\": \"%s\"",
-                       kesc, sesc);
+            default: json_escape_str(sesc, sizeof(sesc), vstr);
+                printf("  \"%s\": \"%s\"", kesc, sesc);
                 break;
             }
         }
         else
         {
-            printf("%s=%s\n",
-                   fps.parray[pi].keyword[0],
-                   vstr);
+            printf("%s=%s\n", fps.parray[pi].keyword[0], vstr);
         }
     }
 
@@ -624,8 +540,7 @@ static int emit_streams_json_body(
     struct dirent *de;
     while((de = readdir(d)) != NULL)
     {
-        char *sfx = strstr(de->d_name,
-                           ".im.shm");
+        char *sfx = strstr(de->d_name, ".im.shm");
         if(sfx == NULL)
         {
             continue;
@@ -637,8 +552,7 @@ static int emit_streams_json_body(
         }
 
         char sname[256];
-        size_t nlen = (size_t)(sfx
-                               - de->d_name);
+        size_t nlen = (size_t)(sfx - de->d_name);
         if(nlen >= sizeof(sname))
         {
             continue;
@@ -654,8 +568,7 @@ static int emit_streams_json_body(
 
         IMAGE img;
         memset(&img, 0, sizeof(IMAGE));
-        errno_t sret =
-            ImageStreamIO_openIm(&img, sname);
+        errno_t sret = ImageStreamIO_openIm(&img, sname);
         if(sret != IMAGESTREAMIO_SUCCESS
            || img.md == NULL)
         {
@@ -664,28 +577,21 @@ static int emit_streams_json_body(
 
         char nesc[256];
         char tesc[64];
-        const char *dtype_name =
-            ImageStreamIO_typename(
-                img.md->datatype);
+        const char *dtype_name = ImageStreamIO_typename(img.md->datatype);
         if(dtype_name == NULL)
         {
             dtype_name = "?";
         }
-        json_escape_str(nesc,
-                        sizeof(nesc), sname);
-        json_escape_str(tesc,
-                        sizeof(tesc),
-                        dtype_name);
+        json_escape_str(nesc, sizeof(nesc), sname);
+        json_escape_str(tesc, sizeof(tesc), dtype_name);
 
         if(count > 0)
         {
             printf(",\n");
         }
         printf("%s{\n", pad);
-        printf("%s  \"name\": \"%s\",\n",
-               pad, nesc);
-        printf("%s  \"naxis\": %u,\n",
-               pad, img.md->naxis);
+        printf("%s  \"name\": \"%s\",\n", pad, nesc);
+        printf("%s  \"naxis\": %u,\n", pad, img.md->naxis);
         printf("%s  \"size\": [", pad);
         for(int ax = 0;
             ax < img.md->naxis; ax++)
@@ -697,11 +603,8 @@ static int emit_streams_json_body(
             printf("%u", img.md->size[ax]);
         }
         printf("],\n");
-        printf("%s  \"type\": \"%s\",\n",
-               pad, tesc);
-        printf("%s  \"cnt0\": %lu\n",
-               pad,
-               (unsigned long) img.md->cnt0);
+        printf("%s  \"type\": \"%s\",\n", pad, tesc);
+        printf("%s  \"cnt0\": %lu\n", pad, (unsigned long) img.md->cnt0);
         printf("%s}", pad);
 
         count++;
@@ -731,8 +634,7 @@ errno_t cli_cmd_streamlist(void)
 
     for(int a = 1; a < data.cmdNBarg; a++)
     {
-        const char *tok =
-            data.cmdargtoken[a].val.string;
+        const char *tok = data.cmdargtoken[a].val.string;
         if(strcmp(tok, "-l") == 0)
         {
             longmode = 1;
@@ -746,9 +648,7 @@ errno_t cli_cmd_streamlist(void)
     }
     if(argpos < data.cmdNBarg)
     {
-        pat =
-            data.cmdargtoken[argpos]
-                .val.string;
+        pat = data.cmdargtoken[argpos] .val.string;
     }
 
     DIR           *d;
@@ -756,8 +656,7 @@ errno_t cli_cmd_streamlist(void)
     d = opendir(dcshmdir);
     if(d == NULL)
     {
-        printf("Cannot open SHM dir: %s\n",
-               dcshmdir);
+        printf("Cannot open SHM dir: %s\n", dcshmdir);
         return RETURN_FAILURE;
     }
 
@@ -766,8 +665,7 @@ errno_t cli_cmd_streamlist(void)
 
     while((de = readdir(d)) != NULL)
     {
-        char *sfx = strstr(de->d_name,
-                           ".im.shm");
+        char *sfx = strstr(de->d_name, ".im.shm");
         if(sfx == NULL)
         {
             continue;
@@ -779,8 +677,7 @@ errno_t cli_cmd_streamlist(void)
         }
 
         char sname[256];
-        size_t nlen = (size_t)(sfx
-                               - de->d_name);
+        size_t nlen = (size_t)(sfx - de->d_name);
         if(nlen >= sizeof(sname))
         {
             continue;
@@ -802,9 +699,7 @@ errno_t cli_cmd_streamlist(void)
         {
             IMAGE img;
             memset(&img, 0, sizeof(IMAGE));
-            errno_t sret =
-                ImageStreamIO_openIm(
-                    &img, sname);
+            errno_t sret = ImageStreamIO_openIm(&img, sname);
             if(sret == IMAGESTREAMIO_SUCCESS
                && img.md != NULL)
             {
@@ -812,18 +707,13 @@ errno_t cli_cmd_streamlist(void)
                 {
                     char nesc[256];
                     char tesc[64];
-                    const char *dtype_name =
-                        ImageStreamIO_typename(
-                            img.md->datatype);
+                    const char *dtype_name = ImageStreamIO_typename(img.md->datatype);
                     if(dtype_name == NULL)
                     {
                         dtype_name = "?";
                     }
-                    json_escape_str(nesc,
-                        sizeof(nesc), sname);
-                    json_escape_str(tesc,
-                        sizeof(tesc),
-                        dtype_name);
+                    json_escape_str(nesc, sizeof(nesc), sname);
+                    json_escape_str(tesc, sizeof(tesc), dtype_name);
                     if(!first_json_item)
                     {
                         printf(",\n");
@@ -831,12 +721,8 @@ errno_t cli_cmd_streamlist(void)
                     first_json_item = 0;
 
                     printf("  {\n");
-                    printf(
-                        "    \"name\": \"%s\",\n",
-                        nesc);
-                    printf(
-                        "    \"naxis\": %u,\n",
-                        img.md->naxis);
+                    printf("    \"name\": \"%s\",\n", nesc);
+                    printf("    \"naxis\": %u,\n", img.md->naxis);
                     printf("    \"size\": [");
                     for(int ax = 0;
                         ax < img.md->naxis;
@@ -846,17 +732,11 @@ errno_t cli_cmd_streamlist(void)
                         {
                             printf(", ");
                         }
-                        printf("%u",
-                               img.md->size[ax]);
+                        printf("%u", img.md->size[ax]);
                     }
                     printf("],\n");
-                    printf(
-                        "    \"type\": \"%s\",\n",
-                        tesc);
-                    printf(
-                        "    \"cnt0\": %lu\n",
-                        (unsigned long)
-                        img.md->cnt0);
+                    printf("    \"type\": \"%s\",\n", tesc);
+                    printf("    \"cnt0\": %lu\n", (unsigned long) img.md->cnt0);
                     printf("  }");
                 }
                 else
@@ -864,36 +744,23 @@ errno_t cli_cmd_streamlist(void)
                     char szstr[64];
                     if(img.md->naxis == 1)
                     {
-                        snprintf(
-                            szstr, sizeof(szstr),
-                            "%u",
-                            img.md->size[0]);
+                        snprintf(szstr, sizeof(szstr), "%u", img.md->size[0]);
                     }
                     else if(img.md->naxis == 2)
                     {
-                        snprintf(
-                            szstr, sizeof(szstr),
-                            "%ux%u",
-                            img.md->size[0],
-                            img.md->size[1]);
+                        snprintf(szstr, sizeof(szstr), "%ux%u", img.md->size[0], img.md->size[1]);
                     }
                     else
                     {
                         snprintf(
                             szstr, sizeof(szstr),
-                            "%ux%ux%u",
-                            img.md->size[0],
-                            img.md->size[1],
-                            img.md->size[2]);
+                            "%ux%ux%u", img.md->size[0], img.md->size[1], img.md->size[2]);
                     }
                     printf(
                         "%-24s %-12s %-7s "
                         "cnt0=%lu\n",
                         sname, szstr,
-                        ImageStreamIO_typename(
-                            img.md->datatype),
-                        (unsigned long)
-                        img.md->cnt0);
+                        ImageStreamIO_typename(img.md->datatype), (unsigned long) img.md->cnt0);
                 }
                 ImageStreamIO_closeIm(&img);
             }
@@ -901,8 +768,7 @@ errno_t cli_cmd_streamlist(void)
             {
                 if(!jsonmode)
                 {
-                    printf("%-24s UNAVAIL\n",
-                           sname);
+                    printf("%-24s UNAVAIL\n", sname);
                 }
             }
         }
@@ -957,8 +823,7 @@ static int emit_procs_json_body(int indent)
             continue;
         }
 
-        pid_t fpid =
-            pinfolist->PIDarray[pi];
+        pid_t fpid = pinfolist->PIDarray[pi];
         const char *state = "UNKNOWN";
         double freq = 0.0;
 
@@ -967,36 +832,24 @@ static int emit_procs_json_body(int indent)
             char pfn[512];
             char pdname[256];
             processinfo_procdirname(pdname);
-            snprintf(pfn, sizeof(pfn),
-                     "%s/proc.%d.shm",
-                     pdname, (int) fpid);
+            snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
             int pfd = -1;
-            PROCESSINFO *pi_shm =
-                processinfo_shm_link(
-                    pfn, &pfd);
+            PROCESSINFO *pi_shm = processinfo_shm_link(pfn, &pfd);
             if(pi_shm != MAP_FAILED
                && pi_shm != NULL)
             {
                 switch(pi_shm->CTRLval)
                 {
-                case PROCESSINFO_CTRLVAL_RUN:
-                    state = "ACTIVE"; break;
-                case PROCESSINFO_CTRLVAL_PAUSE:
-                    state = "PAUSED"; break;
-                case PROCESSINFO_CTRLVAL_EXIT:
-                    state = "STOPPED"; break;
-                default:
-                    state = "OTHER"; break;
+                case PROCESSINFO_CTRLVAL_RUN: state = "ACTIVE"; break;
+                case PROCESSINFO_CTRLVAL_PAUSE: state = "PAUSED"; break;
+                case PROCESSINFO_CTRLVAL_EXIT: state = "STOPPED"; break;
+                default: state = "OTHER"; break;
                 }
                 if(pi_shm->dtmedian_iter_ns > 0)
                 {
-                    freq =
-                        1.0e9
-                        / (double) pi_shm
-                              ->dtmedian_iter_ns;
+                    freq = 1.0e9 / (double) pi_shm ->dtmedian_iter_ns;
                 }
-                munmap(pi_shm,
-                       sizeof(PROCESSINFO));
+                munmap(pi_shm, sizeof(PROCESSINFO));
                 close(pfd);
             }
             else if(pfd >= 0)
@@ -1007,25 +860,18 @@ static int emit_procs_json_body(int indent)
 
         char nesc[256];
         char sesc[64];
-        json_escape_str(nesc, sizeof(nesc),
-                        pinfolist
-                            ->pnamearray[pi]);
-        json_escape_str(sesc, sizeof(sesc),
-                        state);
+        json_escape_str(nesc, sizeof(nesc), pinfolist ->pnamearray[pi]);
+        json_escape_str(sesc, sizeof(sesc), state);
 
         if(count > 0)
         {
             printf(",\n");
         }
         printf("%s{\n", pad);
-        printf("%s  \"name\": \"%s\",\n",
-               pad, nesc);
-        printf("%s  \"state\": \"%s\",\n",
-               pad, sesc);
-        printf("%s  \"pid\": %d,\n",
-               pad, (int) fpid);
-        printf("%s  \"freq_hz\": %g\n",
-               pad, freq);
+        printf("%s  \"name\": \"%s\",\n", pad, nesc);
+        printf("%s  \"state\": \"%s\",\n", pad, sesc);
+        printf("%s  \"pid\": %d,\n", pad, (int) fpid);
+        printf("%s  \"freq_hz\": %g\n", pad, freq);
         printf("%s}", pad);
         count++;
     }
@@ -1048,8 +894,7 @@ errno_t cli_cmd_proclist(void)
     int jsonmode = 0;
     for(int a = 1; a < data.cmdNBarg; a++)
     {
-        const char *tok =
-            data.cmdargtoken[a].val.string;
+        const char *tok = data.cmdargtoken[a].val.string;
         if(strcmp(tok, "-l") == 0)
         {
             longmode = 1;
@@ -1062,8 +907,7 @@ errno_t cli_cmd_proclist(void)
 
     if(pinfolist == NULL)
     {
-        printf("proclist: processinfo "
-               "not available\n");
+        printf("proclist: processinfo " "not available\n");
         return RETURN_FAILURE;
     }
 
@@ -1080,13 +924,11 @@ errno_t cli_cmd_proclist(void)
 
         if(!longmode && !jsonmode)
         {
-            printf("%s\n",
-                   pinfolist->pnamearray[pi]);
+            printf("%s\n", pinfolist->pnamearray[pi]);
         }
         else
         {
-            pid_t fpid =
-                pinfolist->PIDarray[pi];
+            pid_t fpid = pinfolist->PIDarray[pi];
             const char *state = "UNKNOWN";
             double freq = 0.0;
 
@@ -1095,37 +937,25 @@ errno_t cli_cmd_proclist(void)
                 char pfn[512];
                 char pdname[256];
                 processinfo_procdirname(pdname);
-                snprintf(pfn, sizeof(pfn),
-                         "%s/proc.%d.shm",
-                         pdname, (int) fpid);
+                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
                 int pfd = -1;
-                PROCESSINFO *pi_shm =
-                    processinfo_shm_link(
-                        pfn, &pfd);
+                PROCESSINFO *pi_shm = processinfo_shm_link(pfn, &pfd);
                 if(pi_shm != MAP_FAILED
                    && pi_shm != NULL)
                 {
                     switch(pi_shm->CTRLval)
                     {
-                    case PROCESSINFO_CTRLVAL_RUN:
-                        state = "ACTIVE"; break;
-                    case PROCESSINFO_CTRLVAL_PAUSE:
-                        state = "PAUSED"; break;
-                    case PROCESSINFO_CTRLVAL_EXIT:
-                        state = "STOPPED"; break;
-                    default:
-                        state = "OTHER"; break;
+                    case PROCESSINFO_CTRLVAL_RUN: state = "ACTIVE"; break;
+                    case PROCESSINFO_CTRLVAL_PAUSE: state = "PAUSED"; break;
+                    case PROCESSINFO_CTRLVAL_EXIT: state = "STOPPED"; break;
+                    default: state = "OTHER"; break;
                     }
                     if(pi_shm->dtmedian_iter_ns
                        > 0)
                     {
-                        freq =
-                            1.0e9
-                            / (double) pi_shm
-                                ->dtmedian_iter_ns;
+                        freq = 1.0e9 / (double) pi_shm ->dtmedian_iter_ns;
                     }
-                    munmap(pi_shm,
-                           sizeof(PROCESSINFO));
+                    munmap(pi_shm, sizeof(PROCESSINFO));
                     close(pfd);
                 }
                 else if(pfd >= 0)
@@ -1138,33 +968,23 @@ errno_t cli_cmd_proclist(void)
             {
                 char nesc[256];
                 char sesc[64];
-                json_escape_str(nesc,
-                    sizeof(nesc),
-                    pinfolist->pnamearray[pi]);
-                json_escape_str(sesc,
-                    sizeof(sesc), state);
+                json_escape_str(nesc, sizeof(nesc), pinfolist->pnamearray[pi]);
+                json_escape_str(sesc, sizeof(sesc), state);
                 if(!first_json_item)
                 {
                     printf(",\n");
                 }
                 first_json_item = 0;
                 printf("  {\n");
-                printf("    \"name\": \"%s\",\n",
-                       nesc);
-                printf("    \"state\": \"%s\",\n",
-                       sesc);
-                printf("    \"pid\": %d,\n",
-                       (int) fpid);
-                printf("    \"freq_hz\": %g\n",
-                       freq);
+                printf("    \"name\": \"%s\",\n", nesc);
+                printf("    \"state\": \"%s\",\n", sesc);
+                printf("    \"pid\": %d,\n", (int) fpid);
+                printf("    \"freq_hz\": %g\n", freq);
                 printf("  }");
             }
             else
             {
-                printf(
-                    "%-24s %-8s %8.1f Hz\n",
-                    pinfolist->pnamearray[pi],
-                    state, freq);
+                printf("%-24s %-8s %8.1f Hz\n", pinfolist->pnamearray[pi], state, freq);
             }
         }
     }
@@ -1200,8 +1020,7 @@ errno_t cli_cmd_milkquery(void)
 
     for(int a = 1; a < data.cmdNBarg; a++)
     {
-        const char *tok =
-            data.cmdargtoken[a].val.string;
+        const char *tok = data.cmdargtoken[a].val.string;
         if(strcmp(tok, "--fps") == 0)
         {
             do_fps = 1;
@@ -1209,9 +1028,7 @@ errno_t cli_cmd_milkquery(void)
                && data.cmdargtoken[a + 1]
                       .val.string[0] != '-')
             {
-                fps_pat =
-                    data.cmdargtoken[a + 1]
-                        .val.string;
+                fps_pat = data.cmdargtoken[a + 1] .val.string;
                 a++;
             }
         }
@@ -1222,9 +1039,7 @@ errno_t cli_cmd_milkquery(void)
                && data.cmdargtoken[a + 1]
                       .val.string[0] != '-')
             {
-                stream_pat =
-                    data.cmdargtoken[a + 1]
-                        .val.string;
+                stream_pat = data.cmdargtoken[a + 1] .val.string;
                 a++;
             }
         }
@@ -1234,14 +1049,9 @@ errno_t cli_cmd_milkquery(void)
         }
         else
         {
+            fprintf(stderr, "milkquery: unknown argument " "'%s'\n", tok);
             fprintf(stderr,
-                "milkquery: unknown argument "
-                "'%s'\n", tok);
-            fprintf(stderr,
-                "usage: milkquery "
-                "[--fps [pattern]] "
-                "[--streams [pattern]] "
-                "[--procs]\n");
+                "usage: milkquery " "[--fps [pattern]] " "[--streams [pattern]] " "[--procs]\n");
             return RETURN_FAILURE;
         }
     }
@@ -1270,8 +1080,7 @@ errno_t cli_cmd_milkquery(void)
     {
         if(need_comma) { printf(",\n"); }
         printf("  \"streams\": [\n");
-        emit_streams_json_body(
-            stream_pat, 4);
+        emit_streams_json_body(stream_pat, 4);
         printf("\n  ]");
         need_comma = 1;
     }

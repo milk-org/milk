@@ -7,6 +7,7 @@ trigger: always_on
   explaining what the block is doing.
 - Keep lines short, no more than 100 characters.
   This limit applies to both C source and agent `.md` files.
+- **Do not artificially split lines**: Avoid unnecessary vertical fragmentation. If an expression, variable assignment, or function call fits entirely within the 100-character limit, it must be written on a single line. Do not split short expressions across multiple lines, unless mandated by function prototype rules.
 - Factorize code as much as possible. Copy-paste coding
   is a red flag — extract shared logic into helper
   functions or macros instead of duplicating it.

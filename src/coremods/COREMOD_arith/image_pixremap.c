@@ -22,16 +22,13 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // input image
-static char insname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char insname[FUNCTION_PARAMETER_STRMAXLEN];
 
 // mapping array
-static char mapsname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char mapsname[FUNCTION_PARAMETER_STRMAXLEN];
 
 // output image
-static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN];
 static int32_t outshared = 0;
 
 #define FPS_PARAMS(X) \
@@ -85,10 +82,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     if(outshared == 1)
     {
         imgid_free(&imgout);
-        imgout = stream_connect_create_2D(outimname,
-            xsize,
-            ysize,
-            imgin.md->datatype);
+        imgout = stream_connect_create_2D(outimname, xsize, ysize, imgin.md->datatype);
     }
     else
     {
@@ -115,10 +109,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     printf("mapping table has %lu elements\n", nbpix);
 
-    uint64_t * MILK_RESTRICT map_outpixindex =
-        (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
-    uint64_t * MILK_RESTRICT map_inpixindex =
-        (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t * MILK_RESTRICT map_outpixindex = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t * MILK_RESTRICT map_inpixindex = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
 
     nbpix = 0;
     for(uint64_t ii = 0; ii < (uint64_t)xsize*ysize; ii++)
@@ -150,9 +142,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         switch ( imgin.md->datatype)
         {
-            FOREACH_REAL_DATATYPE(REMAP_CASE_)
-        default:
-            PRINT_ERROR("unsupported datatype");
+            FOREACH_REAL_DATATYPE(REMAP_CASE_) default: PRINT_ERROR("unsupported datatype");
             break;
         }
 #undef REMAP_CASE_
@@ -160,9 +150,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    free(map_outpixindex);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  free(map_outpixindex);
     free(map_inpixindex);
     imgid_free(&imgin);
     imgid_free(&imgmap);
@@ -177,21 +165,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMODE_arith__pixremap()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

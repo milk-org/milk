@@ -189,13 +189,10 @@ void cli_highlight_redisplay(void)
             int back = rl_point;
             if(back > 0)
             {
-                fprintf(rl_outstream,
-                        "\033[%dD", back);
+                fprintf(rl_outstream, "\033[%dD", back);
             }
         }
-        fprintf(rl_outstream,
-                "\033[2;32m%s\033[0m",
-                rl_line_buffer);
+        fprintf(rl_outstream, "\033[2;32m%s\033[0m", rl_line_buffer);
         fprintf(rl_outstream, "\033[u");
         fflush(rl_outstream);
         return;
@@ -208,8 +205,7 @@ void cli_highlight_redisplay(void)
     {
         fwlen = 199;
     }
-    memcpy(firstword, rl_line_buffer + ws,
-           (size_t) fwlen);
+    memcpy(firstword, rl_line_buffer + ws, (size_t) fwlen);
     firstword[fwlen] = '\0';
 
     /* Pick color */
@@ -247,12 +243,10 @@ void cli_highlight_redisplay(void)
         int back = rl_point - ws;
         if(back > 0)
         {
-            fprintf(rl_outstream,
-                    "\033[%dD", back);
+            fprintf(rl_outstream, "\033[%dD", back);
         }
     }
-    fprintf(rl_outstream, "%s%s\033[0m",
-            col, firstword);
+    fprintf(rl_outstream, "%s%s\033[0m", col, firstword);
     fprintf(rl_outstream, "\033[u");  /* restore */
     fflush(rl_outstream);
 }

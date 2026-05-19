@@ -161,8 +161,7 @@ int starts_with(
     const char *line,
     const char *prefix)
 {
-    return strncmp(line, prefix,
-                   strlen(prefix)) == 0;
+    return strncmp(line, prefix, strlen(prefix)) == 0;
 }
 
 
@@ -188,8 +187,7 @@ int cli_find_in_path(
     {
         if(access(name, X_OK) == 0)
         {
-            strncpy(pathbuf, name,
-                    pathbuf_sz - 1);
+            strncpy(pathbuf, name, pathbuf_sz - 1);
             pathbuf[pathbuf_sz - 1] = '\0';
             return 1;
         }
@@ -199,26 +197,21 @@ int cli_find_in_path(
     const char *PATH_env = getenv("PATH");
     if(PATH_env == NULL)
     {
-        PATH_env =
-            "/usr/local/bin:"
-            "/usr/bin:/bin";
+        PATH_env = "/usr/local/bin:" "/usr/bin:/bin";
     }
 
     char path_copy[4096];
-    strncpy(path_copy, PATH_env,
-            sizeof(path_copy) - 1);
+    strncpy(path_copy, PATH_env, sizeof(path_copy) - 1);
     path_copy[sizeof(path_copy) - 1] = '\0';
 
     char *dir = strtok(path_copy, ":");
     while(dir != NULL)
     {
         char candidate[1024];
-        snprintf(candidate, sizeof(candidate),
-                 "%s/%s", dir, name);
+        snprintf(candidate, sizeof(candidate), "%s/%s", dir, name);
         if(access(candidate, X_OK) == 0)
         {
-            strncpy(pathbuf, candidate,
-                    pathbuf_sz - 1);
+            strncpy(pathbuf, candidate, pathbuf_sz - 1);
             pathbuf[pathbuf_sz - 1] = '\0';
             return 1;
         }
@@ -246,15 +239,11 @@ int eval_cond_line(
     int        skip)
 {
     char cl[STRINGMAXLEN_CLICMDLINE];
-    strncpy(cl, raw,
-            STRINGMAXLEN_CLICMDLINE - 1);
+    strncpy(cl, raw, STRINGMAXLEN_CLICMDLINE - 1);
     cl[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    cli_expand_fpsvar(
-        cl, STRINGMAXLEN_CLICMDLINE);
-    cli_expand_env(
-        cl, STRINGMAXLEN_CLICMDLINE);
-    cli_expand_arith(
-        cl, STRINGMAXLEN_CLICMDLINE);
+    cli_expand_fpsvar(cl, STRINGMAXLEN_CLICMDLINE);
+    cli_expand_env(cl, STRINGMAXLEN_CLICMDLINE);
+    cli_expand_arith(cl, STRINGMAXLEN_CLICMDLINE);
 
     const char *p = strip_ws(cl);
     p += skip;
@@ -352,8 +341,7 @@ int cli_script_intercept(const char *line)
         {
             /* End of heredoc — assign */
             heredoc_buf[heredoc_pos] = '\0';
-            cli_var_set(heredoc_var,
-                        heredoc_buf);
+            cli_var_set(heredoc_var, heredoc_buf);
             heredoc_active = 0;
         }
         else
@@ -363,12 +351,9 @@ int cli_script_intercept(const char *line)
             if(heredoc_pos + llen + 1
                     < (int) sizeof(heredoc_buf))
             {
-                memcpy(
-                    heredoc_buf + heredoc_pos,
-                    p, (size_t)   llen);
+                memcpy(heredoc_buf + heredoc_pos, p, (size_t)   llen);
                 heredoc_pos += llen;
-                heredoc_buf[
-                    heredoc_pos++] = '\n';
+                heredoc_buf[heredoc_pos++] = '\n';
             }
         }
         return 1;
@@ -385,8 +370,7 @@ int cli_script_intercept(const char *line)
             if(nlen > 0
                     && nlen < CLI_VAR_NAMELEN)
             {
-                memcpy(heredoc_var, p,
-                       (size_t) nlen);
+                memcpy(heredoc_var, p, (size_t) nlen);
                 heredoc_var[nlen] = '\0';
                 const char *d = eq + 3;
                 while(*d == ' '
@@ -397,8 +381,7 @@ int cli_script_intercept(const char *line)
                 int dlen = (int) strlen(d);
                 if(dlen > 0 && dlen < 64)
                 {
-                    strncpy(heredoc_delim,
-                            d, 63);
+                    strncpy(heredoc_delim, d, 63);
                     heredoc_delim[63] = '\0';
                     heredoc_active = 1;
                     heredoc_pos = 0;
@@ -413,9 +396,7 @@ int cli_script_intercept(const char *line)
      * buffer the line */
     if(cli_block_level > 0)
     {
-        CLI_BLOCK *blk =
-            &cli_block_stack[
-         cli_block_level - 1];
+        CLI_BLOCK *blk = &cli_block_stack[cli_block_level - 1];
 
         /* Check for nested openers */
         if(starts_with(p, "if ")
@@ -446,9 +427,7 @@ int cli_script_intercept(const char *line)
         int is_close = 0;
         int is_any_close =
             (strcmp(p, "fi") == 0
-             || strcmp(p, "done") == 0
-             || strcmp(p, "}") == 0
-             || strcmp(p, "esac") == 0);
+             || strcmp(p, "done") == 0 || strcmp(p, "}") == 0 || strcmp(p, "esac") == 0);
 
         if(is_any_close && blk->depth > 0)
         {
@@ -458,12 +437,7 @@ int cli_script_intercept(const char *line)
             if(blk->nlines
                     < CLI_BLOCK_MAXLINES)
             {
-                strncpy(
-                    blk->lines[
-                        blk->nlines],
-                    p,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
+                strncpy(blk->lines[blk->nlines], p, STRINGMAXLEN_CLICMDLINE - 1);
                 blk->nlines++;
             }
             return 1;
@@ -504,76 +478,54 @@ int cli_script_intercept(const char *line)
             int saved_type = blk->type;
             int saved_nlines = blk->nlines;
             char (*saved_lines)[
-            STRINGMAXLEN_CLICMDLINE] =
-                    malloc(
-                        (size_t) saved_nlines
-                        * STRINGMAXLEN_CLICMDLINE);
+            STRINGMAXLEN_CLICMDLINE] = malloc((size_t) saved_nlines * STRINGMAXLEN_CLICMDLINE);
             if(saved_lines == NULL)
             {
-                printf("Error: malloc failed "
-                       "for block lines\n");
+                printf("Error: malloc failed " "for block lines\n");
                 cli_block_level--;
                 return 1;
             }
             for(int si = 0;
                     si < saved_nlines; si++)
             {
-                strncpy(
-                    saved_lines[si],
-                    blk->lines[si],
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-                saved_lines[si][
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1] = '\0';
+                strncpy(saved_lines[si], blk->lines[si], STRINGMAXLEN_CLICMDLINE - 1);
+                saved_lines[si][STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             }
             cli_block_level--;
 
             if(saved_type == CLI_BLOCK_IF)
             {
-                cli_exec_block_if(
-                    saved_lines,
-                    saved_nlines);
+                cli_exec_block_if(saved_lines, saved_nlines);
             }
             else if(
                 saved_type == CLI_BLOCK_WHILE)
             {
-                cli_exec_block_while(
-                    saved_lines,
-                    saved_nlines);
+                cli_exec_block_while(saved_lines, saved_nlines);
             }
             else if(
                 saved_type
                 == CLI_BLOCK_UNTIL)
             {
-                cli_exec_block_until(
-                    saved_lines,
-                    saved_nlines);
+                cli_exec_block_until(saved_lines, saved_nlines);
             }
             else if(
                 saved_type == CLI_BLOCK_FOR)
             {
-                cli_exec_block_for(
-                    saved_lines,
-                    saved_nlines);
+                cli_exec_block_for(saved_lines, saved_nlines);
             }
             else if(
                 saved_type
                 ==
                 CLI_BLOCK_SELECT)
             {
-                cli_exec_block_select(
-                    saved_lines,
-                    saved_nlines);
+                cli_exec_block_select(saved_lines, saved_nlines);
             }
             else if(
                 saved_type == CLI_BLOCK_FUNC)
             {
                 /* Define function from
                  * buffered lines */
-                const char *fl =
-                    strip_ws(
-                        saved_lines[0]);
+                const char *fl = strip_ws(saved_lines[0]);
                 fl += 8; /* "function" */
                 fl = strip_ws(fl);
                 char fname[CLI_FUNC_NAMELEN];
@@ -593,17 +545,12 @@ int cli_script_intercept(const char *line)
                 }
                 /* Body starts at line 1
                  * (skip function header) */
-                cli_func_define(
-                    fname,
-                    saved_lines + 1,
-                    saved_nlines - 1);
+                cli_func_define(fname, saved_lines + 1, saved_nlines - 1);
             }
             else if(
                 saved_type == CLI_BLOCK_CASE)
             {
-                cli_exec_block_case(
-                    saved_lines,
-                    saved_nlines);
+                cli_exec_block_case(saved_lines, saved_nlines);
             }
 
             free(saved_lines);
@@ -613,10 +560,7 @@ int cli_script_intercept(const char *line)
         /* Buffer normal line */
         if(blk->nlines < CLI_BLOCK_MAXLINES)
         {
-            strncpy(
-                blk->lines[blk->nlines],
-                p,
-                STRINGMAXLEN_CLICMDLINE - 1);
+            strncpy(blk->lines[blk->nlines], p, STRINGMAXLEN_CLICMDLINE - 1);
             blk->nlines++;
         }
         return 1;
@@ -834,8 +778,7 @@ int cli_script_intercept(const char *line)
     /* Try alias expansion before
      * user-defined function call */
     {
-        char firstword[
-        CLI_FUNC_NAMELEN];
+        char firstword[CLI_FUNC_NAMELEN];
         int fw = 0;
         const char *pp = p;
         while(*pp != '\0'
@@ -860,17 +803,9 @@ int cli_script_intercept(const char *line)
             {
                 /* Build expanded
                  * command */
-                char expanded[
-                    STRINGMAXLEN_CLICMDLINE
-                ];
-                snprintf(
-                    expanded,
-                    sizeof(expanded),
-                    "%s%s",
-                    data.alias[k].cmd,
-                    pp);
-                CLI_execute_string(
-                    expanded);
+                char expanded[STRINGMAXLEN_CLICMDLINE];
+                snprintf(expanded, sizeof(expanded), "%s%s", data.alias[k].cmd, pp);
+                CLI_execute_string(expanded);
                 return 1;
             }
         }

@@ -41,8 +41,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char insname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "stream";
+static char insname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 
 
 /* ================================================================
@@ -66,17 +65,14 @@ imageID read_sharedmem_image(
     long                 NB_images)
 {
     IMGID img = imgid_make_from_name(sname);
-    resolveIMGID(
-        &img,       ERRMODE_NULL,
-        imagearray, NB_images);
+    resolveIMGID(&img,       ERRMODE_NULL, imagearray, NB_images);
     imgid_connect(&img, IMGID_CONNECT_NOCHECK);
     if (img.ID == -1)
     {
         return -1;
     }
 
-    return RegisterIMGID(
-        &img, imagearray, NB_images);
+    return RegisterIMGID(&img, imagearray, NB_images);
 }
 
 
@@ -95,14 +91,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  read_sharedmem_image(insname, dcimg, dcnimg);
 
-    read_sharedmem_image(
-        insname, dcimg, dcnimg);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -115,18 +106,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__read_sharedmem_image()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

@@ -37,8 +37,7 @@ double arith_image_mean_IMGID(IMGID *imgin)
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
-    value =
-        (double)(arith_image_total_IMGID(imgin) / imgin->md[0].nelement);
+    value = (double)(arith_image_total_IMGID(imgin) / imgin->md[0].nelement);
     if(imgin->ID == -1)
     {
         return RETURN_FAILURE;
@@ -182,26 +181,22 @@ double arith_image_percentile_IMGID(
         PRINT_ERROR("malloc() error");
         exit(EXIT_FAILURE);
     }
-    memcpy(array_raw, imgin->im->array.raw,
-           ImageStreamIO_typesize(datatype) * nelement);
+    memcpy(array_raw, imgin->im->array.raw, ImageStreamIO_typesize(datatype) * nelement);
 
 
     switch(datatype)
     {
-    case _DATATYPE_FLOAT:
-        arrayF = array_raw;
+    case _DATATYPE_FLOAT: arrayF = array_raw;
         quick_sort_float(arrayF, nelement);
         value = (double) arrayF[(long)(fraction * nelement)];
         break;
 
-    case _DATATYPE_DOUBLE:
-        arrayD = array_raw;
+    case _DATATYPE_DOUBLE: arrayD = array_raw;
         quick_sort_double(arrayD, nelement);
         value = arrayD[(long)(fraction * nelement)];
         break;
 
-    case _DATATYPE_UINT8:
-        arrayU = (unsigned short *) malloc(sizeof(unsigned short) * nelement);
+    case _DATATYPE_UINT8: arrayU = (unsigned short *) malloc(sizeof(unsigned short) * nelement);
         if(arrayU == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -216,8 +211,7 @@ double arith_image_percentile_IMGID(
         free(arrayU);
         break;
 
-    case _DATATYPE_UINT16:
-        arrayU = (unsigned short *) malloc(sizeof(unsigned short) * nelement);
+    case _DATATYPE_UINT16: arrayU = (unsigned short *) malloc(sizeof(unsigned short) * nelement);
         if(arrayU == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -232,8 +226,7 @@ double arith_image_percentile_IMGID(
         free(arrayU);
         break;
 
-    case _DATATYPE_UINT32:
-        arrayL = (long *) malloc(sizeof(long) * nelement);
+    case _DATATYPE_UINT32: arrayL = (long *) malloc(sizeof(long) * nelement);
         if(arrayL == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -248,8 +241,7 @@ double arith_image_percentile_IMGID(
         free(arrayL);
         break;
 
-    case _DATATYPE_UINT64:
-        arrayL = (long *) malloc(sizeof(long) * nelement);
+    case _DATATYPE_UINT64: arrayL = (long *) malloc(sizeof(long) * nelement);
         if(arrayL == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -264,8 +256,7 @@ double arith_image_percentile_IMGID(
         free(arrayL);
         break;
 
-    case _DATATYPE_INT8:
-        arrayL = (long *) malloc(sizeof(long) * nelement);
+    case _DATATYPE_INT8: arrayL = (long *) malloc(sizeof(long) * nelement);
         if(arrayL == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -280,8 +271,7 @@ double arith_image_percentile_IMGID(
         free(arrayL);
         break;
 
-    case _DATATYPE_INT16:
-        arrayL = (long *) malloc(sizeof(long) * nelement);
+    case _DATATYPE_INT16: arrayL = (long *) malloc(sizeof(long) * nelement);
         if(arrayL == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -296,8 +286,7 @@ double arith_image_percentile_IMGID(
         free(arrayL);
         break;
 
-    case _DATATYPE_INT32:
-        arrayL = (long *) malloc(sizeof(long) * nelement);
+    case _DATATYPE_INT32: arrayL = (long *) malloc(sizeof(long) * nelement);
         if(arrayL == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -312,8 +301,7 @@ double arith_image_percentile_IMGID(
         free(arrayL);
         break;
 
-    case _DATATYPE_INT64:
-        arrayL = (long *) malloc(sizeof(long) * nelement);
+    case _DATATYPE_INT64: arrayL = (long *) malloc(sizeof(long) * nelement);
         if(arrayL == NULL)
         {
             PRINT_ERROR("malloc() error");
@@ -328,8 +316,7 @@ double arith_image_percentile_IMGID(
         free(arrayL);
         break;
 
-    default:
-        PRINT_ERROR("Image type not supported");
+    default: PRINT_ERROR("Image type not supported");
         atypeOK = 0;
         break;
     }
@@ -440,40 +427,31 @@ double MILK_HOT arith_image_dot_IMGID(
             float v1, v2;
             switch(datatype1)
             {
-            case _DATATYPE_UINT8:
-                v1 = (float)imgin1->im->array.UI8[ii];
+            case _DATATYPE_UINT8: v1 = (float)imgin1->im->array.UI8[ii];
                 v2 = (float)imgin2->im->array.UI8[ii];
                 break;
-            case _DATATYPE_UINT16:
-                v1 = (float)imgin1->im->array.UI16[ii];
+            case _DATATYPE_UINT16: v1 = (float)imgin1->im->array.UI16[ii];
                 v2 = (float)imgin2->im->array.UI16[ii];
                 break;
-            case _DATATYPE_UINT32:
-                v1 = (float)imgin1->im->array.UI32[ii];
+            case _DATATYPE_UINT32: v1 = (float)imgin1->im->array.UI32[ii];
                 v2 = (float)imgin2->im->array.UI32[ii];
                 break;
-            case _DATATYPE_UINT64:
-                v1 = (float)imgin1->im->array.UI64[ii];
+            case _DATATYPE_UINT64: v1 = (float)imgin1->im->array.UI64[ii];
                 v2 = (float)imgin2->im->array.UI64[ii];
                 break;
-            case _DATATYPE_INT8:
-                v1 = (float)imgin1->im->array.SI8[ii];
+            case _DATATYPE_INT8: v1 = (float)imgin1->im->array.SI8[ii];
                 v2 = (float)imgin2->im->array.SI8[ii];
                 break;
-            case _DATATYPE_INT16:
-                v1 = (float)imgin1->im->array.SI16[ii];
+            case _DATATYPE_INT16: v1 = (float)imgin1->im->array.SI16[ii];
                 v2 = (float)imgin2->im->array.SI16[ii];
                 break;
-            case _DATATYPE_INT32:
-                v1 = (float)imgin1->im->array.SI32[ii];
+            case _DATATYPE_INT32: v1 = (float)imgin1->im->array.SI32[ii];
                 v2 = (float)imgin2->im->array.SI32[ii];
                 break;
-            case _DATATYPE_INT64:
-                v1 = (float)imgin1->im->array.SI64[ii];
+            case _DATATYPE_INT64: v1 = (float)imgin1->im->array.SI64[ii];
                 v2 = (float)imgin2->im->array.SI64[ii];
                 break;
-            default:
-                v1 = 0;
+            default: v1 = 0;
                 v2 = 0;
                 break;
             }

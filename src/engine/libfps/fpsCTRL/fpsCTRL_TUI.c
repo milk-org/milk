@@ -239,8 +239,7 @@ inline static void fpsCTRLscreen_print_FPShelp(
 
     TUI_printfw(" src / line   : %s / %d\n",
                 fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourcefname,
-                fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourceline
-               );
+                fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourceline);
 
     TUI_printfw("\n");
 
@@ -261,8 +260,7 @@ inline static void fpsCTRLscreen_print_FPShelp(
                  "%smload %s;",
                  mloadstring,
                  fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[mod_idx]);
-        snprintf(mloadstring, mloadstring_maxlen,
-                 "%s", mloadstringcp);
+        snprintf(mloadstring, mloadstring_maxlen, "%s", mloadstringcp);
     }
 
     char helpfunctionstring[2000] = {0};
@@ -271,9 +269,7 @@ inline static void fpsCTRLscreen_print_FPShelp(
              "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;%s ?\"\n",
              fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
              fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
-             mloadstring,
-             fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname
-            );
+             mloadstring, fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
 
     //  TUI_printfw("%s", helpfunctionstring);
 
@@ -359,8 +355,7 @@ errno_t functionparameter_CTRLscreen(
         struct timespec tnow = {0};
         clock_gettime(CLOCK_REALTIME, &tnow);
         FPS_TIMESTAMP = tnow.tv_sec;
-        snprintf(FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE, "ctrl");
+        snprintf(FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "ctrl");
     }
 
 
@@ -386,16 +381,10 @@ errno_t functionparameter_CTRLscreen(
     fpsCTRLvar.directorynodeSelected = 0;
     fpsCTRLvar.currentlevel          = 0;
     fpsCTRLvar.direction             = 1;
-    strncpy(fpsCTRLvar.fpsnamemask, fpsnamemask,
-            sizeof(fpsCTRLvar.fpsnamemask) - 1);
-    fpsCTRLvar.fpsnamemask[
-     sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
-    strncpy(fpsCTRLvar.fpsCTRLfifoname,
-            fpsCTRLfifoname,
-            sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1);
-    fpsCTRLvar.fpsCTRLfifoname[
-     sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
-        = '\0';
+    strncpy(fpsCTRLvar.fpsnamemask, fpsnamemask, sizeof(fpsCTRLvar.fpsnamemask) - 1);
+    fpsCTRLvar.fpsnamemask[sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
+    strncpy(fpsCTRLvar.fpsCTRLfifoname, fpsCTRLfifoname, sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1);
+    fpsCTRLvar.fpsCTRLfifoname[sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1] = '\0';
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
@@ -455,8 +444,7 @@ errno_t functionparameter_CTRLscreen(
                                    1 // verbose
                                   );
         TUI_printfw("%d function parameter structure(s) imported, %ld parameters\n",
-                    fpsCTRLvar.NBfps,
-                    NBpindex);
+                    fpsCTRLvar.NBfps, NBpindex);
     }
 
     fpsCTRLvar.nodeSelected = 1;
@@ -597,12 +585,7 @@ errno_t functionparameter_CTRLscreen(
 
         DEBUG_TRACEPOINT(" ");
 
-        loopOK = fpsCTRL_TUI_process_user_key(ch,
-                                              fpsarray,
-                                              keywnode,
-                                              NULL,
-                                              NULL,
-                                              &fpsCTRLvar);
+        loopOK = fpsCTRL_TUI_process_user_key(ch, fpsarray, keywnode, NULL, NULL, &fpsCTRLvar);
 
         DEBUG_TRACEPOINT(" ");
 
@@ -620,19 +603,13 @@ errno_t functionparameter_CTRLscreen(
 
             if(fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
             {
-                TUI_printfw(
-                    "======== FPSCTRL info  "
-                    "( screen refresh cnt %7lld )\n",
-                    loopcnt);
+                TUI_printfw("======== FPSCTRL info  " "(screen refresh cnt %7lld)\n", loopcnt);
                 TUI_printfw(
                     "    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
                     "%ld   NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n",
                     fpsCTRLvar.fpsCTRLfifoname,
                     fpsCTRLvar.fpsCTRLfifofd,
-                    fifocmdcnt,
-                    NBtaskLaunched,
-                    NBtaskLaunchedcnt,
-                    fpsCTRLvar.NBfps);
+                    fifocmdcnt, NBtaskLaunched, NBtaskLaunchedcnt, fpsCTRLvar.NBfps);
 
                 DEBUG_TRACEPOINT(" ");
                 char logfname[STRINGMAXLEN_FULLFILENAME];
@@ -670,9 +647,7 @@ errno_t functionparameter_CTRLscreen(
 
             if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
             {
-                fpsCTRL_scheduler_display(&fpsCTRLvar,
-                                          wrow,
-                                          &fpsCTRLvar.scheduler_wrowstart);
+                fpsCTRL_scheduler_display(&fpsCTRLvar, wrow, &fpsCTRLvar.scheduler_wrowstart);
             }
 
             if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)

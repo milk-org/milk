@@ -46,64 +46,35 @@ static int binop_img_img(
 {
     switch(op)
     {
-    case TOK_OP_PLUS:
-        arith_image_add(
-            lname, rname, tmpn);
+    case TOK_OP_PLUS: arith_image_add(lname, rname, tmpn);
         break;
-    case TOK_OP_MINUS:
-        arith_image_sub(
-            lname, rname, tmpn);
+    case TOK_OP_MINUS: arith_image_sub(lname, rname, tmpn);
         break;
-    case TOK_OP_STAR:
-        arith_image_mult(
-            lname, rname, tmpn);
+    case TOK_OP_STAR: arith_image_mult(lname, rname, tmpn);
         break;
-    case TOK_OP_SLASH:
-        arith_image_div(
-            lname, rname, tmpn);
+    case TOK_OP_SLASH: arith_image_div(lname, rname, tmpn);
         break;
-    case TOK_OP_MOD:
-        arith_image_fmod(
-            lname, rname, tmpn);
+    case TOK_OP_MOD: arith_image_fmod(lname, rname, tmpn);
         break;
-    case TOK_OP_CARET:
-        arith_image_pow(
-            lname, rname, tmpn);
+    case TOK_OP_CARET: arith_image_pow(lname, rname, tmpn);
         break;
-    case TOK_OP_LT:
-        arith_image_testlt(
-            lname, rname, tmpn);
+    case TOK_OP_LT: arith_image_testlt(lname, rname, tmpn);
         break;
-    case TOK_OP_LE:
-        arith_image_testle(
-            lname, rname, tmpn);
+    case TOK_OP_LE: arith_image_testle(lname, rname, tmpn);
         break;
-    case TOK_OP_GT:
-        arith_image_testmt(
-            lname, rname, tmpn);
+    case TOK_OP_GT: arith_image_testmt(lname, rname, tmpn);
         break;
-    case TOK_OP_GE:
-        arith_image_testge(
-            lname, rname, tmpn);
+    case TOK_OP_GE: arith_image_testge(lname, rname, tmpn);
         break;
-    case TOK_OP_EQ:
-        arith_image_teste(
-            lname, rname, tmpn);
+    case TOK_OP_EQ: arith_image_teste(lname, rname, tmpn);
         break;
-    case TOK_OP_NEQ:
-        arith_image_testne(
-            lname, rname, tmpn);
+    case TOK_OP_NEQ: arith_image_testne(lname, rname, tmpn);
         break;
-    case TOK_OP_AND:
-        arith_image_and(
-            lname, rname, tmpn);
+    case TOK_OP_AND: arith_image_and(lname, rname, tmpn);
         break;
-    case TOK_OP_OR:
-        arith_image_or(
-            lname, rname, tmpn);
+    case TOK_OP_OR: arith_image_or(lname, rname, tmpn);
         break;
-    default:
-        return 0;
+    default: return 0;
     }
     return 1;
 }
@@ -126,64 +97,35 @@ static int binop_img_scalar(
 {
     switch(op)
     {
-    case TOK_OP_PLUS:
-        arith_image_cstadd(
-            iname, rv, tmpn);
+    case TOK_OP_PLUS: arith_image_cstadd(iname, rv, tmpn);
         break;
-    case TOK_OP_MINUS:
-        arith_image_cstadd(
-            iname, -rv, tmpn);
+    case TOK_OP_MINUS: arith_image_cstadd(iname, -rv, tmpn);
         break;
-    case TOK_OP_STAR:
-        arith_image_cstmult(
-            iname, rv, tmpn);
+    case TOK_OP_STAR: arith_image_cstmult(iname, rv, tmpn);
         break;
-    case TOK_OP_SLASH:
-        arith_image_cstdiv(
-            iname, rv, tmpn);
+    case TOK_OP_SLASH: arith_image_cstdiv(iname, rv, tmpn);
         break;
-    case TOK_OP_MOD:
-        arith_image_cstfmod(
-            iname, rv, tmpn);
+    case TOK_OP_MOD: arith_image_cstfmod(iname, rv, tmpn);
         break;
-    case TOK_OP_CARET:
-        arith_image_cstpow(
-            iname, rv, tmpn);
+    case TOK_OP_CARET: arith_image_cstpow(iname, rv, tmpn);
         break;
-    case TOK_OP_LT:
-        arith_image_csttestlt(
-            iname, rv, tmpn);
+    case TOK_OP_LT: arith_image_csttestlt(iname, rv, tmpn);
         break;
-    case TOK_OP_LE:
-        arith_image_csttestle(
-            iname, rv, tmpn);
+    case TOK_OP_LE: arith_image_csttestle(iname, rv, tmpn);
         break;
-    case TOK_OP_GT:
-        arith_image_csttestmt(
-            iname, rv, tmpn);
+    case TOK_OP_GT: arith_image_csttestmt(iname, rv, tmpn);
         break;
-    case TOK_OP_GE:
-        arith_image_csttestge(
-            iname, rv, tmpn);
+    case TOK_OP_GE: arith_image_csttestge(iname, rv, tmpn);
         break;
-    case TOK_OP_EQ:
-        arith_image_cstteste(
-            iname, rv, tmpn);
+    case TOK_OP_EQ: arith_image_cstteste(iname, rv, tmpn);
         break;
-    case TOK_OP_NEQ:
-        arith_image_csttestne(
-            iname, rv, tmpn);
+    case TOK_OP_NEQ: arith_image_csttestne(iname, rv, tmpn);
         break;
-    case TOK_OP_AND:
-        arith_image_cstand(
-            iname, rv, tmpn);
+    case TOK_OP_AND: arith_image_cstand(iname, rv, tmpn);
         break;
-    case TOK_OP_OR:
-        arith_image_cstor(
-            iname, rv, tmpn);
+    case TOK_OP_OR: arith_image_cstor(iname, rv, tmpn);
         break;
-    default:
-        return 0;
+    default: return 0;
     }
     return 1;
 }
@@ -206,56 +148,31 @@ static int binop_scalar_img(
 {
     switch(op)
     {
-    case TOK_OP_PLUS:
-        arith_image_cstadd(
-            iname, lv, tmpn);
+    case TOK_OP_PLUS: arith_image_cstadd(iname, lv, tmpn);
         break;
-    case TOK_OP_MINUS:
-        arith_image_cstsubm(
-            iname, lv, tmpn);
+    case TOK_OP_MINUS: arith_image_cstsubm(iname, lv, tmpn);
         break;
-    case TOK_OP_STAR:
-        arith_image_cstmult(
-            iname, lv, tmpn);
+    case TOK_OP_STAR: arith_image_cstmult(iname, lv, tmpn);
         break;
-    case TOK_OP_SLASH:
-        arith_image_cstdiv1(
-            iname, lv, tmpn);
+    case TOK_OP_SLASH: arith_image_cstdiv1(iname, lv, tmpn);
         break;
-    case TOK_OP_LT:
-        arith_image_csttestmt(
-            iname, lv, tmpn);
+    case TOK_OP_LT: arith_image_csttestmt(iname, lv, tmpn);
         break;
-    case TOK_OP_LE:
-        arith_image_csttestge(
-            iname, lv, tmpn);
+    case TOK_OP_LE: arith_image_csttestge(iname, lv, tmpn);
         break;
-    case TOK_OP_GT:
-        arith_image_csttestlt(
-            iname, lv, tmpn);
+    case TOK_OP_GT: arith_image_csttestlt(iname, lv, tmpn);
         break;
-    case TOK_OP_GE:
-        arith_image_csttestle(
-            iname, lv, tmpn);
+    case TOK_OP_GE: arith_image_csttestle(iname, lv, tmpn);
         break;
-    case TOK_OP_EQ:
-        arith_image_cstteste(
-            iname, lv, tmpn);
+    case TOK_OP_EQ: arith_image_cstteste(iname, lv, tmpn);
         break;
-    case TOK_OP_NEQ:
-        arith_image_csttestne(
-            iname, lv, tmpn);
+    case TOK_OP_NEQ: arith_image_csttestne(iname, lv, tmpn);
         break;
-    case TOK_OP_AND:
-        arith_image_cstand(
-            iname, lv, tmpn);
+    case TOK_OP_AND: arith_image_cstand(iname, lv, tmpn);
         break;
-    case TOK_OP_OR:
-        arith_image_cstor(
-            iname, lv, tmpn);
+    case TOK_OP_OR: arith_image_cstor(iname, lv, tmpn);
         break;
-    default:
-        return 0;
+    default: return 0;
     }
     return 1;
 }
@@ -298,9 +215,7 @@ val_t eval_binop(
                         op, left.sval,
                         right.sval, tmpn))
             {
-                parse_errmsg(
-                    "Unsupported image op"
-                );
+                parse_errmsg("Unsupported image op");
                 return mk_string("");
             }
             return mk_string(tmpn);
@@ -318,9 +233,7 @@ val_t eval_binop(
                         op, left.sval,
                         rv, tmpn))
             {
-                parse_errmsg(
-                    "Unsupported image op"
-                );
+                parse_errmsg("Unsupported image op");
                 return mk_string("");
             }
             return mk_string(tmpn);
@@ -338,9 +251,7 @@ val_t eval_binop(
                         op,         lv,
                         right.sval, tmpn))
             {
-                parse_errmsg(
-                    "Unsupported image op"
-                );
+                parse_errmsg("Unsupported image op");
                 return mk_string("");
             }
             return mk_string(tmpn);
@@ -356,65 +267,31 @@ val_t eval_binop(
     {
         switch(op)
         {
-        case TOK_OP_PLUS:
-            return mk_long(
-                       left.lval + right.lval
-                   );
-        case TOK_OP_MINUS:
-            return mk_long(
-                       left.lval - right.lval
-                   );
-        case TOK_OP_STAR:
-            return mk_long(
-                       left.lval * right.lval
-                   );
+        case TOK_OP_PLUS: return mk_long(left.lval + right.lval);
+        case TOK_OP_MINUS: return mk_long(left.lval - right.lval);
+        case TOK_OP_STAR: return mk_long(left.lval * right.lval);
         case TOK_OP_MOD:
             if(right.lval == 0)
             {
                 parse_errmsg("Modulo by zero");
                 return mk_long(0);
             }
-            return mk_long(
-                       left.lval % right.lval
-                   );
-        case TOK_OP_CARET:
-            return mk_long(
-                       (long) pow(
-                           left.lval, right.lval)
-                   );
-        case TOK_OP_LT:
-            return mk_long(left.lval < right.lval ? 1 : 0);
-        case TOK_OP_LE:
-            return mk_long(left.lval <= right.lval ? 1 : 0);
-        case TOK_OP_GT:
-            return mk_long(left.lval > right.lval ? 1 : 0);
-        case TOK_OP_GE:
-            return mk_long(left.lval >= right.lval ? 1 : 0);
-        case TOK_OP_EQ:
-            return mk_long(left.lval == right.lval ? 1 : 0);
-        case TOK_OP_NEQ:
-            return mk_long(left.lval != right.lval ? 1 : 0);
-        case TOK_OP_AND:
-            return mk_long((left.lval && right.lval) ? 1 : 0);
-        case TOK_OP_OR:
-            return mk_long((left.lval || right.lval) ? 1 : 0);
-        case TOK_OP_BAND:
-            return mk_long(
-                       left.lval & right.lval);
-        case TOK_OP_BOR:
-            return mk_long(
-                       left.lval | right.lval);
-        case TOK_OP_BXOR:
-            return mk_long(
-                       left.lval ^ right.lval);
-        case TOK_OP_LSHIFT:
-            return mk_long(
-                       left.lval << right.lval);
-        case TOK_OP_RSHIFT:
-            return mk_long(
-                       left.lval >> right.lval);
-        default:
-            break;
+            return mk_long(left.lval % right.lval);
+        case TOK_OP_CARET: return mk_long((long) pow(left.lval, right.lval));
+        case TOK_OP_LT: return mk_long(left.lval < right.lval ? 1 : 0);
+        case TOK_OP_LE: return mk_long(left.lval <= right.lval ? 1 : 0);
+        case TOK_OP_GT: return mk_long(left.lval > right.lval ? 1 : 0);
+        case TOK_OP_GE: return mk_long(left.lval >= right.lval ? 1 : 0);
+        case TOK_OP_EQ: return mk_long(left.lval == right.lval ? 1 : 0);
+        case TOK_OP_NEQ: return mk_long(left.lval != right.lval ? 1 : 0);
+        case TOK_OP_AND: return mk_long((left.lval && right.lval) ? 1 : 0);
+        case TOK_OP_OR: return mk_long((left.lval || right.lval) ? 1 : 0);
+        case TOK_OP_BAND: return mk_long(left.lval & right.lval);
+        case TOK_OP_BOR: return mk_long(left.lval | right.lval);
+        case TOK_OP_BXOR: return mk_long(left.lval ^ right.lval);
+        case TOK_OP_LSHIFT: return mk_long(left.lval << right.lval);
+        case TOK_OP_RSHIFT: return mk_long(left.lval >> right.lval);
+        default: break;
         }
     }
 
@@ -425,12 +302,9 @@ val_t eval_binop(
 
         switch(op)
         {
-        case TOK_OP_PLUS:
-            return mk_double(lv + rv);
-        case TOK_OP_MINUS:
-            return mk_double(lv - rv);
-        case TOK_OP_STAR:
-            return mk_double(lv * rv);
+        case TOK_OP_PLUS: return mk_double(lv + rv);
+        case TOK_OP_MINUS: return mk_double(lv - rv);
+        case TOK_OP_STAR: return mk_double(lv * rv);
         case TOK_OP_SLASH:
             if(rv == 0.0)
             {
@@ -445,41 +319,21 @@ val_t eval_binop(
                 return mk_double(0);
             }
             return mk_double(fmod(lv, rv));
-        case TOK_OP_CARET:
-            return mk_double(pow(lv, rv));
-        case TOK_OP_LT:
-            return mk_long(lv < rv ? 1 : 0);
-        case TOK_OP_LE:
-            return mk_long(lv <= rv ? 1 : 0);
-        case TOK_OP_GT:
-            return mk_long(lv > rv ? 1 : 0);
-        case TOK_OP_GE:
-            return mk_long(lv >= rv ? 1 : 0);
-        case TOK_OP_EQ:
-            return mk_long(lv == rv ? 1 : 0);
-        case TOK_OP_NEQ:
-            return mk_long(lv != rv ? 1 : 0);
-        case TOK_OP_AND:
-            return mk_long((lv != 0 && rv != 0) ? 1 : 0);
-        case TOK_OP_OR:
-            return mk_long((lv != 0 || rv != 0) ? 1 : 0);
-        case TOK_OP_BAND:
-            return mk_long(
-                       (long) lv & (long) rv);
-        case TOK_OP_BOR:
-            return mk_long(
-                       (long) lv | (long) rv);
-        case TOK_OP_BXOR:
-            return mk_long(
-                       (long) lv ^ (long) rv);
-        case TOK_OP_LSHIFT:
-            return mk_long(
-                       (long) lv << (long) rv);
-        case TOK_OP_RSHIFT:
-            return mk_long(
-                       (long) lv >> (long) rv);
-        default:
-            break;
+        case TOK_OP_CARET: return mk_double(pow(lv, rv));
+        case TOK_OP_LT: return mk_long(lv < rv ? 1 : 0);
+        case TOK_OP_LE: return mk_long(lv <= rv ? 1 : 0);
+        case TOK_OP_GT: return mk_long(lv > rv ? 1 : 0);
+        case TOK_OP_GE: return mk_long(lv >= rv ? 1 : 0);
+        case TOK_OP_EQ: return mk_long(lv == rv ? 1 : 0);
+        case TOK_OP_NEQ: return mk_long(lv != rv ? 1 : 0);
+        case TOK_OP_AND: return mk_long((lv != 0 && rv != 0) ? 1 : 0);
+        case TOK_OP_OR: return mk_long((lv != 0 || rv != 0) ? 1 : 0);
+        case TOK_OP_BAND: return mk_long((long) lv & (long) rv);
+        case TOK_OP_BOR: return mk_long((long) lv | (long) rv);
+        case TOK_OP_BXOR: return mk_long((long) lv ^ (long) rv);
+        case TOK_OP_LSHIFT: return mk_long((long) lv << (long) rv);
+        case TOK_OP_RSHIFT: return mk_long((long) lv >> (long) rv);
+        default: break;
         }
     }
 

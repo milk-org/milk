@@ -120,10 +120,7 @@ static errno_t __attribute__((unused)) compute_listim()
 static errno_t CLIfunction_listim(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info_listim,
-               NULL, &CLIcmddata_listim,
-               NULL, 0,
-               compute_listim);
+               &FPS_app_info_listim, NULL, &CLIcmddata_listim, NULL, 0, compute_listim);
 }
 
 errno_t
@@ -131,11 +128,8 @@ CLIADDCMD_COREMOD_memory__list_image()
 {
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_listim,
-                       CLIfunction_listim);
-        CLIcmddata_listim.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_listim, CLIfunction_listim);
+        CLIcmddata_listim.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -145,23 +139,9 @@ CLIADDCMD_COREMOD_memory__list_image()
 errno_t list_image_ID_ofp(FILE *fo)
 {
 
-    long               j;
-    long long          tmp_long;
-    char               type[STYPESIZE];
-    uint8_t            datatype;
-    int                n;
-    unsigned long long sizeb, sizeKb, sizeMb, sizeGb;
-    int strmaxlen = 500;
-    char               str[strmaxlen];
-    int str1maxlen = 512;
-    char               str1[str1maxlen];
-    struct timespec    timenow;
-    double             timediff;
-    //struct mallinfo minfo;
+    unsigned long long sizeb = compute_image_memory();
 
-    sizeb = compute_image_memory();
-    //minfo = mallinfo();
-
+    struct timespec timenow;
     clock_gettime(CLOCK_MILK, &timenow);
     //fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
 
@@ -174,72 +154,54 @@ errno_t list_image_ID_ofp(FILE *fo)
     for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
-            datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long)(dcimg[i].md[0].nelement)) *
-                       ImageStreamIO_typesize(datatype);
+            uint8_t datatype = dcimg[i].md[0].datatype;
+            long long tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             if(dcimg[i].md[0].shared == 1)
             {
                 fprintf(fo,
                         "%4ld %c[%d;%dm%14s%c[%d;m ",
-                        i,
-                        (char) 27,
-                        1,
-                        34,
-                        dcimg[i].name,
-                        (char) 27,
-                        0);
+                        i, (char) 27, 1, 34, dcimg[i].name, (char) 27, 0);
             }
             else
             {
                 fprintf(fo,
                         "%4ld %c[%d;%dm%14s%c[%d;m ",
-                        i,
-                        (char) 27,
-                        1,
-                        33,
-                        dcimg[i].name,
-                        (char) 27,
-                        0);
+                        i, (char) 27, 1, 33, dcimg[i].name, (char) 27, 0);
             }
             //fprintf(fo, "%s", str);
 
+            int strmaxlen = 500;
+            char str[strmaxlen];
             snprintf(str, strmaxlen, "[ %6ld", (long) dcimg[i].md[0].size[0]);
 
-            for(j = 1; j < dcimg[i].md[0].naxis; j++)
+            int str1maxlen = 512;
+            char str1[str1maxlen];
+            for(long j = 1; j < dcimg[i].md[0].naxis; j++)
             {
-                snprintf(str1,
-                         str1maxlen,
-                         "%s x %6ld",
-                         str,
-                         (long) dcimg[i].md[0].size[j]);
-                snprintf(str, strmaxlen,
-                         "%s", str1);
+                snprintf(str1, str1maxlen, "%s x %6ld", str, (long) dcimg[i].md[0].size[j]);
+                snprintf(str, strmaxlen, "%s", str1);
             }
-            snprintf(str1, str1maxlen,
-                     "%s]", str);
-            snprintf(str, strmaxlen,
-                     "%s", str1);
+            snprintf(str1, str1maxlen, "%s]", str);
+            snprintf(str, strmaxlen, "%s", str1);
 
             fprintf(fo, "%-32s", str);
 
-            n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
+            char type[STYPESIZE];
+            int n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
 
             fprintf(fo, "%7s ", type);
 
             if(n >= STYPESIZE)
             {
-                PRINT_ERROR(
-                    "Attempted to write string buffer with too many "
-                    "characters");
+                PRINT_ERROR("Attempted to write string buffer with too many " "characters");
             }
 
             fprintf(fo,
                     "%10ld Kb %6.2f   ",
-                    (long)(tmp_long / 1024),
-                    (float)(100.0 * tmp_long / sizeb));
+                    (long)(tmp_long / 1024), (float)(100.0 * tmp_long / sizeb));
 
-            timediff =
+            double timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
                 (1.0 * dcimg[i].md[0].lastaccesstime.tv_sec +
                  0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
@@ -248,9 +210,9 @@ errno_t list_image_ID_ofp(FILE *fo)
         }
     fprintf(fo, "\n");
 
-    sizeGb = 0;
-    sizeMb = 0;
-    sizeKb = 0;
+    unsigned long long sizeGb = 0;
+    unsigned long long sizeMb = 0;
+    unsigned long long sizeKb = 0;
     sizeb  = compute_image_memory();
 
     if(sizeb > 1024 - 1)
@@ -297,12 +259,11 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
 {
     long i;
     //long long   tmp_long;
-    uint8_t datatype;
 
     for(i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
-            datatype = dcimg[i].md[0].datatype;
+            uint8_t datatype = dcimg[i].md[0].datatype;
             //tmp_long = ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo,
@@ -310,8 +271,7 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
                     dcimg[i].name,
                     datatype,
                     (long) dcimg[i].md[0].naxis,
-                    dcimg[i].md[0].shared,
-                    (long) dcimg[i].md[0].size[0]);
+                    dcimg[i].md[0].shared, (long) dcimg[i].md[0].size[0]);
 
             for(long j = 1; j < dcimg[i].md[0].naxis; j++)
             {
@@ -341,8 +301,6 @@ errno_t list_image_ID()
 errno_t list_image_ID_ofp_json(FILE *fo)
 {
 
-    long long   tmp_long;
-    uint8_t datatype;
     unsigned long long sizeb = compute_image_memory();
     struct timespec timenow;
     clock_gettime(CLOCK_MILK, &timenow);
@@ -357,8 +315,8 @@ errno_t list_image_ID_ofp_json(FILE *fo)
                 fprintf(fo, ",\n");
             }
             first = 0;
-            datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+            uint8_t datatype = dcimg[i].md[0].datatype;
+            long long tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo, "    {\n");
             fprintf(fo, "      \"index\": %ld,\n", i);
@@ -392,8 +350,6 @@ errno_t list_image_ID_ofp_json(FILE *fo)
 errno_t list_image_ID_ofp_porcelain(FILE *fo)
 {
 
-    long long   tmp_long;
-    uint8_t datatype;
     struct timespec timenow;
     clock_gettime(CLOCK_MILK, &timenow);
 
@@ -402,8 +358,8 @@ errno_t list_image_ID_ofp_porcelain(FILE *fo)
     for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
-            datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+            uint8_t datatype = dcimg[i].md[0].datatype;
+            long long tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo, "%ld\t%s\t%ld\t", i, dcimg[i].name, (long) dcimg[i].md[0].naxis);
             for(long j = 0; j < dcimg[i].md[0].naxis; j++)
@@ -415,9 +371,7 @@ errno_t list_image_ID_ofp_porcelain(FILE *fo)
                                0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
             fprintf(fo, "\t%s\t%ld\t%ld\t%.9f\n",
                     ImageStreamIO_typename_7(datatype),
-                    (long) dcimg[i].md[0].shared,
-                    (long)(tmp_long / 1024),
-                    timediff);
+                    (long) dcimg[i].md[0].shared, (long)(tmp_long / 1024), timediff);
         }
 
     return RETURN_SUCCESS;
@@ -434,13 +388,7 @@ errno_t list_image_ID_ofp_porcelain(FILE *fo)
 
 errno_t list_image_ID_file(const char *fname)
 {
-    FILE   *fp;
-
-    uint8_t datatype;
-    char    type[STYPESIZE];
-    int     n;
-
-    fp = fopen(fname, "w");
+    FILE *fp = fopen(fname, "w");
     if(fp == NULL)
     {
         PRINT_ERROR("Cannot create file %s", fname);
@@ -450,7 +398,7 @@ errno_t list_image_ID_file(const char *fname)
     for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
-            datatype = dcimg[i].md[0].datatype;
+            uint8_t datatype = dcimg[i].md[0].datatype;
             fprintf(fp, "%ld %s", i, dcimg[i].name);
             fprintf(fp, " %ld", (long) dcimg[i].md[0].naxis);
             for(long j = 0; j < dcimg[i].md[0].naxis; j++)
@@ -458,13 +406,12 @@ errno_t list_image_ID_file(const char *fname)
                 fprintf(fp, " %ld", (long) dcimg[i].md[0].size[j]);
             }
 
-            n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
+            char type[STYPESIZE];
+            int n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
 
             if(n >= STYPESIZE)
             {
-                PRINT_ERROR(
-                    "Attempted to write string buffer with too many "
-                    "characters");
+                PRINT_ERROR("Attempted to write string buffer with too many " "characters");
             }
 
             fprintf(fp, " %s\n", type);
