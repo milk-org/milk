@@ -4,15 +4,13 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
 
 /** @brief remove FPS and associated files
  *
  * Requires CONF and RUN to be off
  *
  */
-errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_FPSremove(FPS *fps)
 {
 
     // get directory name
@@ -24,15 +22,9 @@ errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
     WRITE_FULLFILENAME(fpsfname, "%s/%s.fps.shm", shmdname, fps->md->name);
 
     // delete sym links
-    EXECUTE_SYSTEM_COMMAND(
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "find %s -follow -type f -name \"fpslog.*%s\" -exec grep -q \"LOGSTART "
-        "%s\" {} \\; -delete",
-        shmdname,
-        fps->md->name,
-        fps->md->name);
-
-    fps->SMfd = -1;
-    close(fps->SMfd);
+        "%s\" {} \\; -delete", shmdname, fps->md->name, fps->md->name);
 
     //    remove(conflogfname);
     int ret     = remove(fpsfname);
@@ -82,37 +74,23 @@ errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
      */
     {
         char chkcmd[256];
-        snprintf(chkcmd, sizeof(chkcmd),
-                 "tmux has-session -t %s 2>/dev/null",
-                 fps->md->name);
-        if (system(chkcmd) == 0)
+        snprintf(chkcmd, sizeof(chkcmd), "tmux has-session -t %s 2>/dev/null", fps->md->name);
+        if(system(chkcmd) == 0)
         {
-            EXECUTE_SYSTEM_COMMAND(
-                "tmux send-keys -t %s:ctrl"
-                " \" exit\" C-m",
-                fps->md->name);
-            EXECUTE_SYSTEM_COMMAND(
-                "tmux send-keys -t %s:ctrl"
-                " \" exit\" C-m",
-                fps->md->name);
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
+                "tmux send-keys -t %s:ctrl" " \" exit\" C-m", fps->md->name);
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
+                "tmux send-keys -t %s:ctrl" " \" exit\" C-m", fps->md->name);
 
-            EXECUTE_SYSTEM_COMMAND(
-                "tmux send-keys -t %s:conf"
-                " \" exit\" C-m",
-                fps->md->name);
-            EXECUTE_SYSTEM_COMMAND(
-                "tmux send-keys -t %s:conf"
-                " \" exit\" C-m",
-                fps->md->name);
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
+                "tmux send-keys -t %s:conf" " \" exit\" C-m", fps->md->name);
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
+                "tmux send-keys -t %s:conf" " \" exit\" C-m", fps->md->name);
 
-            EXECUTE_SYSTEM_COMMAND(
-                "tmux send-keys -t %s:run"
-                " \" exit\" C-m",
-                fps->md->name);
-            EXECUTE_SYSTEM_COMMAND(
-                "tmux send-keys -t %s:run"
-                " \" exit\" C-m",
-                fps->md->name);
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
+                "tmux send-keys -t %s:run" " \" exit\" C-m", fps->md->name);
+            EXECUTE_SYSTEM_COMMAND_NOCHECK(
+                "tmux send-keys -t %s:run" " \" exit\" C-m", fps->md->name);
         }
     }
 

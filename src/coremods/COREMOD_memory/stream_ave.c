@@ -17,6 +17,7 @@
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/pixel_dispatch.h"
 
 
 /* ================================================================
@@ -27,7 +28,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streamave",
     .cmdkey      = "streamave",
     .description =
-        "average stream of images"
+        "average stream of images",
+    .description_long =
+        "Compute a running average of image stream frames. Accumulates N consecutive frames and writes the mean to the output stream. Useful for background estimation and noise reduction."
 };
 
 
@@ -35,13 +38,10 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     streamave_inimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "instream";
-static char     streamave_outimave[
-    FUNCTION_PARAMETER_STRMAXLEN] = "outave";
+static char     streamave_inimname[FUNCTION_PARAMETER_STRMAXLEN] = "instream";
+static char     streamave_outimave[FUNCTION_PARAMETER_STRMAXLEN] = "outave";
 static uint32_t streamave_outimshared = 0;
-static char     streamave_outimrms[
-    FUNCTION_PARAMETER_STRMAXLEN] = "outrms";
+static char     streamave_outimrms[FUNCTION_PARAMETER_STRMAXLEN] = "outrms";
 static uint64_t streamave_NBcoadd     = 100;
 static uint64_t streamave_cntindex    = 0;
 static uint64_t streamave_compave     = 1;
@@ -55,7 +55,7 @@ static uint64_t streamave_comprms     = 0;
 #define FPS_PARAMS(X) \
     X(".in_name", streamave_inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "input image") \
     X(".outave_name", streamave_outimave, \
       FPTYPE_STREAMNAME, 1, \
@@ -105,9 +105,7 @@ static MILK_HOT errno_t fpsexec(
     double *imdataarray,
     double *imdataarrayPOW)
 {
-    uint64_t xysize =
-        imgin->md[0].size[0]
-        * imgin->md[0].size[1];
+    uint64_t xysize = imgin->md[0].size[0] * imgin->md[0].size[1];
 
     #define STREAM_AVE_LOOP(VTYPE, ARRAY_MEMBER) \
     { \
@@ -133,27 +131,14 @@ static MILK_HOT errno_t fpsexec(
         } \
     }
 
-    if (imgin->md[0].datatype == _DATATYPE_FLOAT) {
-        STREAM_AVE_LOOP(float, F);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT16) {
-        STREAM_AVE_LOOP(uint16_t, UI16);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT8) {
-        STREAM_AVE_LOOP(uint8_t, UI8);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT8) {
-        STREAM_AVE_LOOP(int8_t, SI8);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT16) {
-        STREAM_AVE_LOOP(int16_t, SI16);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT32) {
-        STREAM_AVE_LOOP(uint32_t, UI32);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT32) {
-        STREAM_AVE_LOOP(int32_t, SI32);
-    } else if (imgin->md[0].datatype == _DATATYPE_UINT64) {
-        STREAM_AVE_LOOP(uint64_t, UI64);
-    } else if (imgin->md[0].datatype == _DATATYPE_INT64) {
-        STREAM_AVE_LOOP(int64_t, SI64);
-    } else if (imgin->md[0].datatype == _DATATYPE_DOUBLE) {
-        STREAM_AVE_LOOP(double, D);
-    }
+#define STREAM_AVE_DISPATCH(DTYPE, ACC, CTYPE)       \
+    else if (imgin->md[0].datatype == DTYPE)           \
+        STREAM_AVE_LOOP(CTYPE, ACC)
+
+    if (0) {}  // anchor for else-if chain
+    FOREACH_REAL_DATATYPE(STREAM_AVE_DISPATCH)
+
+#undef STREAM_AVE_DISPATCH
 
     #undef STREAM_AVE_LOOP
 
@@ -168,12 +153,9 @@ static MILK_HOT errno_t fpsexec(
             for (uint64_t i = 0;
                  i < xysize; i++)
             {
-                imgoutave->array.F[i] =
-                    imdataarray[i]
-                    / (streamave_cntindex);
+                imgoutave->array.F[i] = imdataarray[i] / (streamave_cntindex);
             }
-            processinfo_update_output_stream(
-                NULL, imgoutave, NULL);
+            processinfo_update_output_stream(NULL, imgoutave, NULL);
         }
         if (streamave_comprms
             && imgoutrms)
@@ -181,12 +163,9 @@ static MILK_HOT errno_t fpsexec(
             for (uint64_t i = 0;
                  i < xysize; i++)
             {
-                imgoutrms->array.F[i] =
-                    sqrtf(imdataarrayPOW[i])
-                    / (streamave_cntindex);
+                imgoutrms->array.F[i] = sqrtf(imdataarrayPOW[i]) / (streamave_cntindex);
             }
-            processinfo_update_output_stream(
-                NULL, imgoutrms, NULL);
+            processinfo_update_output_stream(NULL, imgoutrms, NULL);
         }
         streamave_cntindex = 0;
     }
@@ -205,33 +184,59 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t __attribute__((unused))
+compute_function()
 {
-    IMGID in =
-        imgid_make_from_name(
-            streamave_inimname);
-    resolveIMGID(
-        &in, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID in = imgid_make_from_name(streamave_inimname);
+    resolveIMGID(&in,   ERRMODE_NULL, dcimg, dcnimg);
 
-    uint64_t xys =
-        in.md[0].size[0]
-        * in.md[0].size[1];
-    double *d1 =
-        (double *) malloc(
-            sizeof(double) * xys);
-    double *d2 =
-        (double *) malloc(
-            sizeof(double) * xys);
+    if (in.im == NULL)
+    {
+        return RETURN_FAILURE;
+    }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    uint64_t xys = (uint64_t) in.md->size[0] * in.md->size[1];
 
-    fpsexec(in.im, NULL, NULL, d1, d2);
+    /* Create output streams */
+    IMGID outave = stream_connect_create_2Df32(streamave_outimave, in.md->size[0], in.md->size[1]);
+    IMAGE *imgoutave = NULL;
+    if (outave.im != NULL && streamave_compave)
+    {
+        imgoutave = outave.im;
+    }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    IMAGE *imgoutrms = NULL;
+    if (streamave_comprms
+        && strlen(streamave_outimrms) > 0)
+    {
+        IMGID outrms =
+            stream_connect_create_2Df32(streamave_outimrms, in.md->size[0], in.md->size[1]);
+        if (outrms.im != NULL)
+        {
+            imgoutrms = outrms.im;
+        }
+    }
 
-    free(d1);
-    free(d2);
+    /* Allocate accumulation buffers */
+    double *d1 = (double *) calloc(xys, sizeof(double));
+    double *d2 = NULL;
+    if (streamave_comprms)
+    {
+        d2 = (double *) calloc(xys, sizeof(double));
+    }
+
+    if (d1 == NULL)
+    {
+        return RETURN_FAILURE;
+    }
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(in.im, imgoutave, imgoutrms, d1,    d2);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  free(d1);
+    if (d2 != NULL)
+    {
+        free(d2);
+    }
     return RETURN_SUCCESS;
 }
 
@@ -244,17 +249,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_streamaverage()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

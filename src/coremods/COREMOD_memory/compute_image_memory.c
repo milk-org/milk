@@ -15,6 +15,9 @@
 #endif
 
 
+/**
+ * @brief Compute total memory used by all images.
+ */
 uint64_t compute_image_memory()
 {
     uint64_t totalmem = 0;
@@ -26,8 +29,7 @@ uint64_t compute_image_memory()
 
         if(dcimg[i].used == 1)
         {
-            totalmem += dcimg[i].md[0].nelement *
-                        ImageStreamIO_typesize(dcimg[i].md[0].datatype);
+            totalmem += dcimg[i].md[0].nelement * ImageStreamIO_typesize(dcimg[i].md[0].datatype);
         }
     }
 

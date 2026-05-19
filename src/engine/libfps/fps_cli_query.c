@@ -10,72 +10,62 @@
  * (app_info->fps_name) of the queried command.
  */
 
-#include <stdio.h>
-#include <string.h>
 
 #include "CLIcore.h"
-#include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function_registry.h"
-#include "fps_cli_init.h"
-#include "fps_cli_query.h"
-#include "fps_connect.h"
-#include "fps_disconnect.h"
-#include "fps_local_store.h"
-#include "fps_print_info.h"
 
 
+/**
+ * @brief Print FPS query information ("?" mode).
+ *
+ * Lists all parameters, their types, defaults,
+ * and current values. Used when the CLI receives
+ * "?" as the FPS name.
+ */
 void fps_print_query_info(
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,
-    int              nb_b
-)
+    int             nb_b)
 {
     const char *fpsn = app_info->fps_name;
 
-    printf("\n\033[1;36m=== FPS instances for "
-           "%s ===\033[0m\n\n",
-           app_info->cmdkey);
+    printf("\n\033[1;36m=== FPS instances for " "%s ===\033[0m\n\n", app_info->cmdkey);
 
     /* ---- Local FPS (scoped to compute unit) ---- */
     {
         int local_count = 0;
         int n = fps_local_count_entries();
 
-        for (int i = 0; i < n; i++) {
-            FUNCTION_PARAMETER_STRUCT *lfps =
-                fps_local_get_by_index(i);
-            if (lfps == NULL ||
-                lfps->md == NULL)
+        for(int ii = 0; ii < n; ii++)
+        {
+            FPS *lfps = fps_local_get_by_index(ii);
+            if(lfps == NULL ||
+                    lfps->md == NULL)
             {
                 continue;
             }
-            if (strcmp(lfps->md->name,
-                       "_defaults") == 0)
+            if(strcmp(lfps->md->name,
+                      "_defaults") == 0)
             {
                 continue;
             }
             /* Only show FPS belonging to this
              * compute unit */
-            const char *creator =
-                fps_local_get_creator(i);
-            if (creator[0] != '\0' &&
-                strcmp(creator, fpsn) != 0)
+            const char *creator = fps_local_get_creator(ii);
+            if(creator[0] != '\0' &&
+                    strcmp(creator, fpsn) != 0)
             {
                 continue;
             }
-            if (local_count == 0) {
-                printf("\033[1;33m  Local FPS "
-                       "(in-process memory):"
-                       "\033[0m\n");
+            if(local_count == 0)
+            {
+                printf("\033[1;33m  Local FPS " "(in-process memory):" "\033[0m\n");
             }
             printf("    \033[1;32m%-20s\033[0m  "
-                   "%ld params\n",
-                   lfps->md->name,
-                   lfps->NBparamActive);
+                   "%ld params\n", lfps->md->name, lfps->NBparamActive);
             local_count++;
         }
-        if (local_count == 0) {
+        if(local_count == 0)
+        {
             printf("  Local FPS : (none)\n");
         }
     }
@@ -83,47 +73,45 @@ void fps_print_query_info(
     /* ---- Shared FPS in shm ---- */
     {
         char pattern[1024];
-        snprintf(pattern, sizeof(pattern),
-                 "ls %s/*.fps.shm 2>/dev/null",
-                 dcshmdir);
+        snprintf(pattern, sizeof(pattern), "ls %s/*.fps.shm 2>/dev/null", dcshmdir);
 
         FILE *pp = popen(pattern, "r");
         int shm_count = 0;
-        if (pp != NULL) {
+        if(pp != NULL)
+        {
             char line[512];
-            while (fgets(line, sizeof(line), pp)
-                   != NULL)
+            while(fgets(line, sizeof(line), pp)
+                    != NULL)
             {
                 line[strcspn(line, "\n")] = '\0';
 
                 char *base = strrchr(line, '/');
                 base = base ? base + 1 : line;
-                char *dot =
-                    strstr(base, ".fps.shm");
-                if (dot) {
+                char *dot = strstr(base, ".fps.shm");
+                if(dot)
+                {
                     *dot = '\0';
                 }
 
                 /* Only show FPS used by this
                  * compute unit */
-                if (!fps_shared_was_used_by(
-                        base, fpsn))
+                if(!fps_shared_was_used_by(
+                            base, fpsn))
                 {
                     continue;
                 }
 
-                if (shm_count == 0) {
-                    printf("\n\033[1;33m  Shared FPS"
-                           " (shm):\033[0m\n");
+                if(shm_count == 0)
+                {
+                    printf("\n\033[1;33m  Shared FPS" " (shm):\033[0m\n");
                 }
-                printf("    \033[1;32m%-20s\033[0m"
-                       "  %s\n",
-                       base, line);
+                printf("    \033[1;32m%-20s\033[0m" "  %s\n", base, line);
                 shm_count++;
             }
             pclose(pp);
         }
-        if (shm_count == 0) {
+        if(shm_count == 0)
+        {
             printf("  Shared FPS: (none)\n");
         }
     }
@@ -131,24 +119,25 @@ void fps_print_query_info(
     /* ---- Parameter table ---- */
     printf("\n");
 
-    FUNCTION_PARAMETER_STRUCT *show_fps = NULL;
+    FPS *show_fps = NULL;
     int must_disconnect = 0;
-    static FUNCTION_PARAMETER_STRUCT tmp_fps;
+    static FPS tmp_fps;
 
     /* Try last-used FPS if it belongs to this
      * compute unit */
-    if (fps_last_used_name[0] != '\0' &&
-        strcmp(fps_last_used_cmdkey, fpsn) == 0)
+    if(fps_last_used_name[0] != '\0' &&
+            strcmp(fps_last_used_cmdkey, fpsn) == 0)
     {
-        if (fps_last_used_name[0] == '_') {
-            show_fps = fps_local_find(
-                fps_last_used_name);
+        if(fps_last_used_name[0] == '_')
+        {
+            show_fps = fps_local_find(fps_last_used_name);
         }
-        else {
-            if (function_parameter_struct_connect(
-                    fps_last_used_name,
-                    &tmp_fps,
-                    FPSCONNECT_SIMPLE) != -1)
+        else
+        {
+            if(fps_connect(
+                        fps_last_used_name,
+                        &tmp_fps,
+                        FPSCONNECT_SIMPLE) != -1)
             {
                 show_fps = &tmp_fps;
                 must_disconnect = 1;
@@ -158,25 +147,25 @@ void fps_print_query_info(
 
     /* Fallback: most recent local FPS for this
      * compute unit */
-    if (show_fps == NULL) {
+    if(show_fps == NULL)
+    {
         int n = fps_local_count_entries();
-        for (int i = n - 1; i >= 0; i--) {
-            FUNCTION_PARAMETER_STRUCT *lfps =
-                fps_local_get_by_index(i);
-            if (lfps == NULL ||
-                lfps->md == NULL)
+        for(int ii = n - 1; ii >= 0; ii--)
+        {
+            FPS *lfps = fps_local_get_by_index(ii);
+            if(lfps == NULL ||
+                    lfps->md == NULL)
             {
                 continue;
             }
-            if (strcmp(lfps->md->name,
-                       "_defaults") == 0)
+            if(strcmp(lfps->md->name,
+                      "_defaults") == 0)
             {
                 continue;
             }
-            const char *creator =
-                fps_local_get_creator(i);
-            if (creator[0] != '\0' &&
-                strcmp(creator, fpsn) != 0)
+            const char *creator = fps_local_get_creator(ii);
+            if(creator[0] != '\0' &&
+                    strcmp(creator, fpsn) != 0)
             {
                 continue;
             }
@@ -186,19 +175,20 @@ void fps_print_query_info(
     }
 
     /* Try shared FPS if no local found */
-    if (show_fps == NULL) {
+    if(show_fps == NULL)
+    {
         char try_name[200];
-        if (data.processname[0] != '\0') {
-            snprintf(try_name, sizeof(try_name),
-                     "%s.%s",
-                     fpsn, data.processname);
-        } else {
-            strncpy(try_name, fpsn,
-                    sizeof(try_name) - 1);
+        if(data.processname[0] != '\0')
+        {
+            snprintf(try_name, sizeof(try_name), "%s.%s", fpsn, data.processname);
         }
-        if (function_parameter_struct_connect(
-                try_name, &tmp_fps,
-                FPSCONNECT_SIMPLE) != -1)
+        else
+        {
+            strncpy(try_name, fpsn, sizeof(try_name) - 1);
+        }
+        if(fps_connect(
+                    try_name, &tmp_fps,
+                    FPSCONNECT_SIMPLE) != -1)
         {
             show_fps = &tmp_fps;
             must_disconnect = 1;
@@ -206,35 +196,29 @@ void fps_print_query_info(
     }
 
     /* Create temporary with defaults */
-    if (show_fps == NULL) {
-        show_fps = fps_local_create(
-            "_defaults",
-            FUNCTION_PARAMETER_NBPARAM_DEFAULT);
-        if (show_fps != NULL) {
+    if(show_fps == NULL)
+    {
+        show_fps = fps_local_create("_defaults", FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+        if(show_fps != NULL)
+        {
             fps_init_from_bindings(
-                show_fps,
-                app_info->cmdkey,
-                app_info->description,
-                bindings,
-                nb_b);
-            printf("\033[1;33m  Showing default"
-                   " parameter values:\033[0m"
-                   "\n\n");
+                show_fps, app_info->cmdkey, app_info->description, bindings, nb_b);
+            printf("\033[1;33m  Showing default" " parameter values:\033[0m" "\n\n");
         }
-    } else {
-        printf("\033[1;33m  Parameters for "
-               "'%s':\033[0m\n\n",
-               show_fps->md->name);
+    }
+    else
+    {
+        printf("\033[1;33m  Parameters for " "'%s':\033[0m\n\n", show_fps->md->name);
     }
 
-    if (show_fps != NULL) {
-        function_parameter_print_info(
-            show_fps, 0, 0);
+    if(show_fps != NULL)
+    {
+        function_parameter_print_info(show_fps, 0, 0);
     }
 
-    if (must_disconnect) {
-        function_parameter_struct_disconnect(
-            &tmp_fps);
+    if(must_disconnect)
+    {
+        fps_disconnect(&tmp_fps);
     }
     /*
      * Note: _defaults FPS lives in the local

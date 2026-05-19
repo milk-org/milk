@@ -15,4 +15,4 @@ char FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN] = "unknown";
 errno_t (*FPS_CONFfunc)() = NULL;
 errno_t (*FPS_RUNfunc)() = NULL;
 
-FUNCTION_PARAMETER_STRUCT *fpsarray = NULL;
+FPS *fpsarray = NULL;

@@ -55,9 +55,8 @@ typedef struct
  */
 int fps_valkey_connect(
     FPS_VALKEY_CTX *vctx,
-    const char *server,
-    int port
-);
+    const char     *server,
+    int            port);
 
 /**
  * @brief Disconnect and free Valkey resources
@@ -85,12 +84,11 @@ void fps_valkey_disconnect(FPS_VALKEY_CTX *vctx);
  */
 int fps_valkey_push_param(
     FPS_VALKEY_CTX *vctx,
-    const char *fpsname,
-    const char *keyword,
-    const char *value,
-    const char *typestr,
-    long cnt0
-);
+    const char     *fpsname,
+    const char     *keyword,
+    const char     *value,
+    const char     *typestr,
+    long           cnt0);
 
 /**
  * @brief Push FPS metadata to Valkey
@@ -104,10 +102,9 @@ int fps_valkey_push_param(
  * @return 0 on success, -1 on error
  */
 int fps_valkey_push_metadata(
-    FPS_VALKEY_CTX *vctx,
-    const char *fpsname,
-    FUNCTION_PARAMETER_STRUCT_MD *md
-);
+    FPS_VALKEY_CTX               *vctx,
+    const char                   *fpsname,
+    FUNCTION_PARAMETER_STRUCT_MD *md);
 
 /**
  * @brief Register FPS in Valkey fps_list set
@@ -118,8 +115,7 @@ int fps_valkey_push_metadata(
  */
 int fps_valkey_register_fps(
     FPS_VALKEY_CTX *vctx,
-    const char *fpsname
-);
+    const char     *fpsname);
 
 /**
  * @brief Unregister FPS from Valkey
@@ -133,8 +129,7 @@ int fps_valkey_register_fps(
  */
 int fps_valkey_unregister_fps(
     FPS_VALKEY_CTX *vctx,
-    const char *fpsname
-);
+    const char     *fpsname);
 
 /**
  * @brief Start subscriber thread

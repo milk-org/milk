@@ -1,5 +1,6 @@
 build
 _build*
+build_local/
 build_debug
 install_debug
 src/config.h

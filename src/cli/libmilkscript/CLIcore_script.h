@@ -102,8 +102,7 @@ const char *cli_var_get(const char *name);
 /** Set a CLI variable. Creates if new. */
 void cli_var_set(
     const char *name,
-    const char *val
-);
+    const char *val);
 
 /** Remove a CLI variable. */
 void cli_var_unset(const char *name);
@@ -130,8 +129,7 @@ errno_t cli_cmd_fpsset(void);
 int cli_fps_set_param(
     const char *fpsname,
     const char *pname,
-    const char *valstr
-);
+    const char *valstr);
 
 /** read — read a line into a variable */
 errno_t cli_cmd_read(void);
@@ -174,21 +172,18 @@ const char *cli_var_lookup(const char *name);
 /** Expand @fpsname.param tokens in place. */
 void cli_expand_fpsvar(
     char *line,
-    int   maxlen
-);
+    int  maxlen);
 
 /** Expand $(( expr )) arithmetic in place. */
 void cli_expand_arith(
     char *line,
-    int   maxlen
-);
+    int  maxlen);
 
 /** Expand $VAR and ${VAR} in place.
  *  Defined in CLIcore_UI.c. */
 void cli_expand_env(
     char *line,
-    int   maxlen
-);
+    int  maxlen);
 
 /** Check if line is a variable assignment
  *  (VAR=val). Returns 1 if handled. */
@@ -242,8 +237,7 @@ int cli_eval_test(const char *expr);
 /** Execute a list of lines as a block. */
 void cli_exec_lines(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int  nlines
-);
+    int nlines);
 
 /* -- Cross-file helpers (CLIcore_script_*.c) -- */
 
@@ -253,43 +247,35 @@ const char *strip_ws(const char *s);
 /** Test if line starts with given prefix. */
 int starts_with(
     const char *line,
-    const char *prefix
-);
+    const char *prefix);
 
 /** Evaluate a condition line for if/elif. */
 int eval_cond_line(
     const char *raw,
-    int skip
-);
+    int        skip);
 
 /* CLIcore_script_flow.c */
 void cli_exec_block_if(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 void cli_exec_block_while(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 void cli_exec_block_for(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 void cli_exec_block_select(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 
 /* CLIcore_script_case.c */
 void cli_func_define(
     const char *name,
     char body[][STRINGMAXLEN_CLICMDLINE],
-    int nbody
-);
+    int nbody);
 void cli_exec_block_case(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 
 /* ---- User-Defined Functions ---- */
 
@@ -384,7 +370,7 @@ typedef struct
     int      connected;
     IMAGE    img;
     uint64_t last_cnt0;
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     char     last_fpsval[256];
     struct timespec last_fire_ts;
 } CLI_ENGINE_TRAP;

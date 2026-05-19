@@ -9,6 +9,7 @@
 #include "fps.h"
 
 int functionparameter_UserInputSetParamValue(
-    FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
+    FPS *fpsentry,
+    int pindex);
 
 #endif

@@ -8,10 +8,21 @@
 
 #include <math.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -30,8 +41,11 @@ imageID basic_stretch(
 {
     IMGID imgin =
         imgid_make_from_name(name_in);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0] = imgin.md->size[0];
@@ -105,8 +119,11 @@ imageID basic_stretch_range(
 
     IMGID imgin =
         imgid_make_from_name(name_in);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0] = imgin.md->size[0];
@@ -250,8 +267,11 @@ imageID basic_stretchc(
 
     IMGID imgin =
         imgid_make_from_name(name_in);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t naxes[2];
     naxes[0] = imgin.md->size[0];

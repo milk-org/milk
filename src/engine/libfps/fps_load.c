@@ -4,15 +4,22 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
 
-#include "fps_connect.h"
 
 // Forward declaration or include for fps_ID
+/**
+ * @brief Look up an FPS index by name.
+ *
+ * Searches the connected FPS array for the
+ * given name. Returns -1 if not found.
+ */
 long fps_ID(const char *fpsname);
 
 
+/**
+ * @brief Loads an FPS structure from shared memory by name.
+ */
 long function_parameter_structure_load(char *fpsname)
 {
     long fpsID;
@@ -44,10 +51,7 @@ long function_parameter_structure_load(char *fpsname)
 
         if(foundflag == 1)
         {
-            fpsarray[fpsID].NBparam =
-                function_parameter_struct_connect(fpsname,
-                                                  &fpsarray[fpsID],
-                                                  FPSCONNECT_SIMPLE);
+            fpsarray[fpsID].NBparam = fps_connect(fpsname, &fpsarray[fpsID], FPSCONNECT_SIMPLE);
             if(fpsarray[fpsID].NBparam < 1)
             {
                 printf("--- cannot load FPS %s\n", fpsname);

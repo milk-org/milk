@@ -42,17 +42,21 @@
 #define RL_COLORRESET  "\001\033[0m\002"
 
 
+/**
+ * @brief Dispatch shell built-in commands.
+ *
+ * Handles cd, echo, printf, and other standard
+ * shell builtins within the milk interpreter.
+ */
 int cli_handle_shell_builtins(void)
 {
     if(data.CLIcmdline[0] == '!')
     {
         data.CLIcmdline[0] = ' ';
-        printf(COLORDIMYELLOW
-               "[shell] %s" COLORRST "\n",
-               data.CLIcmdline);
+        printf(COLORDIMYELLOW "[shell] %s" COLORRST "\n", data.CLIcmdline);
         cli_export_vars_to_env();
         if(cli_run_external(
-               data.CLIcmdline) != 0)
+                    data.CLIcmdline) != 0)
         {
             PRINT_ERROR("shell command error");
             exit(4);
@@ -72,46 +76,37 @@ int cli_handle_shell_builtins(void)
          * wildcard chars (* or ?).
          * Non-wildcard falls through to
          * normal registered command. */
-        const char *pat =
-            data.CLIcmdline + 7;
+        const char *pat = data.CLIcmdline + 7;
         while(*pat == ' ' || *pat == '\t')
         {
             pat++;
         }
         if(strchr(pat, '*') != NULL
-           || strchr(pat, '?') != NULL)
+                || strchr(pat, '?') != NULL)
         {
             /* Build glob pattern for
              * /dev/shm matching */
             char shmglob[512];
-            snprintf(shmglob,
-                     sizeof(shmglob),
-                     "%s.im.shm", pat);
+            snprintf(shmglob, sizeof(shmglob), "%s.im.shm", pat);
             DIR *dp = opendir("/dev/shm");
             if(dp != NULL)
             {
                 struct dirent *de;
                 int count = 0;
                 while((de = readdir(dp))
-                      != NULL)
+                        != NULL)
                 {
                     if(fnmatch(
-                        shmglob,
-                        de->d_name,
-                        0) == 0)
+                                shmglob,
+                                de->d_name,
+                                0) == 0)
                     {
                         /* Strip .im.shm
                          * suffix */
                         char nm[256];
-                        strncpy(nm,
-                                de->d_name,
-                                sizeof(nm)
-                                - 1);
-                        nm[sizeof(nm) - 1]
-                            = '\0';
-                        char *sfx =
-                            strstr(nm,
-                                   ".im.shm");
+                        strncpy(nm, de->d_name, sizeof(nm) - 1);
+                        nm[sizeof(nm) - 1] = '\0';
+                        char *sfx = strstr(nm, ".im.shm");
                         if(sfx != NULL)
                         {
                             *sfx = '\0';
@@ -121,9 +116,7 @@ int cli_handle_shell_builtins(void)
                     }
                 }
                 closedir(dp);
-                printf("%d stream(s) "
-                       "matched\n",
-                       count);
+                printf("%d stream(s) " "matched\n", count);
             }
             data.CMDexecuted = 1;
         }
@@ -137,8 +130,7 @@ int cli_handle_shell_builtins(void)
     {
         /* Handle echo before tokenization
          * to avoid image name resolution */
-        const char *args =
-            data.CLIcmdline + 4;
+        const char *args = data.CLIcmdline + 4;
         while(*args == ' ')
         {
             args++;
@@ -166,8 +158,7 @@ int cli_handle_shell_builtins(void)
         /* Intercept printf before
          * tokenization so % and
          * backslash are preserved */
-        const char *raw =
-            data.CLIcmdline + 7;
+        const char *raw = data.CLIcmdline + 7;
         while(*raw == ' ')
         {
             raw++;
@@ -176,52 +167,50 @@ int cli_handle_shell_builtins(void)
         /* Tokenize manually: split on
          * spaces, respecting quotes */
         data.cmdNBarg = 1;
-        strncpy(
-            data.cmdargtoken[0].val.string,
-            "printf",
-            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+        strncpy(data.cmdargtoken[0].val.string, "printf", STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
 
         const char *s = raw;
         while(*s != '\0'
-              && data.cmdNBarg
-                 < NB_ARG_MAX)
+                && data.cmdNBarg
+                < NB_ARG_MAX)
         {
-            while(*s == ' ') s++;
-            if(*s == '\0') break;
+            while(*s == ' ')
+            {
+                s++;
+            }
+            if(*s == '\0')
+            {
+                break;
+            }
             int ai = 0;
             if(*s == '"')
             {
                 s++;
                 while(*s != '\0'
-                      && *s != '"'
-                      && ai
-                         < STRINGMAXLEN_CMDARGTOKEN_VAL
-                           - 1)
+                        && *s != '"'
+                        && ai
+                        < STRINGMAXLEN_CMDARGTOKEN_VAL
+                        - 1)
                 {
-                    data.cmdargtoken[
-                        data.cmdNBarg]
-                        .val.string[ai++]
-                        = *s++;
+                    data.cmdargtoken[data.cmdNBarg] .val.string[ai++] = *s++;
                 }
-                if(*s == '"') s++;
+                if(*s == '"')
+                {
+                    s++;
+                }
             }
             else
             {
                 while(*s != '\0'
-                      && *s != ' '
-                      && ai
-                         < STRINGMAXLEN_CMDARGTOKEN_VAL
-                           - 1)
+                        && *s != ' '
+                        && ai
+                        < STRINGMAXLEN_CMDARGTOKEN_VAL
+                        - 1)
                 {
-                    data.cmdargtoken[
-                        data.cmdNBarg]
-                        .val.string[ai++]
-                        = *s++;
+                    data.cmdargtoken[data.cmdNBarg] .val.string[ai++] = *s++;
                 }
             }
-            data.cmdargtoken[
-                data.cmdNBarg]
-                .val.string[ai] = '\0';
+            data.cmdargtoken[data.cmdNBarg] .val.string[ai] = '\0';
             data.cmdNBarg++;
         }
 
@@ -231,39 +220,32 @@ int cli_handle_shell_builtins(void)
     else if(strncmp(data.CLIcmdline,
                     "export ", 7) == 0
             || strcmp(data.CLIcmdline,
-                     "export") == 0)
+                      "export") == 0)
     {
         /* Intercept export before
          * tokenization so = in
          * VAR=value is preserved */
-        const char *raw =
-            data.CLIcmdline + 6;
+        const char *raw = data.CLIcmdline + 6;
         while(*raw == ' ')
         {
             raw++;
         }
 
         data.cmdNBarg = 1;
-        strncpy(
-            data.cmdargtoken[0].val.string,
-            "export",
-            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+        strncpy(data.cmdargtoken[0].val.string, "export", STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
 
         if(*raw != '\0')
         {
             int ai = 0;
             while(*raw != '\0'
-                  && *raw != ' '
-                  && ai
-                     < STRINGMAXLEN_CMDARGTOKEN_VAL
-                       - 1)
+                    && *raw != ' '
+                    && ai
+                    < STRINGMAXLEN_CMDARGTOKEN_VAL
+                    - 1)
             {
-                data.cmdargtoken[1]
-                    .val.string[ai++]
-                    = *raw++;
+                data.cmdargtoken[1] .val.string[ai++] = *raw++;
             }
-            data.cmdargtoken[1]
-                .val.string[ai] = '\0';
+            data.cmdargtoken[1] .val.string[ai] = '\0';
             data.cmdNBarg = 2;
         }
 
@@ -276,27 +258,20 @@ int cli_handle_shell_builtins(void)
         /* Handle before tokenization so
          * file paths with dots are not
          * misinterpreted by the parser */
-        const char *arg =
-            data.CLIcmdline + 7;
+        const char *arg = data.CLIcmdline + 7;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
         }
         if(*arg == '\0')
         {
-            printf("Usage: source "
-                   "<filename>\n");
+            printf("Usage: source " "<filename>\n");
         }
         else
         {
             data.cmdNBarg = 2;
             strncpy(
-                data.cmdargtoken[1]
-                .val.string,
-                arg,
-                sizeof(
-                    data.cmdargtoken[1]
-                    .val.string) - 1);
+                data.cmdargtoken[1] .val.string, arg, sizeof(data.cmdargtoken[1] .val.string) - 1);
             cli_source();
         }
         data.CMDexecuted = 1;
@@ -310,37 +285,31 @@ int cli_handle_shell_builtins(void)
         static char sourced[128][PATH_MAX];
         static int nsourced = 0;
 
-        const char *arg =
-            data.CLIcmdline + 13;
+        const char *arg = data.CLIcmdline + 13;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
         }
         if(*arg == '\0')
         {
-            printf("Usage: include_once "
-                   "<filename>\n");
+            printf("Usage: include_once " "<filename>\n");
         }
         else
         {
             char rp[PATH_MAX];
-            char *resolved =
-                realpath(arg, rp);
+            char *resolved = realpath(arg, rp);
             if(resolved == NULL)
             {
-                printf("include_once: "
-                       "%s: %s\n",
-                       arg,
-                       strerror(errno));
+                printf("include_once: " "%s: %s\n", arg, strerror(errno));
             }
             else
             {
                 int found = 0;
                 for(int k = 0;
-                    k < nsourced; k++)
+                        k < nsourced; k++)
                 {
                     if(strcmp(sourced[k],
-                             rp) == 0)
+                              rp) == 0)
                     {
                         found = 1;
                         break;
@@ -350,20 +319,13 @@ int cli_handle_shell_builtins(void)
                 {
                     if(nsourced < 128)
                     {
-                        strncpy(
-                            sourced[nsourced],
-                            rp,
-                            PATH_MAX - 1);
+                        strncpy(sourced[nsourced], rp, PATH_MAX - 1);
                         nsourced++;
                     }
                     data.cmdNBarg = 2;
                     strncpy(
                         data.cmdargtoken[1]
-                        .val.string,
-                        arg,
-                        sizeof(
-                            data.cmdargtoken[1]
-                            .val.string) - 1);
+                        .val.string, arg, sizeof(data.cmdargtoken[1] .val.string) - 1);
                     cli_source();
                 }
             }
@@ -376,16 +338,14 @@ int cli_handle_shell_builtins(void)
         /* Handle before tokenization so
          * file paths with dots etc. are
          * not misinterpreted */
-        const char *arg =
-            data.CLIcmdline + 11;
+        const char *arg = data.CLIcmdline + 11;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
         }
         if(*arg == '\0')
         {
-            printf("Usage: savescript "
-                   "<filename>\n");
+            printf("Usage: savescript " "<filename>\n");
         }
         else
         {
@@ -393,12 +353,7 @@ int cli_handle_shell_builtins(void)
              * token for cli_savescript() */
             data.cmdNBarg = 2;
             strncpy(
-                data.cmdargtoken[1]
-                .val.string,
-                arg,
-                sizeof(
-                    data.cmdargtoken[1]
-                    .val.string) - 1);
+                data.cmdargtoken[1] .val.string, arg, sizeof(data.cmdargtoken[1] .val.string) - 1);
             cli_savescript();
         }
         data.CMDexecuted = 1;
@@ -406,27 +361,20 @@ int cli_handle_shell_builtins(void)
     else if(strncmp(data.CLIcmdline,
                     "savehistory ", 12) == 0)
     {
-        const char *arg =
-            data.CLIcmdline + 12;
+        const char *arg = data.CLIcmdline + 12;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
         }
         if(*arg == '\0')
         {
-            printf("Usage: savehistory "
-                   "<filename>\n");
+            printf("Usage: savehistory " "<filename>\n");
         }
         else
         {
             data.cmdNBarg = 2;
             strncpy(
-                data.cmdargtoken[1]
-                .val.string,
-                arg,
-                sizeof(
-                    data.cmdargtoken[1]
-                    .val.string) - 1);
+                data.cmdargtoken[1] .val.string, arg, sizeof(data.cmdargtoken[1] .val.string) - 1);
             cli_savehistory();
         }
         data.CMDexecuted = 1;
@@ -442,8 +390,14 @@ int cli_handle_shell_builtins(void)
          * -l: loop forever
          * -n N: loop N times */
         const char *arg = data.CLIcmdline;
-        if(strncmp(data.CLIcmdline, "on_update ", 10) == 0) arg += 10;
-        else arg += 9;
+        if(strncmp(data.CLIcmdline, "on_update ", 10) == 0)
+        {
+            arg += 10;
+        }
+        else
+        {
+            arg += 9;
+        }
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
@@ -454,9 +408,9 @@ int cli_handle_shell_builtins(void)
         while(*arg == '-')
         {
             if(strncmp(arg, "-l", 2) == 0
-               && (arg[2] == ' '
-                   || arg[2] == '\t'
-                   || arg[2] == '\0'))
+                    && (arg[2] == ' '
+                        || arg[2] == '\t'
+                        || arg[2] == '\0'))
             {
                 loop_count = -1;
                 arg += 2;
@@ -466,7 +420,7 @@ int cli_handle_shell_builtins(void)
             {
                 arg += 2;
                 while(*arg == ' '
-                      || *arg == '\t')
+                        || *arg == '\t')
                 {
                     arg++;
                 }
@@ -491,7 +445,7 @@ int cli_handle_shell_builtins(void)
                 break;
             }
             while(*arg == ' '
-                  || *arg == '\t')
+                    || *arg == '\t')
             {
                 arg++;
             }
@@ -502,9 +456,9 @@ int cli_handle_shell_builtins(void)
         {
             int si = 0;
             while(*arg != '\0'
-                  && *arg != ' '
-                  && *arg != '\t'
-                  && si < 199)
+                    && *arg != ' '
+                    && *arg != '\t'
+                    && si < 199)
             {
                 sname[si++] = *arg++;
             }
@@ -525,30 +479,24 @@ int cli_handle_shell_builtins(void)
         }
         /* Find end, strip } */
         char body[STRINGMAXLEN_CLICMDLINE];
-        strncpy(body, arg,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        body[
-            STRINGMAXLEN_CLICMDLINE - 1]
-            = '\0';
+        strncpy(body, arg, STRINGMAXLEN_CLICMDLINE - 1);
+        body[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
         {
             int blen = (int) strlen(body);
             while(blen > 0
-                  && (body[blen - 1] == '}'
-                      || body[blen - 1] == ' '
-                      || body[blen - 1]
-                      == '\t'))
+                    && (body[blen - 1] == '}'
+                        || body[blen - 1] == ' '
+                        || body[blen - 1]
+                        == '\t'))
             {
                 blen--;
             }
             body[blen] = '\0';
         }
         if(sname[0] == '\0'
-           || body[0] == '\0')
+                || body[0] == '\0')
         {
-            printf("Usage: on_update "
-                   "[-l] [-n N] "
-                   "<stream> "
-                   "{ command }\n");
+            printf("Usage: on_update " "[-l] [-n N] " "<stream> " "{ command }\n");
         }
         else
         {
@@ -556,49 +504,45 @@ int cli_handle_shell_builtins(void)
              * wait for semaphore */
             IMAGE img;
             if(ImageStreamIO_read_sharedmem_image_toIMAGE(
-                   sname, &img)
-               == IMAGESTREAMIO_SUCCESS)
+                        sname, &img)
+                    == IMAGESTREAMIO_SUCCESS)
             {
-                int semidx =
-                    ImageStreamIO_getsemwaitindex(
-                        &img, 0);
+                int semidx = ImageStreamIO_getsemwaitindex(&img, 0);
                 if(semidx >= 0)
                 {
                     /* Create processinfo for
                      * loop mode */
-                    PROCESSINFO *procinfo =
-                        NULL;
-                    int is_loop =
-                        (loop_count != 1);
+                    PROCESSINFO *procinfo = NULL;
+                    int is_loop = (loop_count != 1);
                     if(is_loop)
                     {
                         char pname[64];
-                        snprintf(pname,
-                            sizeof(pname),
-                            "on_update_%s",
-                            sname);
-                        procinfo =
-                            processinfo_shm_create(
-                                pname,
-                                PROCESSINFO_CTRLVAL_RUN);
+                        snprintf(pname, sizeof(pname), "on_update_%s", sname);
+                        procinfo = processinfo_shm_create(pname, PROCESSINFO_CTRLVAL_RUN);
+                        if(procinfo == NULL)
+                        {
+                            PRINT_WARNING(
+                                "processinfo_shm_create(%s) "
+                                "failed; continuing without " "process tracking", pname);
+                        }
                     }
 
                     int iter = 0;
                     int keep_going = 1;
                     while(keep_going
-                          && !cli_break_flag)
+                            && !cli_break_flag)
                     {
                         /* Check procctl */
                         if(procinfo != NULL)
                         {
                             if(procinfo->CTRLval
-                               == PROCESSINFO_CTRLVAL_EXIT)
+                                    == PROCESSINFO_CTRLVAL_EXIT)
                             {
                                 break;
                             }
                             while(procinfo
-                                ->CTRLval
-                                == PROCESSINFO_CTRLVAL_PAUSE)
+                                    ->CTRLval
+                                    == PROCESSINFO_CTRLVAL_PAUSE)
                             {
                                 usleep(10000);
                                 if(cli_break_flag)
@@ -608,29 +552,21 @@ int cli_handle_shell_builtins(void)
                             }
                         }
 
-                        ImageStreamIO_semwait(
-                            &img, semidx);
+                        ImageStreamIO_semwait(&img, semidx);
 
                         /* Execute body */
-                        strncpy(
-                            data.CLIcmdline,
-                            body,
-                            STRINGMAXLEN_CLICMDLINE
-                            - 1);
-                        data.CLIcmdline[
-                            STRINGMAXLEN_CLICMDLINE
-                            - 1] = '\0';
+                        strncpy(data.CLIcmdline, body, STRINGMAXLEN_CLICMDLINE - 1);
+                        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
                         CLI_execute_line();
 
                         iter++;
                         if(procinfo != NULL)
                         {
-                            procinfo->loopcnt
-                                = iter;
+                            procinfo->loopcnt = iter;
                         }
                         if(loop_count > 0
-                           && iter
-                           >= loop_count)
+                                && iter
+                                >= loop_count)
                         {
                             keep_going = 0;
                         }
@@ -639,16 +575,13 @@ int cli_handle_shell_builtins(void)
 
                     if(procinfo != NULL)
                     {
-                        processinfo_cleanExit(
-                            procinfo);
+                        processinfo_cleanExit(procinfo);
                     }
                 }
             }
             else
             {
-                printf("on_update: "
-                       "stream %s not "
-                       "found\n", sname);
+                printf("on_update: " "stream %s not " "found\n", sname);
             }
         }
         data.CMDexecuted = 1;
@@ -661,10 +594,9 @@ int cli_handle_shell_builtins(void)
          *   fpsname.param { cmd }
          * Poll FPS parameter, execute body
          * when it changes. */
-        const char *arg =
-            data.CLIcmdline + 13;
+        const char *arg = data.CLIcmdline + 13;
         while(*arg == ' '
-              || *arg == '\t')
+                || *arg == '\t')
         {
             arg++;
         }
@@ -674,9 +606,9 @@ int cli_handle_shell_builtins(void)
         while(*arg == '-')
         {
             if(strncmp(arg, "-l", 2) == 0
-               && (arg[2] == ' '
-                   || arg[2] == '\t'
-                   || arg[2] == '\0'))
+                    && (arg[2] == ' '
+                        || arg[2] == '\t'
+                        || arg[2] == '\0'))
             {
                 loop_count = -1;
                 arg += 2;
@@ -686,22 +618,18 @@ int cli_handle_shell_builtins(void)
             {
                 arg += 2;
                 while(*arg == ' '
-                      || *arg == '\t')
+                        || *arg == '\t')
                 {
                     arg++;
                 }
                 char *endptr = NULL;
-                long nval = strtol(
-                    arg, &endptr, 10);
+                long nval = strtol(arg, &endptr, 10);
                 if(endptr == arg
-                   || nval <= 0)
+                        || nval <= 0)
                 {
                     fprintf(stderr,
                             "Invalid value for"
-                            " -n option: '%s'"
-                            " (expected positive"
-                            " integer)\n",
-                            arg);
+                            " -n option: '%s'" " (expected positive" " integer)\n", arg);
                 }
                 else
                 {
@@ -715,7 +643,7 @@ int cli_handle_shell_builtins(void)
                 break;
             }
             while(*arg == ' '
-                  || *arg == '\t')
+                    || *arg == '\t')
             {
                 arg++;
             }
@@ -726,9 +654,9 @@ int cli_handle_shell_builtins(void)
         {
             int ai = 0;
             while(*arg != '\0'
-                  && *arg != ' '
-                  && *arg != '\t'
-                  && ai < 255)
+                    && *arg != ' '
+                    && *arg != '\t'
+                    && ai < 255)
             {
                 fparg[ai++] = *arg++;
             }
@@ -738,9 +666,7 @@ int cli_handle_shell_builtins(void)
         char *dot = strchr(fparg, '.');
         if(dot == NULL)
         {
-            printf(
-                "on_fpschange: "
-                "use fpsname.param\n");
+            printf("on_fpschange: " "use fpsname.param\n");
             cli_last_retval = 1;
             data.CMDexecuted = 1;
         }
@@ -751,113 +677,98 @@ int cli_handle_shell_builtins(void)
             const char *parn = dot + 1;
             /* Extract body between { } */
             while(*arg == ' '
-                  || *arg == '\t')
+                    || *arg == '\t')
             {
                 arg++;
             }
-            char body[
-                STRINGMAXLEN_CLICMDLINE];
+            char body[STRINGMAXLEN_CLICMDLINE];
             body[0] = '\0';
             if(*arg == '{')
             {
                 arg++;
                 while(*arg == ' '
-                      || *arg == '\t')
+                        || *arg == '\t')
                 {
                     arg++;
                 }
                 int bi = 0;
                 while(*arg != '\0'
-                      && *arg != '}'
-                      && bi
-                      < STRINGMAXLEN_CLICMDLINE
-                      - 1)
+                        && *arg != '}'
+                        && bi
+                        < STRINGMAXLEN_CLICMDLINE
+                        - 1)
                 {
                     body[bi++] = *arg++;
                 }
                 body[bi] = '\0';
                 /* trim trailing spaces */
                 while(bi > 0
-                      && (body[bi - 1]
-                          == ' '
-                          || body[bi - 1]
-                          == '\t'))
+                        && (body[bi - 1]
+                            == ' '
+                            || body[bi - 1]
+                            == '\t'))
                 {
                     body[--bi] = '\0';
                 }
             }
             /* Connect to FPS */
-            FUNCTION_PARAMETER_STRUCT fps;
+            FPS fps;
             if(
-                function_parameter_struct_connect(
+                fps_connect(
                     fpsn, &fps,
                     FPSCONNECT_SIMPLE)
                 != EXIT_SUCCESS)
             {
-                printf(
-                    "on_fpschange: "
-                    "cannot connect "
-                    "to fps '%s'\n",
-                    fpsn);
+                printf("on_fpschange: " "cannot connect " "to fps '%s'\n", fpsn);
                 cli_last_retval = 1;
             }
             else
             {
-                long pidx =
-                    functionparameter_GetParamIndex(
-                        &fps, parn);
+                long pidx = functionparameter_GetParamIndex(&fps, parn);
                 if(pidx < 0)
                 {
-                    printf(
-                        "on_fpschange: "
-                        "param '%s' not "
-                        "found\n", parn);
+                    printf("on_fpschange: " "param '%s' not " "found\n", parn);
                     cli_last_retval = 1;
                 }
                 else
                 {
                     /* Create processinfo
                      * for loop mode */
-                    PROCESSINFO *procinfo =
-                        NULL;
-                    int is_loop =
-                        (loop_count != 1);
+                    PROCESSINFO *procinfo = NULL;
+                    int is_loop = (loop_count != 1);
                     if(is_loop)
                     {
                         char pname[64];
-                        snprintf(pname,
-                            sizeof(pname),
-                            "on_fpschg_%s",
-                            fpsn);
-                        procinfo =
-                            processinfo_shm_create(
-                                pname,
-                                PROCESSINFO_CTRLVAL_RUN);
+                        snprintf(pname, sizeof(pname), "on_fpschg_%s", fpsn);
+                        procinfo = processinfo_shm_create(pname, PROCESSINFO_CTRLVAL_RUN);
+                        if(procinfo == NULL)
+                        {
+                            PRINT_WARNING(
+                                "processinfo_shm_create(%s) "
+                                "failed; continuing without " "process tracking", pname);
+                        }
                     }
 
                     char prev[256];
-                    functionparameter_GetParamValueString(
-                        &fps.parray[pidx],
-                        prev,
-                        sizeof(prev));
+                    functionparameter_GetParamValueString(&fps.parray[pidx], prev, sizeof(prev));
 
                     int iter = 0;
                     int keep_going = 1;
                     while(keep_going
-                          && !cli_break_flag)
+                            && !cli_break_flag)
                     {
                         /* Check procctl */
                         if(procinfo != NULL)
                         {
                             if(procinfo
-                                ->CTRLval
-                               == PROCESSINFO_CTRLVAL_EXIT)
+                                    ->CTRLval
+                                    == PROCESSINFO_CTRLVAL_EXIT)
                             {
                                 break;
                             }
                             while(procinfo
-                                ->CTRLval
-                                == PROCESSINFO_CTRLVAL_PAUSE)
+                                    ->CTRLval
+                                    == PROCESSINFO_CTRLVAL_PAUSE)
                             {
                                 usleep(10000);
                                 if(cli_break_flag)
@@ -877,21 +788,18 @@ int cli_handle_shell_builtins(void)
                                 break;
                             }
                             if(procinfo
-                               != NULL
-                               && procinfo
-                                ->CTRLval
-                               != PROCESSINFO_CTRLVAL_RUN)
+                                    != NULL
+                                    && procinfo
+                                    ->CTRLval
+                                    != PROCESSINFO_CTRLVAL_RUN)
                             {
                                 break;
                             }
                             functionparameter_GetParamValueString(
-                                &fps
-                                .parray[pidx],
-                                cur,
-                                sizeof(cur));
+                                &fps .parray[pidx], cur, sizeof(cur));
                             if(strcmp(cur,
-                                     prev)
-                               != 0)
+                                      prev)
+                                    != 0)
                             {
                                 break;
                             }
@@ -901,38 +809,28 @@ int cli_handle_shell_builtins(void)
                             break;
                         }
                         if(procinfo != NULL
-                           && procinfo
-                            ->CTRLval
-                           != PROCESSINFO_CTRLVAL_RUN)
+                                && procinfo
+                                ->CTRLval
+                                != PROCESSINFO_CTRLVAL_RUN)
                         {
                             break;
                         }
 
                         /* Execute body */
-                        strncpy(prev, cur,
-                                sizeof(prev)
-                                - 1);
+                        strncpy(prev, cur, sizeof(prev) - 1);
                         prev[sizeof(prev) - 1] = '\0';
-                        strncpy(
-                            data.CLIcmdline,
-                            body,
-                            STRINGMAXLEN_CLICMDLINE
-                            - 1);
-                        data.CLIcmdline[
-                            STRINGMAXLEN_CLICMDLINE
-                            - 1] = '\0';
+                        strncpy(data.CLIcmdline, body, STRINGMAXLEN_CLICMDLINE - 1);
+                        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
                         CLI_execute_line();
 
                         iter++;
                         if(procinfo != NULL)
                         {
-                            procinfo
-                                ->loopcnt
-                                = iter;
+                            procinfo ->loopcnt = iter;
                         }
                         if(loop_count > 0
-                           && iter
-                           >= loop_count)
+                                && iter
+                                >= loop_count)
                         {
                             keep_going = 0;
                         }
@@ -941,12 +839,10 @@ int cli_handle_shell_builtins(void)
 
                     if(procinfo != NULL)
                     {
-                        processinfo_cleanExit(
-                            procinfo);
+                        processinfo_cleanExit(procinfo);
                     }
                 }
-                function_parameter_struct_disconnect(
-                    &fps);
+                fps_disconnect(&fps);
             }
             data.CMDexecuted = 1;
         }
@@ -954,31 +850,27 @@ int cli_handle_shell_builtins(void)
     else if(strncmp(data.CLIcmdline,
                     "sleep ", 6) == 0
             || strcmp(data.CLIcmdline,
-                     "sleep") == 0)
+                      "sleep") == 0)
     {
         /* sleep <seconds> — float-capable
          * delay. Handle before tokenization
          * because the parser would try to
          * interpret decimals. */
-        const char *arg =
-            data.CLIcmdline + 5;
+        const char *arg = data.CLIcmdline + 5;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
         }
         if(*arg == '\0')
         {
-            printf("Usage: sleep "
-                   "<seconds>\n");
+            printf("Usage: sleep " "<seconds>\n");
         }
         else
         {
             double secs = strtod(arg, NULL);
             if(secs > 0.0)
             {
-                usleep(
-                    (useconds_t)
-                    (secs * 1e6));
+                usleep((useconds_t) (secs * 1e6));
             }
         }
         data.CMDexecuted = 1;
@@ -987,8 +879,7 @@ int cli_handle_shell_builtins(void)
     {
         /* printf "fmt" arg1 arg2 ...
          * Supports %d %f %s %% \n \t */
-        const char *p =
-            data.CLIcmdline + 7;
+        const char *p = data.CLIcmdline + 7;
         while(*p == ' ' || *p == '\t')
         {
             p++;
@@ -1001,8 +892,8 @@ int cli_handle_shell_builtins(void)
         {
             delim = *p++;
             while(*p != '\0'
-                  && *p != delim
-                  && fi < 511)
+                    && *p != delim
+                    && fi < 511)
             {
                 fmt[fi++] = *p++;
             }
@@ -1014,9 +905,9 @@ int cli_handle_shell_builtins(void)
         else
         {
             while(*p != '\0'
-                  && *p != ' '
-                  && *p != '\t'
-                  && fi < 511)
+                    && *p != ' '
+                    && *p != '\t'
+                    && fi < 511)
             {
                 fmt[fi++] = *p++;
             }
@@ -1038,25 +929,24 @@ int cli_handle_shell_builtins(void)
             char abuf[256];
             int ai = 0;
             while(*p != '\0'
-                  && *p != ' '
-                  && *p != '\t'
-                  && ai < 255)
+                    && *p != ' '
+                    && *p != '\t'
+                    && ai < 255)
             {
                 abuf[ai++] = *p++;
             }
             abuf[ai] = '\0';
-            args[nargs] =
-                strdup(abuf);
+            args[nargs] = strdup(abuf);
             nargs++;
         }
         /* Print with format */
         {
             int ai = 0;
             for(int k = 0; fmt[k] != '\0';
-                k++)
+                    k++)
             {
                 if(fmt[k] == '\\'
-                   && fmt[k + 1] != '\0')
+                        && fmt[k + 1] != '\0')
                 {
                     k++;
                     if(fmt[k] == 'n')
@@ -1089,24 +979,17 @@ int cli_handle_shell_builtins(void)
                     else if(fmt[k] == 'd'
                             && ai < nargs)
                     {
-                        printf("%ld",
-                               strtol(
-                                   args[ai++],
-                                   NULL, 0));
+                        printf("%ld", strtol(args[ai++], NULL, 0));
                     }
                     else if(fmt[k] == 'f'
                             && ai < nargs)
                     {
-                        printf("%f",
-                               strtod(
-                                   args[ai++],
-                                   NULL));
+                        printf("%f", strtod(args[ai++], NULL));
                     }
                     else if(fmt[k] == 's'
                             && ai < nargs)
                     {
-                        printf("%s",
-                               args[ai++]);
+                        printf("%s", args[ai++]);
                     }
                     else if(fmt[k] == '.'
                             && ai < nargs)
@@ -1118,19 +1001,15 @@ int cli_handle_shell_builtins(void)
                         pfmt[pfi++] = '.';
                         k++;
                         while(fmt[k] >= '0'
-                              && fmt[k] <= '9'
-                              && pfi < 14)
+                                && fmt[k] <= '9'
+                                && pfi < 14)
                         {
-                            pfmt[pfi++] =
-                                fmt[k++];
+                            pfmt[pfi++] = fmt[k++];
                         }
                         pfmt[pfi++] =
                             fmt[k]; /* f */
                         pfmt[pfi] = '\0';
-                        printf(pfmt,
-                               strtod(
-                                   args[ai++],
-                                   NULL));
+                        printf(pfmt, strtod(args[ai++], NULL));
                     }
                     else
                     {
@@ -1154,13 +1033,12 @@ int cli_handle_shell_builtins(void)
     else if(strncmp(data.CLIcmdline,
                     "read ", 5) == 0
             || strcmp(data.CLIcmdline,
-                     "read") == 0)
+                      "read") == 0)
     {
         /* read [-p "prompt"] [-t N]
          * [-a arr] varname
          * Read line from stdin */
-        const char *p =
-            data.CLIcmdline + 4;
+        const char *p = data.CLIcmdline + 4;
         while(*p == ' ' || *p == '\t')
         {
             p++;
@@ -1174,29 +1052,27 @@ int cli_handle_shell_builtins(void)
         while(p[0] == '-')
         {
             if(strncmp(p, "-p ", 3)
-               == 0)
+                    == 0)
             {
                 p += 3;
                 while(*p == ' '
-                      || *p == '\t')
+                        || *p == '\t')
                 {
                     p++;
                 }
                 if(*p == '"'
-                   || *p == '\'')
+                        || *p == '\'')
                 {
                     char delim = *p++;
                     int pi = 0;
                     while(*p != '\0'
-                          && *p
-                          != delim
-                          && pi < 254)
+                            && *p
+                            != delim
+                            && pi < 254)
                     {
-                        rd_prompt[pi++]
-                            = *p++;
+                        rd_prompt[pi++] = *p++;
                     }
-                    rd_prompt[pi] =
-                        '\0';
+                    rd_prompt[pi] = '\0';
                     if(*p == delim)
                     {
                         p++;
@@ -1206,16 +1082,14 @@ int cli_handle_shell_builtins(void)
                 {
                     int pi = 0;
                     while(*p != '\0'
-                          && *p != ' '
-                          && *p
-                          != '\t'
-                          && pi < 254)
+                            && *p != ' '
+                            && *p
+                            != '\t'
+                            && pi < 254)
                     {
-                        rd_prompt[pi++]
-                            = *p++;
+                        rd_prompt[pi++] = *p++;
                     }
-                    rd_prompt[pi] =
-                        '\0';
+                    rd_prompt[pi] = '\0';
                 }
             }
             else if(strncmp(
@@ -1224,16 +1098,14 @@ int cli_handle_shell_builtins(void)
             {
                 p += 3;
                 while(*p == ' '
-                      || *p == '\t')
+                        || *p == '\t')
                 {
                     p++;
                 }
-                rd_timeout = (int)
-                    strtol(p, NULL,
-                           10);
+                rd_timeout = (int) strtol(p, NULL, 10);
                 while(*p != '\0'
-                      && *p != ' '
-                      && *p != '\t')
+                        && *p != ' '
+                        && *p != '\t')
                 {
                     p++;
                 }
@@ -1244,7 +1116,7 @@ int cli_handle_shell_builtins(void)
             {
                 p += 3;
                 while(*p == ' '
-                      || *p == '\t')
+                        || *p == '\t')
                 {
                     p++;
                 }
@@ -1252,18 +1124,16 @@ int cli_handle_shell_builtins(void)
                 {
                     int ni = 0;
                     while(*p != '\0'
-                          && *p != ' '
-                          && *p
-                          != '\t'
-                          && ni
-                          < CLI_VAR_NAMELEN
-                          - 1)
+                            && *p != ' '
+                            && *p
+                            != '\t'
+                            && ni
+                            < CLI_VAR_NAMELEN
+                            - 1)
                     {
-                        rd_aname[ni++]
-                            = *p++;
+                        rd_aname[ni++] = *p++;
                     }
-                    rd_aname[ni] =
-                        '\0';
+                    rd_aname[ni] = '\0';
                 }
             }
             else
@@ -1271,14 +1141,14 @@ int cli_handle_shell_builtins(void)
                 /* Unknown flag */
                 p++;
                 while(*p != '\0'
-                      && *p != ' '
-                      && *p != '\t')
+                        && *p != ' '
+                        && *p != '\t')
                 {
                     p++;
                 }
             }
             while(*p == ' '
-                  || *p == '\t')
+                    || *p == '\t')
             {
                 p++;
             }
@@ -1295,15 +1165,11 @@ int cli_handle_shell_builtins(void)
         {
             fd_set fds;
             FD_ZERO(&fds);
-            FD_SET(STDIN_FILENO,
-                   &fds);
+            FD_SET(STDIN_FILENO, &fds);
             struct timeval tv;
             tv.tv_sec = rd_timeout;
             tv.tv_usec = 0;
-            int sr = select(
-                STDIN_FILENO + 1,
-                &fds, NULL, NULL,
-                &tv);
+            int sr = select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
             if(sr <= 0)
             {
                 rd_ok = 0;
@@ -1316,77 +1182,48 @@ int cli_handle_shell_builtins(void)
             if(fgets(rbuf,
                      sizeof(rbuf),
                      stdin)
-               != NULL)
+                    != NULL)
             {
                 /* Strip trailing
                  * newline */
-                size_t rlen =
-                    strlen(rbuf);
+                size_t rlen = strlen(rbuf);
                 while(rlen > 0
-                      && (rbuf[
-                              rlen - 1]
-                          == '\n'
-                          || rbuf[
-                              rlen - 1]
-                          == '\r'))
+                        && (rbuf[
+                                rlen - 1]
+                            == '\n'
+                            || rbuf[
+                                rlen - 1]
+                            == '\r'))
                 {
-                    rbuf[--rlen] =
-                        '\0';
+                    rbuf[--rlen] = '\0';
                 }
                 if(rd_array)
                 {
                     /* Split into array
                      * elements */
                     for(int k = 0;
-                        k
-                        < CLI_MAX_ARRAYS;
-                        k++)
+                            k < CLI_MAX_ARRAYS;
+                            k++)
                     {
                         if(!cli_arrays[
-                            k].used)
+                                    k].used)
                         {
-                            cli_arrays[
-                                k]
-                                .used = 1;
-                            strncpy(
-                                cli_arrays[
-                                    k]
-                                .name,
-                                rd_aname,
-                                CLI_VAR_NAMELEN
-                                - 1);
-                            cli_arrays[
-                                k]
-                                .nelem
-                                = 0;
-                            char *tok
-                                = strtok(
-                                    rbuf,
-                                    " \t");
+                            cli_arrays[k] .used = 1;
+                            strncpy(cli_arrays[k] .name, rd_aname, CLI_VAR_NAMELEN - 1);
+                            cli_arrays[k] .nelem = 0;
+                            char *tok = strtok(rbuf, " \t");
                             while(tok
-                                  != NULL
-                                  && cli_arrays[
-                                      k]
-                                  .nelem
-                                  < CLI_ARRAY_MAXELEM)
+                                    != NULL
+                                    && cli_arrays[
+                                        k]
+                                    .nelem
+                                    < CLI_ARRAY_MAXELEM)
                             {
                                 strncpy(
                                     cli_arrays[
-                                        k]
-                                    .elem[
-                                        cli_arrays[
-                                            k]
-                                        .nelem],
-                                    tok,
-                                    CLI_VAR_VALLEN
-                                    - 1);
-                                cli_arrays[
-                                    k]
-                                    .nelem++;
-                                tok
-                                    = strtok(
-                                        NULL,
-                                        " \t");
+                                        k] .elem[cli_arrays[k] .nelem], tok, CLI_VAR_VALLEN - 1);
+                                cli_arrays[k] .nelem++;
+                                tok = strtok(NULL, " \t");
                             }
                             break;
                         }
@@ -1395,24 +1232,20 @@ int cli_handle_shell_builtins(void)
                 else if(*p != '\0')
                 {
                     /* Scalar var */
-                    char vname[
-                        CLI_VAR_NAMELEN
-                    ];
+                    char vname[CLI_VAR_NAMELEN];
                     int vi = 0;
                     while(*p != '\0'
-                          && *p != ' '
-                          && *p
-                          != '\t'
-                          && vi
-                          < CLI_VAR_NAMELEN
-                          - 1)
+                            && *p != ' '
+                            && *p
+                            != '\t'
+                            && vi
+                            < CLI_VAR_NAMELEN
+                            - 1)
                     {
-                        vname[vi++] =
-                            *p++;
+                        vname[vi++] = *p++;
                     }
                     vname[vi] = '\0';
-                    cli_var_set(
-                        vname, rbuf);
+                    cli_var_set(vname, rbuf);
                 }
                 cli_last_retval = 0;
             }

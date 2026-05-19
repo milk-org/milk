@@ -30,6 +30,7 @@ See also: [Streams](streams.md) ·
 | `milk-commands` | List all available milk CLI commands |
 | `milk-completion.sh` | Bash tab-completion for milk commands |
 | `milk-debug` | Launch milk with GDB debugging |
+| `milk-demopipeline` | Start a multi-stage FPS pipeline for demonstration |
 | `milk-fpsinit` | Initialize FPS instances from configuration |
 | `milk-fpslist-addentry` | Add an entry to `fpslist.txt` |
 | `milk-fpsmkcmd` | Generate FPS command scripts |

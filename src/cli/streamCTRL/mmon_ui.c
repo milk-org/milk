@@ -49,8 +49,17 @@ static int listim_scr_wcol;
 
 /* forward decls */
 errno_t init_list_image_ID_ncurses(const char *termttyname);
+/**
+ * @brief Close ncurses memory monitor display.
+ */
 void close_list_image_ID_ncurses();
+/**
+ * @brief Display image list in ncurses mode.
+ */
 errno_t list_image_ID_ncurses();
+/**
+ * @brief Main memory monitor loop.
+ */
 errno_t memory_monitor(const char *termttyname);
 
 
@@ -58,7 +67,8 @@ errno_t memory_monitor(const char *termttyname);
  *  STANDALONE REGISTRATION
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "mmon",
     .cmdkey      = "mmon",
     .description = "monitor memory content"
@@ -69,17 +79,20 @@ static char p_ttyname[FUNCTION_PARAMETER_STRMAXLEN] = "/dev/pts/4";
 #define FPS_PARAMS(X) \
     X(".ttyname", p_ttyname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "terminal tty name")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
 static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
@@ -121,23 +134,12 @@ errno_t init_list_image_ID_ncurses(const char *termttyname)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Display image list in ncurses mode.
+ */
 errno_t list_image_ID_ncurses()
 {
-    int strmaxlen = 300;
-    char      str[strmaxlen];
-    int str1maxlen = 500;
-    char      str1[500];
-    int str2maxlen = 512;
-    char      str2[512];
-    long      i, j;
-    long long tmp_long;
-    char      type[STYPESIZE];
-    uint8_t   datatype;
-    int       n;
-    uint64_t  sizeb, sizeKb, sizeMb, sizeGb;
-
     struct timespec timenow;
-    double          timediff;
 
     clock_gettime(CLOCK_MILK, &timenow);
 
@@ -146,59 +148,79 @@ errno_t list_image_ID_ncurses()
     clear();
 #endif
 
-    sizeb = compute_image_memory();
+    uint64_t sizeb = compute_image_memory();
 
     printw("INDEX    NAME         SIZE                    TYPE        SIZE  [percent]    LAST ACCESS\n\n");
 
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
     {
         if(dcimg[i].used == 1)
         {
-            datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long)(dcimg[i].md[0].nelement)) *
-                       ImageStreamIO_typesize(datatype);
+            uint8_t datatype = dcimg[i].md[0].datatype;
+            long long tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             if(dcimg[i].md[0].shared == 1)
+            {
                 printw("%4ldS", i);
+            }
             else
+            {
                 printw("%4ld ", i);
+            }
 
             if(dcimg[i].md[0].shared == 1)
+            {
                 attron(A_BOLD | COLOR_PAIR(9));
+            }
             else
+            {
                 attron(A_BOLD | COLOR_PAIR(6));
+            }
 
+            int strmaxlen = 300;
+            char str[300];
             snprintf(str, strmaxlen, "%10s ", dcimg[i].name);
             printw("%s", str);
 
             if(dcimg[i].md[0].shared == 1)
+            {
                 attroff(A_BOLD | COLOR_PAIR(9));
+            }
             else
+            {
                 attroff(A_BOLD | COLOR_PAIR(6));
+            }
 
             snprintf(str, strmaxlen, "[ %6ld", (long) dcimg[i].md[0].size[0]);
 
-            for(j = 1; j < dcimg[i].md[0].naxis; j++)
+            int str1maxlen = 500;
+            char str1[500];
+            for(long j = 1; j < dcimg[i].md[0].naxis; j++)
             {
                 snprintf(str1, str1maxlen, "%s x %6ld", str, (long) dcimg[i].md[0].size[j]);
             }
+            
+            int str2maxlen = 512;
+            char str2[512];
             snprintf(str2, str2maxlen, "%s]", str1);
 
             printw("%-28s", str2);
 
             attron(COLOR_PAIR(3));
-            n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
+            char type[STYPESIZE];
+            int n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
             printw("%7s ", type);
             attroff(COLOR_PAIR(3));
 
             if(n >= STYPESIZE)
+            {
                 PRINT_ERROR("Attempted to write string buffer with too many characters");
+            }
 
             printw("%10ld Kb %6.2f   ",
-                   (long)(tmp_long / 1024),
-                   (float)(100.0 * tmp_long / sizeb));
+                   (long)(tmp_long / 1024), (float)(100.0 * tmp_long / sizeb));
 
-            timediff =
+            double timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
                 (1.0 * dcimg[i].md[0].lastaccesstime.tv_sec +
                  0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
@@ -210,25 +232,64 @@ errno_t list_image_ID_ncurses()
                 attroff(COLOR_PAIR(4));
             }
             else
+            {
                 printw("%15.9f\n", timediff);
+            }
 
         }
         else
+        {
             printw("\n");
+        }
     }
 
-    sizeGb = 0; sizeMb = 0; sizeKb = 0;
+    uint64_t sizeGb = 0;
+    uint64_t sizeMb = 0;
+    uint64_t sizeKb = 0;
     sizeb  = compute_image_memory();
 
-    if(sizeb > 1024 - 1) { sizeKb = sizeb / 1024; sizeb  = sizeb - 1024 * sizeKb; }
-    if(sizeKb > 1024 - 1) { sizeMb = sizeKb / 1024; sizeKb = sizeKb - 1024 * sizeMb; }
-    if(sizeMb > 1024 - 1) { sizeGb = sizeMb / 1024; sizeMb = sizeMb - 1024 * sizeGb; }
+    if(sizeb > 1024 - 1)
+    {
+        sizeKb = sizeb / 1024;
+        sizeb  = sizeb - 1024 * sizeKb;
+    }
+    if(sizeKb > 1024 - 1)
+    {
+        sizeMb = sizeKb / 1024;
+        sizeKb = sizeKb - 1024 * sizeMb;
+    }
+    if(sizeMb > 1024 - 1)
+    {
+        sizeGb = sizeMb / 1024;
+        sizeMb = sizeMb - 1024 * sizeGb;
+    }
 
+    int strmaxlen = 300;
+    char str[300];
     snprintf(str, strmaxlen, "%ld image(s)      ", compute_nb_image());
-    if(sizeGb > 0) { snprintf(str1, str1maxlen, "%s %ld GB", str, (long)(sizeGb)); strcpy(str, str1); }
-    if(sizeMb > 0) { snprintf(str1, str1maxlen, "%s %ld MB", str, (long)(sizeMb)); strcpy(str, str1); }
-    if(sizeKb > 0) { snprintf(str1, str1maxlen, "%s %ld KB", str, (long)(sizeKb)); strcpy(str, str1); }
-    if(sizeb > 0)  { snprintf(str1, str1maxlen, "%s %ld B", str, (long)(sizeb)); strcpy(str, str1); }
+    
+    int str1maxlen = 500;
+    char str1[500];
+    if(sizeGb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld GB", str, (long)(sizeGb));
+        strcpy(str, str1);
+    }
+    if(sizeMb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld MB", str, (long)(sizeMb));
+        strcpy(str, str1);
+    }
+    if(sizeKb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld KB", str, (long)(sizeKb));
+        strcpy(str, str1);
+    }
+    if(sizeb > 0)
+    {
+        snprintf(str1, str1maxlen, "%s %ld B", str, (long)(sizeb));
+        strcpy(str, str1);
+    }
 
     mvprintw(listim_scr_wrow - 1, 0, "%s\n", str);
 
@@ -239,23 +300,48 @@ errno_t list_image_ID_ncurses()
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Close ncurses memory monitor display.
+ */
 void close_list_image_ID_ncurses(void)
 {
     printf("Closing monitor cleanly\n");
     set_term(listim_scr);
     endwin();
-    if(listim_scr_fpo) fclose(listim_scr_fpo);
-    if(listim_scr_fpi) fclose(listim_scr_fpi);
+    if(listim_scr_fpo)
+    {
+        fclose(listim_scr_fpo);
+    }
+    if(listim_scr_fpi)
+    {
+        fclose(listim_scr_fpi);
+    }
     dcmemmon = 0;
 }
 #else
-errno_t init_list_image_ID_ncurses(const char *termttyname) { (void)termttyname; return 0; }
-errno_t list_image_ID_ncurses() { return 0; }
+errno_t init_list_image_ID_ncurses(const char *termttyname)
+{
+    (void)termttyname;
+    return 0;
+}
+/**
+ * @brief Display image list in ncurses mode.
+ */
+errno_t list_image_ID_ncurses()
+{
+    return 0;
+}
+/**
+ * @brief Close ncurses memory monitor display.
+ */
 void close_list_image_ID_ncurses(void) {}
 #endif
 
 static int mmon_initialized = 0;
 
+/**
+ * @brief Main memory monitor loop.
+ */
 errno_t memory_monitor(const char *termttyname)
 {
     if(mmon_initialized == 0)
@@ -287,8 +373,7 @@ errno_t memory_monitor(const char *termttyname)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings, compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings,   nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_streamCTRL_mmon_ui()

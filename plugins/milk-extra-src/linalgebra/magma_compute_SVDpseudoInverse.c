@@ -15,7 +15,22 @@
 #include "magma_lapack.h"
 #include "magma_v2.h"
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#endif
 #include "timeutils.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -121,7 +136,9 @@ static FPS_APP_INFO FPS_app_info_pi = {
     .fps_name = "linalgebrapsinv",
     .cmdkey   = "linalgebrapsinv",
     .description =
-        "compute pseudo inverse"
+        "compute pseudo inverse",
+    .description_long =
+        "Compute the Moore-Penrose pseudo-inverse of a matrix via SVD using the MAGMA GPU library."
 };
 #define FPS_PARAMS_PI(X) \
     X(".inmat", pi_r, \

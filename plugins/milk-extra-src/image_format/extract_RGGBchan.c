@@ -13,7 +13,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "extractRGGBchan",
     .cmdkey      = "extractRGGBchan",
-    .description = "extract RGGB channels from color image"
+    .description = "extract RGGB channels from color image",
+    .description_long =
+        "Extract individual RGGB Bayer channels from a raw color camera image into separate monochrome images."
 };
 
 
@@ -82,13 +84,16 @@ errno_t image_format_extract_RGGBchan(
     DEBUG_TRACE_FSTART();
 
     // input image is required
-    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     // Create output images if not yet allocated.
     // Guards prevent reallocation on every frame.
     if(imgoutR->ID == -1)
     {
         imgid_copy(imgin, imgoutR);
+    if (imgin->ID == -1) {
+        return RETURN_FAILURE;
+    }
         imgoutR->mdt->size[0] = imgin->md->size[0] / 2;
         imgoutR->mdt->size[1] = imgin->md->size[1] / 2;
         createimagefromIMGID(imgoutR);
@@ -118,88 +123,91 @@ errno_t image_format_extract_RGGBchan(
     {
 
         case _DATATYPE_FLOAT:
-            for(uint32_t ii = 0;
-                 ii < imgoutR->mdt->size[0]; ii++)
+        {
+            float * MILK_RESTRICT outR = MILK_ASSUME_ALIGNED(imgoutR->im->array.F);
+            float * MILK_RESTRICT outG1 = MILK_ASSUME_ALIGNED(imgoutG1->im->array.F);
+            float * MILK_RESTRICT outG2 = MILK_ASSUME_ALIGNED(imgoutG2->im->array.F);
+            float * MILK_RESTRICT outB = MILK_ASSUME_ALIGNED(imgoutB->im->array.F);
+            const float * MILK_RESTRICT in = MILK_ASSUME_ALIGNED(imgin->im->array.F);
+            uint32_t size_x = imgoutR->mdt->size[0];
+            uint32_t size_y = imgoutR->mdt->size[1];
+
+            _Pragma("omp parallel for")
+            for(uint32_t jj = 0; jj < size_y; jj++)
             {
-                for(uint32_t jj = 0;
-                     jj < imgoutR->mdt->size[1]; jj++)
+                _Pragma("omp simd")
+                for(uint32_t ii = 0; ii < size_x; ii++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi =
-                        jj * imgoutR->mdt->size[0] + ii;
+                    uint64_t pixi = jj * (uint64_t)size_x + ii;
 
-                    imgoutR->im->array.F[pixi] =
-                        imgin->im->array.F[
-                            (jj1 + 1) * xsize + ii1];
-                    imgoutG1->im->array.F[pixi] =
-                        imgin->im->array.F[
-                            jj1 * xsize + ii1];
-                    imgoutG2->im->array.F[pixi] =
-                        imgin->im->array.F[
-                            (jj1 + 1) * xsize + ii1 + 1];
-                    imgoutB->im->array.F[pixi] =
-                        imgin->im->array.F[
-                            jj1 * xsize + ii1 + 1];
+                    outR[pixi]  = in[(jj1 + 1) * xsize + ii1];
+                    outG1[pixi] = in[jj1 * xsize + ii1];
+                    outG2[pixi] = in[(jj1 + 1) * xsize + ii1 + 1];
+                    outB[pixi]  = in[jj1 * xsize + ii1 + 1];
                 }
             }
             break;
+        }
 
         case _DATATYPE_DOUBLE:
-            for(uint32_t ii = 0;
-                 ii < imgoutR->mdt->size[0]; ii++)
+        {
+            double * MILK_RESTRICT outR = MILK_ASSUME_ALIGNED(imgoutR->im->array.D);
+            double * MILK_RESTRICT outG1 = MILK_ASSUME_ALIGNED(imgoutG1->im->array.D);
+            double * MILK_RESTRICT outG2 = MILK_ASSUME_ALIGNED(imgoutG2->im->array.D);
+            double * MILK_RESTRICT outB = MILK_ASSUME_ALIGNED(imgoutB->im->array.D);
+            const double * MILK_RESTRICT in = MILK_ASSUME_ALIGNED(imgin->im->array.D);
+            uint32_t size_x = imgoutR->mdt->size[0];
+            uint32_t size_y = imgoutR->mdt->size[1];
+
+            _Pragma("omp parallel for")
+            for(uint32_t jj = 0; jj < size_y; jj++)
             {
-                for(uint32_t jj = 0;
-                     jj < imgoutR->mdt->size[1]; jj++)
+                _Pragma("omp simd")
+                for(uint32_t ii = 0; ii < size_x; ii++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi =
-                        jj * imgoutR->mdt->size[0] + ii;
+                    uint64_t pixi = jj * (uint64_t)size_x + ii;
 
-                    imgoutR->im->array.D[pixi] =
-                        imgin->im->array.D[
-                            (jj1 + 1) * xsize + ii1];
-                    imgoutG1->im->array.D[pixi] =
-                        imgin->im->array.D[
-                            jj1 * xsize + ii1];
-                    imgoutG2->im->array.D[pixi] =
-                        imgin->im->array.D[
-                            (jj1 + 1) * xsize + ii1 + 1];
-                    imgoutB->im->array.D[pixi] =
-                        imgin->im->array.D[
-                            jj1 * xsize + ii1 + 1];
+                    outR[pixi]  = in[(jj1 + 1) * xsize + ii1];
+                    outG1[pixi] = in[jj1 * xsize + ii1];
+                    outG2[pixi] = in[(jj1 + 1) * xsize + ii1 + 1];
+                    outB[pixi]  = in[jj1 * xsize + ii1 + 1];
                 }
             }
             break;
+        }
 
         case _DATATYPE_UINT16:
-            for(uint32_t ii = 0;
-                 ii < imgoutR->mdt->size[0]; ii++)
+        {
+            uint16_t * MILK_RESTRICT outR = MILK_ASSUME_ALIGNED(imgoutR->im->array.UI16);
+            uint16_t * MILK_RESTRICT outG1 = MILK_ASSUME_ALIGNED(imgoutG1->im->array.UI16);
+            uint16_t * MILK_RESTRICT outG2 = MILK_ASSUME_ALIGNED(imgoutG2->im->array.UI16);
+            uint16_t * MILK_RESTRICT outB = MILK_ASSUME_ALIGNED(imgoutB->im->array.UI16);
+            const uint16_t * MILK_RESTRICT in = MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
+            uint32_t size_x = imgoutR->mdt->size[0];
+            uint32_t size_y = imgoutR->mdt->size[1];
+
+            _Pragma("omp parallel for")
+            for(uint32_t jj = 0; jj < size_y; jj++)
             {
-                for(uint32_t jj = 0;
-                     jj < imgoutR->mdt->size[1]; jj++)
+                _Pragma("omp simd")
+                for(uint32_t ii = 0; ii < size_x; ii++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi =
-                        jj * imgoutR->mdt->size[0] + ii;
+                    uint64_t pixi = jj * (uint64_t)size_x + ii;
 
-                    imgoutR->im->array.UI16[pixi] =
-                        imgin->im->array.UI16[
-                            (jj1 + 1) * xsize + ii1];
-                    imgoutG1->im->array.UI16[pixi] =
-                        imgin->im->array.UI16[
-                            jj1 * xsize + ii1];
-                    imgoutG2->im->array.UI16[pixi] =
-                        imgin->im->array.UI16[
-                            (jj1 + 1) * xsize + ii1 + 1];
-                    imgoutB->im->array.UI16[pixi] =
-                        imgin->im->array.UI16[
-                            jj1 * xsize + ii1 + 1];
+                    outR[pixi]  = in[(jj1 + 1) * xsize + ii1];
+                    outG1[pixi] = in[jj1 * xsize + ii1];
+                    outG2[pixi] = in[(jj1 + 1) * xsize + ii1 + 1];
+                    outB[pixi]  = in[jj1 * xsize + ii1 + 1];
                 }
             }
             break;
+        }
     }
 
 

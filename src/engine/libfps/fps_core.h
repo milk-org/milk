@@ -7,7 +7,7 @@
  * entry management) without pulling in the full fps.h
  * umbrella (scan, tmux, lifecycle, logging, V2 framework).
  *
- * This is a subset of fps.h — anything that includes
+ * This is a subset of fps.h -- anything that includes
  * fps.h already has everything in this file.
  */
 

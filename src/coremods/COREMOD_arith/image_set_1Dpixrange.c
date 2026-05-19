@@ -23,7 +23,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "setpix1D",
     .cmdkey      = "setpix1Drange",
     .description =
-        "set image pixel value over range"
+        "set image pixel value over range",
+    .description_long =
+        "Set a contiguous range of pixels in a 1D image or along the linear memory layout of a multi-dimensional image. Specify start index, end index, and the value to assign."
 };
 
 
@@ -89,9 +91,7 @@ static MILK_HOT errno_t fpsexec(IMAGE *inimg)
         break;
 
     switch (inimg->md[0].datatype) {
-        FOREACH_REAL_DATATYPE(SET1D_CASE_)
-    default:
-        PRINT_ERROR("unsupported datatype");
+        FOREACH_REAL_DATATYPE(SET1D_CASE_) default: PRINT_ERROR("unsupported datatype");
         return RETURN_FAILURE;
     }
 #undef SET1D_CASE_
@@ -112,22 +112,13 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    IMGID in =
-        imgid_make_from_name(
-            setpix1d_inimname);
-    resolveIMGID(
-        &in, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID in = imgid_make_from_name(setpix1d_inimname);
+    resolveIMGID(&in,   ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(in.im);
+    processinfo_update_output_stream(processinfo, in.im, NULL);
 
-    fpsexec(in.im);
-    processinfo_update_output_stream(
-        processinfo, in.im, NULL);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
 }
 
 
@@ -139,18 +130,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_arith__imset_1Dpixrange()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

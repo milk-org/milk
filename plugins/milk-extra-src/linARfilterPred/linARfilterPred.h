@@ -11,6 +11,15 @@
 
 void __attribute__((constructor)) libinit_linARfilterPred();
 
+errno_t CLIADDCMD_linARfilterPred__pfloadascii();
+errno_t CLIADDCMD_linARfilterPred__mselblock();
+errno_t CLIADDCMD_linARfilterPred__imrepshiftx();
+errno_t CLIADDCMD_linARfilterPred__mkARpfilt();
+errno_t CLIADDCMD_linARfilterPred__applyARpfilt();
+errno_t CLIADDCMD_linARfilterPred__mscangain();
+errno_t CLIADDCMD_linARfilterPred__linARPFMupdate();
+errno_t CLIADDCMD_linARfilterPred__linARapplyRT();
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /** @name 1. INITIALIZATION, configurations

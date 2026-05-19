@@ -8,9 +8,9 @@
  * reordering throughout the framework.
  *
  * Naming convention:
- *  - qs_<type>()       — recursive Hoare-partition
+ *  - qs_<type>()       -- recursive Hoare-partition
  *                        quicksort on a single array.
- *  - quick_sort_*()    — public entry points that
+ *  - quick_sort_*()    -- public entry points that
  *                        convert (array, count) to
  *                        (array, 0, count-1) and call
  *                        the recursive qs_ variant.
@@ -31,15 +31,14 @@
  * @return 0 on success
  */
 int bubble_sort(
-    double * __restrict array,
-    unsigned long count
-)
+    double *__restrict array,
+    unsigned long      count)
 {
-    unsigned long a, b;
+    unsigned long a;
     double        t;
 
-    for(a = 1; a < count; a++)
-        for(b = count - 1; b >= a; b--)
+    for(unsigned a = 1; a < count; a++)
+        for(unsigned b = count - 1; b >= a; b--)
             if(array[b - 1] > array[b])
             {
                 t            = array[b - 1];
@@ -60,10 +59,9 @@ int bubble_sort(
  * @param right  Right index of partition (inclusive)
  */
 void qs_float(
-    float * __restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    float *__restrict array,
+    unsigned long     left,
+    unsigned long     right)
 {
     unsigned long i, j;
     float         x, y;
@@ -115,12 +113,11 @@ void qs_float(
  * @param right  Right index of partition (inclusive)
  */
 void qs_long(
-    long * __restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    long *__restrict array,
+    unsigned long    left,
+    unsigned long    right)
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     long                   x, y;
 
     i = left;
@@ -170,12 +167,11 @@ void qs_long(
  * @param right  Right index of partition (inclusive)
  */
 void qs_double(
-    double * __restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    double *__restrict array,
+    unsigned long      left,
+    unsigned long      right)
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     double                 x, y;
 
     i = left;
@@ -226,12 +222,11 @@ void qs_double(
  * @param right  Right index (inclusive)
  */
 void qs_ushort(
-    unsigned short * __restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    unsigned short *__restrict array,
+    unsigned long              left,
+    unsigned long              right)
 {
-    register unsigned long i, j;
+    unsigned long i, j;
     unsigned short         x, y;
 
     i = left;
@@ -275,7 +270,7 @@ void qs_ushort(
 }
 
 /* ============================================================
- * Public entry points — single-array variants
+ * Public entry points -- single-array variants
  *
  * Convert (array, count) to (array, 0, count-1) and
  * delegate to the recursive qs_ variant.
@@ -288,9 +283,8 @@ void qs_ushort(
  * @param count  Number of elements
  */
 void quick_sort_float(
-    float * __restrict array,
-    unsigned long count
-)
+    float *__restrict array,
+    unsigned long     count)
 {
     qs_float(array, 0, count - 1);
 }
@@ -302,9 +296,8 @@ void quick_sort_float(
  * @param count  Number of elements
  */
 void quick_sort_long(
-    long * __restrict array,
-    unsigned long count
-)
+    long *__restrict array,
+    unsigned long    count)
 {
     qs_long(array, 0, count - 1);
 }
@@ -316,9 +309,8 @@ void quick_sort_long(
  * @param count  Number of elements
  */
 void quick_sort_double(
-    double * __restrict array,
-    unsigned long count
-)
+    double *__restrict array,
+    unsigned long      count)
 {
     qs_double(array, 0, count - 1);
 }
@@ -330,9 +322,8 @@ void quick_sort_double(
  * @param count  Number of elements
  */
 void quick_sort_ushort(
-    unsigned short * __restrict array,
-    unsigned long count
-)
+    unsigned short *__restrict array,
+    unsigned long              count)
 {
     qs_ushort(array, 0, count - 1);
 }

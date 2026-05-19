@@ -87,42 +87,28 @@ errno_t printInfo()
     {
         printf("Default precision upon startup : double\n");
     }
-    printf("sizeof(struct timespec)        = %4ld bit\n",
-           sizeof(struct timespec) * 8);
+    printf("sizeof(struct timespec)        = %4ld bit\n", sizeof(struct timespec) * 8);
     printf("sizeof(pid_t)                  = %4ld bit\n", sizeof(pid_t) * 8);
-    printf("sizeof(short int)              = %4ld bit\n",
-           sizeof(short int) * 8);
+    printf("sizeof(short int)              = %4ld bit\n", sizeof(short int) * 8);
     printf("sizeof(int)                    = %4ld bit\n", sizeof(int) * 8);
     printf("sizeof(long)                   = %4ld bit\n", sizeof(long) * 8);
-    printf("sizeof(long long)              = %4ld bit\n",
-           sizeof(long long) * 8);
-    printf("sizeof(int_fast8_t)            = %4ld bit\n",
-           sizeof(int_fast8_t) * 8);
-    printf("sizeof(int_fast16_t)           = %4ld bit\n",
-           sizeof(int_fast16_t) * 8);
-    printf("sizeof(int_fast32_t)           = %4ld bit\n",
-           sizeof(int_fast32_t) * 8);
-    printf("sizeof(int_fast64_t)           = %4ld bit\n",
-           sizeof(int_fast64_t) * 8);
-    printf("sizeof(uint_fast8_t)           = %4ld bit\n",
-           sizeof(uint_fast8_t) * 8);
-    printf("sizeof(uint_fast16_t)          = %4ld bit\n",
-           sizeof(uint_fast16_t) * 8);
-    printf("sizeof(uint_fast32_t)          = %4ld bit\n",
-           sizeof(uint_fast32_t) * 8);
-    printf("sizeof(uint_fast64_t)          = %4ld bit\n",
-           sizeof(uint_fast64_t) * 8);
-    printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n",
-           sizeof(IMAGE_KEYWORD) * 8);
+    printf("sizeof(long long)              = %4ld bit\n", sizeof(long long) * 8);
+    printf("sizeof(int_fast8_t)            = %4ld bit\n", sizeof(int_fast8_t) * 8);
+    printf("sizeof(int_fast16_t)           = %4ld bit\n", sizeof(int_fast16_t) * 8);
+    printf("sizeof(int_fast32_t)           = %4ld bit\n", sizeof(int_fast32_t) * 8);
+    printf("sizeof(int_fast64_t)           = %4ld bit\n", sizeof(int_fast64_t) * 8);
+    printf("sizeof(uint_fast8_t)           = %4ld bit\n", sizeof(uint_fast8_t) * 8);
+    printf("sizeof(uint_fast16_t)          = %4ld bit\n", sizeof(uint_fast16_t) * 8);
+    printf("sizeof(uint_fast32_t)          = %4ld bit\n", sizeof(uint_fast32_t) * 8);
+    printf("sizeof(uint_fast64_t)          = %4ld bit\n", sizeof(uint_fast64_t) * 8);
+    printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD) * 8);
 
     size_t offsetval  = 0;
     size_t offsetval0 = 0;
 
     printf(
         "sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte "
-        "------------------\n",
-        sizeof(IMAGE_METADATA) * 8,
-        sizeof(IMAGE_METADATA));
+        "------------------\n", sizeof(IMAGE_METADATA) * 8, sizeof(IMAGE_METADATA));
 
     offsetval = offsetof(IMAGE_METADATA, version);
 
@@ -130,283 +116,195 @@ errno_t printInfo()
     offsetval  = offsetof(IMAGE_METADATA, name);
     printf(
         "   version                     offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, naxis);
     printf(
         "   name                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, size);
     printf(
         "   naxis                       offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, nelement);
     printf(
         "   size                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, datatype);
     printf(
         "   nelement                    offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, imagetype);
     printf(
         "   datatype                    offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, creationtime);
     printf(
         "   imagetype                   offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, lastaccesstime);
     printf(
         "   creationtime                offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, atime);
     printf(
         "   lastaccesstime              offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, writetime);
     printf(
         "   atime                       offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, location);
     printf(
         "   writetime                   offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, location);
     printf(
         "   shared                      offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, status);
     printf(
         "   location                    offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, flag);
     printf(
         "   status                      offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, sem);
     printf(
         "   flag                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, sem);
     printf(
         "   logflag                     offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cnt0);
     printf(
         "   sem                         offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cnt1);
     printf(
         "   cnt0                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cnt2);
     printf(
         "   cnt1                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, write);
     printf(
         "   cnt2                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, NBkw);
     printf(
         "   write                       offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cudaMemHandle);
     printf(
         "   NBkw                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n",
-        8 * offsetval0,
-        offsetval0,
-        offsetval - offsetval0);
+        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     printf("   cudaMemHandle               offset = %4zu bit  = %4zu byte\n",
-           8 * offsetval0,
-           offsetval0);
+           8 * offsetval0, offsetval0);
 
     printf(
         "sizeof(IMAGE)                  offset = %4zu bit  = %4zu byte "
-        "------------------\n",
-        sizeof(IMAGE) * 8,
-        sizeof(IMAGE));
+        "------------------\n", sizeof(IMAGE) * 8, sizeof(IMAGE));
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, name),
-           offsetof(IMAGE, name));
+           8 * offsetof(IMAGE, name), offsetof(IMAGE, name));
 
     printf("   used                        offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, used),
-           offsetof(IMAGE, used));
+           8 * offsetof(IMAGE, used), offsetof(IMAGE, used));
 
     printf("   shmfd                       offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, shmfd),
-           offsetof(IMAGE, shmfd));
+           8 * offsetof(IMAGE, shmfd), offsetof(IMAGE, shmfd));
 
     printf("   memsize                     offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, memsize),
-           offsetof(IMAGE, memsize));
+           8 * offsetof(IMAGE, memsize), offsetof(IMAGE, memsize));
 
     printf("   semlog                      offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, semlog),
-           offsetof(IMAGE, semlog));
+           8 * offsetof(IMAGE, semlog), offsetof(IMAGE, semlog));
 
     printf("   md                          offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, md),
-           offsetof(IMAGE, md));
+           8 * offsetof(IMAGE, md), offsetof(IMAGE, md));
 
     printf("   atimearray                  offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, atimearray),
-           offsetof(IMAGE, atimearray));
+           8 * offsetof(IMAGE, atimearray), offsetof(IMAGE, atimearray));
 
     printf("   writetimearray              offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, writetimearray),
-           offsetof(IMAGE, writetimearray));
+           8 * offsetof(IMAGE, writetimearray), offsetof(IMAGE, writetimearray));
 
     printf("   flagarray                   offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, flagarray),
-           offsetof(IMAGE, flagarray));
+           8 * offsetof(IMAGE, flagarray), offsetof(IMAGE, flagarray));
 
     printf("   cntarray                    offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, cntarray),
-           offsetof(IMAGE, cntarray));
+           8 * offsetof(IMAGE, cntarray), offsetof(IMAGE, cntarray));
 
     printf("   array                       offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, array),
-           offsetof(IMAGE, array));
+           8 * offsetof(IMAGE, array), offsetof(IMAGE, array));
 
     printf("   semptr                      offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, semptr),
-           offsetof(IMAGE, semptr));
+           8 * offsetof(IMAGE, semptr), offsetof(IMAGE, semptr));
 
     printf("   kw                          offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE, kw),
-           offsetof(IMAGE, kw));
+           8 * offsetof(IMAGE, kw), offsetof(IMAGE, kw));
 
     printf(
         "sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte "
-        "------------------\n",
-        sizeof(IMAGE_KEYWORD) * 8,
-        sizeof(IMAGE_KEYWORD));
+        "------------------\n", sizeof(IMAGE_KEYWORD) * 8, sizeof(IMAGE_KEYWORD));
 
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE_KEYWORD, name),
-           offsetof(IMAGE_KEYWORD, name));
+           8 * offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
 
     printf("   type                        offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE_KEYWORD, type),
-           offsetof(IMAGE_KEYWORD, type));
+           8 * offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
 
     printf("   value                       offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE_KEYWORD, value),
-           offsetof(IMAGE_KEYWORD, value));
+           8 * offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
 
     printf("   comment                     offset = %4zu bit  = %4zu byte\n",
-           8 * offsetof(IMAGE_KEYWORD, comment),
-           offsetof(IMAGE_KEYWORD, comment));
+           8 * offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
 
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
@@ -482,11 +380,7 @@ errno_t list_commands()
 
         printf("%4u > " COLORCMD " %-24s " COLORRESET " %-16s " COLORINFO " %-*s " COLORRESET " %s\n",
                i,
-               data.cmd[i].key,
-               data.cmd[i].module,
-               cmdinfoslen - 1,
-               cmdinfoshort,
-               example_short);
+               data.cmd[i].key, data.cmd[i].module, cmdinfoslen - 1, cmdinfoshort, example_short);
     }
 
     return RETURN_SUCCESS;
@@ -538,8 +432,7 @@ errno_t list_commands_module(
     }
     if(moduleindex == -1)
     {
-        printf("---- MODULE %s DOES NOT EXIST / NOT LOADED ---------\n",
-               modulename);
+        printf("---- MODULE %s DOES NOT EXIST / NOT LOADED ---------\n", modulename);
     }
     else
     {
@@ -551,11 +444,9 @@ errno_t list_commands_module(
         printf("   sofilename   %s\n", data.module[moduleindex].sofilename);
         printf("   version      %d %d %d\n",
                data.module[moduleindex].versionmajor,
-               data.module[moduleindex].versionminor,
-               data.module[moduleindex].versionpatch);
+               data.module[moduleindex].versionminor, data.module[moduleindex].versionpatch);
         printf("   date         %s %s\n",
-               data.module[moduleindex].datestring,
-               data.module[moduleindex].timestring);
+               data.module[moduleindex].datestring, data.module[moduleindex].timestring);
         printf("   info         %s\n", data.module[moduleindex].info);
 
         for(unsigned int i = 0; i < data.NBcmd; i++)
@@ -575,10 +466,7 @@ errno_t list_commands_module(
                 cmdinfoshort[cmdinfoslen - 1] = '\0';
                 
                 printf(COLORCMD "   %-24s" COLORRESET COLORINFO
-                       "  %-*s\n" COLORRESET,
-                       data.cmd[i].key,
-                       cmdinfoslen - 1,
-                       cmdinfoshort);
+                       "  %-*s\n" COLORRESET, data.cmd[i].key, cmdinfoslen - 1, cmdinfoshort);
                 mOK = 1;
             }
         }
@@ -587,10 +475,7 @@ errno_t list_commands_module(
         {
             if(strlen(modulename) > 0)
             {
-                printf(
-                    "---- MODULE %s DOES NOT HAVE COMMANDS "
-                    "---------\n",
-                    modulename);
+                printf("---- MODULE %s DOES NOT HAVE COMMANDS " "---------\n", modulename);
             }
         }
     }
@@ -602,9 +487,10 @@ errno_t list_commands_module(
 /** @brief Construct command line (CLI) arguments help string
  *
  */
-int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
-                           int          nbarg,
-                           char        *outargstring)
+int CLIhelp_make_argstring(
+    CLICMDARGDEF fpscliarg[],
+    int nbarg,
+    char *outargstring)
 {
     char tmpstr[STRINGMAXLEN_CMD_SYNTAX];
     tmpstr[0] = '\0';
@@ -618,82 +504,43 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
 
             switch(fpscliarg[arg].type)
             {
-            case CLIARG_FLOAT32:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "FLOAT32");
+            case CLIARG_FLOAT32: snprintf(typestring, sizeof(typestring), "FLOAT32");
                 break;
 
-            case CLIARG_FLOAT64:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "FLOAT64");
+            case CLIARG_FLOAT64: snprintf(typestring, sizeof(typestring), "FLOAT64");
                 break;
 
-            case CLIARG_INT32:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "INT32");
+            case CLIARG_INT32: snprintf(typestring, sizeof(typestring), "INT32");
                 break;
 
-            case CLIARG_UINT32:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "UINT32");
+            case CLIARG_UINT32: snprintf(typestring, sizeof(typestring), "UINT32");
                 break;
 
-            case CLIARG_INT64:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "INT64");
+            case CLIARG_INT64: snprintf(typestring, sizeof(typestring), "INT64");
                 break;
 
-            case CLIARG_UINT64:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "UINT64");
+            case CLIARG_UINT64: snprintf(typestring, sizeof(typestring), "UINT64");
                 break;
 
-            case CLIARG_STR_NOT_IMG:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "STRING");
+            case CLIARG_STR_NOT_IMG: snprintf(typestring, sizeof(typestring), "STRING");
                 break;
 
-            case CLIARG_IMG:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "STREAMNAME");
+            case CLIARG_IMG: snprintf(typestring, sizeof(typestring), "STREAMNAME");
                 break;
 
-            case CLIARG_STR:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "STRING");
+            case CLIARG_STR: snprintf(typestring, sizeof(typestring), "STRING");
                 break;
 
-            case CLIARG_ONOFF:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "ONOFF");
+            case CLIARG_ONOFF: snprintf(typestring, sizeof(typestring), "ONOFF");
                 break;
 
-            case CLIARG_FILENAME:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "FILENAME");
+            case CLIARG_FILENAME: snprintf(typestring, sizeof(typestring), "FILENAME");
                 break;
 
-            case CLIARG_FITSFILENAME:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "FITSFILENAME");
+            case CLIARG_FITSFILENAME: snprintf(typestring, sizeof(typestring), "FITSFILENAME");
                 break;
 
-            case CLIARG_FPSNAME:
-                snprintf(typestring,
-                         sizeof(typestring),
-                         "FPSNAME");
+            case CLIARG_FPSNAME: snprintf(typestring, sizeof(typestring), "FPSNAME");
                 break;
             }
 
@@ -701,18 +548,13 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
             if(CLIargcnt == 0)
             {
                 snprintf(tmpstr1,
-                         STRINGMAXLEN_CMD_SYNTAX,
-                         "<%s [%s]>",
-                         fpscliarg[arg].descr,
-                         typestring);
+                         STRINGMAXLEN_CMD_SYNTAX, "<%s [%s]>", fpscliarg[arg].descr, typestring);
             }
             else
             {
                 snprintf(tmpstr1,
                          STRINGMAXLEN_CMD_SYNTAX - 1,
-                         " <%s [%s]>",
-                         fpscliarg[arg].descr,
-                         typestring);
+                         " <%s [%s]>", fpscliarg[arg].descr, typestring);
             }
 
             // max number of chars we can write
@@ -733,10 +575,11 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
 /** @brief Assemble command line (CLI) example command string
  *
  */
-int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
-                                  int          nbarg,
-                                  char        *shortname,
-                                  char        *outcmdexstring)
+int CLIhelp_make_cmdexamplestring(
+    CLICMDARGDEF fpscliarg[],
+    int nbarg,
+    char *shortname,
+    char *outcmdexstring)
 {
     char tmpstr[STRINGMAXLEN_CMD_EXAMPLE];
 
@@ -747,10 +590,7 @@ int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
         if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             char tmpstr1[STRINGMAXLEN_CMD_EXAMPLE];
-            snprintf(tmpstr1,
-                     STRINGMAXLEN_CMD_EXAMPLE - 1,
-                     " %s",
-                     fpscliarg[arg].example);
+            snprintf(tmpstr1, STRINGMAXLEN_CMD_EXAMPLE - 1, " %s", fpscliarg[arg].example);
 
             // max number of chars we can write
             int n = STRINGMAXLEN_CMD_EXAMPLE - strlen(tmpstr);

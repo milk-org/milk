@@ -43,10 +43,7 @@ errno_t write_process_log()
         {
             // extract last word
             char str[STRINGMAXLEN_FULLFILENAME];
-            snprintf(str,
-                     sizeof(str),
-                     "%s",
-                     dctestpoint.file);
+            snprintf(str, sizeof(str), "%s", dctestpoint.file);
             char *lastword = strrchr(str, '/') + 1;
             fprintf(fplog, " %s", lastword);
         }
@@ -76,7 +73,7 @@ static void set_terminal_echo_on()
     struct termios termInfo;
     if(tcgetattr(0, &termInfo) == -1)
     {
-        perror("tcgetattr");
+        PRINT_ERROR("tcgetattr: %s", strerror(errno));
         exit(1);
     }
     termInfo.c_lflag |= ECHO; /* turn on ECHO */
@@ -92,10 +89,9 @@ static void set_terminal_echo_on()
  * printing it to the terminal.
  */
 static void fprintf_stdout(
-    FILE       *f,
+    FILE *f,
     char const *fmt,
-    ...
-)
+    ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -185,9 +181,7 @@ errno_t write_process_exit_report(
 
     WRITE_FILENAME(fname, "exitreport-%s.%05d.log", errortypestring, thisPID);
 
-    printf("EXIT CONDITION < %s >: See report in file %s\n",
-           errortypestring,
-           fname);
+    printf("EXIT CONDITION < %s >: See report in file %s\n", errortypestring, fname);
     printf("    File    : %s\n", dctestpoint.file);
     printf("    Function: %s\n", dctestpoint.func);
     printf("    Line    : %d\n", dctestpoint.line);
@@ -212,10 +206,7 @@ errno_t write_process_exit_report(
                        1900 + uttime->tm_year,
                        1 + uttime->tm_mon,
                        uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       tnow.tv_nsec);
+                       uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
 
         fprintf_stdout(fpexit, "Last encountered test point\n");
         tvsec1 = dctestpoint.time.tv_sec;
@@ -225,10 +216,7 @@ errno_t write_process_exit_report(
                        1900 + uttime->tm_year,
                        1 + uttime->tm_mon,
                        uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       dctestpoint.time.tv_nsec);
+                       uttime->tm_hour, uttime->tm_min, uttime->tm_sec, dctestpoint.time.tv_nsec);
 
         double timediff = 1.0 * (tvsec0 - tvsec1) +
                           1.0e-9 * (tnow.tv_nsec - dctestpoint.time.tv_nsec);
@@ -282,27 +270,23 @@ void sig_handler(int signo)
     switch(signo)
     {
 
-        case SIGINT:
-            printf("PID %d sig_handler received SIGINT\n", CLIPID);
+        case SIGINT: printf("PID %d sig_handler received SIGINT\n", CLIPID);
             dcsigINT = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
-        case SIGTERM:
-            printf("PID %d sig_handler received SIGTERM\n", CLIPID);
+        case SIGTERM: printf("PID %d sig_handler received SIGTERM\n", CLIPID);
             dcsigTERM = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
-        case SIGUSR1:
-            printf("PID %d sig_handler received SIGUSR1\n", CLIPID);
+        case SIGUSR1: printf("PID %d sig_handler received SIGUSR1\n", CLIPID);
             dcsigUSR1 = 1;
             break;
 
-        case SIGUSR2:
-            printf("PID %d sig_handler received SIGUSR2\n", CLIPID);
+        case SIGUSR2: printf("PID %d sig_handler received SIGUSR2\n", CLIPID);
             dcsigUSR2 = 1;
             break;
 
@@ -314,8 +298,7 @@ void sig_handler(int signo)
             exit(EXIT_FAILURE);
             break;
 
-        case SIGABRT:
-            printf("PID %d sig_handler received SIGABRT\n", CLIPID);
+        case SIGABRT: printf("PID %d sig_handler received SIGABRT\n", CLIPID);
             write_process_exit_report("SIGABRT");
             dcsigABRT = 1;
             set_terminal_echo_on();
@@ -330,16 +313,14 @@ void sig_handler(int signo)
             exit(EXIT_FAILURE);
             break;
 
-        case SIGHUP:
-            printf("PID %d sig_handler received SIGHUP\n", CLIPID);
+        case SIGHUP: printf("PID %d sig_handler received SIGHUP\n", CLIPID);
             write_process_exit_report("SIGHUP");
             dcsigHUP = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
-        case SIGPIPE:
-            printf("PID %d sig_handler received SIGPIPE\n", CLIPID);
+        case SIGPIPE: printf("PID %d sig_handler received SIGPIPE\n", CLIPID);
             dcsigPIPE = 1;
             break;
     }

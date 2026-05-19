@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im3Dto2D",
     .cmdkey      = "im3D_to_stream2D",
-    .description = "convert 3D image to 2D stream"
+    .description = "convert 3D image to 2D stream",
+    .description_long =
+        "Convert a static 3D image cube into a 2D shared memory stream by sequentially playing back each slice as a frame. Useful for testing stream consumers with pre-recorded data."
 };
 
 
@@ -29,10 +31,8 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    inimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "im3d";
-static char    outname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "im2d";
+static char    inimname[FUNCTION_PARAMETER_STRMAXLEN] = "im3d";
+static char    outname[FUNCTION_PARAMETER_STRMAXLEN] = "im2d";
 static int64_t slice_index = 0;
 static int32_t loop_mode   = 0;
 
@@ -70,18 +70,15 @@ static int32_t loop_mode   = 0;
 static errno_t extract_slice_to_2D(
     IMGID *inimg,
     IMGID *outimg,
-    long slice_idx)
+    long  slice_idx)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(
-        inimg, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    resolveIMGID(inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
     if(inimg->md->naxis != 3)
     {
-        FUNC_RETURN_FAILURE(
-            "Input image is not 3D");
+        FUNC_RETURN_FAILURE("Input image is not 3D");
     }
 
     uint32_t xsize = inimg->mdt->size[0];
@@ -90,8 +87,7 @@ static errno_t extract_slice_to_2D(
 
     if(slice_idx < 0 || slice_idx >= zsize)
     {
-        FUNC_RETURN_FAILURE(
-            "Slice index out of bounds");
+        FUNC_RETURN_FAILURE("Slice index out of bounds");
     }
 
     // Image is created once before the loop;
@@ -99,15 +95,10 @@ static errno_t extract_slice_to_2D(
 
     outimg->md->write = 1;
 
-    long framesize =
-        xsize * ysize
-        * ImageStreamIO_typesize(
-            inimg->md->datatype);
+    long framesize = xsize * ysize * ImageStreamIO_typesize(inimg->md->datatype);
 
     __builtin_memcpy(outimg->im->array.raw,
-           inimg->im->array.raw
-           + slice_idx * framesize,
-           framesize);
+           inimg->im->array.raw + slice_idx * framesize, framesize);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -129,17 +120,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg =
-        imgid_make_from_name(inimname);
-    resolveIMGID(
-        &inimg, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID inimg = imgid_make_from_name(inimname);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg,  dcnimg);
 
     IMGID outimg;
-    outimg = imgid_make_from_name_2D(
-        outname,
-        inimg.mdt->size[0],
-        inimg.mdt->size[1]);
+    outimg = imgid_make_from_name_2D(outname, inimg.mdt->size[0], inimg.mdt->size[1]);
     outimg.mdt->shared = 1;
     outimg.mdt->datatype = inimg.md->datatype;
 
@@ -152,23 +137,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     {
         if(loop_mode == 0)
         {
-            extract_slice_to_2D(
-                &inimg, &outimg, slice_index);
+            extract_slice_to_2D(&inimg, &outimg, slice_index);
         }
         else
         {
-            slice_index = (slice_index + 1)
-                % inimg.mdt->size[2];
-            extract_slice_to_2D(
-                &inimg, &outimg, slice_index);
+            slice_index = (slice_index + 1) % inimg.mdt->size[2];
+            extract_slice_to_2D(&inimg, &outimg, slice_index);
         }
 
-        processinfo_update_output_stream(
-            processinfo, outimg.im, NULL);
+        processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&inimg);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&inimg);
     imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
@@ -184,18 +163,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__im3D_to_stream2D()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

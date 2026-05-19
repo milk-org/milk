@@ -3,57 +3,48 @@
  * @brief Processinfo signals module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <signal.h>
-#include <time.h>
-#include <string.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_signals.h"
 #include "processinfo_SIGexit.h"
 #include "processinfo_procdirname.h"
-#include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
 #define CLOCK_MILK CLOCK_REALTIME
 #endif
 
+/**
+ * @brief Signal handler for process info processes.
+ */
 void processinfo_sig_handler(int signo)
 {
     switch(signo)
     {
-        case SIGUSR1:
-            processinfo_signal_USR1 = 1;
-            break;
-        case SIGUSR2:
-            processinfo_signal_USR2 = 1;
-            break;
-        case SIGINT:
-            processinfo_signal_INT = 1;
-            break;
-        case SIGTERM:
-            processinfo_signal_TERM = 1;
-            break;
-        case SIGSEGV:
-            processinfo_signal_SEGV = 1;
-            break;
-        case SIGABRT:
-            processinfo_signal_ABRT = 1;
-            break;
-        case SIGBUS:
-            processinfo_signal_BUS = 1;
-            break;
-        case SIGHUP:
-            processinfo_signal_HUP = 1;
-            break;
-        case SIGPIPE:
-            processinfo_signal_PIPE = 1;
-            break;
+    case SIGUSR1: processinfo_signal_USR1 = 1;
+        break;
+    case SIGUSR2: processinfo_signal_USR2 = 1;
+        break;
+    case SIGINT: processinfo_signal_INT = 1;
+        break;
+    case SIGTERM: processinfo_signal_TERM = 1;
+        break;
+    case SIGSEGV: processinfo_signal_SEGV = 1;
+        break;
+    case SIGABRT: processinfo_signal_ABRT = 1;
+        break;
+    case SIGBUS: processinfo_signal_BUS = 1;
+        break;
+    case SIGHUP: processinfo_signal_HUP = 1;
+        break;
+    case SIGPIPE: processinfo_signal_PIPE = 1;
+        break;
     }
 }
 
+/**
+ * @brief Registers signal handlers for the process info system.
+ */
 int processinfo_CatchSignals()
 {
     struct sigaction sigact;
@@ -61,17 +52,41 @@ int processinfo_CatchSignals()
     sigact.sa_flags = 0;
     sigact.sa_handler = processinfo_sig_handler;
 
-    if(sigaction(SIGTERM, &sigact, NULL) == -1) printf("\ncan't catch SIGTERM\n");
-    if(sigaction(SIGINT, &sigact, NULL) == -1) printf("\ncan't catch SIGINT\n");
-    if(sigaction(SIGABRT, &sigact, NULL) == -1) printf("\ncan't catch SIGABRT\n");
-    if(sigaction(SIGBUS, &sigact, NULL) == -1) printf("\ncan't catch SIGBUS\n");
-    if(sigaction(SIGSEGV, &sigact, NULL) == -1) printf("\ncan't catch SIGSEGV\n");
-    if(sigaction(SIGHUP, &sigact, NULL) == -1) printf("\ncan't catch SIGHUP\n");
-    if(sigaction(SIGPIPE, &sigact, NULL) == -1) printf("\ncan't catch SIGPIPE\n");
+    if(sigaction(SIGTERM, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGTERM\n");
+    }
+    if(sigaction(SIGINT, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGINT\n");
+    }
+    if(sigaction(SIGABRT, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGABRT\n");
+    }
+    if(sigaction(SIGBUS, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGBUS\n");
+    }
+    if(sigaction(SIGSEGV, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGSEGV\n");
+    }
+    if(sigaction(SIGHUP, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGHUP\n");
+    }
+    if(sigaction(SIGPIPE, &sigact, NULL) == -1)
+    {
+        printf("\ncan't catch SIGPIPE\n");
+    }
 
     return 0;
 }
 
+/**
+ * @brief Processes any pending signals for the current process.
+ */
 int processinfo_ProcessSignals(PROCESSINFO *processinfo)
 {
     int loopOK = 1;
@@ -122,6 +137,9 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
     return loopOK;
 }
 
+/**
+ * @brief Performs a clean exit for a process info instance.
+ */
 int processinfo_cleanExit(PROCESSINFO *processinfo)
 {
 
@@ -140,12 +158,8 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
                      STRINGMAXLEN_PROCESSINFO_STATUSMSG,
                      "CTRLexit %02d:%02d:%02d.%03d",
                      tstoptm->tm_hour,
-                     tstoptm->tm_min,
-                     tstoptm->tm_sec,
-                     (int)(0.000001 * (tstop.tv_nsec)));
-            strncpy(processinfo->statusmsg,
-                    msgstring,
-                    STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
+                     tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
+            strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
         }
 
         if(processinfo->loopstat == 1)
@@ -154,12 +168,8 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
                      STRINGMAXLEN_PROCESSINFO_STATUSMSG,
                      "Loop exit %02d:%02d:%02d.%03d",
                      tstoptm->tm_hour,
-                     tstoptm->tm_min,
-                     tstoptm->tm_sec,
-                     (int)(0.000001 * (tstop.tv_nsec)));
-            strncpy(processinfo->statusmsg,
-                    msgstring,
-                    STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
+                     tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
+            strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
         }
 
         processinfo->loopstat = 3; // clean exit
@@ -171,10 +181,7 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
     char SM_fname[STRINGMAXLEN_FULLFILENAME];
     WRITE_FULLFILENAME(SM_fname,
-                       "%s/proc.%s.%06d.shm",
-                       procdname,
-                       processinfo->name,
-                       processinfo->PID);
+                       "%s/proc.%s.%06d.shm", procdname, processinfo->name, processinfo->PID);
     remove(SM_fname);
 
     return 0;

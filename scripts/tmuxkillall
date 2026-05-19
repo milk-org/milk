@@ -1,1 +1,19 @@
-tmux ls | grep : | cut -d. -f1 | awk '{print substr($1, 0, length($1)-1)}' | xargs -n 1 tmux kill-session -t
+#!/bin/bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "kill all tmux sessions"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Kill every tmux session on the system."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: tmuxkillall"
+        echo "Kill all tmux sessions."
+        exit 0 ;;
+esac
+
+tmux ls | grep : | cut -d. -f1 \
+    | awk '{print substr($1, 0, length($1)-1)}' \
+    | xargs -n 1 tmux kill-session -t

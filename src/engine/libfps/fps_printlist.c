@@ -4,10 +4,17 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
-int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray,
-                                 long                NBparamMAX)
+/**
+ * @brief Print a summary table of all parameters in an
+ * FPS parameter array.
+ *
+ * Lists keyword, type, value, and flags for each
+ * active entry.
+ */
+int function_parameter_printlist(
+    FPS_PARAM *funcparamarray,
+    long      NBparamMAX)
 {
     long pindex = 0;
     long pcnt   = 0;
@@ -17,17 +24,14 @@ int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray,
     {
         if(funcparamarray[pindex].fpflag & FPFLAG_ACTIVE)
         {
-            printf("Parameter %4ld : %s\n",
-                   pindex,
-                   funcparamarray[pindex].keywordfull);
+            printf("Parameter %4ld : %s\n", pindex, funcparamarray[pindex].keywordfull);
             /*for(int kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
             	printf("  %s", funcparamarray[pindex].keyword[kl]);
             printf("\n");*/
             printf("    %s\n", funcparamarray[pindex].description);
 
             // STATUS FLAGS
-            printf("    STATUS FLAGS (0x%02hhx) :",
-                   (int) funcparamarray[pindex].fpflag);
+            printf("    STATUS FLAGS (0x%02hhx) :", (int) funcparamarray[pindex].fpflag);
             if(funcparamarray[pindex].fpflag & FPFLAG_ACTIVE)
             {
                 printf(" ACTIVE");
@@ -103,8 +107,7 @@ int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray,
             if(funcparamarray[pindex].type & FPTYPE_INT64)
             {
                 printf("    TYPE  = INT64\n");
-                printf("    VALUE = %ld\n",
-                       (long) funcparamarray[pindex].val.i64[0]);
+                printf("    VALUE = %ld\n", (long) funcparamarray[pindex].val.i64[0]);
             }
             if(funcparamarray[pindex].type & FPTYPE_FLOAT64)
             {

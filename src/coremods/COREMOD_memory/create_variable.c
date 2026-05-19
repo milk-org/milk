@@ -16,7 +16,9 @@
 #include "variable_ID.h"
 
 /* creates floating point variable */
-variableID create_variable_ID(const char *name, double value)
+variableID create_variable_ID(
+    const char *name,
+    double     value)
 {
     variableID ID;
     long       i2;
@@ -27,10 +29,7 @@ variableID create_variable_ID(const char *name, double value)
 
     if(imgid_exists(name))
     {
-        printf(
-            "ERROR: cannot create variable \"%s\": name already used as an "
-            "image\n",
-            name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
     }
     else
     {
@@ -46,16 +45,16 @@ variableID create_variable_ID(const char *name, double value)
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 0; /** floating point double */
-        snprintf(dcvar[ID].name,
-                 sizeof(dcvar[ID].name),
-                 "%s", name);
+        snprintf(dcvar[ID].name, sizeof(dcvar[ID].name), "%s", name);
         dcvar[ID].value.f = value;
     }
     return ID;
 }
 
 /* creates long variable */
-variableID create_variable_long_ID(const char *name, long value)
+variableID create_variable_long_ID(
+    const char *name,
+    long       value)
 {
     variableID ID;
     long       i2;
@@ -65,10 +64,7 @@ variableID create_variable_long_ID(const char *name, long value)
 
     if(imgid_exists(name))
     {
-        printf(
-            "ERROR: cannot create variable \"%s\": name already used as an "
-            "image\n",
-            name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
     }
     else
     {
@@ -84,9 +80,7 @@ variableID create_variable_long_ID(const char *name, long value)
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 1; /** long */
-        snprintf(dcvar[ID].name,
-                 sizeof(dcvar[ID].name),
-                 "%s", name);
+        snprintf(dcvar[ID].name, sizeof(dcvar[ID].name), "%s", name);
         dcvar[ID].value.l = value;
     }
 
@@ -94,7 +88,9 @@ variableID create_variable_long_ID(const char *name, long value)
 }
 
 /* creates long variable */
-variableID create_variable_string_ID(const char *name, const char *value)
+variableID create_variable_string_ID(
+    const char *name,
+    const char *value)
 {
     variableID ID;
     long       i2;
@@ -104,10 +100,7 @@ variableID create_variable_string_ID(const char *name, const char *value)
 
     if(imgid_exists(name))
     {
-        printf(
-            "ERROR: cannot create variable \"%s\": name already used as an "
-            "image\n",
-            name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
     }
     else
     {
@@ -123,12 +116,8 @@ variableID create_variable_string_ID(const char *name, const char *value)
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 2; /** string */
-        snprintf(dcvar[ID].name,
-                 sizeof(dcvar[ID].name),
-                 "%s", name);
-        snprintf(dcvar[ID].value.s,
-                 sizeof(dcvar[ID].value.s),
-                 "%s", value);
+        snprintf(dcvar[ID].name, sizeof(dcvar[ID].name), "%s", name);
+        snprintf(dcvar[ID].value.s, sizeof(dcvar[ID].value.s), "%s", value);
     }
 
     return ID;

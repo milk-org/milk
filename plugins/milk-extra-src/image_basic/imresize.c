@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "resizeim",
     .cmdkey      = "resizeim",
-    .description = "resize 2D image"
+    .description = "resize 2D image",
+    .description_long =
+        "Resize a 2D image to arbitrary dimensions using bilinear interpolation."
 };
 
 
@@ -51,7 +53,7 @@ static int64_t imresize_ysize = 64;
 #define FPS_PARAMS(X) \
     X(".in_name", imresize_inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
       "input image") \
     X(".out_name", imresize_outimname, \
       FPTYPE_STREAMNAME, 1, \

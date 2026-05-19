@@ -1,5 +1,8 @@
 #include <stddef.h>
-extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
+extern int cli_find_in_path(
+    const char *cmd,
+    char       *outpath,
+    size_t     outsize);
 extern int processinfo_procdirname(char *procdirname);
 #include <stddef.h>
 #include <sys/mman.h>
@@ -26,10 +29,13 @@ extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
 
+/**
+ * @brief Handler: set a shell variable.
+ */
 int cli_intercept_cmd_set(const char *p)
 {
     if(starts_with(p, "set ")
-       || starts_with(p, "set\t"))
+            || starts_with(p, "set\t"))
     {
         p += 3;
         p = strip_ws(p);
@@ -40,18 +46,16 @@ int cli_intercept_cmd_set(const char *p)
                 int on = (*p == '-');
                 p++;
                 while(*p != '\0'
-                      && *p != ' '
-                      && *p != '\t')
+                        && *p != ' '
+                        && *p != '\t')
                 {
                     if(*p == 'e')
                     {
-                        cli_flag_errexit =
-                            on;
+                        cli_flag_errexit = on;
                     }
                     else if(*p == 'x')
                     {
-                        cli_flag_xtrace =
-                            on;
+                        cli_flag_xtrace = on;
                     }
                     p++;
                 }
@@ -67,10 +71,13 @@ int cli_intercept_cmd_set(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: export a variable to child processes.
+ */
 int cli_intercept_cmd_export(const char *p)
 {
     if(starts_with(p, "export ")
-       || starts_with(p, "export\t"))
+            || starts_with(p, "export\t"))
     {
         p += 6;
         p = strip_ws(p);
@@ -81,51 +88,39 @@ int cli_intercept_cmd_export(const char *p)
             int elen = (int)(eq - p);
             if(elen >= CLI_VAR_NAMELEN)
             {
-                elen =
-                    CLI_VAR_NAMELEN - 1;
+                elen = CLI_VAR_NAMELEN - 1;
             }
-            memcpy(ename, p,
-                   (size_t) elen);
+            memcpy(ename, p, (size_t) elen);
             ename[elen] = '\0';
             const char *eval = eq + 1;
             /* Strip quotes */
-            int evlen =
-                (int) strlen(eval);
+            int evlen = (int) strlen(eval);
             if(evlen >= 2
-               && ((eval[0] == '"'
-                    && eval[evlen - 1]
-                    == '"')
-                   || (eval[0] == '\''
-                       && eval[
-                           evlen - 1]
-                       == '\'')))
+                    && ((eval[0] == '"'
+                         && eval[evlen - 1]
+                         == '"')
+                        || (eval[0] == '\''
+                            && eval[
+                                evlen - 1]
+                            == '\'')))
             {
-                char ebuf[
-                    CLI_VAR_VALLEN];
-                memcpy(ebuf,
-                       eval + 1,
-                       (size_t)
-                       (evlen - 2));
+                char ebuf[CLI_VAR_VALLEN];
+                memcpy(ebuf, eval + 1, (size_t) (evlen - 2));
                 ebuf[evlen - 2] = '\0';
-                setenv(ename,
-                       ebuf, 1);
-                cli_var_set(ename,
-                            ebuf);
+                setenv(ename, ebuf, 1);
+                cli_var_set(ename, ebuf);
             }
             else
             {
-                setenv(ename,
-                       eval, 1);
-                cli_var_set(ename,
-                            eval);
+                setenv(ename, eval, 1);
+                cli_var_set(ename, eval);
             }
         }
         else
         {
             /* export VAR (no =val):
              * push current value */
-            const char *eval =
-                cli_var_get(p);
+            const char *eval = cli_var_get(p);
             if(eval != NULL)
             {
                 setenv(p, eval, 1);
@@ -136,13 +131,16 @@ int cli_intercept_cmd_export(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: source (execute) a script file.
+ */
 int cli_intercept_cmd_source(const char *p)
 {
     if(starts_with(p, "source ")
-       || starts_with(p, "source\t")
-       || (p[0] == '.'
-           && (p[1] == ' '
-               || p[1] == '\t')))
+            || starts_with(p, "source\t")
+            || (p[0] == '.'
+                && (p[1] == ' '
+                    || p[1] == '\t')))
     {
         const char *fn = p;
         if(p[0] == '.')
@@ -157,30 +155,24 @@ int cli_intercept_cmd_source(const char *p)
         FILE *sf = fopen(fn, "r");
         if(sf == NULL)
         {
-            fprintf(stderr,
-                    "source: %s: "
-                    "No such file\n",
-                    fn);
+            fprintf(stderr, "source: %s: " "No such file\n", fn);
         }
         else
         {
-            char sline[
-                STRINGMAXLEN_CLICMDLINE];
+            char sline[STRINGMAXLEN_CLICMDLINE];
             while(fgets(
-                      sline,
-                      (int) sizeof(
-                          sline),
-                      sf) != NULL)
+                        sline,
+                        (int) sizeof(
+                            sline),
+                        sf) != NULL)
             {
                 /* Strip newline */
-                int sl =
-                    (int) strlen(sline);
+                int sl = (int) strlen(sline);
                 if(sl > 0
-                   && sline[sl - 1]
-                   == '\n')
+                        && sline[sl - 1]
+                        == '\n')
                 {
-                    sline[sl - 1] =
-                        '\0';
+                    sline[sl - 1] = '\0';
                 }
                 CLI_execute_string(sline);
             }
@@ -194,24 +186,21 @@ int cli_intercept_cmd_source(const char *p)
 int cli_intercept_cmd_readonly(const char *p)
 {
     if(starts_with(p, "readonly ")
-       || starts_with(p,
-                      "readonly\t"))
+            || starts_with(p,
+                           "readonly\t"))
     {
         p += 8;
         p = strip_ws(p);
-        const char *eq =
-            strchr(p, '=');
+        const char *eq = strchr(p, '=');
         if(eq != NULL)
         {
             char rn[CLI_VAR_NAMELEN];
             int rl = (int)(eq - p);
             if(rl >= CLI_VAR_NAMELEN)
             {
-                rl =
-                    CLI_VAR_NAMELEN - 1;
+                rl = CLI_VAR_NAMELEN - 1;
             }
-            memcpy(rn, p,
-                   (size_t) rl);
+            memcpy(rn, p, (size_t) rl);
             rn[rl] = '\0';
             cli_var_set(rn, eq + 1);
         }
@@ -224,16 +213,15 @@ int cli_intercept_cmd_readonly(const char *p)
 int cli_intercept_cmd_break(const char *p)
 {
     if(starts_with(p, "break")
-       && (p[5] == '\0'
-           || p[5] == ' '
-           || p[5] == '\t'))
+            && (p[5] == '\0'
+                || p[5] == ' '
+                || p[5] == '\t'))
     {
         /* Set break level */
         int n = 1;
         if(p[5] != '\0')
         {
-            n = (int) strtol(
-                p + 5, NULL, 10);
+            n = (int) strtol(p + 5, NULL, 10);
             if(n < 1)
             {
                 n = 1;
@@ -248,15 +236,14 @@ int cli_intercept_cmd_break(const char *p)
 int cli_intercept_cmd_continue(const char *p)
 {
     if(starts_with(p, "continue")
-       && (p[8] == '\0'
-           || p[8] == ' '
-           || p[8] == '\t'))
+            && (p[8] == '\0'
+                || p[8] == ' '
+                || p[8] == '\t'))
     {
         int n = 1;
         if(p[8] != '\0')
         {
-            n = (int) strtol(
-                p + 8, NULL, 10);
+            n = (int) strtol(p + 8, NULL, 10);
             if(n < 1)
             {
                 n = 1;
@@ -271,13 +258,12 @@ int cli_intercept_cmd_continue(const char *p)
 int cli_intercept_cmd_printf(const char *p)
 {
     if(starts_with(p, "printf ")
-       || starts_with(p, "printf\t"))
+            || starts_with(p, "printf\t"))
     {
         p += 6;
         p = strip_ws(p);
         /* Parse format string */
-        char fmt[
-            STRINGMAXLEN_CLICMDLINE];
+        char fmt[STRINGMAXLEN_CLICMDLINE];
         int fi = 0;
         char delim = ' ';
         if(*p == '"' || *p == '\'')
@@ -286,27 +272,23 @@ int cli_intercept_cmd_printf(const char *p)
             p++;
         }
         while(*p != '\0'
-              && *p != delim
-              && fi
-              < STRINGMAXLEN_CLICMDLINE
-              - 1)
+                && *p != delim
+                && fi
+                < STRINGMAXLEN_CLICMDLINE
+                - 1)
         {
             if(*p == '\\'
-               && p[1] != '\0')
+                    && p[1] != '\0')
             {
                 switch(p[1])
                 {
-                case 'n':
-                    fmt[fi++] = '\n';
+                case 'n': fmt[fi++] = '\n';
                     break;
-                case 't':
-                    fmt[fi++] = '\t';
+                case 't': fmt[fi++] = '\t';
                     break;
-                case '\\':
-                    fmt[fi++] = '\\';
+                case '\\': fmt[fi++] = '\\';
                     break;
-                default:
-                    fmt[fi++] = p[1];
+                default: fmt[fi++] = p[1];
                     break;
                 }
                 p += 2;
@@ -326,19 +308,18 @@ int cli_intercept_cmd_printf(const char *p)
         int nargs = 0;
         p = strip_ws(p);
         while(*p != '\0'
-              && nargs < 32)
+                && nargs < 32)
         {
             int ai = 0;
             if(*p == '"'
-               || *p == '\'')
+                    || *p == '\'')
             {
                 char qc = *p++;
                 while(*p != '\0'
-                      && *p != qc
-                      && ai < 255)
+                        && *p != qc
+                        && ai < 255)
                 {
-                    args[nargs][ai++] =
-                        *p++;
+                    args[nargs][ai++] = *p++;
                 }
                 if(*p == qc)
                 {
@@ -348,12 +329,11 @@ int cli_intercept_cmd_printf(const char *p)
             else
             {
                 while(*p != '\0'
-                      && *p != ' '
-                      && *p != '\t'
-                      && ai < 255)
+                        && *p != ' '
+                        && *p != '\t'
+                        && ai < 255)
                 {
-                    args[nargs][ai++] =
-                        *p++;
+                    args[nargs][ai++] = *p++;
                 }
             }
             args[nargs][ai] = '\0';
@@ -366,15 +346,13 @@ int cli_intercept_cmd_printf(const char *p)
         while(*f != '\0')
         {
             if(*f == '%'
-               && f[1] != '\0')
+                    && f[1] != '\0')
             {
                 if(f[1] == 's')
                 {
                     if(ai < nargs)
                     {
-                        printf("%s",
-                               args[
-                                   ai++]);
+                        printf("%s", args[ai++]);
                     }
                     f += 2;
                 }
@@ -382,13 +360,7 @@ int cli_intercept_cmd_printf(const char *p)
                 {
                     if(ai < nargs)
                     {
-                        printf(
-                            "%d",
-                            (int) strtol(
-                                args[
-                                    ai++],
-                                NULL,
-                                10));
+                        printf("%d", (int) strtol(args[ai++], NULL, 10));
                     }
                     f += 2;
                 }
@@ -396,12 +368,7 @@ int cli_intercept_cmd_printf(const char *p)
                 {
                     if(ai < nargs)
                     {
-                        printf(
-                            "%f",
-                            strtod(
-                                args[
-                                    ai++],
-                                NULL));
+                        printf("%f", strtod(args[ai++], NULL));
                     }
                     f += 2;
                 }
@@ -431,8 +398,8 @@ int cli_intercept_cmd_printf(const char *p)
 int cli_intercept_cmd_getopts(const char *p)
 {
     if(starts_with(p, "getopts ")
-       || starts_with(p,
-                      "getopts\t"))
+            || starts_with(p,
+                           "getopts\t"))
     {
         p += 7;
         p = strip_ws(p);
@@ -441,9 +408,9 @@ int cli_intercept_cmd_getopts(const char *p)
         {
             int oi = 0;
             while(*p != '\0'
-                  && *p != ' '
-                  && *p != '\t'
-                  && oi < 127)
+                    && *p != ' '
+                    && *p != '\t'
+                    && oi < 127)
             {
                 optstr[oi++] = *p++;
             }
@@ -455,31 +422,25 @@ int cli_intercept_cmd_getopts(const char *p)
         {
             int gi = 0;
             while(*p != '\0'
-                  && *p != ' '
-                  && *p != '\t'
-                  && gi
-                  < CLI_VAR_NAMELEN - 1)
+                    && *p != ' '
+                    && *p != '\t'
+                    && gi
+                    < CLI_VAR_NAMELEN - 1)
             {
                 gvar[gi++] = *p++;
             }
             gvar[gi] = '\0';
         }
         /* Get OPTIND */
-        const char *oidx =
-            cli_var_get("OPTIND");
-        int optind_val =
-            oidx ? (int) strtol(
-                       oidx, NULL, 10)
-            : 1;
+        const char *oidx = cli_var_get("OPTIND");
+        int optind_val = oidx ? (int) strtol(oidx, NULL, 10) : 1;
         /* Get current positional arg */
         char pname[32];
-        snprintf(pname, sizeof(pname),
-                 "%d", optind_val);
-        const char *arg =
-            cli_var_get(pname);
+        snprintf(pname, sizeof(pname), "%d", optind_val);
+        const char *arg = cli_var_get(pname);
         if(arg == NULL
-           || arg[0] != '-'
-           || arg[1] == '\0')
+                || arg[0] != '-'
+                || arg[1] == '\0')
         {
             cli_var_set(gvar, "?");
             cli_last_retval = 1;
@@ -487,8 +448,7 @@ int cli_intercept_cmd_getopts(const char *p)
         }
         char optch = arg[1];
         /* Check if valid */
-        const char *found =
-            strchr(optstr, optch);
+        const char *found = strchr(optstr, optch);
         if(found == NULL)
         {
             cli_var_set(gvar, "?");
@@ -504,25 +464,18 @@ int cli_intercept_cmd_getopts(const char *p)
                 /* Next arg is OPTARG */
                 optind_val++;
                 char pn2[32];
-                snprintf(
-                    pn2, sizeof(pn2),
-                    "%d", optind_val);
-                const char *oa =
-                    cli_var_get(pn2);
+                snprintf(pn2, sizeof(pn2), "%d", optind_val);
+                const char *oa = cli_var_get(pn2);
                 if(oa != NULL)
                 {
-                    cli_var_set(
-                        "OPTARG", oa);
+                    cli_var_set("OPTARG", oa);
                 }
             }
         }
         optind_val++;
         {
             char oib[32];
-            snprintf(oib,
-                     sizeof(oib),
-                     "%d",
-                     optind_val);
+            snprintf(oib, sizeof(oib), "%d", optind_val);
             cli_var_set("OPTIND", oib);
         }
         cli_last_retval = 0;
@@ -534,17 +487,20 @@ int cli_intercept_cmd_getopts(const char *p)
 int cli_intercept_cmd_local(const char *p)
 {
     if(starts_with(p, "local ")
-       || starts_with(p, "local\t"))
+            || starts_with(p, "local\t"))
     {
         p += 5;
         p = strip_ws(p);
-        
+
         char vn[CLI_VAR_NAMELEN];
         const char *eq = strchr(p, '=');
         if(eq != NULL)
         {
             int nl = (int)(eq - p);
-            if(nl >= CLI_VAR_NAMELEN) nl = CLI_VAR_NAMELEN - 1;
+            if(nl >= CLI_VAR_NAMELEN)
+            {
+                nl = CLI_VAR_NAMELEN - 1;
+            }
             memcpy(vn, p, (size_t) nl);
             vn[nl] = '\0';
         }
@@ -553,7 +509,7 @@ int cli_intercept_cmd_local(const char *p)
             strncpy(vn, p, CLI_VAR_NAMELEN - 1);
             vn[CLI_VAR_NAMELEN - 1] = '\0';
         }
-        
+
         /* Save shadow if in function scope and not already shadowed */
         if(cli_local_depth > 0)
         {
@@ -602,11 +558,11 @@ int cli_intercept_cmd_local(const char *p)
 int cli_intercept_cmd_declare(const char *p)
 {
     if(starts_with(p, "declare ")
-       || starts_with(p,
-                      "declare\t")
-       || starts_with(p, "typeset ")
-       || starts_with(p,
-                      "typeset\t"))
+            || starts_with(p,
+                           "declare\t")
+            || starts_with(p, "typeset ")
+            || starts_with(p,
+                           "typeset\t"))
     {
         p += 7;
         if(p[0] == ' ' || p[0] == '\t')
@@ -623,8 +579,8 @@ int cli_intercept_cmd_declare(const char *p)
         {
             p++;
             while(*p != '\0'
-                  && *p != ' '
-                  && *p != '\t')
+                    && *p != ' '
+                    && *p != '\t')
             {
                 if(*p == 'i')
                 {
@@ -647,40 +603,30 @@ int cli_intercept_cmd_declare(const char *p)
             p = strip_ws(p);
         }
         /* Parse VAR=val */
-        const char *eq =
-            strchr(p, '=');
+        const char *eq = strchr(p, '=');
         char vn[CLI_VAR_NAMELEN];
         if(eq != NULL)
         {
             int nl = (int)(eq - p);
             if(nl >= CLI_VAR_NAMELEN)
             {
-                nl =
-                    CLI_VAR_NAMELEN - 1;
+                nl = CLI_VAR_NAMELEN - 1;
             }
-            memcpy(vn, p,
-                   (size_t) nl);
+            memcpy(vn, p, (size_t) nl);
             vn[nl] = '\0';
             if(fl_arr)
             {
                 /* declare -a arr */
                 for(int k = 0;
-                    k < CLI_MAX_ARRAYS;
-                    k++)
+                        k < CLI_MAX_ARRAYS;
+                        k++)
                 {
                     if(!cli_arrays[k]
-                        .used)
+                            .used)
                     {
-                        cli_arrays[k]
-                            .used = 1;
-                        strncpy(
-                            cli_arrays[k]
-                            .name,
-                            vn,
-                            CLI_VAR_NAMELEN
-                            - 1);
-                        cli_arrays[k]
-                            .nelem = 0;
+                        cli_arrays[k] .used = 1;
+                        strncpy(cli_arrays[k] .name, vn, CLI_VAR_NAMELEN - 1);
+                        cli_arrays[k] .nelem = 0;
                         break;
                     }
                 }
@@ -688,23 +634,18 @@ int cli_intercept_cmd_declare(const char *p)
             else if(fl_int)
             {
                 /* Integer eval */
-                long iv = strtol(
-                    eq + 1, NULL, 0);
+                long iv = strtol(eq + 1, NULL, 0);
                 char ib[32];
-                snprintf(ib,
-                         sizeof(ib),
-                         "%ld", iv);
+                snprintf(ib, sizeof(ib), "%ld", iv);
                 cli_var_set(vn, ib);
             }
             else
             {
-                cli_var_set(
-                    vn, eq + 1);
+                cli_var_set(vn, eq + 1);
             }
             if(fl_exp)
             {
-                const char *v =
-                    cli_var_get(vn);
+                const char *v = cli_var_get(vn);
                 if(v != NULL)
                 {
                     setenv(vn, v, 1);
@@ -713,11 +654,8 @@ int cli_intercept_cmd_declare(const char *p)
         }
         else
         {
-            strncpy(vn, p,
-                    CLI_VAR_NAMELEN
-                    - 1);
-            vn[CLI_VAR_NAMELEN - 1] =
-                '\0';
+            strncpy(vn, p, CLI_VAR_NAMELEN - 1);
+            vn[CLI_VAR_NAMELEN - 1] = '\0';
             if(cli_var_get(vn) == NULL)
             {
                 cli_var_set(vn, "");
@@ -728,4 +666,3 @@ int cli_intercept_cmd_declare(const char *p)
     }
     return 0;
 }
-

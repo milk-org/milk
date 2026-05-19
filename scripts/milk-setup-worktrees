@@ -3,6 +3,22 @@
 # milk-setup-worktrees
 # Helper script to set up parallel development worktrees for milk.
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "set up parallel development worktrees"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Create parallel git worktrees for" \
+             "docs, cli, perf, and arch development" \
+             "tracks alongside the main repository."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        echo "Usage: milk-setup-worktrees"
+        echo "Set up parallel development worktrees."
+        exit 0 ;;
+esac
+
 set -e
 
 # Default directory where worktrees will be created (parent of milk repository)

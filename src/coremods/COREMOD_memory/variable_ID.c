@@ -68,6 +68,11 @@ variableID next_avail_variable_ID()
     return ID;
 }
 
+/**
+ * @brief Compute total memory used by variables.
+ *
+ * Sums the storage of all active variable entries.
+ */
 long compute_variable_memory()
 {
     long totalvmem = 0;

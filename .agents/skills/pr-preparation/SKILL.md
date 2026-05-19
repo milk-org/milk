@@ -97,11 +97,10 @@ not the detailed back-and-forth. If design
 alternatives were considered, briefly explain
 why this approach was chosen.]
 
-## AI Authorship
+## Authorship
 
-- **Model**: Antigravity
-- **User edits**: [None / describe what the user
-  edited manually]
+- **Model**: Gemini 3.1 Pro (ask user to confirm)
+- **Reviewed and signed off by**: [User's name]
 ```
 
 ## Step 4 — Present to User

@@ -4,10 +4,17 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
-int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps,
-                                    const char                *paramname)
+/**
+ * @brief Look up a parameter index by its dot-separated
+ * keyword name.
+ *
+ * Searches the FPS parameter array for a matching
+ * keyword chain. Returns -1 if not found.
+ */
+int functionparameter_GetParamIndex(
+    FPS        *fps,
+    const char *paramname)
 {
     long index  = -1;
     long pindex = 0;

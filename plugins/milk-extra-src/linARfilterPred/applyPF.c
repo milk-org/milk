@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "applyPF",
     .cmdkey      = "applyPF",
-    .description = "apply predictive filter"
+    .description = "apply predictive filter",
+    .description_long =
+        "Apply a linear predictive filter to a stream. Uses pre-computed filter coefficients to predict future frames from past ones."
 };
 
 
@@ -112,14 +114,20 @@ static MILK_HOT errno_t compute_function()
     // Connect to 2D input stream
     //
     IMGID imgin = imgid_make_from_name(indata);
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
     long NBmodeINmax = imgin.md->size[0] * imgin.md->size[1];
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     // connect to 2D predictive filter (PF) matrix
     //
     IMGID imgPFmat = imgid_make_from_name(PFmat);
-    resolveIMGID(&imgPFmat, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgPFmat, ERRMODE_WARN, dcimg, dcnimg);
     long NBmodeOUT = imgPFmat.md->size[1];
+    if (imgPFmat.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     list_image_ID();
 

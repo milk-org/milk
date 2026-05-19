@@ -31,6 +31,9 @@ endif()
 
 # milk-seq standalone executable
 add_executable(milk-seq milk-seq.c)
+target_include_directories(milk-seq PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+)
 target_link_libraries(milk-seq PUBLIC
     milkfpsseq milkfps milkfpsStandalone
     milkdata milkprocessinfo ImageStreamIO

@@ -24,12 +24,11 @@
  * @return            RETURN_SUCCESS on success
  */
 errno_t fps_init_from_bindings(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    const char                *cmdkey,
-    const char                *description,
-    FPS_CLI_BINDING           *bindings,
-    int                        nb_b
-);
+    FPS             *fps,
+    const char      *cmdkey,
+    const char      *description,
+    FPS_CLI_BINDING *bindings,
+    int             nb_b);
 
 
 #endif /* FPS_CLI_INIT_H */

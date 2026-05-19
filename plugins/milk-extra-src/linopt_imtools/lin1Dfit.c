@@ -19,7 +19,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "linopt1Dfit",
     .cmdkey      = "linopt1Dfit",
-    .description = "least-square 1D fit"
+    .description = "least-square 1D fit",
+    .description_long =
+        "Perform a least-squares 1D polynomial fit to data. Supports configurable polynomial order."
 };
 
 

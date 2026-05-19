@@ -13,6 +13,8 @@ set(SOURCEFILES
 	${SRCNAME}.c
 	DFT.c
 	dofft.c
+	dofft_1d.c
+	dofft_2d.c
 	fftcorrelation.c
 	ffttranslate.c
 	fftzoom.c
@@ -29,6 +31,7 @@ set(INCLUDEFILES
 	${SRCNAME}.h
 	DFT.h
 	dofft.h
+	dofft_internal.h
 	fftcorrelation.h
 	ffttranslate.h
 	fftzoom.h

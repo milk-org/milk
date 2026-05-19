@@ -1,5 +1,18 @@
 #! /bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "log image stream to disk"
+        exit 0 ;;
+    -h2|--help-description)
+        echo "Start process to log image stream" \
+             "to disk. Delegates to milk-cli's" \
+             "shmimstreamlog command."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through to printHELP
+esac
+
 NBARGS=3
 
 pname="logshim-$1"
@@ -25,6 +38,9 @@ function printHELP {
     echo " $(tput bold)EXAMPLE:$(tput sgr0)"
     echo "     logshim ircam2 10000 /media/data/20150222/ircamlog/"
     echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-streamFITSlog   log stream as FITS files"
+    echo "     milk-shm2FITSloop    save stream to FITS periodically"
     echo "------------------------------------------------------------------------"
 }
 
@@ -101,8 +117,9 @@ while getopts :hc: FLAG; do
             CPUset="$OPTARG"
             ;;
         \?) #unrecognized option - show help
-            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            echo -e "\n\033[1;31mERROR\033[0m Option -${OPTARG} not allowed."
             printHELP
+            exit 1
             ;;
     esac
 done
@@ -111,10 +128,10 @@ shift $((OPTIND-1))
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     if [ "$#" -ne $NBARGS ]; then
-        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+        echo -e "\n\033[1;31mERROR\033[0m Illegal number of parameters ($NBARGS params required, $# entered)"
     fi
     printHELP
-    exit
+    exit 1
 fi
 
 # ======================= CHECK REQUIRED FILES =================================

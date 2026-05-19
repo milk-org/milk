@@ -13,10 +13,28 @@
 
 #include "timeutils.h"
 
+/**
+ * milkseq_scheduler_step - Run one iteration of the task scheduler
+ * @state:    Sequencer state mapped from SHM
+ * @fps:      Array of all FPS entries
+ * @keywnode: Keyword tree root
+ * @vars:     TUI-level process variables (exitloop, logging)
+ *
+ * Three-phase scheduling algorithm:
+ *   1. Scan each queue for its oldest active task. If the task is
+ *      running, check dependency flags (WAITONRUN, WAITONCONF,
+ *      WAITSEQ_IDLE) and mark it completed when all are met.
+ *   2. Purge completed tasks when the task array exceeds the
+ *      configured high-water mark (NB_FPSCTRL_TASK_PURGESIZE).
+ *   3. Select the highest-priority queue with a ready task and
+ *      dispatch it via milkseq_exec_cmd().
+ *
+ * Return: Number of tasks launched this step (0 or 1)
+ */
 int milkseq_scheduler_step(
-    MILKSEQ_STATE *state,
-    FUNCTION_PARAMETER_STRUCT *fps,
-    KEYWORD_TREE_NODE *keywnode,
+    MILKSEQ_STATE        *state,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *vars)
 {
     if (!state) return 0;
@@ -165,12 +183,7 @@ int milkseq_scheduler_step(
         uint64_t taskstatus = 0;
 
         state->tasklist[cmdindexExec].fpsindex = milkseq_exec_cmd(
-            cmdindexExec,
-            state,
-            fps,
-            keywnode,
-            vars,
-            &taskstatus);
+            cmdindexExec, state, fps, keywnode, vars, &taskstatus);
 
         NBtaskLaunched++;
         state->tasklist[cmdindexExec].status |= taskstatus;

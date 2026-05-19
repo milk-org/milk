@@ -4,33 +4,36 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
-#include "fps_connect.h"
 
+/**
+ * @brief Connect an FPS to an external (foreign) FPS.
+ *
+ * Opens the target FPS shared memory and maps its
+ * parameter array, allowing cross-process parameter
+ * access.
+ */
 int functionparameter_ConnectExternalFPS(
-    FUNCTION_PARAMETER_STRUCT *FPS,
-    int                        pindex,
-    FUNCTION_PARAMETER_STRUCT *FPSext)
+    FPS *fps,
+    int pindex,
+    FPS *FPSext)
 {
-    FPS->parray[pindex].info.fps.FPSNBparamMAX =
-        function_parameter_struct_connect(FPS->parray[pindex].val.string[0],
-                                          FPSext,
-                                          FPSCONNECT_SIMPLE);
+    fps->parray[pindex].info.fps.FPSNBparamMAX =
+        fps_connect(fps->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE);
 
-    FPS->parray[pindex].info.fps.FPSNBparamActive = 0;
-    FPS->parray[pindex].info.fps.FPSNBparamUsed   = 0;
-    int pindexext;
-    for(pindexext = 0; pindexext < FPS->parray[pindex].info.fps.FPSNBparamMAX;
+    fps->parray[pindex].info.fps.FPSNBparamActive = 0;
+    fps->parray[pindex].info.fps.FPSNBparamUsed   = 0;
+
+    for(int pindexext = 0; pindexext < fps->parray[pindex].info.fps.FPSNBparamMAX;
             pindexext++)
     {
         if(FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE)
         {
-            FPS->parray[pindex].info.fps.FPSNBparamActive++;
+            fps->parray[pindex].info.fps.FPSNBparamActive++;
         }
         if(FPSext->parray[pindexext].fpflag & FPFLAG_USED)
         {
-            FPS->parray[pindex].info.fps.FPSNBparamUsed++;
+            fps->parray[pindex].info.fps.FPSNBparamUsed++;
         }
     }
 

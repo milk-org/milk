@@ -185,10 +185,9 @@ static void print_help(const char *progname)
  * without extra stream metadata.
  */
 static void param_value_str(
-    FUNCTION_PARAMETER *fp,
-    char *buf,
-    int buflen
-)
+    FPS_PARAM *fp,
+    char      *buf,
+    int       buflen)
 {
     switch (fp->type)
     {
@@ -282,7 +281,9 @@ int main(int argc, char *argv[])
         case 'h':
             print_help(argv[0]);
             return 0;
+        case '?':
         default:
+            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(argv[0]);
             return 1;
         }
@@ -336,9 +337,9 @@ int main(int argc, char *argv[])
     }
 
     /* Allocate FPS scan arrays */
-    fpsarray = (FUNCTION_PARAMETER_STRUCT *)
+    fpsarray = (FPS *)
         calloc(NB_FPS_MAX,
-               sizeof(FUNCTION_PARAMETER_STRUCT));
+               sizeof(FPS));
     for (int i = 0; i < NB_FPS_MAX; i++)
     {
         fpsarray[i].SMfd = -1;
@@ -370,7 +371,7 @@ int main(int argc, char *argv[])
 
         /* Scan FPS */
         functionparameter_scan_fps(
-            0, "_ALL", fpsarray, keywnode,
+            0, "_ALL",                 fpsarray, keywnode,
             &NBkwn, &NBfps, &NBpindex, 0);
 
         /* Mark all tracked as inactive */

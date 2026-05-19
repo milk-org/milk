@@ -38,11 +38,12 @@ Key resources live under `.agents/`:
 
 Follow the project's [Coding Standards](docs/developer/coding_standards.md):
 
-- Linux kernel C style with 80-character line limit
+- Allman brace style, 100-character line limit
 - One argument per line in function prototypes
 - Kernel-Doc style documentation (`/** @brief ... */`)
 - Minimize variable scope using code blocks
-- Every `.c` file must include only the headers it directly uses
+- Every `.c` file must include only the headers
+  it directly uses
 - Compile with `-Wall -Wextra` and fix all warnings
 
 ## Writing Compute Units

@@ -70,8 +70,7 @@ int   pending_replace_len = 0;
  */
 int accept_suggestion(
     int count,
-    int key
-)
+    int key)
 {
     (void) count;
     (void) key;
@@ -79,10 +78,9 @@ int accept_suggestion(
     if(pending_suggestion && rl_point == rl_end)
     {
         if(pending_replace_len > 0
-            && rl_end >= pending_replace_len)
+                && rl_end >= pending_replace_len)
         {
-            int del_start =
-                rl_end - pending_replace_len;
+            int del_start = rl_end - pending_replace_len;
             rl_delete_text(del_start, rl_end);
             rl_point = del_start;
         }
@@ -103,16 +101,14 @@ int accept_suggestion(
  */
 void set_pending_suggestion(
     const char *text,
-    int replace_len
-)
+    int        replace_len)
 {
     free(pending_suggestion);
     pending_suggestion = NULL;
     pending_replace_len = 0;
     if(text && strlen(text) > 0)
     {
-        pending_suggestion =
-            dupstr((char *) text);
+        pending_suggestion = dupstr((char *) text);
         pending_replace_len = replace_len;
     }
 }
@@ -131,10 +127,10 @@ void set_pending_suggestion(
 int find_command_match(const char *firstword)
 {
     for(uint32_t cmdi = 0;
-        cmdi < data.NBcmd; cmdi++)
+            cmdi < data.NBcmd; cmdi++)
     {
         if(strcmp(firstword,
-                 data.cmd[cmdi].key) == 0)
+                  data.cmd[cmdi].key) == 0)
         {
             data.cmdindex = cmdi;
             return (int) cmdi;
@@ -154,9 +150,7 @@ int find_command_match(const char *firstword)
  */
 int visible_prompt_len(void)
 {
-    const char *p = rl_display_prompt
-                        ? rl_display_prompt
-                        : "";
+    const char *p = rl_display_prompt ? rl_display_prompt : "";
     int   len = 0;
     int   invisible = 0;
 
@@ -190,14 +184,12 @@ int get_ghost_budget(void)
     int cols = 80; /* fallback */
 
     if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws)
-       >= 0 && ws.ws_col > 0)
+            >= 0 && ws.ws_col > 0)
     {
         cols = ws.ws_col;
     }
 
-    int cursor_col =
-        (visible_prompt_len() + rl_point)
-        % cols;
+    int cursor_col = (visible_prompt_len() + rl_point) % cols;
 
     int budget = cols - cursor_col - 1;
     if(budget < 0)
@@ -218,8 +210,7 @@ int get_ghost_budget(void)
 int print_ghost(
     const char *style,
     const char *text,
-    int budget
-)
+    int        budget)
 {
     int tlen = (int) strlen(text);
     int plen = tlen < budget ? tlen : budget;
@@ -253,7 +244,7 @@ void CLI_setup_hint_area(void)
 {
     struct winsize ws;
     if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws)
-       < 0 || ws.ws_row <= 3)
+            < 0 || ws.ws_row <= 3)
     {
         hint_area_active = 0;
         return;
@@ -290,8 +281,7 @@ void CLI_cleanup_scroll_region(void)
     }
 
     printf("\033[s");
-    printf("\033[%d;1H\033[2K",
-           cached_term_rows);
+    printf("\033[%d;1H\033[2K", cached_term_rows);
     printf("\033[r");
     printf("\033[u");
     fflush(stdout);
@@ -310,7 +300,7 @@ void CLI_cleanup_scroll_region(void)
 void update_hint_area(void)
 {
     if(!hint_area_active
-       || !data.autocomplete_arghint)
+            || !data.autocomplete_arghint)
     {
         return;
     }
@@ -323,33 +313,27 @@ void update_hint_area(void)
         struct winsize ws;
         if(ioctl(STDOUT_FILENO, TIOCGWINSZ,
                  &ws) >= 0
-           && ws.ws_row > 3
-           && (ws.ws_row != cached_term_rows
-               || ws.ws_col != cached_term_cols))
+                && ws.ws_row > 3
+                && (ws.ws_row != cached_term_rows
+                    || ws.ws_col != cached_term_cols))
         {
             cached_term_rows = ws.ws_row;
             cached_term_cols = ws.ws_col;
-            printf("\033[1;%dr",
-                   cached_term_rows - 1);
-            printf("\033[%d;1H\033[2K",
-                   cached_term_rows);
+            printf("\033[1;%dr", cached_term_rows - 1);
+            printf("\033[%d;1H\033[2K", cached_term_rows);
         }
     }
 
     /* Move to hint line, clear it */
-    printf("\033[%d;1H\033[2K",
-           cached_term_rows);
+    printf("\033[%d;1H\033[2K", cached_term_rows);
 
     /* Check if first word is a known command */
     if(rl_line_buffer[0] != '\0')
     {
         char  buf[200];
         char *saveptr_hint = NULL;
-        snprintf(buf, sizeof(buf), "%s",
-                 rl_line_buffer);
-        char *fw = strtok_r(
-                       buf, " ",
-                       &saveptr_hint);
+        snprintf(buf, sizeof(buf), "%s", rl_line_buffer);
+        char *fw = strtok_r(buf, " ", &saveptr_hint);
 
         if(fw != NULL)
         {
@@ -361,8 +345,7 @@ void update_hint_area(void)
                  * argument index */
                 int argidx = 0;
                 {
-                    const char *p =
-                        rl_line_buffer;
+                    const char *p = rl_line_buffer;
                     while(*p && *p != ' ')
                     {
                         p++;
@@ -386,31 +369,28 @@ void update_hint_area(void)
                         p++;
                     }
                     if(rl_end > 0
-                       && rl_line_buffer[
-                              rl_end - 1]
-                       == ' ')
+                            && rl_line_buffer[
+                                rl_end - 1]
+                            == ' ')
                     {
                         argidx = wcount;
                     }
                     else
                     {
-                        argidx = wcount > 0
-                                 ? wcount - 1
-                                 : 0;
+                        argidx = wcount > 0 ? wcount - 1 : 0;
                     }
                 }
 
                 /* Print syntax with <> tokens,
                  * highlighting current arg */
-                const char *syn =
-                    data.cmd[cmi].syntax;
+                const char *syn = data.cmd[cmi].syntax;
                 int col = 0;
                 int tidx = 0;
                 const char *p = syn;
 
                 while(*p
-                      && col
-                      < cached_term_cols - 2)
+                        && col
+                        < cached_term_cols - 2)
                 {
                     if(*p == ' ')
                     {
@@ -435,33 +415,23 @@ void update_hint_area(void)
                     else
                     {
                         while(*p && *p != ' '
-                              && *p != '<')
+                                && *p != '<')
                         {
                             p++;
                         }
                     }
-                    int tlen =
-                        (int)(p - tstart);
-                    int avail =
-                        cached_term_cols
-                        - 1 - col;
-                    int plen = tlen < avail
-                               ? tlen : avail;
+                    int tlen = (int)(p - tstart);
+                    int avail = cached_term_cols - 1 - col;
+                    int plen = tlen < avail ? tlen : avail;
 
                     if(*tstart == '<'
-                       && tidx == argidx)
+                            && tidx == argidx)
                     {
-                        printf("\033[1;97m"
-                               "%.*s"
-                               "\033[0m",
-                               plen, tstart);
+                        printf("\033[1;97m" "%.*s" "\033[0m", plen, tstart);
                     }
                     else
                     {
-                        printf("\033[2m"
-                               "%.*s"
-                               "\033[0m",
-                               plen, tstart);
+                        printf("\033[2m" "%.*s" "\033[0m", plen, tstart);
                     }
                     col += plen;
                     if(*tstart == '<')
@@ -505,8 +475,8 @@ void CLI_redisplay(void)
     }
 
 #if RL_READLINE_VERSION >= 0x0600
-    /* If incremental search (Ctrl-R) is active, fall back 
-     * entirely to readline's built-in redisplay to avoid 
+    /* If incremental search (Ctrl-R) is active, fall back
+     * entirely to readline's built-in redisplay to avoid
      * corrupting the search prompt. */
     if(RL_ISSTATE(RL_STATE_ISEARCH) || RL_ISSTATE(RL_STATE_NSEARCH))
     {
@@ -569,29 +539,23 @@ void CLI_redisplay(void)
         {
             int hlen = history_length;
             for(int i = hlen - 1;
-                i >= 0; i--)
+                    i >= 0; i--)
             {
                 if(strncmp(hist[i]->line,
                            rl_line_buffer,
                            rl_end) == 0
-                   && (int) strlen(
-                          hist[i]->line)
-                   > rl_end)
+                        && (int) strlen(
+                            hist[i]->line)
+                        > rl_end)
                 {
-                    const char *suffix =
-                        hist[i]->line
-                        + rl_end;
-                    int n = print_ghost(
-                        "\033[38;5;245m",
-                        suffix,
-                        budget);
+                    const char *suffix = hist[i]->line + rl_end;
+                    int n = print_ghost("\033[38;5;245m", suffix, budget);
                     if(n > 0)
                     {
                         printf("\033[K");
                         printf("\033[%dD", n);
                         fflush(stdout);
-                        set_pending_suggestion(
-                            suffix, 0);
+                        set_pending_suggestion(suffix, 0);
                     }
                     update_hint_area();
                     return;
@@ -617,8 +581,8 @@ void CLI_redisplay(void)
 
     /* Determine matching mode */
     if((start == 0)
-       || (strncmp(rl_line_buffer, "cmd?",
-                   strlen("cmd?")) == 0))
+            || (strncmp(rl_line_buffer, "cmd?",
+                        strlen("cmd?")) == 0))
     {
         data.CLImatchMode = 0; /* COMMANDS */
     }
@@ -626,26 +590,22 @@ void CLI_redisplay(void)
     {
         char  str[200];
         char *saveptr_comp = NULL;
-        snprintf(str, 200, "%s",
-                 rl_line_buffer);
-        char *firstword = strtok_r(
-                str, " ", &saveptr_comp);
+        snprintf(str, 200, "%s", rl_line_buffer);
+        char *firstword = strtok_r(str, " ", &saveptr_comp);
 
         int cmdimatch = -1;
         if(firstword != NULL)
         {
-            cmdimatch =
-                find_command_match(firstword);
+            cmdimatch = find_command_match(firstword);
         }
 
         /* If command has no <> argument tokens,
          * don't suggest arguments */
         if(cmdimatch >= 0)
         {
-            const char *syn =
-                data.cmd[cmdimatch].syntax;
+            const char *syn = data.cmd[cmdimatch].syntax;
             if(syn == NULL
-               || strchr(syn, '<') == NULL)
+                    || strchr(syn, '<') == NULL)
             {
                 update_hint_area();
                 return;
@@ -653,7 +613,7 @@ void CLI_redisplay(void)
         }
 
         if((cmdimatch != -1)
-           && (text[0] == '.'))
+                && (text[0] == '.'))
         {
             data.CLImatchMode = 2; /* CMDARGS */
         }
@@ -671,32 +631,21 @@ void CLI_redisplay(void)
         if(strncmp(match, text,
                    strlen(text)) == 0)
         {
-            char *suffix =
-                match + strlen(text);
-            int n = print_ghost(
-                "\033[38;5;245m",
-                suffix,
-                budget);
+            char *suffix = match + strlen(text);
+            int n = print_ghost("\033[38;5;245m", suffix, budget);
             if(n > 0)
             {
                 total_ghost += n;
-                set_pending_suggestion(
-                    suffix, 0);
+                set_pending_suggestion(suffix, 0);
             }
         }
         else if(data.autocomplete_fuzzy)
         {
             char fzbuf[256];
-            snprintf(fzbuf, sizeof(fzbuf),
-                     " [%s]", match);
-            int n = print_ghost(
-                "\033[38;5;245m",
-                fzbuf,
-                budget);
+            snprintf(fzbuf, sizeof(fzbuf), " [%s]", match);
+            int n = print_ghost("\033[38;5;245m", fzbuf, budget);
             total_ghost += n;
-            set_pending_suggestion(
-                match,
-                (int) strlen(text));
+            set_pending_suggestion(match, (int) strlen(text));
         }
         free(match);
     }
@@ -746,6 +695,12 @@ void CLI_configure_readline()
 #else
 /* Stubs when readline is not available */
 void CLI_configure_readline() {}
+/**
+ * @brief Set up the hint/completion area below the prompt.
+ */
 void CLI_setup_hint_area(void) {}
+/**
+ * @brief Restore terminal scroll region on exit.
+ */
 void CLI_cleanup_scroll_region(void) {}
 #endif

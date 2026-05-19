@@ -1,5 +1,8 @@
 #include <stddef.h>
-extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
+extern int cli_find_in_path(
+    const char *cmd,
+    char       *outpath,
+    size_t     outsize);
 extern int processinfo_procdirname(char *procdirname);
 #include <stddef.h>
 #include <sys/mman.h>
@@ -25,6 +28,9 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
+/**
+ * @brief Handler: extract basename from path.
+ */
 int cli_intercept_cmd_basename(const char *p)
 {
     if(starts_with(p, "basename "))
@@ -32,8 +38,7 @@ int cli_intercept_cmd_basename(const char *p)
         p += 8;
         p = strip_ws(p);
         /* Find last / */
-        const char *sl =
-            strrchr(p, '/');
+        const char *sl = strrchr(p, '/');
         if(sl != NULL)
         {
             printf("%s\n", sl + 1);
@@ -48,18 +53,19 @@ int cli_intercept_cmd_basename(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: extract directory from path.
+ */
 int cli_intercept_cmd_dirname(const char *p)
 {
     if(starts_with(p, "dirname "))
     {
         p += 7;
         p = strip_ws(p);
-        const char *sl =
-            strrchr(p, '/');
+        const char *sl = strrchr(p, '/');
         if(sl != NULL && sl != p)
         {
-            printf("%.*s\n",
-                   (int)(sl - p), p);
+            printf("%.*s\n", (int)(sl - p), p);
         }
         else if(sl == p)
         {
@@ -75,16 +81,19 @@ int cli_intercept_cmd_dirname(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: push directory onto stack.
+ */
 int cli_intercept_cmd_pushd(const char *p)
 {
     if(starts_with(p, "pushd ")
-       || starts_with(p, "pushd\t"))
+            || starts_with(p, "pushd\t"))
     {
         p += 5;
         p = strip_ws(p);
         char cwd[1024];
         if(getcwd(cwd, sizeof(cwd))
-           != NULL)
+                != NULL)
         {
             /* Push current dir as
              * cli var */
@@ -93,28 +102,24 @@ int cli_intercept_cmd_pushd(const char *p)
              * _dirstack entries */
             int dcnt = 0;
             for(int k = 0;
-                k < CLI_MAX_VARS; k++)
+                    k < CLI_MAX_VARS; k++)
             {
                 if(cli_vars[k].used
-                   && strncmp(
-                       cli_vars[k]
-                       .name,
-                       "_ds_",
-                       4) == 0)
+                        && strncmp(
+                            cli_vars[k]
+                            .name,
+                            "_ds_",
+                            4) == 0)
                 {
                     dcnt++;
                 }
             }
-            snprintf(idx,
-                     sizeof(idx),
-                     "_ds_%d", dcnt);
+            snprintf(idx, sizeof(idx), "_ds_%d", dcnt);
             cli_var_set(idx, cwd);
         }
         if(chdir(p) != 0)
         {
-            printf("pushd: %s: %s\n",
-                   p,
-                   strerror(errno));
+            printf("pushd: %s: %s\n", p, strerror(errno));
             cli_last_retval = 1;
         }
         else
@@ -134,16 +139,14 @@ int cli_intercept_cmd_popd(const char *p)
         int maxn = -1;
         int maxk = -1;
         for(int k = 0;
-            k < CLI_MAX_VARS; k++)
+                k < CLI_MAX_VARS; k++)
         {
             if(cli_vars[k].used
-               && strncmp(
-                   cli_vars[k].name,
-                   "_ds_", 4) == 0)
+                    && strncmp(
+                        cli_vars[k].name,
+                        "_ds_", 4) == 0)
             {
-                int n = atoi(
-                    cli_vars[k].name
-                    + 4);
+                int n = atoi(cli_vars[k].name + 4);
                 if(n > maxn)
                 {
                     maxn = n;
@@ -154,19 +157,16 @@ int cli_intercept_cmd_popd(const char *p)
         if(maxk >= 0)
         {
             if(chdir(
-                cli_vars[maxk].val)
-               != 0)
+                        cli_vars[maxk].val)
+                    != 0)
             {
-                printf("popd: %s\n",
-                       strerror(
-                           errno));
+                printf("popd: %s\n", strerror(errno));
             }
             cli_vars[maxk].used = 0;
         }
         else
         {
-            printf("popd: directory "
-                   "stack empty\n");
+            printf("popd: directory " "stack empty\n");
         }
         cli_last_retval = 0;
         return 1;
@@ -180,19 +180,16 @@ int cli_intercept_cmd_dirs(const char *p)
     {
         char cwd[1024];
         if(getcwd(cwd, sizeof(cwd))
-           != NULL)
+                != NULL)
         {
             printf("%s", cwd);
         }
         for(int n = 0;
-            n < CLI_MAX_VARS; n++)
+                n < CLI_MAX_VARS; n++)
         {
             char idx[32];
-            snprintf(idx,
-                     sizeof(idx),
-                     "_ds_%d", n);
-            const char *dv =
-                cli_var_get(idx);
+            snprintf(idx, sizeof(idx), "_ds_%d", n);
+            const char *dv = cli_var_get(idx);
             if(dv == NULL)
             {
                 break;
@@ -219,20 +216,16 @@ int cli_intercept_cmd_seq(const char *p)
         char *end1 = NULL;
         s1 = strtod(p, &end1);
         if(end1 != NULL
-           && *end1 != '\0')
+                && *end1 != '\0')
         {
-            const char *p2 =
-                strip_ws(end1);
+            const char *p2 = strip_ws(end1);
             char *end2 = NULL;
-            double v2 =
-                strtod(p2, &end2);
+            double v2 = strtod(p2, &end2);
             if(end2 != NULL
-               && *end2 != '\0')
+                    && *end2 != '\0')
             {
-                const char *p3 =
-                    strip_ws(end2);
-                double v3 =
-                    strtod(p3, NULL);
+                const char *p3 = strip_ws(end2);
+                double v3 = strtod(p3, NULL);
                 /* 3-arg: s1 step s2 */
                 step = v2;
                 s2 = v3;
@@ -252,8 +245,8 @@ int cli_intercept_cmd_seq(const char *p)
         if(step > 0.0)
         {
             for(double v = s1;
-                v <= s2 + 1e-12;
-                v += step)
+                    v <= s2 + 1e-12;
+                    v += step)
             {
                 printf("%g\n", v);
             }
@@ -261,8 +254,8 @@ int cli_intercept_cmd_seq(const char *p)
         else if(step < 0.0)
         {
             for(double v = s1;
-                v >= s2 - 1e-12;
-                v += step)
+                    v >= s2 - 1e-12;
+                    v += step)
             {
                 printf("%g\n", v);
             }
@@ -282,10 +275,10 @@ int cli_intercept_cmd_waitfor_stream(const char *p)
         char sname[CLI_VAR_NAMELEN];
         int si = 0;
         while(*p != '\0'
-              && *p != ' '
-              && *p != '\t'
-              && si
-              < CLI_VAR_NAMELEN - 1)
+                && *p != ' '
+                && *p != '\t'
+                && si
+                < CLI_VAR_NAMELEN - 1)
         {
             sname[si++] = *p++;
         }
@@ -297,20 +290,13 @@ int cli_intercept_cmd_waitfor_stream(const char *p)
             tout = strtod(p, NULL);
         }
         struct timespec wstart;
-        clock_gettime(
-            CLOCK_MONOTONIC,
-            &wstart);
+        clock_gettime(CLOCK_MONOTONIC, &wstart);
         int found = 0;
         while(1)
         {
             /* Check if SHM exists */
             char shmpath[256];
-            snprintf(shmpath,
-                     sizeof(shmpath),
-                     "%s/%s"
-                     ".im.shm",
-                     dcshmdir,
-                     sname);
+            snprintf(shmpath, sizeof(shmpath), "%s/%s" ".im.shm", dcshmdir, sname);
             if(access(shmpath,
                       F_OK) == 0)
             {
@@ -318,24 +304,17 @@ int cli_intercept_cmd_waitfor_stream(const char *p)
                 break;
             }
             struct timespec wnow;
-            clock_gettime(
-                CLOCK_MONOTONIC,
-                &wnow);
+            clock_gettime(CLOCK_MONOTONIC, &wnow);
             double elapsed =
                 (double)(wnow.tv_sec
-                    - wstart.tv_sec)
-                + (double)(
-                    wnow.tv_nsec
-                    - wstart.tv_nsec)
-                / 1e9;
+                         - wstart.tv_sec) + (double)(wnow.tv_nsec - wstart.tv_nsec) / 1e9;
             if(elapsed >= tout)
             {
                 break;
             }
             usleep(50000);
         }
-        cli_last_retval =
-            found ? 0 : 1;
+        cli_last_retval = found ? 0 : 1;
         return 1;
     }
     return 0;
@@ -350,10 +329,10 @@ int cli_intercept_cmd_waitfor_fps(const char *p)
         char fname[CLI_VAR_NAMELEN];
         int fi = 0;
         while(*p != '\0'
-              && *p != ' '
-              && *p != '\t'
-              && fi
-              < CLI_VAR_NAMELEN - 1)
+                && *p != ' '
+                && *p != '\t'
+                && fi
+                < CLI_VAR_NAMELEN - 1)
         {
             fname[fi++] = *p++;
         }
@@ -365,19 +344,12 @@ int cli_intercept_cmd_waitfor_fps(const char *p)
             tout = strtod(p, NULL);
         }
         struct timespec wstart;
-        clock_gettime(
-            CLOCK_MONOTONIC,
-            &wstart);
+        clock_gettime(CLOCK_MONOTONIC, &wstart);
         int found = 0;
         while(1)
         {
             char fpath[256];
-            snprintf(fpath,
-                     sizeof(fpath),
-                     "%s/"
-                     "fps.%s.shm",
-                     dcshmdir,
-                     fname);
+            snprintf(fpath, sizeof(fpath), "%s/" "fps.%s.shm", dcshmdir, fname);
             if(access(fpath,
                       F_OK) == 0)
             {
@@ -385,26 +357,18 @@ int cli_intercept_cmd_waitfor_fps(const char *p)
                 break;
             }
             struct timespec wnow;
-            clock_gettime(
-                CLOCK_MONOTONIC,
-                &wnow);
+            clock_gettime(CLOCK_MONOTONIC, &wnow);
             double elapsed =
                 (double)(wnow.tv_sec
-                    - wstart.tv_sec)
-                + (double)(
-                    wnow.tv_nsec
-                    - wstart.tv_nsec)
-                / 1e9;
+                         - wstart.tv_sec) + (double)(wnow.tv_nsec - wstart.tv_nsec) / 1e9;
             if(elapsed >= tout)
             {
                 break;
             }
             usleep(50000);
         }
-        cli_last_retval =
-            found ? 0 : 1;
+        cli_last_retval = found ? 0 : 1;
         return 1;
     }
     return 0;
 }
-

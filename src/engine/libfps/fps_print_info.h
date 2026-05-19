@@ -21,10 +21,9 @@ extern "C" {
  * @return int 0 on success, -1 on error
  */
 int function_parameter_print_info(
-    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS *fps,
     int verbose,
-    int show_info
-);
+    int show_info);
 
 #ifdef __cplusplus
 }

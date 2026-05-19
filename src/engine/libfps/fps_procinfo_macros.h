@@ -11,7 +11,10 @@
 #include "milk_types.h"
 #include "fps.h"
 
-imageID image_ID(const char *apzname, IMAGE *dcimage_array, long dcnbimg);
+imageID image_ID(
+    const char *apzname,
+    IMAGE      *dcimage_array,
+    long       dcnbimg);
 
 #ifdef __cplusplus
 
@@ -184,7 +187,7 @@ typedef struct
     }
 
 
-/* INSERT_STD_* macros — stub versions
+/* INSERT_STD_* macros -- stub versions
  * for standalone compilation. The real
  * versions are in CLIcore_utils.h and
  * reference CLI functions. */
@@ -197,31 +200,12 @@ typedef struct
         return RETURN_SUCCESS;           \
     }
 
-#define INSERT_STD_FPSCONFfunction        \
-    static errno_t FPSCONFfunction(void) \
-    { return RETURN_SUCCESS; }
 
-#define INSERT_STD_FPSRUNfunction         \
-    static errno_t FPSRUNfunction(void)  \
-    { return RETURN_SUCCESS; }
 
-#define INSERT_STD_FPSCLIfunction         \
-    /* already provided by CLIfunction */
-
-#define INSERT_STD_FPSCLIfunctions        \
-    INSERT_STD_FPSCONFfunction            \
-    INSERT_STD_FPSRUNfunction             \
-    INSERT_STD_CLIfunction
-
-#define INSERT_STD_FPSCONFfunction_DynamicSize \
-    INSERT_STD_FPSCONFfunction
-
-#define INSERT_STD_FPSCLIfunctions_DynamicSize \
-    INSERT_STD_FPSCLIfunctions
 
 #define INSERT_STD_CLIREGISTERFUNC {}
 
-/* Process info macros — these are used by
+/* Process info macros -- these are used by
  * standalone code so we provide the real
  * versions via CLIcore_utils.h-compatible
  * macros that reference CLIcmddata. */

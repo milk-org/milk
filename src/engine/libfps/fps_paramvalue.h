@@ -6,7 +6,7 @@
 #ifndef FPS_PARAMVALUE_H
 #define FPS_PARAMVALUE_H
 
-int64_t *functionparameter_GetParamPtr_generic(FUNCTION_PARAMETER_STRUCT *fps,
+int64_t *functionparameter_GetParamPtr_generic(FPS *fps,
         const char *paramname,
         long       *paramindex);
 
@@ -14,14 +14,16 @@ int64_t *functionparameter_GetParamPtr_generic(FUNCTION_PARAMETER_STRUCT *fps,
 // INT32
 // =====================================================================
 
-errno_t functionparameter_SetParamValue_INT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        int32_t     value);
+errno_t functionparameter_SetParamValue_INT32(
+    FPS        *fps,
+    const char *paramname,
+    int32_t    value);
 
-int32_t functionparameter_GetParamValue_INT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+int32_t functionparameter_GetParamValue_INT32(
+    FPS        *fps,
+    const char *paramname);
 
-int32_t *functionparameter_GetParamPtr_INT32(FUNCTION_PARAMETER_STRUCT *fps,
+int32_t *functionparameter_GetParamPtr_INT32(FPS *fps,
         const char *paramname);
 
 // Creates variable "_varname"
@@ -38,14 +40,16 @@ int32_t *functionparameter_GetParamPtr_INT32(FUNCTION_PARAMETER_STRUCT *fps,
 // UINT32
 // =====================================================================
 
-errno_t functionparameter_SetParamValue_UINT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        uint32_t    value);
+errno_t functionparameter_SetParamValue_UINT32(
+    FPS        *fps,
+    const char *paramname,
+    uint32_t   value);
 
-uint32_t functionparameter_GetParamValue_UINT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+uint32_t functionparameter_GetParamValue_UINT32(
+    FPS        *fps,
+    const char *paramname);
 
-uint32_t *functionparameter_GetParamPtr_UINT32(FUNCTION_PARAMETER_STRUCT *fps,
+uint32_t *functionparameter_GetParamPtr_UINT32(FPS *fps,
         const char *paramname);
 
 // Creates variable "_varname"
@@ -62,14 +66,16 @@ uint32_t *functionparameter_GetParamPtr_UINT32(FUNCTION_PARAMETER_STRUCT *fps,
 // INT64
 // =====================================================================
 
-errno_t functionparameter_SetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        int64_t     value);
+errno_t functionparameter_SetParamValue_INT64(
+    FPS        *fps,
+    const char *paramname,
+    int64_t    value);
 
-int64_t functionparameter_GetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+int64_t functionparameter_GetParamValue_INT64(
+    FPS        *fps,
+    const char *paramname);
 
-int64_t *functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps,
+int64_t *functionparameter_GetParamPtr_INT64(FPS *fps,
         const char *paramname);
 
 // Creates variable "_varname"
@@ -86,14 +92,16 @@ int64_t *functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps,
 // UINT64
 // =====================================================================
 
-errno_t functionparameter_SetParamValue_UINT64(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        uint64_t    value);
+errno_t functionparameter_SetParamValue_UINT64(
+    FPS        *fps,
+    const char *paramname,
+    uint64_t   value);
 
-uint64_t functionparameter_GetParamValue_UINT64(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+uint64_t functionparameter_GetParamValue_UINT64(
+    FPS        *fps,
+    const char *paramname);
 
-uint64_t *functionparameter_GetParamPtr_UINT64(FUNCTION_PARAMETER_STRUCT *fps,
+uint64_t *functionparameter_GetParamPtr_UINT64(FPS *fps,
         const char *paramname);
 
 // Creates variable "_varname"
@@ -110,14 +118,16 @@ uint64_t *functionparameter_GetParamPtr_UINT64(FUNCTION_PARAMETER_STRUCT *fps,
 // FLOAT32
 // =====================================================================
 
-float functionparameter_GetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+float functionparameter_GetParamValue_FLOAT32(
+    FPS        *fps,
+    const char *paramname);
 
-errno_t functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        float       value);
+errno_t functionparameter_SetParamValue_FLOAT32(
+    FPS        *fps,
+    const char *paramname,
+    float      value);
 
-float *functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
+float *functionparameter_GetParamPtr_FLOAT32(FPS *fps,
         const char *paramname);
 
 // Creates variable "_varname"
@@ -134,54 +144,61 @@ float *functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
 // FLOAT64
 // =====================================================================
 
-double functionparameter_GetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+double functionparameter_GetParamValue_FLOAT64(
+    FPS        *fps,
+    const char *paramname);
 
-errno_t functionparameter_SetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        double      value);
+errno_t functionparameter_SetParamValue_FLOAT64(
+    FPS        *fps,
+    const char *paramname,
+    double     value);
 
-double *functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
+double *functionparameter_GetParamPtr_FLOAT64(FPS *fps,
         const char *paramname);
 
 // =====================================================================
 // TIMESPEC
 // =====================================================================
 
-float functionparameter_GetParamValue_TIMESPEC(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+float functionparameter_GetParamValue_TIMESPEC(
+    FPS        *fps,
+    const char *paramname);
 
-int functionparameter_SetParamValue_TIMESPEC(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        float       value);
+int functionparameter_SetParamValue_TIMESPEC(
+    FPS        *fps,
+    const char *paramname,
+    float      value);
 
 struct timespec *
-functionparameter_GetParamPtr_TIMESPEC(FUNCTION_PARAMETER_STRUCT *fps,
+functionparameter_GetParamPtr_TIMESPEC(FPS *fps,
                                        const char                *paramname);
 
 // =====================================================================
 // STRING
 // =====================================================================
 
-char *functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps,
+char *functionparameter_GetParamPtr_STRING(FPS *fps,
         const char *paramname);
 
-errno_t functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        const char *stringvalue);
+errno_t functionparameter_SetParamValue_STRING(
+    FPS        *fps,
+    const char *paramname,
+    const char *stringvalue);
 
 // =====================================================================
 // ON/OFF
 // =====================================================================
 
-int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
-        const char                *paramname);
+int functionparameter_GetParamValue_ONOFF(
+    FPS        *fps,
+    const char *paramname);
 
-errno_t functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname,
-        int         ONOFFvalue);
+errno_t functionparameter_SetParamValue_ONOFF(
+    FPS        *fps,
+    const char *paramname,
+    int        ONOFFvalue);
 
-uint64_t *functionparameter_GetParamPtr_fpflag(FUNCTION_PARAMETER_STRUCT *fps,
+uint64_t *functionparameter_GetParamPtr_fpflag(FPS *fps,
         const char *paramname);
 
 // =====================================================================
@@ -190,8 +207,8 @@ uint64_t *functionparameter_GetParamPtr_fpflag(FUNCTION_PARAMETER_STRUCT *fps,
 
 /** Set parameter at @pindex from string @strval */
 int functionparameter_SetParamValue_fromString(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int                        pindex,
-    const char                *strval);
+    FPS        *fps,
+    int        pindex,
+    const char *strval);
 
 #endif

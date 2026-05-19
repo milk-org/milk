@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkpolygon",
     .cmdkey      = "mkpolygon",
-    .description = "make regular polygon image"
+    .description = "make regular polygon image",
+    .description_long =
+        "Generate a filled regular polygon on a 2D image with configurable center, radius, number of sides, and orientation."
 };
 
 

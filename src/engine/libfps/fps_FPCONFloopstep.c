@@ -4,10 +4,14 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
 
-uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps)
+/**
+ * @brief Execute one step of the FPS configuration loop.
+ *
+ * Checks for parameter changes, validates values,
+ * and applies updates to the running process.
+ */
+uint16_t function_parameter_FPCONFloopstep(FPS *fps)
 {
     static int loopINIT   = 0;
     uint16_t   updateFLAG = 0;

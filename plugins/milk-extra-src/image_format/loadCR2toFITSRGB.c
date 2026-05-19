@@ -35,7 +35,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "loadcr2torgb",
     .cmdkey      = "loadcr2torgb",
     .description =
-        "load CR2 file into R G B images"
+        "load CR2 file into R G B images",
+    .description_long =
+        "Load a Canon CR2 file and demosaic it into separate R, G, B FITS images."
 };
 
 #define FPS_PARAMS(X) \
@@ -115,7 +117,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
                          const char *__restrict fnameFITSg,
                          const char *__restrict fnameFITSb)
 {
-    EXECUTE_SYSTEM_COMMAND("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
 
     read_PGMimage("_tmppgm.pgm", "tmpfits1");
     //  r = system("rm _tmppgm.pgm");
@@ -129,7 +131,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         //imageID ID;
         //long xsize,ysize;
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"ISO speed\"| awk '{print $3}' > "
             "iso_tmp.txt",
             fnameCR2);
@@ -150,7 +152,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         }
         printf("iso = %f\n", iso);
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"Shutter\"| awk '{print $2}' > "
             "shutter_tmp.txt",
             fnameCR2);
@@ -172,7 +174,7 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         }
         printf("shutter = %f\n", shutter);
 
-        EXECUTE_SYSTEM_COMMAND(
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
             "dcraw -i -v %s | grep \"Aperture\"| awk '{print $2}' > "
             "aperture_tmp.txt",
             fnameCR2);

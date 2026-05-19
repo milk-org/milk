@@ -6,10 +6,21 @@
 /** @file cubepercentile.c
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -27,8 +38,11 @@ imageID filter_CubePercentile(
     IMGID imgin =
         imgid_make_from_name(
             IDcin_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long xsize = imgin.md->size[0];
     long ysize = imgin.md->size[1];
@@ -87,8 +101,11 @@ imageID filter_CubePercentileLimit(
     IMGID imgin =
         imgid_make_from_name(
             IDcin_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long xsize = imgin.md->size[0];
     long ysize = imgin.md->size[1];

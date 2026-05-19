@@ -8,9 +8,10 @@
 
 #include <processinfo.h>
 
-errno_t functionparameter_CTRLscreen(uint32_t mode,
-                                     char    *fpsnamemask,
-                                     char    *fpsCTRLfifoname,
-                                     double  timeout_sec);
+errno_t functionparameter_CTRLscreen(
+    uint32_t mode,
+    char     *fpsnamemask,
+    char     *fpsCTRLfifoname,
+    double   timeout_sec);
 
 #endif

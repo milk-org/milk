@@ -5,9 +5,6 @@
 #include <limits.h>
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
-#include "timeutils.h"
 
 #include "fps_processcmdline.h"
 
@@ -39,11 +36,11 @@
  */
 
 int function_parameter_process_fpsCMDarray(
-    FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
-    KEYWORD_TREE_NODE  *keywnode,
+    FPSCTRL_TASK_ENTRY   *fpsctrltasklist,
+    FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    FUNCTION_PARAMETER_STRUCT *fps)
+    FPS                  *fps)
 {
     // queue has no task
     int QUEUE_NOTASK = -1;
@@ -135,20 +132,15 @@ int function_parameter_process_fpsCMDarray(
                     if(task_completed == 1)
                     {
                         // update status - no longer running
-                        fpsctrltasklist[cmdindexExec].status &=
-                            ~FPSTASK_STATUS_RUNNING;
-                        fpsctrltasklist[cmdindexExec].status |=
-                            FPSTASK_STATUS_COMPLETED;
+                        fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_RUNNING;
+                        fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_COMPLETED;
 
                         //no longer active, remove it from list
-                        fpsctrltasklist[cmdindexExec].status &=
-                            ~FPSTASK_STATUS_ACTIVE;
+                        fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_ACTIVE;
 
                         //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW; // and stop displaying
 
-                        clock_gettime(
-                            CLOCK_MILK,
-                            &fpsctrltasklist[cmdindexExec].completiontime);
+                        clock_gettime(CLOCK_MILK, &fpsctrltasklist[cmdindexExec].completiontime);
                         queue_nexttask[qi] = QUEUE_SCANREADY;
                     }
                 }
@@ -158,17 +150,9 @@ int function_parameter_process_fpsCMDarray(
 
     // Remove old tasks
     //
-    double         *completion_age; // completion time
     long            oldest_index = 0;
     struct timespec tnow;
     double          tnowd;
-
-    completion_age = (double *) malloc(sizeof(double) * NB_FPSCTRL_TASK_MAX);
-    if(completion_age == NULL)
-    {
-        PRINT_ERROR("malloc returns NULL pointer");
-        abort();
-    }
 
     clock_gettime(CLOCK_MILK, &tnow);
     tnowd = 1.0 * tnow.tv_sec + 1.0e-9 * tnow.tv_nsec;
@@ -184,15 +168,14 @@ int function_parameter_process_fpsCMDarray(
             // how many tasks are candidates for removal (completed) ?
             if(fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_COMPLETED)
             {
-
-                completion_age[taskcnt] =
+                double current_age =
                     tnowd -
                     (1.0 * fpsctrltasklist[cmdindex].completiontime.tv_sec +
                      1.0e-9 * fpsctrltasklist[cmdindex].completiontime.tv_nsec);
 
-                if(completion_age[taskcnt] > oldest_age)
+                if(current_age > oldest_age)
                 {
-                    oldest_age   = completion_age[taskcnt];
+                    oldest_age   = current_age;
                     oldest_index = cmdindex;
                 }
                 taskcnt++;
@@ -204,7 +187,6 @@ int function_parameter_process_fpsCMDarray(
         }
     }
 
-    free(completion_age);
 
     // find out which task to run among the ones pre-selected above
 
@@ -235,18 +217,13 @@ int function_parameter_process_fpsCMDarray(
             fpsctrltasklist[cmdindexExec].fpsindex =
                 functionparameter_FPSprocess_cmdline(
                     fpsctrltasklist[cmdindexExec].cmdstring,
-                    fpsctrlqueuelist,
-                    keywnode,
-                    fpsCTRLvar,
-                    fps,
-                    &taskstatus);
+                    fpsctrlqueuelist, keywnode, fpsCTRLvar, fps, &taskstatus);
             NBtaskLaunched++;
 
             // update status form cmdline interpreter
             fpsctrltasklist[cmdindexExec].status |= taskstatus;
 
-            clock_gettime(CLOCK_MILK,
-                          &fpsctrltasklist[cmdindexExec].activationtime);
+            clock_gettime(CLOCK_MILK, &fpsctrltasklist[cmdindexExec].activationtime);
 
             // update status to running
             fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_RUNNING;

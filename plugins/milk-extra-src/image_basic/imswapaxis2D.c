@@ -26,7 +26,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imswapaxis2D",
     .cmdkey      = "imswapaxis2D",
     .description =
-        "swap axis of a 2D image"
+        "swap axis of a 2D image",
+    .description_long =
+        "Transpose a 2D image by swapping its x and y axes. Equivalent to a matrix transpose operation."
 };
 
 #define FPS_PARAMS(X) \
@@ -135,8 +137,11 @@ imageID image_basic_SwapAxis2D(
 {
     IMGID imgin =
         imgid_make_from_name(IDin_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     return image_basic_SwapAxis2D_byID(
         imgin.ID, IDout_name);

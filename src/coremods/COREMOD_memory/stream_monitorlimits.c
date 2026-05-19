@@ -26,7 +26,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streammlim",
     .cmdkey      = "streammlim",
     .description =
-        "monitor stream values for safety"
+        "monitor stream values for safety",
+    .description_long =
+        "Monitor pixel values in a stream and flag frames where values exceed configurable min/max thresholds. Reports out-of-range statistics."
 };
 
 
@@ -34,8 +36,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    inimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "stream";
+static char    inimname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 static int64_t dtus     = 100000;
 static int32_t minON    = 0;
 static float   minVal   = 0.0;
@@ -85,9 +86,7 @@ static errno_t monitor_logic(IMGID *imgptr)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(
-        imgptr, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    resolveIMGID(imgptr, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t xsize  = imgptr->md->size[0];
     uint32_t ysize  = imgptr->md->size[1];
@@ -107,18 +106,14 @@ static errno_t monitor_logic(IMGID *imgptr)
     }
 
     int limit_exceeded = 0;
-    char msg[
-        STRINGMAXLEN_PROCESSINFO_STATUSMSG];
+    char msg[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
     msg[0] = '\0';
 
     if(minON && (minv < minVal))
     {
         limit_exceeded = 1;
         snprintf(
-            msg,
-            STRINGMAXLEN_PROCESSINFO_STATUSMSG,
-            "MIN LIMIT EXCEEDED: %f < %f",
-            minv, minVal);
+            msg, STRINGMAXLEN_PROCESSINFO_STATUSMSG, "MIN LIMIT EXCEEDED: %f < %f", minv, minVal);
     }
 
     if(maxON && (maxv > maxVal))
@@ -126,17 +121,11 @@ static errno_t monitor_logic(IMGID *imgptr)
         limit_exceeded = 1;
         if(msg[0] != '\0')
         {
-            strncat(msg, " | ",
-                    STRINGMAXLEN_PROCESSINFO_STATUSMSG
-                    - strlen(msg) - 1);
+            strncat(msg, " | ", STRINGMAXLEN_PROCESSINFO_STATUSMSG - strlen(msg) - 1);
         }
         char tmpmsg[100];
-        snprintf(tmpmsg, 100,
-                 "MAX LIMIT EXCEEDED: %f > %f",
-                 maxv, maxVal);
-        strncat(msg, tmpmsg,
-                STRINGMAXLEN_PROCESSINFO_STATUSMSG
-                - strlen(msg) - 1);
+        snprintf(tmpmsg, 100, "MAX LIMIT EXCEEDED: %f > %f", maxv, maxVal);
+        strncat(msg, tmpmsg, STRINGMAXLEN_PROCESSINFO_STATUSMSG - strlen(msg) - 1);
     }
 
     if(limit_exceeded)
@@ -164,30 +153,22 @@ static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg =
-        imgid_make_from_name(inimname);
-    resolveIMGID(
-        &inimg, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    IMGID inimg = imgid_make_from_name(inimname);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg,  dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     if(dcprocinfo == 1)
     {
         processinfo_waitoninputstream_init(
-            processinfo, inimg.im,
-            PROCESSINFO_TRIGGERMODE_DELAY,
-            -1);
+            processinfo, inimg.im, PROCESSINFO_TRIGGERMODE_DELAY, -1);
         processinfo->triggerdelay.tv_sec = 0;
-        processinfo->triggerdelay.tv_nsec =
-            dtus * 1000;
+        processinfo->triggerdelay.tv_nsec = dtus * 1000;
         while(processinfo->triggerdelay.tv_nsec
               >= 1000000000)
         {
-            processinfo->triggerdelay.tv_nsec
-                -= 1000000000;
-            processinfo->triggerdelay.tv_sec
-                += 1;
+            processinfo->triggerdelay.tv_nsec -= 1000000000;
+            processinfo->triggerdelay.tv_sec += 1;
         }
     }
 
@@ -195,9 +176,7 @@ static MILK_HOT errno_t compute_function()
     {
         monitor_logic(&inimg);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -210,17 +189,13 @@ static MILK_HOT errno_t compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t stream_monitorlimits_addCLIcmd()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 
@@ -244,8 +219,7 @@ FPS_MAIN_STANDALONE_V2(
 errno_t stream_monitorlimits(
     const char *instreamname)
 {
-    strncpy(inimname, instreamname,
-        FUNCTION_PARAMETER_STRMAXLEN - 1);
+    strncpy(inimname, instreamname, FUNCTION_PARAMETER_STRMAXLEN - 1);
     dtus   = 100000;
     minON  = 0;
     minVal = 0.0;

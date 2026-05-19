@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "GramSchmidt",
     .cmdkey      = "GramSchmidt",
-    .description = "Gram-Schmidt process"
+    .description = "Gram-Schmidt process",
+    .description_long =
+        "Orthogonalize a set of vectors using the Gram-Schmidt process. Produces an orthonormal basis from the input set."
 };
 
 
@@ -65,9 +67,12 @@ errno_t GramSchmidt(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imginm, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginm, ERRMODE_WARN, dcimg, dcnimg);
 
     resolveIMGID(&imgaux, ERRMODE_WARN, dcimg, dcnimg);
+    if (imginm.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     // Compute cross product on input
@@ -166,10 +171,13 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginm = imgid_make_from_name(inmodes);
-    resolveIMGID(&imginm, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginm, ERRMODE_WARN, dcimg, dcnimg);
 
 
     IMGID imgoutm  = imgid_make_from_name(outmodes);
+    if (imginm.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgaux = imgid_make_from_name(auxmat);
     resolveIMGID(&imgaux, ERRMODE_WARN, dcimg, dcnimg);

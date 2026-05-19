@@ -14,7 +14,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im2vec",
     .cmdkey      = "im2vec",
-    .description = "remap image to vector"
+    .description = "remap image to vector",
+    .description_long =
+        "Remap a 2D image to a 1D vector using a pixel table (mask). Extracts active pixels into a compact array."
 };
 
 
@@ -78,8 +80,11 @@ errno_t linopt_imtools_image_to_vec(
 
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long    naxisin =
         imgin.md->naxis;
@@ -89,14 +94,20 @@ errno_t linopt_imtools_image_to_vec(
     IMGID imgpixi =
         imgid_make_from_name(
             IDpixindex_name);
-    resolveIMGID(&imgpixi, ERRMODE_ABORT,
+    resolveIMGID(&imgpixi, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgpixi.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgpixm =
         imgid_make_from_name(
             IDpixmult_name);
-    resolveIMGID(&imgpixm, ERRMODE_ABORT,
+    resolveIMGID(&imgpixm, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgpixm.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long NBpix =
         imgpixi.md->nelement;

@@ -122,12 +122,17 @@ Use the following patterns for script names.
 ### 3.3 Loop Index Conventions
 
 - **Hard rule for agent-generated code**: use **doubled letters**
-  `ii`, `jj`, `kk` (not `i`, `j`, `k`). This makes them
-  grep-searchable and avoids false matches.
+  `ii`, `jj`, `kk` (not `i`, `j`, `k`) **exclusively** for loops
+  iterating over pixels in images or data vectors.
 - Reserve `ii` for x-axis / innermost, `jj` for y, `kk` for z.
 - For pixel count loops, `nn` is acceptable.
-- Named indices preferred for non-trivial loops:
+- **For all other non-pixel loops**: Use descriptive index names.
+  Appending `_idx` is encouraged (e.g., `fps_idx`, `proc_idx`, `arg_idx`, `term_idx`).
+- **Forbidden**: Bare single-letter variables (`i`, `j`, `k`) are
+  forbidden everywhere as they are ungrepable.
+- Examples of descriptive named indices for non-trivial loops:
   ```c
+  for (int fps_idx = 0; fps_idx < nb_fps; fps_idx++)
   for (uint32_t col = 0; col < ncol; col++)
   ```
 
@@ -155,6 +160,15 @@ for vectorization (see §3.8).
   float *restrict pix_in  = imgin.im->array.F;
   float *restrict pix_out = imgout.im->array.F;
   ```
+- **GPU device pointers**: prefix with `d_` to distinguish
+  device memory from host memory:
+  ```c
+  float *d_modes  = NULL;  /* GPU device memory */
+  float *d_in     = NULL;  /* GPU input buffer  */
+  float *d_wfsVec = NULL;  /* GPU WFS vector    */
+  ```
+  This convention is already established in `linalgebra`,
+  `ImageStreamIO`, and `cudacomp` modules.
 - Raw pointers (`void *`): `raw`, `buf`, `ptr`
 - IMGID variables (`IMGID`): `img`, `imgptr`, `img_input`
 - Stream metadata (`IMAGE_METADATA *`): `md`
@@ -419,11 +433,9 @@ Dirs:         snake_case (new), COREMOD_X (legacy)
 Public funcs: subsystem_verb_object()
 Static funcs: verb_object()
 Variables:    snake_case, length ∝ scope
-Loop indices: ii, jj, kk (not i, j, k)
+Loop indices: ii, jj, kk (pixels); _idx or descriptive (other); not i, j, k
 Structs:      UPPER_CASE
 Macros:       UPPER_CASE_WITH_UNDERSCORES
 FPS keywords: .snake_case
 Scripts:      milk-subsys-verb
 ```
-
-

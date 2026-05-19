@@ -2,10 +2,15 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "remove shared memory stream and associated files"; exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-rmshmim <stream(s)>  -- remove shmim and associated files"
+    -h1|--help-oneline)
+        echo "remove shared memory stream and associated files"
         exit 0 ;;
+    -h2|--help-description)
+        echo "Remove shared memory image stream and" \
+             "associated files. Multiple streams can" \
+             "be entered separated by comma."
+        exit 0 ;;
+    -hm|--help-mono|-h|--help) ;; # fall through
 esac
 
 # number of arguments to script
@@ -28,6 +33,10 @@ function printHELP {
     echo " $(tput bold)OPTIONS:$(tput sgr0)"
     echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
     echo ""
+    echo ""
+    echo " $(tput bold)SEE ALSO:$(tput sgr0)"
+    echo "     milk-shmim-rm      remove stream and files"
+    echo "     milk-shmimpurge    purge orphan streams"
     echo "------------------------------------------------------------------------"
 }
 
@@ -61,8 +70,9 @@ while getopts :h FLAG; do
             exit
             ;;
         \?)
-            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            echo -e "\n\033[1;31mERROR\033[0m Option -${OPTARG} not allowed."
             printHELP
+            exit 1
             ;;
     esac
 done
@@ -73,10 +83,10 @@ shift $((OPTIND-1))
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     if [ "$#" -ne $NBARGS ]; then
-        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+        echo -e "\n\033[1;31mERROR\033[0m Illegal number of parameters ($NBARGS params required, $# entered)"
     fi
     printHELP
-    exit
+    exit 1
 fi
 
 IFS=',' read -r -a array <<< "$1"

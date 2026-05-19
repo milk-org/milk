@@ -35,7 +35,9 @@ static long long pe1_fy = 2;
 static FPS_APP_INFO FPS_app_info_1 = {
     .fps_name    = "imexpand",
     .cmdkey      = "imexpand",
-    .description = "expand 2D image"
+    .description = "expand 2D image",
+    .description_long =
+        "Expand (upsample) a 2D or 3D image by integer factors. Each input pixel is replicated into a block of output pixels."
 };
 
 #define FPS_PARAMS_1(X) \
@@ -118,7 +120,9 @@ static long long pe2_fz = 2;
 static FPS_APP_INFO FPS_app_info_2 = {
     .fps_name    = "imexpand3D",
     .cmdkey      = "imexpand3D",
-    .description = "expand 3D image"
+    .description = "expand 3D image",
+    .description_long =
+        "Expand (upsample) a 2D or 3D image by integer factors. Each input pixel is replicated into a block of output pixels."
 };
 
 #define FPS_PARAMS_2(X) \
@@ -232,8 +236,11 @@ imageID basic_expand(
 
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long naxes[2];
     naxes[0] = imgin.md->size[0];
@@ -292,8 +299,11 @@ imageID basic_expand3D(
 {
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long naxes[3];
     naxes[0] = imgin.md->size[0];

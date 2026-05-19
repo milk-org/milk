@@ -6,8 +6,22 @@
 /** @file linalgebratest.c
  */
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "GPU_SVD_computeControlMatrix.h"
@@ -36,7 +50,9 @@ static int64_t lt_gpu = 1;
 static FPS_APP_INFO FPS_app_info_lt = {
     .fps_name = "linalgebratest",
     .cmdkey   = "linalgebratest",
-    .description = "test CUDA comp"
+    .description = "test CUDA comp",
+    .description_long =
+        "Test and benchmark cuBLAS linear algebra operations. Verifies GPU matrix multiply correctness and measures throughput."
 };
 #define FPS_PARAMS_LT(X) \
     X(".nbact", &lt_nact, \

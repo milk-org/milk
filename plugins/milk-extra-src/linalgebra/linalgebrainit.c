@@ -6,8 +6,22 @@
 #include "magma_v2.h"
 #endif
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef HAVE_CUDA
@@ -27,7 +41,9 @@ int LINALGEBRA_init();
 static FPS_APP_INFO FPS_app_info_li = {
     .fps_name = "linalgebrainit",
     .cmdkey   = "linalgebrainit",
-    .description = "init linalgebra"
+    .description = "init linalgebra",
+    .description_long =
+        "Initialize linear algebra subsystem. Sets up BLAS/LAPACK configuration and GPU context if available."
 };
 #define FPS_PARAMS_LI(X)
 #include "fps.h"

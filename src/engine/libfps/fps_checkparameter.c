@@ -8,24 +8,19 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-#include "ImageStreamIO/ImageStreamIO.h"
-
-#include "fps_connect.h"
-#include "fps_disconnect.h"
-#include "fps_outlog.h"
-#include "fps_streamname_parse.h"
-
-// Prototypes for functions provided by fps_loadmemstream_lite.c or other libfps files
-imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, uint32_t *imLOC);
-int file_exists(const char *filename);
-int is_fits_file(const char *filename);
-int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, FUNCTION_PARAMETER_STRUCT *fpstest);
 
 
+
+/**
+ * @brief Validate an FPS parameter's current value.
+ *
+ * Checks range constraints (min/max), stream
+ * existence, and file path validity depending
+ * on the parameter type and flags.
+ */
 int functionparameter_CheckParameter(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
-    int                        pindex
-)
+    FPS *fpsentry,
+    int pindex)
 {
     int err = 0;
 
@@ -39,10 +34,7 @@ int functionparameter_CheckParameter(
     else
     {
         char msg[STRINGMAXLEN_FPS_LOGMSG];
-        SNPRINTF_CHECK(msg,
-                       STRINGMAXLEN_FPS_LOGMSG,
-                       "%s",
-                       fpsentry->parray[pindex].keywordfull);
+        SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s", fpsentry->parray[pindex].keywordfull);
         functionparameter_outlog("CHECKPARAM", "%s", msg);
     }
 
@@ -246,8 +238,7 @@ int functionparameter_CheckParameter(
             if(file_exists(fpsentry->parray[pindex].val.string[0]) == 0)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "File %s does not exist",
@@ -275,8 +266,7 @@ int functionparameter_CheckParameter(
             if(is_fits_file(fpsentry->parray[pindex].val.string[0]) == 0)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "FITS file %s does not exist",
@@ -308,8 +298,7 @@ int functionparameter_CheckParameter(
                     sb.st_mode & S_IXUSR))
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "File %s cannot be executed",
@@ -331,15 +320,13 @@ int functionparameter_CheckParameter(
 
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
     {
-        FUNCTION_PARAMETER_STRUCT fpstest;
+        FPS fpstest;
         fpstest.SMfd = -1; // initialize
 
         functionparameter_ConnectExternalFPS(fpsentry, pindex, &fpstest);
 
         long NBparamMAX = fpsentry->parray[pindex].info.fps.FPSNBparamMAX;
-        printf("%s NBparamMAX = %ld\n",
-               fpsentry->parray[pindex].val.string[0],
-               NBparamMAX);
+        printf("%s NBparamMAX = %ld\n", fpsentry->parray[pindex].val.string[0], NBparamMAX);
 
 
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED)
@@ -347,8 +334,7 @@ int functionparameter_CheckParameter(
             if(NBparamMAX < 1)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "FPS %s: no connection %lu",
@@ -367,7 +353,7 @@ int functionparameter_CheckParameter(
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
-            function_parameter_struct_disconnect(&fpstest);
+            fps_disconnect(&fpstest);
         }
     }
 
@@ -377,67 +363,40 @@ int functionparameter_CheckParameter(
         uint32_t imLOC;
 
         /* Strip @X: modifier prefix */
-        FPS_STREAMNAME_PARSED sp =
-            fps_streamname_parse(
-                fpsentry->parray[pindex]
-                    .val.string[0]);
+        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(fpsentry->parray[pindex] .val.string[0]);
 
         long     ID =
-            COREMOD_IOFITS_LoadMemStream(
-                sp.name,
-                &(fpsentry->parray[pindex].fpflag),
-                &imLOC);
-        fpsentry->parray[pindex]
-            .info.stream.streamID = ID;
+            COREMOD_IOFITS_LoadMemStream(sp.name, &(fpsentry->parray[pindex].fpflag), &imLOC);
+        fpsentry->parray[pindex] .info.stream.streamID = ID;
 
         if(ID > -1)
         {
-            fpsentry->parray[pindex]
-                .info.stream
-                .stream_sourceLocation = imLOC;
-            
+            fpsentry->parray[pindex] .info.stream .stream_sourceLocation = imLOC;
+
             // Use ImageStreamIO to get metadata
             IMAGE tmpimg;
-            if (ImageStreamIO_openIm(
-                    &tmpimg, sp.name)
-                == IMAGESTREAMIO_SUCCESS)
+            if(ImageStreamIO_openIm(
+                        &tmpimg, sp.name)
+                    == IMAGESTREAMIO_SUCCESS)
             {
-                fpsentry->parray[pindex]
-                    .info.stream.stream_atype =
-                    tmpimg.md->datatype;
-                fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_naxis[0] =
-                    tmpimg.md->naxis;
-                fpsentry->parray[pindex]
-                    .info.stream
-                    .stream_xsize[0] =
-                    tmpimg.md->size[0];
+                fpsentry->parray[pindex] .info.stream.stream_atype = tmpimg.md->datatype;
+                fpsentry->parray[pindex] .info.stream .stream_naxis[0] = tmpimg.md->naxis;
+                fpsentry->parray[pindex] .info.stream .stream_xsize[0] = tmpimg.md->size[0];
                 if(tmpimg.md->naxis > 1)
                 {
-                    fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_ysize[0] =
-                        tmpimg.md->size[1];
+                    fpsentry->parray[pindex] .info.stream .stream_ysize[0] = tmpimg.md->size[1];
                 }
                 else
                 {
-                    fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_ysize[0] = 1;
+                    fpsentry->parray[pindex] .info.stream .stream_ysize[0] = 1;
                 }
                 if(tmpimg.md->naxis > 2)
                 {
-                    fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_zsize[0] =
-                        tmpimg.md->size[2];
+                    fpsentry->parray[pindex] .info.stream .stream_zsize[0] = tmpimg.md->size[2];
                 }
                 else
                 {
-                    fpsentry->parray[pindex]
-                        .info.stream
-                        .stream_zsize[0] = 1;
+                    fpsentry->parray[pindex] .info.stream .stream_zsize[0] = 1;
                 }
                 ImageStreamIO_closeIm(&tmpimg);
             }
@@ -447,16 +406,13 @@ int functionparameter_CheckParameter(
         {
             int msglen = 200;
             char msg[msglen];
-            snprintf(msg, msglen,
-                     "Loading stream %s",
-                     fpsentry->parray[pindex].val.string[0]);
+            snprintf(msg, msglen, "Loading stream %s", fpsentry->parray[pindex].val.string[0]);
             functionparameter_outlog("LOADMEMSTREAM", "%s", msg);
 
             if(imLOC == STREAM_LOAD_SOURCE_NOTFOUND)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =
-                    FPS_MSG_FLAG_ERROR;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] = FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "cannot load stream %s",
@@ -491,25 +447,23 @@ int functionparameter_CheckParameter(
 }
 
 
-int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
+/**
+ * @brief Checks all parameters for validity in the specified FPS entry.
+ */
+int functionparameter_CheckParametersAll(FPS *fpsentry)
 {
-    long NBparamMAX;
-    long pindex;
-    int  errcnt = 0;
-
-
     char msg[FUNCTION_PARAMETER_STRUCT_MSG_LEN];
     snprintf(msg, FUNCTION_PARAMETER_STRUCT_MSG_LEN, "%s", fpsentry->md->name);
     functionparameter_outlog("CHECKPARAMALL", "%s", msg);
 
     strncpy(fpsentry->md->message[0], "\0", FUNCTION_PARAMETER_STRUCT_MSG_LEN - 1);
-    NBparamMAX = fpsentry->md->NBparamMAX;
+    long NBparamMAX = fpsentry->md->NBparamMAX;
 
-    // Check if Value is OK
+    int errcnt = 0;
     fpsentry->md->msgcnt     = 0;
     fpsentry->md->conferrcnt = 0;
     //    printf("Checking %d parameter entries\n", NBparam);
-    for(pindex = 0; pindex < NBparamMAX; pindex++)
+    for(long pindex = 0; pindex < NBparamMAX; pindex++)
     {
         errcnt += functionparameter_CheckParameter(fpsentry, pindex);
     }
@@ -528,7 +482,7 @@ int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
 
     // compute write status
 
-    for(pindex = 0; pindex < NBparamMAX; pindex++)
+    for(long pindex = 0; pindex < NBparamMAX; pindex++)
     {
         int writeOK; // do we have write permission ?
 

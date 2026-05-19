@@ -4,24 +4,16 @@
  */
 
 #include <sys/mman.h> // mmap()
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <time.h>
-#include <string.h>
 
 #include "processinfo_internal.h"
-#include "processinfo.h"
 #include "processinfo_shm_list_create.h"
 #include "processinfo_procdirname.h"
-#include "processinfo_WriteMessage.h"
-#include "processinfo_shm_create.h"
+
 
 
 #define FILEMODE 0666
-
-extern PROCESSINFOLIST *pinfolist;
 
 #ifndef CLOCK_MILK
 #define CLOCK_MILK CLOCK_REALTIME
@@ -42,23 +34,26 @@ PROCESSINFO *processinfo_shm_create(
 {
     DEBUG_TRACE_FSTART();
 
-    size_t       sharedsize = 0; // shared memory size in bytes
-    int          SM_fd;          // shared memory file descriptor
-    PROCESSINFO *pinfo = NULL;
+    size_t       sharedsize = 0;
+    int          SM_fd      = -1;
+    PROCESSINFO *pinfo      = NULL;
+    long         pindex     = 0;
 
     static int LogFileCreated __attribute__((unused)) = 0;
     // toggles to 1 when created. To avoid re-creating file on same process
 
     sharedsize = sizeof(PROCESSINFO);
 
-    char  SM_fname[STRINGMAXLEN_FULLFILENAME];
     pid_t PID;
 
     PID = getpid();
 
     DEBUG_TRACEPOINT("create/update pinfolist");
-    long pindex;
-    pindex = processinfo_shm_list_create();
+    if(processinfo_shm_list_create(&pindex) != RETURN_SUCCESS)
+    {
+        PRINT_ERROR("processinfo_shm_list_create failed");
+        goto fail;
+    }
 
     DEBUG_TRACEPOINT("index = %ld", pindex);
 
@@ -66,71 +61,61 @@ PROCESSINFO *processinfo_shm_create(
 
     DEBUG_TRACEPOINT(" ");
 
-    strncpy(pinfolist->pnamearray[pindex],
-            pname,
-            STRINGMAXLEN_PROCESSINFO_NAME - 1);
+    strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
 
-    DEBUG_TRACEPOINT("getting procdname");
-    char procdname[STRINGMAXLEN_DIRNAME];
-    processinfo_procdirname(procdname);
-
-
-    WRITE_FULLFILENAME(SM_fname,
-                       "%s/proc.%s.%06d.shm",
-                       procdname,
-                       pname,
-                       (int) PID);
-
-    DEBUG_TRACEPOINT("SM_fname = %s", SM_fname);
-
-    umask(0);
-    SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
-    if(SM_fd == -1)
     {
-        perror("Error opening file for writing");
-        exit(0);
-    }
+        DEBUG_TRACEPOINT("getting procdname");
+        char procdname[STRINGMAXLEN_DIRNAME];
+        processinfo_procdirname(procdname);
 
-    int result;
-    result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
-    if(result == -1)
-    {
-        close(SM_fd);
-        fprintf(stderr, "Error calling lseek() to 'stretch' the file");
-        exit(0);
-    }
 
-    result = write(SM_fd, "", 1);
-    if(result != 1)
-    {
-        close(SM_fd);
-        perror("Error writing last byte of the file");
-        exit(0);
-    }
+        char SM_fname[STRINGMAXLEN_FULLFILENAME];
+        WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
 
-    pinfo = (PROCESSINFO *)
-            mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if(pinfo == MAP_FAILED)
-    {
-        close(SM_fd);
-        perror("Error mmapping the file");
-        exit(0);
-    }
+        DEBUG_TRACEPOINT("SM_fname = %s", SM_fname);
 
-    DEBUG_TRACEPOINT("created processinfo entry at %s\n", SM_fname);
+        umask(0);
+        SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
+        if(SM_fd == -1)
+        {
+            PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
+            goto fail;
+        }
+
+        if(lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
+        {
+            PRINT_ERROR("lseek failed: %s", strerror(errno));
+            goto fail;
+        }
+
+        if(write(SM_fd, "", 1) != 1)
+        {
+            PRINT_ERROR("write last byte failed: %s", strerror(errno));
+            goto fail;
+        }
+
+        pinfo = (PROCESSINFO *) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+        if(pinfo == MAP_FAILED)
+        {
+            PRINT_ERROR("mmap(%s) failed: %s", SM_fname, strerror(errno));
+            pinfo = NULL;
+            goto fail;
+        }
+
+        DEBUG_TRACEPOINT("created processinfo entry at %s\n", SM_fname);
+    }
     DEBUG_TRACEPOINT("shared memory space = %ld bytes\n", sharedsize);
 
     clock_gettime(CLOCK_MILK, &pinfo->createtime);
     pinfolist->createtime[pindex] =
         1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
 
-    strncpy(pinfo->name, pname,
-            STRINGMAXLEN_PROCESSINFO_NAME - 1);
+    strncpy(pinfo->name, pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
     pinfo->name[STRINGMAXLEN_PROCESSINFO_NAME - 1] = '\0';
 
     pinfolist->active[pindex] = 1;
 
-    int tmuxnamestrlen = 100;
+    enum { tmuxnamestrlen = 100 };
     char  tmuxname[tmuxnamestrlen];
     FILE *fpout;
     int   notmux = 0;
@@ -213,10 +198,7 @@ PROCESSINFO *processinfo_shm_create(
         int slen = snprintf(pinfo->logfilename,
                             STRINGMAXLEN_PROCESSINFO_LOGFILENAME,
                             "%s/proc.%s.%06d.%09ld.logfile",
-                            procdname,
-                            pinfo->name,
-                            (int) pinfo->PID,
-                            tnow.tv_sec);
+                            procdname, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
@@ -243,5 +225,17 @@ PROCESSINFO *processinfo_shm_create(
 
     DEBUG_TRACE_FEXIT();
 
+    if(SM_fd != -1)
+    {
+        close(SM_fd);
+    }
     return pinfo;
+
+fail:
+    if(SM_fd != -1)
+    {
+        close(SM_fd);
+    }
+    DEBUG_TRACE_FEXIT();
+    return NULL;
 }

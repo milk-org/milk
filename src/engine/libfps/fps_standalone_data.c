@@ -4,10 +4,6 @@
  */
 
 #define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 /*
  * fitsio.h often expects LONGLONG to be defined.
@@ -57,17 +53,23 @@ pid_t CLIPID;
 
 #if !defined(FPS_STANDALONE_SKIP_STUBS) \
     && !defined(MILK_NO_CLI)
+/**
+ * @brief Stub: no-op module registration for standalone.
+ */
 errno_t RegisterModule(
     const char *restrict FileName __attribute__((unused)),
     const char *restrict PackageName __attribute__((unused)),
     const char *restrict InfoString __attribute__((unused)),
-    int versionmajor __attribute__((unused)),
-    int versionminor __attribute__((unused)),
-    int versionpatch __attribute__((unused))
-) {
+    int                  versionmajor __attribute__((unused)),
+    int                  versionminor __attribute__((unused)),
+    int                  versionpatch __attribute__((unused)))
+{
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Stub: no-op CLI command registration.
+ */
 uint32_t RegisterCLIcommand(
     const char *restrict CLIkey __attribute__((unused)),
     const char *restrict CLImodulesrc __attribute__((unused)),
@@ -75,33 +77,45 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLIinfo __attribute__((unused)),
     const char *restrict CLIsyntax __attribute__((unused)),
     const char *restrict CLIexample __attribute__((unused)),
-    const char *restrict CLICcall __attribute__((unused))
-) {
+    const char *restrict CLICcall __attribute__((unused)))
+{
     return 0;
 }
 
+/**
+ * @brief Stub: no-op CLI command registration (v2).
+ */
 uint32_t RegisterCLIcmd(
     CLICMDDATA CLIcmddata __attribute__((unused)),
-    errno_t (*CLIfptr)() __attribute__((unused))
-) {
+    errno_t (*CLIfptr)() __attribute__((unused)))
+{
     return 0;
 }
 
+/**
+ * @brief Stub: image lookup by name for standalone builds.
+ *
+ * Linear search through the provided image array.
+ *
+ * @param name        Stream name to find
+ * @param imagearray  Image array to search
+ * @param NB_images   Number of entries in imagearray
+ * @return imageID index or -1 if not found
+ */
 imageID image_ID(
     const char *name,
     IMAGE      *imagearray __attribute__((unused)),
-    long        NB_images __attribute__((unused))
-)
+    long       NB_images __attribute__((unused)))
 {
-    for (long i = 0; i < NB_images; i++)
+    for(long ii = 0; ii < NB_images; ii++)
     {
-        if (imagearray[i].used == 1 &&
-            strncmp(imagearray[i].name,
-                    name,
-                    STRINGMAXLEN_IMAGE_NAME)
+        if(imagearray[ii].used == 1 &&
+                strncmp(imagearray[ii].name,
+                        name,
+                        STRINGMAXLEN_IMAGE_NAME)
                 == 0)
         {
-            return i;
+            return ii;
         }
     }
     return -1;
@@ -115,9 +129,9 @@ imageID image_ID(
 errno_t
 functionparameter_CTRLscreen(
     uint32_t mode __attribute__((unused)),
-    char *fpsnamemask __attribute__((unused)),
-    char *fpsCTRLfifoname __attribute__((unused)),
-    double timeout_sec __attribute__((unused)))
+    char     *fpsnamemask __attribute__((unused)),
+    char     *fpsCTRLfifoname __attribute__((unused)),
+    double   timeout_sec __attribute__((unused)))
 {
     return 0;
 }
@@ -135,8 +149,11 @@ TUI_printfw(
 {
 }
 
+/** @brief No-op stub: cursor newline (standalone). */
 void TUI_newline(void) {}
+/** @brief No-op stub: enable reverse video (standalone). */
 void screenprint_setreverse(void) {}
+/** @brief No-op stub: disable reverse video (standalone). */
 void screenprint_unsetreverse(void) {}
 
 void
@@ -169,4 +186,8 @@ get_singlechar_nonblock(void)
     return -1;
 }
 
-errno_t TUI_exit(void) { return 0; }
+/** @brief No-op stub: restore terminal (standalone). */
+errno_t TUI_exit(void)
+{
+    return 0;
+}

@@ -54,9 +54,8 @@
 static void emit_str_local(
     char       *out,
     int        *opos,
-    int         maxlen,
-    const char *s
-)
+    int        maxlen,
+    const char *s)
 {
     while(*s != '\0' && *opos < maxlen - 1)
     {
@@ -83,10 +82,9 @@ static void emit_str_local(
  */
 static void expand_env_array_all(
     const char *varname,
-    int         is_length,
+    int        is_length,
     char       *out_buf,
-    const char **out_val
-)
+    const char **out_val)
 {
     *out_val    = NULL;
     int elems_count = 0;
@@ -111,14 +109,10 @@ static void expand_env_array_all(
             {
                 if(e > 0)
                 {
-                    strncat(out_buf, " ",
-                            STRINGMAXLEN_CLICMDLINE
-                            - strlen(out_buf) - 1);
+                    strncat(out_buf, " ", STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
                 }
                 strncat(out_buf,
-                        cli_assoc[a].vals[e],
-                        STRINGMAXLEN_CLICMDLINE
-                        - strlen(out_buf) - 1);
+                        cli_assoc[a].vals[e], STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
             }
         }
         *out_val = out_buf;
@@ -146,14 +140,10 @@ static void expand_env_array_all(
                 {
                     if(e > 0)
                     {
-                        strncat(out_buf, " ",
-                                STRINGMAXLEN_CLICMDLINE
-                                - strlen(out_buf) - 1);
+                        strncat(out_buf, " ", STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
                     }
                     strncat(out_buf,
-                            cli_arrays[a].elem[e],
-                            STRINGMAXLEN_CLICMDLINE
-                            - strlen(out_buf) - 1);
+                            cli_arrays[a].elem[e], STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
                 }
             }
             *out_val = out_buf;
@@ -167,8 +157,7 @@ static void expand_env_array_all(
     {
         char cnt_buf[32];
         snprintf(cnt_buf, sizeof(cnt_buf), "%d", elems_count);
-        strncpy(out_buf, cnt_buf,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(out_buf, cnt_buf, STRINGMAXLEN_CLICMDLINE - 1);
         out_buf[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     }
 
@@ -194,10 +183,9 @@ static void expand_env_array_all(
  * arrays (by numeric index).
  */
 static void expand_env_array_index(
-    const char  *varname,
-    const char  *idx_val,
-    const char **out_val
-)
+    const char *varname,
+    const char *idx_val,
+    const char **out_val)
 {
     *out_val = NULL;
 
@@ -272,13 +260,12 @@ static void expand_env_array_index(
  *   :   substring ${VAR:off} or ${VAR:off:len}
  */
 static void apply_modifier(
-    const char  *varname,
-    const char  *mod_op,
-    char        *mod_arg,
-    char        *val_buf,
-    int          val_buf_size,
-    const char **val
-)
+    const char *varname,
+    const char *mod_op,
+    char       *mod_arg,
+    char       *val_buf,
+    int        val_buf_size,
+    const char **val)
 {
     char op = mod_op[1]; /* '-', '=', '?', '+', or '\0' */
 
@@ -305,8 +292,7 @@ static void apply_modifier(
     {
         if(*val == NULL || (*val)[0] == '\0')
         {
-            printf("CLI expand error: %s: %s\n",
-                   varname, mod_arg);
+            printf("CLI expand error: %s: %s\n", varname, mod_arg);
             *val = "";
         }
         return;
@@ -314,8 +300,7 @@ static void apply_modifier(
 
     if(op == '+')
     {
-        *val = (*val != NULL && (*val)[0] != '\0')
-               ? mod_arg : "";
+        *val = (*val != NULL && (*val)[0] != '\0') ? mod_arg : "";
         return;
     }
 
@@ -402,8 +387,7 @@ static void apply_modifier(
  */
 void cli_expand_env(
     char *line,
-    int   maxlen
-)
+    int  maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos = 0;
@@ -472,7 +456,7 @@ void cli_expand_env(
             int  alen = 0;
             atbuf[alen++] = '@';
             while(line[i] != '\0' && line[i] != '}'
-                  && alen < 511)
+                    && alen < 511)
             {
                 atbuf[alen++] = line[i++];
             }
@@ -512,9 +496,9 @@ void cli_expand_env(
             {
                 char c = line[i];
                 if(!((c >= 'A' && c <= 'Z')
-                     || (c >= 'a' && c <= 'z')
-                     || (c >= '0' && c <= '9')
-                     || c == '_' || c == '?' || c == '.'))
+                        || (c >= 'a' && c <= 'z')
+                        || (c >= '0' && c <= '9')
+                        || c == '_' || c == '?' || c == '.'))
                 {
                     break;
                 }
@@ -535,7 +519,7 @@ void cli_expand_env(
             i++;
             int ilen = 0;
             while(line[i] != '\0' && line[i] != ']'
-                  && ilen < 255)
+                    && ilen < 255)
             {
                 index_str[ilen++] = line[i++];
             }
@@ -554,7 +538,7 @@ void cli_expand_env(
         {
             i++;
             if(line[i] == '-' || line[i] == '='
-               || line[i] == '?' || line[i] == '+')
+                    || line[i] == '?' || line[i] == '+')
             {
                 mod_op[0] = ':';
                 mod_op[1] = line[i++];
@@ -565,7 +549,7 @@ void cli_expand_env(
             }
             int mlen = 0;
             while(line[i] != '\0' && line[i] != '}'
-                  && mlen < 255)
+                    && mlen < 255)
             {
                 mod_arg[mlen++] = line[i++];
             }
@@ -614,17 +598,12 @@ void cli_expand_env(
 
             if(strcmp(idx_val, "@") == 0)
             {
-                expand_env_array_all(varname,
-                                     is_length,
-                                     all_buf,
-                                     &val);
+                expand_env_array_all(varname, is_length, all_buf, &val);
                 is_length = 0; /* already handled */
             }
             else
             {
-                expand_env_array_index(varname,
-                                       idx_val,
-                                       &val);
+                expand_env_array_index(varname, idx_val, &val);
             }
         }
         else
@@ -637,9 +616,7 @@ void cli_expand_env(
         val_buf[0] = '\0';
         if(mod_op[0] != '\0')
         {
-            apply_modifier(varname, mod_op, mod_arg,
-                           val_buf, (int) sizeof(val_buf),
-                           &val);
+            apply_modifier(varname, mod_op, mod_arg, val_buf, (int) sizeof(val_buf), &val);
         }
 
         /* ---- Emit result ---- */

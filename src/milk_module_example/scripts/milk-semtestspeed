@@ -3,6 +3,13 @@
 # This script uses milk-argparse
 # See template milk-scriptexample in module milk_module_example for template and instructions
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "test semaphore latency"
+        exit 0 ;;
+esac
+
 MSdescr="test semaphore latency"
 
 MSextdescr="
@@ -25,6 +32,8 @@ RequiredDirs=()
 MSarg+=( "nbloop:integer:number of loop iterations" )
 MSarg+=( "semtrig:integer:semaphore trigger" )
 
+
+MSseealso+=( "milk-semloopspeed:measure semaphore latency" )
 
 source milk-argparse
 
