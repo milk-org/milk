@@ -48,3 +48,12 @@ docs/doxygen/
 
 # Performance benchmark results
 perfresults/
+
+# Python
+__pycache__
+*.pyc
+
+# Testing suite
+.nox
+testing/gcov_html
+pyrightconfig.json

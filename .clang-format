@@ -1,4 +1,5 @@
-BasedOnStyle: Linux
+BasedOnStyle: Chromium
 IndentWidth: 4
 ColumnLimit: 100
-BreakBeforeBraces: Allman
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: true
