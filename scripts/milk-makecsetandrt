@@ -21,4 +21,8 @@ fi
 pname="$0-$1-$2"
 echo "$pname"
 
-milk-rtsched -c $2 -p $3 $1
+if [ "$3" -gt 0 ]; then
+    milk-rtsched -c "$2" -p "$3" "$1"
+else
+    milk-rtsched -c "$2" "$1"
+fi
