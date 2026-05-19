@@ -20,13 +20,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "fpslist",
     .cmdkey      = "fpslist",
     .description =
-        "list function parameter structures",
+    "list function parameter structures",
     .description_long =
-        "List all FPS (Function Parameter Structure) instances currently active in shared memory. Shows FPS name, status, and associated process."
+    "List all FPS (Function Parameter Structure) instances currently active in shared memory. Shows FPS name, status, and associated process."
 };
 
 
@@ -101,7 +102,7 @@ errno_t fps_list()
     while((de = readdir(dr)) != NULL)
     {
         if(strstr(de->d_name, ".fps.shm")
-            != NULL)
+                != NULL)
         {
             char fpsname[100];
             int  slen1 =
@@ -128,9 +129,11 @@ errno_t fps_list()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
+CLICMDDATA CLIcmddata =
+{
 #else
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
 #endif
     "",
     "",
@@ -163,16 +166,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, NULL, &CLIcmddata,
-        NULL, 0,
-        compute_function);
+               &FPS_app_info, NULL, &CLIcmddata,
+               NULL, 0,
+               compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__fps_list()
 {
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 

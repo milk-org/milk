@@ -31,13 +31,14 @@ errno_t write_float_file(
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "writef2file",
     .cmdkey      = "writef2file",
     .description =
-        "write float to file",
+    "write float to file",
     .description_long =
-        "File system utility operations: count files matching a pattern, list directory contents, and check file existence."
+    "File system utility operations: count files matching a pattern, list directory contents, and check file existence."
 };
 
 
@@ -83,9 +84,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_tools__fileutils()
@@ -94,7 +95,7 @@ errno_t CLIADDCMD_COREMOD_tools__fileutils()
         farg, my_bindings, nb_bindings);
 
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 

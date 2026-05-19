@@ -392,7 +392,7 @@ errno_t functionparameter_scan_fps(
                                         int match = 1;
                                         // keywords at all levels need to match
 
-                                        for (int ll = 0; ll < level; ll++)
+                                        for(int ll = 0; ll < level; ll++)
                                         {
                                             if(strcmp(fps[fpsindex]
                                                       .parray[pindex0]
@@ -435,7 +435,7 @@ errno_t functionparameter_scan_fps(
                                         {
                                             int match = 1;
 
-                                            for (
+                                            for(
                                                 int ll = 0; ll < level - 1;
                                                 ll++) // keywords at all levels need to match
                                             {

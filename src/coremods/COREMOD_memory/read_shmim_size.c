@@ -26,12 +26,13 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "readshmimsize",
     .cmdkey      = "readshmimsize",
     .description = "read shared memory image size",
     .description_long =
-        "Read only the size metadata of a shared memory stream without mapping the full pixel buffer. Lightweight probe for stream dimensions."
+    "Read only the size metadata of a shared memory stream without mapping the full pixel buffer. Lightweight probe for stream dimensions."
 };
 
 
@@ -77,7 +78,7 @@ imageID read_sharedmem_image_size(
     int             SM_fd;
     struct stat     file_stat;
     char            SM_fname[
-        STRINGMAXLEN_FULLFILENAME];
+     STRINGMAXLEN_FULLFILENAME];
     IMAGE_METADATA *map;
 
     FILE           *fp;
@@ -103,12 +104,12 @@ imageID read_sharedmem_image_size(
             fstat(SM_fd, &file_stat);
 
             map = (IMAGE_METADATA *) mmap(
-                0,
-                sizeof(IMAGE_METADATA),
-                PROT_READ | PROT_WRITE,
-                MAP_SHARED,
-                SM_fd,
-                0);
+                      0,
+                      sizeof(IMAGE_METADATA),
+                      PROT_READ | PROT_WRITE,
+                      MAP_SHARED,
+                      SM_fd,
+                      0);
             if(map == MAP_FAILED)
             {
                 close(SM_fd);
@@ -119,7 +120,7 @@ imageID read_sharedmem_image_size(
             }
 
             fp = fopen(fname, "w");
-            for( int i = 0; i < map[0].naxis; i++)
+            for(int i = 0; i < map[0].naxis; i++)
             {
                 fprintf(fp, "%ld ",
                         (long) map[0].size[i]);
@@ -129,7 +130,7 @@ imageID read_sharedmem_image_size(
 
             if(munmap(map,
                       sizeof(IMAGE_METADATA))
-                == -1)
+                    == -1)
             {
                 printf("unmapping %s\n",
                        SM_fname);
@@ -144,8 +145,8 @@ imageID read_sharedmem_image_size(
     {
         fp = fopen(fname, "w");
         for(int i = 0;
-             i < img.im->md[0].naxis;
-             i++)
+                i < img.im->md[0].naxis;
+                i++)
         {
             fprintf(
                 fp, "%ld ",
@@ -191,9 +192,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t

@@ -431,7 +431,7 @@ complex_double CPdiv_CD_CD(
     double         den;
 
     den = b.re * b.re + b.im * b.im;
-    
+
     v.re = (a.re * b.re + a.im * b.im) / den;
     v.im = (a.im * b.re - a.re * b.im) / den;
 

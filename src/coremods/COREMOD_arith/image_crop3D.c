@@ -264,7 +264,7 @@ imageID arith_image_crop(const char *ID_name,
     int64_t start_c[3];
     int64_t end_c[3];
 
-    for( i = 0; i < 3; i++)
+    for(i = 0; i < 3; i++)
     {
         start_c[i] = 0;
         end_c[i]   = 0;

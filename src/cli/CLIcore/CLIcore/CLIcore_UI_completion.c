@@ -223,7 +223,7 @@ void rl_cb_linehandler(char *linein)
 
     /* Expand history (!! and !$) now that the full line is assembled */
     cli_history_expand();
-    
+
     if(data.CLIcmdline[0] == '\0')
     {
         /* Expansion error. Exit loop and prevent execution. */
@@ -248,7 +248,8 @@ void rl_cb_linehandler(char *linein)
         }
     }
 
-    if (data.echo_input) {
+    if(data.echo_input)
+    {
         printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
     }
     CLI_execute_line();
@@ -340,8 +341,8 @@ int levenshtein_distance(
     unsigned int len1 = strlen(s1);
     unsigned int len2 = strlen(s2);
     unsigned int *d = (unsigned int *)
-        xmalloc((len1 + 1) * (len2 + 1)
-                * sizeof(unsigned int));
+                      xmalloc((len1 + 1) * (len2 + 1)
+                              * sizeof(unsigned int));
 
     for(unsigned int i = 0; i <= len1; i++)
     {
@@ -365,7 +366,7 @@ int levenshtein_distance(
                 d[i * (len2 + 1) + j - 1] + 1;
             unsigned int min3 =
                 d[(i - 1) * (len2 + 1)
-                  + j - 1] + cost;
+                          + j - 1] + cost;
             unsigned int m =
                 (min1 < min2) ? min1 : min2;
             d[i * (len2 + 1) + j] =
@@ -378,4 +379,3 @@ int levenshtein_distance(
 }
 
 #endif
-

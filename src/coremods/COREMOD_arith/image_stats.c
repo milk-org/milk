@@ -223,7 +223,7 @@ double arith_image_percentile_IMGID(
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayU[ii] = imgin->im->array.UI16[ii];
         }
@@ -239,7 +239,7 @@ double arith_image_percentile_IMGID(
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = imgin->im->array.UI32[ii];
         }
@@ -255,7 +255,7 @@ double arith_image_percentile_IMGID(
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = imgin->im->array.UI64[ii];
         }
@@ -271,7 +271,7 @@ double arith_image_percentile_IMGID(
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI8[ii];
         }
@@ -287,7 +287,7 @@ double arith_image_percentile_IMGID(
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI16[ii];
         }
@@ -303,7 +303,7 @@ double arith_image_percentile_IMGID(
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI32[ii];
         }
@@ -319,7 +319,7 @@ double arith_image_percentile_IMGID(
             PRINT_ERROR("malloc() error");
             exit(EXIT_FAILURE);
         }
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             arrayL[ii] = (long) imgin->im->array.SI64[ii];
         }

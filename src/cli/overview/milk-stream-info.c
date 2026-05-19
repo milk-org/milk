@@ -61,7 +61,7 @@ volatile sig_atomic_t ov_sigTERM = 0;
 
 static const char *dtype_name(uint8_t dt)
 {
-    switch (dt)
+    switch(dt)
     {
     case _DATATYPE_UINT8:
         return "UINT8";
@@ -94,7 +94,7 @@ static const char *dtype_name(uint8_t dt)
 
 static unsigned int dtype_bytes(uint8_t dt)
 {
-    switch (dt)
+    switch(dt)
     {
     case _DATATYPE_UINT8:
     case _DATATYPE_INT8:
@@ -124,12 +124,12 @@ static unsigned int dtype_bytes(uint8_t dt)
 
 static const char *pid_status_str(pid_t pid)
 {
-    if (pid <= 0)
+    if(pid <= 0)
     {
         return C_DIM "N/A" C_RST;
     }
     ov_pid_status_t st = pid_get_status(pid);
-    switch (st)
+    switch(st)
     {
     case OV_PID_ALIVE:
         return C_ALIVE "ALIVE" C_RST;
@@ -149,7 +149,7 @@ static const char *proc_name_by_pid(
     pid_t pid)
 {
     int pi = ov_find_proc_by_pid(m, pid);
-    if (pi >= 0)
+    if(pi >= 0)
     {
         return m->procs[pi].name;
     }
@@ -182,13 +182,13 @@ static void print_stream_info(
     /* Dimensions */
     {
         char dimstr[64];
-        if (s->naxis == 1)
+        if(s->naxis == 1)
         {
             snprintf(dimstr, sizeof(dimstr),
                      "1D  %u",
                      (unsigned) s->size[0]);
         }
-        else if (s->naxis == 2)
+        else if(s->naxis == 2)
         {
             snprintf(dimstr, sizeof(dimstr),
                      "2D  %u x %u",
@@ -238,7 +238,7 @@ static void print_stream_info(
         printf("   %-18s: " C_PROC "%d" C_RST,
                "Creator PID",
                (int) s->creatorPID);
-        if (cname)
+        if(cname)
         {
             printf(" (%s)", cname);
         }
@@ -251,7 +251,7 @@ static void print_stream_info(
         printf("   %-18s: " C_PROC "%d" C_RST,
                "Owner PID",
                (int) s->ownerPID);
-        if (oname)
+        if(oname)
         {
             printf(" (%s)", oname);
         }
@@ -264,7 +264,7 @@ static void print_stream_info(
     printf("   %-18s: " C_VAL "%" PRIu64 C_RST "\n",
            "cnt0",
            (uint64_t) s->cnt0);
-    if (s->update_hz > 0.01)
+    if(s->update_hz > 0.01)
     {
         printf("   %-18s: " C_VAL "%.1f Hz"
                C_RST "\n",
@@ -274,10 +274,10 @@ static void print_stream_info(
     /* ---- Semaphores ---- */
     printf("\n" C_HDR " Semaphores" C_RST
            " (%d active)\n", s->nb_sem);
-    if (s->nb_sem > 0)
+    if(s->nb_sem > 0)
     {
         printf("   ");
-        for (int i = 0; i < s->nb_sem; i++)
+        for(int i = 0; i < s->nb_sem; i++)
         {
             printf("[%d]=%d  ", i, s->semval[i]);
         }
@@ -289,7 +289,7 @@ static void print_stream_info(
            C_RST " (from system graph)\n");
 
     int sni = s->node_idx;
-    if (sni < 0)
+    if(sni < 0)
     {
         printf("   " C_DIM
                "(stream not in graph)"
@@ -300,21 +300,21 @@ static void print_stream_info(
         int found_any = 0;
 
         /* Written by (PROC → stream) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].tgt_node != sni)
+            if(m->edges[e].tgt_node != sni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_PROC_WRITES_STREAM)
+            if(m->edges[e].type
+                    != OV_EDGE_PROC_WRITES_STREAM)
             {
                 continue;
             }
             int ni = m->edges[e].src_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_PROC)
             {
                 continue;
@@ -329,23 +329,23 @@ static void print_stream_info(
         }
 
         /* Triggers (stream → PROC) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].src_node != sni)
+            if(m->edges[e].src_node != sni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_STREAM_TRIGGERS_PROC
-                && m->edges[e].type
-                != OV_EDGE_PROC_TRIGGER_STREAM)
+            if(m->edges[e].type
+                    != OV_EDGE_STREAM_TRIGGERS_PROC
+                    && m->edges[e].type
+                    != OV_EDGE_PROC_TRIGGER_STREAM)
             {
                 continue;
             }
             int ni = m->edges[e].tgt_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_PROC)
             {
                 continue;
@@ -360,21 +360,21 @@ static void print_stream_info(
         }
 
         /* Read by (stream → PROC via sem) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].src_node != sni)
+            if(m->edges[e].src_node != sni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_STREAM_READ_BY_PROC)
+            if(m->edges[e].type
+                    != OV_EDGE_STREAM_READ_BY_PROC)
             {
                 continue;
             }
             int ni = m->edges[e].tgt_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_PROC)
             {
                 continue;
@@ -389,21 +389,21 @@ static void print_stream_info(
         }
 
         /* FPS input to (stream → FPS) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].src_node != sni)
+            if(m->edges[e].src_node != sni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_FPS_INPUT_STREAM)
+            if(m->edges[e].type
+                    != OV_EDGE_FPS_INPUT_STREAM)
             {
                 continue;
             }
             int ni = m->edges[e].tgt_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_FPS)
             {
                 continue;
@@ -417,21 +417,21 @@ static void print_stream_info(
         }
 
         /* FPS output of (FPS → stream) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].tgt_node != sni)
+            if(m->edges[e].tgt_node != sni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_FPS_OUTPUT_STREAM)
+            if(m->edges[e].type
+                    != OV_EDGE_FPS_OUTPUT_STREAM)
             {
                 continue;
             }
             int ni = m->edges[e].src_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_FPS)
             {
                 continue;
@@ -444,7 +444,7 @@ static void print_stream_info(
             found_any = 1;
         }
 
-        if (!found_any)
+        if(!found_any)
         {
             printf("   " C_DIM
                    "(no connections found)"
@@ -453,12 +453,12 @@ static void print_stream_info(
     }
 
     /* ---- Process trace ---- */
-    if (s->nb_proctrace > 0)
+    if(s->nb_proctrace > 0)
     {
         printf("\n" C_HDR " Process Trace"
                C_RST " (STREAM_PROC_TRACE)\n");
-        for (int t = 0;
-             t < s->nb_proctrace; t++)
+        for(int t = 0;
+                t < s->nb_proctrace; t++)
         {
             const char *pn =
                 proc_name_by_pid(
@@ -469,9 +469,9 @@ static void print_stream_info(
                    t,
                    (int) s->proctrace_pid[t],
                    (uint64_t)
-                       s->proctrace_inode[t],
+                   s->proctrace_inode[t],
                    s->proctrace_trigmode[t]);
-            if (pn)
+            if(pn)
             {
                 printf("  (%s)", pn);
             }
@@ -515,7 +515,8 @@ static void print_help(
     printf("  %s$ milk-stream-info%s %sdm00disp%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-stream-list:list active shared memory streams",
         "milk-stream-rm:remove shared memory streams",
         "milk-procinfo-info:inspect processinfo memory contents"
@@ -533,28 +534,32 @@ int main(
 {
     int action = milk_help_init(argc, argv,
                                 SI_ONELINE, SI_DESC_LONG);
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
+    }
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
     }
 
-    static struct option long_opts[] = {
+    static struct option long_opts[] =
+    {
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
 
     int opt;
-    while ((opt = getopt_long(
-                argc, argv, "h",
-                long_opts, NULL)) != -1)
+    while((opt = getopt_long(
+                     argc, argv, "h",
+                     long_opts, NULL)) != -1)
     {
-        switch (opt)
+        switch(opt)
         {
-        case 'h': break; /* handled above */
+        case 'h':
+            break; /* handled above */
         default:
             printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
@@ -562,7 +567,7 @@ int main(
         }
     }
 
-    if (optind >= argc)
+    if(optind >= argc)
     {
         printf("\n\033[1;31mERROR\033[0m stream name required\n\n");
         print_help(argv[0], 1);
@@ -579,7 +584,7 @@ int main(
     /* Find the requested stream */
     int si = ov_find_stream_by_name(
                  &model, stream_name);
-    if (si < 0)
+    if(si < 0)
     {
         PRINT_ERROR(
             "stream '%s' not found in shared memory",

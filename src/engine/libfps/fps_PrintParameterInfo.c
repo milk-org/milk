@@ -27,7 +27,7 @@ functionparameter_PrintParameterInfo(
     printf("FPS name       : %s\n", fpsentry->md->name);
     printf("   %s ", fpsentry->md->pname);
 
-    for (int i = 0; i < fpsentry->md->NBnameindex; i++)
+    for(int i = 0; i < fpsentry->md->NBnameindex; i++)
     {
         printf(" [%s]", fpsentry->md->nameindexW[i]);
     }

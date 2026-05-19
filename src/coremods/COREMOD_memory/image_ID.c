@@ -117,8 +117,8 @@ imageID next_avail_image_ID(
     {
 #endif
         if((preferredID > -1)
-            && (preferredID < dcnimg)
-            && (dcimg[preferredID].used == 0))
+                && (preferredID < dcnimg)
+                && (dcimg[preferredID].used == 0))
         {
             ID = preferredID;
             dcimg[ID].used = 1;
@@ -141,8 +141,8 @@ imageID next_avail_image_ID(
     if(ID == -1)
     {
         PRINT_ERROR("ran out of image IDs"
-            " (NB_MAX_IMAGE=%ld)",
-            dcnimg);
+                    " (NB_MAX_IMAGE=%ld)",
+                    dcnimg);
     }
 
     DEBUG_TRACEPOINT("FOUT ID : %ld", ID);

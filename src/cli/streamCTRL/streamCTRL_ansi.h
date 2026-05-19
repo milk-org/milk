@@ -102,7 +102,7 @@ static inline void ansi_raw_mode_enter(void)
     raw = ansi__orig_termios;
     raw.c_iflag &= ~(unsigned int)(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
     raw.c_oflag &= ~(unsigned int)(OPOST);
-    raw.c_cflag |=  (unsigned int)(CS8);
+    raw.c_cflag |= (unsigned int)(CS8);
     raw.c_lflag &= ~(unsigned int)(ECHO | ICANON | IEXTEN | ISIG);
     raw.c_cc[VMIN]  = 0;
     raw.c_cc[VTIME] = 0;
@@ -213,7 +213,7 @@ static int ansi__color_level = 0; // 0=uninit, 1=16-color, 2=256-color, 3=TrueCo
 
 static inline void ansi_detect_color_level(void)
 {
-    if (ansi__color_level > 0)
+    if(ansi__color_level > 0)
     {
         return;
     }
@@ -221,11 +221,11 @@ static inline void ansi_detect_color_level(void)
     const char *term = getenv("TERM");
     const char *colorterm = getenv("COLORTERM");
 
-    if (colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
+    if(colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
     {
         ansi__color_level = 3;
     }
-    else if (term && strstr(term, "256color"))
+    else if(term && strstr(term, "256color"))
     {
         ansi__color_level = 2;
     }
@@ -354,34 +354,66 @@ static inline void ansi_setcolor(int idx)
 {
     ansi_detect_color_level();
 
-    if (ansi__color_level >= 3)
+    if(ansi__color_level >= 3)
     {
         /* TrueColor (24-bit) */
         switch(idx)
         {
-        case 2:  ansi_fg(80,  220, 80);  break; /* green        */
-        case 3:  ansi_fg(220, 200, 0);   break; /* yellow       */
-        case 4:  ansi_fg(240, 60,  60);  break; /* red          */
-        case 5:  ansi_fg(200, 80,  220); break; /* magenta      */
-        case 7:  ansi_fg(0,   200, 220); break; /* cyan         */
-        case 9:  ansi_fg(255, 140, 0);   break; /* orange       */
-        case 12: ansi_fg(100, 255, 100); break; /* bright-green */
-        default: ansi_reset(); break;
+        case 2:
+            ansi_fg(80,  220, 80);
+            break; /* green        */
+        case 3:
+            ansi_fg(220, 200, 0);
+            break; /* yellow       */
+        case 4:
+            ansi_fg(240, 60,  60);
+            break; /* red          */
+        case 5:
+            ansi_fg(200, 80,  220);
+            break; /* magenta      */
+        case 7:
+            ansi_fg(0,   200, 220);
+            break; /* cyan         */
+        case 9:
+            ansi_fg(255, 140, 0);
+            break; /* orange       */
+        case 12:
+            ansi_fg(100, 255, 100);
+            break; /* bright-green */
+        default:
+            ansi_reset();
+            break;
         }
     }
-    else if (ansi__color_level == 2)
+    else if(ansi__color_level == 2)
     {
         /* 256-color fallback */
         switch(idx)
         {
-        case 2:  ansi_fg_256(114); break; /* green        */
-        case 3:  ansi_fg_256(220); break; /* yellow       */
-        case 4:  ansi_fg_256(203); break; /* red          */
-        case 5:  ansi_fg_256(176); break; /* magenta      */
-        case 7:  ansi_fg_256(44);  break; /* cyan         */
-        case 9:  ansi_fg_256(208); break; /* orange       */
-        case 12: ansi_fg_256(119); break; /* bright-green */
-        default: ansi_reset();     break;
+        case 2:
+            ansi_fg_256(114);
+            break; /* green        */
+        case 3:
+            ansi_fg_256(220);
+            break; /* yellow       */
+        case 4:
+            ansi_fg_256(203);
+            break; /* red          */
+        case 5:
+            ansi_fg_256(176);
+            break; /* magenta      */
+        case 7:
+            ansi_fg_256(44);
+            break; /* cyan         */
+        case 9:
+            ansi_fg_256(208);
+            break; /* orange       */
+        case 12:
+            ansi_fg_256(119);
+            break; /* bright-green */
+        default:
+            ansi_reset();
+            break;
         }
     }
     else
@@ -389,14 +421,30 @@ static inline void ansi_setcolor(int idx)
         /* 16-color (standard ANSI) fallback */
         switch(idx)
         {
-        case 2:  ansi_fg_16(32); break; /* green        */
-        case 3:  ansi_fg_16(33); break; /* yellow       */
-        case 4:  ansi_fg_16(31); break; /* red          */
-        case 5:  ansi_fg_16(35); break; /* magenta      */
-        case 7:  ansi_fg_16(36); break; /* cyan         */
-        case 9:  ansi_fg_16(33); break; /* orange -> yellow */
-        case 12: ansi_fg_16(92); break; /* bright-green */
-        default: ansi_reset();   break;
+        case 2:
+            ansi_fg_16(32);
+            break; /* green        */
+        case 3:
+            ansi_fg_16(33);
+            break; /* yellow       */
+        case 4:
+            ansi_fg_16(31);
+            break; /* red          */
+        case 5:
+            ansi_fg_16(35);
+            break; /* magenta      */
+        case 7:
+            ansi_fg_16(36);
+            break; /* cyan         */
+        case 9:
+            ansi_fg_16(33);
+            break; /* orange -> yellow */
+        case 12:
+            ansi_fg_16(92);
+            break; /* bright-green */
+        default:
+            ansi_reset();
+            break;
         }
     }
 }
@@ -528,13 +576,32 @@ static inline int ansi_get_key(void)
 
                 switch(buf[2])
                 {
-                case 'A': key = ANSI_KEY_UP; consumed = 3; break;
-                case 'B': key = ANSI_KEY_DOWN; consumed = 3; break;
-                case 'C': key = ANSI_KEY_RIGHT; consumed = 3; break;
-                case 'D': key = ANSI_KEY_LEFT; consumed = 3; break;
-                case 'H': key = ANSI_KEY_HOME; consumed = 3; break;
-                case 'F': key = ANSI_KEY_END; consumed = 3; break;
-                default:  break;
+                case 'A':
+                    key = ANSI_KEY_UP;
+                    consumed = 3;
+                    break;
+                case 'B':
+                    key = ANSI_KEY_DOWN;
+                    consumed = 3;
+                    break;
+                case 'C':
+                    key = ANSI_KEY_RIGHT;
+                    consumed = 3;
+                    break;
+                case 'D':
+                    key = ANSI_KEY_LEFT;
+                    consumed = 3;
+                    break;
+                case 'H':
+                    key = ANSI_KEY_HOME;
+                    consumed = 3;
+                    break;
+                case 'F':
+                    key = ANSI_KEY_END;
+                    consumed = 3;
+                    break;
+                default:
+                    break;
                 }
 
                 if(key)
@@ -565,24 +632,59 @@ static inline int ansi_get_key(void)
                     consumed = tilde_idx + 1;
                     switch(code)
                     {
-                    case 1:  key = ANSI_KEY_HOME; break;
-                    case 3:  key = ANSI_KEY_DEL; break;
-                    case 4:  key = ANSI_KEY_END; break;
-                    case 5:  key = ANSI_KEY_PGUP; break;
-                    case 6:  key = ANSI_KEY_PGDN; break;
-                    case 11: key = ANSI_KEY_F1; break;
-                    case 12: key = ANSI_KEY_F2; break;
-                    case 13: key = ANSI_KEY_F3; break;
-                    case 14: key = ANSI_KEY_F4; break;
-                    case 15: key = ANSI_KEY_F5; break;
-                    case 17: key = ANSI_KEY_F6; break;
-                    case 18: key = ANSI_KEY_F7; break;
-                    case 19: key = ANSI_KEY_F8; break;
-                    case 20: key = ANSI_KEY_F9; break;
-                    case 21: key = ANSI_KEY_F10; break;
-                    case 23: key = ANSI_KEY_F11; break;
-                    case 24: key = ANSI_KEY_F12; break;
-                    default: break;
+                    case 1:
+                        key = ANSI_KEY_HOME;
+                        break;
+                    case 3:
+                        key = ANSI_KEY_DEL;
+                        break;
+                    case 4:
+                        key = ANSI_KEY_END;
+                        break;
+                    case 5:
+                        key = ANSI_KEY_PGUP;
+                        break;
+                    case 6:
+                        key = ANSI_KEY_PGDN;
+                        break;
+                    case 11:
+                        key = ANSI_KEY_F1;
+                        break;
+                    case 12:
+                        key = ANSI_KEY_F2;
+                        break;
+                    case 13:
+                        key = ANSI_KEY_F3;
+                        break;
+                    case 14:
+                        key = ANSI_KEY_F4;
+                        break;
+                    case 15:
+                        key = ANSI_KEY_F5;
+                        break;
+                    case 17:
+                        key = ANSI_KEY_F6;
+                        break;
+                    case 18:
+                        key = ANSI_KEY_F7;
+                        break;
+                    case 19:
+                        key = ANSI_KEY_F8;
+                        break;
+                    case 20:
+                        key = ANSI_KEY_F9;
+                        break;
+                    case 21:
+                        key = ANSI_KEY_F10;
+                        break;
+                    case 23:
+                        key = ANSI_KEY_F11;
+                        break;
+                    case 24:
+                        key = ANSI_KEY_F12;
+                        break;
+                    default:
+                        break;
                     }
                     if(key)
                     {
@@ -639,11 +741,20 @@ static inline int ansi_get_key(void)
                 int consumed = 3;
                 switch(buf[2])
                 {
-                case 'P': key = ANSI_KEY_F1; break;
-                case 'Q': key = ANSI_KEY_F2; break;
-                case 'R': key = ANSI_KEY_F3; break;
-                case 'S': key = ANSI_KEY_F4; break;
-                default:  break;
+                case 'P':
+                    key = ANSI_KEY_F1;
+                    break;
+                case 'Q':
+                    key = ANSI_KEY_F2;
+                    break;
+                case 'R':
+                    key = ANSI_KEY_F3;
+                    break;
+                case 'S':
+                    key = ANSI_KEY_F4;
+                    break;
+                default:
+                    break;
                 }
                 memmove(buf, buf + consumed, buf_len - consumed);
                 buf_len -= consumed;

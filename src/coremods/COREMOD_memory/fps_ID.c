@@ -73,8 +73,8 @@ long next_avail_fps_ID()
     if(ID == -1)
     {
         PRINT_ERROR("ran out of FPS IDs"
-            " (NB_MAX_FPS=%ld)",
-            dcnfps);
+                    " (NB_MAX_FPS=%ld)",
+                    dcnfps);
     }
 
     return ID;

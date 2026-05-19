@@ -32,7 +32,7 @@
 static int TCPTRANSFERKW = 1;
 static int MULTIGRAM_MAGIC = 0x3E;
 static int DGRAM_CHUNK_SIZE = 62 *
-    1024;
+                              1024;
 
 /** continuously receives 2D image through TCP link
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
@@ -99,7 +99,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         //
         char pinfoname[STRINGMAXLEN_FILENAME];
         snprintf(pinfoname, STRINGMAXLEN_FILENAME, "ntw-receive-%d", port);
-        
+
         PROCESSINFO_AUX_SETUP(processinfo, pinfoname, "", "Waiting for input stream");
     }
 
@@ -130,20 +130,20 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     sock_server.sin_addr.s_addr = htonl(INADDR_ANY);
 
     setsockopt(fds_server,
-        SOL_SOCKET,
-        SO_NO_CHECK,
-        (char *) & flag,
-        sizeof(flag));
+               SOL_SOCKET,
+               SO_NO_CHECK,
+               (char *) & flag,
+               sizeof(flag));
     setsockopt(fds_server,
-        SOL_SOCKET,
-        SO_REUSEADDR,
-        (char *) & flag,
-        sizeof(flag));
+               SOL_SOCKET,
+               SO_REUSEADDR,
+               (char *) & flag,
+               sizeof(flag));
     setsockopt(fds_server,
-        SOL_SOCKET,
-        SO_REUSEPORT,
-        (char *) & flag,
-        sizeof(flag));
+               SOL_SOCKET,
+               SO_REUSEPORT,
+               (char *) & flag,
+               sizeof(flag));
 
 #ifdef SO_ATTACH_REUSEPORT_CBPF
     setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
@@ -225,7 +225,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
     {
         IMGID img = imgid_make_from_name(
-            imgmd[0].name);
+                        imgmd[0].name);
         resolveIMGID(
             &img, ERRMODE_NULL,
             dcimg, dcnimg);
@@ -235,7 +235,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     {
         // is it in shared memory ?
         ID = read_sharedmem_image(
-            imgmd[0].name, dcimg, dcnimg);
+                 imgmd[0].name, dcimg, dcnimg);
     }
 
     list_image_ID();
@@ -291,7 +291,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             imgrcv.mdt->naxis =
                 imgmd[0].naxis;
             for(int a = 0;
-                a < imgmd[0].naxis; a++)
+                    a < imgmd[0].naxis; a++)
             {
                 imgrcv.mdt->size[a] =
                     imgmd[0].size[a];
@@ -545,8 +545,8 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     break;
                 }
                 __builtin_memcpy(buff + k_dgram * DGRAM_CHUNK_SIZE,
-                    buff_udp + 2,
-                    this_dgram_bytes);
+                                 buff_udp + 2,
+                                 this_dgram_bytes);
             }
         }
         if(socketOpen == 1 && abort_frame == 0)
@@ -559,8 +559,8 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             {
                 // copy kw
                 __builtin_memcpy(dcimg[ID].kw,
-                       (IMAGE_KEYWORD *)(ptr_buff_keywords),
-                       nbkw * sizeof(IMAGE_KEYWORD));
+                                 (IMAGE_KEYWORD *)(ptr_buff_keywords),
+                                 nbkw * sizeof(IMAGE_KEYWORD));
             }
 
             frameincr = (long) imgmd_remote[0].cnt0 - cnt0previous;
@@ -657,4 +657,3 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
     return ID;
 }
-

@@ -28,7 +28,8 @@ typedef struct
  * Section indices (must match help_expand bitmask
  * positions).
  */
-enum {
+enum
+{
     HS_NAV = 0,
     HS_SORT,
     HS_DISPLAY,
@@ -105,8 +106,10 @@ static const help_line_t HELP[] =
     { "  Drag panel borders to resize",         HF_CHILD,   HS_MOUSE },
     /* --- Colors --- */
     { "Colors",                                 HF_SECTION, HS_COLORS },
-    { "",                                       HF_CHILD | HF_COLORS,
-                                                            HS_COLORS },
+    {
+        "",                                       HF_CHILD | HF_COLORS,
+        HS_COLORS
+    },
 };
 /* clang-format on */
 
@@ -140,11 +143,11 @@ static int help_nb_sections(void)
 static int help_section_header_idx(int n)
 {
     int sec = 0;
-    for (int i = 0; i < HELP_TOTAL; i++)
+    for(int i = 0; i < HELP_TOTAL; i++)
     {
-        if (HELP[i].flags & HF_SECTION)
+        if(HELP[i].flags & HF_SECTION)
         {
-            if (sec == n)
+            if(sec == n)
             {
                 return i;
             }
@@ -169,15 +172,15 @@ static int help_visible_rows(
     const OV_LAYOUT *lay, int *map)
 {
     int vis = 0;
-    for (int i = 0; i < HELP_TOTAL; i++)
+    for(int i = 0; i < HELP_TOTAL; i++)
     {
-        if (HELP[i].flags & HF_SECTION)
+        if(HELP[i].flags & HF_SECTION)
         {
             map[vis++] = i;
         }
-        else if (HELP[i].flags & HF_CHILD)
+        else if(HELP[i].flags & HF_CHILD)
         {
-            if (help_is_expanded(lay, HELP[i].section))
+            if(help_is_expanded(lay, HELP[i].section))
             {
                 map[vis++] = i;
             }
@@ -196,26 +199,26 @@ void ov_render_help(const OV_LAYOUT *lay)
 
     /* Compute content width */
     int content_w = 0;
-    for (int i = 0; i < HELP_TOTAL; i++)
+    for(int i = 0; i < HELP_TOTAL; i++)
     {
         int l = (int) strlen(HELP[i].text);
         /* Section headers get "▸ " or "▾ " prefix */
-        if (HELP[i].flags & HF_SECTION)
+        if(HELP[i].flags & HF_SECTION)
         {
             l += 4; /* chevron + space + padding */
         }
-        if (l > content_w)
+        if(l > content_w)
         {
             content_w = l;
         }
     }
     /* Color legend row adds extra */
     int legend_extra = (int) strlen("  stream proc fps");
-    if (legend_extra + 4 > content_w)
+    if(legend_extra + 4 > content_w)
     {
         content_w = legend_extra + 4;
     }
-    if (content_w < 44)
+    if(content_w < 44)
     {
         content_w = 44;
     }
@@ -228,13 +231,25 @@ void ov_render_help(const OV_LAYOUT *lay)
     int H = lay->term_rows;
 
     /* Cap to terminal */
-    if (ph > H - 2) { ph = H - 2; }
-    if (pw > W - 2) { pw = W - 2; }
+    if(ph > H - 2)
+    {
+        ph = H - 2;
+    }
+    if(pw > W - 2)
+    {
+        pw = W - 2;
+    }
 
     int pr = (H - ph) / 2;
     int pc = (W - pw) / 2;
-    if (pr < 1) { pr = 1; }
-    if (pc < 1) { pc = 1; }
+    if(pr < 1)
+    {
+        pr = 1;
+    }
+    if(pc < 1)
+    {
+        pc = 1;
+    }
 
     /* Border */
     ov_draw_panel_border(
@@ -243,7 +258,7 @@ void ov_render_help(const OV_LAYOUT *lay)
         OV_FG_BRIGHT, 1, 0);
 
     /* Clear interior */
-    for (int r = pr + 1; r < pr + ph - 1; r++)
+    for(int r = pr + 1; r < pr + ph - 1; r++)
     {
         clear_row(r, pc + 1, pw - 2, OV_BG_PANEL);
     }
@@ -251,24 +266,33 @@ void ov_render_help(const OV_LAYOUT *lay)
     /* Visible content area (inside border + title) */
     int body_top = pr + 2;
     int body_h   = ph - 4;
-    if (body_h < 1) { body_h = 1; }
+    if(body_h < 1)
+    {
+        body_h = 1;
+    }
 
     /* Ensure sel is in range */
     int sel = lay->help_sel;
-    if (sel < 0) { sel = 0; }
-    if (sel >= nvis) { sel = nvis - 1; }
+    if(sel < 0)
+    {
+        sel = 0;
+    }
+    if(sel >= nvis)
+    {
+        sel = nvis - 1;
+    }
 
     /* Scroll so cursor is visible */
     int scroll = 0;
-    if (sel >= body_h)
+    if(sel >= body_h)
     {
         scroll = sel - body_h + 1;
     }
 
     /* Render visible rows */
     int inner_w = pw - 4;
-    for (int vr = 0; vr < body_h && vr + scroll < nvis;
-         vr++)
+    for(int vr = 0; vr < body_h && vr + scroll < nvis;
+            vr++)
     {
         int idx = map[vr + scroll];
         const help_line_t *h = &HELP[idx];
@@ -279,12 +303,12 @@ void ov_render_help(const OV_LAYOUT *lay)
         ov_theme_bg(OV_BG_PANEL);
 
         /* Highlight selected row */
-        if (is_sel)
+        if(is_sel)
         {
             ov_buf_bg(40, 45, 70);
         }
 
-        if (h->flags & HF_SECTION)
+        if(h->flags & HF_SECTION)
         {
             /* Section header with chevron */
             int expanded = help_is_expanded(
@@ -292,7 +316,7 @@ void ov_render_help(const OV_LAYOUT *lay)
             const char *chev = expanded
                                ? "▾" : "▸";
 
-            if (is_sel)
+            if(is_sel)
             {
                 ov_buf_fg(255, 220, 100);
             }
@@ -306,12 +330,12 @@ void ov_render_help(const OV_LAYOUT *lay)
             /* Pad remainder */
             int used = 3 + (int)strlen(h->text) + 2;
             int pad  = inner_w - used;
-            if (pad > 0)
+            if(pad > 0)
             {
                 ov_buf_hline(' ', pad);
             }
         }
-        else if (h->flags & HF_COLORS)
+        else if(h->flags & HF_COLORS)
         {
             /* Color legend row */
             ov_theme_fg(OV_FG_DIM);
@@ -324,7 +348,7 @@ void ov_render_help(const OV_LAYOUT *lay)
             ov_buf_printf("fps");
             int used = 22;
             int pad  = inner_w - used;
-            if (pad > 0)
+            if(pad > 0)
             {
                 ov_buf_hline(' ', pad);
             }
@@ -381,13 +405,13 @@ int ov_help_toggle_at(
     int map[128];
     int nvis = help_visible_rows(lay, map);
 
-    if (vis_row < 0 || vis_row >= nvis)
+    if(vis_row < 0 || vis_row >= nvis)
     {
         return -1;
     }
 
     int idx = map[vis_row];
-    if (!(HELP[idx].flags & HF_SECTION))
+    if(!(HELP[idx].flags & HF_SECTION))
     {
         return -1;
     }
@@ -396,4 +420,3 @@ int ov_help_toggle_at(
     lay->help_expand ^= (1U << sec);
     return sec;
 }
-
