@@ -64,7 +64,9 @@
  * @progname: argv[0]
  * @mh_color: non-zero for ANSI color output
  */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, LSC_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -143,7 +145,8 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-logshim-ctrl%s %sstat ircam0%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-streamFITSlog:log stream frames to FITS files",
         "milk-logshim:launch the logging shim daemon",
         "milk-fpsCTRL:launch the FPS dashboard TUI"
@@ -159,14 +162,16 @@ static void print_help(const char *progname, int mh_color)
 static const char *get_shmdir(void)
 {
     const char *env = getenv("MILK_SHM_DIR");
-    if (env != NULL) {
+    if(env != NULL)
+    {
         return env;
     }
 
     static const char fallback[] = "/milk/shm";
     struct stat st;
 
-    if (stat(fallback, &st) == 0 && S_ISDIR(st.st_mode)) {
+    if(stat(fallback, &st) == 0 && S_ISDIR(st.st_mode))
+    {
         return fallback;
     }
     return "/dev/shm";
@@ -180,7 +185,9 @@ static const char *get_shmdir(void)
  * The FIFO is at $MILK_SHM_DIR/milkFITSlogger.fifo,
  * matching the path used by milk-streamFITSlog.
  */
-static void fifo_path(char *buf, size_t bufsz)
+static void fifo_path(
+    char *buf,
+    size_t bufsz)
 {
     snprintf(buf, bufsz,
              "%s/milkFITSlogger.fifo", get_shmdir());
@@ -194,11 +201,14 @@ static void fifo_path(char *buf, size_t bufsz)
  * Opens the FIFO in non-blocking write-only mode, writes the
  * command, then closes. Returns 0 on success, 1 on error.
  */
-static int fifo_write(const char *fifo, const char *cmd)
+static int fifo_write(
+    const char *fifo,
+    const char *cmd)
 {
     /* Check FIFO exists */
     struct stat st;
-    if (stat(fifo, &st) != 0 || !S_ISFIFO(st.st_mode)) {
+    if(stat(fifo, &st) != 0 || !S_ISFIFO(st.st_mode))
+    {
         fprintf(stderr,
                 "\033[1;31mERROR\033[0m: FIFO '%s' not found.\n"
                 "  Is the logging process running?\n"
@@ -215,13 +225,17 @@ static int fifo_write(const char *fifo, const char *cmd)
      * with O_NONBLOCK first to detect a missing reader immediately.
      */
     int fd = open(fifo, O_WRONLY | O_NONBLOCK);
-    if (fd < 0) {
-        if (errno == ENXIO) {
+    if(fd < 0)
+    {
+        if(errno == ENXIO)
+        {
             fprintf(stderr,
                     "\033[1;31mERROR\033[0m: No reader on"
                     " FIFO '%s' — is milk-fpsCTRL running?\n",
                     fifo);
-        } else {
+        }
+        else
+        {
             fprintf(stderr,
                     "\033[1;31mERROR\033[0m: open('%s'): %s\n",
                     fifo, strerror(errno));
@@ -236,7 +250,8 @@ static int fifo_write(const char *fifo, const char *cmd)
     ssize_t written = write(fd, line, (size_t)n);
     close(fd);
 
-    if (written < 0) {
+    if(written < 0)
+    {
         fprintf(stderr,
                 "\033[1;31mERROR\033[0m: write to FIFO: %s\n",
                 strerror(errno));
@@ -354,10 +369,12 @@ static int action_kill(const char *stream)
     snprintf(buf1, sizeof(buf1),
              "%s/%s_logbuff1%s", shmdir, stream, SHM_SUFFIX);
 
-    if (unlink(buf0) == 0) {
+    if(unlink(buf0) == 0)
+    {
         printf("  removed: %s_logbuff0\n", stream);
     }
-    if (unlink(buf1) == 0) {
+    if(unlink(buf1) == 0)
+    {
         printf("  removed: %s_logbuff1\n", stream);
     }
 
@@ -407,7 +424,8 @@ static int action_stat(const char *stream)
            fifo);
 
     /* If FPS SHM exists, parse saveON by scanning for key */
-    if (fps_alive) {
+    if(fps_alive)
+    {
         /* We can't include milkfpsStandalone here (standalone binary
          * must not link CLIcore).  Read raw bytes from the SHM file
          * and search for the saveON parameter name.
@@ -422,7 +440,8 @@ static int action_stat(const char *stream)
          * the CLIcore dependency for a standalone binary.
          */
         FILE *fp = fopen(shm_path, "rb");
-        if (fp != NULL) {
+        if(fp != NULL)
+        {
             /* Scan up to 4 MB */
             static unsigned char buf[4 * 1024 * 1024];
             size_t nr = fread(buf, 1, sizeof(buf), fp);
@@ -432,17 +451,20 @@ static int action_stat(const char *stream)
             size_t nlen = strlen(needle);
             int found = 0;
 
-            for (size_t i = 0; i + nlen + 10 < nr; i++) {
-                if (memcmp(&buf[i], needle, nlen) == 0) {
+            for(size_t i = 0; i + nlen + 10 < nr; i++)
+            {
+                if(memcmp(&buf[i], needle, nlen) == 0)
+                {
                     /* The ON/OFF flag is stored as a uint8
                      * in the val.u8 union member.  Walk
                      * forward past the null-terminator of
                      * the name to find the first non-zero
                      * byte that is 0 or 1. */
-                    for (size_t j = i + nlen;
-                         j < i + nlen + 64 && j < nr; j++)
+                    for(size_t j = i + nlen;
+                            j < i + nlen + 64 && j < nr; j++)
                     {
-                        if (buf[j] == 0 || buf[j] == 1) {
+                        if(buf[j] == 0 || buf[j] == 1)
+                        {
                             printf("  saveON   : %s%s\033[0m\n\n",
                                    buf[j]
                                    ? "\033[1;32mON "
@@ -452,17 +474,21 @@ static int action_stat(const char *stream)
                             break;
                         }
                     }
-                    if (found) {
+                    if(found)
+                    {
                         break;
                     }
                 }
             } // for i
 
-            if (!found) {
+            if(!found)
+            {
                 printf("  saveON   : \033[33m(cannot parse)\033[0m\n\n");
             }
         } // if (fp)
-    } else {
+    }
+    else
+    {
         printf("\n  Start logging first with:\n"
                "    milk-logshim-ctrl start %s <blocksize> <dir>\n\n",
                stream);
@@ -494,7 +520,8 @@ static int action_start(
              "%s/%s%s", shmdir, stream, SHM_SUFFIX);
 
     struct stat st;
-    if (stat(shmfile, &st) != 0) {
+    if(stat(shmfile, &st) != 0)
+    {
         fprintf(stderr,
                 "\n\033[1;31mERROR\033[0m:"
                 " stream SHM '%s' not found.\n\n",
@@ -504,13 +531,16 @@ static int action_start(
 
     /* Build milk-streamFITSlog command */
     char cmd[1024];
-    if (cpuset != NULL) {
+    if(cpuset != NULL)
+    {
         snprintf(cmd, sizeof(cmd),
                  "milk-streamFITSlog -cset \"%s\" -D \"%s\""
                  " -z %s %s pstart && "
                  "milk-streamFITSlog %s on",
                  cpuset, dir, blocksize, stream, stream);
-    } else {
+    }
+    else
+    {
         snprintf(cmd, sizeof(cmd),
                  "milk-streamFITSlog -D \"%s\" -z %s %s pstart &&"
                  " milk-streamFITSlog %s on",
@@ -522,22 +552,27 @@ static int action_start(
     return system(cmd) == 0 ? 0 : 1;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(
-        argc, argv, LSC_DESC, LSC_DESC_LONG);
+                     argc, argv, LSC_DESC, LSC_DESC_LONG);
 
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2) {
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
     }
 
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO) {
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
         print_help(argv[0], mh_color);
         return 0;
     }
 
-    if (argc < 3) {
+    if(argc < 3)
+    {
         fprintf(stderr,
                 "\n\033[1;31mERROR\033[0m:"
                 " expected <action> <stream> [options].\n\n");
@@ -550,51 +585,65 @@ int main(int argc, char *argv[])
 
     /* Optional -c <cpuset> (only used by 'start') */
     const char *cpuset = NULL;
-    for (int i = 3; i < argc - 1; i++) {
-        if (strcmp(argv[i], "-c") == 0) {
+    for(int i = 3; i < argc - 1; i++)
+    {
+        if(strcmp(argv[i], "-c") == 0)
+        {
             cpuset = argv[i + 1];
             i++;
         }
     }
 
     /* Dispatch */
-    if (strcmp(act, "on") == 0) {
-        if (argc < 3) {
+    if(strcmp(act, "on") == 0)
+    {
+        if(argc < 3)
+        {
             goto missing_stream;
         }
         return action_on(stream);
     }
 
-    if (strcmp(act, "off") == 0) {
-        if (argc < 3) {
+    if(strcmp(act, "off") == 0)
+    {
+        if(argc < 3)
+        {
             goto missing_stream;
         }
         return action_off(stream);
     }
 
-    if (strcmp(act, "offc") == 0) {
-        if (argc < 3) {
+    if(strcmp(act, "offc") == 0)
+    {
+        if(argc < 3)
+        {
             goto missing_stream;
         }
         return action_offc(stream);
     }
 
-    if (strcmp(act, "kill") == 0) {
-        if (argc < 3) {
+    if(strcmp(act, "kill") == 0)
+    {
+        if(argc < 3)
+        {
             goto missing_stream;
         }
         return action_kill(stream);
     }
 
-    if (strcmp(act, "stat") == 0) {
-        if (argc < 3) {
+    if(strcmp(act, "stat") == 0)
+    {
+        if(argc < 3)
+        {
             goto missing_stream;
         }
         return action_stat(stream);
     }
 
-    if (strcmp(act, "start") == 0) {
-        if (argc < 5) {
+    if(strcmp(act, "start") == 0)
+    {
+        if(argc < 5)
+        {
             fprintf(stderr,
                     "\n\033[1;31mERROR\033[0m:"
                     " 'start' requires <stream> <blocksize> <dir>.\n\n");

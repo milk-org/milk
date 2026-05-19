@@ -1063,7 +1063,9 @@ int cli_handle_background(
  *                no-space arithmetic like "a=b+1" is
  *                still evaluated by the calc engine.
  */
-int is_internal_cmd(const char *firstword, int check_assign)
+int is_internal_cmd(
+    const char *firstword,
+    int check_assign)
 {
     static const char *keywords[] =
     {

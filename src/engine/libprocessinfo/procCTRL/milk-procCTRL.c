@@ -22,7 +22,9 @@ errno_t processinfo_CTRLscreen();
 /**
  * @brief Print help message for milk-procCTRL.
  */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, "interactive TUI for monitoring and controlling milk processes",
                      mh_color);

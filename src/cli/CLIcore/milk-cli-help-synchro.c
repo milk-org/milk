@@ -92,7 +92,9 @@ void print_milk_synchro_help(void)
     printf("\n");
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* One-line help - before CLI_startup() */
     for(int i = 1; i < argc; i++)

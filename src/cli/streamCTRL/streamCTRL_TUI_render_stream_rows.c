@@ -298,7 +298,7 @@ void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata,
             {
                 char str[STRINGMAXLEN_DEFAULT];
                 char str1[STRINGMAXLEN_DEFAULT];
-                int  j;
+
 
                 if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                 {
@@ -323,7 +323,7 @@ void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata,
                              " [%3ld",
                              (long) streamCTRLimages[ID].md[0].size[0]);
 
-                    for(j = 1; j < streamCTRLimages[ID].md[0].naxis; j++)
+                    for(int j = 1; j < streamCTRLimages[ID].md[0].naxis; j++)
                     {
                         {
                             int slen = snprintf(
@@ -512,12 +512,12 @@ void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata,
                         (DisplayFlag == 1)) // sem vals
                 {
 
-                    int s;
+
                     int max_s = sTUIparam.DISPLAY_ALL_SEMS
                                 ? streamCTRLimages[ID].md[0].sem
                                 : 3;
                     TUI_printfw(" ");
-                    for(s = 0; s < max_s; s++)
+                    for(int s = 0; s < max_s; s++)
                     {
                         int semval = ImageStreamIO_semvalue(streamCTRLimages + ID, s);
                         if(s > 0)
@@ -655,12 +655,12 @@ void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata,
                 if((sTUIparam.DisplayMode == DISPLAY_MODE_READ) &&
                         (DisplayFlag == 1)) // sem read PIDs
                 {
-                    int s;
+
                     int max_s = sTUIparam.DISPLAY_ALL_SEMS
                                 ? streamCTRLimages[ID].md[0].sem
                                 : 3;
                     TUI_printfw(" ");
-                    for(s = 0; s < max_s; s++)
+                    for(int s = 0; s < max_s; s++)
                     {
                         pid_t pid = streamCTRLimages[ID].semReadPID[s];
                         if(s > 0)
@@ -851,14 +851,14 @@ void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata,
 
                 DEBUG_TRACEPOINT(" ");
 
-                int pidIndex;
+
 
                 switch(streaminfo[sindex].streamOpenPID_status)
                 {
 
                 case 1:
                     streaminfo[sindex].streamOpenPID_cnt1 = 0;
-                    for(pidIndex = 0;
+                    for(int pidIndex = 0;
                             pidIndex < streaminfo[sindex].streamOpenPID_cnt;
                             pidIndex++)
                     {

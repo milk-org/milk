@@ -128,7 +128,9 @@ extern int ov_handle_key(
  * Usage / help
  * ========================================================= */
 
-static void print_help(const char *prog, int mh_color)
+static void print_help(
+    const char *prog,
+    int mh_color)
 {
     milk_help_banner(prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
                      mh_color);
@@ -248,7 +250,9 @@ static void print_help(const char *prog, int mh_color)
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* --- Help handling --- */
     int action = milk_help_init(argc, argv,

@@ -128,42 +128,58 @@ double Ppositive(double a)
  * Pdiv1(a,b) returns b/a (reverse divide).
  * ========================================================== */
 
-double Pfmod(double a, double b)
+double Pfmod(
+    double a,
+    double b)
 {
     return ((double) fmod(a, b));
 }
 
-double Ppow(double a, double b)
+double Ppow(
+    double a,
+    double b)
 {
     return ((double) pow(a, b));
 }
 
-double Padd(double a, double b)
+double Padd(
+    double a,
+    double b)
 {
     return ((double) a + b);
 }
 
-double Psubm(double a, double b)
+double Psubm(
+    double a,
+    double b)
 {
     return ((double) b - a);
 }
 
-double Psub(double a, double b)
+double Psub(
+    double a,
+    double b)
 {
     return ((double) a - b);
 }
 
-double Pmult(double a, double b)
+double Pmult(
+    double a,
+    double b)
 {
     return ((double) a * b);
 }
 
-double Pdiv(double a, double b)
+double Pdiv(
+    double a,
+    double b)
 {
     return ((double) a / b);
 }
 
-double Pdiv1(double a, double b)
+double Pdiv1(
+    double a,
+    double b)
 {
     return ((double) b / a);
 }
@@ -175,7 +191,9 @@ double Pdiv1(double a, double b)
 /**
  * @brief Element-wise minimum of two values
  */
-double Pminv(double a, double b)
+double Pminv(
+    double a,
+    double b)
 {
     if(a < b)
     {
@@ -190,7 +208,9 @@ double Pminv(double a, double b)
 /**
  * @brief Element-wise maximum of two values
  */
-double Pmaxv(double a, double b)
+double Pmaxv(
+    double a,
+    double b)
 {
     if(a > b)
     {
@@ -211,7 +231,9 @@ double Pmaxv(double a, double b)
  * ========================================================== */
 
 /** @brief a < b → 1.0 */
-double Ptestlt(double a, double b)
+double Ptestlt(
+    double a,
+    double b)
 {
     if(a < b)
     {
@@ -224,7 +246,9 @@ double Ptestlt(double a, double b)
 }
 
 /** @brief a >= b → 1.0 ("mt" = more than) */
-double Ptestmt(double a, double b)
+double Ptestmt(
+    double a,
+    double b)
 {
     if(a < b)
     {
@@ -237,7 +261,9 @@ double Ptestmt(double a, double b)
 }
 
 /** @brief a == b → 1.0 */
-double Pteste(double a, double b)
+double Pteste(
+    double a,
+    double b)
 {
     if(a == b)
     {
@@ -250,7 +276,9 @@ double Pteste(double a, double b)
 }
 
 /** @brief a != b → 1.0 */
-double Ptestne(double a, double b)
+double Ptestne(
+    double a,
+    double b)
 {
     if(a != b)
     {
@@ -263,7 +291,9 @@ double Ptestne(double a, double b)
 }
 
 /** @brief a <= b → 1.0 */
-double Ptestle(double a, double b)
+double Ptestle(
+    double a,
+    double b)
 {
     if(a <= b)
     {
@@ -276,7 +306,9 @@ double Ptestle(double a, double b)
 }
 
 /** @brief a >= b → 1.0 */
-double Ptestge(double a, double b)
+double Ptestge(
+    double a,
+    double b)
 {
     if(a >= b)
     {
@@ -293,7 +325,9 @@ double Ptestge(double a, double b)
  * ========================================================== */
 
 /** @brief Logical AND: (a!=0 && b!=0) → 1.0 */
-double Pand(double a, double b)
+double Pand(
+    double a,
+    double b)
 {
     if((a != 0.0) && (b != 0.0))
     {
@@ -306,7 +340,9 @@ double Pand(double a, double b)
 }
 
 /** @brief Logical OR: (a!=0 || b!=0) → 1.0 */
-double Por(double a, double b)
+double Por(
+    double a,
+    double b)
 {
     if((a != 0.0) || (b != 0.0))
     {
@@ -326,7 +362,10 @@ double Por(double a, double b)
  * @param c  Upper bound
  * @return Clamped value
  */
-double Ptrunc(double a, double b, double c)
+double Ptrunc(
+    double a,
+    double b,
+    double c)
 {
     double value;
     value = a;
@@ -392,7 +431,7 @@ complex_double CPdiv_CD_CD(
     double         den;
 
     den = b.re * b.re + b.im * b.im;
-    
+
     v.re = (a.re * b.re + a.im * b.im) / den;
     v.im = (a.im * b.re - a.re * b.im) / den;
 

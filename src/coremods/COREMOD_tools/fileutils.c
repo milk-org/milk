@@ -31,13 +31,14 @@ errno_t write_float_file(
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "writef2file",
     .cmdkey      = "writef2file",
     .description =
-        "write float to file",
+    "write float to file",
     .description_long =
-        "File system utility operations: count files matching a pattern, list directory contents, and check file existence."
+    "File system utility operations: count files matching a pattern, list directory contents, and check file existence."
 };
 
 
@@ -83,9 +84,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_tools__fileutils()
@@ -94,7 +95,7 @@ errno_t CLIADDCMD_COREMOD_tools__fileutils()
         farg, my_bindings, nb_bindings);
 
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 
@@ -108,7 +109,9 @@ int file_exist(char *filename)
     return (stat(filename, &buffer) == 0);
 }
 
-int create_counter_file(const char *fname, unsigned long NBpts)
+int create_counter_file(
+    const char *fname,
+    unsigned long NBpts)
 {
     unsigned long i;
     FILE         *fp;
@@ -119,7 +122,7 @@ int create_counter_file(const char *fname, unsigned long NBpts)
         abort();
     }
 
-    for(i = 0; i < NBpts; i++)
+    for(unsigned i = 0; i < NBpts; i++)
     {
         fprintf(fp, "%ld %f\n", i, (double)((double) i / NBpts));
     }
@@ -129,7 +132,9 @@ int create_counter_file(const char *fname, unsigned long NBpts)
     return (0);
 }
 
-int read_config_parameter_exists(const char *config_file, const char *keyword)
+int read_config_parameter_exists(
+    const char *config_file,
+    const char *keyword)
 {
     FILE *fp;
     char  line[1000];
@@ -206,7 +211,9 @@ int read_config_parameter(const char *config_file,
     return (read);
 }
 
-float read_config_parameter_float(const char *config_file, const char *keyword)
+float read_config_parameter_float(
+    const char *config_file,
+    const char *keyword)
 {
     float value;
     char  content[SBUFFERSIZE];
@@ -219,7 +226,9 @@ float read_config_parameter_float(const char *config_file, const char *keyword)
     return (value);
 }
 
-long read_config_parameter_long(const char *config_file, const char *keyword)
+long read_config_parameter_long(
+    const char *config_file,
+    const char *keyword)
 {
     long value;
     char content[SBUFFERSIZE];
@@ -230,7 +239,9 @@ long read_config_parameter_long(const char *config_file, const char *keyword)
     return (value);
 }
 
-int read_config_parameter_int(const char *config_file, const char *keyword)
+int read_config_parameter_int(
+    const char *config_file,
+    const char *keyword)
 {
     int  value;
     char content[SBUFFERSIZE];
@@ -290,13 +301,16 @@ FILE *open_file_r(const char *filename)
     return (fp);
 }
 
-errno_t write_1D_array(double *array, long nbpoints, const char *filename)
+errno_t write_1D_array(
+    double *array,
+    long nbpoints,
+    const char *filename)
 {
     FILE *fp;
-    long  ii;
+
 
     fp = open_file_w(filename);
-    for(ii = 0; ii < nbpoints; ii++)
+    for(long ii = 0; ii < nbpoints; ii++)
     {
         fprintf(fp, "%ld\t%f\n", ii, array[ii]);
     }
@@ -305,14 +319,17 @@ errno_t write_1D_array(double *array, long nbpoints, const char *filename)
     return RETURN_SUCCESS;
 }
 
-errno_t read_1D_array(double *array, long nbpoints, const char *filename)
+errno_t read_1D_array(
+    double *array,
+    long nbpoints,
+    const char *filename)
 {
     FILE *fp;
-    long  ii;
+
     long  tmpl;
 
     fp = open_file_r(filename);
-    for(ii = 0; ii < nbpoints; ii++)
+    for(long ii = 0; ii < nbpoints; ii++)
     {
         if(fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
         {
@@ -349,7 +366,9 @@ int read_int_file(const char *fname)
     return (value);
 }
 
-errno_t write_int_file(const char *fname, int value)
+errno_t write_int_file(
+    const char *fname,
+    int value)
 {
     FILE *fp;
 
@@ -365,7 +384,9 @@ errno_t write_int_file(const char *fname, int value)
     return RETURN_SUCCESS;
 }
 
-errno_t write_float_file(const char *fname, float value)
+errno_t write_float_file(
+    const char *fname,
+    float value)
 {
     FILE *fp;
     int   mode = 0; // default, create single file

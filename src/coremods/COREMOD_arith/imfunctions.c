@@ -434,9 +434,9 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
  * @return RETURN_SUCCESS or RETURN_FAILURE
  */
 errno_t arith_image_function_imd_im__dd_d(
-    const char *__restrict ID_name,
-    double                 v0,
-    const char *__restrict ID_out,
+    const char *__restrict        ID_name,
+    double                        v0,
+    const char *__restrict        ID_out,
     double (*pt2function)(double, double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,

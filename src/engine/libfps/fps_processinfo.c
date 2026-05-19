@@ -24,7 +24,9 @@
  * Looks up the FPS by name, reads its run PID,
  * and sends the specified signal.
  */
-errno_t functionparameter_FPS_processinfo_signal(const char *fps_name, int signal_val)
+errno_t functionparameter_FPS_processinfo_signal(
+    const char *fps_name,
+    int signal_val)
 {
     char procdname[STRINGMAXLEN_DIR_NAME];
     processinfo_procdirname(procdname);

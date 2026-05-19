@@ -74,7 +74,10 @@ struct wa_event
  * Extracts stream/FPS names and timeout values
  * from the argument list.
  */
-static int parse_waitany_args(const char *p, struct wa_event *events, double *timeout_v)
+static int parse_waitany_args(
+    const char *p,
+    struct wa_event *events,
+    double *timeout_v)
 {
     char argbuf[STRINGMAXLEN_CLICMDLINE];
     strncpy(argbuf, p, STRINGMAXLEN_CLICMDLINE - 1);
@@ -282,7 +285,9 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
  * Connects to all specified streams/FPS instances
  * for event monitoring.
  */
-static int open_waitany_handles(struct wa_event *events, int nevents)
+static int open_waitany_handles(
+    struct wa_event *events,
+    int nevents)
 {
     int any_open = 0;
     for(int i = 0; i < nevents; i++)
@@ -330,7 +335,9 @@ static int open_waitany_handles(struct wa_event *events, int nevents)
     return any_open;
 }
 
-static void close_waitany_handles(struct wa_event *events, int nevents)
+static void close_waitany_handles(
+    struct wa_event *events,
+    int nevents)
 {
     for(int i = 0; i < nevents; i++)
     {
@@ -345,7 +352,10 @@ static void close_waitany_handles(struct wa_event *events, int nevents)
     }
 }
 
-static int poll_waitany_events(struct wa_event *events, int nevents, double timeout)
+static int poll_waitany_events(
+    struct wa_event *events,
+    int nevents,
+    double timeout)
 {
     struct timespec ts_start;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
@@ -440,7 +450,9 @@ static int poll_waitany_events(struct wa_event *events, int nevents, double time
  * Checks if any FPS parameter meets the
  * specified condition.
  */
-static int eval_waitany_fps(struct wa_event *ev, const char *vstr)
+static int eval_waitany_fps(
+    struct wa_event *ev,
+    const char *vstr)
 {
     int fired = 0;
     switch(ev->cmp_op)

@@ -15,12 +15,15 @@
 #include <stdio.h>
 #include "CLIcore.h"
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* One-line help — before CLI_startup() to avoid initialization */
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i], "--help-oneline") == 0)
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-h1") == 0 ||
+                strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("milk-cli interactive shell help\n");
             return 0;
@@ -33,13 +36,13 @@ int main(int argc, char *argv[])
 
     const char *topic = NULL;
 
-    for (int i = 1; i < argc; i++)
+    for(int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "--json") == 0)
+        if(strcmp(argv[i], "--json") == 0)
         {
             help_format_mode = 1;
         }
-        else if (strcmp(argv[i], "--porcelain") == 0)
+        else if(strcmp(argv[i], "--porcelain") == 0)
         {
             help_format_mode = 2;
         }
@@ -49,12 +52,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (topic != NULL)
+    if(topic != NULL)
     {
         int ret = help_topic_dispatch(topic);
-        if (ret != 0)
+        if(ret != 0)
         {
-            if (help_format_mode == 0) {
+            if(help_format_mode == 0)
+            {
                 fprintf(stderr,
                         "\033[1;31mmilk-cli-help: unknown topic"
                         " \"%s\"\033[0m\n\n",
@@ -71,4 +75,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

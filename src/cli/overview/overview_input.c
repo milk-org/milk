@@ -14,7 +14,9 @@
 #include "overview_fps_edit.h"
 #include "stream_graph.h"
 
-static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
+static int get_graph_start_node(
+    const OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
     int target_type = -1;
@@ -103,7 +105,9 @@ static int hit_panel_tab(
  */
 
 
-static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
+static int ov_input__handle_filter_mode(
+    int key,
+    OV_LAYOUT *lay)
 {
     char *active_filter = NULL;
     switch(lay->focus)
@@ -260,7 +264,10 @@ static const OV_FPS *ov_input_get_sel_fps(
 /**
  * @brief Count visible items after filtering.
  */
-static int ov_input_get_filtered_count(int focus, const OV_LAYOUT *lay, const OV_MODEL *m)
+static int ov_input_get_filtered_count(
+    int focus,
+    const OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     int count = 0;
     if(focus == OV_FOCUS_STREAMS)
@@ -596,7 +603,11 @@ static void ov_input__exec_preview_btn(
     ov_scan_force_update();
 }
 
-void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
+void ov_hittest(
+    OV_LAYOUT *lay,
+    const OV_MODEL *m,
+    int mr,
+    int mc)
 {
     lay->hover_view = -1;
     lay->hover_idx = -1;
@@ -795,7 +806,9 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
     }
 }
 
-void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
+void ov_hittest_resolve_globals(
+    OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     lay->hover_global_stream = -1;
     lay->hover_global_proc = -1;
@@ -976,7 +989,10 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
     }
 }
 
-static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+static int ov_input__handle_mouse(
+    int key,
+    OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     if(key == OV_KEY_MOUSE_CLICK)
     {
@@ -2006,7 +2022,9 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 }
 #undef INSIDE
 
-static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
+static int ov_input__handle_view_switch(
+    int key,
+    OV_LAYOUT *lay)
 {
     if(key >= OV_KEY_F2 && key <= OV_KEY_F6)
     {
@@ -2096,7 +2114,10 @@ static int ov_input__handle_view_switch(int key, OV_LAYOUT *lay)
     return 0;
 }
 
-static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+static int ov_input__handle_misc_toggles(
+    int key,
+    OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     if(key == '+' || key == '=')
     {
@@ -2384,7 +2405,9 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     return 0;
 }
 
-static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
+static int ov_input__handle_sorting(
+    int key,
+    OV_LAYOUT *lay)
 {
     if(key == 'S')
     {
@@ -2564,7 +2587,10 @@ static const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *
     return NULL;
 }
 
-static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+static int ov_input__handle_actions(
+    int key,
+    OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
@@ -2885,7 +2911,10 @@ static int find_relative_node_of_type(const OV_MODEL *m, int start_node, int tar
     return -1;
 }
 
-static int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+static int ov_input__handle_ancestry_nav(
+    int key,
+    OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     if(key != OV_KEY_SHIFT_UP && key != OV_KEY_SHIFT_DOWN)
     {
@@ -2975,7 +3004,10 @@ static int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL
     return 1;
 }
 
-static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+static int ov_input__handle_navigation(
+    int key,
+    OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     int *sel    = NULL;
     int *scroll = NULL;

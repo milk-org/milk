@@ -41,7 +41,9 @@ extern void libinit_COREMOD_iofits(void);
  * Sets up the interpreter state, loads modules,
  * and prepares the command dispatch table.
  */
-errno_t milkscript_init(int argc, char **argv)
+errno_t milkscript_init(
+    int argc,
+    char **argv)
 {
     if(argc > 0 && argv && argv[0])
     {

@@ -33,7 +33,7 @@ errno_t functionparameter_scan_fps(
     int pindex;
     int kwnindex;
     int NBkwn;
-    int ll;
+
 
 
     // FPS list file
@@ -110,8 +110,8 @@ errno_t functionparameter_scan_fps(
             }
         }
 
-        int fpsi;
-        for(fpsi = 0; fpsi < fpslistcnt; fpsi++)
+
+        for(int fpsi = 0; fpsi < fpslistcnt; fpsi++)
         {
             if(verbose > 0)
             {
@@ -366,8 +366,8 @@ errno_t functionparameter_scan_fps(
                 {
 
 
-                    long pindex0;
-                    for(pindex0 = 0; pindex0 < NBparamMAX; pindex0++)
+
+                    for(long pindex0 = 0; pindex0 < NBparamMAX; pindex0++)
                     {
                         if(fps[fpsindex].parray[pindex0].fpflag &
                                 FPFLAG_ACTIVE) // if entry is active
@@ -392,7 +392,7 @@ errno_t functionparameter_scan_fps(
                                         int match = 1;
                                         // keywords at all levels need to match
 
-                                        for(ll = 0; ll < level; ll++)
+                                        for(int ll = 0; ll < level; ll++)
                                         {
                                             if(strcmp(fps[fpsindex]
                                                       .parray[pindex0]
@@ -436,7 +436,7 @@ errno_t functionparameter_scan_fps(
                                             int match = 1;
 
                                             for(
-                                                ll = 0; ll < level - 1;
+                                                int ll = 0; ll < level - 1;
                                                 ll++) // keywords at all levels need to match
                                             {
                                                 if(strcmp(fps[fpsindex]
@@ -485,7 +485,7 @@ errno_t functionparameter_scan_fps(
                                     }
                                     keywnode[kwnindex].keywordlevel = level;
 
-                                    for(ll = 0; ll < level; ll++)
+                                    for(int ll = 0; ll < level; ll++)
                                     {
                                         char tmpstring[200];
                                         strncpy(

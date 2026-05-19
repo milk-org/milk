@@ -224,13 +224,13 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 {
     long *IDarray;
     long *IDarraycp;
-    long  i;
+
     long  imcnt = 0;
     char  imnamecp[STRINGMAXLEN_IMGNAME];
     char  fnamecp[STRINGMAXLEN_FULLFILENAME];
     long  ID;
 
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
             imcnt++;
@@ -242,7 +242,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
         (long *) malloc(sizeof(long) * imcnt);
 
     imcnt = 0;
-    for(i = 0; i < dcnimg; i++)
+    for(int i = 0; i < dcnimg; i++)
     {
         if(dcimg[i].used == 1)
         {
@@ -254,7 +254,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
     EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "mkdir -p %s", dirname);
 
-    for(i = 0; i < imcnt; i++)
+    for(int i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
         WRITE_IMAGENAME(imnamecp,
@@ -267,7 +267,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
     list_image_ID();
 
 #ifdef USE_CFITSIO
-    for(i = 0; i < imcnt; i++)
+    for(int i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
         WRITE_IMAGENAME(imnamecp,
@@ -299,7 +299,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
 {
     long   *IDarray;
     long   *IDarrayout;
-    long    i;
+
     long    imcnt = 0;
     char    imnameout[200];
     char    fnameout[500];
@@ -311,7 +311,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     char     *ptr1;
     uint32_t *imsizearray;
 
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
             imcnt++;
@@ -325,7 +325,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
             sizeof(imageID) * imcnt);
 
     imcnt = 0;
-    for(i = 0; i < dcnimg; i++)
+    for(int i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
             IDarray[imcnt] = i;
@@ -360,7 +360,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     printf("Creating arrays\n");
     fflush(stdout);
 
-    for(i = 0; i < imcnt; i++)
+    for(int i = 0; i < imcnt; i++)
     {
         snprintf(imnameout,
                  sizeof(imnameout),
@@ -400,7 +400,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     {
         ImageStreamIO_semwait(
             dcimg + IDtrig, semtrig);
-        for(i = 0; i < imcnt; i++)
+        for(int i = 0; i < imcnt; i++)
         {
             ID   = IDarray[i];
             ptr0 = (char *)
@@ -420,7 +420,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     list_image_ID();
 
 #ifdef USE_CFITSIO
-    for(i = 0; i < imcnt; i++)
+    for(int i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
         snprintf(imnameout,

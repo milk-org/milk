@@ -164,7 +164,9 @@ static void milkscript_main_usage(const char *prog)
  * Sets $0 (script name), $1..$N (arguments), and $# (count).
  * Unsets any leftover positional variables beyond $N.
  */
-static void set_positional_args(int argc, char **argv)
+static void set_positional_args(
+    int argc,
+    char **argv)
 {
     char nbuf[32];
 
@@ -190,7 +192,9 @@ static void set_positional_args(int argc, char **argv)
     cli_var_set("#", nbuf);
 }
 
-int main(int argc, char **argv)
+int main(
+    int argc,
+    char **argv)
 {
     /* Handle -h1/--help-oneline before getopt so "-h1" is not
      * parsed as "-h" (flag) + "1" (unknown). */

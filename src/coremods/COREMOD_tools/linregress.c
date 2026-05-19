@@ -32,7 +32,7 @@ errno_t lin_regress(double      *a,
     Syy = 0;
     Sxy = 0;
 
-    for(i = 0; i < nb_points; i++)
+    for(unsigned i = 0; i < nb_points; i++)
     {
         S += 1.0 / sig[i] / sig[i];
         Sx += x[i] / sig[i] / sig[i];

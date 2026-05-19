@@ -421,8 +421,8 @@ imageID COREMOD_MEMORY_image_seminfo(
     printf("----------------------------------\n");
     printf(" sem    value   writePID   readPID\n");
     printf("----------------------------------\n");
-    int s;
-    for(s = 0; s < dcimg[ID].md[0].sem; s++)
+
+    for(int s = 0; s < dcimg[ID].md[0].sem; s++)
     {
         int semval;
 
@@ -644,7 +644,7 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
     imageID *IDarray,
     long    NB_ID)
 {
-    int t;
+
     //    int semval;
 
     //   printf("======== ENTER COREMOD_MEMORY_image_set_semwait_OR_IDarray [%ld] =======\n", NB_ID);
@@ -653,7 +653,7 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
     thrarray_semwait    = (pthread_t *) malloc(sizeof(pthread_t) * NB_ID);
     NB_thrarray_semwait = NB_ID;
 
-    for(t = 0; t < NB_ID; t++)
+    for(int t = 0; t < NB_ID; t++)
     {
         //      printf("thread %d create, ID = %ld\n", t, IDarray[t]);
         //      fflush(stdout);
@@ -663,7 +663,7 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
                        (void *) IDarray[t]);
     }
 
-    for(t = 0; t < NB_ID; t++)
+    for(int t = 0; t < NB_ID; t++)
     {
         //         printf("thread %d tid %u join waiting\n", t, (unsigned int) thrarray_semwait[t]);
         //fflush(stdout);
@@ -691,14 +691,14 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
 errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
     imageID *IDarray, long NB_ID)
 {
-    long i, cnt;
+
     int  semval;
-    int  s;
+
 
     list_image_ID();
-    for(i = 0; i < NB_ID; i++)
+    for(long i = 0; i < NB_ID; i++)
     {
-        for(s = 0; s < dcimg[IDarray[i]].md[0].sem; s++)
+        for(int s = 0; s < dcimg[IDarray[i]].md[0].sem; s++)
         {
             semval = ImageStreamIO_semvalue(dcimg + IDarray[i], s);
             printf("sem %d/%d of %s [%ld] = %d\n",
@@ -708,7 +708,7 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
                    IDarray[i],
                    semval);
             fflush(stdout);
-            for(cnt = 0; cnt < semval; cnt++)
+            for(long cnt = 0; cnt < semval; cnt++)
             {
                 ImageStreamIO_semtrywait(dcimg + IDarray[i], s);
             }

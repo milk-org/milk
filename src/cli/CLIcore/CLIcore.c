@@ -681,7 +681,10 @@ static int handle_fifo_input(const char *prompt)
  * @return              errno_t Status code (0 on normal exit)
  */
 
-errno_t runCLI(int argc, char *argv[], char *promptstring)
+errno_t runCLI(
+    int argc,
+    char *argv[],
+    char *promptstring)
 {
     DEBUG_TRACE_FSTART();
 
@@ -1152,7 +1155,9 @@ void fnExit1(void)
 }
 
 
-static int command_line_process_options(int argc, char **argv)
+static int command_line_process_options(
+    int argc,
+    char **argv)
 {
     int                option_index = 0;
     struct sched_param schedpar;

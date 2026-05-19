@@ -15,7 +15,9 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
+imageID arith_image_dx_IMGID(
+    IMGID *imgin,
+    IMGID *imgout)
 {
     DEBUG_TRACE_FSTART();
 
@@ -69,7 +71,9 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
  * Uses central differences for interior pixels
  * and forward/backward differences at boundaries.
  */
-imageID arith_image_dx(const char *ID_name, const char *IDout_name)
+imageID arith_image_dx(
+    const char *ID_name,
+    const char *IDout_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(IDout_name);
@@ -80,7 +84,9 @@ imageID arith_image_dx(const char *ID_name, const char *IDout_name)
     return ID;
 }
 
-imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
+imageID arith_image_dy_IMGID(
+    IMGID *imgin,
+    IMGID *imgout)
 {
     DEBUG_TRACE_FSTART();
 
@@ -135,7 +141,9 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
 /**
  * @brief Compute y-gradient (finite difference) of an image.
  */
-imageID arith_image_dy(const char *ID_name, const char *IDout_name)
+imageID arith_image_dy(
+    const char *ID_name,
+    const char *IDout_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(IDout_name);

@@ -273,7 +273,9 @@ static void print_stream(
     printf("\n");
 }
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, "command-line interface for monitoring shared memory streams", mh_color);
     milk_help_section("Usage", mh_color);
@@ -316,7 +318,9 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 3, mh_color);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     const char *progname = basename(argv[0]);
 

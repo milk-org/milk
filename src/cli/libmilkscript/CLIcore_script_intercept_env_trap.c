@@ -432,7 +432,9 @@ static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_int
     }
 }
 
-static void cli_trap_process_posix(const char *sname, const char *tcmd)
+static void cli_trap_process_posix(
+    const char *sname,
+    const char *tcmd)
 {
     /* POSIX signal name */
     int sn =

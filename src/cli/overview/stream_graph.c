@@ -30,7 +30,9 @@
 /**
  * @brief Set a bit in the stream graph adjacency matrix.
  */
-static void sg_bset(uint64_t *words, int idx)
+static void sg_bset(
+    uint64_t *words,
+    int idx)
 {
     words[idx / SG_BITS_PER_WORD] |=
         (UINT64_C(1) << (idx % SG_BITS_PER_WORD));
@@ -39,7 +41,9 @@ static void sg_bset(uint64_t *words, int idx)
 /**
  * @brief Get a bit from the stream graph adjacency matrix.
  */
-static int sg_bget(const uint64_t *words, int idx)
+static int sg_bget(
+    const uint64_t *words,
+    int idx)
 {
     return (words[idx / SG_BITS_PER_WORD]
             >> (idx % SG_BITS_PER_WORD)) & 1;

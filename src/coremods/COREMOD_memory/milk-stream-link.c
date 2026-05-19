@@ -38,14 +38,16 @@
 static const char *get_shmdir(void)
 {
     const char *env = getenv("MILK_SHM_DIR");
-    if (env != NULL) {
+    if(env != NULL)
+    {
         return env;
     }
 
     static const char fallback[] = "/milk/shm";
     struct stat st;
 
-    if (stat(fallback, &st) == 0 && S_ISDIR(st.st_mode)) {
+    if(stat(fallback, &st) == 0 && S_ISDIR(st.st_mode))
+    {
         return fallback;
     }
     return "/dev/shm";
@@ -56,7 +58,9 @@ static const char *get_shmdir(void)
  * @progname: argv[0]
  * @color:    non-zero for ANSI color
  */
-static void print_help(const char *progname, int color)
+static void print_help(
+    const char *progname,
+    int color)
 {
     milk_help_banner(progname, LSL_DESC, color);
     milk_help_section("Usage", color);
@@ -86,7 +90,8 @@ static void print_help(const char *progname, int color)
     printf("  %s$ milk-stream-link%s %s-p myprefix- ircam0%s\n\n",
            color ? MH_CMD : "", color ? MH_RST : "",
            color ? MH_ARG : "", color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-stream-list:list active shared memory streams",
         "milk-stream-create:create a new shared memory stream"
     };
@@ -112,7 +117,8 @@ static void write_imsize(
     IMAGE img;
     int   ret = ImageStreamIO_openIm(&img, srcname);
 
-    if (ret != 0) {
+    if(ret != 0)
+    {
         fprintf(stderr,
                 "  [warn] could not open stream '%s'"
                 " — skipping imsize write\n", srcname);
@@ -120,7 +126,8 @@ static void write_imsize(
     }
 
     /* Ensure conf/ directory exists */
-    if (mkdir("conf", 0755) != 0 && errno != EEXIST) {
+    if(mkdir("conf", 0755) != 0 && errno != EEXIST)
+    {
         fprintf(stderr,
                 "  [warn] cannot create conf/ directory: %s\n",
                 strerror(errno));
@@ -133,7 +140,8 @@ static void write_imsize(
              "conf/streamlink.%s.imsize.txt", linkname);
 
     FILE *fp = fopen(outfile, "w");
-    if (fp == NULL) {
+    if(fp == NULL)
+    {
         fprintf(stderr,
                 "  [warn] cannot write '%s': %s\n",
                 outfile, strerror(errno));
@@ -143,7 +151,8 @@ static void write_imsize(
 
     uint8_t naxis = img.md->naxis;
 
-    for (uint8_t i = 0; i < naxis; i++) {
+    for(uint8_t i = 0; i < naxis; i++)
+    {
         fprintf(fp, "%u ", (unsigned)img.md->size[i]);
     }
     fprintf(fp, "\n");
@@ -154,17 +163,21 @@ static void write_imsize(
     printf("  imsize written → %s\n", outfile);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(
-        argc, argv, LSL_DESC, LSL_DESC_LONG);
+                     argc, argv, LSL_DESC, LSL_DESC_LONG);
 
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2) {
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
     }
 
     int color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO) {
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
         print_help(argv[0], color);
         return 0;
     }
@@ -173,15 +186,20 @@ int main(int argc, char *argv[])
     const char *prefix    = "";
     const char *linkname  = NULL;
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-p") == 0 && i + 1 < argc)
+        {
             prefix = argv[++i];
-        } else if (argv[i][0] != '-') {
+        }
+        else if(argv[i][0] != '-')
+        {
             linkname = argv[i];
         }
     }
 
-    if (linkname == NULL) {
+    if(linkname == NULL)
+    {
         fprintf(stderr,
                 "\n\033[1;31mERROR\033[0m:"
                 " <streamname> argument required.\n\n");
@@ -195,7 +213,8 @@ int main(int argc, char *argv[])
              "conf/streamlink.%s.name.txt", linkname);
 
     FILE *fp = fopen(conffile, "r");
-    if (fp == NULL) {
+    if(fp == NULL)
+    {
         fprintf(stderr,
                 "\n\033[1;31mERROR\033[0m:"
                 " cannot open '%s': %s\n"
@@ -205,7 +224,8 @@ int main(int argc, char *argv[])
     }
 
     char srcname[256];
-    if (fgets(srcname, sizeof(srcname), fp) == NULL) {
+    if(fgets(srcname, sizeof(srcname), fp) == NULL)
+    {
         fprintf(stderr,
                 "\033[1;31mERROR\033[0m: '%s' is empty.\n", conffile);
         fclose(fp);
@@ -229,8 +249,10 @@ int main(int argc, char *argv[])
 
     /* Remove stale link/file */
     struct stat st;
-    if (lstat(linkpath, &st) == 0) {
-        if (unlink(linkpath) != 0) {
+    if(lstat(linkpath, &st) == 0)
+    {
+        if(unlink(linkpath) != 0)
+        {
             fprintf(stderr,
                     "\033[1;31mERROR\033[0m:"
                     " cannot remove '%s': %s\n",
@@ -240,7 +262,8 @@ int main(int argc, char *argv[])
     }
 
     /* Create symlink */
-    if (symlink(srcpath, linkpath) != 0) {
+    if(symlink(srcpath, linkpath) != 0)
+    {
         fprintf(stderr,
                 "\033[1;31mERROR\033[0m:"
                 " symlink('%s' → '%s'): %s\n",
@@ -254,9 +277,12 @@ int main(int argc, char *argv[])
            prefix, linkname, srcpath, linkpath);
 
     /* If source stream exists, write imsize */
-    if (stat(srcpath, &st) == 0) {
+    if(stat(srcpath, &st) == 0)
+    {
         write_imsize(shmdir, srcname, linkname);
-    } else {
+    }
+    else
+    {
         printf("  [warn] source '%s' not found"
                " — skipping imsize write\n", srcpath);
     }

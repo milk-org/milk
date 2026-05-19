@@ -324,7 +324,7 @@ CLIADDCMD_COREMOD_memory__stream_updateloop()
 errno_t COREMOD_MEMORY_image_streamburst(
     const char *IDin_name,
     const char *IDout_name,
-    long        periodus)
+    long       periodus)
 {
     imageID IDin;
     imageID IDout;
@@ -445,20 +445,21 @@ errno_t COREMOD_MEMORY_image_streamburst(
  */
 imageID
 COREMOD_MEMORY_image_streamupdateloop(
-    const char                 *IDinname,
-    const char                 *IDoutname,
+    const char                  *IDinname,
+    const char                  *IDoutname,
     long                        usperiod,
     long                        NBcubes,
     long                        period,
     long                        offsetus,
-    const char                 *IDsync_name,
+    const char                  *IDsync_name,
     int                         semtrig,
     __attribute__((unused)) int timingmode)
 {
     imageID           *IDin;
-    long               cubeindex;
+
     char               imname[200];
     long               IDsync;
+    long               cubeindex; // used outside loop
     unsigned long long cntsync;
     long               pcnt         = 0;
     long               offsetfr     = 0;
@@ -799,11 +800,11 @@ COREMOD_MEMORY_image_streamupdateloop(
 imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     const char                  *IDinname,
     const char                  *IDoutname,
-    long                         period,
-    long                         offsetus,
+    long                        period,
+    long                        offsetus,
     const char                  *IDsync_name,
-    int                          semtrig,
-    __attribute__((unused)) int  timingmode)
+    int                         semtrig,
+    __attribute__((unused)) int timingmode)
 {
     imageID IDin;
     imageID IDout;

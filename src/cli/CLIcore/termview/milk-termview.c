@@ -18,7 +18,9 @@
 /**
  * @brief Print help message for milk-termview.
  */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, "TrueColor terminal image viewer", mh_color);
     milk_help_section("Usage", mh_color);
@@ -66,7 +68,9 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s%-12s%s %s\n\n", mh_color ? MH_CMD : "", "q", mh_color ? MH_RST : "", "Quit");
 }
 
-int main(int argc, char **argv)
+int main(
+    int argc,
+    char **argv)
 {
     const char *progname = basename(argv[0]);
 

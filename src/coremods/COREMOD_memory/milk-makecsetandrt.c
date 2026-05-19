@@ -212,7 +212,9 @@ static void print_help(
  * Prints a ✓ / ✗ line for each step. Returns CGCHECK_OK only when all
  * four pass; returns the first failing CGCHECK_* constant otherwise.
  */
-static int check_cgroup_setup(const char *cgname, int color)
+static int check_cgroup_setup(
+    const char *cgname,
+    int color)
 {
     const char *ok  = color ? ANSI_GRN "✓" ANSI_RST : "[OK]";
     const char *err = color ? ANSI_RED "✗" ANSI_RST : "[!!]";
@@ -350,7 +352,9 @@ static int move_thread_to_cgroup(
  *
  * Returns 0 on success, 1 on error.
  */
-static int move_to_cgroup(pid_t pid, const char *cgname)
+static int move_to_cgroup(
+    pid_t pid,
+    const char *cgname)
 {
     if(strcmp(cgname, "NULL") == 0)
     {
@@ -436,7 +440,9 @@ static int move_to_cgroup(pid_t pid, const char *cgname)
  *
  * Returns 0 on success, 1 if any thread failed.
  */
-static int set_rt_priority(pid_t pid, int rtprio)
+static int set_rt_priority(
+    pid_t pid,
+    int rtprio)
 {
     if(rtprio <= 0)
     {
@@ -533,7 +539,9 @@ static int set_rt_priority(pid_t pid, int rtprio)
 /* main()                                                              */
 /* ------------------------------------------------------------------ */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(
                      argc, argv, MCSR_DESC, MCSR_DESC_LONG);

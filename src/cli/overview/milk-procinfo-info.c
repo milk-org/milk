@@ -383,7 +383,9 @@ static void print_proc_info(
  * Help
  * ========================================================= */
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, PI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -450,7 +452,9 @@ static int find_proc_by_name(
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 PI_ONELINE, PI_DESC_LONG);

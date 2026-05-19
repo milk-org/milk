@@ -165,7 +165,10 @@ int pid_get_cpu_ticks(
  *
  * Reads the 39th field of /proc/<pid>/task/<tid>/stat for each thread.
  */
-int pid_get_core_utilization(pid_t pid, int *cores, int max_cores)
+int pid_get_core_utilization(
+    pid_t pid,
+    int *cores,
+    int max_cores)
 {
     if(pid <= 0 || cores == NULL || max_cores <= 0)
     {
@@ -275,7 +278,9 @@ int pid_get_core_utilization(pid_t pid, int *cores, int max_cores)
 /**
  * pid_get_advanced_stats - get scheduling, memory faults, and thread counts
  */
-int pid_get_advanced_stats(pid_t pid, ov_advanced_stats_t *out)
+int pid_get_advanced_stats(
+    pid_t pid,
+    ov_advanced_stats_t *out)
 {
     if(pid <= 0 || out == NULL)
     {
@@ -403,7 +408,10 @@ static long _perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu, i
  * Configures hardware performance counters for
  * the specified event type.
  */
-static int open_perf_fd(pid_t pid, uint32_t type, uint64_t config)
+static int open_perf_fd(
+    pid_t pid,
+    uint32_t type,
+    uint64_t config)
 {
     struct perf_event_attr attr;
     memset(&attr, 0, sizeof(attr));
@@ -427,7 +435,10 @@ static int open_perf_fd(pid_t pid, uint32_t type, uint64_t config)
  * pid_read_perf_counters - get hardware metrics via perf_event_open
  * Requires CAP_PERFMON or root, or perf_event_paranoid <= 2
  */
-int pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out)
+int pid_read_perf_counters(
+    pid_t pid,
+    int64_t loopcnt,
+    ov_perf_counters_t *out)
 {
     if(pid <= 0 || !out)
     {

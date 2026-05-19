@@ -338,19 +338,31 @@ long image_write_keyword_S(
 /**
  * @brief Legacy wrappers taking IMGID
  */
-errno_t image_keyword_addL(IMGID img, const char *kwname, long kwval, const char *comment)
+errno_t image_keyword_addL(
+    IMGID img,
+    const char *kwname,
+    long kwval,
+    const char *comment)
 {
     _image_write_keyword(img, kwname, 'L', kwval, 0.0, NULL, comment);
     return RETURN_SUCCESS;
 }
 
-errno_t image_keyword_addD(IMGID img, const char *kwname, double kwval, const char *comment)
+errno_t image_keyword_addD(
+    IMGID img,
+    const char *kwname,
+    double kwval,
+    const char *comment)
 {
     _image_write_keyword(img, kwname, 'D', 0, kwval, NULL, comment);
     return RETURN_SUCCESS;
 }
 
-errno_t image_keyword_addS(IMGID img, const char *kwname, const char *kwval, const char *comment)
+errno_t image_keyword_addS(
+    IMGID img,
+    const char *kwname,
+    const char *kwval,
+    const char *comment)
 {
     _image_write_keyword(img, kwname, 'S', 0, 0.0, kwval, comment);
     return RETURN_SUCCESS;
@@ -375,10 +387,10 @@ imageID image_list_keywords(
     {
         return RETURN_FAILURE;
     }
-    long    kw;
+
 
     int kwcnt = 0;
-    for(kw = 0;
+    for(long kw = 0;
             kw < dcimg[ID].md->NBkw;
             kw++)
     {
@@ -442,11 +454,11 @@ long image_read_keyword_D(
         return -1;
     }
     long ID = img.ID;
-    long       kw;
+
     long       kw0;
 
     kw0 = -1;
-    for(kw = 0;
+    for(long kw = 0;
             kw < dcimg[ID].md[0].NBkw;
             kw++)
     {
@@ -485,11 +497,11 @@ long image_read_keyword_L(
         return -1;
     }
     long ID = img.ID;
-    long       kw;
+
     long       kw0;
 
     kw0 = -1;
-    for(kw = 0;
+    for(long kw = 0;
             kw < dcimg[ID].md[0].NBkw;
             kw++)
     {

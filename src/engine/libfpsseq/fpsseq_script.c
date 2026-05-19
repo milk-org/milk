@@ -56,7 +56,9 @@ static void trim_whitespace(char *str)
  * replaces the token with its value. Undefined variables
  * expand to the empty string.
  */
-static void expand_vars(SCRIPT_CTX *ctx, char *line)
+static void expand_vars(
+    SCRIPT_CTX *ctx,
+    char *line)
 {
     char result[MAX_LINE_LEN] = {0};
     char *p = line;
@@ -127,7 +129,10 @@ static void expand_vars(SCRIPT_CTX *ctx, char *line)
  * Return: 0 on success, -1 on error (max depth, open failure,
  *         or script exceeding MAX_SCRIPT_LINES)
  */
-static int load_and_preprocess(SCRIPT_CTX *ctx, const char *filename, int depth)
+static int load_and_preprocess(
+    SCRIPT_CTX *ctx,
+    const char *filename,
+    int depth)
 {
     if(depth > 10)
     {

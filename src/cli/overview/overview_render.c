@@ -76,7 +76,9 @@ static int get_fps_rank(const char *name)
     return 999999;
 }
 
-static int sort_stream_by_rank(const void *a, const void *b)
+static int sort_stream_by_rank(
+    const void *a,
+    const void *b)
 {
     int ra = get_stream_rank(((const OV_STREAM *)a)->name);
     int rb = get_stream_rank(((const OV_STREAM *)b)->name);
@@ -87,7 +89,9 @@ static int sort_stream_by_rank(const void *a, const void *b)
     return strcmp(((const OV_STREAM *)a)->name, ((const OV_STREAM *)b)->name);
 }
 
-static int sort_proc_by_rank(const void *a, const void *b)
+static int sort_proc_by_rank(
+    const void *a,
+    const void *b)
 {
     int ra = get_proc_rank(((const OV_PROC *)a)->name);
     int rb = get_proc_rank(((const OV_PROC *)b)->name);
@@ -98,7 +102,9 @@ static int sort_proc_by_rank(const void *a, const void *b)
     return strcmp(((const OV_PROC *)a)->name, ((const OV_PROC *)b)->name);
 }
 
-static int sort_fps_by_rank(const void *a, const void *b)
+static int sort_fps_by_rank(
+    const void *a,
+    const void *b)
 {
     int ra = get_fps_rank(((const OV_FPS *)a)->name);
     int rb = get_fps_rank(((const OV_FPS *)b)->name);
