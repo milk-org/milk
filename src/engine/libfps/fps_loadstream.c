@@ -35,8 +35,7 @@
 imageID functionparameter_LoadStream(
     FPS *fps,
     int pindex,
-    int                        fpsconnectmode
-)
+    int fpsconnectmode)
 {
     imageID  ID = -1;
     uint32_t imLOC;

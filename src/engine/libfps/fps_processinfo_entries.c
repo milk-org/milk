@@ -220,9 +220,8 @@ errno_t fps_add_processinfo_entries(
  * structure for monitoring.
  */
 errno_t fps_to_processinfo(
-    FPS *fps,
-    PROCESSINFO               *procinfo
-)
+    FPS         *fps,
+    PROCESSINFO *procinfo)
 {
     DEBUG_TRACE_FSTART();
 

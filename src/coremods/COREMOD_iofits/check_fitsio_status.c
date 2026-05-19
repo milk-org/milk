@@ -19,10 +19,11 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
  * If the status is non-zero, prints the cfitsio
  * error message and optionally aborts.
  */
-int check_FITSIO_status(const char *restrict cfile,
-                        const char *restrict cfunc,
-                        long cline,
-                        int  print)
+int check_FITSIO_status(
+    const char *restrict cfile,
+    const char *restrict cfunc,
+    long                 cline,
+    int                  print)
 {
     int Ferr = 0;
 

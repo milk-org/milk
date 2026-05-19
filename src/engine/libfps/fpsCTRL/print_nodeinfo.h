@@ -7,11 +7,10 @@
 #define FPS_CTRLSCREEN_PRINT_NODEINFO_H
 
 void fpsCTRLscreen_print_nodeinfo(
-    FPS *fps,
+    FPS               *fps,
     KEYWORD_TREE_NODE *keywnode,
-    int nodeSelected,
-    int fpsindexSelected,
-    long pindexSelected
-);
+    int               nodeSelected,
+    int               fpsindexSelected,
+    long              pindexSelected);
 
 #endif

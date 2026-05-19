@@ -47,7 +47,9 @@ static long _perf_event_open(
  * @param fds    Output array of size N_PERF_EVS
  * @return       Number of fds successfully opened
  */
-int perf_open_all(pid_t pid, int *fds)
+int perf_open_all(
+    pid_t pid,
+    int   *fds)
 {
     int nok = 0;
     for(int i = 0; i < N_PERF_EVS; i++)
@@ -83,7 +85,8 @@ int perf_open_all(pid_t pid, int *fds)
  * @param phase  Output hw_phase_t to fill
  */
 void perf_read_close(
-    int *fds, hw_phase_t *phase)
+    int        *fds,
+    hw_phase_t *phase)
 {
     phase->valid = 0;
     for(int i = 0; i < N_PERF_EVS; i++)

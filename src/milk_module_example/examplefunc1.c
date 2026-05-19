@@ -83,9 +83,8 @@ static CLICMDDATA CLIcmddata =
  * On success, return value is RETURN_SUCCESS (=0).
  */
 static errno_t example_compute_2Dimage_total(
-    IMGID *imgptr,
-    double scalingcoeff
-)
+    IMGID  *imgptr,
+    double scalingcoeff)
 {
     // The preferred way to have images and streams as function args is to pass a pointer to IMGID struct.
     // Here, the function needs to change the IMGID content (call to resolveIMGID).

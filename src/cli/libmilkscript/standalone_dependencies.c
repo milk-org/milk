@@ -58,7 +58,7 @@ struct timespec timespec_diff(
  */
 int print_header(
     const char *str,
-    char c)
+    char       c)
 {
     long n;
 
@@ -85,9 +85,9 @@ int print_header(
  */
 void qs2l(
     double *array,
-    long *array1,
-    long left,
-    long right)
+    long   *array1,
+    long   left,
+    long   right)
 {
     register long i, j;
     double        x, y;
@@ -139,17 +139,17 @@ void qs2l(
  */
 void quick_sort2l(
     double *array,
-    long *array1,
-    long count)
+    long   *array1,
+    long   count)
 {
     qs2l(array, array1, 0, count - 1);
 }
 
 void qs2l_double(
     double *array,
-    long *array1,
-    long left,
-    long right)
+    long   *array1,
+    long   left,
+    long   right)
 {
     register long i, j;
     double        x, y;
@@ -198,8 +198,8 @@ void qs2l_double(
 
 void quick_sort2l_double(
     double *array,
-    long *array1,
-    long count)
+    long   *array1,
+    long   count)
 {
     qs2l_double(array, array1, 0, count - 1);
 }
@@ -282,8 +282,8 @@ void quick_sort_long(
 int printERROR(
     const char *file,
     const char *func,
-    int line,
-    char *errmessage)
+    int        line,
+    char       *errmessage)
 {
     fprintf(stderr,
             "%c[%d;%dm ERROR [ %s:%d: %s ]  %c[%d;m\n",

@@ -34,8 +34,7 @@ errno_t saveFITS_opt_trunc_IMGID(
     const char    *importheaderfile,
     IMAGE_KEYWORD *kwarray,
     int           kwarraysize,
-    const char     *FITSIOext
-);
+    const char    *FITSIOext);
 
 errno_t saveFITS_opt_trunc(
     const char    *inputimname,
@@ -45,8 +44,7 @@ errno_t saveFITS_opt_trunc(
     const char    *importheaderfile,
     IMAGE_KEYWORD *kwarray,
     int           kwarraysize,
-    const char     *FITSIOext
-);
+    const char    *FITSIOext);
 
 errno_t saveFITS(
     const char    *inputimname,
@@ -54,13 +52,11 @@ errno_t saveFITS(
     int           outputbitpix,
     const char    *importheaderfile,
     IMAGE_KEYWORD *kwarray,
-    int             kwarraysize
-);
+    int           kwarraysize);
 
 errno_t save_fl_fits(
     const char *inputimname,
-    const char *outputFITSname
-);
+    const char *outputFITSname);
 
 errno_t saveall_fits(
     const char *savedirname
@@ -68,8 +64,7 @@ errno_t saveall_fits(
 
 errno_t save_fits(
     const char *inputimname,
-    const char *outputFITSname
-);
+    const char *outputFITSname);
 
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS();
 

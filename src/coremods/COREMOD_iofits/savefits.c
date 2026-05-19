@@ -72,15 +72,14 @@ char savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN]  = "";
  * ========================================= */
 
 errno_t saveFITS_opt_trunc_IMGID(
-    IMGID          *imgin,
-    int             truncate,
-    const char     *outputFITSname,
-    int             outputbitpix,
-    const char     *importheaderfile __attribute__((unused)),
-    IMAGE_KEYWORD  *kwarray __attribute__((unused)),
-    int             kwarraysize __attribute__((unused)),
-    const char     *FITSIOext
-)
+    IMGID *imgin,
+    int truncate,
+    const char *outputFITSname,
+    int outputbitpix,
+    const char *importheaderfile __attribute__((unused)),
+    IMAGE_KEYWORD *kwarray __attribute__((unused)),
+    int kwarraysize __attribute__((unused)),
+    const char *FITSIOext)
 {
     COREMOD_iofits_data.FITSIO_status = 0;
     pthread_t self_id = pthread_self();
@@ -172,14 +171,13 @@ errno_t saveFITS_opt_trunc(
     const char    *importheaderfile,
     IMAGE_KEYWORD *kwarray,
     int           kwarraysize,
-    const char     *FITSIOext
-)
+    const char    *FITSIOext)
 {
     IMGID id = imgid_make_from_name(inputimname);
     return saveFITS_opt_trunc_IMGID(
-               &id, truncate, outputFITSname,
+               &id,          truncate, outputFITSname,
                outputbitpix, importheaderfile,
-               kwarray, kwarraysize, FITSIOext);
+               kwarray,      kwarraysize, FITSIOext);
 }
 
 /**
@@ -187,12 +185,11 @@ errno_t saveFITS_opt_trunc(
  */
 errno_t save_fl_fits(
     const char *inputimname,
-    const char *outputFITSname
-)
+    const char *outputFITSname)
 {
     return saveFITS_opt_trunc(
                inputimname, -1, outputFITSname,
-               -32, NULL, NULL, 0, "");
+               -32,             NULL, NULL, 0, "");
 }
 
 /**
@@ -206,8 +203,7 @@ errno_t saveFITS(
     int           outputbitpix,
     const char    *importheaderfile,
     IMAGE_KEYWORD *kwarray,
-    int             kwarraysize
-)
+    int           kwarraysize)
 {
     return saveFITS_opt_trunc(
                inputimname, -1, outputFITSname,
@@ -234,8 +230,7 @@ errno_t saveall_fits(const char *savedirname)
 
 errno_t save_fits(
     const char *inputimname,
-    const char *outputFITSname
-)
+    const char *outputFITSname)
 {
     return saveFITS(inputimname,
                     outputFITSname, 0, NULL, NULL, 0);
@@ -305,7 +300,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         imgid_make_from_name(
             savefits_inimname);
     resolveIMGID(
-        &in, ERRMODE_ABORT,
+        &in,   ERRMODE_ABORT,
         dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

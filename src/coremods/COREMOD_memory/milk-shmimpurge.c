@@ -50,7 +50,7 @@
  */
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, SP_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -184,7 +184,7 @@ static int pid_has_inode_open(
  */
 static int is_stream_orphan(
     const char *fullpath,
-    int verbose)
+    int        verbose)
 {
     struct stat st;
     if(stat(fullpath, &st) != 0)

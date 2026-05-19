@@ -39,7 +39,7 @@ static int DGRAM_CHUNK_SIZE = 62 *
  */
 
 imageID COREMOD_MEMORY_image_NETUDPreceive(
-    int port,
+    int                         port,
     __attribute__((unused)) int do_counter_sync,
     int RT_priority)
 {
@@ -227,7 +227,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         IMGID img = imgid_make_from_name(
                         imgmd[0].name);
         resolveIMGID(
-            &img, ERRMODE_NULL,
+            &img,  ERRMODE_NULL,
             dcimg, dcnimg);
         ID = img.ID;
     }

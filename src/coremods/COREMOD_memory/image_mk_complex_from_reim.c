@@ -67,8 +67,7 @@ static char outimname[
 errno_t mk_complex_from_reim_IMGID(
     IMGID *imgre,
     IMGID *imgim,
-    IMGID *imgout
-)
+    IMGID *imgout)
 {
     DEBUG_TRACE_FSTART();
 

@@ -92,10 +92,9 @@ static void set_terminal_echo_on()
  * printing it to the terminal.
  */
 static void fprintf_stdout(
-    FILE       *f,
+    FILE *f,
     char const *fmt,
-    ...
-)
+    ...)
 {
     va_list ap;
     va_start(ap, fmt);

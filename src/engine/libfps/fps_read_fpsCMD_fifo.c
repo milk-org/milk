@@ -22,8 +22,7 @@
 int functionparameter_read_fpsCMD_fifo(
     int                fpsCTRLfifofd,
     FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist
-)
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist)
 {
     int   cmdcnt     = 0;
     char *FPScmdline = NULL;

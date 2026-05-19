@@ -32,7 +32,10 @@ cli_token *advance_eval(void);
 void parse_errmsg(const char *msg);
 val_t parse_expr(int min_prec);
 
-val_t eval_binop(cli_token_type op, val_t left, val_t right);
+val_t eval_binop(
+    cli_token_type op,
+    val_t          left,
+    val_t          right);
 val_t parse_funccall(cli_token *ftok);
 
 double to_double(val_t v);

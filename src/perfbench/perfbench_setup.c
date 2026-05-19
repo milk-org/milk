@@ -13,7 +13,9 @@
  * @param fmt  printf-style format string
  * @return     exit code of command, -1 on error
  */
-int run_cmd(const char *fmt, ...)
+int run_cmd(
+    const char *fmt,
+    ...)
 {
     char buf[MAX_CMD];
     va_list ap;
@@ -54,7 +56,9 @@ void resolve_procdir(bench_cfg_t *cfg)
 /**
  * @brief Get SHM directory (same as MILK_SHM_DIR).
  */
-void resolve_shmdir(char *shmdir, size_t sz)
+void resolve_shmdir(
+    char   *shmdir,
+    size_t sz)
 {
     const char *env = getenv("MILK_SHM_DIR");
     if(env && strlen(env) > 0)
@@ -205,27 +209,27 @@ void read_build_tags(
 
     if(strstr(payload, "OPT=3"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "O3 ");
     if(strstr(payload, "PGO=USE"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "PGO ");
     else if(strstr(payload, "PGO=GENERATE"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "PGO-instr ");
     if(strstr(payload, "LTO=STATIC"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "LTO-static ");
     else if(strstr(payload, "LTO=1"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "LTO ");
 
@@ -242,7 +246,7 @@ void read_build_tags(
                 arch[ai++] = *ap++;
             }
             slen += (size_t) snprintf(
-                        summary + slen,
+                        summary +         slen,
                         sizeof(summary) - slen,
                         "[%s]", arch);
         }
@@ -265,7 +269,9 @@ void read_build_tags(
  * Unique FPS name
  * ============================================================= */
 
-void make_fpsname(char *out, size_t sz)
+void make_fpsname(
+    char   *out,
+    size_t sz)
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);

@@ -63,8 +63,7 @@ static char outimname[FUNCTION_PARAMETER_STRMAXLEN]
 
 errno_t image_copy_shm_IMGID(
     IMGID *img,
-    IMGID *imgshm
-)
+    IMGID *imgshm)
 {
     resolveIMGID(
         img, ERRMODE_ABORT,
@@ -120,8 +119,7 @@ errno_t image_copy_shm_IMGID(
 
 errno_t image_copy_shm(
     const char *inname,
-    const char *outname
-)
+    const char *outname)
 {
     IMGID imgin =
         imgid_make_from_name(inname);

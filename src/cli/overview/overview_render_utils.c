@@ -128,9 +128,9 @@ int dtype_bytesize(uint8_t dt)
  * @brief Clear a screen row to blank.
  */
 void clear_row(
-    int row,
-    int col,
-    int width,
+    int      row,
+    int      col,
+    int      width,
     ov_rgb_t bg)
 {
     ov_buf_reset_attr();

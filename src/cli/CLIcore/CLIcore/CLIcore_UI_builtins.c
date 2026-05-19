@@ -117,7 +117,7 @@ errno_t cli_watch(void)
                 FD_SET(STDIN_FILENO, &fds);
                 int r = select(
                     STDIN_FILENO + 1,
-                    &fds, NULL, NULL, &tv);
+                    &fds,          NULL, NULL, &tv);
                 if(r > 0)
                 {
                     /* Consume the keypress */

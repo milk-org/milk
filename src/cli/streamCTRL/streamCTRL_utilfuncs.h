@@ -8,9 +8,8 @@
 
 
 imageID image_ID_from_images(
-    IMAGE *images, const
-    char * __restrict name
-);
+    IMAGE                   *images,
+    const char * __restrict name);
 
 
 imageID image_get_first_ID_available_from_images(
@@ -20,8 +19,7 @@ imageID image_get_first_ID_available_from_images(
 
 errno_t get_process_name_by_pid(
     const int pid,
-    char *pname
-);
+    char      *pname);
 
 
 int get_PIDmax();

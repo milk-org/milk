@@ -165,7 +165,7 @@ static void milkscript_main_usage(const char *prog)
  * Unsets any leftover positional variables beyond $N.
  */
 static void set_positional_args(
-    int argc,
+    int  argc,
     char **argv)
 {
     char nbuf[32];
@@ -193,7 +193,7 @@ static void set_positional_args(
 }
 
 int main(
-    int argc,
+    int  argc,
     char **argv)
 {
     /* Handle -h1/--help-oneline before getopt so "-h1" is not

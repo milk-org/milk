@@ -181,8 +181,7 @@ void cli_history_log_init(void)
  */
 static void cli_history_log_entry(
     const char *text,
-    char        type
-)
+    char       type)
 {
     if(text == NULL || text[0] == '\0')
     {

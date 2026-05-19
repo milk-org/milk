@@ -28,8 +28,7 @@ errno_t processinfo_waitoninputstream_init(
     PROCESSINFO *processinfo,
     IMAGE       *image,
     int         triggermode,
-    int          semindexrequested
-)
+    int         semindexrequested)
 {
     DEBUG_TRACE_FSTART("%p %d %d", (void *)image, triggermode, semindexrequested);
 

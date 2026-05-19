@@ -40,10 +40,9 @@ int check_image(const char *name);
  */
 static int binop_img_img(
     cli_token_type op,
-    const char *lname,
-    const char *rname,
-    const char *tmpn
-)
+    const char     *lname,
+    const char     *rname,
+    const char     *tmpn)
 {
     switch(op)
     {
@@ -121,10 +120,9 @@ static int binop_img_img(
  */
 static int binop_img_scalar(
     cli_token_type op,
-    const char *iname,
-    double rv,
-    const char *tmpn
-)
+    const char     *iname,
+    double         rv,
+    const char     *tmpn)
 {
     switch(op)
     {
@@ -202,10 +200,9 @@ static int binop_img_scalar(
  */
 static int binop_scalar_img(
     cli_token_type op,
-    double lv,
-    const char *iname,
-    const char *tmpn
-)
+    double         lv,
+    const char     *iname,
+    const char     *tmpn)
 {
     switch(op)
     {
@@ -279,9 +276,8 @@ static int binop_scalar_img(
  */
 val_t eval_binop(
     cli_token_type op,
-    val_t left,
-    val_t right
-)
+    val_t          left,
+    val_t          right)
 {
     /* string (image) operands */
     if(left.type == VAL_STRING
@@ -339,7 +335,7 @@ val_t eval_binop(
             }
             double lv = to_double(left);
             if(!binop_scalar_img(
-                        op, lv,
+                        op,         lv,
                         right.sval, tmpn))
             {
                 parse_errmsg(

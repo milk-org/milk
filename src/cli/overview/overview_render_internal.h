@@ -57,7 +57,9 @@ typedef struct
 
 /* ---- Shared render utilities ---- */
 
-void render_pad_spaces(int chars_written, int panel_width);
+void render_pad_spaces(
+    int chars_written,
+    int panel_width);
 int ov_render_header_text(
     const char *text,
     int        hs,
@@ -72,20 +74,24 @@ void render_scroll_indicators(
     ov_rgb_t accent);
 
 void clear_row(
-    int row,
-    int col,
-    int width,
+    int      row,
+    int      col,
+    int      width,
     ov_rgb_t bg);
 
 int ov_filter_build(
     const char *filter,
     const char *names[],
-    int         count,
-    int        *out_idx,
-    int         max_out);
+    int count,
+    int *out_idx,
+    int max_out);
 
-void bset(uint64_t *words, int idx);
-int  bget(const uint64_t *words, int idx);
+void bset(
+    uint64_t *words,
+    int      idx);
+int  bget(
+    const uint64_t *words,
+    int            idx);
 
 const char *render_dtype(uint8_t dt);
 int         dtype_bytesize(uint8_t dt);
@@ -140,8 +146,8 @@ static inline const char *render_trigmode_label(
 
 /* Inline memory-size formatter */
 static inline void format_mem_kb(
-    char *buf,
-    size_t sz,
+    char    *buf,
+    size_t  sz,
     int64_t kb)
 {
     if(kb <= 0)
@@ -305,8 +311,8 @@ void ov_render_fps_panel(
     const OV_RELATED *rel);
 
 int ov_render_detail_panel(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m);
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m);
 
 int ov_render_resources_panel(
     const OV_LAYOUT *lay,
@@ -317,8 +323,8 @@ void ov_render_graph_panel(
     const OV_MODEL  *m);
 
 void ov_render_fps_params_panel(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m);
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m);
 
 void ov_render_status(
     const OV_LAYOUT *lay,
@@ -328,13 +334,15 @@ void ov_render_cmdlog(const OV_LAYOUT *lay);
 
 void ov_render_help(const OV_LAYOUT *lay);
 void ov_render_preview_line(
-    OV_LAYOUT       *lay,
-    const OV_MODEL  *m);
+    OV_LAYOUT      *lay,
+    const OV_MODEL *m);
 
 /* Help panel utilities */
 int ov_help_nb_sections(void);
 int ov_help_visible_count(const OV_LAYOUT *lay);
-int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
+int ov_help_toggle_at(
+    OV_LAYOUT *lay,
+    int       vis_row);
 
 extern float ov_scan_get_interval(void);
 

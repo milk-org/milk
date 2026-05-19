@@ -118,7 +118,7 @@ PROCESSINFO *processinfo_setup(
  */
 errno_t processinfo_error(
     PROCESSINFO *processinfo,
-    char *errmsgstring)
+    char        *errmsgstring)
 {
     processinfo->loopstat = 4; // ERROR
     processinfo_WriteMessage(processinfo, errmsgstring);

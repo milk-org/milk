@@ -105,7 +105,6 @@ typedef struct
 int cli_tokenize(
     const char *input,
     cli_token  *tokens,
-    int         max_tok
-);
+    int        max_tok);
 
 #endif /* CLI_CALC_TOKENIZER_H */

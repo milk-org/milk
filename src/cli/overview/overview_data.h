@@ -55,7 +55,10 @@ ov_pid_status_t pid_get_status(pid_t pid);
  *
  * Return: number of cores written to @cores.
  */
-int pid_get_core_utilization(pid_t pid, int *cores, int max_cores);
+int pid_get_core_utilization(
+    pid_t pid,
+    int   *cores,
+    int   max_cores);
 
 typedef struct
 {
@@ -70,7 +73,9 @@ typedef struct
 /**
  * pid_get_advanced_stats - get scheduling, memory faults, and thread counts
  */
-int pid_get_advanced_stats(pid_t pid, ov_advanced_stats_t *out);
+int pid_get_advanced_stats(
+    pid_t               pid,
+    ov_advanced_stats_t *out);
 
 typedef struct
 {
@@ -94,7 +99,10 @@ typedef struct
  * @loopcnt: current loop iteration count of the process, used to calculate per-loop rates.
  * Requires CAP_PERFMON or root, or perf_event_paranoid <= 2
  */
-int pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
+int pid_read_perf_counters(
+    pid_t              pid,
+    int64_t            loopcnt,
+    ov_perf_counters_t *out);
 
 /* =========================================================
  * Node types
@@ -243,8 +251,11 @@ typedef struct
     int param_idx;
 } fps_tree_item_t;
 
-int ov_get_fps_tree_items(const OV_FPS *fps, const char *path, fps_tree_item_t *items,
-                          int max_items);
+int ov_get_fps_tree_items(
+    const OV_FPS    *fps,
+    const char      *path,
+    fps_tree_item_t *items,
+    int             max_items);
 
 
 
@@ -454,7 +465,7 @@ void ov_scan_cache_cleanup(void);
  */
 int ov_find_stream_by_inode(
     const OV_MODEL *model,
-    ino_t inode);
+    ino_t          inode);
 
 /**
  * ov_find_stream_by_name - find stream index by name.
@@ -465,7 +476,7 @@ int ov_find_stream_by_inode(
  */
 int ov_find_stream_by_name(
     const OV_MODEL *model,
-    const char *name);
+    const char     *name);
 
 /**
  * ov_find_proc_by_pid - find process index by PID.
@@ -476,7 +487,7 @@ int ov_find_stream_by_name(
  */
 int ov_find_proc_by_pid(
     const OV_MODEL *model,
-    pid_t pid);
+    pid_t          pid);
 
 /**
  * ov_add_edge - add an edge to the graph if not duplicate.
@@ -487,11 +498,11 @@ int ov_find_proc_by_pid(
  * @label: human-readable label
  */
 void ov_add_edge(
-    OV_MODEL *model,
-    int src,
-    int tgt,
+    OV_MODEL       *model,
+    int            src,
+    int            tgt,
     ov_edge_type_t type,
-    const char *label);
+    const char     *label);
 
 /* =========================================================
  * Sorting helpers
@@ -509,7 +520,9 @@ void ov_sort_set_depths(const int8_t *depths);
  * @dir:   0=ascending, 1=descending
  */
 void ov_sort_streams(
-    OV_MODEL *model, int key, int dir);
+    OV_MODEL *model,
+    int      key,
+    int      dir);
 
 /**
  * ov_sort_procs - sort procs array in-place.
@@ -518,7 +531,9 @@ void ov_sort_streams(
  * @dir:   0=ascending, 1=descending
  */
 void ov_sort_procs(
-    OV_MODEL *model, int key, int dir);
+    OV_MODEL *model,
+    int      key,
+    int      dir);
 
 /**
  * ov_sort_fps - sort FPS array in-place.
@@ -527,7 +542,9 @@ void ov_sort_procs(
  * @dir:   0=ascending, 1=descending
  */
 void ov_sort_fps(
-    OV_MODEL *model, int key, int dir);
+    OV_MODEL *model,
+    int      key,
+    int      dir);
 
 /**
  * ov_filter_build - build filtered index array.

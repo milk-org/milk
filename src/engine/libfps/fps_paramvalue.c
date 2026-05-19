@@ -84,8 +84,9 @@ int64_t *functionparameter_GetParamPtr_generic(FPS *fps,
  * @return Current int64_t value
  */
 
-int64_t functionparameter_GetParamValue_INT64(FPS *fps,
-        const char *paramname)
+int64_t functionparameter_GetParamValue_INT64(
+    FPS        *fps,
+    const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
                    fps, paramname);
@@ -138,7 +139,7 @@ errno_t functionparameter_SetParamValue_INT64(
  * @return RETURN_SUCCESS
  */
 errno_t function_parameter_SetValue_int64(
-    char *keywordfull,
+    char    *keywordfull,
     int64_t val)
 {
     FPS fps;
@@ -191,7 +192,7 @@ errno_t function_parameter_SetValue_int64(
  * @return Pointer to val.i64[0]
  */
 int64_t *functionparameter_GetParamPtr_INT64(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     long fpsi = functionparameter_GetParamIndex(
@@ -215,7 +216,7 @@ int64_t *functionparameter_GetParamPtr_INT64(
  * @return Current uint64_t value
  */
 uint64_t functionparameter_GetParamValue_UINT64(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -264,7 +265,7 @@ errno_t functionparameter_SetParamValue_UINT64(
  * @return Pointer to val.ui64[0]
  */
 uint64_t *functionparameter_GetParamPtr_UINT64(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -288,7 +289,7 @@ uint64_t *functionparameter_GetParamPtr_UINT64(
  * @return Current int32_t value
  */
 int32_t functionparameter_GetParamValue_INT32(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -337,7 +338,7 @@ errno_t functionparameter_SetParamValue_INT32(
  * @return Pointer to val.i32[0]
  */
 int32_t *functionparameter_GetParamPtr_INT32(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -361,7 +362,7 @@ int32_t *functionparameter_GetParamPtr_INT32(
  * @return Current uint32_t value
  */
 uint32_t functionparameter_GetParamValue_UINT32(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -410,7 +411,7 @@ errno_t functionparameter_SetParamValue_UINT32(
  * @return Pointer to val.ui32[0]
  */
 uint32_t *functionparameter_GetParamPtr_UINT32(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -434,7 +435,7 @@ uint32_t *functionparameter_GetParamPtr_UINT32(
  * @return Current double value
  */
 double functionparameter_GetParamValue_FLOAT64(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -483,7 +484,7 @@ errno_t functionparameter_SetParamValue_FLOAT64(
  * @return Pointer to val.f64[0]
  */
 double *functionparameter_GetParamPtr_FLOAT64(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -507,7 +508,7 @@ double *functionparameter_GetParamPtr_FLOAT64(
  * @return Current float value
  */
 float functionparameter_GetParamValue_FLOAT32(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -556,7 +557,7 @@ int functionparameter_SetParamValue_FLOAT32(
  * @return Pointer to val.f32[0]
  */
 float *functionparameter_GetParamPtr_FLOAT32(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -582,7 +583,7 @@ float *functionparameter_GetParamPtr_FLOAT32(
  * @return Time in seconds
  */
 float functionparameter_GetParamValue_TIMESPEC(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     int fpsi = functionparameter_GetParamIndex(
@@ -795,7 +796,7 @@ int functionparameter_SetParamValue_ONOFF(
  * @return Pointer to fpflag (uint64_t)
  */
 uint64_t *functionparameter_GetParamPtr_fpflag(
-    FPS *fps,
+    FPS        *fps,
     const char *paramname)
 {
     uint64_t *ptr;
@@ -825,10 +826,9 @@ uint64_t *functionparameter_GetParamPtr_fpflag(
  * Returns 0 on success, -1 if pindex is out of range.
  */
 int functionparameter_SetParamValue_fromString(
-    FPS *fps,
-    int pindex,
-    const char                *strval
-)
+    FPS        *fps,
+    int        pindex,
+    const char *strval)
 {
     if(pindex < 0 || pindex >= fps->md->NBparamMAX)
     {

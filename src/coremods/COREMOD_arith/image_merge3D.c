@@ -179,12 +179,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID id0 = imgid_make_from_name(
         immerge_inimname0);
     resolveIMGID(
-        &id0, ERRMODE_ABORT,
+        &id0,  ERRMODE_ABORT,
         dcimg, dcnimg);
     IMGID id1 = imgid_make_from_name(
         immerge_inimname1);
     resolveIMGID(
-        &id1, ERRMODE_ABORT,
+        &id1,  ERRMODE_ABORT,
         dcimg, dcnimg);
     IMGID idout = imgid_make_from_name(
         immerge_outimname);

@@ -25,7 +25,7 @@
 errno_t COREMOD_MEMORY_image_streamburst(
     const char *IDin_name,
     const char *IDout_name,
-    long periodus);
+    long       periodus);
 
 /**
  * @brief Continuous stream update loop.
@@ -36,23 +36,23 @@ errno_t COREMOD_MEMORY_image_streamburst(
 imageID COREMOD_MEMORY_image_streamupdateloop(
     const char *IDinname,
     const char *IDoutname,
-    long usperiod,
-    long NBcubes,
-    long period,
-    long offsetus,
+    long       usperiod,
+    long       NBcubes,
+    long       period,
+    long       offsetus,
     const char *IDsync_name,
-    int semtrig,
-    int timingmode);
+    int        semtrig,
+    int        timingmode);
 
 imageID
 COREMOD_MEMORY_image_streamupdateloop_semtrig(
     const char *IDinname,
     const char *IDoutname,
-    long period,
-    long offsetus,
+    long       period,
+    long       offsetus,
     const char *IDsync_name,
-    int semtrig,
-    int timingmode);
+    int        semtrig,
+    int        timingmode);
 
 
 /* ================================================================
@@ -346,7 +346,7 @@ errno_t COREMOD_MEMORY_image_streamburst(
         IMGID img = imgid_make_from_name(
                         IDin_name);
         resolveIMGID(
-            &img, ERRMODE_ABORT,
+            &img,  ERRMODE_ABORT,
             dcimg, dcnimg);
         IDin = img.ID;
     }
@@ -370,7 +370,7 @@ errno_t COREMOD_MEMORY_image_streamburst(
         IMGID img = imgid_make_from_name(
                         IDout_name);
         resolveIMGID(
-            &img, ERRMODE_ABORT,
+            &img,  ERRMODE_ABORT,
             dcimg, dcnimg);
         IDout = img.ID;
     }
@@ -523,7 +523,7 @@ COREMOD_MEMORY_image_streamupdateloop(
             IMGID img = imgid_make_from_name(
                             IDinname);
             resolveIMGID(
-                &img, ERRMODE_ABORT,
+                &img,  ERRMODE_ABORT,
                 dcimg, dcnimg);
             IDin[0] = img.ID;
         }
@@ -533,7 +533,7 @@ COREMOD_MEMORY_image_streamupdateloop(
             IMGID img = imgid_make_from_name(
                             IDsync_name);
             resolveIMGID(
-                &img, ERRMODE_NULL,
+                &img,  ERRMODE_NULL,
                 dcimg, dcnimg);
             IDsync = img.ID;
         }
@@ -550,7 +550,7 @@ COREMOD_MEMORY_image_streamupdateloop(
             IMGID img = imgid_make_from_name(
                             IDsync_name);
             resolveIMGID(
-                &img, ERRMODE_NULL,
+                &img,  ERRMODE_NULL,
                 dcimg, dcnimg);
             IDsync = img.ID;
         }
@@ -571,7 +571,7 @@ COREMOD_MEMORY_image_streamupdateloop(
                     imgid_make_from_name(
                         imname);
                 resolveIMGID(
-                    &img, ERRMODE_ABORT,
+                    &img,  ERRMODE_ABORT,
                     dcimg, dcnimg);
                 IDin[cubeindex] = img.ID;
             }
@@ -604,7 +604,7 @@ COREMOD_MEMORY_image_streamupdateloop(
         IMGID img = imgid_make_from_name(
                         IDoutname);
         resolveIMGID(
-            &img, ERRMODE_NULL,
+            &img,  ERRMODE_NULL,
             dcimg, dcnimg);
         IDout = img.ID;
     }
@@ -837,7 +837,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
         IMGID img = imgid_make_from_name(
                         IDinname);
         resolveIMGID(
-            &img, ERRMODE_ABORT,
+            &img,  ERRMODE_ABORT,
             dcimg, dcnimg);
         IDin = img.ID;
     }
@@ -859,7 +859,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
         IMGID img = imgid_make_from_name(
                         IDoutname);
         resolveIMGID(
-            &img, ERRMODE_NULL,
+            &img,  ERRMODE_NULL,
             dcimg, dcnimg);
         IDout = img.ID;
     }
@@ -893,7 +893,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
         IMGID img = imgid_make_from_name(
                         IDsync_name);
         resolveIMGID(
-            &img, ERRMODE_NULL,
+            &img,  ERRMODE_NULL,
             dcimg, dcnimg);
         IDsync = img.ID;
     }

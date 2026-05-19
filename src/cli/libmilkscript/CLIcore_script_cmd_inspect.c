@@ -62,7 +62,8 @@ extern errno_t processinfo_procdirname(
  * embed inside a JSON string literal.
  */
 static void json_escape_str(
-    char *buf, size_t bufsz,
+    char       *buf,
+    size_t     bufsz,
     const char *src)
 {
     size_t bi = 0;
@@ -129,7 +130,8 @@ static void json_escape_str(
  * Returns the number of entries emitted.
  */
 static int emit_fps_json_body(
-    const char *pat, int indent)
+    const char *pat,
+    int        indent)
 {
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
     function_parameter_struct_shmdirname(
@@ -598,7 +600,8 @@ errno_t cli_cmd_fpsdump(void)
  * Returns number of entries emitted.
  */
 static int emit_streams_json_body(
-    const char *pat, int indent)
+    const char *pat,
+    int        indent)
 {
     char pad[32];
     {

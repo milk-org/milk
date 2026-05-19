@@ -15,8 +15,9 @@
  * @param[in]     input_image  Pointer to the input stream's IMAGE.
  * @return RETURN_SUCCESS on success.
  */
-errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-        IMAGE        *output_image,
-        IMAGE        *input_image);
+errno_t processinfo_update_output_stream(
+    PROCESSINFO *processinfo,
+    IMAGE       *output_image,
+    IMAGE       *input_image);
 
 #endif

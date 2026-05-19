@@ -38,29 +38,37 @@ static long       NB_thrarray_semwait;
 imageID COREMOD_MEMORY_image_seminfo(
     const char *IDname);
 imageID COREMOD_MEMORY_image_set_sempost(
-    const char *IDname, long index);
+    const char *IDname,
+    long       index);
 /**
  * @brief Post to all semaphores of a stream (by ID).
  */
 imageID COREMOD_MEMORY_image_set_sempost_byID(
-    imageID ID, long index);
+    imageID ID,
+    long    index);
 /**
  * @brief Post to all semaphores except one (by ID).
  */
 imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
-    imageID ID, long index);
+    imageID ID,
+    long    index);
 imageID COREMOD_MEMORY_image_set_sempost_loop(
-    const char *IDname, long index,
-    long dtus);
+    const char *IDname,
+    long       index,
+    long       dtus);
 imageID COREMOD_MEMORY_image_set_semwait(
-    const char *IDname, long index);
+    const char *IDname,
+    long       index);
 void *waitforsemID(void *ID);
 errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
-    imageID *IDarray, long NB_ID);
+    imageID *IDarray,
+    long    NB_ID);
 errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
-    imageID *IDarray, long NB_ID);
+    imageID *IDarray,
+    long    NB_ID);
 imageID COREMOD_MEMORY_image_set_semflush(
-    const char *IDname, long index);
+    const char *IDname,
+    long       index);
 
 
 /* ================================================================
@@ -454,7 +462,8 @@ imageID COREMOD_MEMORY_image_seminfo(
  * @return Image ID
  */
 imageID COREMOD_MEMORY_image_set_sempost(
-    const char *IDname, long index)
+    const char *IDname,
+    long       index)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(
@@ -486,7 +495,8 @@ imageID COREMOD_MEMORY_image_set_sempost(
  * @return Image ID
  */
 imageID COREMOD_MEMORY_image_set_sempost_byID(
-    imageID ID, long index)
+    imageID ID,
+    long    index)
 {
     if(ID < 0 || ID >= dcnimg)
     {
@@ -505,7 +515,8 @@ imageID COREMOD_MEMORY_image_set_sempost_byID(
  * @return Image ID
  */
 imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
-    imageID ID, long index)
+    imageID ID,
+    long    index)
 {
     if(ID < 0 || ID >= dcnimg)
     {
@@ -531,7 +542,7 @@ imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
 imageID
 COREMOD_MEMORY_image_set_sempost_loop(
     const char *IDname, long index,
-    long dtus)
+    long       dtus)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(
@@ -566,7 +577,8 @@ COREMOD_MEMORY_image_set_sempost_loop(
  * @return Image ID
  */
 imageID COREMOD_MEMORY_image_set_semwait(
-    const char *IDname, long index)
+    const char *IDname,
+    long       index)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(
@@ -689,7 +701,8 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
  * @return RETURN_SUCCESS
  */
 errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
-    imageID *IDarray, long NB_ID)
+    imageID *IDarray,
+    long    NB_ID)
 {
 
     int  semval;
@@ -729,7 +742,8 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
  * @return Image ID
  */
 imageID COREMOD_MEMORY_image_set_semflush(
-    const char *IDname, long index)
+    const char *IDname,
+    long       index)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(

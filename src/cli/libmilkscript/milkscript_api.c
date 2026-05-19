@@ -42,7 +42,7 @@ extern void libinit_COREMOD_iofits(void);
  * and prepares the command dispatch table.
  */
 errno_t milkscript_init(
-    int argc,
+    int  argc,
     char **argv)
 {
     if(argc > 0 && argv && argv[0])

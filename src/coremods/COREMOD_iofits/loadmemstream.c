@@ -37,8 +37,7 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 imageID COREMOD_IOFITS_LoadMemStream(
     const char *sname,
     uint64_t   *streamflag,
-    uint32_t   *imLOC
-)
+    uint32_t   *imLOC)
 {
     imageID ID = -1;
 

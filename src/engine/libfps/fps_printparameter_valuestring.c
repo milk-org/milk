@@ -14,9 +14,8 @@
  */
 static void fps_printparameter_bare_stream_name(
     const char *streamspec,
-    char *streamname,
-    size_t streamname_size
-)
+    char       *streamname,
+    size_t     streamname_size)
 {
     const char *basename = streamspec;
 
@@ -43,9 +42,8 @@ static void fps_printparameter_bare_stream_name(
  */
 errno_t functionparameter_PrintParameter_ValueString(
     FPS_PARAM *fpsentry,
-    char *outstring,
-    int stringmaxlen
-)
+    char      *outstring,
+    int       stringmaxlen)
 {
     int cmdOK = 0;
 
@@ -199,9 +197,8 @@ errno_t functionparameter_PrintParameter_ValueString(
  */
 errno_t functionparameter_GetParamValueString(
     FPS_PARAM *fpsentry,
-    char *outstring,
-    int stringmaxlen
-)
+    char      *outstring,
+    int       stringmaxlen)
 {
     int cmdOK = 0;
 

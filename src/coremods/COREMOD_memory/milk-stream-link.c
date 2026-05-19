@@ -60,7 +60,7 @@ static const char *get_shmdir(void)
  */
 static void print_help(
     const char *progname,
-    int color)
+    int        color)
 {
     milk_help_banner(progname, LSL_DESC, color);
     milk_help_section("Usage", color);

@@ -104,32 +104,77 @@ typedef struct
  * ============================================================= */
 
 // setup.c
-int run_cmd(const char *fmt, ...);
+int run_cmd(
+    const char *fmt,
+    ...);
 void resolve_procdir(bench_cfg_t *cfg);
-void resolve_shmdir(char *shmdir, size_t sz);
+void resolve_shmdir(
+    char   *shmdir,
+    size_t sz);
 void resolve_git_commit(bench_cfg_t *cfg);
 int64_t exe_size(const char *exe);
-void read_build_tags(const char *exe, char *out, size_t outsz);
-void make_fpsname(char *out, size_t sz);
-void fps_set(const char *fpsname, const char *key, const char *val);
+void read_build_tags(
+    const char *exe,
+    char       *out,
+    size_t     outsz);
+void make_fpsname(
+    char   *out,
+    size_t sz);
+void fps_set(
+    const char *fpsname,
+    const char *key,
+    const char *val);
 void fps_setup(bench_cfg_t *cfg);
 void fps_create_streams(bench_cfg_t *cfg);
 void fps_cleanup(bench_cfg_t *cfg);
 
 // sysmon.c
-void find_proc_shm(bench_cfg_t *cfg, pid_t pid, char *shm_path, size_t sz);
-void read_proc_mem(pid_t pid, pi_stats_t *st);
-void read_smaps_huge(pid_t pid, pi_stats_t *st);
+void find_proc_shm(
+    bench_cfg_t *cfg,
+    pid_t       pid,
+    char        *shm_path,
+    size_t      sz);
+void read_proc_mem(
+    pid_t      pid,
+    pi_stats_t *st);
+void read_smaps_huge(
+    pid_t      pid,
+    pi_stats_t *st);
 void read_cpu_freq(pi_stats_t *st);
 int64_t read_rapl_energy(void);
-void read_procinfo_stats(bench_cfg_t *cfg, pid_t pid, pi_stats_t *st);
+void read_procinfo_stats(
+    bench_cfg_t *cfg,
+    pid_t       pid,
+    pi_stats_t  *st);
 
 // perf.c
-int perf_open_all(pid_t pid, int *fds);
-void perf_read_close(int *fds, hw_phase_t *hw);
+int perf_open_all(
+    pid_t pid,
+    int   *fds);
+void perf_read_close(
+    int        *fds,
+    hw_phase_t *hw);
 
 // report.c
-void write_json(const bench_cfg_t *cfg, const hw_phase_t *t, const hw_phase_t *w, int measured, long long t_ns, long long w_ns, const pi_stats_t *pi, const pi_stats_t *pi_w, int64_t exe_size);
-void print_summary(const bench_cfg_t *cfg, int measured, const hw_phase_t *t, const hw_phase_t *w, long long t_ns, long long w_ns, const pi_stats_t *pi, const pi_stats_t *pi_w, int64_t exe_size);
+void write_json(
+    const bench_cfg_t *cfg,
+    const hw_phase_t  *t,
+    const hw_phase_t  *w,
+    int               measured,
+    long long         t_ns,
+    long long         w_ns,
+    const pi_stats_t  *pi,
+    const pi_stats_t  *pi_w,
+    int64_t           exe_size);
+void print_summary(
+    const bench_cfg_t *cfg,
+    int               measured,
+    const hw_phase_t  *t,
+    const hw_phase_t  *w,
+    long long         t_ns,
+    long long         w_ns,
+    const pi_stats_t  *pi,
+    const pi_stats_t  *pi_w,
+    int64_t           exe_size);
 
 #endif /* PERFBENCH_H */

@@ -16,7 +16,7 @@
 
 static int get_graph_start_node(
     const OV_LAYOUT *lay,
-    const OV_MODEL *m)
+    const OV_MODEL  *m)
 {
     ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
     int target_type = -1;
@@ -60,7 +60,8 @@ extern void  ov_scan_set_interval(float s);
 extern int ov_help_visible_count(const OV_LAYOUT *lay);
 extern int ov_help_nb_sections(void);
 extern int ov_help_toggle_at(
-    OV_LAYOUT *lay, int vis_row);
+    OV_LAYOUT *lay,
+    int       vis_row);
 
 /**
  * hit_panel_tab - detect which tab label was clicked.
@@ -106,7 +107,7 @@ static int hit_panel_tab(
 
 
 static int ov_input__handle_filter_mode(
-    int key,
+    int       key,
     OV_LAYOUT *lay)
 {
     char *active_filter = NULL;
@@ -265,9 +266,9 @@ static const OV_FPS *ov_input_get_sel_fps(
  * @brief Count visible items after filtering.
  */
 static int ov_input_get_filtered_count(
-    int focus,
+    int             focus,
     const OV_LAYOUT *lay,
-    const OV_MODEL *m)
+    const OV_MODEL  *m)
 {
     int count = 0;
     if(focus == OV_FOCUS_STREAMS)
@@ -322,7 +323,8 @@ static const char *stream_col_names[] =
 };
 
 static void ov_input__streams_header_click(
-    OV_LAYOUT *lay, int mc)
+    OV_LAYOUT *lay,
+    int       mc)
 {
     int c = mc - lay->r_streams.col - 5
             + lay->hscroll_stream;
@@ -393,7 +395,8 @@ static const char *proc_col_names[] =
 };
 
 static void ov_input__procs_header_click(
-    OV_LAYOUT *lay, int mc)
+    OV_LAYOUT *lay,
+    int       mc)
 {
     int c = mc - lay->r_procs.col - 5
             + lay->hscroll_proc;
@@ -455,7 +458,8 @@ static const char *fps_col_names[] =
 };
 
 static void ov_input__fps_header_click(
-    OV_LAYOUT *lay, int mc)
+    OV_LAYOUT *lay,
+    int       mc)
 {
     int c = mc - lay->r_fps.col - 4
             + lay->hscroll_fps;
@@ -604,10 +608,10 @@ static void ov_input__exec_preview_btn(
 }
 
 void ov_hittest(
-    OV_LAYOUT *lay,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int mr,
-    int mc)
+    int            mr,
+    int            mc)
 {
     lay->hover_view = -1;
     lay->hover_idx = -1;
@@ -807,7 +811,7 @@ void ov_hittest(
 }
 
 void ov_hittest_resolve_globals(
-    OV_LAYOUT *lay,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m)
 {
     lay->hover_global_stream = -1;
@@ -990,8 +994,8 @@ void ov_hittest_resolve_globals(
 }
 
 static int ov_input__handle_mouse(
-    int key,
-    OV_LAYOUT *lay,
+    int            key,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m)
 {
     if(key == OV_KEY_MOUSE_CLICK)
@@ -1859,7 +1863,7 @@ static int ov_input__handle_mouse(
                 {
                     SG_RENDER_NODE rnodes[OV_MAX_NODES];
                     count = sg_compute_render_nodes(
-                                m, start_node,
+                                m,                 start_node,
                                 lay->lineage_mode, rnodes);
                 }
                 else
@@ -1930,7 +1934,7 @@ static int ov_input__handle_mouse(
                     {
                         SG_RENDER_NODE rnodes[OV_MAX_NODES];
                         count = sg_compute_render_nodes(
-                                    m, start_node,
+                                    m,                 start_node,
                                     lay->lineage_mode, rnodes);
                     }
                     else
@@ -2023,7 +2027,7 @@ static int ov_input__handle_mouse(
 #undef INSIDE
 
 static int ov_input__handle_view_switch(
-    int key,
+    int       key,
     OV_LAYOUT *lay)
 {
     if(key >= OV_KEY_F2 && key <= OV_KEY_F6)
@@ -2115,8 +2119,8 @@ static int ov_input__handle_view_switch(
 }
 
 static int ov_input__handle_misc_toggles(
-    int key,
-    OV_LAYOUT *lay,
+    int            key,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m)
 {
     if(key == '+' || key == '=')
@@ -2406,7 +2410,7 @@ static int ov_input__handle_misc_toggles(
 }
 
 static int ov_input__handle_sorting(
-    int key,
+    int       key,
     OV_LAYOUT *lay)
 {
     if(key == 'S')
@@ -2588,8 +2592,8 @@ static const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *
 }
 
 static int ov_input__handle_actions(
-    int key,
-    OV_LAYOUT *lay,
+    int            key,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m)
 {
     OV_CMDLOG *log = &lay->cmdlog;
@@ -2870,8 +2874,11 @@ static int ov_input__handle_actions(
     return 0;
 }
 
-static int find_relative_node_of_type(const OV_MODEL *m, int start_node, int target_type,
-                                      int upstream)
+static int find_relative_node_of_type(
+    const OV_MODEL *m,
+    int            start_node,
+    int            target_type,
+    int            upstream)
 {
     int queue[OV_MAX_NODES];
     int visited[OV_MAX_NODES];
@@ -2912,8 +2919,8 @@ static int find_relative_node_of_type(const OV_MODEL *m, int start_node, int tar
 }
 
 static int ov_input__handle_ancestry_nav(
-    int key,
-    OV_LAYOUT *lay,
+    int            key,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m)
 {
     if(key != OV_KEY_SHIFT_UP && key != OV_KEY_SHIFT_DOWN)
@@ -3005,8 +3012,8 @@ static int ov_input__handle_ancestry_nav(
 }
 
 static int ov_input__handle_navigation(
-    int key,
-    OV_LAYOUT *lay,
+    int            key,
+    OV_LAYOUT      *lay,
     const OV_MODEL *m)
 {
     int *sel    = NULL;

@@ -14,8 +14,7 @@
  */
 void cli_exec_lines(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int  nlines
-)
+    int nlines)
 {
     for(int i = 0; i < nlines; i++)
     {

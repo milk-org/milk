@@ -16,7 +16,7 @@
  */
 int processinfo_shm_close(
     PROCESSINFO *pinfo,
-    int fd)
+    int         fd)
 {
     if(munmap(pinfo, sizeof(PROCESSINFO)) == -1)
     {

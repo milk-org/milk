@@ -126,7 +126,8 @@ static inline void TUI_newline(void)
 
 __attribute__((format(printf, 1, 2)))
 static inline void TUI_printfw(
-    const char *fmt, ...)
+    const char *fmt,
+    ...)
 {
     char    tmpbuf[2048];
     va_list ap;

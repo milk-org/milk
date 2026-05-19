@@ -153,7 +153,7 @@ double arith_image_max(const char *ID_name)
 }
 
 double arith_image_percentile_IMGID(
-    IMGID *imgin,
+    IMGID  *imgin,
     double fraction)
 {
 
@@ -352,7 +352,7 @@ double arith_image_percentile_IMGID(
  */
 double arith_image_percentile(
     const char *ID_name,
-    double fraction)
+    double     fraction)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_percentile_IMGID(&imgin, fraction);

@@ -93,7 +93,7 @@ errno_t shmim_purge(const char *strfilter)
         IMGID img = imgid_make_from_name(
             streaminfo[sindex].sname);
         resolveIMGID(
-            &img, ERRMODE_NULL,
+            &img,  ERRMODE_NULL,
             dcimg, dcnimg);
         if(img.ID == -1)
         {
@@ -108,7 +108,7 @@ errno_t shmim_purge(const char *strfilter)
             }
 
             resolveIMGID(
-                &img, ERRMODE_NULL,
+                &img,  ERRMODE_NULL,
                 dcimg, dcnimg);
             if(img.ID == -1 || img.im == NULL)
             {

@@ -96,9 +96,9 @@ ARITH_CST_OPTIMIZED_FUNCTION(mult, *)
 ARITH_CST_OPTIMIZED_FUNCTION(div, /)
 
 errno_t arith_image_cstpow_optimized_IMGID(
-    IMGID *imgin,
+    IMGID  *imgin,
     double f1,
-    IMGID *imgout)
+    IMGID  *imgout)
 {
     DEBUG_TRACE_FSTART();
     if(imgin->im == NULL)

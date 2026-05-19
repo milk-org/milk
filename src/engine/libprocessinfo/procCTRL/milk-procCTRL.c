@@ -24,7 +24,7 @@ errno_t processinfo_CTRLscreen();
  */
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, "interactive TUI for monitoring and controlling milk processes",
                      mh_color);

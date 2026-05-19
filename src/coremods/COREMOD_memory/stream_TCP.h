@@ -12,16 +12,16 @@ CLIADDCMD_COREMOD_memory__stream_TCP();
 errno_t
 COREMOD_MEMORY_testfunction_semaphore(
     const char *IDname,
-    int semtrig,
-    int testmode);
+    int        semtrig,
+    int        testmode);
 
 imageID
 COREMOD_MEMORY_image_NETWORKtransmit(
     const char *IDname,
     const char *IPaddr,
-    int port,
-    int mode,
-    int RT_priority);
+    int        port,
+    int        mode,
+    int        RT_priority);
 
 imageID
 COREMOD_MEMORY_image_NETWORKreceive(

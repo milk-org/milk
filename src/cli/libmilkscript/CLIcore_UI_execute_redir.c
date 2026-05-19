@@ -69,8 +69,7 @@ int cli_find_unquoted_op(
     const char *line,
     char       primary,
     char       reject,
-    char        accept
-)
+    char       accept)
 {
     int in_sq = 0;
     int in_dq = 0;
@@ -121,7 +120,7 @@ int cli_find_unquoted_op(
  * @brief Helper to safely create and open a temporary file
  */
 static FILE *cli_mkstemp_open(
-    char *namebuf, size_t sz,
+    char       *namebuf, size_t sz,
     const char *prefix,
     const char *mode)
 {
@@ -655,9 +654,8 @@ int cli_handle_input_redir(
  * from the string value.
  */
 static void cli_redir_fps_writeback(
-    char *rfile,
-    const char *tempname
-)
+    char       *rfile,
+    const char *tempname)
 {
     char *fpspath = rfile + 3;
     char *dot = strchr(fpspath, '.');
@@ -752,8 +750,7 @@ static void cli_redir_fps_writeback(
  */
 static void cli_redir_stream_writeback(
     const char *rfile,
-    const char *tempname
-)
+    const char *tempname)
 {
     char *sname = (char *)(rfile + 3);
     IMAGE *img =
@@ -775,7 +772,7 @@ static void cli_redir_stream_writeback(
                     * img->md->nelement;
                 size_t bread = fread(
                                    img->array.raw, 1,
-                                   bytes, tf);
+                                   bytes,          tf);
                 (void)bread;
                 do_update = 1;
             }
@@ -1065,7 +1062,7 @@ int cli_handle_background(
  */
 int is_internal_cmd(
     const char *firstword,
-    int check_assign)
+    int        check_assign)
 {
     static const char *keywords[] =
     {
@@ -1121,8 +1118,7 @@ int is_internal_cmd(
  */
 void cli_pipe_setup(
     FILE **pipe_fp,
-    int   *saved_stdout_fd
-)
+    int  *saved_stdout_fd)
 {
     *pipe_fp         = NULL;
     *saved_stdout_fd = -1;
@@ -1166,8 +1162,7 @@ void cli_pipe_setup(
  */
 void cli_pipe_teardown(
     FILE *pipe_fp,
-    int   saved_stdout_fd
-)
+    int  saved_stdout_fd)
 {
     if(pipe_fp == NULL)
     {
@@ -1194,8 +1189,7 @@ void cli_pipe_teardown(
  */
 void cli_redir_setup(
     FILE **redir_fp,
-    int   *saved_stdout_fd
-)
+    int  *saved_stdout_fd)
 {
     *redir_fp        = NULL;
     *saved_stdout_fd = -1;
@@ -1251,8 +1245,7 @@ void cli_redir_setup(
  */
 void cli_redir_teardown(
     FILE *redir_fp,
-    int   saved_stdout_fd
-)
+    int  saved_stdout_fd)
 {
     if(redir_fp == NULL)
     {

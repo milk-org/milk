@@ -170,9 +170,9 @@ static inline void stream_net_rt_sched_set(
  * semaphore and increments *iter_p.
  */
 static inline void stream_net_sem_drain(
-    IMAGE *img,
-    int semtrig,
-    long long *iter_p,
+    IMAGE       *img,
+    int         semtrig,
+    long long   *iter_p,
     PROCESSINFO *pinfo)
 {
     if (*iter_p == 0)
@@ -262,9 +262,9 @@ static inline int stream_net_clamp_slice(
  * Returns 1 for semaphore sync, 0 for counter sync.
  */
 static inline int stream_net_decide_sync(
-    int sem_count,
-    int force_cnt,
-    int semtrig,
+    int         sem_count,
+    int         force_cnt,
+    int         semtrig,
     PROCESSINFO *pinfo)
 {
     if (sem_count == 0 || force_cnt == 1)
@@ -295,7 +295,7 @@ static inline int stream_net_decide_sync(
  */
 static inline int stream_net_sem_wait(
     IMAGE *img,
-    int semtrig)
+    int   semtrig)
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_MILK, &ts) == -1)

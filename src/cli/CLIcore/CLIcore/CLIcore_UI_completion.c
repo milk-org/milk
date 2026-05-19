@@ -125,8 +125,7 @@ int ghost_chars_on_line = 0;
  */
 int cli_accept_line(
     int count,
-    int key
-)
+    int key)
 {
     if(ghost_chars_on_line > 0)
     {
@@ -335,8 +334,7 @@ errno_t runCLI_prompt(
  */
 int levenshtein_distance(
     const char *s1,
-    const char *s2
-)
+    const char *s2)
 {
     unsigned int len1 = strlen(s1);
     unsigned int len2 = strlen(s2);

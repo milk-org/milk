@@ -42,8 +42,7 @@ char cli_prompt_format[200] = "";
 void cli_build_prompt(
     const char *fmt,
     char       *out,
-    int         maxlen
-)
+    int        maxlen)
 {
     int pos = 0;
     for(int i = 0; fmt[i] != '\0'
@@ -90,7 +89,7 @@ void cli_build_prompt(
                 time_t now = time(NULL);
                 struct tm *tm = localtime(&now);
                 pos += (int) strftime(
-                           out + pos,
+                           out +             pos,
                            (size_t)(maxlen - pos),
                            "%H:%M:%S", tm);
                 break;
@@ -159,11 +158,10 @@ errno_t cli_setprompt(void)
  * and {0..10..2} with "0 2 4 6 8 10".
  */
 void emit_str(
-    char *out,
-    int  *opos,
-    int  maxlen,
-    const char *s
-);
+    char       *out,
+    int        *opos,
+    int        maxlen,
+    const char *s);
 /**
  * @brief Expand brace expressions in a command line.
  *
@@ -171,8 +169,7 @@ void emit_str(
  */
 void cli_expand_braces(
     char *line,
-    int   maxlen
-)
+    int  maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos = 0;
@@ -283,11 +280,10 @@ void cli_expand_braces(
  * @brief Emit string into output buffer
  */
 void emit_str(
-    char *out,
-    int  *opos,
-    int  maxlen,
-    const char *s
-)
+    char       *out,
+    int        *opos,
+    int        maxlen,
+    const char *s)
 {
     while(*s != '\0' && *opos < maxlen - 1)
     {

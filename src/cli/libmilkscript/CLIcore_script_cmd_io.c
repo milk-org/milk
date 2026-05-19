@@ -58,8 +58,7 @@
 int cli_fps_set_param(
     const char *fpsname,
     const char *pname,
-    const char *valstr
-)
+    const char *valstr)
 {
     FPS fps;
     int fpsconn =

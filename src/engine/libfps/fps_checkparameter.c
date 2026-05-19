@@ -20,8 +20,7 @@
  */
 int functionparameter_CheckParameter(
     FPS *fpsentry,
-    int                        pindex
-)
+    int pindex)
 {
     int err = 0;
 

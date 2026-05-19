@@ -8,7 +8,8 @@
 
 #include "fps.h"
 
-int functionparameter_GetParamIndex(FPS *fps,
-                                    const char                *paramname);
+int functionparameter_GetParamIndex(
+    FPS        *fps,
+    const char *paramname);
 
 #endif

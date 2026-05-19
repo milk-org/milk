@@ -23,8 +23,7 @@
 static inline imageID RegisterIMGID(
     IMGID *img,
     IMAGE *imagearray,
-    long NB_images
-)
+    long  NB_images)
 {
     imageID ID = -1;
 
@@ -117,8 +116,7 @@ static inline imageID _resolveIMGID_impl(
     IMGID *img,
     int ERRMODE,
     IMAGE *imagearray __attribute__((unused)),
-    long NB_images __attribute__((unused))
-)
+    long NB_images __attribute__((unused)))
 {
     // IF:
     // Not resolved before OR create counter mismatch OR not used.
@@ -262,7 +260,7 @@ static inline int imgid_exists(const char *name)
  */
 static inline IMGID makesetIMGID(
     CONST_WORD name,
-    imageID ID)
+    imageID    ID)
 {
     IMGID img;
 
@@ -343,8 +341,7 @@ static inline imageID createimagefromIMGID(IMGID *img)
  */
 static inline imageID imcreatelikewiseIMGID(
     IMGID *target_img,
-    IMGID *source_img
-)
+    IMGID *source_img)
 {
     if(target_img->ID == -1)
     {
@@ -460,8 +457,7 @@ static inline IMGID _stream_connect_create_2D_impl(
     uint8_t                datatype,
     const char             *caller_file,
     int                    caller_line,
-    const char *caller_func
-)
+    const char             *caller_func)
 {
     /* Guard: an empty or NULL stream name means a required FPS
      * parameter was never configured.  Detect here and abort with
@@ -585,11 +581,10 @@ static inline IMGID _stream_connect_create_2D_impl(
  */
 static inline IMGID stream_connect_create_3D(
     const char *__restrict imname,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize,
-    uint8_t  datatype
-)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize,
+    uint8_t                datatype)
 {
     IMGID img = imgid_make_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
@@ -665,9 +660,9 @@ static inline IMGID stream_connect_create_3D(
  */
 static inline IMGID stream_connect_create_3Df32(
     const char *__restrict imname,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize)
+    uint32_t               xsize,
+    uint32_t               ysize,
+    uint32_t               zsize)
 {
     return stream_connect_create_3D(imname, xsize, ysize, zsize, _DATATYPE_FLOAT);
 }

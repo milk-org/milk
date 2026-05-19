@@ -20,8 +20,7 @@
  */
 int processinfo_WriteMessage(
     PROCESSINFO *processinfo,
-    const char  *msgstring
-)
+    const char  *msgstring)
 {
     struct timespec tnow;
     struct tm      *tnowtm;
@@ -74,8 +73,7 @@ int processinfo_WriteMessage(
 int processinfo_WriteMessage_fmt(
     PROCESSINFO *processinfo,
     const char *format,
-    ...
-)
+    ...)
 {
     va_list args;
     char msg[STRINGMAXLEN_PROCESSINFO_STATUSMSG];

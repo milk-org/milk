@@ -41,8 +41,7 @@ int cli_ts_init(void);
 void cli_ts_highlight_line(
     const char *line,
     int        len,
-    FILE       *out
-);
+    FILE       *out);
 
 /**
  * @brief Detect if terminal supports 256 colors

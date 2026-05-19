@@ -32,7 +32,7 @@
  */
 static void sg_bset(
     uint64_t *words,
-    int idx)
+    int      idx)
 {
     words[idx / SG_BITS_PER_WORD] |=
         (UINT64_C(1) << (idx % SG_BITS_PER_WORD));
@@ -43,7 +43,7 @@ static void sg_bset(
  */
 static int sg_bget(
     const uint64_t *words,
-    int idx)
+    int            idx)
 {
     return (words[idx / SG_BITS_PER_WORD]
             >> (idx % SG_BITS_PER_WORD)) & 1;
@@ -808,19 +808,19 @@ int sg_compute_render_nodes(
 }
 static void sg_dfs_tree(
     const OV_MODEL *m,
-    int current_stream,
-    int target_stream,
-    int target_proc,
+    int            current_stream,
+    int            target_stream,
+    int            target_proc,
     const uint64_t *S_words,
-    sg_mode_t mode,
-    const char *prefix,
-    int is_last,
-    int is_root,
-    int depth,
-    int *path,
-    int path_len,
-    SG_TREE_NODE *out_nodes,
-    int *nb_out_nodes)
+    sg_mode_t      mode,
+    const char     *prefix,
+    int            is_last,
+    int            is_root,
+    int            depth,
+    int            *path,
+    int            path_len,
+    SG_TREE_NODE   *out_nodes,
+    int            *nb_out_nodes)
 {
     if(*nb_out_nodes >= OV_MAX_NODES)
     {

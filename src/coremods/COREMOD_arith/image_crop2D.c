@@ -157,7 +157,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID iin =
         imgid_make_from_name(cropinsname);
     resolveIMGID(
-        &iin, ERRMODE_ABORT,
+        &iin,  ERRMODE_ABORT,
         dcimg, dcnimg);
     IMGID iout = stream_connect_create_2D(
         outsname, cropxsize, cropysize,

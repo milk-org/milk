@@ -75,19 +75,21 @@ static char   outimname[FUNCTION_PARAMETER_STRMAXLEN];
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-int arith_image_trunc_IMGID(IMGID *imgin,
-                            double f1,
-                            double f2,
-                            IMGID *imgout)
+int arith_image_trunc_IMGID(
+    IMGID  *imgin,
+    double f1,
+    double f2,
+    IMGID  *imgout)
 {
     arith_image_function_1ff_1_IMGID(imgin, f1, f2, imgout, &Ptrunc);
     return (0);
 }
 
-int arith_image_trunc(const char *ID_name,
-                      double      f1,
-                      double      f2,
-                      const char *ID_out)
+int arith_image_trunc(
+    const char *ID_name,
+    double     f1,
+    double     f2,
+    const char *ID_out)
 {
     IMGID imgin  = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(ID_out);
@@ -99,8 +101,8 @@ int arith_image_trunc(const char *ID_name,
 
 int arith_image_trunc_inplace(
     const char *ID_name,
-    double f1,
-    double f2)
+    double     f1,
+    double     f2)
 {
     arith_image_function_1ff_1_inplace(ID_name, f1, f2, &Ptrunc);
     return (0);

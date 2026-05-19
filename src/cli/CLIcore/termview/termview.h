@@ -83,6 +83,8 @@ typedef struct {
  * @param options    Initial display options
  * @return           0 on success
  */
-errno_t termview_screen(const char *imagename, termview_options_t options);
+errno_t termview_screen(
+    const char         *imagename,
+    termview_options_t options);
 
 #endif /* _TERMVIEW_H */

@@ -14,7 +14,9 @@
 void rl_cb_linehandler(char *linein);
 #endif
 
-errno_t runCLI_prompt(char *promptstring, char *prompt);
+errno_t runCLI_prompt(
+    char *promptstring,
+    char *prompt);
 
 #ifdef USE_READLINE
 char **CLI_completion(const char *, int, int);
@@ -37,10 +39,13 @@ char *dupstr(char *s);
 extern int ghost_chars_on_line;
 
 #ifdef USE_READLINE
-int  cli_accept_line(int count, int key);
+int  cli_accept_line(
+    int count,
+    int key);
 char *CLI_generator(const char *text, int state);
 int  levenshtein_distance(
-    const char *s1, const char *s2);
+    const char *s1,
+    const char *s2);
 #endif
 
 /* CLIcore_UI_highlight.c */
@@ -53,7 +58,8 @@ void cli_highlight_redisplay(void);
 #ifdef USE_READLINE
 int  find_command_match(const char *firstword);
 void set_pending_suggestion(
-    const char *text, int replace_len);
+    const char *text,
+    int        replace_len);
 #endif
 
 /* Command aliases */
@@ -105,8 +111,7 @@ errno_t cli_setprompt(void);
 void cli_build_prompt(
     const char *fmt,
     char       *out,
-    int         maxlen
-);
+    int        maxlen);
 
 /* Command bookmarks */
 errno_t cli_bookmark(void);
@@ -137,7 +142,9 @@ errno_t cli_lhistory(void);
 
 void cli_history_expand(void);
 void cli_alias_expand(void);
-void cli_expand_braces(char *line, int maxlen);
+void cli_expand_braces(
+    char *line,
+    int  maxlen);
 void cli_session_log_cmd(const char *cmd);
 void cli_history_log_cmd(const char *cmd);
 void cli_history_log_prompt(const char *prompt);

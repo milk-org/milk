@@ -122,7 +122,8 @@ static const int HELP_TOTAL =
  * @sec: section index (HS_NAV, etc.)
  */
 static inline int help_is_expanded(
-    const OV_LAYOUT *lay, int sec)
+    const OV_LAYOUT *lay,
+    int             sec)
 {
     return (lay->help_expand >> sec) & 1;
 }
@@ -169,7 +170,8 @@ static int help_section_header_idx(int n)
  * Return: number of visible rows
  */
 static int help_visible_rows(
-    const OV_LAYOUT *lay, int *map)
+    const OV_LAYOUT *lay,
+    int             *map)
 {
     int vis = 0;
     for(int i = 0; i < HELP_TOTAL; i++)
@@ -253,7 +255,7 @@ void ov_render_help(const OV_LAYOUT *lay)
 
     /* Border */
     ov_draw_panel_border(
-        pr, pc, ph, pw,
+        pr,                                  pc, ph, pw,
         "HELP  (↑↓ navigate  ENTER expand  h close)",
         OV_FG_BRIGHT, 1, 0);
 
@@ -400,7 +402,7 @@ int ov_help_visible_count(const OV_LAYOUT *lay)
  */
 int ov_help_toggle_at(
     OV_LAYOUT *lay,
-    int vis_row)
+    int       vis_row)
 {
     int map[128];
     int nvis = help_visible_rows(lay, map);

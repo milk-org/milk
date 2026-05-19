@@ -1,5 +1,8 @@
 #include <stddef.h>
-extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
+extern int cli_find_in_path(
+    const char *cmd,
+    char       *outpath,
+    size_t     outsize);
 extern int processinfo_procdirname(char *procdirname);
 
 /**
@@ -126,20 +129,16 @@ int cli_return_flag = 0;
 /* Forward declaration */
 void cli_exec_block_if(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 void cli_exec_block_while(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 void cli_exec_block_until(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 void cli_exec_block_for(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-);
+    int nlines);
 
 
 /* ---- Helper: strip whitespace ---- */
@@ -160,8 +159,7 @@ const char *strip_ws(const char *s)
  */
 int starts_with(
     const char *line,
-    const char *prefix
-)
+    const char *prefix)
 {
     return strncmp(line, prefix,
                    strlen(prefix)) == 0;
@@ -183,8 +181,7 @@ int starts_with(
 int cli_find_in_path(
     const char *name,
     char       *pathbuf,
-    size_t      pathbuf_sz
-)
+    size_t     pathbuf_sz)
 {
     /* Absolute or relative path — test directly */
     if(strchr(name, '/') != NULL)
@@ -246,8 +243,7 @@ int cli_find_in_path(
  */
 int eval_cond_line(
     const char *raw,
-    int skip
-)
+    int        skip)
 {
     char cl[STRINGMAXLEN_CLICMDLINE];
     strncpy(cl, raw,
@@ -369,7 +365,7 @@ int cli_script_intercept(const char *line)
             {
                 memcpy(
                     heredoc_buf + heredoc_pos,
-                    p, (size_t) llen);
+                    p, (size_t)   llen);
                 heredoc_pos += llen;
                 heredoc_buf[
                     heredoc_pos++] = '\n';

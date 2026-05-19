@@ -23,7 +23,8 @@ static double ipc(
 }
 
 static double miss_rate(
-    long long misses, long long loads)
+    long long misses,
+    long long loads)
 {
     if(loads == 0)
     {

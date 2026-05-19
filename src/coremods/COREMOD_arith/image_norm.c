@@ -69,8 +69,8 @@ static uint32_t *norm_sliceaxis = NULL;
  * Pure computation — takes resolved IMGIDs.
  */
 static errno_t image_slicenorm_IMGID(
-    IMGID *inimg,
-    IMGID *outimg,
+    IMGID   *inimg,
+    IMGID   *outimg,
     uint8_t sliceaxis)
 {
     if (outimg->ID == -1) {

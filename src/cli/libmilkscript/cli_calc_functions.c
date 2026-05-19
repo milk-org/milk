@@ -51,8 +51,7 @@
  */
 static val_t func_where(
     cli_token *(*cur_func)(void),
-    cli_token *(*advance_func)(void)
-)
+    cli_token *(*advance_func)(void))
 {
     val_t cond = parse_expr(0);
     if(parse_error || eval_error)
@@ -163,8 +162,7 @@ static val_t func_where(
  */
 static val_t func_replace(
     cli_token *(*cur_func)(void),
-    cli_token *(*advance_func)(void)
-)
+    cli_token *(*advance_func)(void))
 {
     val_t arg1 = parse_expr(0);
     if(parse_error || eval_error)

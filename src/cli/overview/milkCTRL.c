@@ -130,7 +130,7 @@ extern int ov_handle_key(
 
 static void print_help(
     const char *prog,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
                      mh_color);

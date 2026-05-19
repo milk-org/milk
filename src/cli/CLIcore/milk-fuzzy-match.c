@@ -73,7 +73,7 @@ struct scored_line
  * non-alphanumeric characters.
  */
 static void make_bigrams(
-    const char *s,
+    const char        *s,
     struct bigram_set *out)
 {
     out->count = 0;
@@ -178,7 +178,7 @@ static int cmp_score_desc(
  */
 static void print_help(
     const char *prog,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(prog, FM_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -217,7 +217,7 @@ static void print_help(
 }
 
 int main(
-    int argc,
+    int  argc,
     char **argv)
 {
     int action = milk_help_init(argc, argv,

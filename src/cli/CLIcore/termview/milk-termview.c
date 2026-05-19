@@ -20,7 +20,7 @@
  */
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, "TrueColor terminal image viewer", mh_color);
     milk_help_section("Usage", mh_color);
@@ -69,7 +69,7 @@ static void print_help(
 }
 
 int main(
-    int argc,
+    int  argc,
     char **argv)
 {
     const char *progname = basename(argv[0]);

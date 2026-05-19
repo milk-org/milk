@@ -343,7 +343,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
             imgid_make_from_name(IDtrig_name);
         resolveIMGID(
             &imgtrig, ERRMODE_NULL,
-            dcimg, dcnimg);
+            dcimg,    dcnimg);
         IDtrig = imgtrig.ID;
         if(IDtrig == -1)
         {

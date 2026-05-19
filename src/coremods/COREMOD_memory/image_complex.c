@@ -26,8 +26,7 @@ errno_t mk_reim_from_amph_IMGID(
     IMGID *imgam,
     IMGID *imgph,
     IMGID *imgre,
-    IMGID *imgim
-)
+    IMGID *imgim)
 {
     DEBUG_TRACE_FSTART();
 
@@ -46,11 +45,12 @@ errno_t mk_reim_from_amph_IMGID(
     return RETURN_SUCCESS;
 }
 
-errno_t mk_reim_from_amph(const char *am_name,
-                          const char *ph_name,
-                          const char *re_out_name,
-                          const char *im_out_name,
-                          int         sharedmem)
+errno_t mk_reim_from_amph(
+    const char *am_name,
+    const char *ph_name,
+    const char *re_out_name,
+    const char *im_out_name,
+    int        sharedmem)
 {
     IMGID imgam = imgid_make_from_name(am_name);
     IMGID imgph = imgid_make_from_name(ph_name);
@@ -71,8 +71,7 @@ errno_t mk_amph_from_reim_IMGID(
     IMGID *imgre,
     IMGID *imgim,
     IMGID *imgam,
-    IMGID *imgph
-)
+    IMGID *imgph)
 {
     DEBUG_TRACE_FSTART();
 
@@ -91,11 +90,12 @@ errno_t mk_amph_from_reim_IMGID(
     return RETURN_SUCCESS;
 }
 
-errno_t mk_amph_from_reim(const char *re_name,
-                          const char *im_name,
-                          const char *am_out_name,
-                          const char *ph_out_name,
-                          int         sharedmem)
+errno_t mk_amph_from_reim(
+    const char *re_name,
+    const char *im_name,
+    const char *am_out_name,
+    const char *ph_out_name,
+    int        sharedmem)
 {
     IMGID imgre = imgid_make_from_name(re_name);
     IMGID imgim = imgid_make_from_name(im_name);

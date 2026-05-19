@@ -342,8 +342,8 @@ static void procctrl_render_help(void)
  */
 static void procctrl_render_row_ctrl(
     procctrl_context_t *ctx,
-    int m,
-    int pindex)
+    int                m,
+    int                pindex)
 {
     // 4: tstart
     if(ctx->procinfoproc->col_visible[m][4])
@@ -458,8 +458,8 @@ static void procctrl_render_row_ctrl(
  */
 static void procctrl_render_row_resources(
     procctrl_context_t *ctx,
-    int m,
-    int pindex)
+    int                m,
+    int                pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -536,8 +536,8 @@ static void procctrl_render_row_resources(
  */
 static void procctrl_render_row_trigger(
     procctrl_context_t *ctx,
-    int m,
-    int pindex)
+    int                m,
+    int                pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -627,8 +627,8 @@ static void procctrl_render_row_trigger(
  */
 static void procctrl_render_row_timing(
     procctrl_context_t *ctx,
-    int m,
-    int pindex)
+    int                m,
+    int                pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -711,8 +711,8 @@ static void procctrl_render_row_timing(
  */
 static void procctrl_render_row_procinfo(
     procctrl_context_t *ctx,
-    int m,
-    int pindex)
+    int                m,
+    int                pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -804,7 +804,7 @@ static void procctrl_render_row_procinfo(
  */
 static void procctrl_render_process_list(
     procctrl_context_t *ctx,
-    int NBactive)
+    int                NBactive)
 {
     int dispindexMax = wrow - 6;
 
@@ -1038,7 +1038,7 @@ static void procctrl_render_process_list(
  */
 void procctrl_render_frame(
     procctrl_context_t *ctx,
-    int NBactive)
+    int                NBactive)
 {
     if(ctx->freeze == 0)
     {

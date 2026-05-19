@@ -47,7 +47,7 @@ static void handle_sigterm(int sig)
  */
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, "interactive stream monitor TUI", mh_color);
     milk_help_section("Usage", mh_color);

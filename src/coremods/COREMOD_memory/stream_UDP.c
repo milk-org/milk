@@ -36,11 +36,13 @@ static int DGRAM_CHUNK_SIZE = 62 *
 imageID COREMOD_MEMORY_image_NETUDPtransmit(
     const char *IDname,
     const char *IPaddr,
-    int port, int do_counter_sync,
-    int RT_priority);
+    int        port,
+    int        do_counter_sync,
+    int        RT_priority);
 
 imageID COREMOD_MEMORY_image_NETUDPreceive(
-    int port, int do_counter_sync,
+    int port,
+    int do_counter_sync,
     int RT_priority);
 
 
@@ -229,11 +231,12 @@ CLIADDCMD_COREMOD_memory__stream_UDP()
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
 
-imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
-        const char *IPaddr,
-        int         port,
-        int         do_counter_sync,
-        int         RT_priority)
+imageID COREMOD_MEMORY_image_NETUDPtransmit(
+    const char *IDname,
+    const char *IPaddr,
+    int        port,
+    int        do_counter_sync,
+    int        RT_priority)
 {
     imageID            ID;
     struct sockaddr_in sock_server;
@@ -312,7 +315,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
     {
         IMGID img = imgid_make_from_name(IDname);
         resolveIMGID(
-            &img, ERRMODE_ABORT,
+            &img,  ERRMODE_ABORT,
             dcimg, dcnimg);
         ID = img.ID;
     }
@@ -404,7 +407,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     use_sem = stream_net_decide_sync(
         dcimg[ID].md[0].sem, do_counter_sync,
-        semtrig, processinfo);
+        semtrig,             processinfo);
 
     // ===========================
     // Start loop
@@ -432,7 +435,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
             stream_net_sem_drain(
                 dcimg + ID, semtrig,
-                &iter, processinfo);
+                &iter,  processinfo);
         }
 
         processinfo_exec_start(processinfo);

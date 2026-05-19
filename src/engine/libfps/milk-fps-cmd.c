@@ -92,7 +92,7 @@ static const char *cmd_desc_long(const char *prog)
 
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, cmd_desc(progname), mh_color);
 
@@ -269,7 +269,7 @@ int main(
                  " %s:%s", fpsname, command);
 
         if(functionparameter_FPS_tmux_send_dispatch(
-                    fpsname, command,
+                    fpsname,              command,
                     fps.md->execfullpath, extra_args) != 0)
         {
             fprintf(stderr,

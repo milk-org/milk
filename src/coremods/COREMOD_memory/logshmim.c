@@ -240,7 +240,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         imgid_make_from_name(streamname);
     resolveIMGID(
         &inimg, ERRMODE_ABORT,
-        dcimg, dcnimg);
+        dcimg,  dcnimg);
 
     if(inimg.md->naxis == 3)
     {

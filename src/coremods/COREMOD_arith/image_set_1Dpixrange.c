@@ -118,7 +118,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         imgid_make_from_name(
             setpix1d_inimname);
     resolveIMGID(
-        &in, ERRMODE_ABORT,
+        &in,   ERRMODE_ABORT,
         dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

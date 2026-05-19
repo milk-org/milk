@@ -1,7 +1,10 @@
 #include <stddef.h>
 #include <math.h>
 #include "CLIcore/cli_calc_parser.h"
-extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
+extern int cli_find_in_path(
+    const char *cmd,
+    char       *outpath,
+    size_t     outsize);
 extern int processinfo_procdirname(char *procdirname);
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -579,8 +582,7 @@ int cli_intercept_cmd_time(const char *p)
  */
 static int cli_assert_eval(
     const char *expr,
-    double     *out
-)
+    double     *out)
 {
     int type = 0;
     long lval = 0;
@@ -609,8 +611,7 @@ static int cli_cmp_ok(
     double a,
     double b,
     char   op_ch,
-    int    op_eq
-)
+    int    op_eq)
 {
     if(op_ch == '<')
     {
@@ -644,8 +645,7 @@ static void cli_assert_trim(
     char       *dst,
     size_t     sz,
     const char *src,
-    int         len
-)
+    int        len)
 {
     if(len >= (int) sz)
     {
@@ -929,7 +929,7 @@ int cli_intercept_cmd_assert(const char *p)
                     {
                         char mb[512];
                         strncpy(
-                            mb, msg,
+                            mb,          msg,
                             sizeof(mb) - 1);
                         mb[sizeof(mb) - 1]
                             = '\0';

@@ -143,7 +143,7 @@ static void sg_raw_exit(void)
 
 static void print_usage(
     const char *prog,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(prog, SG_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);

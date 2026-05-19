@@ -49,12 +49,11 @@ static uint32_t colsize = 1;
       FPFLAG_DEFAULT_INPUT, "column size")
 
 errno_t image_unfold(
-    IMGID inimg,
-    IMGID *outimg,
+    IMGID   inimg,
+    IMGID   *outimg,
     uint8_t axisA,
     uint8_t axisB,
-    int colsize
-)
+    int     colsize)
 {
     DEBUG_TRACE_FSTART();
 

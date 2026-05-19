@@ -13,6 +13,5 @@ errno_t COREMOD_MEMORY_streamDelay(
     const char *IDin_name,
     const char *IDout_name,
     long       delayus,
-    long        dtus
-);
+    long       dtus);
 */

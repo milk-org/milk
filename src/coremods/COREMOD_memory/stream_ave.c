@@ -202,7 +202,7 @@ compute_function()
         imgid_make_from_name(
             streamave_inimname);
     resolveIMGID(
-        &in, ERRMODE_NULL,
+        &in,   ERRMODE_NULL,
         dcimg, dcnimg);
 
     if (in.im == NULL)
@@ -258,7 +258,7 @@ compute_function()
 
     fpsexec(
         in.im, imgoutave, imgoutrms,
-        d1, d2);
+        d1,    d2);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

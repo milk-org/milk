@@ -131,8 +131,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *IDmap_name,
     const char *IDout_name,
     const char *IDout_pixslice_fname,
-    uint32_t    reverse
-)
+    uint32_t   reverse)
 {
     imageID            IDout = -1;
     imageID            IDin;

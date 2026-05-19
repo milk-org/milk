@@ -62,7 +62,7 @@ static int             g_n_entries;
  * -------------------------------------------------------------- */
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, FEL_DESC, mh_color);
     milk_help_section("Usage", mh_color);

@@ -268,7 +268,8 @@ static inline void ov_buf_gradient_bar(
 static inline void ov_buf_printf_gradient(
     ov_rgb_t a,
     ov_rgb_t b,
-    const char *fmt, ...)
+    const char *fmt,
+    ...)
 {
     char tmp[4096];
     va_list ap;

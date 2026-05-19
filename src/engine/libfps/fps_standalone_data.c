@@ -62,8 +62,7 @@ errno_t RegisterModule(
     const char *restrict InfoString __attribute__((unused)),
     int versionmajor __attribute__((unused)),
     int versionminor __attribute__((unused)),
-    int versionpatch __attribute__((unused))
-)
+    int versionpatch __attribute__((unused)))
 {
     return RETURN_SUCCESS;
 }
@@ -78,8 +77,7 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLIinfo __attribute__((unused)),
     const char *restrict CLIsyntax __attribute__((unused)),
     const char *restrict CLIexample __attribute__((unused)),
-    const char *restrict CLICcall __attribute__((unused))
-)
+    const char *restrict CLICcall __attribute__((unused)))
 {
     return 0;
 }
@@ -89,8 +87,7 @@ uint32_t RegisterCLIcommand(
  */
 uint32_t RegisterCLIcmd(
     CLICMDDATA CLIcmddata __attribute__((unused)),
-    errno_t (*CLIfptr)() __attribute__((unused))
-)
+    errno_t (*CLIfptr)() __attribute__((unused)))
 {
     return 0;
 }
@@ -107,9 +104,8 @@ uint32_t RegisterCLIcmd(
  */
 imageID image_ID(
     const char *name,
-    IMAGE      *imagearray __attribute__((unused)),
-    long        NB_images __attribute__((unused))
-)
+    IMAGE *imagearray __attribute__((unused)),
+    long NB_images __attribute__((unused)))
 {
     for(long ii = 0; ii < NB_images; ii++)
     {

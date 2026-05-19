@@ -26,7 +26,7 @@ void ov_render_streams_panel(
     int filt_idx[OV_MAX_STREAMS];
     int filt_n = ov_filter_build(
                      lay->filter_stream, names,
-                     m->nb_streams, filt_idx, OV_MAX_STREAMS);
+                     m->nb_streams,      filt_idx, OV_MAX_STREAMS);
 
     if(lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
     {
@@ -125,7 +125,7 @@ void ov_render_streams_panel(
 
     /* Separator between header and data rows */
     render_separator(
-        hrow + 1, r.col + 1,
+        hrow +    1, r.col + 1,
         r.width - 2, OV_FG_STREAM_HDR);
 
     int max_rows = r.height - 4;
@@ -658,7 +658,7 @@ void ov_render_streams_panel(
         {
             clear_row(
                 row, r.col + 1,
-                r.width - 2, OV_BG_PANEL);
+                r.width -    2, OV_BG_PANEL);
         }
     }
     render_scroll_indicators(

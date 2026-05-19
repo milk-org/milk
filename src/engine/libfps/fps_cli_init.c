@@ -26,8 +26,7 @@ errno_t fps_init_from_bindings(
     const char      *cmdkey,
     const char      *description,
     FPS_CLI_BINDING *bindings,
-    int                        nb_b
-)
+    int             nb_b)
 {
     strncpy(fps->md->callprogname, cmdkey,
             FPS_CALLPROGNAME_STRMAXLEN - 1);

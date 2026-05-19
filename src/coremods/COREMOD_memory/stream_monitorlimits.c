@@ -170,7 +170,7 @@ static MILK_HOT errno_t compute_function()
         imgid_make_from_name(inimname);
     resolveIMGID(
         &inimg, ERRMODE_ABORT,
-        dcimg, dcnimg);
+        dcimg,  dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

@@ -55,7 +55,7 @@ short unsigned int wrow, wcol;
  */
 static int processinfo_CPUsets_List(
     STRINGLISTENTRY *CPUsetList,
-    int has_cset)
+    int             has_cset)
 {
     if(has_cset == 0)
     {
@@ -112,7 +112,7 @@ static int processinfo_CPUsets_List(
  */
 static int __attribute__(
     (unused)) processinfo_SelectFromList(STRINGLISTENTRY *StringList,
-            int NBelem)
+    int NBelem)
 {
     int selected = 0;
     int inputOK = 0;
@@ -311,8 +311,9 @@ static errno_t procctrl_init(procctrl_context_t *ctx)
     ctx->procinfoproc->selected_col = 1;
 
     ctx->CPUsetList = (STRINGLISTENTRY *) malloc(sizeof(STRINGLISTENTRY) * 1000);
-    int NBCPUset __attribute__((unused)) = processinfo_CPUsets_List(ctx->CPUsetList,
-                                           ctx->procinfoproc->has_cset);
+    int NBCPUset __attribute__(
+    (unused)) = processinfo_CPUsets_List(ctx->CPUsetList,
+    ctx->procinfoproc->has_cset);
 
     if(ctx->flog)
     {

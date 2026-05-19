@@ -17,8 +17,7 @@
 FPS function_parameter_FPCONFsetup_sized(
     const char *fpsname,
     uint32_t   CMDmode,
-    long        NBparamMAX
-)
+    long       NBparamMAX)
 {
     uint32_t FPSCONNECTFLAG;
 
@@ -115,8 +114,7 @@ FPS function_parameter_FPCONFsetup_sized(
  */
 FPS function_parameter_FPCONFsetup(
     const char *fpsname,
-    uint32_t    CMDmode
-)
+    uint32_t   CMDmode)
 {
     return function_parameter_FPCONFsetup_sized(fpsname, CMDmode,
             FUNCTION_PARAMETER_NBPARAM_DEFAULT);

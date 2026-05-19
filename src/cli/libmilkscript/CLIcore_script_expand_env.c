@@ -52,11 +52,10 @@
  * Writes characters until NUL or the buffer is full.
  */
 static void emit_str_local(
-    char *out,
-    int  *opos,
-    int  maxlen,
-    const char *s
-)
+    char       *out,
+    int        *opos,
+    int        maxlen,
+    const char *s)
 {
     while(*s != '\0' && *opos < maxlen - 1)
     {
@@ -85,8 +84,7 @@ static void expand_env_array_all(
     const char *varname,
     int        is_length,
     char       *out_buf,
-    const char **out_val
-)
+    const char **out_val)
 {
     *out_val    = NULL;
     int elems_count = 0;
@@ -196,8 +194,7 @@ static void expand_env_array_all(
 static void expand_env_array_index(
     const char *varname,
     const char *idx_val,
-    const char **out_val
-)
+    const char **out_val)
 {
     *out_val = NULL;
 
@@ -277,8 +274,7 @@ static void apply_modifier(
     char       *mod_arg,
     char       *val_buf,
     int        val_buf_size,
-    const char **val
-)
+    const char **val)
 {
     char op = mod_op[1]; /* '-', '=', '?', '+', or '\0' */
 
@@ -402,8 +398,7 @@ static void apply_modifier(
  */
 void cli_expand_env(
     char *line,
-    int   maxlen
-)
+    int  maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos = 0;

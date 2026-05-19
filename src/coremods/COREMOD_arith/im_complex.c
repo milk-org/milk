@@ -26,11 +26,10 @@
 
 // complex float (CF), complex float (CF) -> complex float (CF)
 errno_t arith_image_function_CF_CF__CF(
-    const char *ID_name1,
-    const char *ID_name2,
-    const char *ID_out,
-    complex_float(*pt2function)(
-        complex_float, complex_float))
+    const char                   *ID_name1,
+    const char                   *ID_name2,
+    const char                   *ID_out,
+    complex_float(*pt2function)( complex_float, complex_float))
 {
     IMGID img1 =
         imgid_make_from_name(ID_name1);
@@ -89,11 +88,10 @@ errno_t arith_image_function_CF_CF__CF(
 
 // complex double (CD), complex double (CD) -> complex double (CD)
 errno_t arith_image_function_CD_CD__CD(
-    const char *ID_name1,
-    const char *ID_name2,
-    const char *ID_out,
-    complex_double(*pt2function)(
-        complex_double, complex_double))
+    const char                    *ID_name1,
+    const char                    *ID_name2,
+    const char                    *ID_out,
+    complex_double(*pt2function)( complex_double, complex_double))
 {
     IMGID img1 =
         imgid_make_from_name(ID_name1);

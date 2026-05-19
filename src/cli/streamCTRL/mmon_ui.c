@@ -377,7 +377,7 @@ static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
                &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings, compute_function);
+               my_bindings,   nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_streamCTRL_mmon_ui()

@@ -17,7 +17,10 @@
 
 #include <libfps/IMGID.h>
 
-double Ptrunc(double a, double b, double c);
+double Ptrunc(
+    double a,
+    double b,
+    double c);
 
 
 /* ==========================================================

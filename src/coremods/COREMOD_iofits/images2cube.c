@@ -21,9 +21,10 @@
  * Reads a list of FITS filenames and stacks them
  * along the third axis.
  */
-errno_t images_to_cube(const char *restrict img_name,
-                       long nbframes,
-                       const char *restrict cube_name);
+errno_t images_to_cube(
+    const char *restrict img_name,
+    long                 nbframes,
+    const char *restrict cube_name);
 
 // ==========================================
 // FPS V2
@@ -105,7 +106,7 @@ FPS_MAIN_STANDALONE_V2(
  */
 errno_t images_to_cube(
     const char *restrict img_name,
-    long nbframes,
+    long                 nbframes,
     const char *restrict cube_name)
 {
     DEBUG_TRACE_FSTART();

@@ -12,8 +12,7 @@
 errno_t processinfo_update_output_stream(
     PROCESSINFO *processinfo,
     IMAGE       *output_image,
-    IMAGE        *input_image
-)
+    IMAGE       *input_image)
 {
     if(output_image == NULL)
     {

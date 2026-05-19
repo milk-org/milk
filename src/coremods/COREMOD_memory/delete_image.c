@@ -28,7 +28,7 @@
  */
 errno_t delete_image_ID(
     const char *__restrict imname,
-    int errmode);
+    int                    errmode);
 
 
 /* ================================================================
@@ -162,8 +162,7 @@ FPS_MAIN_STANDALONE_V2(
  */
 errno_t delete_image_IMGID(
     IMGID *img,
-    int errmode
-)
+    int   errmode)
 {
     return delete_image(img, errmode);
 }
@@ -179,8 +178,7 @@ errno_t delete_image_IMGID(
  */
 errno_t delete_image(
     IMGID *img,
-    int errmode
-)
+    int   errmode)
 {
     DEBUG_TRACE_FSTART();
 
@@ -378,14 +376,13 @@ errno_t delete_image(
  */
 errno_t delete_image_ID(
     const char *__restrict imname,
-    int errmode
-)
+    int                    errmode)
 {
     DEBUG_TRACE_FSTART();
 
     IMGID   img = imgid_make_from_name(imname);
     imageID ID  = resolveIMGID(
-                      &img, errmode,
+                      &img,  errmode,
                       dcimg, dcnimg);
 
     if(ID != -1)

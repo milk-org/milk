@@ -25,17 +25,21 @@
  */
 #ifndef MILK_NO_CLI
 
-int CLI_checkarg(int argnum, uint32_t argtype);
+int CLI_checkarg(
+    int      argnum,
+    uint32_t argtype);
 
 int CLI_checkarg_noerrmsg(
-    int argnum, uint32_t argtype);
+    int      argnum,
+    uint32_t argtype);
 
 errno_t CLI_checkarg_array(
-    CLICMDARGDEF fpscliarg[], int nbarg);
+    CLICMDARGDEF fpscliarg[],
+    int nbarg);
 
 int CLIargs_to_FPSparams_setval(
-    CLICMDARGDEF               fpscliarg[],
-    int                        nbarg,
+    CLICMDARGDEF fpscliarg[],
+    int nbarg,
     FPS *fps);
 
 int CMDargs_to_FPSparams_create(

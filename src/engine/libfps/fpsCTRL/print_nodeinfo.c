@@ -13,12 +13,11 @@
  * description, and value history.
  */
 void fpsCTRLscreen_print_nodeinfo(
-    FPS *fps,
+    FPS               *fps,
     KEYWORD_TREE_NODE *keywnode,
-    int nodeSelected,
-    int fpsindexSelected,
-    long pindexSelected
-)
+    int               nodeSelected,
+    int               fpsindexSelected,
+    long              pindexSelected)
 {
     TUI_newline();
     screenprint_setbold();

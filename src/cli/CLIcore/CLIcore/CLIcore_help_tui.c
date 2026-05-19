@@ -104,8 +104,7 @@ static int tui_stdin_wait_ms(int ms)
  */
 static int fuzzy_match_score(
     const char *query,
-    const char *target
-)
+    const char *target)
 {
     if (!query || !query[0]) return 10000; // Empty query matches perfectly
     
@@ -140,8 +139,7 @@ typedef struct {
  */
 static int compare_matches(
     const void *a,
-    const void *b
-)
+    const void *b)
 {
     return ((MatchScore*)b)->score - ((MatchScore*)a)->score;
 }

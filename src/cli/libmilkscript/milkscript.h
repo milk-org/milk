@@ -33,9 +33,8 @@ typedef int errno_t;
  * @return 0 on success, non-zero on failure
  */
 errno_t milkscript_init(
-    int    argc,
-    char **argv
-);
+    int  argc,
+    char **argv);
 
 /**
  * @brief Execute a single command line string.

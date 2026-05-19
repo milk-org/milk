@@ -17,8 +17,7 @@
  */
 int functionparameter_UserInputSetParamValue(
     FPS *fpsentry,
-    int pindex
-)
+    int pindex)
 {
     int  inputOK;
     int  strlenmax = 64;

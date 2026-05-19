@@ -66,18 +66,27 @@ extern char  BuildTime[200];
 extern int C_ERRNO; // C errno (from errno.h)
 
 #ifdef USE_NCURSES
-errno_t functionparameter_CTRLscreen(uint32_t mode,
-                                     char    *fpsnamemask,
-                                     char    *fpsCTRLfifoname,
-                                     double  timeout_sec);
+errno_t functionparameter_CTRLscreen(
+    uint32_t mode,
+    char     *fpsnamemask,
+    char     *fpsCTRLfifoname,
+    double   timeout_sec);
 
 errno_t processinfo_CTRLscreen();
 #else
-static inline errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname, double timeout_sec) {
+static inline errno_t functionparameter_CTRLscreen(
+    uint32_t mode,
+    char     *fpsnamemask,
+    char     *fpsCTRLfifoname,
+    double   timeout_sec)
+{
     (void)mode; (void)fpsnamemask; (void)fpsCTRLfifoname; (void)timeout_sec; return 0;
 }
 static inline errno_t processinfo_CTRLscreen() { return 0; }
-static inline void TUI_printfw(const char *fmt, ...) {
+static inline void TUI_printfw(
+    const char *fmt,
+    ...)
+{
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
@@ -89,7 +98,9 @@ static inline void screenprint_unsetreverse() {}
 static inline void screenprint_setcolor(int pair) { (void)pair; }
 static inline void screenprint_unsetcolor(int pair) { (void)pair; }
 static inline void TUI_set_screenprintmode(int mode) { (void)mode; }
-static inline errno_t TUI_init_terminal(short unsigned int *wrow, short unsigned int *wcol) { (void)wrow; (void)wcol; return 0; }
+static inline errno_t TUI_init_terminal(
+    short unsigned int *wrow,
+    short unsigned int *wcol) { (void)wrow; (void)wcol; return 0; }
 static inline int get_singlechar_nonblock() { return -1; }
 static inline errno_t TUI_exit() { return 0; }
 #endif
@@ -533,10 +544,9 @@ errno_t RegisterModule(
     const char *restrict FileName,
     const char *restrict PackageName,
     const char *restrict InfoString,
-    int versionmajor,
-    int versionminor,
-    int versionpatch
-);
+    int                  versionmajor,
+    int                  versionminor,
+    int                  versionpatch);
 
 uint32_t RegisterCLIcommand(
     const char *restrict CLIkey,
@@ -545,13 +555,18 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLIinfo,
     const char *restrict CLIsyntax,
     const char *restrict CLIexample,
-    const char *restrict CLICcall
-);
+    const char *restrict CLICcall);
 */
 
-errno_t runCLItest(int argc, char *argv[], char *promptstring);
+errno_t runCLItest(
+    int argc,
+    char *argv[],
+    char *promptstring);
 
-errno_t runCLI(int argc, char *argv[], char *promptstring);
+errno_t runCLI(
+    int argc,
+    char *argv[],
+    char *promptstring);
 
 errno_t CLI_execute_line();
 

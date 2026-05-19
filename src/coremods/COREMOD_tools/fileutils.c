@@ -24,7 +24,8 @@
 
 /* forward decl */
 errno_t write_float_file(
-    const char *fname, float value);
+    const char *fname,
+    float      value);
 
 
 /* ================================================================
@@ -110,7 +111,7 @@ int file_exist(char *filename)
 }
 
 int create_counter_file(
-    const char *fname,
+    const char    *fname,
     unsigned long NBpts)
 {
     unsigned long i;
@@ -168,9 +169,10 @@ int read_config_parameter_exists(
     return (read);
 }
 
-int read_config_parameter(const char *config_file,
-                          const char *keyword,
-                          char       *content)
+int read_config_parameter(
+    const char *config_file,
+    const char *keyword,
+    char       *content)
 {
     FILE *fp;
     char  line[1000];
@@ -302,8 +304,8 @@ FILE *open_file_r(const char *filename)
 }
 
 errno_t write_1D_array(
-    double *array,
-    long nbpoints,
+    double     *array,
+    long       nbpoints,
     const char *filename)
 {
     FILE *fp;
@@ -320,8 +322,8 @@ errno_t write_1D_array(
 }
 
 errno_t read_1D_array(
-    double *array,
-    long nbpoints,
+    double     *array,
+    long       nbpoints,
     const char *filename)
 {
     FILE *fp;
@@ -368,7 +370,7 @@ int read_int_file(const char *fname)
 
 errno_t write_int_file(
     const char *fname,
-    int value)
+    int        value)
 {
     FILE *fp;
 
@@ -386,7 +388,7 @@ errno_t write_int_file(
 
 errno_t write_float_file(
     const char *fname,
-    float value)
+    float      value)
 {
     FILE *fp;
     int   mode = 0; // default, create single file

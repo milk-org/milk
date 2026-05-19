@@ -382,10 +382,9 @@ errno_t RegisterModule(
     const char *__restrict FileName,
     const char *__restrict PackageName,
     const char *__restrict InfoString,
-    int versionmajor,
-    int versionminor,
-    int versionpatch
-)
+    int                    versionmajor,
+    int                    versionminor,
+    int                    versionpatch)
 {
     DEBUG_TRACE_FSTART();
 
@@ -602,8 +601,7 @@ uint32_t RegisterCLIcommand(
     const char *__restrict CLIinfo,
     const char *__restrict CLIsyntax,
     const char *__restrict CLIexample,
-    const char *__restrict CLICcall
-)
+    const char *__restrict CLICcall)
 {
     DEBUG_TRACE_FSTART();
 
@@ -704,8 +702,7 @@ uint32_t RegisterCLIcommand(
  */
 uint32_t RegisterCLIcmd(
     CLICMDDATA CLIcmddata,
-    errno_t (*CLIfptr)()
-)
+    errno_t (*CLIfptr)())
 {
     // Command registration logic
     DEBUG_TRACE_FSTART();

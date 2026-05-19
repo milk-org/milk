@@ -14,8 +14,12 @@
 #include "milkDebugTools.h"
 #include "ImageStreamIO/ImageStruct.h"
 
-errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
-errno_t function_parameter_struct_realloc(FPS *fps, int NBparamMAX_new);
+errno_t function_parameter_struct_create(
+    int        NBparamMAX,
+    const char *name);
+errno_t function_parameter_struct_realloc(
+    FPS *fps,
+    int NBparamMAX_new);
 
 /* Forward declarations for cross-file libfps functions */
 imageID COREMOD_IOFITS_LoadMemStream(

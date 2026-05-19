@@ -19,7 +19,7 @@ static FILE *fpgnuplot;
 /* forward decl */
 errno_t COREMOD_TOOLS_imgdisplay3D(
     const char *IDname,
-    long step);
+    long       step);
 
 
 /* ================================================================
@@ -106,7 +106,7 @@ CLIADDCMD_COREMOD_tools__imdisplay3d()
 //
 errno_t COREMOD_TOOLS_imgdisplay3D(
     const char *IDname,
-    long step)
+    long       step)
 {
     imageID ID;
     long    xsize, ysize;

@@ -41,8 +41,7 @@
 long fps_connect(
     const char *name,
     FPS        *fps,
-    int fpsconnectmode
-)
+    int        fpsconnectmode)
 {
     DEBUG_TRACEPOINT("Launching fps_connect for %s", name);
 

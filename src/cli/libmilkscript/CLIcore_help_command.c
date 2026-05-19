@@ -61,8 +61,7 @@ extern int help_format_mode;
 static int checkFlag64(
     uint64_t flags,
     uint64_t testflag,
-    char    *flagdescription
-)
+    char     *flagdescription)
 {
     int rval = 0;
 

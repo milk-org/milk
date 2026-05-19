@@ -12,7 +12,6 @@ int streamCTRL_print_inode(
     ino_t inode,
     ino_t *upstreaminode,
     int   NBupstreaminode,
-    int    downstreamindex
-);
+    int   downstreamindex);
 
 #endif

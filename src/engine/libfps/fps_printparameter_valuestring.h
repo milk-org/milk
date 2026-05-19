@@ -9,25 +9,15 @@
 #include "fps.h"
 
 errno_t functionparameter_PrintParameter_ValueString(
-
     FPS_PARAM *fpsentry,
-
-    char *outstring,
-
-    int stringmaxlen
-
-);
+    char      *outstring,
+    int       stringmaxlen);
 
 
 
 errno_t functionparameter_GetParamValueString(
-
     FPS_PARAM *fpsentry,
-
-    char *outstring,
-
-    int stringmaxlen
-
-);
+    char      *outstring,
+    int       stringmaxlen);
 
 #endif
