@@ -27,18 +27,19 @@ errno_t COREMOD_TOOLS_imgdisplay3D(
  * ============================================================= */
 
 static char p_imname[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "im1";
 static long long p_step = 5;
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "dispim3d",
     .cmdkey      = "dispim3d",
     .description =
-        "display 2D image as 3D surface "
-        "using gnuplot",
+    "display 2D image as 3D surface "
+    "using gnuplot",
     .description_long =
-        "Display slices of a 3D image cube interactively. Provides a TUI-based viewer for browsing through cube frames."
+    "Display slices of a 3D image cube interactively. Provides a TUI-based viewer for browsing through cube frames."
 };
 
 #define FPS_PARAMS(X) \
@@ -51,7 +52,8 @@ static FPS_APP_INFO FPS_app_info = {
       FPFLAG_DEFAULT_INPUT, \
       "pixel step")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
@@ -59,11 +61,13 @@ static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
@@ -80,9 +84,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -91,7 +95,7 @@ CLIADDCMD_COREMOD_tools__imdisplay3d()
     safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
     return RETURN_SUCCESS;
@@ -100,11 +104,13 @@ CLIADDCMD_COREMOD_tools__imdisplay3d()
 
 // displays 2D image in 3D using gnuplot
 //
-errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
+errno_t COREMOD_TOOLS_imgdisplay3D(
+    const char *IDname,
+    long step)
 {
     imageID ID;
     long    xsize, ysize;
-    long    ii, jj;
+    long ii;
     char    cmd[512];
     FILE   *fp;
 
@@ -135,7 +141,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fprintf(fpgnuplot, "splot \"-\" w d notitle\n");
     for(ii = 0; ii < xsize; ii += step)
     {
-        for(jj = 0; jj < xsize; jj += step)
+        for(long jj = 0; jj < xsize; jj += step)
         {
             fprintf(fpgnuplot,
                     "%ld %ld %f\n",

@@ -41,7 +41,8 @@
  * ------------------------------------------------------- */
 
 /** Known single-character binary operators */
-static const char * const operand_names[] = {
+static const char *const operand_names[] =
+{
     "+", "-", "*", "/", "^", NULL
 };
 
@@ -52,7 +53,8 @@ static const char * const operand_names[] = {
  * they are handled with a separate image_reducer sub-table
  * in the dispatch step.
  */
-static const char * const unary_func_names[] = {
+static const char *const unary_func_names[] =
+{
     "acos", "asin", "atan", "ceil",
     "cos",  "cosh", "exp",  "fabs",
     "floor",
@@ -67,12 +69,14 @@ static const char * const unary_func_names[] = {
  * Multi-arg functions: returns the number of input arguments
  * (2 or 3), or 0 if the name is not a multi-arg function.
  */
-struct multfunc_entry {
+struct multfunc_entry
+{
     const char *name;
     int         nargs; /* number of scalar/image arguments */
 };
 
-static const struct multfunc_entry multfunc_table[] = {
+static const struct multfunc_entry multfunc_table[] =
+{
     { "fmod",   2 },
     { "trunc",  3 },
     { "perc",   2 },
@@ -227,7 +231,7 @@ arith_image_dy_wrap(
 int execute_arith(const char *cmd1)
 {
     char word[100][100];
-    int  w, l, j;
+    int w, l;
     int  nbword;
     int  word_type[100];
     int  par_level[100];
@@ -269,7 +273,7 @@ int execute_arith(const char *cmd1)
        - remove any spaces in cmd1
        - replace "=-" by "=0-" and "=+" by "="
        copy result into cmd */
-    j = 0;
+    int j = 0;
 
     for(int i = 0; i < (int)(strlen(cmd1)); i++)
     {
@@ -308,16 +312,16 @@ int execute_arith(const char *cmd1)
         /* Inside brackets: everything is part of
          * the current word. Used for slice syntax
          * like im[0:19,10:29]. */
-        if (cmd[i] == '[')
+        if(cmd[i] == '[')
         {
             bracket_depth++;
             word[w][l] = cmd[i];
             l++;
             continue;
         }
-        if (cmd[i] == ']')
+        if(cmd[i] == ']')
         {
-            if (bracket_depth > 0)
+            if(bracket_depth > 0)
             {
                 bracket_depth--;
             }
@@ -325,7 +329,7 @@ int execute_arith(const char *cmd1)
             l++;
             continue;
         }
-        if (bracket_depth > 0)
+        if(bracket_depth > 0)
         {
             word[w][l] = cmd[i];
             l++;
@@ -337,7 +341,7 @@ int execute_arith(const char *cmd1)
 
         case '+':
         case '-':
-            if((i>1) &&((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) &&
+            if((i > 1) && ((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) &&
                     (isdigit(cmd[i - 2])) && (isdigit(cmd[i + 1])))
             {
                 // + or - is part of exponent
@@ -599,13 +603,13 @@ int execute_arith(const char *cmd1)
         /* Sliced images are materialized into
          * temporary images so the rest of the
          * evaluator can work with plain names. */
-        for (int i = 0; i < nbword; i++)
+        for(int i = 0; i < nbword; i++)
         {
-            if (word_type[i] != ARITHTOKENTYPE_IMAGE)
+            if(word_type[i] != ARITHTOKENTYPE_IMAGE)
             {
                 continue;
             }
-            if (strchr(word[i], '[') == NULL)
+            if(strchr(word[i], '[') == NULL)
             {
                 continue;
             }
@@ -613,15 +617,15 @@ int execute_arith(const char *cmd1)
             IMGID simg =
                 imgid_make_from_name(word[i]);
             resolveIMGID(&simg, ERRMODE_NULL, dcimg, dcnimg);
-            if (simg.ID < 0)
+            if(simg.ID < 0)
             {
                 imgid_free(&simg);
                 continue;
             }
 
             /* Materialize the slice */
-            if (imgid_slice_materialize(
-                    &simg) != 0)
+            if(imgid_slice_materialize(
+                        &simg) != 0)
             {
                 PRINT_WARNING(
                     "slice materialize failed"
@@ -634,7 +638,7 @@ int execute_arith(const char *cmd1)
             int snaxis =
                 (int) slc->md[0].naxis;
             uint32_t ssz[3] = {1, 1, 1};
-            for (int a = 0; a < snaxis; a++)
+            for(int a = 0; a < snaxis; a++)
             {
                 ssz[a] = slc->md[0].size[a];
             }
@@ -658,13 +662,13 @@ int execute_arith(const char *cmd1)
                 0, /* CBsize */
                 &tid);
 
-            if (tid >= 0)
+            if(tid >= 0)
             {
                 uint64_t nbytes =
                     slc->md[0].nelement
                     * (uint64_t)
-                      ImageStreamIO_typesize(
-                          slc->md[0].datatype);
+                    ImageStreamIO_typesize(
+                        slc->md[0].datatype);
                 __builtin_memcpy(
                     dcimg[tid].array.raw,
                     slc->array.raw,
@@ -702,7 +706,7 @@ int execute_arith(const char *cmd1)
                 {
                     snprintf(word[i], sizeof(word[i]), "%s", word[i + 1]);
                     word_type[i] = word_type[i + 1];
-                    for(j = i + 1; j < nbword - 2; j++)
+                    for(int j = i + 1; j < nbword - 2; j++)
                     {
                         snprintf(word[j], sizeof(word[j]), "%s", word[j + 2]);
                         word_type[j] = word_type[j + 2];
@@ -719,7 +723,7 @@ int execute_arith(const char *cmd1)
                         -dcvar[variable_ID(word[i + 2])].value.f;
                     snprintf(word[i], sizeof(word[i]), "%s", word[i + 2]);
                     word_type[i] = word_type[i + 2];
-                    for(j = i + 2; j < nbword - 3; j++)
+                    for(int j = i + 2; j < nbword - 3; j++)
                     {
                         snprintf(word[j], sizeof(word[j]), "%s", word[j + 3]);
                         word_type[j] = word_type[j + 3];
@@ -820,10 +824,10 @@ int execute_arith(const char *cmd1)
                                  tmp_name_index,
                                  (int) getpid());
 
-                if (exec_arith_binary(word[hpi], 
-                                      word_type[hpi - 1], word[hpi - 1], 
-                                      word_type[hpi + 1], word[hpi + 1], 
-                                      name, &type, &tmp_name_index) != 0)
+                if(exec_arith_binary(word[hpi],
+                                     word_type[hpi - 1], word[hpi - 1],
+                                     word_type[hpi + 1], word[hpi + 1],
+                                     name, &type, &tmp_name_index) != 0)
                 {
                     return RETURN_FAILURE;
                 }
@@ -849,8 +853,8 @@ int execute_arith(const char *cmd1)
                                  (int) getpid());
 
                 int hpi = highest_priority_index;
-                if (exec_arith_unary(word[hpi], word_type[hpi + 1], word[hpi + 1], 
-                                     name, &type, &tmp_name_index) != 0)
+                if(exec_arith_unary(word[hpi], word_type[hpi + 1], word[hpi + 1],
+                                    name, &type, &tmp_name_index) != 0)
                 {
                     return RETURN_FAILURE;
                 }
@@ -858,8 +862,8 @@ int execute_arith(const char *cmd1)
                 snprintf(word[highest_priority_index], sizeof(word[highest_priority_index]), "%s", name);
                 word_type[highest_priority_index] = type;
                 for(j = highest_priority_index + 1;
-                    j < nbword - 1;
-                    j++)
+                        j < nbword - 1;
+                        j++)
                 {
                     snprintf(word[j], sizeof(word[j]), "%s", word[j + 1]);
                     word_type[j] = word_type[j + 1];
@@ -873,7 +877,7 @@ int execute_arith(const char *cmd1)
             if(word_type[highest_priority_index] == ARITHTOKENTYPE_MULTFUNC)
             {
                 nbvarinput = isfunction_sev_var(
-                    word[highest_priority_index]);
+                                 word[highest_priority_index]);
                 CREATE_IMAGENAME(name,
                                  "_tmp%d_%d",
                                  tmp_name_index,
@@ -883,15 +887,27 @@ int execute_arith(const char *cmd1)
                 int a1t = 0, a2t = 0, a3t = 0;
                 const char *a1w = NULL, *a2w = NULL, *a3w = NULL;
 
-                if (nbvarinput >= 1) { a1t = word_type[hpi + 2]; a1w = word[hpi + 2]; }
-                if (nbvarinput >= 2) { a2t = word_type[hpi + 4]; a2w = word[hpi + 4]; }
-                if (nbvarinput >= 3) { a3t = word_type[hpi + 6]; a3w = word[hpi + 6]; }
+                if(nbvarinput >= 1)
+                {
+                    a1t = word_type[hpi + 2];
+                    a1w = word[hpi + 2];
+                }
+                if(nbvarinput >= 2)
+                {
+                    a2t = word_type[hpi + 4];
+                    a2w = word[hpi + 4];
+                }
+                if(nbvarinput >= 3)
+                {
+                    a3t = word_type[hpi + 6];
+                    a3w = word[hpi + 6];
+                }
 
-                if (exec_arith_multfunc(word[hpi], nbvarinput, 
-                                        a1t, a1w, 
-                                        a2t, a2w, 
-                                        a3t, a3w, 
-                                        name, &type, &tmp_name_index) != 0)
+                if(exec_arith_multfunc(word[hpi], nbvarinput,
+                                       a1t, a1w,
+                                       a2t, a2w,
+                                       a3t, a3w,
+                                       name, &type, &tmp_name_index) != 0)
                 {
                     return RETURN_FAILURE;
                 }
@@ -899,13 +915,13 @@ int execute_arith(const char *cmd1)
                 snprintf(word[highest_priority_index], sizeof(word[highest_priority_index]), "%s", name);
                 word_type[highest_priority_index] = type;
                 for(j = highest_priority_index + 1;
-                    j < nbword - (nbvarinput * 2 + 1);
-                    j++)
+                        j < nbword - (nbvarinput * 2 + 1);
+                        j++)
                 {
                     snprintf(word[j],
-                           sizeof(word[j]),
-                           "%s",
-                           word[j + (nbvarinput * 2 + 1)]);
+                             sizeof(word[j]),
+                             "%s",
+                             word[j + (nbvarinput * 2 + 1)]);
                     word_type[j] =
                         word_type[j + (nbvarinput * 2 + 1)];
                 }

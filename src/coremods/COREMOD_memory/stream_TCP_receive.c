@@ -73,7 +73,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     int             semval __attribute__((unused));
     int             semnb __attribute__((unused));
     int             OKim;
-    int             axis;
+
 
     imgmd = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
 
@@ -96,7 +96,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
         char msgstring[200];
         snprintf(msgstring, 200, "Waiting for input stream");
-        
+
         PROCESSINFO_AUX_SETUP(processinfo, pinfoname, "", msgstring);
     }
 
@@ -246,7 +246,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     {
         IMGID img = imgid_make_from_name(
-            imgmd->name);
+                        imgmd->name);
         resolveIMGID(
             &img, ERRMODE_NULL,
             dcimg, dcnimg);
@@ -279,7 +279,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         }
         if(OKim == 1)
         {
-            for(axis = 0; axis < imgmd->naxis; axis++)
+            for(int axis = 0; axis < imgmd->naxis; axis++)
                 if(imgmd->size[axis] != img_p->md->size[axis])
                 {
                     OKim = 0;
@@ -314,7 +314,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             imgrcv.mdt->naxis =
                 imgmd->naxis;
             for(int a = 0;
-                a < imgmd->naxis; a++)
+                    a < imgmd->naxis; a++)
             {
                 imgrcv.mdt->size[a] =
                     imgmd->size[a];
@@ -443,9 +443,9 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         while(recv_bytes == framesizefull)
         {
             recv_bytes = recv(fds_client,
-                socket_flush_buff,
-                framesizefull,
-                MSG_DONTWAIT);
+                              socket_flush_buff,
+                              framesizefull,
+                              MSG_DONTWAIT);
             printf("TCP recv buffer flush. %ld stray bytes.\n", recv_bytes);
         }
         if(recv_bytes >
@@ -523,8 +523,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             {
                 // copy kw
                 __builtin_memcpy(img_p->kw,
-                       (IMAGE_KEYWORD *)(buff + framesize1),
-                       img_p->md->NBkw * sizeof(IMAGE_KEYWORD));
+                                 (IMAGE_KEYWORD *)(buff + framesize1),
+                                 img_p->md->NBkw * sizeof(IMAGE_KEYWORD));
             }
 
             frameincr = (long) frame_md_p->cnt0 - cnt0previous;
@@ -607,4 +607,3 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     return ID;
 }
-

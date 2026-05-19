@@ -35,11 +35,11 @@ int bubble_sort(
     unsigned long count
 )
 {
-    unsigned long a, b;
+    unsigned long a;
     double        t;
 
-    for(a = 1; a < count; a++)
-        for(b = count - 1; b >= a; b--)
+    for(unsigned a = 1; a < count; a++)
+        for(unsigned b = count - 1; b >= a; b--)
             if(array[b - 1] > array[b])
             {
                 t            = array[b - 1];

@@ -48,7 +48,9 @@
  * @progname: argv[0]
  * @mh_color: non-zero for ANSI color output
  */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, SP_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -96,7 +98,8 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s$ milk-shmimpurge%s %s-n%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-stream-rm:remove shared memory streams",
         "milk-stream-list:list active shared memory streams"
     };
@@ -111,14 +114,16 @@ static void print_help(const char *progname, int mh_color)
 static const char *get_shmdir(void)
 {
     const char *env = getenv("MILK_SHM_DIR");
-    if (env != NULL) {
+    if(env != NULL)
+    {
         return env;
     }
 
     static const char fallback1[] = "/milk/shm";
     struct stat st;
 
-    if (stat(fallback1, &st) == 0 && S_ISDIR(st.st_mode)) {
+    if(stat(fallback1, &st) == 0 && S_ISDIR(st.st_mode))
+    {
         return fallback1;
     }
     return "/dev/shm";
@@ -132,21 +137,26 @@ static const char *get_shmdir(void)
  * Scans /proc/<pid>/fd/ symlinks for a stat inode match.
  * Returns 1 if the process has the inode open, 0 otherwise.
  */
-static int pid_has_inode_open(pid_t pid, ino_t inode)
+static int pid_has_inode_open(
+    pid_t pid,
+    ino_t inode)
 {
     char fddir[64];
     snprintf(fddir, sizeof(fddir), "/proc/%d/fd", (int)pid);
 
     DIR *d = opendir(fddir);
-    if (d == NULL) {
+    if(d == NULL)
+    {
         return 0;
     }
 
     struct dirent *de;
     int found = 0;
 
-    while (!found && (de = readdir(d)) != NULL) {
-        if (de->d_name[0] == '.') {
+    while(!found && (de = readdir(d)) != NULL)
+    {
+        if(de->d_name[0] == '.')
+        {
             continue;
         }
 
@@ -155,7 +165,8 @@ static int pid_has_inode_open(pid_t pid, ino_t inode)
                  "/proc/%d/fd/%s", (int)pid, de->d_name);
 
         struct stat st;
-        if (stat(fdpath, &st) == 0 && st.st_ino == inode) {
+        if(stat(fdpath, &st) == 0 && st.st_ino == inode)
+        {
             found = 1;
         }
     } // while !found
@@ -171,17 +182,21 @@ static int pid_has_inode_open(pid_t pid, ino_t inode)
  *
  * Returns 1 if orphan (no live holder), 0 if live.
  */
-static int is_stream_orphan(const char *fullpath, int verbose)
+static int is_stream_orphan(
+    const char *fullpath,
+    int verbose)
 {
     struct stat st;
-    if (stat(fullpath, &st) != 0) {
+    if(stat(fullpath, &st) != 0)
+    {
         return 1; /* cannot stat — treat as orphan */
     }
 
     ino_t inode = st.st_ino;
 
     DIR *proc = opendir("/proc");
-    if (proc == NULL) {
+    if(proc == NULL)
+    {
         PRINT_ERROR("opendir(/proc): %s", strerror(errno));
         return 0; /* fail-safe: assume live */
     }
@@ -189,19 +204,25 @@ static int is_stream_orphan(const char *fullpath, int verbose)
     int any_live = 0;
     struct dirent *de;
 
-    while ((de = readdir(proc)) != NULL) {
+    while((de = readdir(proc)) != NULL)
+    {
         char *ep;
         long pid_l = strtol(de->d_name, &ep, 10);
-        if (*ep != '\0' || pid_l <= 0) {
+        if(*ep != '\0' || pid_l <= 0)
+        {
             continue;
         }
         pid_t pid = (pid_t)pid_l;
 
-        if (pid_has_inode_open(pid, inode)) {
+        if(pid_has_inode_open(pid, inode))
+        {
             any_live = 1;
-            if (verbose) {
+            if(verbose)
+            {
                 printf("    held by PID %d\n", (int)pid);
-            } else {
+            }
+            else
+            {
                 break; /* early exit when not verbose */
             }
         }
@@ -222,7 +243,8 @@ static int read_confirm(void)
     struct termios old_t;
     int is_tty = isatty(STDIN_FILENO);
 
-    if (is_tty) {
+    if(is_tty)
+    {
         tcgetattr(STDIN_FILENO, &old_t);
         struct termios t = old_t;
         t.c_lflag |= (ICANON | ECHO);
@@ -233,7 +255,8 @@ static int read_confirm(void)
     char buf[32];
     int ok = (fgets(buf, sizeof(buf), stdin) != NULL);
 
-    if (is_tty) {
+    if(is_tty)
+    {
         tcsetattr(STDIN_FILENO, TCSANOW, &old_t);
     }
 
@@ -247,7 +270,9 @@ static int read_confirm(void)
  *
  * Returns 0 on success, 1 on error.
  */
-static int remove_orphan(const char *shmdir, const char *sname)
+static int remove_orphan(
+    const char *shmdir,
+    const char *sname)
 {
     char fullpath[512];
     snprintf(fullpath, sizeof(fullpath),
@@ -257,14 +282,17 @@ static int remove_orphan(const char *shmdir, const char *sname)
     errno_t ret =
         ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &image);
 
-    if (ret == IMAGESTREAMIO_SUCCESS) {
-        for (int i = 0; i < image.md->sem; i++) {
+    if(ret == IMAGESTREAMIO_SUCCESS)
+    {
+        for(int i = 0; i < image.md->sem; i++)
+        {
             sem_destroy(image.semptr[i]);
         }
         ImageStreamIO_closeIm(&image);
     }
 
-    if (unlink(fullpath) != 0) {
+    if(unlink(fullpath) != 0)
+    {
         PRINT_ERROR("  \033[1;31mFAILED\033[0m: unlink '%s': %s", fullpath, strerror(errno));
         return 1;
     }
@@ -273,17 +301,21 @@ static int remove_orphan(const char *shmdir, const char *sname)
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv, SP_DESC, SP_DESC_LONG);
 
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2) {
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
     }
 
     int mh_color = (action == MH_ACTION_HELP);
 
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO) {
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
         print_help(argv[0], mh_color);
         return 0;
     }
@@ -294,22 +326,31 @@ int main(int argc, char *argv[])
     int         dry_run = 0;
     int         verbose = 0;
 
-    for (int i = 1; i < argc; i++) {
-        if ((strcmp(argv[i], "-f") == 0 ||
-             strcmp(argv[i], "--filter") == 0) &&
-            i + 1 < argc)
+    for(int i = 1; i < argc; i++)
+    {
+        if((strcmp(argv[i], "-f") == 0 ||
+                strcmp(argv[i], "--filter") == 0) &&
+                i + 1 < argc)
         {
             filter = argv[++i];
-        } else if (strcmp(argv[i], "-y") == 0 ||
-                   strcmp(argv[i], "--force") == 0) {
+        }
+        else if(strcmp(argv[i], "-y") == 0 ||
+                strcmp(argv[i], "--force") == 0)
+        {
             force = 1;
-        } else if (strcmp(argv[i], "-n") == 0 ||
-                   strcmp(argv[i], "--dry-run") == 0) {
+        }
+        else if(strcmp(argv[i], "-n") == 0 ||
+                strcmp(argv[i], "--dry-run") == 0)
+        {
             dry_run = 1;
-        } else if (strcmp(argv[i], "-v") == 0 ||
-                   strcmp(argv[i], "--verbose") == 0) {
+        }
+        else if(strcmp(argv[i], "-v") == 0 ||
+                strcmp(argv[i], "--verbose") == 0)
+        {
             verbose = 1;
-        } else {
+        }
+        else
+        {
             fprintf(stderr,
                     "\n\033[1;31mERROR\033[0m:"
                     " unknown option '%s'.\n\n", argv[i]);
@@ -322,9 +363,10 @@ int main(int argc, char *argv[])
 
     /* Scan SHM directory */
     DIR *d = opendir(shmdir);
-    if (d == NULL) {
+    if(d == NULL)
+    {
         PRINT_ERROR("\033[1;31mERROR\033[0m:"
-                " cannot open '%s': %s", shmdir, strerror(errno));
+                    " cannot open '%s': %s", shmdir, strerror(errno));
         return 1;
     }
 
@@ -332,22 +374,26 @@ int main(int argc, char *argv[])
     int total = 0;
     struct dirent *de;
 
-    while ((de = readdir(d)) != NULL &&
-           total < SP_MAX_STREAMS)
+    while((de = readdir(d)) != NULL &&
+            total < SP_MAX_STREAMS)
     {
         char *suf = strstr(de->d_name, ".im.shm");
-        if (suf == NULL) {
+        if(suf == NULL)
+        {
             continue;
         }
         size_t nl = (size_t)(suf - de->d_name);
-        if (nl == 0 || nl >= sizeof(names[0])) {
+        if(nl == 0 || nl >= sizeof(names[0]))
+        {
             continue;
         }
-        if (suf != de->d_name + strlen(de->d_name) - 7) {
+        if(suf != de->d_name + strlen(de->d_name) - 7)
+        {
             continue;
         }
-        if (filter != NULL &&
-            strstr(de->d_name, filter) == NULL) {
+        if(filter != NULL &&
+                strstr(de->d_name, filter) == NULL)
+        {
             continue;
         }
 
@@ -358,9 +404,11 @@ int main(int argc, char *argv[])
 
     closedir(d);
 
-    if (total == 0) {
+    if(total == 0)
+    {
         printf("No streams found");
-        if (filter != NULL) {
+        if(filter != NULL)
+        {
             printf(" matching '%s'", filter);
         }
         printf(".\n");
@@ -373,52 +421,63 @@ int main(int argc, char *argv[])
 
     printf("Scanning %d stream(s)...\n\n", total);
 
-    for (int i = 0; i < total; i++) {
+    for(int i = 0; i < total; i++)
+    {
         char fullpath[512];
         snprintf(fullpath, sizeof(fullpath),
                  "%s/%s.im.shm", shmdir, names[i]);
 
-        if (verbose) {
+        if(verbose)
+        {
             printf("  %s\n", names[i]);
         }
 
         is_orphan[i] = is_stream_orphan(fullpath, verbose);
-        if (is_orphan[i]) {
+        if(is_orphan[i])
+        {
             n_orphan++;
         }
     } // for i
 
-    if (n_orphan == 0) {
+    if(n_orphan == 0)
+    {
         printf("No orphan streams found.\n");
         return 0;
     }
 
     printf("\n  Orphan streams (%d):\n\n", n_orphan);
-    for (int i = 0; i < total; i++) {
-        if (is_orphan[i]) {
+    for(int i = 0; i < total; i++)
+    {
+        if(is_orphan[i])
+        {
             printf("    %s\n", names[i]);
         }
     }
     printf("\n");
 
-    if (dry_run) {
+    if(dry_run)
+    {
         printf("  [dry-run] No streams removed.\n");
         return 0;
     }
 
-    if (!force && !read_confirm()) {
+    if(!force && !read_confirm())
+    {
         printf("  Cancelled.\n");
         return 0;
     }
 
     int errors = 0;
-    for (int i = 0; i < total; i++) {
-        if (is_orphan[i]) {
+    for(int i = 0; i < total; i++)
+    {
+        if(is_orphan[i])
+        {
             errors += remove_orphan(shmdir, names[i]);
         }
     }
 
-    if (errors > 0) {
+    if(errors > 0)
+    {
         PRINT_ERROR("%d stream(s) failed to remove.", errors);
         return 1;
     }

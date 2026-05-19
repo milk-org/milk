@@ -143,7 +143,9 @@ typedef struct
     const char *color;
 } HighlightSpan;
 
-static int compare_spans(const void *a, const void *b)
+static int compare_spans(
+    const void *a,
+    const void *b)
 {
     const HighlightSpan *sa = (const HighlightSpan *)a;
     const HighlightSpan *sb = (const HighlightSpan *)b;
@@ -155,7 +157,10 @@ static int compare_spans(const void *a, const void *b)
     return sb->end_byte - sa->end_byte;
 }
 
-void cli_ts_highlight_line(const char *line, int len, FILE *out)
+void cli_ts_highlight_line(
+    const char *line,
+    int len,
+    FILE *out)
 {
     if(!ts_parser || !ts_query || !line || len == 0)
     {
@@ -301,7 +306,10 @@ int cli_ts_detect_color_level(void)
     return 1;
 }
 void cli_ts_cleanup(void) {}
-void cli_ts_highlight_line(const char *line, int len, FILE *out)
+void cli_ts_highlight_line(
+    const char *line,
+    int len,
+    FILE *out)
 {
     (void)len;
     fprintf(out, "%s", line);

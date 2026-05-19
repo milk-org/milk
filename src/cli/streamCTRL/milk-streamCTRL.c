@@ -45,7 +45,9 @@ static void handle_sigterm(int sig)
 /**
  * @brief Print help message for milk-streamCTRL.
  */
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, "interactive stream monitor TUI", mh_color);
     milk_help_section("Usage", mh_color);
@@ -85,7 +87,9 @@ static void print_help(const char *progname, int mh_color)
 }
 
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     const char *progname = basename(argv[0]);
 

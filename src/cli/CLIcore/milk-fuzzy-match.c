@@ -176,7 +176,9 @@ static int cmp_score_desc(
 /**
  * @brief Print help message for milk-fuzzy-match.
  */
-static void print_help(const char *prog, int mh_color)
+static void print_help(
+    const char *prog,
+    int mh_color)
 {
     milk_help_banner(prog, FM_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -214,7 +216,9 @@ static void print_help(const char *prog, int mh_color)
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 }
 
-int main(int argc, char **argv)
+int main(
+    int argc,
+    char **argv)
 {
     int action = milk_help_init(argc, argv,
                                 FM_ONELINE, FM_DESC_LONG);

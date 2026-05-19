@@ -77,8 +77,8 @@ static errno_t __attribute__((unused)) compute_listim()
     int porcelain_mode = 0;
 
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-    long arg;
-    for(arg = 1; arg < data.cmdNBarg; arg++)
+
+    for(long arg = 1; arg < data.cmdNBarg; arg++)
     {
         if(data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING
                 || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
@@ -144,7 +144,7 @@ CLIADDCMD_COREMOD_memory__list_image()
 
 errno_t list_image_ID_ofp(FILE *fo)
 {
-    long               i;
+
     long               j;
     long long          tmp_long;
     char               type[STYPESIZE];
@@ -171,7 +171,7 @@ errno_t list_image_ID_ofp(FILE *fo)
             "[percent]    LAST ACCESS\n");
     fprintf(fo, "\n");
 
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
             datatype = dcimg[i].md[0].datatype;
@@ -295,7 +295,7 @@ errno_t list_image_ID_ofp(FILE *fo)
 
 errno_t list_image_ID_ofp_simple(FILE *fo)
 {
-    long i, j;
+    long i;
     //long long   tmp_long;
     uint8_t datatype;
 
@@ -313,7 +313,7 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
                     dcimg[i].md[0].shared,
                     (long) dcimg[i].md[0].size[0]);
 
-            for(j = 1; j < dcimg[i].md[0].naxis; j++)
+            for(long j = 1; j < dcimg[i].md[0].naxis; j++)
             {
                 fprintf(fo, " %4ld", (long) dcimg[i].md[0].size[j]);
             }
@@ -340,7 +340,7 @@ errno_t list_image_ID()
 
 errno_t list_image_ID_ofp_json(FILE *fo)
 {
-    long i, j;
+
     long long   tmp_long;
     uint8_t datatype;
     unsigned long long sizeb = compute_image_memory();
@@ -349,7 +349,7 @@ errno_t list_image_ID_ofp_json(FILE *fo)
 
     fprintf(fo, "{\n  \"images\": [\n");
     int first = 1;
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
             if(!first)
@@ -365,7 +365,7 @@ errno_t list_image_ID_ofp_json(FILE *fo)
             fprintf(fo, "      \"name\": \"%s\",\n", dcimg[i].name);
             fprintf(fo, "      \"naxis\": %ld,\n", (long) dcimg[i].md[0].naxis);
             fprintf(fo, "      \"size\": [");
-            for(j = 0; j < dcimg[i].md[0].naxis; j++)
+            for(long j = 0; j < dcimg[i].md[0].naxis; j++)
             {
                 fprintf(fo, "%ld%s", (long) dcimg[i].md[0].size[j], (j < dcimg[i].md[0].naxis - 1) ? ", " : "");
             }
@@ -391,7 +391,7 @@ errno_t list_image_ID_ofp_json(FILE *fo)
 
 errno_t list_image_ID_ofp_porcelain(FILE *fo)
 {
-    long i, j;
+
     long long   tmp_long;
     uint8_t datatype;
     struct timespec timenow;
@@ -399,14 +399,14 @@ errno_t list_image_ID_ofp_porcelain(FILE *fo)
 
     fprintf(fo, "INDEX\tNAME\tNAXIS\tSIZE\tTYPE\tSHARED\tSIZE_KB\tLAST_ACCESS_DT\n");
 
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
             datatype = dcimg[i].md[0].datatype;
             tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo, "%ld\t%s\t%ld\t", i, dcimg[i].name, (long) dcimg[i].md[0].naxis);
-            for(j = 0; j < dcimg[i].md[0].naxis; j++)
+            for(long j = 0; j < dcimg[i].md[0].naxis; j++)
             {
                 fprintf(fo, "%ld%s", (long) dcimg[i].md[0].size[j], (j < dcimg[i].md[0].naxis - 1) ? "x" : "");
             }
@@ -435,7 +435,7 @@ errno_t list_image_ID_ofp_porcelain(FILE *fo)
 errno_t list_image_ID_file(const char *fname)
 {
     FILE   *fp;
-    long    i, j;
+
     uint8_t datatype;
     char    type[STYPESIZE];
     int     n;
@@ -447,13 +447,13 @@ errno_t list_image_ID_file(const char *fname)
         abort();
     }
 
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
         if(dcimg[i].used == 1)
         {
             datatype = dcimg[i].md[0].datatype;
             fprintf(fp, "%ld %s", i, dcimg[i].name);
             fprintf(fp, " %ld", (long) dcimg[i].md[0].naxis);
-            for(j = 0; j < dcimg[i].md[0].naxis; j++)
+            for(long j = 0; j < dcimg[i].md[0].naxis; j++)
             {
                 fprintf(fp, " %ld", (long) dcimg[i].md[0].size[j]);
             }

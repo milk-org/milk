@@ -340,7 +340,10 @@ static void procctrl_render_help(void)
  *
  * Shows PID, name, loop state, and control actions.
  */
-static void procctrl_render_row_ctrl(procctrl_context_t *ctx, int m, int pindex)
+static void procctrl_render_row_ctrl(
+    procctrl_context_t *ctx,
+    int m,
+    int pindex)
 {
     // 4: tstart
     if(ctx->procinfoproc->col_visible[m][4])
@@ -453,7 +456,10 @@ static void procctrl_render_row_ctrl(procctrl_context_t *ctx, int m, int pindex)
  *
  * Shows memory, CPU affinity, and thread count.
  */
-static void procctrl_render_row_resources(procctrl_context_t *ctx, int m, int pindex)
+static void procctrl_render_row_resources(
+    procctrl_context_t *ctx,
+    int m,
+    int pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -528,7 +534,10 @@ static void procctrl_render_row_resources(procctrl_context_t *ctx, int m, int pi
  * Shows trigger stream, semaphore index, and
  * timeout settings.
  */
-static void procctrl_render_row_trigger(procctrl_context_t *ctx, int m, int pindex)
+static void procctrl_render_row_trigger(
+    procctrl_context_t *ctx,
+    int m,
+    int pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -616,7 +625,10 @@ static void procctrl_render_row_trigger(procctrl_context_t *ctx, int m, int pind
  *
  * Shows loop rate, latency, and jitter metrics.
  */
-static void procctrl_render_row_timing(procctrl_context_t *ctx, int m, int pindex)
+static void procctrl_render_row_timing(
+    procctrl_context_t *ctx,
+    int m,
+    int pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -697,7 +709,10 @@ static void procctrl_render_row_timing(procctrl_context_t *ctx, int m, int pinde
  * Shows executable path, start time, and
  * status message.
  */
-static void procctrl_render_row_procinfo(procctrl_context_t *ctx, int m, int pindex)
+static void procctrl_render_row_procinfo(
+    procctrl_context_t *ctx,
+    int m,
+    int pindex)
 {
     // 4: pname
     if(ctx->procinfoproc->col_visible[m][4])
@@ -787,7 +802,9 @@ static void procctrl_render_row_procinfo(procctrl_context_t *ctx, int m, int pin
  * Iterates visible processes and dispatches to
  * the mode-specific row renderer.
  */
-static void procctrl_render_process_list(procctrl_context_t *ctx, int NBactive)
+static void procctrl_render_process_list(
+    procctrl_context_t *ctx,
+    int NBactive)
 {
     int dispindexMax = wrow - 6;
 
@@ -1019,7 +1036,9 @@ static void procctrl_render_process_list(procctrl_context_t *ctx, int NBactive)
  * Composes header, tabs, column headers, process
  * list, and status bar into a single screen update.
  */
-void procctrl_render_frame(procctrl_context_t *ctx, int NBactive)
+void procctrl_render_frame(
+    procctrl_context_t *ctx,
+    int NBactive)
 {
     if(ctx->freeze == 0)
     {

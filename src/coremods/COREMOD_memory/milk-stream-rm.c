@@ -24,7 +24,9 @@
     "  -r         Regex match: list matches then confirm.\n" \
     "  (no args)  Interactive: list all streams, select to remove."
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, SR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -68,7 +70,8 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-stream-list:list active shared memory streams",
         "milk-stream-info:inspect stream metadata and data"
     };
@@ -97,14 +100,16 @@ static int remove_single_stream(
     /* Check if symlink — just unlink */
     struct stat lbuf;
 
-    if (lstat(fullpath, &lbuf) == 0
-        && S_ISLNK(lbuf.st_mode))
+    if(lstat(fullpath, &lbuf) == 0
+            && S_ISLNK(lbuf.st_mode))
     {
-        if (verbose) {
+        if(verbose)
+        {
             printf("Removing symlink '%s'...\n",
                    sname);
         }
-        if (unlink(fullpath) != 0) {
+        if(unlink(fullpath) != 0)
+        {
             PRINT_ERROR("unlink: %s", strerror(errno));
             return 1;
         }
@@ -119,21 +124,23 @@ static int remove_single_stream(
         ImageStreamIO_read_sharedmem_image_toIMAGE(
             sname, &image);
 
-    if (ret != IMAGESTREAMIO_SUCCESS) {
+    if(ret != IMAGESTREAMIO_SUCCESS)
+    {
         fprintf(stderr,
                 "Error: cannot open stream"
                 " '%s'.\n", sname);
         return 1;
     }
 
-    if (verbose) {
+    if(verbose)
+    {
         printf("Removing stream '%s'...\n",
                sname);
     }
 
     /* Destroy semaphores */
-    for (int si = 0;
-         si < image.md->sem; si++)
+    for(int si = 0;
+            si < image.md->sem; si++)
     {
         sem_destroy(image.semptr[si]);
     }
@@ -142,7 +149,8 @@ static int remove_single_stream(
     ImageStreamIO_closeIm(&image);
 
     /* Unlink the SHM file */
-    if (unlink(fullpath) != 0) {
+    if(unlink(fullpath) != 0)
+    {
         PRINT_ERROR("unlink: %s", strerror(errno));
         return 1;
     }
@@ -167,7 +175,8 @@ static int scan_streams(
 {
     DIR *d = opendir(shmdir);
 
-    if (!d) {
+    if(!d)
+    {
         fprintf(stderr,
                 "Error opening directory %s\n",
                 shmdir);
@@ -180,17 +189,20 @@ static int scan_streams(
 
     struct dirent *dir;
 
-    while ((dir = readdir(d)) != NULL) {
+    while((dir = readdir(d)) != NULL)
+    {
         char *pch =
             strstr(dir->d_name, ".im.shm");
-        if (!pch) {
+        if(!pch)
+        {
             continue;
         }
         int suffix_pos =
             (int)(pch - dir->d_name);
         int name_len =
             (int)strlen(dir->d_name);
-        if (suffix_pos != name_len - 7) {
+        if(suffix_pos != name_len - 7)
+        {
             continue;
         }
 
@@ -200,7 +212,8 @@ static int scan_streams(
                  "%.*s", suffix_pos,
                  dir->d_name);
 
-        if (count >= capacity) {
+        if(count >= capacity)
+        {
             capacity *= 2;
             *names = realloc(*names,
                              capacity
@@ -227,7 +240,8 @@ static int read_confirmation(void)
     struct termios old_term;
     int is_tty = isatty(STDIN_FILENO);
 
-    if (is_tty) {
+    if(is_tty)
+    {
         tcgetattr(STDIN_FILENO, &old_term);
         struct termios t = old_term;
 
@@ -242,12 +256,14 @@ static int read_confirmation(void)
         (fgets(linebuf, sizeof(linebuf),
                stdin) != NULL);
 
-    if (is_tty) {
+    if(is_tty)
+    {
         tcsetattr(STDIN_FILENO,
                   TCSANOW, &old_term);
     }
 
-    if (!ok) {
+    if(!ok)
+    {
         return 0;
     }
 
@@ -255,9 +271,9 @@ static int read_confirmation(void)
     {
         char *p = linebuf + strlen(linebuf);
 
-        while (p > linebuf
-               && (*(p - 1) == '\n'
-                   || *(p - 1) == '\r'))
+        while(p > linebuf
+                && (*(p - 1) == '\n'
+                    || *(p - 1) == '\r'))
         {
             *(--p) = '\0';
         }
@@ -275,12 +291,15 @@ static int read_confirmation(void)
  * Handles terminal mode setup and strips
  * trailing whitespace.  Returns 1 on success.
  */
-static int read_line(char *buf, int size)
+static int read_line(
+    char *buf,
+    int size)
 {
     struct termios old_term;
     int is_tty = isatty(STDIN_FILENO);
 
-    if (is_tty) {
+    if(is_tty)
+    {
         tcgetattr(STDIN_FILENO, &old_term);
         struct termios t = old_term;
 
@@ -293,12 +312,14 @@ static int read_line(char *buf, int size)
     int ok =
         (fgets(buf, size, stdin) != NULL);
 
-    if (is_tty) {
+    if(is_tty)
+    {
         tcsetattr(STDIN_FILENO,
                   TCSANOW, &old_term);
     }
 
-    if (!ok) {
+    if(!ok)
+    {
         return 0;
     }
 
@@ -306,9 +327,9 @@ static int read_line(char *buf, int size)
     {
         char *p = buf + strlen(buf);
 
-        while (p > buf
-               && (*(p - 1) == '\n'
-                   || *(p - 1) == '\r'))
+        while(p > buf
+                && (*(p - 1) == '\n'
+                    || *(p - 1) == '\r'))
         {
             *(--p) = '\0';
         }
@@ -317,14 +338,18 @@ static int read_line(char *buf, int size)
     return 1;
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 SR_DESC, SR_DESC_LONG);
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
+    }
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
@@ -335,7 +360,8 @@ int main(int argc, char *argv[])
     int force = 0;
     int opt;
 
-    static struct option long_options[] = {
+    static struct option long_options[] =
+    {
         {"verbose", no_argument, 0, 'v'},
         {"regex",   no_argument, 0, 'r'},
         {"force",   no_argument, 0, 'f'},
@@ -343,12 +369,13 @@ int main(int argc, char *argv[])
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv,
-                              "vrfh",
-                              long_options,
-                              NULL)) != -1)
+    while((opt = getopt_long(argc, argv,
+                             "vrfh",
+                             long_options,
+                             NULL)) != -1)
     {
-        switch (opt) {
+        switch(opt)
+        {
         case 'v':
             verbose = 1;
             break;
@@ -358,7 +385,8 @@ int main(int argc, char *argv[])
         case 'f':
             force = 1;
             break;
-        case 'h': break; /* handled above */
+        case 'h':
+            break; /* handled above */
         default:
             printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(argv[0], 1);
@@ -368,18 +396,21 @@ int main(int argc, char *argv[])
 
     const char *pattern = NULL;
 
-    if (optind < argc) {
+    if(optind < argc)
+    {
         pattern = argv[optind];
     }
 
     /* Determine SHM directory */
     const char *shmdir = getenv("MILK_SHM_DIR");
 
-    if (shmdir == NULL) {
+    if(shmdir == NULL)
+    {
         shmdir = "/milk/shm";
         struct stat st;
 
-        if (stat(shmdir, &st) != 0) {
+        if(stat(shmdir, &st) != 0)
+        {
             shmdir = "/dev/shm";
         }
     }
@@ -387,9 +418,10 @@ int main(int argc, char *argv[])
     /* ------------------------------------------
      * Mode 1: Exact match (default with pattern)
      * ----------------------------------------*/
-    if (pattern != NULL && !use_regex) {
+    if(pattern != NULL && !use_regex)
+    {
         return remove_single_stream(
-            shmdir, pattern, verbose);
+                   shmdir, pattern, verbose);
     }
 
     /* ------------------------------------------
@@ -401,11 +433,13 @@ int main(int argc, char *argv[])
         scan_streams(shmdir, &all_names,
                      capacity);
 
-    if (total < 0) {
+    if(total < 0)
+    {
         return 1;
     }
 
-    if (total == 0) {
+    if(total == 0)
+    {
         printf("No streams found.\n");
         free(all_names);
         return 1;
@@ -414,16 +448,19 @@ int main(int argc, char *argv[])
     /* ------------------------------------------
      * Mode 2: Regex match (with -r flag)
      * ----------------------------------------*/
-    if (use_regex && pattern != NULL) {
+    if(use_regex && pattern != NULL)
+    {
         regex_t regex;
         int ret = regcomp(&regex, pattern,
                           REG_EXTENDED
                           | REG_NOSUB);
-        if (ret != 0) {
+        if(ret != 0)
+        {
             fprintf(stderr,
                     "Error: invalid regex"
                     " '%s'.\n", pattern);
-            for (int i = 0; i < total; i++) {
+            for(int i = 0; i < total; i++)
+            {
                 free(all_names[i]);
             }
             free(all_names);
@@ -436,28 +473,33 @@ int main(int argc, char *argv[])
         char **match_names =
             calloc(match_cap, sizeof(char *));
 
-        for (int i = 0; i < total; i++) {
-            if (regexec(&regex, all_names[i],
-                        0, NULL, 0) == 0)
+        for(int i = 0; i < total; i++)
+        {
+            if(regexec(&regex, all_names[i],
+                       0, NULL, 0) == 0)
             {
-                if (match_count >= match_cap) {
+                if(match_count >= match_cap)
+                {
                     match_cap *= 2;
                     match_names = realloc(
-                        match_names,
-                        match_cap
-                        * sizeof(char *));
+                                      match_names,
+                                      match_cap
+                                      * sizeof(char *));
                 }
                 match_names[match_count] =
                     all_names[i];
                 match_count++;
-            } else {
+            }
+            else
+            {
                 free(all_names[i]);
             }
         }
         free(all_names);
         regfree(&regex);
 
-        if (match_count == 0) {
+        if(match_count == 0)
+        {
             fprintf(stderr,
                     "No streams matching"
                     " '%s' found.\n",
@@ -470,19 +512,21 @@ int main(int argc, char *argv[])
         printf("\n  Streams matching '%s'"
                " (%d):\n\n",
                pattern, match_count);
-        for (int i = 0;
-             i < match_count; i++)
+        for(int i = 0;
+                i < match_count; i++)
         {
             printf("    %s\n", match_names[i]);
         }
         printf("\n");
 
         /* Confirm unless -f */
-        if (!force) {
-            if (!read_confirmation()) {
+        if(!force)
+        {
+            if(!read_confirmation())
+            {
                 printf("Cancelled.\n");
-                for (int i = 0;
-                     i < match_count; i++)
+                for(int i = 0;
+                        i < match_count; i++)
                 {
                     free(match_names[i]);
                 }
@@ -494,17 +538,18 @@ int main(int argc, char *argv[])
         /* Remove all matched streams */
         int errors = 0;
 
-        for (int i = 0;
-             i < match_count; i++)
+        for(int i = 0;
+                i < match_count; i++)
         {
             errors += remove_single_stream(
-                shmdir, match_names[i],
-                verbose);
+                          shmdir, match_names[i],
+                          verbose);
             free(match_names[i]);
         }
         free(match_names);
 
-        if (errors > 0) {
+        if(errors > 0)
+        {
             fprintf(stderr,
                     "%d stream(s) failed"
                     " to remove.\n",
@@ -518,7 +563,8 @@ int main(int argc, char *argv[])
      * Mode 3: Interactive selection (no pattern)
      * ----------------------------------------*/
     printf("\n  Streams:\n\n");
-    for (int i = 0; i < total; i++) {
+    for(int i = 0; i < total; i++)
+    {
         printf("  %3d  %s\n",
                i + 1, all_names[i]);
     }
@@ -530,11 +576,12 @@ int main(int argc, char *argv[])
 
     char linebuf[512];
 
-    if (!read_line(linebuf,
-                   sizeof(linebuf)))
+    if(!read_line(linebuf,
+                  sizeof(linebuf)))
     {
         printf("Cancelled.\n");
-        for (int i = 0; i < total; i++) {
+        for(int i = 0; i < total; i++)
+        {
             free(all_names[i]);
         }
         free(all_names);
@@ -546,10 +593,12 @@ int main(int argc, char *argv[])
         parse_multiselect(linebuf,
                           selected, total);
 
-    if (nsel <= 0) {
+    if(nsel <= 0)
+    {
         printf("Cancelled.\n");
         free(selected);
-        for (int i = 0; i < total; i++) {
+        for(int i = 0; i < total; i++)
+        {
             free(all_names[i]);
         }
         free(all_names);
@@ -558,21 +607,25 @@ int main(int argc, char *argv[])
 
     int errors = 0;
 
-    for (int i = 0; i < total; i++) {
-        if (selected[i]) {
+    for(int i = 0; i < total; i++)
+    {
+        if(selected[i])
+        {
             errors += remove_single_stream(
-                shmdir, all_names[i],
-                verbose);
+                          shmdir, all_names[i],
+                          verbose);
         }
     }
 
     free(selected);
-    for (int i = 0; i < total; i++) {
+    for(int i = 0; i < total; i++)
+    {
         free(all_names[i]);
     }
     free(all_names);
 
-    if (errors > 0) {
+    if(errors > 0)
+    {
         fprintf(stderr,
                 "%d stream(s) failed"
                 " to remove.\n", errors);

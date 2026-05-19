@@ -51,7 +51,7 @@ long fps_ID(const char *name)
 /* next available ID number */
 long next_avail_fps_ID()
 {
-    long i;
+
     long ID = -1;
 
     if(fpsarray == NULL)
@@ -59,7 +59,7 @@ long next_avail_fps_ID()
         return -1;
     }
 
-    for(i = 0; i < NB_FPS_MAX; i++)
+    for(long i = 0; i < NB_FPS_MAX; i++)
     {
         if(fpsarray[i].SMfd < 0)
         {

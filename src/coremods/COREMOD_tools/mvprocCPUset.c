@@ -39,7 +39,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(
 
 static long long p_pid = 0;
 static char p_name[
-    FUNCTION_PARAMETER_STRMAXLEN]
+     FUNCTION_PARAMETER_STRMAXLEN]
     = "realtime";
 static long long p_rtprio = 80;
 
@@ -48,13 +48,14 @@ static long long p_rtprio = 80;
  *  CMD 1: rtprio (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_rtp = {
+static FPS_APP_INFO FPS_app_info_rtp =
+{
     .fps_name    = "rtprio",
     .cmdkey      = "rtprio",
     .description =
-        "set SCHED_FIFO priority",
+    "set SCHED_FIFO priority",
     .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
+    "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS_RTP(X) \
@@ -63,7 +64,8 @@ static FPS_APP_INFO FPS_app_info_rtp = {
       FPFLAG_DEFAULT_INPUT, \
       "RT priority")
 
-static CLICMDDATA CLIcmddata_rtp = {
+static CLICMDDATA CLIcmddata_rtp =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(rtp, CLIcmddata_rtp, FPS_app_info_rtp)
@@ -79,13 +81,14 @@ static errno_t __attribute__((unused)) compute_rtp()
  *  CMD 2: tsetpmove (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_tset = {
+static FPS_APP_INFO FPS_app_info_tset =
+{
     .fps_name    = "tsetpmove",
     .cmdkey      = "tsetpmove",
     .description =
-        "assign taskset to current process",
+    "assign taskset to current process",
     .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
+    "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS_TSET(X) \
@@ -94,7 +97,8 @@ static FPS_APP_INFO FPS_app_info_tset = {
       FPFLAG_DEFAULT_INPUT, \
       "taskset spec list")
 
-static CLICMDDATA CLIcmddata_tset = {
+static CLICMDDATA CLIcmddata_tset =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(tset, CLIcmddata_tset, FPS_app_info_tset)
@@ -110,13 +114,14 @@ static errno_t __attribute__((unused)) compute_tset()
  *  CMD 3: tsetpmoveext (2 args)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_tsete = {
+static FPS_APP_INFO FPS_app_info_tsete =
+{
     .fps_name    = "tsetpmoveext",
     .cmdkey      = "tsetpmoveext",
     .description =
-        "assign taskset for any process",
+    "assign taskset for any process",
     .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
+    "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS_TSETE(X) \
@@ -129,7 +134,8 @@ static FPS_APP_INFO FPS_app_info_tsete = {
       FPFLAG_DEFAULT_INPUT, \
       "taskset spec list")
 
-static CLICMDDATA CLIcmddata_tsete = {
+static CLICMDDATA CLIcmddata_tsete =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(tsete, CLIcmddata_tsete, FPS_app_info_tsete)
@@ -146,16 +152,18 @@ static errno_t __attribute__((unused)) compute_tsete()
  *  CMD 4: csetpmove (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_cset = {
+static FPS_APP_INFO FPS_app_info_cset =
+{
     .fps_name    = "csetpmove",
     .cmdkey      = "csetpmove",
     .description =
-        "move current process to CPU set",
+    "move current process to CPU set",
     .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
+    "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
-static CLICMDDATA CLIcmddata_cset = {
+static CLICMDDATA CLIcmddata_cset =
+{
     "", "", CLICMD_FIELDS_NOPARAM
 };
 FPS_CMDSETTINGS_INIT(cset, CLIcmddata_cset, FPS_app_info_cset)
@@ -171,14 +179,15 @@ static errno_t __attribute__((unused)) compute_cset()
  *  CMD 5: csetandprioext (3 args, primary)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "csetandprioext",
     .cmdkey      = "csetandprioext",
     .description =
-        "move PID to CPU set and assign "
-        "RT priority",
+    "move PID to CPU set and assign "
+    "RT priority",
     .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
+    "Move processes to specific CPU sets for core pinning and isolation. Supports assigning PIDs to NUMA-aware CPU groups for real-time performance."
 };
 
 #define FPS_PARAMS(X) \
@@ -195,7 +204,8 @@ static FPS_APP_INFO FPS_app_info = {
       FPFLAG_DEFAULT_INPUT, \
       "RT priority (0=ignore)")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
@@ -203,11 +213,13 @@ static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
@@ -232,33 +244,39 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 /* bindings for single-param commands */
-static FPS_CLI_BINDING bindings_rtp[] = {
+static FPS_CLI_BINDING bindings_rtp[] =
+{
     FPS_PARAMS_RTP(FPS_X_BINDING)
 };
 static const int nb_bindings_rtp =
     sizeof(bindings_rtp) /
     sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_rtp[] = {
+static CLICMDARGDEF farg_rtp[] =
+{
     FPS_PARAMS_RTP(FPS_X_FARG)
 };
 
-static FPS_CLI_BINDING bindings_tset[] = {
+static FPS_CLI_BINDING bindings_tset[] =
+{
     FPS_PARAMS_TSET(FPS_X_BINDING)
 };
 static const int nb_bindings_tset =
     sizeof(bindings_tset) /
     sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_tset[] = {
+static CLICMDARGDEF farg_tset[] =
+{
     FPS_PARAMS_TSET(FPS_X_FARG)
 };
 
-static FPS_CLI_BINDING bindings_tsete[] = {
+static FPS_CLI_BINDING bindings_tsete[] =
+{
     FPS_PARAMS_TSETE(FPS_X_BINDING)
 };
 static const int nb_bindings_tsete =
     sizeof(bindings_tsete) /
     sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_tsete[] = {
+static CLICMDARGDEF farg_tsete[] =
+{
     FPS_PARAMS_TSETE(FPS_X_FARG)
 };
 
@@ -267,46 +285,46 @@ static CLICMDARGDEF farg_tsete[] = {
 static errno_t CLIfunction_rtp(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_rtp,
-        farg_rtp, &CLIcmddata_rtp,
-        bindings_rtp, nb_bindings_rtp,
-        compute_rtp);
+               &FPS_app_info_rtp,
+               farg_rtp, &CLIcmddata_rtp,
+               bindings_rtp, nb_bindings_rtp,
+               compute_rtp);
 }
 
 static errno_t CLIfunction_tset(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_tset,
-        farg_tset, &CLIcmddata_tset,
-        bindings_tset, nb_bindings_tset,
-        compute_tset);
+               &FPS_app_info_tset,
+               farg_tset, &CLIcmddata_tset,
+               bindings_tset, nb_bindings_tset,
+               compute_tset);
 }
 
 static errno_t CLIfunction_tsete(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_tsete,
-        farg_tsete, &CLIcmddata_tsete,
-        bindings_tsete,
-        nb_bindings_tsete,
-        compute_tsete);
+               &FPS_app_info_tsete,
+               farg_tsete, &CLIcmddata_tsete,
+               bindings_tsete,
+               nb_bindings_tsete,
+               compute_tsete);
 }
 
 static errno_t CLIfunction_cset(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_cset,
-        farg_tset, &CLIcmddata_cset,
-        bindings_tset, nb_bindings_tset,
-        compute_cset);
+               &FPS_app_info_cset,
+               farg_tset, &CLIcmddata_cset,
+               bindings_tset, nb_bindings_tset,
+               compute_cset);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -326,35 +344,35 @@ CLIADDCMD_COREMOD_tools__mvprocCPUset()
 
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_rtp,
-            CLIfunction_rtp);
+                       CLIcmddata_rtp,
+                       CLIfunction_rtp);
         CLIcmddata_rtp.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_tset,
-            CLIfunction_tset);
+                       CLIcmddata_tset,
+                       CLIfunction_tset);
         CLIcmddata_tset.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_tsete,
-            CLIfunction_tsete);
+                       CLIcmddata_tsete,
+                       CLIfunction_tsete);
         CLIcmddata_tsete.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_cset,
-            CLIfunction_cset);
+                       CLIcmddata_cset,
+                       CLIfunction_cset);
         CLIcmddata_cset.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
     {
         int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
+                       CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -406,7 +424,9 @@ int COREMOD_TOOLS_mvProcTset(const char *tsetspec)
     return COREMOD_TOOLS_mvProcTsetExt(getpid(), tsetspec);
 }
 
-int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
+int COREMOD_TOOLS_mvProcTsetExt(
+    const int pid,
+    const char *tsetspec)
 {
     char command[200];
 

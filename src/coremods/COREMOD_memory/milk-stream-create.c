@@ -13,12 +13,14 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 
-typedef struct {
+typedef struct
+{
     const char *name;
     uint8_t     code;
 } DTYPE_ENTRY;
 
-static const DTYPE_ENTRY dtype_table[] = {
+static const DTYPE_ENTRY dtype_table[] =
+{
     {"uint8",   _DATATYPE_UINT8},
     {"u8",      _DATATYPE_UINT8},
     {"int8",    _DATATYPE_INT8},
@@ -45,15 +47,18 @@ static const DTYPE_ENTRY dtype_table[] = {
 static uint8_t parse_dtype(const char *s)
 {
     /* Try by name */
-    for (int i = 0; dtype_table[i].name; i++) {
-        if (strcasecmp(s, dtype_table[i].name) == 0) {
+    for(int i = 0; dtype_table[i].name; i++)
+    {
+        if(strcasecmp(s, dtype_table[i].name) == 0)
+        {
             return dtype_table[i].code;
         }
     }
     /* Try numeric code */
     char *end;
     long v = strtol(s, &end, 10);
-    if (*end == '\0' && v >= 1 && v <= 12) {
+    if(*end == '\0' && v >= 1 && v <= 12)
+    {
         return (uint8_t) v;
     }
     return 0;
@@ -129,12 +134,15 @@ void print_help(const char *progname)
            progname);
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* One-line help — before getopt so it works without any positional args */
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h1") == 0 ||
-            strcmp(argv[i], "--help-oneline") == 0)
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-h1") == 0 ||
+                strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("create a shared-memory image stream\n");
             return 0;
@@ -145,42 +153,46 @@ int main(int argc, char *argv[])
     int nbkw = 10;
     int opt;
 
-    static struct option long_options[] = {
+    static struct option long_options[] =
+    {
         {"type", required_argument, 0, 't'},
         {"kw",   required_argument, 0, 'k'},
         {"help", no_argument,       0, 'h'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv,
-                              "t:k:h",
-                              long_options,
-                              NULL)) != -1)
+    while((opt = getopt_long(argc, argv,
+                             "t:k:h",
+                             long_options,
+                             NULL)) != -1)
     {
-        switch (opt) {
-            case 't':
-                dtype = parse_dtype(optarg);
-                if (dtype == 0) {
-                    printf("\n\033[1;31mERROR\033[0m unknown type: %s\n\n", optarg);
-                    print_help(argv[0]);
-                    return 1;
-                }
-                break;
-            case 'k':
-                nbkw = atoi(optarg);
-                break;
-            case 'h':
-                print_help(argv[0]);
-                return 0;
-            default:
-                printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        switch(opt)
+        {
+        case 't':
+            dtype = parse_dtype(optarg);
+            if(dtype == 0)
+            {
+                printf("\n\033[1;31mERROR\033[0m unknown type: %s\n\n", optarg);
                 print_help(argv[0]);
                 return 1;
+            }
+            break;
+        case 'k':
+            nbkw = atoi(optarg);
+            break;
+        case 'h':
+            print_help(argv[0]);
+            return 0;
+        default:
+            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+            print_help(argv[0]);
+            return 1;
         }
     }
 
     int npos = argc - optind;
-    if (npos < 2) {
+    if(npos < 2)
+    {
         printf("\n\033[1;31mERROR\033[0m need at least name and xsize\n\n");
         print_help(argv[0]);
         return 1;
@@ -189,13 +201,16 @@ int main(int argc, char *argv[])
     const char *name = argv[optind];
     uint32_t sz[3];
     long naxis = npos - 1;
-    if (naxis > 3) {
+    if(naxis > 3)
+    {
         naxis = 3;
     }
 
-    for (int i = 0; i < naxis; i++) {
+    for(int i = 0; i < naxis; i++)
+    {
         sz[i] = (uint32_t) atol(argv[optind + 1 + i]);
-        if (sz[i] == 0) {
+        if(sz[i] == 0)
+        {
             fprintf(stderr,
                     "Error: invalid size %s\n",
                     argv[optind + 1 + i]);
@@ -207,15 +222,17 @@ int main(int argc, char *argv[])
     memset(&image, 0, sizeof(IMAGE));
 
     int cbsize = 0;
-    if (naxis == 3) {
+    if(naxis == 3)
+    {
         cbsize = sz[2];
     }
 
     errno_t ret = ImageStreamIO_createIm(
-        &image, name, naxis, sz,
-        dtype, 1, nbkw, cbsize);
+                      &image, name, naxis, sz,
+                      dtype, 1, nbkw, cbsize);
 
-    if (ret != IMAGESTREAMIO_SUCCESS) {
+    if(ret != IMAGESTREAMIO_SUCCESS)
+    {
         fprintf(stderr,
                 "Failed to create stream '%s'\n",
                 name);
@@ -229,8 +246,12 @@ int main(int argc, char *argv[])
     printf("Created stream '%s'  ", name);
     printf("type=%s  size=",
            tname ? tname : "?");
-    for (int i = 0; i < naxis; i++) {
-        if (i > 0) printf("x");
+    for(int i = 0; i < naxis; i++)
+    {
+        if(i > 0)
+        {
+            printf("x");
+        }
         printf("%u", sz[i]);
     }
     printf("\n");

@@ -58,12 +58,16 @@ int ov_filter_build(
  * overview_render_internal.h
  */
 
-void bset(uint64_t *words, int idx)
+void bset(
+    uint64_t *words,
+    int idx)
 {
     words[idx / BITS_PER_WORD] |= (UINT64_C(1) << (idx % BITS_PER_WORD));
 }
 
-int bget(const uint64_t *words, int idx)
+int bget(
+    const uint64_t *words,
+    int idx)
 {
     return (words[idx / BITS_PER_WORD] >> (idx % BITS_PER_WORD)) & 1;
 }

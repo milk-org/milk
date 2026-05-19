@@ -7,7 +7,10 @@
  * Dispatches key presses to navigation, mode
  * switching, or process control actions.
  */
-void procctrl_handle_keyboard_event(procctrl_context_t *ctx, int ch, int NBactive)
+void procctrl_handle_keyboard_event(
+    procctrl_context_t *ctx,
+    int ch,
+    int NBactive)
 {
     ctx->last_ch = ch;
     if(ctx->flog)

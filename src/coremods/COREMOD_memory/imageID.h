@@ -260,7 +260,9 @@ static inline int imgid_exists(const char *name)
  * @param ID    Index into the global dcimg[] array
  * @return Fully populated IMGID
  */
-static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
+static inline IMGID makesetIMGID(
+    CONST_WORD name,
+    imageID ID)
 {
     IMGID img;
 

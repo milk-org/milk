@@ -141,7 +141,9 @@ void clear_row(
 }
 
 /* Pad the remainder of a panel's interior row */
-void render_pad_spaces(int chars_written, int panel_width)
+void render_pad_spaces(
+    int chars_written,
+    int panel_width)
 {
     int remain = (panel_width - 2) - chars_written;
     if(remain > 0)

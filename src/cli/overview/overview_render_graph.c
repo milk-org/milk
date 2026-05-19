@@ -390,7 +390,9 @@ void ov_render_preview_line(
     ov_buf_reset_attr();
 }
 
-static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
+static int get_graph_start_node(
+    const OV_LAYOUT *lay,
+    const OV_MODEL *m)
 {
     ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
     int target_type = -1;

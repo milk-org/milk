@@ -145,7 +145,7 @@ errno_t list_image_ID_ncurses()
     char      str1[500];
     int str2maxlen = 512;
     char      str2[512];
-    long      i, j;
+
     long long tmp_long;
     char      type[STYPESIZE];
     uint8_t   datatype;
@@ -166,7 +166,7 @@ errno_t list_image_ID_ncurses()
 
     printw("INDEX    NAME         SIZE                    TYPE        SIZE  [percent]    LAST ACCESS\n\n");
 
-    for(i = 0; i < dcnimg; i++)
+    for(long i = 0; i < dcnimg; i++)
     {
         if(dcimg[i].used == 1)
         {
@@ -206,7 +206,7 @@ errno_t list_image_ID_ncurses()
 
             snprintf(str, strmaxlen, "[ %6ld", (long) dcimg[i].md[0].size[0]);
 
-            for(j = 1; j < dcimg[i].md[0].naxis; j++)
+            for(long j = 1; j < dcimg[i].md[0].naxis; j++)
             {
                 snprintf(str1, str1maxlen, "%s x %6ld", str, (long) dcimg[i].md[0].size[j]);
             }

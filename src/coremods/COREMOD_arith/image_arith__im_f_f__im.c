@@ -27,13 +27,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "imtrunc",
     .cmdkey      = "imtrunc",
     .description =
-        "truncate pixel values between min and max",
+    "truncate pixel values between min and max",
     .description_long =
-        "Truncate pixel values in an image stream by clamping them to a specified range [min, max]. Pixels below min are set to min, pixels above max are set to max. Useful for filtering outliers or enforcing dynamic range limits in real-time streams."
+    "Truncate pixel values in an image stream by clamping them to a specified range [min, max]. Pixels below min are set to min, pixels above max are set to max. Useful for filtering outliers or enforcing dynamic range limits in real-time streams."
 };
 
 
@@ -96,7 +97,10 @@ int arith_image_trunc(const char *ID_name,
     return (0);
 }
 
-int arith_image_trunc_inplace(const char *ID_name, double f1, double f2)
+int arith_image_trunc_inplace(
+    const char *ID_name,
+    double f1,
+    double f2)
 {
     arith_image_function_1ff_1_inplace(ID_name, f1, f2, &Ptrunc);
     return (0);
@@ -121,7 +125,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID imgin  = imgid_make_from_name(inimname);
     resolveIMGID(&imgin, ERRMODE_NULL, dcimg, dcnimg);
 
-    if (imgin.im == NULL) {
+    if(imgin.im == NULL)
+    {
         return RETURN_FAILURE;
     }
 
@@ -129,7 +134,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imgid_copy(&imgin, &imgout);
     imcreateIMGID(&imgout);
 
-    if (imgout.im == NULL) {
+    if(imgout.im == NULL)
+    {
         imgid_free(&imgin);
         return RETURN_FAILURE;
     }
@@ -140,33 +146,47 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        if (imgin.md->datatype == _DATATYPE_FLOAT && imgout.mdt->datatype == _DATATYPE_FLOAT)
+        if(imgin.md->datatype == _DATATYPE_FLOAT && imgout.mdt->datatype == _DATATYPE_FLOAT)
         {
-            float * MILK_RESTRICT pin = MILK_ASSUME_ALIGNED(imgin.im->array.F);
-            float * MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.F);
+            float *MILK_RESTRICT pin = MILK_ASSUME_ALIGNED(imgin.im->array.F);
+            float *MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.F);
             float f_min = (float)valmin;
             float f_max = (float)valmax;
 
             #pragma omp simd
-            for (uint64_t ii = 0; ii < nelement; ii++) {
+            for(uint64_t ii = 0; ii < nelement; ii++)
+            {
                 float v = pin[ii];
-                if (v < f_min) v = f_min;
-                else if (v > f_max) v = f_max;
+                if(v < f_min)
+                {
+                    v = f_min;
+                }
+                else if(v > f_max)
+                {
+                    v = f_max;
+                }
                 pout[ii] = v;
             }
         }
-        else if (imgin.md->datatype == _DATATYPE_DOUBLE && imgout.mdt->datatype == _DATATYPE_DOUBLE)
+        else if(imgin.md->datatype == _DATATYPE_DOUBLE && imgout.mdt->datatype == _DATATYPE_DOUBLE)
         {
-            double * MILK_RESTRICT pin = MILK_ASSUME_ALIGNED(imgin.im->array.D);
-            double * MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.D);
+            double *MILK_RESTRICT pin = MILK_ASSUME_ALIGNED(imgin.im->array.D);
+            double *MILK_RESTRICT pout = MILK_ASSUME_ALIGNED(imgout.im->array.D);
             double d_min = valmin;
             double d_max = valmax;
 
             #pragma omp simd
-            for (uint64_t ii = 0; ii < nelement; ii++) {
+            for(uint64_t ii = 0; ii < nelement; ii++)
+            {
                 double v = pin[ii];
-                if (v < d_min) v = d_min;
-                else if (v > d_max) v = d_max;
+                if(v < d_min)
+                {
+                    v = d_min;
+                }
+                else if(v > d_max)
+                {
+                    v = d_max;
+                }
                 pout[ii] = v;
             }
         }
@@ -194,9 +214,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t image_arith__im_f_f__im_addCLIcmd()
