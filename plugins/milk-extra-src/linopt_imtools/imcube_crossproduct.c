@@ -19,7 +19,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imcubeXprod",
     .cmdkey      = "imcubeXprod",
-    .description = "cross product of two image cubes"
+    .description = "cross product of two image cubes",
+    .description_long =
+        "Compute the cross-product matrix of two image cubes. Each element (i,j) is the dot product of slice i from cube A with slice j from cube B."
 };
 
 
@@ -69,11 +71,20 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imgcube0, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgcube1, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgmask, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgcube0, ERRMODE_WARN, dcimg, dcnimg);
+    resolveIMGID(&imgcube1, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgcube0.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    if (imgcube1.ID == -1) {
+        return RETURN_FAILURE;
+    }
+    resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t xsize  = imgcube0.md->size[0];
+    if (imgmask.ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t ysize  = imgcube0.md->size[1];
     uint32_t zsize0 = imgcube0.md->size[2];
     uint32_t zsize1 = imgcube1.md->size[2];

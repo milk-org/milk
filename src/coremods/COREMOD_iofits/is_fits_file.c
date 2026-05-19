@@ -21,6 +21,11 @@
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
+/**
+ * @brief Check if a filename has a .fits extension.
+ *
+ * Returns 1 if the file extension is .fits.
+ */
 int is_fits_file(const char *restrict file_name)
 {
     int       value = 0;
@@ -44,7 +49,7 @@ int is_fits_file(const char *restrict file_name)
     {
         fitsfile *fptr;
 
-        EXECUTE_SYSTEM_COMMAND("touch fitscheck.%s", file_name);
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("touch fitscheck.%s", file_name);
 
         if(!fits_open_file(&fptr,
                            file_name,

@@ -3,10 +3,21 @@
 
 #include <math.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -472,6 +483,11 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
     printf("zfactor = %f\n", zfactor);
 
     IDin            = image_ID(pupin_name, dcimg, dcnimg);
+    if(IDin == -1)
+    {
+        PRINT_ERROR("image %s not found", pupin_name);
+        return RETURN_FAILURE;
+    }
     xsize           = dcimg[IDin].md[0].size[0];
     ysize           = dcimg[IDin].md[0].size[1];
     uint64_t xysize = (uint64_t) xsize;
@@ -530,6 +546,11 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         // If amplitude >eps, turn pixel ON, save result in _fpmzmask
         //
         IDfpmz = image_ID(fpmz_name, dcimg, dcnimg);
+        if(IDfpmz == -1)
+        {
+            PRINT_ERROR("image %s not found", fpmz_name);
+            return RETURN_FAILURE;
+        }
         FUNC_CHECK_RETURN(
             create_2Dimage_ID("_fpmzmask", xsize, ysize, &IDfpmz_mask));
 
@@ -756,6 +777,11 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
     imageID ID_DFTmask00;
 
     imageID  IDin   = image_ID(pupin_name, dcimg, dcnimg);
+    if(IDin == -1)
+    {
+        PRINT_ERROR("image %s not found", pupin_name);
+        return RETURN_FAILURE;
+    }
     uint32_t xsize  = dcimg[IDin].md[0].size[0];
     uint32_t ysize  = dcimg[IDin].md[0].size[1];
     uint64_t xysize = xsize;
@@ -794,6 +820,11 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
 
     // ! Why read and re-create ?
     IDfpmz = image_ID(fpmz_name, dcimg, dcnimg);
+    if(IDfpmz == -1)
+    {
+        PRINT_ERROR("image %s not found", fpmz_name);
+        return RETURN_FAILURE;
+    }
     FUNC_CHECK_RETURN(
         create_2Dimage_ID("_fpmzmask", xsize, ysize, &IDfpmz_mask));
 

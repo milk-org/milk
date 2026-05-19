@@ -310,33 +310,46 @@ static errno_t cli_seq_log(void)
         return RETURN_SUCCESS;
     }
 
-    /* Count lines */
+    /* Count total lines in the log */
     int nlines = 0;
-    int ch;
-    while ((ch = fgetc(fp)) != EOF) {
-        if (ch == '\n') {
-            nlines++;
+    {
+        int ch;
+        while((ch = fgetc(fp)) != EOF)
+        {
+            if(ch == '\n')
+            {
+                nlines++;
+            }
         }
     }
 
-    /* Seek to last 50 lines */
+    /* Seek past all but the last 50 lines */
     int skip = (nlines > 50) ? nlines - 50 : 0;
     rewind(fp);
-    int cur = 0;
-    while (cur < skip) {
-        ch = fgetc(fp);
-        if (ch == EOF) {
-            break;
-        }
-        if (ch == '\n') {
-            cur++;
+    {
+        int cur = 0;
+        while(cur < skip)
+        {
+            int ch = fgetc(fp);
+            if(ch == EOF)
+            {
+                break;
+            }
+            if(ch == '\n')
+            {
+                cur++;
+            }
         }
     }
 
     printf("--- %s (last %d lines) ---\n",
            logpath, nlines - skip);
-    while ((ch = fgetc(fp)) != EOF) {
-        putchar(ch);
+    {
+        int ch;
+        while((ch = fgetc(fp)) != EOF)
+        {
+            putchar(ch);
+        }
     }
     printf("--- end ---\n");
 

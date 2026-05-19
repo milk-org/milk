@@ -98,11 +98,10 @@ IMGID_SLICE imgid_slice_parse(
  * @return 0 on success, 1 on error
  */
 int imgid_slice_output_size(
-    IMGID_SLICE *s,
-    int          src_naxis,
+    IMGID_SLICE    *s,
+    int            src_naxis,
     const uint32_t *src_size,
-    uint32_t    *out_size
-);
+    uint32_t       *out_size);
 
 
 /**
@@ -119,8 +118,7 @@ int imgid_slice_output_size(
 void imgid_slice_format(
     const IMGID_SLICE *s,
     char              *buf,
-    int                bufsz
-);
+    int               bufsz);
 
 
 /**
@@ -139,8 +137,7 @@ void imgid_slice_shmname(
     const char        *srcname,
     const IMGID_SLICE *s,
     char              *buf,
-    int                bufsz
-);
+    int               bufsz);
 
 
 /**
@@ -162,10 +159,9 @@ void imgid_slice_shmname(
 int imgid_slice_split_name(
     const char *raw,
     char       *name_buf,
-    int         name_sz,
+    int        name_sz,
     char       *slice_buf,
-    int         slice_sz
-);
+    int        slice_sz);
 
 
 #endif

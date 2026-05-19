@@ -21,7 +21,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkFouriermodes",
     .cmdkey      = "mkFouriermodes",
-    .description = "make basis of Fourier Modes"
+    .description = "make basis of Fourier Modes",
+    .description_long =
+        "Generate a basis of Fourier (CPA) modes within a pupil aperture. Creates sinusoidal modes at specified spatial frequencies."
 };
 
 

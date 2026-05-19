@@ -30,7 +30,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "streammon",
     .cmdkey      = "streammon",
-    .description = "stream monitor with multi-level time binning and circular buffer"
+    .description = "stream monitor with multi-level time binning and circular buffer",
+    .description_long =
+        "Monitor a shared memory stream with multi-level temporal binning and circular buffer logging. Tracks frame rate, statistics, and timing jitter."
 };
 
 
@@ -201,10 +203,13 @@ errno_t stream_monitor_run(
     if (inimg.ID == -1) {
         // Not found, try to load from SHM
         read_sharedmem_image(inimname_arg, dcimg, dcnimg);
-        resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+        resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
     }
 
     uint32_t xsize  = inimg.md->size[0];
+        if (inimg.ID == -1) {
+            return RETURN_FAILURE;
+        }
     uint32_t ysize  = inimg.md->size[1];
     uint64_t xysize = (uint64_t) xsize * ysize;
     uint8_t datatype = inimg.md->datatype;
@@ -371,7 +376,7 @@ errno_t stream_monitor_run(
         // Update Timing
         // --------------------------------------------------------------------
         struct timespec tnow = inimg.md->atime;
-        uint64_t *cbtptr = cbtimg.im->array.UI64;
+        uint64_t * MILK_RESTRICT cbtptr = MILK_ASSUME_ALIGNED(cbtimg.im->array.UI64);
         cbtptr[cb_idx * 2 + 0] = (uint64_t) tnow.tv_sec;
         cbtptr[cb_idx * 2 + 1] = (uint64_t) tnow.tv_nsec;
         cbtimg.md->cnt1 = cb_idx;
@@ -475,8 +480,8 @@ errno_t stream_monitor_run(
                     bincounter[b+1] += bincounter[b];
                 }
 
-                float *outptr    = imgoutbin[b].im->array.F;
-                float *outrmsptr = imgoutbinrms[b].im->array.F;
+                float * MILK_RESTRICT outptr = MILK_ASSUME_ALIGNED(imgoutbin[b].im->array.F);
+                float * MILK_RESTRICT outrmsptr = MILK_ASSUME_ALIGNED(imgoutbinrms[b].im->array.F);
                 double invcount  = 1.0 / bincounter[b];
 
                 imgoutbin[b].md->write = 1;

@@ -91,10 +91,9 @@ static int check_and_reconnect(FPS_VALKEY_CTX *vctx)
  * @param buflen  Buffer length
  */
 static void param_value_to_string(
-    FUNCTION_PARAMETER *fp,
-    char *buf,
-    int buflen
-)
+    FPS_PARAM *fp,
+    char      *buf,
+    int       buflen)
 {
     switch (fp->type)
     {
@@ -243,9 +242,9 @@ static void *subscriber_loop(void *arg)
              * 4. Bump cnt0, signal UPDATE
              * 5. Disconnect
              */
-            FUNCTION_PARAMETER_STRUCT fps;
+            FPS fps;
             long nbp =
-                function_parameter_struct_connect(
+                fps_connect(
                     msg_fpsname, &fps,
                     FPSCONNECT_SIMPLE);
 
@@ -263,7 +262,7 @@ static void *subscriber_loop(void *arg)
 
             if (pidx == -1)
             {
-                function_parameter_struct_disconnect(
+                fps_disconnect(
                     &fps);
                 freeReplyObject(reply);
                 continue;
@@ -282,7 +281,7 @@ static void *subscriber_loop(void *arg)
                 fflush(stdout);
             }
 
-            function_parameter_struct_disconnect(
+            fps_disconnect(
                 &fps);
         }
 
@@ -299,9 +298,8 @@ static void *subscriber_loop(void *arg)
 
 int fps_valkey_connect(
     FPS_VALKEY_CTX *vctx,
-    const char *server,
-    int port
-)
+    const char     *server,
+    int            port)
 {
     memset(vctx, 0, sizeof(FPS_VALKEY_CTX));
 
@@ -377,12 +375,11 @@ void fps_valkey_disconnect(FPS_VALKEY_CTX *vctx)
 
 int fps_valkey_push_param(
     FPS_VALKEY_CTX *vctx,
-    const char *fpsname,
-    const char *keyword,
-    const char *value,
-    const char *typestr,
-    long cnt0
-)
+    const char     *fpsname,
+    const char     *keyword,
+    const char     *value,
+    const char     *typestr,
+    long           cnt0)
 {
     if (check_and_reconnect(vctx) != 0)
     {
@@ -452,10 +449,9 @@ int fps_valkey_push_param(
 
 
 int fps_valkey_push_metadata(
-    FPS_VALKEY_CTX *vctx,
-    const char *fpsname,
-    FUNCTION_PARAMETER_STRUCT_MD *md
-)
+    FPS_VALKEY_CTX               *vctx,
+    const char                   *fpsname,
+    FUNCTION_PARAMETER_STRUCT_MD *md)
 {
     if (check_and_reconnect(vctx) != 0)
     {
@@ -523,8 +519,7 @@ int fps_valkey_push_metadata(
 
 int fps_valkey_register_fps(
     FPS_VALKEY_CTX *vctx,
-    const char *fpsname
-)
+    const char     *fpsname)
 {
     if (check_and_reconnect(vctx) != 0)
     {
@@ -552,8 +547,7 @@ int fps_valkey_register_fps(
 
 int fps_valkey_unregister_fps(
     FPS_VALKEY_CTX *vctx,
-    const char *fpsname
-)
+    const char     *fpsname)
 {
     if (check_and_reconnect(vctx) != 0)
     {
@@ -621,7 +615,7 @@ int fps_valkey_sub_start(FPS_VALKEY_CTX *vctx)
 
     int rc = pthread_create(
         &vctx->sub_thread, NULL,
-        subscriber_loop, vctx);
+        subscriber_loop,   vctx);
     if (rc != 0)
     {
         fprintf(stderr,

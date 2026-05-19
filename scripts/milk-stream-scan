@@ -3,6 +3,12 @@
 # This script uses milk-argparse
 # See template milk-scriptexample in module milk_module_example for template and instructions
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "Scan for streams on system"
+        exit 0 ;;
+esac
 
 MSdescr="Scan for streams on system"
 
@@ -16,6 +22,9 @@ source milk-script-std-config
 RequiredCommands=( milk-cli )
 RequiredFiles=()
 RequiredDirs=()
+
+MSseealso+=( "milk-shmimpurge:purge orphan shared memory streams" )
+MSseealso+=( "milk-commands:list milk commands with descriptions" )
 
 source milk-argparse
 

@@ -35,9 +35,8 @@ int fps_generic_init(
     const char      *fps_name,
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,
-    int              nb_b,
-    int              procinfo
-);
+    int             nb_b,
+    int             procinfo);
 
 
 /**
@@ -52,10 +51,9 @@ int fps_generic_init(
  * @param nb_b      Number of bindings
  */
 void fps_loop_override_trigger(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    FPS_CLI_BINDING           *bindings,
-    int                        nb_b
-);
+    FPS             *fps,
+    FPS_CLI_BINDING *bindings,
+    int             nb_b);
 
 
 /**
@@ -68,9 +66,8 @@ void fps_loop_override_trigger(
  * @param delay_sec Delay between iterations (seconds)
  */
 void fps_loop_override_delay(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    double                     delay_sec
-);
+    FPS    *fps,
+    double delay_sec);
 
 
 /**
@@ -86,9 +83,8 @@ void fps_loop_override_delay(
  */
 int fps_generic_conf_cb(
     const char *fps_name,
-    int         loop,
-    errno_t   (*confcheck_fn)(void)
-);
+    int loop,
+    errno_t (*confcheck_fn)(void));
 
 
 /**
@@ -103,8 +99,7 @@ int fps_generic_conf_cb(
  */
 int fps_generic_conf(
     const char *fps_name,
-    int         loop
-);
+    int        loop);
 
 
 /**
@@ -126,9 +121,8 @@ int fps_generic_run(
     FPS_APP_INFO    *app_info,
     CLICMDARGDEF    *farg,
     FPS_CLI_BINDING *bindings,
-    int              nb_b,
-    fps_compute_fn   compute_fn
-);
+    int             nb_b,
+    fps_compute_fn  compute_fn);
 
 
 /**
@@ -161,8 +155,7 @@ int fps_generic_confstop(const char *fps_name);
  */
 int fps_check_has_trigger_binding(
     FPS_CLI_BINDING *bindings,
-    int              nb_b
-);
+    int             nb_b);
 
 
 #endif /* FPS_LIFECYCLE_H */

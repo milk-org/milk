@@ -64,7 +64,7 @@ typedef struct
     int subprocPIDarray[MAXNBSUBPROCESS];
 
     double sampletimearray
-    [MAXNBSUBPROCESS]; // time at which sampling was performed [sec] 
+    [MAXNBSUBPROCESS]; // time at which sampling was performed [sec]
     double sampletimearray_prev[MAXNBSUBPROCESS];
 
     long ctxtsw_voluntary[MAXNBSUBPROCESS];
@@ -202,7 +202,9 @@ PROCESSINFO *processinfo_setup(char       *pinfoname,
                                const char *filename,
                                int         linenumber);
 
-errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring);
+errno_t processinfo_error(
+    PROCESSINFO *processinfo,
+    char        *errmsgstring);
 
 errno_t processinfo_loopstart(PROCESSINFO *processinfo);
 
@@ -212,18 +214,22 @@ int processinfo_compute_status(PROCESSINFO *processinfo);
 
 PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
 PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
-int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
+int          processinfo_shm_close(
+    PROCESSINFO *pinfo,
+    int         fd);
 int          processinfo_cleanExit(PROCESSINFO *processinfo);
-int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
+int processinfo_SIGexit(
+    PROCESSINFO *processinfo,
+    int         SignalNumber);
 
-int processinfo_WriteMessage(PROCESSINFO *processinfo,
-                             const char  *msgstring);
+int processinfo_WriteMessage(
+    PROCESSINFO *processinfo,
+    const char  *msgstring);
 
 int processinfo_WriteMessage_fmt(
     PROCESSINFO *processinfo,
     const char *format,
-    ...
-);
+    ...);
 
 int processinfo_exec_start(PROCESSINFO *processinfo);
 int processinfo_exec_end(PROCESSINFO *processinfo);
@@ -236,9 +242,8 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo);
  */
 errno_t processinfo_update_output_stream(
     PROCESSINFO *processinfo,
-    IMAGE        *output_image,
-    IMAGE        *input_image
-);
+    IMAGE       *output_image,
+    IMAGE       *input_image);
 
 #ifdef USE_NCURSES
 errno_t processinfo_CTRLscreen();
@@ -252,7 +257,7 @@ errno_t processinfo_CTRLscreen();
         processinfo_waitoninputstream(processinfo);                            \
         processinfo_exec_start(processinfo);                                   \
         if (processinfo_compute_status(processinfo) == 1)                      \
-        {                                                                      
+        {
 
 #define PROCINFOLOOP_END                                                       \
     }                                                                          \

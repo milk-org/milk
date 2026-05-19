@@ -27,10 +27,15 @@ COREMOD_IOFITS_DATA COREMOD_iofits_data;
 #include "savefits.h"
 
 // External function from savefits.c
-extern errno_t save_fl_fits(const char *inputimname, const char *outputFITSname);
+extern errno_t save_fl_fits(
+    const char *inputimname,
+    const char *outputFITSname);
 
 INIT_MODULE_LIB(COREMOD_iofits)
 
+/**
+ * @brief Register COREMOD_iofits CLI commands.
+ */
 static errno_t init_module_CLI()
 {
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -47,7 +52,14 @@ static errno_t init_module_CLI()
 }
 
 // Dummy function to ensure symbols are exported
-void COREMOD_iofits_export_dummy() {
+/**
+ * @brief Export symbol to ensure library is linked.
+ *
+ * Empty function referenced externally to prevent
+ * the linker from discarding this module.
+ */
+void COREMOD_iofits_export_dummy()
+{
     saveFITS_opt_trunc(NULL, 0, NULL, 0, NULL, NULL, 0, NULL);
     save_fl_fits(NULL, NULL);
 }

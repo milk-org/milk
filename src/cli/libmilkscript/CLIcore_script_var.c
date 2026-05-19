@@ -20,8 +20,7 @@
  */
 void cli_var_set(
     const char *name,
-    const char *val
-)
+    const char *val)
 {
     int type = 2; // default string
     long numl = 0;
@@ -62,8 +61,7 @@ void cli_var_set(
                     } else if (mtype == 2) {
                         type = 0; // double
                         numf = mdval;
-                        snprintf(valbuf, CLI_VAR_VALLEN, "%.*g",
-                                 cli_float_digits, numf);
+                        snprintf(valbuf, CLI_VAR_VALLEN, "%.*g", cli_float_digits, numf);
                     } else {
                         type = 2; // string
                     }
@@ -87,16 +85,12 @@ void cli_var_set(
                 && strcmp(cli_vars[i].name, name)
                 == 0)
         {
-            strncpy(cli_vars[i].val, valbuf,
-                    CLI_VAR_VALLEN - 1);
-            cli_vars[i].val[
-                CLI_VAR_VALLEN - 1] = '\0';
+            strncpy(cli_vars[i].val, valbuf, CLI_VAR_VALLEN - 1);
+            cli_vars[i].val[CLI_VAR_VALLEN - 1] = '\0';
             cli_vars[i].type = type;
             if (type == 1) { 
                 cli_vars[i].num.l = numl;
-                create_variable_long_ID(
-                    name, numl
-                );
+                create_variable_long_ID(name, numl);
             }
             if (type == 0) {
                 cli_vars[i].num.f = numf;
@@ -110,20 +104,14 @@ void cli_var_set(
     {
         if(!cli_vars[i].used)
         {
-            strncpy(cli_vars[i].name, name,
-                    CLI_VAR_NAMELEN - 1);
-            cli_vars[i].name[
-                CLI_VAR_NAMELEN - 1] = '\0';
-            strncpy(cli_vars[i].val, valbuf,
-                    CLI_VAR_VALLEN - 1);
-            cli_vars[i].val[
-                CLI_VAR_VALLEN - 1] = '\0';
+            strncpy(cli_vars[i].name, name, CLI_VAR_NAMELEN - 1);
+            cli_vars[i].name[CLI_VAR_NAMELEN - 1] = '\0';
+            strncpy(cli_vars[i].val, valbuf, CLI_VAR_VALLEN - 1);
+            cli_vars[i].val[CLI_VAR_VALLEN - 1] = '\0';
             cli_vars[i].type = type;
             if (type == 1) {
                 cli_vars[i].num.l = numl;
-                create_variable_long_ID(
-                    name, numl
-                );
+                create_variable_long_ID(name, numl);
             }
             if (type == 0) {
                 cli_vars[i].num.f = numf;
@@ -133,8 +121,7 @@ void cli_var_set(
             return;
         }
     }
-    printf("Error: variable table full "
-           "(max %d)\n", CLI_MAX_VARS);
+    printf("Error: variable table full " "(max %d)\n", CLI_MAX_VARS);
 }
 
 /**
@@ -215,8 +202,7 @@ int cli_try_var_assign(const char *line)
         {
             namelen = CLI_VAR_NAMELEN - 1;
         }
-        memcpy(tmpname, name_start,
-               (size_t) namelen);
+        memcpy(tmpname, name_start, (size_t) namelen);
         tmpname[namelen] = '\0';
 
         /* Extract value (everything after '=') */
@@ -224,8 +210,7 @@ int cli_try_var_assign(const char *line)
 
         /* Strip trailing whitespace/newline */
         char valbuf[CLI_VAR_VALLEN];
-        strncpy(valbuf, val,
-                CLI_VAR_VALLEN - 1);
+        strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
         valbuf[CLI_VAR_VALLEN - 1] = '\0';
         {
             size_t vl = strlen(valbuf);
@@ -271,22 +256,16 @@ int cli_try_var_assign(const char *line)
                 {
                     if (cli_vars[i].type == 1)
                     {
-                        printf("    %s long: %ld\n",
-                               cli_vars[i].name,
-                               cli_vars[i].num.l);
+                        printf("    %s long: %ld\n", cli_vars[i].name, cli_vars[i].num.l);
                     }
                     else if (cli_vars[i].type == 0)
                     {
                         printf("    %s double: %.*g\n",
-                               cli_vars[i].name,
-                               cli_float_digits,
-                               cli_vars[i].num.f);
+                               cli_vars[i].name, cli_float_digits, cli_vars[i].num.f);
                     }
                     else
                     {
-                        printf("    %s string: %s\n",
-                               cli_vars[i].name,
-                               cli_vars[i].val);
+                        printf("    %s string: %s\n", cli_vars[i].name, cli_vars[i].val);
                     }
                     break;
                 }
@@ -397,9 +376,7 @@ int cli_try_array_assign(const char *line)
         return 1;
     }
 
-    strncpy(cli_arrays[slot].name,
-            aname,
-            CLI_VAR_NAMELEN - 1);
+    strncpy(cli_arrays[slot].name, aname, CLI_VAR_NAMELEN - 1);
     cli_arrays[slot].used = 1;
     cli_arrays[slot].nelem = 0;
 
@@ -415,8 +392,7 @@ int cli_try_array_assign(const char *line)
             break;
         }
         int ei = 0;
-        int idx =
-            cli_arrays[slot].nelem;
+        int idx = cli_arrays[slot].nelem;
         if(idx >= CLI_ARRAY_MAXELEM)
         {
             break;
@@ -427,11 +403,9 @@ int cli_try_array_assign(const char *line)
               && *p != ')'
               && ei < CLI_VAR_VALLEN - 1)
         {
-            cli_arrays[slot]
-                .elem[idx][ei++] = *p++;
+            cli_arrays[slot] .elem[idx][ei++] = *p++;
         }
-        cli_arrays[slot]
-            .elem[idx][ei] = '\0';
+        cli_arrays[slot] .elem[idx][ei] = '\0';
         cli_arrays[slot].nelem++;
     }
 
@@ -454,8 +428,7 @@ errno_t cli_cmd_unset(void)
         printf("Usage: unset <varname>\n");
         return RETURN_FAILURE;
     }
-    cli_var_unset(
-        data.cmdargtoken[1].val.string);
+    cli_var_unset(data.cmdargtoken[1].val.string);
     return RETURN_SUCCESS;
 }
 
@@ -466,10 +439,8 @@ errno_t cli_cmd_vars(void)
 {
     int count = 0;
     printf("\n  CLI Variables:\n");
-    printf("  %-20s  %-6s  %s\n",
-           "NAME", "TYPE", "VALUE");
-    printf("  %-20s  %-6s  %s\n",
-           "----", "----", "-----");
+    printf("  %-20s  %-6s  %s\n", "NAME", "TYPE", "VALUE");
+    printf("  %-20s  %-6s  %s\n", "----", "----", "-----");
     for(int i = 0; i < CLI_MAX_VARS; i++)
     {
         if(cli_vars[i].used)
@@ -478,10 +449,7 @@ errno_t cli_cmd_vars(void)
             if(cli_vars[i].type == 0) typestr = "FLT";
             else if(cli_vars[i].type == 1) typestr = "INT";
             
-            printf("  %-20s  [%-3s]  %s\n",
-                   cli_vars[i].name,
-                   typestr,
-                   cli_vars[i].val);
+            printf("  %-20s  [%-3s]  %s\n", cli_vars[i].name, typestr, cli_vars[i].val);
             count++;
         }
     }

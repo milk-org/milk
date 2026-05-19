@@ -3,12 +3,8 @@
  * @brief   find fps ID(s) from name
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
 
 /* ID number corresponding to a name */
@@ -18,7 +14,8 @@ long fps_ID(const char *name)
     int  loopOK;
     long tmpID = 0;
 
-    if(fpsarray == NULL) {
+    if(fpsarray == NULL)
+    {
         return -1;
     }
 
@@ -54,14 +51,15 @@ long fps_ID(const char *name)
 /* next available ID number */
 long next_avail_fps_ID()
 {
-    long i;
+
     long ID = -1;
 
-    if(fpsarray == NULL) {
+    if(fpsarray == NULL)
+    {
         return -1;
     }
 
-    for(i = 0; i < NB_FPS_MAX; i++)
+    for(long i = 0; i < NB_FPS_MAX; i++)
     {
         if(fpsarray[i].SMfd < 0)
         {
@@ -73,10 +71,9 @@ long next_avail_fps_ID()
 
     if(ID == -1)
     {
-        printf("ERROR: ran out of FPS IDs - cannot allocate new ID\n");
-        printf("NB_FPS_MAX should be increased above current value (%d)\n",
-               NB_FPS_MAX);
-        exit(0);
+        PRINT_ERROR(
+            "ran out of FPS IDs - cannot allocate new ID; "
+            "NB_FPS_MAX should be increased above current " "value (%d)", NB_FPS_MAX);
     }
 
     return ID;

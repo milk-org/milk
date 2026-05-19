@@ -20,11 +20,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "fpslist",
     .cmdkey      = "fpslist",
     .description =
-        "list function parameter structures"
+    "list function parameter structures",
+    .description_long =
+    "List all FPS (Function Parameter Structure) instances currently active in shared memory. Shows FPS name, status, and associated process."
 };
 
 
@@ -48,21 +51,20 @@ static FPS_APP_INFO FPS_app_info = {
 
 errno_t fps_list()
 {
-    long fpsID;
+
     long fpscnt = 0;
 
     int NBchar_fpsID   = 5;
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-    for(fpsID = 0; fpsID < dcnfps; fpsID++)
+    for(long fpsID = 0; fpsID < dcnfps; fpsID++)
     {
         if(dcfpsarr[fpsID].SMfd > -1)
         {
             if(fpscnt == 0)
             {
-                printf(
-                    "FPSs currently connected :\n");
+                printf("FPSs currently connected :\n");
             }
             printf(
                 "%*ld  %*s  %*ld/%*ld entries\n",
@@ -71,9 +73,7 @@ errno_t fps_list()
                 NBchar_fpsname,
                 dcfpsarr[fpsID].md[0].name,
                 NBchar_NBparam,
-                dcfpsarr[fpsID].NBparamActive,
-                NBchar_NBparam,
-                dcfpsarr[fpsID].NBparam);
+                dcfpsarr[fpsID].NBparamActive, NBchar_NBparam, dcfpsarr[fpsID].NBparam);
 
             fpscnt++;
         }
@@ -83,39 +83,34 @@ errno_t fps_list()
         printf("No FPS currently connected\n");
     }
 
-    printf(
-        "FPSs in system shared memory (%s):\n",
-        dcshmdir);
+    printf("FPSs in system shared memory (%s):\n", dcshmdir);
 
-    struct dirent *de;
-    DIR           *dr = opendir(dcshmdir);
-    if(dr == NULL)
+    /* Scan SHM directory for *.fps.shm files */
     {
-        printf("Could not open current directory");
-        return RETURN_FAILURE;
-    }
-
-    fpscnt = 0;
-    while((de = readdir(dr)) != NULL)
-    {
-        if(strstr(de->d_name, ".fps.shm")
-            != NULL)
+        struct dirent *de;
+        DIR           *dr = opendir(dcshmdir);
+        if(dr == NULL)
         {
-            char fpsname[100];
-            int  slen1 =
-                100 - strlen(".fps.shm");
-
-            strncpy(fpsname, de->d_name, slen1);
-            fpsname[slen1] = '\0';
-            printf("%*ld  %*s\n",
-                   NBchar_fpsID,
-                   fpscnt,
-                   NBchar_fpsname,
-                   fpsname);
-            fpscnt++;
+            printf("Could not open current directory");
+            return RETURN_FAILURE;
         }
-    }
-    closedir(dr);
+
+        fpscnt = 0;
+        while((de = readdir(dr)) != NULL)
+        {
+            if(strstr(de->d_name, ".fps.shm") != NULL)
+            {
+                char fpsname[100];
+                int  slen1 = 100 - strlen(".fps.shm");
+
+                strncpy(fpsname, de->d_name, slen1);
+                fpsname[slen1] = '\0';
+                printf("%*ld  %*s\n", NBchar_fpsID, fpscnt, NBchar_fpsname, fpsname);
+                fpscnt++;
+            }
+        }
+        closedir(dr);
+    } // Scan SHM directory
 
     return RETURN_SUCCESS;
 }
@@ -126,9 +121,11 @@ errno_t fps_list()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
+CLICMDDATA CLIcmddata =
+{
 #else
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
 #endif
     "",
     "",
@@ -161,18 +158,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, NULL, &CLIcmddata,
-        NULL, 0,
-        compute_function);
+               &FPS_app_info, NULL, &CLIcmddata, NULL, 0, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__fps_list()
 {
-    int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }

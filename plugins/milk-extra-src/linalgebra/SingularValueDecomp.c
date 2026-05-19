@@ -38,7 +38,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "compSVD",
     .cmdkey      = "compSVD",
-    .description = "compute SVD"
+    .description = "compute SVD",
+    .description_long =
+        "Compute the Singular Value Decomposition (SVD) of a matrix. Factorizes M = U * S * V^T using LAPACK routines."
 };
 
 
@@ -105,8 +107,11 @@ errno_t compute_SVD(
 
     // check if images already exist
     //
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
     resolveIMGID(imgU, ERRMODE_NULL, dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
     resolveIMGID(imgS, ERRMODE_NULL, dcimg, dcnimg);
     resolveIMGID(imgV, ERRMODE_NULL, dcimg, dcnimg);
 
@@ -598,10 +603,13 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginM = imgid_make_from_name(inM);
-    resolveIMGID(&imginM, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginM, ERRMODE_WARN, dcimg, dcnimg);
 
 
     IMGID imgU  = imgid_make_from_name(outU);
+    if (imginM.ID == -1) {
+        return RETURN_FAILURE;
+    }
     IMGID imgS  = imgid_make_from_name(outS);
     IMGID imgV  = imgid_make_from_name(outV);
 

@@ -1,16 +1,13 @@
 /**
- * @file    datatype_dispatch.h
- * @brief   X-macro for numeric datatype dispatch
+ * @file    milk_type_dispatch.h
+ * @brief   X-macros for numeric datatype dispatch
  *
  * Eliminates duplicated 10-branch else-if chains
- * across the generic function-pointer dispatch
- * functions in imfunctions.c.
- *
- * Private header — only included from imfunctions.c.
+ * across generic function-pointer dispatch functions.
  */
 
-#ifndef DATATYPE_DISPATCH_H
-#define DATATYPE_DISPATCH_H
+#ifndef MILK_TYPE_DISPATCH_H
+#define MILK_TYPE_DISPATCH_H
 
 /**
  * @brief Dispatch a per-pixel body over all types
@@ -28,7 +25,7 @@
  * @param BODY    Macro(member) for non-double types
  * @param BODY_D  Macro for DOUBLE type
  */
-#define FOR_EACH_DATATYPE(dt, BODY, BODY_D)  \
+#define MILK_FOR_EACH_DATATYPE(dt, BODY, BODY_D)  \
     if      (dt == _DATATYPE_UINT8)          \
     {                                        \
         BODY(UI8)                            \
@@ -70,4 +67,44 @@
         BODY_D                               \
     }
 
-#endif /* DATATYPE_DISPATCH_H */
+/**
+ * @brief Dispatch a per-pixel body over complex types
+ *
+ * Expands BODY(member) for each complex datatype.
+ *
+ * @param dt      uint8_t datatype value
+ * @param BODY    Macro(member) for complex types
+ */
+#define MILK_FOR_EACH_COMPLEX_TYPE(dt, BODY)  \
+    if      (dt == _DATATYPE_COMPLEX_FLOAT)   \
+    {                                         \
+        BODY(CF)                              \
+    }                                         \
+    else if (dt == _DATATYPE_COMPLEX_DOUBLE)  \
+    {                                         \
+        BODY(CD)                              \
+    }
+
+/**
+ * @brief Dispatch an FPS stream test over all datatypes
+ *
+ * Expands BODY(type_name) for each numeric datatype, where
+ * type_name is the uppercase string name of the datatype (e.g. UINT8).
+ *
+ * @param dt_flag  The parameter's fpflag field
+ * @param BODY     Macro(dt_flag, type_name) that gets expanded
+ */
+#define MILK_FOR_EACH_FPS_STREAM_TYPE(dt_flag, BODY) \
+    BODY(dt_flag, UINT8)   \
+    BODY(dt_flag, INT8)    \
+    BODY(dt_flag, UINT16)  \
+    BODY(dt_flag, INT16)   \
+    BODY(dt_flag, UINT32)  \
+    BODY(dt_flag, INT32)   \
+    BODY(dt_flag, UINT64)  \
+    BODY(dt_flag, INT64)   \
+    BODY(dt_flag, HALF)    \
+    BODY(dt_flag, FLOAT)   \
+    BODY(dt_flag, DOUBLE)
+
+#endif /* MILK_TYPE_DISPATCH_H */

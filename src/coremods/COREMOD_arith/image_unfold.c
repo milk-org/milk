@@ -16,14 +16,14 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "unfold",
     .cmdkey      = "unfold",
-    .description = "image unfold, merge axis A into axis B"
+    .description = "image unfold, merge axis A into axis B",
+    .description_long =
+        "Reshape an image by merging one axis into another. For example, unfold a 3D cube (x, y, z) into a 2D image by merging z into y, producing dimensions (x, y*z). The total pixel count is preserved."
 };
 
 // input image names
-static char inimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
-static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN];
 static uint32_t axisA   = 0;
 static uint32_t axisB   = 0;
 static uint32_t colsize = 1;
@@ -47,18 +47,20 @@ static uint32_t colsize = 1;
       FPFLAG_DEFAULT_INPUT, "column size")
 
 errno_t image_unfold(
-    IMGID inimg,
-    IMGID *outimg,
+    IMGID   inimg,
+    IMGID   *outimg,
     uint8_t axisA,
     uint8_t axisB,
-    int colsize
-)
+    int     colsize)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     resolveIMGID(outimg, ERRMODE_NULL, dcimg, dcnimg);
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
     if( outimg->ID == -1)
     {
         imgid_copy(&inimg, outimg);
@@ -192,28 +194,23 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = imgid_make_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID outimg = imgid_make_from_name(outimname);
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        image_unfold(
-            inimg,
-            &outimg,
-            axisA,
-            axisB,
-            colsize
-        );
+        image_unfold(inimg, &outimg, axisA, axisB, colsize);
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&inimg);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&inimg);
     imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
@@ -224,21 +221,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMOD_arith__image_unfold()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

@@ -414,7 +414,7 @@ static MILK_COLD errno_t customCONFcheck()
         return RETURN_SUCCESS;
     }
 
-    FUNCTION_PARAMETER_STRUCT *fps = dcfpsptr;
+    FPS *fps = dcfpsptr;
 
     /* --- Toggle p_float64 visibility --- */
     {

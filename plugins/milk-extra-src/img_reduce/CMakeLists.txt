@@ -6,7 +6,8 @@ message("")
 message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 set(SOURCEFILES
-	${SRCNAME}.c)
+	${SRCNAME}.c
+	${SRCNAME}_compute.c)
 
 set(INCLUDEFILES
 	${SRCNAME}.h)

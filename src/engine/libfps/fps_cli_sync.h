@@ -20,18 +20,17 @@
  * @param argv  Argument vector
  */
 void fps_cli_set_standalone_args(
-    int    argc,
-    char **argv
-);
+    int  argc,
+    char **argv);
 
 
 /**
  * @brief Sync CLI arguments to FPS and local variables.
  *
  * Performs two-step sync:
- * 1. CLI tokens → FPS values (from standalone args
+ * 1. CLI tokens -> FPS values (from standalone args
  *    or milk CLI argdata)
- * 2. FPS values → local C variables via bindings
+ * 2. FPS values -> local C variables via bindings
  *
  * @param fps       FPS structure to sync
  * @param farg      CLICMDARGDEF array (for milk CLI mode)
@@ -40,11 +39,10 @@ void fps_cli_set_standalone_args(
  * @return          RETURN_SUCCESS on success
  */
 errno_t fps_process_cli_and_sync(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    CLICMDARGDEF              *farg,
-    FPS_CLI_BINDING           *bindings,
-    int                        nb_b
-);
+    FPS             *fps,
+    CLICMDARGDEF    *farg,
+    FPS_CLI_BINDING *bindings,
+    int             nb_b);
 
 
 #endif /* FPS_CLI_SYNC_H */

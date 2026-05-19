@@ -13,12 +13,21 @@
 #include "COREMOD_memory/imageID.h"
 
 //  check only is size > 0
-int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
+/**
+ * @brief Verify that an image has the expected 2D size.
+ */
+int check_2Dsize(
+    const char *ID_name,
+    uint32_t   xsize,
+    uint32_t   ysize)
 {
     int     retval;
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
+    if(img.ID == -1)
+    {
+        return 0;
+    }
 
     retval = 1;
     if(img.im->md[0].naxis != 2)
@@ -40,16 +49,23 @@ int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
     return retval;
 }
 
-int check_3Dsize(const char *ID_name,
-                 uint32_t    xsize,
-                 uint32_t    ysize,
-                 uint32_t    zsize)
+/**
+ * @brief Verify that an image has the expected 3D size.
+ */
+int check_3Dsize(
+    const char *ID_name,
+    uint32_t   xsize,
+    uint32_t   ysize,
+    uint32_t   zsize)
 {
     int     retval;
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
-    
+    if(img.ID == -1)
+    {
+        return 0;
+    }
+
     retval = 1;
     if(img.im->md[0].naxis != 3)
     {
@@ -79,93 +95,82 @@ int check_3Dsize(const char *ID_name,
     return retval;
 }
 
-int COREMOD_MEMORY_check_2Dsize(const char *IDname,
-                                uint32_t    xsize,
-                                uint32_t    ysize)
+int COREMOD_MEMORY_check_2Dsize(
+    const char *IDname,
+    uint32_t   xsize,
+    uint32_t   ysize)
 {
     int     sizeOK = 1; // 1 if size matches
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
+    if(img.ID == -1)
+    {
+        return 0;
+    }
     if(img.im->md[0].naxis != 2)
     {
         printf(
             "WARNING : image %s naxis = %d does not match expected value "
-            "2\n",
-            IDname,
-            (int) img.im->md[0].naxis);
+            "2\n", IDname, (int) img.im->md[0].naxis);
         sizeOK = 0;
     }
     if((xsize > 0) && (img.im->md[0].size[0] != xsize))
     {
         printf(
             "WARNING : image %s xsize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[0],
-            (int) xsize);
+            "%d\n", IDname, (int) img.im->md[0].size[0], (int) xsize);
         sizeOK = 0;
     }
     if((ysize > 0) && (img.im->md[0].size[1] != ysize))
     {
         printf(
             "WARNING : image %s ysize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[1],
-            (int) ysize);
+            "%d\n", IDname, (int) img.im->md[0].size[1], (int) ysize);
         sizeOK = 0;
     }
 
     return sizeOK;
 }
 
-int COREMOD_MEMORY_check_3Dsize(const char *IDname,
-                                uint32_t    xsize,
-                                uint32_t    ysize,
-                                uint32_t    zsize)
+int COREMOD_MEMORY_check_3Dsize(
+    const char *IDname,
+    uint32_t   xsize,
+    uint32_t   ysize,
+    uint32_t   zsize)
 {
     int     sizeOK = 1; // 1 if size matches
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
+    if(img.ID == -1)
+    {
+        return 0;
+    }
     if(img.im->md[0].naxis != 3)
     {
         printf(
             "WARNING : image %s naxis = %d does not match expected value "
-            "3\n",
-            IDname,
-            (int) img.im->md[0].naxis);
+            "3\n", IDname, (int) img.im->md[0].naxis);
         sizeOK = 0;
     }
     if((xsize > 0) && (img.im->md[0].size[0] != xsize))
     {
         printf(
             "WARNING : image %s xsize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[0],
-            (int) xsize);
+            "%d\n", IDname, (int) img.im->md[0].size[0], (int) xsize);
         sizeOK = 0;
     }
     if((ysize > 0) && (img.im->md[0].size[1] != ysize))
     {
         printf(
             "WARNING : image %s ysize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[1],
-            (int) ysize);
+            "%d\n", IDname, (int) img.im->md[0].size[1], (int) ysize);
         sizeOK = 0;
     }
     if((zsize > 0) && (img.im->md[0].size[2] != zsize))
     {
         printf(
             "WARNING : image %s zsize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[2],
-            (int) zsize);
+            "%d\n", IDname, (int) img.im->md[0].size[2], (int) zsize);
         sizeOK = 0;
     }
 

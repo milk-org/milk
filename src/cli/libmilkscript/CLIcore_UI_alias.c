@@ -37,13 +37,11 @@ const char *CLI_alias_file(void)
         const char *home = getenv("HOME");
         if(home)
         {
-            snprintf(path, sizeof(path),
-                     "%s/.milk_aliases", home);
+            snprintf(path, sizeof(path), "%s/.milk_aliases", home);
         }
         else
         {
-            snprintf(path, sizeof(path),
-                     ".milk_aliases");
+            snprintf(path, sizeof(path), ".milk_aliases");
         }
     }
     return path;
@@ -83,16 +81,10 @@ void cli_alias_load(void)
             continue;
         }
         *eq = '\0';
-        strncpy(data.alias[data.NBalias].name,
-                line,
-                CLI_ALIAS_NAMELEN - 1);
-        data.alias[data.NBalias].name[
-            CLI_ALIAS_NAMELEN - 1] = '\0';
-        strncpy(data.alias[data.NBalias].cmd,
-                eq + 1,
-                CLI_ALIAS_CMDLEN - 1);
-        data.alias[data.NBalias].cmd[
-            CLI_ALIAS_CMDLEN - 1] = '\0';
+        strncpy(data.alias[data.NBalias].name, line, CLI_ALIAS_NAMELEN - 1);
+        data.alias[data.NBalias].name[CLI_ALIAS_NAMELEN - 1] = '\0';
+        strncpy(data.alias[data.NBalias].cmd, eq + 1, CLI_ALIAS_CMDLEN - 1);
+        data.alias[data.NBalias].cmd[CLI_ALIAS_CMDLEN - 1] = '\0';
         data.NBalias++;
     }
     fclose(fp);
@@ -106,15 +98,12 @@ void cli_alias_save(void)
     FILE *fp = fopen(CLI_alias_file(), "w");
     if(fp == NULL)
     {
-        printf("ERROR: cannot write %s\n",
-               CLI_alias_file());
+        printf("ERROR: cannot write %s\n", CLI_alias_file());
         return;
     }
     for(int i = 0; i < data.NBalias; i++)
     {
-        fprintf(fp, "%s=%s\n",
-                data.alias[i].name,
-                data.alias[i].cmd);
+        fprintf(fp, "%s=%s\n", data.alias[i].name, data.alias[i].cmd);
     }
     fclose(fp);
 }
@@ -132,8 +121,7 @@ errno_t cli_alias_add(void)
         return RETURN_FAILURE;
     }
 
-    const char *name =
-        data.cmdargtoken[1].val.string;
+    const char *name = data.cmdargtoken[1].val.string;
 
     /* Build command from args 2..N */
     char cmd[CLI_ALIAS_CMDLEN];
@@ -142,14 +130,9 @@ errno_t cli_alias_add(void)
     {
         if(a > 2)
         {
-            strncat(cmd, " ",
-                    CLI_ALIAS_CMDLEN
-                    - strlen(cmd) - 1);
+            strncat(cmd, " ", CLI_ALIAS_CMDLEN - strlen(cmd) - 1);
         }
-        strncat(cmd,
-                data.cmdargtoken[a].val.string,
-                CLI_ALIAS_CMDLEN
-                - strlen(cmd) - 1);
+        strncat(cmd, data.cmdargtoken[a].val.string, CLI_ALIAS_CMDLEN - strlen(cmd) - 1);
     }
 
     /* Check if alias already exists — update */
@@ -157,13 +140,10 @@ errno_t cli_alias_add(void)
     {
         if(strcmp(data.alias[i].name, name) == 0)
         {
-            strncpy(data.alias[i].cmd, cmd,
-                    CLI_ALIAS_CMDLEN - 1);
-            data.alias[i].cmd[
-                CLI_ALIAS_CMDLEN - 1] = '\0';
+            strncpy(data.alias[i].cmd, cmd, CLI_ALIAS_CMDLEN - 1);
+            data.alias[i].cmd[CLI_ALIAS_CMDLEN - 1] = '\0';
             cli_alias_save();
-            printf("Alias updated: %s = %s\n",
-                   name, cmd);
+            printf("Alias updated: %s = %s\n", name, cmd);
             return RETURN_SUCCESS;
         }
     }
@@ -171,24 +151,18 @@ errno_t cli_alias_add(void)
     /* Add new alias */
     if(data.NBalias >= CLI_MAX_ALIASES)
     {
-        printf("ERROR: alias table full (%d)\n",
-               CLI_MAX_ALIASES);
+        printf("ERROR: alias table full (%d)\n", CLI_MAX_ALIASES);
         return RETURN_FAILURE;
     }
 
-    strncpy(data.alias[data.NBalias].name,
-            name, CLI_ALIAS_NAMELEN - 1);
-    data.alias[data.NBalias].name[
-        CLI_ALIAS_NAMELEN - 1] = '\0';
-    strncpy(data.alias[data.NBalias].cmd,
-            cmd, CLI_ALIAS_CMDLEN - 1);
-    data.alias[data.NBalias].cmd[
-        CLI_ALIAS_CMDLEN - 1] = '\0';
+    strncpy(data.alias[data.NBalias].name, name, CLI_ALIAS_NAMELEN - 1);
+    data.alias[data.NBalias].name[CLI_ALIAS_NAMELEN - 1] = '\0';
+    strncpy(data.alias[data.NBalias].cmd, cmd, CLI_ALIAS_CMDLEN - 1);
+    data.alias[data.NBalias].cmd[CLI_ALIAS_CMDLEN - 1] = '\0';
     data.NBalias++;
 
     cli_alias_save();
-    printf("Alias created: %s = %s\n",
-           name, cmd);
+    printf("Alias created: %s = %s\n", name, cmd);
 
     return RETURN_SUCCESS;
 }
@@ -204,8 +178,7 @@ errno_t cli_alias_remove(void)
         return RETURN_FAILURE;
     }
 
-    const char *name =
-        data.cmdargtoken[1].val.string;
+    const char *name = data.cmdargtoken[1].val.string;
 
     for(int i = 0; i < data.NBalias; i++)
     {
@@ -238,13 +211,10 @@ errno_t cli_alias_list(void)
         printf("No aliases defined.\n");
         return RETURN_SUCCESS;
     }
-    printf("--- Aliases (%d) ---\n",
-           data.NBalias);
+    printf("--- Aliases (%d) ---\n", data.NBalias);
     for(int i = 0; i < data.NBalias; i++)
     {
-        printf("  %-16s = %s\n",
-               data.alias[i].name,
-               data.alias[i].cmd);
+        printf("  %-16s = %s\n", data.alias[i].name, data.alias[i].cmd);
     }
     return RETURN_SUCCESS;
 }
@@ -302,11 +272,8 @@ void cli_alias_expand(void)
                      "%s%s",
                      data.alias[i].cmd,
                      p); /* p points to rest */
-            strncpy(data.CLIcmdline, expanded,
-                    STRINGMAXLEN_CLICMDLINE - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
+            strncpy(data.CLIcmdline, expanded, STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             return;
         }
     }

@@ -9,7 +9,7 @@
  *   - SHAREDSHMDIR  — from $MILK_SHM_DIR env var or /dev/shm fallback
  *   - PRINT_ERROR   — thin stderr wrapper
  *   - DEBUG_TRACEPOINT — no-op (or stderr if VERBOSE defined)
- *   - EXECUTE_SYSTEM_COMMAND — inline system() wrapper
+ *   - EXECUTE_SYSTEM_COMMAND_NOCHECK — inline system() wrapper
  *   - WRITE_FULLFILENAME — inline snprintf wrapper
  *   - errno_t / imageID types if not already defined
  */
@@ -160,12 +160,12 @@ static inline const char *streamctrl_get_shmdir(void)
  * ========================================================= */
 
 /**
- * EXECUTE_SYSTEM_COMMAND - build and run a shell command.
+ * EXECUTE_SYSTEM_COMMAND_NOCHECK - build and run a shell command.
  *
  * Formats the command with snprintf, then passes it to system().
  * On failure, prints a warning but does not abort.
  */
-#define EXECUTE_SYSTEM_COMMAND(fmt, ...) \
+#define EXECUTE_SYSTEM_COMMAND_NOCHECK(fmt, ...) \
     do { \
         char _escmd_buf[STRINGMAXLEN_COMMAND]; \
         int  _escmd_n = snprintf(_escmd_buf, sizeof(_escmd_buf), \

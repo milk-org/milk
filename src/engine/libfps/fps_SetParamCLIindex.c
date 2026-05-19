@@ -4,7 +4,6 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
 /**
  * @brief Set the CLI index for a parameter in an FPS.
@@ -14,15 +13,16 @@
  * @param cli_index The CLI argument index (1-indexed usually).
  * @return errno_t RETURN_SUCCESS on success, error code otherwise.
  */
-int functionparameter_SetParamCLIindex(FUNCTION_PARAMETER_STRUCT *fps,
-                                     long                       pindex,
-                                     int                        cli_index)
+int functionparameter_SetParamCLIindex(
+    FPS  *fps,
+    long pindex,
+    int  cli_index)
 {
-    FUNCTION_PARAMETER *funcparamarray;
+    FPS_PARAM *funcparamarray;
 
     funcparamarray = fps->parray;
 
-    if (pindex < 0 || pindex >= fps->md->NBparamMAX)
+    if(pindex < 0 || pindex >= fps->md->NBparamMAX)
     {
         return RETURN_FAILURE;
     }

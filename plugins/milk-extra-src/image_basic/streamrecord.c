@@ -30,7 +30,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imgstreamrec",
     .cmdkey      = "imgstreamrec",
     .description =
-        "record stream of images"
+        "record stream of images",
+    .description_long =
+        "Record frames from a 2D shared memory stream into a 3D cube or sequence of FITS files on disk."
 };
 
 #define FPS_PARAMS(X) \
@@ -111,8 +113,11 @@ imageID IMAGE_BASIC_streamrecord(
 {
     IMGID imgin =
         imgid_make_from_name(streamname);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long xsize  = imgin.md->size[0];
     long ysize  = imgin.md->size[1];

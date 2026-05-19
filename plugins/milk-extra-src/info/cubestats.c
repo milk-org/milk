@@ -26,7 +26,9 @@ static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cubestats",
     .cmdkey      = "cubestats",
-    .description = "image cube stats"
+    .description = "image cube stats",
+    .description_long =
+        "Compute per-slice statistics (mean, rms, min, max) of a 3D image cube. Outputs a summary table."
 };
 
 #define FPS_PARAMS(X) \

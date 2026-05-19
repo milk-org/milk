@@ -35,7 +35,9 @@ static long long pc1_by = 4;
 static FPS_APP_INFO FPS_app_info_1 = {
     .fps_name    = "imcontract",
     .cmdkey      = "imcontract",
-    .description = "image binning"
+    .description = "image binning",
+    .description_long =
+        "Bin (downsample) a 2D or 3D image by integer factors. Each output pixel is the sum or average of a block of input pixels."
 };
 
 #define FPS_PARAMS_1(X) \
@@ -118,7 +120,9 @@ static long long pc2_bz = 1;
 static FPS_APP_INFO FPS_app_info_2 = {
     .fps_name    = "imcontract3D",
     .cmdkey      = "imcontract3D",
-    .description = "image binning (3D)"
+    .description = "image binning (3D)",
+    .description_long =
+        "Bin (downsample) a 2D or 3D image by integer factors. Each output pixel is the sum or average of a block of input pixels."
 };
 
 #define FPS_PARAMS_2(X) \

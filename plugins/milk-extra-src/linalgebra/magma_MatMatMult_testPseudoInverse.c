@@ -11,8 +11,22 @@
 extern int           INIT_MAGMA;
 extern magma_queue_t magmaqueue;
 
-#include "CLIcore.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "linalgebra_types.h"
@@ -39,7 +53,9 @@ static char tp_o[FUNCTION_PARAMETER_STRMAXLEN]
 static FPS_APP_INFO FPS_app_info_tp = {
     .fps_name = "cudatestpsinv",
     .cmdkey   = "cudatestpsinv",
-    .description = "test pseudo inverse"
+    .description = "test pseudo inverse",
+    .description_long =
+        "Test pseudo-inverse computation using MAGMA GPU library. Validates matrix inversion accuracy and performance."
 };
 #define FPS_PARAMS_TP(X) \
     X(".matA", tp_a, \

@@ -23,7 +23,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "breakcube",
     .cmdkey      = "breakcube",
     .description =
-        "break cube into individual images"
+        "break cube into individual images",
+    .description_long =
+        "Split a 3D FITS cube into individual 2D FITS files, one per slice along the z-axis. Output files are numbered sequentially."
 };
 
 
@@ -31,8 +33,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "imc";
+static char inname[FUNCTION_PARAMETER_STRMAXLEN] = "imc";
 
 
 /* ================================================================
@@ -53,10 +54,11 @@ static char inname[FUNCTION_PARAMETER_STRMAXLEN]
 imageID break_cube(
     const char *restrict ID_name)
 {
-    IMGID imgin =
-        imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    IMGID imgin = imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     uint32_t xsize = imgin.md->size[0];
     uint32_t ysize = imgin.md->size[1];
@@ -65,9 +67,7 @@ imageID break_cube(
     for(uint32_t kk = 0; kk < nz; kk++)
     {
         char framename[STRINGMAXLEN_IMGNAME];
-        CREATE_IMAGENAME(framename,
-                         "%s_%5u",
-                         ID_name, kk);
+        CREATE_IMAGENAME(framename, "%s_%5u", ID_name, kk);
         for(long i = 0;
             i < (long) strlen(framename);
             i++)
@@ -78,12 +78,9 @@ imageID break_cube(
             }
         }
 
-        IMGID imgfr =
-            imgid_make_from_name_2D(
-                framename, xsize, ysize);
+        IMGID imgfr = imgid_make_from_name_2D(framename, xsize, ysize);
         imgfr.mdt->shared = 0;
-        imgfr.im = (IMAGE *) calloc(
-            1, sizeof(IMAGE));
+        imgfr.im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(&imgfr);
 
         for(uint32_t ii = 0; ii < xsize; ii++)
@@ -92,10 +89,7 @@ imageID break_cube(
                 jj < ysize; jj++)
             {
                 imgfr.im->array.F[
-                    jj * xsize + ii] =
-                    imgin.im->array.F[
-                        kk * xsize * ysize
-                        + jj * xsize + ii];
+                    jj * xsize + ii] = imgin.im->array.F[kk * xsize * ysize + jj * xsize + ii];
             }
         }
     }
@@ -119,13 +113,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  break_cube(inname);
 
-    break_cube(inname);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -138,21 +128,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_iofits__breakcube()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }

@@ -28,7 +28,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "PCAdecomp",
     .cmdkey      = "PCAdecomp",
-    .description = "Principal Components Analysis decomposition"
+    .description = "Principal Components Analysis decomposition",
+    .description_long =
+        "GPU-accelerated Principal Component Analysis using cuBLAS. Decomposes data cubes into eigenimages and coefficients."
 };
 
 
@@ -471,9 +473,12 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACEPOINT("PCA of %s", inimname);
 
     IMGID img = imgid_make_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     printf("PCA of %s\n", inimname);
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

@@ -7,16 +7,19 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
 
-#include "fps.h"
 #include "fps_processcmdline.h"
 
+/**
+ * @brief Process a batch of FPS commands from a file.
+ *
+ * Reads lines from the specified file and dispatches
+ * each to the interactive command processor.
+ */
 int functionparameter_FPSprocess_cmdfile(
-    char                      *infname,
-    FUNCTION_PARAMETER_STRUCT *fps,
-    KEYWORD_TREE_NODE         *keywnode,
+    char                 *infname,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
@@ -25,7 +28,7 @@ int functionparameter_FPSprocess_cmdfile(
 
     if(fpinputcmd == NULL)
     {
-        fprintf(stderr, "ERROR: cannot open command file %s\n", infname);
+        PRINT_ERROR("ERROR: cannot open command file %s", infname);
         return RETURN_FAILURE;
     }
     if(fpinputcmd != NULL)
@@ -40,10 +43,7 @@ int functionparameter_FPSprocess_cmdfile(
             printf("Processing line : %s\n", FPScmdline);
             functionparameter_FPSprocess_cmdline(FPScmdline,
                                                  fpsctrlqueuelist,
-                                                 keywnode,
-                                                 fpsCTRLvar,
-                                                 fps,
-                                                 &taskstatus);
+                                                 keywnode, fpsCTRLvar, fps, &taskstatus);
         }
         free(FPScmdline);
         fclose(fpinputcmd);

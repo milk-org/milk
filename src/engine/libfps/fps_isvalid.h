@@ -8,6 +8,6 @@
 
 #include "fps.h"
 
-int function_parameter_struct_isvalid(FUNCTION_PARAMETER_STRUCT *fps);
+int function_parameter_struct_isvalid(FPS *fps);
 
 #endif

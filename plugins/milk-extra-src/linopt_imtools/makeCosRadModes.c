@@ -16,7 +16,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkcosrmodes",
     .cmdkey      = "mkcosrmodes",
-    .description = "make basis of cosine radial modes"
+    .description = "make basis of cosine radial modes",
+    .description_long =
+        "Generate a basis of cosine radial modes within a circular aperture. Useful for radial wavefront decomposition."
 };
 
 
@@ -80,13 +82,11 @@ errno_t linopt_imtools_makeCosRadModes(
 
     long size2 = size * size;
 
-    IMGID imgr =
-        imgid_make_from_name_2D(
-            "linopt_tmpr", size, size);
-    imgr.mdt->shared = 0;
-    imgr.im = (IMAGE *) calloc(
-        1, sizeof(IMAGE));
-    imgid_mkimage(&imgr);
+    /* Intermediate r-coord image: registered in the global pool
+     * so that delete_image_ID() can find and free it. */
+    imageID IDr;
+    FUNC_CHECK_RETURN(
+        create_2Dimage_ID("linopt_tmpr", size, size, &IDr));
 
     FILE *fp =
         fopen("ModesExpr_CosRad.txt", "w");
@@ -105,28 +105,25 @@ errno_t linopt_imtools_makeCosRadModes(
     for(long ii = 0; ii < size; ii++)
     {
         float x =
-            (1.0 * ii - 0.5 * size)
+            (1.0f * ii - 0.5f * size)
             / radius;
         for(long jj = 0;
             jj < size; jj++)
         {
             float y =
-                (1.0 * jj - 0.5 * size)
+                (1.0f * jj - 0.5f * size)
                 / radius;
-            float r =
-                sqrt(x * x + y * y);
-            imgr.im->array.F[
-                jj * size + ii] = r;
+            data.core.image[IDr].array.F[
+                jj * size + ii] =
+                sqrtf(x * x + y * y);
         }
     }
 
-    IMGID imgout =
-        imgid_make_from_name_3D(
-            ID_name, size, size, kmax);
-    imgout.mdt->shared = 0;
-    imgout.im = (IMAGE *) calloc(
-        1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    /* Output 3-D modes cube: registered in the global pool
+     * so that the caller can find it with image_ID(). */
+    imageID IDout;
+    FUNC_CHECK_RETURN(
+        create_3Dimage_ID(ID_name, size, size, kmax, &IDout));
 
     for(long k = 0; k < kmax; k++)
     {
@@ -134,12 +131,12 @@ errno_t linopt_imtools_makeCosRadModes(
             ii < size2; ii++)
         {
             float r =
-                imgr.im->array.F[ii];
+                data.core.image[IDr].array.F[ii];
             if(r < radfactlim)
             {
-                imgout.im->array.F[
+                data.core.image[IDout].array.F[
                     k * size2 + ii] =
-                    cos(r * M_PI * k);
+                    cosf(r * (float) M_PI * k);
             }
         }
     }
@@ -151,7 +148,7 @@ errno_t linopt_imtools_makeCosRadModes(
 
     if(outID != NULL)
     {
-        *outID = imgout.ID;
+        *outID = IDout;
     }
 
     DEBUG_TRACE_FEXIT();

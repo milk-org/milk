@@ -22,7 +22,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkspdisk",
     .cmdkey      = "mkspdisk",
-    .description = "make subpixel disk image"
+    .description = "make subpixel disk image",
+    .description_long =
+        "Generate a sub-pixel accurate disk pattern using anti-aliasing. More precise than mkdisk for small radii."
 };
 
 

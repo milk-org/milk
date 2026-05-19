@@ -55,8 +55,7 @@ typedef struct
  */
 static int parse_time_arg(
     const char *s,
-    time_t     *out
-)
+    time_t     *out)
 {
     if(s == NULL || out == NULL)
     {
@@ -86,20 +85,17 @@ static int parse_time_arg(
             {
                 if(unit == 'm')
                 {
-                    *out = now
-                           - (time_t) val * 60;
+                    *out = now - (time_t) val * 60;
                     return 0;
                 }
                 if(unit == 'h')
                 {
-                    *out = now
-                           - (time_t) val * 3600;
+                    *out = now - (time_t) val * 3600;
                     return 0;
                 }
                 if(unit == 'd')
                 {
-                    *out = now
-                           - (time_t) val * 86400;
+                    *out = now - (time_t) val * 86400;
                     return 0;
                 }
             }
@@ -137,13 +133,11 @@ static int parse_time_arg(
  *             Caller must free with cmdline_free.
  */
 static void cmdline_split(
-    int    *argc_out,
-    char ***argv_out
-)
+    int *argc_out,
+    char ***argv_out)
 {
     char buf[STRINGMAXLEN_CLICMDLINE];
-    strncpy(buf, data.CLIcmdline,
-            sizeof(buf) - 1);
+    strncpy(buf, data.CLIcmdline, sizeof(buf) - 1);
     buf[sizeof(buf) - 1] = '\0';
 
 #define HIST_ARGV_MAX 64
@@ -206,8 +200,7 @@ static void cmdline_split(
     }
 
     *argc_out = ntok;
-    *argv_out = (char **) malloc(
-        (size_t)(ntok + 1) * sizeof(char *));
+    *argv_out = (char **) malloc((size_t)(ntok + 1) * sizeof(char *));
     for(int i = 0; i < ntok; i++)
     {
         (*argv_out)[i] = tokens[i];
@@ -219,9 +212,8 @@ static void cmdline_split(
  * @brief Free the argv array from cmdline_split().
  */
 static void cmdline_free(
-    int argc,
-    char **argv
-)
+    int  argc,
+    char **argv)
 {
     for(int i = 0; i < argc; i++)
     {
@@ -245,24 +237,19 @@ void history_log_display(
     const HistDisplayOpts *opts
 )
 {
-    FILE *fp = fopen(
-        CLI_history_log_file(), "r");
+    FILE *fp = fopen(CLI_history_log_file(), "r");
     if(fp == NULL)
     {
-        printf("No history log found (%s)\n",
-               CLI_history_log_file());
+        printf("No history log found (%s)\n", CLI_history_log_file());
         return;
     }
 
     char line[2048];
     int  cap    = 1024;
 
-    char **lines   = (char **) malloc(
-        (size_t) cap * sizeof(char *));
-    int  *is_self  = (int *)   malloc(
-        (size_t) cap * sizeof(int));
-    char *types    = (char *)  malloc(
-        (size_t) cap * sizeof(char));
+    char **lines   = (char **) malloc((size_t) cap * sizeof(char *));
+    int  *is_self  = (int *)   malloc((size_t) cap * sizeof(int));
+    char *types    = (char *)  malloc((size_t) cap * sizeof(char));
 
     if(lines == NULL || is_self == NULL
        || types == NULL)
@@ -308,15 +295,13 @@ void history_log_display(
         }
 
         char *sid_start = tab1 + 1;
-        int   sid_len   =
-            (int)(tab2 - tab1 - 1);
+        int   sid_len   = (int)(tab2 - tab1 - 1);
 
         /* Detect 5-field vs 4-field */
         char  entry_type = 'C';
         char *text_start;
         {
-            char *tab4 = strchr(
-                tab3 + 1, '\t');
+            char *tab4 = strchr(tab3 + 1, '\t');
             if(tab4 != NULL
                && (tab4 - tab3) == 2)
             {
@@ -340,9 +325,7 @@ void history_log_display(
         /* Session filter */
         if(opts->filter_session != NULL)
         {
-            int fslen =
-                (int) strlen(
-                    opts->filter_session);
+            int fslen = (int) strlen(opts->filter_session);
             if(sid_len != fslen
                || strncmp(
                       sid_start,
@@ -370,16 +353,13 @@ void history_log_display(
            || opts->time_before)
         {
             char     ts_buf[32];
-            int      tslen =
-                (int)(tab1 - line);
+            int      tslen = (int)(tab1 - line);
             if(tslen
                >= (int) sizeof(ts_buf))
             {
-                tslen =
-                    (int) sizeof(ts_buf) - 1;
+                tslen = (int) sizeof(ts_buf) - 1;
             }
-            memcpy(ts_buf, line,
-                   (size_t) tslen);
+            memcpy(ts_buf, line, (size_t) tslen);
             ts_buf[tslen] = '\0';
 
             struct tm tm0;
@@ -389,8 +369,7 @@ void history_log_display(
                         &tm0))
             {
                 tm0.tm_isdst = -1;
-                time_t entry_t =
-                    mktime(&tm0);
+                time_t entry_t = mktime(&tm0);
                 if(opts->time_after
                    && entry_t
                       < opts->time_after)
@@ -411,27 +390,15 @@ void history_log_display(
             (sid_len
              == (int) strlen(
                     data.session_id)
-             && strncmp(sid_start,
-                        data.session_id,
-                        (size_t) sid_len)
-                == 0);
+             && strncmp(sid_start, data.session_id, (size_t) sid_len) == 0);
 
         /* Store */
         if(total >= cap)
         {
             cap *= 2;
-            char **tmp1 = (char **) realloc(
-                lines,
-                (size_t) cap
-                * sizeof(char *));
-            int  *tmp2  = (int *) realloc(
-                is_self,
-                (size_t) cap
-                * sizeof(int));
-            char *tmp3  = (char *) realloc(
-                types,
-                (size_t) cap
-                * sizeof(char));
+            char **tmp1 = (char **) realloc(lines, (size_t) cap * sizeof(char *));
+            int  *tmp2  = (int *) realloc(is_self, (size_t) cap * sizeof(int));
+            char *tmp3  = (char *) realloc(types, (size_t) cap * sizeof(char));
             if(tmp1 == NULL || tmp2 == NULL
                || tmp3 == NULL)
             {
@@ -466,19 +433,14 @@ void history_log_display(
     }
 
     /* Header */
-    int show_sess =
-        (opts->filter_session == NULL);
+    int show_sess = (opts->filter_session == NULL);
     if(show_sess)
     {
-        printf("\033[1;36m %-24s %-19s"
-               "  T  %s\033[0m\n",
-               "Session", "Time", "Entry");
+        printf("\033[1;36m %-24s %-19s" "  T  %s\033[0m\n", "Session", "Time", "Entry");
     }
     else
     {
-        printf("\033[1;36m %-19s"
-               "  T  %s\033[0m\n",
-               "Time", "Entry");
+        printf("\033[1;36m %-19s" "  T  %s\033[0m\n", "Time", "Entry");
     }
 
     /* Print entries */
@@ -487,8 +449,7 @@ void history_log_display(
     {
         /* Re-parse for display */
         char buf[2048];
-        strncpy(buf, lines[i],
-                sizeof(buf) - 1);
+        strncpy(buf, lines[i], sizeof(buf) - 1);
         buf[sizeof(buf) - 1] = '\0';
 
         char *ts   = buf;
@@ -550,26 +511,17 @@ void history_log_display(
         if(show_sess)
         {
             char sess_col[40];
-            snprintf(sess_col,
-                     sizeof(sess_col),
-                     "%s %s", sid, tty_s);
-            printf("%s %-24s %-19s"
-                   "  %c  %s%s\n",
-                   col_on, sess_col, ts,
-                   etype, etext, col_off);
+            snprintf(sess_col, sizeof(sess_col), "%s %s", sid, tty_s);
+            printf("%s %-24s %-19s" "  %c  %s%s\n", col_on, sess_col, ts, etype, etext, col_off);
         }
         else
         {
-            printf("%s %-19s"
-                   "  %c  %s%s\n",
-                   col_on, ts, etype,
-                   etext, col_off);
+            printf("%s %-19s" "  %c  %s%s\n", col_on, ts, etype, etext, col_off);
         }
         shown++;
     }
 
-    printf("(%d entr%s)\n",
-           shown, shown == 1 ? "y" : "ies");
+    printf("(%d entr%s)\n", shown, shown == 1 ? "y" : "ies");
 
     for(int i = 0; i < total; i++)
     {
@@ -650,10 +602,7 @@ errno_t cli_ghistory(void)
             }
             else
             {
-                printf("ghistory: unknown "
-                       "type '%s'\n"
-                       "  valid: prompt "
-                       "cmd shell\n", tv);
+                printf("ghistory: unknown " "type '%s'\n" "  valid: prompt " "cmd shell\n", tv);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
@@ -672,8 +621,7 @@ errno_t cli_ghistory(void)
                               &opts.time_after)
                != 0)
             {
-                printf("ghistory: bad time"
-                       " '%s'\n", argv[i]);
+                printf("ghistory: bad time" " '%s'\n", argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
@@ -687,8 +635,7 @@ errno_t cli_ghistory(void)
                               &opts.time_before)
                != 0)
             {
-                printf("ghistory: bad time"
-                       " '%s'\n", argv[i]);
+                printf("ghistory: bad time" " '%s'\n", argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
@@ -696,8 +643,7 @@ errno_t cli_ghistory(void)
         }
         else if(strcmp(a, "--today") == 0)
         {
-            parse_time_arg("today",
-                           &opts.time_after);
+            parse_time_arg("today", &opts.time_after);
             opts.max_entries = 0;
         }
         else if(isdigit(
@@ -711,8 +657,7 @@ errno_t cli_ghistory(void)
         }
         else
         {
-            printf("ghistory: unknown "
-                   "option '%s'\n", a);
+            printf("ghistory: unknown " "option '%s'\n", a);
             printf(
                 "Usage: ghistory [N]\n"
                 "  -n N       last N\n"
@@ -723,9 +668,7 @@ errno_t cli_ghistory(void)
                 "  --since T  after time\n"
                 "  --until T  before time\n"
                 "  --today    today only\n"
-                "T: today Nm Nh Nd "
-                "YYYY-MM-DD "
-                "YYYY-MM-DDTHH:MM:SS\n");
+                "T: today Nm Nh Nd " "YYYY-MM-DD " "YYYY-MM-DDTHH:MM:SS\n");
             cmdline_free(argc, argv);
             return RETURN_FAILURE;
         }
@@ -798,10 +741,7 @@ errno_t cli_lhistory(void)
             }
             else
             {
-                printf("lhistory: unknown "
-                       "type '%s'\n"
-                       "  valid: prompt "
-                       "cmd shell\n", tv);
+                printf("lhistory: unknown " "type '%s'\n" "  valid: prompt " "cmd shell\n", tv);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
@@ -820,8 +760,7 @@ errno_t cli_lhistory(void)
                               &opts.time_after)
                != 0)
             {
-                printf("lhistory: bad time"
-                       " '%s'\n", argv[i]);
+                printf("lhistory: bad time" " '%s'\n", argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
@@ -834,16 +773,14 @@ errno_t cli_lhistory(void)
                               &opts.time_before)
                != 0)
             {
-                printf("lhistory: bad time"
-                       " '%s'\n", argv[i]);
+                printf("lhistory: bad time" " '%s'\n", argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
         }
         else if(strcmp(a, "--today") == 0)
         {
-            parse_time_arg("today",
-                           &opts.time_after);
+            parse_time_arg("today", &opts.time_after);
         }
         else if(isdigit(
                     (unsigned char) a[0]))
@@ -856,8 +793,7 @@ errno_t cli_lhistory(void)
         }
         else
         {
-            printf("lhistory: unknown "
-                   "option '%s'\n", a);
+            printf("lhistory: unknown " "option '%s'\n", a);
             printf(
                 "Usage: lhistory [N]\n"
                 "  -n N       last N\n"
@@ -865,8 +801,7 @@ errno_t cli_lhistory(void)
                 "shell\n"
                 "  -g PAT     glob\n"
                 "  --since T  after time\n"
-                "  --until T  before time\n"
-                "  --today    today only\n");
+                "  --until T  before time\n" "  --today    today only\n");
             cmdline_free(argc, argv);
             return RETURN_FAILURE;
         }

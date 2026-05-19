@@ -61,6 +61,8 @@ add_executable(milk-procinfo-help milk-procinfo-help.c)
 install(TARGETS milk-procinfo-help DESTINATION bin)
 
 add_executable(milk-procinfo-rm milk-procinfo-rm.c)
+target_include_directories(milk-procinfo-rm PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-procinfo-rm PUBLIC 
     milkprocessinfo 
     ImageStreamIO
@@ -70,6 +72,8 @@ target_link_libraries(milk-procinfo-rm PUBLIC
 install(TARGETS milk-procinfo-rm DESTINATION bin)
 
 add_executable(milk-procinfo-list procCTRL/milk-procinfo-list.c)
+target_include_directories(milk-procinfo-list PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-procinfo-list PUBLIC 
     milkprocessinfo 
     ImageStreamIO
@@ -111,6 +115,8 @@ add_executable(milk-procCTRL
     procCTRL/procCTRL_PIDcollectSystemInfo.c
     procCTRL/procCTRL_processinfo_scan.c
     procCTRL/procCTRL_TUI.c
+    procCTRL/procCTRL_TUI_render.c
+    procCTRL/procCTRL_TUI_input.c
     procCTRL/procCTRL_TUI_sort.c
     procCTRL/procCTRL_TUIcompat.c
 )
@@ -120,6 +126,7 @@ target_link_libraries(milk-procCTRL PUBLIC
     pthread
     m
 )
+target_include_directories(milk-procCTRL PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 
 add_executable(milk-procCTRL-scan
     procCTRL/milk-procCTRL-scan.c

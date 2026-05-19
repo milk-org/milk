@@ -33,7 +33,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imgetcircasym",
     .cmdkey      = "imgetcircasym",
     .description =
-        "extract non-circ symmetric part"
+        "extract non-circ symmetric part",
+    .description_long =
+        "Extract the non-circularly-symmetric component of a 2D image. Subtracts the azimuthal average to isolate asymmetric structures."
 };
 
 #define FPS_PARAMS(X) \
@@ -322,8 +324,11 @@ IMAGE_BASIC_get_circasym_component(
 
     IMGID imgin =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin, ERRMODE_ABORT,
+    resolveIMGID(&imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     return
         IMAGE_BASIC_get_circasym_component_byID(

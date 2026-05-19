@@ -18,11 +18,16 @@ set(PERFBENCH_SCRIPTS
 # ──────────────────────────────────────────
 
 add_executable(milk-perfbench
-    milk-perfbench.c)
+    milk-perfbench.c
+    perfbench_setup.c
+    perfbench_perf.c
+    perfbench_sysmon.c
+    perfbench_report.c)
 
 target_include_directories(milk-perfbench PRIVATE
     ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
-    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${PROJECT_SOURCE_DIR}/src/engine/libfps)
 
 target_link_libraries(milk-perfbench
     milkprocessinfo
@@ -41,7 +46,8 @@ add_executable(milk-perfbench-readprocinfo
 target_include_directories(
     milk-perfbench-readprocinfo PRIVATE
     ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
-    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${PROJECT_SOURCE_DIR}/src/engine/libfps)
 
 target_link_libraries(
     milk-perfbench-readprocinfo
@@ -59,7 +65,8 @@ add_executable(milk-perfbench-mkstream
 
 target_include_directories(
     milk-perfbench-mkstream PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${PROJECT_SOURCE_DIR}/src/engine/libfps)
 
 target_link_libraries(
     milk-perfbench-mkstream

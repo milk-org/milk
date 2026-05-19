@@ -14,7 +14,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "vec2im",
     .cmdkey      = "vec2im",
-    .description = "remap vector to image"
+    .description = "remap vector to image",
+    .description_long =
+        "Reconstruct a 2D image from a 1D vector using a pixel table. Inverse of image_to_vec."
 };
 
 
@@ -84,18 +86,27 @@ errno_t linopt_imtools_vec_to_2DImage(
 
     IMGID imgvec =
         imgid_make_from_name(IDvec_name);
-    resolveIMGID(&imgvec, ERRMODE_ABORT,
+    resolveIMGID(&imgvec, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgvec.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgpixi =
         imgid_make_from_name(IDpixindex_name);
-    resolveIMGID(&imgpixi, ERRMODE_ABORT,
+    resolveIMGID(&imgpixi, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgpixi.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgpixm =
         imgid_make_from_name(IDpixmult_name);
-    resolveIMGID(&imgpixm, ERRMODE_ABORT,
+    resolveIMGID(&imgpixm, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgpixm.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long NBpix = imgpixi.md->nelement;
 

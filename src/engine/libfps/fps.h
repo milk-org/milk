@@ -15,30 +15,30 @@ typedef long variableID;
 #include "IMGID.h"
 
 int function_parameter_printlist(
-    FUNCTION_PARAMETER *funcparamarray,
-    long NBparamMAX);
+    FPS_PARAM *funcparamarray,
+    long      NBparamMAX);
 
 #ifdef USE_NCURSES
 errno_t functionparameter_CTRLscreen(
     uint32_t mode,
-    char    *fpsnamemask,
-    char    *fpsCTRLfifoname,
-    double  timeout_sec);
+    char     *fpsnamemask,
+    char     *fpsCTRLfifoname,
+    double   timeout_sec);
 #endif
 
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
+FPS function_parameter_FPCONFsetup(
     const char *fpsname,
-    uint32_t mode);
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
+    uint32_t   mode);
+FPS function_parameter_FPCONFsetup_sized(
     const char *fpsname,
-    uint32_t mode,
-    long NBparamMAX);
+    uint32_t   mode,
+    long       NBparamMAX);
 uint16_t function_parameter_FPCONFloopstep(
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 uint16_t function_parameter_FPCONFexit(
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 uint16_t function_parameter_RUNexit(
-    FUNCTION_PARAMETER_STRUCT *fps);
+    FPS *fps);
 
 /* Core FPS operations (connect, params, entries) */
 #include "fps_core.h"
@@ -72,6 +72,9 @@ uint16_t function_parameter_RUNexit(
 #include "fps_cli_query.h"
 #include "fps_cli_function.h"
 
+/* Shared help-message color palette and flag init */
+#include "milk_help.h"
+
 // ===========================
 // CONVENIENT MACROS FOR FPS
 // ===========================
@@ -85,801 +88,39 @@ uint16_t function_parameter_RUNexit(
  * @{
  */
 
-/**
- * @brief Initialize function parameter structure (FPS)
- *
- * @param[in] VARfpsname FPS name
- * @param[in] VARCMDmode command code
- * @param[in] VARNBparamMAX max number of parameters
+/* Legacy color aliases -- map to milk_help.h palette.
+ * Used by non-help code (e.g. runtime status lines).
+ * New code should use MH_* macros instead.
  */
-#define FPS_SETUP_INIT_SIZED(VARfpsname, VARCMDmode, VARNBparamMAX)            \
-    FUNCTION_PARAMETER_STRUCT fps;                                             \
-    do                                                                         \
-    {                                                                          \
-        fps.SMfd = -1;                                                         \
-        fps      = function_parameter_FPCONFsetup_sized((VARfpsname), (VARCMDmode), (VARNBparamMAX)); \
-        strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);          \
-        fps.md->sourceline = __LINE__;                                         \
-        {                                                                      \
-            char msgstring[STRINGMAXLEN_FPS_LOGMSG];                           \
-            SNPRINTF_CHECK(msgstring,                                          \
-                           STRINGMAXLEN_FPS_LOGMSG,                            \
-                           "LOGSTART %s %d %s %d",                             \
-                           (VARfpsname),                                       \
-                           (VARCMDmode),                                       \
-                           fps.md->sourcefname,                                \
-                           fps.md->sourceline);                                \
-            functionparameter_outlog("FPSINIT", msgstring);                    \
-        }                                                                      \
-    } while (0)
-
-
-/**
- * @brief Initialize function parameter structure (FPS)
- *
- * @param[in] VARfpsname FPS name
- * @param[in] VARCMDmode command code
- */
-#define FPS_SETUP_INIT(VARfpsname, VARCMDmode)                                 \
-    FUNCTION_PARAMETER_STRUCT fps;                                             \
-    do                                                                         \
-    {                                                                          \
-        fps.SMfd = -1;                                                         \
-        fps      = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
-        strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);          \
-        fps.md->sourceline = __LINE__;                                         \
-        {                                                                      \
-            char msgstring[STRINGMAXLEN_FPS_LOGMSG];                           \
-            SNPRINTF_CHECK(msgstring,                                          \
-                           STRINGMAXLEN_FPS_LOGMSG,                            \
-                           "LOGSTART %s %d %s %d",                             \
-                           (VARfpsname),                                       \
-                           (VARCMDmode),                                       \
-                           fps.md->sourcefname,                                \
-                           fps.md->sourceline);                                \
-            functionparameter_outlog("FPSINIT", msgstring);                    \
-        }                                                                      \
-    } while (0)
-
-
-
-/** @brief Connect to FPS
- *
- *
- */
-#define FPS_CONNECT(VARfpsname, VARCMDmode)                                    \
-    FUNCTION_PARAMETER_STRUCT fps;                                             \
-    do                                                                         \
-    {                                                                          \
-        fps.SMfd = -1;                                                         \
-        if (function_parameter_struct_connect((VARfpsname),                    \
-                                              &fps,                            \
-                                              (VARCMDmode)) == -1)             \
-        {                                                                      \
-            printf(                                                            \
-                "ERROR: fps \"%s\" does not exist -> running without "         \
-                "FPS interface\n",                                             \
-                VARfpsname);                                                   \
-            return RETURN_FAILURE;                                             \
-        }                                                                      \
-    } while (0)
-
-
-
-
-/** @brief Start FPS configuration loop
- */
-#define FPS_CONFLOOP_START                                                     \
-    if (!(fps.localstatus & FPS_LOCALSTATUS_CONFLOOP))                         \
-    {                                                                          \
-        return RETURN_SUCCESS;                                                 \
-    }                                                                          \
-    while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)                         \
-    {                                                                          \
-        {                                                                      \
-            struct timespec treq, trem;                                        \
-            treq.tv_sec  = 0;                                                  \
-            treq.tv_nsec = 50000;                                              \
-            nanosleep(&treq, &trem);                                           \
-            if (processinfo_signal_INT == 1)                                   \
-            {                                                                  \
-                fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;                  \
-            }                                                                  \
-        }                                                                      \
-        if (function_parameter_FPCONFloopstep(&fps) == 1)                      \
-        {
-
-
-
-/** @brief End FPS configuration loop
- */
-#define FPS_CONFLOOP_END                                                       \
-    functionparameter_CheckParametersAll(&fps);                                \
-    }                                                                          \
-    }                                                                          \
-    function_parameter_FPCONFexit(&fps);
-
-/** @brief Combine initialization of FPS and procinfo for RUN process
- */
-
-#define FPSPROCINFOLOOP_RUNINIT(...)                                           \
-    PROCESSINFO *processinfo = NULL;                                                  \
-    int          processloopOK = 1;                                            \
-    do                                                                         \
-    {                                                                          \
-        char pinfodescr[200];                                                  \
-        int  slen = snprintf(pinfodescr, 200, __VA_ARGS__);                    \
-        if (slen < 1)                                                          \
-        {                                                                      \
-            PRINT_ERROR("snprintf wrote <1 char");                             \
-            abort();                                                           \
-        }                                                                      \
-        if (slen >= 200)                                                       \
-        {                                                                      \
-            PRINT_ERROR("snprintf string truncation");                         \
-            abort();                                                           \
-        }                                                                      \
-        processinfo = processinfo_setup(FPS_name,                              \
-                                        pinfodescr,                            \
-                                        "startup",                             \
-                                        __FUNCTION__,                          \
-                                        __FILE__,                              \
-                                        __LINE__);                             \
-        fps_to_processinfo(&fps, processinfo);                                 \
-    } while (0)
-
-
-
-
-#define FPS_AUTORUN_SETUP(funcstring, shortname)                               \
-    FUNCTION_PARAMETER_STRUCT fps;                                             \
-    do                                                                         \
-    {                                                                          \
-        extern uint32_t FPS_CMDCODE;                                           \
-        extern char     FPS_name[STRINGMAXLEN_FPS_NAME];                       \
-        extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];          \
-        extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];          \
-        extern FUNCTION_PARAMETER_STRUCT *fpsarray;                            \
-        snprintf(FPS_name,STRINGMAXLEN_FPS_NAME,  "%s-%06ld", (shortname), (long) getpid());      \
-        FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
-        strncpy(FPS_callprogname, "milk", FPS_CALLPROGNAME_STRMAXLEN - 1); \
-        strncpy(FPS_callfuncname, "autorun", FPS_CALLFUNCNAME_STRMAXLEN - 1);  \
-        FPSCONF_##funcstring();                                                \
-        function_parameter_struct_connect(FPS_name,                            \
-                                          &fps,                                \
-                                          FPSCONNECT_SIMPLE);                  \
-    } while (0)
-
-
-
-
-#define FPS_EXECFUNCTION_STD                                                   \
-    static errno_t FPSEXECfunction()                                           \
-    {                                                                          \
-        extern uint32_t FPS_CMDCODE;                                           \
-        extern char     FPS_name[STRINGMAXLEN_FPS_NAME];                       \
-        extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];          \
-        extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];          \
-        extern FUNCTION_PARAMETER_STRUCT *fpsarray;                            \
-        FUNCTION_PARAMETER_STRUCT fps;                                         \
-        snprintf(FPS_name, STRINGMAXLEN_FPS_NAME, "%s-%06ld", CLIcmddata.key, (long) getpid());   \
-        FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
-        strncpy(FPS_callprogname, "milk", FPS_CALLPROGNAME_STRMAXLEN - 1); \
-        strncpy(FPS_callfuncname, CLIcmddata.key, FPS_CALLFUNCNAME_STRMAXLEN - 1); \
-        FPSCONFfunction();                                                     \
-        function_parameter_struct_connect(FPS_name,                            \
-                                          &fps,                                \
-                                          FPSCONNECT_SIMPLE);                  \
-        CLIargs_to_FPSparams_setval(farg, CLIcmddata.nbarg, &fps);             \
-        function_parameter_struct_disconnect(&fps);                            \
-        FPSRUNfunction();                                                      \
-        return RETURN_SUCCESS;                                                 \
-    }
-
-
-
-#define FPS_CLIFUNCTION_STD                                                    \
-    static errno_t FPSCLIfunction(void)                                        \
-    {                                                                          \
-        extern errno_t (*FPS_CONFfunc)();                                      \
-        extern errno_t (*FPS_RUNfunc)();                                       \
-        extern uint32_t FPS_CMDCODE;                                           \
-        extern char     FPS_name[STRINGMAXLEN_FPS_NAME];                       \
-        extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];          \
-        extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];          \
-        extern FUNCTION_PARAMETER_STRUCT *fpsarray;                            \
-        function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);            \
-        if (FPS_CMDCODE != 0)                                                  \
-        {                                                                      \
-            printf("DEBUG: FPS command detected (code %u)\n",                  \
-                   FPS_CMDCODE);                                               \
-            FPS_CONFfunc = FPSCONFfunction;                                    \
-            FPS_RUNfunc  = FPSRUNfunction;                                     \
-            strncpy(FPS_name, FPS_name, STRINGMAXLEN_FPS_NAME - 1);             \
-            strncpy(FPS_callprogname, "milk", FPS_CALLPROGNAME_STRMAXLEN - 1); \
-            strncpy(FPS_callfuncname, CLIcmddata.key, FPS_CALLFUNCNAME_STRMAXLEN - 1); \
-            function_parameter_execFPScmd();                                   \
-            return RETURN_SUCCESS;                                             \
-        }                                                                      \
-        if (CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)      \
-        {                                                                      \
-            FPSEXECfunction();                                                 \
-            return RETURN_SUCCESS;                                             \
-        }                                                                      \
-        else                                                                   \
-        {                                                                      \
-            return CLICMD_INVALID_ARG;                                         \
-        }                                                                      \
-    }
-
-#define FPS_MAKE_CONF_FUNCNAME(x)      FPSCONF_##x
-#define FPSCONF_FUNCTION_NAME(fncname) FPS_MAKE_CONF_FUNCNAME(fncname)
-
-#define FPS_MAKE_RUN_FUNCNAME(x)      FPSRUN_##x
-#define FPSRUN_FUNCTION_NAME(fncname) FPS_MAKE_RUN_FUNCNAME(fncname)
-
-#define FPS_MAKE_CLI_FUNCNAME(x)      FPSCLI_##x
-#define FPSCLI_FUNCTION_NAME(fncname) FPS_MAKE_CLI_FUNCNAME(fncname)
-
-#define FPS_MAKE_CLIADDCMD_FUNCNAME(x)      FPSCLIADDCMD_##x
-#define FPSCLIADDCMD_FUNCTION_NAME(fncname) FPS_MAKE_CLIADDCMD_FUNCNAME(fncname)
-
-/** @brief Macro to generate standalone CONFSTOP function
- */
-#define FPS_MAKE_STANDALONE_CONFSTOP(FUNC_SUFFIX) \
-int FPSCONFSTOP_##FUNC_SUFFIX(const char *fps_name) { \
-    FUNCTION_PARAMETER_STRUCT fps; \
-    printf("Stopping configuration process for '%s'\n", fps_name); \
-    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
-        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name); \
-        return 1; \
-    } \
-    functionparameter_CONFstop(&fps); \
-    function_parameter_struct_disconnect(&fps); \
-    return 0; \
-}
-
-/** @brief Macro to generate standalone RUNSTOP function
- *
- * Do NOT call functionparameter_RUNstop() here.
- * That function dispatches a runstop command to
- * the tmux :ctrl window via send-keys, but this
- * function is invoked FROM the :ctrl window —
- * calling RUNstop() creates an infinite loop.
- */
-#define FPS_MAKE_STANDALONE_RUNSTOP(FUNC_SUFFIX) \
-int FPSRUNSTOP_##FUNC_SUFFIX( \
-    const char *fps_name) \
-{ \
-    FUNCTION_PARAMETER_STRUCT fps; \
-    printf("Stopping run process for '%s'\n", \
-           fps_name); \
-    if (function_parameter_struct_connect( \
-            fps_name, &fps, \
-            FPSCONNECT_SIMPLE) == -1) \
-    { \
-        fprintf(stderr, \
-                "Error: FPS '%s' not found.\n", \
-                fps_name); \
-        return 1; \
-    } \
-    EXECUTE_SYSTEM_COMMAND( \
-        "tmux send-keys -t %s:run C-c" \
-        " 2>/dev/null", \
-        fps.md->name); \
-    fps.md->status &= \
-        ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;\
-    fps.md->signal |= \
-        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; \
-    function_parameter_struct_disconnect(&fps); \
-    functionparameter_FPS_processinfo_signal( \
-        fps_name, 3); \
-    return 0; \
-}
-
 #ifndef COLORRESET
-#define COLORRESET     "\033[0m"
+#define COLORRESET     MH_RST
 #endif
 #ifndef COLORARGCLI
-#define COLORARGCLI    "\033[36m" // argument part of CLI call: cyan
+#define COLORARGCLI    MH_DFLT
 #endif
 #ifndef COLORARGnotCLI
-#define COLORARGnotCLI "\033[35m" // argument not part of CLI call: yellow
+#define COLORARGnotCLI MH_ARG
 #endif
 #ifndef COLORCOMMAND
-#define COLORCOMMAND   "\033[32m" // command: green
+#define COLORCOMMAND   MH_CMD
 #endif
 #ifndef COLORHEADER
-#define COLORHEADER    "\033[1m"  // header: bold
+#define COLORHEADER    MH_HDR
 #endif
 #ifndef COLOROPTION
-#define COLOROPTION    "\033[33m" // option: yellow
+#define COLOROPTION    MH_OPT
 #endif
 #ifndef COLORPRIMARY
-#define COLORPRIMARY   "\033[1;36m" // primary CLI argument: bold cyan
+#define COLORPRIMARY   MH_TITLE
 #endif
 #ifndef COLORNORMAL
-#define COLORNORMAL    "\033[0;37m" // normal text
-
-#define COLORERROR     "\033[31m"   // error: red
+#define COLORNORMAL    "\033[0;37m"
+#define COLORERROR     MH_ERR
 #endif
-
-// Helper for X_HELP_PRINT to extract the first argument from variadic args
-#define GET_1ST_ARG_HELPER(arg1, ...) arg1
-#define GET_1ST_ARG(args) GET_1ST_ARG_HELPER args
-
-#define X_HELP_MEASURE(fps_type, c_type, key, \
-    descr, def_str, ptr_name, get_func, \
-    flags, ...) \
-    { \
-        int _kl = (int) strlen(key); \
-        if (_kl > col_kw_w) col_kw_w = _kl; \
-        char _ts[20] = "???"; \
-        if (fps_type == FPTYPE_FLOAT32) \
-            strcpy(_ts, "FLOAT32"); \
-        else if (fps_type == FPTYPE_UINT32) \
-            strcpy(_ts, "UINT32"); \
-        else if (fps_type == FPTYPE_INT32) \
-            strcpy(_ts, "INT32"); \
-        else if (fps_type == FPTYPE_INT64) \
-            strcpy(_ts, "INT64"); \
-        else if (fps_type == FPTYPE_UINT64) \
-            strcpy(_ts, "UINT64"); \
-        else if (fps_type == FPTYPE_FLOAT64) \
-            strcpy(_ts, "FLOAT64"); \
-        else if (fps_type == FPTYPE_ONOFF) \
-            strcpy(_ts, "ONOFF"); \
-        else if (fps_type == FPTYPE_STREAMNAME)\
-            strcpy(_ts, "STREAMNAME"); \
-        else if (fps_type == FPTYPE_FILENAME) \
-            strcpy(_ts, "FILENAME"); \
-        else if (fps_type == FPTYPE_FITSFILENAME)\
-            strcpy(_ts, "FITSFILE"); \
-        else if (fps_type == FPTYPE_EXECFILENAME)\
-            strcpy(_ts, "EXECFILE"); \
-        else if (fps_type == FPTYPE_DIRNAME) \
-            strcpy(_ts, "DIRNAME"); \
-        else if (fps_type == FPTYPE_FPSNAME) \
-            strcpy(_ts, "FPSNAME"); \
-        else if (fps_type == FPTYPE_PROCESS) \
-            strcpy(_ts, "PROCESS"); \
-        else if (fps_type == FPTYPE_STRING_NOT_STREAM)\
-            strcpy(_ts, "STRING"); \
-        else if (fps_type == FPTYPE_STRING) \
-            strcpy(_ts, "STRING"); \
-        else if (fps_type == FPTYPE_PID) \
-            strcpy(_ts, "PID"); \
-        else if (fps_type == FPTYPE_TIMESPEC) \
-            strcpy(_ts, "TIMESPEC"); \
-        int _tl = (int) strlen(_ts); \
-        if (_tl > col_tp_w) col_tp_w = _tl; \
-        int _dl = (int) strlen(def_str); \
-        if (_dl > col_df_w) col_df_w = _dl; \
-    }
-
-#define X_HELP_PRINT(fps_type, c_type, key, \
-    descr, def_str, ptr_name, get_func, \
-    flags, ...) \
-    { \
-        char valuestring[256]; \
-        int is_hidden = \
-            !(flags & FPFLAG_PRIMARY_CLI_INPUT); \
-        char type_str[20] = "???"; \
-        if (fps_type == FPTYPE_FLOAT32) \
-            strcpy(type_str, "FLOAT32"); \
-        else if (fps_type == FPTYPE_UINT32) \
-            strcpy(type_str, "UINT32"); \
-        else if (fps_type == FPTYPE_INT32) \
-            strcpy(type_str, "INT32"); \
-        else if (fps_type == FPTYPE_INT64) \
-            strcpy(type_str, "INT64"); \
-        else if (fps_type == FPTYPE_UINT64) \
-            strcpy(type_str, "UINT64"); \
-        else if (fps_type == FPTYPE_FLOAT64) \
-            strcpy(type_str, "FLOAT64"); \
-        else if (fps_type == FPTYPE_ONOFF) \
-            strcpy(type_str, "ONOFF"); \
-        else if (fps_type == FPTYPE_STREAMNAME)\
-            strcpy(type_str, "STREAMNAME"); \
-        else if (fps_type == FPTYPE_FILENAME) \
-            strcpy(type_str, "FILENAME"); \
-        else if (fps_type == FPTYPE_FITSFILENAME)\
-            strcpy(type_str, "FITSFILE"); \
-        else if (fps_type == FPTYPE_EXECFILENAME)\
-            strcpy(type_str, "EXECFILE"); \
-        else if (fps_type == FPTYPE_DIRNAME) \
-            strcpy(type_str, "DIRNAME"); \
-        else if (fps_type == FPTYPE_FPSNAME) \
-            strcpy(type_str, "FPSNAME"); \
-        else if (fps_type == FPTYPE_PROCESS) \
-            strcpy(type_str, "PROCESS"); \
-        else if (fps_type == FPTYPE_STRING_NOT_STREAM)\
-            strcpy(type_str, "STRING"); \
-        else if (fps_type == FPTYPE_STRING) \
-            strcpy(type_str, "STRING"); \
-        else if (fps_type == FPTYPE_PID) \
-            strcpy(type_str, "PID"); \
-        else if (fps_type == FPTYPE_TIMESPEC) \
-            strcpy(type_str, "TIMESPEC"); \
-        \
-        if (!is_hidden) { \
-            if (show_help_color) \
-                printf("%8d " COLORARGCLI \
-                       "%-*s" COLORRESET \
-                       " %-*s %-*s %s\n", \
-                       CLIargcnt, \
-                       col_kw_w, key, \
-                       col_tp_w, type_str, \
-                       col_df_w, def_str, \
-                       descr); \
-            else \
-                printf("%8d %-*s %-*s" \
-                       " %-*s %s\n", \
-                       CLIargcnt, \
-                       col_kw_w, key, \
-                       col_tp_w, type_str, \
-                       col_df_w, def_str, \
-                       descr); \
-        } else { \
-            if (show_help_color) \
-                printf("[hidden] " \
-                       COLORARGnotCLI \
-                       "%-*s" COLORRESET \
-                       " %-*s %-*s %s\n", \
-                       col_kw_w, key, \
-                       col_tp_w, type_str, \
-                       col_df_w, def_str, \
-                       descr); \
-            else \
-                printf("[hidden] %-*s %-*s" \
-                       " %-*s %s\n", \
-                       col_kw_w, key, \
-                       col_tp_w, type_str, \
-                       col_df_w, def_str, \
-                       descr); \
-        } \
-        CLIargcnt++; \
-    }
-
-/** @brief Macro to generate standalone main function
- */
-#define FPS_MAIN_STANDALONE(DEFAULT_FPS_NAME, FUNC_PREFIX, HELPTEXT, PARAMS_MACRO) \
-int main(int argc, char *argv[]) { \
-    char fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
-    strncpy(fps_name, DEFAULT_FPS_NAME, STRINGMAXLEN_FPS_NAME - 1); \
-    char arg_fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
-    int use_tmux = 0; \
-    int use_procinfo = 0; \
-    int show_help = 0; \
-    int show_h1 = 0; \
-    int show_help_color = 1; \
-    char *command = NULL; \
-    char *keywords = NULL; \
-    char *description = NULL; \
-    char *colon_pos = NULL; \
-    for (int i = 1; i < argc; i++) { \
-        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) { \
-            show_help = 1; \
-        } else if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0) { \
-            show_h1 = 1; \
-        } else if (strcmp(argv[i], "-hc") == 0 || strcmp(argv[i], "--help-color") == 0) { \
-            show_help = 1; \
-            show_help_color = 1; \
-        } else if (strcmp(argv[i], "-hnc") == 0 || strcmp(argv[i], "--help-no-color") == 0) { \
-            show_help = 1; \
-            show_help_color = 0; \
-        } else if (strcmp(argv[i], "-tmux") == 0) { \
-            use_tmux = 1; \
-        } else if (strcmp(argv[i], "-procinfo") == 0 || strcmp(argv[i], "--procinfo") == 0) { \
-            use_procinfo = 1; \
-        } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) { \
-            keywords = argv[++i]; \
-        } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
-            description = argv[++i]; \
-        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) { \
-            strncpy(arg_fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1); \
-        } else if (command == NULL) { \
-            command = argv[i]; \
-            /* Check for fpsname:command format */ \
-            if ((colon_pos = strchr(command, ':')) != NULL) { \
-                *colon_pos = '\0'; \
-                strncpy(arg_fps_name, command, STRINGMAXLEN_FPS_NAME - 1); \
-                command = colon_pos + 1; \
-            } \
-        } \
-    } \
-    if (command == NULL) { \
-        command = "run"; \
-    } else { \
-        /* Check if the command is a recognized one. If not, it's likely the first parameter. */ \
-        if (strcmp(command, "fpsinit") != 0 && \
-            strcmp(command, "fps") != 0 && \
-            strcmp(command, "fpslist") != 0 && \
-            strcmp(command, "confstart") != 0 && \
-            strcmp(command, "confstep") != 0 && \
-            strcmp(command, "confstop") != 0 && \
-            strcmp(command, "runstart") != 0 && \
-            strcmp(command, "runstop") != 0 && \
-            strcmp(command, "exec") != 0 && \
-            strcmp(command, "set") != 0 && \
-            strcmp(command, "run") != 0) { \
-            /* It's not a recognized command, so we treat it as a parameter for 'run' */ \
-            /* However, if it contains a colon, we already split it into arg_fps_name and command. */ \
-            /* If it was 'fpsname:paramvalue', then command is now 'paramvalue'. */ \
-            /* We should push it back into the argument list for 'run' to pick up. */ \
-            command = "run"; \
-        } \
-    } \
-    (void) use_procinfo; \
-    if (strlen(arg_fps_name) > 0) { \
-        strncpy(fps_name, arg_fps_name, STRINGMAXLEN_FPS_NAME - 1); \
-    } \
-    if (show_h1) { \
-        printf("%s\n", \
-               "Standalone FPS application."); \
-        return 0; \
-    } \
-    if (show_help || (argc < 2)) { \
-        if (show_help_color) { \
-            printf("\n" COLORHEADER "Usage:" COLORRESET " %s " COLOROPTION "[Options]" COLORRESET " " COLOROPTION "[fpsname:]" COLORRESET COLORCOMMAND "<Command>" COLORRESET "\n", argv[0]); \
-            printf("  Compiled: %s %s\n\n", __DATE__, __TIME__); \
-            printf(COLORHEADER "Description:" COLORRESET "\n  Standalone FPS application.\n\n"); \
-            printf(COLORHEADER "Options:" COLORRESET "\n"); \
-            printf("  " COLOROPTION "fpsname:" COLORRESET "           Optional prefix (or use -n) to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
-            printf("  " COLOROPTION "-n, --name FPSNAME" COLORRESET "       Specify FPS name.\n"); \
-            printf("  " COLOROPTION "-k, --keywords KEYWORDS" COLORRESET "  Specify FPS keywords (default: NULL).\n"); \
-            printf("  " COLOROPTION "-d, --description DESC" COLORRESET "   Specify FPS description (default: NULL).\n"); \
-            printf("  " COLOROPTION "-tmux" COLORRESET "                    Auto-create a tmux session and dispatch commands.\n"); \
-            printf("  " COLOROPTION "-procinfo" COLORRESET "                Enable processinfo support (for fpsinit).\n"); \
-            printf("  " COLOROPTION "-h, --help" COLORRESET "               Show this help message (color default).\n"); \
-            printf("  " COLOROPTION "-hnc, --help-no-color" COLORRESET "   Show this help message without color.\n\n"); \
-            printf(COLORHEADER "Commands:" COLORRESET "\n"); \
-            printf("  " COLORCOMMAND "fpsinit" COLORRESET "    One-time setup: creates the FPS shared memory segment.\n"); \
-            printf("  " COLORCOMMAND "fps" COLORRESET "        Print content of the FPS.\n"); \
-            printf("  " COLORCOMMAND "fpslist" COLORRESET "    List all FPS instances matching this executable.\n"); \
-            printf("  " COLORCOMMAND "confstart" COLORRESET "  Run the configuration monitoring loop.\n"); \
-            printf("  " COLORCOMMAND "confstep" COLORRESET "   Run a single configuration monitoring step.\n"); \
-            printf("  " COLORCOMMAND "confstop" COLORRESET "   Stop the configuration monitoring loop.\n"); \
-            printf("  " COLORCOMMAND "runstart" COLORRESET "   Run the main processing loop.\n"); \
-            printf("  " COLORCOMMAND "runstop" COLORRESET "    Stop the main processing loop.\n"); \
-            printf("  " COLORCOMMAND "set" COLORRESET " " COLOROPTION "[args]" COLORRESET "  Set positional arguments in the FPS (use . to skip).\n"); \
-            printf("  " COLORCOMMAND "exec" COLORRESET " " COLOROPTION "[args]" COLORRESET " Auto-init + set args + run.\n\n"); \
-            printf(COLORHEADER "Notes:" COLORRESET "\n"); \
-            printf("  Alternate ways to perform these operations once the FPS has been created:\n"); \
-            printf("    " COLORCOMMAND "milk-fps-confstart" COLORRESET " <fpsname>\n"); \
-            printf("    " COLORCOMMAND "milk-fps-confstop" COLORRESET "  <fpsname>\n"); \
-            printf("    " COLORCOMMAND "milk-fps-runstart" COLORRESET "  <fpsname>\n"); \
-            printf("    " COLORCOMMAND "milk-fps-runstop" COLORRESET "   <fpsname>\n"); \
-            printf("    " COLORCOMMAND "milk-fps-confstep" COLORRESET "  <fpsname>\n\n"); \
-        } else { \
-            printf("\nUsage: %s [Options] [fpsname:]<Command>\n", argv[0]); \
-            printf("  Compiled: %s %s\n\n", __DATE__, __TIME__); \
-            printf("Description:\n  Standalone FPS application.\n\n"); \
-            printf("Options:\n"); \
-            printf("  fpsname:                 Optional prefix (or use -n) to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
-            printf("  -n, --name FPSNAME       Specify FPS name.\n"); \
-            printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n"); \
-            printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
-            printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n"); \
-            printf("  -procinfo                Enable processinfo support (for fpsinit).\n"); \
-            printf("  -h, --help               Show this help message (color default).\n"); \
-            printf("  -hnc, --help-no-color    Show this help message without color.\n\n"); \
-            printf("Commands:\n"); \
-            printf("  fpsinit    One-time setup: creates the FPS shared memory segment.\n"); \
-            printf("  fps        Print content of the FPS.\n"); \
-            printf("  fpslist    List all FPS instances matching this executable.\n"); \
-            printf("  confstart  Run the configuration monitoring loop.\n"); \
-            printf("  confstep   Run a single configuration monitoring step.\n"); \
-            printf("  confstop   Stop the configuration monitoring loop.\n"); \
-            printf("  runstart   Run the main processing loop.\n"); \
-            printf("  runstop    Stop the main processing loop.\n"); \
-            printf("  set [args] Set positional arguments in the FPS (use . to skip).\n"); \
-            printf("  exec [args] Auto-init + set args + run.\n\n"); \
-            printf("Notes:\n"); \
-            printf("  Alternate ways to perform these operations once the FPS has been created:\n"); \
-            printf("    milk-fps-confstart <fpsname>\n"); \
-            printf("    milk-fps-confstop  <fpsname>\n"); \
-            printf("    milk-fps-runstart  <fpsname>\n"); \
-            printf("    milk-fps-runstop   <fpsname>\n"); \
-            printf("    milk-fps-confstep  <fpsname>\n\n"); \
-        } \
-        if (HELPTEXT[0] != '\0') { \
-            if (show_help_color) printf(COLORHEADER "Detailed Help:" COLORRESET "\n"); \
-            else printf("Detailed Help:\n"); \
-            printf("--------------\n"); \
-            printf("%s\n\n", HELPTEXT); \
-        } \
-        int col_kw_w = 7; /* strlen("Keyword") */ \
-        int col_tp_w = 4; /* strlen("Type")    */ \
-        int col_df_w = 7; /* strlen("Default") */ \
-        PARAMS_MACRO(X_HELP_MEASURE) \
-        if (show_help_color) { \
-            printf(COLORHEADER \
-                   "CLI call arguments:" \
-                   COLORRESET "\n"); \
-        } else { \
-            printf("CLI call arguments:\n"); \
-        } \
-        printf("%8s %-*s %-*s %-*s %s\n", \
-               "Idx", col_kw_w, "Keyword", \
-               col_tp_w, "Type", \
-               col_df_w, "Default", \
-               "Description"); \
-        printf("%8s %-*s %-*s %-*s %s\n", \
-               "---", col_kw_w, "-------", \
-               col_tp_w, "----", \
-               col_df_w, "-------", \
-               "-----------"); \
-        int CLIargcnt = 0; \
-        (void) CLIargcnt; \
-        PARAMS_MACRO(X_HELP_PRINT) \
-        printf("\n"); \
-        if (show_help_color) \
-            printf(COLOROPTION "Run " COLORCOMMAND "milk-fpsexec-help" COLOROPTION " for detailed FPS framework info." COLORRESET "\n\n"); \
-        else \
-            printf("Run milk-fpsexec-help for detailed FPS framework info.\n\n"); \
-        return 0; \
-    } \
-    if (command == NULL) { \
-        fprintf(stderr, "Error: Missing command argument.\n"); \
-        return 1; \
-    } \
-    if (strcmp(command, "exec") != 0) \
-        printf("FPS " COLORCOMMAND "%s" COLORRESET " %s\n", fps_name, command); \
-    if (strcmp(command, "fps") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
-            fprintf(stderr, "Error: cannot connect to FPS '%s'.\n", fps_name); \
-            return 1; \
-        } \
-        function_parameter_print_info(&fps, 0, 0); \
-        function_parameter_struct_disconnect(&fps); \
-        return 0; \
-    } else if (strcmp(command, "fpslist") == 0) { \
-        FUNCTION_PARAMETER_STRUCT *fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT)); \
-        if (fpsarray == NULL) return 1; \
-        for(int i = 0; i < NB_FPS_MAX; i++) fpsarray[i].SMfd = -1; \
-        KEYWORD_TREE_NODE *keywnode = (KEYWORD_TREE_NODE *) calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE)); \
-        if (keywnode == NULL) { free(fpsarray); return 1; } \
-        int NBkwn = 0, NBfps = 0; \
-        long NBpindex = 0; \
-        functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, 0); \
-        if (NBfps > 0) { \
-            char *exec_basename = strrchr(argv[0], '/'); \
-            if (exec_basename) exec_basename++; else exec_basename = argv[0]; \
-            int found = 0; \
-            for(int i = 0; i < NBfps; i++) { \
-                char *fps_exec_basename = strrchr(fpsarray[i].md->execfullpath, '/'); \
-                if (fps_exec_basename) fps_exec_basename++; else fps_exec_basename = fpsarray[i].md->execfullpath; \
-                if (strcmp(exec_basename, fps_exec_basename) == 0) { \
-                    if (!found) { \
-                        printf("%-30s %-10s %s\n", "FPS Name", "Status", "Description"); \
-                        printf("------------------------------------------------------------\n"); \
-                        found = 1; \
-                    } \
-                    char status_str[32] = "UNKNOWN"; \
-                    if(fpsarray[i].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) strcpy(status_str, "CONF"); \
-                    else if(fpsarray[i].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) strcpy(status_str, "RUN"); \
-                    printf("%-30s %-10s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->description); \
-                } \
-                function_parameter_struct_disconnect(&fpsarray[i]); \
-            } \
-            if (!found) printf("No matching FPS instances found for executable '%s'.\n", exec_basename); \
-        } else { \
-            printf("No FPS instances found.\n"); \
-        } \
-        free(keywnode); \
-        free(fpsarray); \
-        return 0; \
-    } \
-    if (use_tmux) { \
-        char path[1024]; \
-        if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL) { \
-            if (realpath(argv[0], path) == NULL) strncpy(path, argv[0], 1023); \
-        } \
-        char name_arg[256] = ""; \
-        /* fps name is now part of command, but tmux dispatch expects args? No, tmux dispatch sends command line. */ \
-        /* We need to reconstruct command line for tmux */ \
-        /* The previous implementation used -n name. Now we prepend name: */ \
-        if (strcmp(fps_name, DEFAULT_FPS_NAME) != 0) { \
-             /* Should we pass fps_name separately? functionparameter_FPS_tmux_send_dispatch logic check needed */ \
-             /* But simpler: pass reconstructed command "fpsname:command" */ \
-             /* functionparameter_FPS_tmux_send_dispatch takes (char *fpsname, char *cmd, char *execpath, char *arg) */ \
-             /* It constructs "tmux send-keys ... execpath cmd arg" */ \
-             /* We want "tmux send-keys ... execpath fpsname:cmd" */ \
-             snprintf(name_arg, sizeof(name_arg), " %s:%s", fps_name, command); \
-             /* Wait, command is already parsed. */ \
-        } else { \
-             snprintf(name_arg, sizeof(name_arg), " %s", command); \
-        } \
-        functionparameter_FPS_tmux_standalone_setup(fps_name); \
-        if (strcmp(command, "exec") == 0) { \
-            FUNCTION_PARAMETER_STRUCT fps; \
-            if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
-                printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " "\033[33m" "NEW" COLORRESET "\n", fps_name); \
-                FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
-            } else { \
-                printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND "REUSE" COLORRESET "\n", fps_name); \
-                function_parameter_struct_disconnect(&fps); \
-            } \
-            char run_arg[512] = ""; \
-            if (use_procinfo) { \
-                strncat(run_arg, " -procinfo", sizeof(run_arg) - strlen(run_arg) - 1); \
-            } \
-            if (strcmp(fps_name, DEFAULT_FPS_NAME) != 0) { \
-                { size_t _l = strlen(run_arg); snprintf(run_arg + _l, sizeof(run_arg) - _l, " %s:runstart", fps_name); } \
-            } else { \
-                strncat(run_arg, " runstart", sizeof(run_arg) - strlen(run_arg) - 1); \
-            } \
-            functionparameter_FPS_tmux_send_dispatch(fps_name, "runstart", path, run_arg); \
-            return 0; \
-        } \
-        if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0) { \
-            return 0; \
-        } \
-        if (strcmp(command, "fpsinit") == 0) { \
-            FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
-        } \
-        return 0; \
-    } \
-    if (strcmp(command, "fpsinit") == 0) { \
-        return FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
-    } else if (strcmp(command, "confstart") == 0) { \
-        return FPSCONF_##FUNC_PREFIX(fps_name, 1); \
-    } else if (strcmp(command, "confstep") == 0) { \
-        return FPSCONF_##FUNC_PREFIX(fps_name, 0); \
-    } else if (strcmp(command, "confstop") == 0) { \
-        return FPSCONFSTOP_##FUNC_PREFIX(fps_name); \
-    } else if (strcmp(command, "set") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
-            fprintf(stderr, "Error: FPS '%s' not found. Run fpsinit first.\n", fps_name); \
-            return 1; \
-        } \
-        { \
-            int cmd_pos = -1; \
-            for (int j = 1; j < argc; j++) { \
-                if (strcmp(argv[j], "set") == 0) { cmd_pos = j; break; } \
-            } \
-            if (cmd_pos != -1) { \
-                int cli_idx = 0; \
-                for (long p = 0; p < fps.md->NBparamMAX; p++) { \
-                    if (!(fps.parray[p].fpflag & FPFLAG_ACTIVE)) continue; \
-                    if (!(fps.parray[p].fpflag & FPFLAG_PRIMARY_CLI_INPUT)) continue; \
-                    int arg_idx = cmd_pos + 1 + cli_idx; \
-                    cli_idx++; \
-                    if (arg_idx >= argc) break; \
-                    if (strcmp(argv[arg_idx], ".") != 0) { \
-                        functionparameter_SetParamValue_STRING(&fps, fps.parray[p].keyword[0], argv[arg_idx]); \
-                    } \
-                } \
-            } \
-        } \
-        function_parameter_struct_disconnect(&fps); \
-        printf("FPS " COLORCOMMAND "%s" COLORRESET " set done\n", fps_name); \
-        return 0; \
-    } else if (strcmp(command, "exec") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
-            printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " "\033[33m" "NEW" COLORRESET "\n", fps_name); \
-            FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
-        } else { \
-            printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND "REUSE" COLORRESET "\n", fps_name); \
-            function_parameter_struct_disconnect(&fps); \
-        } \
-        return FPSRUN_##FUNC_PREFIX(fps_name); \
-    } else if (strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0) { \
-        return FPSRUN_##FUNC_PREFIX(fps_name); \
-    } else if (strcmp(command, "runstop") == 0) { \
-        return FPSRUNSTOP_##FUNC_PREFIX(fps_name); \
-    } \
-    fprintf(stderr, "Invalid command: %s\n", command); \
-    return 1; \
-}
 
 /*
  * ================================================================
- * FPS_MAIN_STANDALONE_V2 — uses generic library functions
+ * FPS_MAIN_STANDALONE_V2 -- uses generic library functions
  *
  * Usage (new binding format):
  *     FPS_MAIN_STANDALONE_V2(
@@ -1110,7 +351,7 @@ int main(int argc, char *argv[]) { \
 
 /*
  * ================================================================
- * MILK_EMBED_BUILD_TAG — compile-time build metadata
+ * MILK_EMBED_BUILD_TAG -- compile-time build metadata
  *
  * Embeds a sentinel string in every fpsexec binary
  * so milk-perfbench can detect PGO/LTO status at
@@ -1120,11 +361,11 @@ int main(int argc, char *argv[]) { \
  *   \x1fMILK_BUILD:<flags>END
  *
  * where <flags> is a comma-separated list of:
- *   OPT=1        — optimised (-O2/-O3)
- *   PGO=GENERATE — pass-1 instrumented binary
- *   PGO=USE      — pass-2 profile-optimised binary
- *   LTO=1        — link-time optimisation enabled
- *   STATIC=1     — static LTO archives used
+ *   OPT=1        -- optimised (-O2/-O3)
+ *   PGO=GENERATE -- pass-1 instrumented binary
+ *   PGO=USE      -- pass-2 profile-optimised binary
+ *   LTO=1        -- link-time optimisation enabled
+ *   STATIC=1     -- static LTO archives used
  *
  * The \x1f (ASCII unit-separator) prefix ensures
  * the sentinel is not confused with other strings.
@@ -1191,12 +432,25 @@ int main(int argc, char *argv[]) { \
     CONFCHECK_FN) \
 int main(int argc, char *argv[]) { \
     MILK_EMBED_BUILD_TAG(); \
+    /* Pre-getopt scan: -h1 and -h2 must be \
+     * handled before anything else so -h1 is \
+     * never split into -h + 1.              */ \
     for (int _i = 1; _i < argc; _i++) { \
         if (strcmp(argv[_i], "-h1") == 0 || \
             strcmp(argv[_i], \
                    "--help-oneline") == 0) { \
             printf("%s\n", \
                    (APP_INFO).description); \
+            return 0; \
+        } \
+        if (strcmp(argv[_i], "-h2") == 0 || \
+            strcmp(argv[_i], \
+                   "--help-description") == 0) {\
+            const char *_dl = \
+                (APP_INFO).description_long; \
+            printf("%s\n", \
+                   _dl ? _dl \
+                   : (APP_INFO).description); \
             return 0; \
         } \
     } \
@@ -1214,11 +468,13 @@ int main(int argc, char *argv[]) { \
         = ""; \
     int use_tmux = 0; \
     int use_procinfo = 0; \
+    if (getenv("MILK_FPSPROCINFO") != NULL) { \
+        use_procinfo = 1; \
+    } \
     int use_loop = 0; \
     double loop_delay = -1.0; \
     int show_help = 0; \
-    int show_h1 = 0; \
-    int show_help_color = 1; \
+    int mh_color = 1; \
     char *command = NULL; \
     char *keywords = NULL; \
     char *description = NULL; \
@@ -1232,78 +488,65 @@ int main(int argc, char *argv[]) { \
         PARAMS_MACRO(FPS_X_FARG) \
     }; \
     (void) farg_; \
-    for (int i = 1; i < argc; i++) { \
-        if (strcmp(argv[i], "-h") == 0 || \
-            strcmp(argv[i], "--help") == 0) { \
+    for (int ii = 1; ii < argc; ii++) { \
+        if (strcmp(argv[ii], "-h") == 0 || \
+            strcmp(argv[ii], "--help") == 0) { \
             show_help = 1; \
         } else if ( \
-            strcmp(argv[i], "-h1") == 0 || \
-            strcmp(argv[i], \
-                   "--help-oneline") == 0) { \
-            show_h1 = 1; \
-        } else if (strcmp(argv[i], "-hc") == 0 ||\
-            strcmp(argv[i], \
-                   "--help-color") == 0) { \
+            strcmp(argv[ii], "-hm") == 0 || \
+            strcmp(argv[ii], \
+                   "--help-mono") == 0) { \
             show_help = 1; \
-            show_help_color = 1; \
-        } else if (strcmp(argv[i], \
-                   "-hnc") == 0 || \
-            strcmp(argv[i], \
-                   "--help-no-color") == 0) { \
-            show_help = 1; \
-            show_help_color = 0; \
-        } else if (strcmp(argv[i], \
+            mh_color = 0; \
+        } else if (strcmp(argv[ii], \
                    "-tmux") == 0) { \
             use_tmux = 1; \
-        } else if (strcmp(argv[i], \
+        } else if (strcmp(argv[ii], \
                    "-procinfo") == 0 || \
-            strcmp(argv[i], \
+            strcmp(argv[ii], \
                    "--procinfo") == 0) { \
             use_procinfo = 1; \
-        } else if (strcmp(argv[i], \
+        } else if (strcmp(argv[ii], \
                    "-loops") == 0 || \
-            strcmp(argv[i], \
+            strcmp(argv[ii], \
                    "--loops") == 0) { \
             use_loop = 1; \
             use_procinfo = 1; \
-        } else if (strcmp(argv[i], \
+        } else if (strcmp(argv[ii], \
                     "-loopd") == 0 || \
-            strcmp(argv[i], \
+            strcmp(argv[ii], \
                     "--loopd") == 0) { \
             use_loop = 2; \
             use_procinfo = 1; \
-            /* Consume next arg as delay only if \
-             * it looks numeric (digit, '.', '-').\
-             * Otherwise use delay=0. */ \
-            if (i + 1 < argc) { \
-                char c0 = argv[i + 1][0]; \
+            if (ii + 1 < argc) { \
+                char c0 = argv[ii + 1][0]; \
                 if ((c0 >= '0' && c0 <= '9') \
                     || c0 == '.' || c0 == '-') {\
-                    loop_delay = atof(argv[++i]);\
+                    loop_delay = atof(argv[++ii]);\
                 } else { \
                     loop_delay = 0.0; \
                 } \
             } else { \
                 loop_delay = 0.0; \
             } \
-        } else if ((strcmp(argv[i], "-k") == 0 ||\
-            strcmp(argv[i], \
+        } else if ((strcmp(argv[ii], "-k") == 0 ||\
+            strcmp(argv[ii], \
                    "--keywords") == 0) \
-            && i + 1 < argc) { \
-            keywords = argv[++i]; \
-        } else if ((strcmp(argv[i], "-d") == 0 ||\
-            strcmp(argv[i], \
+            && ii + 1 < argc) { \
+            keywords = argv[++ii]; \
+        } else if ((strcmp(argv[ii], "-d") == 0 ||\
+            strcmp(argv[ii], \
                    "--description") == 0) \
-            && i + 1 < argc) { \
-            description = argv[++i]; \
-        } else if ((strcmp(argv[i], "-n") == 0 ||\
-            strcmp(argv[i], \
+            && ii + 1 < argc) { \
+            description = argv[++ii]; \
+        } else if ((strcmp(argv[ii], "-n") == 0 ||\
+            strcmp(argv[ii], \
                    "--name") == 0) \
-            && i + 1 < argc) { \
-            strncpy(arg_fps_name, argv[++i], \
+            && ii + 1 < argc) { \
+            strncpy(arg_fps_name, argv[++ii], \
                     STRINGMAXLEN_FPS_NAME - 1); \
         } else if (command == NULL) { \
-            command = argv[i]; \
+            command = argv[ii]; \
             if ((colon_pos = strchr(command, \
                                     ':')) \
                 != NULL) { \
@@ -1329,8 +572,8 @@ int main(int argc, char *argv[]) { \
             strcmp(command, "set") != 0 && \
             strcmp(command, "run") != 0) { \
             fprintf(stderr, \
-                    COLORERROR "Error:" \
-                    COLORRESET " '%s' is not a" \
+                    MH_ERR "Error:" MH_RST \
+                    " '%s' is not a" \
                     " valid command. Run with" \
                     " -h for help.\n", \
                     command); \
@@ -1342,157 +585,123 @@ int main(int argc, char *argv[]) { \
                 STRINGMAXLEN_FPS_NAME - 1); \
     } \
     (void)keywords; (void)description; \
-    if (show_h1) { \
-        printf("%s\n", \
-               (APP_INFO).description); \
-        return 0; \
-    } \
     if (show_help || (argc < 2)) { \
-        if (show_help_color) { \
-            printf("\n" COLORHEADER "Usage:" \
-                   COLORRESET " %s " \
-                   COLOROPTION "[Options]" \
-                   COLORRESET " " \
-                   COLOROPTION "[fpsname:]" \
-                   COLORRESET COLORCOMMAND \
-                   "<Command>" COLORRESET \
-                   "\n", argv[0]); \
-            printf("  Compiled: %s %s\n\n", \
-                   __DATE__, __TIME__); \
-            printf(COLORHEADER "Description:" \
-                   COLORRESET "\n  %s\n\n", \
-                   (APP_INFO).description); \
-        } else { \
-            printf("\nUsage: %s [Options]" \
-                   " [fpsname:]<Command>\n", \
-                   argv[0]); \
-            printf("  Compiled: %s %s\n\n", \
-                   __DATE__, __TIME__); \
-            printf("Description:\n  %s\n\n", \
-                   (APP_INFO).description); \
+        /* TTY auto-detect for -h */ \
+        if (show_help && mh_color && \
+            !isatty(STDOUT_FILENO)) { \
+            mh_color = 0; \
         } \
-        if (show_help_color) \
-            printf(COLORHEADER "Options:" \
-                   COLORRESET "\n"); \
-        else printf("Options:\n"); \
-        if (show_help_color) { \
-            printf("  " COLOROPTION "-tmux" \
-                   COLORRESET \
-                   "       Run inside " \
-                   "tmux session.\n"); \
-            printf("  " COLOROPTION "-procinfo" \
-                   COLORRESET \
-                   "   Enable " \
-                   "processinfo.\n"); \
-            printf("  " COLOROPTION "-loops" \
-                   COLORRESET \
-                   "      Infinite loop," \
-                   " stream semaphore" \
-                   " trigger.\n"); \
-            printf("  " COLOROPTION \
-                   "-loopd SEC" \
-                   COLORRESET \
-                   " Infinite loop," \
-                   " delay trigger" \
-                   " (seconds).\n"); \
-            printf("  " COLOROPTION \
-                   "-n NAME" \
-                   COLORRESET \
-                   "   Set FPS instance" \
-                   " name.\n\n"); \
-        } else { \
-            printf("  -tmux       Run inside" \
-                   " tmux session.\n"); \
-            printf("  -procinfo   Enable" \
-                   " processinfo.\n"); \
-            printf("  -loops      Infinite loop," \
-                   " stream semaphore" \
-                   " trigger.\n"); \
-            printf("  -loopd SEC  Infinite loop," \
-                   " delay trigger" \
-                   " (seconds).\n"); \
-            printf("  -n NAME     Set FPS" \
-                   " instance name.\n\n"); \
+        /* ---- BANNER ---- */ \
+        milk_help_banner(argv[0], \
+            (APP_INFO).description, mh_color); \
+        /* ---- USAGE ---- */ \
+        milk_help_section("Usage", mh_color); \
+        printf("  %s %s %s%s\n\n", \
+               argv[0], \
+               MH(MH_OPT, "[options]"), \
+               MH(MH_OPT, "[fpsname:]"), \
+               MH(MH_CMD, "<command>")); \
+        /* ---- DESCRIPTION ---- */ \
+        { \
+            const char *_dl = \
+                (APP_INFO).description_long; \
+            const char *_desc = \
+                _dl ? _dl \
+                : (APP_INFO).description; \
+            milk_help_section("Description", \
+                              mh_color); \
+            printf("  %s\n\n", _desc); \
         } \
-        if (show_help_color) \
-            printf(COLORHEADER "Commands:" \
-                   COLORRESET "\n"); \
-        else printf("Commands:\n"); \
-        if (show_help_color) { \
-            printf("  " COLORCOMMAND "fpsinit" \
-                   COLORRESET \
-                   "    Create the FPS.\n"); \
-            printf("  " COLORCOMMAND "fps" \
-                   COLORRESET \
-                   "        Print FPS " \
-                   "content.\n"); \
-            printf("  " COLORCOMMAND "fpslist" \
-                   COLORRESET \
-                   "    List matching " \
-                   "FPS instances.\n"); \
-            printf("  " COLORCOMMAND "confstart" \
-                   COLORRESET \
-                   "  Configuration " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "confstep" \
-                   COLORRESET \
-                   "   Single config " \
-                   "step.\n"); \
-            printf("  " COLORCOMMAND "confstop" \
-                   COLORRESET \
-                   "   Stop config " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "runstart" \
-                   COLORRESET \
-                   "   Main processing " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "runstop" \
-                   COLORRESET \
-                   "    Stop processing " \
-                   "loop.\n"); \
-            printf("  " COLORCOMMAND "set" \
-                   COLORRESET " " \
-                   COLOROPTION "[args]" \
-                   COLORRESET \
-                   "  Set positional args" \
-                   " (. to skip).\n"); \
-            printf("  " COLORCOMMAND "exec" \
-                   COLORRESET " " \
-                   COLOROPTION "[args]" \
-                   COLORRESET \
-                   " Auto-init + set" \
-                   " args + run.\n\n"); \
+        /* ---- FPS NOTE ---- */ \
+        if (mh_color) { \
+            printf("  " MH_NOTE \
+                   "This is a fpsexec command." \
+                   " Command parameters map" \
+                   " to FPS parameters." MH_RST \
+                   "\n  Run " MH_CMD \
+                   "milk-fpsexec-help" MH_RST \
+                   " for detailed FPS" \
+                   " framework info.\n\n"); \
         } else { \
-            printf("  fpsinit    Create the " \
-                   "FPS.\n"); \
-            printf("  fps        Print FPS " \
-                   "content.\n"); \
-            printf("  fpslist    List matching " \
-                   "FPS instances.\n"); \
-            printf("  confstart  Configuration " \
-                   "loop.\n"); \
-            printf("  confstep   Single config " \
-                   "step.\n"); \
-            printf("  confstop   Stop config " \
-                   "loop.\n"); \
-            printf("  runstart   Main processing" \
-                   " loop.\n"); \
-            printf("  runstop    Stop processing" \
-                   " loop.\n"); \
-            printf("  set [args] Set positional" \
-                   " args (. to skip).\n"); \
-            printf("  exec [args] Auto-init +" \
-                   " set args + run.\n\n"); \
+            printf("  NOTE: This is a fpsexec" \
+                   " command. Command" \
+                   " parameters map to FPS" \
+                   " parameters.\n" \
+                   "  Run milk-fpsexec-help" \
+                   " for detailed FPS" \
+                   " framework info.\n\n"); \
         } \
+        /* ---- OPTIONS ---- */ \
+        milk_help_section("Options", mh_color); \
+        printf("  %s         Show this help\n", \
+               MH(MH_OPT, "-h, --help")); \
+        printf("  %s              One-line" \
+               " description\n", \
+               MH(MH_OPT, "-h1")); \
+        printf("  %s              Verbose" \
+               " description\n", \
+               MH(MH_OPT, "-h2")); \
+        printf("  %s              Monochrome" \
+               " help\n", \
+               MH(MH_OPT, "-hm")); \
+        printf("  %s            Run inside" \
+               " tmux session\n", \
+               MH(MH_OPT, "-tmux")); \
+        printf("  %s        Enable" \
+               " processinfo\n", \
+               MH(MH_OPT, "-procinfo")); \
+        printf("  %s           Infinite loop," \
+               " semaphore trigger\n", \
+               MH(MH_OPT, "-loops")); \
+        printf("  %s %s      Infinite loop," \
+               " delay trigger\n", \
+               MH(MH_OPT, "-loopd"), \
+               MH(MH_ARG, "SEC")); \
+        printf("  %s %s        Set FPS" \
+               " instance name\n\n", \
+               MH(MH_OPT, "-n"), \
+               MH(MH_ARG, "NAME")); \
+        /* ---- COMMANDS ---- */ \
+        milk_help_section("Commands", mh_color);\
+        printf("  %s          Create" \
+               " the FPS\n", \
+               MH(MH_CMD, "fpsinit")); \
+        printf("  %s              Print FPS" \
+               " content\n", \
+               MH(MH_CMD, "fps")); \
+        printf("  %s          List matching" \
+               " FPS instances\n", \
+               MH(MH_CMD, "fpslist")); \
+        printf("  %s        Configuration" \
+               " loop\n", \
+               MH(MH_CMD, "confstart")); \
+        printf("  %s         Single config" \
+               " step\n", \
+               MH(MH_CMD, "confstep")); \
+        printf("  %s         Stop config" \
+               " loop\n", \
+               MH(MH_CMD, "confstop")); \
+        printf("  %s         Main processing" \
+               " loop\n", \
+               MH(MH_CMD, "runstart")); \
+        printf("  %s          Stop" \
+               " processing loop\n", \
+               MH(MH_CMD, "runstop")); \
+        printf("  %s %s      Set positional" \
+               " args (. to skip)\n", \
+               MH(MH_CMD, "set"), \
+               MH(MH_OPT, "[args]")); \
+        printf("  %s %s     Auto-init + set" \
+               " args + run\n\n", \
+               MH(MH_CMD, "exec"), \
+               MH(MH_OPT, "[args]")); \
+        /* ---- PARAMETERS ---- */ \
         int col_kw_w = 7; \
         int col_tp_w = 4; \
         int col_df_w = 7; \
         PARAMS_MACRO(X_HELP_MEASURE_V2) \
-        if (show_help_color) \
-            printf(COLORHEADER \
-                   "CLI arguments:" \
-                   COLORRESET "\n"); \
-        else printf("CLI arguments:\n"); \
+        milk_help_section("Parameters", \
+                          mh_color); \
         printf("  %-3s %-*s %-*s %-*s %s\n", \
                "Idx", \
                col_kw_w, "Keyword", \
@@ -1507,21 +716,21 @@ int main(int argc, char *argv[]) { \
                "-----------"); \
         int CLIargcnt = 0; \
         (void) CLIargcnt; \
+        int show_help_color = mh_color; \
+        (void) show_help_color; \
         PARAMS_MACRO(X_HELP_PRINT_V2) \
         printf("\n"); \
-        if (show_help_color) \
-            printf(COLOROPTION "Run " \
-                   COLORCOMMAND \
-                   "milk-fpsexec-help" \
-                   COLOROPTION \
-                   " for detailed FPS " \
-                   "framework info." \
-                   COLORRESET "\n\n"); \
-        else \
-            printf("Run milk-fpsexec-help" \
-                   " for detailed FPS " \
-                   "framework info." \
-                   "\n\n"); \
+        /* ---- SEE ALSO ---- */ \
+        { \
+            const char *_sa[] = { \
+                "milk-fpsexec-help:print detailed FPS framework info", \
+                "milk-fpsCTRL:launch the FPS dashboard TUI", \
+                "milk-fpsexec-list:list installed fpsexec commands" \
+            }; \
+            milk_help_see_also(_sa, 3, \
+                               mh_color); \
+        } \
+        printf("\n"); \
         return 0; \
     } \
     if (command == NULL) { \
@@ -1534,8 +743,8 @@ int main(int argc, char *argv[]) { \
                COLORRESET " %s\n", \
                fps_name, command); \
     if (strcmp(command, "fps") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect( \
+        FPS fps; \
+        if (fps_connect( \
                 fps_name, &fps, \
                 FPSCONNECT_SIMPLE) == -1) { \
             fprintf(stderr, \
@@ -1545,19 +754,19 @@ int main(int argc, char *argv[]) { \
         } \
         function_parameter_print_info( \
             &fps, 0, 0); \
-        function_parameter_struct_disconnect( \
+        fps_disconnect( \
             &fps); \
         return 0; \
     } else if (strcmp(command, \
                       "fpslist") == 0) { \
-        FUNCTION_PARAMETER_STRUCT *fpsarray = \
-            (FUNCTION_PARAMETER_STRUCT *) \
+        FPS *fpsarray = \
+            (FPS *) \
             calloc(NB_FPS_MAX, \
                    sizeof( \
-                   FUNCTION_PARAMETER_STRUCT));\
+                   FPS));\
         if (fpsarray == NULL) return 1; \
-        for (int i = 0; i < NB_FPS_MAX; i++) \
-            fpsarray[i].SMfd = -1; \
+        for (int ii = 0; ii < NB_FPS_MAX; ii++) \
+            fpsarray[ii].SMfd = -1; \
         KEYWORD_TREE_NODE *keywnode = \
             (KEYWORD_TREE_NODE *) \
             calloc(NB_KEYWNODE_MAX, \
@@ -1573,12 +782,12 @@ int main(int argc, char *argv[]) { \
             char *eb = strrchr(argv[0], '/'); \
             if (eb) eb++; else eb = argv[0]; \
             int found = 0; \
-            for (int i = 0; i < NBfps; i++) { \
+            for (int ii = 0; ii < NBfps; ii++) { \
                 char *fb = strrchr( \
-                    fpsarray[i].md \
+                    fpsarray[ii].md \
                         ->execfullpath, '/'); \
                 if (fb) fb++; \
-                else fb = fpsarray[i].md \
+                else fb = fpsarray[ii].md \
                     ->execfullpath; \
                 if (strcmp(eb, fb) == 0) { \
                     if (!found) { \
@@ -1594,21 +803,21 @@ int main(int argc, char *argv[]) { \
                         found = 1; \
                     } \
                     char ss[32] = "UNKNOWN"; \
-                    if (fpsarray[i].md->status \
+                    if (fpsarray[ii].md->status \
                         & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) \
                         strcpy(ss, "CONF"); \
-                    else if (fpsarray[i].md \
+                    else if (fpsarray[ii].md \
                         ->status \
                         & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) \
                         strcpy(ss, "RUN"); \
                     printf("%-30s %-10s %s\n", \
-                           fpsarray[i].md->name,\
+                           fpsarray[ii].md->name,\
                            ss, \
-                           fpsarray[i].md \
+                           fpsarray[ii].md \
                                ->description); \
                 } \
-                function_parameter_struct_disconnect( \
-                    &fpsarray[i]); \
+                fps_disconnect( \
+                    &fpsarray[ii]); \
             } \
             if (!found) \
                 printf("No matching FPS for " \
@@ -1643,9 +852,9 @@ int main(int argc, char *argv[]) { \
             fps_name); \
         if (strcmp(command, "exec") == 0) { \
             { \
-                FUNCTION_PARAMETER_STRUCT fc_; \
+                FPS fc_; \
                 if (fps_name[0] != '_') { \
-                    if (function_parameter_struct_connect( \
+                    if (fps_connect( \
                             fps_name, &fc_, \
                             FPSCONNECT_SIMPLE) \
                         == -1) \
@@ -1670,7 +879,7 @@ int main(int argc, char *argv[]) { \
                                "REUSE" \
                                COLORRESET "\n", \
                                fps_name); \
-                        function_parameter_struct_disconnect( \
+                        fps_disconnect( \
                             &fc_); \
                     } \
                 } \
@@ -1678,8 +887,8 @@ int main(int argc, char *argv[]) { \
             /* Set CLI args into FPS before \
              * dispatching runstart to tmux */ \
             { \
-                FUNCTION_PARAMETER_STRUCT fs_; \
-                if (function_parameter_struct_connect(\
+                FPS fs_; \
+                if (fps_connect(\
                         fps_name, &fs_, \
                         FPSCONNECT_SIMPLE) != -1) \
                 { \
@@ -1695,7 +904,7 @@ int main(int argc, char *argv[]) { \
                         fps_loop_override_delay(\
                             &fs_, loop_delay); \
                     } \
-                    function_parameter_struct_disconnect(\
+                    fps_disconnect(\
                         &fs_); \
                 } \
             } \
@@ -1767,8 +976,8 @@ int main(int argc, char *argv[]) { \
         /* Sync CLI args into FPS before \
          * applying loop overrides. */ \
         if (use_loop && rc_ == 0) { \
-            FUNCTION_PARAMETER_STRUCT fp_; \
-            if (function_parameter_struct_connect(\
+            FPS fp_; \
+            if (fps_connect(\
                     fps_name, &fp_, \
                     FPSCONNECT_SIMPLE) != -1) {\
                 fps_process_cli_and_sync( \
@@ -1782,7 +991,7 @@ int main(int argc, char *argv[]) { \
                     fps_loop_override_delay( \
                         &fp_, loop_delay); \
                 } \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fp_); \
             } \
         } \
@@ -1799,8 +1008,8 @@ int main(int argc, char *argv[]) { \
                       "confstop") == 0) { \
         return fps_generic_confstop(fps_name); \
     } else if (strcmp(command, "set") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect( \
+        FPS fps; \
+        if (fps_connect( \
                 fps_name, &fps, \
                 FPSCONNECT_SIMPLE) == -1) { \
             fprintf(stderr, \
@@ -1812,7 +1021,7 @@ int main(int argc, char *argv[]) { \
         fps_process_cli_and_sync( \
             &fps, farg_, \
             my_bindings_, nb_bindings_); \
-        function_parameter_struct_disconnect( \
+        fps_disconnect( \
             &fps); \
         printf("FPS " COLORCOMMAND "%s" \
                COLORRESET " set done\n", \
@@ -1823,9 +1032,9 @@ int main(int argc, char *argv[]) { \
          * then run. fps_name goes to shared mem \
          * when name lacks _ prefix. */ \
         { \
-            FUNCTION_PARAMETER_STRUCT fps_chk_; \
+            FPS fps_chk_; \
             if (fps_name[0] != '_') { \
-                if (function_parameter_struct_connect( \
+                if (fps_connect( \
                         fps_name, &fps_chk_, \
                         FPSCONNECT_SIMPLE) == -1) \
                 { \
@@ -1846,7 +1055,7 @@ int main(int argc, char *argv[]) { \
                            COLORCOMMAND "REUSE" \
                            COLORRESET "\n", \
                            fps_name); \
-                    function_parameter_struct_disconnect( \
+                    fps_disconnect( \
                         &fps_chk_); \
                 } \
             } \
@@ -1855,37 +1064,37 @@ int main(int argc, char *argv[]) { \
          * applying loop overrides, so that \
          * trigger stream names are available. */ \
         { \
-            FUNCTION_PARAMETER_STRUCT fps_sync_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_sync_; \
+            if (fps_connect(\
                     fps_name, &fps_sync_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_process_cli_and_sync( \
                     &fps_sync_, farg_, \
                     my_bindings_, nb_bindings_);\
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_sync_); \
             } \
         } \
         /* Apply -loops/-loopd overrides */ \
         if (use_loop == 1) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_trigger( \
                     &fps_lp_, my_bindings_, \
                     nb_bindings_); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } else if (use_loop == 2) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_delay( \
                     &fps_lp_, loop_delay); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } \
@@ -1899,37 +1108,37 @@ int main(int argc, char *argv[]) { \
         /* Sync CLI args into FPS before \
          * applying loop overrides. */ \
         { \
-            FUNCTION_PARAMETER_STRUCT fps_sync_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_sync_; \
+            if (fps_connect(\
                     fps_name, &fps_sync_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_process_cli_and_sync( \
                     &fps_sync_, farg_, \
                     my_bindings_, nb_bindings_);\
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_sync_); \
             } \
         } \
         /* Apply -loops/-loopd overrides */ \
         if (use_loop == 1) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_trigger( \
                     &fps_lp_, my_bindings_, \
                     nb_bindings_); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } else if (use_loop == 2) { \
-            FUNCTION_PARAMETER_STRUCT fps_lp_; \
-            if (function_parameter_struct_connect(\
+            FPS fps_lp_; \
+            if (fps_connect(\
                     fps_name, &fps_lp_, \
                     FPSCONNECT_SIMPLE) != -1) { \
                 fps_loop_override_delay( \
                     &fps_lp_, loop_delay); \
-                function_parameter_struct_disconnect(\
+                fps_disconnect(\
                     &fps_lp_); \
             } \
         } \
@@ -2002,14 +1211,14 @@ int main(int argc, char *argv[]) { \
 
 /**
  * @brief Standard body for FPSCONF function
- * 
+ *
  * @param VARfps_name Name of the FPS
  * @param VARloop Loop flag (1 for loop, 0 for single step)
  * @param BLOCK_VAR_MAP Code block to map parameters (e.g. { ptr = ...; })
  * @param BLOCK_VALIDATE Code block to validate parameters (e.g. { validate(); })
  */
 #define FPS_CONF_STD_BODY(VARfps_name, VARloop, BLOCK_VAR_MAP, BLOCK_VALIDATE) \
-    FUNCTION_PARAMETER_STRUCT fps; \
+    FPS fps; \
     if (VARloop) { \
         printf("Starting configuration process loop for '%s'\n", VARfps_name); \
         fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_CONFSTART); \
@@ -2035,8 +1244,8 @@ int main(int argc, char *argv[]) { \
  * @brief Standard connection and parameter mapping for FPSRUN
  */
 #define FPS_RUN_STD_PREAMBLE(VARfps_name, VARfps, BLOCK_VAR_MAP) \
-    if (function_parameter_struct_connect(VARfps_name, &(VARfps), FPSCONNECT_RUN) == -1) { \
-        fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", VARfps_name); \
+    if (fps_connect(VARfps_name, &(VARfps), FPSCONNECT_RUN) == -1) { \
+        PRINT_ERROR("Error: FPS '%s' not found. Run 'fpsinit' first.", VARfps_name); \
         return 1; \
     } \
     BLOCK_VAR_MAP
@@ -2068,7 +1277,7 @@ int main(int argc, char *argv[]) { \
         processinfo_update_output_stream(VARprocessinfo, VARoutput_image, VARinput_image); \
     } \
     processinfo_cleanExit(VARprocessinfo); \
-    function_parameter_struct_disconnect(&(VARfps));
+    fps_disconnect(&(VARfps));
 
 /** @} */ // end group fpsmacro
 

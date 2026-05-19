@@ -20,7 +20,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mindiffscan",
     .cmdkey      = "mindiffscan",
     .description =
-        "scan image cube for similar pairs"
+        "scan image cube for similar pairs",
+    .description_long =
+        "Scan an image cube for the most similar pair of slices by minimizing the sum-of-squared differences."
 };
 
 
@@ -66,9 +68,12 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname __attribute__((unu
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s", outdname);
 
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t xsize = img.md->size[0];
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t ysize = img.md->size[1];
     uint32_t zsize = img.md->size[2];
 

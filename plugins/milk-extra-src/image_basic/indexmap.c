@@ -29,7 +29,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imindexmap",
     .cmdkey      = "imindexmap",
     .description =
-        "map values using index map"
+        "map values using index map",
+    .description_long =
+        "Map pixel values through a lookup table defined by an index map. Each output pixel takes the value at the index specified by the map."
 };
 
 #define FPS_PARAMS(X) \
@@ -110,14 +112,20 @@ imageID image_basic_indexmap(
 {
     IMGID imgidx =
         imgid_make_from_name(ID_index_name);
-    resolveIMGID(&imgidx, ERRMODE_ABORT,
+    resolveIMGID(&imgidx, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgidx.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     IMGID imgval =
         imgid_make_from_name(
             ID_values_name);
-    resolveIMGID(&imgval, ERRMODE_ABORT,
+    resolveIMGID(&imgval, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (imgval.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     long xsize  = imgidx.md->size[0];
     long ysize  = imgidx.md->size[1];

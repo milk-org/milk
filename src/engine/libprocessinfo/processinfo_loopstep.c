@@ -1,10 +1,5 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-#include "processinfo_internal.h"
 #include "processinfo.h"
-#include "processinfo_loopstep.h"
 #include "processinfo_signals.h"
 
 
@@ -23,9 +18,15 @@ int processinfo_loopstep(
 {
     int loopstatus = 1;
 
-    while(processinfo->CTRLval == 1)  // pause
+    if(processinfo->CTRLval == 1)  // pause
     {
-        usleep(50);
+        int prev_stat = processinfo->loopstat;
+        processinfo->loopstat = 2; // PROCESSINFO_LOOPSTAT_PAUSE
+        while(processinfo->CTRLval == 1)
+        {
+            usleep(50);
+        }
+        processinfo->loopstat = prev_stat;
     }
     if(processinfo->CTRLval == 2)  // single iteration
     {

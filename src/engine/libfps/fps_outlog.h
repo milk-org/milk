@@ -21,15 +21,14 @@ errno_t getFPSlogfname(
 errno_t functionparameter_outlog_file(
     char *keyw,
     char *msgstring,
-    FILE *fpout
-);
+    FILE *fpout);
 
 
 
 errno_t functionparameter_outlog(
     char *keyw,
-    const char *fmt, ...
-);
+    const char *fmt,
+    ...);
 
 
 errno_t functionparameter_outlog_namelink();

@@ -85,8 +85,7 @@ static int tui_stdin_wait_ms(int ms)
     FD_SET(STDIN_FILENO, &fds);
     tv.tv_sec  = 0;
     tv.tv_usec = ms * 1000;
-    return select(STDIN_FILENO + 1,
-                  &fds, NULL, NULL, &tv) > 0;
+    return select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0;
 }
 
 /**
@@ -104,8 +103,7 @@ static int tui_stdin_wait_ms(int ms)
  */
 static int fuzzy_match_score(
     const char *query,
-    const char *target
-)
+    const char *target)
 {
     if (!query || !query[0]) return 10000; // Empty query matches perfectly
     
@@ -140,8 +138,7 @@ typedef struct {
  */
 static int compare_matches(
     const void *a,
-    const void *b
-)
+    const void *b)
 {
     return ((MatchScore*)b)->score - ((MatchScore*)a)->score;
 }
@@ -440,10 +437,10 @@ int cli_fparam(void)
     
     char *fpsname = data.cmdargtoken[1].val.string;
     
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS fps;
     fps.SMfd = -1;
 
-    if (function_parameter_struct_connect(fpsname, &fps, 0) == -1) {
+    if (fps_connect(fpsname, &fps, 0) == -1) {
         printf("Error: cannot connect to FPS '%s'.\n", fpsname);
         return RETURN_SUCCESS;
     }
@@ -560,8 +557,7 @@ int cli_fparam(void)
                 
                 if (strlen(inputbuf) > 0) {
                     // Update parameter logic
-                    int ret = functionparameter_SetParamValue_fromString(
-                        &fps, pidx, inputbuf);
+                    int ret = functionparameter_SetParamValue_fromString(&fps, pidx, inputbuf);
                     
                     if (ret != EXIT_SUCCESS) {
                         snprintf(error_msg, sizeof(error_msg), "Invalid value format for the type.");
@@ -579,6 +575,6 @@ int cli_fparam(void)
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     printf("\033[2J\033[H");
     
-    function_parameter_struct_disconnect(&fps);
+    fps_disconnect(&fps);
     return RETURN_SUCCESS;
 }

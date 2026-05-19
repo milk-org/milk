@@ -3,16 +3,9 @@
  * @brief   read user input to set parameter value
  */
 
-#include <limits.h>
-#include <math.h>
-#include <string.h>
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
 
-#include "fps_PrintParameterInfo.h"
-#include "fps_WriteParameterToDisk.h"
 
 #define AECBOLDHIRED ""
 #define AECNORMAL    ""
@@ -23,9 +16,8 @@
  *
  */
 int functionparameter_UserInputSetParamValue(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
-    int pindex
-)
+    FPS *fpsentry,
+    int pindex)
 {
     int  inputOK;
     int  strlenmax = 64;
@@ -82,7 +74,7 @@ int functionparameter_UserInputSetParamValue(
                     stringindex = 0;
                 }
 
-            c = getchar();
+                c = getchar();
             }
             buff[stringindex] = '\0';
             inputOK           = 1;
@@ -92,7 +84,7 @@ int functionparameter_UserInputSetParamValue(
         if(esc_toggle == 0)  // update value if escape key has not been pressed
         {
 
-            if (functionparameter_SetParamValue_fromString(fpsentry, pindex, buff) != 0)
+            if(functionparameter_SetParamValue_fromString(fpsentry, pindex, buff) != 0)
             {
                 printf("\n%s Error: could not convert argument %s\n", AECBOLDHIRED, AECNORMAL);
                 sleep(1);
@@ -111,10 +103,7 @@ int functionparameter_UserInputSetParamValue(
                 if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
                 {
                     functionparameter_WriteParameterToDisk(
-                        fpsentry,
-                        pindex,
-                        "setval",
-                        "UserInputSetParamValue");
+                        fpsentry, pindex, "setval", "UserInputSetParamValue");
 
                     functionparameter_SaveFPS2disk(fpsentry);
                 }

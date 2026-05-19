@@ -2,7 +2,7 @@
  * @file    milkdata.h
  * @brief   Core milk data structures
  *
- * Defines MILK_DATA — the minimal data structure
+ * Defines MILK_DATA -- the minimal data structure
  * needed by all milk programs (CLI and standalone).
  * The CLI extends this with CLI-specific fields
  * in the DATA struct (see CLIcore.h).
@@ -22,7 +22,7 @@
 
 #define STRINGMAXLEN_FPS_NAME 100
 
-struct FUNCTION_PARAMETER_STRUCT;
+#include "libfps/fps_types.h"
 struct PROCESSINFO;
 
 #ifndef __STDC_LIB_EXT1__
@@ -80,7 +80,7 @@ typedef struct
     long funccallcnt;
 
     char funcstack[MAXNB_FUNCSTACK]
-        [STRINGMAXLEN_FUNCSTAK_FUNCNAME];
+    [STRINGMAXLEN_FUNCSTAK_FUNCNAME];
     long fcntstack[MAXNB_FUNCSTACK];
     int  linestack[MAXNB_FUNCSTACK];
 
@@ -159,8 +159,8 @@ typedef struct
 
     /* FPS */
     long                       NB_MAX_FPS;
-    struct FUNCTION_PARAMETER_STRUCT *fpsarray;
-    struct FUNCTION_PARAMETER_STRUCT *fpsptr;
+    FPS *fpsarray;
+    FPS *fpsptr;
     char     FPS_name[STRINGMAXLEN_FPS_NAME];
     long     FPS_TIMESTAMP;
     uint32_t FPS_CMDCODE;

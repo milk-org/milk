@@ -26,7 +26,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "readb32fim",
     .cmdkey      = "readb32fim",
     .description =
-        "read 32-bit float RAW image"
+        "read 32-bit float RAW image",
+    .description_long =
+        "Read a raw 32-bit float binary file into a shared memory image stream."
 };
 
 #define FPS_PARAMS(X) \

@@ -176,6 +176,7 @@ install(FILES
     fps_procinfo_macros.h
     imgid_slice.h
     IMGID.h
+    milk_help.h
     DESTINATION include/libfps)
 
 # ==========================================
@@ -218,7 +219,14 @@ install(TARGETS milk-fpsCTRL DESTINATION bin)
 add_executable(milk-fpsexec-help milk-fpsexec-help.c)
 install(TARGETS milk-fpsexec-help DESTINATION bin)
 
-install(PROGRAMS scripts/milk-fpsexec-list DESTINATION bin)
+# milk-fpsexec-list: C replacement for bash script
+add_executable(milk-fpsexec-list milk-fpsexec-list.c)
+target_include_directories(milk-fpsexec-list PRIVATE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+install(TARGETS milk-fpsexec-list DESTINATION bin)
+
+install(PROGRAMS scripts/milk-demopipeline DESTINATION bin)
 install(PROGRAMS scripts/milk-latency-audit DESTINATION bin)
 
 add_executable(milk-fps-help milk-fps-help.c)
@@ -242,11 +250,26 @@ target_link_libraries(milk-fps-search PUBLIC
 )
 install(TARGETS milk-fps-search DESTINATION bin)
 
-add_executable(milk-fps-info milk-fps-info.c)
-target_link_libraries(milk-fps-info PUBLIC 
+add_executable(milk-fps-info
+    milk-fps-info.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_sys.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_cache.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_scan.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_graph.c
+    ${CMAKE_SOURCE_DIR}/src/cli/overview/overview_data_sort.c
+)
+target_compile_definitions(milk-fps-info PRIVATE
+    FPS_INFO_CONNECTIONS)
+target_include_directories(milk-fps-info PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+    ${CMAKE_SOURCE_DIR}/src/cli/overview
+)
+target_link_libraries(milk-fps-info PUBLIC
     milkfpsStandalone
-    pthread
-    m
+    ImageStreamIO milkprocessinfo
+    pthread m rt
 )
 install(TARGETS milk-fps-info DESTINATION bin)
 

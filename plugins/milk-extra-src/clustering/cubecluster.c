@@ -49,7 +49,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "cubeclust",
     .cmdkey      = "cubeclust",
-    .description = "compute cube cluster"
+    .description = "compute cube cluster",
+    .description_long =
+        "Cluster image cube slices by similarity using k-means or hierarchical clustering. Groups similar frames together."
 };
 
 

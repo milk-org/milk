@@ -21,7 +21,9 @@ const int INFO_HEADER_SIZE = 40;
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "mkBMPim",
     .cmdkey      = "mkBMPim",
-    .description = "make BMP image"
+    .description = "make BMP image",
+    .description_long =
+        "Write a 2D image as a BMP bitmap file for quick visual inspection without FITS viewers."
 };
 
 

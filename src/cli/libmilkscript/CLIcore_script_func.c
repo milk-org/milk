@@ -14,8 +14,7 @@
  */
 void cli_exec_lines(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int  nlines
-)
+    int nlines)
 {
     for(int i = 0; i < nlines; i++)
     {
@@ -27,11 +26,8 @@ void cli_exec_lines(
         }
 
         /* Copy to cmdline and execute */
-        strncpy(data.CLIcmdline, lines[i],
-                STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1]
-            = '\0';
+        strncpy(data.CLIcmdline, lines[i], STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
         CLI_execute_line();
     }
 }
@@ -88,8 +84,7 @@ int cli_try_func_call(const char *line)
     /* Parse arguments */
     p = strip_ws(p);
     char *args[CLI_FUNC_MAXARGS];
-    char argbuf[CLI_FUNC_MAXARGS][
-        CLI_VAR_VALLEN];
+    char argbuf[CLI_FUNC_MAXARGS][CLI_VAR_VALLEN];
     int nargs = 0;
 
     while(*p != '\0'
@@ -109,22 +104,18 @@ int cli_try_func_call(const char *line)
     }
 
     /* Save old $1..$9, set new ones */
-    char old_args[CLI_FUNC_MAXARGS][
-        CLI_VAR_VALLEN];
+    char old_args[CLI_FUNC_MAXARGS][CLI_VAR_VALLEN];
     int old_used[CLI_FUNC_MAXARGS];
     for(int i = 0; i < CLI_FUNC_MAXARGS; i++)
     {
         char aname[4];
-        snprintf(aname, sizeof(aname),
-                 "%d", i + 1);
+        snprintf(aname, sizeof(aname), "%d", i + 1);
         const char *ov = cli_var_get(aname);
         old_used[i] = (ov != NULL) ? 1 : 0;
         if(ov != NULL)
         {
-            strncpy(old_args[i], ov,
-                    CLI_VAR_VALLEN - 1);
-            old_args[i][
-                CLI_VAR_VALLEN - 1] = '\0';
+            strncpy(old_args[i], ov, CLI_VAR_VALLEN - 1);
+            old_args[i][CLI_VAR_VALLEN - 1] = '\0';
         }
         if(i < nargs)
         {
@@ -152,8 +143,7 @@ int cli_try_func_call(const char *line)
     for(int i = 0; i < CLI_FUNC_MAXARGS; i++)
     {
         char aname[4];
-        snprintf(aname, sizeof(aname),
-                 "%d", i + 1);
+        snprintf(aname, sizeof(aname), "%d", i + 1);
         if(old_used[i])
         {
             cli_var_set(aname, old_args[i]);

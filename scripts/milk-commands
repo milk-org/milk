@@ -13,6 +13,13 @@ Queries are run in parallel (up to MILK_COMMANDS_JOBS concurrent jobs,
 default: number of CPU cores) to keep total runtime under ~1 s.
 "
 
+# Early-exit for -h1 before sourcing
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "list milk- commands with one-line descriptions"
+        exit 0 ;;
+esac
+
 source milk-script-std-config
 
 PRINTPATH="0"
@@ -35,6 +42,16 @@ function set_porcelain()
 {
 	PORCELAIN="1"
 }
+
+SEARCHTERM=""
+MSopt+=( "s:search:set_search:searchterm:Fuzzy-search descriptions for SEARCHTERM" )
+function set_search()
+{
+	SEARCHTERM="$1"
+}
+
+MSseealso+=( "milk-exec:execute milk-cli command" )
+MSseealso+=( "milk-cli-all:milk-cli with all modules" )
 
 source milk-argparse
 
@@ -90,6 +107,93 @@ if [ "${PRINTDATE}" = "1" ]; then
 			printf "%s\t%s\t%s\n" "${datestr}" "${cmdstr}" "${helpline}"
 		else
 			printf " %s ${GREEN}%-40s${NC}  %s\n" "${datestr}" "${cmdstr}" "${helpline}"
+		fi
+	done
+	exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# Search path: fuzzy-match -h2 verbose descriptions
+# ---------------------------------------------------------------------------
+
+if [ -n "${SEARCHTERM}" ]; then
+	JOBS="${MILK_COMMANDS_JOBS:-$(nproc 2>/dev/null || echo 8)}"
+	WORKDIR=$(mktemp -d)
+	trap 'rm -rf "${WORKDIR}"' EXIT
+
+	# Create semaphore FIFO
+	SEMFIFO="${WORKDIR}/.sem"
+	mkfifo "${SEMFIFO}"
+	exec 3<>"${SEMFIFO}"
+	for ((i=0; i<JOBS; i++)); do printf '.' >&3; done
+
+	idx=0
+	for cmd in $CMDLIST; do
+		outfile="${WORKDIR}/$(printf '%06d' "${idx}")"
+
+		read -r -n 1 -u 3
+
+		{
+			desc=$(timeout 0.5 "${cmd}" -h2 2>/dev/null \
+				| head -n 1 || true)
+			desc="${desc#"${desc%%[!.]*}"}"
+			# Fall back to -h1 if -h2 is not supported
+			# (command prints error like "Unknown option")
+			case "${desc}" in
+				*[Uu]nknown*option*|\
+				*[Ii]nvalid*option*|\
+				*[Uu]nrecognized*|\
+				*[Ee]rror*|\
+				"")
+					desc=$(timeout 0.5 "${cmd}" \
+						-h1 2>/dev/null \
+						| head -n 1 || true)
+					desc="${desc#"${desc%%[!.]*}"}"
+					;;
+			esac
+			if [ -n "${desc}" ]; then
+				printf "%s\t%s\n" "${cmd}" "${desc}" \
+					> "${outfile}"
+			fi
+			printf '.' >&3
+		} &
+
+		(( idx++ )) || true
+	done
+
+	wait
+	exec 3>&-
+
+	# Build searchable text: "cmd<TAB>description"
+	# and feed to milk-fuzzy-match
+	SEARCHFILE="${WORKDIR}/all.txt"
+	for outfile in "${WORKDIR}"/[0-9]*; do
+		[ -f "${outfile}" ] || continue
+		cat "${outfile}" >> "${SEARCHFILE}"
+	done
+
+	if [ ! -s "${SEARCHFILE}" ]; then
+		echo "No descriptions found."
+		exit 0
+	fi
+
+	# Run fuzzy match
+	if ! command -v milk-fuzzy-match &>/dev/null; then
+		echo "ERROR: milk-fuzzy-match not found." \
+			"Install milk with CLI support." >&2
+		exit 1
+	fi
+
+	milk-fuzzy-match -t 0.2 "${SEARCHTERM}" \
+		"${SEARCHFILE}" | \
+	while IFS=$'\t' read -r score rest; do
+		IFS=$'\t' read -r cmd desc <<< "${rest}"
+		if [ "${PORCELAIN}" = "1" ]; then
+			printf "%s\t%s\t%s\n" \
+				"${score}" "${cmd}" "${desc}"
+		else
+			printf "  %s  ${GREEN}%-40s${NC}  %s\n" \
+				"${score}" "${cmd}" "${desc}"
 		fi
 	done
 	exit 0

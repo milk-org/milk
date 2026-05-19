@@ -8,6 +8,6 @@
 
 #include "fps.h"
 
-errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps);
+errno_t functionparameter_FPSremove(FPS *fps);
 
 #endif

@@ -14,7 +14,10 @@
 #endif
 
 /* ID number corresponding to a name */
-imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
+imageID image_ID(
+    const char *name,
+    IMAGE      *imagearray,
+    long       NB_images)
 {
     DEBUG_TRACE_FSTART();
 
@@ -38,8 +41,7 @@ imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
             {
                 loopOK = 0;
                 tmpID  = i;
-                clock_gettime(CLOCK_MILK,
-                              &imagearray[i].md[0].lastaccesstime);
+                clock_gettime(CLOCK_MILK, &imagearray[i].md[0].lastaccesstime);
             }
         }
         i++;
@@ -59,8 +61,8 @@ imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
 /* ID number corresponding to a name */
 MILK_PURE imageID image_ID_noaccessupdate(
     const char *name,
-    IMAGE *imagearray,
-    long NB_images)
+    IMAGE      *imagearray,
+    long       NB_images)
 {
     DEBUG_TRACE_FSTART();
 
@@ -114,8 +116,8 @@ imageID next_avail_image_ID(
     {
 #endif
         if((preferredID > -1)
-            && (preferredID < dcnimg)
-            && (dcimg[preferredID].used == 0))
+                && (preferredID < dcnimg)
+                && (dcimg[preferredID].used == 0))
         {
             ID = preferredID;
             dcimg[ID].used = 1;
@@ -137,10 +139,7 @@ imageID next_avail_image_ID(
 #endif
     if(ID == -1)
     {
-        printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
-        printf("NB_MAX_IMAGE should be increased above current value (%ld)\n",
-               dcnimg);
-        exit(0);
+        PRINT_ERROR("ran out of image IDs" " (NB_MAX_IMAGE=%ld)", dcnimg);
     }
 
     DEBUG_TRACEPOINT("FOUT ID : %ld", ID);

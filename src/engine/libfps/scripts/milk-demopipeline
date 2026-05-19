@@ -1,0 +1,312 @@
+#!/bin/bash
+# milk-demopipeline
+# Start a multi-stage FPS pipeline for demonstration.
+
+FRAMERATE=100
+
+# Names of the pipeline nodes (tmux session == FPS name)
+PIPELINE_NODES=(
+    mkrnd
+    gaussfilt
+    imtrunc
+    gaussfilt2
+    resizeim
+    rotateim
+    cropim
+    streamave
+    streammon
+)
+
+# SHM streams created by the pipeline
+PIPELINE_STREAMS=(
+    random_in
+    blurred_out
+    truncated_out
+    smooth_out
+    resized_out
+    rotated_out
+    cropped_out
+    averaged_out
+)
+
+# ----------------------------------------------------------------
+# cleanup: kill tmux sessions and remove FPS/stream SHM files
+# ----------------------------------------------------------------
+do_cleanup()
+{
+    echo "Stopping milk-demopipeline processes..."
+
+    # Determine SHM directory
+    SHMDIR="${MILK_SHM_DIR:-/milk/shm}"
+
+    for node in "${PIPELINE_NODES[@]}"; do
+        if tmux has-session -t "$node" 2>/dev/null; then
+            echo "  Killing tmux session: $node"
+            tmux kill-session -t "$node"
+        fi
+    done
+
+    echo "Removing FPS shared-memory files..."
+    for node in "${PIPELINE_NODES[@]}"; do
+        # shellcheck disable=SC2086
+        rm -f "${SHMDIR}/${node}.fps.shm" 2>/dev/null
+    done
+
+    echo "Removing stream shared-memory files..."
+    for stream in "${PIPELINE_STREAMS[@]}"; do
+        # shellcheck disable=SC2086
+        rm -f ${SHMDIR}/${stream}*.shm 2>/dev/null
+    done
+
+    echo "Removing processinfo files..."
+    for node in "${PIPELINE_NODES[@]}"; do
+        # shellcheck disable=SC2086
+        rm -f ${SHMDIR}/proc.${node}.*.shm 2>/dev/null
+    done
+
+    echo "Removing on-disk FPS directories..."
+    for node in "${PIPELINE_NODES[@]}"; do
+        rm -rf "fps.${node}.confdir" \
+               "fps.${node}.datadir" 2>/dev/null
+    done
+
+    echo "Cleanup complete."
+}
+
+# ----------------------------------------------------------------
+# Parse arguments
+# ----------------------------------------------------------------
+usage()
+{
+    if [ -t 1 ] && [ "$FORCE_MONOCHROME" != "1" ]; then
+        MH_RST=$'\033[0m'
+        MH_BOLD=$'\033[1m'
+        MH_DIM=$'\033[2m'
+        MH_TITLE=$'\033[1;36m'
+        MH_HDR=$'\033[1;34m'
+        MH_CMD=$'\033[1;32m'
+        MH_OPT=$'\033[33m'
+        MH_ARG=$'\033[1;35m'
+        MH_DFLT=$'\033[36m'
+        MH_NOTE=$'\033[1;33m'
+        MH_ERR=$'\033[1;31m'
+    else
+        MH_RST=""
+        MH_BOLD=""
+        MH_DIM=""
+        MH_TITLE=""
+        MH_HDR=""
+        MH_CMD=""
+        MH_OPT=""
+        MH_ARG=""
+        MH_DFLT=""
+        MH_NOTE=""
+        MH_ERR=""
+    fi
+
+    cat <<EOF
+${MH_TITLE}milk-demopipeline${MH_RST} — Start a multi-stage FPS pipeline for demonstration.
+
+${MH_HDR}Usage:${MH_RST}
+  ${MH_CMD}milk-demopipeline${MH_RST} [${MH_OPT}OPTIONS${MH_RST}] [${MH_CMD}COMMAND${MH_RST}]
+
+${MH_HDR}Description:${MH_RST}
+  This script sets up a 9-node image processing chain inside tmux,
+  creating a rich graph for milk-CTRL:
+
+    random_in ──> blurred_out ──> truncated_out
+                                       │
+                                smooth_out
+                                       │
+                               resized_out
+                                       │
+                               rotated_out
+                                       │
+                               cropped_out
+                                       │
+                              averaged_out
+
+  Pipeline stages:
+    1. Random image generation   (random_in)
+    2. Gaussian filter           (blurred_out)
+    3. Image truncation          (truncated_out)
+    4. Second Gaussian filter    (smooth_out)
+    5. Image resize              (resized_out)
+    6. Image rotation            (rotated_out)
+    7. Image crop                (cropped_out)
+    8. Running average           (averaged_out)
+    9. Stream monitor            (stats on averaged_out)
+
+${MH_HDR}Commands:${MH_RST}
+  ${MH_CMD}cleanup${MH_RST}              Stop all pipeline processes and remove FPS/stream SHM files.
+
+${MH_HDR}Options:${MH_RST}
+  ${MH_OPT}-f, --framerate${MH_RST} ${MH_ARG}HZ${MH_RST}   Set the framerate in Hz (${MH_DFLT}default: 100${MH_RST}).
+  ${MH_OPT}-h, --help${MH_RST}           Print this help message.
+  ${MH_OPT}-h1, --help-oneline${MH_RST}  Print one-line description.
+  ${MH_OPT}-h2${MH_RST}                  Print verbose description.
+  ${MH_OPT}-hm${MH_RST}                  Monochrome help.
+
+${MH_HDR}Environment:${MH_RST}
+  MILK_SHM_DIR         Directory for shared memory files (${MH_DFLT}default: /milk/shm${MH_RST}).
+
+${MH_HDR}See Also:${MH_RST}
+  ${MH_CMD}milk-CTRL${MH_RST}
+EOF
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        cleanup)
+            do_cleanup
+            exit 0
+            ;;
+        -h1|--help-oneline)
+            echo "start a multi-stage FPS pipeline for demonstration"
+            exit 0
+            ;;
+        -h2|--help-description)
+            echo "Start a 9-node FPS image processing pipeline" \
+                 "for demonstration and testing. Creates a chain" \
+                 "of compute units (random generation, Gaussian" \
+                 "blur, truncation, resize, rotation, cropping," \
+                 "averaging, monitoring)" \
+                 "connected via shared-memory streams in tmux" \
+                 "sessions. Useful for testing milk-CTRL," \
+                 "stream-graph, and pipeline diagnostics."
+            exit 0
+            ;;
+        -h|--help|-hm)
+            if [ "$1" = "-hm" ]; then
+                FORCE_MONOCHROME=1
+            fi
+            usage
+            exit 0
+            ;;
+        -f|--framerate)
+            FRAMERATE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h for help."
+            exit 1
+            ;;
+    esac
+done
+
+# ----------------------------------------------------------------
+# Start pipeline
+# ----------------------------------------------------------------
+
+# Calculate delay in seconds
+DELAY=$(awk "BEGIN {print 1.0 / $FRAMERATE}")
+
+# SHM directory (default: /milk/shm)
+SHMDIR="${MILK_SHM_DIR:-/milk/shm}"
+
+# ----------------------------------------------------------------
+# wait_for_stream - poll for SHM file existence
+# Usage: wait_for_stream <stream_name> [timeout_sec]
+# ----------------------------------------------------------------
+wait_for_stream()
+{
+    local name="$1"
+    local timeout="${2:-15}"
+    local shmfile="${SHMDIR}/${name}.im.shm"
+    local elapsed=0
+
+    # Wait for SHM file to exist
+    while [ ! -f "$shmfile" ]; do
+        sleep 0.2
+        elapsed=$(awk "BEGIN {print $elapsed + 0.2}")
+        timed_out=$(awk "BEGIN {
+            print ($elapsed >= $timeout)
+        }")
+        if [ "$timed_out" = "1" ]; then
+            echo "  WARNING: $name not ready" \
+                 "after ${timeout}s"
+            return 1
+        fi
+    done
+
+    # Wait for at least one compute iteration to
+    # complete so stream has proper dimensions.
+    # Checking file size does not work because the
+    # SHM header alone exceeds any reasonable
+    # threshold even for a 1x1 placeholder.
+    sleep 2
+    return 0
+}
+
+
+echo "Starting milk demo pipeline" \
+     "at ${FRAMERATE} Hz..."
+echo ""
+echo "  random_in -> blurred_out" \
+     "-> truncated_out"
+echo "      -> smooth_out -> resized_out"
+echo "          -> rotated_out -> cropped_out"
+echo "              -> averaged_out -> [monitor]"
+echo ""
+
+# 1. Generate a 512x512 random image
+milk-fpsexec-imggen-mkrandom \
+    -tmux -procinfo -loopd "$DELAY" \
+    exec random_in 512 512 0
+wait_for_stream random_in
+
+# 2. Gaussian filter (sigma 5.0, size 15)
+milk-fpsexec-imgfilt-gaussfilt \
+    -tmux -procinfo -loops \
+    exec random_in blurred_out 5.0 15
+wait_for_stream blurred_out
+
+# 3. Truncate pixel values [0.2, 0.8]
+milk-fpsexec-arith-imtrunc \
+    -tmux -procinfo -loops \
+    exec blurred_out 0.2 0.8 truncated_out
+wait_for_stream truncated_out
+
+# 4. Second Gaussian filter (sigma 3.0, size 7)
+milk-fpsexec-imgfilt-gaussfilt \
+    -n gaussfilt2 -tmux -procinfo -loops \
+    exec truncated_out smooth_out 3.0 7
+wait_for_stream smooth_out
+
+# 5. Resize smoothed image to 256x256
+milk-fpsexec-imgbasic-resizeim \
+    -tmux -procinfo -loops \
+    exec smooth_out resized_out 256 256
+wait_for_stream resized_out
+
+# 6. Image rotation
+milk-fpsexec-imgbasic-rotateim \
+    -tmux -procinfo -loops \
+    exec resized_out rotated_out 45.0
+wait_for_stream rotated_out
+
+# 7. Image crop
+milk-fpsexec-arith-crop2D \
+    -tmux -procinfo -loops \
+    exec rotated_out cropped_out 64 128 64 128
+wait_for_stream cropped_out
+
+# 8. Running average (window 10)
+milk-fpsexec-mem-streamave \
+    -tmux -procinfo -loops \
+    exec cropped_out averaged_out 10
+wait_for_stream averaged_out 15
+
+# 9. Stream monitor on the final output
+milk-fpsexec-info-strmonproc \
+    -tmux -procinfo -loops \
+    exec averaged_out 1 100
+
+echo ""
+echo "Pipeline started in tmux sessions."
+echo "Run 'milk-CTRL' and press D on a stream"
+echo "to see ancestors/descendants."
+echo ""
+echo "Run 'milk-demopipeline cleanup' to stop."
+

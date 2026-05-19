@@ -24,7 +24,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "basisrotmatch",
     .cmdkey      = "basisrotmatch",
-    .description = "rotate modal basis to fit modes"
+    .description = "rotate modal basis to fit modes",
+    .description_long =
+        "Rotate a modal basis to best fit a set of target modes using least-squares matching."
 };
 
 
@@ -606,10 +608,13 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginAB = imgid_make_from_name(inmatAB);
-    resolveIMGID(&imginAB, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imginAB, ERRMODE_WARN, dcimg, dcnimg);
 
 
     IMGID imgoutArot  = imgid_make_from_name(outmatArot);
+    if (imginAB.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

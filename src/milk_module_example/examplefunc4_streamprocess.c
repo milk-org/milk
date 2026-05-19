@@ -136,17 +136,19 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  */
 static errno_t streamprocess(
     IMGID *inimg,
-    IMGID *outimg
-)
+    IMGID *outimg)
 {
     DEBUG_TRACE_FSTART();
     // custom stream process function code
 
     // resolve image
     // This function call has low overhead, as it will acknowledge existing image
-    resolveIMGID(inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t xsize  = inimg->mdt->size[0];
+    if (inimg->ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t ysize  = inimg->mdt->size[1];
     uint64_t xysize = xsize * ysize;
 
@@ -175,12 +177,15 @@ static MILK_HOT errno_t compute_function()
     IMGID inimg = imgid_make_from_name(inimname);
     // Then resolve it (connect it to an image in memory if possible)
     // Once the image is resolved, this function will execute very quickly, only checking if resolved
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     // Create output image/stream.
     // Here we only fill in the name.
     // The image itself will be created in the compute function.
     IMGID outimg = imgid_make_from_name(outimname);
+    if (inimg.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     // If we are sure we want outimg to be the same format (size, type etc) as inimg, we can use:
     imgid_copy(&inimg, &outimg);

@@ -23,7 +23,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "combineHDR",
     .cmdkey      = "combineHDR",
-    .description = "combine HDR image"
+    .description = "combine HDR image",
+    .description_long =
+        "Combine multiple exposures into a high dynamic range (HDR) image. Merges short and long exposures weighted by signal-to-noise."
 };
 
 

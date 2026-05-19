@@ -6,10 +6,21 @@
 /** @file measure_transl.c
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -43,15 +54,21 @@ double basic_measure_transl(
 
     IMGID img1 =
         imgid_make_from_name(ID_name1);
-    resolveIMGID(&img1, ERRMODE_ABORT,
+    resolveIMGID(&img1, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (img1.ID == -1) {
+        return RETURN_FAILURE;
+    }
     long size1x = img1.md->size[0];
     long size1y = img1.md->size[1];
 
     IMGID img2 =
         imgid_make_from_name(ID_name2);
-    resolveIMGID(&img2, ERRMODE_ABORT,
+    resolveIMGID(&img2, ERRMODE_WARN,
                  dcimg, dcnimg);
+    if (img2.ID == -1) {
+        return RETURN_FAILURE;
+    }
     long size2x = img2.md->size[0];
     long size2y = img2.md->size[1];
 

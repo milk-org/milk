@@ -57,13 +57,16 @@ static MILK_HOT errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID img = imgid_make_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     // Notify that the image is being changed.
     // This is required prior to modifying image content so that consumers can be informed.
     img.md->write = 1;
+    if (img.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
     // Insert code, or function(s) that perform operation(s) on image
     // If the code is very brief, it can be insterted right here, otherwise

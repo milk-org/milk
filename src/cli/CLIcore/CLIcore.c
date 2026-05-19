@@ -4,7 +4,7 @@
  *
  * This file contains the initialization and main loop logic for the milk-cli.
  * It is responsible for setting up the environment, loading persistent state
- * (history, aliases, configurations), initializing core modules, and 
+ * (history, aliases, configurations), initializing core modules, and
  * entering the main Read-Eval-Print Loop (REPL) in `runCLI()`.
  */
 
@@ -115,13 +115,30 @@ static fd_set cli_fdin_set;
 *       Forward References
 */
 int         user_function();
+/**
+ * @brief atexit handler: performs CLI cleanup on exit.
+ */
 void        fnExit1(void);
+/**
+ * @brief Initialize CLI command subsystem.
+ *
+ * Sets up readline, signal handlers, and module
+ * loading infrastructure.
+ */
 void        runCLI_cmd_init();
+/**
+ * @brief Free CLI resources on shutdown.
+ *
+ * Releases command tables, module handles, and
+ * process state.
+ */
 static void runCLI_free();
 
 static volatile sig_atomic_t sigwinch_received = 0;
 
-static int command_line_process_options(int argc, char **argv);
+static int command_line_process_options(
+    int  argc,
+    char **argv);
 
 /// CLI commands
 int exitCLI();
@@ -148,14 +165,14 @@ errno_t exitCLI()
     CLI_cleanup_scroll_region();
 
     if(data.fifoON == 1
-       || data.fifofd >= 0)
+            || data.fifofd >= 0)
     {
         cli_fifo_close();
     }
 
     if(Listimfile == 1)
     {
-        EXECUTE_SYSTEM_COMMAND("rm imlist.txt");
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("rm imlist.txt");
     }
 
     if(dcquiet == 0)
@@ -288,18 +305,12 @@ int cli_fifo_open(const char *path)
     /* Set the path */
     if(path != NULL && path[0] != '\0')
     {
-        snprintf(data.fifoname,
-                 STRINGMAXLEN_FULLFILENAME,
-                 "%s", path);
+        snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", path);
     }
     else
     {
         WRITE_FULLFILENAME(
-            data.fifoname,
-            "%s/.%s.fifo.%07d",
-            dcshmdir,
-            data.processname,
-            getpid());
+            data.fifoname, "%s/.%s.fifo.%07d", dcshmdir, data.processname, getpid());
     }
 
     /* Create the FIFO if it doesn't exist */
@@ -310,21 +321,16 @@ int cli_fifo_open(const char *path)
         {
             printf(
                 "\033[31mfifo: cannot create"
-                " '%s': %s\033[0m\n",
-                data.fifoname,
-                strerror(errno));
+                " '%s': %s\033[0m\n", data.fifoname, strerror(errno));
             return -1;
         }
     }
 
-    data.fifofd = open(
-        data.fifoname,
-        O_RDWR | O_NONBLOCK);
+    data.fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
     if(data.fifofd == -1)
     {
-        perror("open");
-        printf("File name : %s\n",
-               data.fifoname);
+        PRINT_ERROR("open: %s", strerror(errno));
+        printf("File name : %s\n", data.fifoname);
         return -1;
     }
 
@@ -332,10 +338,7 @@ int cli_fifo_open(const char *path)
 
     if(dcquiet == 0)
     {
-        printf(
-            "\033[36m[fifo]\033[0m "
-            "opened: %s (fd=%d)\n",
-            data.fifoname, data.fifofd);
+        printf("\033[36m[fifo]\033[0m " "opened: %s (fd=%d)\n", data.fifoname, data.fifofd);
     }
     return 0;
 }
@@ -351,7 +354,7 @@ void cli_fifo_close(void)
         data.fifofd = -1;
     }
     if(data.fifoON == 1
-       && data.fifoname[0] != '\0')
+            && data.fifoname[0] != '\0')
     {
         unlink(data.fifoname);
     }
@@ -374,10 +377,8 @@ errno_t CLI_startup()
     {
         printf("        CLI PID = %d\n", (int) CLIPID);
 
-        EXECUTE_SYSTEM_COMMAND(
-            "echo -n \"        \"; cat /proc/%d/status | grep "
-            "Cpus_allowed_list",
-            CLIPID);
+        EXECUTE_SYSTEM_COMMAND_NOCHECK(
+            "echo -n \"        \"; cat /proc/%d/status | grep " "Cpus_allowed_list", CLIPID);
     }
 
     //	printf("    _SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
@@ -392,9 +393,7 @@ errno_t CLI_startup()
     {
         printf(
             "        Running with openMP %d, max threads = %d  "
-            "(OMP_NUM_THREADS)\n",
-            _OPENMP,
-            omp_get_max_threads());
+            "(OMP_NUM_THREADS)\n", _OPENMP, omp_get_max_threads());
     }
 #else
     if(dcquiet == 0)
@@ -409,10 +408,7 @@ errno_t CLI_startup()
     {
         printf(
             "        Running with openACC version %d.  %d device(s), type "
-            "%d\n",
-            _OPENACC,
-            acc_get_num_devices(openACC_devtype),
-            openACC_devtype);
+            "%d\n", _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
     }
 #endif
 
@@ -540,8 +536,7 @@ static void sighandler(int sig)
  */
 static void readline_lazy_init(
     const char *prompt,
-    int        *flag
-)
+    int        *flag)
 {
     if(*flag != 0)
     {
@@ -560,9 +555,7 @@ static void readline_lazy_init(
         sigaction(SIGWINCH, &sa_winch, NULL);
     }
     CLI_setup_hint_area();
-    rl_callback_handler_install(
-        prompt,
-        (rl_vcpfunc_t *) &rl_cb_linehandler);
+    rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
     CLI_configure_readline();
 #else
     (void) prompt;
@@ -583,8 +576,8 @@ static void readline_lazy_init(
 static int handle_fifo_input(const char *prompt)
 {
     if(!(data.fifoON == 1
-         && data.fifofd >= 0
-         && FD_ISSET(data.fifofd, &cli_fdin_set)))
+            && data.fifofd >= 0
+            && FD_ISSET(data.fifofd, &cli_fdin_set)))
     {
         return 0;
     }
@@ -610,7 +603,7 @@ static int handle_fifo_input(const char *prompt)
             }
             else
             {
-                perror("read");
+                PRINT_ERROR("read: %s", strerror(errno));
                 return -1; /* signal error */
             }
         }
@@ -618,12 +611,9 @@ static int handle_fifo_input(const char *prompt)
         if(buf0[0] == '\n')
         {
             buf1[total_bytes - 1] = '\0';
-            strncpy(data.CLIcmdline,
-                    buf1,
-                    STRINGMAXLEN_CLICMDLINE - 1);
+            strncpy(data.CLIcmdline, buf1, STRINGMAXLEN_CLICMDLINE - 1);
 
-            printf("\033[36m[fifo]\033[0m \u2190 \"%s\"\n",
-                   data.CLIcmdline);
+            printf("\033[36m[fifo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
 
             struct timespec ft0, ft1;
             clock_gettime(CLOCK_MONOTONIC, &ft0);
@@ -635,10 +625,8 @@ static int handle_fifo_input(const char *prompt)
             {
                 double fe =
                     (double)(ft1.tv_sec  - ft0.tv_sec)
-                    + 1.0e-9
-                    * (double)(ft1.tv_nsec - ft0.tv_nsec);
-                printf("\033[36m[fifo]\033[0m \u2713 (%.3fs)\n",
-                       fe);
+                    + 1.0e-9 * (double)(ft1.tv_nsec - ft0.tv_nsec);
+                printf("\033[36m[fifo]\033[0m \u2713 (%.3fs)\n", fe);
             }
 
             printf("%s", prompt);
@@ -666,7 +654,10 @@ static int handle_fifo_input(const char *prompt)
  * @return              errno_t Status code (0 on normal exit)
  */
 
-errno_t runCLI(int argc, char *argv[], char *promptstring)
+errno_t runCLI(
+    int argc,
+    char *argv[],
+    char *promptstring)
 {
     DEBUG_TRACE_FSTART();
 
@@ -674,17 +665,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     int fdmax;
     int n;
 
-    ssize_t bytes __attribute__((unused));
-    size_t  total_bytes __attribute__((unused));
-    char    buf0[1] __attribute__((unused));
-    char    buf1[1024] __attribute__((unused));
-
     int initstartup = 0; /// becomes 1 after startup
 
     int            blockCLIinput = 0;
     int            cliwaitus     = 100;
     struct timeval tv; // sleep 100 us after reading FIFO
-
 
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
@@ -693,12 +678,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     runCLI_prompt(promptstring, prompt);
 
     // Call shared script engine init
-    int ms_status = milkscript_init(argc, argv);
-    if(ms_status != 0)
     {
-        fprintf(stderr, "ERROR: milkscript_init() failed with code %d\n", ms_status);
-        DEBUG_TRACE_FEXIT();
-        return ms_status;
+        int ms_status = milkscript_init(argc, argv);
+        if(ms_status != 0)
+        {
+            PRINT_ERROR("ERROR: milkscript_init() failed with code %d", ms_status);
+            DEBUG_TRACE_FEXIT();
+            return ms_status;
+        }
     }
 
     // CLI interactive overlay (signals, autocomplete)
@@ -713,7 +700,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Enable syntax highlighting by default based on terminal capabilities
     // (level 2 = 256-color tree-sitter, level 1 = 16-color legacy)
     data.syntax_highlight = (cli_ts_detect_color_level() >= 2) ? 2 : 1;
-    
+
     // Disable command timing by default
     data.print_cmd_timing = 0;
 
@@ -735,11 +722,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     // initialize fifo to process name
     DEBUG_TRACEPOINT("set default fifo name");
-    WRITE_FULLFILENAME(data.fifoname,
-                       "%s/.%s.fifo.%07d",
-                       dcshmdir,
-                       data.processname,
-                       getpid());
+    WRITE_FULLFILENAME(data.fifoname, "%s/.%s.fifo.%07d", dcshmdir, data.processname, getpid());
 
     DEBUG_TRACEPOINT("Get command-line options");
     command_line_process_options(argc, argv);
@@ -750,33 +733,30 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // (Module loading is now handled centrally by milkscript_init)
 
     // load other libs specified by environment variable MILKCLI_ADD_LIBS
-    char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
-    if(CLI_ADD_LIBS != NULL)
     {
-        if(dcquiet == 0)
+        char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
+        if(CLI_ADD_LIBS != NULL)
         {
-            printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
-        }
+            if(dcquiet == 0)
+            {
+                printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
+            }
 
-        char *libname;
-        libname = strtok(CLI_ADD_LIBS, " ,;");
-
-        while(libname != NULL)
-        {
-            DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
-            // load_sharedobj(libname);
-            load_module_shared(libname);
-            libname = strtok(NULL, " ,;");
+            char *libname = strtok(CLI_ADD_LIBS, " ,;");
+            while(libname != NULL)
+            {
+                DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
+                load_module_shared(libname);
+                libname = strtok(NULL, " ,;");
+            }
+            printf("\n");
         }
-        printf("\n");
-    }
-    else
-    {
-        if(dcquiet == 0)
+        else
         {
-            printf(
-                "        MILKCLI_ADD_LIBS not set -> no additional "
-                "module loaded\n");
+            if(dcquiet == 0)
+            {
+                printf("        MILKCLI_ADD_LIBS not set -> no additional module loaded\n");
+            }
         }
     }
 
@@ -845,21 +825,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             fprintf(stderr,
                     "%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: "
                     "%d ]  %c[%d;m\n",
-                    (char) 27,
-                    1,
-                    31,
-                    __FILE__,
-                    __func__,
-                    __LINE__,
-                    (char) 27,
-                    0);
+                    (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,
                     "%c[%d;%dm Memory re-allocation failed  %c[%d;m\n",
-                    (char) 27,
-                    1,
-                    31,
-                    (char) 27,
-                    0);
+                    (char) 27, 1, 31, (char) 27, 0);
             exit(EXIT_FAILURE);
         }
 
@@ -878,13 +847,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             }
             else if(data.fifoON == 1)
             {
-                EXECUTE_SYSTEM_COMMAND("file %s",
-                                       CLIstartupfilename); //TEST
-                EXECUTE_SYSTEM_COMMAND("cat %s",
-                                       CLIstartupfilename); //TEST
-                EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null",
-                                       CLIstartupfilename,
-                                       data.fifoname);
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("file %s",
+                                               CLIstartupfilename); //TEST
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s",
+                                               CLIstartupfilename); //TEST
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("cat %s > %s 2> /dev/null",
+                                               CLIstartupfilename, data.fifoname);
 
                 if(dcquiet == 0)
                 {
@@ -903,7 +871,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     strncpy(data.cmdargtoken[1].val.string, CLIstartupfilename, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
                     data.cmdNBarg = 2;
                     cli_source();
-                    
+
                     // Exit the interactive loop, as shebang scripts should terminate upon completion
                     if(strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
                     {
@@ -923,11 +891,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         FD_ZERO(
             &cli_fdin_set); // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
         if(data.fifoON == 1
-           && data.fifofd >= 0)
+                && data.fifofd >= 0)
         {
-            FD_SET(
-                data.fifofd,
-                &cli_fdin_set);
+            FD_SET(data.fifofd, &cli_fdin_set);
         }
 
         FD_SET(
@@ -936,8 +902,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
         if(data.fifoON == 0)
         {
-            readline_lazy_init(prompt,
-                               &realine_initialized);
+            readline_lazy_init(prompt, &realine_initialized);
         }
 
         DEBUG_TRACEPOINT("loop entry");
@@ -967,8 +932,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     if(ioctl(STDOUT_FILENO,
                              TIOCGWINSZ, &ws) >= 0)
                     {
-                        rl_set_screen_size(
-                            ws.ws_row, ws.ws_col);
+                        rl_set_screen_size(ws.ws_row, ws.ws_col);
                     }
                 }
 #endif
@@ -978,7 +942,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
              * was opened dynamically */
             fdmax = fileno(stdin);
             if(data.fifoON == 1
-               && data.fifofd > fdmax)
+                    && data.fifofd > fdmax)
             {
                 fdmax = data.fifofd;
             }
@@ -992,15 +956,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
                 FD_ZERO(&cli_fdin_set);
                 if(data.fifoON == 1
-                   && data.fifofd >= 0)
+                        && data.fifofd >= 0)
                 {
-                    FD_SET(
-                        data.fifofd,
-                        &cli_fdin_set);
+                    FD_SET(data.fifofd, &cli_fdin_set);
                 }
-                FD_SET(
-                    fileno(stdin),
-                    &cli_fdin_set);
+                FD_SET(fileno(stdin), &cli_fdin_set);
                 continue;
             }
             if(n == -1)
@@ -1011,7 +971,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 }
                 else
                 {
-                    perror("select");
+                    PRINT_ERROR("select: %s", strerror(errno));
                     DEBUG_TRACE_FEXIT();
                     return EXIT_FAILURE;
                 }
@@ -1037,8 +997,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             if(blockCLIinput == 0)  /* fifo cleared */
             {
                 DEBUG_TRACEPOINT("fifo cleared");
-                readline_lazy_init(prompt,
-                                   &realine_initialized);
+                readline_lazy_init(prompt, &realine_initialized);
             }
 
             //printf("fifo cleared, accepting user input through CLI\n");
@@ -1053,12 +1012,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     rl_callback_read_char();
 #else
                     // Fallback: no readline
-                    if (fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin)) {
+                    if(fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin))
+                    {
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
-                        cli_history_log_prompt(
-                            data.CLIcmdline);
+                        cli_history_log_prompt(data.CLIcmdline);
                         CLI_execute_line();
-                    } else {
+                    }
+                    else
+                    {
                         data.CLIloopON = 0;
                     }
 #endif
@@ -1125,13 +1086,18 @@ int user_function()
     return (0);
 }
 
+/**
+ * @brief atexit handler: performs CLI cleanup on exit.
+ */
 void fnExit1(void)
 {
     //
 }
 
 
-static int command_line_process_options(int argc, char **argv)
+static int command_line_process_options(
+    int  argc,
+    char **argv)
 {
     int                option_index = 0;
     struct sched_param schedpar;
@@ -1172,11 +1138,7 @@ static int command_line_process_options(int argc, char **argv)
     {
         int c;
 
-        c = getopt_long(argc,
-                        argv,
-                        "hvic:d:oen:p:fF:s:A",
-                        long_options,
-                        &option_index);
+        c = getopt_long(argc, argv, "hvic:d:oen:p:fF:s:A", long_options, &option_index);
 
         /* Detect the end of the options. */
         if(c == -1)
@@ -1200,23 +1162,19 @@ static int command_line_process_options(int argc, char **argv)
             printf("\n");
             break;
 
-        case 'h':
-            help();
+        case 'h': help();
             exit(EXIT_SUCCESS);
             break;
 
-        case 'v':
-            printf("%s   %s\n", dcpkgname, dcpkgver);
+        case 'v': printf("%s   %s\n", dcpkgname, dcpkgver);
             exit(EXIT_SUCCESS);
             break;
 
-        case 'i':
-            printInfo();
+        case 'i': printInfo();
             exit(EXIT_SUCCESS);
             break;
 
-        case 'o':
-            puts("CAUTION - WILL OVERWRITE EXISTING FITS FILES\n");
+        case 'o': puts("CAUTION - WILL OVERWRITE EXISTING FITS FILES\n");
             dcoverwrite = 1;
             break;
 
@@ -1229,10 +1187,7 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'Z':
-            printf(
-                "Idle mode: only runs process when X is idle (pid "
-                "%ld)\n",
-                (long) getpid());
+            printf("Idle mode: only runs process when X is idle (pid " "%ld)\n", (long) getpid());
             snprintf(command, STRINGMAXLEN_COMMAND, "runidle %ld > /dev/null &\n",
                      (long) getpid());
             if(system(command) != 0)
@@ -1249,25 +1204,20 @@ static int command_line_process_options(int argc, char **argv)
             data.autocomplete = 1;
             break;
 
-        case 0x100:
-            data.autocomplete = 0;
+        case 0x100: data.autocomplete = 0;
             break;
 
-        case 0x101:
-            data.autocomplete_history = 0;
+        case 0x101: data.autocomplete_history = 0;
             break;
 
-        case 0x102:
-            data.autocomplete_arghint = 0;
+        case 0x102: data.autocomplete_arghint = 0;
             break;
 
-        case 0x103:
-            data.autocomplete_fuzzy = 0;
+        case 0x103: data.autocomplete_fuzzy = 0;
             break;
 
 
-        case 'd':
-            printf("debug level : '%s'\n", optarg);
+        case 'd': printf("debug level : '%s'\n", optarg);
             dcdebug = atoi(optarg);
             printf("Debug = %d\n", dcdebug);
             break;
@@ -1290,8 +1240,7 @@ static int command_line_process_options(int argc, char **argv)
             prctl(PR_SET_NAME, optarg, 0, 0, 0);
             break;
 
-        case 'p':
-            schedpar.sched_priority = atoi(optarg);
+        case 'p': schedpar.sched_priority = atoi(optarg);
             printf("RUNNING WITH RT PRIORITY = %d\n", schedpar.sched_priority);
 
             if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
@@ -1317,22 +1266,17 @@ static int command_line_process_options(int argc, char **argv)
             data.fifoON = 1;
             break;
 
-        case 'F':
-            printf("using input fifo '%s'\n", optarg);
+        case 'F': printf("using input fifo '%s'\n", optarg);
             data.fifoON = 1;
             snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", optarg);
             printf("FIFO NAME = %s\n", data.fifoname);
             break;
 
-        case 'c':
-            strncpy(single_command_string, optarg, STRINGMAXLEN_CLICMDLINE - 1);
+        case 'c': strncpy(single_command_string, optarg, STRINGMAXLEN_CLICMDLINE - 1);
             single_command_flag = 1;
             break;
 
-        case 's':
-            strncpy(CLIstartupfilename,
-                optarg,
-                STRINGMAXLEN_CLISTARTUPFILENAME - 1);
+        case 's': strncpy(CLIstartupfilename, optarg, STRINGMAXLEN_CLISTARTUPFILENAME - 1);
             if(dcquiet == 0)
             {
                 printf("Startup file : %s\n", CLIstartupfilename);
@@ -1343,8 +1287,7 @@ static int command_line_process_options(int argc, char **argv)
             /* getopt_long already printed an error message. */
             break;
 
-        default:
-            abort();
+        default: abort();
         }
     }
 
@@ -1355,21 +1298,15 @@ static int command_line_process_options(int argc, char **argv)
     {
         time_t ts = time(NULL);
         int slen = snprintf(data.processname,
-                            STRINGMAXLEN_PROCESSNAME,
-                            "%ldp%ld",
-                            (long) ts,
-                            (long) CLIPID);
+                            STRINGMAXLEN_PROCESSNAME, "%ldp%ld", (long) ts, (long) CLIPID);
         if(slen < 1 || slen >= STRINGMAXLEN_PROCESSNAME)
         {
             PRINT_ERROR("snprintf error building default processname");
         }
-        strncpy(data.processname0,
-                data.processname,
-                STRINGMAXLEN_PROCESSNAME - 1);
+        strncpy(data.processname0, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
         data.processnameflag = 1;
         prctl(PR_SET_NAME, data.processname, 0, 0, 0);
     }
 
     return RETURN_SUCCESS;
 }
-

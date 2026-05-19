@@ -55,11 +55,13 @@
 
 extern int help_format_mode;
 
+/**
+ * @brief Check if a 64-bit flag contains a specific bit.
+ */
 static int checkFlag64(
     uint64_t flags,
     uint64_t testflag,
-    char    *flagdescription
-)
+    char     *flagdescription)
 {
     int rval = 0;
 
@@ -68,24 +70,12 @@ static int checkFlag64(
     if(flags & testflag)
     {
         rval = 1;
-        printf("    [%c[%d;%dm ON%c[%dm]  %s\n",
-               (char) 27,
-               1,
-               32,
-               (char) 27,
-               0,
-               flagdescription);
+        printf("    [%c[%d;%dm ON%c[%dm]  %s\n", (char) 27, 1, 32, (char) 27, 0, flagdescription);
     }
     else
     {
         rval = 0;
-        printf("    [%c[%d;%dmOFF%c[%dm]  %s\n",
-               (char) 27,
-               1,
-               31,
-               (char) 27,
-               0,
-               flagdescription);
+        printf("    [%c[%d;%dmOFF%c[%dm]  %s\n", (char) 27, 1, 31, (char) 27, 0, flagdescription);
     }
     return rval;
 }
@@ -113,22 +103,13 @@ errno_t help_command(
                    "%s\n" COLORRESET,
                    data.cmd[cmdi].key,
                    data.cmd[cmdi].module,
-                   data.module[
-                       data.cmd[cmdi]
-                       .moduleindex]
-                   .shortname,
-                   data.cmd[cmdi].info);
+                   data.module[data.cmd[cmdi] .moduleindex] .shortname, data.cmd[cmdi].info);
 
-            printf("\t\033[33mexample>\033[0m"
-                   " \033[1m%s\033[0m\n",
-                   data.cmd[cmdi].example);
-            printf("\t\033[2msrc: %s\033[0m"
-                   "\n",
-                   data.cmd[cmdi].srcfile);
+            printf("\t\033[33mexample>\033[0m" " \033[1m%s\033[0m\n", data.cmd[cmdi].example);
+            printf("\t\033[2msrc: %s\033[0m" "\n", data.cmd[cmdi].srcfile);
 
             int FPSsupport = checkFlag64(data.cmd[cmdi].cmdsettings.flags,
-                                         CLICMDFLAG_FPS,
-                                         "FPS support");
+                                         CLICMDFLAG_FPS, "FPS support");
             if(FPSsupport == 1)
             {
                 if(checkFlag64(data.cmd[cmdi].cmdsettings.flags,
@@ -143,26 +124,19 @@ errno_t help_command(
                            data.cmd[cmdi].cmdsettings.triggermode);
                     switch(data.cmd[cmdi].cmdsettings.triggermode)
                     {
-                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                        printf("IMMEDIATE");
+                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE: printf("IMMEDIATE");
                         break;
-                    case PROCESSINFO_TRIGGERMODE_CNT0:
-                        printf("CNT0");
+                    case PROCESSINFO_TRIGGERMODE_CNT0: printf("CNT0");
                         break;
-                    case PROCESSINFO_TRIGGERMODE_CNT1:
-                        printf("CNT1");
+                    case PROCESSINFO_TRIGGERMODE_CNT1: printf("CNT1");
                         break;
-                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                        printf("SEMAPHORE");
+                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE: printf("SEMAPHORE");
                         break;
-                    case PROCESSINFO_TRIGGERMODE_DELAY:
-                        printf("DELAY");
+                    case PROCESSINFO_TRIGGERMODE_DELAY: printf("DELAY");
                         break;
-                    case PROCESSINFO_TRIGGERMODE_CNT2:
-                        printf("CNT2");
+                    case PROCESSINFO_TRIGGERMODE_CNT2: printf("CNT2");
                         break;
-                    default:
-                        printf("unknown");
+                    default: printf("unknown");
                         break;
                     }
                     printf("\n");
@@ -197,9 +171,7 @@ errno_t help_command(
                     int nproc = sysconf(_SC_NPROCESSORS_ONLN);
                     for(int cpu = 0; cpu < nproc; cpu++)
                     {
-                        printf(" %d",
-                               CPU_ISSET(cpu,
-                                         &data.cmd[cmdi].cmdsettings.CPUmask));
+                        printf(" %d", CPU_ISSET(cpu, &data.cmd[cmdi].cmdsettings.CPUmask));
                     }
                     printf("\n");
                     printf("        MeasureTiming      : %d\n",
@@ -221,64 +193,55 @@ errno_t help_command(
                 case CLIARG_FLOAT32:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[float32]  %f",
-                                   data.cmd[cmdi].argdata[argi].val.f32);
+                                   "[float32]  %f", data.cmd[cmdi].argdata[argi].val.f32);
                     break;
 
                 case CLIARG_FLOAT64:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[float64]  %lf",
-                                   data.cmd[cmdi].argdata[argi].val.f64);
+                                   "[float64]  %lf", data.cmd[cmdi].argdata[argi].val.f64);
                     break;
 
                 case CLIARG_ONOFF:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[ ONOFF ]  %ld",
-                                   data.cmd[cmdi].argdata[argi].val.ui64);
+                                   "[ONOFF]  %ld", data.cmd[cmdi].argdata[argi].val.ui64);
                     break;
 
                 case CLIARG_INT32:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[ int32 ]  %d",
-                                   data.cmd[cmdi].argdata[argi].val.i32);
+                                   "[int32]  %d", data.cmd[cmdi].argdata[argi].val.i32);
                     break;
 
                 case CLIARG_UINT32:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[uint32 ]  %u",
-                                   data.cmd[cmdi].argdata[argi].val.ui32);
+                                   "[uint32]  %u", data.cmd[cmdi].argdata[argi].val.ui32);
                     break;
 
                 case CLIARG_INT64:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[ int64 ]  %ld",
-                                   data.cmd[cmdi].argdata[argi].val.i64);
+                                   "[int64]  %ld", data.cmd[cmdi].argdata[argi].val.i64);
                     break;
 
                 case CLIARG_UINT64:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[uint64 ]  %lu",
-                                   data.cmd[cmdi].argdata[argi].val.ui64);
+                                   "[uint64]  %lu", data.cmd[cmdi].argdata[argi].val.ui64);
                     break;
 
                 case CLIARG_STR_NOT_IMG:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[ STRnI ]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
+                                   "[STRnI]  %s", data.cmd[cmdi].argdata[argi].val.s);
                     break;
 
                 case CLIARG_IMG:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[ STREAM]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
+                                   "[STREAM]  %s", data.cmd[cmdi].argdata[argi].val.s);
                     break;
 
                 case FPTYPE_FITSFILENAME:
@@ -287,43 +250,37 @@ errno_t help_command(
                 case FPTYPE_EXECFILENAME:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[ FILE  ]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
+                                   "[FILE ]  %s", data.cmd[cmdi].argdata[argi].val.s);
                     break;
 
                 case FPTYPE_STRING:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[STRING ]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
+                                   "[STRING]  %s", data.cmd[cmdi].argdata[argi].val.s);
                     break;
 
                 case FPTYPE_PID:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[  PID  ]  %ld",
-                                   data.cmd[cmdi].argdata[argi].val.i64);
+                                   "[ PID ]  %ld", data.cmd[cmdi].argdata[argi].val.i64);
                     break;
 
                 case FPTYPE_TIMESPEC:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[ TIME  ]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
+                                   "[TIME ]  %s", data.cmd[cmdi].argdata[argi].val.s);
                     break;
 
                 case FPTYPE_PROCESS:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[PROCESS]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
+                                   "[PROCESS]  %s", data.cmd[cmdi].argdata[argi].val.s);
                     break;
 
                 case FPTYPE_FPSNAME:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[FPSNAME]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
+                                   "[FPSNAME]  %s", data.cmd[cmdi].argdata[argi].val.s);
                     break;
                 }
 
@@ -332,16 +289,14 @@ errno_t help_command(
                     printf("%6d   " COLORARGCLI " %-16s" COLORRESET " %-24s %s\n",
                            CLIargcnt,
                            data.cmd[cmdi].argdata[argi].fpstag,
-                           valuestring,
-                           data.cmd[cmdi].argdata[argi].descr);
+                           valuestring, data.cmd[cmdi].argdata[argi].descr);
                     CLIargcnt++;
                 }
                 else
                 {
                     printf("[hidden] " COLORARGnotCLI " %-16s" COLORRESET " %-24s %s\n",
                            data.cmd[cmdi].argdata[argi].fpstag,
-                           valuestring,
-                           data.cmd[cmdi].argdata[argi].descr);
+                           valuestring, data.cmd[cmdi].argdata[argi].descr);
                 }
             }
 
@@ -363,7 +318,7 @@ errno_t help_command(
         reti = regcomp(&regex, cmdkey, REG_EXTENDED);
         if(reti)
         {
-            fprintf(stderr, "Could not compile regex : \"%s\"\n", cmdkey);
+            PRINT_ERROR("Could not compile regex : \"%s\"", cmdkey);
             exit(1);
         }
         int        maxGroups = 8;
@@ -383,19 +338,14 @@ errno_t help_command(
                        "%s\n" COLORRESET,
                        data.cmd[cmdi].key,
                        data.cmd[cmdi].module,
-                       data.module[data.cmd[cmdi].moduleindex].shortname,
-                       data.cmd[cmdi].info);
+                       data.module[data.cmd[cmdi].moduleindex].shortname, data.cmd[cmdi].info);
             }
 
             // Regular expression search
             if(matchsubstring == 0)
             {
                 // Regular expression search
-                reti = regexec(&regex,
-                               data.cmd[cmdi].key,
-                               maxGroups,
-                               groupArray,
-                               0);
+                reti = regexec(&regex, data.cmd[cmdi].key, maxGroups, groupArray, 0);
                 if(!reti)
                 {
                     foundregexmatch = 1;
@@ -403,8 +353,7 @@ errno_t help_command(
                            "%s\n" COLORRESET,
                            data.cmd[cmdi].key,
                            data.cmd[cmdi].module,
-                           data.module[data.cmd[cmdi].moduleindex].shortname,
-                           data.cmd[cmdi].info);
+                           data.module[data.cmd[cmdi].moduleindex].shortname, data.cmd[cmdi].info);
 
                     char        *cursor = data.cmd[cmdi].key;
                     unsigned int offset = 0;
@@ -421,8 +370,7 @@ errno_t help_command(
                         }
 
                         char cursorCopy[strlen(cursor) + 1];
-                        memcpy(cursorCopy, cursor,
-                               strlen(cursor) + 1);
+                        memcpy(cursorCopy, cursor, strlen(cursor) + 1);
                         cursorCopy[groupArray[g].rm_eo] = 0;
                         /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
                                g, groupArray[g].rm_so, groupArray[g].rm_eo,
@@ -438,7 +386,7 @@ errno_t help_command(
                 {
                     char msgbuf[100];
                     regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-                    fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                    PRINT_ERROR("Regex match failed: %s", msgbuf);
                     exit(1);
                 }
             }
@@ -450,10 +398,7 @@ errno_t help_command(
         {
             if(foundregexmatch == 0)
             {
-                printf(
-                    "\tNo substring or regex "
-                    "match to \"%s\"\n",
-                    cmdkey);
+                printf("\tNo substring or regex " "match to \"%s\"\n", cmdkey);
             }
         }
         return RETURN_FAILURE;
@@ -480,7 +425,7 @@ errno_t command_info_search(const char *restrict searchstring)
     int reti = regcomp(&regex, searchstring, REG_EXTENDED);
     if(reti)
     {
-        fprintf(stderr, "Could not compile regex : \"%s\"\n", searchstring);
+        PRINT_ERROR("Could not compile regex : \"%s\"", searchstring);
         exit(1);
     }
     int        maxGroups = 8;
@@ -505,20 +450,14 @@ errno_t command_info_search(const char *restrict searchstring)
                    0,
                    data.cmd[cmdi].module,
                    data.module[data.cmd[cmdi].moduleindex].shortname,
-                   (char) 27,
-                   1,
-                   colorcodeinfo,
-                   data.cmd[cmdi].info,
-                   (char) 27,
-                   0);
+                   (char) 27, 1, colorcodeinfo, data.cmd[cmdi].info, (char) 27, 0);
         }
 
         // Regular expression search
         if(matchsubstring == 0)
         {
             // Regular expression search
-            reti =
-                regexec(&regex, data.cmd[cmdi].info, maxGroups, groupArray, 0);
+            reti = regexec(&regex, data.cmd[cmdi].info, maxGroups, groupArray, 0);
             if(!reti)
             {
                 foundregexmatch = 1;
@@ -534,12 +473,7 @@ errno_t command_info_search(const char *restrict searchstring)
                     0,
                     data.cmd[cmdi].module,
                     data.module[data.cmd[cmdi].moduleindex].shortname,
-                    (char) 27,
-                    1,
-                    colorcodeinfo,
-                    data.cmd[cmdi].info,
-                    (char) 27,
-                    0);
+                    (char) 27, 1, colorcodeinfo, data.cmd[cmdi].info, (char) 27, 0);
 
                 char        *cursor = data.cmd[cmdi].info;
                 unsigned int offset = 0;
@@ -556,8 +490,7 @@ errno_t command_info_search(const char *restrict searchstring)
                     }
 
                     char cursorCopy[strlen(cursor) + 1];
-                    memcpy(cursorCopy, cursor,
-                           strlen(cursor) + 1);
+                    memcpy(cursorCopy, cursor, strlen(cursor) + 1);
                     cursorCopy[groupArray[g].rm_eo] = 0;
                     /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
                            g, groupArray[g].rm_so, groupArray[g].rm_eo,
@@ -573,7 +506,7 @@ errno_t command_info_search(const char *restrict searchstring)
             {
                 char msgbuf[100];
                 regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-                fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                PRINT_ERROR("Regex match failed: %s", msgbuf);
                 exit(1);
             }
         }
@@ -609,15 +542,16 @@ errno_t help()
     int porcelain_mode = 0;
     const char *topic = NULL;
 
-    for (int arg = 1; arg < data.cmdNBarg; arg++)
+    for(int arg = 1; arg < data.cmdNBarg; arg++)
     {
-        if (data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+        if(data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING
+                || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
         {
-            if (strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
+            if(strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
             {
                 json_mode = 1;
             }
-            else if (strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
+            else if(strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
             {
                 porcelain_mode = 1;
             }
@@ -630,11 +564,12 @@ errno_t help()
 
     help_format_mode = json_mode ? 1 : (porcelain_mode ? 2 : 0);
 
-    if (topic != NULL)
+    if(topic != NULL)
     {
-        if (help_topic_dispatch(topic) != 0)
+        if(help_topic_dispatch(topic) != 0)
         {
-            if (help_format_mode == 0) {
+            if(help_format_mode == 0)
+            {
                 printf(C_ERR "Unknown help topic: \"%s\"" C_RST "\n\n", topic);
                 print_help_topic_list();
             }
@@ -657,9 +592,8 @@ errno_t help()
 errno_t helpreadline()
 {
 
-    EXECUTE_SYSTEM_COMMAND(
-        "more %s/src/CommandLineInterface/doc/helpreadline.md",
-        dcsourcedir);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK(
+        "more %s/src/CommandLineInterface/doc/helpreadline.md", dcsourcedir);
 
     return RETURN_SUCCESS;
 }
@@ -728,21 +662,14 @@ errno_t help_module()
     }
     else
     {
-        long i;
+
         printf("\n");
         printf("%2s  %10s %32s %10s %7s    %20s %s\n",
-               "#",
-               "shortname",
-               "Name",
-               "Package",
-               "Version",
-               "last compiled",
-               "description");
+               "#", "shortname", "Name", "Package", "Version", "last compiled", "description");
         printf(
             "--------------------------------------------------------------"
-            "-----------------------------------------"
-            "-------\n");
-        for(i = 0; i < data.NBmodule; i++)
+            "-----------------------------------------" "-------\n");
+        for(long i = 0; i < data.NBmodule; i++)
         {
             printf(
                 "%2ld %10s \033[1m%32s\033[0m %10s %2d.%02d.%02d    "
@@ -754,18 +681,13 @@ errno_t help_module()
                 data.module[i].versionmajor,
                 data.module[i].versionminor,
                 data.module[i].versionpatch,
-                data.module[i].datestring,
-                data.module[i].timestring,
-                data.module[i].info);
+                data.module[i].datestring, data.module[i].timestring, data.module[i].info);
         }
         printf(
             "--------------------------------------------------------------"
-            "-----------------------------------------"
-            "\n");
+            "-----------------------------------------" "\n");
         printf("\n");
     }
 
     return RETURN_SUCCESS;
 }
-
-

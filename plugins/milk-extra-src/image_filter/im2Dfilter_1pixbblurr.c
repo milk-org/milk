@@ -20,7 +20,9 @@
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "im2Dfilt1pblurr",
     .cmdkey      = "im2Dfilt1pblurr",
-    .description = "1 pixel radual blurr, can be iterated"
+    .description = "1 pixel radual blurr, can be iterated",
+    .description_long =
+        "Apply a 1-pixel box blur to a 2D image. Can be iterated multiple times to approximate a Gaussian blur via the central limit theorem."
 };
 
 
@@ -74,13 +76,16 @@ static errno_t imfilter_im2D_1pixblurr(
     // custom stream process function code
 
     // resolve imgpos
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
 
 
     // create eigenvalues array if needed
     if( imgout->ID == -1)
     {
         imgout->mdt->naxis   = 2;
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
         imgout->mdt->size[0] = imgin.md->size[0];
         imgout->mdt->size[1] = imgin.md->size[1];
         imgout->mdt->shared = imgin.md->shared;
@@ -108,10 +113,7 @@ static errno_t imfilter_im2D_1pixblurr(
     switch (imgin.md->datatype)
     {
     case _DATATYPE_FLOAT:
-        for(uint32_t ii=0; ii<xsize*ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.F[ii];
-        }
+        memcpy(tmpfim0, imgin.im->array.F, sizeof(float)*xsize*ysize);
         break;
 
     case _DATATYPE_DOUBLE:
@@ -181,30 +183,31 @@ static errno_t imfilter_im2D_1pixblurr(
 
     for ( int iter=0; iter < NBiter; iter++)
     {
+        memset(tmpfim1, 0, sizeof(float)*xsize*ysize);
 
-        for(uint32_t ii=0; ii<xsize*ysize; ii++)
+        _Pragma("omp parallel for")
+        for(uint32_t jj=1; jj<ysize-1; jj++)
         {
-            tmpfim1[ii] = 0.0;
-        }
-
-        for(uint32_t ii=1; ii<xsize-1; ii++)
-        {
-            for(uint32_t jj=1; jj<ysize-1; jj++)
+            _Pragma("omp simd")
+            for(uint32_t ii=1; ii<xsize-1; ii++)
             {
-                float pixval = tmpfim0[jj*xsize+ii];
+                float val = 0.0f;
+                // central
+                val += coeff0 * tmpfim0[jj*xsize + ii];
 
-                tmpfim1[ (jj)*xsize + ii ] += coeff0 * pixval;
+                // sides
+                val += coeff1 * tmpfim0[jj*xsize + ii + 1];
+                val += coeff1 * tmpfim0[jj*xsize + ii - 1];
+                val += coeff1 * tmpfim0[(jj+1)*xsize + ii];
+                val += coeff1 * tmpfim0[(jj-1)*xsize + ii];
 
-                tmpfim1[ (jj)*xsize + ii+1 ] += coeff1 * pixval;
-                tmpfim1[ (jj)*xsize + ii-1 ] += coeff1 * pixval;
-                tmpfim1[ (jj+1)*xsize + ii ] += coeff1 * pixval;
-                tmpfim1[ (jj-1)*xsize + ii ] += coeff1 * pixval;
+                // corners
+                val += coeff2 * tmpfim0[(jj+1)*xsize + ii + 1];
+                val += coeff2 * tmpfim0[(jj+1)*xsize + ii - 1];
+                val += coeff2 * tmpfim0[(jj-1)*xsize + ii + 1];
+                val += coeff2 * tmpfim0[(jj-1)*xsize + ii - 1];
 
-
-                tmpfim1[ (jj+1)*xsize + ii+1 ] += coeff2 * pixval;
-                tmpfim1[ (jj+1)*xsize + ii-1 ] += coeff2 * pixval;
-                tmpfim1[ (jj-1)*xsize + ii+1 ] += coeff2 * pixval;
-                tmpfim1[ (jj-1)*xsize + ii-1 ] += coeff2 * pixval;
+                tmpfim1[jj*xsize + ii] = val;
             }
         }
         memcpy(tmpfim0, tmpfim1, sizeof(float)*xsize*ysize);
@@ -227,10 +230,13 @@ static MILK_HOT errno_t compute_function()
 
     // input
     IMGID imgin = imgid_make_from_name(iminname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     // output
     IMGID imgout  = imgid_make_from_name(imoutname);
+    if (imgin.ID == -1) {
+        return RETURN_FAILURE;
+    }
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

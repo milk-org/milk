@@ -83,9 +83,8 @@ static CLICMDDATA CLIcmddata =
  * On success, return value is RETURN_SUCCESS (=0).
  */
 static errno_t example_compute_2Dimage_total(
-    IMGID *imgptr,
-    double scalingcoeff
-)
+    IMGID  *imgptr,
+    double scalingcoeff)
 {
     // The preferred way to have images and streams as function args is to pass a pointer to IMGID struct.
     // Here, the function needs to change the IMGID content (call to resolveIMGID).
@@ -98,13 +97,16 @@ static errno_t example_compute_2Dimage_total(
     // Resolve image if not already resolved.
     // This is a low-overhead function if the image is already in memory and imgptr already pointing to it.
     // If not already connected, the function will use imgptr->name to try to connect to it.
-    resolveIMGID(imgptr, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgptr, ERRMODE_WARN, dcimg, dcnimg);
     // Abort if unable to resolve.
     // Upon success, these are available for use:
     // imgptr->name, imgptr->naxis, imgptr->ID, imgptr->size, imgptr->im
 
     // From now on, we access the image and its metadata through its IMGID
     uint32_t  xsize  = imgptr->md->size[0];
+    if (imgptr->ID == -1) {
+        return RETURN_FAILURE;
+    }
     uint32_t  ysize  = imgptr->md->size[1];
     uint64_t  xysize = xsize * ysize;
 

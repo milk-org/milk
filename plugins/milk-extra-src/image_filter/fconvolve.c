@@ -34,7 +34,9 @@ static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "fconv",
     .cmdkey      = "fconv",
     .description =
-        "Fourier-based convolution"
+        "Fourier-based convolution",
+    .description_long =
+        "Convolve two images using FFT-based multiplication in Fourier space. Efficient for large kernel sizes."
 };
 
 #define FPS_PARAMS(X) \

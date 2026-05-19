@@ -32,6 +32,6 @@ extern errno_t (*FPS_CONFfunc)();
 extern errno_t (*FPS_RUNfunc)();
 
 /** @brief Global array of connected FPS structures (internal use). */
-extern FUNCTION_PARAMETER_STRUCT *fpsarray;
+extern FPS *fpsarray;
 
 #endif

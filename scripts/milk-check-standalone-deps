@@ -17,11 +17,51 @@ case "${1-}" in
     -h1|--help-oneline)
         echo "verify standalone executables do not link CLIcore unexpectedly"
         exit 0 ;;
-    -h|--help)
-        echo "Usage: milk-check-standalone-deps [install-prefix]"
-        echo "CI guard: verify milk-fpsexec-* and cacao-fpsexec-* binaries do not"
-        echo "link libCLIcore unless on the known-exception list."
-        echo "Exit 0 = all OK, 1 = unexpected CLIcore dependency found."
+    -h2|--help-description)
+        echo "CI guard: verify milk-fpsexec-* and" \
+             "cacao-fpsexec-* binaries do not link" \
+             "libCLIcore unless on the known-exception" \
+             "list. Exit 0 = all OK, 1 = unexpected" \
+             "CLIcore dependency found."
+        exit 0 ;;
+    -h|--help|-hm|--help-mono)
+        if [ "$1" = "-hm" ] || [ "$1" = "--help-mono" ] \
+            || ! [ -t 1 ]; then
+            T="" R="" H="" C="" O="" A=""
+        else
+            T=$'\033[1;36m' R=$'\033[0m'
+            H=$'\033[1;34m' C=$'\033[1;32m'
+            O=$'\033[33m'   A=$'\033[1;35m'
+        fi
+        echo "${T}milk-check-standalone-deps${R}" \
+            "— verify standalone executables do" \
+            "not link CLIcore unexpectedly"
+        echo ""
+        echo "${H}Usage:${R}"
+        echo "  ${C}milk-check-standalone-deps${R}" \
+            "[${A}install-prefix${R}]"
+        echo ""
+        echo "${H}Description:${R}"
+        echo "  CI guard: verify milk-fpsexec-* and" \
+             "cacao-fpsexec-* binaries do not link"
+        echo "  libCLIcore unless on the" \
+             "known-exception list."
+        echo "  Exit 0 = all OK, 1 = unexpected" \
+             "CLIcore dependency found."
+        echo ""
+        echo "${H}Options:${R}"
+        echo "  ${O}-h, --help${R}" \
+            "           Print this help."
+        echo "  ${O}-h1, --help-oneline${R}" \
+            "   One-line description."
+        echo "  ${O}-h2${R}" \
+            "                   Verbose description."
+        echo "  ${O}-hm${R}" \
+            "                   Monochrome help."
+        echo ""
+        echo "${H}See Also:${R}"
+        echo "  ${C}milk-check${R}" \
+            "               — check milk installation"
         exit 0 ;;
 esac
 

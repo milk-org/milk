@@ -1,5 +1,23 @@
 #!/usr/bin/env python
 
+import sys
+if len(sys.argv) > 1:
+    if sys.argv[1] in ('-h1', '--help-oneline'):
+        print("shared memory stream live viewer (pygame)")
+        sys.exit(0)
+    if sys.argv[1] in ('-h2', '--help-description'):
+        print("Live display of shared memory image"
+              " streams using pygame.")
+        sys.exit(0)
+    if sys.argv[1] in ('-h', '--help', '-hm', '--help-mono'):
+        print("Usage: pyshmimview <shmfile> [zoom]")
+        print("Shared memory stream live viewer.")
+        print("")
+        print("See Also:")
+        print("  shmimview2       — stream viewer (v2)")
+        print("  milk-shmimmon    — monitor image stream")
+        sys.exit(0)
+
 import pygame, sys
 from pygame.locals import *
 import numpy as np
