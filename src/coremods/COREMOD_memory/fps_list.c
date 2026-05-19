@@ -85,30 +85,32 @@ errno_t fps_list()
 
     printf("FPSs in system shared memory (%s):\n", dcshmdir);
 
-    struct dirent *de;
-    DIR           *dr = opendir(dcshmdir);
-    if(dr == NULL)
+    /* Scan SHM directory for *.fps.shm files */
     {
-        printf("Could not open current directory");
-        return RETURN_FAILURE;
-    }
-
-    fpscnt = 0;
-    while((de = readdir(dr)) != NULL)
-    {
-        if(strstr(de->d_name, ".fps.shm")
-                != NULL)
+        struct dirent *de;
+        DIR           *dr = opendir(dcshmdir);
+        if(dr == NULL)
         {
-            char fpsname[100];
-            int  slen1 = 100 - strlen(".fps.shm");
-
-            strncpy(fpsname, de->d_name, slen1);
-            fpsname[slen1] = '\0';
-            printf("%*ld  %*s\n", NBchar_fpsID, fpscnt, NBchar_fpsname, fpsname);
-            fpscnt++;
+            printf("Could not open current directory");
+            return RETURN_FAILURE;
         }
-    }
-    closedir(dr);
+
+        fpscnt = 0;
+        while((de = readdir(dr)) != NULL)
+        {
+            if(strstr(de->d_name, ".fps.shm") != NULL)
+            {
+                char fpsname[100];
+                int  slen1 = 100 - strlen(".fps.shm");
+
+                strncpy(fpsname, de->d_name, slen1);
+                fpsname[slen1] = '\0';
+                printf("%*ld  %*s\n", NBchar_fpsID, fpscnt, NBchar_fpsname, fpsname);
+                fpscnt++;
+            }
+        }
+        closedir(dr);
+    } // Scan SHM directory
 
     return RETURN_SUCCESS;
 }

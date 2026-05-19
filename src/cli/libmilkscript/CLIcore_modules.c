@@ -256,11 +256,6 @@ errno_t load_module_shared_local()
 
     char           libname[STRINGMAXLEN_FULLFILENAME + STRINGMAXLEN_DIRNAME];
     char           dirname[STRINGMAXLEN_DIRNAME];
-    DIR           *d;
-    struct dirent *dir;
-    int            iter;
-    int            loopOK;
-    int            itermax;
 
     WRITE_DIRNAME(dirname, "./milklib");
 
@@ -269,11 +264,14 @@ errno_t load_module_shared_local()
         printf("load modules from directory %s\n", dirname);
     }
 
-    loopOK  = 0;
-    iter    = 0;
-    itermax = 4; // number of passes
+    int loopOK  = 0;
+    int iter    = 0;
+    int itermax = 4; // number of passes
     while((loopOK == 0) && (iter < itermax))
     {
+        DIR           *d;
+        struct dirent *dir;
+
         loopOK = 1;
         d      = opendir(dirname);
         if(d)

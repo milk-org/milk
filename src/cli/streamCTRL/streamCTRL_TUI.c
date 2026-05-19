@@ -315,18 +315,20 @@ errno_t streamCTRL_CTRLscreen(void)
 
     // redirect stderr to /dev/null
 
+    /* Redirect stderr to a per-PID log file for the TUI session.
+     * backstderr and newstderrfname are used post-loop for cleanup. */
     int  backstderr;
-    int  newstderr;
     char newstderrfname[STRINGMAXLEN_FULLFILENAME];
 
     fflush(stderr);
     backstderr = dup(STDERR_FILENO);
     WRITE_FULLFILENAME(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, (int)getpid());
-
-    umask(0);
-    newstderr = open(newstderrfname, O_WRONLY | O_CREAT, FILEMODE);
-    dup2(newstderr, STDERR_FILENO);
-    close(newstderr);
+    {
+        umask(0);
+        int newstderr = open(newstderrfname, O_WRONLY | O_CREAT, FILEMODE);
+        dup2(newstderr, STDERR_FILENO);
+        close(newstderr);
+    }
 
     DEBUG_TRACEPOINT("Start scan thread");
     streaminfoproc.loop = 1;
