@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 BasedOnStyle: Chromium
+=======
+BasedOnStyle: Linux
+>>>>>>> 273e97988f (refactor: defensive block-scoping and line-break consolidation for src/ (#356))
 IndentWidth: 4
 ColumnLimit: 100
 BreakBeforeBraces: Allman
