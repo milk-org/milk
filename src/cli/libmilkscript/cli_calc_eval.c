@@ -550,7 +550,7 @@ val_t parse_primary(void)
                 }
                 if(imgid_slice_output_size(
                             &slc, snax,
-                            ssz, outsz) != 0)
+                            ssz,  outsz) != 0)
                 {
                     parse_errmsg(
                         "Bad slice dims");

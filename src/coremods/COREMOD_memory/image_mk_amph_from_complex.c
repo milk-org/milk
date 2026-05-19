@@ -68,8 +68,7 @@ static char outphaimname[
 errno_t mk_amph_from_complex_IMGID(
     IMGID *imgin,
     IMGID *imgamp,
-    IMGID *imgpha
-)
+    IMGID *imgpha)
 {
     DEBUG_TRACE_FSTART();
 

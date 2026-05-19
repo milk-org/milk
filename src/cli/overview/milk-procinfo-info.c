@@ -120,7 +120,7 @@ static const char *trigmode_str(int mode)
 
 static void print_proc_info(
     const OV_MODEL *m,
-    int pi)
+    int            pi)
 {
     const OV_PROC *p = &m->procs[pi];
 
@@ -385,7 +385,7 @@ static void print_proc_info(
 
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, PI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -434,7 +434,7 @@ static void print_help(
 
 static int find_proc_by_name(
     const OV_MODEL *m,
-    const char *name)
+    const char     *name)
 {
     for(int i = 0; i < m->nb_procs; i++)
     {

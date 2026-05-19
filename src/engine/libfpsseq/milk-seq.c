@@ -153,7 +153,7 @@ static int daemonize(
  */
 static void print_help(
     const char *prog,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(prog, SEQ_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);
@@ -201,7 +201,7 @@ static void print_help(
 
 
 int main(
-    int argc,
+    int  argc,
     char **argv)
 {
     int help_action = milk_help_init(argc, argv,

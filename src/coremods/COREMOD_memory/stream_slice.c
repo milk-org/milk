@@ -63,8 +63,7 @@ static errno_t alloc_slice_buffer(
     IMGID          *img,
     const uint32_t *out_sz,
     int            naxis,
-    uint8_t         datatype
-)
+    uint8_t        datatype)
 {
     if(img->slice_im != NULL)
     {
@@ -130,14 +129,13 @@ static errno_t alloc_slice_buffer(
  */
 static void copy_crop_2d(
     const char *restrict src,
-    char       *restrict dst,
+    char *restrict       dst,
     int                  esize,
     uint32_t             src_xsz,
     int32_t              x0,
     int32_t              x1,
     int32_t              y0,
-    int32_t     y1
-)
+    int32_t              y1)
 {
     int32_t out_xsz = x1 - x0 + 1;
     int32_t row_bytes = out_xsz * esize;
@@ -173,13 +171,12 @@ static void copy_crop_2d(
  */
 static void copy_general(
     const char *restrict src,
-    char       *restrict dst,
+    char *restrict       dst,
     int                  esize,
     const IMGID_SLICE    *s,
     const uint32_t       *src_size,
     const uint32_t       *out_size,
-    int                  naxis
-)
+    int                  naxis)
 {
     /* Compute source strides (elements) */
     uint64_t src_stride[3] = {1, 0, 0};
@@ -280,14 +277,13 @@ static void copy_general(
  * back to the correct source location.
  */
 static void writeback_general(
-    char       *restrict dst_src,
+    char *restrict       dst_src,
     const char *restrict src_slice,
     int                  esize,
     const IMGID_SLICE    *s,
     const uint32_t       *src_size,
     const uint32_t       *out_size,
-    int                  naxis
-)
+    int                  naxis)
 {
     uint64_t src_stride[3] = {1, 0, 0};
     if(naxis >= 2)
@@ -378,8 +374,7 @@ static void writeback_general(
  */
 static int is_simple_crop_2d(
     const IMGID_SLICE *s,
-    int naxis
-)
+    int               naxis)
 {
     if(naxis < 1 || naxis > 2)
     {

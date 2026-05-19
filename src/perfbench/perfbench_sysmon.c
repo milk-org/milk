@@ -23,7 +23,9 @@
  * ============================================================= */
 
 /** Compare two int64_t for qsort */
-static int cmp_int64(const void *a, const void *b)
+static int cmp_int64(
+    const void *a,
+    const void *b)
 {
     int64_t la = *(const int64_t *) a;
     int64_t lb = *(const int64_t *) b;
@@ -174,7 +176,9 @@ void read_proc_mem(
  * @param pid   Target process
  * @param st    Stats structure to fill
  */
-void read_smaps_huge(pid_t pid, pi_stats_t *st)
+void read_smaps_huge(
+    pid_t      pid,
+    pi_stats_t *st)
 {
     st->anon_huge_kb = 0;
     char path[128];

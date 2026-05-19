@@ -376,8 +376,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
 static inline void imgid_setfpskeyword(
     IMGID      *img,
     const char *fpsname,
-    const char *key
-)
+    const char *key)
 {
     snprintf(img->fpskeyword,
              sizeof(img->fpskeyword),
@@ -395,8 +394,7 @@ static inline void imgid_setfpskeyword(
 static inline IMGID imgid_make_from_fpskey(
     CONST_WORD name,
     const char *fpsname,
-    const char *key
-)
+    const char *key)
 {
     IMGID img = imgid_make_from_name(name);
     imgid_setfpskeyword(&img, fpsname, key);
@@ -418,9 +416,8 @@ static inline IMGID imgid_make_from_fpskey(
  */
 static inline IMGID imgid_make_from_name_2D(
     CONST_WORD name,
-    uint32_t xsize,
-    uint32_t ysize
-)
+    uint32_t   xsize,
+    uint32_t   ysize)
 {
     IMGID img   = imgid_make_from_name(name);
     img.mdt->naxis   = 2;
@@ -444,10 +441,9 @@ static inline IMGID imgid_make_from_name_2D(
  */
 static inline IMGID imgid_make_from_name_3D(
     CONST_WORD name,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize
-)
+    uint32_t   xsize,
+    uint32_t   ysize,
+    uint32_t   zsize)
 {
     IMGID img   = imgid_make_from_name(name);
     img.mdt->naxis   = 3;
@@ -472,8 +468,7 @@ static inline IMGID imgid_make_from_name_3D(
  */
 static inline void imgid_copy(
     IMGID *imgin,
-    IMGID *imgout
-)
+    IMGID *imgout)
 {
     imgout->mdt->datatype = imgin->mdt->datatype;
     imgout->mdt->shared   = imgin->mdt->shared;
@@ -528,8 +523,7 @@ static inline void imgid_update_creationparams(IMGID *img)
  */
 static inline uint64_t imgid_mdcompare(
     IMAGE_METADATA *md1,
-    IMAGE_METADATA *md2
-)
+    IMAGE_METADATA *md2)
 {
     uint64_t diff = 0;
 
@@ -576,8 +570,7 @@ static inline uint64_t imgid_mdcompare(
  */
 static inline uint64_t imgid_compare(
     IMGID img,
-    IMGID imgtemplate
-)
+    IMGID imgtemplate)
 {
     int compErr = 0;
 
@@ -681,8 +674,7 @@ static inline uint64_t imgid_compare(
  */
 static inline uint64_t imgid_compare_md(
     IMGID img,
-    IMGID imgtemplate
-)
+    IMGID imgtemplate)
 {
     int compErr = 0;
 
@@ -855,8 +847,7 @@ static inline const char *imgid_strerror(errno_t err)
  */
 static inline errno_t imgid_connect(
     IMGID *img,
-    int FLAG
-)
+    int   FLAG)
 {
     printf("img template size:\n");
     printf("  naxes    = %d\n", img->mdt->naxis);
@@ -1036,10 +1027,9 @@ imgid_connect_report:
  * @param ysize  Height in pixels
  */
 static inline void imgid_connect_create_2Df32(
-    IMGID *img,
+    IMGID    *img,
     uint32_t xsize,
-    uint32_t ysize
-)
+    uint32_t ysize)
 {
     img->mdt->datatype = _DATATYPE_FLOAT;
     img->mdt->naxis    = 2;
@@ -1064,11 +1054,10 @@ static inline void imgid_connect_create_2Df32(
  * @param zsize  Depth (number of slices)
  */
 static inline void imgid_connect_create_3Df32(
-    IMGID *img,
+    IMGID    *img,
     uint32_t xsize,
     uint32_t ysize,
-    uint32_t zsize
-)
+    uint32_t zsize)
 {
     img->mdt->datatype = _DATATYPE_FLOAT;
     img->mdt->naxis    = 3;

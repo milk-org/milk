@@ -38,8 +38,7 @@
 static int parse_one_axis(
     const char  *spec,
     IMGID_SLICE *s,
-    int          axis
-)
+    int         axis)
 {
     /* Default: full axis, step +1, no bin */
     s->start[axis] = 0;
@@ -274,8 +273,7 @@ int imgid_slice_output_size(
     IMGID_SLICE    *s,
     int            src_naxis,
     const uint32_t *src_size,
-    uint32_t       *out_size
-)
+    uint32_t       *out_size)
 {
     if(!s->has_slice)
     {
@@ -416,8 +414,7 @@ int imgid_slice_output_size(
 void imgid_slice_format(
     const IMGID_SLICE *s,
     char              *buf,
-    int                bufsz
-)
+    int               bufsz)
 {
     if(!s->has_slice)
     {
@@ -491,8 +488,7 @@ void imgid_slice_shmname(
     const char        *srcname,
     const IMGID_SLICE *s,
     char              *buf,
-    int                bufsz
-)
+    int               bufsz)
 {
     char slicestr[128];
     imgid_slice_format(s, slicestr,
@@ -537,8 +533,7 @@ int imgid_slice_split_name(
     char       *name_buf,
     int        name_sz,
     char       *slice_buf,
-    int         slice_sz
-)
+    int        slice_sz)
 {
     const char *open = strchr(raw, '[');
     if(open == NULL)

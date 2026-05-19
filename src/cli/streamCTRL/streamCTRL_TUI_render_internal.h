@@ -72,8 +72,7 @@ static inline void streamCTRL_set_sem_color(int val)
 static inline void streamCTRL_render_active_bg(
     const char *str,
     int        len,
-    int         color_level
-)
+    int        color_level)
 {
     if(color_level >= 3)
     {
@@ -98,8 +97,7 @@ static inline void streamCTRL_render_active_bg(
 static inline void streamCTRL_print_frequ_field(
     double frequ,
     double wave_age,
-    int    color_level
-)
+    int    color_level)
 {
     char fbuf[32];
 
@@ -150,16 +148,29 @@ static inline void streamCTRL_print_frequ_field(
     SC_APPEND("\033[0m");
 }
 
-void streamCTRL__render_header_help(streamCTRLarg_struct *streamCTRLdata,
-                                    struct streamCTRL_TUI_state *state);
-void streamCTRL__render_header_streams(streamCTRLarg_struct *streamCTRLdata,
-                                       struct streamCTRL_TUI_state *state, int *NBsinfodisp_out, int *lastindex_out,
-                                       double *frame_t_sec_out, int *frame_color_level_out);
-void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata,
-                                    struct streamCTRL_TUI_state *state, int NBsinfodisp, double frame_t_sec, int frame_color_level);
-void streamCTRL__render_footer(streamCTRLarg_struct *streamCTRLdata,
-                               struct streamCTRL_TUI_state *state, int NBsinfodisp);
+void streamCTRL__render_header_help(
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state);
+void streamCTRL__render_header_streams(
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state,
+    int                         *NBsinfodisp_out,
+    int                         *lastindex_out,
+    double                      *frame_t_sec_out,
+    int                         *frame_color_level_out);
+void streamCTRL__render_stream_rows(
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state,
+    int                         NBsinfodisp,
+    double                      frame_t_sec,
+    int                         frame_color_level);
+void streamCTRL__render_footer(
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state,
+    int                         NBsinfodisp);
 
-extern int cmp_stream_col(const void *a, const void *b);
+extern int cmp_stream_col(
+    const void *a,
+    const void *b);
 
 #endif

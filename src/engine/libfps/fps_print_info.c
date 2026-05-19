@@ -22,8 +22,7 @@
 int function_parameter_print_info(
     FPS *fps,
     int verbose,
-    int show_info
-)
+    int show_info)
 {
     if(fps == NULL || fps->md == NULL || fps->parray == NULL)
     {

@@ -221,7 +221,7 @@ static inline void ov_buf_reset(void)
 
 static inline void ov_buf_append(
     const char *data,
-    int len)
+    int        len)
 {
     if(ov__screenbuf_len + len < OV_SCREENBUF_SIZE)
     {
@@ -435,7 +435,9 @@ static inline void ov_buf_flush_delta(
     ov_buf_flush_internal();
 }
 
-static inline void ov_buf_append_char(const char *utf8_seq, int bytes)
+static inline void ov_buf_append_char(
+    const char *utf8_seq,
+    int        bytes)
 {
     if(ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS &&
             ov__cursor_col >= 1 && ov__cursor_col <= OV_MAX_COLS)
@@ -507,12 +509,18 @@ static inline void ov_buf_printf(
  * Buffered color / attribute helpers
  * ========================================================= */
 
-static inline void ov_buf_fg(int r, int g, int b)
+static inline void ov_buf_fg(
+    int r,
+    int g,
+    int b)
 {
     ov__current_fg = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 }
 
-static inline void ov_buf_bg(int r, int g, int b)
+static inline void ov_buf_bg(
+    int r,
+    int g,
+    int b)
 {
     ov__current_bg = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 }
@@ -527,7 +535,10 @@ static inline void ov_buf_bg_256(int code)
     ov__current_bg = OV_COLOR_256 | (code & 0xFF);
 }
 
-static inline void ov_buf_ul_color(int r, int g, int b)
+static inline void ov_buf_ul_color(
+    int r,
+    int g,
+    int b)
 {
     ov__current_ul = OV_COLOR_TRUE | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 }
@@ -537,7 +548,9 @@ static inline void ov_buf_ul_color_256(int code)
     ov__current_ul = OV_COLOR_256 | (code & 0xFF);
 }
 
-static inline void ov_buf_pos(int row, int col)
+static inline void ov_buf_pos(
+    int row,
+    int col)
 {
     ov__cursor_row = row;
     ov__cursor_col = col;
@@ -581,7 +594,9 @@ static inline void ov_buf_cls(void)
     ov_buf_force_clear();
 }
 
-static inline void ov_buf_hline(char ch, int len)
+static inline void ov_buf_hline(
+    char ch,
+    int  len)
 {
     for(int i = 0; i < len; i++)
     {
@@ -589,7 +604,9 @@ static inline void ov_buf_hline(char ch, int len)
     }
 }
 
-static inline void ov_buf_hline_utf8(const char *s, int len)
+static inline void ov_buf_hline_utf8(
+    const char *s,
+    int        len)
 {
     int slen = (int) strlen(s);
     for(int i = 0; i < len; i++)

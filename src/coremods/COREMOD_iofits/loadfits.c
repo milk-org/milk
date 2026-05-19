@@ -65,9 +65,8 @@ FPS_V2_SECTION5(FPS_PARAMS)
  */
 errno_t load_fits_IMGID(
     const char *__restrict file_name,
-    IMGID *imgout,
-    int      errmode
-)
+    IMGID                  *imgout,
+    int                    errmode)
 {
     DEBUG_TRACE_FSTART();
 
@@ -645,8 +644,7 @@ errno_t load_fits(
     const char *__restrict file_name,
     const char *__restrict ID_name,
     int                    errmode,
-    imageID *IDout
-)
+    imageID                *IDout)
 {
     IMGID imgout = imgid_make_from_name(ID_name);
 

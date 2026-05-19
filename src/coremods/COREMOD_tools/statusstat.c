@@ -22,7 +22,7 @@
 /* forward decl */
 imageID COREMOD_TOOLS_statusStat(
     const char *IDstat_name,
-    long indexmax);
+    long       indexmax);
 
 
 /* ================================================================
@@ -106,7 +106,7 @@ CLIADDCMD_COREMOD_tools__statusstat()
  */
 imageID COREMOD_TOOLS_statusStat(
     const char *IDstat_name,
-    long indexmax)
+    long       indexmax)
 {
     int RT_priority = 91;
     struct sched_param schedpar;

@@ -23,14 +23,14 @@ int COREMOD_TOOLS_mvProcRTPrio(
 int COREMOD_TOOLS_mvProcTset(
     const char *tsetspec);
 int COREMOD_TOOLS_mvProcTsetExt(
-    const int pid,
+    const int  pid,
     const char *tsetspec);
 int COREMOD_TOOLS_mvProcCPUset(
     const char *csetname);
 int COREMOD_TOOLS_mvProcCPUsetExt(
-    const int pid,
+    const int  pid,
     const char *csetname,
-    const int rtprio);
+    const int  rtprio);
 
 
 /* ================================================================
@@ -425,7 +425,7 @@ int COREMOD_TOOLS_mvProcTset(const char *tsetspec)
 }
 
 int COREMOD_TOOLS_mvProcTsetExt(
-    const int pid,
+    const int  pid,
     const char *tsetspec)
 {
     char command[200];
@@ -473,9 +473,10 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 }
 
 
-int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
-                                  const char *csetname,
-                                  const int   rtprio)
+int COREMOD_TOOLS_mvProcCPUsetExt(
+    const int  pid,
+    const char *csetname,
+    const int  rtprio)
 {
     char command[STRINGMAXLEN_COMMAND];
 

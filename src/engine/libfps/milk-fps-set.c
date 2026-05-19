@@ -106,7 +106,7 @@ static const char *get_type_name(uint32_t type)
  */
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, FSET_DESC, mh_color);
     milk_help_section("Usage", mh_color);

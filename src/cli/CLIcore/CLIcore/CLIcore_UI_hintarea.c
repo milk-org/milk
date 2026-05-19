@@ -70,8 +70,7 @@ int   pending_replace_len = 0;
  */
 int accept_suggestion(
     int count,
-    int key
-)
+    int key)
 {
     (void) count;
     (void) key;
@@ -103,8 +102,7 @@ int accept_suggestion(
  */
 void set_pending_suggestion(
     const char *text,
-    int replace_len
-)
+    int        replace_len)
 {
     free(pending_suggestion);
     pending_suggestion = NULL;
@@ -218,8 +216,7 @@ int get_ghost_budget(void)
 int print_ghost(
     const char *style,
     const char *text,
-    int budget
-)
+    int        budget)
 {
     int tlen = (int) strlen(text);
     int plen = tlen < budget ? tlen : budget;

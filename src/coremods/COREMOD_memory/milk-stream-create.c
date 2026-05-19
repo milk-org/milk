@@ -229,7 +229,7 @@ int main(
 
     errno_t ret = ImageStreamIO_createIm(
                       &image, name, naxis, sz,
-                      dtype, 1, nbkw, cbsize);
+                      dtype,  1, nbkw, cbsize);
 
     if(ret != IMAGESTREAMIO_SUCCESS)
     {

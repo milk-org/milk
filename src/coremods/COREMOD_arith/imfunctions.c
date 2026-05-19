@@ -98,7 +98,8 @@ do { \
  * @return Pixel value cast to double
  */
 static inline double get_pixel_double(
-    IMAGE *im, uint64_t index)
+    IMAGE    *im,
+    uint64_t index)
 {
     switch(im->md[0].datatype)
     {
@@ -128,9 +129,9 @@ static inline double get_pixel_double(
 }
 
 static inline void do_math_2_1_fastpath(
-    IMGID *inimg1,
-    IMGID *inimg2,
-    IMGID *outimg,
+    IMGID                         *inimg1,
+    IMGID                         *inimg2,
+    IMGID                         *outimg,
     double (*pt2function)(double, double))
 {
     uint64_t nelement = inimg1->md->nelement;
@@ -344,9 +345,9 @@ errno_t arith_image_function_im_im__d_d(
  * @return RETURN_SUCCESS or RETURN_FAILURE
  */
 errno_t arith_image_function_imd_im__dd_d_IMGID(
-    IMGID *imgin,
-    double v0,
-    IMGID *imgout,
+    IMGID                         *imgin,
+    double                        v0,
+    IMGID                         *imgout,
     double (*pt2function)(double, double))
 {
 
@@ -457,13 +458,11 @@ errno_t arith_image_function_imd_im__dd_d(
  * @return RETURN_SUCCESS or RETURN_FAILURE
  */
 errno_t arith_image_function_imdd_im__ddd_d_IMGID(
-    IMGID      *imgin,
-    double      v0,
-    double      v1,
-    IMGID      *imgout,
-    double (*pt2function)(double,
-                          double,
-                          double))
+    IMGID                         *imgin,
+    double                        v0,
+    double                        v1,
+    IMGID                         *imgout,
+    double (*pt2function)(double, double, double))
 {
 
     if(imgin->im == NULL)
@@ -545,13 +544,11 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
  * @brief Apply image+2-scalar function (string API)
  */
 errno_t arith_image_function_imdd_im__ddd_d(
-    const char *ID_name,
-    double      v0,
-    double      v1,
-    const char *ID_out,
-    double (*pt2function)(double,
-                          double,
-                          double))
+    const char                    *ID_name,
+    double                        v0,
+    double                        v1,
+    const char                    *ID_out,
+    double (*pt2function)(double, double, double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
                          arith_image_function_imdd_im__ddd_d_IMGID(&_in, v0, v1, &_out, pt2function));
@@ -653,11 +650,10 @@ errno_t arith_image_function_1_1_inplace(
 /* ------------------------------------------------------------------------- */
 
 errno_t arith_image_function_2_1_IMGID(
-    IMGID *inimg1,
-    IMGID *inimg2,
-    IMGID *outimg,
-    double (*pt2function)(double, double)
-)
+    IMGID                         *inimg1,
+    IMGID                         *inimg2,
+    IMGID                         *outimg,
+    double (*pt2function)(double, double))
 {
     DEBUG_TRACE_FSTART();
 
@@ -885,11 +881,10 @@ errno_t arith_image_function_2_1_IMGID(
 }
 
 errno_t arith_img_function_2_1(
-    IMGID inimg1,
-    IMGID inimg2,
-    IMGID *outimg,
-    double (*pt2function)(double, double)
-)
+    IMGID                         inimg1,
+    IMGID                         inimg2,
+    IMGID                         *outimg,
+    double (*pt2function)(double, double))
 {
     return arith_image_function_2_1_IMGID(&inimg1, &inimg2, outimg, pt2function);
 }
@@ -899,11 +894,10 @@ errno_t arith_img_function_2_1(
 /* ------------------------------------------------------------------------- */
 
 errno_t arith_image_function_2_1(
-    const char *ID_name1,
-    const char *ID_name2,
-    const char *ID_out,
-    double (*pt2function)(double, double)
-)
+    const char                    *ID_name1,
+    const char                    *ID_name2,
+    const char                    *ID_out,
+    double (*pt2function)(double, double))
 {
     IMGID inimg1 = imgid_make_from_name(ID_name1);
     IMGID inimg2 = imgid_make_from_name(ID_name2);
@@ -943,8 +937,8 @@ errno_t arith_image_function_2_1(
 }
 
 errno_t arith_image_function_2_1_inplace(
-    const char *ID_name1,
-    const char *ID_name2,
+    const char                    *ID_name1,
+    const char                    *ID_name2,
     double (*pt2function)(double, double))
 {
     IMGID img1 = imgid_make_from_name(ID_name1);
@@ -1017,8 +1011,11 @@ errno_t arith_image_function_2_1_inplace(
 /* ------------------------------------------------------------------------- */
 // Migrated to im_complex.c
 
-int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout,
-                                    double (*pt2function)(double, double))
+int arith_image_function_1f_1_IMGID(
+    IMGID                         *imgin,
+    double                        f1,
+    IMGID                         *imgout,
+    double (*pt2function)(double, double))
 {
     if(imgin->im == NULL)
     {
@@ -1097,16 +1094,21 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout,
     return EXIT_SUCCESS;
 }
 
-int arith_image_function_1f_1(const char *ID_name, double f1, const char *ID_out,
-                              double (*pt2function)(double, double))
+int arith_image_function_1f_1(
+    const char                    *ID_name,
+    double                        f1,
+    const char                    *ID_out,
+    double (*pt2function)(double, double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
                          arith_image_function_1f_1_IMGID(&_in, f1, &_out, pt2function));
 
 }
 
-int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt2function)(double,
-        double))
+int arith_image_function_1f_1_inplace_IMGID(
+    IMGID                         *imgin,
+    double                        f1,
+    double (*pt2function)(double, double))
 {
     uint64_t nelement = imgin->im->md[0].nelement;
 #ifdef _OPENMP
@@ -1127,8 +1129,10 @@ int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt
     return EXIT_SUCCESS;
 }
 
-int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*pt2function)(double,
-                                      double))
+int arith_image_function_1f_1_inplace(
+    const char                    *ID_name,
+    double                        f1,
+    double (*pt2function)(double, double))
 {
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
@@ -1141,8 +1145,12 @@ int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*p
     return ret;
 }
 
-int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout,
-                                     double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1_IMGID(
+    IMGID                         *imgin,
+    double                        f1,
+    double                        f2,
+    IMGID                         *imgout,
+    double (*pt2function)(double, double, double))
 {
     if(imgin->im == NULL)
     {
@@ -1193,16 +1201,23 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
     return (0);
 }
 
-int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const char *ID_out,
-                               double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1(
+    const char                    *ID_name,
+    double                        f1,
+    double                        f2,
+    const char                    *ID_out,
+    double (*pt2function)(double, double, double))
 {
     RESOLVE_CALL_CLEANUP(ID_name, ID_out,
                          arith_image_function_1ff_1_IMGID(&_in, f1, f2, &_out, pt2function));
 
 }
 
-int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2,
-        double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1_inplace_IMGID(
+    IMGID                         *imgin,
+    double                        f1,
+    double                        f2,
+    double (*pt2function)(double, double, double))
 {
     uint64_t nelement = imgin->im->md[0].nelement;
 #ifdef _OPENMP
@@ -1223,8 +1238,11 @@ int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2,
     return (0);
 }
 
-int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2,
-                                       double (*pt2function)(double, double, double))
+int arith_image_function_1ff_1_inplace(
+    const char                    *ID_name,
+    double                        f1,
+    double                        f2,
+    double (*pt2function)(double, double, double))
 {
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);

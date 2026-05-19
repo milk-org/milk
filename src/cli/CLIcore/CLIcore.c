@@ -136,7 +136,9 @@ static void runCLI_free();
 
 static volatile sig_atomic_t sigwinch_received = 0;
 
-static int command_line_process_options(int argc, char **argv);
+static int command_line_process_options(
+    int  argc,
+    char **argv);
 
 /// CLI commands
 int exitCLI();
@@ -555,8 +557,7 @@ static void sighandler(int sig)
  */
 static void readline_lazy_init(
     const char *prompt,
-    int        *flag
-)
+    int        *flag)
 {
     if(*flag != 0)
     {
@@ -1156,7 +1157,7 @@ void fnExit1(void)
 
 
 static int command_line_process_options(
-    int argc,
+    int  argc,
     char **argv)
 {
     int                option_index = 0;

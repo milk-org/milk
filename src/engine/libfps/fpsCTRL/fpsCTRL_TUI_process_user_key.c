@@ -31,8 +31,7 @@
 static int fpsCTRL_inline_edit_param(
     FPS *fps,
     int fps_idx,
-    int                        p_idx
-)
+    int p_idx)
 {
     char curval[200];
     functionparameter_GetParamValueString(
@@ -257,13 +256,12 @@ static int fpsCTRL_inline_edit_param(
  * or command handlers based on the current mode.
  */
 int fpsCTRL_TUI_process_user_key(
-    int                        ch,
+    int ch,
     FPS *fps,
-    KEYWORD_TREE_NODE         *keywnode,
-    FPSCTRL_TASK_ENTRY        *fpsctrltasklist __attribute__((unused)),
-    FPSCTRL_TASK_QUEUE        *fpsctrlqueuelist __attribute__((unused)),
-    FPSCTRL_PROCESS_VARS      *fpsCTRLvar
-)
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_TASK_ENTRY *fpsctrltasklist __attribute__((unused)),
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist __attribute__((unused)),
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     int loopOK = 1;
     int fps_idx;

@@ -76,7 +76,9 @@ static int lut_scale = -1;
 static double lut_min = -1.0;
 static double lut_max = -1.0;
 
-static rgb_t get_colormap_color(termview_colormap_t cmap, double v)
+static rgb_t get_colormap_color(
+    termview_colormap_t cmap,
+    double              v)
 {
     if(v < 0.0)
     {
@@ -391,7 +393,9 @@ static rgb_t get_colormap_color(termview_colormap_t cmap, double v)
     return c;
 }
 
-static void build_colormap_lut(termview_colormap_t cmap, termview_scale_t scale)
+static void build_colormap_lut(
+    termview_colormap_t cmap,
+    termview_scale_t    scale)
 {
     for(int i = 0; i < 1024; i++)
     {
@@ -614,7 +618,10 @@ static int tv_read_key(long timeout_us)
 /* -----------------------------------------------------------------------
  * Data Retrieval & Colormaps
  * ----------------------------------------------------------------------- */
-static inline double get_pixel_value(IMAGE *img, int x, int y)
+static inline double get_pixel_value(
+    IMAGE *img,
+    int   x,
+    int   y)
 {
     long idx = y * img->md[0].size[0] + x;
     if(x < 0 || x >= img->md[0].size[0] || y < 0 || y >= img->md[0].size[1])
@@ -650,7 +657,9 @@ static inline double get_pixel_value(IMAGE *img, int x, int y)
 
 
 
-static inline int compare_doubles(const void *a, const void *b)
+static inline int compare_doubles(
+    const void *a,
+    const void *b)
 {
     double arg1 = *(const double *)a;
     double arg2 = *(const double *)b;
@@ -879,7 +888,9 @@ static void termview_handle_mouse_event(tv_context_t *ctx)
     }
 }
 
-static void termview_handle_keyboard_event(tv_context_t *ctx, int ch)
+static void termview_handle_keyboard_event(
+    tv_context_t *ctx,
+    int          ch)
 {
     switch(ch)
     {
@@ -1068,9 +1079,19 @@ static void termview_handle_keyboard_event(tv_context_t *ctx, int ch)
     }
 }
 
-static void termview_render_image(tv_context_t *ctx, int disp_char_rows, int disp_cols,
-                                  double center_img_x, double center_img_y, double sign_x, double sign_y, double step, uint32_t xsize,
-                                  uint32_t ysize, double min_val, double max_val)
+static void termview_render_image(
+    tv_context_t *ctx,
+    int          disp_char_rows,
+    int          disp_cols,
+    double       center_img_x,
+    double       center_img_y,
+    double       sign_x,
+    double       sign_y,
+    double       step,
+    uint32_t     xsize,
+    uint32_t     ysize,
+    double       min_val,
+    double       max_val)
 {
 #define IS_IN_BOUNDS(jj, yy) \
     ( ((int)(center_img_x + sign_x * ((jj) - center_disp_x) * step) >= 0) && \
@@ -1224,8 +1245,12 @@ static void termview_render_image(tv_context_t *ctx, int disp_char_rows, int dis
 #undef IS_IN_BOUNDS
 }
 
-static void termview_render_colorbar(tv_context_t *ctx, int disp_char_rows, int bar_col_start,
-                                     double min_val, double max_val)
+static void termview_render_colorbar(
+    tv_context_t *ctx,
+    int          disp_char_rows,
+    int          bar_col_start,
+    double       min_val,
+    double       max_val)
 {
     for(int i = 0; i < disp_char_rows; i++)
     {
@@ -1283,8 +1308,13 @@ static void termview_render_colorbar(tv_context_t *ctx, int disp_char_rows, int 
     }
 }
 
-static void termview_render_infobar(tv_context_t *ctx, uint32_t xsize, uint32_t ysize, double step,
-                                    double min_val, double max_val)
+static void termview_render_infobar(
+    tv_context_t *ctx,
+    uint32_t     xsize,
+    uint32_t     ysize,
+    double       step,
+    double       min_val,
+    double       max_val)
 {
     int info_row = wrow - 3;
 
@@ -1502,7 +1532,10 @@ static void termview_render_infobar(tv_context_t *ctx, uint32_t xsize, uint32_t 
     }
 }
 
-static void termview_render_popup(tv_context_t *ctx, int disp_char_rows, int disp_cols)
+static void termview_render_popup(
+    tv_context_t *ctx,
+    int          disp_char_rows,
+    int          disp_cols)
 {
     if(ctx->popup_type <= 0)
     {
@@ -1715,7 +1748,7 @@ static void termview_flush_ansi(tv_context_t *ctx)
 }
 
 errno_t termview_screen(
-    const char *imagename,
+    const char         *imagename,
     termview_options_t options)
 {
     IMAGE img;

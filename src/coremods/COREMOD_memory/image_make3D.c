@@ -73,9 +73,9 @@ imageID make_3Dimage_IMGID(IMGID *img)
 
 imageID make_3Dimage(
     const char *name,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize)
+    uint32_t   xsize,
+    uint32_t   ysize,
+    uint32_t   zsize)
 {
     IMGID img = imgid_make_from_name_3D(
         name, xsize, ysize, zsize);

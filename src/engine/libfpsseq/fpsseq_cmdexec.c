@@ -661,8 +661,7 @@ int milkseq_exec_cmd(
     FPS                  *fps,
     KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    uint64_t                 *taskstatus
-)
+    uint64_t             *taskstatus)
 {
     const char *FPScmdline = state->tasklist[cmdindex].cmdstring;
     int  fpsindex;
@@ -1004,8 +1003,8 @@ int milkseq_exec_cmd(
     }
 
     milkseq_cmd_handle_sys(
-        FPScommand, FPScmdline, nbword, FPSarg0, FPSarg1,
-        cmdindex, state, fpsCTRLvar, fps, keywnode,
+        FPScommand,        FPScmdline, nbword, FPSarg0, FPSarg1,
+        cmdindex,          state, fpsCTRLvar, fps, keywnode,
         &cmdFOUND, &cmdOK, taskstatus, &testcnt);
 
     // wait, we skip FPS resolution for these commands!

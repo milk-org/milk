@@ -108,10 +108,15 @@ struct streamCTRL_TUI_state {
 };
 
 // Functions implemented in streamCTRL_TUI_input.c
-errno_t streamCTRL_keyinput_process(int ch, streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state);
+errno_t streamCTRL_keyinput_process(
+    int                         ch,
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state);
 
 // Functions implemented in streamCTRL_TUI_render.c
-void streamCTRL_render_screen(streamCTRLarg_struct *streamCTRLdata, struct streamCTRL_TUI_state *state);
+void streamCTRL_render_screen(
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state);
 
 // Render helpers that are currently static in streamCTRL_TUI.c but needed in streamCTRL_TUI_render.c
 

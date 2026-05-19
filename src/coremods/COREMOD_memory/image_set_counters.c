@@ -21,7 +21,8 @@
  * ============================================================= */
 
 errno_t COREMOD_MEMORY_image_set_status(
-    const char *IDname, int status)
+    const char *IDname,
+    int        status)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
@@ -39,7 +40,8 @@ errno_t COREMOD_MEMORY_image_set_status(
  * Directly overwrites the counter in SHM metadata.
  */
 errno_t COREMOD_MEMORY_image_set_cnt0(
-    const char *IDname, int cnt0)
+    const char *IDname,
+    int        cnt0)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
@@ -55,7 +57,8 @@ errno_t COREMOD_MEMORY_image_set_cnt0(
  * @brief Set the auxiliary counter (cnt1) of a shared stream.
  */
 errno_t COREMOD_MEMORY_image_set_cnt1(
-    const char *IDname, int cnt1)
+    const char *IDname,
+    int        cnt1)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);

@@ -17,9 +17,8 @@
  */
 errno_t fpsCTRL_scheduler_display(
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int                 wrow,
-    int                *wrowstart __attribute__((unused))
-)
+    int wrow,
+    int *wrowstart __attribute__((unused)))
 {
     struct timespec tnow;
     struct timespec tdiff;

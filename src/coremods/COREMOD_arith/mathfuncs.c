@@ -390,7 +390,8 @@ double Ptrunc(
 
 /** @brief Complex double addition */
 complex_double CPadd_CD_CD(
-    complex_double a, complex_double b)
+    complex_double a,
+    complex_double b)
 {
     complex_double v;
     v.re = a.re + b.re;
@@ -400,7 +401,8 @@ complex_double CPadd_CD_CD(
 
 /** @brief Complex double subtraction */
 complex_double CPsub_CD_CD(
-    complex_double a, complex_double b)
+    complex_double a,
+    complex_double b)
 {
     complex_double v;
     v.re = a.re - b.re;
@@ -410,7 +412,8 @@ complex_double CPsub_CD_CD(
 
 /** @brief Complex double multiplication */
 complex_double CPmult_CD_CD(
-    complex_double a, complex_double b)
+    complex_double a,
+    complex_double b)
 {
     complex_double v;
     v.re = a.re * b.re - a.im * b.im;
@@ -425,7 +428,8 @@ complex_double CPmult_CD_CD(
  * transcendentals.
  */
 complex_double CPdiv_CD_CD(
-    complex_double a, complex_double b)
+    complex_double a,
+    complex_double b)
 {
     complex_double v;
     double         den;
@@ -444,7 +448,8 @@ complex_double CPdiv_CD_CD(
 
 /** @brief Complex float addition */
 complex_float CPadd_CF_CF(
-    complex_float a, complex_float b)
+    complex_float a,
+    complex_float b)
 {
     complex_float v;
     v.re = a.re + b.re;
@@ -454,7 +459,8 @@ complex_float CPadd_CF_CF(
 
 /** @brief Complex float subtraction */
 complex_float CPsub_CF_CF(
-    complex_float a, complex_float b)
+    complex_float a,
+    complex_float b)
 {
     complex_float v;
     v.re = a.re - b.re;
@@ -464,7 +470,8 @@ complex_float CPsub_CF_CF(
 
 /** @brief Complex float multiplication */
 complex_float CPmult_CF_CF(
-    complex_float a, complex_float b)
+    complex_float a,
+    complex_float b)
 {
     complex_float v;
     v.re = a.re * b.re - a.im * b.im;
@@ -476,7 +483,8 @@ complex_float CPmult_CF_CF(
  * @brief Complex float division via conjugate
  */
 complex_float CPdiv_CF_CF(
-    complex_float a, complex_float b)
+    complex_float a,
+    complex_float b)
 {
     complex_float v;
     float         den;

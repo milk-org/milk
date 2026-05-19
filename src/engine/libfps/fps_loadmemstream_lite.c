@@ -39,8 +39,7 @@ static long   milkfps_nb_max   = 0;
  */
 void milkfps_set_image_array(
     IMAGE *imarray,
-    long   nb_max
-)
+    long  nb_max)
 {
     milkfps_imarray = imarray;
     milkfps_nb_max  = nb_max;
@@ -85,8 +84,7 @@ static imageID find_in_local(const char *sname)
 imageID COREMOD_IOFITS_LoadMemStream(
     const char *sname,
     uint64_t   *streamflag,
-    uint32_t   *imLOC
-)
+    uint32_t   *imLOC)
 {
     (void) streamflag;
 
@@ -331,8 +329,7 @@ int is_fits_file(const char *filename)
 __attribute__((weak, visibility("hidden")))
 int save_fits(
     const char *imname,
-    const char *filename
-)
+    const char *filename)
 {
     (void) imname;
     (void) filename;
@@ -350,8 +347,7 @@ int load_fits(
     const char *filename,
     const char *imname,
     int        verbose,
-    imageID    *ID
-)
+    imageID    *ID)
 {
     (void) filename;
     (void) imname;
@@ -370,8 +366,7 @@ __attribute__((weak, visibility("hidden")))
 int copy_image_ID(
     const char *name1,
     const char *name2,
-    int         shared
-)
+    int        shared)
 {
     (void) name1;
     (void) name2;

@@ -265,7 +265,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         imgid_make_from_name(inimname);
     resolveIMGID(
         &inimg, ERRMODE_ABORT,
-        dcimg, dcnimg);
+        dcimg,  dcnimg);
 
     IMGID outimg =
         imgid_make_from_name(outimname);

@@ -24,8 +24,10 @@
 
 /* forward decls */
 long image_write_keyword_L(
-    const char *IDname, const char *kname,
-    long value, const char *comment);
+    const char *IDname,
+    const char *kname,
+    long       value,
+    const char *comment);
 
 /**
  * @brief Print all keywords attached to an image.
@@ -224,11 +226,11 @@ CLIADDCMD_COREMOD_memory__image_keyword()
  * @brief Internal helper to write a keyword
  */
 static long _image_write_keyword(
-    IMGID img,
+    IMGID      img,
     const char *kname,
-    char type,
-    long numl,
-    double numf,
+    char       type,
+    long       numl,
+    double     numf,
     const char *valstr,
     const char *comment)
 {
@@ -339,9 +341,9 @@ long image_write_keyword_S(
  * @brief Legacy wrappers taking IMGID
  */
 errno_t image_keyword_addL(
-    IMGID img,
+    IMGID      img,
     const char *kwname,
-    long kwval,
+    long       kwval,
     const char *comment)
 {
     _image_write_keyword(img, kwname, 'L', kwval, 0.0, NULL, comment);
@@ -349,9 +351,9 @@ errno_t image_keyword_addL(
 }
 
 errno_t image_keyword_addD(
-    IMGID img,
+    IMGID      img,
     const char *kwname,
-    double kwval,
+    double     kwval,
     const char *comment)
 {
     _image_write_keyword(img, kwname, 'D', 0, kwval, NULL, comment);
@@ -359,7 +361,7 @@ errno_t image_keyword_addD(
 }
 
 errno_t image_keyword_addS(
-    IMGID img,
+    IMGID      img,
     const char *kwname,
     const char *kwval,
     const char *comment)
@@ -445,7 +447,7 @@ imageID image_list_keywords(
 long image_read_keyword_D(
     const char *IDname,
     const char *kname,
-    double *val)
+    double     *val)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
@@ -488,7 +490,7 @@ long image_read_keyword_D(
 long image_read_keyword_L(
     const char *IDname,
     const char *kname,
-    long *val)
+    long       *val)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);

@@ -32,8 +32,7 @@
  */
 int bubble_sort(
     double *__restrict array,
-    unsigned long count
-)
+    unsigned long      count)
 {
     unsigned long a;
     double        t;
@@ -61,9 +60,8 @@ int bubble_sort(
  */
 void qs_float(
     float *__restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    unsigned long     left,
+    unsigned long     right)
 {
     unsigned long i, j;
     float         x, y;
@@ -116,9 +114,8 @@ void qs_float(
  */
 void qs_long(
     long *__restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    unsigned long    left,
+    unsigned long    right)
 {
     unsigned long i, j;
     long                   x, y;
@@ -171,9 +168,8 @@ void qs_long(
  */
 void qs_double(
     double *__restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    unsigned long      left,
+    unsigned long      right)
 {
     unsigned long i, j;
     double                 x, y;
@@ -227,9 +223,8 @@ void qs_double(
  */
 void qs_ushort(
     unsigned short *__restrict array,
-    unsigned long left,
-    unsigned long right
-)
+    unsigned long              left,
+    unsigned long              right)
 {
     unsigned long i, j;
     unsigned short         x, y;
@@ -289,8 +284,7 @@ void qs_ushort(
  */
 void quick_sort_float(
     float *__restrict array,
-    unsigned long count
-)
+    unsigned long     count)
 {
     qs_float(array, 0, count - 1);
 }
@@ -303,8 +297,7 @@ void quick_sort_float(
  */
 void quick_sort_long(
     long *__restrict array,
-    unsigned long count
-)
+    unsigned long    count)
 {
     qs_long(array, 0, count - 1);
 }
@@ -317,8 +310,7 @@ void quick_sort_long(
  */
 void quick_sort_double(
     double *__restrict array,
-    unsigned long count
-)
+    unsigned long      count)
 {
     qs_double(array, 0, count - 1);
 }
@@ -331,8 +323,7 @@ void quick_sort_double(
  */
 void quick_sort_ushort(
     unsigned short *__restrict array,
-    unsigned long count
-)
+    unsigned long              count)
 {
     qs_ushort(array, 0, count - 1);
 }

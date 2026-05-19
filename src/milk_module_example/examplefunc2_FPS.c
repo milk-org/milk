@@ -61,7 +61,7 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  *
  */
 static errno_t example_compute_2Dimage_total(
-    IMGID *imgptr,
+    IMGID  *imgptr,
     double scalingcoeff)
 {
     DEBUG_TRACE_FSTART();

@@ -159,8 +159,11 @@ static void render_param_breadcrumb(
  * Tree Helpers
  * ========================================================= */
 
-int ov_get_fps_tree_items(const OV_FPS *fps, const char *path, fps_tree_item_t *items,
-                          int max_items)
+int ov_get_fps_tree_items(
+    const OV_FPS    *fps,
+    const char      *path,
+    fps_tree_item_t *items,
+    int             max_items)
 {
     int count = 0;
     int path_len = strlen(path);

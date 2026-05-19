@@ -28,12 +28,11 @@ typedef int errno_t;
  * stream propagation paths.
  */
 errno_t streamCTRL_print_SPTRACE_details(
-    IMAGE   *streamCTRLimages,
-    imageID ID,
-    pid_t   *upstreamproc,
-    int     NBupstreamproc,
-    uint32_t print_pid_mode
-)
+    IMAGE    *streamCTRLimages,
+    imageID  ID,
+    pid_t    *upstreamproc,
+    int      NBupstreamproc,
+    uint32_t print_pid_mode)
 {
     int Disp_inode_NBchar = 8;
 

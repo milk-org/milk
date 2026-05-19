@@ -602,9 +602,10 @@ errno_t list_commands_module(
 /** @brief Construct command line (CLI) arguments help string
  *
  */
-int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
-                           int          nbarg,
-                           char        *outargstring)
+int CLIhelp_make_argstring(
+    CLICMDARGDEF fpscliarg[],
+    int nbarg,
+    char *outargstring)
 {
     char tmpstr[STRINGMAXLEN_CMD_SYNTAX];
     tmpstr[0] = '\0';
@@ -733,10 +734,11 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
 /** @brief Assemble command line (CLI) example command string
  *
  */
-int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
-                                  int          nbarg,
-                                  char        *shortname,
-                                  char        *outcmdexstring)
+int CLIhelp_make_cmdexamplestring(
+    CLICMDARGDEF fpscliarg[],
+    int nbarg,
+    char *shortname,
+    char *outcmdexstring)
 {
     char tmpstr[STRINGMAXLEN_CMD_EXAMPLE];
 

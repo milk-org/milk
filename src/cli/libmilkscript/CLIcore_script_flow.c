@@ -51,8 +51,7 @@
  */
 void cli_exec_block_if(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-)
+    int nlines)
 {
     if(nlines < 2)
     {
@@ -211,8 +210,7 @@ void cli_exec_block_if(
  */
 void cli_exec_block_while(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-)
+    int nlines)
 {
     if(nlines < 2)
     {
@@ -316,7 +314,7 @@ void cli_exec_block_while(
         /* Execute body */
         cli_continue_flag = 0;
         cli_exec_lines(
-            lines + body_start,
+            lines +    body_start,
             body_end - body_start);
 
         if(cli_break_flag)
@@ -341,8 +339,7 @@ void cli_exec_block_while(
  */
 void cli_exec_block_until(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-)
+    int nlines)
 {
     if(nlines < 2)
     {
@@ -456,7 +453,7 @@ void cli_exec_block_until(
 
         cli_continue_flag = 0;
         cli_exec_lines(
-            lines + body_start,
+            lines +    body_start,
             body_end - body_start);
 
         if(cli_break_flag)
@@ -480,8 +477,7 @@ void cli_exec_block_until(
  */
 void cli_exec_block_select(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int  nlines
-)
+    int nlines)
 {
     if(nlines < 2)
     {
@@ -580,7 +576,7 @@ void cli_exec_block_select(
             cli_var_set(vn, "");
         }
         cli_exec_lines(
-            lines + 1,
+            lines +  1,
             nlines - 1);
     }
 }
@@ -595,8 +591,7 @@ void cli_exec_block_select(
  */
 void cli_exec_block_for(
     char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines
-)
+    int nlines)
 {
     if(nlines < 2)
     {
@@ -694,7 +689,7 @@ void cli_exec_block_for(
                         break;
                     }
                     cli_exec_lines(
-                        lines + 1,
+                        lines +  1,
                         nlines - 1);
                     /* step */
                     {
@@ -796,7 +791,7 @@ void cli_exec_block_for(
 
         cli_continue_flag = 0;
         cli_exec_lines(
-            lines + body_start,
+            lines +    body_start,
             body_end - body_start);
 
         if(cli_break_flag)

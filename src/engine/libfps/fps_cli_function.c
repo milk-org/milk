@@ -37,8 +37,7 @@ errno_t fps_generic_CLIfunction(
     CLICMDDATA      *cmdata,
     FPS_CLI_BINDING *bindings,
     int             nb_b,
-    fps_compute_fn   compute_fn
-)
+    fps_compute_fn  compute_fn)
 {
     FPS fps;
 
@@ -249,8 +248,7 @@ errno_t fps_generic_CLIfunction(
 void fps_fill_farg_examples(
     CLICMDARGDEF    *farg,
     FPS_CLI_BINDING *bindings,
-    int              nb_b
-)
+    int             nb_b)
 {
     for(int ii = 0; ii < nb_b; ii++)
     {

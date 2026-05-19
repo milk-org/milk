@@ -58,7 +58,7 @@ static void trim_whitespace(char *str)
  */
 static void expand_vars(
     SCRIPT_CTX *ctx,
-    char *line)
+    char       *line)
 {
     char result[MAX_LINE_LEN] = {0};
     char *p = line;
@@ -132,7 +132,7 @@ static void expand_vars(
 static int load_and_preprocess(
     SCRIPT_CTX *ctx,
     const char *filename,
-    int depth)
+    int        depth)
 {
     if(depth > 10)
     {

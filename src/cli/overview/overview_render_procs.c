@@ -13,12 +13,12 @@
 
 
 static int ov_procs__filter(
-    const OV_LAYOUT *lay,
-    const OV_MODEL *m,
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
     const OV_RELATED *rel,
-    int *filt_idx,
-    int *has_re,
-    regex_t *re)
+    int              *filt_idx,
+    int              *has_re,
+    regex_t          *re)
 {
     const char *names[OV_MAX_PROCS];
     for(int i = 0; i < m->nb_procs; i++)
@@ -27,7 +27,7 @@ static int ov_procs__filter(
     }
     int filt_n = ov_filter_build(
                      lay->filter_proc, names,
-                     m->nb_procs, filt_idx, OV_MAX_PROCS);
+                     m->nb_procs,      filt_idx, OV_MAX_PROCS);
 
     if(lay->freeze && lay->freeze_focus != OV_FOCUS_PROCS && rel != NULL)
     {
@@ -58,7 +58,9 @@ static int ov_procs__filter(
  */
 static void ov_procs__render_header(
     const OV_LAYOUT *lay,
-    int hrow, int hs, OV_RECT r)
+    int             hrow,
+    int             hs,
+    OV_RECT         r)
 {
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
@@ -110,7 +112,7 @@ static void ov_procs__render_header(
 
     /* Separator between header and data rows */
     render_separator(
-        hrow + 1, r.col + 1,
+        hrow +    1, r.col + 1,
         r.width - 2, OV_FG_PROC_HDR);
 }
 
@@ -118,12 +120,16 @@ static void ov_procs__render_header(
  * @brief Render process rows in the overview.
  */
 static void ov_procs__render_rows(
-    const OV_LAYOUT *lay,
-    const OV_MODEL *m,
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
     const OV_RELATED *rel,
-    int hrow, int hs, OV_RECT r,
-    const int *filt_idx, int filt_n,
-    int has_re, const regex_t *re)
+    int              hrow,
+    int              hs,
+    OV_RECT          r,
+    const int        *filt_idx,
+    int              filt_n,
+    int              has_re,
+    const regex_t    *re)
 {
     int8_t local_depth[OV_MAX_PROCS];
     memset(local_depth, 0, sizeof(local_depth));
@@ -1043,7 +1049,7 @@ static void ov_procs__render_rows(
         {
             clear_row(
                 row, r.col + 1,
-                r.width - 2, OV_BG_PANEL);
+                r.width -    2, OV_BG_PANEL);
         }
     }
     render_scroll_indicators(

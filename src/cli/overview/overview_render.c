@@ -191,7 +191,9 @@ int ov_render_header_text(
     return printed;
 }
 
-void render_pad_spaces(int chars_written, int panel_width);
+void render_pad_spaces(
+    int chars_written,
+    int panel_width);
 
 
 static const char *view_label(ov_view_t v)

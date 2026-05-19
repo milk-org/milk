@@ -146,7 +146,7 @@ static const char *pid_status_str(pid_t pid)
 
 static const char *proc_name_by_pid(
     const OV_MODEL *m,
-    pid_t pid)
+    pid_t          pid)
 {
     int pi = ov_find_proc_by_pid(m, pid);
     if(pi >= 0)
@@ -162,7 +162,7 @@ static const char *proc_name_by_pid(
 
 static void print_stream_info(
     const OV_MODEL *m,
-    int si)
+    int            si)
 {
     const OV_STREAM *s = &m->streams[si];
 
@@ -488,7 +488,7 @@ static void print_stream_info(
 
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, SI_ONELINE, mh_color);
     milk_help_section("Usage", mh_color);

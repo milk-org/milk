@@ -189,8 +189,7 @@ FPS *fps_local_get_by_index(
  */
 void fps_local_set_creator(
     const char *name,
-    const char *creator_name
-)
+    const char *creator_name)
 {
     if(name == NULL || creator_name == NULL)
     {
@@ -258,8 +257,7 @@ shared_track_creator[FPS_SHARED_TRACK_MAX]
  */
 void fps_shared_record_usage(
     const char *fps_name,
-    const char *creator_name
-)
+    const char *creator_name)
 {
     if(fps_name == NULL ||
             creator_name == NULL)
@@ -306,8 +304,7 @@ void fps_shared_record_usage(
  */
 int fps_shared_was_used_by(
     const char *fps_name,
-    const char *creator_name
-)
+    const char *creator_name)
 {
     if(fps_name == NULL ||
             creator_name == NULL)

@@ -99,8 +99,7 @@ errno_t getFPSlogfname(
 errno_t functionparameter_outlog_file(
     char *keyw,
     char *msgstring,
-    FILE *fpout
-)
+    FILE *fpout)
 {
     //get_FLAG_FPSOUTLOG();
 
@@ -143,7 +142,8 @@ errno_t functionparameter_outlog_file(
  */
 errno_t functionparameter_outlog(
     char *keyw,
-    const char *fmt, ...)
+    const char *fmt,
+    ...)
 {
     get_FLAG_FPSOUTLOG();
 

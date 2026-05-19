@@ -57,8 +57,7 @@ extern errno_t processinfo_procdirname(
 static int test_unary_file(
     const char *op,
     const char *arg,
-    int        *result
-)
+    int        *result)
 {
     if(strcmp(op, "-r") == 0)
     {
@@ -146,8 +145,7 @@ static int test_unary_file(
 static int test_unary_shm(
     const char *op,
     const char *arg,
-    int        *result
-)
+    int        *result)
 {
     if(strcmp(op, "-n") == 0)
     {
@@ -297,8 +295,7 @@ static int test_binary_op(
     const char *lhs,
     const char *op,
     const char *rhs,
-    int        *result
-)
+    int        *result)
 {
     double lv = strtod(lhs, NULL);
     double rv = strtod(rhs, NULL);

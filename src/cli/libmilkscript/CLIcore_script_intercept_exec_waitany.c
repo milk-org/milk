@@ -1,5 +1,8 @@
 #include <stddef.h>
-extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
+extern int cli_find_in_path(
+    const char *cmd,
+    char       *outpath,
+    size_t     outsize);
 extern int processinfo_procdirname(char *procdirname);
 #include <stddef.h>
 #include <sys/mman.h>
@@ -27,7 +30,9 @@ struct wa_event;
  * Checks if any FPS parameter meets the
  * specified condition.
  */
-static int eval_waitany_fps(struct wa_event *ev, const char *vstr);
+static int eval_waitany_fps(
+    struct wa_event *ev,
+    const char      *vstr);
 
 enum
 {
@@ -75,9 +80,9 @@ struct wa_event
  * from the argument list.
  */
 static int parse_waitany_args(
-    const char *p,
+    const char      *p,
     struct wa_event *events,
-    double *timeout_v)
+    double          *timeout_v)
 {
     char argbuf[STRINGMAXLEN_CLICMDLINE];
     strncpy(argbuf, p, STRINGMAXLEN_CLICMDLINE - 1);
@@ -287,7 +292,7 @@ static int parse_waitany_args(
  */
 static int open_waitany_handles(
     struct wa_event *events,
-    int nevents)
+    int             nevents)
 {
     int any_open = 0;
     for(int i = 0; i < nevents; i++)
@@ -337,7 +342,7 @@ static int open_waitany_handles(
 
 static void close_waitany_handles(
     struct wa_event *events,
-    int nevents)
+    int             nevents)
 {
     for(int i = 0; i < nevents; i++)
     {
@@ -354,8 +359,8 @@ static void close_waitany_handles(
 
 static int poll_waitany_events(
     struct wa_event *events,
-    int nevents,
-    double timeout)
+    int             nevents,
+    double          timeout)
 {
     struct timespec ts_start;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
@@ -452,7 +457,7 @@ static int poll_waitany_events(
  */
 static int eval_waitany_fps(
     struct wa_event *ev,
-    const char *vstr)
+    const char      *vstr)
 {
     int fired = 0;
     switch(ev->cmp_op)

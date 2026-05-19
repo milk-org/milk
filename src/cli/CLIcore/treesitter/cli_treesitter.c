@@ -159,8 +159,8 @@ static int compare_spans(
 
 void cli_ts_highlight_line(
     const char *line,
-    int len,
-    FILE *out)
+    int        len,
+    FILE       *out)
 {
     if(!ts_parser || !ts_query || !line || len == 0)
     {
@@ -308,8 +308,8 @@ int cli_ts_detect_color_level(void)
 void cli_ts_cleanup(void) {}
 void cli_ts_highlight_line(
     const char *line,
-    int len,
-    FILE *out)
+    int        len,
+    FILE       *out)
 {
     (void)len;
     fprintf(out, "%s", line);

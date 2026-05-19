@@ -71,8 +71,7 @@ static void expand_fpsvar_write(
     const char *token,
     char       *out,
     int        *opos,
-    int         maxlen
-)
+    int        maxlen)
 {
     char valstr[512];
     int  vlen  = 0;
@@ -321,8 +320,7 @@ static int expand_fpsvar_seq(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -414,8 +412,7 @@ static int expand_fpsvar_procinfo(
     const char *pname,
     char       *out,
     int        *opos,
-    int         maxlen
-)
+    int        maxlen)
 {
     if(pinfolist == NULL)
     {
@@ -559,8 +556,7 @@ static int expand_fpsvar_procinfo_strict(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -587,8 +583,7 @@ static int expand_fpsvar_stream(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -762,8 +757,7 @@ static int expand_fpsvar_fps_strict(
     char *pname,
     char *out,
     int  *opos,
-    int   maxlen
-)
+    int  maxlen)
 {
     char *dot2 = strchr(pname, '.');
     if(dot2 == NULL)
@@ -883,8 +877,7 @@ static int expand_fpsvar_fps_strict(
  */
 void cli_expand_fpsvar(
     char *line,
-    int   maxlen
-)
+    int  maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos      = 0;

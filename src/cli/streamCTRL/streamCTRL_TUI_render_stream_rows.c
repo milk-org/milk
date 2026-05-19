@@ -3,8 +3,12 @@
 /**
  * @brief Render the stream list rows.
  */
-void streamCTRL__render_stream_rows(streamCTRLarg_struct *streamCTRLdata,
-                                    struct streamCTRL_TUI_state *state, int NBsinfodisp, double frame_t_sec, int frame_color_level)
+void streamCTRL__render_stream_rows(
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state,
+    int                         NBsinfodisp,
+    double                      frame_t_sec,
+    int                         frame_color_level)
 {
     int DisplayFlag = 0;
     int print_pid_mode = PRINT_PID_DEFAULT;

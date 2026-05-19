@@ -55,8 +55,7 @@ typedef struct
  */
 static int parse_time_arg(
     const char *s,
-    time_t     *out
-)
+    time_t     *out)
 {
     if(s == NULL || out == NULL)
     {
@@ -137,9 +136,8 @@ static int parse_time_arg(
  *             Caller must free with cmdline_free.
  */
 static void cmdline_split(
-    int    *argc_out,
-    char ***argv_out
-)
+    int *argc_out,
+    char ***argv_out)
 {
     char buf[STRINGMAXLEN_CLICMDLINE];
     strncpy(buf, data.CLIcmdline,
@@ -219,9 +217,8 @@ static void cmdline_split(
  * @brief Free the argv array from cmdline_split().
  */
 static void cmdline_free(
-    int argc,
-    char **argv
-)
+    int  argc,
+    char **argv)
 {
     for(int i = 0; i < argc; i++)
     {

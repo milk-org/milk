@@ -18,8 +18,8 @@
  */
 int check_2Dsize(
     const char *ID_name,
-    uint32_t xsize,
-    uint32_t ysize)
+    uint32_t   xsize,
+    uint32_t   ysize)
 {
     int     retval;
     IMGID img = imgid_make_from_name(ID_name);
@@ -52,10 +52,11 @@ int check_2Dsize(
 /**
  * @brief Verify that an image has the expected 3D size.
  */
-int check_3Dsize(const char *ID_name,
-                 uint32_t    xsize,
-                 uint32_t    ysize,
-                 uint32_t    zsize)
+int check_3Dsize(
+    const char *ID_name,
+    uint32_t   xsize,
+    uint32_t   ysize,
+    uint32_t   zsize)
 {
     int     retval;
     IMGID img = imgid_make_from_name(ID_name);
@@ -94,9 +95,10 @@ int check_3Dsize(const char *ID_name,
     return retval;
 }
 
-int COREMOD_MEMORY_check_2Dsize(const char *IDname,
-                                uint32_t    xsize,
-                                uint32_t    ysize)
+int COREMOD_MEMORY_check_2Dsize(
+    const char *IDname,
+    uint32_t   xsize,
+    uint32_t   ysize)
 {
     int     sizeOK = 1; // 1 if size matches
     IMGID img = imgid_make_from_name(IDname);
@@ -138,10 +140,11 @@ int COREMOD_MEMORY_check_2Dsize(const char *IDname,
     return sizeOK;
 }
 
-int COREMOD_MEMORY_check_3Dsize(const char *IDname,
-                                uint32_t    xsize,
-                                uint32_t    ysize,
-                                uint32_t    zsize)
+int COREMOD_MEMORY_check_3Dsize(
+    const char *IDname,
+    uint32_t   xsize,
+    uint32_t   ysize,
+    uint32_t   zsize)
 {
     int     sizeOK = 1; // 1 if size matches
     IMGID img = imgid_make_from_name(IDname);

@@ -133,9 +133,8 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
  */
 void fps_streamname_modifier_label(
     const FPS_STREAMNAME_PARSED *p,
-    char *buf,
-    int   bufsz
-)
+    char                        *buf,
+    int                         bufsz)
 {
     if(bufsz < 2)
     {

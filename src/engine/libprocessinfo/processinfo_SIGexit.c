@@ -21,7 +21,7 @@
  */
 int processinfo_SIGexit(
     PROCESSINFO *processinfo,
-    int SignalNumber)
+    int         SignalNumber)
 {
     char            timestring[200];
     struct timespec tstop;

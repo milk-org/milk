@@ -24,8 +24,8 @@
  * @name:  Sequencer name
  */
 static void build_shm_name(
-    char *dest,
-    size_t size,
+    char       *dest,
+    size_t     size,
     const char *name)
 {
     snprintf(dest, size, "%s%s.shm", SHM_PREFIX, name);
@@ -38,8 +38,8 @@ static void build_shm_name(
  * @name:  Sequencer name
  */
 static void build_fifo_name(
-    char *dest,
-    size_t size,
+    char       *dest,
+    size_t     size,
     const char *name)
 {
     snprintf(dest, size, "%s%s.fifo", FIFO_PREFIX, name);

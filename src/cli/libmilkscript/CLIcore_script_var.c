@@ -20,8 +20,7 @@
  */
 void cli_var_set(
     const char *name,
-    const char *val
-)
+    const char *val)
 {
     int type = 2; // default string
     long numl = 0;

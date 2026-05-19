@@ -694,7 +694,7 @@ retry_fuzzy:
 char **
 CLI_completion(
     const char *text,
-    int start,
+    int        start,
     int __attribute__((unused)) end
 )
 {

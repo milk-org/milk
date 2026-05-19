@@ -186,9 +186,8 @@ static void print_help(const char *progname)
  */
 static void param_value_str(
     FPS_PARAM *fp,
-    char *buf,
-    int buflen
-)
+    char      *buf,
+    int       buflen)
 {
     switch (fp->type)
     {
@@ -372,7 +371,7 @@ int main(int argc, char *argv[])
 
         /* Scan FPS */
         functionparameter_scan_fps(
-            0, "_ALL", fpsarray, keywnode,
+            0, "_ALL",                 fpsarray, keywnode,
             &NBkwn, &NBfps, &NBpindex, 0);
 
         /* Mark all tracked as inactive */

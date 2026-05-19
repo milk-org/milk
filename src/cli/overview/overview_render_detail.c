@@ -116,7 +116,7 @@ static int ov_fps__render_detail_stream(
                          (uint64_t) s->nelement);
         H_ov_buf_printf(
             " Type: %s  Size: %s  Elements: %" PRIu64,
-            render_dtype(s->datatype), szb,
+            render_dtype(s->datatype),         szb,
             (uint64_t) s->nelement);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)

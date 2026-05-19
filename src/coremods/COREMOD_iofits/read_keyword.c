@@ -26,9 +26,10 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
  * Opens the FITS file, reads the named keyword,
  * and stores the value in the output buffer.
  */
-int read_keyword(const char *restrict file_name,
-                 const char *restrict KEYWORD,
-                 char *restrict content)
+int read_keyword(
+    const char *restrict file_name,
+    const char *restrict KEYWORD,
+    char *restrict       content)
 {
     fitsfile *fptr; /* FITS file pointer, defined in fitsio.h */
     int       exists = 0;
@@ -81,8 +82,9 @@ int read_keyword(const char *restrict file_name,
  * Simplified interface returning the raw keyword
  * value as a string.
  */
-errno_t read_keyword_alone(const char *restrict file_name,
-                           const char *restrict KEYWORD)
+errno_t read_keyword_alone(
+    const char *restrict file_name,
+    const char *restrict KEYWORD)
 {
     char *content =
         (char *) malloc(sizeof(char) * STRINGMAXLEN_FITSKEYWORDVALUE);

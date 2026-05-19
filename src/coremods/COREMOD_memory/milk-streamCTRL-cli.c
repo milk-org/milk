@@ -275,7 +275,7 @@ static void print_stream(
 
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, "command-line interface for monitoring shared memory streams", mh_color);
     milk_help_section("Usage", mh_color);

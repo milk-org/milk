@@ -40,8 +40,7 @@
 static void fps_autopopulate_trigger_stream(
     FPS             *fps,
     FPS_CLI_BINDING *bindings,
-    int                        nb_b
-)
+    int             nb_b)
 {
     /* Find the first TRIGGER_STREAM binding */
     const char *trigger_name = NULL;
@@ -117,8 +116,7 @@ int fps_generic_init(
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,
     int             nb_b,
-    int              procinfo
-)
+    int             procinfo)
 {
     if(fps_name[0] == '_')
     {
@@ -199,8 +197,7 @@ int fps_generic_init(
  */
 int fps_check_has_trigger_binding(
     FPS_CLI_BINDING *bindings,
-    int              nb_b
-)
+    int             nb_b)
 {
     for(int ii = 0; ii < nb_b; ii++)
     {
@@ -232,8 +229,7 @@ int fps_check_has_trigger_binding(
 void fps_loop_override_trigger(
     FPS             *fps,
     FPS_CLI_BINDING *bindings,
-    int                        nb_b
-)
+    int             nb_b)
 {
     /*
      * Find trigger stream from bindings.
@@ -381,9 +377,8 @@ void fps_loop_override_trigger(
  * @param delay_sec Delay between iterations (seconds)
  */
 void fps_loop_override_delay(
-    FPS *fps,
-    double                     delay_sec
-)
+    FPS    *fps,
+    double delay_sec)
 {
     printf("\033[33m-loopd\033[0m"
            " Delay loop (%.6f sec)\n",
@@ -429,9 +424,8 @@ void fps_loop_override_delay(
  */
 int fps_generic_conf_cb(
     const char *fps_name,
-    int         loop,
-    errno_t (*confcheck_fn)(void)
-)
+    int loop,
+    errno_t (*confcheck_fn)(void))
 {
     if(fps_name[0] == '_')
     {
@@ -468,8 +462,7 @@ int fps_generic_conf_cb(
  */
 int fps_generic_conf(
     const char *fps_name,
-    int         loop
-)
+    int        loop)
 {
     return fps_generic_conf_cb(
                fps_name, loop, NULL);
@@ -502,8 +495,7 @@ int fps_generic_run(
     CLICMDARGDEF    *farg,
     FPS_CLI_BINDING *bindings,
     int             nb_b,
-    fps_compute_fn   compute_fn
-)
+    fps_compute_fn  compute_fn)
 {
     FPS fps;
     long loopcnt = 0;

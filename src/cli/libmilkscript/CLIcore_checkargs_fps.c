@@ -51,9 +51,10 @@
  * All CLI arguments converted to FPS parameters
  *
  */
-int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
-                                int                        nbarg,
-                                FPS *fps)
+int CLIargs_to_FPSparams_setval(
+    CLICMDARGDEF fpscliarg[],
+    int nbarg,
+    FPS *fps)
 {
     DEBUG_TRACE_FSTART();
 

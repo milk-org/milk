@@ -1,5 +1,8 @@
 #include <stddef.h>
-extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
+extern int cli_find_in_path(
+    const char *cmd,
+    char       *outpath,
+    size_t     outsize);
 extern int processinfo_procdirname(char *procdirname);
 #include <stddef.h>
 #include <sys/mman.h>
@@ -87,8 +90,11 @@ static int cli_trap_list_active(void)
 /**
  * @brief Process stream-based trap events.
  */
-static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_interval_ms,
-                                    int opt_max_fires)
+static void cli_trap_process_stream(
+    const char *nm,
+    const char *tcmd,
+    long       opt_interval_ms,
+    int        opt_max_fires)
 {
     /* Find or alloc slot */
     int slot = -1;
@@ -164,8 +170,11 @@ static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_i
 /**
  * @brief Process FPS-based trap events.
  */
-static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_interval_ms,
-                                 int opt_max_fires)
+static void cli_trap_process_fps(
+    const char *fp,
+    const char *tcmd,
+    long       opt_interval_ms,
+    int        opt_max_fires)
 {
     /* Split fpsname.param
      * and optional op+val */
@@ -308,8 +317,11 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
     }
 }
 
-static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_interval_ms,
-                                  int opt_max_fires)
+static void cli_trap_process_proc(
+    const char *pp,
+    const char *tcmd,
+    long       opt_interval_ms,
+    int        opt_max_fires)
 {
     char pname[128];
     int pstate = 0;

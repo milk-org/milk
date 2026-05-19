@@ -1578,20 +1578,23 @@ static const TSStateId ts_primary_state_ids[STATE_COUNT] = {
   [686] = 601,
 };
 
-static bool ts_lex(TSLexer *lexer, TSStateId state) {
+static bool ts_lex(
+    TSLexer   *lexer,
+    TSStateId state)
+{
   START_LEXER();
   eof = lexer->eof(lexer);
   switch (state) {
     case 0:
       if (eof) ADVANCE(47);
       ADVANCE_MAP(
-        '"', 97,
-        '#', 48,
-        '$', 58,
-        '&', 18,
+        '"',  97,
+        '#',  48,
+        '$',  58,
+        '&',  18,
         '\'', 103,
-        '(', 142,
-        ')', 96,
+        '(',  142,
+        ')',  96,
         '.', 21,
         '/', 41,
         '2', 108,
@@ -1628,13 +1631,13 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 4:
       ADVANCE_MAP(
-        '"', 97,
-        '#', 48,
-        '$', 58,
-        '&', 18,
+        '"',  97,
+        '#',  48,
+        '$',  58,
+        '&',  18,
         '\'', 103,
-        '(', 142,
-        ')', 20,
+        '(',  142,
+        ')',  20,
         '.', 119,
         '/', 129,
         '2', 110,
@@ -1661,29 +1664,29 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 5:
       ADVANCE_MAP(
-        '"', 97,
-        '#', 48,
-        '$', 58,
-        '&', 18,
+        '"',  97,
+        '#',  48,
+        '$',  58,
+        '&',  18,
         '\'', 103,
-        '(', 142,
-        '-', 82,
-        '.', 72,
-        '/', 129,
-        '2', 73,
-        ';', 133,
-        '<', 150,
-        '>', 148,
-        '@', 125,
+        '(',  142,
+        '-',  82,
+        '.',  72,
+        '/',  129,
+        '2',  73,
+        ';',  133,
+        '<',  150,
+        '>',  148,
+        '@',  125,
         '\\', 3,
-        '|', 144,
-        '}', 68,
-        '*', 132,
-        '?', 132,
-        '[', 132,
-        ']', 132,
-        '{', 132,
-        '~', 132,
+        '|',  144,
+        '}',  68,
+        '*',  132,
+        '?',  132,
+        '[',  132,
+        ']',  132,
+        '{',  132,
+        '~',  132,
       );
       if (('\t' <= lookahead && lookahead <= '\r') ||
           lookahead == ' ') SKIP(5);
@@ -1694,19 +1697,19 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 6:
       ADVANCE_MAP(
-        '"', 97,
-        '#', 48,
-        '$', 58,
-        '&', 18,
+        '"',  97,
+        '#',  48,
+        '$',  58,
+        '&',  18,
         '\'', 103,
-        '(', 142,
-        '.', 119,
-        '/', 129,
-        ';', 133,
-        '@', 125,
+        '(',  142,
+        '.',  119,
+        '/',  129,
+        ';',  133,
+        '@',  125,
         '\\', 3,
-        '|', 144,
-        '}', 68,
+        '|',  144,
+        '}',  68,
       );
       if (('\t' <= lookahead && lookahead <= '\r') ||
           lookahead == ' ') SKIP(6);
@@ -1722,14 +1725,14 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 7:
       ADVANCE_MAP(
-        '"', 97,
-        '$', 58,
+        '"',  97,
+        '$',  58,
         '\'', 103,
-        '-', 82,
-        '.', 72,
-        '/', 129,
-        ';', 133,
-        '@', 125,
+        '-',  82,
+        '.',  72,
+        '/',  129,
+        ';',  133,
+        '@',  125,
         '\\', 3,
       );
       if (('\t' <= lookahead && lookahead <= '\r') ||
@@ -1747,21 +1750,21 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 8:
       ADVANCE_MAP(
-        '"', 97,
-        '$', 58,
+        '"',  97,
+        '$',  58,
         '\'', 103,
-        '-', 82,
-        '.', 72,
-        '/', 129,
-        '@', 125,
+        '-',  82,
+        '.',  72,
+        '/',  129,
+        '@',  125,
         '\\', 3,
-        ']', 123,
-        '*', 132,
-        '?', 132,
-        '[', 132,
-        '{', 132,
-        '}', 132,
-        '~', 132,
+        ']',  123,
+        '*',  132,
+        '?',  132,
+        '[',  132,
+        '{',  132,
+        '}',  132,
+        '~',  132,
       );
       if (('\t' <= lookahead && lookahead <= '\r') ||
           lookahead == ' ') SKIP(8);
@@ -1772,21 +1775,21 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 9:
       ADVANCE_MAP(
-        '"', 97,
-        '$', 58,
+        '"',  97,
+        '$',  58,
         '\'', 103,
-        '-', 82,
-        '.', 72,
-        '/', 129,
-        '@', 125,
+        '-',  82,
+        '.',  72,
+        '/',  129,
+        '@',  125,
         '\\', 3,
-        ']', 138,
-        '*', 132,
-        '?', 132,
-        '[', 132,
-        '{', 132,
-        '}', 132,
-        '~', 132,
+        ']',  138,
+        '*',  132,
+        '?',  132,
+        '[',  132,
+        '{',  132,
+        '}',  132,
+        '~',  132,
       );
       if (('\t' <= lookahead && lookahead <= '\r') ||
           lookahead == ' ') SKIP(9);
@@ -1797,14 +1800,14 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 10:
       ADVANCE_MAP(
-        '"', 97,
-        '$', 58,
+        '"',  97,
+        '$',  58,
         '\'', 103,
-        '.', 119,
-        '/', 129,
-        '@', 125,
+        '.',  119,
+        '/',  129,
+        '@',  125,
         '\\', 3,
-        ']', 123,
+        ']',  123,
       );
       if (('\t' <= lookahead && lookahead <= '\r') ||
           lookahead == ' ') SKIP(10);
@@ -1822,14 +1825,14 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 11:
       ADVANCE_MAP(
-        '"', 97,
-        '$', 58,
+        '"',  97,
+        '$',  58,
         '\'', 103,
-        '.', 119,
-        '/', 129,
-        '@', 125,
+        '.',  119,
+        '/',  129,
+        '@',  125,
         '\\', 3,
-        ']', 138,
+        ']',  138,
       );
       if (('\t' <= lookahead && lookahead <= '\r') ||
           lookahead == ' ') SKIP(11);
@@ -2020,13 +2023,13 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 42:
       if (eof) ADVANCE(47);
       ADVANCE_MAP(
-        '"', 97,
-        '#', 48,
-        '$', 58,
-        '&', 18,
+        '"',  97,
+        '#',  48,
+        '$',  58,
+        '&',  18,
         '\'', 103,
-        '(', 142,
-        ')', 96,
+        '(',  142,
+        ')',  96,
         '-', 82,
         '.', 72,
         '/', 129,
@@ -2052,13 +2055,13 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 43:
       if (eof) ADVANCE(47);
       ADVANCE_MAP(
-        '"', 97,
-        '#', 48,
-        '$', 58,
-        '&', 18,
+        '"',  97,
+        '#',  48,
+        '$',  58,
+        '&',  18,
         '\'', 103,
-        '(', 142,
-        ')', 96,
+        '(',  142,
+        ')',  96,
         '.', 119,
         '/', 129,
         '2', 110,
@@ -2085,13 +2088,13 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 44:
       if (eof) ADVANCE(47);
       ADVANCE_MAP(
-        '"', 97,
-        '#', 48,
-        '$', 58,
-        '&', 18,
+        '"',  97,
+        '#',  48,
+        '$',  58,
+        '&',  18,
         '\'', 103,
-        '(', 142,
-        ')', 96,
+        '(',  142,
+        ')',  96,
         '.', 119,
         '/', 129,
         ';', 134,
@@ -3060,7 +3063,10 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
   }
 }
 
-static bool ts_lex_keywords(TSLexer *lexer, TSStateId state) {
+static bool ts_lex_keywords(
+    TSLexer   *lexer,
+    TSStateId state)
+{
   START_LEXER();
   eof = lexer->eof(lexer);
   switch (state) {

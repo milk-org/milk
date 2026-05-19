@@ -11,7 +11,10 @@
 #include "milk_types.h"
 #include "fps.h"
 
-imageID image_ID(const char *apzname, IMAGE *dcimage_array, long dcnbimg);
+imageID image_ID(
+    const char *apzname,
+    IMAGE      *dcimage_array,
+    long       dcnbimg);
 
 #ifdef __cplusplus
 

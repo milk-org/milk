@@ -13,9 +13,9 @@ imageID
 COREMOD_MEMORY_image_NETUDPtransmit(
     const char *IDname,
     const char *IPaddr,
-    int port,
-    int do_counter_sync,
-    int RT_priority);
+    int        port,
+    int        do_counter_sync,
+    int        RT_priority);
 
 imageID
 COREMOD_MEMORY_image_NETUDPreceive(

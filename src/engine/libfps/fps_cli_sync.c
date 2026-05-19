@@ -33,9 +33,8 @@ static char **standalone_argv;
  * @param argv  Argument vector from main()
  */
 void fps_cli_set_standalone_args(
-    int    argc,
-    char **argv
-)
+    int  argc,
+    char **argv)
 {
     standalone_argc = argc;
     standalone_argv = argv;
@@ -47,11 +46,10 @@ void fps_cli_set_standalone_args(
  *        parameter, interpreting it according to the type.
  */
 static void set_fps_value_from_string(
-    FPS      *fps,
-    long     pindex,
-    uint64_t type,
-    const char                *str
-)
+    FPS        *fps,
+    long       pindex,
+    uint64_t   type,
+    const char *str)
 {
     if(type == FPTYPE_FLOAT64)
     {
@@ -112,10 +110,9 @@ static void set_fps_value_from_string(
  *        the module-local C variable via the binding.
  */
 static void sync_fps_to_local(
-    FPS  *fps,
-    long pindex,
-    FPS_CLI_BINDING           *b
-)
+    FPS             *fps,
+    long            pindex,
+    FPS_CLI_BINDING *b)
 {
     if(b->type == FPTYPE_FLOAT64)
     {
@@ -197,8 +194,7 @@ errno_t fps_process_cli_and_sync(
     FPS             *fps,
     CLICMDARGDEF    *farg,
     FPS_CLI_BINDING *bindings,
-    int                        nb_b
-)
+    int             nb_b)
 {
     /* ---- Step 1: CLI -> FPS ---- */
     if(standalone_argv != NULL)

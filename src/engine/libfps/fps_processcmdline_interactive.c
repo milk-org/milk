@@ -550,8 +550,7 @@ int functionparameter_FPSprocess_cmdline(
     KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
     FPS                  *fps,
-    uint64_t                  *taskstatus
-)
+    uint64_t             *taskstatus)
 {
     int  fpsindex;
     long pindex;
@@ -706,8 +705,8 @@ int functionparameter_FPSprocess_cmdline(
     }
 
     fps_cmd_handle_sys(
-        FPScommand, nbword, FPSarg0, FPSarg1,
-        fpsCTRLvar, fps, keywnode, fpsctrlqueuelist,
+        FPScommand,        nbword, FPSarg0, FPSarg1,
+        fpsCTRLvar,        fps, keywnode, fpsctrlqueuelist,
         &cmdFOUND, &cmdOK, taskstatus, &testcnt);
 
     // From this point on, FPSarg0 is expected to be a FPS entry

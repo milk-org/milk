@@ -33,11 +33,13 @@
 
 int exec_arith_binary(
     const char *op,
-    int lt, const char *lw,
-    int rt, const char *rw,
-    char *name,
-    int *type,
-    int *tmp_name_index)
+    int        lt,
+    const char *lw,
+    int        rt,
+    const char *rw,
+    char       *name,
+    int        *type,
+    int        *tmp_name_index)
 {
     int lvar = (lt == ARITHTOKENTYPE_VARIABLE);
     int rvar = (rt == ARITHTOKENTYPE_VARIABLE);
@@ -194,11 +196,11 @@ int exec_arith_binary(
 
 int exec_arith_unary(
     const char *fname,
-    int arg_wtype,
+    int        arg_wtype,
     const char *arg_word,
-    char *name,
-    int *type,
-    int *tmp_name_index)
+    char       *name,
+    int        *type,
+    int        *tmp_name_index)
 {
     /*
      * Unary function dispatch table.
@@ -296,13 +298,16 @@ int exec_arith_unary(
 
 int exec_arith_multfunc(
     const char *fn,
-    int nbvarinput,
-    int a1t, const char *a1w,
-    int a2t, const char *a2w,
-    int a3t, const char *a3w,
-    char *name,
-    int *type,
-    int *tmp_name_index)
+    int        nbvarinput,
+    int        a1t,
+    const char *a1w,
+    int        a2t,
+    const char *a2w,
+    int        a3t,
+    const char *a3w,
+    char       *name,
+    int        *type,
+    int        *tmp_name_index)
 {
     int a1var = (a1t == ARITHTOKENTYPE_VARIABLE);
     int a2var = (a2t == ARITHTOKENTYPE_VARIABLE);

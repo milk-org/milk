@@ -6,7 +6,7 @@
 
 int ov_find_stream_by_inode(
     const OV_MODEL *model,
-    ino_t inode)
+    ino_t          inode)
 {
     if(inode == 0)
     {
@@ -28,7 +28,7 @@ int ov_find_stream_by_inode(
  */
 int ov_find_stream_by_name(
     const OV_MODEL *model,
-    const char *name)
+    const char     *name)
 {
     if(name == NULL || name[0] == '\0')
     {
@@ -51,7 +51,7 @@ int ov_find_stream_by_name(
  */
 int ov_find_proc_by_pid(
     const OV_MODEL *model,
-    pid_t pid)
+    pid_t          pid)
 {
     if(pid <= 0)
     {
@@ -74,11 +74,11 @@ int ov_find_proc_by_pid(
  * ========================================================= */
 
 void ov_add_edge(
-    OV_MODEL *model,
-    int src,
-    int tgt,
+    OV_MODEL       *model,
+    int            src,
+    int            tgt,
     ov_edge_type_t type,
-    const char *label)
+    const char     *label)
 {
     if(src < 0 || tgt < 0 || src == tgt)
     {
@@ -127,11 +127,11 @@ void ov_add_edge(
  * Return: node index in model->nodes[].
  */
 static int add_node(
-    OV_MODEL *model,
+    OV_MODEL       *model,
     ov_node_type_t type,
-    int index,
-    const char *name,
-    int active)
+    int            index,
+    const char     *name,
+    int            active)
 {
     if(model->nb_nodes >= OV_MAX_NODES)
     {

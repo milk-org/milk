@@ -12,8 +12,9 @@
  * Lists keyword, type, value, and flags for each
  * active entry.
  */
-int function_parameter_printlist(FPS_PARAM *funcparamarray,
-                                 long                NBparamMAX)
+int function_parameter_printlist(
+    FPS_PARAM *funcparamarray,
+    long      NBparamMAX)
 {
     long pindex = 0;
     long pcnt   = 0;

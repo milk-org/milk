@@ -12,7 +12,9 @@
 
 
 // Prototype for ported or stubbed function
-int save_fits(const char *imname, const char *filename);
+int save_fits(
+    const char *imname,
+    const char *filename);
 
 
 /**
@@ -26,9 +28,8 @@ int save_fits(const char *imname, const char *filename);
  * @return RETURN_SUCCESS
  */
 int functionparameter_SaveParam2disk(
-    FPS *fpsentry,
-    const char                *paramname
-)
+    FPS        *fpsentry,
+    const char *paramname)
 {
     int pindex;
 
@@ -54,8 +55,9 @@ int functionparameter_SaveParam2disk(
  * @param dirname   Target directory (created if absent)
  * @return RETURN_SUCCESS
  */
-int functionparameter_SaveFPS2disk_dir(FPS *fpsentry,
-                                       char                      *dirname)
+int functionparameter_SaveFPS2disk_dir(
+    FPS  *fpsentry,
+    char *dirname)
 {
     char  fname[STRINGMAXLEN_FULLFILENAME];
     FILE *fpoutval;
@@ -259,9 +261,10 @@ errno_t functionparameter_write_archivescript(FPS *fps)
  * outname.fits.
  *
  */
-errno_t fps_write_RUNoutput_image(FPS *fps,
-                                  const char                *imagename,
-                                  const char                *outname)
+errno_t fps_write_RUNoutput_image(
+    FPS        *fps,
+    const char *imagename,
+    const char *outname)
 {
     char ffname[STRINGMAXLEN_FULLFILENAME];
     char timestring[TIMESTRINGLEN];

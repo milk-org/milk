@@ -45,9 +45,10 @@ extern long FRAME_MD_MAGIC;
  * mode = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
 
-imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
-        __attribute__((unused)) int mode,
-        int RT_priority)
+imageID COREMOD_MEMORY_image_NETWORKreceive(
+    int                         port,
+    __attribute__((unused)) int mode,
+    int RT_priority)
 {
     struct sockaddr_in sock_server;
     struct sockaddr_in sock_client;
@@ -248,7 +249,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         IMGID img = imgid_make_from_name(
                         imgmd->name);
         resolveIMGID(
-            &img, ERRMODE_NULL,
+            &img,  ERRMODE_NULL,
             dcimg, dcnimg);
         ID = img.ID;
     }

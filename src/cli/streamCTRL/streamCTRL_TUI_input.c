@@ -10,10 +10,9 @@
  * and filter handlers.
  */
 errno_t streamCTRL_keyinput_process(
-    int ch,
-    streamCTRLarg_struct *streamCTRLdata,
-    struct streamCTRL_TUI_state *state
-)
+    int                         ch,
+    streamCTRLarg_struct        *streamCTRLdata,
+    struct streamCTRL_TUI_state *state)
 {
     char c; // for user input
     int  stringindex;

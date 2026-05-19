@@ -9,8 +9,8 @@
  */
 void procctrl_handle_keyboard_event(
     procctrl_context_t *ctx,
-    int ch,
-    int NBactive)
+    int                ch,
+    int                NBactive)
 {
     ctx->last_ch = ch;
     if(ctx->flog)

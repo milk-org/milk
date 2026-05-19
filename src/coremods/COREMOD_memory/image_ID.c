@@ -16,8 +16,8 @@
 /* ID number corresponding to a name */
 imageID image_ID(
     const char *name,
-    IMAGE *imagearray,
-    long NB_images)
+    IMAGE      *imagearray,
+    long       NB_images)
 {
     DEBUG_TRACE_FSTART();
 
@@ -62,8 +62,8 @@ imageID image_ID(
 /* ID number corresponding to a name */
 MILK_PURE imageID image_ID_noaccessupdate(
     const char *name,
-    IMAGE *imagearray,
-    long NB_images)
+    IMAGE      *imagearray,
+    long       NB_images)
 {
     DEBUG_TRACE_FSTART();
 

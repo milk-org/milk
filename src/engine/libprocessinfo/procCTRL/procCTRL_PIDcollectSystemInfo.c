@@ -17,7 +17,7 @@
  */
 int PIDcollectSystemInfo(
     PROCESSINFODISP *pinfodisp,
-    int mode)
+    int             mode)
 {
     char procfname[200];
     FILE *fp;

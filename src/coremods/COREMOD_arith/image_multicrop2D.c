@@ -273,7 +273,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID in = imgid_make_from_name(
         multicrop_insname);
     resolveIMGID(
-        &in, ERRMODE_ABORT,
+        &in,   ERRMODE_ABORT,
         dcimg, dcnimg);
     IMGID out = stream_connect_create_2D(
         multicrop_outsname,

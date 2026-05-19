@@ -183,7 +183,7 @@ static inline void tv_fg(
  * character row.
  * ----------------------------------------------------------------------- */
 static inline void tv_halfblock(
-    char *buf,
+    char   *buf,
     size_t *pos)
 {
     buf[(*pos)++] = (char)0xE2;
@@ -196,7 +196,7 @@ static inline void tv_halfblock(
  * Used for the colorbar and single-row fallback.
  * ----------------------------------------------------------------------- */
 static inline void tv_fullblock(
-    char *buf,
+    char   *buf,
     size_t *pos)
 {
     buf[(*pos)++] = (char)0xE2;
@@ -208,7 +208,7 @@ static inline void tv_fullblock(
  * Reset all attributes: \e[0m  (4 bytes)
  * ----------------------------------------------------------------------- */
 static inline void tv_reset(
-    char *buf,
+    char   *buf,
     size_t *pos)
 {
     buf[(*pos)++] = '\033';
@@ -221,7 +221,7 @@ static inline void tv_reset(
  * Emit a plain ASCII space with the current attribute state (1 byte).
  * ----------------------------------------------------------------------- */
 static inline void tv_space(
-    char *buf,
+    char   *buf,
     size_t *pos)
 {
     buf[(*pos)++] = ' ';
@@ -231,7 +231,7 @@ static inline void tv_space(
  * Emit a newline (1 byte).
  * ----------------------------------------------------------------------- */
 static inline void tv_newline(
-    char *buf,
+    char   *buf,
     size_t *pos)
 {
     buf[(*pos)++] = '\n';

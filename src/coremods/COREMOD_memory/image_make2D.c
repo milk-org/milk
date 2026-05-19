@@ -68,8 +68,8 @@ imageID make_2Dimage_IMGID(IMGID *img)
 
 imageID make_2Dimage(
     const char *name,
-    uint32_t xsize,
-    uint32_t ysize)
+    uint32_t   xsize,
+    uint32_t   ysize)
 {
     IMGID img = imgid_make_from_name_2D(
         name, xsize, ysize);

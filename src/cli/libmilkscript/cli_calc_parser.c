@@ -463,9 +463,9 @@ int cli_calc_eval_line(const char *input)
  */
 int cli_calc_eval_math_to_val(
     const char *input,
-    int *out_type,
-    long *out_lval,
-    double *out_dval)
+    int        *out_type,
+    long       *out_lval,
+    double     *out_dval)
 {
     parse_mode = 1;
     char tbuf[8192];

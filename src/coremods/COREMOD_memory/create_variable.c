@@ -18,7 +18,7 @@
 /* creates floating point variable */
 variableID create_variable_ID(
     const char *name,
-    double value)
+    double     value)
 {
     variableID ID;
     long       i2;
@@ -59,7 +59,7 @@ variableID create_variable_ID(
 /* creates long variable */
 variableID create_variable_long_ID(
     const char *name,
-    long value)
+    long       value)
 {
     variableID ID;
     long       i2;

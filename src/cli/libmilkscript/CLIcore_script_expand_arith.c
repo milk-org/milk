@@ -345,8 +345,7 @@ double arith_expr(ArithParser *p)
  */
 void cli_expand_arith(
     char *line,
-    int   maxlen
-)
+    int  maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos = 0;

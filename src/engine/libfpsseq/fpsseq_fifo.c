@@ -26,7 +26,7 @@
  */
 int milkseq_fifo_read(
     MILKSEQ_STATE *state,
-    int fifo_fd)
+    int           fifo_fd)
 {
     if(!state || fifo_fd < 0)
     {

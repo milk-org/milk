@@ -153,8 +153,7 @@ static inline int is_ident_start(int c)
 int cli_tokenize(
     const char *input,
     cli_token  *tokens,
-    int         max_tok
-)
+    int        max_tok)
 {
     const char *p  = input;
     int         nt = 0;

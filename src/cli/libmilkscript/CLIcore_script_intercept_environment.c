@@ -1,5 +1,8 @@
 #include <stddef.h>
-extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
+extern int cli_find_in_path(
+    const char *cmd,
+    char       *outpath,
+    size_t     outsize);
 extern int processinfo_procdirname(char *procdirname);
 #include <stddef.h>
 #include <sys/mman.h>

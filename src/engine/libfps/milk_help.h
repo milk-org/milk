@@ -127,8 +127,8 @@
  * The caller should then `return 0`.
  */
 static inline int milk_help_init(
-    int         argc,
-    char       *argv[],
+    int argc,
+    char *argv[],
     const char *description,
     const char *description_long)
 {
@@ -262,8 +262,8 @@ static inline void milk_help_section(
  */
 static inline void milk_help_see_also(
     const char *cmds[],
-    int         ncmds,
-    int         color)
+    int ncmds,
+    int color)
 {
     if(color)
     {

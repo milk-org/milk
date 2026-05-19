@@ -142,7 +142,7 @@ void *create_scan_shm(const char *name, size_t size, int *fd)
  * the scanner shared memory with current data.
  */
 void rebuild_process_list(
-    const char *procdname,
+    const char   *procdname,
     PROCSCAN_SHM *scan_shm)
 {
     printf("Rebuilding process list from %s...\n", procdname);

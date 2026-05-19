@@ -26,8 +26,7 @@ errno_t functionparameter_scan_fps(
     int               *ptr_NBkwn,
     int               *ptr_fpsindex,
     long              *ptr_pindex,
-    int                        verbose
-)
+    int               verbose)
 {
     int fpsindex;
     int pindex;

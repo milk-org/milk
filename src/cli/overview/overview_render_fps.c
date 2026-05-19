@@ -26,7 +26,7 @@ void ov_render_fps_panel(
     int fidx[OV_MAX_FPS];
     int filt_n = ov_filter_build(
                      lay->filter_fps, names,
-                     m->nb_fps, fidx, OV_MAX_FPS);
+                     m->nb_fps,       fidx, OV_MAX_FPS);
 
     if(lay->freeze && lay->freeze_focus != OV_FOCUS_FPS && rel != NULL)
     {
@@ -116,7 +116,7 @@ void ov_render_fps_panel(
 
     /* Separator between header and data rows */
     render_separator(
-        hrow + 1, r.col + 1,
+        hrow +    1, r.col + 1,
         r.width - 2, OV_FG_FPS_HDR);
 
     int8_t local_depth[OV_MAX_FPS];

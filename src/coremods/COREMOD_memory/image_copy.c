@@ -33,9 +33,12 @@
 /* forward decls */
 imageID copy_image_ID(
     const char *name,
-    const char *newname, int shared);
+    const char *newname,
+    int        shared);
 imageID copy_image_ID_IMGID(
-    IMGID *imgin, IMGID *imgout, int shared);
+    IMGID *imgin,
+    IMGID *imgout,
+    int   shared);
 /**
  * @brief Rename an image in the image array.
  *
@@ -45,12 +48,14 @@ imageID chname_image_ID(
     const char *ID_name,
     const char *new_name);
 imageID chname_image_ID_IMGID(
-    IMGID *imgin, const char *new_name);
+    IMGID      *imgin,
+    const char *new_name);
 errno_t COREMOD_MEMORY_cp2shm(
     const char *IDname,
     const char *IDshmname);
 errno_t COREMOD_MEMORY_cp2shm_IMGID(
-    IMGID *imgin, IMGID *imgout);
+    IMGID *imgin,
+    IMGID *imgout);
 
 
 /* ================================================================
@@ -252,8 +257,7 @@ CLIADDCMD_COREMOD_memory__image_copy()
 imageID copy_image_ID_IMGID(
     IMGID *imgin,
     IMGID *imgout,
-    int shared
-)
+    int   shared)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
@@ -347,8 +351,7 @@ imageID copy_image_ID_IMGID(
 imageID copy_image_ID(
     const char *restrict name,
     const char *restrict newname,
-    int shared
-)
+    int                  shared)
 {
     IMGID imgin  = imgid_make_from_name(name);
     IMGID imgout = imgid_make_from_name(newname);
@@ -368,9 +371,8 @@ imageID copy_image_ID(
  * @return Image ID
  */
 imageID chname_image_ID_IMGID(
-    IMGID *imgin,
-    const char *new_name
-)
+    IMGID      *imgin,
+    const char *new_name)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
@@ -406,8 +408,7 @@ imageID chname_image_ID_IMGID(
  */
 imageID chname_image_ID(
     const char *restrict ID_name,
-    const char *restrict new_name
-)
+    const char *restrict new_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
 
@@ -428,8 +429,7 @@ imageID chname_image_ID(
  */
 errno_t COREMOD_MEMORY_cp2shm_IMGID(
     IMGID *imgin,
-    IMGID *imgout
-)
+    IMGID *imgout)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
@@ -509,8 +509,7 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
 
 errno_t COREMOD_MEMORY_cp2shm(
     const char *restrict IDname,
-    const char *restrict IDshmname
-)
+    const char *restrict IDshmname)
 {
     IMGID imgin  = imgid_make_from_name(IDname);
     IMGID imgout = imgid_make_from_name(IDshmname);

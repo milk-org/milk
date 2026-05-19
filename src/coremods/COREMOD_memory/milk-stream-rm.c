@@ -26,7 +26,7 @@
 
 static void print_help(
     const char *progname,
-    int mh_color)
+    int        mh_color)
 {
     milk_help_banner(progname, SR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
@@ -90,7 +90,7 @@ static void print_help(
 static int remove_single_stream(
     const char *shmdir,
     const char *sname,
-    int verbose)
+    int        verbose)
 {
     char fullpath[512];
 
@@ -293,7 +293,7 @@ static int read_confirmation(void)
  */
 static int read_line(
     char *buf,
-    int size)
+    int  size)
 {
     struct termios old_term;
     int is_tty = isatty(STDIN_FILENO);

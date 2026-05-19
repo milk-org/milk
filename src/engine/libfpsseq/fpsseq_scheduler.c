@@ -32,9 +32,9 @@
  * Return: Number of tasks launched this step (0 or 1)
  */
 int milkseq_scheduler_step(
-    MILKSEQ_STATE *state,
-    FPS *fps,
-    KEYWORD_TREE_NODE *keywnode,
+    MILKSEQ_STATE        *state,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *vars)
 {
     if (!state) return 0;

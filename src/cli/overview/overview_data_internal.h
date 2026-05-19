@@ -18,7 +18,10 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps_shmdirname.h"
 
-long fps_connect(const char *name, FPS *fps, int fpsconnectmode);
+long fps_connect(
+    const char *name,
+    FPS        *fps,
+    int        fpsconnectmode);
 int fps_disconnect(FPS *fps);
 
 #define OV_SHMDIR_MAXLEN STRINGMAXLEN_FPS_DIRNAME
@@ -85,7 +88,10 @@ void pid_cache_reset(void);
 int pid_check_zombie(pid_t pid);
 int64_t pid_get_rss_kb(pid_t pid);
 int pid_is_alive(pid_t pid);
-int pid_get_cpu_ticks(pid_t pid, uint64_t *utime, uint64_t *stime);
+int pid_get_cpu_ticks(
+    pid_t    pid,
+    uint64_t *utime,
+    uint64_t *stime);
 const char *ov_datatype_name(uint8_t dt);
 
 int scache_find(const char *name);

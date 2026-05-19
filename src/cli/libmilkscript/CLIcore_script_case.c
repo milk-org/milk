@@ -41,8 +41,7 @@
 void cli_func_define(
     const char *name,
     char body[][STRINGMAXLEN_CLICMDLINE],
-    int nbody
-)
+    int nbody)
 {
     /* Update existing */
     for(int i = 0; i < CLI_MAX_FUNCS; i++)
@@ -118,8 +117,7 @@ void cli_func_define(
  */
 void cli_exec_block_case(
     char (*lines)[STRINGMAXLEN_CLICMDLINE],
-    int    nlines
-)
+    int nlines)
 {
     /* Line 0 = "case <word> in" */
     const char *hdr = strip_ws(lines[0]);

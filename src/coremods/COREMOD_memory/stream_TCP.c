@@ -43,7 +43,8 @@ long FRAME_MD_MAGIC = 0x12341234ff;
 /* forward decls */
 errno_t COREMOD_MEMORY_testfunction_semaphore(
     const char *IDname,
-    int semtrig, int testmode);
+    int        semtrig,
+    int        testmode);
 
 /**
  * @brief Transmit a stream over TCP.
@@ -54,8 +55,9 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(
 imageID COREMOD_MEMORY_image_NETWORKtransmit(
     const char *IDname,
     const char *IPaddr,
-    int port, int mode,
-    int RT_priority);
+    int        port,
+    int        mode,
+    int        RT_priority);
 
 /**
  * @brief Receive a stream over TCP.
@@ -64,7 +66,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
  * writes them to a local shared memory stream.
  */
 imageID COREMOD_MEMORY_image_NETWORKreceive(
-    int port, int mode,
+    int port,
+    int mode,
     int RT_priority);
 
 
@@ -332,9 +335,10 @@ CLIADDCMD_COREMOD_memory__stream_TCP()
     return RETURN_SUCCESS;
 }
 #endif
-errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
-        int         semtrig,
-        int         testmode)
+errno_t COREMOD_MEMORY_testfunction_semaphore(
+    const char *IDname,
+    int        semtrig,
+    int        testmode)
 {
     imageID ID;
     int     semval;
@@ -344,7 +348,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
     {
         IMGID img = imgid_make_from_name(IDname);
         resolveIMGID(
-            &img, ERRMODE_ABORT,
+            &img,  ERRMODE_ABORT,
             dcimg, dcnimg);
         ID = img.ID;
     }
@@ -443,7 +447,11 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
  */
 
 imageID COREMOD_MEMORY_image_NETWORKtransmit(
-    const char *IDname, const char *IPaddr, int port, int mode, int RT_priority)
+    const char *IDname,
+    const char *IPaddr,
+    int        port,
+    int        mode,
+    int        RT_priority)
 {
     imageID            ID;
     IMAGE             *img_p;
@@ -513,7 +521,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     {
         IMGID img = imgid_make_from_name(IDname);
         resolveIMGID(
-            &img, ERRMODE_ABORT,
+            &img,  ERRMODE_ABORT,
             dcimg, dcnimg);
         ID = img.ID;
     }

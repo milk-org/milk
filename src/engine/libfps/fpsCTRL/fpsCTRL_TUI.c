@@ -224,9 +224,8 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
  *
  */
 inline static void fpsCTRLscreen_print_FPShelp(
-    KEYWORD_TREE_NODE *keywnode,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar
-)
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     DEBUG_TRACE_FSTART();
     // int attrval = A_BOLD;
@@ -333,10 +332,9 @@ inline static void fpsCTRLscreen_print_FPShelp(
  */
 errno_t functionparameter_CTRLscreen(
     uint32_t mode,
-    char    *fpsnamemask,
-    char    *fpsCTRLfifoname,
-    double  timeout_sec __attribute__((unused))
-)
+    char *fpsnamemask,
+    char *fpsCTRLfifoname,
+    double timeout_sec __attribute__((unused)))
 {
     DEBUG_TRACE_FSTART();
 

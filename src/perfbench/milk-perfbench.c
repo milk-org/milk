@@ -322,7 +322,9 @@ static int         g_initialized = 0;
  * @param fmt  printf-style format string
  * @return     exit code of command, -1 on error
  */
-static int run_cmd(const char *fmt, ...)
+static int run_cmd(
+    const char *fmt,
+    ...)
 {
     char buf[MAX_CMD];
     va_list ap;
@@ -362,7 +364,9 @@ static void usage(const char *prog)
  * @return 0 on success, 1 on error
  */
 static int parse_args(
-    int argc, char *argv[], bench_cfg_t *cfg)
+    int argc,
+    char *argv[],
+    bench_cfg_t *cfg)
 {
     static const struct option long_opts[] =
     {
@@ -467,7 +471,9 @@ static void resolve_procdir(bench_cfg_t *cfg)
 /**
  * @brief Get SHM directory (same as MILK_SHM_DIR).
  */
-static void resolve_shmdir(char *shmdir, size_t sz)
+static void resolve_shmdir(
+    char   *shmdir,
+    size_t sz)
 {
     const char *env = getenv("MILK_SHM_DIR");
     if(env && strlen(env) > 0)
@@ -626,27 +632,27 @@ static void read_build_tags(
 
     if(strstr(payload, "OPT=3"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "O3 ");
     if(strstr(payload, "PGO=USE"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "PGO ");
     else if(strstr(payload, "PGO=GENERATE"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "PGO-instr ");
     if(strstr(payload, "LTO=STATIC"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "LTO-static ");
     else if(strstr(payload, "LTO=1"))
         slen += (size_t) snprintf(
-                    summary + slen,
+                    summary +         slen,
                     sizeof(summary) - slen,
                     "LTO ");
 
@@ -663,7 +669,7 @@ static void read_build_tags(
                 arch[ai++] = *ap++;
             }
             slen += (size_t) snprintf(
-                        summary + slen,
+                        summary +         slen,
                         sizeof(summary) - slen,
                         "[%s]", arch);
         }
@@ -686,7 +692,9 @@ static void read_build_tags(
  * Unique FPS name
  * ============================================================= */
 
-static void make_fpsname(char *out, size_t sz)
+static void make_fpsname(
+    char   *out,
+    size_t sz)
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -843,7 +851,9 @@ static long perf_event_open(
  * ============================================================= */
 
 /** Compare two longs for qsort */
-static int cmp_long(const void *a, const void *b)
+static int cmp_long(
+    const void *a,
+    const void *b)
 {
     long la = *(const long *) a;
     long lb = *(const long *) b;
@@ -1290,7 +1300,9 @@ static void read_procinfo_stats(
  * @param fds    Output array of size N_PERF_EVS
  * @return       Number of fds successfully opened
  */
-static int perf_open_all(pid_t pid, int *fds)
+static int perf_open_all(
+    pid_t pid,
+    int   *fds)
 {
     int nok = 0;
     for(int i = 0; i < N_PERF_EVS; i++)
@@ -1326,7 +1338,8 @@ static int perf_open_all(pid_t pid, int *fds)
  * @param phase  Output hw_phase_t to fill
  */
 static void perf_read_close(
-    int *fds, hw_phase_t *phase)
+    int        *fds,
+    hw_phase_t *phase)
 {
     phase->valid = 0;
     for(int i = 0; i < N_PERF_EVS; i++)
@@ -1473,7 +1486,7 @@ static void run_phase(
                 memset(&tmp, 0, sizeof(tmp));
                 read_procinfo_stats(
                     shm_path, child,
-                    &tmp, rapl_start);
+                    &tmp,     rapl_start);
                 if(tmp.valid)
                 {
                     *pi = tmp;
@@ -1519,7 +1532,8 @@ static double ipc(
 }
 
 static double miss_rate(
-    long long misses, long long loads)
+    long long misses,
+    long long loads)
 {
     if(loads == 0)
     {

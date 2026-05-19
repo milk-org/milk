@@ -136,8 +136,7 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  */
 static errno_t streamprocess(
     IMGID *inimg,
-    IMGID *outimg
-)
+    IMGID *outimg)
 {
     DEBUG_TRACE_FSTART();
     // custom stream process function code

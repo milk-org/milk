@@ -62,13 +62,12 @@ static char insname[FUNCTION_PARAMETER_STRMAXLEN]
 
 imageID read_sharedmem_image(
     const char *restrict sname,
-    IMAGE *imagearray,
-    long NB_images
-)
+    IMAGE                *imagearray,
+    long                 NB_images)
 {
     IMGID img = imgid_make_from_name(sname);
     resolveIMGID(
-        &img, ERRMODE_NULL,
+        &img,       ERRMODE_NULL,
         imagearray, NB_images);
     imgid_connect(&img, IMGID_CONNECT_NOCHECK);
     if (img.ID == -1)

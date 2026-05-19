@@ -32,7 +32,9 @@
 /**
  * @brief Compare two longs for qsort.
  */
-static int cmp_long(const void *a, const void *b)
+static int cmp_long(
+    const void *a,
+    const void *b)
 {
     long la = *(const long *) a;
     long lb = *(const long *) b;
@@ -66,7 +68,7 @@ struct proc_mem
  * @return      0 on success, -1 on failure
  */
 static int read_proc_memory(
-    pid_t pid,
+    pid_t           pid,
     struct proc_mem *mem)
 {
     char path[128];
@@ -132,7 +134,9 @@ static long timespec_diff_ns(
 }
 
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int        mh_color)
 {
     milk_help_banner(progname, "read processinfo shared memory and output timing metrics as JSON", mh_color);
     milk_help_section("Usage", mh_color);

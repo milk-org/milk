@@ -22,10 +22,9 @@
  */
 
 int find_streams(
-    STREAMINFO *streaminfo,
-    int        filter,
-    const char *__restrict namefilter
-)
+    STREAMINFO             *streaminfo,
+    int                    filter,
+    const char *__restrict namefilter)
 {
     int            NBstream = 0;
     DIR           *d;

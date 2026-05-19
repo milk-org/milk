@@ -23,9 +23,8 @@
  * to it instead.
  */
 errno_t function_parameter_struct_create(
-    int NBparamMAX,
-    const char *name
-)
+    int        NBparamMAX,
+    const char *name)
 {
     errno_t                   rv         = RETURN_FAILURE;
     char                     *mapv       = NULL;
@@ -221,8 +220,7 @@ fail:
  */
 errno_t function_parameter_struct_realloc(
     FPS *fps,
-    int NBparamMAX_new
-)
+    int NBparamMAX_new)
 {
     char shmdname[STRINGMAXLEN_DIRNAME];
     char SM_fname[STRINGMAXLEN_FULLFILENAME];

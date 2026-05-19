@@ -167,8 +167,8 @@ int pid_get_cpu_ticks(
  */
 int pid_get_core_utilization(
     pid_t pid,
-    int *cores,
-    int max_cores)
+    int   *cores,
+    int   max_cores)
 {
     if(pid <= 0 || cores == NULL || max_cores <= 0)
     {
@@ -279,7 +279,7 @@ int pid_get_core_utilization(
  * pid_get_advanced_stats - get scheduling, memory faults, and thread counts
  */
 int pid_get_advanced_stats(
-    pid_t pid,
+    pid_t               pid,
     ov_advanced_stats_t *out)
 {
     if(pid <= 0 || out == NULL)
@@ -396,8 +396,12 @@ static uint64_t s_perf_prev_l1d = 0;
 static uint64_t s_perf_prev_llc = 0;
 static uint64_t s_perf_prev_dtlb = 0;
 
-static long _perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu, int group_fd,
-                             unsigned long flags)
+static long _perf_event_open(
+    struct perf_event_attr *attr,
+    pid_t                  pid,
+    int                    cpu,
+    int                    group_fd,
+    unsigned long          flags)
 {
     return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
 }
@@ -409,7 +413,7 @@ static long _perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu, i
  * the specified event type.
  */
 static int open_perf_fd(
-    pid_t pid,
+    pid_t    pid,
     uint32_t type,
     uint64_t config)
 {
@@ -436,8 +440,8 @@ static int open_perf_fd(
  * Requires CAP_PERFMON or root, or perf_event_paranoid <= 2
  */
 int pid_read_perf_counters(
-    pid_t pid,
-    int64_t loopcnt,
+    pid_t              pid,
+    int64_t            loopcnt,
     ov_perf_counters_t *out)
 {
     if(pid <= 0 || !out)

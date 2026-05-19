@@ -34,7 +34,8 @@ void ov_sort_set_depths(const int8_t *depths)
 /* ----- Stream comparators ----- */
 
 static int sort_stream_by_name(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     return ov_sort_dir_mul * strcmp(
                ((const OV_STREAM *) a)->name,
@@ -45,7 +46,8 @@ static int sort_stream_by_name(
  * @brief Sort streams by data type.
  */
 static int sort_stream_by_type(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     int ta = ((const OV_STREAM *) a)->datatype;
     int tb = ((const OV_STREAM *) b)->datatype;
@@ -64,7 +66,8 @@ static int sort_stream_by_type(
  * @brief Sort streams by total element count.
  */
 static int sort_stream_by_size(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     const OV_STREAM *sa = (const OV_STREAM *) a;
     const OV_STREAM *sb = (const OV_STREAM *) b;
@@ -82,7 +85,8 @@ static int sort_stream_by_size(
 }
 
 static int sort_stream_by_hz(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     double ha = ((const OV_STREAM *) a)->update_hz;
     double hb = ((const OV_STREAM *) b)->update_hz;
@@ -124,7 +128,8 @@ static int dtype_bytes(uint8_t dt)
 }
 
 static int sort_stream_by_throughput(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     const OV_STREAM *sa = (const OV_STREAM *) a;
     const OV_STREAM *sb = (const OV_STREAM *) b;
@@ -146,7 +151,8 @@ static int sort_stream_by_throughput(
 }
 
 static int sort_stream_by_inode(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     ino_t ia = ((const OV_STREAM *) a)->inode;
     ino_t ib = ((const OV_STREAM *) b)->inode;
@@ -162,7 +168,8 @@ static int sort_stream_by_inode(
 }
 
 static int sort_stream_by_count(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     uint64_t ca = ((const OV_STREAM *) a)->cnt0;
     uint64_t cb = ((const OV_STREAM *) b)->cnt0;
@@ -178,7 +185,8 @@ static int sort_stream_by_count(
 }
 
 static int sort_stream_by_ancestry(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     const OV_STREAM *sa = (const OV_STREAM *) a;
     const OV_STREAM *sb = (const OV_STREAM *) b;
@@ -205,7 +213,9 @@ static int sort_stream_by_ancestry(
 #define OV_STREAM_SORT_NCOL 7
 
 void ov_sort_streams(
-    OV_MODEL *model, int key, int dir)
+    OV_MODEL *model,
+    int      key,
+    int      dir)
 {
     if(model->nb_streams < 2)
     {
@@ -249,7 +259,8 @@ void ov_sort_streams(
 /* ----- Process comparators ----- */
 
 static int sort_proc_by_name(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     return ov_sort_dir_mul * strcmp(
                ((const OV_PROC *) a)->name,
@@ -257,7 +268,8 @@ static int sort_proc_by_name(
 }
 
 static int sort_proc_by_pid(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     pid_t pa = ((const OV_PROC *) a)->PID;
     pid_t pb = ((const OV_PROC *) b)->PID;
@@ -273,7 +285,8 @@ static int sort_proc_by_pid(
 }
 
 static int sort_proc_by_stat(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     int sa = ((const OV_PROC *) a)->loopstat;
     int sb = ((const OV_PROC *) b)->loopstat;
@@ -289,7 +302,8 @@ static int sort_proc_by_stat(
 }
 
 static int sort_proc_by_hz(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     double ha = ((const OV_PROC *) a)->loop_hz;
     double hb = ((const OV_PROC *) b)->loop_hz;
@@ -305,7 +319,8 @@ static int sort_proc_by_hz(
 }
 
 static int sort_proc_by_mem(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     int64_t ma = ((const OV_PROC *) a)->mem_rss_kb;
     int64_t mb = ((const OV_PROC *) b)->mem_rss_kb;
@@ -321,7 +336,8 @@ static int sort_proc_by_mem(
 }
 
 static int sort_proc_by_ancestry(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     const OV_PROC *pa = (const OV_PROC *) a;
     const OV_PROC *pb = (const OV_PROC *) b;
@@ -348,7 +364,9 @@ static int sort_proc_by_ancestry(
 #define OV_PROC_SORT_NCOL 5
 
 void ov_sort_procs(
-    OV_MODEL *model, int key, int dir)
+    OV_MODEL *model,
+    int      key,
+    int      dir)
 {
     if(model->nb_procs < 2)
     {
@@ -386,7 +404,8 @@ void ov_sort_procs(
 /* ----- FPS comparators ----- */
 
 static int sort_fps_by_name(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     return ov_sort_dir_mul * strcmp(
                ((const OV_FPS *) a)->name,
@@ -394,7 +413,8 @@ static int sort_fps_by_name(
 }
 
 static int sort_fps_by_cpid(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     pid_t pa = ((const OV_FPS *) a)->confpid;
     pid_t pb = ((const OV_FPS *) b)->confpid;
@@ -410,7 +430,8 @@ static int sort_fps_by_cpid(
 }
 
 static int sort_fps_by_rpid(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     pid_t pa = ((const OV_FPS *) a)->runpid;
     pid_t pb = ((const OV_FPS *) b)->runpid;
@@ -426,7 +447,8 @@ static int sort_fps_by_rpid(
 }
 
 static int sort_fps_by_mem(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     int64_t ma = ((const OV_FPS *) a)->mem_rss_kb;
     int64_t mb = ((const OV_FPS *) b)->mem_rss_kb;
@@ -442,7 +464,8 @@ static int sort_fps_by_mem(
 }
 
 static int sort_fps_by_ancestry(
-    const void *a, const void *b)
+    const void *a,
+    const void *b)
 {
     const OV_FPS *fa = (const OV_FPS *) a;
     const OV_FPS *fb = (const OV_FPS *) b;
@@ -469,7 +492,9 @@ static int sort_fps_by_ancestry(
 #define OV_FPS_SORT_NCOL 4
 
 void ov_sort_fps(
-    OV_MODEL *model, int key, int dir)
+    OV_MODEL *model,
+    int      key,
+    int      dir)
 {
     if(model->nb_fps < 2)
     {

@@ -58,16 +58,15 @@ static int32_t modeRMS = 0;
       FPFLAG_DEFAULT_INPUT, "output RMS=1 over mask")
 
 static errno_t image_slicenormalize_core(
-    IMGID inimg,
-    IMGID maskimg,
-    IMGID *outimg,
-    uint8_t sliceaxis,
-    IMGID imgaux,
-    int modeRMS,
+    IMGID              inimg,
+    IMGID              maskimg,
+    IMGID              *outimg,
+    uint8_t            sliceaxis,
+    IMGID              imgaux,
+    int                modeRMS,
     double *__restrict normarray,
     double *__restrict avarray,
-    double *__restrict maskcntarray
-)
+    double *__restrict maskcntarray)
 {
     DEBUG_TRACE_FSTART();
 
@@ -286,13 +285,12 @@ static errno_t image_slicenormalize_core(
 }
 
 errno_t image_slicenormalize(
-    IMGID inimg,
-    IMGID maskimg,
-    IMGID *outimg,
+    IMGID   inimg,
+    IMGID   maskimg,
+    IMGID   *outimg,
     uint8_t sliceaxis,
-    IMGID imgaux,
-    int modeRMS
-)
+    IMGID   imgaux,
+    int     modeRMS)
 {
     resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
     if(inimg.ID == -1) return RETURN_FAILURE;

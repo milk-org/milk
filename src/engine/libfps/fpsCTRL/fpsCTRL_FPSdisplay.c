@@ -34,11 +34,10 @@
  * level.
  */
 static void fpsCTRL__filter_and_sort_children(
-    KEYWORD_TREE_NODE *keywnode,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int *filtered_children,
-    int *num_filtered
-)
+    int                  *filtered_children,
+    int                  *num_filtered)
 {
     // Filter and Sort current directory children
     (*num_filtered) = 0;
@@ -132,16 +131,15 @@ static void fpsCTRL__filter_and_sort_children(
  * optimal column widths for the parameter display.
  */
 static void fpsCTRL__calculate_widths_and_layout(
-    KEYWORD_TREE_NODE *keywnode,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int *nodechain,
-    int num_filtered,
-    int *filtered_children,
-    int *GUIlineMax,
-    int *child_index,
-    int *max_kw_width,
-    int *max_val_width
-)
+    int                  *nodechain,
+    int                  num_filtered,
+    int                  *filtered_children,
+    int                  *GUIlineMax,
+    int                  *child_index,
+    int                  *max_kw_width,
+    int                  *max_val_width)
 {
     (*GUIlineMax) = num_filtered;
     for(int level_idx = 0; level_idx < fpsCTRLvar->currentlevel; level_idx ++)
@@ -294,18 +292,17 @@ static void fpsCTRL__calculate_widths_and_layout(
  * and status indicators at the top of the screen.
  */
 static void fpsCTRL__render_summary_and_breadcrumbs(
-    KEYWORD_TREE_NODE *keywnode,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int *nodechain,
-    int GUIlineMax,
-    int num_filtered,
-    int *filtered_children,
-    int *child_index,
-    int *dispindexMax,
-    int *doffsetindex,
-    int *lastindex,
-    int *summary_printed
-)
+    int                  *nodechain,
+    int                  GUIlineMax,
+    int                  num_filtered,
+    int                  *filtered_children,
+    int                  *child_index,
+    int                  *dispindexMax,
+    int                  *doffsetindex,
+    int                  *lastindex,
+    int                  *summary_printed)
 {
     // 1-line summary for selected parameter
     (*summary_printed) = 0;
@@ -598,18 +595,17 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
  * a row with type, value, and status indicators.
  */
 static void fpsCTRL__render_parameter_rows(
-    KEYWORD_TREE_NODE *keywnode,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int *nodechain,
-    int *filtered_children,
-    int num_filtered,
-    int doffsetindex,
-    int lastindex,
-    int *child_index,
-    int *max_kw_width,
-    int max_val_width,
-    int GUIlineMax
-)
+    int                  *nodechain,
+    int                  *filtered_children,
+    int                  num_filtered,
+    int                  doffsetindex,
+    int                  lastindex,
+    int                  *child_index,
+    int                  *max_kw_width,
+    int                  max_val_width,
+    int                  GUIlineMax)
 {
     int level = fpsCTRLvar->currentlevel - 1;
     int cl = fpsCTRLvar->currentlevel;
@@ -1183,9 +1179,8 @@ static void fpsCTRL__render_parameter_rows(
  */
 static void fpsCTRL__render_footer_status(
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int GUIlineMax,
-    int dispindexMax
-)
+    int                  GUIlineMax,
+    int                  dispindexMax)
 {
     int lastindex_root = fpsCTRLvar->display_offset[0] + dispindexMax;
     if(lastindex_root < GUIlineMax)
@@ -1251,8 +1246,7 @@ static void fpsCTRL__render_footer_status(
  */
 errno_t fpsCTRL_FPSdisplay(
     KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar
-)
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     DEBUG_TRACE_FSTART();
 
@@ -1365,8 +1359,7 @@ errno_t fpsCTRL_FPSdisplay(
  */
 errno_t fpsCTRL_FPSlog(
     KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar
-)
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     (void) keywnode;
     if(fpsCTRLvar->NBfps > 0)

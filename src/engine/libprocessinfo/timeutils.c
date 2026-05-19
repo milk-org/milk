@@ -32,9 +32,8 @@ errno_t milk_clock_gettime(struct timespec *tnow_p)
  * @return RETURN_SUCCESS
  */
 errno_t mkUTtimestring_nanosec(
-    char *timestring,
-    struct timespec tnow
-)
+    char            *timestring,
+    struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;
@@ -96,9 +95,8 @@ errno_t mkUTtimestring_nanosec_now(char *timestring)
  * @return RETURN_SUCCESS
  */
 errno_t mkUTtimestring_microsec(
-    char *timestring,
-    struct timespec tnow
-)
+    char            *timestring,
+    struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;
@@ -160,9 +158,8 @@ errno_t mkUTtimestring_microsec_now(char *timestring)
  * @return RETURN_SUCCESS
  */
 errno_t mkUTtimestring_millisec(
-    char *timestring,
-    struct timespec tnow
-)
+    char            *timestring,
+    struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;
@@ -223,9 +220,8 @@ errno_t mkUTtimestring_millisec_now(char *timestring)
  * @return RETURN_SUCCESS
  */
 errno_t mkUTtimestring_sec(
-    char *timestring,
-    struct timespec tnow
-)
+    char            *timestring,
+    struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;

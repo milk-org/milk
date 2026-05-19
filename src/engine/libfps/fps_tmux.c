@@ -272,8 +272,7 @@ int functionparameter_FPS_tmux_standalone_setup(
 int functionparameter_FPS_tmux_send(
     const char *fps_name,
     const char *window,
-    const char *cmd_str
-)
+    const char *cmd_str)
 {
     EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:%s \"%s\" C-m", fps_name, window, cmd_str);
     return RETURN_SUCCESS;
@@ -287,8 +286,7 @@ int functionparameter_FPS_tmux_send_dispatch(
     const char *fps_name,
     const char *command,
     const char *exec_path,
-    const char *extra_args
-)
+    const char *extra_args)
 {
     char cmd_str[2048];
     const char *window = "ctrl";
@@ -325,7 +323,7 @@ int functionparameter_FPS_tmux_send_dispatch(
 /** @brief Get path to current executable
  */
 char *functionparameter_FPS_get_executable_path(
-    char *buffer,
+    char   *buffer,
     size_t size)
 {
     if(!buffer || size == 0)

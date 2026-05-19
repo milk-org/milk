@@ -27,7 +27,9 @@ COREMOD_IOFITS_DATA COREMOD_iofits_data;
 #include "savefits.h"
 
 // External function from savefits.c
-extern errno_t save_fl_fits(const char *inputimname, const char *outputFITSname);
+extern errno_t save_fl_fits(
+    const char *inputimname,
+    const char *outputFITSname);
 
 INIT_MODULE_LIB(COREMOD_iofits)
 

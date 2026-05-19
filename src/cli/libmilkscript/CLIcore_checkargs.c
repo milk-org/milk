@@ -112,8 +112,7 @@ static const char *CMDARGTOKEN_type_to_string(uint32_t type)
 static int CLI_checkarg0(
     int      CLIargnum,
     uint32_t funcargtype,
-    int       errmsg
-)
+    int      errmsg)
 {
     DEBUG_TRACE_FSTART();
 
@@ -272,7 +271,7 @@ static int CLI_checkarg0(
  * @return int
  */
 int CLI_checkarg(
-    int CLIargnum,
+    int      CLIargnum,
     uint32_t funcargtype)
 {
     DEBUG_TRACE_FSTART();
@@ -305,7 +304,7 @@ int CLI_checkarg(
  * @return int
  */
 int CLI_checkarg_noerrmsg(
-    int CLIargnum,
+    int      CLIargnum,
     uint32_t funcargtype)
 {
     DEBUG_TRACE_FSTART();
@@ -351,10 +350,9 @@ int CLI_checkarg_noerrmsg(
  * @param ad     Pointer to the argdata slot
  */
 static void sync_fps_to_argdata(
-    uint32_t ptype,
-    FPS_PARAM *fp,
-    CLICMDARGDATA      *ad
-)
+    uint32_t      ptype,
+    FPS_PARAM     *fp,
+    CLICMDARGDATA *ad)
 {
     switch(ptype)
     {
@@ -428,8 +426,7 @@ static void set_fps_from_clitoken(
     uint32_t   ptype,
     long       numl,
     double     numf,
-    const char *str
-)
+    const char *str)
 {
     switch(ptype)
     {
@@ -493,8 +490,7 @@ static void set_fps_from_clitoken(
  */
 errno_t CLI_checkarg_array(
     CLICMDARGDEF fpscliarg[],
-    int nbarg
-)
+    int nbarg)
 {
     DEBUG_TRACE_FSTART();
 

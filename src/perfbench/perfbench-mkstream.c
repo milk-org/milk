@@ -18,7 +18,9 @@
 #include "ImageStruct.h"
 #include "ImageStreamIO.h"
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int        mh_color)
 {
     milk_help_banner(progname, "create a dummy shared-memory stream for FPS benchmarking", mh_color);
     milk_help_section("Usage", mh_color);
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
     uint32_t dims[2] = {xsize, ysize};
 
     if (ImageStreamIO_createIm(
-            &img, name, 2, dims,
+            &img,            name, 2, dims,
             _DATATYPE_FLOAT, 1, 10, 0)
         != EXIT_SUCCESS)
     {

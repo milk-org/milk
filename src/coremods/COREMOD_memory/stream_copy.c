@@ -78,13 +78,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         imgid_make_from_name(inimname);
     resolveIMGID(
         &imgin, ERRMODE_ABORT,
-        dcimg, dcnimg);
+        dcimg,  dcnimg);
 
     IMGID imgout =
         imgid_make_from_name(outimname);
     resolveIMGID(
         &imgout, ERRMODE_ABORT,
-        dcimg, dcnimg);
+        dcimg,   dcnimg);
 
     uint64_t im_in_datasize =
         ImageStreamIO_typesize(

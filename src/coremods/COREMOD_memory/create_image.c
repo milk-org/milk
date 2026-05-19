@@ -181,8 +181,7 @@ errno_t create_image_ID(
     int                    shared,
     int                    NBkw,
     int                    CBsize,
-    imageID    *outID
-)
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -234,9 +233,8 @@ errno_t create_1Dimage_ID_IMGID(
 
 errno_t create_1Dimage_ID(
     const char *restrict ID_name,
-    uint32_t xsize,
-    imageID *outID
-)
+    uint32_t             xsize,
+    imageID              *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -272,9 +270,8 @@ errno_t create_1DCimage_ID_IMGID(
 
 errno_t create_1DCimage_ID(
     const char *__restrict ID_name,
-    uint32_t xsize,
-    imageID *outID
-)
+    uint32_t               xsize,
+    imageID                *outID)
 {
     IMGID img = imgid_make();
     strncpy(img.name, ID_name, STRINGMAXLEN_IMAGE_NAME - 1);
