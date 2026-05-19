@@ -136,7 +136,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     imageID            IDout = -1;
     imageID            IDin;
     imageID            IDmap;
-    long sliceii;
+    long               sliceii;
     long               oldslice = 0;
     long               NBslice;
     long              *nbpixslice;
