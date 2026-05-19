@@ -3,18 +3,18 @@
  * @brief Scheduler display module
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fpsCTRL_TUIcompat.h"
 #include "engine/libfpsseq/fpsseq.h"
-#include "scheduler_display.h"
 #include "quicksort.h"
 
+/**
+ * @brief Render the FPS scheduler queue display.
+ *
+ * Shows pending and active tasks in each priority
+ * queue with timing information.
+ */
 errno_t fpsCTRL_scheduler_display(
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
     int                 wrow,

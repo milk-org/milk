@@ -8,18 +8,12 @@
  * module-local C variables via the binding array.
  */
 
-#include <stdlib.h>
-#include <string.h>
 
 #ifndef FPS_STANDALONE
 #include "CLIcore.h"
 #else
-#include "libmilkdata/milkdata.h"
 #endif
-#include "fps.h"
 #include "fps_GetParamIndex.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_sync.h"
 
 
 /* Standalone argc/argv captured by main() */
@@ -27,6 +21,17 @@ static int   standalone_argc;
 static char **standalone_argv;
 
 
+/**
+ * @brief Capture argc/argv from standalone main() for later
+ *        CLI-to-FPS argument synchronization.
+ *
+ * Must be called once before fps_process_cli_and_sync().
+ * In module (non-standalone) mode, this is never called
+ * and standalone_argv remains NULL.
+ *
+ * @param argc  Argument count from main()
+ * @param argv  Argument vector from main()
+ */
 void fps_cli_set_standalone_args(
     int    argc,
     char **argv
@@ -42,9 +47,9 @@ void fps_cli_set_standalone_args(
  *        parameter, interpreting it according to the type.
  */
 static void set_fps_value_from_string(
-    FPS *fps,
-    long                       pindex,
-    uint64_t                   type,
+    FPS      *fps,
+    long     pindex,
+    uint64_t type,
     const char                *str
 )
 {
@@ -107,8 +112,8 @@ static void set_fps_value_from_string(
  *        the module-local C variable via the binding.
  */
 static void sync_fps_to_local(
-    FPS *fps,
-    long                       pindex,
+    FPS  *fps,
+    long pindex,
     FPS_CLI_BINDING           *b
 )
 {
@@ -166,10 +171,32 @@ static void sync_fps_to_local(
 }
 
 
+/**
+ * @brief Sync CLI arguments into FPS and copy FPS values
+ *        back into module-local C variables.
+ *
+ * Two-step process:
+ *   1. CLI -> FPS: parse CLI positional arguments
+ *      (standalone mode) or CLIargs (module mode) and
+ *      write them into the FPS shared memory.
+ *   2. FPS -> local: for each binding, copy the FPS
+ *      parameter value into the local C variable.
+ *
+ * In standalone mode, locates the subcommand keyword
+ * (run, exec, set, etc.) and maps subsequent positional
+ * arguments to primary bindings in order.  A "." value
+ * is treated as "keep default".
+ *
+ * @param fps       Connected FPS
+ * @param farg      CLI argument definitions (module mode)
+ * @param bindings  Parameter binding array
+ * @param nb_b      Number of bindings
+ * @return RETURN_SUCCESS
+ */
 errno_t fps_process_cli_and_sync(
-    FPS *fps,
-    CLICMDARGDEF              *farg,
-    FPS_CLI_BINDING           *bindings,
+    FPS             *fps,
+    CLICMDARGDEF    *farg,
+    FPS_CLI_BINDING *bindings,
     int                        nb_b
 )
 {

@@ -3,17 +3,17 @@
  * @brief Level0node summary module
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fpsCTRL_TUIcompat.h"
-#include "fpsCTRL_globals.h"
 
-#include "level0node_summary.h"
 
+/**
+ * @brief Render a summary line for a top-level FPS node.
+ *
+ * Shows FPS name, process status, run/conf state,
+ * and loop rate in a single dashboard row.
+ */
 void fpsCTRLscreen_level0node_summary(
     FPS *fps,
     int fps_idx)

@@ -8,14 +8,14 @@ int ov_find_stream_by_inode(
     const OV_MODEL *model,
     ino_t inode)
 {
-    if (inode == 0)
+    if(inode == 0)
     {
         return -1;
     }
-    for (int i = 0; i < model->nb_streams; i++)
+    for(int i = 0; i < model->nb_streams; i++)
     {
-        if (model->streams[i].valid
-            && model->streams[i].inode == inode)
+        if(model->streams[i].valid
+                && model->streams[i].inode == inode)
         {
             return i;
         }
@@ -23,19 +23,22 @@ int ov_find_stream_by_inode(
     return -1;
 }
 
+/**
+ * @brief Find a stream node by name in the graph.
+ */
 int ov_find_stream_by_name(
     const OV_MODEL *model,
     const char *name)
 {
-    if (name == NULL || name[0] == '\0')
+    if(name == NULL || name[0] == '\0')
     {
         return -1;
     }
-    for (int i = 0; i < model->nb_streams; i++)
+    for(int i = 0; i < model->nb_streams; i++)
     {
-        if (model->streams[i].valid
-            && strcmp(model->streams[i].name,
-                     name) == 0)
+        if(model->streams[i].valid
+                && strcmp(model->streams[i].name,
+                          name) == 0)
         {
             return i;
         }
@@ -43,18 +46,21 @@ int ov_find_stream_by_name(
     return -1;
 }
 
+/**
+ * @brief Find a process node by PID in the graph.
+ */
 int ov_find_proc_by_pid(
     const OV_MODEL *model,
     pid_t pid)
 {
-    if (pid <= 0)
+    if(pid <= 0)
     {
         return -1;
     }
-    for (int i = 0; i < model->nb_procs; i++)
+    for(int i = 0; i < model->nb_procs; i++)
     {
-        if (model->procs[i].valid
-            && model->procs[i].PID == pid)
+        if(model->procs[i].valid
+                && model->procs[i].PID == pid)
         {
             return i;
         }
@@ -74,21 +80,21 @@ void ov_add_edge(
     ov_edge_type_t type,
     const char *label)
 {
-    if (src < 0 || tgt < 0 || src == tgt)
+    if(src < 0 || tgt < 0 || src == tgt)
     {
         return;
     }
-    if (model->nb_edges >= OV_MAX_EDGES)
+    if(model->nb_edges >= OV_MAX_EDGES)
     {
         return;
     }
 
     /* Check for duplicate */
-    for (int i = 0; i < model->nb_edges; i++)
+    for(int i = 0; i < model->nb_edges; i++)
     {
-        if (model->edges[i].src_node == src
-            && model->edges[i].tgt_node == tgt
-            && model->edges[i].type == type)
+        if(model->edges[i].src_node == src
+                && model->edges[i].tgt_node == tgt
+                && model->edges[i].type == type)
         {
             return;
         }
@@ -127,7 +133,7 @@ static int add_node(
     const char *name,
     int active)
 {
-    if (model->nb_nodes >= OV_MAX_NODES)
+    if(model->nb_nodes >= OV_MAX_NODES)
     {
         return -1;
     }
@@ -146,6 +152,12 @@ static int add_node(
 }
 
 
+/**
+ * @brief Build the stream-process connectivity graph.
+ *
+ * Analyzes processinfo triggers and stream
+ * semaphore chains to construct the DAG.
+ */
 void ov_build_graph(OV_MODEL *model)
 {
     model->nb_nodes = 0;
@@ -153,9 +165,9 @@ void ov_build_graph(OV_MODEL *model)
 
     /* ---- Create nodes for all entities ---- */
 
-    for (int i = 0; i < model->nb_streams; i++)
+    for(int i = 0; i < model->nb_streams; i++)
     {
-        if (!model->streams[i].valid)
+        if(!model->streams[i].valid)
         {
             continue;
         }
@@ -165,9 +177,9 @@ void ov_build_graph(OV_MODEL *model)
                                          model->streams[i].active);
     }
 
-    for (int i = 0; i < model->nb_fps; i++)
+    for(int i = 0; i < model->nb_fps; i++)
     {
-        if (!model->fps[i].valid)
+        if(!model->fps[i].valid)
         {
             continue;
         }
@@ -177,9 +189,9 @@ void ov_build_graph(OV_MODEL *model)
                                      model->fps[i].run_alive);
     }
 
-    for (int i = 0; i < model->nb_procs; i++)
+    for(int i = 0; i < model->nb_procs; i++)
     {
-        if (!model->procs[i].valid)
+        if(!model->procs[i].valid)
         {
             continue;
         }
@@ -191,18 +203,18 @@ void ov_build_graph(OV_MODEL *model)
 
     /* ---- Build edges from process trace ---- */
 
-    for (int si = 0; si < model->nb_streams; si++)
+    for(int si = 0; si < model->nb_streams; si++)
     {
         OV_STREAM *s = &model->streams[si];
-        if (!s->valid || s->node_idx < 0)
+        if(!s->valid || s->node_idx < 0)
         {
             continue;
         }
 
-        for (int t = 0; t < s->nb_proctrace; t++)
+        for(int t = 0; t < s->nb_proctrace; t++)
         {
             pid_t wpid = s->proctrace_pid[t];
-            if (wpid <= 0)
+            if(wpid <= 0)
             {
                 continue;
             }
@@ -214,9 +226,9 @@ void ov_build_graph(OV_MODEL *model)
              * triggers in the causal chain and
              * must NOT get write-edges. */
             int pi = ov_find_proc_by_pid(model, wpid);
-            if (t == 0
-                && pi >= 0
-                && model->procs[pi].node_idx >= 0)
+            if(t == 0
+                    && pi >= 0
+                    && model->procs[pi].node_idx >= 0)
             {
                 /* proc → stream (writes) */
                 ov_add_edge(
@@ -230,15 +242,15 @@ void ov_build_graph(OV_MODEL *model)
             /* Find the trigger stream */
             ino_t trig_inode =
                 s->proctrace_inode[t];
-            if (trig_inode != 0
-                && pi >= 0
-                && model->procs[pi].node_idx >= 0)
+            if(trig_inode != 0
+                    && pi >= 0
+                    && model->procs[pi].node_idx >= 0)
             {
                 int tsi = ov_find_stream_by_inode(
                               model, trig_inode);
-                if (tsi >= 0
-                    && model->streams[tsi].node_idx
-                    >= 0)
+                if(tsi >= 0
+                        && model->streams[tsi].node_idx
+                        >= 0)
                 {
                     /* stream → proc (triggers) */
                     ov_add_edge(
@@ -252,13 +264,13 @@ void ov_build_graph(OV_MODEL *model)
         }
 
         /* Create edges for input-based reading (via read_pids) */
-        for (int r = 0; r < s->nb_read_pids; r++)
+        for(int r = 0; r < s->nb_read_pids; r++)
         {
             pid_t rpid = s->read_pids[r];
-            if (rpid > 0)
+            if(rpid > 0)
             {
                 int rpi = ov_find_proc_by_pid(model, rpid);
-                if (rpi >= 0 && model->procs[rpi].node_idx >= 0)
+                if(rpi >= 0 && model->procs[rpi].node_idx >= 0)
                 {
                     /* stream → proc (reads/inputs) */
                     ov_add_edge(
@@ -274,21 +286,21 @@ void ov_build_graph(OV_MODEL *model)
 
     /* ---- Build edges from FPS ---- */
 
-    for (int fi = 0; fi < model->nb_fps; fi++)
+    for(int fi = 0; fi < model->nb_fps; fi++)
     {
         OV_FPS *f = &model->fps[fi];
-        if (!f->valid || f->node_idx < 0)
+        if(!f->valid || f->node_idx < 0)
         {
             continue;
         }
 
         /* FPS → Process (via runpid match) */
-        if (f->run_alive && f->runpid > 0)
+        if(f->run_alive && f->runpid > 0)
         {
             int pi = ov_find_proc_by_pid(
                          model, f->runpid);
-            if (pi >= 0
-                && model->procs[pi].node_idx >= 0)
+            if(pi >= 0
+                    && model->procs[pi].node_idx >= 0)
             {
                 ov_add_edge(
                     model,
@@ -300,21 +312,21 @@ void ov_build_graph(OV_MODEL *model)
         }
 
         /* FPS stream params → Stream nodes */
-        for (int sp = 0;
-             sp < f->nb_stream_params;
-             sp++)
+        for(int sp = 0;
+                sp < f->nb_stream_params;
+                sp++)
         {
             const char *sval =
                 f->stream_param_value[sp];
-            if (sval[0] == '\0')
+            if(sval[0] == '\0')
             {
                 continue;
             }
 
             int si = ov_find_stream_by_name(
                          model, sval);
-            if (si < 0
-                || model->streams[si].node_idx < 0)
+            if(si < 0
+                    || model->streams[si].node_idx < 0)
             {
                 continue;
             }
@@ -325,7 +337,7 @@ void ov_build_graph(OV_MODEL *model)
             /* Skip procinfo trigger stream —
              * already handled by
              * PROC_TRIGGER_STREAM edges */
-            if (strstr(pname, "procinfo.trigger"))
+            if(strstr(pname, "procinfo.trigger"))
             {
                 continue;
             }
@@ -335,13 +347,13 @@ void ov_build_graph(OV_MODEL *model)
              * means "user-editable", which is
              * set for both inputs and outputs. */
             int is_out = 0;
-            if (strstr(pname, "out")
-                || strstr(pname, "OUT"))
+            if(strstr(pname, "out")
+                    || strstr(pname, "OUT"))
             {
                 is_out = 1;
             }
 
-            if (is_out)
+            if(is_out)
             {
                 /* FPS → stream (output) */
                 ov_add_edge(
@@ -366,20 +378,20 @@ void ov_build_graph(OV_MODEL *model)
 
     /* ---- Build edges from process trigger ---- */
 
-    for (int pi = 0; pi < model->nb_procs; pi++)
+    for(int pi = 0; pi < model->nb_procs; pi++)
     {
         OV_PROC *p = &model->procs[pi];
-        if (!p->valid || p->node_idx < 0)
+        if(!p->valid || p->node_idx < 0)
         {
             continue;
         }
 
-        if (p->trigstreamname[0] != '\0')
+        if(p->trigstreamname[0] != '\0')
         {
             int si = ov_find_stream_by_name(
                          model, p->trigstreamname);
-            if (si >= 0
-                && model->streams[si].node_idx >= 0)
+            if(si >= 0
+                    && model->streams[si].node_idx >= 0)
             {
                 ov_add_edge(
                     model,
@@ -391,5 +403,3 @@ void ov_build_graph(OV_MODEL *model)
         }
     }
 }
-
-

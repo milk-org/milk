@@ -379,9 +379,9 @@ void qs2l(
  */
 void qs2ul(
     double         *__restrict array,
-    unsigned long *__restrict array1,
-    unsigned long  left,
-    unsigned long  right)
+    unsigned long *__restrict  array1,
+    unsigned long              left,
+    unsigned long              right)
 {
     unsigned long i, j;
     double                 x, y;
@@ -509,8 +509,8 @@ void qs2l_double(
  */
 void qs2ul_double(
     double         *__restrict array,
-    unsigned long *__restrict array1,
-    unsigned long  left,
+    unsigned long *__restrict  array1,
+    unsigned long              left,
     unsigned long  right
 )
 {
@@ -643,9 +643,9 @@ void qs3ll_double(
  */
 void qs3ulul_double(
     double         *__restrict array,
-    unsigned long *__restrict array1,
-    unsigned long *__restrict array2,
-    unsigned long  left,
+    unsigned long *__restrict  array1,
+    unsigned long *__restrict  array2,
+    unsigned long              left,
     unsigned long  right
 )
 {

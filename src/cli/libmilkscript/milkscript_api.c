@@ -35,11 +35,20 @@ extern void libinit_COREMOD_tools(void);
 extern void libinit_COREMOD_iofits(void);
 #endif
 
+/**
+ * @brief Initialize the milk scripting engine.
+ *
+ * Sets up the interpreter state, loads modules,
+ * and prepares the command dispatch table.
+ */
 errno_t milkscript_init(int argc, char **argv)
 {
-    if (argc > 0 && argv && argv[0]) {
+    if(argc > 0 && argv && argv[0])
+    {
         strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
-    } else {
+    }
+    else
+    {
         strncpy(data.processname, "milk-script", STRINGMAXLEN_PROCESSNAME - 1);
     }
 
@@ -87,16 +96,28 @@ errno_t milkscript_init(int argc, char **argv)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Execute a single milk script command string.
+ */
 errno_t milkscript_execute(const char *cmdline)
 {
-    if(!cmdline) return -1;
+    if(!cmdline)
+    {
+        return -1;
+    }
     strncpy(data.CLIcmdline, cmdline, STRINGMAXLEN_CLICMDLINE - 1);
     return CLI_execute_line();
 }
 
+/**
+ * @brief Run a milk script file.
+ */
 errno_t milkscript_run(FILE *fp)
 {
-    if(!fp) return -1;
+    if(!fp)
+    {
+        return -1;
+    }
     char line[STRINGMAXLEN_CLICMDLINE];
     data.CLIloopON = 1;
 

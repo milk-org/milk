@@ -32,6 +32,12 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
 
+/**
+ * @brief Define a new script function.
+ *
+ * Registers a function body for later invocation
+ * by name.
+ */
 void cli_func_define(
     const char *name,
     char body[][STRINGMAXLEN_CLICMDLINE],
@@ -42,8 +48,8 @@ void cli_func_define(
     for(int i = 0; i < CLI_MAX_FUNCS; i++)
     {
         if(cli_funcs[i].used
-           && strcmp(cli_funcs[i].name, name)
-              == 0)
+                && strcmp(cli_funcs[i].name, name)
+                == 0)
         {
             cli_funcs[i].nbody = nbody;
             for(int j = 0; j < nbody; j++)
@@ -123,9 +129,9 @@ void cli_exec_block_case(
     {
         int wi = 0;
         while(*hdr != '\0'
-              && *hdr != ' '
-              && *hdr != '\t'
-              && wi < 255)
+                && *hdr != ' '
+                && *hdr != '\t'
+                && wi < 255)
         {
             word[wi++] = *hdr++;
         }
@@ -171,13 +177,13 @@ void cli_exec_block_case(
             {
                 /* strip ws */
                 while(*pp == ' '
-                      || *pp == '\t')
+                        || *pp == '\t')
                 {
                     pp++;
                 }
                 if(strcmp(pp, "*") == 0
-                   || strcmp(pp, word)
-                   == 0)
+                        || strcmp(pp, word)
+                        == 0)
                 {
                     matched = 1;
                     break;
@@ -195,7 +201,7 @@ void cli_exec_block_case(
         /* Collect body lines until ;; */
         const char *body_start = cp + 1;
         while(*body_start == ' '
-              || *body_start == '\t')
+                || *body_start == '\t')
         {
             body_start++;
         }
@@ -213,20 +219,20 @@ void cli_exec_block_case(
                 int cl =
                     (int) strlen(cmdline);
                 while(cl > 1
-                      && cmdline[cl - 1]
-                      == ';'
-                      && cmdline[cl - 2]
-                      == ';')
+                        && cmdline[cl - 1]
+                        == ';'
+                        && cmdline[cl - 2]
+                        == ';')
                 {
                     cmdline[cl - 2] = '\0';
                     cl -= 2;
                 }
                 /* Trim trailing ws */
                 while(cl > 0
-                      && (cmdline[cl - 1]
-                          == ' '
-                          || cmdline[cl - 1]
-                          == '\t'))
+                        && (cmdline[cl - 1]
+                            == ' '
+                            || cmdline[cl - 1]
+                            == '\t'))
                 {
                     cmdline[--cl] = '\0';
                 }
@@ -245,7 +251,7 @@ void cli_exec_block_case(
         {
             /* Multi-line body */
             for(int j = i + 1;
-                j < nlines; j++)
+                    j < nlines; j++)
             {
                 const char *bl =
                     strip_ws(lines[j]);
@@ -267,10 +273,10 @@ void cli_exec_block_case(
                         (int) strlen(cmd2);
                     int ends_dsemi = 0;
                     while(c2l > 1
-                          && cmd2[c2l - 1]
-                          == ';'
-                          && cmd2[c2l - 2]
-                          == ';')
+                            && cmd2[c2l - 1]
+                            == ';'
+                            && cmd2[c2l - 2]
+                            == ';')
                     {
                         cmd2[c2l - 2] =
                             '\0';
@@ -278,11 +284,11 @@ void cli_exec_block_case(
                         ends_dsemi = 1;
                     }
                     while(c2l > 0
-                          && (cmd2[c2l - 1]
-                              == ' '
-                              || cmd2[
-                                  c2l - 1]
-                              == '\t'))
+                            && (cmd2[c2l - 1]
+                                == ' '
+                                || cmd2[
+                                    c2l - 1]
+                                == '\t'))
                     {
                         cmd2[--c2l] = '\0';
                     }
@@ -305,5 +311,3 @@ void cli_exec_block_case(
         return; /* first match only */
     }
 }
-
-

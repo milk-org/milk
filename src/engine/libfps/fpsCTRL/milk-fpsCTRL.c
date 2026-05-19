@@ -3,22 +3,17 @@
  * @brief Milk fpsctrl module
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <getopt.h>
 #include <libgen.h>
 
-#include "ImageStreamIO/ImageStreamIO.h"
-#include "fps.h"
 #include "fpsCTRL_TUI.h"
 #include "fpsCTRL_globals.h"
-#include "fps_shmdirname.h"
 #include "fpsCTRL_ansi.h"
 
-#include <signal.h>
 
+/**
+ * @brief Crash handler for the fpsCTRL module.
+ */
 void fpsCTRL_crash_handler(int sig)
 {
     /*
@@ -50,6 +45,9 @@ void fpsCTRL_crash_handler(int sig)
 
 // Standalone main for milk-fpsCTRL
 
+/**
+ * @brief Prints the usage information.
+ */
 void print_usage(const char *progname)
 {
     printf("Usage: %s [options]\n", progname);
@@ -90,7 +88,9 @@ void print_usage(const char *progname)
            " module\n");
 }
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     /* Handle -h1/--help-oneline before getopt so "-h1" is not
      * parsed as "-h" (flag) + "1" (unknown). */

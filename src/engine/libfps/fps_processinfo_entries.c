@@ -4,9 +4,6 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_processinfo_entries.h"
-#include <processinfo.h>
 
 /** @brief Add parameters to FPS for real-time process settings
  *
@@ -142,7 +139,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.loopcntMax",
                                  "max loop cnt",
                                  FPTYPE_INT64,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &loopcntMax_default,
                                  NULL);
 
@@ -151,7 +148,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggermode",
                                  "trigger mode",
                                  FPTYPE_INT64,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &triggermode_default,
                                  NULL);
 
@@ -169,7 +166,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.MeasureTiming",
                                  "Measure timing",
                                  FPTYPE_ONOFF,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  NULL,
                                  &fp_measuretiming);
     fps->parray[fp_measuretiming].fpflag |= FPFLAG_ONOFF;
@@ -195,7 +192,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggerdelay",
                                  "trigger delay",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &triggerdelay_default,
                                  NULL);
 
@@ -206,7 +203,7 @@ errno_t fps_add_processinfo_entries(
                                  ".procinfo.triggertimeout",
                                  "trigger timeout",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG|FPFLAG_WRITERUN,
+                                 FPFLAG | FPFLAG_WRITERUN,
                                  &triggertimeout_default,
                                  NULL);
 
@@ -215,6 +212,13 @@ errno_t fps_add_processinfo_entries(
 }
 
 
+/**
+ * @brief Populate processinfo fields from FPS metadata.
+ *
+ * Copies timing, trigger, and loop-rate metrics
+ * from the FPS into the corresponding processinfo
+ * structure for monitoring.
+ */
 errno_t fps_to_processinfo(
     FPS *fps,
     PROCESSINFO               *procinfo

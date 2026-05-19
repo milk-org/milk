@@ -14,6 +14,9 @@
 #include "libmilkdata/milkdata.h"
 #endif
 
+/**
+ * @brief Count the number of active variables.
+ */
 long compute_nb_variable()
 {
     long NBvar = 0;

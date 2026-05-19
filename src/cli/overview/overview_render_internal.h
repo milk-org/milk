@@ -60,9 +60,9 @@ typedef struct
 void render_pad_spaces(int chars_written, int panel_width);
 int ov_render_header_text(
     const char *text,
-    int         hs,
-    int         max_vis_width,
-    ov_rgb_t    base_fg);
+    int        hs,
+    int        max_vis_width,
+    ov_rgb_t   base_fg);
 
 void render_scroll_indicators(
     OV_RECT  r,
@@ -91,15 +91,15 @@ const char *render_dtype(uint8_t dt);
 int         dtype_bytesize(uint8_t dt);
 
 void ov_compute_related(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    OV_RELATED       *rel);
+    const OV_LAYOUT *lay,
+    const OV_MODEL  *m,
+    OV_RELATED      *rel);
 
 void ov_hittest(
     OV_LAYOUT      *lay,
     const OV_MODEL *m,
-    int             mr,
-    int             mc);
+    int            mr,
+    int            mc);
 
 void ov_hittest_resolve_globals(
     OV_LAYOUT      *lay,
@@ -107,26 +107,34 @@ void ov_hittest_resolve_globals(
 
 void render_highlighted_name(
     const char *name,
-    int         max_len,
+    int        max_len,
     regex_t    *re,
-    int         has_re,
-    ov_rgb_t    normal_fg,
-    ov_rgb_t    row_bg);
+    int        has_re,
+    ov_rgb_t   normal_fg,
+    ov_rgb_t   row_bg);
 
 /* Inline trigger-mode short label */
 static inline const char *render_trigmode_label(
     int mode)
 {
-    switch (mode)
+    switch(mode)
     {
-    case 0:  return "IMM";
-    case 1:  return "CN0";
-    case 2:  return "CN1";
-    case 3:  return "SEM";
-    case 4:  return "DLY";
-    case 5:  return "SMP";
-    case 6:  return "CN2";
-    default: return " - ";
+    case 0:
+        return "IMM";
+    case 1:
+        return "CN0";
+    case 2:
+        return "CN1";
+    case 3:
+        return "SEM";
+    case 4:
+        return "DLY";
+    case 5:
+        return "SMP";
+    case 6:
+        return "CN2";
+    default:
+        return " - ";
     }
 }
 
@@ -136,14 +144,21 @@ static inline void format_mem_kb(
     size_t sz,
     int64_t kb)
 {
-    if (kb <= 0) {
+    if(kb <= 0)
+    {
         snprintf(buf, sz, "   -");
-    } else if (kb >= 1024 * 1024) {
+    }
+    else if(kb >= 1024 * 1024)
+    {
         snprintf(buf, sz, "%4.1fG",
-            (double)kb / (1024.0 * 1024.0));
-    } else if (kb >= 1024) {
+                 (double)kb / (1024.0 * 1024.0));
+    }
+    else if(kb >= 1024)
+    {
         snprintf(buf, sz, "%4" PRId64 "M", kb / 1024);
-    } else {
+    }
+    else
+    {
         snprintf(buf, sz, "%4" PRId64 "K", kb);
     }
 }
@@ -151,19 +166,19 @@ static inline void format_mem_kb(
 /* Inline sort column label builder */
 static inline int sort_col_label(
     char       *buf,
-    int         bufsz,
+    int        bufsz,
     const char *label,
-    int         col_key,
-    int         cur_key,
-    int         desc,
-    int         visual_width)
+    int        col_key,
+    int        cur_key,
+    int        desc,
+    int        visual_width)
 {
-    if (col_key == cur_key)
+    if(col_key == cur_key)
     {
         snprintf(buf, bufsz, "\x01%s%s\x02",
                  label,
                  desc ? "\xe2\x96\xbc"
-                      : "\xe2\x96\xb2");
+                 : "\xe2\x96\xb2");
         return visual_width + 4;
     }
     else
@@ -176,16 +191,27 @@ static inline int sort_col_label(
 /* Inline semaphore color helper */
 static inline ov_rgb_t ov_get_sem_color(int val)
 {
-    if (val == 0) {
-        return (ov_rgb_t){0, 150, 0};
+    if(val == 0)
+    {
+        return (ov_rgb_t)
+        {
+            0, 150, 0
+        };
     }
-    if (val >= 10) {
-        return (ov_rgb_t){160, 90, 30};
+    if(val >= 10)
+    {
+        return (ov_rgb_t)
+        {
+            160, 90, 30
+        };
     }
     int r = 100 + (val - 1) * (180 - 100) / 9;
     int g = 120 - (val - 1) * (120 - 40) / 9;
     int b = 30;
-    return (ov_rgb_t){r, g, b};
+    return (ov_rgb_t)
+    {
+        r, g, b
+    };
 }
 
 /**
@@ -201,8 +227,8 @@ static inline ov_rgb_t zebra_bg(
     ov_rgb_t base_bg,
     int      row_idx)
 {
-    if (base_bg.r != 30 || base_bg.g != 32
-        || base_bg.b != 40)
+    if(base_bg.r != 30 || base_bg.g != 32
+            || base_bg.b != 40)
     {
         return base_bg;
     }
@@ -225,7 +251,7 @@ static inline void render_separator(
     ov_buf_pos(row, col);
     ov_theme_bg(OV_BG_PANEL);
     ov_theme_fg(accent);
-    for (int cc = 0; cc < width; cc++)
+    for(int cc = 0; cc < width; cc++)
     {
         ov_buf_printf("\xe2\x94\x80"); /* ─ */
     }
@@ -248,7 +274,7 @@ static inline void render_focus_strip(
     ov_rgb_t row_bg)
 {
     ov_buf_pos(row, col);
-    if (focused)
+    if(focused)
     {
         ov_theme_bg(accent);
         ov_buf_printf(" ");
@@ -322,13 +348,14 @@ extern float ov_scan_get_interval(void);
  */
 static inline void render_sparkline(
     const float *hist,
-    int          hidx,
-    int          len,
-    int          width,
-    ov_rgb_t     fg)
+    int         hidx,
+    int         len,
+    int         width,
+    ov_rgb_t    fg)
 {
     /* Unicode block elements: 1/8 to 8/8 */
-    static const char *bars[] = {
+    static const char *bars[] =
+    {
         "\xe2\x96\x81", "\xe2\x96\x82",
         "\xe2\x96\x83", "\xe2\x96\x84",
         "\xe2\x96\x85", "\xe2\x96\x86",
@@ -336,21 +363,33 @@ static inline void render_sparkline(
     };
     /* Find max in history for scaling */
     float mx = 0.001f;
-    for (int ii = 0; ii < len; ii++)
+    for(int ii = 0; ii < len; ii++)
     {
-        if (hist[ii] > mx) { mx = hist[ii]; }
+        if(hist[ii] > mx)
+        {
+            mx = hist[ii];
+        }
     }
     ov_theme_fg(fg);
     int start = hidx - width;
-    if (start < 0) { start += len; }
-    for (int ii = 0; ii < width; ii++)
+    if(start < 0)
+    {
+        start += len;
+    }
+    for(int ii = 0; ii < width; ii++)
     {
         int idx = (start + ii) % len;
         float v = hist[idx];
         int level = (int)(v / mx * 7.0f);
-        if (level < 0) { level = 0; }
-        if (level > 7) { level = 7; }
-        if (v < 0.001f)
+        if(level < 0)
+        {
+            level = 0;
+        }
+        if(level > 7)
+        {
+            level = 7;
+        }
+        if(v < 0.001f)
         {
             ov_buf_printf(" ");
         }
@@ -370,23 +409,26 @@ static inline void render_sparkline(
  */
 static inline void format_uptime(
     char    *buf,
-    int      sz,
-    int64_t  secs)
+    int     sz,
+    int64_t secs)
 {
-    if (secs < 0) { secs = 0; }
-    if (secs < 60)
+    if(secs < 0)
+    {
+        secs = 0;
+    }
+    if(secs < 60)
     {
         snprintf(buf, (size_t) sz,
                  "%ds", (int) secs);
     }
-    else if (secs < 3600)
+    else if(secs < 3600)
     {
         snprintf(buf, (size_t) sz,
                  "%dm%ds",
                  (int)(secs / 60),
                  (int)(secs % 60));
     }
-    else if (secs < 86400)
+    else if(secs < 86400)
     {
         snprintf(buf, (size_t) sz,
                  "%dh%dm",

@@ -4,16 +4,17 @@
  */
 
 #include <dirent.h>
-#include <stdlib.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 
 // #define SHAREDSHMDIR dcshmdir
 #ifndef SHAREDSHMDIR
 #define SHAREDSHMDIR "/milk/shm"
 #endif
 
+/**
+ * @brief Gets the directory name for FPS shared memory parameters.
+ */
 errno_t function_parameter_struct_shmdirname(char *shmdname)
 {
     int                  shmdirOK = 0;

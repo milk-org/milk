@@ -7,16 +7,19 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
 
-#include "fps.h"
 #include "fps_processcmdline.h"
 
+/**
+ * @brief Process a batch of FPS commands from a file.
+ *
+ * Reads lines from the specified file and dispatches
+ * each to the interactive command processor.
+ */
 int functionparameter_FPSprocess_cmdfile(
-    char                      *infname,
-    FPS *fps,
-    KEYWORD_TREE_NODE         *keywnode,
+    char                 *infname,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {

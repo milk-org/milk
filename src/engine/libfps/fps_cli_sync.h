@@ -40,9 +40,9 @@ void fps_cli_set_standalone_args(
  * @return          RETURN_SUCCESS on success
  */
 errno_t fps_process_cli_and_sync(
-    FPS *fps,
-    CLICMDARGDEF              *farg,
-    FPS_CLI_BINDING           *bindings,
+    FPS             *fps,
+    CLICMDARGDEF    *farg,
+    FPS_CLI_BINDING *bindings,
     int                        nb_b
 );
 

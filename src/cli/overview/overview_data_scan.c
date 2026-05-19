@@ -20,41 +20,41 @@ double s_scan_dt_sec = 0.0;
  */
 static void scache_rate_update(
     OV_STREAM *s,
-    int        ci)
+    int       ci)
 {
     ov_stream_cache_t *ce = &s_scache[ci];
 
     s->cnt_active = 0;
-    if (ce->has_prev && s_scan_dt_sec > 0.01)
+    if(ce->has_prev && s_scan_dt_sec > 0.01)
     {
         uint64_t dc = s->cnt0 - ce->prev_cnt0;
         s->update_hz =
             (double) dc / s_scan_dt_sec;
 
-        if (dc > 0)
+        if(dc > 0)
         {
             s->cnt_active = 1;
         }
 
         /* Update sparkline in cache (auto-scale) */
         float sv = (float) s->update_hz;
-        if (sv > ce->spark_max)
+        if(sv > ce->spark_max)
         {
             ce->spark_max = sv;
         }
         /* Decay max slowly so sparkline adapts */
         ce->spark_max *= 0.999f;
-        if (ce->spark_max < 1.0f)
+        if(ce->spark_max < 1.0f)
         {
             ce->spark_max = 1.0f;
         }
         float norm = sv / ce->spark_max;
-        if (norm > 1.0f)
+        if(norm > 1.0f)
         {
             norm = 1.0f;
         }
         ce->spark_rate[
-            ce->spark_idx % OV_SPARKLINE_LEN]
+        ce->spark_idx % OV_SPARKLINE_LEN]
             = norm;
         ce->spark_idx++;
     }
@@ -78,10 +78,10 @@ static void scache_rate_update(
  * @inode: inode value
  */
 static void fill_stream_from_img(
-    OV_STREAM   *s,
-    IMAGE       *imgp,
-    const char  *name,
-    ino_t        inode)
+    OV_STREAM  *s,
+    IMAGE      *imgp,
+    const char *name,
+    ino_t      inode)
 {
     memset(s, 0, sizeof(OV_STREAM));
     strncpy(s->name, name,
@@ -89,7 +89,7 @@ static void fill_stream_from_img(
     s->valid = 1;
     s->inode = inode;
 
-    if (imgp->md == NULL)
+    if(imgp->md == NULL)
     {
         s->node_idx = -1;
         return;
@@ -102,12 +102,18 @@ static void fill_stream_from_img(
     s->size[2]    = imgp->md->size[2];
     s->nelement   = imgp->md->nelement;
 
-    if (s->naxis == 1) {
+    if(s->naxis == 1)
+    {
         snprintf(s->size_str, sizeof(s->size_str), "%u", (unsigned)s->size[0]);
-    } else if (s->naxis == 2) {
+    }
+    else if(s->naxis == 2)
+    {
         snprintf(s->size_str, sizeof(s->size_str), "%ux%u", (unsigned)s->size[0], (unsigned)s->size[1]);
-    } else {
-        snprintf(s->size_str, sizeof(s->size_str), "%ux%ux%u", (unsigned)s->size[0], (unsigned)s->size[1], (unsigned)s->size[2]);
+    }
+    else
+    {
+        snprintf(s->size_str, sizeof(s->size_str), "%ux%ux%u", (unsigned)s->size[0], (unsigned)s->size[1],
+                 (unsigned)s->size[2]);
     }
 
     s->creatorPID = imgp->md->creatorPID;
@@ -116,19 +122,19 @@ static void fill_stream_from_img(
 
     /* Process trace entries */
     int npt = imgp->md->NBproctrace;
-    if (npt > IMAGE_NB_PROCTRACE)
+    if(npt > IMAGE_NB_PROCTRACE)
     {
         npt = IMAGE_NB_PROCTRACE;
     }
     s->nb_proctrace = 0;
 
-    if (imgp->streamproctrace != NULL)
+    if(imgp->streamproctrace != NULL)
     {
-        for (int t = 0; t < npt; t++)
+        for(int t = 0; t < npt; t++)
         {
             STREAM_PROC_TRACE *spt =
                 &imgp->streamproctrace[t];
-            if (spt->procwrite_PID > 0)
+            if(spt->procwrite_PID > 0)
             {
                 int ti = s->nb_proctrace;
                 s->proctrace_pid[ti] =
@@ -148,11 +154,11 @@ static void fill_stream_from_img(
                 || pid_is_alive(s->creatorPID);
 
     s->nb_sem = imgp->md->sem;
-    if (s->nb_sem > 10)
+    if(s->nb_sem > 10)
     {
         s->nb_sem = 10;
     }
-    for (int sm = 0; sm < s->nb_sem; sm++)
+    for(int sm = 0; sm < s->nb_sem; sm++)
     {
         s->semval[sm] =
             ImageStreamIO_semvalue(imgp, sm);
@@ -160,35 +166,35 @@ static void fill_stream_from_img(
 
     /* Writer PID: first active proc trace entry */
     s->write_pid = 0;
-    if (s->nb_proctrace > 0)
+    if(s->nb_proctrace > 0)
     {
         s->write_pid = s->proctrace_pid[0];
     }
 
     /* Reader PIDs from semReadPID array */
     s->nb_read_pids = 0;
-    if (imgp->semReadPID != NULL)
+    if(imgp->semReadPID != NULL)
     {
-        for (int sm = 0;
-             sm < s->nb_sem
-             && s->nb_read_pids < IMAGE_NB_SEMAPHORE;
-             sm++)
+        for(int sm = 0;
+                sm < s->nb_sem
+                && s->nb_read_pids < IMAGE_NB_SEMAPHORE;
+                sm++)
         {
             pid_t rpid = imgp->semReadPID[sm];
-            if (rpid > 0 && pid_is_alive(rpid))
+            if(rpid > 0 && pid_is_alive(rpid))
             {
                 /* Avoid duplicates */
                 int dup = 0;
-                for (int k = 0;
-                     k < s->nb_read_pids; k++)
+                for(int k = 0;
+                        k < s->nb_read_pids; k++)
                 {
-                    if (s->read_pids[k] == rpid)
+                    if(s->read_pids[k] == rpid)
                     {
                         dup = 1;
                         break;
                     }
                 }
-                if (!dup)
+                if(!dup)
                 {
                     s->read_pids[
                         s->nb_read_pids] = rpid;
@@ -201,13 +207,16 @@ static void fill_stream_from_img(
     s->node_idx = -1;
 }
 
+/**
+ * @brief Scan shared memory for active streams.
+ */
 void ov_scan_streams(OV_MODEL *model)
 {
     const char *shmdir = SHAREDSHMDIR;
 
     /* Check directory mtime to skip readdir */
     struct stat dirstat;
-    if (stat(shmdir, &dirstat) != 0)
+    if(stat(shmdir, &dirstat) != 0)
     {
         model->nb_streams = 0;
         return;
@@ -215,19 +224,19 @@ void ov_scan_streams(OV_MODEL *model)
 
     int dir_changed =
         (dirstat.st_mtim.tv_sec
-            != s_shm_mtime.tv_sec)
+         != s_shm_mtime.tv_sec)
         || (dirstat.st_mtim.tv_nsec
             != s_shm_mtime.tv_nsec);
 
-    if (!dir_changed && s_scache_nb > 0)
+    if(!dir_changed && s_scache_nb > 0)
     {
         /* Fast path: no files added/removed.
          * Just re-read metadata from cache. */
         int idx = 0;
-        for (int ci = 0;
-             ci < s_scache_nb
-             && idx < OV_MAX_STREAMS;
-             ci++)
+        for(int ci = 0;
+                ci < s_scache_nb
+                && idx < OV_MAX_STREAMS;
+                ci++)
         {
             fill_stream_from_img(
                 &model->streams[idx],
@@ -246,14 +255,14 @@ void ov_scan_streams(OV_MODEL *model)
     s_shm_mtime = dirstat.st_mtim;
 
     DIR *dp = opendir(shmdir);
-    if (dp == NULL)
+    if(dp == NULL)
     {
         model->nb_streams = 0;
         return;
     }
 
     /* Mark all cache entries as not-in-use */
-    for (int i = 0; i < s_scache_nb; i++)
+    for(int i = 0; i < s_scache_nb; i++)
     {
         s_scache[i].in_use = 0;
     }
@@ -261,16 +270,16 @@ void ov_scan_streams(OV_MODEL *model)
     int idx = 0;
     struct dirent *ep;
 
-    while ((ep = readdir(dp)) != NULL
-           && idx < OV_MAX_STREAMS)
+    while((ep = readdir(dp)) != NULL
+            && idx < OV_MAX_STREAMS)
     {
         /* Match *.im.shm */
         int namelen = (int) strlen(ep->d_name);
-        if (namelen < 8)
+        if(namelen < 8)
         {
             continue;
         }
-        if (strcmp(ep->d_name + namelen - 7,
+        if(strcmp(ep->d_name + namelen - 7,
                   ".im.shm") != 0)
         {
             continue;
@@ -279,7 +288,7 @@ void ov_scan_streams(OV_MODEL *model)
         /* Extract stream name */
         char sname[STRINGMAXLEN_IMAGE_NAME];
         int  snlen = namelen - 7;
-        if (snlen >= (int) sizeof(sname))
+        if(snlen >= (int) sizeof(sname))
         {
             snlen = (int) sizeof(sname) - 1;
         }
@@ -292,7 +301,7 @@ void ov_scan_streams(OV_MODEL *model)
         snprintf(fpath, sizeof(fpath),
                  "%s/%s", shmdir, ep->d_name);
         struct stat st;
-        if (stat(fpath, &st) != 0)
+        if(stat(fpath, &st) != 0)
         {
             continue;
         }
@@ -301,8 +310,8 @@ void ov_scan_streams(OV_MODEL *model)
         int ci = scache_find(sname);
         IMAGE *imgp = NULL;
 
-        if (ci >= 0
-            && s_scache[ci].inode == st.st_ino)
+        if(ci >= 0
+                && s_scache[ci].inode == st.st_ino)
         {
             /* Cache hit — reuse mapping */
             s_scache[ci].in_use = 1;
@@ -311,13 +320,13 @@ void ov_scan_streams(OV_MODEL *model)
         else
         {
             /* Cache miss or inode changed */
-            if (ci >= 0)
+            if(ci >= 0)
             {
                 scache_evict(ci);
                 ci = -1;
             }
 
-            if (s_scache_nb >= OV_MAX_STREAMS)
+            if(s_scache_nb >= OV_MAX_STREAMS)
             {
                 continue;
             }
@@ -326,10 +335,10 @@ void ov_scan_streams(OV_MODEL *model)
             memset(&s_scache[ci], 0,
                    sizeof(ov_stream_cache_t));
 
-            if (ImageStreamIO_read_sharedmem_image_toIMAGE(
-                    sname,
-                    &s_scache[ci].img)
-                != IMAGESTREAMIO_SUCCESS)
+            if(ImageStreamIO_read_sharedmem_image_toIMAGE(
+                        sname,
+                        &s_scache[ci].img)
+                    != IMAGESTREAMIO_SUCCESS)
             {
                 continue;
             }
@@ -355,9 +364,9 @@ void ov_scan_streams(OV_MODEL *model)
     model->nb_streams = idx;
 
     /* Evict stale cache entries */
-    for (int i = s_scache_nb - 1; i >= 0; i--)
+    for(int i = s_scache_nb - 1; i >= 0; i--)
     {
-        if (!s_scache[i].in_use)
+        if(!s_scache[i].in_use)
         {
             scache_evict(i);
         }
@@ -373,7 +382,7 @@ void ov_scan_streams(OV_MODEL *model)
 static struct timespec s_fps_mtime = {0, 0};
 
 /**
- * fcache_build_params - discover param indices and cache them. 
+ * fcache_build_params - discover param indices and cache them.
  * Called once per FPS.
  * @ce: FPS cache entry
  */
@@ -384,7 +393,7 @@ static void fcache_build_params(
     int sp = 0;
     int dp = 0;
 
-    if (fpsp->md == NULL)
+    if(fpsp->md == NULL)
     {
         ce->sparam_nb     = 0;
         ce->dparam_nb     = 0;
@@ -393,54 +402,54 @@ static void fcache_build_params(
     }
 
     int nb_params = fpsp->md->NBparamMAX;
-    if (nb_params > 10000)
+    if(nb_params > 10000)
     {
         nb_params = 10000;
     }
 
-    for (int p = 0; p < nb_params && (sp < OV_FPS_MAX_STREAM_PARAMS || dp < OV_FPS_MAX_DISP_PARAMS); p++)
+    for(int p = 0; p < nb_params && (sp < OV_FPS_MAX_STREAM_PARAMS || dp < OV_FPS_MAX_DISP_PARAMS); p++)
     {
         FPS_PARAM *fp =
             &fpsp->parray[p];
-        if (!(fp->fpflag & FPFLAG_ACTIVE))
+        if(!(fp->fpflag & FPFLAG_ACTIVE))
         {
             continue;
         }
         char kbuf[FUNCTION_PARAMETER_STRMAXLEN];
         kbuf[0] = '\0';
         int klen = 0;
-        for (int kl = 1; kl < FUNCTION_PARAMETER_KEYWORD_MAXLEVEL; kl++)
+        for(int kl = 1; kl < FUNCTION_PARAMETER_KEYWORD_MAXLEVEL; kl++)
         {
-            if (fp->keyword[kl][0] == '\0')
+            if(fp->keyword[kl][0] == '\0')
             {
                 break;
             }
-            if (klen > 0 && klen < FUNCTION_PARAMETER_STRMAXLEN - 1)
+            if(klen > 0 && klen < FUNCTION_PARAMETER_STRMAXLEN - 1)
             {
                 kbuf[klen++] = '.';
                 kbuf[klen]   = '\0';
             }
             int rem = FUNCTION_PARAMETER_STRMAXLEN - klen - 1;
-            if (rem > 0)
+            if(rem > 0)
             {
                 strncat(kbuf + klen, fp->keyword[kl], (size_t) rem);
                 klen = (int) strlen(kbuf);
             }
         }
-        if (kbuf[0] == '\0')
+        if(kbuf[0] == '\0')
         {
             strncpy(kbuf, fp->keyword[0], FUNCTION_PARAMETER_STRMAXLEN - 1);
         }
 
         /* If there's room in dparam cache, add it */
-        if (dp < OV_FPS_MAX_DISP_PARAMS)
+        if(dp < OV_FPS_MAX_DISP_PARAMS)
         {
             ce->dparam_idx[dp] = p;
             strncpy(ce->dparam_key[dp], kbuf, FUNCTION_PARAMETER_STRMAXLEN - 1);
             dp++;
         }
 
-        if (fp->type == FPTYPE_STREAMNAME && sp < OV_FPS_MAX_STREAM_PARAMS)
+        if(fp->type == FPTYPE_STREAMNAME && sp < OV_FPS_MAX_STREAM_PARAMS)
         {
             ce->sparam_idx[sp] = p;
             strncpy(ce->sparam_key[sp], kbuf, FUNCTION_PARAMETER_STRMAXLEN - 1);
@@ -460,8 +469,8 @@ static void fcache_build_params(
  * @ce:  FPS cache entry (includes param index cache)
  */
 static void fill_fps_from_struct(
-    OV_FPS          *f,
-    ov_fps_cache_t  *ce)
+    OV_FPS         *f,
+    ov_fps_cache_t *ce)
 {
     FPS *fpsp = &ce->fps;
 
@@ -470,7 +479,7 @@ static void fill_fps_from_struct(
             sizeof(f->name) - 1);
     f->valid = 1;
 
-    if (fpsp->md == NULL)
+    if(fpsp->md == NULL)
     {
         f->node_idx = -1;
         return;
@@ -483,13 +492,13 @@ static void fill_fps_from_struct(
     f->conf_alive = (pid_get_status(f->confpid) == OV_PID_ALIVE);
     f->run_alive  = pid_is_alive(f->runpid);
 
-    if (!ce->sparam_cached)
+    if(!ce->sparam_cached)
     {
         fcache_build_params(ce);
     }
 
     /* Read only the cached stream-type params */
-    for (int sp = 0; sp < ce->sparam_nb; sp++)
+    for(int sp = 0; sp < ce->sparam_nb; sp++)
     {
         FPS_PARAM *fp =
             &fpsp->parray[ce->sparam_idx[sp]];
@@ -506,14 +515,14 @@ static void fill_fps_from_struct(
     f->nb_stream_params = ce->sparam_nb;
 
     /* Read the cached display params */
-    for (int dp = 0; dp < ce->dparam_nb; dp++)
+    for(int dp = 0; dp < ce->dparam_nb; dp++)
     {
         FPS_PARAM *fp = &fpsp->parray[ce->dparam_idx[dp]];
         strncpy(f->disp_param_name[dp], ce->dparam_key[dp], FUNCTION_PARAMETER_STRMAXLEN - 1);
-        
+
         /* Format value to string based on type */
         char valstr[FUNCTION_PARAMETER_STRMAXLEN] = {0};
-        switch (fp->type)
+        switch(fp->type)
         {
         case FPTYPE_INT64:
             snprintf(valstr, sizeof(valstr), "%" PRIi64, fp->val.i64[0]);
@@ -549,7 +558,7 @@ static void fill_fps_from_struct(
     f->nb_disp_params = ce->dparam_nb;
 
     /* Read description from md */
-    if (fpsp->md->description[0] != '\0')
+    if(fpsp->md->description[0] != '\0')
     {
         strncpy(f->description,
                 fpsp->md->description,
@@ -559,6 +568,9 @@ static void fill_fps_from_struct(
     f->node_idx = -1;
 }
 
+/**
+ * @brief Scan shared memory for active FPS instances.
+ */
 void ov_scan_fps(OV_MODEL *model)
 {
     char shmdir[OV_SHMDIR_MAXLEN];
@@ -566,7 +578,7 @@ void ov_scan_fps(OV_MODEL *model)
 
     /* Check directory mtime to skip readdir */
     struct stat dirstat;
-    if (stat(shmdir, &dirstat) != 0)
+    if(stat(shmdir, &dirstat) != 0)
     {
         model->nb_fps = 0;
         return;
@@ -574,18 +586,18 @@ void ov_scan_fps(OV_MODEL *model)
 
     int dir_changed =
         (dirstat.st_mtim.tv_sec
-            != s_fps_mtime.tv_sec)
+         != s_fps_mtime.tv_sec)
         || (dirstat.st_mtim.tv_nsec
             != s_fps_mtime.tv_nsec);
 
-    if (!dir_changed && s_fcache_nb > 0)
+    if(!dir_changed && s_fcache_nb > 0)
     {
         /* Fast path: no files added/removed */
         int idx = 0;
-        for (int ci = 0;
-             ci < s_fcache_nb
-             && idx < OV_MAX_FPS;
-             ci++)
+        for(int ci = 0;
+                ci < s_fcache_nb
+                && idx < OV_MAX_FPS;
+                ci++)
         {
             fill_fps_from_struct(
                 &model->fps[idx],
@@ -600,14 +612,14 @@ void ov_scan_fps(OV_MODEL *model)
     s_fps_mtime = dirstat.st_mtim;
 
     DIR *dp = opendir(shmdir);
-    if (dp == NULL)
+    if(dp == NULL)
     {
         model->nb_fps = 0;
         return;
     }
 
     /* Mark all FPS cache entries as not-in-use */
-    for (int i = 0; i < s_fcache_nb; i++)
+    for(int i = 0; i < s_fcache_nb; i++)
     {
         s_fcache[i].in_use = 0;
     }
@@ -615,16 +627,16 @@ void ov_scan_fps(OV_MODEL *model)
     int idx = 0;
     struct dirent *ep;
 
-    while ((ep = readdir(dp)) != NULL
-           && idx < OV_MAX_FPS)
+    while((ep = readdir(dp)) != NULL
+            && idx < OV_MAX_FPS)
     {
         /* Match *.fps.shm */
         int namelen = (int) strlen(ep->d_name);
-        if (namelen < 9)
+        if(namelen < 9)
         {
             continue;
         }
-        if (strcmp(ep->d_name + namelen - 8,
+        if(strcmp(ep->d_name + namelen - 8,
                   ".fps.shm") != 0)
         {
             continue;
@@ -633,7 +645,7 @@ void ov_scan_fps(OV_MODEL *model)
         /* Extract FPS name */
         char fname[STRINGMAXLEN_FPS_NAME];
         int fnlen = namelen - 8;
-        if (fnlen >= (int) sizeof(fname))
+        if(fnlen >= (int) sizeof(fname))
         {
             fnlen = (int) sizeof(fname) - 1;
         }
@@ -644,7 +656,7 @@ void ov_scan_fps(OV_MODEL *model)
         /* Look up in cache */
         int ci = fcache_find(fname);
 
-        if (ci >= 0)
+        if(ci >= 0)
         {
             /* Cache hit */
             s_fcache[ci].in_use = 1;
@@ -652,7 +664,7 @@ void ov_scan_fps(OV_MODEL *model)
         else
         {
             /* Cache miss */
-            if (s_fcache_nb >= OV_MAX_FPS)
+            if(s_fcache_nb >= OV_MAX_FPS)
             {
                 continue;
             }
@@ -667,7 +679,7 @@ void ov_scan_fps(OV_MODEL *model)
                     fname,
                     &s_fcache[ci].fps,
                     FPSCONNECT_SIMPLE);
-            if (fpsID < 0)
+            if(fpsID < 0)
             {
                 continue;
             }
@@ -688,9 +700,9 @@ void ov_scan_fps(OV_MODEL *model)
     model->nb_fps = idx;
 
     /* Evict stale FPS cache entries */
-    for (int i = s_fcache_nb - 1; i >= 0; i--)
+    for(int i = s_fcache_nb - 1; i >= 0; i--)
     {
-        if (!s_fcache[i].in_use)
+        if(!s_fcache[i].in_use)
         {
             fcache_evict(i);
         }
@@ -701,6 +713,9 @@ void ov_scan_fps(OV_MODEL *model)
 /* Directory mtime for proc readdir skip */
 static struct timespec s_proc_mtime = {0, 0};
 
+/**
+ * @brief Scan processinfo for active processes.
+ */
 void ov_scan_procs(OV_MODEL *model)
 {
     char shmdir[OV_SHMDIR_MAXLEN];
@@ -709,7 +724,7 @@ void ov_scan_procs(OV_MODEL *model)
     /* Check directory mtime to skip readdir when
      * no proc.*.shm files have been added or removed. */
     struct stat dirstat;
-    if (stat(shmdir, &dirstat) != 0)
+    if(stat(shmdir, &dirstat) != 0)
     {
         model->nb_procs = 0;
         return;
@@ -717,17 +732,17 @@ void ov_scan_procs(OV_MODEL *model)
 
     int dir_changed =
         (dirstat.st_mtim.tv_sec
-            != s_proc_mtime.tv_sec)
+         != s_proc_mtime.tv_sec)
         || (dirstat.st_mtim.tv_nsec
             != s_proc_mtime.tv_nsec);
 
-    if (!dir_changed && s_pcache_nb > 0)
+    if(!dir_changed && s_pcache_nb > 0)
     {
         /* Fast path: refresh data from existing mappings */
         int idx = 0;
-        for (int ci = 0;
-             ci < s_pcache_nb && idx < OV_MAX_PROCS;
-             ci++)
+        for(int ci = 0;
+                ci < s_pcache_nb && idx < OV_MAX_PROCS;
+                ci++)
         {
             OV_PROC   *p     = &model->procs[idx];
             PROCESSINFO *pinfo = s_pcache[ci].pinfo;
@@ -742,7 +757,7 @@ void ov_scan_procs(OV_MODEL *model)
             p->loopstat = pinfo->loopstat;
 
             int alive = pid_is_alive(pid);
-            if (!alive)
+            if(!alive)
             {
                 p->loopstat =
                     (pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP)
@@ -755,7 +770,7 @@ void ov_scan_procs(OV_MODEL *model)
             p->mem_rss_kb = pid_get_rss_kb(pid);
             p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
             p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
-            if (p->dtmedian_iter_ns > 0)
+            if(p->dtmedian_iter_ns > 0)
             {
                 p->loop_hz =
                     1.0e9 / (double) p->dtmedian_iter_ns;
@@ -775,13 +790,13 @@ void ov_scan_procs(OV_MODEL *model)
                 ov_proc_cache_t *ce = &s_pcache[ci];
 
                 /* Hz from loopcnt delta (fallback) */
-                if (p->loop_hz < 0.1
-                    && ce->has_prev_loop
-                    && s_scan_dt_sec > 0.01)
+                if(p->loop_hz < 0.1
+                        && ce->has_prev_loop
+                        && s_scan_dt_sec > 0.01)
                 {
                     int64_t dlc =
                         p->loopcnt - ce->prev_loopcnt;
-                    if (dlc > 0)
+                    if(dlc > 0)
                     {
                         p->loop_hz =
                             (double) dlc / s_scan_dt_sec;
@@ -796,20 +811,20 @@ void ov_scan_procs(OV_MODEL *model)
 
                 /* CPU percent from tick delta */
                 uint64_t ut = 0, st = 0;
-                if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
+                if(pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {
-                    if (ce->has_prev_cpu
-                        && s_scan_dt_sec > 0.01)
+                    if(ce->has_prev_cpu
+                            && s_scan_dt_sec > 0.01)
                     {
                         long clk = sysconf(_SC_CLK_TCK);
                         uint64_t dticks =
                             (ut - ce->prev_utime)
                             + (st - ce->prev_stime);
                         ce->cpu_pct = (float)(
-                            (double) dticks
-                            / ((double) clk
-                                * s_scan_dt_sec)
-                            * 100.0);
+                                          (double) dticks
+                                          / ((double) clk
+                                             * s_scan_dt_sec)
+                                          * 100.0);
                     }
                     ce->prev_utime   = ut;
                     ce->prev_stime   = st;
@@ -829,13 +844,13 @@ void ov_scan_procs(OV_MODEL *model)
     s_proc_mtime = dirstat.st_mtim;
 
     /* Mark all proc cache entries as not-in-use */
-    for (int i = 0; i < s_pcache_nb; i++)
+    for(int i = 0; i < s_pcache_nb; i++)
     {
         s_pcache[i].in_use = 0;
     }
 
     DIR *dp = opendir(shmdir);
-    if (dp == NULL)
+    if(dp == NULL)
     {
         model->nb_procs = 0;
         return;
@@ -844,21 +859,21 @@ void ov_scan_procs(OV_MODEL *model)
     int idx = 0;
     struct dirent *ep;
 
-    while ((ep = readdir(dp)) != NULL
-           && idx < OV_MAX_PROCS)
+    while((ep = readdir(dp)) != NULL
+            && idx < OV_MAX_PROCS)
     {
         /* Match proc.*.shm — at minimum "proc.a.1.shm" */
         const char *fname = ep->d_name;
-        if (strncmp(fname, "proc.", 5) != 0)
+        if(strncmp(fname, "proc.", 5) != 0)
         {
             continue;
         }
         int flen = (int) strlen(fname);
-        if (flen < 10)
+        if(flen < 10)
         {
             continue;
         }
-        if (strcmp(fname + flen - 4, ".shm") != 0)
+        if(strcmp(fname + flen - 4, ".shm") != 0)
         {
             continue;
         }
@@ -869,24 +884,24 @@ void ov_scan_procs(OV_MODEL *model)
         const char *p_pid_end = p_sfx;        /* one past PID digits */
         /* Walk backward to the '.' before PID */
         const char *q = p_pid_end - 1;
-        while (q > fname + 5 && *q != '.')
+        while(q > fname + 5 && *q != '.')
         {
             q--;
         }
-        if (*q != '.')
+        if(*q != '.')
         {
             continue;
         }
         /* Parse PID */
         pid_t pid = (pid_t) atoi(q + 1);
-        if (pid <= 0)
+        if(pid <= 0)
         {
             continue;
         }
         /* Extract process name: fname+5 .. q-1 */
         int pname_len = (int)(q - (fname + 5));
-        if (pname_len <= 0 ||
-            pname_len >= (int) sizeof(((OV_PROC *)0)->name))
+        if(pname_len <= 0 ||
+                pname_len >= (int) sizeof(((OV_PROC *)0)->name))
         {
             continue;
         }
@@ -900,7 +915,7 @@ void ov_scan_procs(OV_MODEL *model)
         int ci = pcache_find_pid(pid);
         PROCESSINFO *pinfo = NULL;
 
-        if (ci >= 0)
+        if(ci >= 0)
         {
             /* Cache hit */
             s_pcache[ci].in_use = 1;
@@ -909,13 +924,13 @@ void ov_scan_procs(OV_MODEL *model)
         else
         {
             /* Cache miss — open and mmap */
-            if (s_pcache_nb >= OV_MAX_PROCS)
+            if(s_pcache_nb >= OV_MAX_PROCS)
             {
                 continue;
             }
 
             int pfd = open(fpath, O_RDONLY);
-            if (pfd == -1)
+            if(pfd == -1)
             {
                 continue;
             }
@@ -929,7 +944,7 @@ void ov_scan_procs(OV_MODEL *model)
                     pfd,
                     0);
 
-            if (pm == MAP_FAILED)
+            if(pm == MAP_FAILED)
             {
                 close(pfd);
                 continue;
@@ -949,7 +964,7 @@ void ov_scan_procs(OV_MODEL *model)
 
         /* Use name from PROCESSINFO struct if available,
          * otherwise fall back to the name from the filename. */
-        if (pinfo != NULL && pinfo->name[0] != '\0')
+        if(pinfo != NULL && pinfo->name[0] != '\0')
         {
             strncpy(p->name, pinfo->name,
                     sizeof(p->name) - 1);
@@ -964,13 +979,13 @@ void ov_scan_procs(OV_MODEL *model)
         p->valid  = 1;
         p->active = 1;
 
-        if (pinfo != NULL)
+        if(pinfo != NULL)
         {
             p->loopstat = pinfo->loopstat;
         }
 
         int alive = pid_is_alive(pid);
-        if (!alive)
+        if(!alive)
         {
             p->loopstat =
                 (pinfo != NULL &&
@@ -979,7 +994,7 @@ void ov_scan_procs(OV_MODEL *model)
                 : PROCESSINFO_LOOPSTAT_CRASHED;
         }
 
-        if (pinfo != NULL)
+        if(pinfo != NULL)
         {
             p->CTRLval  = pinfo->CTRLval;
             p->loopcnt  = pinfo->loopcnt;
@@ -988,7 +1003,7 @@ void ov_scan_procs(OV_MODEL *model)
             /* Timing stats */
             p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
             p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
-            if (p->dtmedian_iter_ns > 0)
+            if(p->dtmedian_iter_ns > 0)
             {
                 p->loop_hz =
                     1.0e9
@@ -1012,13 +1027,13 @@ void ov_scan_procs(OV_MODEL *model)
                 ov_proc_cache_t *ce = &s_pcache[ci];
 
                 /* Hz from loopcnt delta (fallback) */
-                if (p->loop_hz < 0.1
-                    && ce->has_prev_loop
-                    && s_scan_dt_sec > 0.01)
+                if(p->loop_hz < 0.1
+                        && ce->has_prev_loop
+                        && s_scan_dt_sec > 0.01)
                 {
                     int64_t dlc =
                         p->loopcnt - ce->prev_loopcnt;
-                    if (dlc > 0)
+                    if(dlc > 0)
                     {
                         p->loop_hz =
                             (double) dlc / s_scan_dt_sec;
@@ -1033,21 +1048,21 @@ void ov_scan_procs(OV_MODEL *model)
 
                 /* CPU percent from tick delta */
                 uint64_t ut = 0, st = 0;
-                if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
+                if(pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {
-                    if (ce->has_prev_cpu
-                        && s_scan_dt_sec > 0.01)
+                    if(ce->has_prev_cpu
+                            && s_scan_dt_sec > 0.01)
                     {
                         long clk = sysconf(
-                            _SC_CLK_TCK);
+                                       _SC_CLK_TCK);
                         uint64_t dticks =
                             (ut - ce->prev_utime)
                             + (st - ce->prev_stime);
                         ce->cpu_pct = (float)(
-                            (double) dticks
-                            / ((double) clk
-                                * s_scan_dt_sec)
-                            * 100.0);
+                                          (double) dticks
+                                          / ((double) clk
+                                             * s_scan_dt_sec)
+                                          * 100.0);
                     }
                     ce->prev_utime   = ut;
                     ce->prev_stime   = st;
@@ -1065,9 +1080,9 @@ void ov_scan_procs(OV_MODEL *model)
     model->nb_procs = idx;
 
     /* Evict stale proc cache entries */
-    for (int i = s_pcache_nb - 1; i >= 0; i--)
+    for(int i = s_pcache_nb - 1; i >= 0; i--)
     {
-        if (!s_pcache[i].in_use)
+        if(!s_pcache[i].in_use)
         {
             pcache_evict(i);
         }
@@ -1082,35 +1097,35 @@ void ov_scan_procs(OV_MODEL *model)
 void ov_scan_tmux_sessions(OV_MODEL *model)
 {
     /* Reset all tmux flags */
-    for (int i = 0; i < model->nb_fps; i++)
+    for(int i = 0; i < model->nb_fps; i++)
     {
         model->fps[i].tmux_flags = 0;
     }
 
-    if (model->nb_fps == 0)
+    if(model->nb_fps == 0)
     {
         return;
     }
 
     FILE *fp = popen("tmux list-windows -a -F \"#{session_name}:#{window_name}\" 2>/dev/null", "r");
-    if (fp == NULL)
+    if(fp == NULL)
     {
         return;
     }
 
     char line[256];
-    while (fgets(line, sizeof(line), fp) != NULL)
+    while(fgets(line, sizeof(line), fp) != NULL)
     {
         /* Strip newline */
         int len = strlen(line);
-        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+        while(len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
         {
             line[--len] = '\0';
         }
 
         /* Find the colon */
         char *colon = strchr(line, ':');
-        if (colon == NULL)
+        if(colon == NULL)
         {
             continue;
         }
@@ -1120,19 +1135,19 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
         const char *window_name  = colon + 1;
 
         /* Find matching FPS in model */
-        for (int i = 0; i < model->nb_fps; i++)
+        for(int i = 0; i < model->nb_fps; i++)
         {
-            if (strcmp(model->fps[i].name, session_name) == 0)
+            if(strcmp(model->fps[i].name, session_name) == 0)
             {
-                if (strcmp(window_name, "ctrl") == 0)
+                if(strcmp(window_name, "ctrl") == 0)
                 {
                     model->fps[i].tmux_flags |= OV_TMUX_CTRL;
                 }
-                else if (strcmp(window_name, "conf") == 0)
+                else if(strcmp(window_name, "conf") == 0)
                 {
                     model->fps[i].tmux_flags |= OV_TMUX_CONF;
                 }
-                else if (strcmp(window_name, "run") == 0)
+                else if(strcmp(window_name, "run") == 0)
                 {
                     model->fps[i].tmux_flags |= OV_TMUX_RUN;
                 }
@@ -1152,14 +1167,14 @@ void ov_scan_tmux_sessions(OV_MODEL *model)
 void ov_scan_cache_cleanup(void)
 {
     /* Close all cached stream mappings */
-    for (int i = s_scache_nb - 1; i >= 0; i--)
+    for(int i = s_scache_nb - 1; i >= 0; i--)
     {
         ImageStreamIO_closeIm(&s_scache[i].img);
     }
     s_scache_nb = 0;
 
     /* Disconnect all cached FPS mappings */
-    for (int i = s_fcache_nb - 1; i >= 0; i--)
+    for(int i = s_fcache_nb - 1; i >= 0; i--)
     {
         fps_disconnect(
             &s_fcache[i].fps);
@@ -1167,7 +1182,7 @@ void ov_scan_cache_cleanup(void)
     s_fcache_nb = 0;
 
     /* Unmap all cached proc mappings */
-    for (int i = s_pcache_nb - 1; i >= 0; i--)
+    for(int i = s_pcache_nb - 1; i >= 0; i--)
     {
         munmap(s_pcache[i].pinfo,
                sizeof(PROCESSINFO));
@@ -1217,19 +1232,19 @@ static int  s_prev_nb_procs = 0;
 static int64_t get_boot_time(void)
 {
     static int64_t cached_boot = 0;
-    if (cached_boot > 0)
+    if(cached_boot > 0)
     {
         return cached_boot;
     }
     FILE *fp = fopen("/proc/stat", "r");
-    if (fp == NULL)
+    if(fp == NULL)
     {
         return 0;
     }
     char line[256];
-    while (fgets(line, sizeof(line), fp) != NULL)
+    while(fgets(line, sizeof(line), fp) != NULL)
     {
-        if (strncmp(line, "btime ", 6) == 0)
+        if(strncmp(line, "btime ", 6) == 0)
         {
             cached_boot = (int64_t) atoll(line + 6);
             break;
@@ -1251,14 +1266,14 @@ static int64_t pid_get_start_time(pid_t pid)
     snprintf(path, sizeof(path),
              "/proc/%d/stat", (int) pid);
     FILE *fp = fopen(path, "r");
-    if (fp == NULL)
+    if(fp == NULL)
     {
         return 0;
     }
     /* Field 22 is starttime (in clock ticks).
      * Skip past the comm field (in parens) first. */
     char buf[1024];
-    if (fgets(buf, sizeof(buf), fp) == NULL)
+    if(fgets(buf, sizeof(buf), fp) == NULL)
     {
         fclose(fp);
         return 0;
@@ -1267,21 +1282,30 @@ static int64_t pid_get_start_time(pid_t pid)
 
     /* Find closing paren of comm field */
     char *cp = strrchr(buf, ')');
-    if (cp == NULL)
+    if(cp == NULL)
     {
         return 0;
     }
     /* Skip fields 3..21 (19 fields after ')') */
     char *p = cp + 2;
-    for (int ff = 0; ff < 19; ff++)
+    for(int ff = 0; ff < 19; ff++)
     {
-        while (*p == ' ') { p++; }
-        while (*p != ' ' && *p != '\0') { p++; }
+        while(*p == ' ')
+        {
+            p++;
+        }
+        while(*p != ' ' && *p != '\0')
+        {
+            p++;
+        }
     }
-    while (*p == ' ') { p++; }
+    while(*p == ' ')
+    {
+        p++;
+    }
     int64_t starttime = (int64_t) atoll(p);
     long clk = sysconf(_SC_CLK_TCK);
-    if (clk <= 0)
+    if(clk <= 0)
     {
         clk = 100;
     }
@@ -1301,12 +1325,12 @@ static int64_t pid_get_start_time(pid_t pid)
 static int name_in_list(
     const char *name,
     const char *list,
-    int         count,
-    int         width)
+    int        count,
+    int        width)
 {
-    for (int ii = 0; ii < count; ii++)
+    for(int ii = 0; ii < count; ii++)
     {
-        if (strcmp(name, list + ii * width) == 0)
+        if(strcmp(name, list + ii * width) == 0)
         {
             return 1;
         }
@@ -1319,20 +1343,20 @@ void ov_post_scan_enrich(OV_MODEL *model)
     int64_t now_epoch = (int64_t) time(NULL);
 
     /* --- #6: FPS sparklines (cross-ref RPID to procs) --- */
-    for (int fi = 0; fi < model->nb_fps; fi++)
+    for(int fi = 0; fi < model->nb_fps; fi++)
     {
         OV_FPS *f = &model->fps[fi];
         float hz = 0.0f;
-        if (f->runpid > 0)
+        if(f->runpid > 0)
         {
-            for (int pi = 0;
-                 pi < model->nb_procs; pi++)
+            for(int pi = 0;
+                    pi < model->nb_procs; pi++)
             {
-                if (model->procs[pi].PID
-                    == f->runpid)
+                if(model->procs[pi].PID
+                        == f->runpid)
                 {
                     hz = (float)
-                        model->procs[pi].loop_hz;
+                         model->procs[pi].loop_hz;
                     break;
                 }
             }
@@ -1344,14 +1368,14 @@ void ov_post_scan_enrich(OV_MODEL *model)
     }
 
     /* --- #7: Process uptime --- */
-    for (int pi = 0; pi < model->nb_procs; pi++)
+    for(int pi = 0; pi < model->nb_procs; pi++)
     {
         OV_PROC *p = &model->procs[pi];
-        if (p->PID > 0)
+        if(p->PID > 0)
         {
             int64_t st = pid_get_start_time(
-                p->PID);
-            if (st > 0)
+                             p->PID);
+            if(st > 0)
             {
                 p->start_time_sec =
                     now_epoch - st;
@@ -1360,11 +1384,11 @@ void ov_post_scan_enrich(OV_MODEL *model)
     }
 
     /* --- #15: Stale process detection --- */
-    for (int pi = 0; pi < model->nb_procs; pi++)
+    for(int pi = 0; pi < model->nb_procs; pi++)
     {
         OV_PROC *p = &model->procs[pi];
-        if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE
-            && !p->cnt_active)
+        if(p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE
+                && !p->cnt_active)
         {
             p->stale_count++;
         }
@@ -1376,45 +1400,45 @@ void ov_post_scan_enrich(OV_MODEL *model)
 
     /* --- #16: New-item flash --- */
     /* Streams */
-    for (int si = 0; si < model->nb_streams; si++)
+    for(int si = 0; si < model->nb_streams; si++)
     {
         OV_STREAM *s = &model->streams[si];
-        if (s_prev_nb_streams > 0
-            && !name_in_list(
-                s->name,
-                (const char *) s_prev_stream_names,
-                s_prev_nb_streams, 40))
+        if(s_prev_nb_streams > 0
+                && !name_in_list(
+                    s->name,
+                    (const char *) s_prev_stream_names,
+                    s_prev_nb_streams, 40))
         {
             s->is_new = 4;
         }
     }
     /* FPS */
-    for (int fi = 0; fi < model->nb_fps; fi++)
+    for(int fi = 0; fi < model->nb_fps; fi++)
     {
         OV_FPS *f = &model->fps[fi];
-        if (s_prev_nb_fps > 0
-            && !name_in_list(
-                f->name,
-                (const char *) s_prev_fps_names,
-                s_prev_nb_fps,
-                STRINGMAXLEN_FPS_NAME))
+        if(s_prev_nb_fps > 0
+                && !name_in_list(
+                    f->name,
+                    (const char *) s_prev_fps_names,
+                    s_prev_nb_fps,
+                    STRINGMAXLEN_FPS_NAME))
         {
             f->is_new = 4;
         }
     }
     /* Procs */
-    for (int pi = 0; pi < model->nb_procs; pi++)
+    for(int pi = 0; pi < model->nb_procs; pi++)
     {
         OV_PROC *p = &model->procs[pi];
         /* Build unique key: name + PID */
         char key[48];
         snprintf(key, sizeof(key), "%s/%d",
                  p->name, (int) p->PID);
-        if (s_prev_nb_procs > 0
-            && !name_in_list(
-                key,
-                (const char *) s_prev_proc_names,
-                s_prev_nb_procs, 48))
+        if(s_prev_nb_procs > 0
+                && !name_in_list(
+                    key,
+                    (const char *) s_prev_proc_names,
+                    s_prev_nb_procs, 48))
         {
             p->is_new = 4;
         }
@@ -1422,26 +1446,26 @@ void ov_post_scan_enrich(OV_MODEL *model)
 
     /* Save current names for next scan */
     s_prev_nb_streams = model->nb_streams;
-    for (int si = 0;
-         si < model->nb_streams
-         && si < OV_MAX_STREAMS; si++)
+    for(int si = 0;
+            si < model->nb_streams
+            && si < OV_MAX_STREAMS; si++)
     {
         strncpy(s_prev_stream_names[si],
                 model->streams[si].name, 39);
     }
     s_prev_nb_fps = model->nb_fps;
-    for (int fi = 0;
-         fi < model->nb_fps
-         && fi < OV_MAX_FPS; fi++)
+    for(int fi = 0;
+            fi < model->nb_fps
+            && fi < OV_MAX_FPS; fi++)
     {
         strncpy(s_prev_fps_names[fi],
                 model->fps[fi].name,
                 STRINGMAXLEN_FPS_NAME - 1);
     }
     s_prev_nb_procs = model->nb_procs;
-    for (int pi = 0;
-         pi < model->nb_procs
-         && pi < OV_MAX_PROCS; pi++)
+    for(int pi = 0;
+            pi < model->nb_procs
+            && pi < OV_MAX_PROCS; pi++)
     {
         snprintf(s_prev_proc_names[pi],
                  sizeof(s_prev_proc_names[pi]),

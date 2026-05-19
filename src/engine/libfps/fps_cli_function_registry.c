@@ -10,7 +10,6 @@
 
 #include <stddef.h>
 
-#include "fps_cli_function_registry.h"
 
 void *fps_generic_CLIfunction_ptr = NULL;
 void *fps_fill_farg_examples_ptr  = NULL;

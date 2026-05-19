@@ -25,6 +25,9 @@
 
 INIT_MODULE_LIB(COREMOD_tools)
 
+/**
+ * @brief Register COREMOD_tools CLI commands.
+ */
 static errno_t init_module_CLI()
 {
     CLIADDCMD_COREMOD_tools__mvprocCPUset();

@@ -9,6 +9,11 @@
 
 #include <stdio.h>
 
+/**
+ * @brief Check if a file exists on disk.
+ *
+ * Returns 1 if accessible, 0 otherwise.
+ */
 int file_exists(const char *restrict file_name)
 {
     FILE *fp;

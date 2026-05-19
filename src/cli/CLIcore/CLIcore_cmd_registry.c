@@ -78,18 +78,27 @@ static errno_t help_cmdopts_cmd(void)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief CLI handler: display command syntax help.
+ */
 static errno_t help_syntax_cmd(void)
 {
     help_topic_syntax();
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief CLI handler: list all available commands.
+ */
 static errno_t help_commands_cmd(void)
 {
     help_topic_commands();
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief CLI handler: list all active variables.
+ */
 static errno_t help_variables_cmd(void)
 {
     help_topic_variables();

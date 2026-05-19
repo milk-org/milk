@@ -132,7 +132,9 @@ static inline void ansi_raw_mode_exit(void)
  * @rows: pointer to store row count
  * @cols: pointer to store column count
  */
-static inline void ansi_get_terminal_size(int *rows, int *cols)
+static inline void ansi_get_terminal_size(
+    int *rows,
+    int *cols)
 {
     struct winsize ws;
 
@@ -166,7 +168,9 @@ static inline void ansi_cls(void)
  * @row: target row (1 = top)
  * @col: target column (1 = left)
  */
-static inline void ansi_pos(int row, int col)
+static inline void ansi_pos(
+    int row,
+    int col)
 {
     char buf[32];
     int  n = snprintf(buf, sizeof(buf), "\033[%d;%dH", row, col);
@@ -216,7 +220,10 @@ static inline void ansi_detect_color_level(void)
  * @g: green component
  * @b: blue component
  */
-static inline void ansi_fg(int r, int g, int b)
+static inline void ansi_fg(
+    int r,
+    int g,
+    int b)
 {
     char buf[32];
     int  n = snprintf(buf, sizeof(buf), "\033[38;2;%d;%d;%dm", r, g, b);
@@ -232,7 +239,10 @@ static inline void ansi_fg(int r, int g, int b)
  * @g: green component
  * @b: blue component
  */
-static inline void ansi_bg(int r, int g, int b)
+static inline void ansi_bg(
+    int r,
+    int g,
+    int b)
 {
     char buf[32];
     int  n = snprintf(buf, sizeof(buf), "\033[48;2;%d;%d;%dm", r, g, b);

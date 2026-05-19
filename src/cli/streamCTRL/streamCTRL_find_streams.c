@@ -23,7 +23,7 @@
 
 int find_streams(
     STREAMINFO *streaminfo,
-    int         filter,
+    int        filter,
     const char *__restrict namefilter
 )
 {

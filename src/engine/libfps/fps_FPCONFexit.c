@@ -4,11 +4,14 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
 
-#include "fps_disconnect.h"
 
+/**
+ * @brief Exit the FPS configuration loop.
+ *
+ * Sets conf loop status to exit and flushes any
+ * pending parameter writes.
+ */
 uint16_t function_parameter_FPCONFexit(FPS *fps)
 {
     //fps->md->confpid = 0;

@@ -27,7 +27,7 @@ int file_exists(const char *filename);
 int is_fits_file(const char *filename);
 int functionparameter_ConnectExternalFPS(
     FPS *fpsentry,
-    int  pindex,
+    int pindex,
     FPS *fpstest);
 
 #endif // FPS_INTERNAL_H

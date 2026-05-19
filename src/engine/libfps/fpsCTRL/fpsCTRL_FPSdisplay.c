@@ -26,6 +26,13 @@
 #define LEVEL0_SUMMARY_WIDTH 20
 #define TREE_LEVEL_WIDTH 12
 
+/**
+ * @brief Filter and sort child parameter nodes.
+ *
+ * Applies display filters (search string, type) and
+ * sorts by keyword or value for the current tree
+ * level.
+ */
 static void fpsCTRL__filter_and_sort_children(
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
@@ -118,6 +125,12 @@ static void fpsCTRL__filter_and_sort_children(
 
 }
 
+/**
+ * @brief Calculate column widths and layout metrics.
+ *
+ * Measures keyword and value strings to determine
+ * optimal column widths for the parameter display.
+ */
 static void fpsCTRL__calculate_widths_and_layout(
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
@@ -274,6 +287,12 @@ static void fpsCTRL__calculate_widths_and_layout(
     TUI_newline();
 }
 
+/**
+ * @brief Render the summary header and breadcrumb path.
+ *
+ * Displays the FPS name, navigation breadcrumbs,
+ * and status indicators at the top of the screen.
+ */
 static void fpsCTRL__render_summary_and_breadcrumbs(
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
@@ -572,6 +591,12 @@ static void fpsCTRL__render_summary_and_breadcrumbs(
     }
 }
 
+/**
+ * @brief Render the parameter list rows.
+ *
+ * Displays each parameter or keyword-tree node as
+ * a row with type, value, and status indicators.
+ */
 static void fpsCTRL__render_parameter_rows(
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
@@ -1150,6 +1175,12 @@ static void fpsCTRL__render_parameter_rows(
     }
 }
 
+/**
+ * @brief Render the footer status bar.
+ *
+ * Shows key bindings, current mode, and error
+ * counts at the bottom of the screen.
+ */
 static void fpsCTRL__render_footer_status(
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
     int GUIlineMax,
@@ -1212,6 +1243,12 @@ static void fpsCTRL__render_footer_status(
 }
 
 
+/**
+ * @brief Main display function for fpsCTRL TUI.
+ *
+ * Orchestrates the full-screen rendering cycle:
+ * filter, layout, header, rows, and footer.
+ */
 errno_t fpsCTRL_FPSdisplay(
     KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar
@@ -1320,6 +1357,12 @@ errno_t fpsCTRL_FPSdisplay(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Append FPS events to the fpsCTRL log file.
+ *
+ * Records parameter changes, state transitions,
+ * and user actions with timestamps.
+ */
 errno_t fpsCTRL_FPSlog(
     KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar

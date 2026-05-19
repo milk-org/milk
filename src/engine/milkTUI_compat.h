@@ -162,6 +162,7 @@ static inline void TUI_printfw(
     }
 }
 
+/** @brief Clear from cursor to end of screen. */
 static inline void TUI_cleartobottom(void)
 {
     SC_APPEND("\033[J");
@@ -183,36 +184,43 @@ static inline void screenprint_unsetbold(void)
     SC_APPEND("\033[22m");
 }
 
+/** @brief Enable blink attribute in the frame buffer. */
 static inline void screenprint_setblink(void)
 {
     SC_APPEND("\033[5m");
 }
 
+/** @brief Disable blink attribute. */
 static inline void screenprint_unsetblink(void)
 {
     SC_APPEND("\033[25m");
 }
 
+/** @brief Enable dim (faint) attribute. */
 static inline void screenprint_setdim(void)
 {
     SC_APPEND("\033[2m");
 }
 
+/** @brief Disable dim attribute (restores normal weight). */
 static inline void screenprint_unsetdim(void)
 {
     SC_APPEND("\033[22m");
 }
 
+/** @brief Enable reverse-video attribute. */
 static inline void screenprint_setreverse(void)
 {
     SC_APPEND("\033[7m");
 }
 
+/** @brief Disable reverse-video attribute. */
 static inline void screenprint_unsetreverse(void)
 {
     SC_APPEND("\033[27m");
 }
 
+/** @brief Reset all text attributes (bold, dim, color, etc.). */
 static inline void screenprint_setnormal(void)
 {
     SC_APPEND("\033[0m");
@@ -380,6 +388,10 @@ static inline void screenprint_setcolor(int idx)
  * SLEEK UI COLORS
  * ========================================================= */
 
+/**
+ * @brief Set background to the row-highlight color
+ *        (steel blue).
+ */
 static inline void
 screenprint_setbgcolor_highlight(void)
 {
@@ -398,6 +410,10 @@ screenprint_setbgcolor_highlight(void)
     }
 }
 
+/**
+ * @brief Set status-bar colors (white text on dark
+ *        blue-grey background).
+ */
 static inline void
 screenprint_set_status_bar(void)
 {
@@ -418,6 +434,7 @@ screenprint_set_status_bar(void)
     }
 }
 
+/** @brief Set foreground to cyan (string value color). */
 static inline void screenprint_color_string(void)
 {
     ansi_detect_color_level();
@@ -435,6 +452,7 @@ static inline void screenprint_color_string(void)
     }
 }
 
+/** @brief Set foreground to warm yellow (numeric value color). */
 static inline void screenprint_color_number(void)
 {
     ansi_detect_color_level();
@@ -452,6 +470,7 @@ static inline void screenprint_color_number(void)
     }
 }
 
+/** @brief Set foreground to bright green (boolean flag color). */
 static inline void screenprint_color_flag(void)
 {
     ansi_detect_color_level();
@@ -469,6 +488,7 @@ static inline void screenprint_color_flag(void)
     }
 }
 
+/** @brief Set foreground to grey (dimmed / secondary text). */
 static inline void screenprint_color_dim(void)
 {
     ansi_detect_color_level();
@@ -510,7 +530,7 @@ static inline void screenprint_unsetbgcolor(void)
 
 static inline int TUI_print_header(
     const char *str,
-    char        c)
+    char       c)
 {
     int col =
         sc_term_cols > 0 ? sc_term_cols : 80;
@@ -530,17 +550,30 @@ static inline int TUI_print_header(
  * TUI_clearscreen / TUI_init_terminal compat
  * ========================================================= */
 
+/** @brief No-op: screen print mode is always STDIO. */
 static inline void TUI_set_screenprintmode(
     int mode)
 {
     (void) mode;
 }
 
+/** @brief Always returns SCREENPRINT_STDIO. */
 static inline int TUI_get_screenprintmode(void)
 {
     return SCREENPRINT_STDIO;
 }
 
+/**
+ * @brief Enter raw terminal mode and query terminal size.
+ *
+ * Enters raw mode via the tool-specific ansi backend,
+ * queries rows/cols, and stores them in the global
+ * sc_term_rows / sc_term_cols.
+ *
+ * @param wrow  If non-NULL, receives terminal row count
+ * @param wcol  If non-NULL, receives terminal column count
+ * @return Always 0
+ */
 static inline int TUI_init_terminal(
     short unsigned int *wrow,
     short unsigned int *wcol)
@@ -561,6 +594,7 @@ static inline int TUI_init_terminal(
     return 0;
 }
 
+/** @brief Re-query terminal size (alias for TUI_init_terminal). */
 static inline int TUI_get_terminal_size(
     short unsigned int *wrow,
     short unsigned int *wcol)
@@ -568,11 +602,19 @@ static inline int TUI_get_terminal_size(
     return TUI_init_terminal(wrow, wcol);
 }
 
+/** @brief Restore the terminal to its original cooked mode. */
 static inline void TUI_exit(void)
 {
     ansi_raw_mode_exit();
 }
 
+/**
+ * @brief Re-query terminal size, clear the frame buffer,
+ *        and move cursor to home position.
+ *
+ * @param wrow  If non-NULL, receives terminal row count
+ * @param wcol  If non-NULL, receives terminal column count
+ */
 static inline void TUI_clearscreen(
     short unsigned int *wrow,
     short unsigned int *wcol)
@@ -596,16 +638,19 @@ static inline void TUI_clearscreen(
 }
 
 /* ncurses stubs */
+/** @brief No-op ncurses compatibility stub. */
 static inline int TUI_ncurses_refresh(void)
 {
     return 0;
 }
 
+/** @brief No-op ncurses compatibility stub. */
 static inline int TUI_ncurses_erase(void)
 {
     return 0;
 }
 
+/** @brief Clear frame buffer and move cursor to home. */
 static inline int TUI_stdio_clear(void)
 {
     sc_frame_clear();
@@ -615,11 +660,13 @@ static inline int TUI_stdio_clear(void)
     return 0;
 }
 
+/** @brief Non-blocking single keypress read. Returns ANSI_KEY_NONE if nothing available. */
 static inline int get_singlechar_nonblock(void)
 {
     return ansi_get_key();
 }
 
+/** @brief Blocking single keypress read. Polls at 100 Hz until a key arrives. */
 static inline int get_singlechar_block(void)
 {
     int ch = ANSI_KEY_NONE;

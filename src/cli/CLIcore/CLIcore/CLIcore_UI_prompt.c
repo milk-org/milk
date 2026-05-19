@@ -59,16 +59,16 @@ void cli_build_prompt(
                 char hn[64];
                 gethostname(hn, sizeof(hn));
                 pos += snprintf(out + pos,
-                    (size_t)(maxlen - pos),
-                    "%s", hn);
+                                (size_t)(maxlen - pos),
+                                "%s", hn);
                 break;
             }
             case 'u':
             {
                 const char *u = getenv("USER");
                 pos += snprintf(out + pos,
-                    (size_t)(maxlen - pos),
-                    "%s", u ? u : "?");
+                                (size_t)(maxlen - pos),
+                                "%s", u ? u : "?");
                 break;
             }
             case 'd':
@@ -79,9 +79,9 @@ void cli_build_prompt(
                     char *base = strrchr(cwd,
                                          '/');
                     pos += snprintf(out + pos,
-                        (size_t)(maxlen - pos),
-                        "%s",
-                        base ? base + 1 : cwd);
+                                    (size_t)(maxlen - pos),
+                                    "%s",
+                                    base ? base + 1 : cwd);
                 }
                 break;
             }
@@ -90,15 +90,15 @@ void cli_build_prompt(
                 time_t now = time(NULL);
                 struct tm *tm = localtime(&now);
                 pos += (int) strftime(
-                    out + pos,
-                    (size_t)(maxlen - pos),
-                    "%H:%M:%S", tm);
+                           out + pos,
+                           (size_t)(maxlen - pos),
+                           "%H:%M:%S", tm);
                 break;
             }
             case 'n':
                 pos += snprintf(out + pos,
-                    (size_t)(maxlen - pos),
-                    "%s", data.processname);
+                                (size_t)(maxlen - pos),
+                                "%s", data.processname);
                 break;
             default:
                 if(pos < maxlen - 2)
@@ -117,6 +117,12 @@ void cli_build_prompt(
     out[pos] = '\0';
 }
 
+/**
+ * @brief Update the CLI prompt string.
+ *
+ * Reflects current directory, session name, and
+ * script nesting level.
+ */
 errno_t cli_setprompt(void)
 {
     if(data.cmdNBarg < 2)
@@ -139,7 +145,7 @@ errno_t cli_setprompt(void)
             data.cmdargtoken[1].val.string,
             sizeof(cli_prompt_format) - 1);
     cli_prompt_format[
-        sizeof(cli_prompt_format) - 1] = '\0';
+     sizeof(cli_prompt_format) - 1] = '\0';
     printf("Prompt set to: '%s'\n",
            cli_prompt_format);
     return RETURN_SUCCESS;
@@ -153,11 +159,16 @@ errno_t cli_setprompt(void)
  * and {0..10..2} with "0 2 4 6 8 10".
  */
 void emit_str(
-    char       *out,
-    int        *opos,
-    int         maxlen,
+    char *out,
+    int  *opos,
+    int  maxlen,
     const char *s
 );
+/**
+ * @brief Expand brace expressions in a command line.
+ *
+ * Supports {a,b,c} expansion like bash.
+ */
 void cli_expand_braces(
     char *line,
     int   maxlen
@@ -168,7 +179,7 @@ void cli_expand_braces(
     int  i = 0;
 
     while(line[i] != '\0'
-          && opos < maxlen - 1)
+            && opos < maxlen - 1)
     {
         if(line[i] == '{')
         {
@@ -178,8 +189,8 @@ void cli_expand_braces(
                 strtol(line + i + 1,
                        &endp, 10);
             if(endp != NULL
-               && endp[0] == '.'
-               && endp[1] == '.')
+                    && endp[0] == '.'
+                    && endp[1] == '.')
             {
                 char *endp2 = NULL;
                 long ev =
@@ -187,8 +198,8 @@ void cli_expand_braces(
                            &endp2, 10);
                 long step = 1;
                 if(endp2 != NULL
-                   && endp2[0] == '.'
-                   && endp2[1] == '.')
+                        && endp2[0] == '.'
+                        && endp2[1] == '.')
                 {
                     char *endp3 = NULL;
                     step =
@@ -198,8 +209,8 @@ void cli_expand_braces(
                     endp2 = endp3;
                 }
                 if(endp2 != NULL
-                   && *endp2 == '}'
-                   && step != 0)
+                        && *endp2 == '}'
+                        && step != 0)
                 {
                     int first = 1;
                     if(sv <= ev)
@@ -209,8 +220,8 @@ void cli_expand_braces(
                             step = -step;
                         }
                         for(long v = sv;
-                            v <= ev;
-                            v += step)
+                                v <= ev;
+                                v += step)
                         {
                             char nb[32];
                             snprintf(
@@ -233,8 +244,8 @@ void cli_expand_braces(
                             step = -step;
                         }
                         for(long v = sv;
-                            v >= ev;
-                            v += step)
+                                v >= ev;
+                                v += step)
                         {
                             char nb[32];
                             snprintf(
@@ -274,7 +285,7 @@ void cli_expand_braces(
 void emit_str(
     char *out,
     int  *opos,
-    int   maxlen,
+    int  maxlen,
     const char *s
 )
 {

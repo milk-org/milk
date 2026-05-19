@@ -207,7 +207,7 @@ static inline int milk_help_init(
 static inline void milk_help_banner(
     const char *progname,
     const char *description,
-    int         color)
+    int        color)
 {
     /* Extract basename */
     const char *base = strrchr(progname, '/');
@@ -241,7 +241,7 @@ static inline void milk_help_banner(
  */
 static inline void milk_help_section(
     const char *title,
-    int         color)
+    int        color)
 {
     if(color)
     {

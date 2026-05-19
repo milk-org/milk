@@ -29,13 +29,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "impixdecodeU",
     .cmdkey      = "impixdecodeU",
     .description =
-        "decode image stream",
+    "decode image stream",
     .description_long =
-        "Decode a pixel map to reconstruct a 2D image from a 1D encoded stream. The pixel map specifies the mapping from linear to 2D coordinates."
+    "Decode a pixel map to reconstruct a 2D image from a 1D encoded stream. The pixel map specifies the mapping from linear to 2D coordinates."
 };
 
 
@@ -109,13 +110,13 @@ static long long p_reverse = 0;
 
 imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *inputstream_name,
-    uint32_t    xsizeim,
-    uint32_t    ysizeim,
+    uint32_t   xsizeim,
+    uint32_t   ysizeim,
     const char *NBpix_fname,
     const char *IDmap_name,
     const char *IDout_name,
     const char *IDout_pixslice_fname,
-    uint32_t    reverse);
+    uint32_t   reverse);
 //
 // pixel decode for unsigned short
 // sem0, cnt0 gets updated at each full frame
@@ -124,8 +125,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 //
 imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *inputstream_name,
-    uint32_t    xsizeim,
-    uint32_t    ysizeim,
+    uint32_t   xsizeim,
+    uint32_t   ysizeim,
     const char *NBpix_fname,
     const char *IDmap_name,
     const char *IDout_name,
@@ -168,14 +169,16 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     IMGID img_in = imgid_make_from_name(inputstream_name);
     resolveIMGID(&img_in, ERRMODE_WARN, dcimg, dcnimg);
     IDin = img_in.ID;
-    if (img_in.ID == -1) {
+    if(img_in.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
     IMGID img_map = imgid_make_from_name(IDmap_name);
     resolveIMGID(&img_map, ERRMODE_WARN, dcimg, dcnimg);
     IDmap = img_map.ID;
-    if (img_map.ID == -1) {
+    if(img_map.ID == -1)
+    {
         return RETURN_FAILURE;
     }
     // Size of IDmap is different depending if forward or reverse lookup !
@@ -526,8 +529,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                 if(slice == NBslice - 1)
                 {
                     processinfo_update_output_stream(processinfo,
-                        &dcimg[IDout],
-                        NULL);
+                                                     &dcimg[IDout],
+                                                     NULL);
                 }
 
                 dcimg[IDout].md[0].cnt1 = slice;
@@ -609,9 +612,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -621,7 +624,7 @@ CLIADDCMD_COREMOD_memory__stream_pixmapdecode()
         farg, my_bindings, nb_bindings);
 
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 

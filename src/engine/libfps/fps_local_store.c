@@ -7,11 +7,7 @@
  * Local FPS names are prefixed with '_'.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "fps.h"
 #include "fps_local_store.h"
 
 
@@ -27,6 +23,15 @@ local_fps_creator[FPS_LOCAL_MAX]
 [FPS_CREATOR_NAME_MAX];
 
 
+/**
+ * @brief Find a local FPS by name.
+ *
+ * Searches the in-process FPS store for an entry whose
+ * name matches.  Returns NULL if no match.
+ *
+ * @param name  FPS name to search for
+ * @return Pointer to the local FPS, or NULL
+ */
 FPS *fps_local_find(
     const char *name
 )
@@ -49,6 +54,17 @@ FPS *fps_local_find(
 }
 
 
+/**
+ * @brief Allocate a new local FPS in the in-process store.
+ *
+ * Allocates metadata and parameter array in heap memory.
+ * The FPS is not backed by shared memory, making it
+ * suitable for transient computations.
+ *
+ * @param name       FPS name (should start with '_')
+ * @param NBparamMAX Maximum number of parameters
+ * @return Pointer to the new FPS, or NULL on failure
+ */
 FPS *fps_local_create(
     const char *name,
     long        NBparamMAX
@@ -105,6 +121,16 @@ FPS *fps_local_create(
 }
 
 
+/**
+ * @brief Find or create a local FPS.
+ *
+ * Returns the existing local FPS if found by name;
+ * otherwise creates a new one with the given capacity.
+ *
+ * @param name       FPS name
+ * @param NBparamMAX Capacity for new FPS (ignored if exists)
+ * @return Pointer to the FPS, or NULL on failure
+ */
 FPS *fps_local_get_or_create(
     const char *name,
     long        NBparamMAX
@@ -121,12 +147,21 @@ FPS *fps_local_get_or_create(
 }
 
 
+/**
+ * @brief Counts the number of local FPS entries.
+ */
 int fps_local_count_entries(void)
 {
     return local_fps_count;
 }
 
 
+/**
+ * @brief Get a local FPS by its store index.
+ *
+ * @param idx  Index into the local FPS array
+ * @return Pointer to the FPS, or NULL if invalid/unused
+ */
 FPS *fps_local_get_by_index(
     int idx
 )
@@ -143,6 +178,15 @@ FPS *fps_local_get_by_index(
 }
 
 
+/**
+ * @brief Associate a creator name with a local FPS.
+ *
+ * Records which CLI command (fps_name) created this
+ * local FPS, used for diagnostic display in "?" queries.
+ *
+ * @param name          FPS name to tag
+ * @param creator_name  Creator identifier to store
+ */
 void fps_local_set_creator(
     const char *name,
     const char *creator_name
@@ -170,6 +214,12 @@ void fps_local_set_creator(
 }
 
 
+/**
+ * @brief Get the creator name for a local FPS by index.
+ *
+ * @param idx  Index into the local FPS array
+ * @return Creator name string, or "" if invalid
+ */
 const char *fps_local_get_creator(int idx)
 {
     if(idx < 0 || idx >= local_fps_count)
@@ -196,6 +246,16 @@ shared_track_creator[FPS_SHARED_TRACK_MAX]
 [FPS_CREATOR_NAME_MAX];
 
 
+/**
+ * @brief Record that a shared FPS was used by a given
+ *        CLI command.
+ *
+ * Stores (fps_name, creator_name) pairs for diagnostic
+ * display.  Duplicate entries are silently ignored.
+ *
+ * @param fps_name      Shared FPS name
+ * @param creator_name  CLI command that used it
+ */
 void fps_shared_record_usage(
     const char *fps_name,
     const char *creator_name
@@ -236,6 +296,14 @@ void fps_shared_record_usage(
 }
 
 
+/**
+ * @brief Check whether a shared FPS was previously used by
+ *        a specific CLI command.
+ *
+ * @param fps_name      Shared FPS name
+ * @param creator_name  CLI command to check
+ * @return 1 if found, 0 otherwise
+ */
 int fps_shared_was_used_by(
     const char *fps_name,
     const char *creator_name

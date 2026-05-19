@@ -4,30 +4,15 @@
  */
 
 #include <dirent.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <math.h>
-#include <time.h>
 #include <sys/stat.h>
 
-#include <unistd.h>
-#include <stdio.h>
 #include <poll.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_isvalid.h"
-#include "timeutils.h"
 
 #include "fpsCTRL_TUI_process_user_key.h"
-#include "fps_GetTypeString.h"
-#include "fps_disconnect.h"
-#include "fps_outlog.h"
-#include "fps_process_fpsCMDarray.h"
-#include "fps_read_fpsCMD_fifo.h"
-#include "fps_scan.h"
 
-#include "processinfo_signals.h"
 #ifdef MILK_MODULE
 #ifdef MILK_MODULE
 #endif
@@ -37,8 +22,6 @@
 #include "fpsCTRL_globals.h"
 
 #include "fpsCTRL_FPSdisplay.h"
-#include "print_nodeinfo.h"
-#include "level0node_summary.h"
 
 #include "scheduler_display.h"
 

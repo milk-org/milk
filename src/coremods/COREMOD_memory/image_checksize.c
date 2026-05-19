@@ -13,12 +13,18 @@
 #include "COREMOD_memory/imageID.h"
 
 //  check only is size > 0
+/**
+ * @brief Verify that an image has the expected 2D size.
+ */
 int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
 {
     int     retval;
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
+    if(img.ID == -1)
+    {
+        return 0;
+    }
 
     retval = 1;
     if(img.im->md[0].naxis != 2)
@@ -40,6 +46,9 @@ int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
     return retval;
 }
 
+/**
+ * @brief Verify that an image has the expected 3D size.
+ */
 int check_3Dsize(const char *ID_name,
                  uint32_t    xsize,
                  uint32_t    ysize,
@@ -48,8 +57,11 @@ int check_3Dsize(const char *ID_name,
     int     retval;
     IMGID img = imgid_make_from_name(ID_name);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
-    
+    if(img.ID == -1)
+    {
+        return 0;
+    }
+
     retval = 1;
     if(img.im->md[0].naxis != 3)
     {
@@ -86,7 +98,10 @@ int COREMOD_MEMORY_check_2Dsize(const char *IDname,
     int     sizeOK = 1; // 1 if size matches
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
+    if(img.ID == -1)
+    {
+        return 0;
+    }
     if(img.im->md[0].naxis != 2)
     {
         printf(
@@ -128,7 +143,10 @@ int COREMOD_MEMORY_check_3Dsize(const char *IDname,
     int     sizeOK = 1; // 1 if size matches
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if(img.ID == -1) return 0;
+    if(img.ID == -1)
+    {
+        return 0;
+    }
     if(img.im->md[0].naxis != 3)
     {
         printf(

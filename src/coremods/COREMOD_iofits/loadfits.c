@@ -22,12 +22,13 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 // FPS V2
 // ==========================================
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "loadfits",
     .cmdkey      = "loadfits",
     .description = "load FITS format file",
     .description_long =
-        "Load a FITS file from disk into a shared memory image stream. Supports 2D and 3D images with automatic data type detection."
+    "Load a FITS file from disk into a shared memory image stream. Supports 2D and 3D images with automatic data type detection."
 };
 
 // CLI function arguments and parameters
@@ -56,6 +57,12 @@ FPS_V2_SECTION5(FPS_PARAMS)
 /// LOADFITS_ERRMODE_ERROR   (2) return error
 /// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
+/**
+ * @brief Load a FITS file and return an IMGID.
+ *
+ * Reads a FITS file from disk into the image array
+ * and returns the IMGID handle.
+ */
 errno_t load_fits_IMGID(
     const char *__restrict file_name,
     IMGID *imgout,
@@ -274,7 +281,7 @@ errno_t load_fits_IMGID(
         imgout->mdt->NBkw =
             NB_KEYWNODE_MAX;
         imgout->im = (IMAGE *) calloc(
-            1, sizeof(IMAGE));
+                         1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         {
@@ -309,7 +316,7 @@ errno_t load_fits_IMGID(
         imgout->mdt->NBkw =
             NB_KEYWNODE_MAX;
         imgout->im = (IMAGE *) calloc(
-            1, sizeof(IMAGE));
+                         1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         {
@@ -344,7 +351,7 @@ errno_t load_fits_IMGID(
         imgout->mdt->NBkw =
             NB_KEYWNODE_MAX;
         imgout->im = (IMAGE *) calloc(
-            1, sizeof(IMAGE));
+                         1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         {
@@ -378,11 +385,11 @@ errno_t load_fits_IMGID(
         imgout->mdt->NBkw =
             NB_KEYWNODE_MAX;
         imgout->im = (IMAGE *) calloc(
-            1, sizeof(IMAGE));
+                         1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         larray = (long *) malloc(
-            sizeof(long) * nelements);
+                     sizeof(long) * nelements);
         if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -407,8 +414,8 @@ errno_t load_fits_IMGID(
 
         bzero = 0.0;
         for(uint_fast64_t ii = 0;
-            ii < (uint_fast64_t) nelements;
-            ii++)
+                ii < (uint_fast64_t) nelements;
+                ii++)
         {
             imgout->im->array.SI32[ii] =
                 larray[ii] * bscale + bzero;
@@ -431,11 +438,11 @@ errno_t load_fits_IMGID(
         imgout->mdt->NBkw =
             NB_KEYWNODE_MAX;
         imgout->im = (IMAGE *) calloc(
-            1, sizeof(IMAGE));
+                         1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         larray = (long *) malloc(
-            sizeof(long) * nelements);
+                     sizeof(long) * nelements);
         if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -461,8 +468,8 @@ errno_t load_fits_IMGID(
 
         bzero = 0.0;
         for(uint_fast64_t ii = 0;
-            ii < (uint_fast64_t) nelements;
-            ii++)
+                ii < (uint_fast64_t) nelements;
+                ii++)
         {
             imgout->im->array.SI64[ii] =
                 larray[ii] * bscale + bzero;
@@ -485,12 +492,12 @@ errno_t load_fits_IMGID(
         imgout->mdt->NBkw =
             NB_KEYWNODE_MAX;
         imgout->im = (IMAGE *) calloc(
-            1, sizeof(IMAGE));
+                         1, sizeof(IMAGE));
         imgid_mkimage(imgout);
 
         barray = (unsigned char *) malloc(
-            sizeof(unsigned char)
-            * naxes[1] * naxes[0]);
+                     sizeof(unsigned char)
+                     * naxes[1] * naxes[0]);
         if(barray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -515,8 +522,8 @@ errno_t load_fits_IMGID(
         }
 
         for(uint_fast64_t ii = 0;
-            ii < (uint_fast64_t) nelements;
-            ii++)
+                ii < (uint_fast64_t) nelements;
+                ii++)
         {
             imgout->im->array.F[ii] =
                 (1.0 * barray[ii]
@@ -593,9 +600,9 @@ errno_t load_fits_IMGID(
                 {
                     kwtypeOK = 1;
                     image_keyword_addD(*imgout,
-                        keyname,
-                        kwdoubleval,
-                        kwcomment);
+                                       keyname,
+                                       kwdoubleval,
+                                       kwcomment);
                 }
 
                 if(kwtypeOK == 0)
@@ -606,9 +613,9 @@ errno_t load_fits_IMGID(
                     char *kwvaluestr1;
                     kwvaluestr1 = kwvaluestr + 1;
                     image_keyword_addS(*imgout,
-                        keyname,
-                        kwvaluestr1,
-                        kwcomment);
+                                       keyname,
+                                       kwvaluestr1,
+                                       kwcomment);
                 }
             }
         }
@@ -629,10 +636,15 @@ errno_t load_fits_IMGID(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Load a FITS file into the image array.
+ *
+ * Legacy interface returning an imageID integer.
+ */
 errno_t load_fits(
     const char *__restrict file_name,
     const char *__restrict ID_name,
-    int      errmode,
+    int                    errmode,
     imageID *IDout
 )
 {
@@ -668,9 +680,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 // Register function in CLI

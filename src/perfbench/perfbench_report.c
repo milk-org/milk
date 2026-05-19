@@ -14,19 +14,23 @@
 static double ipc(
     const hw_phase_t *p)
 {
-    if (!p->valid || p->v[IDX_CYCLES] == 0)
+    if(!p->valid || p->v[IDX_CYCLES] == 0)
+    {
         return 0.0;
+    }
     return (double) p->v[IDX_INSTRUCTIONS]
-         / (double) p->v[IDX_CYCLES];
+           / (double) p->v[IDX_CYCLES];
 }
 
 static double miss_rate(
     long long misses, long long loads)
 {
-    if (loads == 0)
+    if(loads == 0)
+    {
         return 0.0;
+    }
     return 100.0 * (double) misses
-                 / (double) loads;
+           / (double) loads;
 }
 
 /**
@@ -42,8 +46,10 @@ static void sub_phase(
     const hw_phase_t *w)
 {
     m->valid = t->valid;
-    for (int i = 0; i < N_PERF_EVS; i++)
+    for(int i = 0; i < N_PERF_EVS; i++)
+    {
         m->v[i] = t->v[i] - w->v[i];
+    }
 }
 
 /* ================================================================
@@ -67,15 +73,15 @@ void write_json(
     const bench_cfg_t *cfg,
     const hw_phase_t  *t,
     const hw_phase_t  *w,
-    int                measured,
-    long long          t_ns,
-    long long          w_ns,
+    int               measured,
+    long long         t_ns,
+    long long         w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    int64_t            exe_sz)
+    int64_t           exe_sz)
 {
     FILE *fp = fopen(cfg->result_file, "w");
-    if (!fp)
+    if(!fp)
     {
         fprintf(stderr,
                 "ERROR: cannot write %s: %s\n",
@@ -101,8 +107,8 @@ void write_json(
             cfg->git_commit);
     fprintf(fp, "  \"build_tags\": \"%s\",\n",
             cfg->build_tags[0]
-                ? cfg->build_tags
-                : "default");
+            ? cfg->build_tags
+            : "default");
     fprintf(fp, "  \"iterations\": %d,\n",
             cfg->nbiter);
     fprintf(fp, "  \"warmup_iterations\": %d,\n",
@@ -118,22 +124,22 @@ void write_json(
 
     /* hw_counters */
     fprintf(fp, "  \"hw_counters\": {\n");
-    if (t->valid)
+    if(t->valid)
     {
-        for (int i = 0; i < N_PERF_EVS; i++)
+        for(int i = 0; i < N_PERF_EVS; i++)
         {
             fprintf(fp,
                     "    \"%s\": %lld%s\n",
                     PERF_EVS[i].json,
                     t->v[i],
                     (i < N_PERF_EVS - 1)
-                        ? "," : "");
+                    ? "," : "");
         }
     }
     fprintf(fp, "  },\n");
 
     /* warmup_counters */
-    if (cfg->warmup > 0 && w->valid)
+    if(cfg->warmup > 0 && w->valid)
     {
         fprintf(fp, "  \"warmup_counters\": {\n");
         fprintf(fp,
@@ -153,49 +159,49 @@ void write_json(
     }
 
     /* processinfo - total */
-    if (pi && pi->valid)
+    if(pi && pi->valid)
     {
         fprintf(fp,
-            "  \"processinfo\": {\n"
-            "    \"loopcnt\": %" PRId64 ",\n"
-            "    \"p50_iter_ns\": %" PRId64 ",\n"
-            "    \"p95_iter_ns\": %" PRId64 ",\n"
-            "    \"p99_iter_ns\": %" PRId64 ",\n"
-            "    \"p999_iter_ns\": %" PRId64 ",\n"
-            "    \"max_iter_ns\": %" PRId64 ",\n"
-            "    \"jitter_iter_ns\": %" PRId64 ",\n"
-            "    \"p50_exec_ns\": %" PRId64 ",\n"
-            "    \"p95_exec_ns\": %" PRId64 ",\n"
-            "    \"p99_exec_ns\": %" PRId64 ",\n"
-            "    \"p999_exec_ns\": %" PRId64 ",\n"
-            "    \"max_exec_ns\": %" PRId64 ",\n"
-            "    \"jitter_exec_ns\": %" PRId64 ",\n"
-            "    \"vmpeak_kb\": %" PRId64 ",\n"
-            "    \"vmhwm_kb\": %" PRId64 ",\n"
-            "    \"vmrss_kb\": %" PRId64 ",\n"
-            "    \"anon_huge_kb\": %" PRId64 ",\n"
-            "    \"vol_ctxt_switches\": %" PRId64 ",\n"
-            "    \"nvol_ctxt_switches\": %" PRId64 ",\n"
-            "    \"cpu_freq_min_khz\": %" PRId64 ",\n"
-            "    \"cpu_freq_max_khz\": %" PRId64 ",\n"
-            "    \"rapl_energy_uj\": %" PRId64 "\n"
-            "  },\n",
-            pi->loopcnt,
-            pi->p50_iter, pi->p95_iter,
-            pi->p99_iter,
-            pi->p999_iter, pi->max_iter,
-            pi->jitter_iter,
-            pi->p50_exec, pi->p95_exec,
-            pi->p99_exec,
-            pi->p999_exec, pi->max_exec,
-            pi->jitter_exec,
-            pi->vmpeak_kb, pi->vmhwm_kb,
-            pi->vmrss_kb,
-            pi->anon_huge_kb,
-            pi->vol_ctxt, pi->nvol_ctxt,
-            pi->cpu_freq_min_khz,
-            pi->cpu_freq_max_khz,
-            pi->rapl_uj);
+                "  \"processinfo\": {\n"
+                "    \"loopcnt\": %" PRId64 ",\n"
+                "    \"p50_iter_ns\": %" PRId64 ",\n"
+                "    \"p95_iter_ns\": %" PRId64 ",\n"
+                "    \"p99_iter_ns\": %" PRId64 ",\n"
+                "    \"p999_iter_ns\": %" PRId64 ",\n"
+                "    \"max_iter_ns\": %" PRId64 ",\n"
+                "    \"jitter_iter_ns\": %" PRId64 ",\n"
+                "    \"p50_exec_ns\": %" PRId64 ",\n"
+                "    \"p95_exec_ns\": %" PRId64 ",\n"
+                "    \"p99_exec_ns\": %" PRId64 ",\n"
+                "    \"p999_exec_ns\": %" PRId64 ",\n"
+                "    \"max_exec_ns\": %" PRId64 ",\n"
+                "    \"jitter_exec_ns\": %" PRId64 ",\n"
+                "    \"vmpeak_kb\": %" PRId64 ",\n"
+                "    \"vmhwm_kb\": %" PRId64 ",\n"
+                "    \"vmrss_kb\": %" PRId64 ",\n"
+                "    \"anon_huge_kb\": %" PRId64 ",\n"
+                "    \"vol_ctxt_switches\": %" PRId64 ",\n"
+                "    \"nvol_ctxt_switches\": %" PRId64 ",\n"
+                "    \"cpu_freq_min_khz\": %" PRId64 ",\n"
+                "    \"cpu_freq_max_khz\": %" PRId64 ",\n"
+                "    \"rapl_energy_uj\": %" PRId64 "\n"
+                "  },\n",
+                pi->loopcnt,
+                pi->p50_iter, pi->p95_iter,
+                pi->p99_iter,
+                pi->p999_iter, pi->max_iter,
+                pi->jitter_iter,
+                pi->p50_exec, pi->p95_exec,
+                pi->p99_exec,
+                pi->p999_exec, pi->max_exec,
+                pi->jitter_exec,
+                pi->vmpeak_kb, pi->vmhwm_kb,
+                pi->vmrss_kb,
+                pi->anon_huge_kb,
+                pi->vol_ctxt, pi->nvol_ctxt,
+                pi->cpu_freq_min_khz,
+                pi->cpu_freq_max_khz,
+                pi->rapl_uj);
     }
     else
     {
@@ -203,42 +209,42 @@ void write_json(
                 "  \"processinfo\": null,\n");
     }
     /* processinfo - warmup */
-    if (pi_w && pi_w->valid)
+    if(pi_w && pi_w->valid)
     {
         fprintf(fp,
-            "  \"processinfo_warmup\": {\n"
-            "    \"loopcnt\": %" PRId64 ",\n"
-            "    \"p50_iter_ns\": %" PRId64 ",\n"
-            "    \"p95_iter_ns\": %" PRId64 ",\n"
-            "    \"p99_iter_ns\": %" PRId64 ",\n"
-            "    \"p999_iter_ns\": %" PRId64 ",\n"
-            "    \"max_iter_ns\": %" PRId64 ",\n"
-            "    \"jitter_iter_ns\": %" PRId64 ",\n"
-            "    \"p50_exec_ns\": %" PRId64 ",\n"
-            "    \"p95_exec_ns\": %" PRId64 ",\n"
-            "    \"p99_exec_ns\": %" PRId64 ",\n"
-            "    \"p999_exec_ns\": %" PRId64 ",\n"
-            "    \"max_exec_ns\": %" PRId64 ",\n"
-            "    \"jitter_exec_ns\": %" PRId64 ",\n"
-            "    \"vol_ctxt_switches\": %" PRId64 ",\n"
-            "    \"nvol_ctxt_switches\": %" PRId64 ",\n"
-            "    \"cpu_freq_min_khz\": %" PRId64 ",\n"
-            "    \"cpu_freq_max_khz\": %" PRId64 ",\n"
-            "    \"rapl_energy_uj\": %" PRId64 "\n"
-            "  }\n",
-            pi_w->loopcnt,
-            pi_w->p50_iter, pi_w->p95_iter,
-            pi_w->p99_iter,
-            pi_w->p999_iter, pi_w->max_iter,
-            pi_w->jitter_iter,
-            pi_w->p50_exec, pi_w->p95_exec,
-            pi_w->p99_exec,
-            pi_w->p999_exec, pi_w->max_exec,
-            pi_w->jitter_exec,
-            pi_w->vol_ctxt, pi_w->nvol_ctxt,
-            pi_w->cpu_freq_min_khz,
-            pi_w->cpu_freq_max_khz,
-            pi_w->rapl_uj);
+                "  \"processinfo_warmup\": {\n"
+                "    \"loopcnt\": %" PRId64 ",\n"
+                "    \"p50_iter_ns\": %" PRId64 ",\n"
+                "    \"p95_iter_ns\": %" PRId64 ",\n"
+                "    \"p99_iter_ns\": %" PRId64 ",\n"
+                "    \"p999_iter_ns\": %" PRId64 ",\n"
+                "    \"max_iter_ns\": %" PRId64 ",\n"
+                "    \"jitter_iter_ns\": %" PRId64 ",\n"
+                "    \"p50_exec_ns\": %" PRId64 ",\n"
+                "    \"p95_exec_ns\": %" PRId64 ",\n"
+                "    \"p99_exec_ns\": %" PRId64 ",\n"
+                "    \"p999_exec_ns\": %" PRId64 ",\n"
+                "    \"max_exec_ns\": %" PRId64 ",\n"
+                "    \"jitter_exec_ns\": %" PRId64 ",\n"
+                "    \"vol_ctxt_switches\": %" PRId64 ",\n"
+                "    \"nvol_ctxt_switches\": %" PRId64 ",\n"
+                "    \"cpu_freq_min_khz\": %" PRId64 ",\n"
+                "    \"cpu_freq_max_khz\": %" PRId64 ",\n"
+                "    \"rapl_energy_uj\": %" PRId64 "\n"
+                "  }\n",
+                pi_w->loopcnt,
+                pi_w->p50_iter, pi_w->p95_iter,
+                pi_w->p99_iter,
+                pi_w->p999_iter, pi_w->max_iter,
+                pi_w->jitter_iter,
+                pi_w->p50_exec, pi_w->p95_exec,
+                pi_w->p99_exec,
+                pi_w->p999_exec, pi_w->max_exec,
+                pi_w->jitter_exec,
+                pi_w->vol_ctxt, pi_w->nvol_ctxt,
+                pi_w->cpu_freq_min_khz,
+                pi_w->cpu_freq_max_khz,
+                pi_w->rapl_uj);
     }
     else
     {
@@ -309,8 +315,10 @@ static int g_use_color = 0;
 static void print_heavy_sep(void)
 {
     printf("%s  ", CB);
-    for (int i = 0; i < 54; i++)
+    for(int i = 0; i < 54; i++)
+    {
         printf("%s", BOX_HEAVY);
+    }
     printf("%s\n", CR);
 }
 
@@ -345,12 +353,12 @@ static void print_section(
  */
 static void print_row(
     const char *label,
-    long long   total,
-    long long   warmup_v,
-    int         measured,
-    int         has_warmup,
-    int         decimals,
-    long long   paired_warmup_misses)
+    long long  total,
+    long long  warmup_v,
+    int        measured,
+    int        has_warmup,
+    int        decimals,
+    long long  paired_warmup_misses)
 {
     /* Detect PMU multiplexing: loads counter got zero samples
      * during warmup while its companion misses counter did not. */
@@ -361,16 +369,16 @@ static void print_row(
     double per_iter =
         (measured > 0 && total > warmup_v)
         ? (double)(total - warmup_v)
-          / (double) measured
+        / (double) measured
         : 0.0;
 
-    if (has_warmup)
+    if(has_warmup)
     {
-        if (mux_out)
+        if(mux_out)
         {
             /* Warmup column: show "n/a" to flag multiplexed-out
              * PMU counter rather than a misleading zero. */
-            if (decimals == 6)
+            if(decimals == 6)
                 printf("  %s%-*s%s %*lld %s%*s%s %s%*.6f%s/iter\n",
                        CD, COL1W, label, CR,
                        COL2W, total,
@@ -385,7 +393,7 @@ static void print_row(
         }
         else
         {
-            if (decimals == 6)
+            if(decimals == 6)
                 printf("  %s%-*s%s %*lld %*lld %s%*.6f%s/iter\n",
                        CD, COL1W, label, CR,
                        COL2W, total,
@@ -401,7 +409,7 @@ static void print_row(
     }
     else
     {
-        if (decimals == 6)
+        if(decimals == 6)
             printf("  %s%-*s%s %*lld %s%*.6f%s/iter\n",
                    CD, COL1W, label, CR,
                    COL2W, total,
@@ -423,15 +431,15 @@ static void print_row(
  */
 static void print_rate(
     const char *label,
-    double      rate_t,
-    double      rate_w,
-    double      rate_m,
-    int         has_warmup,
-    int         loads_mux_out)
+    double     rate_t,
+    double     rate_w,
+    double     rate_m,
+    int        has_warmup,
+    int        loads_mux_out)
 {
-    if (has_warmup)
+    if(has_warmup)
     {
-        if (loads_mux_out)
+        if(loads_mux_out)
             printf("  %s%-*s%s %s%*.3f%%%s "
                    "%s%*s%s %s%*.3f%%%s\n",
                    CD, COL1W, label, CR,
@@ -457,14 +465,14 @@ static void print_rate(
  */
 void print_summary(
     const bench_cfg_t *cfg,
-    int                measured,
+    int               measured,
     const hw_phase_t  *t,
     const hw_phase_t  *w,
-    long long          t_ns,
-    long long          w_ns,
+    long long         t_ns,
+    long long         w_ns,
     const pi_stats_t  *pi,
     const pi_stats_t  *pi_w,
-    int64_t            exe_sz)
+    int64_t           exe_sz)
 {
     /* detect color support once */
     g_use_color = isatty(STDOUT_FILENO);
@@ -478,26 +486,26 @@ void print_summary(
            CB, COL1W, "", CR,
            CB, COL2W, "Total", CR,
            (hw ? CB : CD), COL2W,
-               (hw ? "Warmup" : ""), CR);
+           (hw ? "Warmup" : ""), CR);
     printf("  %s%-*s%s %s%-*s%s %s%-*s%s\n",
            CB, COL1W,
-               "Benchmark Results", CR,
+           "Benchmark Results", CR,
            CD, COL2W,
-               "", CR,
+           "", CR,
            CB, COL2W,
-               "Measured", CR);
+           "Measured", CR);
     printf("  %s%-*s%s  %s%d iter%s, "
            "%sBuild:%s %s\n",
            CD, COL1W,
-               cfg->fpsexec[0] == '/' || cfg->fpsexec[0] == '.'
-                   ? (strrchr(cfg->fpsexec, '/') + 1)
-                   : cfg->fpsexec,
+           cfg->fpsexec[0] == '/' || cfg->fpsexec[0] == '.'
+           ? (strrchr(cfg->fpsexec, '/') + 1)
+           : cfg->fpsexec,
            CR,
            CD, measured, CR,
            CD, CR,
            cfg->build_tags[0]
-               ? cfg->build_tags
-               : "default");
+           ? cfg->build_tags
+           : "default");
     print_heavy_sep();
 
     /* Column header */
@@ -520,64 +528,64 @@ void print_summary(
         double scale = use_us ? 1e3 : 1.0;
         const char *unit = use_us ? "µs" : "ns";
 
-        if (hw)
+        if(hw)
             printf("  %s%-*s%s %*.3f s %*.3f s "
                    "%s%*.1f %s/iter%s\n",
                    CB, COL1W, "Wall clock", CR,
                    COL2W - 2,
-                       (double) t_ns / 1e9,
+                   (double) t_ns / 1e9,
                    COL2W - 2,
-                       (double) w_ns / 1e9,
+                   (double) w_ns / 1e9,
                    CWH,
                    COL2W - 2,
-                       meas_pi / scale,
+                   meas_pi / scale,
                    unit, CR);
         else
             printf("  %s%-*s%s %*.3f s %s%*.1f %s/iter%s\n",
                    CB, COL1W, "Wall clock", CR,
                    COL2W - 2,
-                       (double) t_ns / 1e9,
+                   (double) t_ns / 1e9,
                    CWH,
                    COL2W - 2,
-                       (double) t_ns / measured / scale,
+                   (double) t_ns / measured / scale,
                    unit, CR);
     }
 
 #define C_VAL(idx) t->v[idx], w->v[idx]
     print_row("Cycles",
-        C_VAL(IDX_CYCLES), measured, hw, 1, 0);
+              C_VAL(IDX_CYCLES), measured, hw, 1, 0);
     print_row("Instructions",
-        C_VAL(IDX_INSTRUCTIONS), measured, hw, 1, 0);
+              C_VAL(IDX_INSTRUCTIONS), measured, hw, 1, 0);
 
     /* IPC */
     {
         double ipc_t = ipc(t);
         double ipc_w = ipc(w);
         double ipc_m = ipc(&m);
-        if (hw)
+        if(hw)
             printf("  %s%-*s%s %*.3f %*.3f %s%*.3f%s\n",
                    CD, COL1W,
-                       "Instr per Cycle (IPC)", CR,
+                   "Instr per Cycle (IPC)", CR,
                    COL2W, ipc_t,
                    COL2W, ipc_w,
                    CGR, COL2W, ipc_m, CR);
         else
             printf("  %s%-*s%s %s%*.3f%s\n",
                    CD, COL1W,
-                       "Instr per Cycle (IPC)", CR,
+                   "Instr per Cycle (IPC)", CR,
                    CGR, COL2W, ipc_t, CR);
     }
     print_row("Branch misses",
-        C_VAL(IDX_BRANCH_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_BRANCH_MISSES), measured, hw, 1, 0);
     {
         long long stall_fe = t->v[IDX_STALL_FE];
         long long stall_be = t->v[IDX_STALL_BE];
-        if (stall_fe > 0 || stall_be > 0)
+        if(stall_fe > 0 || stall_be > 0)
         {
             print_row("Stalled cyc (FE)",
-                C_VAL(IDX_STALL_FE), measured, hw, 1, 0);
+                      C_VAL(IDX_STALL_FE), measured, hw, 1, 0);
             print_row("Stalled cyc (BE)",
-                C_VAL(IDX_STALL_BE), measured, hw, 1, 0);
+                      C_VAL(IDX_STALL_BE), measured, hw, 1, 0);
         }
     }
 
@@ -586,66 +594,66 @@ void print_summary(
     /* L1 Data */
     printf("    %sL1 Data%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_L1D_LOADS), measured, hw, 1,
-        w->v[IDX_L1D_MISSES]);
+              C_VAL(IDX_L1D_LOADS), measured, hw, 1,
+              w->v[IDX_L1D_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_L1D_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_L1D_MISSES), measured, hw, 1, 0);
     {
         int l1d_mux = hw && (w->v[IDX_L1D_LOADS] == 0)
-                          && (w->v[IDX_L1D_MISSES] > 0);
+                      && (w->v[IDX_L1D_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_L1D_MISSES],
-            t->v[IDX_L1D_LOADS]);
+                          t->v[IDX_L1D_MISSES],
+                          t->v[IDX_L1D_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_L1D_MISSES],
-            w->v[IDX_L1D_LOADS]);
+                          w->v[IDX_L1D_MISSES],
+                          w->v[IDX_L1D_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_L1D_MISSES],
-            m.v[IDX_L1D_LOADS]);
+                          m.v[IDX_L1D_MISSES],
+                          m.v[IDX_L1D_LOADS]);
         print_rate("        miss rate",
                    mr_t, mr_w, mr_m, hw, l1d_mux);
     }
     /* L1 Instruction */
     printf("    %sL1 Instruction%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_L1I_LOADS), measured, hw, 1,
-        w->v[IDX_L1I_MISSES]);
+              C_VAL(IDX_L1I_LOADS), measured, hw, 1,
+              w->v[IDX_L1I_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_L1I_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_L1I_MISSES), measured, hw, 1, 0);
     {
         int l1i_mux = hw && (w->v[IDX_L1I_LOADS] == 0)
-                          && (w->v[IDX_L1I_MISSES] > 0);
+                      && (w->v[IDX_L1I_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_L1I_MISSES],
-            t->v[IDX_L1I_LOADS]);
+                          t->v[IDX_L1I_MISSES],
+                          t->v[IDX_L1I_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_L1I_MISSES],
-            w->v[IDX_L1I_LOADS]);
+                          w->v[IDX_L1I_MISSES],
+                          w->v[IDX_L1I_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_L1I_MISSES],
-            m.v[IDX_L1I_LOADS]);
+                          m.v[IDX_L1I_MISSES],
+                          m.v[IDX_L1I_LOADS]);
         print_rate("        miss rate",
                    mr_t, mr_w, mr_m, hw, l1i_mux);
     }
     /* LLC */
     printf("    %sLast Level Cache%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_LLC_LOADS), measured, hw, 1,
-        w->v[IDX_LLC_MISSES]);
+              C_VAL(IDX_LLC_LOADS), measured, hw, 1,
+              w->v[IDX_LLC_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_LLC_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_LLC_MISSES), measured, hw, 1, 0);
     {
         int llc_mux = hw && (w->v[IDX_LLC_LOADS] == 0)
-                          && (w->v[IDX_LLC_MISSES] > 0);
+                      && (w->v[IDX_LLC_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_LLC_MISSES],
-            t->v[IDX_LLC_LOADS]);
+                          t->v[IDX_LLC_MISSES],
+                          t->v[IDX_LLC_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_LLC_MISSES],
-            w->v[IDX_LLC_LOADS]);
+                          w->v[IDX_LLC_MISSES],
+                          w->v[IDX_LLC_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_LLC_MISSES],
-            m.v[IDX_LLC_LOADS]);
+                          m.v[IDX_LLC_MISSES],
+                          m.v[IDX_LLC_LOADS]);
         print_rate("        load miss rate",
                    mr_t, mr_w, mr_m, hw, llc_mux);
     }
@@ -654,43 +662,43 @@ void print_summary(
     print_sep();
     printf("    %sData TLB%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_DTLB_LOADS), measured, hw, 1,
-        w->v[IDX_DTLB_MISSES]);
+              C_VAL(IDX_DTLB_LOADS), measured, hw, 1,
+              w->v[IDX_DTLB_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_DTLB_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_DTLB_MISSES), measured, hw, 1, 0);
     {
         int dtlb_mux = hw && (w->v[IDX_DTLB_LOADS] == 0)
-                           && (w->v[IDX_DTLB_MISSES] > 0);
+                       && (w->v[IDX_DTLB_MISSES] > 0);
         double mr_t = miss_rate(
-            t->v[IDX_DTLB_MISSES],
-            t->v[IDX_DTLB_LOADS]);
+                          t->v[IDX_DTLB_MISSES],
+                          t->v[IDX_DTLB_LOADS]);
         double mr_w = miss_rate(
-            w->v[IDX_DTLB_MISSES],
-            w->v[IDX_DTLB_LOADS]);
+                          w->v[IDX_DTLB_MISSES],
+                          w->v[IDX_DTLB_LOADS]);
         double mr_m = miss_rate(
-            m.v[IDX_DTLB_MISSES],
-            m.v[IDX_DTLB_LOADS]);
+                          m.v[IDX_DTLB_MISSES],
+                          m.v[IDX_DTLB_LOADS]);
         print_rate("        load miss rate",
                    mr_t, mr_w, mr_m, hw, dtlb_mux);
     }
     printf("    %sInstruction TLB%s\n", CD, CR);
     print_row("      Load misses",
-        C_VAL(IDX_ITLB_MISSES), measured, hw, 1, 0);
+              C_VAL(IDX_ITLB_MISSES), measured, hw, 1, 0);
 
     print_section("OS Events");
     print_sep();
     print_row("  Page faults (minor)",
-        C_VAL(IDX_MINOR_FAULTS), measured, hw, 6, 0);
+              C_VAL(IDX_MINOR_FAULTS), measured, hw, 6, 0);
     print_row("  Page faults (major)",
-        C_VAL(IDX_MAJOR_FAULTS), measured, hw, 6, 0);
+              C_VAL(IDX_MAJOR_FAULTS), measured, hw, 6, 0);
     print_row("  CPU migrations",
-        C_VAL(IDX_CPU_MIGRATIONS), measured, hw, 6, 0);
+              C_VAL(IDX_CPU_MIGRATIONS), measured, hw, 6, 0);
     print_row("  Context switches",
-        C_VAL(IDX_CTX_SWITCHES), measured, hw, 6, 0);
+              C_VAL(IDX_CTX_SWITCHES), measured, hw, 6, 0);
 #undef C_VAL
 
     /* Processinfo timing */
-    if (pi && pi->valid)
+    if(pi && pi->valid)
     {
         /*
          * print_pi_row — one processinfo timing row.
@@ -739,7 +747,7 @@ void print_summary(
                        CWH, COL2W, _t, CR, tunit); \
         } while (0)
 
-               /* Column header for timing table */
+        /* Column header for timing table */
         printf("  %s  %-28s %14s %14s %s%14s%s\n",
                CD, "", "p50", "p95",
                CWH, "p99", CR);
@@ -786,7 +794,7 @@ void print_summary(
                      pi->vmhwm_kb, 0LL, "kB");
         print_pi_row("  Virtual peak",
                      pi->vmpeak_kb, 0LL, "kB");
-        if (pi->anon_huge_kb > 0)
+        if(pi->anon_huge_kb > 0)
             print_pi_row("  Anon huge pages",
                          pi->anon_huge_kb, 0LL, "kB");
         print_pi_row("  Vol ctx switches",
@@ -797,28 +805,28 @@ void print_summary(
                      pi->nvol_ctxt,
                      (pi_w ? pi_w->nvol_ctxt : 0LL),
                      "");
-        if (pi->cpu_freq_min_khz > 0)
+        if(pi->cpu_freq_min_khz > 0)
         {
             print_pi_row(
                 "  CPU freq (min)",
                 pi->cpu_freq_min_khz / 1000LL,
                 (pi_w ? pi_w->cpu_freq_min_khz
-                            / 1000LL : 0LL),
+                 / 1000LL : 0LL),
                 "MHz");
             print_pi_row(
                 "  CPU freq (max)",
                 pi->cpu_freq_max_khz / 1000LL,
                 (pi_w ? pi_w->cpu_freq_max_khz
-                            / 1000LL : 0LL),
+                 / 1000LL : 0LL),
                 "MHz");
         }
-        if (pi->rapl_uj >= 0)
+        if(pi->rapl_uj >= 0)
             print_pi_row(
                 "  RAPL (package)",
                 (int64_t)(pi->rapl_uj / 1000LL),
                 (pi_w && pi_w->rapl_uj >= 0
-                    ? (int64_t)(pi_w->rapl_uj / 1000LL)
-                    : 0LL),
+                 ? (int64_t)(pi_w->rapl_uj / 1000LL)
+                 : 0LL),
                 "mJ");
         else
             printf("  %s%-*s%s %sN/A%s "

@@ -12,8 +12,6 @@
  */
 
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/time.h>
 
 #include "milkdata.h"
@@ -22,7 +20,6 @@
 /* Global core data instance */
 MILK_DATA milk_data;
 
-#include <fps.h>
 
 
 /* Buffer for variable reallocation */
@@ -156,6 +153,9 @@ typedef struct
 } MILK_RNG;
 
 
+/**
+ * @brief Initializes the milk pseudo-random number generator with a seed.
+ */
 void milk_rng_init(uint64_t seed)
 {
     MILK_RNG *rng = (MILK_RNG *)
@@ -173,6 +173,9 @@ void milk_rng_init(uint64_t seed)
 }
 
 
+/**
+ * @brief Frees the resources associated with the milk random number generator.
+ */
 void milk_rng_free(void)
 {
     if(milk_data.rndgen != NULL)
@@ -200,6 +203,9 @@ static inline uint64_t xorshift64star(
 }
 
 
+/**
+ * @brief Generates a uniformly distributed double-precision random number.
+ */
 double milk_rng_uniform(void)
 {
     MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;

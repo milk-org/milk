@@ -19,12 +19,13 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "c2ri",
     .cmdkey      = "c2ri",
     .description = "complex -> re, im",
     .description_long =
-        "Decompose a complex image into its real and imaginary components. Input is a complex-valued stream; outputs are two real-valued streams."
+    "Decompose a complex image into its real and imaginary components. Input is a complex-valued stream; outputs are two real-valued streams."
 };
 
 
@@ -33,11 +34,11 @@ static FPS_APP_INFO FPS_app_info = {
  * ============================================================= */
 
 static char inimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imc";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imc";
 static char outreimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imre";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imre";
 static char outimimname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "imim";
+     FUNCTION_PARAMETER_STRMAXLEN] = "imim";
 
 
 /* ================================================================
@@ -142,7 +143,7 @@ errno_t mk_reim_from_complex(
     const char *in_name,
     const char *re_name,
     const char *im_name,
-    int         sharedmem)
+    int        sharedmem)
 {
     IMGID imgin =
         imgid_make_from_name(in_name);
@@ -154,7 +155,7 @@ errno_t mk_reim_from_complex(
     imgim.mdt->shared = sharedmem;
 
     errno_t ret = mk_reim_from_complex_IMGID(
-        &imgin, &imgre, &imgim);
+                      &imgin, &imgre, &imgim);
     imgid_free(&imgin);
     imgid_free(&imgre);
     imgid_free(&imgim);
@@ -208,9 +209,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t

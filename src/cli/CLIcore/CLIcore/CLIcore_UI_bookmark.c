@@ -99,6 +99,11 @@ void cli_bookmark_save(void)
     fclose(fp);
 }
 
+/**
+ * @brief Handle bookmark create/goto commands.
+ *
+ * Manages named bookmarks for directory navigation.
+ */
 errno_t cli_bookmark(void)
 {
     if(data.cmdNBarg < 2)
@@ -157,14 +162,14 @@ errno_t cli_bookmark(void)
                 if(a > 3)
                 {
                     strncat(cmd, " ",
-                        BOOKMARK_CMDLEN
-                        - strlen(cmd) - 1);
+                            BOOKMARK_CMDLEN
+                            - strlen(cmd) - 1);
                 }
                 strncat(cmd,
-                    data.cmdargtoken[a]
+                        data.cmdargtoken[a]
                         .val.string,
-                    BOOKMARK_CMDLEN
-                    - strlen(cmd) - 1);
+                        BOOKMARK_CMDLEN
+                        - strlen(cmd) - 1);
             }
             strncpy(
                 bookmarks[bookmark_count].cmd,
@@ -192,7 +197,7 @@ errno_t cli_bookmark(void)
         for(int i = 0; i < bookmark_count; i++)
         {
             if(strcmp(bookmarks[i].name,
-                     name) == 0)
+                      name) == 0)
             {
                 strncpy(data.CLIcmdline,
                         bookmarks[i].cmd,
@@ -222,7 +227,7 @@ errno_t cli_bookmark(void)
         for(int i = 0; i < bookmark_count; i++)
         {
             if(strcmp(bookmarks[i].name,
-                     name) == 0)
+                      name) == 0)
             {
                 for(int j = i;
                         j < bookmark_count - 1;

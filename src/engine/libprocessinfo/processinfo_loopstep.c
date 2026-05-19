@@ -1,10 +1,5 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-#include "processinfo_internal.h"
 #include "processinfo.h"
-#include "processinfo_loopstep.h"
 #include "processinfo_signals.h"
 
 

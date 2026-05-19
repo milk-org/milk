@@ -3,32 +3,13 @@
  * @brief   TUI key input processing
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <math.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fpsCTRL_TUIcompat.h"
-#include "fpsCTRL_globals.h"
 #include "engine/libfpsseq/fpsseq.h"
 
 #include "fps_CONFstart.h"
-#include "fps_CONFstop.h"
 #include "fps_FPSremove.h"
-#include "fps_RUNstart.h"
-#include "fps_RUNstop.h"
-#include "fps_WriteParameterToDisk.h"
-#include "fps_outlog.h"
-#include "fps_processcmdline.h"
-#include "fps_read_fpsCMD_fifo.h"
-#include "fps_save2disk.h"
-#include "fps_scan.h"
-#include "fps_tmux.h"
-#include "fps_userinputsetparamvalue.h"
-#include "fps_printparameter_valuestring.h"
-#include "fps_GetTypeString.h"
 
 #define ctrl(x) ((x) & 0x1f)
 
@@ -49,7 +30,7 @@
  */
 static int fpsCTRL_inline_edit_param(
     FPS *fps,
-    int                        fps_idx,
+    int fps_idx,
     int                        p_idx
 )
 {
@@ -269,6 +250,12 @@ static int fpsCTRL_inline_edit_param(
     return 0;
 }
 
+/**
+ * @brief Process a keyboard event in the fpsCTRL TUI.
+ *
+ * Dispatches key presses to navigation, editing,
+ * or command handlers based on the current mode.
+ */
 int fpsCTRL_TUI_process_user_key(
     int                        ch,
     FPS *fps,

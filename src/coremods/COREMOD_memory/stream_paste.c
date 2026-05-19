@@ -21,13 +21,14 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "streampaste",
     .cmdkey      = "streampaste",
     .description =
-        "paste two 2D streams",
+    "paste two 2D streams",
     .description_long =
-        "Paste (overlay) one image stream onto a region of another. The source stream is copied into the destination at a specified offset position."
+    "Paste (overlay) one image stream onto a region of another. The source stream is copied into the destination at a specified offset position."
 };
 
 
@@ -93,21 +94,23 @@ imageID COREMOD_MEMORY_streamPaste(
     const char *IDstream0_name,
     const char *IDstream1_name,
     const char *IDstreamout_name,
-    long        semtrig0,
-    long        semtrig1,
-    int         master)
+    long       semtrig0,
+    long       semtrig1,
+    int        master)
 {
     IMGID img0 = imgid_make_from_name(IDstream0_name);
     resolveIMGID(&img0, ERRMODE_WARN,
                  dcimg, dcnimg);
-    if (img0.ID == -1) {
+    if(img0.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
     IMGID img1 = imgid_make_from_name(IDstream1_name);
     resolveIMGID(&img1, ERRMODE_WARN,
                  dcimg, dcnimg);
-    if (img1.ID == -1) {
+    if(img1.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -122,8 +125,8 @@ imageID COREMOD_MEMORY_streamPaste(
     if(imgout.ID == -1)
     {
         imgout = stream_connect_create_2D(
-            IDstreamout_name,
-            2 * xsize, ysize, datatype);
+                     IDstreamout_name,
+                     2 * xsize, ysize, datatype);
     }
 
     IMGID imgin[2] = {img0, img1};
@@ -177,8 +180,8 @@ imageID COREMOD_MEMORY_streamPaste(
                     imgout.im->array.CF[
                         jj * 2 * xsize + ii
                         + Xoffset] =
-                        cur->im->array.CF[
-                            jj * xsize + ii];
+                            cur->im->array.CF[
+                                jj * xsize + ii];
                 }
             break;
         case _DATATYPE_COMPLEX_DOUBLE:
@@ -189,8 +192,8 @@ imageID COREMOD_MEMORY_streamPaste(
                     imgout.im->array.CD[
                         jj * 2 * xsize + ii
                         + Xoffset] =
-                        cur->im->array.CD[
-                            jj * xsize + ii];
+                            cur->im->array.CD[
+                                jj * xsize + ii];
                 }
             break;
         default:
@@ -253,9 +256,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t
@@ -265,7 +268,7 @@ CLIADDCMD_COREMOD_memory__stream_paste()
         farg, my_bindings, nb_bindings);
 
     int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
+                   CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings =
         &data.cmd[cmdi].cmdsettings;
 

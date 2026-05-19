@@ -13,6 +13,12 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
 // set print to 0 if error message should not be printed to stderr
 // set print to 1 if error message should be printed to stderr
+/**
+ * @brief Check and report cfitsio error status.
+ *
+ * If the status is non-zero, prints the cfitsio
+ * error message and optionally aborts.
+ */
 int check_FITSIO_status(const char *restrict cfile,
                         const char *restrict cfunc,
                         long cline,

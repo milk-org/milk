@@ -20,6 +20,12 @@
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
+/**
+ * @brief Read a FITS header keyword value.
+ *
+ * Opens the FITS file, reads the named keyword,
+ * and stores the value in the output buffer.
+ */
 int read_keyword(const char *restrict file_name,
                  const char *restrict KEYWORD,
                  char *restrict content)
@@ -69,6 +75,12 @@ int read_keyword(const char *restrict file_name,
     return (exists);
 }
 
+/**
+ * @brief Read a FITS keyword as a standalone string.
+ *
+ * Simplified interface returning the raw keyword
+ * value as a string.
+ */
 errno_t read_keyword_alone(const char *restrict file_name,
                            const char *restrict KEYWORD)
 {

@@ -15,6 +15,9 @@
 #endif
 
 
+/**
+ * @brief Compute total memory used by all images.
+ */
 uint64_t compute_image_memory()
 {
     uint64_t totalmem = 0;

@@ -3,13 +3,15 @@
  * @brief Procctrl getnumbercpus module
  */
 
-#include <stdio.h>
-#include <unistd.h>
 
-#include "processinfo.h"
 #include "processtools.h"
-#include "procCTRL_GetNumberCPUs.h"
 
+/**
+ * @brief Count the number of online CPUs.
+ *
+ * Reads from /proc/stat or sysconf to determine
+ * the CPU count for process affinity displays.
+ */
 int GetNumberCPUs(PROCINFOPROC *pinfop)
 {
     (void)pinfop;

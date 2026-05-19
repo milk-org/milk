@@ -6,18 +6,10 @@
 #include <fcntl.h>    // for open
 #include <sys/mman.h> // mmap
 #include <sys/stat.h> // fstat
-#include <unistd.h>   // for close
-#include <string.h>   // for strerror
-#include <errno.h>
 
 #include "fps.h"
-#include "fps_internal.h"
 #include "fps_globals.h"
-#include "timeutils.h"
 
-#include "fps_GetParamIndex.h"
-#include "fps_loadstream.h"
-#include "fps_shmdirname.h"
 
 
 // #include "timeutils.h"
@@ -26,9 +18,9 @@
 /**
  * @brief Connect to an existing FPS in shared memory.
  *
- * This function performs the mapping of a shared memory file containing 
- * an FPS structure into the process's address space. It also handles 
- * initial synchronization and optionally loads data streams specified 
+ * This function performs the mapping of a shared memory file containing
+ * an FPS structure into the process's address space. It also handles
+ * initial synchronization and optionally loads data streams specified
  * by FPS parameters.
  *
  * Logic flow:
@@ -40,15 +32,15 @@
  * 6.  If connecting as CONF or RUN process, record the process PID and start time.
  * 7.  Parse the FPS name (which may contain indices separated by '-') into the metadata.
  * 8.  Count the number of active parameters.
- * 9.  If in CONF/RUN mode, iterate through all parameters and call 
+ * 9.  If in CONF/RUN mode, iterate through all parameters and call
  *     `functionparameter_LoadStream` for any parameter of type `FPTYPE_STREAMNAME`.
- * 10. If in RUN mode, attempt to populate the `fps->cmdset` structure by looking 
- *     up standard processinfo-related parameters (e.g., ".procinfo.enabled", 
+ * 10. If in RUN mode, attempt to populate the `fps->cmdset` structure by looking
+ *     up standard processinfo-related parameters (e.g., ".procinfo.enabled",
  *     ".procinfo.RTprio", etc.).
  */
 long fps_connect(
-    const char                *name,
-    FPS *fps,
+    const char *name,
+    FPS        *fps,
     int fpsconnectmode
 )
 {
@@ -333,9 +325,9 @@ long fps_connect(
                                .triggerstreamname)
                         - 1);
                     fps->cmdset.triggerstreamname[
-                        sizeof(fps->cmdset
+                    sizeof(fps->cmdset
                                .triggerstreamname)
-                        - 1] = '\0';
+                    - 1] = '\0';
                 }
             }
         }

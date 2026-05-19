@@ -7,30 +7,33 @@
 
 #include "overview_render_internal.h"
 
+/**
+ * @brief Render the streams panel in the overview.
+ */
 void ov_render_streams_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
+    const OV_LAYOUT  *lay,
+    const OV_MODEL   *m,
     const OV_RELATED *rel)
 {
     OV_RECT r = lay->r_streams;
 
     /* Build filtered index array */
     const char *names[OV_MAX_STREAMS];
-    for (int i = 0; i < m->nb_streams; i++)
+    for(int i = 0; i < m->nb_streams; i++)
     {
         names[i] = m->streams[i].name;
     }
     int filt_idx[OV_MAX_STREAMS];
     int filt_n = ov_filter_build(
-        lay->filter_stream, names,
-        m->nb_streams, filt_idx, OV_MAX_STREAMS);
+                     lay->filter_stream, names,
+                     m->nb_streams, filt_idx, OV_MAX_STREAMS);
 
-    if (lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
+    if(lay->freeze && lay->freeze_focus != OV_FOCUS_STREAMS && rel != NULL)
     {
         int new_filt_n = 0;
-        for (int i = 0; i < filt_n; i++)
+        for(int i = 0; i < filt_n; i++)
         {
-            if (bget(rel->streams, filt_idx[i]))
+            if(bget(rel->streams, filt_idx[i]))
             {
                 filt_idx[new_filt_n++] = filt_idx[i];
             }
@@ -40,9 +43,9 @@ void ov_render_streams_panel(
 
     int has_re = 0;
     regex_t re;
-    if (lay->filter_stream[0] != '\0')
+    if(lay->filter_stream[0] != '\0')
     {
-        if (regcomp(&re, lay->filter_stream, REG_EXTENDED | REG_ICASE) == 0)
+        if(regcomp(&re, lay->filter_stream, REG_EXTENDED | REG_ICASE) == 0)
         {
             has_re = 1;
         }
@@ -50,7 +53,7 @@ void ov_render_streams_panel(
 
     /* Panel title with filter indicator */
     char title[80];
-    if (lay->filter_stream[0] != '\0')
+    if(lay->filter_stream[0] != '\0')
     {
         snprintf(title, sizeof(title),
                  "STREAMS /%s/", lay->filter_stream);
@@ -71,7 +74,7 @@ void ov_render_streams_panel(
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf("    ");
     ov_theme_fg(OV_FG_STREAM_HDR);
-    
+
     char htext[300];
     int hlen;
     {
@@ -81,39 +84,42 @@ void ov_render_streams_panel(
         char c_size[16];
         char c_hz[10], c_mbps[12], c_ino[16], c_cnt[16];
         int w_anc = sort_col_label(c_anc, sizeof(c_anc),
-                       "A", 7, sk, sd, 3);
+                                   "A", 7, sk, sd, 3);
         int w_name = sort_col_label(c_name, sizeof(c_name),
-                       "NAME", 0, sk, sd, 14);
+                                    "NAME", 0, sk, sd, 14);
         int w_typ = sort_col_label(c_typ, sizeof(c_typ),
-                       "TYP", 1, sk, sd, 4);
+                                   "TYP", 1, sk, sd, 4);
         int w_size = sort_col_label(c_size, sizeof(c_size),
-                       "SIZE", 2, sk, sd, 11);
+                                    "SIZE", 2, sk, sd, 11);
         int w_hz = sort_col_label(c_hz, sizeof(c_hz),
-                       "Hz", 3, sk, sd, 6);
+                                  "Hz", 3, sk, sd, 6);
         int w_mbps = sort_col_label(c_mbps, sizeof(c_mbps),
-                       "MB/s", 4, sk, sd, 7);
+                                    "MB/s", 4, sk, sd, 7);
         int w_ino = sort_col_label(c_ino, sizeof(c_ino),
-                       "INODE", 5, sk, sd, 10);
+                                   "INODE", 5, sk, sd, 10);
         int w_cnt = sort_col_label(c_cnt, sizeof(c_cnt),
-                       "COUNT", 6, sk, sd, 10);
+                                   "COUNT", 6, sk, sd, 10);
         hlen = snprintf(
-            htext, sizeof(htext),
-            "%-*s %-*s %*s %*s %*s"
-            " %*s %*s %7s %*s %10s"
-            " %7s %s",
-            w_anc, c_anc,
-            w_name, c_name, w_typ, c_typ,
-            w_size, c_size, w_hz, c_hz,
-            w_mbps, c_mbps, w_ino, c_ino,
-            "OWNER", w_cnt, c_cnt, "SEMS",
-            "WPID", "RPID");
+                   htext, sizeof(htext),
+                   "%-*s %-*s %*s %*s %*s"
+                   " %*s %*s %7s %*s %10s"
+                   " %7s %s",
+                   w_anc, c_anc,
+                   w_name, c_name, w_typ, c_typ,
+                   w_size, c_size, w_hz, c_hz,
+                   w_mbps, c_mbps, w_ino, c_ino,
+                   "OWNER", w_cnt, c_cnt, "SEMS",
+                   "WPID", "RPID");
     }
-    
+
     {
         int vis_width = r.width - 4;
-        if (vis_width < 0) vis_width = 0;
+        if(vis_width < 0)
+        {
+            vis_width = 0;
+        }
         int printed = ov_render_header_text(
-            htext, hs, vis_width, OV_FG_STREAM_HDR);
+                          htext, hs, vis_width, OV_FG_STREAM_HDR);
         render_pad_spaces(4 + printed, r.width);
     }
 
@@ -133,30 +139,32 @@ void ov_render_streams_panel(
     memset(local_depth, 0, sizeof(local_depth));
     {
         int eff_sel = -1;
-        if (lay->mouse_hover && lay->hover_global_stream >= 0)
+        if(lay->mouse_hover && lay->hover_global_stream >= 0)
         {
-            for (int i = 0; i < filt_n; i++) {
-                if (filt_idx[i] == lay->hover_global_stream) {
+            for(int i = 0; i < filt_n; i++)
+            {
+                if(filt_idx[i] == lay->hover_global_stream)
+                {
                     eff_sel = i;
                     break;
                 }
             }
         }
-        else if (lay->freeze
-            && lay->freeze_focus
-               == OV_FOCUS_STREAMS
-            && lay->freeze_sel_stream >= 0
-            && lay->freeze_sel_stream < filt_n)
+        else if(lay->freeze
+                && lay->freeze_focus
+                == OV_FOCUS_STREAMS
+                && lay->freeze_sel_stream >= 0
+                && lay->freeze_sel_stream < filt_n)
         {
             eff_sel = lay->freeze_sel_stream;
         }
-        else if (lay->focus == OV_FOCUS_STREAMS
-                 && lay->sel_stream >= 0
-                 && lay->sel_stream < filt_n)
+        else if(lay->focus == OV_FOCUS_STREAMS
+                && lay->sel_stream >= 0
+                && lay->sel_stream < filt_n)
         {
             eff_sel = lay->sel_stream;
         }
-        if (eff_sel >= 0)
+        if(eff_sel >= 0)
         {
             int root_si = filt_idx[eff_sel];
             SG_LINEAGE lin;
@@ -164,34 +172,40 @@ void ov_render_streams_panel(
                 m, root_si,
                 SG_MODE_FULL, &lin);
 
-            for (int a = 0;
-                 a < lin.nb_ancestors; a++)
+            for(int a = 0;
+                    a < lin.nb_ancestors; a++)
             {
                 int si =
                     lin.ancestors[a].stream_idx;
-                if (si >= 0
-                    && si < m->nb_streams)
+                if(si >= 0
+                        && si < m->nb_streams)
                 {
                     int d =
                         lin.ancestors[a].depth;
-                    if (d > 127) { d = 127; }
+                    if(d > 127)
+                    {
+                        d = 127;
+                    }
                     local_depth[si] =
                         (int8_t)(-d);
                 }
             }
-            for (int di = 0;
-                 di < lin.nb_descendants; di++)
+            for(int di = 0;
+                    di < lin.nb_descendants; di++)
             {
                 int si =
                     lin.descendants[di]
-                        .stream_idx;
-                if (si >= 0
-                    && si < m->nb_streams)
+                    .stream_idx;
+                if(si >= 0
+                        && si < m->nb_streams)
                 {
                     int dp =
                         lin.descendants[di]
-                            .depth;
-                    if (dp > 127) { dp = 127; }
+                        .depth;
+                    if(dp > 127)
+                    {
+                        dp = 127;
+                    }
                     local_depth[si] =
                         (int8_t) dp;
                 }
@@ -199,28 +213,29 @@ void ov_render_streams_panel(
             /* DEBUG: dump to file once */
             {
                 static int dbg_done = 0;
-                if (!dbg_done)
+                if(!dbg_done)
                 {
                     dbg_done = 1;
                     FILE *df = fopen(
-                        "/tmp/lineage_debug.txt",
-                        "w");
-                    if (df)
+                                   "/tmp/lineage_debug.txt",
+                                   "w");
+                    if(df)
                     {
                         fprintf(df,
-                            "root_si=%d name=%s "
-                            "node=%d\n",
-                            root_si,
-                            m->streams[root_si]
+                                "root_si=%d name=%s "
+                                "node=%d\n",
+                                root_si,
+                                m->streams[root_si]
                                 .name,
-                            m->streams[root_si]
+                                m->streams[root_si]
                                 .node_idx);
                         fprintf(df,
-                            "nb_edges=%d "
-                            "nb_nodes=%d\n",
-                            m->nb_edges,
-                            m->nb_nodes);
-                        const char *etnames[] = {
+                                "nb_edges=%d "
+                                "nb_nodes=%d\n",
+                                m->nb_edges,
+                                m->nb_nodes);
+                        const char *etnames[] =
+                        {
                             "PROC_WRITES_STREAM",
                             "STREAM_TRIGGERS_PROC",
                             "FPS_RUNS_PROC",
@@ -229,86 +244,86 @@ void ov_render_streams_panel(
                             "PROC_TRIGGER_STREAM",
                             "STREAM_READ_BY_PROC"
                         };
-                        for (int ei = 0;
-                             ei < m->nb_edges;
-                             ei++)
+                        for(int ei = 0;
+                                ei < m->nb_edges;
+                                ei++)
                         {
                             const OV_EDGE *e =
                                 &m->edges[ei];
                             const char *sn =
                                 (e->src_node >= 0
                                  && e->src_node
-                                    < m->nb_nodes)
+                                 < m->nb_nodes)
                                 ? m->nodes[
                                     e->src_node]
-                                    .name
+                                .name
                                 : "??";
                             const char *tn =
                                 (e->tgt_node >= 0
                                  && e->tgt_node
-                                    < m->nb_nodes)
+                                 < m->nb_nodes)
                                 ? m->nodes[
                                     e->tgt_node]
-                                    .name
+                                .name
                                 : "??";
                             const char *et =
                                 (e->type <= 6)
                                 ? etnames[e->type]
                                 : "??";
                             fprintf(df,
-                                "EDGE[%d] "
-                                "%-20s -> "
-                                "%-20s %s\n",
-                                ei, sn, tn, et);
+                                    "EDGE[%d] "
+                                    "%-20s -> "
+                                    "%-20s %s\n",
+                                    ei, sn, tn, et);
                         }
                         fprintf(df,
-                            "\nAncestors: %d\n",
-                            lin.nb_ancestors);
-                        for (int a = 0;
-                             a < lin.nb_ancestors;
-                             a++)
+                                "\nAncestors: %d\n",
+                                lin.nb_ancestors);
+                        for(int a = 0;
+                                a < lin.nb_ancestors;
+                                a++)
                         {
                             fprintf(df,
-                                "  anc[%d] "
-                                "depth=%d "
-                                "si=%d name=%s "
-                                "via=%s\n",
-                                a,
-                                lin.ancestors[a]
-                                    .depth,
-                                lin.ancestors[a]
-                                    .stream_idx,
-                                m->streams[
+                                    "  anc[%d] "
+                                    "depth=%d "
+                                    "si=%d name=%s "
+                                    "via=%s\n",
+                                    a,
                                     lin.ancestors[a]
-                                    .stream_idx]
+                                    .depth,
+                                    lin.ancestors[a]
+                                    .stream_idx,
+                                    m->streams[
+                                        lin.ancestors[a]
+                                        .stream_idx]
                                     .name,
-                                lin.ancestors[a]
+                                    lin.ancestors[a]
                                     .via_name);
                         }
                         fprintf(df,
-                            "\nDescendants: %d\n",
-                            lin.nb_descendants);
-                        for (int di = 0;
-                             di < lin
-                                 .nb_descendants;
-                             di++)
+                                "\nDescendants: %d\n",
+                                lin.nb_descendants);
+                        for(int di = 0;
+                                di < lin
+                                .nb_descendants;
+                                di++)
                         {
                             fprintf(df,
-                                "  desc[%d] "
-                                "depth=%d "
-                                "si=%d name=%s "
-                                "via=%s\n",
-                                di,
-                                lin.descendants[di]
+                                    "  desc[%d] "
+                                    "depth=%d "
+                                    "si=%d name=%s "
+                                    "via=%s\n",
+                                    di,
+                                    lin.descendants[di]
                                     .depth,
-                                lin.descendants[di]
+                                    lin.descendants[di]
                                     .stream_idx,
-                                m->streams[
-                                    lin.descendants
-                                    [di]
-                                    .stream_idx]
+                                    m->streams[
+                                        lin.descendants
+                                        [di]
+                                        .stream_idx]
                                     .name,
-                                lin.descendants[di]
+                                    lin.descendants[di]
                                     .via_name);
                         }
                         fclose(df);
@@ -318,11 +333,11 @@ void ov_render_streams_panel(
         }
     }
 
-    for (int i = 0; i < max_rows; i++)
+    for(int i = 0; i < max_rows; i++)
     {
         int row = hrow + 2 + i;
         int fi = start + i;
-        if (fi < filt_n)
+        if(fi < filt_n)
         {
             int si = filt_idx[fi];
             const OV_STREAM *s = &m->streams[si];
@@ -331,9 +346,9 @@ void ov_render_streams_panel(
                  && (lay->focus == OV_FOCUS_STREAMS
                      || lay->focus == OV_FOCUS_GRAPH));
             int is_frozen = (lay->freeze
-                && lay->freeze_focus
-                   == OV_FOCUS_STREAMS
-                && fi == lay->freeze_sel_stream);
+                             && lay->freeze_focus
+                             == OV_FOCUS_STREAMS
+                             && fi == lay->freeze_sel_stream);
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int is_rel =
                 (!is_sel && !is_frozen
@@ -341,15 +356,24 @@ void ov_render_streams_panel(
                  && rel != NULL
                  && bget(rel->streams, si));
             ov_rgb_t row_bg = OV_BG_PANEL;
-            if (is_sel) {
+            if(is_sel)
+            {
                 row_bg = OV_BG_SELECTED;
-            } else if (is_frozen) {
+            }
+            else if(is_frozen)
+            {
                 row_bg = OV_BG_FROZEN;
-            } else if (is_rel) {
+            }
+            else if(is_rel)
+            {
                 row_bg = OV_BG_RELATED;
-            } else if (s->is_new > 0) {
+            }
+            else if(s->is_new > 0)
+            {
                 row_bg = OV_BG_NEW_ITEM;
-            } else if (lay->mouse_hover && lay->hover_global_stream == si) {
+            }
+            else if(lay->mouse_hover && lay->hover_global_stream == si)
+            {
                 row_bg = OV_BG_HOVER;
             }
             row_bg = zebra_bg(row_bg, i);
@@ -369,7 +393,7 @@ void ov_render_streams_panel(
                 panel_focused,
                 OV_FG_STREAM, row_bg);
 
-            #define STRM_FIELD(color, fmt, ...)        \
+#define STRM_FIELD(color, fmt, ...)        \
             do {                                       \
                 char _fb[80];                          \
                 int _fl = snprintf(                    \
@@ -393,7 +417,7 @@ void ov_render_streams_panel(
             /* PID field with inverted highlight when it
              * matches the selected process PID:
              * green background + bold black text */
-            #define STRM_PID_FIELD(pid_val, fmt, ...)  \
+#define STRM_PID_FIELD(pid_val, fmt, ...)  \
             do {                                       \
                 int _match = (_spid > 0                \
                     && (pid_t)(pid_val) == _spid);     \
@@ -415,21 +439,24 @@ void ov_render_streams_panel(
             } while(0)
 
             pid_t _spid = (rel != NULL)
-                        ? rel->sel_pid : 0;
+                          ? rel->sel_pid : 0;
 
             /* Ancestry column — rendered raw (UTF-8
              * arrows are 3 bytes / 1 display char).
              * Fixed width: 4 display chars. */
             int8_t sdepth = local_depth[si];
-            if (sdepth != 0 && !is_sel && !is_frozen)
+            if(sdepth != 0 && !is_sel && !is_frozen)
             {
                 int abs_d = sdepth < 0
-                    ? -sdepth : sdepth;
-                if (abs_d > 99) abs_d = 99;
-                ov_theme_fg(OV_FG_WARN);
-                if (sdepth < 0)
+                            ? -sdepth : sdepth;
+                if(abs_d > 99)
                 {
-                    if (abs_d < 10)
+                    abs_d = 99;
+                }
+                ov_theme_fg(OV_FG_WARN);
+                if(sdepth < 0)
+                {
+                    if(abs_d < 10)
                         ov_buf_printf(
                             "\xe2\x97\x80%d  ", abs_d);
                     else
@@ -438,7 +465,7 @@ void ov_render_streams_panel(
                 }
                 else
                 {
-                    if (abs_d < 10)
+                    if(abs_d < 10)
                         ov_buf_printf(
                             "%d\xe2\x96\xb6  ", abs_d);
                     else
@@ -449,7 +476,7 @@ void ov_render_streams_panel(
             else
             {
                 /* Activity dot */
-                if (s->update_hz > 0.1)
+                if(s->update_hz > 0.1)
                 {
                     ov_theme_fg(OV_FG_ACTIVE);
                     ov_buf_printf("\xe2\x97\x8f ");
@@ -460,13 +487,13 @@ void ov_render_streams_panel(
                 }
 
                 /* R/W direction arrow */
-                if ((eff_focus == OV_FOCUS_PROCS
-                    || eff_focus == OV_FOCUS_FPS)
-                    && is_rel && rel != NULL)
+                if((eff_focus == OV_FOCUS_PROCS
+                        || eff_focus == OV_FOCUS_FPS)
+                        && is_rel && rel != NULL)
                 {
                     int is_written =
                         bget(rel->stream_written, si);
-                    if (is_written)
+                    if(is_written)
                     {
                         ov_theme_fg(OV_FG_ERROR);
                         ov_buf_printf("\xe2\x96\xb6 ");
@@ -485,59 +512,81 @@ void ov_render_streams_panel(
             printed += 4;
 
             ov_rgb_t base_color = s->active
-                ? OV_FG_STREAM : OV_FG_DIM;
-            
+                                  ? OV_FG_STREAM : OV_FG_DIM;
+
             STRM_FIELD(base_color,
-                "%-14.14s ", s->name);
+                       "%-14.14s ", s->name);
             STRM_FIELD(OV_FG_MUTED, "%4s ", render_dtype(s->datatype));
-            
+
             STRM_FIELD(OV_FG_TEXT, "%11s ", s->size_str);
-            
-            if (s->update_hz > 0.1) {
+
+            if(s->update_hz > 0.1)
+            {
                 STRM_FIELD(OV_FG_ACTIVE, "%6.1f ", s->update_hz);
-            } else {
+            }
+            else
+            {
                 STRM_FIELD(OV_FG_DIM, "     - ");
             }
 
             /* MB/s throughput */
-            if (s->update_hz > 0.1) {
+            if(s->update_hz > 0.1)
+            {
                 double mbps = s->update_hz
-                    * (double) s->nelement
-                    * dtype_bytesize(s->datatype)
-                    / (1024.0 * 1024.0);
-                if (mbps >= 1000.0) {
+                              * (double) s->nelement
+                              * dtype_bytesize(s->datatype)
+                              / (1024.0 * 1024.0);
+                if(mbps >= 1000.0)
+                {
                     STRM_FIELD(OV_FG_ACTIVE,
-                        "%6.1fG ", mbps / 1024.0);
-                } else {
-                    STRM_FIELD(OV_FG_ACTIVE,
-                        "%6.1fM ", mbps);
+                               "%6.1fG ", mbps / 1024.0);
                 }
-            } else {
+                else
+                {
+                    STRM_FIELD(OV_FG_ACTIVE,
+                               "%6.1fM ", mbps);
+                }
+            }
+            else
+            {
                 STRM_FIELD(OV_FG_DIM, "      - ");
             }
 
-            if (!lay->compact_mode)
+            if(!lay->compact_mode)
             {
                 STRM_FIELD(OV_FG_DIM, "%10" PRIu64 " ", (uint64_t) s->inode);
             }
-            
+
             STRM_PID_FIELD(
                 s->ownerPID,
                 "%7d ", (int) s->ownerPID);
-            if (!lay->compact_mode)
+            if(!lay->compact_mode)
             {
                 STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM,
-                    "%10" PRIu64 " ", (uint64_t) s->cnt0);
+                           "%10" PRIu64 " ", (uint64_t) s->cnt0);
 
-                for (int sm = 0; sm < 10; sm++) {
-                    if (sm < s->nb_sem) {
+                for(int sm = 0; sm < 10; sm++)
+                {
+                    if(sm < s->nb_sem)
+                    {
                         int val = s->semval[sm];
                         char c;
-                        if (val < 0) c = '-';
-                        else if (val > 9) c = '+';
-                        else c = '0' + val;
+                        if(val < 0)
+                        {
+                            c = '-';
+                        }
+                        else if(val > 9)
+                        {
+                            c = '+';
+                        }
+                        else
+                        {
+                            c = '0' + val;
+                        }
                         STRM_FIELD(ov_get_sem_color(val), "%c", c);
-                    } else {
+                    }
+                    else
+                    {
                         STRM_FIELD(OV_FG_DIM, ".");
                     }
                 }
@@ -545,21 +594,26 @@ void ov_render_streams_panel(
             }
 
             /* Write PID */
-            if (s->write_pid > 0) {
+            if(s->write_pid > 0)
+            {
                 STRM_PID_FIELD(
                     s->write_pid,
                     "%7d ",
                     (int) s->write_pid);
-            } else {
+            }
+            else
+            {
                 STRM_FIELD(OV_FG_DIM, "      - ");
             }
 
             /* Read PIDs (compact list) */
-            if (s->nb_read_pids > 0) {
-                for (int rp = 0;
-                     rp < s->nb_read_pids; rp++)
+            if(s->nb_read_pids > 0)
+            {
+                for(int rp = 0;
+                        rp < s->nb_read_pids; rp++)
                 {
-                    if (rp > 0) {
+                    if(rp > 0)
+                    {
                         STRM_FIELD(OV_FG_DIM, ":");
                     }
                     STRM_PID_FIELD(
@@ -568,22 +622,24 @@ void ov_render_streams_panel(
                         (int) s->read_pids[rp]);
                 }
                 STRM_FIELD(OV_FG_DIM, " ");
-            } else {
+            }
+            else
+            {
                 STRM_FIELD(OV_FG_DIM, "- ");
             }
 
-            #undef STRM_PID_FIELD
-            #undef STRM_FIELD
-            
-            if (lay->mouse_hover && lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx == si)
+#undef STRM_PID_FIELD
+#undef STRM_FIELD
+
+            if(lay->mouse_hover && lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx == si)
             {
-                snprintf((char*)lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64, 
+                snprintf((char *)lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                         "Stream: %s | Dimensions: %dD (%s) | Semaphores: %d | inode: %" PRIu64,
                          s->name, s->naxis, s->size_str, s->nb_sem, (uint64_t)s->inode);
 
                 int btn_w = 10; /* " [Delete] " */
                 int rem = r.width - printed;
-                if (rem >= btn_w)
+                if(rem >= btn_w)
                 {
                     render_pad_spaces(printed, r.width - btn_w);
                     ov_theme_bg(OV_FG_ERROR);
@@ -594,7 +650,7 @@ void ov_render_streams_panel(
             }
 
             // The active dot is now printed at the start of the line
-            
+
             render_pad_spaces(printed, r.width);
             ov_buf_reset_attr();
         }
@@ -613,28 +669,28 @@ void ov_render_streams_panel(
     {
         /* Totals over ALL streams */
         double total_all_bps = 0.0;
-        for (int i = 0; i < m->nb_streams; i++)
+        for(int i = 0; i < m->nb_streams; i++)
         {
             const OV_STREAM *s = &m->streams[i];
-            if (s->update_hz > 0.1)
+            if(s->update_hz > 0.1)
             {
                 total_all_bps += s->update_hz
-                    * (double) s->nelement
-                    * dtype_bytesize(s->datatype);
+                                 * (double) s->nelement
+                                 * dtype_bytesize(s->datatype);
             }
         }
 
         /* Totals over filtered subset */
         double total_flt_bps = 0.0;
-        for (int i = 0; i < filt_n; i++)
+        for(int i = 0; i < filt_n; i++)
         {
             int si = filt_idx[i];
             const OV_STREAM *s = &m->streams[si];
-            if (s->update_hz > 0.1)
+            if(s->update_hz > 0.1)
             {
                 total_flt_bps += s->update_hz
-                    * (double) s->nelement
-                    * dtype_bytesize(s->datatype);
+                                 * (double) s->nelement
+                                 * dtype_bytesize(s->datatype);
             }
         }
 
@@ -646,29 +702,33 @@ void ov_render_streams_panel(
         double total_all_mb =
             total_all_bps / (1024.0 * 1024.0);
         char rbuf[40];
-        if (total_all_mb >= 1000.0)
+        if(total_all_mb >= 1000.0)
         {
             snprintf(rbuf, sizeof(rbuf),
-                " %.1f GB/s ",
-                total_all_mb / 1024.0);
+                     " %.1f GB/s ",
+                     total_all_mb / 1024.0);
         }
         else
         {
             snprintf(rbuf, sizeof(rbuf),
-                " %.1f MB/s ",
-                total_all_mb);
+                     " %.1f MB/s ",
+                     total_all_mb);
         }
         int rlen = (int) strlen(rbuf);
         int below = filt_n - lay->scroll_stream - max_rows;
         int dw = 0;
-        if (below > 0)
+        if(below > 0)
         {
             dw = 3;
             int tmp = below;
-            while (tmp > 0) { dw++; tmp /= 10; }
+            while(tmp > 0)
+            {
+                dw++;
+                tmp /= 10;
+            }
         }
         int rcol = r.col + r.width - rlen - dw - 4;
-        if (rcol > r.col + 1)
+        if(rcol > r.col + 1)
         {
             ov_buf_pos(brow, rcol);
             ov_theme_fg(OV_FG_ACTIVE);
@@ -678,27 +738,27 @@ void ov_render_streams_panel(
 
         /* Left side: filtered (only when
          * filter is active) */
-        if (is_subset)
+        if(is_subset)
         {
             double flt_mb =
                 total_flt_bps
                 / (1024.0 * 1024.0);
             char lbuf[40];
-            if (flt_mb >= 1000.0)
+            if(flt_mb >= 1000.0)
             {
                 snprintf(lbuf, sizeof(lbuf),
-                    " %.1f GB/s ",
-                    flt_mb / 1024.0);
+                         " %.1f GB/s ",
+                         flt_mb / 1024.0);
             }
             else
             {
                 snprintf(lbuf, sizeof(lbuf),
-                    " %.1f MB/s ",
-                    flt_mb);
+                         " %.1f MB/s ",
+                         flt_mb);
             }
             int llen = (int) strlen(lbuf);
             int lcol = r.col + 2;
-            if (lcol + llen < rcol)
+            if(lcol + llen < rcol)
             {
                 ov_buf_pos(brow, lcol);
                 ov_theme_fg(OV_FG_WARN);
@@ -710,7 +770,7 @@ void ov_render_streams_panel(
 
     ov_buf_reset_attr();
 
-    if (has_re)
+    if(has_re)
     {
         regfree(&re);
     }

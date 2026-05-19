@@ -8,8 +8,14 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
+/**
+ * @brief Get a human-readable type string for an FPS
+ * parameter type code.
+ *
+ * Writes the type name (e.g. "INT64", "FLOAT32")
+ * into the provided buffer.
+ */
 errno_t functionparameter_GetTypeString(
     uint32_t type,
     char *typestring

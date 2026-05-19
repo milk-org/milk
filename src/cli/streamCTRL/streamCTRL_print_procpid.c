@@ -20,10 +20,10 @@
  *
  */
 int streamCTRL_print_procpid(
-    int      DispPID_NBchar,
-    pid_t    procpid,
-    pid_t   *upstreamproc,
-    int      NBupstreamproc,
+    int   DispPID_NBchar,
+    pid_t procpid,
+    pid_t *upstreamproc,
+    int   NBupstreamproc,
     uint32_t mode
 )
 {

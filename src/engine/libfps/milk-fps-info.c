@@ -7,16 +7,9 @@
  * streams) using the OV_MODEL graph.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <getopt.h>
 #include <signal.h>
 
-#include "fps.h"
-#include "fps_globals.h"
-#include "fps_scan.h"
 #include "fps_printparameter_valuestring.h"
 
 #ifdef FPS_INFO_CONNECTIONS
@@ -30,7 +23,6 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * ANSI helpers for connection display
  * ========================================================= */
 
-#include "milk_help.h"
 
 #define CI_RST    MH_RST
 #define CI_HDR    MH_HDR
@@ -44,6 +36,12 @@ volatile sig_atomic_t ov_sigTERM = 0;
  * ========================================================= */
 
 #ifdef FPS_INFO_CONNECTIONS
+/**
+ * @brief Print all connected streams for an FPS.
+ *
+ * Lists each stream-type parameter with its
+ * current connection status and SHM path.
+ */
 static void print_connections(const char *fpsname)
 {
     OV_MODEL model;
@@ -200,7 +198,12 @@ static void print_connections(const char *fpsname)
     "With -c, cross-references stream and process connections\n" \
     "from the live system graph built by milk-CTRL/overview."
 
-static void print_help(const char *progname, int mh_color)
+/**
+ * @brief Print help message for milk-fps-info.
+ */
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, FI_DESC, mh_color);
 
@@ -267,7 +270,9 @@ static void print_help(const char *progname, int mh_color)
  * main
  * ========================================================= */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 FI_DESC, FI_DESC_LONG);

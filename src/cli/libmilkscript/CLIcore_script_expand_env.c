@@ -52,9 +52,9 @@
  * Writes characters until NUL or the buffer is full.
  */
 static void emit_str_local(
-    char       *out,
-    int        *opos,
-    int         maxlen,
+    char *out,
+    int  *opos,
+    int  maxlen,
     const char *s
 )
 {
@@ -83,7 +83,7 @@ static void emit_str_local(
  */
 static void expand_env_array_all(
     const char *varname,
-    int         is_length,
+    int        is_length,
     char       *out_buf,
     const char **out_val
 )
@@ -194,8 +194,8 @@ static void expand_env_array_all(
  * arrays (by numeric index).
  */
 static void expand_env_array_index(
-    const char  *varname,
-    const char  *idx_val,
+    const char *varname,
+    const char *idx_val,
     const char **out_val
 )
 {
@@ -272,11 +272,11 @@ static void expand_env_array_index(
  *   :   substring ${VAR:off} or ${VAR:off:len}
  */
 static void apply_modifier(
-    const char  *varname,
-    const char  *mod_op,
-    char        *mod_arg,
-    char        *val_buf,
-    int          val_buf_size,
+    const char *varname,
+    const char *mod_op,
+    char       *mod_arg,
+    char       *val_buf,
+    int        val_buf_size,
     const char **val
 )
 {
@@ -472,7 +472,7 @@ void cli_expand_env(
             int  alen = 0;
             atbuf[alen++] = '@';
             while(line[i] != '\0' && line[i] != '}'
-                  && alen < 511)
+                    && alen < 511)
             {
                 atbuf[alen++] = line[i++];
             }
@@ -512,9 +512,9 @@ void cli_expand_env(
             {
                 char c = line[i];
                 if(!((c >= 'A' && c <= 'Z')
-                     || (c >= 'a' && c <= 'z')
-                     || (c >= '0' && c <= '9')
-                     || c == '_' || c == '?' || c == '.'))
+                        || (c >= 'a' && c <= 'z')
+                        || (c >= '0' && c <= '9')
+                        || c == '_' || c == '?' || c == '.'))
                 {
                     break;
                 }
@@ -535,7 +535,7 @@ void cli_expand_env(
             i++;
             int ilen = 0;
             while(line[i] != '\0' && line[i] != ']'
-                  && ilen < 255)
+                    && ilen < 255)
             {
                 index_str[ilen++] = line[i++];
             }
@@ -554,7 +554,7 @@ void cli_expand_env(
         {
             i++;
             if(line[i] == '-' || line[i] == '='
-               || line[i] == '?' || line[i] == '+')
+                    || line[i] == '?' || line[i] == '+')
             {
                 mod_op[0] = ':';
                 mod_op[1] = line[i++];
@@ -565,7 +565,7 @@ void cli_expand_env(
             }
             int mlen = 0;
             while(line[i] != '\0' && line[i] != '}'
-                  && mlen < 255)
+                    && mlen < 255)
             {
                 mod_arg[mlen++] = line[i++];
             }

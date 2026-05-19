@@ -106,12 +106,12 @@ int milkseq_fifo_read(MILKSEQ_STATE *state, int fifo_fd);
  * @return The 1D index of the functional parameter accessed, or -1 if none
  */
 int milkseq_exec_cmd(
-    uint32_t                 cmdindex,
-    MILKSEQ_STATE            *state,
-    FPS *fps,
-    KEYWORD_TREE_NODE        *keywnode,
-    FPSCTRL_PROCESS_VARS     *vars,
-    uint64_t                 *taskstatus);
+    uint32_t             cmdindex,
+    MILKSEQ_STATE        *state,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_PROCESS_VARS *vars,
+    uint64_t             *taskstatus);
 
 
 /* =========================================================================
@@ -128,9 +128,9 @@ int milkseq_exec_cmd(
  * @return 0 on success, or an errno value on failure
  */
 errno_t milkseq_load_script(
-    MILKSEQ_STATE             *state,
-    const char                *filename,
-    FPS *fps,
-    KEYWORD_TREE_NODE         *keywnode);
+    MILKSEQ_STATE     *state,
+    const char        *filename,
+    FPS               *fps,
+    KEYWORD_TREE_NODE *keywnode);
 
 #endif // FPSSEQ_H

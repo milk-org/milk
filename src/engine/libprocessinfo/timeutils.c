@@ -2,9 +2,6 @@
  * @file timeutils.c
  */
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "timeutils.h"
 
@@ -15,12 +12,25 @@
 #endif
 
 
+/**
+ * @brief Gets the current time using the standard milk clock.
+ */
 errno_t milk_clock_gettime(struct timespec *tnow_p)
 {
     return clock_gettime(CLOCK_MILK, tnow_p);
 }
 
 
+/**
+ * @brief Format a timespec as an ISO 8601 UTC string with
+ *        nanosecond precision.
+ *
+ * Output format: "YYYY-MM-DDThh:mm:ss.nnnnnnnnnZ"
+ *
+ * @param timestring  Buffer of at least TIMESTRINGLEN bytes
+ * @param tnow        Timestamp to format
+ * @return RETURN_SUCCESS
+ */
 errno_t mkUTtimestring_nanosec(
     char *timestring,
     struct timespec tnow
@@ -61,6 +71,9 @@ errno_t mkUTtimestring_nanosec(
 }
 
 
+/**
+ * @brief Formats the current time as a UT string with nanosecond precision.
+ */
 errno_t mkUTtimestring_nanosec_now(char *timestring)
 {
     struct timespec tnow;
@@ -72,6 +85,16 @@ errno_t mkUTtimestring_nanosec_now(char *timestring)
 }
 
 
+/**
+ * @brief Format a timespec as an ISO 8601 UTC string with
+ *        microsecond precision.
+ *
+ * Output format: "YYYY-MM-DDThh:mm:ss.uuuuuuZ"
+ *
+ * @param timestring  Buffer of at least TIMESTRINGLEN bytes
+ * @param tnow        Timestamp to format
+ * @return RETURN_SUCCESS
+ */
 errno_t mkUTtimestring_microsec(
     char *timestring,
     struct timespec tnow
@@ -112,6 +135,9 @@ errno_t mkUTtimestring_microsec(
 }
 
 
+/**
+ * @brief Formats the current time as a UT string with microsecond precision.
+ */
 errno_t mkUTtimestring_microsec_now(char *timestring)
 {
     struct timespec tnow;
@@ -123,6 +149,16 @@ errno_t mkUTtimestring_microsec_now(char *timestring)
 }
 
 
+/**
+ * @brief Format a timespec as an ISO 8601 UTC string with
+ *        millisecond precision.
+ *
+ * Output format: "YYYY-MM-DDThh:mm:ss.mmmZ"
+ *
+ * @param timestring  Buffer of at least TIMESTRINGLEN bytes
+ * @param tnow        Timestamp to format
+ * @return RETURN_SUCCESS
+ */
 errno_t mkUTtimestring_millisec(
     char *timestring,
     struct timespec tnow
@@ -162,6 +198,9 @@ errno_t mkUTtimestring_millisec(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Formats the current time as a UT string with millisecond precision.
+ */
 errno_t mkUTtimestring_millisec_now(char *timestring)
 {
     struct timespec tnow;
@@ -173,7 +212,16 @@ errno_t mkUTtimestring_millisec_now(char *timestring)
 }
 
 
-// timestring should be of length TIMESTRINGLEN
+/**
+ * @brief Format a timespec as an ISO 8601 UTC string with
+ *        second precision.
+ *
+ * Output format: "YYYY-MM-DDThh:mm:ssZ"
+ *
+ * @param timestring  Buffer of at least TIMESTRINGLEN bytes
+ * @param tnow        Timestamp to format
+ * @return RETURN_SUCCESS
+ */
 errno_t mkUTtimestring_sec(
     char *timestring,
     struct timespec tnow
@@ -211,6 +259,9 @@ errno_t mkUTtimestring_sec(
 }
 
 
+/**
+ * @brief Formats the current time as a UT string with second precision.
+ */
 errno_t mkUTtimestring_sec_now(char *timestring)
 {
     struct timespec tnow;
@@ -222,7 +273,19 @@ errno_t mkUTtimestring_sec_now(char *timestring)
 }
 
 
-struct timespec timespec_diff(struct timespec start, struct timespec end)
+/**
+ * @brief Compute the difference between two timespecs
+ *        as a timespec.
+ *
+ * Returns (end - start), handling nanosecond borrow.
+ *
+ * @param start  Earlier timestamp
+ * @param end    Later timestamp
+ * @return Difference as struct timespec
+ */
+struct timespec timespec_diff(
+    struct timespec start,
+    struct timespec end)
 {
     struct timespec temp;
 
@@ -240,7 +303,17 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
 }
 
 
-double timespec_diff_double(struct timespec start, struct timespec end)
+/**
+ * @brief Compute the difference between two timespecs
+ *        as a double (seconds).
+ *
+ * @param start  Earlier timestamp
+ * @param end    Later timestamp
+ * @return Difference in seconds
+ */
+double timespec_diff_double(
+    struct timespec start,
+    struct timespec end)
 {
     struct timespec temp;
     double          val;

@@ -80,8 +80,8 @@ int cli_rewrite_dot_source(void);
  */
 int cli_find_unquoted_op(
     const char *line,
-    char        primary,
-    char        reject,
+    char       primary,
+    char       reject,
     char        accept
 );
 

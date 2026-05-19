@@ -21,7 +21,8 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     uint8_t   datatype = imgin->md[0].datatype;
-    if (imgin->ID == -1) {
+    if(imgin->ID == -1)
+    {
         return RETURN_FAILURE;
     }
     uint8_t   naxis    = imgin->md[0].naxis;
@@ -62,6 +63,12 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
     return imgout->ID;
 }
 
+/**
+ * @brief Compute x-gradient (finite difference) of an image.
+ *
+ * Uses central differences for interior pixels
+ * and forward/backward differences at boundaries.
+ */
 imageID arith_image_dx(const char *ID_name, const char *IDout_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
@@ -79,7 +86,8 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     uint8_t   datatype = imgin->md[0].datatype;
-    if (imgin->ID == -1) {
+    if(imgin->ID == -1)
+    {
         return RETURN_FAILURE;
     }
     uint8_t   naxis    = imgin->md[0].naxis;
@@ -124,6 +132,9 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
     return imgout->ID;
 }
 
+/**
+ * @brief Compute y-gradient (finite difference) of an image.
+ */
 imageID arith_image_dy(const char *ID_name, const char *IDout_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);

@@ -27,33 +27,33 @@ extern char savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN];
  * ========================================= */
 
 errno_t saveFITS_opt_trunc_IMGID(
-    IMGID          *imgin,
-    int             truncate,
-    const char     *outputFITSname,
-    int             outputbitpix,
-    const char     *importheaderfile,
-    IMAGE_KEYWORD  *kwarray,
-    int             kwarraysize,
+    IMGID         *imgin,
+    int           truncate,
+    const char    *outputFITSname,
+    int           outputbitpix,
+    const char    *importheaderfile,
+    IMAGE_KEYWORD *kwarray,
+    int           kwarraysize,
     const char     *FITSIOext
 );
 
 errno_t saveFITS_opt_trunc(
-    const char     *inputimname,
-    int             truncate,
-    const char     *outputFITSname,
-    int             outputbitpix,
-    const char     *importheaderfile,
-    IMAGE_KEYWORD  *kwarray,
-    int             kwarraysize,
+    const char    *inputimname,
+    int           truncate,
+    const char    *outputFITSname,
+    int           outputbitpix,
+    const char    *importheaderfile,
+    IMAGE_KEYWORD *kwarray,
+    int           kwarraysize,
     const char     *FITSIOext
 );
 
 errno_t saveFITS(
-    const char     *inputimname,
-    const char     *outputFITSname,
-    int             outputbitpix,
-    const char     *importheaderfile,
-    IMAGE_KEYWORD  *kwarray,
+    const char    *inputimname,
+    const char    *outputFITSname,
+    int           outputbitpix,
+    const char    *importheaderfile,
+    IMAGE_KEYWORD *kwarray,
     int             kwarraysize
 );
 

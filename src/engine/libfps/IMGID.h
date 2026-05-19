@@ -157,6 +157,15 @@ static inline IMGID imgid_make()
     return img;
 }
 
+/**
+ * @brief Release resources owned by an IMGID.
+ *
+ * Frees the metadata template (mdt) and any
+ * materialized slice buffer. Does not unmap or
+ * close the underlying shared-memory stream.
+ *
+ * @param img  IMGID whose owned allocations are freed
+ */
 static inline void imgid_free(
     IMGID *img
 )
@@ -384,7 +393,7 @@ static inline void imgid_setfpskeyword(
  * and imgid_setfpskeyword.
  */
 static inline IMGID imgid_make_from_fpskey(
-    CONST_WORD  name,
+    CONST_WORD name,
     const char *fpsname,
     const char *key
 )
@@ -396,6 +405,17 @@ static inline IMGID imgid_make_from_fpskey(
 
 
 
+/**
+ * @brief Create a 2D IMGID from a stream name and dimensions.
+ *
+ * Convenience wrapper: calls imgid_make_from_name() then
+ * sets naxis=2 and the X/Y sizes in the metadata template.
+ *
+ * @param name   Stream name (may include @X: prefix modifiers)
+ * @param xsize  Width in pixels
+ * @param ysize  Height in pixels
+ * @return Initialized IMGID with 2D template parameters
+ */
 static inline IMGID imgid_make_from_name_2D(
     CONST_WORD name,
     uint32_t xsize,
@@ -410,6 +430,18 @@ static inline IMGID imgid_make_from_name_2D(
     return img;
 }
 
+/**
+ * @brief Create a 3D IMGID from a stream name and dimensions.
+ *
+ * Convenience wrapper: calls imgid_make_from_name() then
+ * sets naxis=3 and the X/Y/Z sizes in the metadata template.
+ *
+ * @param name   Stream name (may include @X: prefix modifiers)
+ * @param xsize  Width in pixels
+ * @param ysize  Height in pixels
+ * @param zsize  Depth (number of slices)
+ * @return Initialized IMGID with 3D template parameters
+ */
 static inline IMGID imgid_make_from_name_3D(
     CONST_WORD name,
     uint32_t xsize,
@@ -428,6 +460,16 @@ static inline IMGID imgid_make_from_name_3D(
 
 
 
+/**
+ * @brief Copy metadata template parameters between IMGIDs.
+ *
+ * Copies datatype, shared flag, naxis, size[0..2], NBkw,
+ * and CBsize from imgin->mdt to imgout->mdt.  Does not
+ * copy the image pointer, ID, name, or createcnt.
+ *
+ * @param imgin   Source IMGID to copy template from
+ * @param imgout  Destination IMGID to receive template
+ */
 static inline void imgid_copy(
     IMGID *imgin,
     IMGID *imgout
@@ -448,6 +490,16 @@ static inline void imgid_copy(
 
 
 
+/**
+ * @brief Sync IMGID metadata template from the live image.
+ *
+ * Copies datatype, naxis, size[0..2], shared, NBkw, and
+ * CBsize from img->md (the live IMAGE_METADATA) into
+ * img->mdt (the template).  Call this after connecting
+ * to an existing stream so the template reflects reality.
+ *
+ * @param img  IMGID whose template is updated from img->md
+ */
 static inline void imgid_update_creationparams(IMGID *img)
 {
     img->mdt->datatype = img->md->datatype;
@@ -462,6 +514,18 @@ static inline void imgid_update_creationparams(IMGID *img)
 }
 
 
+/**
+ * @brief Bitwise comparison of two IMAGE_METADATA structs.
+ *
+ * Compares datatype, naxis, size[0..2], shared, NBkw,
+ * and CBsize.  Each mismatch sets a distinct bit in the
+ * return value (bit 0 = datatype, bit 1 = naxis, etc.),
+ * so callers can inspect which fields differ.
+ *
+ * @param md1  First metadata
+ * @param md2  Second metadata
+ * @return 0 if all fields match; bitmask of differences
+ */
 static inline uint64_t imgid_mdcompare(
     IMAGE_METADATA *md1,
     IMAGE_METADATA *md2
@@ -713,7 +777,17 @@ static inline uint64_t imgid_compare_md(
 }
 
 
-// Create image from IMGID
+/**
+ * @brief Create a shared-memory image from IMGID template.
+ *
+ * Calls ImageStreamIO_createIm() using the parameters
+ * stored in img->mdt (name, naxis, size, datatype,
+ * shared, NBkw, CBsize).  After creation, img->md is
+ * updated to point to the new image's metadata and
+ * img->createcnt is incremented.
+ *
+ * @param img  IMGID with im allocated and mdt populated
+ */
 static inline void imgid_mkimage(IMGID *img)
 {
     ImageStreamIO_createIm(img->im, img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype,
@@ -723,9 +797,16 @@ static inline void imgid_mkimage(IMGID *img)
 }
 
 
-// Read ImageStreamIO from shared memory
-//
-
+/**
+ * @brief Return a human-readable string for an IMGID status code.
+ *
+ * Maps IMGID_CONNECTED, IMGID_CREATED, IMGID_RECREATED,
+ * and IMGID_ERR_* codes to descriptive labels for
+ * diagnostic output.
+ *
+ * @param err  IMGID status/error code
+ * @return Static string describing the code
+ */
 static inline const char *imgid_strerror(errno_t err)
 {
     switch(err)
@@ -752,6 +833,26 @@ static inline const char *imgid_strerror(errno_t err)
 
 
 
+/**
+ * @brief Connect to a shared-memory stream, optionally
+ *        validating or (re-)creating it.
+ *
+ * Attempts to open the stream named img->name via
+ * ImageStreamIO.  Behavior depends on FLAG:
+ *
+ * - IMGID_CONNECT_NOCHECK: connect without validation.
+ * - IMGID_CONNECT_CHECK_FAIL: connect and fail if the
+ *   stream's parameters mismatch the IMGID template.
+ * - IMGID_CONNECT_CHECK_CREATE: connect if matching,
+ *   otherwise (re-)create the stream from the template.
+ *
+ * On success, img->im, img->md, and img->ID are set.
+ *
+ * @param img   IMGID with name and mdt template populated
+ * @param FLAG  Connection mode (IMGID_CONNECT_*)
+ * @return IMGID_CONNECTED, IMGID_CREATED, IMGID_RECREATED,
+ *         or an IMGID_ERR_* code
+ */
 static inline errno_t imgid_connect(
     IMGID *img,
     int FLAG
@@ -923,6 +1024,17 @@ imgid_connect_report:
 }
 
 
+/**
+ * @brief Connect to a 2D float32 stream, creating it if needed.
+ *
+ * Sets the IMGID template to a 2D float32 shared stream
+ * with the specified dimensions, then calls imgid_connect()
+ * with IMGID_CONNECT_CHECK_CREATE.
+ *
+ * @param img    IMGID with name already set
+ * @param xsize  Width in pixels
+ * @param ysize  Height in pixels
+ */
 static inline void imgid_connect_create_2Df32(
     IMGID *img,
     uint32_t xsize,
@@ -939,6 +1051,18 @@ static inline void imgid_connect_create_2Df32(
     imgid_connect(img, IMGID_CONNECT_CHECK_CREATE);
 }
 
+/**
+ * @brief Connect to a 3D float32 stream, creating it if needed.
+ *
+ * Sets the IMGID template to a 3D float32 shared stream
+ * with the specified dimensions, then calls imgid_connect()
+ * with IMGID_CONNECT_CHECK_CREATE.
+ *
+ * @param img    IMGID with name already set
+ * @param xsize  Width in pixels
+ * @param ysize  Height in pixels
+ * @param zsize  Depth (number of slices)
+ */
 static inline void imgid_connect_create_3Df32(
     IMGID *img,
     uint32_t xsize,

@@ -22,11 +22,14 @@
  * manage them. Complements milk-fpsexec-help
  * which covers fpsexec standalone executables.
  */
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
-    for (int ii = 1; ii < argc; ii++) {
-        if (strcmp(argv[ii], "-h1") == 0 ||
-            strcmp(argv[ii], "--help-oneline") == 0)
+    for(int ii = 1; ii < argc; ii++)
+    {
+        if(strcmp(argv[ii], "-h1") == 0 ||
+                strcmp(argv[ii], "--help-oneline") == 0)
         {
             printf("FPS concepts and management tools guide\n");
             return 0;

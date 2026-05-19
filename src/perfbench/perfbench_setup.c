@@ -31,7 +31,7 @@ int run_cmd(const char *fmt, ...)
 void resolve_procdir(bench_cfg_t *cfg)
 {
     const char *env = getenv("MILK_SHM_DIR");
-    if (env && strlen(env) > 0)
+    if(env && strlen(env) > 0)
     {
         strncpy(cfg->procdir, env,
                 sizeof(cfg->procdir) - 1);
@@ -39,8 +39,8 @@ void resolve_procdir(bench_cfg_t *cfg)
     }
 
     struct stat st;
-    if (stat("/milk/shm", &st) == 0
-        && S_ISDIR(st.st_mode))
+    if(stat("/milk/shm", &st) == 0
+            && S_ISDIR(st.st_mode))
     {
         strncpy(cfg->procdir, "/milk/shm",
                 sizeof(cfg->procdir) - 1);
@@ -57,15 +57,15 @@ void resolve_procdir(bench_cfg_t *cfg)
 void resolve_shmdir(char *shmdir, size_t sz)
 {
     const char *env = getenv("MILK_SHM_DIR");
-    if (env && strlen(env) > 0)
+    if(env && strlen(env) > 0)
     {
         strncpy(shmdir, env, sz - 1);
         return;
     }
 
     struct stat st;
-    if (stat("/milk/shm", &st) == 0
-        && S_ISDIR(st.st_mode))
+    if(stat("/milk/shm", &st) == 0
+            && S_ISDIR(st.st_mode))
     {
         strncpy(shmdir, "/milk/shm", sz - 1);
         return;
@@ -80,16 +80,16 @@ void resolve_shmdir(char *shmdir, size_t sz)
 void resolve_git_commit(bench_cfg_t *cfg)
 {
     FILE *fp = popen(
-        "git rev-parse --short HEAD 2>/dev/null",
-        "r");
-    if (!fp)
+                   "git rev-parse --short HEAD 2>/dev/null",
+                   "r");
+    if(!fp)
     {
         strncpy(cfg->git_commit, "unknown",
                 sizeof(cfg->git_commit) - 1);
         return;
     }
-    if (!fgets(cfg->git_commit,
-               sizeof(cfg->git_commit) - 1, fp))
+    if(!fgets(cfg->git_commit,
+              sizeof(cfg->git_commit) - 1, fp))
     {
         strncpy(cfg->git_commit, "unknown",
                 sizeof(cfg->git_commit) - 1);
@@ -98,7 +98,7 @@ void resolve_git_commit(bench_cfg_t *cfg)
     {
         /* strip trailing newline */
         cfg->git_commit[strcspn(
-            cfg->git_commit, "\n")] = '\0';
+                            cfg->git_commit, "\n")] = '\0';
     }
     pclose(fp);
 }
@@ -113,10 +113,12 @@ int64_t exe_size(const char *exe)
     snprintf(cmd, sizeof(cmd),
              "command -v %s 2>/dev/null", exe);
     FILE *fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return 0;
+    }
     char path[MAX_PATH] = {0};
-    if (!fgets(path, sizeof(path) - 1, fp))
+    if(!fgets(path, sizeof(path) - 1, fp))
     {
         pclose(fp);
         return 0;
@@ -124,12 +126,16 @@ int64_t exe_size(const char *exe)
     pclose(fp);
     path[strcspn(path, "\n")] = '\0';
 
-    if (strlen(path) == 0)
+    if(strlen(path) == 0)
+    {
         return 0;
+    }
 
     struct stat st;
-    if (stat(path, &st) != 0)
+    if(stat(path, &st) != 0)
+    {
         return 0;
+    }
     return (int64_t) st.st_size;
 }
 
@@ -139,7 +145,7 @@ int64_t exe_size(const char *exe)
 void read_build_tags(
     const char *exe,
     char       *out,
-    size_t      outsz)
+    size_t     outsz)
 {
     out[0] = '\0';
 
@@ -148,29 +154,35 @@ void read_build_tags(
     snprintf(cmd, sizeof(cmd),
              "command -v '%s' 2>/dev/null", exe);
     FILE *fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
     char path[MAX_PATH] = {0};
-    if (!fgets(path, sizeof(path) - 1, fp))
+    if(!fgets(path, sizeof(path) - 1, fp))
     {
         pclose(fp);
         return;
     }
     pclose(fp);
     path[strcspn(path, "\n")] = '\0';
-    if (strlen(path) == 0)
+    if(strlen(path) == 0)
+    {
         return;
+    }
 
     /* Extract the sentinel via strings(1) */
     snprintf(cmd, sizeof(cmd),
-        "strings '%s' 2>/dev/null"
-        " | grep 'MILK_BUILD:'",
-        path);
+             "strings '%s' 2>/dev/null"
+             " | grep 'MILK_BUILD:'",
+             path);
     fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
     char raw[512] = {0};
-    if (!fgets(raw, sizeof(raw) - 1, fp))
+    if(!fgets(raw, sizeof(raw) - 1, fp))
     {
         pclose(fp);
         out[0] = '\0';
@@ -181,64 +193,70 @@ void read_build_tags(
 
     /* Locate payload after "MILK_BUILD:" prefix */
     char *payload = strstr(raw, "MILK_BUILD:");
-    if (!payload)
+    if(!payload)
+    {
         return;
+    }
     payload += strlen("MILK_BUILD:");
 
     /* Build a compact human-readable summary */
     char summary[256] = {0};
     size_t slen = 0;
 
-    if (strstr(payload, "OPT=3"))
+    if(strstr(payload, "OPT=3"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "O3 ");
-    if (strstr(payload, "PGO=USE"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "O3 ");
+    if(strstr(payload, "PGO=USE"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "PGO ");
-    else if (strstr(payload, "PGO=GENERATE"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "PGO ");
+    else if(strstr(payload, "PGO=GENERATE"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "PGO-instr ");
-    if (strstr(payload, "LTO=STATIC"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "PGO-instr ");
+    if(strstr(payload, "LTO=STATIC"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "LTO-static ");
-    else if (strstr(payload, "LTO=1"))
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "LTO-static ");
+    else if(strstr(payload, "LTO=1"))
         slen += (size_t) snprintf(
-            summary + slen,
-            sizeof(summary) - slen,
-            "LTO ");
+                    summary + slen,
+                    sizeof(summary) - slen,
+                    "LTO ");
 
     /* Extract architecture field */
     {
         char *ap = strstr(payload, "ARCH=");
-        if (ap)
+        if(ap)
         {
             ap += 5;
             char arch[32] = {0};
             size_t ai = 0;
-            while (*ap && *ap != ',' && ai < 31)
+            while(*ap && *ap != ',' && ai < 31)
+            {
                 arch[ai++] = *ap++;
+            }
             slen += (size_t) snprintf(
-                summary + slen,
-                sizeof(summary) - slen,
-                "[%s]", arch);
+                        summary + slen,
+                        sizeof(summary) - slen,
+                        "[%s]", arch);
         }
     }
 
-    if (slen == 0)
+    if(slen == 0)
         snprintf(summary, sizeof(summary),
                  "default (no PGO/LTO)");
 
     /* Trim trailing space */
-    while (slen > 0 && summary[slen - 1] == ' ')
+    while(slen > 0 && summary[slen - 1] == ' ')
+    {
         summary[--slen] = '\0';
+    }
 
     snprintf(out, outsz, "%s", summary);
 }
@@ -298,7 +316,7 @@ void fps_setup(bench_cfg_t *cfg)
             "procinfo.triggermode", "0");
 
     /* apply extra positional args if any */
-    if (cfg->fpsargs[0] != '\0')
+    if(cfg->fpsargs[0] != '\0')
     {
         run_cmd("%s %s:set %s"
                 " >/dev/null 2>&1",
@@ -317,29 +335,33 @@ void fps_create_streams(bench_cfg_t *cfg)
 
     char cmd[MAX_CMD];
     snprintf(cmd, sizeof(cmd),
-        "%s %s:fps 2>/dev/null"
-        " | sed 's/\\x1b\\[[0-9;]*m//g'"
-        " | awk '$3==\"STREAMNAME\" && NF>=8"
+             "%s %s:fps 2>/dev/null"
+             " | sed 's/\\x1b\\[[0-9;]*m//g'"
+             " | awk '$3==\"STREAMNAME\" && NF>=8"
              " {print $4}'",
-        cfg->fpsexec, cfg->fpsname);
+             cfg->fpsexec, cfg->fpsname);
 
     FILE *fp = popen(cmd, "r");
-    if (!fp)
+    if(!fp)
+    {
         return;
+    }
 
     char sname[256];
-    while (fgets(sname, sizeof(sname), fp))
+    while(fgets(sname, sizeof(sname), fp))
     {
         sname[strcspn(sname, "\n")] = '\0';
-        if (strlen(sname) == 0)
+        if(strlen(sname) == 0)
+        {
             continue;
+        }
 
         char impath[MAX_PATH + 256 + 32];
         snprintf(impath, sizeof(impath),
                  "%s/%s.im.shm", shmdir, sname);
 
         struct stat st;
-        if (stat(impath, &st) != 0)
+        if(stat(impath, &st) != 0)
         {
             printf("  Creating stream: %s (32x32)\n",
                    sname);

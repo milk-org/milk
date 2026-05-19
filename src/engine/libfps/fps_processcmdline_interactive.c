@@ -7,24 +7,11 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
-#include <string.h>
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
-#include "fps_scan.h"
 #include "fps_CONFstart.h"
-#include "fps_CONFstop.h"
 #include "fps_RUNstart.h"
-#include "fps_RUNstop.h"
-#include "fps_tmux.h"
 #include "fps_FPSremove.h"
-#include "fps_outlog.h"
-#include "fps_paramvalue.h"
-#include "fps_save2disk.h"
-#include "fps_WriteParameterToDisk.h"
-#include "fps_printparameter_valuestring.h"
 
 /** @brief process command line
  *
@@ -59,21 +46,23 @@
  */
 
 static void fps_cmd_handle_sys(
-    const char                *FPScommand,
-    int                        nbword,
-    const char                *FPSarg0,
-    const char                *FPSarg1,
-    FPSCTRL_PROCESS_VARS      *fpsCTRLvar,
-    FPS *fps,
-    KEYWORD_TREE_NODE         *keywnode,
-    FPSCTRL_TASK_QUEUE        *fpsctrlqueuelist,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus,
-    int                       *testcnt)
+    const char           *FPScommand,
+    int                  nbword,
+    const char           *FPSarg0,
+    const char           *FPSarg1,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    FPS                  *fps,
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
+    int                  *cmdFOUND,
+    int                  *cmdOK,
+    uint64_t             *taskstatus,
+    int                  *testcnt)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // exit
     if(strcmp(FPScommand, "exit") == 0)
@@ -201,17 +190,25 @@ static void fps_cmd_handle_sys(
     }
 }
 
+/**
+ * @brief Handle tmux-related FPS commands.
+ *
+ * Processes "tmuxstart" and "tmuxstop" commands
+ * by delegating to tmux_init/tmux_kill.
+ */
 static void fps_cmd_handle_tmux(
-    const char                *FPScommand,
-    int                        nbword,
-    FPS *fps,
-    int                        fpsindex,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus)
+    const char *FPScommand,
+    int        nbword,
+    FPS        *fps,
+    int        fpsindex,
+    int        *cmdFOUND,
+    int        *cmdOK,
+    uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // tmuxstart
     if(strcmp(FPScommand, "tmuxstart") == 0)
@@ -264,17 +261,26 @@ static void fps_cmd_handle_tmux(
     }
 }
 
+/**
+ * @brief Handle conf-related FPS commands.
+ *
+ * Processes confstart, confstep, confstop, and
+ * confupdate commands by delegating to the
+ * corresponding FPS conf lifecycle functions.
+ */
 static void fps_cmd_handle_conf(
-    const char                *FPScommand,
-    int                        nbword,
-    FPS *fps,
-    int                        fpsindex,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus)
+    const char *FPScommand,
+    int        nbword,
+    FPS        *fps,
+    int        fpsindex,
+    int        *cmdFOUND,
+    int        *cmdOK,
+    uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // confstart
     if(strcmp(FPScommand, "confstart") == 0)
@@ -417,17 +423,26 @@ static void fps_cmd_handle_conf(
     }
 }
 
+/**
+ * @brief Handle run-related FPS commands.
+ *
+ * Processes runstart, runwait, and runstop
+ * commands by delegating to the FPS run
+ * lifecycle functions.
+ */
 static void fps_cmd_handle_run(
-    const char                *FPScommand,
-    int                        nbword,
-    FPS *fps,
-    int                        fpsindex,
-    int                       *cmdFOUND,
-    int                       *cmdOK,
-    uint64_t                  *taskstatus)
+    const char *FPScommand,
+    int        nbword,
+    FPS        *fps,
+    int        fpsindex,
+    int        *cmdFOUND,
+    int        *cmdOK,
+    uint64_t   *taskstatus)
 {
     if(*cmdFOUND)
+    {
         return;
+    }
 
     // runstart
     if(strcmp(FPScommand, "runstart") == 0)
@@ -512,12 +527,29 @@ static void fps_cmd_handle_run(
     }
 }
 
+/**
+ * @brief Process a single FPS control command line.
+ *
+ * Parses the command line into words, looks up the
+ * target FPS, and dispatches to the appropriate
+ * handler (system, tmux, conf, run, or parameter
+ * set). Updates task status flags for error
+ * reporting.
+ *
+ * @param FPScmdline        Raw command line text
+ * @param fpsctrlqueuelist  Task queue array
+ * @param keywnode          FPS keyword tree root
+ * @param fpsCTRLvar        fpsCTRL process state
+ * @param fps               Connected FPS array
+ * @param taskstatus        Status bitmap (updated)
+ * @return 1 on success, 0 on command error
+ */
 int functionparameter_FPSprocess_cmdline(
     char                 *FPScmdline,
     FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
     KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    FPS *fps,
+    FPS                  *fps,
     uint64_t                  *taskstatus
 )
 {
@@ -848,7 +880,7 @@ int functionparameter_FPSprocess_cmdline(
                 int updated = 0;
 
                 // Use the new consolidated API for parameter conversion, setting, and logging
-                if (functionparameter_SetParamValue_fromString(&fps[fpsindex], pindex, FPScmdarg1) == 0)
+                if(functionparameter_SetParamValue_fromString(&fps[fpsindex], pindex, FPScmdarg1) == 0)
                 {
                     updated = 1;
                 }
@@ -976,5 +1008,3 @@ int functionparameter_FPSprocess_cmdline(
 
     return fpsindex;
 }
-
-

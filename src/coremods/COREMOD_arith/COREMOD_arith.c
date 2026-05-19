@@ -91,6 +91,12 @@
 
 INIT_MODULE_LIB(COREMOD_arith)
 
+/**
+ * @brief Register COREMOD_arith CLI commands.
+ *
+ * Called during module loading to add all
+ * arithmetic operations to the CLI command table.
+ */
 static errno_t init_module_CLI()
 {
 

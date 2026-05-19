@@ -30,25 +30,26 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 errno_t COREMOD_MEMORY_SaveAll_sequ(
     const char *dirname,
     const char *IDtrig_name,
-    long        semtrig,
-    long        NBframes);
+    long       semtrig,
+    long       NBframes);
 
 
 /* ================================================================
  *  CMD 1: imsaveallsnap (1 arg)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_snap = {
+static FPS_APP_INFO FPS_app_info_snap =
+{
     .fps_name    = "imsaveallsnap",
     .cmdkey      = "imsaveallsnap",
     .description =
-        "save all images in directory",
+    "save all images in directory",
     .description_long =
-        "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
+    "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
 };
 
 static char p_dirname_snap[
-    FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
+     FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
 
 #define FPS_PARAMS_snap(X) \
     X(".dirname", p_dirname_snap, \
@@ -56,7 +57,8 @@ static char p_dirname_snap[
       FPFLAG_DEFAULT_INPUT, \
       "output directory")
 
-static FPS_CLI_BINDING bindings_snap[] = {
+static FPS_CLI_BINDING bindings_snap[] =
+{
     FPS_PARAMS_snap(FPS_X_BINDING)
 };
 
@@ -64,11 +66,13 @@ static const int __attribute__((unused)) nb_bindings_snap =
     sizeof(bindings_snap) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF __attribute__((unused)) farg_snap[] = {
+static CLICMDARGDEF __attribute__((unused)) farg_snap[] =
+{
     FPS_PARAMS_snap(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata_snap = {
+static CLICMDDATA CLIcmddata_snap =
+{
     "",
     "",
     CLICMD_FIELDS_NOPARAM
@@ -88,19 +92,20 @@ static errno_t __attribute__((unused)) compute_snap()
  *  CMD 2: imsaveallseq (4 args, primary)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
+static FPS_APP_INFO FPS_app_info =
+{
     .fps_name    = "imsaveallseq",
     .cmdkey      = "imsaveallseq",
     .description =
-        "save all images, sequence",
+    "save all images, sequence",
     .description_long =
-        "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
+    "Save all images in the current process memory to FITS files on disk. Each image is written as a separate file."
 };
 
 static char p_dirname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
+     FUNCTION_PARAMETER_STRMAXLEN] = "dir1";
 static char p_trigname[
-    FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+     FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static long long p_semtrig = 3;
 static long long p_nbframes = 20;
 
@@ -122,7 +127,8 @@ static long long p_nbframes = 20;
       FPFLAG_DEFAULT_INPUT, \
       "number of frames")
 
-static FPS_CLI_BINDING my_bindings[] = {
+static FPS_CLI_BINDING my_bindings[] =
+{
     FPS_PARAMS(FPS_X_BINDING)
 };
 
@@ -130,11 +136,13 @@ static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     FPS_PARAMS(FPS_X_FARG)
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "",
     "",
     CLICMD_FIELDS_DEFAULTS
@@ -164,18 +172,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction_snap(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info_snap,
-        farg_snap, &CLIcmddata_snap,
-        bindings_snap, nb_bindings_snap,
-        compute_snap);
+               &FPS_app_info_snap,
+               farg_snap, &CLIcmddata_snap,
+               bindings_snap, nb_bindings_snap,
+               compute_snap);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+               &FPS_app_info, farg, &CLIcmddata,
+               my_bindings, nb_bindings,
+               compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_memory__saveall()
@@ -186,8 +194,8 @@ errno_t CLIADDCMD_COREMOD_memory__saveall()
             nb_bindings_snap);
 
         int cmdi = RegisterCLIcmd(
-            CLIcmddata_snap,
-            CLIfunction_snap);
+                       CLIcmddata_snap,
+                       CLIfunction_snap);
         CLIcmddata_snap.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -197,7 +205,7 @@ errno_t CLIADDCMD_COREMOD_memory__saveall()
             farg, my_bindings, nb_bindings);
 
         int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
+                       CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
@@ -253,7 +261,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
                         "%s_cp",
                         dcimg[ID].name);
         IDarraycp[i] = copy_image_ID(
-            dcimg[ID].name, imnamecp, 0);
+                           dcimg[ID].name, imnamecp, 0);
     }
 
     list_image_ID();
@@ -286,8 +294,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 errno_t COREMOD_MEMORY_SaveAll_sequ(
     const char *dirname,
     const char *IDtrig_name,
-    long        semtrig,
-    long        NBframes)
+    long       semtrig,
+    long       NBframes)
 {
     long   *IDarray;
     long   *IDarrayout;
@@ -383,7 +391,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     fflush(stdout);
 
     while(ImageStreamIO_semtrywait(
-              dcimg + IDtrig, semtrig) == 0)
+                dcimg + IDtrig, semtrig) == 0)
     {
     }
 
@@ -396,7 +404,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
         {
             ID   = IDarray[i];
             ptr0 = (char *)
-                dcimg[IDarrayout[i]].array.F;
+                   dcimg[IDarrayout[i]].array.F;
             ptr1 =
                 ptr0 + imsizearray[i] * frame;
             memcpy(ptr1,

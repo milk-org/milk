@@ -21,6 +21,12 @@ extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
 struct wa_event;
+/**
+ * @brief Evaluate FPS conditions for waitany.
+ *
+ * Checks if any FPS parameter meets the
+ * specified condition.
+ */
 static int eval_waitany_fps(struct wa_event *ev, const char *vstr);
 
 enum
@@ -62,6 +68,12 @@ struct wa_event
     int fps_open;
 };
 
+/**
+ * @brief Parse waitany command arguments.
+ *
+ * Extracts stream/FPS names and timeout values
+ * from the argument list.
+ */
 static int parse_waitany_args(const char *p, struct wa_event *events, double *timeout_v)
 {
     char argbuf[STRINGMAXLEN_CLICMDLINE];
@@ -115,7 +127,10 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
                 return -1;
             }
             int nlen = (int)(dot - body);
-            if(nlen >= (int) sizeof(ev->name)) nlen = (int) sizeof(ev->name) - 1;
+            if(nlen >= (int) sizeof(ev->name))
+            {
+                nlen = (int) sizeof(ev->name) - 1;
+            }
             memcpy(ev->name, body, (size_t) nlen);
             ev->name[nlen] = '\0';
 
@@ -125,10 +140,38 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
             ev->cmp_op = CMP_EQ;
 
             op_pos = strstr(rest, ">=");
-            if(op_pos != NULL) { ev->cmp_op = CMP_GE; op_len = 2; }
-            if(op_pos == NULL) { op_pos = strstr(rest, "<="); if(op_pos != NULL) { ev->cmp_op = CMP_LE; op_len = 2; } }
-            if(op_pos == NULL) { op_pos = strstr(rest, "!="); if(op_pos != NULL) { ev->cmp_op = CMP_NE; op_len = 2; } }
-            if(op_pos == NULL) { op_pos = strchr(rest, '='); if(op_pos != NULL) { ev->cmp_op = CMP_EQ; op_len = 1; } }
+            if(op_pos != NULL)
+            {
+                ev->cmp_op = CMP_GE;
+                op_len = 2;
+            }
+            if(op_pos == NULL)
+            {
+                op_pos = strstr(rest, "<=");
+                if(op_pos != NULL)
+                {
+                    ev->cmp_op = CMP_LE;
+                    op_len = 2;
+                }
+            }
+            if(op_pos == NULL)
+            {
+                op_pos = strstr(rest, "!=");
+                if(op_pos != NULL)
+                {
+                    ev->cmp_op = CMP_NE;
+                    op_len = 2;
+                }
+            }
+            if(op_pos == NULL)
+            {
+                op_pos = strchr(rest, '=');
+                if(op_pos != NULL)
+                {
+                    ev->cmp_op = CMP_EQ;
+                    op_len = 1;
+                }
+            }
 
             if(op_pos == NULL)
             {
@@ -138,7 +181,10 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
             }
 
             int plen = (int)(op_pos - rest);
-            if(plen >= (int) sizeof(ev->param)) plen = (int) sizeof(ev->param) - 1;
+            if(plen >= (int) sizeof(ev->param))
+            {
+                plen = (int) sizeof(ev->param) - 1;
+            }
             memcpy(ev->param, rest, (size_t) plen);
             ev->param[plen] = '\0';
 
@@ -157,19 +203,46 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
                 return -1;
             }
             int nlen = (int)(colon - body);
-            if(nlen >= (int) sizeof(ev->name)) nlen = (int) sizeof(ev->name) - 1;
+            if(nlen >= (int) sizeof(ev->name))
+            {
+                nlen = (int) sizeof(ev->name) - 1;
+            }
             memcpy(ev->name, body, (size_t) nlen);
             ev->name[nlen] = '\0';
 
             const char *st = colon + 1;
-            if(strcasecmp(st, "INIT") == 0) ev->target_state = PROCESSINFO_LOOPSTAT_INIT;
-            else if(strcasecmp(st, "ACTIVE") == 0) ev->target_state = PROCESSINFO_LOOPSTAT_ACTIVE;
-            else if(strcasecmp(st, "PAUSE") == 0) ev->target_state = PROCESSINFO_LOOPSTAT_PAUSE;
-            else if(strcasecmp(st, "STOP") == 0) ev->target_state = PROCESSINFO_LOOPSTAT_STOP;
-            else if(strcasecmp(st, "ERROR") == 0) ev->target_state = PROCESSINFO_LOOPSTAT_ERROR;
-            else if(strcasecmp(st, "SPIN") == 0) ev->target_state = PROCESSINFO_LOOPSTAT_SPIN;
-            else if(strcasecmp(st, "CRASHED") == 0) ev->target_state = PROCESSINFO_LOOPSTAT_CRASHED;
-            else ev->target_state = (int) strtol(st, NULL, 0);
+            if(strcasecmp(st, "INIT") == 0)
+            {
+                ev->target_state = PROCESSINFO_LOOPSTAT_INIT;
+            }
+            else if(strcasecmp(st, "ACTIVE") == 0)
+            {
+                ev->target_state = PROCESSINFO_LOOPSTAT_ACTIVE;
+            }
+            else if(strcasecmp(st, "PAUSE") == 0)
+            {
+                ev->target_state = PROCESSINFO_LOOPSTAT_PAUSE;
+            }
+            else if(strcasecmp(st, "STOP") == 0)
+            {
+                ev->target_state = PROCESSINFO_LOOPSTAT_STOP;
+            }
+            else if(strcasecmp(st, "ERROR") == 0)
+            {
+                ev->target_state = PROCESSINFO_LOOPSTAT_ERROR;
+            }
+            else if(strcasecmp(st, "SPIN") == 0)
+            {
+                ev->target_state = PROCESSINFO_LOOPSTAT_SPIN;
+            }
+            else if(strcasecmp(st, "CRASHED") == 0)
+            {
+                ev->target_state = PROCESSINFO_LOOPSTAT_CRASHED;
+            }
+            else
+            {
+                ev->target_state = (int) strtol(st, NULL, 0);
+            }
 
             nevents++;
         }
@@ -196,10 +269,19 @@ static int parse_waitany_args(const char *p, struct wa_event *events, double *ti
         return -1;
     }
 
-    if (timeout_v != NULL) *timeout_v = timeout;
+    if(timeout_v != NULL)
+    {
+        *timeout_v = timeout;
+    }
     return nevents;
 }
 
+/**
+ * @brief Open shared memory handles for waitany.
+ *
+ * Connects to all specified streams/FPS instances
+ * for event monitoring.
+ */
 static int open_waitany_handles(struct wa_event *events, int nevents)
 {
     int any_open = 0;
@@ -295,21 +377,34 @@ static int poll_waitany_events(struct wa_event *events, int nevents, double time
                 {
                     for(int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
                     {
-                        if(!pinfolist->active[pi]) continue;
-                        if(strcmp(pinfolist->pnamearray[pi], ev->name) != 0) continue;
+                        if(!pinfolist->active[pi])
+                        {
+                            continue;
+                        }
+                        if(strcmp(pinfolist->pnamearray[pi], ev->name) != 0)
+                        {
+                            continue;
+                        }
                         pid_t fpid = pinfolist->PIDarray[pi];
-                        char pfn[512]; char pdname[256];
+                        char pfn[512];
+                        char pdname[256];
                         processinfo_procdirname(pdname);
                         snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int)fpid);
                         int pfd = -1;
                         PROCESSINFO *pii = processinfo_shm_link(pfn, &pfd);
                         if(pii != MAP_FAILED && pii != NULL)
                         {
-                            if(pii->loopstat == ev->target_state) { fired = 1; }
+                            if(pii->loopstat == ev->target_state)
+                            {
+                                fired = 1;
+                            }
                             munmap(pii, sizeof(PROCESSINFO));
                             close(pfd);
                         }
-                        else if(pfd >= 0) { close(pfd); }
+                        else if(pfd >= 0)
+                        {
+                            close(pfd);
+                        }
                         break;
                     }
                 }
@@ -326,7 +421,8 @@ static int poll_waitany_events(struct wa_event *events, int nevents, double time
         {
             struct timespec ts_now;
             clock_gettime(CLOCK_MONOTONIC, &ts_now);
-            double elapsed = (double)(ts_now.tv_sec - ts_start.tv_sec) + 1e-9 * (double)(ts_now.tv_nsec - ts_start.tv_nsec);
+            double elapsed = (double)(ts_now.tv_sec - ts_start.tv_sec) + 1e-9 * (double)(
+                                 ts_now.tv_nsec - ts_start.tv_nsec);
             if(elapsed >= timeout)
             {
                 cli_last_retval = 254;
@@ -338,43 +434,78 @@ static int poll_waitany_events(struct wa_event *events, int nevents, double time
     return 1;
 }
 
+/**
+ * @brief Evaluate FPS conditions for waitany.
+ *
+ * Checks if any FPS parameter meets the
+ * specified condition.
+ */
 static int eval_waitany_fps(struct wa_event *ev, const char *vstr)
 {
     int fired = 0;
     switch(ev->cmp_op)
     {
     case CMP_EQ:
+    {
+        if(strcmp(vstr, ev->target_val) == 0)
         {
-            if(strcmp(vstr, ev->target_val) == 0) { fired = 1; break; }
-            char *e1 = NULL; char *e2 = NULL;
-            double d1 = strtod(vstr, &e1); double d2 = strtod(ev->target_val, &e2);
-            if(e1 != vstr && *e1 == '\0' && e2 != ev->target_val && *e2 == '\0' && d1 == d2) { fired = 1; }
+            fired = 1;
+            break;
         }
-        break;
+        char *e1 = NULL;
+        char *e2 = NULL;
+        double d1 = strtod(vstr, &e1);
+        double d2 = strtod(ev->target_val, &e2);
+        if(e1 != vstr && *e1 == '\0' && e2 != ev->target_val && *e2 == '\0' && d1 == d2)
+        {
+            fired = 1;
+        }
+    }
+    break;
     case CMP_NE:
+    {
+        int eq = 0;
+        if(strcmp(vstr, ev->target_val) == 0)
         {
-            int eq = 0;
-            if(strcmp(vstr, ev->target_val) == 0) { eq = 1; }
-            else {
-                char *e1 = NULL; char *e2 = NULL;
-                double d1 = strtod(vstr, &e1); double d2 = strtod(ev->target_val, &e2);
-                if(e1 != vstr && *e1 == '\0' && e2 != ev->target_val && *e2 == '\0' && d1 == d2) { eq = 1; }
-            }
-            if(!eq) { fired = 1; }
+            eq = 1;
         }
-        break;
+        else
+        {
+            char *e1 = NULL;
+            char *e2 = NULL;
+            double d1 = strtod(vstr, &e1);
+            double d2 = strtod(ev->target_val, &e2);
+            if(e1 != vstr && *e1 == '\0' && e2 != ev->target_val && *e2 == '\0' && d1 == d2)
+            {
+                eq = 1;
+            }
+        }
+        if(!eq)
+        {
+            fired = 1;
+        }
+    }
+    break;
     case CMP_GE:
     case CMP_LE:
+    {
+        char *e1 = NULL;
+        char *e2 = NULL;
+        double d1 = strtod(vstr, &e1);
+        double d2 = strtod(ev->target_val, &e2);
+        if(e1 != vstr && *e1 == '\0' && e2 != ev->target_val && *e2 == '\0')
         {
-            char *e1 = NULL; char *e2 = NULL;
-            double d1 = strtod(vstr, &e1); double d2 = strtod(ev->target_val, &e2);
-            if(e1 != vstr && *e1 == '\0' && e2 != ev->target_val && *e2 == '\0')
+            if(ev->cmp_op == CMP_GE && d1 >= d2)
             {
-                if(ev->cmp_op == CMP_GE && d1 >= d2) { fired = 1; }
-                if(ev->cmp_op == CMP_LE && d1 <= d2) { fired = 1; }
+                fired = 1;
+            }
+            if(ev->cmp_op == CMP_LE && d1 <= d2)
+            {
+                fired = 1;
             }
         }
-        break;
+    }
+    break;
     }
     return fired;
 }
@@ -382,8 +513,8 @@ static int eval_waitany_fps(struct wa_event *ev, const char *vstr)
 int cli_intercept_cmd_wait_any(const char *p)
 {
     if(starts_with(p, "wait_any ")
-       || starts_with(p, "wait_any\t")
-       || strcmp(p, "wait_any") == 0)
+            || starts_with(p, "wait_any\t")
+            || strcmp(p, "wait_any") == 0)
     {
         /* --- local types --- */
 

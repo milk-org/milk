@@ -27,11 +27,14 @@ extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
 
+/**
+ * @brief Handler: return from a function call.
+ */
 int cli_intercept_cmd_return(const char *p)
 {
     if(strcmp(p, "return") == 0
-       || starts_with(p, "return ")
-       || starts_with(p, "return\t"))
+            || starts_with(p, "return ")
+            || starts_with(p, "return\t"))
     {
         const char *rv = p + 6;
         while(*rv == ' ' || *rv == '\t')
@@ -49,11 +52,14 @@ int cli_intercept_cmd_return(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: exit the interpreter.
+ */
 int cli_intercept_cmd_exit(const char *p)
 {
     if(strcmp(p, "exit") == 0
-       || starts_with(p, "exit ")
-       || starts_with(p, "exit\t"))
+            || starts_with(p, "exit ")
+            || starts_with(p, "exit\t"))
     {
         int exitcode = 0;
         if(strlen(p) > 4)
@@ -88,11 +94,14 @@ int cli_intercept_cmd_exit(const char *p)
     return 0;
 }
 
+/**
+ * @brief Handler: shift positional args left.
+ */
 int cli_intercept_cmd_shift(const char *p)
 {
     if(strcmp(p, "shift") == 0
-       || starts_with(p, "shift ")
-       || starts_with(p, "shift\t"))
+            || starts_with(p, "shift ")
+            || starts_with(p, "shift\t"))
     {
         int n = 1;
         if(strlen(p) > 5)
@@ -114,7 +123,7 @@ int cli_intercept_cmd_shift(const char *p)
         }
         /* Shift $1..$9 by n positions */
         for(int i = 1;
-            i < CLI_FUNC_MAXARGS; i++)
+                i < CLI_FUNC_MAXARGS; i++)
         {
             char dst[16], src[16];
             snprintf(dst, sizeof(dst),
@@ -147,7 +156,7 @@ int cli_intercept_cmd_shift(const char *p)
 int cli_intercept_cmd_procctl(const char *p)
 {
     if(starts_with(p, "procctl ")
-       || starts_with(p, "procctl\t"))
+            || starts_with(p, "procctl\t"))
     {
         const char *ap = p + 7;
         while(*ap == ' ' || *ap == '\t')
@@ -157,8 +166,8 @@ int cli_intercept_cmd_procctl(const char *p)
         char pname[256];
         int nlen = 0;
         while(*ap && *ap != ' '
-              && *ap != '\t'
-              && nlen < 255)
+                && *ap != '\t'
+                && nlen < 255)
         {
             pname[nlen++] = *ap++;
         }
@@ -182,7 +191,7 @@ int cli_intercept_cmd_procctl(const char *p)
         }
         else if(strncmp(ap, "stop", 4) == 0
                 || strncmp(ap, "exit", 4)
-                   == 0)
+                == 0)
         {
             ctrlval = PROCESSINFO_CTRLVAL_EXIT;
         }
@@ -198,17 +207,17 @@ int cli_intercept_cmd_procctl(const char *p)
         {
             pid_t fpid = 0;
             for(int pi = 0;
-                pi < PROCESSINFOLISTSIZE;
-                pi++)
+                    pi < PROCESSINFOLISTSIZE;
+                    pi++)
             {
                 if(pinfolist->active[pi]
-                   && strcmp(
-                       pinfolist
-                           ->pnamearray[pi],
-                       pname) == 0)
+                        && strcmp(
+                            pinfolist
+                            ->pnamearray[pi],
+                            pname) == 0)
                 {
                     fpid = pinfolist
-                        ->PIDarray[pi];
+                           ->PIDarray[pi];
                     break;
                 }
             }
@@ -227,11 +236,11 @@ int cli_intercept_cmd_procctl(const char *p)
                     processinfo_shm_link(
                         pfn, &pfd);
                 if(pi != MAP_FAILED
-                   && pi != NULL)
+                        && pi != NULL)
                 {
                     pi->CTRLval = ctrlval;
                     munmap(pi,
-                        sizeof(PROCESSINFO));
+                           sizeof(PROCESSINFO));
                     close(pfd);
                 }
                 else if(pfd >= 0)
@@ -255,7 +264,7 @@ int cli_intercept_cmd_procctl(const char *p)
 int cli_intercept_cmd_procwait(const char *p)
 {
     if(starts_with(p, "procwait ")
-       || starts_with(p, "procwait\t"))
+            || starts_with(p, "procwait\t"))
     {
         const char *ap = p + 8;
         while(*ap == ' ' || *ap == '\t')
@@ -265,8 +274,8 @@ int cli_intercept_cmd_procwait(const char *p)
         char pname[256];
         int nlen = 0;
         while(*ap && *ap != ' '
-              && *ap != '\t'
-              && nlen < 255)
+                && *ap != '\t'
+                && nlen < 255)
         {
             pname[nlen++] = *ap++;
         }
@@ -281,22 +290,22 @@ int cli_intercept_cmd_procwait(const char *p)
             tgt = PROCESSINFO_LOOPSTAT_INIT;
         }
         else if(strncasecmp(ap, "ACTIVE",
-                6) == 0)
+                            6) == 0)
         {
             tgt = PROCESSINFO_LOOPSTAT_ACTIVE;
         }
         else if(strncasecmp(ap, "PAUSE",
-                5) == 0)
+                            5) == 0)
         {
             tgt = PROCESSINFO_LOOPSTAT_PAUSE;
         }
         else if(strncasecmp(ap, "STOP",
-                4) == 0)
+                            4) == 0)
         {
             tgt = PROCESSINFO_LOOPSTAT_STOP;
         }
         else if(strncasecmp(ap, "ERROR",
-                5) == 0)
+                            5) == 0)
         {
             tgt = PROCESSINFO_LOOPSTAT_ERROR;
         }
@@ -306,7 +315,7 @@ int cli_intercept_cmd_procwait(const char *p)
         }
         /* Skip state word */
         while(*ap && *ap != ' '
-              && *ap != '\t')
+                && *ap != '\t')
         {
             ap++;
         }
@@ -329,20 +338,20 @@ int cli_intercept_cmd_procwait(const char *p)
             if(pinfolist != NULL)
             {
                 for(int pi = 0;
-                    pi < PROCESSINFOLISTSIZE;
-                    pi++)
+                        pi < PROCESSINFOLISTSIZE;
+                        pi++)
                 {
                     if(pinfolist->active[pi]
-                       && strcmp(
-                           pinfolist
-                               ->pnamearray[
-                                   pi],
-                           pname) == 0)
+                            && strcmp(
+                                pinfolist
+                                ->pnamearray[
+                                    pi],
+                                pname) == 0)
                     {
                         pid_t fpid =
                             pinfolist
-                                ->PIDarray[
-                                    pi];
+                            ->PIDarray[
+                                pi];
                         char pfn[512];
                         char pdname[256];
                         processinfo_procdirname(
@@ -359,19 +368,19 @@ int cli_intercept_cmd_procwait(const char *p)
                             processinfo_shm_link(
                                 pfn, &pfd);
                         if(pii
-                           != MAP_FAILED
-                           && pii != NULL)
+                                != MAP_FAILED
+                                && pii != NULL)
                         {
                             if(pii
-                               ->loopstat
-                               == tgt)
+                                    ->loopstat
+                                    == tgt)
                             {
                                 cli_last_retval
                                     = 0;
                             }
                             munmap(pii,
-                                sizeof(
-                                PROCESSINFO));
+                                   sizeof(
+                                       PROCESSINFO));
                             close(pfd);
                         }
                         else if(pfd >= 0)
@@ -397,8 +406,8 @@ int cli_intercept_cmd_procwait(const char *p)
 int cli_intercept_cmd_procstat(const char *p)
 {
     if(strcmp(p, "procstat") == 0
-       || starts_with(p, "procstat ")
-       || starts_with(p, "procstat\t"))
+            || starts_with(p, "procstat ")
+            || starts_with(p, "procstat\t"))
     {
         const char *ap = p + 8;
         while(*ap == ' ' || *ap == '\t')
@@ -419,24 +428,24 @@ int cli_intercept_cmd_procstat(const char *p)
             char pdname[256];
             processinfo_procdirname(pdname);
             for(int pi = 0;
-                pi < PROCESSINFOLISTSIZE;
-                pi++)
+                    pi < PROCESSINFOLISTSIZE;
+                    pi++)
             {
                 if(!pinfolist->active[pi])
                 {
                     continue;
                 }
                 if(filter[0] != '\0'
-                   && strcmp(
-                       pinfolist
-                           ->pnamearray[pi],
-                       filter) != 0)
+                        && strcmp(
+                            pinfolist
+                            ->pnamearray[pi],
+                            filter) != 0)
                 {
                     continue;
                 }
                 pid_t fpid =
                     pinfolist
-                        ->PIDarray[pi];
+                    ->PIDarray[pi];
                 char pfn[512];
                 snprintf(pfn,
                          sizeof(pfn),
@@ -448,7 +457,7 @@ int cli_intercept_cmd_procstat(const char *p)
                     processinfo_shm_link(
                         pfn, &pfd);
                 if(pii == MAP_FAILED
-                   || pii == NULL)
+                        || pii == NULL)
                 {
                     if(pfd >= 0)
                     {
@@ -460,36 +469,36 @@ int cli_intercept_cmd_procstat(const char *p)
                     "UNKNOWN";
                 switch(pii->loopstat)
                 {
-                    case 0:
-                        stname = "INIT";
-                        break;
-                    case 1:
-                        stname = "ACTIVE";
-                        break;
-                    case 2:
-                        stname = "PAUSED";
-                        break;
-                    case 3:
-                        stname = "STOPPED";
-                        break;
-                    case 4:
-                        stname = "ERROR";
-                        break;
-                    case 5:
-                        stname = "SPINNING";
-                        break;
-                    case 6:
-                        stname = "CRASHED";
-                        break;
+                case 0:
+                    stname = "INIT";
+                    break;
+                case 1:
+                    stname = "ACTIVE";
+                    break;
+                case 2:
+                    stname = "PAUSED";
+                    break;
+                case 3:
+                    stname = "STOPPED";
+                    break;
+                case 4:
+                    stname = "ERROR";
+                    break;
+                case 5:
+                    stname = "SPINNING";
+                    break;
+                case 6:
+                    stname = "CRASHED";
+                    break;
                 }
                 double hz = 0.0;
                 if(pii->dtmedian_iter_ns
-                   > 0)
+                        > 0)
                 {
                     hz = 1.0e9
-                        / (double)
-                          pii
-                          ->dtmedian_iter_ns;
+                         / (double)
+                         pii
+                         ->dtmedian_iter_ns;
                 }
                 double us =
                     (double)
@@ -518,7 +527,7 @@ int cli_intercept_cmd_procstat(const char *p)
                     ->triggermissedframe_cumul,
                     pii->tmuxname);
                 munmap(pii,
-                    sizeof(PROCESSINFO));
+                       sizeof(PROCESSINFO));
                 close(pfd);
                 if(filter[0] != '\0')
                 {
@@ -535,7 +544,7 @@ int cli_intercept_cmd_procstat(const char *p)
 int cli_intercept_cmd_time(const char *p)
 {
     if(starts_with(p, "time ")
-       || starts_with(p, "time\t"))
+            || starts_with(p, "time\t"))
     {
         const char *cmd = p + 4;
         while(*cmd == ' ' || *cmd == '\t')
@@ -552,7 +561,7 @@ int cli_intercept_cmd_time(const char *p)
             (double)(t1.tv_sec - t0.tv_sec)
             + (double)(t1.tv_nsec
                        - t0.tv_nsec)
-              / 1.0e9;
+            / 1.0e9;
         printf(
             "\nreal\t%.3fs\n",
             elapsed);
@@ -577,7 +586,7 @@ static int cli_assert_eval(
     long lval = 0;
     double dval = 0.0;
     int ok = cli_calc_eval_math_to_val(
-        expr, &type, &lval, &dval);
+                 expr, &type, &lval, &dval);
     if(!ok)
     {
         return 0;
@@ -633,7 +642,7 @@ static const char *cli_cmp_sym(
  */
 static void cli_assert_trim(
     char       *dst,
-    size_t      sz,
+    size_t     sz,
     const char *src,
     int         len
 )
@@ -644,7 +653,7 @@ static void cli_assert_trim(
     }
     /* skip leading ws */
     while(len > 0
-          && (*src == ' ' || *src == '\t'))
+            && (*src == ' ' || *src == '\t'))
     {
         src++;
         len--;
@@ -654,8 +663,8 @@ static void cli_assert_trim(
     /* strip trailing ws */
     int ri = len - 1;
     while(ri >= 0
-          && (dst[ri] == ' '
-              || dst[ri] == '\t'))
+            && (dst[ri] == ' '
+                || dst[ri] == '\t'))
     {
         dst[ri--] = '\0';
     }
@@ -735,8 +744,8 @@ static int cli_assert_cmp(const char *ap)
 
         double v1, v2, v3;
         if(!cli_assert_eval(part1, &v1)
-           || !cli_assert_eval(part2, &v2)
-           || !cli_assert_eval(part3, &v3))
+                || !cli_assert_eval(part2, &v2)
+                || !cli_assert_eval(part3, &v3))
         {
             printf(
                 "\033[1;31m"
@@ -804,7 +813,7 @@ static int cli_assert_cmp(const char *ap)
 
         double v1, v2;
         if(!cli_assert_eval(part1, &v1)
-           || !cli_assert_eval(rhs, &v2))
+                || !cli_assert_eval(rhs, &v2))
         {
             printf(
                 "\033[1;31m"
@@ -856,7 +865,7 @@ static int cli_assert_cmp(const char *ap)
 int cli_intercept_cmd_assert(const char *p)
 {
     if(starts_with(p, "assert ")
-       || starts_with(p, "assert\t"))
+            || starts_with(p, "assert\t"))
     {
         const char *ap = p + 6;
         while(*ap == ' ' || *ap == '\t')
@@ -877,7 +886,7 @@ int cli_intercept_cmd_assert(const char *p)
                 int clen =
                     (int)(end - ap);
                 if(clen
-                   >= (int) sizeof(cs))
+                        >= (int) sizeof(cs))
                 {
                     clen =
                         (int) sizeof(cs)
@@ -901,22 +910,22 @@ int cli_intercept_cmd_assert(const char *p)
                     const char *msg =
                         end + 1;
                     while(*msg == ' '
-                          || *msg == '\t')
+                            || *msg == '\t')
                     {
                         msg++;
                     }
                     if(*msg == '"'
-                       || *msg == '\'')
+                            || *msg == '\'')
                     {
                         msg++;
                     }
                     int mlen =
                         (int) strlen(msg);
                     if(mlen > 0
-                       && (msg[mlen - 1]
-                           == '"'
-                           || msg[mlen - 1]
-                              == '\''))
+                            && (msg[mlen - 1]
+                                == '"'
+                                || msg[mlen - 1]
+                                == '\''))
                     {
                         char mb[512];
                         strncpy(
@@ -925,8 +934,8 @@ int cli_intercept_cmd_assert(const char *p)
                         mb[sizeof(mb) - 1]
                             = '\0';
                         if(mlen - 1
-                           < (int)
-                             sizeof(mb))
+                                < (int)
+                                sizeof(mb))
                         {
                             mb[mlen - 1]
                                 = '\0';
@@ -1010,7 +1019,7 @@ int cli_intercept_cmd_assert(const char *p)
                            (size_t) rlen);
                     rhs[rlen] = '\0';
                     tol = fabs(strtod(
-                        tilde + 1, NULL));
+                                   tilde + 1, NULL));
                 }
                 else
                 {
@@ -1021,11 +1030,11 @@ int cli_intercept_cmd_assert(const char *p)
                 /* Trim trailing ws */
                 {
                     int ri = (int)
-                        strlen(rhs) - 1;
+                             strlen(rhs) - 1;
                     while(ri >= 0
-                          && (rhs[ri] == ' '
-                              || rhs[ri]
-                                 == '\t'))
+                            && (rhs[ri] == ' '
+                                || rhs[ri]
+                                == '\t'))
                     {
                         rhs[ri--] = '\0';
                     }
@@ -1136,34 +1145,48 @@ int cli_intercept_cmd_assert(const char *p)
 int cli_intercept_cmd_assigncheck(const char *p)
 {
     const char *sp = strip_ws(p);
-    if (!starts_with(sp, "assigncheck ") && !starts_with(sp, "assigncheck\t"))
+    if(!starts_with(sp, "assigncheck ") && !starts_with(sp, "assigncheck\t"))
+    {
         return 0;
+    }
 
     sp += 11; // skip "assigncheck"
-    while(*sp == ' ' || *sp == '\t') sp++;
+    while(*sp == ' ' || *sp == '\t')
+    {
+        sp++;
+    }
 
     int errexit_local = 0;
-    if (starts_with(sp, "-e ") || starts_with(sp, "-e\t")) {
+    if(starts_with(sp, "-e ") || starts_with(sp, "-e\t"))
+    {
         errexit_local = 1;
         sp += 2;
-        while(*sp == ' ' || *sp == '\t') sp++;
+        while(*sp == ' ' || *sp == '\t')
+        {
+            sp++;
+        }
     }
 
     char buf[512];
     strncpy(buf, sp, 511);
     buf[511] = '\0';
-    
+
     int len = (int)strlen(buf);
-    while (len > 0 && (buf[len-1] == ' ' || buf[len-1] == '\t' || buf[len-1] == '\n' || buf[len-1] == '\r')) {
+    while(len > 0 && (buf[len - 1] == ' ' || buf[len - 1] == '\t' || buf[len - 1] == '\n'
+                      || buf[len - 1] == '\r'))
+    {
         buf[--len] = '\0';
     }
 
     char *tol_ptr = NULL;
-    for (int i = len - 1; i >= 0; i--) {
-        if (buf[i] == ' ' || buf[i] == '\t') {
+    for(int i = len - 1; i >= 0; i--)
+    {
+        if(buf[i] == ' ' || buf[i] == '\t')
+        {
             buf[i] = '\0';
             tol_ptr = &buf[i + 1];
-            while (i > 0 && (buf[i-1] == ' ' || buf[i-1] == '\t')) {
+            while(i > 0 && (buf[i - 1] == ' ' || buf[i - 1] == '\t'))
+            {
                 i--;
                 buf[i] = '\0';
             }
@@ -1171,55 +1194,86 @@ int cli_intercept_cmd_assigncheck(const char *p)
         }
     }
 
-    if (!tol_ptr) goto usage_err;
+    if(!tol_ptr)
+    {
+        goto usage_err;
+    }
 
     char *var_ptr = buf;
     char *val_ptr = NULL;
-    for (int i = 0; buf[i] != '\0'; i++) {
-        if (buf[i] == ' ' || buf[i] == '\t') {
+    for(int i = 0; buf[i] != '\0'; i++)
+    {
+        if(buf[i] == ' ' || buf[i] == '\t')
+        {
             buf[i] = '\0';
             val_ptr = &buf[i + 1];
-            while (*val_ptr == ' ' || *val_ptr == '\t') val_ptr++;
+            while(*val_ptr == ' ' || *val_ptr == '\t')
+            {
+                val_ptr++;
+            }
             break;
         }
     }
 
-    if (!val_ptr || val_ptr[0] == '\0') goto usage_err;
+    if(!val_ptr || val_ptr[0] == '\0')
+    {
+        goto usage_err;
+    }
 
-    int vtype = 0; long vlval = 0; double new_val = 0.0;
-    if (!cli_calc_eval_math_to_val(val_ptr, &vtype, &vlval, &new_val)) {
+    int vtype = 0;
+    long vlval = 0;
+    double new_val = 0.0;
+    if(!cli_calc_eval_math_to_val(val_ptr, &vtype, &vlval, &new_val))
+    {
         printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate value: %s\033[0m\n", val_ptr);
         cli_last_retval = 1;
-        if (errexit_local || cli_flag_errexit) {
+        if(errexit_local || cli_flag_errexit)
+        {
             cli_trap_run(-1);
             cli_trap_run_exit();
             exit(cli_last_retval);
         }
         return 1;
     }
-    if (vtype == 1) new_val = (double)vlval;
+    if(vtype == 1)
+    {
+        new_val = (double)vlval;
+    }
 
-    int ttype = 0; long tlval = 0; double tol_val = 0.0;
-    if (!cli_calc_eval_math_to_val(tol_ptr, &ttype, &tlval, &tol_val)) {
+    int ttype = 0;
+    long tlval = 0;
+    double tol_val = 0.0;
+    if(!cli_calc_eval_math_to_val(tol_ptr, &ttype, &tlval, &tol_val))
+    {
         printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate tolerance: %s\033[0m\n", tol_ptr);
         cli_last_retval = 1;
-        if (errexit_local || cli_flag_errexit) {
+        if(errexit_local || cli_flag_errexit)
+        {
             cli_trap_run(-1);
             cli_trap_run_exit();
             exit(cli_last_retval);
         }
         return 1;
     }
-    if (ttype == 1) tol_val = (double)tlval;
+    if(ttype == 1)
+    {
+        tol_val = (double)tlval;
+    }
 
     const char *oldv_str = cli_var_lookup(var_ptr);
     double old_val = 0.0;
     int has_old = 0;
-    if (oldv_str) {
+    if(oldv_str)
+    {
         has_old = 1;
-        int otype = 0; long olval = 0;
-        if (cli_calc_eval_math_to_val(oldv_str, &otype, &olval, &old_val)) {
-            if (otype == 1) old_val = (double)olval;
+        int otype = 0;
+        long olval = 0;
+        if(cli_calc_eval_math_to_val(oldv_str, &otype, &olval, &old_val))
+        {
+            if(otype == 1)
+            {
+                old_val = (double)olval;
+            }
         }
     }
 
@@ -1227,16 +1281,20 @@ int cli_intercept_cmd_assigncheck(const char *p)
     snprintf(obuf, sizeof(obuf), "%.*g", cli_float_digits, new_val);
     cli_var_set(var_ptr, obuf);
 
-    if (has_old) {
+    if(has_old)
+    {
         double diff = fabs(old_val - new_val);
-        if (diff <= tol_val) {
+        if(diff <= tol_val)
+        {
             printf("\033[1;32m[ASSIGNCHECK PASS] %s: old=%.*g new=%.*g diff=%.*g (tol %.*g)\033[0m\n",
                    var_ptr,
                    cli_float_digits, old_val,
                    cli_float_digits, new_val,
                    cli_float_digits, diff,
                    cli_float_digits, tol_val);
-        } else {
+        }
+        else
+        {
             printf("\033[1;31m[ASSIGNCHECK FAIL] %s: old=%.*g new=%.*g diff=%.*g (tol %.*g)\033[0m\n",
                    var_ptr,
                    cli_float_digits, old_val,
@@ -1244,14 +1302,17 @@ int cli_intercept_cmd_assigncheck(const char *p)
                    cli_float_digits, diff,
                    cli_float_digits, tol_val);
             cli_last_retval = 1;
-            if (errexit_local || cli_flag_errexit) {
+            if(errexit_local || cli_flag_errexit)
+            {
                 cli_trap_run(-1);
                 cli_trap_run_exit();
                 exit(cli_last_retval);
             }
         }
-    } else {
-        printf("\033[1;32m[ASSIGNCHECK NEW] %s initialized to %.*g\033[0m\n", 
+    }
+    else
+    {
+        printf("\033[1;32m[ASSIGNCHECK NEW] %s initialized to %.*g\033[0m\n",
                var_ptr, cli_float_digits, new_val);
     }
     return 1;
@@ -1259,7 +1320,8 @@ int cli_intercept_cmd_assigncheck(const char *p)
 usage_err:
     printf("\033[1;31m[ASSIGNCHECK FAIL] Usage: assigncheck [-e] <var> <val> <tol>\033[0m\n");
     cli_last_retval = 1;
-    if (errexit_local || cli_flag_errexit) {
+    if(errexit_local || cli_flag_errexit)
+    {
         cli_trap_run(-1);
         cli_trap_run_exit();
         exit(cli_last_retval);
@@ -1288,7 +1350,7 @@ int cli_intercept_cmd_dpdigits(const char *p)
         return 1;
     }
     if(starts_with(sp, "dpdigits ")
-       || starts_with(sp, "dpdigits\t"))
+            || starts_with(sp, "dpdigits\t"))
     {
         const char *ap = sp + 9;
         while(*ap == ' ' || *ap == '\t')
@@ -1315,7 +1377,7 @@ int cli_intercept_cmd_dpdigits(const char *p)
 int cli_intercept_cmd_watch(const char *p)
 {
     if(starts_with(p, "watch ")
-       || starts_with(p, "watch\t"))
+            || starts_with(p, "watch\t"))
     {
         const char *wp = p + 5;
         while(*wp == ' ' || *wp == '\t')
@@ -1327,19 +1389,19 @@ int cli_intercept_cmd_watch(const char *p)
             double interval = 2.0;
             wp += 2;
             while(*wp == ' '
-                  || *wp == '\t')
+                    || *wp == '\t')
             {
                 wp++;
             }
             interval = strtod(wp, NULL);
             while(*wp != ' '
-                  && *wp != '\t'
-                  && *wp != '\0')
+                    && *wp != '\t'
+                    && *wp != '\0')
             {
                 wp++;
             }
             while(*wp == ' '
-                  || *wp == '\t')
+                    || *wp == '\t')
             {
                 wp++;
             }
@@ -1365,4 +1427,3 @@ int cli_intercept_cmd_watch(const char *p)
     }
     return 0;
 }
-

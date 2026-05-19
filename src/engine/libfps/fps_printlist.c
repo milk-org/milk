@@ -4,8 +4,14 @@
  */
 
 #include "fps.h"
-#include "fps_internal.h"
 
+/**
+ * @brief Print a summary table of all parameters in an
+ * FPS parameter array.
+ *
+ * Lists keyword, type, value, and flags for each
+ * active entry.
+ */
 int function_parameter_printlist(FPS_PARAM *funcparamarray,
                                  long                NBparamMAX)
 {

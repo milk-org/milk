@@ -7,15 +7,9 @@
  *   milk-fps-runstart, milk-fps-runstop.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <libgen.h>
 
-#include "fps.h"
 #include "fps_globals.h"
-#include "milk_help.h"
 
 /* ---------------------------------------------------------
  * Per-variant descriptions
@@ -46,6 +40,12 @@ static const char *cmd_desc(const char *prog)
     return "send lifecycle command to FPS";
 }
 
+/**
+ * @brief Print the extended command description.
+ *
+ * Called by -h2 to display detailed usage,
+ * examples, and environment variables.
+ */
 static const char *cmd_desc_long(const char *prog)
 {
     if(strcmp(prog, "milk-fps-confstart") == 0)
@@ -90,7 +90,9 @@ static const char *cmd_desc_long(const char *prog)
  * @mh_color:  Non-zero to emit ANSI color.
  * --------------------------------------------------------- */
 
-static void print_help(const char *progname, int mh_color)
+static void print_help(
+    const char *progname,
+    int mh_color)
 {
     milk_help_banner(progname, cmd_desc(progname), mh_color);
 
@@ -151,7 +153,9 @@ static void print_help(const char *progname, int mh_color)
  * main()
  * --------------------------------------------------------- */
 
-int main(int argc, char *argv[])
+int main(
+    int argc,
+    char *argv[])
 {
     const char *progname = basename(argv[0]);
 

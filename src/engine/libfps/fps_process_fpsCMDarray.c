@@ -5,9 +5,6 @@
 #include <limits.h>
 
 #include "fps.h"
-#include "fps_internal.h"
-#include "fps_globals.h"
-#include "timeutils.h"
 
 #include "fps_processcmdline.h"
 
@@ -39,11 +36,11 @@
  */
 
 int function_parameter_process_fpsCMDarray(
-    FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
-    KEYWORD_TREE_NODE  *keywnode,
+    FPSCTRL_TASK_ENTRY   *fpsctrltasklist,
+    FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
+    KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    FPS *fps)
+    FPS                  *fps)
 {
     // queue has no task
     int QUEUE_NOTASK = -1;

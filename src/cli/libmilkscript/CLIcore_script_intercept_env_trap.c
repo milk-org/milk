@@ -19,25 +19,28 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
+/**
+ * @brief List all active trap handlers.
+ */
 static int cli_trap_list_active(void)
 {
     printf("POSIX traps:\n");
     for(int i = 0;
-        i < CLI_TRAP_MAXSIGS; i++)
+            i < CLI_TRAP_MAXSIGS; i++)
     {
         if(cli_traps[i].used)
         {
             printf("  sig=%d "
                    "cmd='%s'\n",
                    cli_traps[i]
-                       .signum,
+                   .signum,
                    cli_traps[i].cmd);
         }
     }
     printf("Engine traps:\n");
     for(int i = 0;
-        i < CLI_ENGINE_TRAP_MAX;
-        i++)
+            i < CLI_ENGINE_TRAP_MAX;
+            i++)
     {
         CLI_ENGINE_TRAP *et =
             &cli_engine_traps[i];
@@ -47,7 +50,7 @@ static int cli_trap_list_active(void)
         }
         const char *tstr = "?";
         if(et->type
-           == CLI_ETRAP_STREAM)
+                == CLI_ETRAP_STREAM)
         {
             tstr = "STREAM";
         }
@@ -64,7 +67,7 @@ static int cli_trap_list_active(void)
         printf("  %s:%s",
                tstr, et->target);
         if(et->type
-           == CLI_ETRAP_FPS)
+                == CLI_ETRAP_FPS)
         {
             printf(".%s",
                    et->param);
@@ -81,24 +84,28 @@ static int cli_trap_list_active(void)
     return 1;
 }
 
-static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_interval_ms, int opt_max_fires)
+/**
+ * @brief Process stream-based trap events.
+ */
+static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_interval_ms,
+                                    int opt_max_fires)
 {
     /* Find or alloc slot */
     int slot = -1;
     for(int i = 0;
-        i < CLI_ENGINE_TRAP_MAX;
-        i++)
+            i < CLI_ENGINE_TRAP_MAX;
+            i++)
     {
         if(cli_engine_traps[i]
-               .used
-           && cli_engine_traps[i]
-                  .type
-           == CLI_ETRAP_STREAM
-           && strcmp(
-                  cli_engine_traps
-                      [i].target,
-                  nm)
-           == 0)
+                .used
+                && cli_engine_traps[i]
+                .type
+                == CLI_ETRAP_STREAM
+                && strcmp(
+                    cli_engine_traps
+                    [i].target,
+                    nm)
+                == 0)
         {
             slot = i;
             break;
@@ -107,9 +114,9 @@ static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_i
     if(slot < 0)
     {
         for(int i = 0;
-            i
-            < CLI_ENGINE_TRAP_MAX;
-            i++)
+                i
+                < CLI_ENGINE_TRAP_MAX;
+                i++)
         {
             if(!cli_engine_traps
                     [i].used)
@@ -123,7 +130,7 @@ static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_i
     {
         CLI_ENGINE_TRAP *et =
             &cli_engine_traps
-                 [slot];
+            [slot];
         if(tcmd[0] == '\0')
         {
             /* Clear trap */
@@ -133,7 +140,7 @@ static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_i
         else
         {
             memset(et, 0,
-                sizeof(*et));
+                   sizeof(*et));
             et->type =
                 CLI_ETRAP_STREAM;
             strncpy(
@@ -154,7 +161,11 @@ static void cli_trap_process_stream(const char *nm, const char *tcmd, long opt_i
     }
 }
 
-static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_interval_ms, int opt_max_fires)
+/**
+ * @brief Process FPS-based trap events.
+ */
+static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_interval_ms,
+                                 int opt_max_fires)
 {
     /* Split fpsname.param
      * and optional op+val */
@@ -187,7 +198,7 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
             eop = CLI_ETRAP_OP_NE;
             *opp = '\0';
             eval = strtod(
-                opp + 2, NULL);
+                       opp + 2, NULL);
             has_cmp = 1;
         }
         else if(p_ge)
@@ -196,7 +207,7 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
             eop = CLI_ETRAP_OP_GE;
             *opp = '\0';
             eval = strtod(
-                opp + 2, NULL);
+                       opp + 2, NULL);
             has_cmp = 1;
         }
         else if(p_le)
@@ -205,7 +216,7 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
             eop = CLI_ETRAP_OP_LE;
             *opp = '\0';
             eval = strtod(
-                opp + 2, NULL);
+                       opp + 2, NULL);
             has_cmp = 1;
         }
         else if(p_eq)
@@ -214,7 +225,7 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
             eop = CLI_ETRAP_OP_EQ;
             *opp = '\0';
             eval = strtod(
-                opp + 1, NULL);
+                       opp + 1, NULL);
             has_cmp = 1;
         }
 
@@ -225,19 +236,19 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
         {
             *dot = '\0';
             strncpy(fpsn, tmp,
-                sizeof(fpsn) - 1);
+                    sizeof(fpsn) - 1);
             fpsn[sizeof(fpsn)
                  - 1] = '\0';
             strncpy(parn,
-                dot + 1,
-                sizeof(parn) - 1);
+                    dot + 1,
+                    sizeof(parn) - 1);
             parn[sizeof(parn)
                  - 1] = '\0';
         }
         else
         {
             strncpy(fpsn, tmp,
-                sizeof(fpsn) - 1);
+                    sizeof(fpsn) - 1);
             fpsn[sizeof(fpsn)
                  - 1] = '\0';
             parn[0] = '\0';
@@ -246,8 +257,8 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
 
     int slot = -1;
     for(int i = 0;
-        i < CLI_ENGINE_TRAP_MAX;
-        i++)
+            i < CLI_ENGINE_TRAP_MAX;
+            i++)
     {
         if(!cli_engine_traps
                 [i].used)
@@ -260,7 +271,7 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
     {
         CLI_ENGINE_TRAP *et =
             &cli_engine_traps
-                 [slot];
+            [slot];
         if(tcmd[0] == '\0')
         {
             et->used = 0;
@@ -269,7 +280,7 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
         else
         {
             memset(et, 0,
-                sizeof(*et));
+                   sizeof(*et));
             et->type =
                 CLI_ETRAP_FPS;
             strncpy(
@@ -297,7 +308,8 @@ static void cli_trap_process_fps(const char *fp, const char *tcmd, long opt_inte
     }
 }
 
-static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_interval_ms, int opt_max_fires)
+static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_interval_ms,
+                                  int opt_max_fires)
 {
     char pname[128];
     int pstate = 0;
@@ -310,7 +322,7 @@ static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_int
                 (size_t)(col
                          - pp);
             if(len
-               >= sizeof(pname))
+                    >= sizeof(pname))
             {
                 len = sizeof(
                           pname)
@@ -322,8 +334,8 @@ static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_int
             const char *ss =
                 col + 1;
             if(strcasecmp(
-                   ss, "ACTIVE")
-               == 0)
+                        ss, "ACTIVE")
+                    == 0)
             {
                 pstate =
                     PROCESSINFO_LOOPSTAT_ACTIVE;
@@ -364,8 +376,8 @@ static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_int
         else
         {
             strncpy(pname, pp,
-                sizeof(pname)
-                - 1);
+                    sizeof(pname)
+                    - 1);
             pname[sizeof(pname)
                   - 1] = '\0';
         }
@@ -373,8 +385,8 @@ static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_int
 
     int slot = -1;
     for(int i = 0;
-        i < CLI_ENGINE_TRAP_MAX;
-        i++)
+            i < CLI_ENGINE_TRAP_MAX;
+            i++)
     {
         if(!cli_engine_traps
                 [i].used)
@@ -387,7 +399,7 @@ static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_int
     {
         CLI_ENGINE_TRAP *et =
             &cli_engine_traps
-                 [slot];
+            [slot];
         if(tcmd[0] == '\0')
         {
             et->used = 0;
@@ -396,7 +408,7 @@ static void cli_trap_process_proc(const char *pp, const char *tcmd, long opt_int
         else
         {
             memset(et, 0,
-                sizeof(*et));
+                   sizeof(*et));
             et->type =
                 CLI_ETRAP_PROC;
             strncpy(
@@ -427,12 +439,12 @@ static void cli_trap_process_posix(const char *sname, const char *tcmd)
         cli_trap_signum(sname);
     int slot = -1;
     for(int i = 0;
-        i < CLI_TRAP_MAXSIGS;
-        i++)
+            i < CLI_TRAP_MAXSIGS;
+            i++)
     {
         if(cli_traps[i].used
-           && cli_traps[i].signum
-           == sn)
+                && cli_traps[i].signum
+                == sn)
         {
             slot = i;
             break;
@@ -441,11 +453,11 @@ static void cli_trap_process_posix(const char *sname, const char *tcmd)
     if(slot < 0)
     {
         for(int i = 0;
-            i < CLI_TRAP_MAXSIGS;
-            i++)
+                i < CLI_TRAP_MAXSIGS;
+                i++)
         {
             if(!cli_traps[i]
-                .used)
+                    .used)
             {
                 slot = i;
                 break;
@@ -467,15 +479,15 @@ static void cli_trap_process_posix(const char *sname, const char *tcmd)
 int cli_intercept_cmd_trap(const char *p)
 {
     if(starts_with(p, "trap ")
-       || starts_with(p, "trap\t"))
+            || starts_with(p, "trap\t"))
     {
         p += 4;
         p = strip_ws(p);
 
         if(strncmp(p, "-l", 2) == 0
-           && (p[2] == '\0'
-               || p[2] == ' '
-               || p[2] == '\t'))
+                && (p[2] == '\0'
+                    || p[2] == ' '
+                    || p[2] == '\t'))
         {
             return cli_trap_list_active();
         }
@@ -492,7 +504,7 @@ int cli_intercept_cmd_trap(const char *p)
             {
                 p += 2;
                 while(*p == ' '
-                      || *p == '\t')
+                        || *p == '\t')
                 {
                     p++;
                 }
@@ -511,7 +523,7 @@ int cli_intercept_cmd_trap(const char *p)
             {
                 p += 2;
                 while(*p == ' '
-                      || *p == '\t')
+                        || *p == '\t')
                 {
                     p++;
                 }
@@ -529,7 +541,7 @@ int cli_intercept_cmd_trap(const char *p)
                 break;
             }
             while(*p == ' '
-                  || *p == '\t')
+                    || *p == '\t')
             {
                 p++;
             }
@@ -543,8 +555,8 @@ int cli_intercept_cmd_trap(const char *p)
             char q = *p++;
             int ti = 0;
             while(*p != '\0' && *p != q
-                  && ti
-                  < CLI_TRAP_CMDLEN - 1)
+                    && ti
+                    < CLI_TRAP_CMDLEN - 1)
             {
                 tcmd[ti++] = *p++;
             }
@@ -562,9 +574,9 @@ int cli_intercept_cmd_trap(const char *p)
             char sname[128];
             int si = 0;
             while(*p != '\0'
-                  && *p != ' '
-                  && *p != '\t'
-                  && si < 127)
+                    && *p != ' '
+                    && *p != '\t'
+                    && si < 127)
             {
                 sname[si++] = *p++;
             }

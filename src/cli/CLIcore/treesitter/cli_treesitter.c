@@ -16,14 +16,16 @@ static TSParser *ts_parser = NULL;
 static TSQuery  *ts_query = NULL;
 static int color_level = 1; // 1 = 16-color, 2 = 256-color
 
-struct color_mapping {
+struct color_mapping
+{
     const char *capture;
     const char *ansi256;
     const char *ansi16;
 };
 
 // Neovim Material Palenight approximation
-static const struct color_mapping colormap[] = {
+static const struct color_mapping colormap[] =
+{
     {"comment",              "\033[38;5;60m",  "\033[2;32m"}, // Dark green/grey
     {"string",               "\033[38;5;150m", "\033[32m"},   // Green
     {"number",               "\033[38;5;209m", "\033[33m"},   // Orange/Yellow
@@ -46,47 +48,70 @@ static const struct color_mapping colormap[] = {
     {NULL, NULL, NULL}
 };
 
-static const char *get_color_for_capture(const char *capture_name) {
-    for (int i = 0; colormap[i].capture != NULL; i++) {
-        if (strcmp(colormap[i].capture, capture_name) == 0) {
+static const char *get_color_for_capture(const char *capture_name)
+{
+    for(int i = 0; colormap[i].capture != NULL; i++)
+    {
+        if(strcmp(colormap[i].capture, capture_name) == 0)
+        {
             return (color_level >= 2) ? colormap[i].ansi256 : colormap[i].ansi16;
         }
     }
     return NULL;
 }
 
-int cli_ts_detect_color_level(void) {
+/**
+ * @brief Detect terminal color capability.
+ *
+ * Checks COLORTERM and TERM environment variables
+ * to determine 256-color or truecolor support.
+ */
+int cli_ts_detect_color_level(void)
+{
     const char *term = getenv("TERM");
     const char *colorterm = getenv("COLORTERM");
-    
-    if (colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit"))) {
+
+    if(colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
+    {
         return 2;
     }
-    if (term && strstr(term, "256color")) {
+    if(term && strstr(term, "256color"))
+    {
         return 2;
     }
     return 1;
 }
 
-int cli_ts_init(void) {
-    if (ts_parser != NULL) {
+/**
+ * @brief Initialize treesitter syntax highlighting.
+ *
+ * Loads the milk grammar and sets up the
+ * parser instance.
+ */
+int cli_ts_init(void)
+{
+    if(ts_parser != NULL)
+    {
         return 0; // Already initialized
     }
 
     color_level = cli_ts_detect_color_level();
 
     ts_parser = ts_parser_new();
-    if (!ts_parser) {
+    if(!ts_parser)
+    {
         return -1;
     }
-    
+
     ts_parser_set_language(ts_parser, tree_sitter_milkcli());
 
     uint32_t error_offset;
     TSQueryError error_type;
-    ts_query = ts_query_new(tree_sitter_milkcli(), milkcli_highlights_scm, strlen(milkcli_highlights_scm), &error_offset, &error_type);
-    
-    if (!ts_query) {
+    ts_query = ts_query_new(tree_sitter_milkcli(), milkcli_highlights_scm,
+                            strlen(milkcli_highlights_scm), &error_offset, &error_type);
+
+    if(!ts_query)
+    {
         // Query compilation failed
         ts_parser_delete(ts_parser);
         ts_parser = NULL;
@@ -96,72 +121,84 @@ int cli_ts_init(void) {
     return 0;
 }
 
-void cli_ts_cleanup(void) {
-    if (ts_query) {
+void cli_ts_cleanup(void)
+{
+    if(ts_query)
+    {
         ts_query_delete(ts_query);
         ts_query = NULL;
     }
-    if (ts_parser) {
+    if(ts_parser)
+    {
         ts_parser_delete(ts_parser);
         ts_parser = NULL;
     }
 }
 
 // Spans for highlighting
-typedef struct {
+typedef struct
+{
     uint32_t start_byte;
     uint32_t end_byte;
     const char *color;
 } HighlightSpan;
 
-static int compare_spans(const void *a, const void *b) {
+static int compare_spans(const void *a, const void *b)
+{
     const HighlightSpan *sa = (const HighlightSpan *)a;
     const HighlightSpan *sb = (const HighlightSpan *)b;
-    if (sa->start_byte != sb->start_byte) {
+    if(sa->start_byte != sb->start_byte)
+    {
         return sa->start_byte - sb->start_byte;
     }
     // If they start at the same place, earlier end_byte goes first so the outer spans enclose inner spans
     return sb->end_byte - sa->end_byte;
 }
 
-void cli_ts_highlight_line(const char *line, int len, FILE *out) {
-    if (!ts_parser || !ts_query || !line || len == 0) {
+void cli_ts_highlight_line(const char *line, int len, FILE *out)
+{
+    if(!ts_parser || !ts_query || !line || len == 0)
+    {
         fprintf(out, "%s", line);
         return;
     }
 
     TSTree *tree = ts_parser_parse_string(ts_parser, NULL, line, len);
-    if (!tree) {
+    if(!tree)
+    {
         fprintf(out, "%s", line);
         return;
     }
 
     TSNode root_node = ts_tree_root_node(tree);
     TSQueryCursor *cursor = ts_query_cursor_new();
-    
+
     ts_query_cursor_exec(cursor, ts_query, root_node);
 
     TSQueryMatch match;
     uint32_t capture_index;
-    
+
     // Max 1024 spans per line should be plenty
     HighlightSpan spans[1024];
     int num_spans = 0;
 
     // Collect all captures
-    while (ts_query_cursor_next_capture(cursor, &match, &capture_index) && num_spans < 1024) {
+    while(ts_query_cursor_next_capture(cursor, &match, &capture_index) && num_spans < 1024)
+    {
         TSNode node = match.captures[capture_index].node;
         uint32_t id = match.captures[capture_index].index;
-        
+
         uint32_t name_len = 0;
         const char *capture_name = ts_query_capture_name_for_id(ts_query, id, &name_len);
-        
+
         // Ensure null-termination or safe comparison
         char name_buf[128] = {0};
-        if (name_len < sizeof(name_buf)) {
+        if(name_len < sizeof(name_buf))
+        {
             memcpy(name_buf, capture_name, name_len);
             const char *color = get_color_for_capture(name_buf);
-            if (color) {
+            if(color)
+            {
                 spans[num_spans].start_byte = ts_node_start_byte(node);
                 spans[num_spans].end_byte = ts_node_end_byte(node);
                 spans[num_spans].color = color;
@@ -177,7 +214,7 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out) {
     qsort(spans, num_spans, sizeof(HighlightSpan), compare_spans);
 
     // Render: caller positions cursor at input start
-    
+
     const char *RESET = "\033[0m";
     int current_byte = 0;
 
@@ -185,16 +222,22 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out) {
     const char *color_stack[64] = {0};
     int stack_depth = 0;
 
-    for (int i = 0; i < len; i++) {
+    for(int i = 0; i < len; i++)
+    {
         // Pop expired spans
         int old_depth = stack_depth;
-        for (int k = 0; k < num_spans; k++) {
-            if (spans[k].end_byte == i) {
+        for(int k = 0; k < num_spans; k++)
+        {
+            if(spans[k].end_byte == i)
+            {
                 // Find and remove this span from stack
-                for (int j = 0; j < stack_depth; j++) {
-                    if (color_stack[j] == spans[k].color) {
+                for(int j = 0; j < stack_depth; j++)
+                {
+                    if(color_stack[j] == spans[k].color)
+                    {
                         // Shift remaining down
-                        for (int m = j; m < stack_depth - 1; m++) {
+                        for(int m = j; m < stack_depth - 1; m++)
+                        {
                             color_stack[m] = color_stack[m + 1];
                         }
                         stack_depth--;
@@ -206,18 +249,23 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out) {
 
         // Push new spans starting here
         int pushed = 0;
-        for (int k = 0; k < num_spans; k++) {
-            if (spans[k].start_byte == i) {
-                if (stack_depth < 64) {
+        for(int k = 0; k < num_spans; k++)
+        {
+            if(spans[k].start_byte == i)
+            {
+                if(stack_depth < 64)
+                {
                     color_stack[stack_depth++] = spans[k].color;
                     pushed = 1;
                 }
             }
         }
 
-        if (pushed || stack_depth < old_depth) {
+        if(pushed || stack_depth < old_depth)
+        {
             fprintf(out, "%s", RESET);
-            if (stack_depth > 0) {
+            if(stack_depth > 0)
+            {
                 fprintf(out, "%s", color_stack[stack_depth - 1]);
             }
         }
@@ -232,10 +280,29 @@ void cli_ts_highlight_line(const char *line, int len, FILE *out) {
 #else
 
 // Stubs when USE_TREESITTER is not defined
-int cli_ts_init(void) { return 0; }
-int cli_ts_detect_color_level(void) { return 1; }
+/**
+ * @brief Initialize treesitter syntax highlighting.
+ *
+ * Loads the milk grammar and sets up the
+ * parser instance.
+ */
+int cli_ts_init(void)
+{
+    return 0;
+}
+/**
+ * @brief Detect terminal color capability.
+ *
+ * Checks COLORTERM and TERM environment variables
+ * to determine 256-color or truecolor support.
+ */
+int cli_ts_detect_color_level(void)
+{
+    return 1;
+}
 void cli_ts_cleanup(void) {}
-void cli_ts_highlight_line(const char *line, int len, FILE *out) {
+void cli_ts_highlight_line(const char *line, int len, FILE *out)
+{
     (void)len;
     fprintf(out, "%s", line);
     fflush(out);

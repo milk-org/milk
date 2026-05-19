@@ -29,23 +29,35 @@
 static inline void tv_move(
     char   *buf,
     size_t *pos,
-    int     row,
-    int     col)
+    int    row,
+    int    col)
 {
     /* Hand-rolled integer serialization avoids printf overhead */
     buf[(*pos)++] = '\033';
     buf[(*pos)++] = '[';
 
     /* row */
-    if (row >= 100) buf[(*pos)++] = (char)('0' + row / 100);
-    if (row >= 10)  buf[(*pos)++] = (char)('0' + (row / 10) % 10);
+    if(row >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + row / 100);
+    }
+    if(row >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (row / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + row % 10);
 
     buf[(*pos)++] = ';';
 
     /* col */
-    if (col >= 100) buf[(*pos)++] = (char)('0' + col / 100);
-    if (col >= 10)  buf[(*pos)++] = (char)('0' + (col / 10) % 10);
+    if(col >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + col / 100);
+    }
+    if(col >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (col / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + col % 10);
 
     buf[(*pos)++] = 'H';
@@ -58,9 +70,9 @@ static inline void tv_move(
 static inline void tv_bg(
     char    *buf,
     size_t  *pos,
-    uint8_t  r,
-    uint8_t  g,
-    uint8_t  b)
+    uint8_t r,
+    uint8_t g,
+    uint8_t b)
 {
     /* Static prefix bytes */
     buf[(*pos)++] = '\033';
@@ -72,20 +84,38 @@ static inline void tv_bg(
     buf[(*pos)++] = ';';
 
     /* R */
-    if (r >= 100) buf[(*pos)++] = (char)('0' + r / 100);
-    if (r >= 10)  buf[(*pos)++] = (char)('0' + (r / 10) % 10);
+    if(r >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + r / 100);
+    }
+    if(r >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (r / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + r % 10);
     buf[(*pos)++] = ';';
 
     /* G */
-    if (g >= 100) buf[(*pos)++] = (char)('0' + g / 100);
-    if (g >= 10)  buf[(*pos)++] = (char)('0' + (g / 10) % 10);
+    if(g >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + g / 100);
+    }
+    if(g >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (g / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + g % 10);
     buf[(*pos)++] = ';';
 
     /* B */
-    if (b >= 100) buf[(*pos)++] = (char)('0' + b / 100);
-    if (b >= 10)  buf[(*pos)++] = (char)('0' + (b / 10) % 10);
+    if(b >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + b / 100);
+    }
+    if(b >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (b / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + b % 10);
 
     buf[(*pos)++] = 'm';
@@ -98,9 +128,9 @@ static inline void tv_bg(
 static inline void tv_fg(
     char    *buf,
     size_t  *pos,
-    uint8_t  r,
-    uint8_t  g,
-    uint8_t  b)
+    uint8_t r,
+    uint8_t g,
+    uint8_t b)
 {
     buf[(*pos)++] = '\033';
     buf[(*pos)++] = '[';
@@ -110,18 +140,36 @@ static inline void tv_fg(
     buf[(*pos)++] = '2';
     buf[(*pos)++] = ';';
 
-    if (r >= 100) buf[(*pos)++] = (char)('0' + r / 100);
-    if (r >= 10)  buf[(*pos)++] = (char)('0' + (r / 10) % 10);
+    if(r >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + r / 100);
+    }
+    if(r >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (r / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + r % 10);
     buf[(*pos)++] = ';';
 
-    if (g >= 100) buf[(*pos)++] = (char)('0' + g / 100);
-    if (g >= 10)  buf[(*pos)++] = (char)('0' + (g / 10) % 10);
+    if(g >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + g / 100);
+    }
+    if(g >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (g / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + g % 10);
     buf[(*pos)++] = ';';
 
-    if (b >= 100) buf[(*pos)++] = (char)('0' + b / 100);
-    if (b >= 10)  buf[(*pos)++] = (char)('0' + (b / 10) % 10);
+    if(b >= 100)
+    {
+        buf[(*pos)++] = (char)('0' + b / 100);
+    }
+    if(b >= 10)
+    {
+        buf[(*pos)++] = (char)('0' + (b / 10) % 10);
+    }
     buf[(*pos)++] = (char)('0' + b % 10);
 
     buf[(*pos)++] = 'm';

@@ -61,7 +61,7 @@ volatile sig_atomic_t ov_sigTERM = 0;
 
 static const char *loopstat_str(int stat)
 {
-    switch (stat)
+    switch(stat)
     {
     case 0:
         return C_STOP "IDLE" C_RST;
@@ -76,9 +76,12 @@ static const char *loopstat_str(int stat)
     }
 }
 
+/**
+ * @brief Map control value to a display string.
+ */
 static const char *ctrlval_str(int val)
 {
-    switch (val)
+    switch(val)
     {
     case 0:
         return C_STOP "STOP" C_RST;
@@ -91,9 +94,12 @@ static const char *ctrlval_str(int val)
     }
 }
 
+/**
+ * @brief Map trigger mode to a display string.
+ */
 static const char *trigmode_str(int mode)
 {
-    switch (mode)
+    switch(mode)
     {
     case 0:
         return "IMMEDIATE";
@@ -129,9 +135,9 @@ static void print_proc_info(
            C_VAL "%d" C_RST " [%s]\n",
            "PID", (int) p->PID,
            (pid_get_status(p->PID)
-               == OV_PID_ALIVE)
-               ? C_ALIVE "ALIVE" C_RST
-               : C_DEAD "DEAD" C_RST);
+            == OV_PID_ALIVE)
+           ? C_ALIVE "ALIVE" C_RST
+           : C_DEAD "DEAD" C_RST);
     printf(C_TITLE
            "========================================"
            "================\n" C_RST);
@@ -147,18 +153,18 @@ static void print_proc_info(
     printf("   %-18s: " C_VAL "%" PRId64 "" C_RST "\n",
            "Loop count",
            (int64_t) p->loopcnt);
-    if (p->rt_priority > 0)
+    if(p->rt_priority > 0)
     {
         printf("   %-18s: " C_VAL "%d" C_RST "\n",
                "RT priority", p->rt_priority);
     }
-    if (p->cpu_used > 0.01f)
+    if(p->cpu_used > 0.01f)
     {
         printf("   %-18s: " C_VAL "%.1f%%"
                C_RST "\n",
                "CPU usage", p->cpu_used);
     }
-    if (p->mem_rss_kb > 0)
+    if(p->mem_rss_kb > 0)
     {
         printf("   %-18s: " C_VAL "%" PRId64 " KB"
                C_RST "\n",
@@ -167,7 +173,7 @@ static void print_proc_info(
 
     /* ---- Timing ---- */
     printf("\n" C_HDR " Timing" C_RST "\n");
-    if (p->dtmedian_iter_ns > 0)
+    if(p->dtmedian_iter_ns > 0)
     {
         double iter_us =
             (double) p->dtmedian_iter_ns / 1e3;
@@ -181,12 +187,12 @@ static void print_proc_info(
         printf("   %-18s: " C_DIM "N/A" C_RST "\n",
                "Iter (median)");
     }
-    if (p->dtmedian_exec_ns > 0)
+    if(p->dtmedian_exec_ns > 0)
     {
         double exec_us =
             (double) p->dtmedian_exec_ns / 1e3;
         double duty = 0.0;
-        if (p->dtmedian_iter_ns > 0)
+        if(p->dtmedian_iter_ns > 0)
         {
             duty = 100.0
                    * (double) p->dtmedian_exec_ns
@@ -204,8 +210,8 @@ static void print_proc_info(
     printf("   %-18s: %s\n",
            "Measure timing",
            p->MeasureTiming
-               ? C_ALIVE "ON" C_RST
-               : C_DIM "OFF" C_RST);
+           ? C_ALIVE "ON" C_RST
+           : C_DIM "OFF" C_RST);
 
     /* ---- Trigger ---- */
     printf("\n" C_HDR " Trigger" C_RST "\n");
@@ -214,13 +220,13 @@ static void print_proc_info(
            "Mode",
            trigmode_str(p->triggermode),
            p->triggermode);
-    if (p->trigstreamname[0] != '\0')
+    if(p->trigstreamname[0] != '\0')
     {
         printf("   %-18s: " C_STREAM "%s"
                C_RST "\n",
                "Stream", p->trigstreamname);
     }
-    if (p->triggermode == 1)
+    if(p->triggermode == 1)
     {
         printf("   %-18s: " C_VAL "%d"
                C_RST "\n",
@@ -231,14 +237,14 @@ static void print_proc_info(
            "Missed frames",
            p->triggermissed,
            (uint64_t)
-               p->triggermissed_cumul);
+           p->triggermissed_cumul);
 
     /* ---- Connections (from graph) ---- */
     printf("\n" C_HDR " Connections"
            C_RST " (from system graph)\n");
 
     int pni = p->node_idx;
-    if (pni < 0)
+    if(pni < 0)
     {
         printf("   " C_DIM
                "(process not in graph)"
@@ -249,23 +255,23 @@ static void print_proc_info(
         int found_any = 0;
 
         /* Triggered by (stream → proc) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].tgt_node != pni)
+            if(m->edges[e].tgt_node != pni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_STREAM_TRIGGERS_PROC
-                && m->edges[e].type
-                != OV_EDGE_PROC_TRIGGER_STREAM)
+            if(m->edges[e].type
+                    != OV_EDGE_STREAM_TRIGGERS_PROC
+                    && m->edges[e].type
+                    != OV_EDGE_PROC_TRIGGER_STREAM)
             {
                 continue;
             }
             int ni = m->edges[e].src_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_STREAM)
             {
                 continue;
@@ -279,21 +285,21 @@ static void print_proc_info(
         }
 
         /* Writes (proc → stream) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].src_node != pni)
+            if(m->edges[e].src_node != pni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_PROC_WRITES_STREAM)
+            if(m->edges[e].type
+                    != OV_EDGE_PROC_WRITES_STREAM)
             {
                 continue;
             }
             int ni = m->edges[e].tgt_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_STREAM)
             {
                 continue;
@@ -307,21 +313,21 @@ static void print_proc_info(
         }
 
         /* Reads (stream → proc via sem) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].tgt_node != pni)
+            if(m->edges[e].tgt_node != pni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_STREAM_READ_BY_PROC)
+            if(m->edges[e].type
+                    != OV_EDGE_STREAM_READ_BY_PROC)
             {
                 continue;
             }
             int ni = m->edges[e].src_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_STREAM)
             {
                 continue;
@@ -335,21 +341,21 @@ static void print_proc_info(
         }
 
         /* Managed by FPS (FPS → proc) */
-        for (int e = 0; e < m->nb_edges; e++)
+        for(int e = 0; e < m->nb_edges; e++)
         {
-            if (m->edges[e].tgt_node != pni)
+            if(m->edges[e].tgt_node != pni)
             {
                 continue;
             }
-            if (m->edges[e].type
-                != OV_EDGE_FPS_RUNS_PROC)
+            if(m->edges[e].type
+                    != OV_EDGE_FPS_RUNS_PROC)
             {
                 continue;
             }
             int ni = m->edges[e].src_node;
-            if (ni < 0
-                || ni >= m->nb_nodes
-                || m->nodes[ni].type
+            if(ni < 0
+                    || ni >= m->nb_nodes
+                    || m->nodes[ni].type
                     != OV_NODE_FPS)
             {
                 continue;
@@ -362,7 +368,7 @@ static void print_proc_info(
             found_any = 1;
         }
 
-        if (!found_any)
+        if(!found_any)
         {
             printf("   " C_DIM
                    "(no connections found)"
@@ -411,7 +417,8 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = {
+    const char *see_also[] =
+    {
         "milk-procinfo-list:list active processinfo instances",
         "milk-procinfo-rm:remove a processinfo instance",
         "milk-stream-info:inspect stream metadata and data"
@@ -427,11 +434,11 @@ static int find_proc_by_name(
     const OV_MODEL *m,
     const char *name)
 {
-    for (int i = 0; i < m->nb_procs; i++)
+    for(int i = 0; i < m->nb_procs; i++)
     {
-        if (m->procs[i].valid
-            && strcmp(m->procs[i].name,
-                      name) == 0)
+        if(m->procs[i].valid
+                && strcmp(m->procs[i].name,
+                          name) == 0)
         {
             return i;
         }
@@ -447,10 +454,12 @@ int main(int argc, char *argv[])
 {
     int action = milk_help_init(argc, argv,
                                 PI_ONELINE, PI_DESC_LONG);
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
+    {
         return 0;
+    }
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    if(action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
@@ -458,20 +467,22 @@ int main(int argc, char *argv[])
 
     pid_t target_pid = 0;
 
-    static struct option long_opts[] = {
+    static struct option long_opts[] =
+    {
         {"help", no_argument, 0, 'h'},
         {"pid",  required_argument, 0, 'p'},
         {0, 0, 0, 0}
     };
 
     int opt;
-    while ((opt = getopt_long(
-                argc, argv, "hp:",
-                long_opts, NULL)) != -1)
+    while((opt = getopt_long(
+                     argc, argv, "hp:",
+                     long_opts, NULL)) != -1)
     {
-        switch (opt)
+        switch(opt)
         {
-        case 'h': break; /* handled above */
+        case 'h':
+            break; /* handled above */
         case 'p':
             target_pid = (pid_t) atoi(optarg);
             break;
@@ -483,12 +494,12 @@ int main(int argc, char *argv[])
     }
 
     const char *proc_name = NULL;
-    if (optind < argc)
+    if(optind < argc)
     {
         proc_name = argv[optind];
     }
 
-    if (target_pid <= 0 && proc_name == NULL)
+    if(target_pid <= 0 && proc_name == NULL)
     {
         printf("\n\033[1;31mERROR\033[0m process name or --pid required\n\n");
         print_help(argv[0], 1);
@@ -502,7 +513,7 @@ int main(int argc, char *argv[])
 
     /* Find the requested process */
     int pi = -1;
-    if (target_pid > 0)
+    if(target_pid > 0)
     {
         pi = ov_find_proc_by_pid(
                  &model, target_pid);
@@ -513,9 +524,9 @@ int main(int argc, char *argv[])
                  &model, proc_name);
     }
 
-    if (pi < 0)
+    if(pi < 0)
     {
-        if (target_pid > 0)
+        if(target_pid > 0)
         {
             PRINT_ERROR(
                 "process with PID %d not found",
