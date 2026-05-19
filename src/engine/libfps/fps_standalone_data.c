@@ -104,7 +104,7 @@ uint32_t RegisterCLIcmd(
  */
 imageID image_ID(
     const char *name,
-    IMAGE *imagearray __attribute__((unused)),
+    IMAGE      *imagearray __attribute__((unused)),
     long NB_images __attribute__((unused)))
 {
     for(long ii = 0; ii < NB_images; ii++)

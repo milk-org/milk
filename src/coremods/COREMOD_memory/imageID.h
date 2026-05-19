@@ -111,11 +111,11 @@ static inline imageID RegisterIMGID(
 
 static inline imageID _resolveIMGID_impl(
     const char *caller_file,
-    int caller_line,
+    int        caller_line,
     const char *caller_func,
-    IMGID *img,
-    int ERRMODE,
-    IMAGE *imagearray __attribute__((unused)),
+    IMGID      *img,
+    int        ERRMODE,
+    IMAGE      *imagearray __attribute__((unused)),
     long NB_images __attribute__((unused)))
 {
     // IF:
