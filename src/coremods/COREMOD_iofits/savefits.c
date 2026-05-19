@@ -72,10 +72,10 @@ char savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN]  = "";
  * ========================================= */
 
 errno_t saveFITS_opt_trunc_IMGID(
-    IMGID *imgin,
-    int truncate,
+    IMGID      *imgin,
+    int        truncate,
     const char *outputFITSname,
-    int outputbitpix,
+    int        outputbitpix,
     const char *importheaderfile __attribute__((unused)),
     IMAGE_KEYWORD *kwarray __attribute__((unused)),
     int kwarraysize __attribute__((unused)),

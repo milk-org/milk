@@ -332,9 +332,9 @@ inline static void fpsCTRLscreen_print_FPShelp(
  */
 errno_t functionparameter_CTRLscreen(
     uint32_t mode,
-    char *fpsnamemask,
-    char *fpsCTRLfifoname,
-    double timeout_sec __attribute__((unused)))
+    char     *fpsnamemask,
+    char     *fpsCTRLfifoname,
+    double   timeout_sec __attribute__((unused)))
 {
     DEBUG_TRACE_FSTART();
 
