@@ -293,19 +293,13 @@ errno_t functionparameter_GetParamValueString(
         {
             char stream_name_pv[STRINGMAXLEN_FILE_NAME];
             fps_printparameter_bare_stream_name(
-                fpsentry->val.string[0],
-                stream_name_pv,
-                sizeof(stream_name_pv));
-            char shmpath_pv[
-                STRINGMAXLEN_FILE_NAME];
+                fpsentry->val.string[0], stream_name_pv, sizeof(stream_name_pv));
+            char shmpath_pv[STRINGMAXLEN_FILE_NAME];
             int shm_ok =
                 (ImageStreamIO_filename(
                      shmpath_pv,
                      sizeof(shmpath_pv),
-                     stream_name_pv)
-                 == IMAGESTREAMIO_SUCCESS)
-                && (access(shmpath_pv,
-                           F_OK) == 0);
+                     stream_name_pv) == IMAGESTREAMIO_SUCCESS) && (access(shmpath_pv, F_OK) == 0);
             IMAGE tmpimg;
             if(shm_ok
                     && ImageStreamIO_openIm(

@@ -132,20 +132,15 @@ int function_parameter_process_fpsCMDarray(
                     if(task_completed == 1)
                     {
                         // update status - no longer running
-                        fpsctrltasklist[cmdindexExec].status &=
-                            ~FPSTASK_STATUS_RUNNING;
-                        fpsctrltasklist[cmdindexExec].status |=
-                            FPSTASK_STATUS_COMPLETED;
+                        fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_RUNNING;
+                        fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_COMPLETED;
 
                         //no longer active, remove it from list
-                        fpsctrltasklist[cmdindexExec].status &=
-                            ~FPSTASK_STATUS_ACTIVE;
+                        fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_ACTIVE;
 
                         //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW; // and stop displaying
 
-                        clock_gettime(
-                            CLOCK_MILK,
-                            &fpsctrltasklist[cmdindexExec].completiontime);
+                        clock_gettime(CLOCK_MILK, &fpsctrltasklist[cmdindexExec].completiontime);
                         queue_nexttask[qi] = QUEUE_SCANREADY;
                     }
                 }
@@ -222,18 +217,13 @@ int function_parameter_process_fpsCMDarray(
             fpsctrltasklist[cmdindexExec].fpsindex =
                 functionparameter_FPSprocess_cmdline(
                     fpsctrltasklist[cmdindexExec].cmdstring,
-                    fpsctrlqueuelist,
-                    keywnode,
-                    fpsCTRLvar,
-                    fps,
-                    &taskstatus);
+                    fpsctrlqueuelist, keywnode, fpsCTRLvar, fps, &taskstatus);
             NBtaskLaunched++;
 
             // update status form cmdline interpreter
             fpsctrltasklist[cmdindexExec].status |= taskstatus;
 
-            clock_gettime(CLOCK_MILK,
-                          &fpsctrltasklist[cmdindexExec].activationtime);
+            clock_gettime(CLOCK_MILK, &fpsctrltasklist[cmdindexExec].activationtime);
 
             // update status to running
             fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_RUNNING;

@@ -120,15 +120,11 @@ void cli_print_source_trace(void)
     {
         return;
     }
-    fprintf(stderr,
-            "\033[2mStack trace:\033[0m\n");
+    fprintf(stderr, "\033[2mStack trace:\033[0m\n");
     for(int i = cli_src_depth - 1;
         i >= 0; i--)
     {
-        fprintf(stderr,
-                "  \033[2m%s:%d\033[0m\n",
-                cli_src_stack[i].file,
-                cli_src_stack[i].line);
+        fprintf(stderr, "  \033[2m%s:%d\033[0m\n", cli_src_stack[i].file, cli_src_stack[i].line);
     }
 }
 
@@ -181,8 +177,7 @@ const char *cli_var_lookup(const char *name)
     /* $? — last return value */
     if(strcmp(name, "?") == 0)
     {
-        snprintf(retbuf, sizeof(retbuf),
-                 "%d", cli_last_retval);
+        snprintf(retbuf, sizeof(retbuf), "%d", cli_last_retval);
         return retbuf;
     }
 
@@ -199,10 +194,8 @@ const char *cli_var_lookup(const char *name)
     /* $PROCINFO_NCPU — online CPUs */
     if(strcmp(name, "PROCINFO_NCPU") == 0)
     {
-        long ncpu = sysconf(
-            _SC_NPROCESSORS_ONLN);
-        snprintf(retbuf, sizeof(retbuf),
-                 "%ld", ncpu);
+        long ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+        snprintf(retbuf, sizeof(retbuf), "%ld", ncpu);
         return retbuf;
     }
 
@@ -222,8 +215,7 @@ const char *cli_var_lookup(const char *name)
                 }
             }
         }
-        snprintf(retbuf, sizeof(retbuf),
-                 "%d", cnt);
+        snprintf(retbuf, sizeof(retbuf), "%d", cnt);
         return retbuf;
     }
 

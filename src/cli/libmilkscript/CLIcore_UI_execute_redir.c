@@ -183,9 +183,7 @@ int cli_run_external(
     extern char **environ;
 
     /* Detect characters that require /bin/sh parsing */
-    static const char sh_meta[] =
-        "|&;<>`()\\\\"
-        "\"'\n*?[{$";
+    static const char sh_meta[] = "|&;<>`()\\\\" "\"'\n*?[{$";
     int needs_shell = 0;
     for(const char *cp = cmd; *cp; cp++)
     {
@@ -211,10 +209,7 @@ int cli_run_external(
             "/bin/sh", "-c",
             (char *) cmd, NULL
         };
-        ret = posix_spawn(
-                  &pid, "/bin/sh",
-                  NULL, NULL,
-                  sh_args, environ);
+        ret = posix_spawn(&pid, "/bin/sh", NULL, NULL, sh_args, environ);
     }
     else
     {
@@ -240,32 +235,22 @@ int cli_run_external(
             return 0;
         }
 
-        ret = posix_spawnp(
-                  &pid, argv[0],
-                  NULL, NULL,
-                  argv, environ);
+        ret = posix_spawnp(&pid, argv[0], NULL, NULL, argv, environ);
         if(ret != 0)
         {
             if(ret == ENOENT)
             {
-                fprintf(stderr,
-                        "milk-cli: %s: not found\n",
-                        argv[0]);
+                fprintf(stderr, "milk-cli: %s: not found\n", argv[0]);
                 return 127; /* command not found */
             }
             else if(ret == EACCES)
             {
-                fprintf(stderr,
-                        "milk-cli: %s: permission"
-                        " denied\n",
-                        argv[0]);
+                fprintf(stderr, "milk-cli: %s: permission" " denied\n", argv[0]);
                 return 126; /* permission denied */
             }
             else
             {
-                fprintf(stderr,
-                        "milk-cli: %s: %s\n",
-                        argv[0], strerror(ret));
+                fprintf(stderr, "milk-cli: %s: %s\n", argv[0], strerror(ret));
                 return 1;
             }
         }
@@ -317,8 +302,7 @@ int cli_handle_subshell(
         return 0;
     }
     char sbuf[STRINGMAXLEN_CLICMDLINE];
-    memcpy(sbuf, sp + 1,
-           (size_t)(spl - 2));
+    memcpy(sbuf, sp + 1, (size_t)(spl - 2));
     sbuf[spl - 2] = '\0';
     pid_t spid = fork();
     if(spid == 0)
@@ -334,8 +318,7 @@ int cli_handle_subshell(
             }
             if(*st != '\0')
             {
-                CLI_execute_string(
-                    (char *) st);
+                CLI_execute_string((char *) st);
             }
             tok = strtok(NULL, ";");
         }
@@ -345,8 +328,7 @@ int cli_handle_subshell(
     {
         int wst;
         waitpid(spid, &wst, 0);
-        cli_last_retval =
-            WEXITSTATUS(wst);
+        cli_last_retval = WEXITSTATUS(wst);
     }
     *retval = 0;
     return 1;
@@ -367,8 +349,7 @@ int cli_handle_herestring_late(
     errno_t *retval
 )
 {
-    const char *hs = strstr(
-                         data.CLIcmdline, "<<<");
+    const char *hs = strstr(data.CLIcmdline, "<<<");
     if(hs == NULL)
     {
         return 0;
@@ -380,8 +361,7 @@ int cli_handle_herestring_late(
     {
         hcl = STRINGMAXLEN_CLICMDLINE - 1;
     }
-    memcpy(hcmd, data.CLIcmdline,
-           (size_t) hcl);
+    memcpy(hcmd, data.CLIcmdline, (size_t) hcl);
     hcmd[hcl] = '\0';
     while(hcl > 0
             && (hcmd[hcl - 1] == ' '
@@ -405,15 +385,13 @@ int cli_handle_herestring_late(
                     && htxt[htl - 1] == '\'')))
     {
         htxt[htl - 1] = '\0';
-        memmove(htxt, htxt + 1,
-                (size_t)(htl - 1));
+        memmove(htxt, htxt + 1, (size_t)(htl - 1));
     }
     int pfd[2];
     if(pipe(pfd) == 0)
     {
         ssize_t wr_ignore;
-        wr_ignore = write(pfd[1], htxt,
-                          strlen(htxt));
+        wr_ignore = write(pfd[1], htxt, strlen(htxt));
         wr_ignore = write(pfd[1], "\n", 1);
         (void) wr_ignore;
         close(pfd[1]);
@@ -443,8 +421,7 @@ int cli_handle_stderr_redir(
     errno_t *retval
 )
 {
-    const char *se = strstr(
-                         data.CLIcmdline, "2>");
+    const char *se = strstr(data.CLIcmdline, "2>");
     if(se == NULL)
     {
         return 0;
@@ -456,8 +433,7 @@ int cli_handle_stderr_redir(
     {
         scl = STRINGMAXLEN_CLICMDLINE - 1;
     }
-    memcpy(scmd, data.CLIcmdline,
-           (size_t) scl);
+    memcpy(scmd, data.CLIcmdline, (size_t) scl);
     scmd[scl] = '\0';
     while(scl > 0
             && (scmd[scl - 1] == ' '
@@ -520,8 +496,7 @@ int cli_handle_input_redir(
     errno_t *retval
 )
 {
-    int inr_pos = cli_find_unquoted_op(
-                      data.CLIcmdline, '<', '<', 0);
+    int inr_pos = cli_find_unquoted_op(data.CLIcmdline, '<', '<', 0);
     if(inr_pos < 0)
     {
         return 0;
@@ -540,8 +515,7 @@ int cli_handle_input_redir(
             && data.CLIcmdline[fst] != '\t'
             && ifi < 511)
     {
-        infile[ifi++] =
-            data.CLIcmdline[fst++];
+        infile[ifi++] = data.CLIcmdline[fst++];
     }
     infile[ifi] = '\0';
 
@@ -565,26 +539,18 @@ int cli_handle_input_redir(
     {
         is_stream = 1;
         char *sname = infile + 3;
-        IMAGE *img =
-            (IMAGE *) malloc(sizeof(IMAGE));
+        IMAGE *img = (IMAGE *) malloc(sizeof(IMAGE));
         if(ImageStreamIO_read_sharedmem_image_toIMAGE(
                     sname, img) == 0)
         {
-            FILE *tf = cli_mkstemp_open(
-                           tempname, sizeof(tempname),
-                           "/tmp/milk_cli_inredir", "w");
+            FILE *tf = cli_mkstemp_open(tempname, sizeof(tempname), "/tmp/milk_cli_inredir", "w");
             if(tf)
             {
-                int typesize =
-                    ImageStreamIO_typesize(
-                        img->md->datatype);
+                int typesize = ImageStreamIO_typesize(img->md->datatype);
                 if(typesize > 0)
                 {
-                    size_t bytes =
-                        (size_t) typesize
-                        * img->md->nelement;
-                    fwrite(img->array.raw,
-                           1, bytes, tf);
+                    size_t bytes = (size_t) typesize * img->md->nelement;
+                    fwrite(img->array.raw, 1, bytes, tf);
                     fclose(tf);
                     ifp = fopen(tempname, "r");
                     unlink(tempname);
@@ -592,10 +558,7 @@ int cli_handle_input_redir(
                 else
                 {
                     fprintf(stderr,
-                            "stream redirection: "
-                            "invalid datatype for "
-                            "stream %s\n",
-                            sname);
+                            "stream redirection: " "invalid datatype for " "stream %s\n", sname);
                     fclose(tf);
                     unlink(tempname);
                 }
@@ -604,10 +567,7 @@ int cli_handle_input_redir(
         }
         else
         {
-            printf(
-                "stream redirection: "
-                "stream %s not found\n",
-                sname);
+            printf("stream redirection: " "stream %s not found\n", sname);
         }
         free(img);
     }
@@ -661,9 +621,7 @@ static void cli_redir_fps_writeback(
     char *dot = strchr(fpspath, '.');
     if(dot == NULL)
     {
-        printf(
-            "fps redirection: format"
-            " must be @F:fpsname.param\n");
+        printf("fps redirection: format" " must be @F:fpsname.param\n");
         unlink(tempname);
         return;
     }
@@ -680,8 +638,7 @@ static void cli_redir_fps_writeback(
     }
 
     char valbuf[2048] = {0};
-    size_t rn = fread(
-                    valbuf, 1, sizeof(valbuf) - 1, tf);
+    size_t rn = fread(valbuf, 1, sizeof(valbuf) - 1, tf);
     valbuf[rn] = '\0';
     fclose(tf);
 
@@ -698,42 +655,27 @@ static void cli_redir_fps_writeback(
                 FPSCONNECT_SIMPLE) == -1
             || fps_s.parray == NULL)
     {
-        printf(
-            "fps redirection: "
-            "could not connect to %s\n",
-            fpsname);
+        printf("fps redirection: " "could not connect to %s\n", fpsname);
         unlink(tempname);
         return;
     }
 
-    int pidx =
-        functionparameter_GetParamIndex(
-            &fps_s, param);
+    int pidx = functionparameter_GetParamIndex(&fps_s, param);
     if(pidx < 0)
     {
         char dotname[512];
-        snprintf(dotname,
-                 sizeof(dotname),
-                 ".%s", param);
-        pidx =
-            functionparameter_GetParamIndex(
-                &fps_s, dotname);
+        snprintf(dotname, sizeof(dotname), ".%s", param);
+        pidx = functionparameter_GetParamIndex(&fps_s, dotname);
     }
     if(pidx >= 0)
     {
-        functionparameter_SetParamValue_fromString(
-            &fps_s, pidx, valbuf);
+        functionparameter_SetParamValue_fromString(&fps_s, pidx, valbuf);
     }
     else
     {
-        printf(
-            "fps redirection: "
-            "param %s not found"
-            " in %s\n",
-            param, fpsname);
+        printf("fps redirection: " "param %s not found" " in %s\n", param, fpsname);
     }
-    fps_disconnect(
-        &fps_s);
+    fps_disconnect(&fps_s);
     unlink(tempname);
 }
 
@@ -753,8 +695,7 @@ static void cli_redir_stream_writeback(
     const char *tempname)
 {
     char *sname = (char *)(rfile + 3);
-    IMAGE *img =
-        (IMAGE *) malloc(sizeof(IMAGE));
+    IMAGE *img = (IMAGE *) malloc(sizeof(IMAGE));
     if(ImageStreamIO_read_sharedmem_image_toIMAGE(
                 sname, img) == 0)
     {
@@ -762,27 +703,17 @@ static void cli_redir_stream_writeback(
         FILE *tf = fopen(tempname, "r");
         if(tf)
         {
-            int typesize =
-                ImageStreamIO_typesize(
-                    img->md->datatype);
+            int typesize = ImageStreamIO_typesize(img->md->datatype);
             if(typesize > 0)
             {
-                size_t bytes =
-                    (size_t) typesize
-                    * img->md->nelement;
-                size_t bread = fread(
-                                   img->array.raw, 1,
-                                   bytes,          tf);
+                size_t bytes = (size_t) typesize * img->md->nelement;
+                size_t bread = fread(img->array.raw, 1, bytes,          tf);
                 (void)bread;
                 do_update = 1;
             }
             else
             {
-                printf(
-                    "stream redirection: "
-                    "invalid datatype for "
-                    "stream %s\n",
-                    sname);
+                printf("stream redirection: " "invalid datatype for " "stream %s\n", sname);
             }
             fclose(tf);
         }
@@ -794,10 +725,7 @@ static void cli_redir_stream_writeback(
     }
     else
     {
-        printf(
-            "stream redirection: "
-            "stream %s not found\n",
-            sname);
+        printf("stream redirection: " "stream %s not found\n", sname);
     }
     free(img);
     unlink(tempname);
@@ -822,20 +750,16 @@ int cli_handle_output_redir(
     errno_t *retval
 )
 {
-    int redir_pos = cli_find_unquoted_op(
-                        data.CLIcmdline, '>', 0, 0);
+    int redir_pos = cli_find_unquoted_op(data.CLIcmdline, '>', 0, 0);
     if(redir_pos < 0)
     {
         return 0;
     }
 
     /* 1=truncate, 2=append (>>) */
-    int redir_mode =
-        (data.CLIcmdline[redir_pos + 1] == '>')
-        ? 2 : 1;
+    int redir_mode = (data.CLIcmdline[redir_pos + 1] == '>') ? 2 : 1;
 
-    int fstart = redir_pos
-                 + ((redir_mode == 2) ? 2 : 1);
+    int fstart = redir_pos + ((redir_mode == 2) ? 2 : 1);
     while(data.CLIcmdline[fstart] == ' '
             || data.CLIcmdline[fstart] == '\t')
     {
@@ -848,8 +772,7 @@ int cli_handle_output_redir(
             && data.CLIcmdline[fstart] != '\t'
             && fi < 511)
     {
-        rfile[fi++] =
-            data.CLIcmdline[fstart++];
+        rfile[fi++] = data.CLIcmdline[fstart++];
     }
     rfile[fi] = '\0';
 
@@ -870,22 +793,17 @@ int cli_handle_output_redir(
     int is_fps = 0;
     int is_stream = 0;
     char tempname[256] = "";
-    const char *fmode =
-        (redir_mode == 2) ? "a" : "w";
+    const char *fmode = (redir_mode == 2) ? "a" : "w";
 
     if(strncmp(rfile, "@F:", 3) == 0)
     {
         is_fps = 1;
-        rfp = cli_mkstemp_open(
-                  tempname, sizeof(tempname),
-                  "/tmp/milk_cli_fredir", fmode);
+        rfp = cli_mkstemp_open(tempname, sizeof(tempname), "/tmp/milk_cli_fredir", fmode);
     }
     else if(strncmp(rfile, "@S:", 3) == 0)
     {
         is_stream = 1;
-        rfp = cli_mkstemp_open(
-                  tempname, sizeof(tempname),
-                  "/tmp/milk_cli_sredir", fmode);
+        rfp = cli_mkstemp_open(tempname, sizeof(tempname), "/tmp/milk_cli_sredir", fmode);
     }
     else
     {
@@ -906,13 +824,11 @@ int cli_handle_output_redir(
 
         if(is_fps)
         {
-            cli_redir_fps_writeback(
-                rfile, tempname);
+            cli_redir_fps_writeback(rfile, tempname);
         }
         else if(is_stream)
         {
-            cli_redir_stream_writeback(
-                rfile, tempname);
+            cli_redir_stream_writeback(rfile, tempname);
         }
         return 1;
     }
@@ -943,8 +859,7 @@ int cli_handle_herestring_early(
     errno_t *retval
 )
 {
-    char *hs = strstr(
-                   data.CLIcmdline, "<<<");
+    char *hs = strstr(data.CLIcmdline, "<<<");
     if(hs == NULL)
     {
         return 0;
@@ -964,16 +879,13 @@ int cli_handle_herestring_early(
                 || (hsval[0] == '\''
                     && hsval[hvlen - 1] == '\'')))
     {
-        memcpy(hvbuf, hsval + 1,
-               (size_t)(hvlen - 2));
+        memcpy(hvbuf, hsval + 1, (size_t)(hvlen - 2));
         hvbuf[hvlen - 2] = '\0';
     }
     else
     {
-        strncpy(hvbuf, hsval,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        hvbuf[STRINGMAXLEN_CLICMDLINE - 1] =
-            '\0';
+        strncpy(hvbuf, hsval, STRINGMAXLEN_CLICMDLINE - 1);
+        hvbuf[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     }
 
     FILE *hsfp = tmpfile();
@@ -1036,8 +948,7 @@ int cli_handle_background(
     {
         printf("[bg] %d\n", (int) cpid);
         char pb[32];
-        snprintf(pb, sizeof(pb),
-                 "%d", (int) cpid);
+        snprintf(pb, sizeof(pb), "%d", (int) cpid);
         cli_var_set("!", pb);
     }
     *retval = 0;
@@ -1123,12 +1034,8 @@ void cli_pipe_setup(
     *pipe_fp         = NULL;
     *saved_stdout_fd = -1;
 
-    int pipe_idx = cli_find_unquoted_op(
-                       data.CLIcmdline, '|', 0, 0);
-    char *pipe_pos =
-        (pipe_idx >= 0)
-        ? data.CLIcmdline + pipe_idx
-        : NULL;
+    int pipe_idx = cli_find_unquoted_op(data.CLIcmdline, '|', 0, 0);
+    char *pipe_pos = (pipe_idx >= 0) ? data.CLIcmdline + pipe_idx : NULL;
 
     if(pipe_pos == NULL)
     {
@@ -1194,12 +1101,8 @@ void cli_redir_setup(
     *redir_fp        = NULL;
     *saved_stdout_fd = -1;
 
-    int redir_idx = cli_find_unquoted_op(
-                        data.CLIcmdline, '>', 0, 0);
-    char *redir_pos =
-        (redir_idx >= 0)
-        ? data.CLIcmdline + redir_idx
-        : NULL;
+    int redir_idx = cli_find_unquoted_op(data.CLIcmdline, '>', 0, 0);
+    char *redir_pos = (redir_idx >= 0) ? data.CLIcmdline + redir_idx : NULL;
 
     if(redir_pos == NULL)
     {
@@ -1286,8 +1189,7 @@ void handle_did_you_mean(const char *input_cmd)
 
         for(unsigned int i = 0; i < data.NBcmd; i++)
         {
-            int d = levenshtein_distance(input_cmd,
-                                         data.cmd[i].key);
+            int d = levenshtein_distance(input_cmd, data.cmd[i].key);
             if(d < matches[2].dist)
             {
                 matches[2].dist = d;
@@ -1309,17 +1211,14 @@ void handle_did_you_mean(const char *input_cmd)
 
         if(matches[0].dist <= 4 && matches[0].cmd != NULL)
         {
-            printf("\033[31mCommand '%s' not found. \033[0m"
-                   "Did you mean:\n", input_cmd);
+            printf("\033[31mCommand '%s' not found. \033[0m" "Did you mean:\n", input_cmd);
             for(int m = 0; m < 3; m++)
             {
                 if(matches[m].cmd
                         && matches[m].dist <= 4
                         && matches[m].dist < 9999)
                 {
-                    printf("  - \033[0;96m%s"
-                           "\033[0m\n",
-                           matches[m].cmd);
+                    printf("  - \033[0;96m%s" "\033[0m\n", matches[m].cmd);
                 }
             }
             return;
@@ -1328,6 +1227,5 @@ void handle_did_you_mean(const char *input_cmd)
 #else
     (void) input_cmd;
 #endif
-    printf("\033[31mCommand not found, "
-           "or command with no effect\n\033[0m");
+    printf("\033[31mCommand not found, " "or command with no effect\n\033[0m");
 }

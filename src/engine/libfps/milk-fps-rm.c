@@ -38,8 +38,7 @@ static void print_help(
            mh_color ? MH_OPT : "", "-f, --force",
            mh_color ? MH_RST : "", "Kill running processes before removal");
     printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-v, --verbose",
-           mh_color ? MH_RST : "", "Verbose output");
+           mh_color ? MH_OPT : "", "-v, --verbose", mh_color ? MH_RST : "", "Verbose output");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
            mh_color ? MH_RST : "", "Show this help and exit");
@@ -102,10 +101,7 @@ static int kill_proc(
         return 0;
     }
 
-    if(verbose)
-        printf("Terminating %s process"
-               " (PID %d) for '%s'...\n",
-               label, (int)pid, name);
+    if(verbose) printf("Terminating %s process" " (PID %d) for '%s'...\n", label, (int)pid, name);
 
     if(kill(pid, SIGTERM) == -1)
     {
@@ -117,8 +113,7 @@ static int kill_proc(
         }
 
         PRINT_ERROR("cannot send SIGTERM to %s (PID %d): %s",
-                    label, (int)pid,
-                    strerror(saved_errno));
+                    label, (int)pid, strerror(saved_errno));
         return 1;
     }
 
@@ -136,9 +131,7 @@ static int kill_proc(
 
     if(verbose)
         printf("Process did not exit cleanly,"
-               " sending SIGKILL to %s"
-               " (PID %d)...\n",
-               label, (int)pid);
+               " sending SIGKILL to %s" " (PID %d)...\n", label, (int)pid);
 
     if(kill(pid, SIGKILL) == -1)
     {
@@ -150,8 +143,7 @@ static int kill_proc(
         }
 
         PRINT_ERROR("cannot send SIGKILL to %s (PID %d): %s",
-                    label, (int)pid,
-                    strerror(saved_errno));
+                    label, (int)pid, strerror(saved_errno));
         return 1;
     }
 
@@ -167,8 +159,7 @@ static int kill_proc(
         }
 
         /* rc == 0 (alive) or rc == -1 with EPERM (still exists) */
-        PRINT_ERROR("Error: %s (PID %d) still"
-                    " running after SIGKILL.", label, (int)pid);
+        PRINT_ERROR("Error: %s (PID %d) still" " running after SIGKILL.", label, (int)pid);
         return 1;
     }
 }
@@ -194,8 +185,7 @@ static int remove_fps(
     if(fps_connect(
                 name, &fps, 0) == -1)
     {
-        PRINT_ERROR("Error: cannot connect to"
-                    " FPS '%s'.", name);
+        PRINT_ERROR("Error: cannot connect to" " FPS '%s'.", name);
         return 1;
     }
 
@@ -238,18 +228,14 @@ static int remove_fps(
             {
                 if(verbose)
                 {
-                    printf("Terminating conf process"
-                           " (PID %d) for '%s'...\n",
-                           (int) cpid, name);
+                    printf("Terminating conf process" " (PID %d) for '%s'...\n", (int) cpid, name);
                 }
                 kill(cpid, SIGTERM);
                 if(!wait_for_death(cpid, 2000))
                 {
                     if(verbose)
                     {
-                        printf("Process did not exit after"
-                               " SIGTERM, sending"
-                               " SIGKILL...\n");
+                        printf("Process did not exit after" " SIGTERM, sending" " SIGKILL...\n");
                     }
                     kill(cpid, SIGKILL);
                     if(!wait_for_death(cpid, 1000))
@@ -263,9 +249,7 @@ static int remove_fps(
             }
             else
             {
-                PRINT_ERROR("conf process (PID %d) running for '%s'.",
-                            (int) cpid,
-                            name);
+                PRINT_ERROR("conf process (PID %d) running for '%s'.", (int) cpid, name);
                 running = 1;
             }
         }
@@ -281,18 +265,14 @@ static int remove_fps(
             {
                 if(verbose)
                 {
-                    printf("Terminating run process"
-                           " (PID %d) for '%s'...\n",
-                           (int) rpid, name);
+                    printf("Terminating run process" " (PID %d) for '%s'...\n", (int) rpid, name);
                 }
                 kill(rpid, SIGTERM);
                 if(!wait_for_death(rpid, 2000))
                 {
                     if(verbose)
                     {
-                        printf("Process did not exit after"
-                               " SIGTERM, sending"
-                               " SIGKILL...\n");
+                        printf("Process did not exit after" " SIGTERM, sending" " SIGKILL...\n");
                     }
                     kill(rpid, SIGKILL);
                     if(!wait_for_death(rpid, 1000))
@@ -306,9 +286,7 @@ static int remove_fps(
             }
             else
             {
-                PRINT_ERROR("run process (PID %d) running for '%s'.",
-                            (int) rpid,
-                            name);
+                PRINT_ERROR("run process (PID %d) running for '%s'.", (int) rpid, name);
                 running = 1;
             }
         }
@@ -319,17 +297,14 @@ static int remove_fps(
 
     if(running)
     {
-        PRINT_ERROR("Abort: stop processes"
-                    " before removing '%s' (or use -f/--force).", name);
-        fps_disconnect(
-            &fps);
+        PRINT_ERROR("Abort: stop processes" " before removing '%s' (or use -f/--force).", name);
+        fps_disconnect(&fps);
         return 1;
     }
 
     if(verbose)
     {
-        printf("Removing FPS '%s'...\n",
-               name);
+        printf("Removing FPS '%s'...\n", name);
     }
 
     functionparameter_FPSremove(&fps);
@@ -343,8 +318,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                FR_DESC, FR_DESC_LONG);
+    int action = milk_help_init(argc, argv, FR_DESC, FR_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -374,17 +348,14 @@ int main(
     {
         switch(opt)
         {
-        case 'f':
-            force   = 1;
+        case 'f': force   = 1;
             break;
-        case 'v':
-            verbose = 1;
+        case 'v': verbose = 1;
             break;
         case 'h':
         case '1':
             break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -411,12 +382,10 @@ int main(
     if(1)    /* Always scan directory unless we specifically only want to target exactly one existing pattern but let's scan anyway */
     {
         char shmdir[200];
-        function_parameter_struct_shmdirname(
-            shmdir);
+        function_parameter_struct_shmdirname(shmdir);
 
         char pat[300];
-        snprintf(pat, sizeof(pat),
-                 "%s/*.fps.shm", shmdir);
+        snprintf(pat, sizeof(pat), "%s/*.fps.shm", shmdir);
 
         glob_t gl;
         int ret = glob(pat, 0, NULL, &gl);
@@ -431,18 +400,15 @@ int main(
         }
         int count = (int)gl.gl_pathc;
         int matched_count = 0;
-        char **names = calloc(count,
-                              sizeof(char *));
+        char **names = calloc(count, sizeof(char *));
 
         for(int ii = 0; ii < count; ii++)
         {
-            char *base =
-                strrchr(gl.gl_pathv[ii], '/');
+            char *base = strrchr(gl.gl_pathv[ii], '/');
             base = base ? base + 1 : gl.gl_pathv[ii];
             /* strip .fps.shm suffix */
             char *dot = strstr(base, ".fps.shm");
-            int len = dot ? (int)(dot - base)
-                      : (int)strlen(base);
+            int len = dot ? (int)(dot - base) : (int)strlen(base);
 
             char tmp_name[256];
             snprintf(tmp_name, sizeof(tmp_name), "%.*s", len, base);
@@ -490,8 +456,7 @@ int main(
         {
             /* Exactly one match for a CLI arg:
              * remove without interactive prompt */
-            int rc = remove_fps(
-                         names[0], verbose, force);
+            int rc = remove_fps(names[0], verbose, force);
             for(int ii = 0;
                     ii < matched_count; ii++)
             {
@@ -510,13 +475,10 @@ int main(
         for(int ii = 0;
                 ii < matched_count; ii++)
         {
-            printf("  %3d  %s\n",
-                   ii + 1, names[ii]);
+            printf("  %3d  %s\n", ii + 1, names[ii]);
         }
 
-        printf("\n  Enter number(s) to remove"
-               " (e.g. 1 3 5-7, 'all',"
-               " 0 to cancel): ");
+        printf("\n  Enter number(s) to remove" " (e.g. 1 3 5-7, 'all'," " 0 to cancel): ");
         fflush(stdout);
 
         struct termios old_term;
@@ -524,25 +486,20 @@ int main(
 
         if(is_tty)
         {
-            tcgetattr(STDIN_FILENO,
-                      &old_term);
+            tcgetattr(STDIN_FILENO, &old_term);
             struct termios t = old_term;
 
             t.c_lflag |= (ICANON | ECHO);
             t.c_iflag |= ICRNL;
-            tcsetattr(STDIN_FILENO,
-                      TCSANOW, &t);
+            tcsetattr(STDIN_FILENO, TCSANOW, &t);
         }
 
         char linebuf[512];
-        int fgets_ok =
-            (fgets(linebuf, sizeof(linebuf),
-                   stdin) != NULL);
+        int fgets_ok = (fgets(linebuf, sizeof(linebuf), stdin) != NULL);
 
         if(is_tty)
         {
-            tcsetattr(STDIN_FILENO,
-                      TCSANOW, &old_term);
+            tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
         }
 
         if(!fgets_ok)
@@ -563,8 +520,7 @@ int main(
 
         /* Strip trailing \r \n */
         {
-            char *p =
-                linebuf + strlen(linebuf);
+            char *p = linebuf + strlen(linebuf);
 
             while(p > linebuf
                     && (*(p - 1) == '\n'
@@ -574,10 +530,8 @@ int main(
             }
         }
 
-        int *selected =
-            calloc(matched_count, sizeof(int));
-        int nsel = parse_multiselect(
-                       linebuf, selected, matched_count);
+        int *selected = calloc(matched_count, sizeof(int));
+        int nsel = parse_multiselect(linebuf, selected, matched_count);
 
         if(nsel <= 0)
         {
@@ -603,8 +557,7 @@ int main(
         {
             if(selected[ii])
             {
-                errors += remove_fps(
-                              names[ii], verbose, force);
+                errors += remove_fps(names[ii], verbose, force);
             }
         }
 
@@ -623,8 +576,7 @@ int main(
 
         if(errors > 0)
         {
-            PRINT_ERROR("%d FPS(es) failed"
-                        " to remove.", errors);
+            PRINT_ERROR("%d FPS(es) failed" " to remove.", errors);
             return 1;
         }
         return 0;

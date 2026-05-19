@@ -171,8 +171,7 @@ errno_t list_image_ID_ncurses()
         if(dcimg[i].used == 1)
         {
             datatype = dcimg[i].md[0].datatype;
-            tmp_long = ((long long)(dcimg[i].md[0].nelement)) *
-                       ImageStreamIO_typesize(datatype);
+            tmp_long = ((long long)(dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             if(dcimg[i].md[0].shared == 1)
             {
@@ -225,8 +224,7 @@ errno_t list_image_ID_ncurses()
             }
 
             printw("%10ld Kb %6.2f   ",
-                   (long)(tmp_long / 1024),
-                   (float)(100.0 * tmp_long / sizeb));
+                   (long)(tmp_long / 1024), (float)(100.0 * tmp_long / sizeb));
 
             timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
@@ -376,8 +374,7 @@ errno_t memory_monitor(const char *termttyname)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings,   nb_bindings, compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings,   nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_streamCTRL_mmon_ui()

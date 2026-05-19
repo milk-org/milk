@@ -38,9 +38,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(
  * ============================================================= */
 
 static long long p_pid = 0;
-static char p_name[
-     FUNCTION_PARAMETER_STRMAXLEN]
-    = "realtime";
+static char p_name[FUNCTION_PARAMETER_STRMAXLEN] = "realtime";
 static long long p_rtprio = 80;
 
 
@@ -142,8 +140,7 @@ FPS_CMDSETTINGS_INIT(tsete, CLIcmddata_tsete, FPS_app_info_tsete)
 
 static errno_t __attribute__((unused)) compute_tsete()
 {
-    COREMOD_TOOLS_mvProcTsetExt(
-        p_pid, p_name);
+    COREMOD_TOOLS_mvProcTsetExt(p_pid, p_name);
     return RETURN_SUCCESS;
 }
 
@@ -228,11 +225,8 @@ FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    COREMOD_TOOLS_mvProcCPUsetExt(
-        p_pid, p_name, p_rtprio);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START COREMOD_TOOLS_mvProcCPUsetExt(p_pid, p_name, p_rtprio);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -248,9 +242,7 @@ static FPS_CLI_BINDING bindings_rtp[] =
 {
     FPS_PARAMS_RTP(FPS_X_BINDING)
 };
-static const int nb_bindings_rtp =
-    sizeof(bindings_rtp) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_rtp = sizeof(bindings_rtp) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_rtp[] =
 {
     FPS_PARAMS_RTP(FPS_X_FARG)
@@ -260,9 +252,7 @@ static FPS_CLI_BINDING bindings_tset[] =
 {
     FPS_PARAMS_TSET(FPS_X_BINDING)
 };
-static const int nb_bindings_tset =
-    sizeof(bindings_tset) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_tset = sizeof(bindings_tset) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_tset[] =
 {
     FPS_PARAMS_TSET(FPS_X_FARG)
@@ -272,9 +262,7 @@ static FPS_CLI_BINDING bindings_tsete[] =
 {
     FPS_PARAMS_TSETE(FPS_X_BINDING)
 };
-static const int nb_bindings_tsete =
-    sizeof(bindings_tsete) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_tsete = sizeof(bindings_tsete) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_tsete[] =
 {
     FPS_PARAMS_TSETE(FPS_X_FARG)
@@ -286,95 +274,63 @@ static errno_t CLIfunction_rtp(void)
 {
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_rtp,
-               farg_rtp, &CLIcmddata_rtp,
-               bindings_rtp, nb_bindings_rtp,
-               compute_rtp);
+               farg_rtp, &CLIcmddata_rtp, bindings_rtp, nb_bindings_rtp, compute_rtp);
 }
 
 static errno_t CLIfunction_tset(void)
 {
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_tset,
-               farg_tset, &CLIcmddata_tset,
-               bindings_tset, nb_bindings_tset,
-               compute_tset);
+               farg_tset, &CLIcmddata_tset, bindings_tset, nb_bindings_tset, compute_tset);
 }
 
 static errno_t CLIfunction_tsete(void)
 {
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_tsete,
-               farg_tsete, &CLIcmddata_tsete,
-               bindings_tsete,
-               nb_bindings_tsete,
-               compute_tsete);
+               farg_tsete, &CLIcmddata_tsete, bindings_tsete, nb_bindings_tsete, compute_tsete);
 }
 
 static errno_t CLIfunction_cset(void)
 {
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_cset,
-               farg_tset, &CLIcmddata_cset,
-               bindings_tset, nb_bindings_tset,
-               compute_cset);
+               farg_tset, &CLIcmddata_cset, bindings_tset, nb_bindings_tset, compute_cset);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_tools__mvprocCPUset()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(
-        farg_rtp, bindings_rtp,
-        nb_bindings_rtp);
-    safe_fps_fill_farg_examples(
-        farg_tset, bindings_tset,
-        nb_bindings_tset);
-    safe_fps_fill_farg_examples(
-        farg_tsete, bindings_tsete,
-        nb_bindings_tsete);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg_rtp, bindings_rtp, nb_bindings_rtp);
+    safe_fps_fill_farg_examples(farg_tset, bindings_tset, nb_bindings_tset);
+    safe_fps_fill_farg_examples(farg_tsete, bindings_tsete, nb_bindings_tsete);
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_rtp,
-                       CLIfunction_rtp);
-        CLIcmddata_rtp.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_rtp, CLIfunction_rtp);
+        CLIcmddata_rtp.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_tset,
-                       CLIfunction_tset);
-        CLIcmddata_tset.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_tset, CLIfunction_tset);
+        CLIcmddata_tset.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_tsete,
-                       CLIfunction_tsete);
-        CLIcmddata_tsete.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_tsete, CLIfunction_tsete);
+        CLIcmddata_tsete.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_cset,
-                       CLIfunction_cset);
-        CLIcmddata_cset.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_cset, CLIfunction_cset);
+        CLIcmddata_cset.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -398,10 +354,7 @@ int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
         return RETURN_FAILURE;
     }
 
-    snprintf(command,
-             sizeof(command),
-             "chrt -f -p %d %d\n",
-             rtprio, getpid());
+    snprintf(command, sizeof(command), "chrt -f -p %d %d\n", rtprio, getpid());
     printf("Executing command: %s\n", command);
 
     EXECUTE_SYSTEM_COMMAND("%s", command);

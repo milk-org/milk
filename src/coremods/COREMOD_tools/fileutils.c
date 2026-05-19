@@ -47,8 +47,7 @@ static FPS_APP_INFO FPS_app_info =
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char p_fname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "val.txt";
+static char p_fname[FUNCTION_PARAMETER_STRMAXLEN] = "val.txt";
 
 static double p_value = 0.0;
 
@@ -73,11 +72,8 @@ FPS_V2_SECTION5(FPS_PARAMS)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    FUNC_CHECK_RETURN(
-        write_float_file(p_fname, p_value));
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START FUNC_CHECK_RETURN(write_float_file(p_fname, p_value));
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -85,20 +81,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_tools__fileutils()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi = RegisterCLIcmd(
-                   CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }
@@ -159,9 +150,7 @@ int read_config_parameter_exists(
     }
     if(read == 0)
     {
-        PRINT_WARNING("parameter \"%s\" does not exist in file \"%s\"",
-                      keyword,
-                      config_file);
+        PRINT_WARNING("parameter \"%s\" does not exist in file \"%s\"", keyword, config_file);
     }
 
     fclose(fp);
@@ -193,17 +182,14 @@ int read_config_parameter(
         sscanf(line, "%100s %100s", keyw, cont);
         if(strcmp(keyw, keyword) == 0)
         {
-            snprintf(content, SBUFFERSIZE,
-                     "%s", cont);
+            snprintf(content, SBUFFERSIZE, "%s", cont);
             read = 1;
         }
         /*      printf("KEYWORD : \"%s\"   CONTENT : \"%s\"\n",keyw,cont);*/
     }
     if(read == 0)
     {
-        PRINT_ERROR("parameter \"%s\" does not exist in file \"%s\"",
-                    keyword,
-                    config_file);
+        PRINT_ERROR("parameter \"%s\" does not exist in file \"%s\"", keyword, config_file);
         snprintf(content, SBUFFERSIZE, "-");
         //  exit(0);
     }

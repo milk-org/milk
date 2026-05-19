@@ -46,8 +46,7 @@ int cli_intercept_cmd_return(const char *p)
         }
         if(*rv != '\0')
         {
-            cli_last_retval =
-                (int) strtol(rv, NULL, 0);
+            cli_last_retval = (int) strtol(rv, NULL, 0);
         }
         cli_return_flag = 1;
         return 1;
@@ -74,9 +73,7 @@ int cli_intercept_cmd_exit(const char *p)
             }
             if(*ev != '\0')
             {
-                exitcode =
-                    (int) strtol(ev,
-                                 NULL, 0);
+                exitcode = (int) strtol(ev, NULL, 0);
             }
         }
 
@@ -116,8 +113,7 @@ int cli_intercept_cmd_shift(const char *p)
             }
             if(*sv != '\0')
             {
-                n = (int) strtol(sv,
-                                 NULL, 0);
+                n = (int) strtol(sv, NULL, 0);
             }
         }
         if(n < 1)
@@ -129,14 +125,11 @@ int cli_intercept_cmd_shift(const char *p)
                 i < CLI_FUNC_MAXARGS; i++)
         {
             char dst[16], src[16];
-            snprintf(dst, sizeof(dst),
-                     "%d", i);
-            snprintf(src, sizeof(src),
-                     "%d", i + n);
+            snprintf(dst, sizeof(dst), "%d", i);
+            snprintf(src, sizeof(src), "%d", i + n);
             if(i + n < CLI_FUNC_MAXARGS)
             {
-                const char *sv2 =
-                    cli_var_get(src);
+                const char *sv2 = cli_var_get(src);
                 if(sv2 != NULL)
                 {
                     cli_var_set(dst, sv2);
@@ -200,10 +193,7 @@ int cli_intercept_cmd_procctl(const char *p)
         }
         if(ctrlval < 0)
         {
-            printf(
-                "procctl: unknown action "
-                "'%s' (use run|pause|"
-                "step|stop)\n", ap);
+            printf("procctl: unknown action " "'%s' (use run|pause|" "step|stop)\n", ap);
             return 1;
         }
         if(pinfolist != NULL)
@@ -219,8 +209,7 @@ int cli_intercept_cmd_procctl(const char *p)
                             ->pnamearray[pi],
                             pname) == 0)
                 {
-                    fpid = pinfolist
-                           ->PIDarray[pi];
+                    fpid = pinfolist ->PIDarray[pi];
                     break;
                 }
             }
@@ -228,22 +217,15 @@ int cli_intercept_cmd_procctl(const char *p)
             {
                 char pfn[512];
                 char pdname[256];
-                processinfo_procdirname(
-                    pdname);
-                snprintf(pfn, sizeof(pfn),
-                         "%s/proc.%d.shm",
-                         pdname,
-                         (int) fpid);
+                processinfo_procdirname(pdname);
+                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
                 int pfd = -1;
-                PROCESSINFO *pi =
-                    processinfo_shm_link(
-                        pfn, &pfd);
+                PROCESSINFO *pi = processinfo_shm_link(pfn, &pfd);
                 if(pi != MAP_FAILED
                         && pi != NULL)
                 {
                     pi->CTRLval = ctrlval;
-                    munmap(pi,
-                           sizeof(PROCESSINFO));
+                    munmap(pi, sizeof(PROCESSINFO));
                     close(pfd);
                 }
                 else if(pfd >= 0)
@@ -253,10 +235,7 @@ int cli_intercept_cmd_procctl(const char *p)
             }
             else
             {
-                printf(
-                    "procctl: process "
-                    "'%s' not found\n",
-                    pname);
+                printf("procctl: process " "'%s' not found\n", pname);
             }
         }
         return 1;
@@ -351,25 +330,13 @@ int cli_intercept_cmd_procwait(const char *p)
                                     pi],
                                 pname) == 0)
                     {
-                        pid_t fpid =
-                            pinfolist
-                            ->PIDarray[
-                                pi];
+                        pid_t fpid = pinfolist ->PIDarray[pi];
                         char pfn[512];
                         char pdname[256];
-                        processinfo_procdirname(
-                            pdname);
-                        snprintf(
-                            pfn,
-                            sizeof(pfn),
-                            "%s/proc."
-                            "%d.shm",
-                            pdname,
-                            (int) fpid);
+                        processinfo_procdirname(pdname);
+                        snprintf(pfn, sizeof(pfn), "%s/proc." "%d.shm", pdname, (int) fpid);
                         int pfd = -1;
-                        PROCESSINFO *pii =
-                            processinfo_shm_link(
-                                pfn, &pfd);
+                        PROCESSINFO *pii = processinfo_shm_link(pfn, &pfd);
                         if(pii
                                 != MAP_FAILED
                                 && pii != NULL)
@@ -378,12 +345,9 @@ int cli_intercept_cmd_procwait(const char *p)
                                     ->loopstat
                                     == tgt)
                             {
-                                cli_last_retval
-                                    = 0;
+                                cli_last_retval = 0;
                             }
-                            munmap(pii,
-                                   sizeof(
-                                       PROCESSINFO));
+                            munmap(pii, sizeof(PROCESSINFO));
                             close(pfd);
                         }
                         else if(pfd >= 0)
@@ -421,10 +385,8 @@ int cli_intercept_cmd_procstat(const char *p)
         filter[0] = '\0';
         if(*ap != '\0')
         {
-            strncpy(filter, ap,
-                    sizeof(filter) - 1);
-            filter[sizeof(filter) - 1]
-                = '\0';
+            strncpy(filter, ap, sizeof(filter) - 1);
+            filter[sizeof(filter) - 1] = '\0';
         }
         if(pinfolist != NULL)
         {
@@ -446,19 +408,11 @@ int cli_intercept_cmd_procstat(const char *p)
                 {
                     continue;
                 }
-                pid_t fpid =
-                    pinfolist
-                    ->PIDarray[pi];
+                pid_t fpid = pinfolist ->PIDarray[pi];
                 char pfn[512];
-                snprintf(pfn,
-                         sizeof(pfn),
-                         "%s/proc.%d.shm",
-                         pdname,
-                         (int) fpid);
+                snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
                 int pfd = -1;
-                PROCESSINFO *pii =
-                    processinfo_shm_link(
-                        pfn, &pfd);
+                PROCESSINFO *pii = processinfo_shm_link(pfn, &pfd);
                 if(pii == MAP_FAILED
                         || pii == NULL)
                 {
@@ -468,45 +422,31 @@ int cli_intercept_cmd_procstat(const char *p)
                     }
                     continue;
                 }
-                const char *stname =
-                    "UNKNOWN";
+                const char *stname = "UNKNOWN";
                 switch(pii->loopstat)
                 {
-                case 0:
-                    stname = "INIT";
+                case 0: stname = "INIT";
                     break;
-                case 1:
-                    stname = "ACTIVE";
+                case 1: stname = "ACTIVE";
                     break;
-                case 2:
-                    stname = "PAUSED";
+                case 2: stname = "PAUSED";
                     break;
-                case 3:
-                    stname = "STOPPED";
+                case 3: stname = "STOPPED";
                     break;
-                case 4:
-                    stname = "ERROR";
+                case 4: stname = "ERROR";
                     break;
-                case 5:
-                    stname = "SPINNING";
+                case 5: stname = "SPINNING";
                     break;
-                case 6:
-                    stname = "CRASHED";
+                case 6: stname = "CRASHED";
                     break;
                 }
                 double hz = 0.0;
                 if(pii->dtmedian_iter_ns
                         > 0)
                 {
-                    hz = 1.0e9
-                         / (double)
-                         pii
-                         ->dtmedian_iter_ns;
+                    hz = 1.0e9 / (double) pii ->dtmedian_iter_ns;
                 }
-                double us =
-                    (double)
-                    pii->dtmedian_exec_ns
-                    / 1000.0;
+                double us = (double) pii->dtmedian_exec_ns / 1000.0;
                 printf(
                     "name=%s\n"
                     "pid=%d\n"
@@ -524,13 +464,8 @@ int cli_intercept_cmd_procstat(const char *p)
                     pii->loopcnt,
                     hz, us,
                     pii->RT_priority,
-                    pii->CTRLval,
-                    (unsigned long)
-                    pii
-                    ->triggermissedframe_cumul,
-                    pii->tmuxname);
-                munmap(pii,
-                       sizeof(PROCESSINFO));
+                    pii->CTRLval, (unsigned long) pii ->triggermissedframe_cumul, pii->tmuxname);
+                munmap(pii, sizeof(PROCESSINFO));
                 close(pfd);
                 if(filter[0] != '\0')
                 {
@@ -555,19 +490,12 @@ int cli_intercept_cmd_time(const char *p)
             cmd++;
         }
         struct timespec t0, t1;
-        clock_gettime(
-            CLOCK_MONOTONIC, &t0);
+        clock_gettime(CLOCK_MONOTONIC, &t0);
         CLI_execute_string(cmd);
-        clock_gettime(
-            CLOCK_MONOTONIC, &t1);
+        clock_gettime(CLOCK_MONOTONIC, &t1);
         double elapsed =
-            (double)(t1.tv_sec - t0.tv_sec)
-            + (double)(t1.tv_nsec
-                       - t0.tv_nsec)
-            / 1.0e9;
-        printf(
-            "\nreal\t%.3fs\n",
-            elapsed);
+            (double)(t1.tv_sec - t0.tv_sec) + (double)(t1.tv_nsec - t0.tv_nsec) / 1.0e9;
+        printf("\nreal\t%.3fs\n", elapsed);
         return 1;
     }
     return 0;
@@ -587,14 +515,12 @@ static int cli_assert_eval(
     int type = 0;
     long lval = 0;
     double dval = 0.0;
-    int ok = cli_calc_eval_math_to_val(
-                 expr, &type, &lval, &dval);
+    int ok = cli_calc_eval_math_to_val(expr, &type, &lval, &dval);
     if(!ok)
     {
         return 0;
     }
-    *out = (type == 1)
-           ? (double) lval : dval;
+    *out = (type == 1) ? (double) lval : dval;
     return 1;
 }
 
@@ -705,9 +631,7 @@ static int cli_assert_cmp(const char *ap)
     int    o1len = 1 + o1eq;
 
     char part1[512];
-    cli_assert_trim(
-        part1, sizeof(part1),
-        ap, (int)(op1 - ap));
+    cli_assert_trim(part1, sizeof(part1), ap, (int)(op1 - ap));
 
     const char *after1 = op1 + o1len;
 
@@ -730,17 +654,11 @@ static int cli_assert_cmp(const char *ap)
         int  o2len = 1 + o2eq;
 
         char part2[512];
-        cli_assert_trim(
-            part2, sizeof(part2),
-            after1,
-            (int)(op2 - after1));
+        cli_assert_trim(part2, sizeof(part2), after1, (int)(op2 - after1));
 
         char part3[512];
         const char *after2 = op2 + o2len;
-        cli_assert_trim(
-            part3, sizeof(part3),
-            after2,
-            (int) strlen(after2));
+        cli_assert_trim(part3, sizeof(part3), after2, (int) strlen(after2));
 
         double v1, v2, v3;
         if(!cli_assert_eval(part1, &v1)
@@ -753,19 +671,12 @@ static int cli_assert_cmp(const char *ap)
                 "cannot evaluate: "
                 "%s %s %s %s %s"
                 "\033[0m\n",
-                part1,
-                cli_cmp_sym(o1ch, o1eq),
-                part2,
-                cli_cmp_sym(o2ch, o2eq),
-                part3);
+                part1, cli_cmp_sym(o1ch, o1eq), part2, cli_cmp_sym(o2ch, o2eq), part3);
             cli_last_retval = 1;
             return 1;
         }
 
-        int ok = cli_cmp_ok(
-                     v1, v2, o1ch, o1eq)
-                 && cli_cmp_ok(
-                     v2, v3, o2ch, o2eq);
+        int ok = cli_cmp_ok(v1, v2, o1ch, o1eq) && cli_cmp_ok(v2, v3, o2ch, o2eq);
         if(ok)
         {
             printf(
@@ -776,10 +687,7 @@ static int cli_assert_cmp(const char *ap)
                 "\033[0m\n",
                 cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
-                part2,
-                cli_float_digits, v2,
-                cli_cmp_sym(o2ch, o2eq),
-                cli_float_digits, v3);
+                part2, cli_float_digits, v2, cli_cmp_sym(o2ch, o2eq), cli_float_digits, v3);
         }
         else
         {
@@ -791,10 +699,7 @@ static int cli_assert_cmp(const char *ap)
                 "\033[0m\n",
                 cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
-                part2,
-                cli_float_digits, v2,
-                cli_cmp_sym(o2ch, o2eq),
-                cli_float_digits, v3);
+                part2, cli_float_digits, v2, cli_cmp_sym(o2ch, o2eq), cli_float_digits, v3);
             cli_last_retval = 1;
             if(cli_flag_errexit)
             {
@@ -806,10 +711,7 @@ static int cli_assert_cmp(const char *ap)
     {
         /* Single: part1 op1 rhs */
         char rhs[512];
-        cli_assert_trim(
-            rhs, sizeof(rhs),
-            after1,
-            (int) strlen(after1));
+        cli_assert_trim(rhs, sizeof(rhs), after1, (int) strlen(after1));
 
         double v1, v2;
         if(!cli_assert_eval(part1, &v1)
@@ -818,12 +720,7 @@ static int cli_assert_cmp(const char *ap)
             printf(
                 "\033[1;31m"
                 "[ASSERT FAIL] "
-                "cannot evaluate: "
-                "%s %s %s"
-                "\033[0m\n",
-                part1,
-                cli_cmp_sym(o1ch, o1eq),
-                rhs);
+                "cannot evaluate: " "%s %s %s" "\033[0m\n", part1, cli_cmp_sym(o1ch, o1eq), rhs);
             cli_last_retval = 1;
             return 1;
         }
@@ -835,10 +732,7 @@ static int cli_assert_cmp(const char *ap)
                 "[ASSERT PASS] "
                 "%s(=%.*g) %s %.*g"
                 "\033[0m\n",
-                part1,
-                cli_float_digits, v1,
-                cli_cmp_sym(o1ch, o1eq),
-                cli_float_digits, v2);
+                part1, cli_float_digits, v1, cli_cmp_sym(o1ch, o1eq), cli_float_digits, v2);
         }
         else
         {
@@ -848,10 +742,7 @@ static int cli_assert_cmp(const char *ap)
                 "%s(=%.*g) NOT %s "
                 "%.*g"
                 "\033[0m\n",
-                part1,
-                cli_float_digits, v1,
-                cli_cmp_sym(o1ch, o1eq),
-                cli_float_digits, v2);
+                part1, cli_float_digits, v1, cli_cmp_sym(o1ch, o1eq), cli_float_digits, v2);
             cli_last_retval = 1;
             if(cli_flag_errexit)
             {
@@ -878,37 +769,27 @@ int cli_intercept_cmd_assert(const char *p)
             /* Bracket syntax:
              * assert [ condition ] "msg" */
             ap++;
-            const char *end =
-                strrchr(ap, ']');
+            const char *end = strrchr(ap, ']');
             if(end != NULL)
             {
                 char cs[512];
-                int clen =
-                    (int)(end - ap);
+                int clen = (int)(end - ap);
                 if(clen
                         >= (int) sizeof(cs))
                 {
-                    clen =
-                        (int) sizeof(cs)
-                        - 1;
+                    clen = (int) sizeof(cs) - 1;
                 }
-                memcpy(cs, ap,
-                       (size_t) clen);
+                memcpy(cs, ap, (size_t) clen);
                 cs[clen] = '\0';
-                int result =
-                    cli_eval_test(cs);
+                int result = cli_eval_test(cs);
                 if(result)
                 {
-                    printf(
-                        "\033[1;32m"
-                        "[ASSERT PASS]"
-                        "\033[0m\n");
+                    printf("\033[1;32m" "[ASSERT PASS]" "\033[0m\n");
                     cli_last_retval = 0;
                 }
                 else
                 {
-                    const char *msg =
-                        end + 1;
+                    const char *msg = end + 1;
                     while(*msg == ' '
                             || *msg == '\t')
                     {
@@ -919,8 +800,7 @@ int cli_intercept_cmd_assert(const char *p)
                     {
                         msg++;
                     }
-                    int mlen =
-                        (int) strlen(msg);
+                    int mlen = (int) strlen(msg);
                     if(mlen > 0
                             && (msg[mlen - 1]
                                 == '"'
@@ -928,31 +808,19 @@ int cli_intercept_cmd_assert(const char *p)
                                 == '\''))
                     {
                         char mb[512];
-                        strncpy(
-                            mb,          msg,
-                            sizeof(mb) - 1);
-                        mb[sizeof(mb) - 1]
-                            = '\0';
+                        strncpy(mb,          msg, sizeof(mb) - 1);
+                        mb[sizeof(mb) - 1] = '\0';
                         if(mlen - 1
                                 < (int)
                                 sizeof(mb))
                         {
-                            mb[mlen - 1]
-                                = '\0';
+                            mb[mlen - 1] = '\0';
                         }
-                        printf(
-                            "\033[1;31m"
-                            "[ASSERT FAIL] "
-                            "%s\033[0m\n",
-                            mb);
+                        printf("\033[1;31m" "[ASSERT FAIL] " "%s\033[0m\n", mb);
                     }
                     else
                     {
-                        printf(
-                            "\033[1;31m"
-                            "[ASSERT FAIL] "
-                            "%s\033[0m\n",
-                            msg);
+                        printf("\033[1;31m" "[ASSERT FAIL] " "%s\033[0m\n", msg);
                     }
                     cli_last_retval = 1;
                     if(cli_flag_errexit)
@@ -963,10 +831,7 @@ int cli_intercept_cmd_assert(const char *p)
             }
             else
             {
-                printf(
-                    "\033[1;31m"
-                    "[ASSERT] missing ']'"
-                    "\033[0m\n");
+                printf("\033[1;31m" "[ASSERT] missing ']'" "\033[0m\n");
                 cli_last_retval = 1;
             }
         }
@@ -983,10 +848,7 @@ int cli_intercept_cmd_assert(const char *p)
             {
                 printf(
                     "\033[1;31m"
-                    "[ASSERT] syntax: "
-                    "assert expr=expected "
-                    "[~tol] or expr<val"
-                    "\033[0m\n");
+                    "[ASSERT] syntax: " "assert expr=expected " "[~tol] or expr<val" "\033[0m\n");
                 cli_last_retval = 1;
             }
             else
@@ -997,29 +859,24 @@ int cli_intercept_cmd_assert(const char *p)
                 {
                     llen = 511;
                 }
-                memcpy(lhs, ap,
-                       (size_t) llen);
+                memcpy(lhs, ap, (size_t) llen);
                 lhs[llen] = '\0';
 
                 const char *rp = eq + 1;
                 char rhs[512];
                 double tol = 0.0;
 
-                const char *tilde =
-                    strchr(rp, '~');
+                const char *tilde = strchr(rp, '~');
                 if(tilde != NULL)
                 {
-                    int rlen =
-                        (int)(tilde - rp);
+                    int rlen = (int)(tilde - rp);
                     if(rlen > 511)
                     {
                         rlen = 511;
                     }
-                    memcpy(rhs, rp,
-                           (size_t) rlen);
+                    memcpy(rhs, rp, (size_t) rlen);
                     rhs[rlen] = '\0';
-                    tol = fabs(strtod(
-                                   tilde + 1, NULL));
+                    tol = fabs(strtod(tilde + 1, NULL));
                 }
                 else
                 {
@@ -1029,8 +886,7 @@ int cli_intercept_cmd_assert(const char *p)
 
                 /* Trim trailing ws */
                 {
-                    int ri = (int)
-                             strlen(rhs) - 1;
+                    int ri = (int) strlen(rhs) - 1;
                     while(ri >= 0
                             && (rhs[ri] == ' '
                                 || rhs[ri]
@@ -1043,10 +899,7 @@ int cli_intercept_cmd_assert(const char *p)
                 int ltype = 0;
                 long llval = 0;
                 double ldval = 0.0;
-                int lok =
-                    cli_calc_eval_math_to_val(
-                        lhs, &ltype,
-                        &llval, &ldval);
+                int lok = cli_calc_eval_math_to_val(lhs, &ltype, &llval, &ldval);
                 if(lok && ltype == 1)
                 {
                     ldval = (double) llval;
@@ -1055,10 +908,7 @@ int cli_intercept_cmd_assert(const char *p)
                 int rtype = 0;
                 long rlval = 0;
                 double rdval = 0.0;
-                int rok =
-                    cli_calc_eval_math_to_val(
-                        rhs, &rtype,
-                        &rlval, &rdval);
+                int rok = cli_calc_eval_math_to_val(rhs, &rtype, &rlval, &rdval);
                 if(rok && rtype == 1)
                 {
                     rdval = (double) rlval;
@@ -1068,17 +918,12 @@ int cli_intercept_cmd_assert(const char *p)
                 {
                     printf(
                         "\033[1;31m"
-                        "[ASSERT FAIL] "
-                        "cannot evaluate: "
-                        "%s = %s"
-                        "\033[0m\n",
-                        lhs, rhs);
+                        "[ASSERT FAIL] " "cannot evaluate: " "%s = %s" "\033[0m\n", lhs, rhs);
                     cli_last_retval = 1;
                 }
                 else
                 {
-                    double diff =
-                        fabs(ldval - rdval);
+                    double diff = fabs(ldval - rdval);
                     if(diff <= tol)
                     {
                         printf(
@@ -1090,11 +935,7 @@ int cli_intercept_cmd_assert(const char *p)
                             "\033[0m\n",
                             lhs,
                             cli_float_digits,
-                            ldval,
-                            cli_float_digits,
-                            rdval,
-                            cli_float_digits,
-                            tol);
+                            ldval, cli_float_digits, rdval, cli_float_digits, tol);
                     }
                     else
                     {
@@ -1110,11 +951,7 @@ int cli_intercept_cmd_assert(const char *p)
                             cli_float_digits,
                             ldval,
                             cli_float_digits,
-                            rdval,
-                            cli_float_digits,
-                            tol,
-                            cli_float_digits,
-                            diff);
+                            rdval, cli_float_digits, tol, cli_float_digits, diff);
                         cli_last_retval = 1;
                         if(cli_flag_errexit)
                         {
@@ -1289,18 +1126,14 @@ int cli_intercept_cmd_assigncheck(const char *p)
             printf("\033[1;32m[ASSIGNCHECK PASS] %s: old=%.*g new=%.*g diff=%.*g (tol %.*g)\033[0m\n",
                    var_ptr,
                    cli_float_digits, old_val,
-                   cli_float_digits, new_val,
-                   cli_float_digits, diff,
-                   cli_float_digits, tol_val);
+                   cli_float_digits, new_val, cli_float_digits, diff, cli_float_digits, tol_val);
         }
         else
         {
             printf("\033[1;31m[ASSIGNCHECK FAIL] %s: old=%.*g new=%.*g diff=%.*g (tol %.*g)\033[0m\n",
                    var_ptr,
                    cli_float_digits, old_val,
-                   cli_float_digits, new_val,
-                   cli_float_digits, diff,
-                   cli_float_digits, tol_val);
+                   cli_float_digits, new_val, cli_float_digits, diff, cli_float_digits, tol_val);
             cli_last_retval = 1;
             if(errexit_local || cli_flag_errexit)
             {
@@ -1345,8 +1178,7 @@ int cli_intercept_cmd_dpdigits(const char *p)
     const char *sp = strip_ws(p);
     if(strcmp(sp, "dpdigits") == 0)
     {
-        printf("dpdigits = %d\n",
-               cli_float_digits);
+        printf("dpdigits = %d\n", cli_float_digits);
         return 1;
     }
     if(starts_with(sp, "dpdigits ")
@@ -1367,8 +1199,7 @@ int cli_intercept_cmd_dpdigits(const char *p)
             val = 17;
         }
         cli_float_digits = val;
-        printf("dpdigits = %d\n",
-               cli_float_digits);
+        printf("dpdigits = %d\n", cli_float_digits);
         return 1;
     }
     return 0;
@@ -1406,18 +1237,11 @@ int cli_intercept_cmd_watch(const char *p)
                 wp++;
             }
             struct timespec ts;
-            ts.tv_sec =
-                (time_t) interval;
-            ts.tv_nsec =
-                (long)((interval
-                        - (double) ts.tv_sec)
-                       * 1.0e9);
+            ts.tv_sec = (time_t) interval;
+            ts.tv_nsec = (long)((interval - (double) ts.tv_sec) * 1.0e9);
             while(!cli_break_flag)
             {
-                printf(
-                    "\033[2J\033[H"
-                    "Every %.1fs: %s\n\n",
-                    interval, wp);
+                printf("\033[2J\033[H" "Every %.1fs: %s\n\n", interval, wp);
                 CLI_execute_string(wp);
                 nanosleep(&ts, NULL);
             }

@@ -75,12 +75,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
  *  PARAMS
  * ============================================================= */
 
-static char p_imname[
-     FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
-static char p_ipaddr[
-     FUNCTION_PARAMETER_STRMAXLEN]
-    = "127.0.0.1";
+static char p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_ipaddr[FUNCTION_PARAMETER_STRMAXLEN] = "127.0.0.1";
 static long long p_port = 8888;
 static long long p_mode = 0;
 static long long p_rtprio = 80;
@@ -124,9 +120,7 @@ FPS_CMDSETTINGS_INIT(tsem, CLIcmddata_tsem, FPS_app_info_tsem)
 
 static errno_t __attribute__((unused)) compute_tsem()
 {
-    COREMOD_MEMORY_testfunction_semaphore(
-        p_imname, p_semtrig_tcp,
-        p_testmode);
+    COREMOD_MEMORY_testfunction_semaphore(p_imname, p_semtrig_tcp, p_testmode);
     return RETURN_SUCCESS;
 }
 
@@ -192,11 +186,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    COREMOD_MEMORY_image_NETWORKtransmit(
-        p_imname, p_ipaddr,
-        p_port, p_mode, p_rtprio);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    COREMOD_MEMORY_image_NETWORKtransmit(p_imname, p_ipaddr, p_port, p_mode, p_rtprio);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -237,8 +228,7 @@ FPS_CMDSETTINGS_INIT(rx, CLIcmddata_rx, FPS_app_info_rx)
 
 static errno_t __attribute__((unused)) compute_rx()
 {
-    COREMOD_MEMORY_image_NETWORKreceive(
-        p_port, p_mode, p_rtprio);
+    COREMOD_MEMORY_image_NETWORKreceive(p_port, p_mode, p_rtprio);
     return RETURN_SUCCESS;
 }
 
@@ -253,9 +243,7 @@ static FPS_CLI_BINDING bindings_tsem[] =
 {
     FPS_PARAMS_TSEM(FPS_X_BINDING)
 };
-static const int nb_bindings_tsem =
-    sizeof(bindings_tsem) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_tsem = sizeof(bindings_tsem) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_tsem[] =
 {
     FPS_PARAMS_TSEM(FPS_X_FARG)
@@ -265,9 +253,7 @@ static FPS_CLI_BINDING bindings_rx[] =
 {
     FPS_PARAMS_RX(FPS_X_BINDING)
 };
-static const int nb_bindings_rx =
-    sizeof(bindings_rx) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_rx = sizeof(bindings_rx) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_rx[] =
 {
     FPS_PARAMS_RX(FPS_X_FARG)
@@ -277,59 +263,39 @@ static errno_t CLIfunction_tsem(void)
 {
     return safe_fps_generic_CLIfunction(
                &FPS_app_info_tsem,
-               farg_tsem, &CLIcmddata_tsem,
-               bindings_tsem, nb_bindings_tsem,
-               compute_tsem);
+               farg_tsem, &CLIcmddata_tsem, bindings_tsem, nb_bindings_tsem, compute_tsem);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 static errno_t CLIfunction_rx(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info_rx,
-               farg_rx, &CLIcmddata_rx,
-               bindings_rx, nb_bindings_rx,
-               compute_rx);
+               &FPS_app_info_rx, farg_rx, &CLIcmddata_rx, bindings_rx, nb_bindings_rx, compute_rx);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__stream_TCP()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(
-        farg_tsem, bindings_tsem,
-        nb_bindings_tsem);
-    safe_fps_fill_farg_examples(
-        farg_rx, bindings_rx,
-        nb_bindings_rx);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg_tsem, bindings_tsem, nb_bindings_tsem);
+    safe_fps_fill_farg_examples(farg_rx, bindings_rx, nb_bindings_rx);
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_tsem,
-                       CLIfunction_tsem);
-        CLIcmddata_tsem.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_tsem, CLIfunction_tsem);
+        CLIcmddata_tsem.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_rx,
-                       CLIfunction_rx);
-        CLIcmddata_rx.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_rx, CLIfunction_rx);
+        CLIcmddata_rx.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -347,9 +313,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(
 
     {
         IMGID img = imgid_make_from_name(IDname);
-        resolveIMGID(
-            &img,  ERRMODE_ABORT,
-            dcimg, dcnimg);
+        resolveIMGID(&img,  ERRMODE_ABORT, dcimg, dcnimg);
         ID = img.ID;
     }
     IMAGE *img_p = &dcimg[ID];
@@ -366,13 +330,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(
         usleep(500);
 
         semval = ImageStreamIO_semvalue(img_p, semtrig);
-        snprintf(pinfomsg,
-                 200,
-                 "%ld TEST 0 semtrig %d  ID %ld  %d",
-                 loopcnt,
-                 semtrig,
-                 ID,
-                 semval);
+        snprintf(pinfomsg, 200, "%ld TEST 0 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
         printf("MSG: %s\n", pinfomsg);
         fflush(stdout);
 
@@ -397,26 +355,19 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(
             switch(errno)
             {
 
-            case EINTR:
-                printf(
-                    "    sem_wait call was interrupted by a signal "
-                    "handler\n");
+            case EINTR: printf("    sem_wait call was interrupted by a signal " "handler\n");
                 break;
 
-            case EINVAL:
-                printf("    not a valid semaphore\n");
+            case EINVAL: printf("    not a valid semaphore\n");
                 break;
 
             case EAGAIN:
                 printf(
                     "    The operation could not be performed "
-                    "without blocking (i.e., the semaphore "
-                    "currently has "
-                    "the value zero)\n");
+                    "without blocking (i.e., the semaphore " "currently has " "the value zero)\n");
                 break;
 
-            default:
-                printf("    ERROR: unknown code %d\n", rv);
+            default: printf("    ERROR: unknown code %d\n", rv);
                 break;
             }
         }
@@ -426,13 +377,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(
         }
 
         semval = ImageStreamIO_semvalue(img_p, semtrig);
-        snprintf(pinfomsg,
-                 200,
-                 "%ld TEST 1 semtrig %d  ID %ld  %d",
-                 loopcnt,
-                 semtrig,
-                 ID,
-                 semval);
+        snprintf(pinfomsg, 200, "%ld TEST 1 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
         printf("MSG: %s\n", pinfomsg);
         fflush(stdout);
 
@@ -505,9 +450,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     processinfo = processinfo_setup(pinfoname,
                                     descr,    // description
                                     pinfomsg, // message on startup
-                                    __FUNCTION__,
-                                    __FILE__,
-                                    __LINE__);
+                                    __FUNCTION__, __FILE__, __LINE__);
     printf(" done\n");
     fflush(stdout);
 
@@ -520,9 +463,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     {
         IMGID img = imgid_make_from_name(IDname);
-        resolveIMGID(
-            &img,  ERRMODE_ABORT,
-            dcimg, dcnimg);
+        resolveIMGID(&img,  ERRMODE_ABORT, dcimg, dcnimg);
         ID = img.ID;
     }
     img_p = &dcimg[ID];
@@ -572,12 +513,10 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         {
             printf(
                 "send() sent a different number of bytes than expected "
-                "%ld\n",
-                sizeof(IMAGE_METADATA));
+                "%ld\n", sizeof(IMAGE_METADATA));
             fflush(stdout);
             processinfo_error(processinfo,
-                              "send() sent a different number of bytes "
-                              "than expected");
+                              "send() sent a different number of bytes " "than expected");
             loopOK = 0;
         }
     }
@@ -603,13 +542,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
         if(-1 == ImageStreamIO_checktype(img_p->md->datatype, 0))
         {
-            PRINT_ERROR(
-                "wrong data type %d",
-                (int) img_p->md->datatype);
-            snprintf(errmsg,
-                     200,
-                     "WRONG DATA TYPE data type = %d\n",
-                     img_p->md->datatype);
+            PRINT_ERROR("wrong data type %d", (int) img_p->md->datatype);
+            snprintf(errmsg, 200, "WRONG DATA TYPE data type = %d\n", img_p->md->datatype);
             processinfo_error(processinfo, errmsg);
             loopOK = 0;
         }
@@ -626,8 +560,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         }
         else
         {
-            framesizeall =
-                framesize1 + img_p->md->NBkw * sizeof(IMAGE_KEYWORD);
+            framesizeall = framesize1 + img_p->md->NBkw * sizeof(IMAGE_KEYWORD);
         }
 
         buff = (char *) malloc(sizeof(char) * framesizeall);
@@ -641,9 +574,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         fflush(stdout);
     }
 
-    UseSem = stream_net_decide_sync(
-                 img_p->md->sem, mode, semtrig,
-                 processinfo);
+    UseSem = stream_net_decide_sync(img_p->md->sem, mode, semtrig, processinfo);
 
     long frameincr = 0;
     long cnt0previous = 0;
@@ -669,12 +600,9 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         }
         else
         {
-            semr = stream_net_sem_wait(
-                       img_p, semtrig);
+            semr = stream_net_sem_wait(img_p, semtrig);
 
-            stream_net_sem_drain(
-                img_p, semtrig,
-                &iter, processinfo);
+            stream_net_sem_drain(img_p, semtrig, &iter, processinfo);
         }
 
         processinfo_exec_start(processinfo);
@@ -687,9 +615,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 frame_md.cnt0 = img_p->md->cnt0;
                 frame_md.cnt1 = img_p->md->cnt1;
 
-                slice = stream_net_clamp_slice(
-                            img_p->md->cnt1,
-                            oldslice, NBslices);
+                slice = stream_net_clamp_slice(img_p->md->cnt1, oldslice, NBslices);
 
                 frame_md.cnt1 = slice;
 
@@ -720,8 +646,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                              "expected %ld  %ld  %ld",
                              rs,
                              (long) framesize,
-                             (long) framesizeall,
-                             (long) sizeof(TCP_BUFFER_METADATA));
+                             (long) framesizeall, (long) sizeof(TCP_BUFFER_METADATA));
                     printf("%s\n", errmsg);
                     fflush(stdout);
                     processinfo_WriteMessage(processinfo, errmsg);
@@ -733,9 +658,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 if(frameincr > 1)
                 {
                     printf("Skipped %ld frame(s) at index %ld %ld\n",
-                           frameincr - 1,
-                           (long)(img_p->md->cnt0),
-                           (long)(img_p->md->cnt1));
+                           frameincr - 1, (long)(img_p->md->cnt0), (long)(img_p->md->cnt1));
                 }
 
                 cnt0previous = img_p->md->cnt0;

@@ -89,11 +89,8 @@ void cli_save_last_argument(void)
     {
         long last = data.cmdNBarg - 1;
         strncpy(data.last_argument,
-                data.cmdargtoken[last].val.string,
-                sizeof(data.last_argument) - 1);
-        data.last_argument[
-            sizeof(data.last_argument) - 1]
-            = '\0';
+                data.cmdargtoken[last].val.string, sizeof(data.last_argument) - 1);
+        data.last_argument[sizeof(data.last_argument) - 1] = '\0';
     }
 }
 
@@ -107,25 +104,21 @@ errno_t cli_savehistory(void)
 {
     if(data.cmdNBarg < 2)
     {
-        printf("Usage: savehistory "
-               "<filename>\n");
+        printf("Usage: savehistory " "<filename>\n");
         return RETURN_FAILURE;
     }
-    const char *fname =
-        data.cmdargtoken[1].val.string;
+    const char *fname = data.cmdargtoken[1].val.string;
 
 #ifdef USE_READLINE
     if(write_history(fname) != 0)
     {
-        printf("savehistory: failed to write "
-               "'%s'\n", fname);
+        printf("savehistory: failed to write " "'%s'\n", fname);
         return RETURN_FAILURE;
     }
     printf("History saved to '%s'\n", fname);
     return RETURN_SUCCESS;
 #else
-    printf("savehistory: readline not "
-           "available\n");
+    printf("savehistory: readline not " "available\n");
     (void) fname;
     return RETURN_FAILURE;
 #endif
@@ -143,8 +136,7 @@ errno_t cli_history_show(void)
     int n = 20;  /* default */
     if(data.cmdNBarg >= 2)
     {
-        n = atoi(
-            data.cmdargtoken[1].val.string);
+        n = atoi(data.cmdargtoken[1].val.string);
         if(n <= 0)
         {
             n = 20;
@@ -166,8 +158,7 @@ errno_t cli_history_show(void)
     }
     for(int i = start; i < total; i++)
     {
-        printf(" %4d  %s\n",
-               i + 1, hlist[i]->line);
+        printf(" %4d  %s\n", i + 1, hlist[i]->line);
     }
 #else
     printf("Readline not available\n");
@@ -191,8 +182,7 @@ errno_t cli_searchhist(void)
         printf("Usage: searchhist <pattern>\n");
         return RETURN_SUCCESS;
     }
-    const char *pattern =
-        data.cmdargtoken[1].val.string;
+    const char *pattern = data.cmdargtoken[1].val.string;
 
     HIST_ENTRY **hlist = history_list();
     if(hlist == NULL)
@@ -209,32 +199,22 @@ errno_t cli_searchhist(void)
                       pattern) != NULL)
         {
             /* Highlight matching substring */
-            const char *pos =
-                strcasestr(hlist[i]->line,
-                           pattern);
-            int pre = (int)(pos
-                            - hlist[i]->line);
+            const char *pos = strcasestr(hlist[i]->line, pattern);
+            int pre = (int)(pos - hlist[i]->line);
             int plen = (int) strlen(pattern);
             printf(" %4d  %.*s"
                    "\033[1;33m%.*s\033[0m"
-                   "%s\n",
-                   i + 1,
-                   pre, hlist[i]->line,
-                   plen, pos,
-                   pos + plen);
+                   "%s\n", i + 1, pre, hlist[i]->line, plen, pos, pos + plen);
             found++;
         }
     }
     if(found == 0)
     {
-        printf("No history entries match"
-               " '%s'\n", pattern);
+        printf("No history entries match" " '%s'\n", pattern);
     }
     else
     {
-        printf("(%d match%s)\n",
-               found,
-               found == 1 ? "" : "es");
+        printf("(%d match%s)\n", found, found == 1 ? "" : "es");
     }
 #else
     printf("Readline not available\n");

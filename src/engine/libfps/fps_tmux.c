@@ -18,19 +18,11 @@ int functionparameter_FPS_tmux_kill(
     FPS *fps
 )
 {
-    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-        "tmux send-keys -t %s:ctrl C-c 2>/dev/null",
-        fps->md->name);
-    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-        "tmux send-keys -t %s:conf C-c 2>/dev/null",
-        fps->md->name);
-    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-        "tmux send-keys -t %s:run C-c 2>/dev/null",
-        fps->md->name);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl C-c 2>/dev/null", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf C-c 2>/dev/null", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run C-c 2>/dev/null", fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-        "tmux kill-session -t %s 2>/dev/null",
-        fps->md->name);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux kill-session -t %s 2>/dev/null", fps->md->name);
 
     return RETURN_SUCCESS;
 }
@@ -76,9 +68,7 @@ int functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux new-session -s %s -d -n ctrl \\;"
         " new-window -n conf \\;"
-        " new-window -n run \\;"
-        " select-window -t %s:ctrl",
-        fps->md->name, fps->md->name);
+        " new-window -n run \\;" " select-window -t %s:ctrl", fps->md->name, fps->md->name);
 
 
     // Write functions to tmux windows
@@ -98,13 +88,8 @@ int functionparameter_FPS_tmux_init(
 
     for(int ii = 1; ii < fps->md->NBnameindex; ii++)
     {
-        snprintf(argstringcp,
-                 argstring_maxlen,
-                 "%s %s",
-                 argstring,
-                 fps->md->nameindexW[ii]);
-        snprintf(argstring, argstring_maxlen,
-                 "%s", argstringcp);
+        snprintf(argstringcp, argstring_maxlen, "%s %s", argstring, fps->md->nameindexW[ii]);
+        snprintf(argstring, argstring_maxlen, "%s", argstringcp);
     }
 
     // module load string
@@ -114,12 +99,8 @@ int functionparameter_FPS_tmux_init(
     for(int mm = 0; mm < fps->md->NBmodule; mm++)
     {
         snprintf(mloadstringcp,
-                 mloadstring_maxlen,
-                 "%smload %s;",
-                 mloadstring,
-                 fps->md->modulename[mm]);
-        snprintf(mloadstring, mloadstring_maxlen,
-                 "%s", mloadstringcp);
+                 mloadstring_maxlen, "%smload %s;", mloadstring, fps->md->modulename[mm]);
+        snprintf(mloadstring, mloadstring_maxlen, "%s", mloadstringcp);
     }
 
     EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:ctrl \" bash\" C-m",
@@ -163,16 +144,10 @@ int functionparameter_FPS_tmux_init(
              " function fpsconfstart {\n"
              "echo \"STARTING CONF PROCESS\"\n"
              "MILK_FPSPROCINFO=1 %s -n %s \\\"%s%s _CONFSTART_ %s\\\"\n"
-             "}\n",
-             progexec,
-             fps->md->name,
-             mloadstring,
-             fps->md->callfuncname,
-             argstring);
+             "}\n", progexec, fps->md->name, mloadstring, fps->md->callfuncname, argstring);
 
     EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" %s\" C-m",
-                                   fps->md->name,
-                                   functionstring);
+                                   fps->md->name, functionstring);
 
     // runstart
     //
@@ -191,16 +166,10 @@ int functionparameter_FPS_tmux_init(
              "echo \"STARTING RUN PROCESS\"\n"
              "MILK_FPSPROCINFO=1 %s -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
              "_RUNSTART_ %s\\\"\n"
-             "}\n",
-             progexec,
-             fps->md->name,
-             mloadstring,
-             fps->md->callfuncname,
-             argstring);
+             "}\n", progexec, fps->md->name, mloadstring, fps->md->callfuncname, argstring);
 
     EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \"%s\" C-m",
-                                   fps->md->name,
-                                   functionstring);
+                                   fps->md->name, functionstring);
 
     // runstop
     //
@@ -209,16 +178,10 @@ int functionparameter_FPS_tmux_init(
              " function fpsrunstop {\n"
              "echo \"STOPPING RUN PROCESS\"\n"
              "%s -n %s \\\"%s%s _RUNSTOP_ %s\\\"\n"
-             "}\n",
-             progexec,
-             fps->md->name,
-             mloadstring,
-             fps->md->callfuncname,
-             argstring);
+             "}\n", progexec, fps->md->name, mloadstring, fps->md->callfuncname, argstring);
 
     EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \"%s\" C-m",
-                                   fps->md->name,
-                                   functionstring);
+                                   fps->md->name, functionstring);
 
     return RETURN_SUCCESS;
 }
@@ -249,9 +212,7 @@ int functionparameter_FPS_tmux_standalone_setup(
 )
 {
     char cmd[2048];
-    snprintf(cmd, sizeof(cmd),
-             "tmux has-session -t %s 2>/dev/null",
-             fps_name);
+    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s 2>/dev/null", fps_name);
     if(system(cmd) == 0)
     {
         return RETURN_SUCCESS;
@@ -260,9 +221,7 @@ int functionparameter_FPS_tmux_standalone_setup(
     EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux new-session -s %s -d -n ctrl \\;"
         " new-window -n conf \\;"
-        " new-window -n run \\;"
-        " select-window -t %s:ctrl",
-        fps_name, fps_name);
+        " new-window -n run \\;" " select-window -t %s:ctrl", fps_name, fps_name);
 
     return RETURN_SUCCESS;
 }

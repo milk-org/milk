@@ -134,23 +134,18 @@ int cmp_stream_col(
 
     switch(g_sort_col)
     {
-    case STREAM_SORT_NAME:
-        res = strcmp(siA->sname, siB->sname);
+    case STREAM_SORT_NAME: res = strcmp(siA->sname, siB->sname);
         break;
 
     case STREAM_SORT_TYPE:
-        res = (siA->datatype < siB->datatype)
-              ? -1
-              : (siA->datatype > siB->datatype)
-              ? 1 : 0;
+        res = (siA->datatype < siB->datatype) ? -1 : (siA->datatype > siB->datatype) ? 1 : 0;
         break;
 
     case STREAM_SORT_SIZE:
     {
         uint64_t neA = mdA->nelement;
         uint64_t neB = mdB->nelement;
-        res = (neA < neB) ? -1
-              : (neA > neB) ? 1 : 0;
+        res = (neA < neB) ? -1 : (neA > neB) ? 1 : 0;
         break;
     }
 
@@ -158,30 +153,22 @@ int cmp_stream_col(
     {
         uint64_t c0A = mdA->cnt0;
         uint64_t c0B = mdB->cnt0;
-        res = (c0A < c0B) ? -1
-              : (c0A > c0B) ? 1 : 0;
+        res = (c0A < c0B) ? -1 : (c0A > c0B) ? 1 : 0;
         break;
     }
 
     case STREAM_SORT_CPID:
         res = (mdA->creatorPID < mdB->creatorPID)
-              ? -1
-              : (mdA->creatorPID > mdB->creatorPID)
-              ? 1 : 0;
+              ? -1 : (mdA->creatorPID > mdB->creatorPID) ? 1 : 0;
         break;
 
     case STREAM_SORT_OPID:
-        res = (mdA->ownerPID < mdB->ownerPID)
-              ? -1
-              : (mdA->ownerPID > mdB->ownerPID)
-              ? 1 : 0;
+        res = (mdA->ownerPID < mdB->ownerPID) ? -1 : (mdA->ownerPID > mdB->ownerPID) ? 1 : 0;
         break;
 
     case STREAM_SORT_FREQ:
         res = (siA->frequ_disp < siB->frequ_disp)
-              ? -1
-              : (siA->frequ_disp > siB->frequ_disp)
-              ? 1 : 0;
+              ? -1 : (siA->frequ_disp > siB->frequ_disp) ? 1 : 0;
         break;
     }
 
@@ -348,10 +335,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
     fflush(stderr);
     backstderr = dup(STDERR_FILENO);
-    WRITE_FULLFILENAME(newstderrfname,
-                       "%s/stderr.cli.%d.txt",
-                       SHAREDSHMDIR,
-                       (int)getpid());
+    WRITE_FULLFILENAME(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, (int)getpid());
 
     umask(0);
     newstderr = open(newstderrfname, O_WRONLY | O_CREAT, FILEMODE);
@@ -360,10 +344,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
     DEBUG_TRACEPOINT("Start scan thread");
     streaminfoproc.loop = 1;
-    pthread_create(&threadscan,
-                   NULL,
-                   streamCTRL_scan,
-                   (void *) &streamCTRLdata);
+    pthread_create(&threadscan, NULL, streamCTRL_scan, (void *) &streamCTRLdata);
 
     DEBUG_TRACEPOINT("Scan thread started");
 

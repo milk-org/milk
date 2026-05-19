@@ -66,30 +66,23 @@ static void print_help(
     milk_help_section("Usage", color);
     printf("  %s%s%s %s[-p prefix]%s %s<streamname>%s\n\n",
            color ? MH_CMD : "", progname, color ? MH_RST : "",
-           color ? MH_OPT : "", color ? MH_RST : "",
-           color ? MH_ARG : "", color ? MH_RST : "");
+           color ? MH_OPT : "", color ? MH_RST : "", color ? MH_ARG : "", color ? MH_RST : "");
     milk_help_section("Description", color);
     printf("  %s\n\n", LSL_DESC_LONG);
     milk_help_section("Options", color);
     printf("  %s%-25s%s %s\n",
            color ? MH_OPT : "", "-p <prefix>",
-           color ? MH_RST : "",
-           "Prefix for the link name (default: none)");
+           color ? MH_RST : "", "Prefix for the link name (default: none)");
     printf("  %s%-25s%s %s\n",
-           color ? MH_OPT : "", "-h, --help",
-           color ? MH_RST : "",
-           "Show this help and exit");
+           color ? MH_OPT : "", "-h, --help", color ? MH_RST : "", "Show this help and exit");
     printf("  %s%-25s%s %s\n\n",
            color ? MH_OPT : "", "-h1, --help-oneline",
-           color ? MH_RST : "",
-           "One-line description and exit");
+           color ? MH_RST : "", "One-line description and exit");
     milk_help_section("Examples", color);
     printf("  %s$ milk-stream-link%s %sircam0%s\n",
-           color ? MH_CMD : "", color ? MH_RST : "",
-           color ? MH_ARG : "", color ? MH_RST : "");
+           color ? MH_CMD : "", color ? MH_RST : "", color ? MH_ARG : "", color ? MH_RST : "");
     printf("  %s$ milk-stream-link%s %s-p myprefix- ircam0%s\n\n",
-           color ? MH_CMD : "", color ? MH_RST : "",
-           color ? MH_ARG : "", color ? MH_RST : "");
+           color ? MH_CMD : "", color ? MH_RST : "", color ? MH_ARG : "", color ? MH_RST : "");
     const char *see_also[] =
     {
         "milk-stream-list:list active shared memory streams",
@@ -120,31 +113,25 @@ static void write_imsize(
     if(ret != 0)
     {
         fprintf(stderr,
-                "  [warn] could not open stream '%s'"
-                " — skipping imsize write\n", srcname);
+                "  [warn] could not open stream '%s'" " — skipping imsize write\n", srcname);
         return;
     }
 
     /* Ensure conf/ directory exists */
     if(mkdir("conf", 0755) != 0 && errno != EEXIST)
     {
-        fprintf(stderr,
-                "  [warn] cannot create conf/ directory: %s\n",
-                strerror(errno));
+        fprintf(stderr, "  [warn] cannot create conf/ directory: %s\n", strerror(errno));
         ImageStreamIO_closeIm(&img);
         return;
     }
 
     char outfile[512];
-    snprintf(outfile, sizeof(outfile),
-             "conf/streamlink.%s.imsize.txt", linkname);
+    snprintf(outfile, sizeof(outfile), "conf/streamlink.%s.imsize.txt", linkname);
 
     FILE *fp = fopen(outfile, "w");
     if(fp == NULL)
     {
-        fprintf(stderr,
-                "  [warn] cannot write '%s': %s\n",
-                outfile, strerror(errno));
+        fprintf(stderr, "  [warn] cannot write '%s': %s\n", outfile, strerror(errno));
         ImageStreamIO_closeIm(&img);
         return;
     }
@@ -167,8 +154,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(
-                     argc, argv, LSL_DESC, LSL_DESC_LONG);
+    int action = milk_help_init(argc, argv, LSL_DESC, LSL_DESC_LONG);
 
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
@@ -200,34 +186,28 @@ int main(
 
     if(linkname == NULL)
     {
-        fprintf(stderr,
-                "\n\033[1;31mERROR\033[0m:"
-                " <streamname> argument required.\n\n");
+        fprintf(stderr, "\n\033[1;31mERROR\033[0m:" " <streamname> argument required.\n\n");
         print_help(argv[0], 1);
         return 1;
     }
 
     /* Read conf/streamlink.<linkname>.name.txt */
     char conffile[512];
-    snprintf(conffile, sizeof(conffile),
-             "conf/streamlink.%s.name.txt", linkname);
+    snprintf(conffile, sizeof(conffile), "conf/streamlink.%s.name.txt", linkname);
 
     FILE *fp = fopen(conffile, "r");
     if(fp == NULL)
     {
         fprintf(stderr,
                 "\n\033[1;31mERROR\033[0m:"
-                " cannot open '%s': %s\n"
-                "  Nothing to do.\n\n",
-                conffile, strerror(errno));
+                " cannot open '%s': %s\n" "  Nothing to do.\n\n", conffile, strerror(errno));
         return 1;
     }
 
     char srcname[256];
     if(fgets(srcname, sizeof(srcname), fp) == NULL)
     {
-        fprintf(stderr,
-                "\033[1;31mERROR\033[0m: '%s' is empty.\n", conffile);
+        fprintf(stderr, "\033[1;31mERROR\033[0m: '%s' is empty.\n", conffile);
         fclose(fp);
         return 1;
     }
@@ -242,10 +222,8 @@ int main(
 
     /* Build paths */
     char linkpath[512], srcpath[512];
-    snprintf(linkpath, sizeof(linkpath),
-             "%s/%s%s.im.shm", shmdir, prefix, linkname);
-    snprintf(srcpath, sizeof(srcpath),
-             "%s/%s.im.shm", shmdir, srcname);
+    snprintf(linkpath, sizeof(linkpath), "%s/%s%s.im.shm", shmdir, prefix, linkname);
+    snprintf(srcpath, sizeof(srcpath), "%s/%s.im.shm", shmdir, srcname);
 
     /* Remove stale link/file */
     struct stat st;
@@ -255,8 +233,7 @@ int main(
         {
             fprintf(stderr,
                     "\033[1;31mERROR\033[0m:"
-                    " cannot remove '%s': %s\n",
-                    linkpath, strerror(errno));
+                    " cannot remove '%s': %s\n", linkpath, strerror(errno));
             return 1;
         }
     }
@@ -266,15 +243,12 @@ int main(
     {
         fprintf(stderr,
                 "\033[1;31mERROR\033[0m:"
-                " symlink('%s' → '%s'): %s\n",
-                srcpath, linkpath, strerror(errno));
+                " symlink('%s' → '%s'): %s\n", srcpath, linkpath, strerror(errno));
         return 1;
     }
 
     printf("  Linking %s%s:\n"
-           "    ln -s %s\n"
-           "       -> %s\n",
-           prefix, linkname, srcpath, linkpath);
+           "    ln -s %s\n" "       -> %s\n", prefix, linkname, srcpath, linkpath);
 
     /* If source stream exists, write imsize */
     if(stat(srcpath, &st) == 0)
@@ -283,8 +257,7 @@ int main(
     }
     else
     {
-        printf("  [warn] source '%s' not found"
-               " — skipping imsize write\n", srcpath);
+        printf("  [warn] source '%s' not found" " — skipping imsize write\n", srcpath);
     }
 
     return 0;

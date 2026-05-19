@@ -82,50 +82,36 @@ static void print_help(
     printf("  %s%-38s%s %s\n",
            mh_color ? MH_ARG : "",
            "start <stream> <blocksize> <dir>",
-           mh_color ? MH_RST : "",
-           "Start FPS logging process (via milk-streamFITSlog)");
+           mh_color ? MH_RST : "", "Start FPS logging process (via milk-streamFITSlog)");
     printf("  %s%-38s%s %s\n",
            mh_color ? MH_ARG : "",
-           "on    <stream>",
-           mh_color ? MH_RST : "",
-           "Enable saving to disk");
+           "on    <stream>", mh_color ? MH_RST : "", "Enable saving to disk");
     printf("  %s%-38s%s %s\n",
            mh_color ? MH_ARG : "",
-           "off   <stream>",
-           mh_color ? MH_RST : "",
-           "Disable saving to disk");
+           "off   <stream>", mh_color ? MH_RST : "", "Disable saving to disk");
     printf("  %s%-38s%s %s\n",
            mh_color ? MH_ARG : "",
            "offc  <stream>",
-           mh_color ? MH_RST : "",
-           "Disable saving after current cube completes");
+           mh_color ? MH_RST : "", "Disable saving after current cube completes");
     printf("  %s%-38s%s %s\n",
            mh_color ? MH_ARG : "",
-           "kill  <stream>",
-           mh_color ? MH_RST : "",
-           "Stop run, remove FPS instance, kill tmux");
+           "kill  <stream>", mh_color ? MH_RST : "", "Stop run, remove FPS instance, kill tmux");
     printf("  %s%-38s%s %s\n\n",
            mh_color ? MH_ARG : "",
-           "stat  <stream>",
-           mh_color ? MH_RST : "",
-           "Show saveON status from FPS shared memory");
+           "stat  <stream>", mh_color ? MH_RST : "", "Show saveON status from FPS shared memory");
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-c <cpuset>",
-           mh_color ? MH_RST : "",
-           "CPU set for 'start' (forwarded to milk-streamFITSlog)");
+           mh_color ? MH_RST : "", "CPU set for 'start' (forwarded to milk-streamFITSlog)");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
-           mh_color ? MH_RST : "",
-           "Show this help and exit");
+           mh_color ? MH_RST : "", "Show this help and exit");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h1, --help-oneline",
-           mh_color ? MH_RST : "",
-           "One-line description and exit");
+           mh_color ? MH_RST : "", "One-line description and exit");
     printf("  %s%-25s%s %s\n\n",
            mh_color ? MH_OPT : "", "-hm, --help-mono",
-           mh_color ? MH_RST : "",
-           "Full help, no ANSI color");
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
     printf("  %s$ milk-logshim-ctrl%s %sstart ircam0 10000 /mnt/log%s\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
@@ -189,8 +175,7 @@ static void fifo_path(
     char   *buf,
     size_t bufsz)
 {
-    snprintf(buf, bufsz,
-             "%s/milkFITSlogger.fifo", get_shmdir());
+    snprintf(buf, bufsz, "%s/milkFITSlogger.fifo", get_shmdir());
 }
 
 /**
@@ -212,9 +197,7 @@ static int fifo_write(
         fprintf(stderr,
                 "\033[1;31mERROR\033[0m: FIFO '%s' not found.\n"
                 "  Is the logging process running?\n"
-                "  Start it first with: milk-logshim-ctrl"
-                " start <stream> ...\n",
-                fifo);
+                "  Start it first with: milk-logshim-ctrl" " start <stream> ...\n", fifo);
         return 1;
     }
 
@@ -231,14 +214,11 @@ static int fifo_write(
         {
             fprintf(stderr,
                     "\033[1;31mERROR\033[0m: No reader on"
-                    " FIFO '%s' — is milk-fpsCTRL running?\n",
-                    fifo);
+                    " FIFO '%s' — is milk-fpsCTRL running?\n", fifo);
         }
         else
         {
-            fprintf(stderr,
-                    "\033[1;31mERROR\033[0m: open('%s'): %s\n",
-                    fifo, strerror(errno));
+            fprintf(stderr, "\033[1;31mERROR\033[0m: open('%s'): %s\n", fifo, strerror(errno));
         }
         return 1;
     }
@@ -252,9 +232,7 @@ static int fifo_write(
 
     if(written < 0)
     {
-        fprintf(stderr,
-                "\033[1;31mERROR\033[0m: write to FIFO: %s\n",
-                strerror(errno));
+        fprintf(stderr, "\033[1;31mERROR\033[0m: write to FIFO: %s\n", strerror(errno));
         return 1;
     }
 
@@ -273,8 +251,7 @@ static int action_on(const char *stream)
     fifo_path(fifo, sizeof(fifo));
 
     char cmd[256];
-    snprintf(cmd, sizeof(cmd),
-             "setval " FPS_PREFIX "%s.saveON ON", stream);
+    snprintf(cmd, sizeof(cmd), "setval " FPS_PREFIX "%s.saveON ON", stream);
 
     printf("logshim-ctrl on  %s: enabling saving\n", stream);
     return fifo_write(fifo, cmd);
@@ -292,8 +269,7 @@ static int action_off(const char *stream)
     fifo_path(fifo, sizeof(fifo));
 
     char cmd[256];
-    snprintf(cmd, sizeof(cmd),
-             "setval " FPS_PREFIX "%s.saveON OFF", stream);
+    snprintf(cmd, sizeof(cmd), "setval " FPS_PREFIX "%s.saveON OFF", stream);
 
     printf("logshim-ctrl off %s: disabling saving\n", stream);
     return fifo_write(fifo, cmd);
@@ -312,11 +288,9 @@ static int action_offc(const char *stream)
     fifo_path(fifo, sizeof(fifo));
 
     char cmd[256];
-    snprintf(cmd, sizeof(cmd),
-             "setval " FPS_PREFIX "%s.lastcubeON ON", stream);
+    snprintf(cmd, sizeof(cmd), "setval " FPS_PREFIX "%s.lastcubeON ON", stream);
 
-    printf("logshim-ctrl offc %s:"
-           " will stop after current cube\n", stream);
+    printf("logshim-ctrl offc %s:" " will stop after current cube\n", stream);
     return fifo_write(fifo, cmd);
 }
 
@@ -343,20 +317,16 @@ static int action_kill(const char *stream)
 
     printf("logshim-ctrl kill %s: stopping...\n", stream);
 
-    snprintf(cmd, sizeof(cmd),
-             "runstop " FPS_PREFIX "%s", stream);
+    snprintf(cmd, sizeof(cmd), "runstop " FPS_PREFIX "%s", stream);
     errors += fifo_write(fifo, cmd);
 
-    snprintf(cmd, sizeof(cmd),
-             "confstop " FPS_PREFIX "%s", stream);
+    snprintf(cmd, sizeof(cmd), "confstop " FPS_PREFIX "%s", stream);
     errors += fifo_write(fifo, cmd);
 
-    snprintf(cmd, sizeof(cmd),
-             "tmuxstop " FPS_PREFIX "%s", stream);
+    snprintf(cmd, sizeof(cmd), "tmuxstop " FPS_PREFIX "%s", stream);
     errors += fifo_write(fifo, cmd);
 
-    snprintf(cmd, sizeof(cmd),
-             "fpsrm " FPS_PREFIX "%s", stream);
+    snprintf(cmd, sizeof(cmd), "fpsrm " FPS_PREFIX "%s", stream);
     errors += fifo_write(fifo, cmd);
 
     fifo_write(fifo, "rescan"); /* best-effort */
@@ -364,10 +334,8 @@ static int action_kill(const char *stream)
     /* Remove log buffer streams */
     const char *shmdir = get_shmdir();
     char buf0[512], buf1[512];
-    snprintf(buf0, sizeof(buf0),
-             "%s/%s_logbuff0%s", shmdir, stream, SHM_SUFFIX);
-    snprintf(buf1, sizeof(buf1),
-             "%s/%s_logbuff1%s", shmdir, stream, SHM_SUFFIX);
+    snprintf(buf0, sizeof(buf0), "%s/%s_logbuff0%s", shmdir, stream, SHM_SUFFIX);
+    snprintf(buf1, sizeof(buf1), "%s/%s_logbuff1%s", shmdir, stream, SHM_SUFFIX);
 
     if(unlink(buf0) == 0)
     {
@@ -396,8 +364,7 @@ static int action_stat(const char *stream)
 
     /* FPS SHM file: fps.streamFITSlog-<stream>.shm */
     char shm_path[512];
-    snprintf(shm_path, sizeof(shm_path),
-             "%s/fps." FPS_PREFIX "%s.shm", shmdir, stream);
+    snprintf(shm_path, sizeof(shm_path), "%s/fps." FPS_PREFIX "%s.shm", shmdir, stream);
 
     /* FIFO path */
     char fifo[512];
@@ -411,17 +378,11 @@ static int action_stat(const char *stream)
 
     /* FPS instance status */
     printf("  FPS SHM  : %s%s\033[0m\n",
-           fps_alive
-           ? "\033[1;32m[  LIVE  ] "
-           : "\033[1;31m[ ABSENT ] ",
-           shm_path);
+           fps_alive ? "\033[1;32m[ LIVE ] " : "\033[1;31m[ABSENT] ", shm_path);
 
     /* FIFO status */
     printf("  FIFO     : %s%s\033[0m\n",
-           fifo_alive
-           ? "\033[1;32m[  LIVE  ] "
-           : "\033[1;31m[ ABSENT ] ",
-           fifo);
+           fifo_alive ? "\033[1;32m[ LIVE ] " : "\033[1;31m[ABSENT] ", fifo);
 
     /* If FPS SHM exists, parse saveON by scanning for key */
     if(fps_alive)
@@ -466,10 +427,7 @@ static int action_stat(const char *stream)
                         if(buf[j] == 0 || buf[j] == 1)
                         {
                             printf("  saveON   : %s%s\033[0m\n\n",
-                                   buf[j]
-                                   ? "\033[1;32mON "
-                                   : "\033[1;31mOFF",
-                                   "");
+                                   buf[j] ? "\033[1;32mON " : "\033[1;31mOFF", "");
                             found = 1;
                             break;
                         }
@@ -490,8 +448,7 @@ static int action_stat(const char *stream)
     else
     {
         printf("\n  Start logging first with:\n"
-               "    milk-logshim-ctrl start %s <blocksize> <dir>\n\n",
-               stream);
+               "    milk-logshim-ctrl start %s <blocksize> <dir>\n\n", stream);
     }
 
     return 0;
@@ -516,16 +473,12 @@ static int action_start(
     /* Verify stream SHM exists */
     const char *shmdir = get_shmdir();
     char shmfile[512];
-    snprintf(shmfile, sizeof(shmfile),
-             "%s/%s%s", shmdir, stream, SHM_SUFFIX);
+    snprintf(shmfile, sizeof(shmfile), "%s/%s%s", shmdir, stream, SHM_SUFFIX);
 
     struct stat st;
     if(stat(shmfile, &st) != 0)
     {
-        fprintf(stderr,
-                "\n\033[1;31mERROR\033[0m:"
-                " stream SHM '%s' not found.\n\n",
-                shmfile);
+        fprintf(stderr, "\n\033[1;31mERROR\033[0m:" " stream SHM '%s' not found.\n\n", shmfile);
         return 1;
     }
 
@@ -536,15 +489,13 @@ static int action_start(
         snprintf(cmd, sizeof(cmd),
                  "milk-streamFITSlog -cset \"%s\" -D \"%s\""
                  " -z %s %s pstart && "
-                 "milk-streamFITSlog %s on",
-                 cpuset, dir, blocksize, stream, stream);
+                 "milk-streamFITSlog %s on", cpuset, dir, blocksize, stream, stream);
     }
     else
     {
         snprintf(cmd, sizeof(cmd),
                  "milk-streamFITSlog -D \"%s\" -z %s %s pstart &&"
-                 " milk-streamFITSlog %s on",
-                 dir, blocksize, stream, stream);
+                 " milk-streamFITSlog %s on", dir, blocksize, stream, stream);
     }
 
     printf("logshim-ctrl start %s: launching...\n", stream);
@@ -556,8 +507,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(
-                     argc, argv, LSC_DESC, LSC_DESC_LONG);
+    int action = milk_help_init(argc, argv, LSC_DESC, LSC_DESC_LONG);
 
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
@@ -573,9 +523,7 @@ int main(
 
     if(argc < 3)
     {
-        fprintf(stderr,
-                "\n\033[1;31mERROR\033[0m:"
-                " expected <action> <stream> [options].\n\n");
+        fprintf(stderr, "\n\033[1;31mERROR\033[0m:" " expected <action> <stream> [options].\n\n");
         print_help(argv[0], 1);
         return 1;
     }
@@ -653,16 +601,12 @@ int main(
         return action_start(stream, argv[3], argv[4], cpuset);
     }
 
-    fprintf(stderr,
-            "\n\033[1;31mERROR\033[0m:"
-            " unknown action '%s'.\n\n", act);
+    fprintf(stderr, "\n\033[1;31mERROR\033[0m:" " unknown action '%s'.\n\n", act);
     print_help(argv[0], 1);
     return 1;
 
 missing_stream:
-    fprintf(stderr,
-            "\n\033[1;31mERROR\033[0m:"
-            " action '%s' requires <stream>.\n\n", act);
+    fprintf(stderr, "\n\033[1;31mERROR\033[0m:" " action '%s' requires <stream>.\n\n", act);
     print_help(argv[0], 1);
     return 1;
 }

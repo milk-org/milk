@@ -25,18 +25,10 @@ void ov_render_preview_line(
     ov_buf_pos(2, 1);
 
     /* Use frozen selection when freeze is active */
-    ov_focus_t focus = lay->freeze
-                       ? lay->freeze_focus
-                       : lay->focus;
-    int ssel = lay->freeze
-               ? lay->freeze_sel_stream
-               : lay->sel_stream;
-    int psel = lay->freeze
-               ? lay->freeze_sel_proc
-               : lay->sel_proc;
-    int fsel = lay->freeze
-               ? lay->freeze_sel_fps
-               : lay->sel_fps;
+    ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
+    int ssel = lay->freeze ? lay->freeze_sel_stream : lay->sel_stream;
+    int psel = lay->freeze ? lay->freeze_sel_proc : lay->sel_proc;
+    int fsel = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
 
     char line[512];
     int  len = 0;
@@ -55,22 +47,17 @@ void ov_render_preview_line(
         char szb[32];
         if(s->naxis == 1)
         {
-            snprintf(szb, sizeof(szb), "%u",
-                     (unsigned) s->size[0]);
+            snprintf(szb, sizeof(szb), "%u", (unsigned) s->size[0]);
         }
         else if(s->naxis == 2)
         {
-            snprintf(szb, sizeof(szb), "%ux%u",
-                     (unsigned) s->size[0],
-                     (unsigned) s->size[1]);
+            snprintf(szb, sizeof(szb), "%ux%u", (unsigned) s->size[0], (unsigned) s->size[1]);
         }
         else
         {
             snprintf(szb, sizeof(szb),
                      "%ux%ux%u",
-                     (unsigned) s->size[0],
-                     (unsigned) s->size[1],
-                     (unsigned) s->size[2]);
+                     (unsigned) s->size[0], (unsigned) s->size[1], (unsigned) s->size[2]);
         }
         len = snprintf(line, sizeof(line),
                        " STM  %s  %s %s"
@@ -82,10 +69,7 @@ void ov_render_preview_line(
                        szb,
                        s->update_hz,
                        (uint64_t) s->inode,
-                       (int) s->ownerPID,
-                       (uint64_t) s->cnt0,
-                       (int) s->write_pid,
-                       s->nb_sem);
+                       (int) s->ownerPID, (uint64_t) s->cnt0, (int) s->write_pid, s->nb_sem);
         break;
     }
     case OV_FOCUS_PROCS:
@@ -99,23 +83,17 @@ void ov_render_preview_line(
         const char *sl;
         switch(p->loopstat)
         {
-        case 0:
-            sl = "IDLE";
+        case 0: sl = "IDLE";
             break;
-        case 1:
-            sl = "RUN";
+        case 1: sl = "RUN";
             break;
-        case 2:
-            sl = "PAUS";
+        case 2: sl = "PAUS";
             break;
-        case 3:
-            sl = "TERM";
+        case 3: sl = "TERM";
             break;
-        case 4:
-            sl = "ERR";
+        case 4: sl = "ERR";
             break;
-        default:
-            sl = "??";
+        default: sl = "??";
             break;
         }
         len = snprintf(line, sizeof(line),
@@ -127,10 +105,7 @@ void ov_render_preview_line(
                        p->loop_hz,
                        p->trigstreamname[0]
                        ? p->trigstreamname : "-",
-                       p->triggersem,
-                       (int64_t) p->loopcnt,
-                       p->triggermissed,
-                       p->rt_priority);
+                       p->triggersem, (int64_t) p->loopcnt, p->triggermissed, p->rt_priority);
         break;
     }
     case OV_FOCUS_FPS:
@@ -148,14 +123,10 @@ void ov_render_preview_line(
                        f->name,
                        f->conf_alive ? "Y" : "-",
                        f->run_alive  ? "Y" : "-",
-                       f->md_status,
-                       (int) f->confpid,
-                       (int) f->runpid,
-                       f->description);
+                       f->md_status, (int) f->confpid, (int) f->runpid, f->description);
         break;
     }
-    default:
-        break;
+    default: break;
     }
 
     if(len > 0)
@@ -235,8 +206,7 @@ void ov_render_preview_line(
             btns[nb].id = OV_BTN_PROC_EXIT;
             nb++;
             /* Kill (SIGTERM) */
-            btns[nb].label =
-                " [k] \xe2\x98\xa0 Kill ";
+            btns[nb].label = " [k] \xe2\x98\xa0 Kill ";
             btns[nb].bg = (ov_rgb_t)
             {
                 180, 40, 40
@@ -250,9 +220,7 @@ void ov_render_preview_line(
         {
             const OV_FPS *f = &m->fps[fsel];
             /* Conf toggle */
-            btns[nb].label = f->conf_alive
-                             ? " [s] \xe2\x96\xa0 Conf "
-                             : " [s] \xe2\x96\xb6 Conf ";
+            btns[nb].label = f->conf_alive ? " [s] \xe2\x96\xa0 Conf " : " [s] \xe2\x96\xb6 Conf ";
             btns[nb].bg = f->conf_alive
                           ? (ov_rgb_t)
             {
@@ -266,9 +234,7 @@ void ov_render_preview_line(
             btns[nb].id = OV_BTN_FPS_CONF;
             nb++;
             /* Run toggle */
-            btns[nb].label = f->run_alive
-                             ? " [r] \xe2\x96\xa0 Run "
-                             : " [r] \xe2\x96\xb6 Run ";
+            btns[nb].label = f->run_alive ? " [r] \xe2\x96\xa0 Run " : " [r] \xe2\x96\xb6 Run ";
             btns[nb].bg = f->run_alive
                           ? (ov_rgb_t)
             {
@@ -282,8 +248,7 @@ void ov_render_preview_line(
             btns[nb].id = OV_BTN_FPS_RUN;
             nb++;
             /* Kill */
-            btns[nb].label =
-                " [k] \xe2\x98\xa0 Kill ";
+            btns[nb].label = " [k] \xe2\x98\xa0 Kill ";
             btns[nb].bg = (ov_rgb_t)
             {
                 180, 40, 40
@@ -304,8 +269,7 @@ void ov_render_preview_line(
                  * symbols use 3 bytes per glyph,
                  * so subtract 2 per symbol for
                  * display width */
-                int blen = (int) strlen(
-                               btns[bi].label);
+                int blen = (int) strlen(btns[bi].label);
                 /* Count UTF-8 leading bytes
                  * (0xE2) to find symbol count */
                 int syms = 0;
@@ -325,8 +289,7 @@ void ov_render_preview_line(
 
             /* Reserve space for SELECTED badge */
             int reserved = lay->freeze ? 12 : 1;
-            int start_col =
-                W - total_w - reserved + 1;
+            int start_col = W - total_w - reserved + 1;
             if(start_col < 1)
             {
                 start_col = 1;
@@ -343,26 +306,20 @@ void ov_render_preview_line(
                 }
                 else
                 {
-                    ov_buf_bg(btns[bi].bg.r,
-                              btns[bi].bg.g,
-                              btns[bi].bg.b);
+                    ov_buf_bg(btns[bi].bg.r, btns[bi].bg.g, btns[bi].bg.b);
                     ov_buf_fg(255, 255, 255);
                 }
                 ov_buf_bold();
-                ov_buf_printf("%s",
-                              btns[bi].label);
+                ov_buf_printf("%s", btns[bi].label);
                 ov_buf_reset_attr();
 
                 /* Record button position */
                 if(lay->nb_preview_btns < 4)
                 {
                     int idx = lay->nb_preview_btns;
-                    lay->preview_btns[idx].col =
-                        col;
-                    lay->preview_btns[idx].width =
-                        btn_widths[bi];
-                    lay->preview_btns[idx].id =
-                        btns[bi].id;
+                    lay->preview_btns[idx].col = col;
+                    lay->preview_btns[idx].width = btn_widths[bi];
+                    lay->preview_btns[idx].id = btns[bi].id;
                     lay->nb_preview_btns++;
                 }
 

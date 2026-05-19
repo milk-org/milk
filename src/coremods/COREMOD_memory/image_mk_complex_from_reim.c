@@ -33,12 +33,9 @@ static FPS_APP_INFO FPS_app_info =
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inreimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "imre";
-static char inimimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "imim";
-static char outimname[
-     FUNCTION_PARAMETER_STRMAXLEN] = "imc";
+static char inreimname[FUNCTION_PARAMETER_STRMAXLEN] = "imre";
+static char inimimname[FUNCTION_PARAMETER_STRMAXLEN] = "imim";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN] = "imc";
 
 
 /* ================================================================
@@ -75,12 +72,8 @@ errno_t mk_complex_from_reim_IMGID(
     uint8_t datatype_im;
     uint8_t datatype_out;
 
-    resolveIMGID(
-        imgre, ERRMODE_ABORT,
-        dcimg, dcnimg);
-    resolveIMGID(
-        imgim, ERRMODE_ABORT,
-        dcimg, dcnimg);
+    resolveIMGID(imgre, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgim, ERRMODE_ABORT, dcimg, dcnimg);
 
     datatype_re = imgre->md[0].datatype;
     datatype_im = imgim->md[0].datatype;
@@ -89,8 +82,7 @@ errno_t mk_complex_from_reim_IMGID(
     for(int8_t i = 0;
             i < imgout->mdt->naxis; i++)
     {
-        imgout->mdt->size[i] =
-            imgre->md[0].size[i];
+        imgout->mdt->size[i] = imgre->md[0].size[i];
     }
     uint64_t nelement = imgre->md[0].nelement;
 
@@ -151,16 +143,12 @@ errno_t mk_complex_from_reim(
     const char *out_name,
     int        sharedmem)
 {
-    IMGID imgre =
-        imgid_make_from_name(re_name);
-    IMGID imgim =
-        imgid_make_from_name(im_name);
-    IMGID imgout =
-        imgid_make_from_name(out_name);
+    IMGID imgre = imgid_make_from_name(re_name);
+    IMGID imgim = imgid_make_from_name(im_name);
+    IMGID imgout = imgid_make_from_name(out_name);
     imgout.mdt->shared = sharedmem;
 
-    errno_t ret = mk_complex_from_reim_IMGID(
-                      &imgre, &imgim, &imgout);
+    errno_t ret = mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
     imgid_free(&imgre);
     imgid_free(&imgim);
     imgid_free(&imgout);
@@ -183,21 +171,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgre =
-        imgid_make_from_name(inreimname);
-    IMGID imgim =
-        imgid_make_from_name(inimimname);
-    IMGID imgout =
-        imgid_make_from_name(outimname);
+    IMGID imgre = imgid_make_from_name(inreimname);
+    IMGID imgim = imgid_make_from_name(inimimname);
+    IMGID imgout = imgid_make_from_name(outimname);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
 
-    mk_complex_from_reim_IMGID(
-        &imgre, &imgim, &imgout);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    imgid_free(&imgre);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&imgre);
     imgid_free(&imgim);
     imgid_free(&imgout);
 
@@ -214,18 +194,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD__mk_complex_from_reim()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

@@ -35,9 +35,7 @@ errno_t write_tracedebugfile()
     pid_t thisPID = getpid();
 
     char fname[STRINGMAXLEN_FILENAME];
-    WRITE_FILENAME(fname,
-                   "milk-codetracepoint.%05d.log",
-                   thisPID);
+    WRITE_FILENAME(fname, "milk-codetracepoint.%05d.log", thisPID);
 
     printf("Writing output trace to file %s\n", fname);
     printf("dctestptinit = %d\n", dctestptinit);
@@ -49,42 +47,28 @@ errno_t write_tracedebugfile()
             i < CODETESTPOINTARRAY_NBCNT;
             i++)
         {
-            long j = (i + dctestptcnt)
-                     % CODETESTPOINTARRAY_NBCNT;
+            long j = (i + dctestptcnt) % CODETESTPOINTARRAY_NBCNT;
 
-            uint64_t index =
-                dctestptarr[j].loopcnt
-                * CODETESTPOINTARRAY_NBCNT + j;
+            uint64_t index = dctestptarr[j].loopcnt * CODETESTPOINTARRAY_NBCNT + j;
 
             if(dctestptarr[j].line != 0)
             {
                 char timestring[TIMESTRINGLEN];
-                mkUTtimestring_nanosec(
-                    timestring,
-                    dctestptarr[j].time);
+                mkUTtimestring_nanosec(timestring, dctestptarr[j].time);
 
                 /* Extract last word from path */
                 char str[STRINGMAXLEN_FULLFILENAME];
-                snprintf(str,
-                         sizeof(str),
-                         "%s",
-                         dctestptarr[j].file);
+                snprintf(str, sizeof(str), "%s", dctestptarr[j].file);
                 char *slash = strrchr(str, '/');
-                char *lastword =
-                    (slash != NULL) ? (slash + 1) : str;
+                char *lastword = (slash != NULL) ? (slash + 1) : str;
 
                 fprintf(fp,
                         "T %6ld %s %-20s"
                         " %6d %-20s  %s\n",
                         index,
                         timestring,
-                        lastword,
-                        dctestptarr[j].line,
-                        dctestptarr[j].func,
-                        dctestptarr[j].msg);
-                fprintf(fp,
-                        "       FTRACE %d ",
-                        dctestptarr[j].funclevel);
+                        lastword, dctestptarr[j].line, dctestptarr[j].func, dctestptarr[j].msg);
+                fprintf(fp, "       FTRACE %d ", dctestptarr[j].funclevel);
                 for(int level = 0;
                     level < dctestptarr[j].funclevel;
                     level++)
@@ -92,8 +76,7 @@ errno_t write_tracedebugfile()
                     fprintf(fp,
                             " (%d) >> %ld:%s",
                             dctestptarr[j].linestack[level],
-                            dctestptarr[j].fcntstack[level],
-                            dctestptarr[j].funcstack[level]);
+                            dctestptarr[j].fcntstack[level], dctestptarr[j].funcstack[level]);
                 }
                 fprintf(fp, "\n\n");
             }
@@ -123,20 +106,12 @@ errno_t write_tracedebugfile()
 errno_t CLI_execute_string(const char *cmd)
 {
     char save_cmdline[STRINGMAXLEN_CLICMDLINE];
-    strncpy(save_cmdline,
-            data.CLIcmdline,
-            STRINGMAXLEN_CLICMDLINE - 1);
+    strncpy(save_cmdline, data.CLIcmdline, STRINGMAXLEN_CLICMDLINE - 1);
     save_cmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    strncpy(data.CLIcmdline,
-            cmd,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] =
-        '\0';
+    strncpy(data.CLIcmdline, cmd, STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     errno_t ret = CLI_execute_line();
-    strncpy(data.CLIcmdline,
-            save_cmdline,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] =
-        '\0';
+    strncpy(data.CLIcmdline, save_cmdline, STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     return ret;
 }

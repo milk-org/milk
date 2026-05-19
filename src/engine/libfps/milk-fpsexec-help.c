@@ -37,15 +37,9 @@ int main(
         }
     }
     printf("\n");
-    printf(C_TITLE
-           "========================================"
-           "========\n" C_RST);
-    printf(C_TITLE
-           "    Standalone FPS Executables User Guide"
-           "        \n" C_RST);
-    printf(C_TITLE
-           "========================================"
-           "========\n" C_RST);
+    printf(C_TITLE "========================================" "========\n" C_RST);
+    printf(C_TITLE "    Standalone FPS Executables User Guide" "        \n" C_RST);
+    printf(C_TITLE "========================================" "========\n" C_RST);
     printf("\n");
 
     printf(
@@ -57,8 +51,7 @@ int main(
         "\n"
         "Each program manages its own FPS"
         " (Function Parameter Structure)\n"
-        "for configuration, execution, and"
-        " parameter tuning.\n\n");
+        "for configuration, execution, and" " parameter tuning.\n\n");
 
     /* ---- Usage ---- */
     printf(C_HDR "General Usage\n" C_RST);
@@ -72,8 +65,7 @@ int main(
         " prefix is given, a default name"
         " is used.\n"
         "  Run " C_CMD "<executable> -h" C_RST
-        " for command-specific help and"
-        " parameters.\n\n");
+        " for command-specific help and" " parameters.\n\n");
 
     /* ---- Options ---- */
     printf(C_HDR "Common Options\n" C_RST);
@@ -100,8 +92,7 @@ int main(
         " Show one-line description\n"
         "  " C_CMD "-h2, --help-description" C_RST
         " Show verbose description\n"
-        "  " C_CMD "-hm, --help-mono" C_RST
-        "    Show help message (monochrome)\n\n");
+        "  " C_CMD "-hm, --help-mono" C_RST "    Show help message (monochrome)\n\n");
 
     /* ---- Commands ---- */
     printf(C_HDR "Commands\n" C_RST);
@@ -125,8 +116,7 @@ int main(
         "     Start main processing loop\n"
         "  " C_CMD "runstop" C_RST
         "      Stop main processing loop\n"
-        "  " C_CMD "exec" C_RST
-        "         Auto-init + run\n\n");
+        "  " C_CMD "exec" C_RST "         Auto-init + run\n\n");
 
     /* ---- Workflow ---- */
     printf(C_HDR "Typical Workflow\n" C_RST);
@@ -152,14 +142,10 @@ int main(
         "milk-fpsCTRL\n" C_RST
         "  " C_BOLD "5." C_RST
         " Stop when done:\n"
-        "     $ " C_CMD
-        "milk-fpsexec-clitest " C_FPS
-        "myfps00" C_CMD ":runstop\n" C_RST
-        "\n");
+        "     $ " C_CMD "milk-fpsexec-clitest " C_FPS "myfps00" C_CMD ":runstop\n" C_RST "\n");
 
     /* ---- Quick execution ---- */
-    printf(C_HDR "Quick Execution (No Workflow)\n"
-           C_RST);
+    printf(C_HDR "Quick Execution (No Workflow)\n" C_RST);
     printf(
         "  Use the " C_CMD "exec" C_RST
         " command with positional arguments"
@@ -172,9 +158,7 @@ int main(
         " FPS, prefix the name with "
         C_BOLD "_" C_RST ":\n"
         "    $ " C_CMD
-        "milk-fpsexec-clitest " C_FPS
-        "_myfps00" C_CMD ":exec 42 cam01\n"
-        C_RST "\n");
+        "milk-fpsexec-clitest " C_FPS "_myfps00" C_CMD ":exec 42 cam01\n" C_RST "\n");
 
     /* ---- tmux ---- */
     printf(C_HDR "Tmux Sessions\n" C_RST);
@@ -193,16 +177,10 @@ int main(
         "myfps00" C_CMD
         ":confstart\n" C_RST
         "    $ " C_CMD
-        "milk-fpsexec-clitest "
-        C_CMD "-tmux " C_FPS
-        "myfps00" C_CMD
-        ":runstart\n" C_RST
-        "\n");
+        "milk-fpsexec-clitest " C_CMD "-tmux " C_FPS "myfps00" C_CMD ":runstart\n" C_RST "\n");
 
     /* ---- Alternate tools ---- */
-    printf(C_HDR
-           "Alternate Tools (After FPS Created)\n"
-           C_RST);
+    printf(C_HDR "Alternate Tools (After FPS Created)\n" C_RST);
     printf(
         "  Once an FPS exists, you can also use"
         " generic FPS tools:\n"
@@ -214,16 +192,12 @@ int main(
         C_FPS "<fpsname>\n" C_RST
         "    " C_CMD "milk-fps-runstop   "
         C_FPS "<fpsname>\n" C_RST
-        "    " C_CMD "milk-fps-confstep  "
-        C_FPS "<fpsname>\n" C_RST
-        "\n");
+        "    " C_CMD "milk-fps-confstep  " C_FPS "<fpsname>\n" C_RST "\n");
 
     /* ---- See also ---- */
     printf(C_NOTE
            "Run " C_CMD "milk-fps-help"
-           C_NOTE " for FPS concepts,"
-           " inspection, and management tools.\n"
-           C_RST "\n");
+           C_NOTE " for FPS concepts," " inspection, and management tools.\n" C_RST "\n");
 
     return 0;
 }

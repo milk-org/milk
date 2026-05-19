@@ -86,9 +86,7 @@ static void make_bigrams(
     {
         lower[i] = (char) tolower((unsigned char) s[i]);
     }
-    lower[len < MAX_LINE_LEN - 1
-              ? len
-              : MAX_LINE_LEN - 1] = '\0';
+    lower[len < MAX_LINE_LEN - 1 ? len : MAX_LINE_LEN - 1] = '\0';
 
     for(int i = 0;
             lower[i] != '\0' && lower[i + 1] != '\0';
@@ -148,8 +146,7 @@ static double dice_coefficient(
         }
     }
 
-    return (2.0 * matches) /
-           (a->count + b->count);
+    return (2.0 * matches) / (a->count + b->count);
 }
 
 /**
@@ -220,8 +217,7 @@ int main(
     int  argc,
     char **argv)
 {
-    int action = milk_help_init(argc, argv,
-                                FM_ONELINE, FM_DESC_LONG);
+    int action = milk_help_init(argc, argv, FM_ONELINE, FM_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -282,8 +278,7 @@ int main(
         fp = fopen(filename, "r");
         if(fp == NULL)
         {
-            PRINT_ERROR("fopen(%s): %s",
-                        filename, strerror(errno));
+            PRINT_ERROR("fopen(%s): %s", filename, strerror(errno));
             return 1;
         }
     }
@@ -313,17 +308,14 @@ int main(
         struct bigram_set line_bg;
         make_bigrams(line, &line_bg);
 
-        double score =
-            dice_coefficient(&query_bg, &line_bg);
+        double score = dice_coefficient(&query_bg, &line_bg);
 
         if(score >= threshold &&
                 nresults < MAX_LINES)
         {
             results[nresults].score = score;
-            strncpy(results[nresults].line, line,
-                    MAX_LINE_LEN - 1);
-            results[nresults]
-            .line[MAX_LINE_LEN - 1] = '\0';
+            strncpy(results[nresults].line, line, MAX_LINE_LEN - 1);
+            results[nresults] .line[MAX_LINE_LEN - 1] = '\0';
             nresults++;
         }
     }
@@ -334,16 +326,12 @@ int main(
     }
 
     /* Sort by score descending */
-    qsort(results, (size_t) nresults,
-          sizeof(struct scored_line),
-          cmp_score_desc);
+    qsort(results, (size_t) nresults, sizeof(struct scored_line), cmp_score_desc);
 
     /* Output */
     for(int i = 0; i < nresults; i++)
     {
-        printf("%.3f\t%s\n",
-               results[i].score,
-               results[i].line);
+        printf("%.3f\t%s\n", results[i].score, results[i].line);
     }
 
     return 0;

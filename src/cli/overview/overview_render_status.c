@@ -28,17 +28,13 @@ void ov_render_status(
     {
         switch (lay->focus)
         {
-        case OV_FOCUS_FPS:
-            ctrl_hint = "  r:run s:conf";
+        case OV_FOCUS_FPS: ctrl_hint = "  r:run s:conf";
             break;
-        case OV_FOCUS_STREAMS:
-            ctrl_hint = "  d:delete";
+        case OV_FOCUS_STREAMS: ctrl_hint = "  d:delete";
             break;
-        case OV_FOCUS_PROCS:
-            ctrl_hint = "  k:kill";
+        case OV_FOCUS_PROCS: ctrl_hint = "  k:kill";
             break;
-        default:
-            ctrl_hint = "";
+        default: ctrl_hint = "";
             break;
         }
     }
@@ -80,8 +76,7 @@ void ov_render_status(
         default: sort_label = " [sort:name]";  break;
         }
         break;
-    default:
-        break;
+    default: break;
     }
 
     const char *detail_label = "";
@@ -98,22 +93,17 @@ void ov_render_status(
         const char *fstr = "";
         switch (lay->focus)
         {
-        case OV_FOCUS_STREAMS:
-            fstr = lay->filter_stream;
+        case OV_FOCUS_STREAMS: fstr = lay->filter_stream;
             break;
-        case OV_FOCUS_PROCS:
-            fstr = lay->filter_proc;
+        case OV_FOCUS_PROCS: fstr = lay->filter_proc;
             break;
-        case OV_FOCUS_FPS:
-            fstr = lay->filter_fps;
+        case OV_FOCUS_FPS: fstr = lay->filter_fps;
             break;
-        default:
-            break;
+        default: break;
         }
         ov_theme_fg(OV_FG_TEXT);
         char pfx = lay->filter_jump ? '?' : '/';
-        int np = snprintf(
-            NULL, 0, " %c%s", pfx, fstr);
+        int np = snprintf(NULL, 0, " %c%s", pfx, fstr);
         ov_buf_printf(" %c%s", pfx, fstr);
 
         /* Blinking cursor */
@@ -162,20 +152,16 @@ void ov_render_status(
         ov_rgb_t panel_fg = OV_FG_DIM;
         switch (lay->focus)
         {
-        case OV_FOCUS_STREAMS:
-            panel_name = "Streams";
+        case OV_FOCUS_STREAMS: panel_name = "Streams";
             panel_fg = OV_FG_STREAM;
             break;
-        case OV_FOCUS_FPS:
-            panel_name = "FPS";
+        case OV_FOCUS_FPS: panel_name = "FPS";
             panel_fg = OV_FG_FPS;
             break;
-        case OV_FOCUS_PROCS:
-            panel_name = "Procs";
+        case OV_FOCUS_PROCS: panel_name = "Procs";
             panel_fg = OV_FG_PROC;
             break;
-        default:
-            panel_name = "Graph";
+        default: panel_name = "Graph";
             break;
         }
         ov_theme_fg(OV_FG_DIM);
@@ -183,8 +169,7 @@ void ov_render_status(
         ov_buf_printf(" \xe2\x80\xba ");
         ov_theme_fg(panel_fg);
         ov_buf_printf("%s", panel_name);
-        n1 += 3 + (int) strlen(view_name)
-            + 3 + (int) strlen(panel_name);
+        n1 += 3 + (int) strlen(view_name) + 3 + (int) strlen(panel_name);
         ov_theme_fg(OV_FG_DIM);
     }
 

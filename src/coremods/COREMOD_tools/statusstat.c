@@ -29,9 +29,7 @@ imageID COREMOD_TOOLS_statusStat(
  *  PARAMS
  * ============================================================= */
 
-static char p_imname[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "imst";
+static char p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "imst";
 static long long p_nbstep = 100000;
 
 static FPS_APP_INFO FPS_app_info = {
@@ -73,8 +71,7 @@ FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    COREMOD_TOOLS_statusStat(
-        p_imname, p_nbstep);
+    COREMOD_TOOLS_statusStat(p_imname, p_nbstep);
     return RETURN_SUCCESS;
 }
 
@@ -82,20 +79,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_tools__statusstat()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     return RETURN_SUCCESS;
 }
 #endif
@@ -114,24 +106,16 @@ imageID COREMOD_TOOLS_statusStat(
     float usec1 = 150.0;
     long long NBkiter = 2000000000;
 
-    IMGID imgstat =
-        imgid_make_from_name(
-            IDstat_name);
-    resolveIMGID(&imgstat,
-                 ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    IMGID imgstat = imgid_make_from_name(IDstat_name);
+    resolveIMGID(&imgstat, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID imgout =
-        imgid_make_from_name(
-            "statout");
+    IMGID imgout = imgid_make_from_name("statout");
     imgout.mdt->naxis = 2;
     imgout.mdt->size[0] = indexmax;
     imgout.mdt->size[1] = 1;
-    imgout.mdt->datatype =
-        _DATATYPE_INT64;
+    imgout.mdt->datatype = _DATATYPE_INT64;
     imgout.mdt->shared = 0;
-    imgout.im = (IMAGE *) calloc(
-        1, sizeof(IMAGE));
+    imgout.im = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
 
     for(unsigned short st = 0;
@@ -140,14 +124,10 @@ imageID COREMOD_TOOLS_statusStat(
         imgout.im->array.SI64[st] = 0;
     }
 
-    schedpar.sched_priority =
-        RT_priority;
-    sched_setscheduler(
-        0, SCHED_FIFO, &schedpar);
+    schedpar.sched_priority = RT_priority;
+    sched_setscheduler(0, SCHED_FIFO, &schedpar);
 
-    printf(
-        "Measuring status"
-        " distribution \n");
+    printf("Measuring status" " distribution \n");
     fflush(stdout);
 
     struct timespec t1;
@@ -158,46 +138,29 @@ imageID COREMOD_TOOLS_statusStat(
     for(long long k = 0;
         k < NBkiter; k++)
     {
-        usleep(
-            (long)(usec0
-                   + usec1
-                     * ((double) k
-                        / NBkiter)));
-        unsigned short st =
-            imgstat.im->array.UI16[0];
+        usleep((long)(usec0 + usec1 * ((double) k / NBkiter)));
+        unsigned short st = imgstat.im->array.UI16[0];
         if(st < indexmax)
         {
-            imgout.im
-                ->array.SI64[st]++;
+            imgout.im ->array.SI64[st]++;
         }
 
         struct timespec t2;
         clock_gettime(CLOCK_MILK, &t2);
-        struct timespec tdiff =
-            timespec_diff(t1, t2);
-        double tdiffv =
-            1.0 * tdiff.tv_sec
-            + 1.0e-9
-              * tdiff.tv_nsec;
+        struct timespec tdiff = timespec_diff(t1, t2);
+        double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
         if(tdiffv > tdiffv1)
         {
             tdiffv1 += tdisplay;
             printf("\n");
-            printf(
-                "=============="
-                " %10lld  %d  "
-                "==================\n",
-                k, st);
+            printf("==============" " %10lld  %d  " "==================\n", k, st);
             printf("\n");
             long cnttot = 0;
             for(st = 0;
                 st < indexmax; st++)
             {
-                cnttot +=
-                    imgout.im
-                        ->array
-                        .SI64[st];
+                cnttot += imgout.im ->array .SI64[st];
             }
 
             for(st = 0;
@@ -207,15 +170,7 @@ imageID COREMOD_TOOLS_statusStat(
                     "STATUS  %5d"
                     "    %20ld"
                     "   %6.3f  \n",
-                    st,
-                    imgout.im
-                        ->array
-                        .SI64[st],
-                    100.0
-                    * imgout.im
-                          ->array
-                          .SI64[st]
-                    / cnttot);
+                    st, imgout.im ->array .SI64[st], 100.0 * imgout.im ->array .SI64[st] / cnttot);
             }
         }
     }
@@ -224,12 +179,7 @@ imageID COREMOD_TOOLS_statusStat(
     for(unsigned short st = 0;
         st < indexmax; st++)
     {
-        printf(
-            "STATUS  %5d"
-            "    %10ld\n",
-            st,
-            imgout.im
-                ->array.SI64[st]);
+        printf("STATUS  %5d" "    %10ld\n", st, imgout.im ->array.SI64[st]);
     }
 
     printf("\n");

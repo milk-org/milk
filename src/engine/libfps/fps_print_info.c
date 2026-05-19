@@ -91,9 +91,7 @@ int function_parameter_print_info(
             }
             else
             {
-                functionparameter_GetParamValueString(&fps->parray[pindex],
-                                                      valstring,
-                                                      200);
+                functionparameter_GetParamValueString(&fps->parray[pindex], valstring, 200);
             }
             int vl = strlen(valstring);
             if(vl > val_width)
@@ -130,70 +128,49 @@ int function_parameter_print_info(
             }
             else
             {
-                functionparameter_GetParamValueString(&fps->parray[pindex],
-                                                      valstring,
-                                                      200);
+                functionparameter_GetParamValueString(&fps->parray[pindex], valstring, 200);
             }
 
             const char *type_str = "UNKNOWN";
             switch(fps->parray[pindex].type)
             {
-            case FPTYPE_UNDEF:
-                type_str = "UNDEF";
+            case FPTYPE_UNDEF: type_str = "UNDEF";
                 break;
-            case FPTYPE_INT32:
-                type_str = "INT32";
+            case FPTYPE_INT32: type_str = "INT32";
                 break;
-            case FPTYPE_UINT32:
-                type_str = "UINT32";
+            case FPTYPE_UINT32: type_str = "UINT32";
                 break;
-            case FPTYPE_INT64:
-                type_str = "INT64";
+            case FPTYPE_INT64: type_str = "INT64";
                 break;
-            case FPTYPE_UINT64:
-                type_str = "UINT64";
+            case FPTYPE_UINT64: type_str = "UINT64";
                 break;
-            case FPTYPE_FLOAT32:
-                type_str = "FLOAT32";
+            case FPTYPE_FLOAT32: type_str = "FLOAT32";
                 break;
-            case FPTYPE_FLOAT64:
-                type_str = "FLOAT64";
+            case FPTYPE_FLOAT64: type_str = "FLOAT64";
                 break;
-            case FPTYPE_PID:
-                type_str = "PID";
+            case FPTYPE_PID: type_str = "PID";
                 break;
-            case FPTYPE_TIMESPEC:
-                type_str = "TIMESPEC";
+            case FPTYPE_TIMESPEC: type_str = "TIMESPEC";
                 break;
-            case FPTYPE_FILENAME:
-                type_str = "FILENAME";
+            case FPTYPE_FILENAME: type_str = "FILENAME";
                 break;
-            case FPTYPE_FITSFILENAME:
-                type_str = "FITSFILENAME";
+            case FPTYPE_FITSFILENAME: type_str = "FITSFILENAME";
                 break;
-            case FPTYPE_EXECFILENAME:
-                type_str = "EXECFILENAME";
+            case FPTYPE_EXECFILENAME: type_str = "EXECFILENAME";
                 break;
-            case FPTYPE_DIRNAME:
-                type_str = "DIRNAME";
+            case FPTYPE_DIRNAME: type_str = "DIRNAME";
                 break;
-            case FPTYPE_STREAMNAME:
-                type_str = "STREAMNAME";
+            case FPTYPE_STREAMNAME: type_str = "STREAMNAME";
                 break;
-            case FPTYPE_STRING:
-                type_str = "STRING";
+            case FPTYPE_STRING: type_str = "STRING";
                 break;
-            case FPTYPE_ONOFF:
-                type_str = "ONOFF";
+            case FPTYPE_ONOFF: type_str = "ONOFF";
                 break;
-            case FPTYPE_PROCESS:
-                type_str = "PROCESS";
+            case FPTYPE_PROCESS: type_str = "PROCESS";
                 break;
-            case FPTYPE_FPSNAME:
-                type_str = "FPSNAME";
+            case FPTYPE_FPSNAME: type_str = "FPSNAME";
                 break;
-            case FPTYPE_STRING_NOT_STREAM:
-                type_str = "STRING_NOT_STREAM";
+            case FPTYPE_STRING_NOT_STREAM: type_str = "STRING_NOT_STREAM";
                 break;
             }
 
@@ -212,8 +189,7 @@ int function_parameter_print_info(
             }
             else
             {
-                snprintf(cli_idx_str,
-                         sizeof(cli_idx_str), "---");
+                snprintf(cli_idx_str, sizeof(cli_idx_str), "---");
             }
 
             const char *display_keyword = fps->parray[pindex].keywordfull;
@@ -231,9 +207,7 @@ int function_parameter_print_info(
                    color_end,
                    type_str,
                    val_width,
-                   valstring,
-                   fps->parray[pindex].value_cnt,
-                   fps->parray[pindex].description);
+                   valstring, fps->parray[pindex].value_cnt, fps->parray[pindex].description);
 
             if(show_info && fps->parray[pindex].type == FPTYPE_STREAMNAME)
             {
@@ -248,9 +222,7 @@ int function_parameter_print_info(
                         (ImageStreamIO_filename(
                              shmpath_pi,
                              sizeof(shmpath_pi),
-                             sp.name)
-                         == IMAGESTREAMIO_SUCCESS)
-                        && (access(shmpath_pi, F_OK) == 0);
+                             sp.name) == IMAGESTREAMIO_SUCCESS) && (access(shmpath_pi, F_OK) == 0);
                 }
 
                 if(shm_ok

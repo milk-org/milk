@@ -73,9 +73,7 @@ long next_avail_fps_ID()
     {
         PRINT_ERROR(
             "ran out of FPS IDs - cannot allocate new ID; "
-            "NB_FPS_MAX should be increased above current "
-            "value (%d)",
-            NB_FPS_MAX);
+            "NB_FPS_MAX should be increased above current " "value (%d)", NB_FPS_MAX);
     }
 
     return ID;

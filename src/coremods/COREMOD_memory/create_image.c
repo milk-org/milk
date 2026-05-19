@@ -54,10 +54,7 @@ errno_t create_image_ID_IMGID(
     DEBUG_TRACEPOINT("FARG %s %ld %d %d %d %d",
                      img->name,
                      (long) img->mdt->naxis,
-                     (int) img->mdt->datatype,
-                     img->mdt->shared,
-                     img->mdt->NBkw,
-                     img->mdt->CBsize);
+                     (int) img->mdt->datatype, img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
     IMGID exist_img = imgid_make_from_name(img->name);
     resolveIMGID(&exist_img, ERRMODE_NULL, dcimg, dcnimg);
 
@@ -69,9 +66,7 @@ errno_t create_image_ID_IMGID(
                                img->mdt->naxis,
                                img->mdt->size,
                                img->mdt->datatype,
-                               img->mdt->shared,
-                               img->mdt->NBkw,
-                               img->mdt->CBsize);
+                               img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
     }
     else
     {
@@ -84,9 +79,7 @@ errno_t create_image_ID_IMGID(
                 != img->mdt->datatype)
         {
             printf("\033[33mWARNING:\033[0m"
-                   " image \"%s\" type mismatch"
-                   " -> re-creating\n",
-                   img->name);
+                   " image \"%s\" type mismatch" " -> re-creating\n", img->name);
             mismatch = 1;
         }
 
@@ -98,10 +91,7 @@ errno_t create_image_ID_IMGID(
                    " image \"%s\" naxis mismatch"
                    " (%ld vs %ld)"
                    " -> re-creating\n",
-                   img->name,
-                   (long) dcimg[img->ID]
-                   .md->naxis,
-                   (long) img->mdt->naxis);
+                   img->name, (long) dcimg[img->ID] .md->naxis, (long) img->mdt->naxis);
             mismatch = 1;
         }
 
@@ -122,11 +112,7 @@ errno_t create_image_ID_IMGID(
                         " (%ld vs %ld)"
                         " -> re-creating\n",
                         img->name, i,
-                        (long) dcimg[
-                            img->ID]
-                        .md->size[i],
-                        (long) img->mdt
-                        ->size[i]);
+                        (long) dcimg[img->ID] .md->size[i], (long) img->mdt ->size[i]);
                     mismatch = 1;
                     break;
                 }
@@ -135,20 +121,14 @@ errno_t create_image_ID_IMGID(
 
         if(mismatch)
         {
-            delete_image_ID(
-                img->name,
-                DELETE_IMAGE_ERRMODE_WARNING);
-            img->ID = next_avail_image_ID(
-                          img->ID);
+            delete_image_ID(img->name, DELETE_IMAGE_ERRMODE_WARNING);
+            img->ID = next_avail_image_ID(img->ID);
             ImageStreamIO_createIm(
                 &dcimg[img->ID],
                 img->name,
                 img->mdt->naxis,
                 img->mdt->size,
-                img->mdt->datatype,
-                img->mdt->shared,
-                img->mdt->NBkw,
-                img->mdt->CBsize);
+                img->mdt->datatype, img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
         }
     }
 

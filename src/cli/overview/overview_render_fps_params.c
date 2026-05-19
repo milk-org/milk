@@ -118,24 +118,19 @@ static void render_param_breadcrumb(
     OV_RECT         r)
 {
     int focused = (lay->fps_param_focus == 1);
-    ov_rgb_t border_fg = focused
-                         ? OV_FG_FPS : OV_FG_DIM;
+    ov_rgb_t border_fg = focused ? OV_FG_FPS : OV_FG_DIM;
 
     /* Draw border and title in one call */
     char title[256];
     if(lay->fps_param_path[0] != '\0')
     {
-        snprintf(title, sizeof(title),
-                 "PARAMS  %s / %s", fps->name, lay->fps_param_path);
+        snprintf(title, sizeof(title), "PARAMS  %s / %s", fps->name, lay->fps_param_path);
     }
     else
     {
-        snprintf(title, sizeof(title),
-                 "PARAMS  %s", fps->name);
+        snprintf(title, sizeof(title), "PARAMS  %s", fps->name);
     }
-    ov_draw_panel_border(
-        r.row, r.col, r.height, r.width,
-        title, border_fg, focused, 0);
+    ov_draw_panel_border(r.row, r.col, r.height, r.width, title, border_fg, focused, 0);
 
     /* Header row: col labels */
     int hrow = r.row + 1;
@@ -148,10 +143,7 @@ static void render_param_breadcrumb(
     {
         kw = 6;
     }
-    ov_buf_printf(" %-*s %4s  %-*s",
-                  kw, "PARAMETER",
-                  "TYPE",
-                  r.width - kw - 12, "VALUE");
+    ov_buf_printf(" %-*s %4s  %-*s", kw, "PARAMETER", "TYPE", r.width - kw - 12, "VALUE");
     ov_buf_reset_attr();
 }
 
@@ -286,9 +278,7 @@ void ov_render_fps_params_panel(
     if(fsel < 0 || fsel >= m->nb_fps)
     {
         /* Draw empty border */
-        ov_draw_panel_border(
-            r.row, r.col, r.height, r.width,
-            "PARAMS", OV_FG_DIM, 0, 0);
+        ov_draw_panel_border(r.row, r.col, r.height, r.width, "PARAMS", OV_FG_DIM, 0, 0);
         return;
     }
 
@@ -367,16 +357,13 @@ void ov_render_fps_params_panel(
 
         if(list_idx >= nitems)
         {
-            clear_row(row, r.col + 1,
-                      r.width - 2, OV_BG_PANEL);
+            clear_row(row, r.col + 1, r.width - 2, OV_BG_PANEL);
             continue;
         }
 
-        int is_sel = (lay->fps_param_focus == 1
-                      && list_idx == psel);
+        int is_sel = (lay->fps_param_focus == 1 && list_idx == psel);
 
-        ov_rgb_t row_bg = is_sel
-                          ? OV_BG_SELECTED : OV_BG_PANEL;
+        ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : OV_BG_PANEL;
 
         ov_buf_pos(row, r.col + 1);
         ov_theme_bg(row_bg);
@@ -454,24 +441,18 @@ void ov_render_fps_params_panel(
             ov_buf_printf(" "); /* separator after badge */
 
             /* Parameter keyword */
-            ov_theme_fg(is_sel
-                        ? OV_FG_TEXT
-                        : OV_FG_FPS);
+            ov_theme_fg(is_sel ? OV_FG_TEXT : OV_FG_FPS);
             ov_buf_printf("%-*.*s ", kw, kw, item->name);
 
             /* Type badge */
             {
-                ov_rgb_t tc =
-                    fps_param_type_color(
-                        fps->disp_param_type[pi]);
+                ov_rgb_t tc = fps_param_type_color(fps->disp_param_type[pi]);
                 if(is_sel)
                 {
                     tc = OV_FG_TEXT;
                 }
                 ov_theme_fg(tc);
-                ov_buf_printf("%4s  ",
-                              fps_param_type_badge(
-                                  fps->disp_param_type[pi]));
+                ov_buf_printf("%4s  ", fps_param_type_badge(fps->disp_param_type[pi]));
             }
 
             /* Value */
@@ -496,8 +477,7 @@ void ov_render_fps_params_panel(
                         {
                             60, 220, 60
                         });
-                        ov_buf_printf("%-*s",
-                                      vw, "ON");
+                        ov_buf_printf("%-*s", vw, "ON");
                     }
                     else
                     {
@@ -507,16 +487,13 @@ void ov_render_fps_params_panel(
                         {
                             160, 60, 60
                         });
-                        ov_buf_printf("%-*s",
-                                      vw, "OFF");
+                        ov_buf_printf("%-*s", vw, "OFF");
                     }
                 }
                 else
                 {
-                    ov_theme_fg(is_sel
-                                ? OV_FG_TEXT : OV_FG_DIM);
-                    ov_buf_printf("%-*.*s",
-                                  vw, vw, val);
+                    ov_theme_fg(is_sel ? OV_FG_TEXT : OV_FG_DIM);
+                    ov_buf_printf("%-*.*s", vw, vw, val);
                 }
             }
         }
@@ -524,16 +501,12 @@ void ov_render_fps_params_panel(
         ov_buf_reset_attr();
     } /* for each row */
 
-    render_scroll_indicators(
-        r, scroll, max_rows,
-        nitems, OV_FG_FPS);
+    render_scroll_indicators(r, scroll, max_rows, nitems, OV_FG_FPS);
 
     /* Footer: item count */
     {
         char fbuf[48];
-        snprintf(fbuf, sizeof(fbuf),
-                 " %d/%d items ",
-                 psel + 1, nitems);
+        snprintf(fbuf, sizeof(fbuf), " %d/%d items ", psel + 1, nitems);
         int flen = (int)strlen(fbuf);
         int bcol = r.col + r.width - flen - 2;
         if(bcol > r.col + 1)

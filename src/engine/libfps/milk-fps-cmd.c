@@ -77,8 +77,7 @@ static const char *cmd_desc_long(const char *prog)
         return
             "Stop the run loop for a Function Parameter Structure (FPS).\n"
             "Sends the runstop signal to the running compute unit, causing\n"
-            "it to exit its main loop cleanly. Use -tmux to dispatch via\n"
-            "the tmux session.";
+            "it to exit its main loop cleanly. Use -tmux to dispatch via\n" "the tmux session.";
     return
         "Send a lifecycle command (confstart/confstop/confstep/runstart/\n"
         "runstop) to a Function Parameter Structure (FPS).";
@@ -107,8 +106,7 @@ static void print_help(
 
     milk_help_section("Arguments", mh_color);
     printf("  %s%-14s%s %s\n\n",
-           mh_color ? MH_ARG : "", "<fpsname>", mh_color ? MH_RST : "",
-           "Name of the target FPS");
+           mh_color ? MH_ARG : "", "<fpsname>", mh_color ? MH_RST : "", "Name of the target FPS");
 
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
@@ -125,8 +123,7 @@ static void print_help(
            mh_color ? MH_RST : "", "Full help, no ANSI color");
     printf("  %s%-25s%s %s\n\n",
            mh_color ? MH_OPT : "", "-tmux",
-           mh_color ? MH_RST : "",
-           "Dispatch via FPS tmux session (runs in background)");
+           mh_color ? MH_RST : "", "Dispatch via FPS tmux session (runs in background)");
 
     milk_help_section("Examples", mh_color);
     printf("  %s$ %s%s%s %smyfps00%s\n",
@@ -159,9 +156,7 @@ int main(
 {
     const char *progname = basename(argv[0]);
 
-    int action = milk_help_init(argc, argv,
-                                cmd_desc(progname),
-                                cmd_desc_long(progname));
+    int action = milk_help_init(argc, argv, cmd_desc(progname), cmd_desc_long(progname));
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -215,8 +210,7 @@ int main(
 
     if(fps_connect(fpsname, &fps, 0) == -1)
     {
-        fprintf(stderr,
-                "Error: cannot connect to FPS \"%s\".\n", fpsname);
+        fprintf(stderr, "Error: cannot connect to FPS \"%s\".\n", fpsname);
         return 1;
     }
 
@@ -244,8 +238,7 @@ int main(
 
     if(command == NULL)
     {
-        fprintf(stderr,
-                "Error: unknown command \"%s\".\n", progname);
+        fprintf(stderr, "Error: unknown command \"%s\".\n", progname);
         fps_disconnect(&fps);
         return 1;
     }
@@ -253,9 +246,7 @@ int main(
     if(strlen(fps.md->execfullpath) == 0
             || strcmp(fps.md->execfullpath, "unknown") == 0)
     {
-        fprintf(stderr,
-                "Error: execfullpath not set for FPS \"%s\".\n",
-                fpsname);
+        fprintf(stderr, "Error: execfullpath not set for FPS \"%s\".\n", fpsname);
         fps_disconnect(&fps);
         return 1;
     }
@@ -265,8 +256,7 @@ int main(
         functionparameter_FPS_tmux_ensure(&fps);
 
         char extra_args[256];
-        snprintf(extra_args, sizeof(extra_args),
-                 " %s:%s", fpsname, command);
+        snprintf(extra_args, sizeof(extra_args), " %s:%s", fpsname, command);
 
         if(functionparameter_FPS_tmux_send_dispatch(
                     fpsname,              command,
@@ -276,9 +266,7 @@ int main(
                     "Warning: '%s' not recognized for tmux dispatch,"
                     " running locally...\n", command);
             char cmdline[1024];
-            snprintf(cmdline, sizeof(cmdline),
-                     "%s %s:%s",
-                     fps.md->execfullpath, fpsname, command);
+            snprintf(cmdline, sizeof(cmdline), "%s %s:%s", fps.md->execfullpath, fpsname, command);
             printf("Executing locally: %s\n", cmdline);
             int ret = system(cmdline);
             fps_disconnect(&fps);
@@ -288,9 +276,7 @@ int main(
     else
     {
         char cmdline[1024];
-        snprintf(cmdline, sizeof(cmdline),
-                 "%s %s:%s",
-                 fps.md->execfullpath, fpsname, command);
+        snprintf(cmdline, sizeof(cmdline), "%s %s:%s", fps.md->execfullpath, fpsname, command);
         printf("Executing locally: %s\n", cmdline);
         int ret = system(cmdline);
         fps_disconnect(&fps);

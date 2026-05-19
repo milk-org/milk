@@ -88,16 +88,13 @@ static void print_setup_commands(
     const char *cpulist,
     int        color)
 {
-    const char *cg = (cgname && strcmp(cgname, "NULL") != 0)
-                     ? cgname : "milk";
+    const char *cg = (cgname && strcmp(cgname, "NULL") != 0) ? cgname : "milk";
     const char *cl = cpulist ? cpulist : "<cpulist>";
 
     if(color)
     {
-        printf("%sOne-time cgroup v2 setup (run as root):%s\n\n",
-               ANSI_BLD, ANSI_RST);
-        printf("  %smkdir%s          /sys/fs/cgroup/%s\n",
-               ANSI_GRN, ANSI_RST, cg);
+        printf("%sOne-time cgroup v2 setup (run as root):%s\n\n", ANSI_BLD, ANSI_RST);
+        printf("  %smkdir%s          /sys/fs/cgroup/%s\n", ANSI_GRN, ANSI_RST, cg);
         printf("  %secho%s '+cpuset'  > /sys/fs/cgroup/cgroup.subtree_control\n",
                ANSI_GRN, ANSI_RST);
         printf("  %secho%s '+cpuset'  > /sys/fs/cgroup/%s/cgroup.subtree_control\n",
@@ -112,8 +109,7 @@ static void print_setup_commands(
         printf("One-time cgroup v2 setup (run as root):\n\n");
         printf("  mkdir          /sys/fs/cgroup/%s\n", cg);
         printf("  echo '+cpuset' > /sys/fs/cgroup/cgroup.subtree_control\n");
-        printf("  echo '+cpuset' > /sys/fs/cgroup/%s/cgroup.subtree_control\n",
-               cg);
+        printf("  echo '+cpuset' > /sys/fs/cgroup/%s/cgroup.subtree_control\n", cg);
         printf("  echo '%s'    > /sys/fs/cgroup/%s/cpuset.cpus\n", cl, cg);
         printf("  echo '0'       > /sys/fs/cgroup/%s/cpuset.mems\n\n", cg);
     }
@@ -145,29 +141,23 @@ static void print_help(
     milk_help_section("Arguments", mh_color);
     printf("  %s%-20s%s %s\n",
            mh_color ? MH_ARG : "", "<PID>",
-           mh_color ? MH_RST : "",
-           "Process ID to move (integer > 0)");
+           mh_color ? MH_RST : "", "Process ID to move (integer > 0)");
     printf("  %s%-20s%s %s\n",
            mh_color ? MH_ARG : "", "<cgroupname>",
-           mh_color ? MH_RST : "",
-           "cgroup v2 name under /sys/fs/cgroup/ (or 'NULL' to skip)");
+           mh_color ? MH_RST : "", "cgroup v2 name under /sys/fs/cgroup/ (or 'NULL' to skip)");
     printf("  %s%-20s%s %s\n\n",
            mh_color ? MH_ARG : "", "<prio>",
-           mh_color ? MH_RST : "",
-           "SCHED_FIFO priority 1-99 (0 to skip)");
+           mh_color ? MH_RST : "", "SCHED_FIFO priority 1-99 (0 to skip)");
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
-           mh_color ? MH_RST : "",
-           "Show this help and exit");
+           mh_color ? MH_RST : "", "Show this help and exit");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h1, --help-oneline",
-           mh_color ? MH_RST : "",
-           "One-line description and exit");
+           mh_color ? MH_RST : "", "One-line description and exit");
     printf("  %s%-25s%s %s\n\n",
            mh_color ? MH_OPT : "", "-hm, --help-mono",
-           mh_color ? MH_RST : "",
-           "Full help, no ANSI color");
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
     printf("  %s$ milk-makecsetandrt%s %s33654 milk 80%s\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
@@ -238,8 +228,7 @@ static int check_cgroup_setup(
         FILE *fp = fopen(CGROOT "/cgroup.controllers", "r");
         if(fp == NULL)
         {
-            printf("  %s cannot read " CGROOT "/cgroup.controllers\n",
-                   err);
+            printf("  %s cannot read " CGROOT "/cgroup.controllers\n", err);
             return CGCHECK_NOCTRL;
         }
 
@@ -267,27 +256,22 @@ static int check_cgroup_setup(
         struct stat st;
         if(stat(cgpath, &st) != 0 || !S_ISDIR(st.st_mode))
         {
-            printf("  %s cgroup directory '%s' not found\n",
-                   err, cgpath);
+            printf("  %s cgroup directory '%s' not found\n", err, cgpath);
             return CGCHECK_NODIR;
         }
-        printf("  %s cgroup directory " CGROOT "/%s exists\n",
-               ok, cgname);
+        printf("  %s cgroup directory " CGROOT "/%s exists\n", ok, cgname);
     }
 
     /* Step 4: cpuset.cpus is non-empty */
     {
         char cpus_path[512];
-        snprintf(cpus_path, sizeof(cpus_path),
-                 CGROOT "/%s/cpuset.cpus", cgname);
+        snprintf(cpus_path, sizeof(cpus_path), CGROOT "/%s/cpuset.cpus", cgname);
 
         FILE *fp = fopen(cpus_path, "r");
         if(fp == NULL)
         {
-            printf("  %s cannot read '%s': %s\n",
-                   err, cpus_path, strerror(errno));
-            printf("      (cpuset controller may not be delegated"
-                   " to this sub-cgroup)\n");
+            printf("  %s cannot read '%s': %s\n", err, cpus_path, strerror(errno));
+            printf("      (cpuset controller may not be delegated" " to this sub-cgroup)\n");
             return CGCHECK_NOCPUS;
         }
 
@@ -302,8 +286,7 @@ static int check_cgroup_setup(
 
         if(cpus[0] == '\0')
         {
-            printf("  %s cpuset.cpus is empty — not configured\n",
-                   err);
+            printf("  %s cpuset.cpus is empty — not configured\n", err);
             return CGCHECK_NOCPUS;
         }
         printf("  %s cpuset.cpus = %s\n", ok, cpus);
@@ -333,8 +316,7 @@ static int move_thread_to_cgroup(
     {
         fprintf(stderr,
                 "  " ANSI_RED "ERROR" ANSI_RST
-                ": cannot write tid %d to '%s': %s\n",
-                (int)tid, threads_file, strerror(errno));
+                ": cannot write tid %d to '%s': %s\n", (int)tid, threads_file, strerror(errno));
         return 1;
     }
     fprintf(fp, "%d\n", (int)tid);
@@ -362,8 +344,7 @@ static int move_to_cgroup(
     }
 
     char threads_file[512];
-    snprintf(threads_file, sizeof(threads_file),
-             CGROOT "/%s/cgroup.threads", cgname);
+    snprintf(threads_file, sizeof(threads_file), CGROOT "/%s/cgroup.threads", cgname);
 
     /* Enumerate all threads of PID via /proc/<pid>/task/ */
     char taskdir[128];
@@ -375,8 +356,7 @@ static int move_to_cgroup(
         fprintf(stderr,
                 ANSI_RED "ERROR" ANSI_RST
                 ": cannot open '%s': %s\n"
-                "  PID %d may not exist.\n",
-                taskdir, strerror(errno), (int)pid);
+                "  PID %d may not exist.\n", taskdir, strerror(errno), (int)pid);
         return 1;
     }
 
@@ -399,8 +379,7 @@ static int move_to_cgroup(
         }
 
         pid_t tid = (pid_t)tid_l;
-        printf("  moving tid %d -> " CGROOT "/%s\n",
-               (int)tid, cgname);
+        printf("  moving tid %d -> " CGROOT "/%s\n", (int)tid, cgname);
 
         if(move_thread_to_cgroup(threads_file, tid) != 0)
         {
@@ -415,14 +394,11 @@ static int move_to_cgroup(
 
     if(moved == 0 && errors == 0)
     {
-        fprintf(stderr,
-                ANSI_RED "ERROR" ANSI_RST
-                ": no threads found for PID %d.\n", (int)pid);
+        fprintf(stderr, ANSI_RED "ERROR" ANSI_RST ": no threads found for PID %d.\n", (int)pid);
         return 1;
     }
 
-    printf("  moved %d thread(s) to cgroup '%s' (%d error(s))\n",
-           moved, cgname, errors);
+    printf("  moved %d thread(s) to cgroup '%s' (%d error(s))\n", moved, cgname, errors);
     return errors > 0 ? 1 : 0;
 }
 
@@ -452,8 +428,7 @@ static int set_rt_priority(
     if(rtprio > 99)
     {
         fprintf(stderr,
-                ANSI_RED "ERROR" ANSI_RST
-                ": RT priority %d out of range (1-99).\n", rtprio);
+                ANSI_RED "ERROR" ANSI_RST ": RT priority %d out of range (1-99).\n", rtprio);
         return 1;
     }
 
@@ -467,9 +442,7 @@ static int set_rt_priority(
     if(d == NULL)
     {
         fprintf(stderr,
-                ANSI_RED "ERROR" ANSI_RST
-                ": cannot open '%s': %s\n",
-                taskdir, strerror(errno));
+                ANSI_RED "ERROR" ANSI_RST ": cannot open '%s': %s\n", taskdir, strerror(errno));
         return 1;
     }
 
@@ -500,23 +473,19 @@ static int set_rt_priority(
                 fprintf(stderr,
                         ANSI_RED "ERROR" ANSI_RST
                         ": SCHED_FIFO prio %d on tid %d:"
-                        " permission denied"
-                        " (needs CAP_SYS_NICE or root).\n",
-                        rtprio, (int)tid);
+                        " permission denied" " (needs CAP_SYS_NICE or root).\n", rtprio, (int)tid);
             }
             else
             {
                 fprintf(stderr,
                         ANSI_RED "ERROR" ANSI_RST
-                        ": sched_setscheduler tid %d: %s\n",
-                        (int)tid, strerror(errno));
+                        ": sched_setscheduler tid %d: %s\n", (int)tid, strerror(errno));
             }
             errors++;
         }
         else
         {
-            printf("  tid %d SCHED_FIFO prio=%d set\n",
-                   (int)tid, rtprio);
+            printf("  tid %d SCHED_FIFO prio=%d set\n", (int)tid, rtprio);
             done++;
         }
     }
@@ -524,14 +493,11 @@ static int set_rt_priority(
 
     if(done == 0 && errors == 0)
     {
-        fprintf(stderr,
-                ANSI_RED "ERROR" ANSI_RST
-                ": no threads found for PID %d.\n", (int)pid);
+        fprintf(stderr, ANSI_RED "ERROR" ANSI_RST ": no threads found for PID %d.\n", (int)pid);
         return 1;
     }
 
-    printf("  set SCHED_FIFO prio=%d on %d thread(s) (%d error(s))\n",
-           rtprio, done, errors);
+    printf("  set SCHED_FIFO prio=%d on %d thread(s) (%d error(s))\n", rtprio, done, errors);
     return errors > 0 ? 1 : 0;
 }
 
@@ -543,8 +509,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(
-                     argc, argv, MCSR_DESC, MCSR_DESC_LONG);
+    int action = milk_help_init(argc, argv, MCSR_DESC, MCSR_DESC_LONG);
 
     if(action == MH_ACTION_H1 ||
             action == MH_ACTION_H2)
@@ -564,8 +529,7 @@ int main(
     if(argc != 4)
     {
         fprintf(stderr,
-                "\n" ANSI_RED "ERROR" ANSI_RST
-                ": expected 3 arguments, got %d.\n\n", argc - 1);
+                "\n" ANSI_RED "ERROR" ANSI_RST ": expected 3 arguments, got %d.\n\n", argc - 1);
         print_help(argv[0], 1);
         return 1;
     }
@@ -577,8 +541,7 @@ int main(
     {
         fprintf(stderr,
                 "\n" ANSI_RED "ERROR" ANSI_RST
-                ": invalid PID '%s'"
-                " — must be a positive integer.\n\n", argv[1]);
+                ": invalid PID '%s'" " — must be a positive integer.\n\n", argv[1]);
         return 1;
     }
     pid_t pid = (pid_t)pid_l;
@@ -589,16 +552,14 @@ int main(
     {
         fprintf(stderr,
                 "\n" ANSI_RED "ERROR" ANSI_RST
-                ": invalid priority '%s'"
-                " — must be 0-99.\n\n", argv[3]);
+                ": invalid priority '%s'" " — must be 0-99.\n\n", argv[3]);
         return 1;
     }
     int rtprio = (int)prio_l;
 
     const char *cgname = argv[2];
 
-    printf("milk-makecsetandrt: PID=%d cgroup=%s prio=%d\n",
-           (int)pid, cgname, rtprio);
+    printf("milk-makecsetandrt: PID=%d cgroup=%s prio=%d\n", (int)pid, cgname, rtprio);
 
     /*
      * If a cgroup name was given (not "NULL"), run the readiness
@@ -612,8 +573,7 @@ int main(
 
         if(status != CGCHECK_OK)
         {
-            printf("\n" ANSI_RED "SETUP INCOMPLETE" ANSI_RST
-                   " — run the following as root:\n\n");
+            printf("\n" ANSI_RED "SETUP INCOMPLETE" ANSI_RST " — run the following as root:\n\n");
             print_setup_commands(cgname, NULL, 1);
             return 1;
         }

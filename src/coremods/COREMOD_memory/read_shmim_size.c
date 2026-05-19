@@ -40,10 +40,8 @@ static FPS_APP_INFO FPS_app_info =
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char insname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "stream";
-static char outfname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "imsize.txt";
+static char insname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
+static char outfname[FUNCTION_PARAMETER_STRMAXLEN] = "imsize.txt";
 
 
 /* ================================================================
@@ -77,8 +75,7 @@ imageID read_sharedmem_image_size(
 {
     int             SM_fd;
     struct stat     file_stat;
-    char            SM_fname[
-     STRINGMAXLEN_FULLFILENAME];
+    char            SM_fname[STRINGMAXLEN_FULLFILENAME];
     IMAGE_METADATA *map;
 
     FILE           *fp;
@@ -88,42 +85,30 @@ imageID read_sharedmem_image_size(
 
     if(img.ID == -1)
     {
-        WRITE_FULLFILENAME(
-            SM_fname, "%s/%s.im.shm",
-            dcshmdir, name);
+        WRITE_FULLFILENAME(SM_fname, "%s/%s.im.shm", dcshmdir, name);
 
         SM_fd = open(SM_fname, O_RDWR);
         if(SM_fd == -1)
         {
-            printf(
-                "Cannot import file"
-                " - continuing\n");
+            printf("Cannot import file" " - continuing\n");
         }
         else
         {
             fstat(SM_fd, &file_stat);
 
             map = (IMAGE_METADATA *) mmap(
-                      0,
-                      sizeof(IMAGE_METADATA),
-                      PROT_READ | PROT_WRITE,
-                      MAP_SHARED,
-                      SM_fd,
-                      0);
+                      0, sizeof(IMAGE_METADATA), PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
             if(map == MAP_FAILED)
             {
                 close(SM_fd);
-                PRINT_ERROR(
-                    "mmap failed for %s",
-                    SM_fname);
+                PRINT_ERROR("mmap failed for %s", SM_fname);
                 return -1;
             }
 
             fp = fopen(fname, "w");
             for(int i = 0; i < map[0].naxis; i++)
             {
-                fprintf(fp, "%ld ",
-                        (long) map[0].size[i]);
+                fprintf(fp, "%ld ", (long) map[0].size[i]);
             }
             fprintf(fp, "\n");
             fclose(fp);
@@ -132,11 +117,8 @@ imageID read_sharedmem_image_size(
                       sizeof(IMAGE_METADATA))
                     == -1)
             {
-                printf("unmapping %s\n",
-                       SM_fname);
-                PRINT_ERROR(
-                    "Error un-mmapping the file: %s",
-                    strerror(errno));
+                printf("unmapping %s\n", SM_fname);
+                PRINT_ERROR("Error un-mmapping the file: %s", strerror(errno));
             }
             close(SM_fd);
         }
@@ -148,9 +130,7 @@ imageID read_sharedmem_image_size(
                 i < img.im->md[0].naxis;
                 i++)
         {
-            fprintf(
-                fp, "%ld ",
-                (long) img.im->md[0].size[i]);
+            fprintf(fp, "%ld ", (long) img.im->md[0].size[i]);
         }
         fprintf(fp, "\n");
         fclose(fp);
@@ -174,12 +154,9 @@ FPS_V2_SECTION5(FPS_PARAMS)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  read_sharedmem_image_size(insname, outfname);
 
-    read_sharedmem_image_size(insname, outfname);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -192,18 +169,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__read_sharedmem_image_size()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

@@ -63,10 +63,7 @@ static void print_connections(const char *fpsname)
 
     if(fi < 0)
     {
-        printf("\n" CI_HDR " Connections" CI_RST
-               CI_DIM
-               " (FPS not found in graph)"
-               CI_RST "\n\n");
+        printf("\n" CI_HDR " Connections" CI_RST CI_DIM " (FPS not found in graph)" CI_RST "\n\n");
         ov_scan_cache_cleanup();
         return;
     }
@@ -74,16 +71,12 @@ static void print_connections(const char *fpsname)
     int fni = model.fps[fi].node_idx;
     if(fni < 0)
     {
-        printf("\n" CI_HDR " Connections" CI_RST
-               CI_DIM
-               " (FPS not in graph)"
-               CI_RST "\n\n");
+        printf("\n" CI_HDR " Connections" CI_RST CI_DIM " (FPS not in graph)" CI_RST "\n\n");
         ov_scan_cache_cleanup();
         return;
     }
 
-    printf("\n" CI_HDR " Connections" CI_RST
-           " (from system graph)\n");
+    printf("\n" CI_HDR " Connections" CI_RST " (from system graph)\n");
 
     int found_any = 0;
 
@@ -110,9 +103,7 @@ static void print_connections(const char *fpsname)
         int pi = model.nodes[ni].index;
         printf("   %-18s: " CI_PROC "%s"
                CI_RST " (PID %d)\n",
-               "Runs process",
-               model.procs[pi].name,
-               (int) model.procs[pi].PID);
+               "Runs process", model.procs[pi].name, (int) model.procs[pi].PID);
         found_any = 1;
     }
 
@@ -137,10 +128,7 @@ static void print_connections(const char *fpsname)
             continue;
         }
         int si = model.nodes[ni].index;
-        printf("   %-18s: " CI_STREAM "%s"
-               CI_RST "\n",
-               "Input stream",
-               model.streams[si].name);
+        printf("   %-18s: " CI_STREAM "%s" CI_RST "\n", "Input stream", model.streams[si].name);
         found_any = 1;
     }
 
@@ -165,18 +153,13 @@ static void print_connections(const char *fpsname)
             continue;
         }
         int si = model.nodes[ni].index;
-        printf("   %-18s: " CI_STREAM "%s"
-               CI_RST "\n",
-               "Output stream",
-               model.streams[si].name);
+        printf("   %-18s: " CI_STREAM "%s" CI_RST "\n", "Output stream", model.streams[si].name);
         found_any = 1;
     }
 
     if(!found_any)
     {
-        printf("   " CI_DIM
-               "(no connections found)"
-               CI_RST "\n");
+        printf("   " CI_DIM "(no connections found)" CI_RST "\n");
     }
 
     printf("\n");
@@ -274,8 +257,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                FI_DESC, FI_DESC_LONG);
+    int action = milk_help_init(argc, argv, FI_DESC, FI_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -308,21 +290,17 @@ int main(
     {
         switch(opt)
         {
-        case 'v':
-            verbose = 1;
+        case 'v': verbose = 1;
             break;
-        case 'i':
-            show_info = 1;
+        case 'i': show_info = 1;
             break;
-        case 'c':
-            show_connections = 1;
+        case 'c': show_connections = 1;
             break;
         case 'h':
         case '1':
             /* Handled above by milk_help_init() */
             break;
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -342,14 +320,11 @@ int main(
 
     if(fps_connect(fpsname, &fps, 0) == -1)
     {
-        fprintf(stderr,
-                "Error: cannot connect "
-                "to FPS '%s'.\n", fpsname);
+        fprintf(stderr, "Error: cannot connect " "to FPS '%s'.\n", fpsname);
         return 1;
     }
 
-    function_parameter_print_info(
-        &fps, verbose, show_info);
+    function_parameter_print_info(&fps, verbose, show_info);
 
     fps_disconnect(&fps);
 
@@ -361,9 +336,7 @@ int main(
 #else
     if(show_connections)
     {
-        fprintf(stderr,
-                "Warning: --connections not "
-                "available in this build\n");
+        fprintf(stderr, "Warning: --connections not " "available in this build\n");
     }
 #endif
 

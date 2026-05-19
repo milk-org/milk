@@ -67,24 +67,15 @@ long fps_connect(
         {
 
         case FPSCONNECT_CONF:
-            snprintf(FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "conf-%s",
-                     name);
+            snprintf(FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "conf-%s", name);
             break;
 
         case FPSCONNECT_RUN:
-            snprintf(FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "run-%s",
-                     name);
+            snprintf(FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "run-%s", name);
             break;
 
         case FPSCONNECT_SIMPLE:
-            snprintf(FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "init-%s",
-                     name);
+            snprintf(FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "init-%s", name);
             break;
 
         }
@@ -125,11 +116,7 @@ long fps_connect(
     fstat(SM_fd, &file_stat);
 
     fps->md = (FUNCTION_PARAMETER_STRUCT_MD *) mmap(0,
-              file_stat.st_size,
-              PROT_READ | PROT_WRITE,
-              MAP_SHARED,
-              SM_fd,
-              0);
+              file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
     if(fps->md == MAP_FAILED)
     {
         PRINT_ERROR("mmap failed: %s", strerror(errno));
@@ -243,8 +230,7 @@ long fps_connect(
         // set timestring if applicable
         //
         {
-            int pindex =
-                functionparameter_GetParamIndex(fps, ".conf.timestring");
+            int pindex = functionparameter_GetParamIndex(fps, ".conf.timestring");
             if(pindex > -1)
             {
                 char timestring[100];
@@ -261,8 +247,7 @@ long fps_connect(
 
         {
             // check if processinfo is enabled
-            int pindex =
-                functionparameter_GetParamIndex(fps, ".procinfo.enabled");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.enabled");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_ONOFF)
@@ -282,14 +267,12 @@ long fps_connect(
         {
             // procinfo_loopcntMax
             fps->cmdset.procinfo_loopcntMax_ptr = NULL;
-            int pindex =
-                functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
                 {
-                    fps->cmdset.procinfo_loopcntMax =
-                        fps->parray[pindex].val.i64[0];
+                    fps->cmdset.procinfo_loopcntMax = fps->parray[pindex].val.i64[0];
 
                     fps->cmdset.procinfo_loopcntMax_ptr = fps->parray[pindex].val.i64;
                 }
@@ -298,8 +281,7 @@ long fps_connect(
 
         {
             // RT_priority
-            int pindex =
-                functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
@@ -311,8 +293,7 @@ long fps_connect(
 
         {
             // triggerstreamname
-            int pindex =
-                functionparameter_GetParamIndex(fps, ".procinfo.triggersname");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggersname");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_STREAMNAME)
@@ -320,13 +301,9 @@ long fps_connect(
                     strncpy(
                         fps->cmdset.triggerstreamname,
                         fps->parray[pindex].val.string[0],
-                        sizeof(fps->cmdset
-                               .triggerstreamname)
-                        - 1);
+                        sizeof(fps->cmdset .triggerstreamname) - 1);
                     fps->cmdset.triggerstreamname[
-                    sizeof(fps->cmdset
-                               .triggerstreamname)
-                    - 1] = '\0';
+                    sizeof(fps->cmdset .triggerstreamname) - 1] = '\0';
                 }
             }
         }
@@ -334,8 +311,7 @@ long fps_connect(
         {
             // triggermode
             fps->cmdset.triggermodeptr = NULL;
-            int pindex =
-                functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
@@ -349,15 +325,12 @@ long fps_connect(
 
         {
             // semindexrequested
-            int pindex =
-                functionparameter_GetParamIndex(fps,
-                                                ".procinfo.semindexrequested");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.semindexrequested");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
                 {
-                    fps->cmdset.semindexrequested =
-                        fps->parray[pindex].val.i64[0];
+                    fps->cmdset.semindexrequested = fps->parray[pindex].val.i64[0];
                 }
             }
         }
@@ -365,16 +338,13 @@ long fps_connect(
         {
             // triggerdelay
             fps->cmdset.triggerdelayptr = NULL;
-            int pindex =
-                functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_TIMESPEC)
                 {
-                    fps->cmdset.triggerdelay.tv_sec =
-                        fps->parray[pindex].val.ts[0].tv_sec;
-                    fps->cmdset.triggerdelay.tv_nsec =
-                        fps->parray[pindex].val.ts[0].tv_nsec;
+                    fps->cmdset.triggerdelay.tv_sec = fps->parray[pindex].val.ts[0].tv_sec;
+                    fps->cmdset.triggerdelay.tv_nsec = fps->parray[pindex].val.ts[0].tv_nsec;
 
                     fps->cmdset.triggerdelayptr = fps->parray[pindex].val.ts;
                 }
@@ -384,25 +354,20 @@ long fps_connect(
         {
             // triggertimeout
             fps->cmdset.triggertimeoutptr = NULL;
-            int pindex =
-                functionparameter_GetParamIndex(fps,
-                                                ".procinfo.triggertimeout");
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggertimeout");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_TIMESPEC)
                 {
-                    fps->cmdset.triggertimeout.tv_sec =
-                        fps->parray[pindex].val.ts[0].tv_sec;
-                    fps->cmdset.triggertimeout.tv_nsec =
-                        fps->parray[pindex].val.ts[0].tv_nsec;
+                    fps->cmdset.triggertimeout.tv_sec = fps->parray[pindex].val.ts[0].tv_sec;
+                    fps->cmdset.triggertimeout.tv_nsec = fps->parray[pindex].val.ts[0].tv_nsec;
 
                     fps->cmdset.triggertimeoutptr = fps->parray[pindex].val.ts;
                 }
             }
         }
     }
-    DEBUG_TRACEPOINT("File: %s - Successful termination of fps_connect.\n",
-                     SM_fname);
+    DEBUG_TRACEPOINT("File: %s - Successful termination of fps_connect.\n", SM_fname);
 
     return (NBparamMAX);
 }

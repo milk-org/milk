@@ -104,8 +104,7 @@ static int scan_streams(
         {
             continue;
         }
-        int suffix_pos =
-            (int)(dot - de->d_name);
+        int suffix_pos = (int)(dot - de->d_name);
         if(suffix_pos !=
                 (int)strlen(de->d_name) - 7)
         {
@@ -113,8 +112,7 @@ static int scan_streams(
         }
 
         char sname[MAX_SNAME_LEN];
-        strncpy(sname, de->d_name,
-                sizeof(sname) - 1);
+        strncpy(sname, de->d_name, sizeof(sname) - 1);
         sname[sizeof(sname) - 1] = '\0';
         sname[suffix_pos] = '\0';
 
@@ -125,42 +123,33 @@ static int scan_streams(
             continue;
         }
 
-        strncpy(entries[n].sname, sname,
-                MAX_SNAME_LEN - 1);
+        strncpy(entries[n].sname, sname, MAX_SNAME_LEN - 1);
         entries[n].is_link = 0;
         entries[n].open_ok = 0;
 
         /* Check symlink */
         char fullpath[MAX_FNAME_LEN];
-        snprintf(fullpath, sizeof(fullpath),
-                 "%s/%s", shmdir, de->d_name);
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", shmdir, de->d_name);
 
         struct stat lbuf;
         if(lstat(fullpath, &lbuf) == 0 &&
                 S_ISLNK(lbuf.st_mode))
         {
             entries[n].is_link = 1;
-            ssize_t len = readlink(
-                              fullpath,
-                              entries[n].link_target,
-                              MAX_FNAME_LEN - 1);
+            ssize_t len = readlink(fullpath, entries[n].link_target, MAX_FNAME_LEN - 1);
             if(len > 0)
             {
-                entries[n].link_target[len] =
-                    '\0';
+                entries[n].link_target[len] = '\0';
             }
             struct stat tbuf;
-            entries[n].link_broken =
-                (stat(fullpath, &tbuf) != 0);
+            entries[n].link_broken = (stat(fullpath, &tbuf) != 0);
         }
 
         if(!entries[n].is_link ||
                 !entries[n].link_broken)
         {
             IMAGE im = {0};
-            errno_t r =
-                ImageStreamIO_read_sharedmem_image_toIMAGE(
-                    sname, &im);
+            errno_t r = ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &im);
             if(r == IMAGESTREAMIO_SUCCESS &&
                     im.md)
             {
@@ -170,8 +159,7 @@ static int scan_streams(
                 entries[n].naxis    = im.md->naxis;
                 for(int i = 0; i < 3; i++)
                 {
-                    entries[n].size[i] =
-                        im.md->size[i];
+                    entries[n].size[i] = im.md->size[i];
                 }
                 ImageStreamIO_closeIm(&im);
             }
@@ -186,10 +174,7 @@ static void print_header(void)
 {
     printf(C_TITLE
            "%-28s %-10s %-18s "
-           "%12s %10s"
-           C_RST "\n",
-           "Stream", "Type", "Size",
-           "Cnt0", "Rate(Hz)");
+           "%12s %10s" C_RST "\n", "Stream", "Type", "Size", "Cnt0", "Rate(Hz)");
     for(int i = 0; i < 82; i++)
     {
         putchar('-');
@@ -205,66 +190,43 @@ static void print_stream(
         if(e->link_broken)
         {
             printf(C_LINK "%-28s" C_RST
-                   " " C_ERR
-                   "LINK -> %s (broken)"
-                   C_RST "\n",
-                   e->sname,
-                   e->link_target);
+                   " " C_ERR "LINK -> %s (broken)" C_RST "\n", e->sname, e->link_target);
         }
         else
         {
-            printf(C_LINK "%-28s" C_RST
-                   " LINK -> %s\n",
-                   e->sname,
-                   e->link_target);
+            printf(C_LINK "%-28s" C_RST " LINK -> %s\n", e->sname, e->link_target);
         }
         return;
     }
     if(!e->open_ok)
     {
-        printf(C_NAME "%-28s" C_RST
-               " " C_ERR "OPEN_FAILED"
-               C_RST "\n",
-               e->sname);
+        printf(C_NAME "%-28s" C_RST " " C_ERR "OPEN_FAILED" C_RST "\n", e->sname);
         return;
     }
 
-    const char *tstr =
-        ImageStreamIO_typename(e->datatype);
+    const char *tstr = ImageStreamIO_typename(e->datatype);
     char sizestr[32];
     if(e->naxis == 1)
     {
-        snprintf(sizestr, sizeof(sizestr),
-                 "%u", e->size[0]);
+        snprintf(sizestr, sizeof(sizestr), "%u", e->size[0]);
     }
     else if(e->naxis == 2)
     {
-        snprintf(sizestr, sizeof(sizestr),
-                 "%ux%u",
-                 e->size[0],
-                 e->size[1]);
+        snprintf(sizestr, sizeof(sizestr), "%ux%u", e->size[0], e->size[1]);
     }
     else
     {
-        snprintf(sizestr, sizeof(sizestr),
-                 "%ux%ux%u",
-                 e->size[0],
-                 e->size[1],
-                 e->size[2]);
+        snprintf(sizestr, sizeof(sizestr), "%ux%ux%u", e->size[0], e->size[1], e->size[2]);
     }
 
     printf(C_NAME "%-28s" C_RST
            " " C_TYPE "%-10s" C_RST
            " " C_SIZE "%-18s" C_RST
            " " C_CNT "%12lu" C_RST,
-           e->sname,
-           tstr ? tstr : "???",
-           sizestr,
-           (unsigned long) e->cnt0);
+           e->sname, tstr ? tstr : "???", sizestr, (unsigned long) e->cnt0);
     if(e->rate > 0.01)
     {
-        printf(" " C_RATE "%10.1f" C_RST,
-               e->rate);
+        printf(" " C_RATE "%10.1f" C_RST, e->rate);
     }
     else
     {
@@ -294,8 +256,7 @@ static void print_help(
            mh_color ? MH_OPT : "", "-n, --interval SEC",
            mh_color ? MH_RST : "", "Refresh interval (default 1.0)");
     printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-1, --once",
-           mh_color ? MH_RST : "", "Print once and exit");
+           mh_color ? MH_OPT : "", "-1, --once", mh_color ? MH_RST : "", "Print once and exit");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
            mh_color ? MH_RST : "", "Show this help and exit");
@@ -358,17 +319,13 @@ int main(
     {
         switch(opt)
         {
-        case 'n':
-            interval = atof(optarg);
+        case 'n': interval = atof(optarg);
             break;
-        case '1':
-            once = 1;
+        case '1': once = 1;
             break;
-        case 'h':
-            print_help(progname, 1);
+        case 'h': print_help(progname, 1);
             return 0;
-        default:
-            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(progname, 1);
             return 1;
         }
@@ -384,9 +341,7 @@ int main(
                    REG_EXTENDED |
                    REG_NOSUB) != 0)
         {
-            fprintf(stderr,
-                    "Invalid regex: %s\n",
-                    pattern);
+            fprintf(stderr, "Invalid regex: %s\n", pattern);
             return 1;
         }
         use_regex = 1;
@@ -409,11 +364,7 @@ int main(
 
     while(keep_running)
     {
-        int n = scan_streams(
-                    shmdir, entries,
-                    MAX_STREAMS,
-                    use_regex ? &regex : NULL,
-                    use_regex);
+        int n = scan_streams(shmdir, entries, MAX_STREAMS, use_regex ? &regex : NULL, use_regex);
 
         /* Compute rates from prev cnt0 */
         for(int i = 0; i < n; i++)
@@ -424,16 +375,12 @@ int main(
                 if(strcmp(entries[i].sname,
                           prev[j].sname) == 0)
                 {
-                    int64_t dc =
-                        (int64_t) entries[i].cnt0
-                        - (int64_t) prev[j].cnt0;
+                    int64_t dc = (int64_t) entries[i].cnt0 - (int64_t) prev[j].cnt0;
                     if(dc > 0 && interval > 0)
                     {
-                        entries[i].rate =
-                            (double) dc / interval;
+                        entries[i].rate = (double) dc / interval;
                     }
-                    entries[i].cnt0_prev =
-                        prev[j].cnt0;
+                    entries[i].cnt0_prev = prev[j].cnt0;
                     break;
                 }
             }
@@ -445,10 +392,7 @@ int main(
             printf("\033[2J\033[H");
         }
         printf(C_TITLE "milk-streamCTRL-cli"
-               C_RST " | " C_DIM "%s" C_RST
-               " | " C_DIM "%d streams"
-               C_RST "\n\n",
-               shmdir, n);
+               C_RST " | " C_DIM "%s" C_RST " | " C_DIM "%d streams" C_RST "\n\n", shmdir, n);
         print_header();
         for(int i = 0; i < n; i++)
         {
@@ -461,12 +405,10 @@ int main(
         }
 
         /* Save for rate calc */
-        memcpy(prev, entries,
-               sizeof(stream_entry) * n);
+        memcpy(prev, entries, sizeof(stream_entry) * n);
         n_prev = n;
 
-        usleep(
-            (useconds_t)(interval * 1e6));
+        usleep((useconds_t)(interval * 1e6));
     }
 
     if(use_regex)

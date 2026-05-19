@@ -45,8 +45,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char strfilter[FUNCTION_PARAMETER_STRMAXLEN]
-    = "aol_";
+static char strfilter[FUNCTION_PARAMETER_STRMAXLEN] = "aol_";
 
 
 /* ================================================================
@@ -74,20 +73,16 @@ errno_t read_sharedmem_image_all(
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
 
-    streaminfo = (STREAMINFO *)
-        malloc(sizeof(STREAMINFO) * NBstreamMAX);
+    streaminfo = (STREAMINFO *) malloc(sizeof(STREAMINFO) * NBstreamMAX);
 
-    int NBstream =
-        find_streams(streaminfo, 1, strfilter);
+    int NBstream = find_streams(streaminfo, 1, strfilter);
 
     for(int sindex = 0;
          sindex < NBstream; sindex++)
     {
         if(!imgid_exists(streaminfo[sindex].sname))
         {
-            read_sharedmem_image(
-                streaminfo[sindex].sname,
-                dcimg, dcnimg);
+            read_sharedmem_image(streaminfo[sindex].sname, dcimg, dcnimg);
         }
     }
 
@@ -113,14 +108,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  FUNC_CHECK_RETURN(read_sharedmem_image_all(strfilter));
 
-    FUNC_CHECK_RETURN(
-        read_sharedmem_image_all(strfilter));
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -133,21 +123,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__read_shmimall()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi = RegisterCLIcmd(
-        CLIcmddata, CLIfunction);
-    CLIcmddata.cmdsettings =
-        &data.cmd[cmdi].cmdsettings;
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }

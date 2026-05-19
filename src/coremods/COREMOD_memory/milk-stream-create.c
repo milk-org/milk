@@ -78,60 +78,34 @@ void print_help(const char *progname)
     printf("\n" C_HDR "Usage:" C_RST
            " %s " C_OPT "[options]" C_RST
            " " C_ARG "<name>" C_RST
-           " " C_ARG "<xsize>" C_RST
-           " " C_DIM "[ysize] [zsize]" C_RST
-           "\n", progname);
-    printf("  Compiled: %s %s\n\n",
-           __DATE__, __TIME__);
-    printf(C_HDR "Description:" C_RST "\n"
-           "  Create a shared memory image"
-           " stream.\n\n");
+           " " C_ARG "<xsize>" C_RST " " C_DIM "[ysize] [zsize]" C_RST "\n", progname);
+    printf("  Compiled: %s %s\n\n", __DATE__, __TIME__);
+    printf(C_HDR "Description:" C_RST "\n" "  Create a shared memory image" " stream.\n\n");
     printf(C_HDR "Arguments:" C_RST "\n");
-    printf("  " C_ARG "name" C_RST
-           "       Stream name\n");
-    printf("  " C_ARG "xsize" C_RST
-           "      Width (required)\n");
-    printf("  " C_ARG "ysize" C_RST
-           "      Height (optional,"
-           " makes 2D)\n");
-    printf("  " C_ARG "zsize" C_RST
-           "      Depth (optional,"
-           " makes 3D / circ buffer)\n\n");
+    printf("  " C_ARG "name" C_RST "       Stream name\n");
+    printf("  " C_ARG "xsize" C_RST "      Width (required)\n");
+    printf("  " C_ARG "ysize" C_RST "      Height (optional," " makes 2D)\n");
+    printf("  " C_ARG "zsize" C_RST "      Depth (optional," " makes 3D / circ buffer)\n\n");
     printf(C_HDR "Options:" C_RST "\n");
     printf("  " C_OPT "-t, --type" C_RST
-           " " C_ARG "TYPE" C_RST
-           "   Data type"
-           " (default: float)\n");
+           " " C_ARG "TYPE" C_RST "   Data type" " (default: float)\n");
     printf("  " C_OPT "-k, --kw" C_RST
-           " " C_ARG "N" C_RST
-           "       Number of keywords"
-           " (default: 10)\n");
-    printf("  " C_OPT "-h, --help" C_RST
-           "         Show this help\n\n");
+           " " C_ARG "N" C_RST "       Number of keywords" " (default: 10)\n");
+    printf("  " C_OPT "-h, --help" C_RST "         Show this help\n\n");
     printf(C_HDR "Data Types:" C_RST "\n");
     printf("  " C_CMD "uint8" C_RST "/u8"
            "     " C_CMD "int8" C_RST "/i8"
-           "      " C_CMD "uint16" C_RST "/u16"
-           "   " C_CMD "int16" C_RST "/i16\n");
+           "      " C_CMD "uint16" C_RST "/u16" "   " C_CMD "int16" C_RST "/i16\n");
     printf("  " C_CMD "uint32" C_RST "/u32"
            "    " C_CMD "int32" C_RST "/i32"
-           "     " C_CMD "uint64" C_RST "/u64"
-           "   " C_CMD "int64" C_RST "/i64\n");
-    printf("  " C_CMD "float" C_RST "/f32"
-           "     " C_CMD "double" C_RST
-           "/f64\n\n");
+           "     " C_CMD "uint64" C_RST "/u64" "   " C_CMD "int64" C_RST "/i64\n");
+    printf("  " C_CMD "float" C_RST "/f32" "     " C_CMD "double" C_RST "/f64\n\n");
     printf(C_HDR "Examples:" C_RST "\n");
+    printf("  $ " C_CMD "%s" C_RST " " C_ARG "wfs" C_RST " 128 128\n", progname);
     printf("  $ " C_CMD "%s" C_RST " "
-           C_ARG "wfs" C_RST " 128 128\n",
-           progname);
+           C_OPT "-t uint16" C_RST " " C_ARG "cam" C_RST " 512 512\n", progname);
     printf("  $ " C_CMD "%s" C_RST " "
-           C_OPT "-t uint16" C_RST " "
-           C_ARG "cam" C_RST " 512 512\n",
-           progname);
-    printf("  $ " C_CMD "%s" C_RST " "
-           C_OPT "-t double" C_RST " "
-           C_ARG "signal" C_RST " 1024\n\n",
-           progname);
+           C_OPT "-t double" C_RST " " C_ARG "signal" C_RST " 1024\n\n", progname);
 }
 
 int main(
@@ -168,8 +142,7 @@ int main(
     {
         switch(opt)
         {
-        case 't':
-            dtype = parse_dtype(optarg);
+        case 't': dtype = parse_dtype(optarg);
             if(dtype == 0)
             {
                 printf("\n\033[1;31mERROR\033[0m unknown type: %s\n\n", optarg);
@@ -177,14 +150,11 @@ int main(
                 return 1;
             }
             break;
-        case 'k':
-            nbkw = atoi(optarg);
+        case 'k': nbkw = atoi(optarg);
             break;
-        case 'h':
-            print_help(argv[0]);
+        case 'h': print_help(argv[0]);
             return 0;
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0]);
             return 1;
         }
@@ -211,9 +181,7 @@ int main(
         sz[i] = (uint32_t) atol(argv[optind + 1 + i]);
         if(sz[i] == 0)
         {
-            fprintf(stderr,
-                    "Error: invalid size %s\n",
-                    argv[optind + 1 + i]);
+            fprintf(stderr, "Error: invalid size %s\n", argv[optind + 1 + i]);
             return 1;
         }
     }
@@ -227,25 +195,19 @@ int main(
         cbsize = sz[2];
     }
 
-    errno_t ret = ImageStreamIO_createIm(
-                      &image, name, naxis, sz,
-                      dtype,  1, nbkw, cbsize);
+    errno_t ret = ImageStreamIO_createIm(&image, name, naxis, sz, dtype,  1, nbkw, cbsize);
 
     if(ret != IMAGESTREAMIO_SUCCESS)
     {
-        fprintf(stderr,
-                "Failed to create stream '%s'\n",
-                name);
+        fprintf(stderr, "Failed to create stream '%s'\n", name);
         return 1;
     }
 
     /* Print confirmation */
-    const char *tname =
-        ImageStreamIO_typename(dtype);
+    const char *tname = ImageStreamIO_typename(dtype);
 
     printf("Created stream '%s'  ", name);
-    printf("type=%s  size=",
-           tname ? tname : "?");
+    printf("type=%s  size=", tname ? tname : "?");
     for(int i = 0; i < naxis; i++)
     {
         if(i > 0)

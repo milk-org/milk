@@ -76,10 +76,7 @@ void *xmalloc(int size)
     buf = malloc(size);
     if(!buf)
     {
-        fprintf(stderr,
-                COLORRED
-                "Error: Out of memory. Exiting.'n"
-                COLORRESET);
+        fprintf(stderr, COLORRED "Error: Out of memory. Exiting.'n" COLORRESET);
         exit(1);
     }
 
@@ -173,8 +170,7 @@ void rl_cb_linehandler(char *linein)
     data.CLIexecuteCMDready = 1;
 
     // copy input into data.CLIcmdline
-    strncpy(data.CLIcmdline, linein,
-            STRINGMAXLEN_CLICMDLINE - 1);
+    strncpy(data.CLIcmdline, linein, STRINGMAXLEN_CLICMDLINE - 1);
     data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     /* We will add to history AFTER backslash continuation and history expansion */
@@ -198,22 +194,15 @@ void rl_cb_linehandler(char *linein)
              * the main loop will re-install
              * with the proper prompt after this
              * handler returns */
-            rl_callback_handler_install(
-                "",
-                (rl_vcpfunc_t *)
-                &rl_cb_linehandler);
+            rl_callback_handler_install("", (rl_vcpfunc_t *) &rl_cb_linehandler);
             if(cont == NULL)
             {
                 break;
             }
-            int avail =
-                STRINGMAXLEN_CLICMDLINE
-                - (int) strlen(data.CLIcmdline)
-                - 1;
+            int avail = STRINGMAXLEN_CLICMDLINE - (int) strlen(data.CLIcmdline) - 1;
             if(avail > 0)
             {
-                strncat(data.CLIcmdline, cont,
-                        (size_t) avail);
+                strncat(data.CLIcmdline, cont, (size_t) avail);
             }
             free(cont);
             len = strlen(data.CLIcmdline);
@@ -240,10 +229,8 @@ void rl_cb_linehandler(char *linein)
         cli_history_log_prompt(data.CLIcmdline);
         if(data.autocomplete_history)
         {
-            append_history(
-                1, CLI_history_file());
-            history_truncate_file(
-                CLI_history_file(), 10000);
+            append_history(1, CLI_history_file());
+            history_truncate_file(CLI_history_file(), 10000);
         }
     }
 
@@ -274,19 +261,15 @@ errno_t runCLI_prompt(
      * shell-specific escapes like $(cmd) that
      * cli_expand_env cannot evaluate, which
      * would corrupt the prompt. */
-    const char *ps1_val =
-        cli_var_get("PS1");
+    const char *ps1_val = cli_var_get("PS1");
 
     if(ps1_val != NULL && strlen(ps1_val) > 0)
     {
         char expanded_ps1[FPS_DIR_STRLENMAX];
-        strncpy(expanded_ps1, ps1_val,
-                FPS_DIR_STRLENMAX - 1);
+        strncpy(expanded_ps1, ps1_val, FPS_DIR_STRLENMAX - 1);
         expanded_ps1[FPS_DIR_STRLENMAX - 1] = '\0';
-        cli_expand_env(expanded_ps1,
-                       FPS_DIR_STRLENMAX);
-        strncpy(prompt, expanded_ps1,
-                FPS_DIR_STRLENMAX - 1);
+        cli_expand_env(expanded_ps1, FPS_DIR_STRLENMAX);
+        strncpy(prompt, expanded_ps1, FPS_DIR_STRLENMAX - 1);
         prompt[FPS_DIR_STRLENMAX - 1] = '\0';
         return RETURN_SUCCESS;
     }
@@ -296,26 +279,19 @@ errno_t runCLI_prompt(
         if(data.processnameflag == 0)
         {
             snprintf(prompt, FPS_DIR_STRLENMAX,
-                     COLORHBOLDCYAN
-                     "%s > " RL_COLORRESET,
-                     promptstring);
+                     COLORHBOLDCYAN "%s > " RL_COLORRESET, promptstring);
         }
         else
         {
             snprintf(prompt,
                      FPS_DIR_STRLENMAX,
-                     COLORHBOLDCYAN
-                     "%s-%s > " RL_COLORRESET,
-                     promptstring,
-                     data.processname);
+                     COLORHBOLDCYAN "%s-%s > " RL_COLORRESET, promptstring, data.processname);
         }
     }
     else
     {
         snprintf(prompt, FPS_DIR_STRLENMAX,
-                 COLORHBOLDCYAN
-                 "%s > " RL_COLORRESET,
-                 data.processname);
+                 COLORHBOLDCYAN "%s > " RL_COLORRESET, data.processname);
     }
 
     return RETURN_SUCCESS;
@@ -338,9 +314,7 @@ int levenshtein_distance(
 {
     unsigned int len1 = strlen(s1);
     unsigned int len2 = strlen(s2);
-    unsigned int *d = (unsigned int *)
-                      xmalloc((len1 + 1) * (len2 + 1)
-                              * sizeof(unsigned int));
+    unsigned int *d = (unsigned int *) xmalloc((len1 + 1) * (len2 + 1) * sizeof(unsigned int));
 
     for(unsigned int i = 0; i <= len1; i++)
     {
@@ -355,20 +329,12 @@ int levenshtein_distance(
     {
         for(unsigned int j = 1; j <= len2; j++)
         {
-            unsigned int cost =
-                (s1[i - 1] == s2[j - 1])
-                ? 0 : 1;
-            unsigned int min1 =
-                d[(i - 1) * (len2 + 1) + j] + 1;
-            unsigned int min2 =
-                d[i * (len2 + 1) + j - 1] + 1;
-            unsigned int min3 =
-                d[(i - 1) * (len2 + 1)
-                          + j - 1] + cost;
-            unsigned int m =
-                (min1 < min2) ? min1 : min2;
-            d[i * (len2 + 1) + j] =
-                (m < min3) ? m : min3;
+            unsigned int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+            unsigned int min1 = d[(i - 1) * (len2 + 1) + j] + 1;
+            unsigned int min2 = d[i * (len2 + 1) + j - 1] + 1;
+            unsigned int min3 = d[(i - 1) * (len2 + 1) + j - 1] + cost;
+            unsigned int m = (min1 < min2) ? min1 : min2;
+            d[i * (len2 + 1) + j] = (m < min3) ? m : min3;
         }
     }
     int dist = d[len1 * (len2 + 1) + len2];

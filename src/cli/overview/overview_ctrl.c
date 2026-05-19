@@ -85,8 +85,7 @@ static int ov_ctrl_fps_action(
     FPS fps;
     memset(&fps, 0, sizeof(fps));
 
-    long rc = fps_connect(
-                  fps_name, &fps, FPSCONNECT_SIMPLE);
+    long rc = fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE);
     if(rc == -1)
     {
         return -1;
@@ -142,15 +141,12 @@ void ov_ctrl_fps_run_toggle(
     if(f->run_alive)
     {
         /* --- RUN stop (no CHECKOK gate) --- */
-        int rc = ov_ctrl_fps_action(
-                     f->name, functionparameter_RUNstop);
+        int rc = ov_ctrl_fps_action(f->name, functionparameter_RUNstop);
         if(log != NULL)
         {
             ov_cmdlog_push(log,
                            rc == 0 ? OV_CMDLOG_OK
-                           : OV_CMDLOG_FAIL,
-                           "⏹️ FPS \"%s\" — RUN stop",
-                           f->name);
+                           : OV_CMDLOG_FAIL, "⏹️ FPS \"%s\" — RUN stop", f->name);
         }
         return;
     }
@@ -159,16 +155,13 @@ void ov_ctrl_fps_run_toggle(
     FPS fps;
     memset(&fps, 0, sizeof(fps));
 
-    long rc = fps_connect(
-                  f->name, &fps, FPSCONNECT_SIMPLE);
+    long rc = fps_connect(f->name, &fps, FPSCONNECT_SIMPLE);
     if(rc == -1)
     {
         if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "▶️ FPS \"%s\" — RUN start"
-                           " failed (connect)",
-                           f->name);
+                           "▶️ FPS \"%s\" — RUN start" " failed (connect)", f->name);
         }
         return;
     }
@@ -188,8 +181,7 @@ void ov_ctrl_fps_run_toggle(
 
     /* cd to workdir */
     EXECUTE_SYSTEM_COMMAND_NOCHECK(
-        "tmux send-keys -t %s:run \" cd %s\" C-m",
-        fps.md->name, fps.md->workdir);
+        "tmux send-keys -t %s:run \" cd %s\" C-m", fps.md->name, fps.md->workdir);
 
     /* Determine executable */
     char progexec[1024];
@@ -207,22 +199,17 @@ void ov_ctrl_fps_run_toggle(
         }
         else
         {
-            snprintf(progexec, sizeof(progexec),
-                     "%s-exec",
-                     fps.md->callprogname);
+            snprintf(progexec, sizeof(progexec), "%s-exec", fps.md->callprogname);
         }
     }
 
     /* Send run command */
     EXECUTE_SYSTEM_COMMAND_NOCHECK(
         "tmux send-keys -t %s:run \" %s %s:runstart\""
-        " C-m",
-        fps.md->name, progexec, fps.md->name);
+        " C-m", fps.md->name, progexec, fps.md->name);
 
-    fps.md->status |=
-        FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
-    fps.md->signal |=
-        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+    fps.md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
+    fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
     /* Restore stderr */
     if(saved_stderr >= 0)
@@ -235,9 +222,7 @@ void ov_ctrl_fps_run_toggle(
 
     if(log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "▶️ FPS \"%s\" — RUN start",
-                       f->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "▶️ FPS \"%s\" — RUN start", f->name);
     }
 }
 
@@ -256,10 +241,8 @@ void ov_ctrl_fps_conf_toggle(
     }
 
     errno_t (*action_fn)(FPS *) = f->conf_alive
-                                  ? functionparameter_CONFstop
-                                  : functionparameter_CONFstart;
-    const char *action = f->conf_alive
-                         ? "CONF stop" : "CONF start";
+                                  ? functionparameter_CONFstop : functionparameter_CONFstart;
+    const char *action = f->conf_alive ? "CONF stop" : "CONF start";
 
     int rc = ov_ctrl_fps_action(f->name, action_fn);
     if(log != NULL)
@@ -267,9 +250,7 @@ void ov_ctrl_fps_conf_toggle(
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
                        : OV_CMDLOG_FAIL,
-                       "%s FPS \"%s\" — %s",
-                       f->conf_alive ? "⏹️" : "▶️",
-                       f->name, action);
+                       "%s FPS \"%s\" — %s", f->conf_alive ? "⏹️" : "▶️", f->name, action);
     }
 }
 
@@ -295,9 +276,7 @@ void ov_ctrl_stream_delete(
         if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Stream \"%s\" — delete"
-                           " failed (open)",
-                           s->name);
+                           "🚫 Stream \"%s\" — delete" " failed (open)", s->name);
         }
         return;
     }
@@ -319,18 +298,14 @@ void ov_ctrl_stream_delete(
         if(log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Stream \"%s\" — delete"
-                           " failed (unlink)",
-                           s->name);
+                           "🚫 Stream \"%s\" — delete" " failed (unlink)", s->name);
         }
         return;
     }
 
     if(log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "🗑️ Stream \"%s\" — deleted",
-                       s->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑️ Stream \"%s\" — deleted", s->name);
     }
 }
 
@@ -354,9 +329,7 @@ void ov_ctrl_proc_kill(
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
                        : OV_CMDLOG_FAIL,
-                       "💀 Process \"%s\" (PID %d)"
-                       " — SIGTERM",
-                       p->name, p->PID);
+                       "💀 Process \"%s\" (PID %d)" " — SIGTERM", p->name, p->PID);
     }
 }
 
@@ -378,10 +351,7 @@ void ov_ctrl_proc_sigkill(
     {
         ov_cmdlog_push(log,
                        rc == 0 ? OV_CMDLOG_OK
-                       : OV_CMDLOG_FAIL,
-                       "Process \"%s\" (PID %d)"
-                       " — SIGKILL",
-                       p->name, p->PID);
+                       : OV_CMDLOG_FAIL, "Process \"%s\" (PID %d)" " — SIGKILL", p->name, p->PID);
     }
 }
 
@@ -404,16 +374,14 @@ void ov_ctrl_proc_set_ctrlval(
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
-             ov_get_shmdir(), p->name, (int)p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int)p->PID);
 
     int fd = open(fname, O_RDWR);
     if(fd < 0)
     {
         if(log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — ctrl failed (open)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (open)", p->name);
         }
         return;
     }
@@ -424,8 +392,7 @@ void ov_ctrl_proc_set_ctrlval(
         close(fd);
         if(log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
         }
         return;
     }
@@ -437,8 +404,7 @@ void ov_ctrl_proc_set_ctrlval(
         close(fd);
         if(log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
         }
         return;
     }
@@ -479,8 +445,7 @@ void ov_ctrl_proc_set_ctrlval(
             action = "CTRLval updated";
         }
 
-        ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "%s Process \"%s\" — %s", emoji, p->name, action);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s Process \"%s\" — %s", emoji, p->name, action);
     }
 }
 
@@ -499,16 +464,14 @@ void ov_ctrl_proc_zero_counters(
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
-             ov_get_shmdir(), p->name, (int)p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int)p->PID);
 
     int fd = open(fname, O_RDWR);
     if(fd < 0)
     {
         if(log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — zero failed (open)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (open)", p->name);
         }
         return;
     }
@@ -519,8 +482,7 @@ void ov_ctrl_proc_zero_counters(
         close(fd);
         if(log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — zero failed (stat)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (stat)", p->name);
         }
         return;
     }
@@ -532,8 +494,7 @@ void ov_ctrl_proc_zero_counters(
         close(fd);
         if(log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" — zero failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (mmap)", p->name);
         }
         return;
     }
@@ -545,8 +506,7 @@ void ov_ctrl_proc_zero_counters(
 
     if(log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "0️⃣ Process \"%s\" — Counters zeroed", p->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "0️⃣ Process \"%s\" — Counters zeroed", p->name);
     }
 }
 
@@ -570,15 +530,13 @@ void ov_ctrl_proc_remove(
         {
             ov_cmdlog_push(log,
                            OV_CMDLOG_FAIL,
-                           "🚫 Process \"%s\" (PID %d) is still alive",
-                           p->name, p->PID);
+                           "🚫 Process \"%s\" (PID %d) is still alive", p->name, p->PID);
         }
         return;
     }
 
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm",
-             ov_get_shmdir(), p->name, (int)p->PID);
+    snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int)p->PID);
 
     int rc = unlink(fname);
 
@@ -586,17 +544,11 @@ void ov_ctrl_proc_remove(
     {
         if(rc == 0)
         {
-            ov_cmdlog_push(log,
-                           OV_CMDLOG_OK,
-                           "file %s removed 🗑",
-                           fname);
+            ov_cmdlog_push(log, OV_CMDLOG_OK, "file %s removed 🗑", fname);
         }
         else
         {
-            ov_cmdlog_push(log,
-                           OV_CMDLOG_FAIL,
-                           "failed to remove file %s",
-                           fname);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "failed to remove file %s", fname);
         }
     }
 }
@@ -655,10 +607,7 @@ void ov_ctrl_proc_pause_toggle(
                        rc == 0 ? OV_CMDLOG_OK
                        : OV_CMDLOG_FAIL,
                        "%s Process \"%s\" (PID %d) — %s",
-                       stopped ? "⏯️" : "⏸️",
-                       p->name, p->PID,
-                       stopped ? "resumed"
-                       : "paused");
+                       stopped ? "⏯️" : "⏸️", p->name, p->PID, stopped ? "resumed" : "paused");
     }
 }
 
@@ -695,14 +644,10 @@ void ov_ctrl_fps_signal_pid(
     if(log != NULL)
     {
         const char *signame =
-            (sig == SIGTERM) ? "SIGTERM"
-            : (sig == SIGKILL) ? "SIGKILL"
-            : "signal";
+            (sig == SIGTERM) ? "SIGTERM" : (sig == SIGKILL) ? "SIGKILL" : "signal";
         ov_cmdlog_push(log,
                        ok ? OV_CMDLOG_OK
-                       : OV_CMDLOG_FAIL,
-                       "FPS \"%s\" — %s sent",
-                       f->name, signame);
+                       : OV_CMDLOG_FAIL, "FPS \"%s\" — %s sent", f->name, signame);
     }
 }
 
@@ -739,10 +684,7 @@ void ov_ctrl_fps_pause_toggle(
     {
         ov_cmdlog_push(log, OV_CMDLOG_OK,
                        "%s FPS \"%s\" — %s",
-                       stopped ? "⏯️" : "⏸️",
-                       f->name,
-                       stopped ? "resumed"
-                       : "paused");
+                       stopped ? "⏯️" : "⏸️", f->name, stopped ? "resumed" : "paused");
     }
 }
 
@@ -768,16 +710,12 @@ void ov_ctrl_fps_remove(
     FPS fps;
     memset(&fps, 0, sizeof(fps));
 
-    long rc = fps_connect(
-                  f->name, &fps, FPSCONNECT_SIMPLE);
+    long rc = fps_connect(f->name, &fps, FPSCONNECT_SIMPLE);
     if(rc == -1)
     {
         if(log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "FPS \"%s\" — erase"
-                           " failed (connect)",
-                           f->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "FPS \"%s\" — erase" " failed (connect)", f->name);
         }
         return;
     }
@@ -810,9 +748,7 @@ void ov_ctrl_fps_remove(
 
     if(log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK,
-                       "🗑️ FPS \"%s\" — erased",
-                       f->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑️ FPS \"%s\" — erased", f->name);
     }
 }
 
@@ -828,8 +764,7 @@ void ov_ctrl_procs_cleanup(
     if(log != NULL)
     {
         ov_cmdlog_push(log,
-                       rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "🧹 Process cleanup requested");
+                       rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "🧹 Process cleanup requested");
     }
 }
 

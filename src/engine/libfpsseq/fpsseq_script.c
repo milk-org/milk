@@ -82,11 +82,7 @@ static void expand_vars(
                 {
                     if(strcmp(ctx->vars[i].name, var_name) == 0)
                     {
-                        snprintf(r,
-                                 sizeof(result)
-                                 - (r - result),
-                                 "%s",
-                                 ctx->vars[i].value);
+                        snprintf(r, sizeof(result) - (r - result), "%s", ctx->vars[i].value);
                         r += strlen(ctx->vars[i].value);
                         found = 1;
                         break;
@@ -178,9 +174,7 @@ static int load_and_preprocess(
                 {
                     if(strcmp(ctx->vars[i].name, vname) == 0)
                     {
-                        snprintf(ctx->vars[i].value,
-                                 sizeof(ctx->vars[i].value),
-                                 "%s", vval);
+                        snprintf(ctx->vars[i].value, sizeof(ctx->vars[i].value), "%s", vval);
                         found = 1;
                         break;
                     }
@@ -188,11 +182,9 @@ static int load_and_preprocess(
                 if(!found && ctx->num_vars < MAX_VARS)
                 {
                     snprintf(ctx->vars[ctx->num_vars].name,
-                             sizeof(ctx->vars[0].name),
-                             "%s", vname);
+                             sizeof(ctx->vars[0].name), "%s", vname);
                     snprintf(ctx->vars[ctx->num_vars].value,
-                             sizeof(ctx->vars[0].value),
-                             "%s", vval);
+                             sizeof(ctx->vars[0].value), "%s", vval);
                     ctx->num_vars++;
                 }
             }
@@ -204,8 +196,7 @@ static int load_and_preprocess(
 
             if(ctx->num_lines < MAX_SCRIPT_LINES)
             {
-                snprintf(ctx->lines[ctx->num_lines],
-                         MAX_LINE_LEN, "%s", line);
+                snprintf(ctx->lines[ctx->num_lines], MAX_LINE_LEN, "%s", line);
                 ctx->num_lines++;
             }
             else
@@ -342,8 +333,7 @@ errno_t milkseq_load_script(
                     {
                         uint32_t t_idx = state->task_input_counter % NB_FPSCTRL_TASK_MAX;
                         snprintf(state->tasklist[t_idx].cmdstring,
-                                 sizeof(state->tasklist[t_idx].cmdstring),
-                                 "%s", ctx.lines[j]);
+                                 sizeof(state->tasklist[t_idx].cmdstring), "%s", ctx.lines[j]);
                         state->tasklist[t_idx].queue = queue;
                         state->tasklist[t_idx].flag = current_error_policy;
                         state->tasklist[t_idx].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_WAITING;
@@ -380,8 +370,7 @@ errno_t milkseq_load_script(
                     {
                         uint32_t t_idx = state->task_input_counter % NB_FPSCTRL_TASK_MAX;
                         snprintf(state->tasklist[t_idx].cmdstring,
-                                 sizeof(state->tasklist[t_idx].cmdstring),
-                                 "%s", ctx.lines[j]);
+                                 sizeof(state->tasklist[t_idx].cmdstring), "%s", ctx.lines[j]);
                         state->tasklist[t_idx].queue = queue;
                         state->tasklist[t_idx].flag = current_error_policy;
                         state->tasklist[t_idx].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_WAITING;
@@ -397,8 +386,7 @@ errno_t milkseq_load_script(
 
         uint32_t t_idx = state->task_input_counter % NB_FPSCTRL_TASK_MAX;
         snprintf(state->tasklist[t_idx].cmdstring,
-                 sizeof(state->tasklist[t_idx].cmdstring),
-                 "%s", cmd);
+                 sizeof(state->tasklist[t_idx].cmdstring), "%s", cmd);
         state->tasklist[t_idx].queue = queue;
         state->tasklist[t_idx].flag = current_error_policy;
         state->tasklist[t_idx].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_WAITING;

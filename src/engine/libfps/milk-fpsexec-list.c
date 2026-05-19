@@ -76,41 +76,32 @@ static void print_help(
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-f, --fuzzy",
-           mh_color ? MH_RST : "",
-           "Fuzzy subsequence match (chars in order, not adjacent)");
+           mh_color ? MH_RST : "", "Fuzzy subsequence match (chars in order, not adjacent)");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-j, --json",
-           mh_color ? MH_RST : "",
-           "Output as JSON array [{name, description}]");
+           mh_color ? MH_RST : "", "Output as JSON array [{name, description}]");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
-           mh_color ? MH_RST : "",
-           "Show this help and exit");
+           mh_color ? MH_RST : "", "Show this help and exit");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h1, --help-oneline",
-           mh_color ? MH_RST : "",
-           "One-line description and exit");
+           mh_color ? MH_RST : "", "One-line description and exit");
     printf("  %s%-25s%s %s\n\n",
            mh_color ? MH_OPT : "", "-hm, --help-mono",
-           mh_color ? MH_RST : "",
-           "Full help, no ANSI color");
+           mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Arguments", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_ARG : "", "SEARCH_TERM",
-           mh_color ? MH_RST : "",
-           "Filter terms (regex by default, fuzzy with -f)");
+           mh_color ? MH_RST : "", "Filter terms (regex by default, fuzzy with -f)");
     printf("  %s%-25s%s %s\n\n",
            mh_color ? MH_ARG : "", "",
-           mh_color ? MH_RST : "",
-           "Multiple terms in fuzzy mode: all must match");
+           mh_color ? MH_RST : "", "Multiple terms in fuzzy mode: all must match");
     milk_help_section("Fuzzy Score", mh_color);
     printf("  +%-2d per matched char, +%-2d consecutive, "
            "+%-2d word boundary, +%d start\n\n",
-           FZ_CHAR_SCORE, FZ_CONSEC_BONUS,
-           FZ_BOUND_BONUS, FZ_START_BONUS);
+           FZ_CHAR_SCORE, FZ_CONSEC_BONUS, FZ_BOUND_BONUS, FZ_START_BONUS);
     milk_help_section("Examples", mh_color);
-    printf("  %s$ milk-fpsexec-list%s\n",
-           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-fpsexec-list%s\n", mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
     printf("  %s$ milk-fpsexec-list%s %sim%s\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
@@ -211,8 +202,7 @@ static void discover_commands(void)
     while(dir != NULL && g_n_entries < FEL_MAX_CMDS)
     {
         char pattern[512];
-        snprintf(pattern, sizeof(pattern),
-                 "%s/milk-fpsexec-*", dir);
+        snprintf(pattern, sizeof(pattern), "%s/milk-fpsexec-*", dir);
 
         glob_t gl;
         if(glob(pattern, GLOB_NOSORT, NULL, &gl) == 0)
@@ -222,8 +212,7 @@ static void discover_commands(void)
                     path_idx++)
             {
                 /* Extract basename */
-                const char *bname =
-                    strrchr(gl.gl_pathv[path_idx], '/');
+                const char *bname = strrchr(gl.gl_pathv[path_idx], '/');
                 bname = bname ? bname + 1 : gl.gl_pathv[path_idx];
 
                 if(should_skip(bname))
@@ -262,8 +251,7 @@ static void discover_commands(void)
                             gl.gl_pathv[path_idx], e->desc,
                             sizeof(e->desc)))
                 {
-                    strncpy(e->desc, "(no description)",
-                            sizeof(e->desc) - 1);
+                    strncpy(e->desc, "(no description)", sizeof(e->desc) - 1);
                 }
 
                 e->score = 0;
@@ -272,8 +260,7 @@ static void discover_commands(void)
                 /* Record in seen list */
                 if(n_seen < FEL_MAX_CMDS)
                 {
-                    strncpy(seen[n_seen], bname,
-                            sizeof(seen[0]) - 1);
+                    strncpy(seen[n_seen], bname, sizeof(seen[0]) - 1);
                     n_seen++;
                 }
 
@@ -448,8 +435,7 @@ static void print_highlighted(
  * -------------------------------------------------------------- */
 static void print_header(void)
 {
-    printf("\033[1;34m%-*s %s\033[0m\n",
-           COL_NAME, "COMMAND", "DESCRIPTION");
+    printf("\033[1;34m%-*s %s\033[0m\n", COL_NAME, "COMMAND", "DESCRIPTION");
 
     for(int ch_idx = 0; ch_idx < COL_NAME; ch_idx++)
     {
@@ -474,8 +460,7 @@ static void output_json(
     for(int ent_idx = 0; ent_idx < n; ent_idx++)
     {
         /* Escape double quotes in description */
-        printf("  {\"name\": \"%s\", \"description\": \"",
-               entries[ent_idx].name);
+        printf("  {\"name\": \"%s\", \"description\": \"", entries[ent_idx].name);
         for(const char *p = entries[ent_idx].desc; *p; p++)
         {
             if(*p == '"')
@@ -496,8 +481,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(
-                     argc, argv, FEL_DESC, FEL_DESC_LONG);
+    int action = milk_help_init(argc, argv, FEL_DESC, FEL_DESC_LONG);
 
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
@@ -539,8 +523,7 @@ int main(
         else
         {
             fprintf(stderr,
-                    "\n\033[1;31mERROR\033[0m:"
-                    " unknown option '%s'.\n\n", argv[arg_idx]);
+                    "\n\033[1;31mERROR\033[0m:" " unknown option '%s'.\n\n", argv[arg_idx]);
             print_help(argv[0], 1);
             return 1;
         }
@@ -550,8 +533,7 @@ int main(
     discover_commands();
 
     /* Sort alphabetically before filtering */
-    qsort(g_entries, (size_t)g_n_entries,
-          sizeof(g_entries[0]), cmp_name);
+    qsort(g_entries, (size_t)g_n_entries, sizeof(g_entries[0]), cmp_name);
 
     /* Filter */
     static struct felentry filtered[FEL_MAX_CMDS];
@@ -563,8 +545,7 @@ int main(
 
         /* Build the "line" as "name  desc" for matching */
         char line[COL_NAME + FEL_DESC_MAX + 4];
-        snprintf(line, sizeof(line),
-                 "%-*s %s", COL_NAME, e->name, e->desc);
+        snprintf(line, sizeof(line), "%-*s %s", COL_NAME, e->name, e->desc);
 
         if(n_terms == 0)
         {
@@ -586,8 +567,7 @@ int main(
                 int n_pos = 0;
                 int sc = fuzzy_score(
                              terms[term_idx], line, pos,
-                             (int)(sizeof(pos) / sizeof(pos[0])),
-                             &n_pos);
+                             (int)(sizeof(pos) / sizeof(pos[0])), &n_pos);
                 if(sc == 0)
                 {
                     matched = 0;
@@ -595,9 +575,7 @@ int main(
                 }
                 total_score += sc;
                 for(int pos_idx = 0;
-                        pos_idx < n_pos &&
-                        n_all_pos < (int)(sizeof(all_pos) /
-                                          sizeof(all_pos[0]));
+                        pos_idx < n_pos && n_all_pos < (int)(sizeof(all_pos) / sizeof(all_pos[0]));
                         pos_idx++)
                 {
                     all_pos[n_all_pos++] = pos[pos_idx];
@@ -615,11 +593,8 @@ int main(
             int copy_n = n_all_pos <
                          (int)(sizeof(fe.hl_pos) /
                                sizeof(fe.hl_pos[0]))
-                         ? n_all_pos
-                         : (int)(sizeof(fe.hl_pos) /
-                                 sizeof(fe.hl_pos[0]));
-            memcpy(fe.hl_pos, all_pos,
-                   (size_t)copy_n * sizeof(int));
+                         ? n_all_pos : (int)(sizeof(fe.hl_pos) / sizeof(fe.hl_pos[0]));
+            memcpy(fe.hl_pos, all_pos, (size_t)copy_n * sizeof(int));
             fe.hl_n = copy_n;
             filtered[n_filtered++] = fe;
 
@@ -632,9 +607,7 @@ int main(
                        REG_EXTENDED | REG_ICASE |
                        REG_NOSUB) != 0)
             {
-                fprintf(stderr,
-                        "\033[1;31mERROR\033[0m:"
-                        " invalid regex '%s'\n", terms[0]);
+                fprintf(stderr, "\033[1;31mERROR\033[0m:" " invalid regex '%s'\n", terms[0]);
                 return 1;
             }
             if(regexec(&re, line, 0, NULL, 0) == 0)
@@ -648,8 +621,7 @@ int main(
     /* Sort fuzzy results by score */
     if(fuzzy && n_terms > 0)
     {
-        qsort(filtered, (size_t)n_filtered,
-              sizeof(filtered[0]), cmp_score_desc);
+        qsort(filtered, (size_t)n_filtered, sizeof(filtered[0]), cmp_score_desc);
     }
 
     /* Output */
@@ -687,17 +659,14 @@ int main(
         if(fuzzy && n_terms > 0)
         {
             char line[COL_NAME + FEL_DESC_MAX + 4];
-            snprintf(line, sizeof(line),
-                     "%-*s %s", COL_NAME,
-                     e->name, e->desc);
+            snprintf(line, sizeof(line), "%-*s %s", COL_NAME, e->name, e->desc);
             printf("[%3d] ", e->score);
             print_highlighted(line, e->hl_pos, e->hl_n);
             putchar('\n');
         }
         else
         {
-            printf("%-*s %s\n",
-                   COL_NAME, e->name, e->desc);
+            printf("%-*s %s\n", COL_NAME, e->name, e->desc);
         }
     } // for ent_idx
 

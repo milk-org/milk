@@ -27,8 +27,7 @@
 
 #define CLI_DEFER_MAX 32
 
-static char cli_defer_stack
-    [CLI_DEFER_MAX][STRINGMAXLEN_CLICMDLINE];
+static char cli_defer_stack [CLI_DEFER_MAX][STRINGMAXLEN_CLICMDLINE];
 static int  cli_defer_count = 0;
 
 /**
@@ -54,8 +53,7 @@ errno_t cli_cmd_defer(void)
 
     if(cli_defer_count >= CLI_DEFER_MAX)
     {
-        printf("defer: stack full "
-               "(max %d)\n", CLI_DEFER_MAX);
+        printf("defer: stack full " "(max %d)\n", CLI_DEFER_MAX);
         return RETURN_FAILURE;
     }
 
@@ -89,12 +87,8 @@ errno_t cli_cmd_defer(void)
 
     strncpy(cmd, p, sizeof(cmd) - 1);
     cmd[sizeof(cmd) - 1] = '\0';
-    strncpy(
-        cli_defer_stack[cli_defer_count],
-        cmd,
-        STRINGMAXLEN_CLICMDLINE - 1);
-    cli_defer_stack[cli_defer_count]
-        [STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    strncpy(cli_defer_stack[cli_defer_count], cmd, STRINGMAXLEN_CLICMDLINE - 1);
+    cli_defer_stack[cli_defer_count] [STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     cli_defer_count++;
 
     return RETURN_SUCCESS;
@@ -126,12 +120,8 @@ void cli_defer_run(void)
     {
         cli_defer_count--;
         char cmd[STRINGMAXLEN_CLICMDLINE];
-        strncpy(
-            cmd,
-            cli_defer_stack[cli_defer_count],
-            STRINGMAXLEN_CLICMDLINE - 1);
-        cmd[STRINGMAXLEN_CLICMDLINE - 1] =
-            '\0';
+        strncpy(cmd, cli_defer_stack[cli_defer_count], STRINGMAXLEN_CLICMDLINE - 1);
+        cmd[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
         CLI_execute_string(cmd);
     }
 

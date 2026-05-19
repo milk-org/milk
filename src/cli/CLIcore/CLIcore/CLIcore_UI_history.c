@@ -37,13 +37,11 @@ const char *CLI_history_file(void)
         const char *home = getenv("HOME");
         if(home)
         {
-            snprintf(path, sizeof(path),
-                     "%s/.milk_history", home);
+            snprintf(path, sizeof(path), "%s/.milk_history", home);
         }
         else
         {
-            snprintf(path, sizeof(path),
-                     ".milk_history");
+            snprintf(path, sizeof(path), ".milk_history");
         }
     }
     return path;
@@ -66,10 +64,7 @@ void cli_history_load(void)
 {
 #ifdef USE_READLINE
     char hpath[STRINGMAXLEN_FULLFILENAME];
-    snprintf(hpath,
-             STRINGMAXLEN_FULLFILENAME,
-             "%s/.milk_history",
-             getenv("HOME"));
+    snprintf(hpath, STRINGMAXLEN_FULLFILENAME, "%s/.milk_history", getenv("HOME"));
     read_history(hpath);
 #endif
 }
@@ -83,13 +78,9 @@ void cli_history_save(void)
 {
 #ifdef USE_READLINE
     char hpath[STRINGMAXLEN_FULLFILENAME];
-    snprintf(hpath,
-             STRINGMAXLEN_FULLFILENAME,
-             "%s/.milk_history",
-             getenv("HOME"));
+    snprintf(hpath, STRINGMAXLEN_FULLFILENAME, "%s/.milk_history", getenv("HOME"));
     write_history(hpath);
-    history_truncate_file(hpath,
-                          MILK_HISTORY_MAXLINES);
+    history_truncate_file(hpath, MILK_HISTORY_MAXLINES);
 #endif
 }
 
@@ -115,14 +106,11 @@ const char *CLI_history_log_file(void)
         const char *home = getenv("HOME");
         if(home)
         {
-            snprintf(path, sizeof(path),
-                     "%s/.milk_history_log",
-                     home);
+            snprintf(path, sizeof(path), "%s/.milk_history_log", home);
         }
         else
         {
-            snprintf(path, sizeof(path),
-                     ".milk_history_log");
+            snprintf(path, sizeof(path), ".milk_history_log");
         }
     }
     return path;
@@ -138,30 +126,22 @@ const char *CLI_history_log_file(void)
 void cli_history_log_init(void)
 {
     pid_t pid = getpid();
-    snprintf(data.session_id,
-             sizeof(data.session_id),
-             "%s-%d",
-             data.processname, (int) pid);
+    snprintf(data.session_id, sizeof(data.session_id), "%s-%d", data.processname, (int) pid);
 
     {
         const char *tty = ttyname(STDIN_FILENO);
         if(tty)
         {
-            strncpy(data.session_tty, tty,
-                    sizeof(data.session_tty) - 1);
-            data.session_tty[
-                sizeof(data.session_tty) - 1]
-                = '\0';
+            strncpy(data.session_tty, tty, sizeof(data.session_tty) - 1);
+            data.session_tty[sizeof(data.session_tty) - 1] = '\0';
         }
         else
         {
-            strncpy(data.session_tty, "?",
-                    sizeof(data.session_tty) - 1);
+            strncpy(data.session_tty, "?", sizeof(data.session_tty) - 1);
         }
     }
 
-    clock_gettime(CLOCK_REALTIME,
-                  &data.session_start);
+    clock_gettime(CLOCK_REALTIME, &data.session_start);
 }
 
 /**
@@ -210,8 +190,7 @@ static void cli_history_log_entry(
         }
     }
 
-    FILE *fp = fopen(
-        CLI_history_log_file(), "a");
+    FILE *fp = fopen(CLI_history_log_file(), "a");
     if(fp == NULL)
     {
         return;
@@ -220,15 +199,8 @@ static void cli_history_log_entry(
     {
         time_t now = time(NULL);
         char tbuf[64];
-        strftime(tbuf, sizeof(tbuf),
-                 "%Y-%m-%dT%H:%M:%S",
-                 localtime(&now));
-        fprintf(fp, "%s\t%s\t%s\t%c\t%s\n",
-                tbuf,
-                data.session_id,
-                data.session_tty,
-                type,
-                text);
+        strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
+        fprintf(fp, "%s\t%s\t%s\t%c\t%s\n", tbuf, data.session_id, data.session_tty, type, text);
     }
     fclose(fp);
 }

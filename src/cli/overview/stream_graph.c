@@ -34,8 +34,7 @@ static void sg_bset(
     uint64_t *words,
     int      idx)
 {
-    words[idx / SG_BITS_PER_WORD] |=
-        (UINT64_C(1) << (idx % SG_BITS_PER_WORD));
+    words[idx / SG_BITS_PER_WORD] |= (UINT64_C(1) << (idx % SG_BITS_PER_WORD));
 }
 
 /**
@@ -45,8 +44,7 @@ static int sg_bget(
     const uint64_t *words,
     int            idx)
 {
-    return (words[idx / SG_BITS_PER_WORD]
-            >> (idx % SG_BITS_PER_WORD)) & 1;
+    return (words[idx / SG_BITS_PER_WORD] >> (idx % SG_BITS_PER_WORD)) & 1;
 }
 
 /* =========================================================
@@ -82,14 +80,10 @@ static int sg_edge_matches_mode_from_stream(
     switch(mode)
     {
     case SG_MODE_TRIGGER:
-        return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC
-                || e->type
-                == OV_EDGE_PROC_TRIGGER_STREAM);
+        return (e->type == OV_EDGE_STREAM_TRIGGERS_PROC || e->type == OV_EDGE_PROC_TRIGGER_STREAM);
 
     case SG_MODE_INPUT:
-        return (e->type == OV_EDGE_FPS_INPUT_STREAM
-                || e->type
-                == OV_EDGE_STREAM_READ_BY_PROC);
+        return (e->type == OV_EDGE_FPS_INPUT_STREAM || e->type == OV_EDGE_STREAM_READ_BY_PROC);
 
     case SG_MODE_FULL:
         /* Follow all stream-related edges */
@@ -101,15 +95,11 @@ static int sg_edge_matches_mode_from_stream(
                 || e->type
                 == OV_EDGE_FPS_OUTPUT_STREAM
                 || e->type
-                == OV_EDGE_STREAM_READ_BY_PROC
-                || e->type
-                == OV_EDGE_PROC_WRITES_STREAM);
+                == OV_EDGE_STREAM_READ_BY_PROC || e->type == OV_EDGE_PROC_WRITES_STREAM);
 
     case SG_MODE_FPS:
         /* FPS-centric: only FPS<->stream edges */
-        return (e->type == OV_EDGE_FPS_INPUT_STREAM
-                || e->type
-                == OV_EDGE_FPS_OUTPUT_STREAM);
+        return (e->type == OV_EDGE_FPS_INPUT_STREAM || e->type == OV_EDGE_FPS_OUTPUT_STREAM);
     } /* switch mode */
 
     return 0;
@@ -162,8 +152,7 @@ static void sg_bfs_downstream(
             for(int ei = 0;
                     ei < m->nb_edges; ei++)
             {
-                const OV_EDGE *e =
-                    &m->edges[ei];
+                const OV_EDGE *e = &m->edges[ei];
                 if(e->src_node != cur.node)
                 {
                     continue;
@@ -199,8 +188,7 @@ static void sg_bfs_downstream(
             for(int ei = 0;
                     ei < m->nb_edges; ei++)
             {
-                const OV_EDGE *e =
-                    &m->edges[ei];
+                const OV_EDGE *e = &m->edges[ei];
                 if(e->src_node != cur.node)
                 {
                     continue;
@@ -212,8 +200,7 @@ static void sg_bfs_downstream(
                     continue;
                 }
 
-                const OV_NODE *nn =
-                    &m->nodes[next];
+                const OV_NODE *nn = &m->nodes[next];
                 if(nn->type != OV_NODE_STREAM)
                 {
                     continue;
@@ -246,14 +233,11 @@ static void sg_bfs_downstream(
                         && nn->index
                         < m->nb_streams)
                 {
-                    SG_LINEAGE_ENTRY *le =
-                        &out->descendants[
-                            out->nb_descendants];
+                    SG_LINEAGE_ENTRY *le = &out->descendants[out->nb_descendants];
                     le->stream_idx = nn->index;
                     le->depth      = d;
                     le->is_loop    = is_loop;
-                    strncpy(le->via_name,
-                            cn->name, 39);
+                    strncpy(le->via_name, cn->name, 39);
                     le->via_name[39] = '\0';
                     out->nb_descendants++;
                 }
@@ -315,8 +299,7 @@ static void sg_bfs_upstream(
             for(int ei = 0;
                     ei < m->nb_edges; ei++)
             {
-                const OV_EDGE *e =
-                    &m->edges[ei];
+                const OV_EDGE *e = &m->edges[ei];
                 if(e->tgt_node != cur.node)
                 {
                     continue;
@@ -345,8 +328,7 @@ static void sg_bfs_upstream(
             for(int ei = 0;
                     ei < m->nb_edges; ei++)
             {
-                const OV_EDGE *e =
-                    &m->edges[ei];
+                const OV_EDGE *e = &m->edges[ei];
                 if(e->tgt_node != cur.node)
                 {
                     continue;
@@ -365,8 +347,7 @@ static void sg_bfs_upstream(
                     continue;
                 }
 
-                const OV_NODE *nn =
-                    &m->nodes[next];
+                const OV_NODE *nn = &m->nodes[next];
                 if(nn->type != OV_NODE_STREAM)
                 {
                     continue;
@@ -398,14 +379,11 @@ static void sg_bfs_upstream(
                         && nn->index
                         < m->nb_streams)
                 {
-                    SG_LINEAGE_ENTRY *le =
-                        &out->ancestors[
-                            out->nb_ancestors];
+                    SG_LINEAGE_ENTRY *le = &out->ancestors[out->nb_ancestors];
                     le->stream_idx = nn->index;
                     le->depth      = d;
                     le->is_loop    = is_loop;
-                    strncpy(le->via_name,
-                            cn->name, 39);
+                    strncpy(le->via_name, cn->name, 39);
                     le->via_name[39] = '\0';
                     out->nb_ancestors++;
                 }
@@ -440,17 +418,14 @@ void sg_compute_lineage(
         return;
     }
 
-    int start_node =
-        m->streams[stream_idx].node_idx;
+    int start_node = m->streams[stream_idx].node_idx;
     if(start_node < 0)
     {
         return;
     }
 
-    sg_bfs_downstream(
-        m, start_node, stream_idx, mode, out);
-    sg_bfs_upstream(
-        m, start_node, stream_idx, mode, out);
+    sg_bfs_downstream(m, start_node, stream_idx, mode, out);
+    sg_bfs_upstream(m, start_node, stream_idx, mode, out);
 
     /* Build cycle path from descendant entries
      * that close a loop */
@@ -460,8 +435,7 @@ void sg_compute_lineage(
         /* Start with root stream */
         if(out->cycle_len < SG_MAX_DEPTH)
         {
-            out->cycle_path[out->cycle_len++] =
-                stream_idx;
+            out->cycle_path[out->cycle_len++] = stream_idx;
         }
         /* Walk descendants until we find the
          * loop-closing entry */
@@ -470,10 +444,7 @@ void sg_compute_lineage(
         {
             if(out->cycle_len < SG_MAX_DEPTH)
             {
-                out->cycle_path[
-                    out->cycle_len++] =
-                        out->descendants[i]
-                        .stream_idx;
+                out->cycle_path[out->cycle_len++] = out->descendants[i] .stream_idx;
             }
             if(out->descendants[i].is_loop)
             {
@@ -491,14 +462,10 @@ const char *sg_mode_label(sg_mode_t mode)
 {
     switch(mode)
     {
-    case SG_MODE_TRIGGER:
-        return "Trigger";
-    case SG_MODE_INPUT:
-        return "Input";
-    case SG_MODE_FULL:
-        return "Full";
-    case SG_MODE_FPS:
-        return "FPS";
+    case SG_MODE_TRIGGER: return "Trigger";
+    case SG_MODE_INPUT: return "Input";
+    case SG_MODE_FULL: return "Full";
+    case SG_MODE_FPS: return "FPS";
     }
     return "Unknown";
 }
@@ -593,8 +560,7 @@ void sg_compute_node_depths(
             {
                 /* From FPS/PROC: follow edges to streams
                  * and FPS_RUNS_PROC edges (FPS->proc) */
-                int tgt_type =
-                    m->nodes[e->tgt_node].type;
+                int tgt_type = m->nodes[e->tgt_node].type;
                 if(tgt_type != OV_NODE_STREAM
                         && e->type != OV_EDGE_FPS_RUNS_PROC)
                 {

@@ -87,13 +87,9 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  * ============================================================= */
 static MILK_HOT errno_t compute_function()
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec();
 
-    fpsexec();
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
 }
 
 /* ================================================================
@@ -103,19 +99,13 @@ static MILK_HOT errno_t compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info,
-        farg,
-        &CLIcmddata,
-        my_bindings,
-        nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_memory__image_keyword_add()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

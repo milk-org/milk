@@ -62,10 +62,8 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
  *  COMMON PARAMS (2 string args)
  * ============================================================= */
 
-static char p_srcname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
-static char p_dstname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im4";
+static char p_srcname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_dstname[FUNCTION_PARAMETER_STRMAXLEN] = "im4";
 
 #define FPS_PARAMS_2STR(X) \
     X(".srcname", p_srcname, \
@@ -170,11 +168,8 @@ FPS_CMDSETTINGS_INIT(shm, CLIcmddata, FPS_app_info)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    COREMOD_MEMORY_cp2shm(
-        p_srcname, p_dstname);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-    DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START COREMOD_MEMORY_cp2shm(p_srcname, p_dstname);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -188,54 +183,39 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction_cp(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info_cp,
-               farg, &CLIcmddata_cp,
-               my_bindings, nb_bindings,
-               compute_cp);
+               &FPS_app_info_cp, farg, &CLIcmddata_cp, my_bindings, nb_bindings, compute_cp);
 }
 
 static errno_t CLIfunction_mv(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info_mv,
-               farg, &CLIcmddata_mv,
-               my_bindings, nb_bindings,
-               compute_mv);
+               &FPS_app_info_mv, farg, &CLIcmddata_mv, my_bindings, nb_bindings, compute_mv);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_memory__image_copy()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_cp, CLIfunction_cp);
-        CLIcmddata_cp.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_cp, CLIfunction_cp);
+        CLIcmddata_cp.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_mv, CLIfunction_mv);
-        CLIcmddata_mv.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_mv, CLIfunction_mv);
+        CLIcmddata_mv.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -285,8 +265,7 @@ imageID copy_image_ID_IMGID(
             fprintf(stderr,
                     "ERROR [copy_image_ID_IMGID]: images %s and %s do not have "
                     "the same size -> deleting and re-creating image\n",
-                    imgin->name,
-                    imgout->name);
+                    imgin->name, imgout->name);
             newim = 1;
         }
 
@@ -295,8 +274,7 @@ imageID copy_image_ID_IMGID(
             fprintf(stderr,
                     "ERROR [copy_image_ID_IMGID]: images %s and %s do not have "
                     "the same type -> deleting and re-creating image\n",
-                    imgin->name,
-                    imgout->name);
+                    imgin->name, imgout->name);
             newim = 1;
         }
 
@@ -312,30 +290,24 @@ imageID copy_image_ID_IMGID(
         imgout->mdt->naxis = naxis;
         for(uint32_t i = 0; i < naxis; i++)
         {
-            imgout->mdt->size[i] =
-                size[i];
+            imgout->mdt->size[i] = size[i];
         }
         imgout->mdt->datatype = datatype;
         imgout->mdt->shared = shared;
-        imgout->mdt->NBkw =
-            NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
     }
 
     imgout->md[0].write = 1;
 
     __builtin_memcpy(
-        imgout->im->array.raw,
-        imgin->im->array.raw,
-        ImageStreamIO_typesize(datatype) * nelement);
+        imgout->im->array.raw, imgin->im->array.raw, ImageStreamIO_typesize(datatype) * nelement);
 
     imgout->md[0].cnt0++;
     imgout->md[0].write = 0;
 
-    COREMOD_MEMORY_image_set_sempost_byID(
-        imgout->ID, -1);
+    COREMOD_MEMORY_image_set_sempost_byID(imgout->ID, -1);
 
     return imgout->ID;
 }
@@ -378,22 +350,16 @@ imageID chname_image_ID_IMGID(
 
     if((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
     {
-        snprintf(imgin->im->name,
-                 STRINGMAXLEN_IMAGE_NAME,
-                 "%s", new_name);
+        snprintf(imgin->im->name, STRINGMAXLEN_IMAGE_NAME, "%s", new_name);
         if(imgin->ID == -1)
         {
             return RETURN_FAILURE;
         }
-        snprintf(imgin->name,
-                 STRINGMAXLEN_IMAGE_NAME,
-                 "%s", new_name);
+        snprintf(imgin->name, STRINGMAXLEN_IMAGE_NAME, "%s", new_name);
     }
     else
     {
-        printf("Cannot change name %s -> %s : new name already in use\n",
-               imgin->name,
-               new_name);
+        printf("Cannot change name %s -> %s : new name already in use\n", imgin->name, new_name);
     }
 
 
@@ -480,13 +446,11 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
         imgout->mdt->naxis = naxis;
         for(uint32_t k = 0; k < naxis; k++)
         {
-            imgout->mdt->size[k] =
-                size[k];
+            imgout->mdt->size[k] = size[k];
         }
         imgout->mdt->datatype = datatype;
         imgout->mdt->shared = 1;
-        imgout->im = (IMAGE *) calloc(
-                         1, sizeof(IMAGE));
+        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
     }
 
@@ -494,15 +458,12 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
 
     __builtin_memcpy(
         imgout->im->array.raw,
-        imgin->im->array.raw,
-        ImageStreamIO_typesize(datatype)
-        * imgin->md[0].nelement);
+        imgin->im->array.raw, ImageStreamIO_typesize(datatype) * imgin->md[0].nelement);
 
     imgout->md[0].cnt0++;
     imgout->md[0].write = 0;
 
-    COREMOD_MEMORY_image_set_sempost_byID(
-        imgout->ID, -1);
+    COREMOD_MEMORY_image_set_sempost_byID(imgout->ID, -1);
 
     return RETURN_SUCCESS;
 }

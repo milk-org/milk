@@ -39,8 +39,7 @@ static void print_help(
     printf("  %s\n\n", FS_DESC_LONG);
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
-           mh_color ? MH_OPT : "", "-v, --verbose",
-           mh_color ? MH_RST : "", "Verbose output");
+           mh_color ? MH_OPT : "", "-v, --verbose", mh_color ? MH_RST : "", "Verbose output");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-h, --help",
            mh_color ? MH_RST : "", "Show this help and exit");
@@ -55,11 +54,9 @@ static void print_help(
            mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
     printf("  %s$ milk-fps-search %s\".*\"%s\n",
-           mh_color ? MH_DIM : "",
-           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+           mh_color ? MH_DIM : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
     printf("  %s$ milk-fps-search %s\"^myfps\\\\.\"\n%s\n",
-           mh_color ? MH_DIM : "",
-           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
+           mh_color ? MH_DIM : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
     const char *see_also[] =
     {
         "milk-fps-list:list active FPS instances",
@@ -72,8 +69,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                FS_DESC, FS_DESC_LONG);
+    int action = milk_help_init(argc, argv, FS_DESC, FS_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -101,14 +97,12 @@ int main(
     {
         switch(opt)
         {
-        case 'v':
-            verbose = 1;
+        case 'v': verbose = 1;
             break;
         case 'h':
         case '1':
             break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -238,80 +232,56 @@ int main(
                     else
                     {
                         functionparameter_GetParamValueString(
-                            &fps->parray[pindex],
-                            valstring,
-                            200);
+                            &fps->parray[pindex], valstring, 200);
                     }
 
                     const char *type_str = "UNKNOWN";
                     switch(fps->parray[pindex].type)
                     {
-                    case FPTYPE_UNDEF:
-                        type_str = "UNDEF";
+                    case FPTYPE_UNDEF: type_str = "UNDEF";
                         break;
-                    case FPTYPE_INT32:
-                        type_str = "INT32";
+                    case FPTYPE_INT32: type_str = "INT32";
                         break;
-                    case FPTYPE_UINT32:
-                        type_str = "UINT32";
+                    case FPTYPE_UINT32: type_str = "UINT32";
                         break;
-                    case FPTYPE_INT64:
-                        type_str = "INT64";
+                    case FPTYPE_INT64: type_str = "INT64";
                         break;
-                    case FPTYPE_UINT64:
-                        type_str = "UINT64";
+                    case FPTYPE_UINT64: type_str = "UINT64";
                         break;
-                    case FPTYPE_FLOAT32:
-                        type_str = "FLOAT32";
+                    case FPTYPE_FLOAT32: type_str = "FLOAT32";
                         break;
-                    case FPTYPE_FLOAT64:
-                        type_str = "FLOAT64";
+                    case FPTYPE_FLOAT64: type_str = "FLOAT64";
                         break;
-                    case FPTYPE_PID:
-                        type_str = "PID";
+                    case FPTYPE_PID: type_str = "PID";
                         break;
-                    case FPTYPE_TIMESPEC:
-                        type_str = "TIMESPEC";
+                    case FPTYPE_TIMESPEC: type_str = "TIMESPEC";
                         break;
-                    case FPTYPE_FILENAME:
-                        type_str = "FILENAME";
+                    case FPTYPE_FILENAME: type_str = "FILENAME";
                         break;
-                    case FPTYPE_FITSFILENAME:
-                        type_str = "FITSFILENAME";
+                    case FPTYPE_FITSFILENAME: type_str = "FITSFILENAME";
                         break;
-                    case FPTYPE_EXECFILENAME:
-                        type_str = "EXECFILENAME";
+                    case FPTYPE_EXECFILENAME: type_str = "EXECFILENAME";
                         break;
-                    case FPTYPE_DIRNAME:
-                        type_str = "DIRNAME";
+                    case FPTYPE_DIRNAME: type_str = "DIRNAME";
                         break;
-                    case FPTYPE_STREAMNAME:
-                        type_str = "STREAMNAME";
+                    case FPTYPE_STREAMNAME: type_str = "STREAMNAME";
                         break;
-                    case FPTYPE_STRING:
-                        type_str = "STRING";
+                    case FPTYPE_STRING: type_str = "STRING";
                         break;
-                    case FPTYPE_ONOFF:
-                        type_str = "ONOFF";
+                    case FPTYPE_ONOFF: type_str = "ONOFF";
                         break;
-                    case FPTYPE_PROCESS:
-                        type_str = "PROCESS";
+                    case FPTYPE_PROCESS: type_str = "PROCESS";
                         break;
-                    case FPTYPE_FPSNAME:
-                        type_str = "FPSNAME";
+                    case FPTYPE_FPSNAME: type_str = "FPSNAME";
                         break;
-                    case FPTYPE_STRING_NOT_STREAM:
-                        type_str = "STRING_NOT_STREAM";
+                    case FPTYPE_STRING_NOT_STREAM: type_str = "STRING_NOT_STREAM";
                         break;
                     }
 
                     printf(C_NAME "%-*s" C_RST " %12s %-*s %s\n",
                            kw_width,
                            short_keyword,
-                           type_str,
-                           val_width,
-                           valstring,
-                           fps->parray[pindex].description);
+                           type_str, val_width, valstring, fps->parray[pindex].description);
                 }
             }
         }

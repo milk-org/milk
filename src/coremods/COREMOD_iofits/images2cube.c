@@ -68,20 +68,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register CLI command(s)
 errno_t CLIADDCMD_COREMOD_iofits__images2cube()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 
@@ -113,13 +108,10 @@ errno_t images_to_cube(
     char imname[STRINGMAXLEN_IMGNAME];
 
     long frame = 0;
-    CREATE_IMAGENAME(imname, "%s%05ld",
-                     img_name, frame);
+    CREATE_IMAGENAME(imname, "%s%05ld", img_name, frame);
 
-    IMGID img1 =
-        imgid_make_from_name(imname);
-    resolveIMGID(&img1, ERRMODE_WARN,
-                 dcimg, dcnimg);
+    IMGID img1 = imgid_make_from_name(imname);
+    resolveIMGID(&img1, ERRMODE_WARN, dcimg, dcnimg);
     if(img1.ID == -1)
     {
         return RETURN_FAILURE;
@@ -128,46 +120,31 @@ errno_t images_to_cube(
     uint32_t xsize = img1.md->size[0];
     uint32_t ysize = img1.md->size[1];
 
-    printf("SIZE = %u %u %ld\n",
-           xsize, ysize, nbframes);
+    printf("SIZE = %u %u %ld\n", xsize, ysize, nbframes);
     fflush(stdout);
 
-    IMGID imgcube =
-        imgid_make_from_name_3D(
-            cube_name,
-            xsize, ysize, nbframes);
+    IMGID imgcube = imgid_make_from_name_3D(cube_name, xsize, ysize, nbframes);
     imgcube.mdt->shared = 0;
-    imgcube.im = (IMAGE *) calloc(
-                     1, sizeof(IMAGE));
+    imgcube.im = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgcube);
 
     for(uint32_t ii = 0; ii < xsize; ii++)
         for(uint32_t jj = 0; jj < ysize; jj++)
         {
-            imgcube.im->array.F[
-            jj * xsize + ii] =
-                    img1.im->array.F[
-             jj * xsize + ii];
+            imgcube.im->array.F[jj * xsize + ii] = img1.im->array.F[jj * xsize + ii];
         }
 
     for(frame = 1; frame < nbframes; frame++)
     {
-        WRITE_IMAGENAME(imname, "%s%05ld",
-                        img_name, frame);
-        printf("Adding image %s -> %ld/%ld.."
-               " ", img_name, frame,
-               nbframes);
+        WRITE_IMAGENAME(imname, "%s%05ld", img_name, frame);
+        printf("Adding image %s -> %ld/%ld.." " ", img_name, frame, nbframes);
         fflush(stdout);
 
         img1 = imgid_make_from_name(imname);
-        resolveIMGID(&img1, ERRMODE_NULL,
-                     dcimg, dcnimg);
+        resolveIMGID(&img1, ERRMODE_NULL, dcimg, dcnimg);
         if(img1.ID == -1)
         {
-            PRINT_ERROR(
-                "Image \"%s\" does not "
-                "exist - skipping",
-                imname);
+            PRINT_ERROR("Image \"%s\" does not " "exist - skipping", imname);
         }
         else
         {
@@ -175,20 +152,16 @@ errno_t images_to_cube(
                     || (ysize
                         != img1.md->size[1]))
             {
-                PRINT_ERROR(
-                    "Image has wrong size");
+                PRINT_ERROR("Image has wrong size");
                 return RETURN_FAILURE;
             }
             for(uint32_t ii = 0;
-                    ii < xsize; ii++)
-                for(uint32_t jj = 0;
+                    ii < xsize; ii++) for(uint32_t jj = 0;
                         jj < ysize; jj++)
                 {
                     imgcube.im->array.F[
                         frame * xsize * ysize
-                        + jj * xsize + ii] =
-                            img1.im->array.F[
-                                jj * xsize + ii];
+                        + jj * xsize + ii] = img1.im->array.F[jj * xsize + ii];
                 }
         }
         printf("Done\n");

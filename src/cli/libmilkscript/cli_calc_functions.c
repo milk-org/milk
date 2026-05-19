@@ -126,9 +126,7 @@ static val_t func_where(
     }
     else
     {
-        arith_image_cstmult(tmp_mask,
-                            to_double(argT),
-                            tmp_tpart);
+        arith_image_cstmult(tmp_mask, to_double(argT), tmp_tpart);
     }
 
     if(argF.type == VAL_STRING)
@@ -141,9 +139,7 @@ static val_t func_where(
     }
     else
     {
-        arith_image_cstmult(tmp_imask,
-                            to_double(argF),
-                            tmp_fpart);
+        arith_image_cstmult(tmp_imask, to_double(argF), tmp_fpart);
     }
 
     arith_image_add(tmp_tpart, tmp_fpart, tmpn);
@@ -323,9 +319,7 @@ val_t parse_funccall(cli_token *ftok)
                 return mk_string("");
             }
             const char *tmpn = alloc_tmpname();
-            arith_image_function_im_im__d_d(
-                arg.sval, tmpn, ftok->fnctptr
-            );
+            arith_image_function_im_im__d_d(arg.sval, tmpn, ftok->fnctptr);
             if (data.core.Debug > 0)
             {
                 printf("double_func(double)\n");
@@ -413,12 +407,7 @@ val_t parse_funccall(cli_token *ftok)
                 return mk_string("");
             }
             const char *tmpn = alloc_tmpname();
-            arith_image_function_imd_im__dd_d(
-                arg1.sval,
-                to_double(arg2),
-                tmpn,
-                ftok->fnctptr
-            );
+            arith_image_function_imd_im__dd_d(arg1.sval, to_double(arg2), tmpn, ftok->fnctptr);
             return mk_string(tmpn);
         }
 
@@ -480,21 +469,14 @@ val_t parse_funccall(cli_token *ftok)
             }
             const char *tmpn = alloc_tmpname();
             arith_image_function_imdd_im__ddd_d(
-                arg1.sval,
-                to_double(arg2),
-                to_double(arg3),
-                tmpn,
-                ftok->fnctptr
-            );
+                arg1.sval, to_double(arg2), to_double(arg3), tmpn, ftok->fnctptr);
             return mk_string(tmpn);
         }
 
         double d1 = to_double(arg1);
         double d2 = to_double(arg2);
         double d3 = to_double(arg3);
-        return mk_double(
-            ((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3)
-        );
+        return mk_double(((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3));
     }
 
     if(ftok->type == TOK_FUNC_WHERE)
@@ -542,9 +524,7 @@ val_t parse_funccall(cli_token *ftok)
 
         if (arg.type != VAL_STRING)
         {
-            parse_errmsg(
-                "Expected image argument"
-            );
+            parse_errmsg("Expected image argument");
             return mk_double(0);
         }
         if (!check_image(arg.sval))
@@ -591,9 +571,7 @@ val_t parse_funccall(cli_token *ftok)
 
         if (arg1.type != VAL_STRING)
         {
-            parse_errmsg(
-                "Expected image argument"
-            );
+            parse_errmsg("Expected image argument");
             return mk_double(0);
         }
         if (!check_image(arg1.sval))
@@ -602,8 +580,7 @@ val_t parse_funccall(cli_token *ftok)
         }
 
         double res = ((double (*)(const char *, double)) ftok->fnctptr)(
-            arg1.sval, to_double(arg2)
-        );
+            arg1.sval, to_double(arg2));
         return mk_double(res);
     }
 
@@ -627,34 +604,25 @@ val_t parse_funccall(cli_token *ftok)
         if (arg.type == VAL_STRING)
         {
             /* Try CLI var first */
-            const char *cv =
-                cli_var_get(arg.sval);
+            const char *cv = cli_var_get(arg.sval);
             if (cv != NULL)
             {
-                return mk_long(
-                    (long) strlen(cv)
-                );
+                return mk_long((long) strlen(cv));
             }
             /* Fallback: length of name */
-            return mk_long(
-                (long) strlen(arg.sval)
-            );
+            return mk_long((long) strlen(arg.sval));
         }
         /* If numeric, convert to string */
         char numstr[64];
         if (arg.type == VAL_LONG)
         {
-            snprintf(numstr, 64,
-                     "%ld", arg.lval);
+            snprintf(numstr, 64, "%ld", arg.lval);
         }
         else
         {
-            snprintf(numstr, 64,
-                     "%g", arg.dval);
+            snprintf(numstr, 64, "%g", arg.dval);
         }
-        return mk_long(
-            (long) strlen(numstr)
-        );
+        return mk_long((long) strlen(numstr));
     }
 
     /* toupper(s), tolower(s) -> string */
@@ -677,26 +645,22 @@ val_t parse_funccall(cli_token *ftok)
         char numbuf[64];
         if (arg.type == VAL_STRING)
         {
-            const char *cv =
-                cli_var_get(arg.sval);
+            const char *cv = cli_var_get(arg.sval);
             sv = cv ? cv : arg.sval;
         }
         else if (arg.type == VAL_LONG)
         {
-            snprintf(numbuf, 64,
-                     "%ld", arg.lval);
+            snprintf(numbuf, 64, "%ld", arg.lval);
             sv = numbuf;
         }
         else
         {
-            snprintf(numbuf, 64,
-                     "%g", arg.dval);
+            snprintf(numbuf, 64, "%g", arg.dval);
             sv = numbuf;
         }
 
         char result[CLI_CALC_TOKEN_MAXLEN];
-        strncpy(result, sv,
-                sizeof(result) - 1);
+        strncpy(result, sv, sizeof(result) - 1);
         result[sizeof(result) - 1] = '\0';
 
         const char *fn = ftok->sval;
@@ -705,8 +669,7 @@ val_t parse_funccall(cli_token *ftok)
             for (int i = 0;
                  result[i]; i++)
             {
-                result[i] = (char) toupper(
-                    (unsigned char) result[i]);
+                result[i] = (char) toupper((unsigned char) result[i]);
             }
         }
         else /* tolower */
@@ -714,8 +677,7 @@ val_t parse_funccall(cli_token *ftok)
             for (int i = 0;
                  result[i]; i++)
             {
-                result[i] = (char) tolower(
-                    (unsigned char) result[i]);
+                result[i] = (char) tolower((unsigned char) result[i]);
             }
         }
 
@@ -765,15 +727,12 @@ val_t parse_funccall(cli_token *ftok)
         const char *sv = NULL;
         if (arg1.type == VAL_STRING)
         {
-            const char *cv =
-                cli_var_get(arg1.sval);
+            const char *cv = cli_var_get(arg1.sval);
             sv = cv ? cv : arg1.sval;
         }
         else
         {
-            parse_errmsg(
-                "substr: first arg "
-                "must be string");
+            parse_errmsg("substr: first arg " "must be string");
             return mk_double(0);
         }
 
@@ -789,8 +748,7 @@ val_t parse_funccall(cli_token *ftok)
         }
 
         char result[CLI_CALC_TOKEN_MAXLEN];
-        memcpy(result, sv + off,
-               (size_t) len);
+        memcpy(result, sv + off, (size_t) len);
         result[len] = '\0';
 
         const char *tmpn = alloc_tmpname();
@@ -819,24 +777,18 @@ val_t parse_funccall(cli_token *ftok)
         }
         advance_func();
 
-        long iv = (arg.type == VAL_LONG)
-            ? arg.lval
-            : (long) to_double(arg);
+        long iv = (arg.type == VAL_LONG) ? arg.lval : (long) to_double(arg);
 
         char result[CLI_CALC_TOKEN_MAXLEN];
         const char *fn = ftok->sval;
         if (strncmp(fn, "hex(", 4) == 0)
         {
-            snprintf(result,
-                     sizeof(result),
-                     "0x%lx", iv);
+            snprintf(result, sizeof(result), "0x%lx", iv);
         }
         else if (strncmp(fn, "oct(", 4)
                  == 0)
         {
-            snprintf(result,
-                     sizeof(result),
-                     "0o%lo", iv);
+            snprintf(result, sizeof(result), "0o%lo", iv);
         }
         else /* bin */
         {
@@ -854,8 +806,7 @@ val_t parse_funccall(cli_token *ftok)
                 int bi = 0;
                 while (v > 0 && bi < 64)
                 {
-                    bits[bi++] =
-                        (v & 1) ? '1' : '0';
+                    bits[bi++] = (v & 1) ? '1' : '0';
                     v >>= 1;
                 }
                 for (int i = bi - 1;

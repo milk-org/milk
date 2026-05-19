@@ -183,12 +183,7 @@ int milkseq_scheduler_step(
         uint64_t taskstatus = 0;
 
         state->tasklist[cmdindexExec].fpsindex = milkseq_exec_cmd(
-            cmdindexExec,
-            state,
-            fps,
-            keywnode,
-            vars,
-            &taskstatus);
+            cmdindexExec, state, fps, keywnode, vars, &taskstatus);
 
         NBtaskLaunched++;
         state->tasklist[cmdindexExec].status |= taskstatus;

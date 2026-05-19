@@ -63,16 +63,11 @@ static const char *loopstat_str(int stat)
 {
     switch(stat)
     {
-    case 0:
-        return C_STOP "IDLE" C_RST;
-    case 1:
-        return C_RUN "ACTIVE" C_RST;
-    case 2:
-        return C_WARN "ERROR" C_RST;
-    case 3:
-        return C_WARN "CRASHED" C_RST;
-    default:
-        return C_DIM "UNKNOWN" C_RST;
+    case 0: return C_STOP "IDLE" C_RST;
+    case 1: return C_RUN "ACTIVE" C_RST;
+    case 2: return C_WARN "ERROR" C_RST;
+    case 3: return C_WARN "CRASHED" C_RST;
+    default: return C_DIM "UNKNOWN" C_RST;
     }
 }
 
@@ -83,14 +78,10 @@ static const char *ctrlval_str(int val)
 {
     switch(val)
     {
-    case 0:
-        return C_STOP "STOP" C_RST;
-    case 1:
-        return C_RUN "RUN" C_RST;
-    case 2:
-        return C_WARN "PAUSE" C_RST;
-    default:
-        return C_DIM "UNKNOWN" C_RST;
+    case 0: return C_STOP "STOP" C_RST;
+    case 1: return C_RUN "RUN" C_RST;
+    case 2: return C_WARN "PAUSE" C_RST;
+    default: return C_DIM "UNKNOWN" C_RST;
     }
 }
 
@@ -101,16 +92,11 @@ static const char *trigmode_str(int mode)
 {
     switch(mode)
     {
-    case 0:
-        return "IMMEDIATE";
-    case 1:
-        return "SEMAPHORE";
-    case 2:
-        return "DELAY";
-    case 3:
-        return "TIMER";
-    default:
-        return "UNKNOWN";
+    case 0: return "IMMEDIATE";
+    case 1: return "SEMAPHORE";
+    case 2: return "DELAY";
+    case 3: return "TIMER";
+    default: return "UNKNOWN";
     }
 }
 
@@ -125,130 +111,86 @@ static void print_proc_info(
     const OV_PROC *p = &m->procs[pi];
 
     /* ---- Header ---- */
-    printf(C_TITLE
-           "========================================"
-           "================\n" C_RST);
-    printf(C_LABEL " %-20s" C_RST ": "
-           C_NAME "%s" C_RST "\n",
-           "Process Name", p->name);
+    printf(C_TITLE "========================================" "================\n" C_RST);
+    printf(C_LABEL " %-20s" C_RST ": " C_NAME "%s" C_RST "\n", "Process Name", p->name);
     printf(C_LABEL " %-20s" C_RST ": "
            C_VAL "%d" C_RST " [%s]\n",
            "PID", (int) p->PID,
-           (pid_get_status(p->PID)
-            == OV_PID_ALIVE)
-           ? C_ALIVE "ALIVE" C_RST
-           : C_DEAD "DEAD" C_RST);
-    printf(C_TITLE
-           "========================================"
-           "================\n" C_RST);
+           (pid_get_status(p->PID) == OV_PID_ALIVE) ? C_ALIVE "ALIVE" C_RST : C_DEAD "DEAD" C_RST);
+    printf(C_TITLE "========================================" "================\n" C_RST);
 
     /* ---- Status ---- */
     printf("\n" C_HDR " Status" C_RST "\n");
-    printf("   %-18s: %s\n",
-           "Loop stat",
-           loopstat_str(p->loopstat));
-    printf("   %-18s: %s\n",
-           "CTRL val",
-           ctrlval_str(p->CTRLval));
-    printf("   %-18s: " C_VAL "%" PRId64 "" C_RST "\n",
-           "Loop count",
-           (int64_t) p->loopcnt);
+    printf("   %-18s: %s\n", "Loop stat", loopstat_str(p->loopstat));
+    printf("   %-18s: %s\n", "CTRL val", ctrlval_str(p->CTRLval));
+    printf("   %-18s: " C_VAL "%" PRId64 "" C_RST "\n", "Loop count", (int64_t) p->loopcnt);
     if(p->rt_priority > 0)
     {
-        printf("   %-18s: " C_VAL "%d" C_RST "\n",
-               "RT priority", p->rt_priority);
+        printf("   %-18s: " C_VAL "%d" C_RST "\n", "RT priority", p->rt_priority);
     }
     if(p->cpu_used > 0.01f)
     {
-        printf("   %-18s: " C_VAL "%.1f%%"
-               C_RST "\n",
-               "CPU usage", p->cpu_used);
+        printf("   %-18s: " C_VAL "%.1f%%" C_RST "\n", "CPU usage", p->cpu_used);
     }
     if(p->mem_rss_kb > 0)
     {
         printf("   %-18s: " C_VAL "%" PRId64 " KB"
-               C_RST "\n",
-               "RSS memory", (int64_t) p->mem_rss_kb);
+               C_RST "\n", "RSS memory", (int64_t) p->mem_rss_kb);
     }
 
     /* ---- Timing ---- */
     printf("\n" C_HDR " Timing" C_RST "\n");
     if(p->dtmedian_iter_ns > 0)
     {
-        double iter_us =
-            (double) p->dtmedian_iter_ns / 1e3;
+        double iter_us = (double) p->dtmedian_iter_ns / 1e3;
         printf("   %-18s: " C_VAL "%.1f µs"
-               C_RST "  (%.1f Hz)\n",
-               "Iter (median)", iter_us,
-               p->loop_hz);
+               C_RST "  (%.1f Hz)\n", "Iter (median)", iter_us, p->loop_hz);
     }
     else
     {
-        printf("   %-18s: " C_DIM "N/A" C_RST "\n",
-               "Iter (median)");
+        printf("   %-18s: " C_DIM "N/A" C_RST "\n", "Iter (median)");
     }
     if(p->dtmedian_exec_ns > 0)
     {
-        double exec_us =
-            (double) p->dtmedian_exec_ns / 1e3;
+        double exec_us = (double) p->dtmedian_exec_ns / 1e3;
         double duty = 0.0;
         if(p->dtmedian_iter_ns > 0)
         {
-            duty = 100.0
-                   * (double) p->dtmedian_exec_ns
-                   / (double) p->dtmedian_iter_ns;
+            duty = 100.0 * (double) p->dtmedian_exec_ns / (double) p->dtmedian_iter_ns;
         }
         printf("   %-18s: " C_VAL "%.1f µs"
-               C_RST "  (duty: %.1f%%)\n",
-               "Exec (median)", exec_us, duty);
+               C_RST "  (duty: %.1f%%)\n", "Exec (median)", exec_us, duty);
     }
     else
     {
-        printf("   %-18s: " C_DIM "N/A" C_RST "\n",
-               "Exec (median)");
+        printf("   %-18s: " C_DIM "N/A" C_RST "\n", "Exec (median)");
     }
     printf("   %-18s: %s\n",
-           "Measure timing",
-           p->MeasureTiming
-           ? C_ALIVE "ON" C_RST
-           : C_DIM "OFF" C_RST);
+           "Measure timing", p->MeasureTiming ? C_ALIVE "ON" C_RST : C_DIM "OFF" C_RST);
 
     /* ---- Trigger ---- */
     printf("\n" C_HDR " Trigger" C_RST "\n");
     printf("   %-18s: " C_VAL "%s (%d)"
-           C_RST "\n",
-           "Mode",
-           trigmode_str(p->triggermode),
-           p->triggermode);
+           C_RST "\n", "Mode", trigmode_str(p->triggermode), p->triggermode);
     if(p->trigstreamname[0] != '\0')
     {
-        printf("   %-18s: " C_STREAM "%s"
-               C_RST "\n",
-               "Stream", p->trigstreamname);
+        printf("   %-18s: " C_STREAM "%s" C_RST "\n", "Stream", p->trigstreamname);
     }
     if(p->triggermode == 1)
     {
-        printf("   %-18s: " C_VAL "%d"
-               C_RST "\n",
-               "Semaphore", p->triggersem);
+        printf("   %-18s: " C_VAL "%d" C_RST "\n", "Semaphore", p->triggersem);
     }
     printf("   %-18s: " C_VAL "%d" C_RST
            " (cumul: %" PRIu64 ")\n",
-           "Missed frames",
-           p->triggermissed,
-           (uint64_t)
-           p->triggermissed_cumul);
+           "Missed frames", p->triggermissed, (uint64_t) p->triggermissed_cumul);
 
     /* ---- Connections (from graph) ---- */
-    printf("\n" C_HDR " Connections"
-           C_RST " (from system graph)\n");
+    printf("\n" C_HDR " Connections" C_RST " (from system graph)\n");
 
     int pni = p->node_idx;
     if(pni < 0)
     {
-        printf("   " C_DIM
-               "(process not in graph)"
-               C_RST "\n");
+        printf("   " C_DIM "(process not in graph)" C_RST "\n");
     }
     else
     {
@@ -277,10 +219,7 @@ static void print_proc_info(
                 continue;
             }
             int si = m->nodes[ni].index;
-            printf("   %-18s: " C_STREAM "%s"
-                   C_RST "\n",
-                   "Triggered by",
-                   m->streams[si].name);
+            printf("   %-18s: " C_STREAM "%s" C_RST "\n", "Triggered by", m->streams[si].name);
             found_any = 1;
         }
 
@@ -305,10 +244,7 @@ static void print_proc_info(
                 continue;
             }
             int si = m->nodes[ni].index;
-            printf("   %-18s: " C_STREAM "%s"
-                   C_RST "\n",
-                   "Writes",
-                   m->streams[si].name);
+            printf("   %-18s: " C_STREAM "%s" C_RST "\n", "Writes", m->streams[si].name);
             found_any = 1;
         }
 
@@ -333,10 +269,7 @@ static void print_proc_info(
                 continue;
             }
             int si = m->nodes[ni].index;
-            printf("   %-18s: " C_STREAM "%s"
-                   C_RST "\n",
-                   "Reads (sem)",
-                   m->streams[si].name);
+            printf("   %-18s: " C_STREAM "%s" C_RST "\n", "Reads (sem)", m->streams[si].name);
             found_any = 1;
         }
 
@@ -361,18 +294,13 @@ static void print_proc_info(
                 continue;
             }
             int fi = m->nodes[ni].index;
-            printf("   %-18s: " C_FPS "%s"
-                   C_RST "\n",
-                   "Managed by FPS",
-                   m->fps[fi].name);
+            printf("   %-18s: " C_FPS "%s" C_RST "\n", "Managed by FPS", m->fps[fi].name);
             found_any = 1;
         }
 
         if(!found_any)
         {
-            printf("   " C_DIM
-                   "(no connections found)"
-                   C_RST "\n");
+            printf("   " C_DIM "(no connections found)" C_RST "\n");
         }
     }
 
@@ -456,8 +384,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                PI_ONELINE, PI_DESC_LONG);
+    int action = milk_help_init(argc, argv, PI_ONELINE, PI_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -487,11 +414,9 @@ int main(
         {
         case 'h':
             break; /* handled above */
-        case 'p':
-            target_pid = (pid_t) atoi(optarg);
+        case 'p': target_pid = (pid_t) atoi(optarg);
             break;
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -519,28 +444,22 @@ int main(
     int pi = -1;
     if(target_pid > 0)
     {
-        pi = ov_find_proc_by_pid(
-                 &model, target_pid);
+        pi = ov_find_proc_by_pid(&model, target_pid);
     }
     else
     {
-        pi = find_proc_by_name(
-                 &model, proc_name);
+        pi = find_proc_by_name(&model, proc_name);
     }
 
     if(pi < 0)
     {
         if(target_pid > 0)
         {
-            PRINT_ERROR(
-                "process with PID %d not found",
-                (int) target_pid);
+            PRINT_ERROR("process with PID %d not found", (int) target_pid);
         }
         else
         {
-            PRINT_ERROR(
-                "process '%s' not found",
-                proc_name);
+            PRINT_ERROR("process '%s' not found", proc_name);
         }
         ov_scan_cache_cleanup();
         return 1;

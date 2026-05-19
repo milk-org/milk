@@ -83,14 +83,12 @@ static void handle_sigterm(int sig)
  */
 static void crash_handler(int sig)
 {
-    static const char reset[] =
-        "\033[?1049l\033[?25h\033[0m\n";
+    static const char reset[] = "\033[?1049l\033[?25h\033[0m\n";
     if(write(STDERR_FILENO,
              reset, sizeof(reset) - 1) < 0) {}
     if(ov__raw_active)
     {
-        tcsetattr(STDIN_FILENO, TCSAFLUSH,
-                  &ov__orig_termios);
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &ov__orig_termios);
     }
     struct sigaction sa;
     sa.sa_handler = SIG_DFL;
@@ -157,8 +155,7 @@ static void print_help(
            "    (RSS), context switching, sleep/run states, and pipeline throughput.\n\n",
            MH(MH_BOLD, "Live Pipeline Topology"),
            MH(MH_BOLD, "Hardware Diagnostics"),
-           MH(MH_BOLD, "Process Orchestration"),
-           MH(MH_BOLD, "System Telemetry"));
+           MH(MH_BOLD, "Process Orchestration"), MH(MH_BOLD, "System Telemetry"));
 
     milk_help_section("Dashboard Layout", mh_color);
     printf("  The TUI is organized into specialized views (tabs), selectable via F2-F6:\n"
@@ -285,8 +282,7 @@ int main(
                     "Run %s%s%s %s for usage.\n",
                     MH(MH_ERR, "Error:"),
                     mh_color ? MH_OPT : "", argv[i], mh_color ? MH_RST : "",
-                    mh_color ? MH_CMD : "", argv[0], mh_color ? MH_RST : "",
-                    MH(MH_OPT, "-h"));
+                    mh_color ? MH_CMD : "", argv[0], mh_color ? MH_RST : "", MH(MH_OPT, "-h"));
             return 1;
         }
     }
@@ -444,8 +440,7 @@ int main(
                         else if(pk
                                 != OV_KEY_NONE)
                         {
-                            ov_handle_key(
-                                pk, &lay, m);
+                            ov_handle_key(pk, &lay, m);
                             need_render = 1;
                         }
                         break;

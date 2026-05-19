@@ -186,10 +186,8 @@ int cli_split_logical_op(errno_t *retval)
     int op_is_and = 0;
 
     /* Find first unquoted && and || and pick earliest */
-    int pos_and = cli_find_unquoted_op(
-        src, '&', 0, '&');
-    int pos_or = cli_find_unquoted_op(
-        src, '|', 0, '|');
+    int pos_and = cli_find_unquoted_op(src, '&', 0, '&');
+    int pos_or = cli_find_unquoted_op(src, '|', 0, '|');
 
     if (pos_and >= 0 &&
         (pos_or < 0 || pos_and < pos_or))
@@ -210,36 +208,27 @@ int cli_split_logical_op(errno_t *retval)
     }
 
     char right[STRINGMAXLEN_CLICMDLINE];
-    const char *rp =
-        src + split_pos + op_len;
+    const char *rp = src + split_pos + op_len;
     while (*rp == ' ' || *rp == '\t')
     {
         rp++;
     }
-    strncpy(right, rp,
-            STRINGMAXLEN_CLICMDLINE - 1);
+    strncpy(right, rp, STRINGMAXLEN_CLICMDLINE - 1);
     right[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     char left[STRINGMAXLEN_CLICMDLINE];
-    strncpy(left, data.CLIcmdline,
-            (size_t) split_pos);
+    strncpy(left, data.CLIcmdline, (size_t) split_pos);
     left[split_pos] = '\0';
-    strncpy(data.CLIcmdline, left,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[
-        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    strncpy(data.CLIcmdline, left, STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     errno_t lret = CLI_execute_line();
     int ok = (cli_last_retval == 0);
-    int run_right =
-        (op_is_and && ok)
-        || (!op_is_and && !ok);
+    int run_right = (op_is_and && ok) || (!op_is_and && !ok);
     if (run_right)
     {
-        strncpy(data.CLIcmdline, right,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        strncpy(data.CLIcmdline, right, STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
         *retval = CLI_execute_line();
         return 1;
     }
@@ -263,16 +252,14 @@ int cli_rewrite_stream_pipe(
 )
 {
     const char *src = data.CLIcmdline;
-    int gpipe = cli_find_unquoted_op(
-        src, '|', 0, '>');
+    int gpipe = cli_find_unquoted_op(src, '|', 0, '>');
     if (gpipe < 0)
     {
         return 0;
     }
 
     char lhs[STRINGMAXLEN_CLICMDLINE];
-    strncpy(lhs, data.CLIcmdline,
-            (size_t) gpipe);
+    strncpy(lhs, data.CLIcmdline, (size_t) gpipe);
     lhs[gpipe] = '\0';
     {
         int e = gpipe - 1;
@@ -283,8 +270,7 @@ int cli_rewrite_stream_pipe(
             lhs[e--] = '\0';
         }
     }
-    const char *rhs =
-        data.CLIcmdline + gpipe + 2;
+    const char *rhs = data.CLIcmdline + gpipe + 2;
     while (*rhs == ' ' || *rhs == '\t')
     {
         rhs++;
@@ -293,20 +279,14 @@ int cli_rewrite_stream_pipe(
     char newcmd[STRINGMAXLEN_CLICMDLINE];
     if (sp != NULL)
     {
-        snprintf(newcmd, sizeof(newcmd),
-                 "%.*s %s %s",
-                 (int)(sp - rhs),
-                 rhs, lhs, sp + 1);
+        snprintf(newcmd, sizeof(newcmd), "%.*s %s %s", (int)(sp - rhs), rhs, lhs, sp + 1);
     }
     else
     {
-        snprintf(newcmd, sizeof(newcmd),
-                 "%s %s", rhs, lhs);
+        snprintf(newcmd, sizeof(newcmd), "%s %s", rhs, lhs);
     }
-    strncpy(data.CLIcmdline, newcmd,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[
-        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    strncpy(data.CLIcmdline, newcmd, STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     *retval = CLI_execute_line();
     data.CMDexecuted = 1;
     return 1;
@@ -332,8 +312,7 @@ int cli_rewrite_stream_pipe(
 int cli_split_pipe(errno_t *retval)
 {
     const char *src = data.CLIcmdline;
-    int pipe_pos = cli_find_unquoted_op(
-        src, '|', '|', 0);
+    int pipe_pos = cli_find_unquoted_op(src, '|', '|', 0);
     /* Also reject |> (stream pipe) */
     if (pipe_pos >= 0
         && src[pipe_pos + 1] == '>')
@@ -346,18 +325,15 @@ int cli_split_pipe(errno_t *retval)
     }
 
     char left[STRINGMAXLEN_CLICMDLINE];
-    strncpy(left, data.CLIcmdline,
-            (size_t) pipe_pos);
+    strncpy(left, data.CLIcmdline, (size_t) pipe_pos);
     left[pipe_pos] = '\0';
-    const char *rp =
-        data.CLIcmdline + pipe_pos + 1;
+    const char *rp = data.CLIcmdline + pipe_pos + 1;
     while (*rp == ' ' || *rp == '\t')
     {
         rp++;
     }
     char right[STRINGMAXLEN_CLICMDLINE];
-    strncpy(right, rp,
-            STRINGMAXLEN_CLICMDLINE - 1);
+    strncpy(right, rp, STRINGMAXLEN_CLICMDLINE - 1);
     right[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     /* Check if right side is a milk command;
@@ -392,8 +368,7 @@ int cli_split_pipe(errno_t *retval)
         int saved_stdout = dup(STDOUT_FILENO);
         dup2(fileno(tmpfp), STDOUT_FILENO);
 
-        strncpy(data.CLIcmdline, left,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(data.CLIcmdline, left, STRINGMAXLEN_CLICMDLINE - 1);
         CLI_execute_line();
 
         fflush(stdout);
@@ -405,8 +380,7 @@ int cli_split_pipe(errno_t *retval)
         int saved_stdin = dup(STDIN_FILENO);
         dup2(fileno(tmpfp), STDIN_FILENO);
 
-        strncpy(data.CLIcmdline, right,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(data.CLIcmdline, right, STRINGMAXLEN_CLICMDLINE - 1);
         *retval = CLI_execute_line();
 
         dup2(saved_stdin, STDIN_FILENO);
@@ -433,10 +407,8 @@ int cli_split_semicolon(
 )
 {
     char fullline[STRINGMAXLEN_CLICMDLINE];
-    strncpy(fullline, data.CLIcmdline,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    fullline[STRINGMAXLEN_CLICMDLINE - 1] =
-        '\0';
+    strncpy(fullline, data.CLIcmdline, STRINGMAXLEN_CLICMDLINE - 1);
+    fullline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     int p_semi = cli_find_unquoted_op(fullline, ';', 0, 0);
     int p_and  = cli_find_unquoted_op(fullline, '&', 0, '&');
@@ -470,10 +442,8 @@ int cli_split_semicolon(
     }
 
     fullline[chain_off] = '\0';
-    strncpy(data.CLIcmdline, fullline,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[
-        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    strncpy(data.CLIcmdline, fullline, STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     errno_t ret1 = CLI_execute_line();
 
@@ -484,18 +454,15 @@ int cli_split_semicolon(
     }
     else if (chain_type == 2)
     {
-        run_rest =
-            (ret1 == RETURN_SUCCESS) ? 1 : 0;
+        run_rest = (ret1 == RETURN_SUCCESS) ? 1 : 0;
     }
     else if (chain_type == 3)
     {
-        run_rest =
-            (ret1 != RETURN_SUCCESS) ? 1 : 0;
+        run_rest = (ret1 != RETURN_SUCCESS) ? 1 : 0;
     }
     if (run_rest)
     {
-        const char *rest =
-            fullline + chain_off + chain_len;
+        const char *rest = fullline + chain_off + chain_len;
         while (*rest == ' '
                || *rest == '\t')
         {
@@ -503,12 +470,8 @@ int cli_split_semicolon(
         }
         if (*rest != '\0')
         {
-            strncpy(data.CLIcmdline, rest,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
+            strncpy(data.CLIcmdline, rest, STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             CLI_execute_line();
         }
     }
@@ -537,13 +500,9 @@ int cli_rewrite_dot_source(void)
     if (p[0] == '.' && p[1] == ' ')
     {
         char tmp[STRINGMAXLEN_CLICMDLINE];
-        snprintf(tmp,
-                 STRINGMAXLEN_CLICMDLINE,
-                 "source %s", p + 2);
-        strncpy(data.CLIcmdline, tmp,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        snprintf(tmp, STRINGMAXLEN_CLICMDLINE, "source %s", p + 2);
+        strncpy(data.CLIcmdline, tmp, STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     }
     return 0;
 }

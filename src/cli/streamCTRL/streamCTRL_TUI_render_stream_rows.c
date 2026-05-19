@@ -65,9 +65,7 @@ void streamCTRL__render_stream_rows(
 
                 screenprint_setcolor(4);
                 TUI_printfw("          %-*.*s  ...",
-                            DispName_NBchar,
-                            DispName_NBchar,
-                            streaminfo[sindex].sname);
+                            DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
                 screenprint_unsetcolor(4);
 
                 if(dindex == sTUIparam.dindexSelected)
@@ -95,10 +93,7 @@ void streamCTRL__render_stream_rows(
                     screenprint_setreverse();
                 }
 
-                TUI_printfw("%-*.*s",
-                            DispName_NBchar,
-                            DispName_NBchar,
-                            streaminfo[sindex].sname);
+                TUI_printfw("%-*.*s", DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
 
 
                 screenprint_setcolor(4);
@@ -108,16 +103,13 @@ void streamCTRL__render_stream_rows(
 
                 switch(streaminfo[sindex].ISIOretval)
                 {
-                case IMAGESTREAMIO_FILEOPEN :
-                    TUI_printfw("cannot open file");
+                case IMAGESTREAMIO_FILEOPEN : TUI_printfw("cannot open file");
                     break;
 
-                case IMAGESTREAMIO_VERSION :
-                    TUI_printfw("incompatible ISIO version");
+                case IMAGESTREAMIO_VERSION : TUI_printfw("incompatible ISIO version");
                     break;
 
-                case IMAGESTREAMIO_FAILURE:
-                    TUI_printfw("failed verification");
+                case IMAGESTREAMIO_FAILURE: TUI_printfw("failed verification");
                     break;
                 }
 
@@ -136,18 +128,14 @@ void streamCTRL__render_stream_rows(
             if(dindex == sTUIparam.dindexSelected)
             {
                 DEBUG_TRACEPOINT(
-                    "dindex %d %d",
-                    dindex,
-                    streamCTRLimages[streaminfo[sindex].ID].used);
+                    "dindex %d %d", dindex, streamCTRLimages[streaminfo[sindex].ID].used);
 
                 // currently selected inode
-                inodeselected =
-                    streamCTRLimages[streaminfo[sindex].ID].md->inode;
+                inodeselected = streamCTRLimages[streaminfo[sindex].ID].md->inode;
 
                 DEBUG_TRACEPOINT(
                     "inode %lu %s",
-                    inodeselected,
-                    streamCTRLimages[streaminfo[sindex].ID].md->name);
+                    inodeselected, streamCTRLimages[streaminfo[sindex].ID].md->name);
 
                 // identify upstream inodes
                 NBupstreaminode = 0;
@@ -157,9 +145,7 @@ void streamCTRL__render_stream_rows(
                 {
                     if(NBupstreaminode < NBupstreaminodeMAX)
                     {
-                        ino_t inode = streamCTRLimages[ID]
-                                      .streamproctrace[spti]
-                                      .trigger_inode;
+                        ino_t inode = streamCTRLimages[ID] .streamproctrace[spti] .trigger_inode;
                         if(inode != 0)
                         {
                             upstreaminode[NBupstreaminode] = inode;
@@ -179,9 +165,7 @@ void streamCTRL__render_stream_rows(
                 {
                     if(NBupstreamproc < NBupstreamprocMAX)
                     {
-                        ino_t procpid = streamCTRLimages[ID]
-                                        .streamproctrace[spti]
-                                        .procwrite_PID;
+                        ino_t procpid = streamCTRLimages[ID] .streamproctrace[spti] .procwrite_PID;
                         if(procpid > 0)
                         {
                             upstreamproc[NBupstreamproc] = procpid;
@@ -202,8 +186,7 @@ void streamCTRL__render_stream_rows(
                                      streaminfo[sindex].ID,
                                      streamCTRLimages[ID].used,
                                      streamCTRLimages[ID].name,
-                                     streaminfo[sindex].ISIOretval,
-                                     IMAGESTREAMIO_SUCCESS);
+                                     streaminfo[sindex].ISIOretval, IMAGESTREAMIO_SUCCESS);
 
                     print_pid_mode = PRINT_PID_DEFAULT;
                     if(streamCTRLimages[ID].used == 1)
@@ -213,8 +196,7 @@ void streamCTRL__render_stream_rows(
                                 spti++)
                         {
                             ino_t inode = streamCTRLimages[ID]
-                                          .streamproctrace[spti]
-                                          .trigger_inode;
+                                          .streamproctrace[spti] .trigger_inode;
                             if(inode == inodeselected)
                             {
                                 if(spti < downstreammin)
@@ -239,9 +221,7 @@ void streamCTRL__render_stream_rows(
                 if(streamCTRLimages[ID].used == 1)
                 {
                     streamCTRL_print_inode(streamCTRLimages[ID].md[0].inode,
-                                           upstreaminode,
-                                           NBupstreaminode,
-                                           downstreammin);
+                                           upstreaminode, NBupstreaminode, downstreammin);
                 }
                 TUI_printfw(" ");
             }
@@ -261,16 +241,11 @@ void streamCTRL__render_stream_rows(
 
                     snprintf(namestring,
                              stringmaxlen,
-                             "%s->%s",
-                             streaminfo[sindex].sname,
-                             streaminfo[sindex].linkname);
+                             "%s->%s", streaminfo[sindex].sname, streaminfo[sindex].linkname);
 
                     screenprint_setbold();
                     screenprint_setcolor(5);
-                    TUI_printfw("%-*.*s",
-                                DispName_NBchar,
-                                DispName_NBchar,
-                                namestring);
+                    TUI_printfw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
                     screenprint_unsetcolor(5);
                     screenprint_unsetbold();
                 }
@@ -278,9 +253,7 @@ void streamCTRL__render_stream_rows(
                 {
                     screenprint_setbold();
                     TUI_printfw("%-*.*s",
-                                DispName_NBchar,
-                                DispName_NBchar,
-                                streaminfo[sindex].sname);
+                                DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
                     screenprint_unsetbold();
                 }
 
@@ -322,10 +295,7 @@ void streamCTRL__render_stream_rows(
                 }
                 else
                 {
-                    snprintf(str,
-                             stringlen,
-                             " [%3ld",
-                             (long) streamCTRLimages[ID].md[0].size[0]);
+                    snprintf(str, stringlen, " [%3ld", (long) streamCTRLimages[ID].md[0].size[0]);
 
                     for(int j = 1; j < streamCTRLimages[ID].md[0].naxis; j++)
                     {
@@ -334,64 +304,40 @@ void streamCTRL__render_stream_rows(
                                            str1,
                                            STRINGMAXLEN_DEFAULT,
                                            "%sx%3ld",
-                                           str,
-                                           (long) streamCTRLimages[ID].md[0].size[j]);
+                                           str, (long) streamCTRLimages[ID].md[0].size[j]);
                             if(slen < 1)
                             {
-                                PRINT_ERROR(
-                                    "snprintf "
-                                    "wrote <1 "
-                                    "char");
+                                PRINT_ERROR("snprintf " "wrote <1 " "char");
                                 abort(); // can't handle this error any other way
                             }
                             if(slen >= STRINGMAXLEN_DEFAULT)
                             {
-                                PRINT_ERROR(
-                                    "snprintf "
-                                    "string "
-                                    "truncatio"
-                                    "n");
+                                PRINT_ERROR("snprintf " "string " "truncatio" "n");
                                 abort(); // can't handle this error any other way
                             }
                         }
-                        snprintf(str,
-                                 STRINGMAXLEN_DEFAULT,
-                                 "%s", str1);
+                        snprintf(str, STRINGMAXLEN_DEFAULT, "%s", str1);
                     }
                     {
-                        int slen = snprintf(str1,
-                                            STRINGMAXLEN_DEFAULT,
-                                            "%s]",
-                                            str);
+                        int slen = snprintf(str1, STRINGMAXLEN_DEFAULT, "%s]", str);
                         if(slen < 1)
                         {
-                            PRINT_ERROR(
-                                "snprintf wrote <1 "
-                                "char");
+                            PRINT_ERROR("snprintf wrote <1 " "char");
                             abort(); // can't handle this error any other way
                         }
                         if(slen >= STRINGMAXLEN_DEFAULT)
                         {
-                            PRINT_ERROR(
-                                "snprintf string "
-                                "truncation");
+                            PRINT_ERROR("snprintf string " "truncation");
                             abort(); // can't handle this error any other way
                         }
                     }
 
-                    snprintf(str,
-                             STRINGMAXLEN_DEFAULT,
-                             "%s", str1);
+                    snprintf(str, STRINGMAXLEN_DEFAULT, "%s", str1);
                 }
 
                 DEBUG_TRACEPOINT(" ");
 
-                snprintf(string,
-                         stringlen,
-                         "%-*.*s ",
-                         DispSize_NBchar,
-                         DispSize_NBchar,
-                         str);
+                snprintf(string, stringlen, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
                 TUI_printfw("%s", string);
 
                 if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
@@ -403,9 +349,7 @@ void streamCTRL__render_stream_rows(
 
                     snprintf(string,
                              stringlen,
-                             " %*ld ",
-                             Dispcnt0_NBchar,
-                             streamCTRLimages[ID].md[0].cnt0);
+                             " %*ld ", Dispcnt0_NBchar, streamCTRLimages[ID].md[0].cnt0);
                 }
 
                 double t_sec = frame_t_sec;
@@ -424,15 +368,12 @@ void streamCTRL__render_stream_rows(
                 if(streamCTRLimages[ID].md != NULL)
                 {
                     uint64_t cnt0now = streamCTRLimages[ID].md[0].cnt0;
-                    double   dt_avg  = t_sec
-                                       - streaminfo[sindex].t_avg_start;
+                    double   dt_avg  = t_sec - streaminfo[sindex].t_avg_start;
 
                     if(dt_avg >= 1.0)
                     {
-                        uint64_t dcnt = cnt0now
-                                        - streaminfo[sindex].cnt0_avg_start;
-                        streaminfo[sindex].frequ_disp     =
-                            (double) dcnt / dt_avg;
+                        uint64_t dcnt = cnt0now - streaminfo[sindex].cnt0_avg_start;
+                        streaminfo[sindex].frequ_disp     = (double) dcnt / dt_avg;
                         streaminfo[sindex].cnt0_avg_start = cnt0now;
                         streaminfo[sindex].t_avg_start    = t_sec;
                     }
@@ -444,9 +385,7 @@ void streamCTRL__render_stream_rows(
                 {
                     int len_cnt = strlen(string);
                     screenprint_setcolor(2);
-                    streamCTRL_render_active_bg(
-                        string, len_cnt,
-                        frame_color_level);
+                    streamCTRL_render_active_bg(string, len_cnt, frame_color_level);
                     SC_APPEND("\033[0m");
 
                     if((dindex ==
@@ -479,16 +418,10 @@ void streamCTRL__render_stream_rows(
                     opid = streamCTRLimages[ID].md[0].ownerPID;
 
                     streamCTRL_print_procpid(8,
-                                             cpid,
-                                             upstreamproc,
-                                             NBupstreamproc,
-                                             print_pid_mode);
+                                             cpid, upstreamproc, NBupstreamproc, print_pid_mode);
                     TUI_printfw(" ");
                     streamCTRL_print_procpid(8,
-                                             opid,
-                                             upstreamproc,
-                                             NBupstreamproc,
-                                             print_pid_mode);
+                                             opid, upstreamproc, NBupstreamproc, print_pid_mode);
                     TUI_printfw(" ");
                 }
 
@@ -502,9 +435,7 @@ void streamCTRL__render_stream_rows(
                 else
                 {
                     streamCTRL_print_frequ_field(
-                        streaminfo[sindex].frequ_disp,
-                        wave_age,
-                        frame_color_level);
+                        streaminfo[sindex].frequ_disp, wave_age, frame_color_level);
                 }
             }
 
@@ -517,9 +448,7 @@ void streamCTRL__render_stream_rows(
                 {
 
 
-                    int max_s = sTUIparam.DISPLAY_ALL_SEMS
-                                ? streamCTRLimages[ID].md[0].sem
-                                : 3;
+                    int max_s = sTUIparam.DISPLAY_ALL_SEMS ? streamCTRLimages[ID].md[0].sem : 3;
                     TUI_printfw(" ");
                     for(int s = 0; s < max_s; s++)
                     {
@@ -548,9 +477,7 @@ void streamCTRL__render_stream_rows(
                         TUI_printfw(" ");
                         streamCTRL_print_procpid(8,
                                                  pid,
-                                                 upstreamproc,
-                                                 NBupstreamproc,
-                                                 print_pid_mode);
+                                                 upstreamproc, NBupstreamproc, print_pid_mode);
                     }
 
                     if(sTUIparam.DisplayDetailLevel == 1)
@@ -600,8 +527,7 @@ void streamCTRL__render_stream_rows(
                                             streamCTRLimages[ID].writehist[windex].wpid,
                                             streamCTRLimages[ID].writehist[windex].writetime.tv_sec,
                                             streamCTRLimages[ID].writehist[windex].writetime.tv_nsec,
-                                            tdouble0 - tdouble,
-                                            1.0e6 * (deltat));
+                                            tdouble0 - tdouble, 1.0e6 * (deltat));
                                 TUI_newline();
                             }
                             tdoubleprev = tdouble;
@@ -660,9 +586,7 @@ void streamCTRL__render_stream_rows(
                         (DisplayFlag == 1)) // sem read PIDs
                 {
 
-                    int max_s = sTUIparam.DISPLAY_ALL_SEMS
-                                ? streamCTRLimages[ID].md[0].sem
-                                : 3;
+                    int max_s = sTUIparam.DISPLAY_ALL_SEMS ? streamCTRLimages[ID].md[0].sem : 3;
                     TUI_printfw(" ");
                     for(int s = 0; s < max_s; s++)
                     {
@@ -673,9 +597,7 @@ void streamCTRL__render_stream_rows(
                         }
                         streamCTRL_print_procpid(0, // 0 for minimal width
                                                  pid,
-                                                 upstreamproc,
-                                                 NBupstreamproc,
-                                                 print_pid_mode);
+                                                 upstreamproc, NBupstreamproc, print_pid_mode);
                     }
                 }
             }
@@ -690,10 +612,7 @@ void streamCTRL__render_stream_rows(
                     DEBUG_TRACEPOINT("show stream process trace");
                     DEBUG_TRACEPOINT("NBproctrace = %d", streamCTRLimages[ID].md->NBproctrace);
 
-                    snprintf(string,
-                             stringlen,
-                             " %2d ",
-                             streamCTRLimages[ID].md->NBproctrace);
+                    snprintf(string, stringlen, " %2d ", streamCTRLimages[ID].md->NBproctrace);
                     TUI_printfw("%s", string);
 
                     for(int spti = 0;
@@ -701,15 +620,9 @@ void streamCTRL__render_stream_rows(
                             spti++)
                     {
                         DEBUG_TRACEPOINT("stream process trace step %d", spti);
-                        ino_t inode = streamCTRLimages[ID]
-                                      .streamproctrace[spti]
-                                      .trigger_inode;
-                        int sem = streamCTRLimages[ID]
-                                  .streamproctrace[spti]
-                                  .trigsemindex;
-                        pid_t pid = streamCTRLimages[ID]
-                                    .streamproctrace[spti]
-                                    .procwrite_PID;
+                        ino_t inode = streamCTRLimages[ID] .streamproctrace[spti] .trigger_inode;
+                        int sem = streamCTRLimages[ID] .streamproctrace[spti] .trigsemindex;
+                        pid_t pid = streamCTRLimages[ID] .streamproctrace[spti] .procwrite_PID;
 
 
                         DEBUG_TRACEPOINT("stream process trace step %d: triggermode", spti);
@@ -742,8 +655,7 @@ void streamCTRL__render_stream_rows(
                             snprintf(string, stringlen, "(%7lu DL ", inode);
                             break;
 
-                        default:
-                            snprintf(string, stringlen, "(%7lu ?? ", inode);
+                        default: snprintf(string, stringlen, "(%7lu ?? ", inode);
                             break;
                         }
                         TUI_printfw("%s", string);
@@ -752,9 +664,7 @@ void streamCTRL__render_stream_rows(
 
                         streamCTRL_print_procpid(8,
                                                  pid,
-                                                 upstreamproc,
-                                                 NBupstreamproc,
-                                                 print_pid_mode);
+                                                 upstreamproc, NBupstreamproc, print_pid_mode);
                         TUI_printfw(")> ");
                         DEBUG_TRACEPOINT(" ");
                     }
@@ -766,8 +676,7 @@ void streamCTRL__render_stream_rows(
                         streamCTRL_print_SPTRACE_details(streamCTRLimages,
                                                          ID,
                                                          upstreamproc,
-                                                         NBupstreamproc,
-                                                         PRINT_PID_DEFAULT);
+                                                         NBupstreamproc, PRINT_PID_DEFAULT);
                         DEBUG_TRACEPOINT(" ");
                     }
                 }
@@ -860,19 +769,15 @@ void streamCTRL__render_stream_rows(
                 switch(streaminfo[sindex].streamOpenPID_status)
                 {
 
-                case 1:
-                    streaminfo[sindex].streamOpenPID_cnt1 = 0;
+                case 1: streaminfo[sindex].streamOpenPID_cnt1 = 0;
                     for(int pidIndex = 0;
                             pidIndex < streaminfo[sindex].streamOpenPID_cnt;
                             pidIndex++)
                     {
-                        pid_t pid =
-                            streaminfo[sindex].streamOpenPID[pidIndex];
+                        pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
                         streamCTRL_print_procpid(8,
                                                  pid,
-                                                 upstreamproc,
-                                                 NBupstreamproc,
-                                                 print_pid_mode);
+                                                 upstreamproc, NBupstreamproc, print_pid_mode);
 
                         if((getpgid(pid) >= 0) && (pid != getpid()))
                         {
@@ -880,9 +785,7 @@ void streamCTRL__render_stream_rows(
                             snprintf(string,
                                      stringlen,
                                      ":%-*.*s",
-                                     PIDnameStringLen,
-                                     PIDnameStringLen,
-                                     PIDname_array[pid]);
+                                     PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                             TUI_printfw("%s", string);
 
                             streaminfo[sindex].streamOpenPID_cnt1++;
@@ -890,13 +793,11 @@ void streamCTRL__render_stream_rows(
                     }
                     break;
 
-                case 2:
-                    snprintf(string, stringlen, "FAILED");
+                case 2: snprintf(string, stringlen, "FAILED");
                     TUI_printfw("%s", string);
                     break;
 
-                default:
-                    snprintf(string, stringlen, "NOT SCANNED");
+                default: snprintf(string, stringlen, "NOT SCANNED");
                     TUI_printfw("%s", string);
                     break;
                 }

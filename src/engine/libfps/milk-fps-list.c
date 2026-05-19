@@ -50,14 +50,12 @@ static void print_help(
     milk_help_section("Arguments", mh_color);
     printf("  %s%-14s%s %s\n\n",
            mh_color ? MH_ARG : "", "[regex]",
-           mh_color ? MH_RST : "",
-           "Optional POSIX extended regex to filter by FPS name");
+           mh_color ? MH_RST : "", "Optional POSIX extended regex to filter by FPS name");
 
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-v, --verbose",
-           mh_color ? MH_RST : "",
-           "Verbose (print search directory and details)");
+           mh_color ? MH_RST : "", "Verbose (print search directory and details)");
     printf("  %s%-25s%s %s\n",
            mh_color ? MH_OPT : "", "-e, --exec",
            mh_color ? MH_RST : "", "Show full path to executable");
@@ -76,8 +74,7 @@ static void print_help(
 
     milk_help_section("Examples", mh_color);
     printf("  %s$ %smilk-fps-list%s\n",
-           mh_color ? MH_DIM : "",
-           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+           mh_color ? MH_DIM : "", mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
     printf("  %s$ %smilk-fps-list%s %smyfps.*%s\n\n",
            mh_color ? MH_DIM : "",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
@@ -97,8 +94,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                FL_DESC, FL_DESC_LONG);
+    int action = milk_help_init(argc, argv, FL_DESC, FL_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -128,18 +124,15 @@ int main(
     {
         switch(opt)
         {
-        case 'v':
-            verbose = 1;
+        case 'v': verbose = 1;
             break;
-        case 'e':
-            show_exec = 1;
+        case 'e': show_exec = 1;
             break;
         case 'h':
         case '1':
             /* Handled above by milk_help_init() */
             break;
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -194,9 +187,7 @@ int main(
     functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, verbose);
 
     printf(C_TITLE "%-25s %-30s %-20s %s %s %s   %s" C_RST "\n",
-           "FPS Name", "Executable",
-           "Cmd Key", "   CONF",
-           "    RUN", "P", "Description");
+           "FPS Name", "Executable", "Cmd Key", "   CONF", "    RUN", "P", "Description");
 
     printf(C_DIM);
     for(int ii = 0; ii < 116; ii++)
@@ -224,17 +215,12 @@ int main(
 
             // Extract executable basename
 
-            const char *exec_basename =
-                strrchr(
-                    fpsarray[ii].md->execfullpath,
-                    '/');
+            const char *exec_basename = strrchr(fpsarray[ii].md->execfullpath, '/');
             if(exec_basename)
             {
                 exec_basename++;
             }
-            else
-                exec_basename =
-                    fpsarray[ii].md->execfullpath;
+            else exec_basename = fpsarray[ii].md->execfullpath;
 
             // Check CONF process
             pid_t confpid = fpsarray[ii].md->confpid;
@@ -292,9 +278,7 @@ int main(
                        "%s   %s\n",
                        fpsarray[ii].md->name,
                        fpsarray[ii].md->execfullpath,
-                       fpsarray[ii].md->callprogname,
-                       status_str,
-                       fpsarray[ii].md->description);
+                       fpsarray[ii].md->callprogname, status_str, fpsarray[ii].md->description);
             }
             else
             {
@@ -304,9 +288,7 @@ int main(
                        "%s   %s\n",
                        fpsarray[ii].md->name,
                        exec_basename,
-                       fpsarray[ii].md->callprogname,
-                       status_str,
-                       fpsarray[ii].md->description);
+                       fpsarray[ii].md->callprogname, status_str, fpsarray[ii].md->description);
             }
 
             // Disconnect to clean up

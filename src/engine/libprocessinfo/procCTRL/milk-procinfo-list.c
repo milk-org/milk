@@ -65,8 +65,7 @@ static void print_help(
            mh_color ? MH_OPT : "", "-hm, --help-mono",
            mh_color ? MH_RST : "", "Full help, no ANSI color");
     milk_help_section("Examples", mh_color);
-    printf("  %s$ milk-procinfo-list%s\n",
-           mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
+    printf("  %s$ milk-procinfo-list%s\n", mh_color ? MH_CMD : "", mh_color ? MH_RST : "");
     printf("  %s$ milk-procinfo-list%s %smyproc.*%s\n\n",
            mh_color ? MH_CMD : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
@@ -83,8 +82,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                PIL_DESC, PIL_DESC_LONG);
+    int action = milk_help_init(argc, argv, PIL_DESC, PIL_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -109,8 +107,7 @@ int main(
         {
         case 'h':
             break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -124,15 +121,12 @@ int main(
     if(optind < argc)
     {
         pattern = argv[optind];
-        int ret = regcomp(&regex, pattern,
-                          REG_EXTENDED | REG_NOSUB);
+        int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
         if(ret != 0)
         {
             char errbuf[128];
             regerror(ret, &regex, errbuf, sizeof(errbuf));
-            fprintf(stderr,
-                    "Error: Invalid regular expression: %s\n",
-                    errbuf);
+            fprintf(stderr, "Error: Invalid regular expression: %s\n", errbuf);
             return 1;
         }
         use_regex = 1;
@@ -152,8 +146,7 @@ int main(
         return 1;
     }
 
-    printf(C_TITLE "%-30s %-10s %-10s" C_RST "\n",
-           "Process Name", "PID", "Status");
+    printf(C_TITLE "%-30s %-10s %-10s" C_RST "\n", "Process Name", "PID", "Status");
     printf(C_DIM);
     for(int i = 0; i < 60; i++)
     {
@@ -217,29 +210,21 @@ int main(
 
         /* Map the PROCESSINFO struct to get loopstat */
         char fullpath[STRINGMAXLEN_FULLFILENAME];
-        snprintf(fullpath, sizeof(fullpath),
-                 "%s/%s", procdname, fname);
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, fname);
 
         int loopstat = -1; /* unknown */
         int fd = open(fullpath, O_RDONLY);
         if(fd != -1)
         {
             PROCESSINFO *pinfo =
-                (PROCESSINFO *) mmap(
-                    NULL,
-                    sizeof(PROCESSINFO),
-                    PROT_READ,
-                    MAP_SHARED,
-                    fd,
-                    0);
+                (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
             if(pinfo != MAP_FAILED)
             {
                 loopstat = pinfo->loopstat;
                 /* Prefer the name stored inside the struct */
                 if(pinfo->name[0] != '\0')
                 {
-                    strncpy(pname, pinfo->name,
-                            sizeof(pname) - 1);
+                    strncpy(pname, pinfo->name, sizeof(pname) - 1);
                     pname[sizeof(pname) - 1] = '\0';
                 }
                 munmap(pinfo, sizeof(PROCESSINFO));
@@ -280,9 +265,7 @@ int main(
         }
 
         printf(C_NAME "%-30s" C_RST " %s%-10ld%s %s\n",
-               pname,
-               pid_color, (long) pid, pid_reset,
-               status_str);
+               pname, pid_color, (long) pid, pid_reset, status_str);
     }
 
     closedir(dir);

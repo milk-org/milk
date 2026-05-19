@@ -85,8 +85,7 @@ static int tui_stdin_wait_ms(int ms)
     FD_SET(STDIN_FILENO, &fds);
     tv.tv_sec  = 0;
     tv.tv_usec = ms * 1000;
-    return select(STDIN_FILENO + 1,
-                  &fds, NULL, NULL, &tv) > 0;
+    return select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0;
 }
 
 /**
@@ -558,8 +557,7 @@ int cli_fparam(void)
                 
                 if (strlen(inputbuf) > 0) {
                     // Update parameter logic
-                    int ret = functionparameter_SetParamValue_fromString(
-                        &fps, pidx, inputbuf);
+                    int ret = functionparameter_SetParamValue_fromString(&fps, pidx, inputbuf);
                     
                     if (ret != EXIT_SUCCESS) {
                         snprintf(error_msg, sizeof(error_msg), "Invalid value format for the type.");

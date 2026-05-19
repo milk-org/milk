@@ -39,18 +39,14 @@ int cli_intercept_cmd_while(const char *p)
         if(cli_block_level
                 >= CLI_BLOCK_MAXDEPTH)
         {
-            printf("Error: max block "
-                   "nesting exceeded\n");
+            printf("Error: max block " "nesting exceeded\n");
             return 1;
         }
-        CLI_BLOCK *blk =
-            &cli_block_stack[
-         cli_block_level];
+        CLI_BLOCK *blk = &cli_block_stack[cli_block_level];
         memset(blk, 0, sizeof(*blk));
         blk->type = CLI_BLOCK_WHILE;
         blk->active = 1;
-        strncpy(blk->lines[0], p,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(blk->lines[0], p, STRINGMAXLEN_CLICMDLINE - 1);
         blk->nlines = 1;
         cli_block_level++;
         return 1;
@@ -69,18 +65,14 @@ int cli_intercept_cmd_until(const char *p)
         if(cli_block_level
                 >= CLI_BLOCK_MAXDEPTH)
         {
-            printf("Error: max block "
-                   "nesting exceeded\n");
+            printf("Error: max block " "nesting exceeded\n");
             return 1;
         }
-        CLI_BLOCK *blk =
-            &cli_block_stack[
-         cli_block_level];
+        CLI_BLOCK *blk = &cli_block_stack[cli_block_level];
         memset(blk, 0, sizeof(*blk));
         blk->type = CLI_BLOCK_UNTIL;
         blk->active = 1;
-        strncpy(blk->lines[0], p,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(blk->lines[0], p, STRINGMAXLEN_CLICMDLINE - 1);
         blk->nlines = 1;
         cli_block_level++;
         return 1;
@@ -99,18 +91,14 @@ int cli_intercept_cmd_for(const char *p)
         if(cli_block_level
                 >= CLI_BLOCK_MAXDEPTH)
         {
-            printf("Error: max block "
-                   "nesting exceeded\n");
+            printf("Error: max block " "nesting exceeded\n");
             return 1;
         }
-        CLI_BLOCK *blk =
-            &cli_block_stack[
-         cli_block_level];
+        CLI_BLOCK *blk = &cli_block_stack[cli_block_level];
         memset(blk, 0, sizeof(*blk));
         blk->type = CLI_BLOCK_FOR;
         blk->active = 1;
-        strncpy(blk->lines[0], p,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(blk->lines[0], p, STRINGMAXLEN_CLICMDLINE - 1);
         blk->nlines = 1;
         cli_block_level++;
         return 1;
@@ -126,20 +114,14 @@ int cli_intercept_cmd_select(const char *p)
         if(cli_block_level
                 >= CLI_BLOCK_MAXDEPTH)
         {
-            printf("Error: max block "
-                   "nesting exceeded\n");
+            printf("Error: max block " "nesting exceeded\n");
             return 1;
         }
-        CLI_BLOCK *blk =
-            &cli_block_stack[
-         cli_block_level];
+        CLI_BLOCK *blk = &cli_block_stack[cli_block_level];
         memset(blk, 0, sizeof(*blk));
-        blk->type =
-            CLI_BLOCK_SELECT;
+        blk->type = CLI_BLOCK_SELECT;
         blk->active = 1;
-        strncpy(blk->lines[0], p,
-                STRINGMAXLEN_CLICMDLINE
-                - 1);
+        strncpy(blk->lines[0], p, STRINGMAXLEN_CLICMDLINE - 1);
         blk->nlines = 1;
         cli_block_level++;
         return 1;
@@ -155,18 +137,14 @@ int cli_intercept_cmd_function(const char *p)
         if(cli_block_level
                 >= CLI_BLOCK_MAXDEPTH)
         {
-            printf("Error: max block "
-                   "nesting exceeded\n");
+            printf("Error: max block " "nesting exceeded\n");
             return 1;
         }
-        CLI_BLOCK *blk =
-            &cli_block_stack[
-         cli_block_level];
+        CLI_BLOCK *blk = &cli_block_stack[cli_block_level];
         memset(blk, 0, sizeof(*blk));
         blk->type = CLI_BLOCK_FUNC;
         blk->active = 1;
-        strncpy(blk->lines[0], p,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(blk->lines[0], p, STRINGMAXLEN_CLICMDLINE - 1);
         blk->nlines = 1;
         cli_block_level++;
         return 1;
@@ -182,18 +160,14 @@ int cli_intercept_cmd_case(const char *p)
         if(cli_block_level
                 >= CLI_BLOCK_MAXDEPTH)
         {
-            printf("Error: max block "
-                   "nesting exceeded\n");
+            printf("Error: max block " "nesting exceeded\n");
             return 1;
         }
-        CLI_BLOCK *blk =
-            &cli_block_stack[
-         cli_block_level];
+        CLI_BLOCK *blk = &cli_block_stack[cli_block_level];
         memset(blk, 0, sizeof(*blk));
         blk->type = CLI_BLOCK_CASE;
         blk->active = 1;
-        strncpy(blk->lines[0], p,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(blk->lines[0], p, STRINGMAXLEN_CLICMDLINE - 1);
         blk->nlines = 1;
         cli_block_level++;
         return 1;
@@ -230,37 +204,22 @@ int cli_intercept_cmd_math_eval(const char *p)
         if(p[plen - 1] == ')'
                 && p[plen - 2] == ')')
         {
-            char aexpr[
-                STRINGMAXLEN_CLICMDLINE
-            ];
+            char aexpr[STRINGMAXLEN_CLICMDLINE];
             int elen = plen - 4;
             if(elen
                     >= STRINGMAXLEN_CLICMDLINE)
             {
-                elen =
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1;
+                elen = STRINGMAXLEN_CLICMDLINE - 1;
             }
-            memcpy(aexpr, p + 2,
-                   (size_t) elen);
+            memcpy(aexpr, p + 2, (size_t) elen);
             aexpr[elen] = '\0';
             /* Wrap in $(( )) and
              * expand */
-            char wrap[
-                STRINGMAXLEN_CLICMDLINE + 64
-            ];
-            snprintf(wrap,
-                     sizeof(wrap),
-                     "$((%s))",
-                     aexpr);
-            cli_expand_env(
-                wrap,
-                STRINGMAXLEN_CLICMDLINE
-            );
-            long val =
-                strtol(wrap, NULL, 10);
-            cli_last_retval =
-                (val != 0) ? 0 : 1;
+            char wrap[STRINGMAXLEN_CLICMDLINE + 64];
+            snprintf(wrap, sizeof(wrap), "$((%s))", aexpr);
+            cli_expand_env(wrap, STRINGMAXLEN_CLICMDLINE);
+            long val = strtol(wrap, NULL, 10);
+            cli_last_retval = (val != 0) ? 0 : 1;
             return 1;
         }
     }
@@ -282,12 +241,7 @@ int cli_intercept_cmd_alias(const char *p)
                     k < data.NBalias;
                     k++)
             {
-                printf("alias %s="
-                       "'%s'\n",
-                       data.alias[
-                           k].name,
-                       data.alias[
-                           k].cmd);
+                printf("alias %s=" "'%s'\n", data.alias[k].name, data.alias[k].cmd);
             }
         }
         else
@@ -297,26 +251,18 @@ int cli_intercept_cmd_alias(const char *p)
             char *eq = strchr(p, '=');
             if(eq != NULL)
             {
-                char aname[
-                    CLI_ALIAS_NAMELEN
-                ];
-                int nl =
-                    (int)(eq - p);
+                char aname[CLI_ALIAS_NAMELEN];
+                int nl = (int)(eq - p);
                 if(nl
                         >= CLI_ALIAS_NAMELEN)
                 {
-                    nl =
-                        CLI_ALIAS_NAMELEN
-                        - 1;
+                    nl = CLI_ALIAS_NAMELEN - 1;
                 }
-                memcpy(aname, p,
-                       (size_t) nl);
+                memcpy(aname, p, (size_t) nl);
                 aname[nl] = '\0';
-                const char *av =
-                    eq + 1;
+                const char *av = eq + 1;
                 /* Strip quotes */
-                int avl =
-                    (int) strlen(av);
+                int avl = (int) strlen(av);
                 if(avl >= 2
                         && ((av[0] == '\''
                              && av[avl - 1]
@@ -348,35 +294,15 @@ int cli_intercept_cmd_alias(const char *p)
                         && data.NBalias
                         < CLI_MAX_ALIASES)
                 {
-                    slot =
-                        data.NBalias++;
+                    slot = data.NBalias++;
                 }
                 if(slot >= 0)
                 {
-                    strncpy(
-                        data.alias[
-                            slot].name,
-                        aname,
-                        CLI_ALIAS_NAMELEN
-                        - 1);
-                    data.alias[slot]
-                    .name[
-                        CLI_ALIAS_NAMELEN
-                        - 1] = '\0';
-                    int cl =
-                        avl
-                        < CLI_ALIAS_CMDLEN
-                        - 1
-                        ? avl
-                        : CLI_ALIAS_CMDLEN
-                        - 1;
-                    memcpy(
-                        data.alias[
-                            slot].cmd,
-                        av,
-                        (size_t) cl);
-                    data.alias[slot]
-                    .cmd[cl] = '\0';
+                    strncpy(data.alias[slot].name, aname, CLI_ALIAS_NAMELEN - 1);
+                    data.alias[slot] .name[CLI_ALIAS_NAMELEN - 1] = '\0';
+                    int cl = avl < CLI_ALIAS_CMDLEN - 1 ? avl : CLI_ALIAS_CMDLEN - 1;
+                    memcpy(data.alias[slot].cmd, av, (size_t) cl);
+                    data.alias[slot] .cmd[cl] = '\0';
                 }
             }
         }
@@ -404,9 +330,7 @@ int cli_intercept_cmd_unalias(const char *p)
                         j < data.NBalias
                         - 1; j++)
                 {
-                    data.alias[j] =
-                        data.alias[
-                            j + 1];
+                    data.alias[j] = data.alias[j + 1];
                 }
                 data.NBalias--;
                 break;

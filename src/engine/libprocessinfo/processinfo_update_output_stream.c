@@ -59,32 +59,26 @@ errno_t processinfo_update_output_stream(
                 {
                     // copy streamproctrace from input to output
                     memcpy(&output_image->streamproctrace[1],
-                           &input_image->streamproctrace[0],
-                           sizeof(STREAM_PROC_TRACE) * sptisize);
+                           &input_image->streamproctrace[0], sizeof(STREAM_PROC_TRACE) * sptisize);
                 }
             }
 
             // write first streamproctrace entry
             DEBUG_TRACEPOINT("trigger info");
-            output_image->streamproctrace[0].trigsemindex =
-                processinfo->triggermode;
+            output_image->streamproctrace[0].trigsemindex = processinfo->triggermode;
 
-            output_image->streamproctrace[0].trigger_inode =
-                processinfo->triggerstreaminode;
+            output_image->streamproctrace[0].trigger_inode = processinfo->triggerstreaminode;
 
             output_image->streamproctrace[0].ts_procstart =
                 processinfo->texecstart[processinfo->timerindex];
 
-            output_image->streamproctrace[0].trigsemindex =
-                processinfo->triggersem;
+            output_image->streamproctrace[0].trigsemindex = processinfo->triggersem;
 
-            output_image->streamproctrace[0].triggerstatus =
-                processinfo->triggerstatus;
+            output_image->streamproctrace[0].triggerstatus = processinfo->triggerstatus;
 
             if(input_image != NULL)
             {
-                output_image->streamproctrace[0].cnt0 =
-                    input_image->md[0].cnt0;
+                output_image->streamproctrace[0].cnt0 = input_image->md[0].cnt0;
             }
         }
 

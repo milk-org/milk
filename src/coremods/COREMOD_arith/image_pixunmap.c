@@ -22,16 +22,13 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // input image
-static char insname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char insname[FUNCTION_PARAMETER_STRMAXLEN];
 
 // unmapping array to 1D
-static char mapsname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char mapsname[FUNCTION_PARAMETER_STRMAXLEN];
 
 // output image
-static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN];
 static int32_t outshared = 0;
 
 #define FPS_PARAMS(X) \
@@ -99,17 +96,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     uint8_t outdatatype;
     switch ( imgin.md->datatype )
     {
-    case (_DATATYPE_DOUBLE) :
-        outdatatype = _DATATYPE_DOUBLE;
+    case (_DATATYPE_DOUBLE) : outdatatype = _DATATYPE_DOUBLE;
         break;
-    case (_DATATYPE_INT64) :
-        outdatatype = _DATATYPE_DOUBLE;
+    case (_DATATYPE_INT64) : outdatatype = _DATATYPE_DOUBLE;
         break;
-    case (_DATATYPE_UINT64) :
-        outdatatype = _DATATYPE_DOUBLE;
+    case (_DATATYPE_UINT64) : outdatatype = _DATATYPE_DOUBLE;
         break;
-    default :
-        outdatatype = _DATATYPE_FLOAT;
+    default : outdatatype = _DATATYPE_FLOAT;
     }
 
     IMGID imgout = imgid_make_from_name(outimname);
@@ -219,8 +212,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         UNMAP_CASE_(_DATATYPE_DOUBLE, D,    double,   D)
         UNMAP_CASE_(_DATATYPE_INT64,  SI64, int64_t,  D)
         UNMAP_CASE_(_DATATYPE_UINT64, UI64, uint64_t, D)
-        default:
-            PRINT_ERROR("unsupported datatype");
+        default: PRINT_ERROR("unsupported datatype");
             break;
         }
 #undef UNMAP_CASE_
@@ -228,9 +220,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    free(map_2Dpixindex);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  free(map_2Dpixindex);
     free(map_1Dpixindex);
 
     DEBUG_TRACE_FEXIT();
@@ -245,21 +235,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMODE_arith__pixunmap()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

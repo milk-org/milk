@@ -113,10 +113,7 @@ void CORE_logFunctionCall(
 
         FILE *fp;
 
-        snprintf(fname,
-                 sizeof(fname),
-                 ".%s.funccalls.log",
-                 FunctionName);
+        snprintf(fname, sizeof(fname), ".%s.funccalls.log", FunctionName);
 
         struct tm *uttime;
         tnow   = time(NULL);
@@ -132,13 +129,7 @@ void CORE_logFunctionCall(
                 uttime->tm_hour,
                 uttime->tm_min,
                 timenow.tv_sec % 60,
-                timenow.tv_nsec,
-                getpid(),
-                (int) tid,
-                modechar,
-                FunctionName,
-                line,
-                comments);
+                timenow.tv_nsec, getpid(), (int) tid, modechar, FunctionName, line, comments);
         fclose(fp);
     }
 }

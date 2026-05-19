@@ -53,54 +53,42 @@ static void set_fps_value_from_string(
 {
     if(type == FPTYPE_FLOAT64)
     {
-        fps->parray[pindex].val.f64[0] =
-            atof(str);
+        fps->parray[pindex].val.f64[0] = atof(str);
     }
     else if(type == FPTYPE_FLOAT32)
     {
-        fps->parray[pindex].val.f32[0] =
-            (float) atof(str);
+        fps->parray[pindex].val.f32[0] = (float) atof(str);
     }
     else if(type == FPTYPE_INT64)
     {
-        fps->parray[pindex].val.i64[0] =
-            atoll(str);
+        fps->parray[pindex].val.i64[0] = atoll(str);
     }
     else if(type == FPTYPE_UINT64)
     {
-        fps->parray[pindex].val.ui64[0] =
-            (uint64_t) atoll(str);
+        fps->parray[pindex].val.ui64[0] = (uint64_t) atoll(str);
     }
     else if(type == FPTYPE_INT32
             || type == FPTYPE_ONOFF)
     {
-        fps->parray[pindex].val.i32[0] =
-            atoi(str);
+        fps->parray[pindex].val.i32[0] = atoi(str);
     }
     else if(type == FPTYPE_UINT32)
     {
-        fps->parray[pindex].val.ui32[0] =
-            (uint32_t) atoi(str);
+        fps->parray[pindex].val.ui32[0] = (uint32_t) atoi(str);
     }
     else if(type == FPTYPE_PID)
     {
-        fps->parray[pindex].val.pid[0] =
-            (pid_t) atoi(str);
+        fps->parray[pindex].val.pid[0] = (pid_t) atoi(str);
     }
     else if(type == FPTYPE_TIMESPEC)
     {
         double val = atof(str);
-        fps->parray[pindex].val.ts[0].tv_sec =
-            (long) val;
-        fps->parray[pindex].val.ts[0].tv_nsec =
-            (long)((val - (long) val) * 1e9);
+        fps->parray[pindex].val.ts[0].tv_sec = (long) val;
+        fps->parray[pindex].val.ts[0].tv_nsec = (long)((val - (long) val) * 1e9);
     }
     else if(FPTYPE_IS_STRING(type))
     {
-        strncpy(
-            fps->parray[pindex].val.string[0],
-            str,
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
+        strncpy(fps->parray[pindex].val.string[0], str, FUNCTION_PARAMETER_STRMAXLEN - 1);
     }
 }
 
@@ -116,54 +104,42 @@ static void sync_fps_to_local(
 {
     if(b->type == FPTYPE_FLOAT64)
     {
-        *((double *) b->ptr) =
-            fps->parray[pindex].val.f64[0];
+        *((double *) b->ptr) = fps->parray[pindex].val.f64[0];
     }
     else if(b->type == FPTYPE_FLOAT32)
     {
-        *((float *) b->ptr) =
-            fps->parray[pindex].val.f32[0];
+        *((float *) b->ptr) = fps->parray[pindex].val.f32[0];
     }
     else if(b->type == FPTYPE_INT64)
     {
-        *((int64_t *) b->ptr) =
-            fps->parray[pindex].val.i64[0];
+        *((int64_t *) b->ptr) = fps->parray[pindex].val.i64[0];
     }
     else if(b->type == FPTYPE_UINT64)
     {
-        *((uint64_t *) b->ptr) =
-            fps->parray[pindex].val.ui64[0];
+        *((uint64_t *) b->ptr) = fps->parray[pindex].val.ui64[0];
     }
     else if(b->type == FPTYPE_INT32
             || b->type == FPTYPE_ONOFF)
     {
-        *((int32_t *) b->ptr) =
-            fps->parray[pindex].val.i32[0];
+        *((int32_t *) b->ptr) = fps->parray[pindex].val.i32[0];
     }
     else if(b->type == FPTYPE_UINT32)
     {
-        *((uint32_t *) b->ptr) =
-            fps->parray[pindex].val.ui32[0];
+        *((uint32_t *) b->ptr) = fps->parray[pindex].val.ui32[0];
     }
     else if(b->type == FPTYPE_PID)
     {
-        *((pid_t *) b->ptr) =
-            fps->parray[pindex].val.pid[0];
+        *((pid_t *) b->ptr) = fps->parray[pindex].val.pid[0];
     }
     else if(b->type == FPTYPE_TIMESPEC)
     {
-        *((struct timespec *) b->ptr) =
-            fps->parray[pindex].val.ts[0];
+        *((struct timespec *) b->ptr) = fps->parray[pindex].val.ts[0];
     }
     else if(FPTYPE_IS_STRING(b->type))
     {
         strncpy(
-            (char *) b->ptr,
-            fps->parray[pindex].val.string[0],
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
-        ((char *) b->ptr)[
-        FUNCTION_PARAMETER_STRMAXLEN - 1]
-            = '\0';
+            (char *) b->ptr, fps->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN - 1);
+        ((char *) b->ptr)[FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
     }
 }
 
@@ -269,19 +245,13 @@ errno_t fps_process_cli_and_sync(
                     break;
                 }
 
-                long pindex =
-                    functionparameter_GetParamIndex(
-                        fps,
-                        bindings[cli_idx]
-                        .fpskeyword);
+                long pindex = functionparameter_GetParamIndex(fps, bindings[cli_idx] .fpskeyword);
                 if(pindex != -1 &&
                         strcmp(standalone_argv[aa],
                                ".") != 0)
                 {
                     set_fps_value_from_string(
-                        fps, pindex,
-                        bindings[cli_idx].type,
-                        standalone_argv[aa]);
+                        fps, pindex, bindings[cli_idx].type, standalone_argv[aa]);
                 }
                 cli_idx++;
             }
@@ -295,8 +265,7 @@ errno_t fps_process_cli_and_sync(
          * CLI_checkarg_array.
          */
 #ifndef FPS_STANDALONE
-        CLIargs_to_FPSparams_setval(
-            farg, nb_b, fps);
+        CLIargs_to_FPSparams_setval(farg, nb_b, fps);
 #else
         (void) farg;
         PRINT_ERROR("CLI sync not available in standalone mode");
@@ -306,14 +275,11 @@ errno_t fps_process_cli_and_sync(
     /* ---- Step 2: FPS -> local C variables ---- */
     for(int ii = 0; ii < nb_b; ii++)
     {
-        long pindex =
-            functionparameter_GetParamIndex(
-                fps, bindings[ii].fpskeyword);
+        long pindex = functionparameter_GetParamIndex(fps, bindings[ii].fpskeyword);
 
         if(pindex != -1)
         {
-            sync_fps_to_local(
-                fps, pindex, &bindings[ii]);
+            sync_fps_to_local(fps, pindex, &bindings[ii]);
         }
     }
 

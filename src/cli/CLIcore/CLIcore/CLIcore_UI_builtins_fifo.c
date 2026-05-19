@@ -44,8 +44,7 @@ errno_t cli_fifo(void)
 
     if(data.cmdNBarg >= 2)
     {
-        sub = data.cmdargtoken[1]
-              .val.string;
+        sub = data.cmdargtoken[1] .val.string;
     }
 
     /* No sub-command → status */
@@ -55,35 +54,19 @@ errno_t cli_fifo(void)
         printf("FIFO status:\n");
         if(data.fifoON == 1)
         {
-            printf(
-                "  state : \033[32m"
-                "ON\033[0m\n");
-            printf(
-                "  path  : %s\n",
-                data.fifoname);
-            printf(
-                "  fd    : %d\n",
-                data.fifofd);
+            printf("  state : \033[32m" "ON\033[0m\n");
+            printf("  path  : %s\n", data.fifoname);
+            printf("  fd    : %d\n", data.fifofd);
         }
         else if(data.fifofd >= 0)
         {
-            printf(
-                "  state : \033[33m"
-                "PAUSED\033[0m "
-                "(fifo open, input off)\n");
-            printf(
-                "  path  : %s\n",
-                data.fifoname);
-            printf(
-                "  fd    : %d\n",
-                data.fifofd);
+            printf("  state : \033[33m" "PAUSED\033[0m " "(fifo open, input off)\n");
+            printf("  path  : %s\n", data.fifoname);
+            printf("  fd    : %d\n", data.fifofd);
         }
         else
         {
-            printf(
-                "  state : \033[2m"
-                "OFF\033[0m "
-                "(no fifo)\n");
+            printf("  state : \033[2m" "OFF\033[0m " "(no fifo)\n");
         }
         return RETURN_SUCCESS;
     }
@@ -94,8 +77,7 @@ errno_t cli_fifo(void)
         const char *path = NULL;
         if(data.cmdNBarg >= 3)
         {
-            path = data.cmdargtoken[2]
-                   .val.string;
+            path = data.cmdargtoken[2] .val.string;
         }
         if(cli_fifo_open(path) != 0)
         {
@@ -109,24 +91,16 @@ errno_t cli_fifo(void)
     {
         if(data.cmdNBarg < 3)
         {
-            printf(
-                "Usage: fifo open "
-                "<path>\n");
+            printf("Usage: fifo open " "<path>\n");
             return RETURN_FAILURE;
         }
         /* Check that the FIFO exists */
-        const char *path =
-            data.cmdargtoken[2]
-            .val.string;
+        const char *path = data.cmdargtoken[2] .val.string;
         struct stat sb;
         if(stat(path, &sb) != 0
            || !S_ISFIFO(sb.st_mode))
         {
-            printf(
-                "\033[31mfifo open:"
-                " '%s' is not a "
-                "FIFO\033[0m\n",
-                path);
+            printf("\033[31mfifo open:" " '%s' is not a " "FIFO\033[0m\n", path);
             return RETURN_FAILURE;
         }
         if(cli_fifo_open(path) != 0)
@@ -141,14 +115,10 @@ errno_t cli_fifo(void)
     {
         if(data.fifofd < 0)
         {
-            printf(
-                "fifo: no fifo open\n");
+            printf("fifo: no fifo open\n");
             return RETURN_SUCCESS;
         }
-        printf(
-            "\033[36m[fifo]\033[0m "
-            "closing: %s\n",
-            data.fifoname);
+        printf("\033[36m[fifo]\033[0m " "closing: %s\n", data.fifoname);
         cli_fifo_close();
         return RETURN_SUCCESS;
     }
@@ -158,16 +128,11 @@ errno_t cli_fifo(void)
     {
         if(data.fifofd < 0)
         {
-            printf(
-                "fifo: no fifo open "
-                "(use 'fifo create' "
-                "first)\n");
+            printf("fifo: no fifo open " "(use 'fifo create' " "first)\n");
             return RETURN_FAILURE;
         }
         data.fifoON = 1;
-        printf(
-            "\033[36m[fifo]\033[0m "
-            "input enabled\n");
+        printf("\033[36m[fifo]\033[0m " "input enabled\n");
         return RETURN_SUCCESS;
     }
 
@@ -175,20 +140,14 @@ errno_t cli_fifo(void)
     if(strcmp(sub, "off") == 0)
     {
         data.fifoON = 0;
-        printf(
-            "\033[36m[fifo]\033[0m "
-            "input disabled\n");
+        printf("\033[36m[fifo]\033[0m " "input disabled\n");
         return RETURN_SUCCESS;
     }
 
     /* Unknown sub-command */
     printf(
         "fifo: unknown sub-command "
-        "'%s'\n"
-        "Usage: fifo "
-        "[create|open|close|on|off"
-        "|status]\n",
-        sub);
+        "'%s'\n" "Usage: fifo " "[create|open|close|on|off" "|status]\n", sub);
     return RETURN_FAILURE;
 }
 
@@ -214,20 +173,16 @@ errno_t cli_list_streams(void)
     {
         while((ent = readdir(dir)) != NULL)
         {
-            char *ext = strstr(
-                ent->d_name, ".im.shm");
+            char *ext = strstr(ent->d_name, ".im.shm");
             if(ext != NULL
                && strcmp(ext, ".im.shm") == 0)
             {
-                int namelen =
-                    ext - ent->d_name;
+                int namelen = ext - ent->d_name;
                 if(!first)
                 {
                     printf(" ");
                 }
-                printf("%.*s",
-                       namelen,
-                       ent->d_name);
+                printf("%.*s", namelen, ent->d_name);
                 first = 0;
             }
         }
@@ -256,22 +211,17 @@ errno_t cli_list_fps(void)
             if(strncmp(ent->d_name,
                        "fps.", 4) == 0)
             {
-                char *ext = strstr(
-                    ent->d_name, ".datadir");
+                char *ext = strstr(ent->d_name, ".datadir");
                 if(ext != NULL
                    && strcmp(ext, ".datadir")
                       == 0)
                 {
-                    int namelen =
-                        ext
-                        - (ent->d_name + 4);
+                    int namelen = ext - (ent->d_name + 4);
                     if(!first)
                     {
                         printf(" ");
                     }
-                    printf("%.*s",
-                           namelen,
-                           ent->d_name + 4);
+                    printf("%.*s", namelen, ent->d_name + 4);
                     first = 0;
                 }
             }

@@ -120,12 +120,7 @@ static const builtin_func builtins[] =
  */
 static inline int is_ident_char(int c)
 {
-    return isalnum(c)
-        || c == '_'
-        || c == '.'
-        || c == '$'
-        || c == ':'
-        || c == '?';
+    return isalnum(c) || c == '_' || c == '.' || c == '$' || c == ':' || c == '?';
 }
 
 /**
@@ -228,11 +223,7 @@ int cli_tokenize(
             {
                 if (data.core.Debug > 0)
                 {
-                    printf(
-                        "DEBUG: TOKENIZER: \"%.*s\" "
-                        "is an operator/punct\n",
-                        oplen, p
-                    );
+                    printf("DEBUG: TOKENIZER: \"%.*s\" " "is an operator/punct\n", oplen, p);
                 }
                 tokens[nt].type = optype;
                 nt++;
@@ -266,9 +257,7 @@ int cli_tokenize(
                 if (pfx == 'x' || pfx == 'X')
                 {
                     tokens[nt].type  = TOK_LONG;
-                    tokens[nt].val_l =
-                        strtol(start, (char **)&p,
-                               16);
+                    tokens[nt].val_l = strtol(start, (char **)&p, 16);
                     nt++;
                     continue;
                 }
@@ -276,8 +265,7 @@ int cli_tokenize(
                 {
                     p += 2;
                     tokens[nt].type  = TOK_LONG;
-                    tokens[nt].val_l =
-                        strtol(p, (char **)&p, 8);
+                    tokens[nt].val_l = strtol(p, (char **)&p, 8);
                     nt++;
                     continue;
                 }
@@ -285,8 +273,7 @@ int cli_tokenize(
                 {
                     p += 2;
                     tokens[nt].type  = TOK_LONG;
-                    tokens[nt].val_l =
-                        strtol(p, (char **)&p, 2);
+                    tokens[nt].val_l = strtol(p, (char **)&p, 2);
                     nt++;
                     continue;
                 }
@@ -332,27 +319,18 @@ int cli_tokenize(
                 {
                     printf(
                         "DEBUG: TOKENIZER: \"%.*s\""
-                        " is a float -> %f\n",
-                        (int)(p - start),
-                        start,
-                        tokens[nt].val_d
-                    );
+                        " is a float -> %f\n", (int)(p - start), start, tokens[nt].val_d);
                 }
             }
             else
             {
                 tokens[nt].type  = TOK_LONG;
-                tokens[nt].val_l = strtol(start,
-                                          NULL, 10);
+                tokens[nt].val_l = strtol(start, NULL, 10);
                 if (data.core.Debug > 0)
                 {
                     printf(
                         "DEBUG: TOKENIZER: \"%.*s\""
-                        " is a long -> %ld\n",
-                        (int)(p - start),
-                        start,
-                        tokens[nt].val_l
-                    );
+                        " is a long -> %ld\n", (int)(p - start), start, tokens[nt].val_l);
                 }
             }
             nt++;
@@ -375,25 +353,18 @@ int cli_tokenize(
                      builtins[i].name != NULL;
                      i++)
                 {
-                    size_t blen =
-                        strlen(builtins[i].name);
+                    size_t blen = strlen(builtins[i].name);
 
                     if (strncmp(p,
                                 builtins[i].name,
                                 blen) == 0)
                     {
-                        tokens[nt].type =
-                            builtins[i].ttype;
-                        tokens[nt].fnctptr =
-                            builtins[i].fptr;
+                        tokens[nt].type = builtins[i].ttype;
+                        tokens[nt].fnctptr = builtins[i].fptr;
                         if (data.core.Debug > 0)
                         {
                             printf(
-                                "DEBUG: TOKENIZER:"
-                                " \"%.*s\" is a "
-                                "function\n",
-                                (int) blen, p
-                            );
+                                "DEBUG: TOKENIZER:" " \"%.*s\" is a " "function\n", (int) blen, p);
                         }
                         nt++;
                         p += blen;
@@ -442,23 +413,16 @@ int cli_tokenize(
              * call an unrecognized function. */
             if (*p == '(')
             {
-                size_t nlen =
-                    (size_t)(p - start);
+                size_t nlen = (size_t)(p - start);
                 if (nlen
                     >= CLI_CALC_TOKEN_MAXLEN)
                 {
-                    nlen =
-                        CLI_CALC_TOKEN_MAXLEN
-                        - 1;
+                    nlen = CLI_CALC_TOKEN_MAXLEN - 1;
                 }
-                char fname[
-                    CLI_CALC_TOKEN_MAXLEN];
+                char fname[CLI_CALC_TOKEN_MAXLEN];
                 memcpy(fname, start, nlen);
                 fname[nlen] = '\0';
-                fprintf(stderr,
-                        "ERROR: unknown "
-                        "function "
-                        "'%s'\n", fname);
+                fprintf(stderr, "ERROR: unknown " "function " "'%s'\n", fname);
                 return -1;
             }
 
@@ -472,10 +436,7 @@ int cli_tokenize(
 
             if (data.core.Debug > 0)
             {
-                printf(
-                    "Found string %s\n",
-                    tokens[nt].sval
-                );
+                printf("Found string %s\n", tokens[nt].sval);
             }
 
             /* classify the identifier */
@@ -486,10 +447,7 @@ int cli_tokenize(
                 tokens[nt].type = TOK_VAR;
                 if (data.core.Debug > 0)
                 {
-                    printf(
-                        "DEBUG: TOKENIZER: \"%s\""
-                        " IS A VARIABLE\n", s
-                    );
+                    printf("DEBUG: TOKENIZER: \"%s\"" " IS A VARIABLE\n", s);
                 }
             }
             else if (image_ID(
@@ -500,22 +458,16 @@ int cli_tokenize(
                 tokens[nt].type = TOK_IMAGE;
                 if (data.core.Debug > 0)
                 {
-                    printf(
-                        "DEBUG: TOKENIZER: \"%s\""
-                        " IS AN IMAGE\n", s
-                    );
+                    printf("DEBUG: TOKENIZER: \"%s\"" " IS AN IMAGE\n", s);
                 }
             }
             /* Bracket token: try bare name
              * for sliced stream references */
             else if (strchr(s, '[') != NULL)
             {
-                char bare[
-                    CLI_CALC_TOKEN_MAXLEN];
-                const char *bk =
-                    strchr(s, '[');
-                size_t bn =
-                    (size_t)(bk - s);
+                char bare[CLI_CALC_TOKEN_MAXLEN];
+                const char *bk = strchr(s, '[');
+                size_t bn = (size_t)(bk - s);
                 if (bn > 0
                     && bn
                        < CLI_CALC_TOKEN_MAXLEN)
@@ -529,13 +481,11 @@ int cli_tokenize(
                                 .NB_MAX_IMAGE)
                         != -1)
                     {
-                        tokens[nt].type =
-                            TOK_IMAGE;
+                        tokens[nt].type = TOK_IMAGE;
                     }
                     else
                     {
-                        tokens[nt].type =
-                            TOK_NVAR;
+                        tokens[nt].type = TOK_NVAR;
                     }
                 }
                 else
@@ -553,8 +503,7 @@ int cli_tokenize(
                      i < (long) data.NBcmd;
                      i++)
                 {
-                    size_t cmdlen =
-                        strlen(data.cmd[i].key);
+                    size_t cmdlen = strlen(data.cmd[i].key);
 
                     if (strncmp(
                             s,
@@ -565,18 +514,13 @@ int cli_tokenize(
                             || s[cmdlen] == ' '))
                     {
                         data.cmdindex = i;
-                        tokens[nt].type =
-                            TOK_COMMAND;
+                        tokens[nt].type = TOK_COMMAND;
                         found_cmd = 1;
                         if (data.core.Debug > 0)
                         {
                             printf(
                                 "DEBUG: TOKENIZER:"
-                                " \"%s\" IS A "
-                                "COMMAND (cmd"
-                                " %ld)\n",
-                                s, i
-                            );
+                                " \"%s\" IS A " "COMMAND (cmd" " %ld)\n", s, i);
                         }
                         break;
                     }
@@ -587,11 +531,7 @@ int cli_tokenize(
                     tokens[nt].type = TOK_NVAR;
                     if (data.core.Debug > 0)
                     {
-                        printf(
-                            "DEBUG: TOKENIZER:"
-                            " \"%s\" IS A NEW"
-                            " VARIABLE\n", s
-                        );
+                        printf("DEBUG: TOKENIZER:" " \"%s\" IS A NEW" " VARIABLE\n", s);
                     }
                 }
             }
@@ -600,10 +540,7 @@ int cli_tokenize(
                 tokens[nt].type = TOK_NVAR;
                 if (data.core.Debug > 0)
                 {
-                    printf(
-                        "DEBUG: TOKENIZER: \"%s\""
-                        " IS A NEW VARIABLE\n", s
-                    );
+                    printf("DEBUG: TOKENIZER: \"%s\"" " IS A NEW VARIABLE\n", s);
                 }
             }
 
@@ -616,9 +553,7 @@ int cli_tokenize(
         {
             printf(
                 "DEBUG: TOKENIZER: unrecognised char"
-                " [hex %02X] length 1\n",
-                (unsigned char) *p
-            );
+                " [hex %02X] length 1\n", (unsigned char) *p);
         }
         return -1;
     }

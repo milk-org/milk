@@ -34,19 +34,13 @@ static int fpsCTRL_inline_edit_param(
     int p_idx)
 {
     char curval[200];
-    functionparameter_GetParamValueString(
-        &fps[fps_idx].parray[p_idx],
-        curval,
-        200);
+    functionparameter_GetParamValueString(&fps[fps_idx].parray[p_idx], curval, 200);
 
     char typestr[STRINGMAXLEN_FPSTYPE];
-    functionparameter_GetTypeString(
-        fps[fps_idx].parray[p_idx].type,
-        typestr);
+    functionparameter_GetTypeString(fps[fps_idx].parray[p_idx].type, typestr);
 
     /* Strip FPS name prefix from keyword */
-    const char *display_kw =
-        fps[fps_idx].parray[p_idx].keywordfull;
+    const char *display_kw = fps[fps_idx].parray[p_idx].keywordfull;
     int prefix_len = strlen(fps[fps_idx].md->name);
     if(strncmp(display_kw,
                fps[fps_idx].md->name,
@@ -66,8 +60,7 @@ static int fpsCTRL_inline_edit_param(
     /* Position at bottom of terminal */
     {
         char posbuf[32];
-        int n = snprintf(posbuf, sizeof(posbuf),
-                         "\033[%d;1H", sc_term_rows);
+        int n = snprintf(posbuf, sizeof(posbuf), "\033[%d;1H", sc_term_rows);
         if(n > 0)
         {
             if(write(STDOUT_FILENO,
@@ -88,9 +81,7 @@ static int fpsCTRL_inline_edit_param(
         {
             n = snprintf(prompt, sizeof(prompt),
                          "\033[1;31m"
-                         " [%s] %s = %s  (read-only)"
-                         "\033[0m",
-                         typestr, display_kw, curval);
+                         " [%s] %s = %s  (read-only)" "\033[0m", typestr, display_kw, curval);
             if(n > 0)
             {
                 if(write(STDOUT_FILENO,
@@ -111,10 +102,7 @@ static int fpsCTRL_inline_edit_param(
                      "\033[1;36m"
                      " [%s] %s"
                      "\033[0m"
-                     " (was: "
-                     "\033[33m%s\033[0m"
-                     ") new value: ",
-                     typestr, display_kw, curval);
+                     " (was: " "\033[33m%s\033[0m" ") new value: ", typestr, display_kw, curval);
         if(n > 0)
         {
             if(write(STDOUT_FILENO,
@@ -202,9 +190,7 @@ static int fpsCTRL_inline_edit_param(
                     &fps[fps_idx], p_idx, buf) != 0)
         {
             /* Show error briefly */
-            char errmsg[] =
-                "\033[1;31m  ERROR: invalid value"
-                "\033[0m";
+            char errmsg[] = "\033[1;31m  ERROR: invalid value" "\033[0m";
             if(write(STDOUT_FILENO,
                      errmsg, sizeof(errmsg) - 1)
                     < 0) {}
@@ -220,13 +206,11 @@ static int fpsCTRL_inline_edit_param(
                         ".procinfo.", 10)
                     == 0)
             {
-                fps[fps_idx]
-                .md->processinfo_change_cnt++;
+                fps[fps_idx] .md->processinfo_change_cnt++;
             }
 
             /* Notify GUI */
-            fps[fps_idx].md->signal |=
-                FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+            fps[fps_idx].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
             /* Save to disk if needed */
             if(fps[fps_idx]
@@ -235,13 +219,9 @@ static int fpsCTRL_inline_edit_param(
                     & FPFLAG_SAVEONCHANGE)
             {
                 functionparameter_WriteParameterToDisk(
-                    &fps[fps_idx],
-                    p_idx,
-                    "setval",
-                    "UserInputSetParamValue");
+                    &fps[fps_idx], p_idx, "setval", "UserInputSetParamValue");
 
-                functionparameter_SaveFPS2disk(
-                    &fps[fps_idx]);
+                functionparameter_SaveFPS2disk(&fps[fps_idx]);
             }
         }
     }
@@ -329,8 +309,7 @@ int fpsCTRL_TUI_process_user_key(
         /* CTRL+LEFT/RIGHT handled below in the switch */
         if(ch == 'v' || ch == 'V')
         {
-            fpsCTRLvar->fpsCTRL_DisplayVerbose =
-                !fpsCTRLvar->fpsCTRL_DisplayVerbose;
+            fpsCTRLvar->fpsCTRL_DisplayVerbose = !fpsCTRLvar->fpsCTRL_DisplayVerbose;
             if(write(STDOUT_FILENO,
                      "\033[2J", 4) < 0) {}
         }
@@ -354,13 +333,11 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
         case 'S':     // Toggle sort mode (legacy)
-            fpsCTRLvar->sort_mode =
-                (fpsCTRLvar->sort_mode + 1) % 2;
+            fpsCTRLvar->sort_mode = (fpsCTRLvar->sort_mode + 1) % 2;
             break;
 
         case ']':     // Next sort column
-            fpsCTRLvar->sort_mode =
-                (fpsCTRLvar->sort_mode + 1) % 3;
+            fpsCTRLvar->sort_mode = (fpsCTRLvar->sort_mode + 1) % 3;
             break;
 
         case '[':     // Toggle sort direction (future)
@@ -417,14 +394,8 @@ int fpsCTRL_TUI_process_user_key(
                     {
                         strncpy(
                             fpsCTRLvar->milkseq_name,
-                            names[next_idx],
-                            sizeof(fpsCTRLvar
-                                   ->milkseq_name)
-                            - 1);
-                        fpsCTRLvar->milkseq_name[
-                            sizeof(fpsCTRLvar
-                                   ->milkseq_name)
-                            - 1] = '\0';
+                            names[next_idx], sizeof(fpsCTRLvar ->milkseq_name) - 1);
+                        fpsCTRLvar->milkseq_name[sizeof(fpsCTRLvar ->milkseq_name) - 1] = '\0';
                     }
                     else
                     {
@@ -436,8 +407,7 @@ int fpsCTRL_TUI_process_user_key(
 
         // ============ SCREENS
 
-        case ANSI_KEY_RESIZE:
-            TUI_clearscreen(NULL, NULL);
+        case ANSI_KEY_RESIZE: TUI_clearscreen(NULL, NULL);
             break;
 
         case 'h': // help
@@ -460,8 +430,7 @@ int fpsCTRL_TUI_process_user_key(
             if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
-        case ANSI_KEY_CTRL_RIGHT:
-            fpsCTRLvar->fpsCTRL_DisplayMode++;
+        case ANSI_KEY_CTRL_RIGHT: fpsCTRLvar->fpsCTRL_DisplayMode++;
             if(fpsCTRLvar->fpsCTRL_DisplayMode > 4)
             {
                 fpsCTRLvar->fpsCTRL_DisplayMode = 1;
@@ -469,8 +438,7 @@ int fpsCTRL_TUI_process_user_key(
             if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
-        case ANSI_KEY_CTRL_LEFT:
-            fpsCTRLvar->fpsCTRL_DisplayMode--;
+        case ANSI_KEY_CTRL_LEFT: fpsCTRLvar->fpsCTRL_DisplayMode--;
             if(fpsCTRLvar->fpsCTRL_DisplayMode < 1)
             {
                 fpsCTRLvar->fpsCTRL_DisplayMode = 4;
@@ -482,12 +450,7 @@ int fpsCTRL_TUI_process_user_key(
             functionparameter_scan_fps(
                 fpsCTRLvar->mode,
                 fpsCTRLvar->fpsnamemask,
-                fps,
-                keywnode,
-                &fpsCTRLvar->NBkwn,
-                &fpsCTRLvar->NBfps,
-                &fpsCTRLvar->NBindex,
-                0);
+                fps, keywnode, &fpsCTRLvar->NBkwn, &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex, 0);
             TUI_clearscreen(NULL, NULL);
             break;
 
@@ -500,12 +463,7 @@ int fpsCTRL_TUI_process_user_key(
             functionparameter_scan_fps(
                 fpsCTRLvar->mode,
                 fpsCTRLvar->fpsnamemask,
-                fps,
-                keywnode,
-                &fpsCTRLvar->NBkwn,
-                &(fpsCTRLvar->NBfps),
-                &fpsCTRLvar->NBindex,
-                0);
+                fps, keywnode, &fpsCTRLvar->NBkwn, &(fpsCTRLvar->NBfps), &fpsCTRLvar->NBindex, 0);
             TUI_clearscreen(NULL, NULL);
             fpsCTRLvar->run_display = 0; // skip next display
             fpsCTRLvar->fpsindexSelected = 0; // safeguard
@@ -532,18 +490,13 @@ int fpsCTRL_TUI_process_user_key(
             functionparameter_scan_fps(
                 fpsCTRLvar->mode,
                 fpsCTRLvar->fpsnamemask,
-                fps,
-                keywnode,
-                &fpsCTRLvar->NBkwn,
-                &fpsCTRLvar->NBfps,
-                &fpsCTRLvar->NBindex, 0);
+                fps, keywnode, &fpsCTRLvar->NBkwn, &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex, 0);
             TUI_clearscreen(NULL, NULL);
             // safeguard in case current selection disappears
             fpsCTRLvar->fpsindexSelected = 0;
             break;
 
-        case ANSI_KEY_UP:
-            fpsCTRLvar->direction = -1;
+        case ANSI_KEY_UP: fpsCTRLvar->direction = -1;
             {
                 int l = fpsCTRLvar->currentlevel;
                 if(l < 0)
@@ -567,8 +520,7 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
 
-        case ANSI_KEY_DOWN:
-            fpsCTRLvar->direction = 1;
+        case ANSI_KEY_DOWN: fpsCTRLvar->direction = 1;
             {
                 int l = fpsCTRLvar->currentlevel;
                 if(l < 0)
@@ -597,8 +549,7 @@ int fpsCTRL_TUI_process_user_key(
             }
             break;
 
-        case ANSI_KEY_PGUP:
-            fpsCTRLvar->direction = -1;
+        case ANSI_KEY_PGUP: fpsCTRLvar->direction = -1;
             {
                 int l = fpsCTRLvar->currentlevel;
                 if(l < 0)
@@ -621,8 +572,7 @@ int fpsCTRL_TUI_process_user_key(
             }
             break;
 
-        case ANSI_KEY_PGDN:
-            fpsCTRLvar->direction = 1;
+        case ANSI_KEY_PGDN: fpsCTRLvar->direction = 1;
             {
                 int l = fpsCTRLvar->currentlevel;
                 if(l < 0)
@@ -678,8 +628,7 @@ int fpsCTRL_TUI_process_user_key(
             {
                 int ei = fpsCTRLvar->fpsindexSelected;
                 int ep = fpsCTRLvar->pindexSelected;
-                int etype =
-                    fps[ei].parray[ep].type;
+                int etype = fps[ei].parray[ep].type;
 
                 if(etype == FPTYPE_ONOFF)
                 {
@@ -690,41 +639,32 @@ int fpsCTRL_TUI_process_user_key(
                         if(fps[ei].parray[ep].fpflag
                                 & FPFLAG_ONOFF)
                         {
-                            fps[ei].parray[ep].fpflag
-                            &= ~FPFLAG_ONOFF;
-                            fps[ei].parray[ep]
-                            .val.i32[0] = 0;
+                            fps[ei].parray[ep].fpflag &= ~FPFLAG_ONOFF;
+                            fps[ei].parray[ep] .val.i32[0] = 0;
                         }
                         else
                         {
-                            fps[ei].parray[ep].fpflag
-                            |= FPFLAG_ONOFF;
-                            fps[ei].parray[ep]
-                            .val.i32[0] = 1;
+                            fps[ei].parray[ep].fpflag |= FPFLAG_ONOFF;
+                            fps[ei].parray[ep] .val.i32[0] = 1;
                         }
                         if(fps[ei].parray[ep].fpflag
                                 & FPFLAG_SAVEONCHANGE)
                         {
                             functionparameter_WriteParameterToDisk(
-                                &fps[ei], ep,
-                                "setval",
-                                "UserInputSetParamValue");
+                                &fps[ei], ep, "setval", "UserInputSetParamValue");
                         }
                         fps[ei].parray[ep].cnt0++;
-                        fps[ei].md->signal |=
-                            FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+                        fps[ei].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
                     }
                 }
                 else
                 {
-                    fpsCTRL_inline_edit_param(
-                        fps, ei, ep);
+                    fpsCTRL_inline_edit_param(fps, ei, ep);
                 }
             }
             break;
 
-        case ' ' :
-            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        case ' ' : fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             p_idx = keywnode[fpsCTRLvar->nodeSelected].pindex;
 
             // toggles ON / OFF
@@ -799,9 +739,7 @@ int fpsCTRL_TUI_process_user_key(
         break;
 
         case ctrl('r') : // stop run process
-            fps_idx =
-                keywnode[fpsCTRLvar->nodeSelected]
-                .fpsindex;
+            fps_idx = keywnode[fpsCTRLvar->nodeSelected] .fpsindex;
             functionparameter_RUNstop(&fps[fps_idx]);
             break;
 
@@ -840,9 +778,7 @@ int fpsCTRL_TUI_process_user_key(
         break;
 
         case ctrl('o'): // stop conf process
-            fps_idx =
-                keywnode[fpsCTRLvar->nodeSelected]
-                .fpsindex;
+            fps_idx = keywnode[fpsCTRLvar->nodeSelected] .fpsindex;
             functionparameter_CONFstop(&fps[fps_idx]);
             break;
 

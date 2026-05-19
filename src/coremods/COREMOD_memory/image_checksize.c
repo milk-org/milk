@@ -111,29 +111,21 @@ int COREMOD_MEMORY_check_2Dsize(
     {
         printf(
             "WARNING : image %s naxis = %d does not match expected value "
-            "2\n",
-            IDname,
-            (int) img.im->md[0].naxis);
+            "2\n", IDname, (int) img.im->md[0].naxis);
         sizeOK = 0;
     }
     if((xsize > 0) && (img.im->md[0].size[0] != xsize))
     {
         printf(
             "WARNING : image %s xsize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[0],
-            (int) xsize);
+            "%d\n", IDname, (int) img.im->md[0].size[0], (int) xsize);
         sizeOK = 0;
     }
     if((ysize > 0) && (img.im->md[0].size[1] != ysize))
     {
         printf(
             "WARNING : image %s ysize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[1],
-            (int) ysize);
+            "%d\n", IDname, (int) img.im->md[0].size[1], (int) ysize);
         sizeOK = 0;
     }
 
@@ -157,39 +149,28 @@ int COREMOD_MEMORY_check_3Dsize(
     {
         printf(
             "WARNING : image %s naxis = %d does not match expected value "
-            "3\n",
-            IDname,
-            (int) img.im->md[0].naxis);
+            "3\n", IDname, (int) img.im->md[0].naxis);
         sizeOK = 0;
     }
     if((xsize > 0) && (img.im->md[0].size[0] != xsize))
     {
         printf(
             "WARNING : image %s xsize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[0],
-            (int) xsize);
+            "%d\n", IDname, (int) img.im->md[0].size[0], (int) xsize);
         sizeOK = 0;
     }
     if((ysize > 0) && (img.im->md[0].size[1] != ysize))
     {
         printf(
             "WARNING : image %s ysize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[1],
-            (int) ysize);
+            "%d\n", IDname, (int) img.im->md[0].size[1], (int) ysize);
         sizeOK = 0;
     }
     if((zsize > 0) && (img.im->md[0].size[2] != zsize))
     {
         printf(
             "WARNING : image %s zsize = %d does not match expected value "
-            "%d\n",
-            IDname,
-            (int) img.im->md[0].size[2],
-            (int) zsize);
+            "%d\n", IDname, (int) img.im->md[0].size[2], (int) zsize);
         sizeOK = 0;
     }
 

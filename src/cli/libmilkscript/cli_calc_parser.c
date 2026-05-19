@@ -156,8 +156,7 @@ val_t mk_string(const char *s)
     r.type = VAL_STRING;
     r.lval = 0;
     r.dval = 0.0;
-    snprintf(r.sval, CLI_CALC_TOKEN_MAXLEN,
-             "%s", s);
+    snprintf(r.sval, CLI_CALC_TOKEN_MAXLEN, "%s", s);
     return r;
 }
 
@@ -176,8 +175,7 @@ int check_image(const char *name)
                 data.core.NB_MAX_IMAGE) == -1)
     {
         char msg[200];
-        snprintf(msg, 200,
-                 "Image '%s' not found", name);
+        snprintf(msg, 200, "Image '%s' not found", name);
         parse_errmsg(msg);
         return 0;
     }
@@ -189,9 +187,7 @@ int check_image(const char *name)
  */
 const char *alloc_tmpname(void)
 {
-    snprintf(calctmpimname, 200,
-             "_tmpcalc%ld",
-             data.calctmp_imindex);
+    snprintf(calctmpimname, 200, "_tmpcalc%ld", data.calctmp_imindex);
     data.calctmp_imindex++;
     return calctmpimname;
 }
@@ -230,11 +226,7 @@ void cli_parse(const char *input)
     eval_error = 0; // Do not trip error abortion logic
 
 
-    parse_ntok = cli_tokenize(
-                     input,
-                     parse_tokens,
-                     CLI_CALC_MAX_TOKENS
-                 );
+    parse_ntok = cli_tokenize(input, parse_tokens, CLI_CALC_MAX_TOKENS);
 
     if(parse_ntok <= 0)
     {
@@ -281,40 +273,29 @@ void cli_parse(const char *input)
     {
         if(data.core.Debug > 0)
         {
-            printf("\t double: %.10g\n",
-                   result.dval);
+            printf("\t double: %.10g\n", result.dval);
         }
-        data.cmdargtoken[data.cmdNBarg].type =
-            CMDARGTOKEN_TYPE_FLOAT;
-        data.cmdargtoken[data.cmdNBarg]
-        .val.numf = result.dval;
+        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_FLOAT;
+        data.cmdargtoken[data.cmdNBarg] .val.numf = result.dval;
     }
     else if(result.type == VAL_LONG)
     {
         if(data.core.Debug > 0)
         {
-            printf("\t long:   %ld\n",
-                   result.lval);
+            printf("\t long:   %ld\n", result.lval);
         }
-        data.cmdargtoken[data.cmdNBarg].type =
-            CMDARGTOKEN_TYPE_LONG;
-        data.cmdargtoken[data.cmdNBarg].val
-        .numl = result.lval;
+        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_LONG;
+        data.cmdargtoken[data.cmdNBarg].val .numl = result.lval;
     }
     else if(result.type == VAL_STRING)
     {
         if(data.core.Debug > 0)
         {
-            printf("\t string: %s\n",
-                   result.sval);
+            printf("\t string: %s\n", result.sval);
         }
         snprintf(
             data.cmdargtoken[data.cmdNBarg]
-            .val.string,
-            STRINGMAXLEN_CMDARGTOKEN_VAL,
-            "%s",
-            result.sval
-        );
+            .val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", result.sval);
         // The type for STRING was already set by AST logic
     }
 }
@@ -384,16 +365,11 @@ int cli_calc_eval_line(const char *input)
     {
         if(is_assignment)
         {
-            printf("    %s double: %.*g\n",
-                   assign_var_name,
-                   cli_float_digits,
-                   result.dval);
+            printf("    %s double: %.*g\n", assign_var_name, cli_float_digits, result.dval);
         }
         else
         {
-            printf("    double: %.*g\n",
-                   cli_float_digits,
-                   result.dval);
+            printf("    double: %.*g\n", cli_float_digits, result.dval);
         }
     }
     else if(result.type == VAL_STRING)
@@ -433,17 +409,11 @@ int cli_calc_eval_line(const char *input)
                 i < data.calctmp_imindex;
                 i++)
         {
-            snprintf(tmpn, sizeof(tmpn),
-                     "_tmpcalc%ld", i);
-            imageID tid = image_ID(
-                              tmpn,
-                              data.core.image,
-                              data.core.NB_MAX_IMAGE);
+            snprintf(tmpn, sizeof(tmpn), "_tmpcalc%ld", i);
+            imageID tid = image_ID(tmpn, data.core.image, data.core.NB_MAX_IMAGE);
             if(tid != -1)
             {
-                delete_image_ID(
-                    tmpn,
-                    DELETE_IMAGE_ERRMODE_WARNING);
+                delete_image_ID(tmpn, DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
         data.calctmp_imindex = 0;

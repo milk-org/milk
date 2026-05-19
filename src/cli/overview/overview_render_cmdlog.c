@@ -38,8 +38,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
      * head points to next write, so the most recent entry
      * is at (head - 1), and the oldest visible is at
      * (head - show). */
-    int start = (log->head - show + OV_CMDLOG_MAX)
-                % OV_CMDLOG_MAX;
+    int start = (log->head - show + OV_CMDLOG_MAX) % OV_CMDLOG_MAX;
 
     /* Dark background for the log strip */
     ov_rgb_t bg = {20, 20, 30};
@@ -66,10 +65,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         localtime_r(&e->ts.tv_sec, &tm_buf);
         char tstr[12];
         snprintf(tstr, sizeof(tstr),
-                 "%02d:%02d:%02d",
-                 tm_buf.tm_hour,
-                 tm_buf.tm_min,
-                 tm_buf.tm_sec);
+                 "%02d:%02d:%02d", tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
 
         /* Status bullet color */
         ov_rgb_t bullet_fg;

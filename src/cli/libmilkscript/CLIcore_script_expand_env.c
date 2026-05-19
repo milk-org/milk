@@ -109,14 +109,10 @@ static void expand_env_array_all(
             {
                 if(e > 0)
                 {
-                    strncat(out_buf, " ",
-                            STRINGMAXLEN_CLICMDLINE
-                            - strlen(out_buf) - 1);
+                    strncat(out_buf, " ", STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
                 }
                 strncat(out_buf,
-                        cli_assoc[a].vals[e],
-                        STRINGMAXLEN_CLICMDLINE
-                        - strlen(out_buf) - 1);
+                        cli_assoc[a].vals[e], STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
             }
         }
         *out_val = out_buf;
@@ -144,14 +140,10 @@ static void expand_env_array_all(
                 {
                     if(e > 0)
                     {
-                        strncat(out_buf, " ",
-                                STRINGMAXLEN_CLICMDLINE
-                                - strlen(out_buf) - 1);
+                        strncat(out_buf, " ", STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
                     }
                     strncat(out_buf,
-                            cli_arrays[a].elem[e],
-                            STRINGMAXLEN_CLICMDLINE
-                            - strlen(out_buf) - 1);
+                            cli_arrays[a].elem[e], STRINGMAXLEN_CLICMDLINE - strlen(out_buf) - 1);
                 }
             }
             *out_val = out_buf;
@@ -165,8 +157,7 @@ static void expand_env_array_all(
     {
         char cnt_buf[32];
         snprintf(cnt_buf, sizeof(cnt_buf), "%d", elems_count);
-        strncpy(out_buf, cnt_buf,
-                STRINGMAXLEN_CLICMDLINE - 1);
+        strncpy(out_buf, cnt_buf, STRINGMAXLEN_CLICMDLINE - 1);
         out_buf[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     }
 
@@ -301,8 +292,7 @@ static void apply_modifier(
     {
         if(*val == NULL || (*val)[0] == '\0')
         {
-            printf("CLI expand error: %s: %s\n",
-                   varname, mod_arg);
+            printf("CLI expand error: %s: %s\n", varname, mod_arg);
             *val = "";
         }
         return;
@@ -310,8 +300,7 @@ static void apply_modifier(
 
     if(op == '+')
     {
-        *val = (*val != NULL && (*val)[0] != '\0')
-               ? mod_arg : "";
+        *val = (*val != NULL && (*val)[0] != '\0') ? mod_arg : "";
         return;
     }
 
@@ -609,17 +598,12 @@ void cli_expand_env(
 
             if(strcmp(idx_val, "@") == 0)
             {
-                expand_env_array_all(varname,
-                                     is_length,
-                                     all_buf,
-                                     &val);
+                expand_env_array_all(varname, is_length, all_buf, &val);
                 is_length = 0; /* already handled */
             }
             else
             {
-                expand_env_array_index(varname,
-                                       idx_val,
-                                       &val);
+                expand_env_array_index(varname, idx_val, &val);
             }
         }
         else
@@ -632,9 +616,7 @@ void cli_expand_env(
         val_buf[0] = '\0';
         if(mod_op[0] != '\0')
         {
-            apply_modifier(varname, mod_op, mod_arg,
-                           val_buf, (int) sizeof(val_buf),
-                           &val);
+            apply_modifier(varname, mod_op, mod_arg, val_buf, (int) sizeof(val_buf), &val);
         }
 
         /* ---- Emit result ---- */

@@ -45,12 +45,8 @@ imageID arith_image_extract3D(
  *  PARAMS
  * ============================================================= */
 
-static char p_inname[
-     FUNCTION_PARAMETER_STRMAXLEN]
-    = "im";
-static char p_outname[
-     FUNCTION_PARAMETER_STRMAXLEN]
-    = "ime";
+static char p_inname[FUNCTION_PARAMETER_STRMAXLEN] = "im";
+static char p_outname[FUNCTION_PARAMETER_STRMAXLEN] = "ime";
 static int64_t p_sizex = 256;
 static int64_t p_sizey = 256;
 static int64_t p_sizez = 5;
@@ -106,10 +102,7 @@ FPS_CMDSETTINGS_INIT(2d, CLIcmddata_2d, FPS_app_info_2d)
 
 static errno_t compute_2d()
 {
-    arith_image_extract2D(
-        p_inname, p_outname,
-        p_sizex, p_sizey,
-        p_xstart, p_ystart);
+    arith_image_extract2D(p_inname, p_outname, p_sizex, p_sizey, p_xstart, p_ystart);
     return RETURN_SUCCESS;
 }
 
@@ -166,9 +159,7 @@ static FPS_CLI_BINDING my_bindings[] =
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
-    sizeof(my_bindings) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] =
 {
@@ -185,9 +176,7 @@ FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 static MILK_HOT errno_t compute_function()
 {
     arith_image_extract3D(
-        p_inname, p_outname,
-        p_sizex, p_sizey, p_sizez,
-        p_xstart, p_ystart, p_zstart);
+        p_inname, p_outname, p_sizex, p_sizey, p_sizez, p_xstart, p_ystart, p_zstart);
     return RETURN_SUCCESS;
 }
 
@@ -202,9 +191,7 @@ static FPS_CLI_BINDING bindings_2d[] =
 {
     FPS_PARAMS_2D(FPS_X_BINDING)
 };
-static const int nb_bindings_2d =
-    sizeof(bindings_2d) /
-    sizeof(FPS_CLI_BINDING);
+static const int nb_bindings_2d = sizeof(bindings_2d) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF farg_2d[] =
 {
     FPS_PARAMS_2D(FPS_X_FARG)
@@ -213,41 +200,28 @@ static CLICMDARGDEF farg_2d[] =
 static errno_t CLIfunction_2d(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info_2d,
-               farg_2d, &CLIcmddata_2d,
-               bindings_2d, nb_bindings_2d,
-               compute_2d);
+               &FPS_app_info_2d, farg_2d, &CLIcmddata_2d, bindings_2d, nb_bindings_2d, compute_2d);
 }
 
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata,
-               my_bindings, nb_bindings,
-               compute_function);
+               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t
 CLIADDCMD_COREMOD_arith__image_crop()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(
-        farg_2d, bindings_2d,
-        nb_bindings_2d);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg_2d, bindings_2d, nb_bindings_2d);
 
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata_2d,
-                       CLIfunction_2d);
-        CLIcmddata_2d.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata_2d, CLIfunction_2d);
+        CLIcmddata_2d.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
     {
-        int cmdi = RegisterCLIcmd(
-                       CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -276,11 +250,8 @@ imageID arith_image_crop(
         end_c[i]   = 0;
     }
 
-    IMGID imgin =
-        imgid_make_from_name(ID_name);
-    resolveIMGID(&imgin,
-                 ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    IMGID imgin = imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
     naxis = imgin.md->naxis;
     if(naxis < 1)
@@ -288,18 +259,14 @@ imageID arith_image_crop(
         PRINT_ERROR("naxis < 1");
         return -1;
     }
-    naxes = (uint32_t *) malloc(
-                sizeof(uint32_t) * naxis);
+    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        PRINT_ERROR(
-            "malloc() error,"
-            " naxis = %ld", naxis);
+        PRINT_ERROR("malloc() error," " naxis = %ld", naxis);
         return -1;
     }
 
-    naxesout = (uint32_t *) malloc(
-                   sizeof(uint32_t) * naxis);
+    naxesout = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxesout == NULL)
     {
         PRINT_ERROR("malloc() error");
@@ -313,25 +280,20 @@ imageID arith_image_crop(
     naxesout[0] = 0;
     for(i = 0; i < naxis; i++)
     {
-        naxes[i] =
-            imgin.md->size[i];
-        naxesout[i] =
-            end[i] - start[i];
+        naxes[i] = imgin.md->size[i];
+        naxesout[i] = end[i] - start[i];
     }
 
-    IMGID imgout =
-        imgid_make_from_name(ID_out);
+    IMGID imgout = imgid_make_from_name(ID_out);
     imgout.mdt->naxis = naxis;
     for(i = 0; i < naxis; i++)
     {
-        imgout.mdt->size[i] =
-            naxesout[i];
+        imgout.mdt->size[i] = naxesout[i];
     }
     imgout.mdt->datatype = datatype;
     imgout.mdt->shared = dcshareddft;
     imgout.mdt->NBkw = NB_KEYWNODE_MAX;
-    imgout.im = (IMAGE *) calloc(
-                    1, sizeof(IMAGE));
+    imgout.im = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
     imageID IDout = imgout.ID;
 
@@ -382,9 +344,7 @@ imageID arith_image_crop(
     {
         printf(
             "Error (arith_image_crop): cropdim [%ld] and naxis [%ld] are "
-            "different\n",
-            cropdim,
-            naxis);
+            "different\n", cropdim, naxis);
     }
 
     if(naxis == 1)
@@ -514,23 +474,18 @@ imageID arith_image_extract2D(
     imageID      IDout;
 
 
-    IMGID img =
-        imgid_make_from_name(in_name);
-    resolveIMGID(&img,
-                 ERRMODE_ABORT,
-                 dcimg, dcnimg);
+    IMGID img = imgid_make_from_name(in_name);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
     int naxis = img.md->naxis;
 
-    start = (int64_t *) malloc(
-                sizeof(int64_t) * naxis);
+    start = (int64_t *) malloc(sizeof(int64_t) * naxis);
     if(start == NULL)
     {
         PRINT_ERROR("malloc() error");
         return -1;
     }
 
-    end = (int64_t *) malloc(
-              sizeof(int64_t) * naxis);
+    end = (int64_t *) malloc(sizeof(int64_t) * naxis);
     if(end == NULL)
     {
         PRINT_ERROR("malloc() error");
@@ -548,9 +503,7 @@ imageID arith_image_extract2D(
     start[1] = ystart;
     end[0]   = xstart + size_x;
     end[1]   = ystart + size_y;
-    IDout = arith_image_crop(
-                in_name, out_name,
-                start, end, naxis);
+    IDout = arith_image_crop(in_name, out_name, start, end, naxis);
 
     free(start);
     free(end);
@@ -578,9 +531,7 @@ imageID arith_image_extract3D(
         PRINT_ERROR(
             "malloc() error, params: "
             "%s %s %ld %ld %ld %ld %ld %ld",
-            in_name, out_name,
-            size_x, size_y, size_z,
-            xstart, ystart, zstart);
+            in_name, out_name, size_x, size_y, size_z, xstart, ystart, zstart);
         return -1;
     }
 
@@ -590,9 +541,7 @@ imageID arith_image_extract3D(
         PRINT_ERROR(
             "malloc() error, params: "
             "%s %s %ld %ld %ld %ld %ld %ld",
-            in_name, out_name,
-            size_x, size_y, size_z,
-            xstart, ystart, zstart);
+            in_name, out_name, size_x, size_y, size_z, xstart, ystart, zstart);
         free(start);
         return -1;
     }

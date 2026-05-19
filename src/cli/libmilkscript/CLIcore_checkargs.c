@@ -33,44 +33,25 @@ static const char *CLIargtype_to_string(uint32_t type)
 {
     switch(type)
     {
-    case FPTYPE_FLOAT32:
-        return "FLOAT32";
-    case FPTYPE_FLOAT64:
-        return "FLOAT64";
-    case FPTYPE_ONOFF:
-        return "ONOFF";
-    case FPTYPE_INT32:
-        return "INT32";
-    case FPTYPE_UINT32:
-        return "UINT32";
-    case FPTYPE_INT64:
-        return "INT64";
-    case FPTYPE_UINT64:
-        return "UINT64";
-    case FPTYPE_STRING_NOT_STREAM:
-        return "STR_NOT_IMG";
-    case FPTYPE_STREAMNAME:
-        return "STREAM";
-    case FPTYPE_STRING:
-        return "STRING";
-    case FPTYPE_FILENAME:
-        return "FILENAME";
-    case FPTYPE_FITSFILENAME:
-        return "FITSFILE";
-    case FPTYPE_FPSNAME:
-        return "FPSNAME";
-    case FPTYPE_EXECFILENAME:
-        return "EXECFILE";
-    case FPTYPE_DIRNAME:
-        return "DIRNAME";
-    case FPTYPE_PID:
-        return "PID";
-    case FPTYPE_TIMESPEC:
-        return "TIMESPEC";
-    case CLIARG_MISSING:
-        return "MISSING";
-    default:
-        return "UNKNOWN";
+    case FPTYPE_FLOAT32: return "FLOAT32";
+    case FPTYPE_FLOAT64: return "FLOAT64";
+    case FPTYPE_ONOFF: return "ONOFF";
+    case FPTYPE_INT32: return "INT32";
+    case FPTYPE_UINT32: return "UINT32";
+    case FPTYPE_INT64: return "INT64";
+    case FPTYPE_UINT64: return "UINT64";
+    case FPTYPE_STRING_NOT_STREAM: return "STR_NOT_IMG";
+    case FPTYPE_STREAMNAME: return "STREAM";
+    case FPTYPE_STRING: return "STRING";
+    case FPTYPE_FILENAME: return "FILENAME";
+    case FPTYPE_FITSFILENAME: return "FITSFILE";
+    case FPTYPE_FPSNAME: return "FPSNAME";
+    case FPTYPE_EXECFILENAME: return "EXECFILE";
+    case FPTYPE_DIRNAME: return "DIRNAME";
+    case FPTYPE_PID: return "PID";
+    case FPTYPE_TIMESPEC: return "TIMESPEC";
+    case CLIARG_MISSING: return "MISSING";
+    default: return "UNKNOWN";
     }
 }
 
@@ -81,22 +62,14 @@ static const char *CMDARGTOKEN_type_to_string(uint32_t type)
 {
     switch(type)
     {
-    case 0:
-        return "UNSOLVED_TOKEN";
-    case 1:
-        return "FLOAT_TOKEN";
-    case 2:
-        return "INT_TOKEN";
-    case 3:
-        return "STRING_TOKEN";
-    case 4:
-        return "IMG_TOKEN";
-    case 5:
-        return "CMD_TOKEN";
-    case 6:
-        return "RAWSTRING_TOKEN";
-    default:
-        return CLIargtype_to_string(type);
+    case 0: return "UNSOLVED_TOKEN";
+    case 1: return "FLOAT_TOKEN";
+    case 2: return "INT_TOKEN";
+    case 3: return "STRING_TOKEN";
+    case 4: return "IMG_TOKEN";
+    case 5: return "CMD_TOKEN";
+    case 6: return "RAWSTRING_TOKEN";
+    default: return CLIargtype_to_string(type);
     }
 }
 
@@ -251,9 +224,7 @@ static int CLI_checkarg0(
                 " (expected %s, got %s)\n",
                 CLIargnum - 1,
                 CLIargtype_to_string(funcargtype),
-                CMDARGTOKEN_type_to_string(
-                    data.cmdargtoken[CLIargnum]
-                    .type));
+                CMDARGTOKEN_type_to_string(data.cmdargtoken[CLIargnum] .type));
         }
         rval = 1;
     }
@@ -356,36 +327,24 @@ static void sync_fps_to_argdata(
 {
     switch(ptype)
     {
-    case FPTYPE_FLOAT32:
-        ad->val.f32 = fp->val.f32[0];
+    case FPTYPE_FLOAT32: ad->val.f32 = fp->val.f32[0];
         break;
-    case FPTYPE_FLOAT64:
-        ad->val.f64 = fp->val.f64[0];
+    case FPTYPE_FLOAT64: ad->val.f64 = fp->val.f64[0];
         break;
-    case FPTYPE_INT32:
-        ad->val.i32 = fp->val.i32[0];
+    case FPTYPE_INT32: ad->val.i32 = fp->val.i32[0];
         break;
-    case FPTYPE_UINT32:
-        ad->val.ui32 = fp->val.ui32[0];
+    case FPTYPE_UINT32: ad->val.ui32 = fp->val.ui32[0];
         break;
-    case FPTYPE_INT64:
-        ad->val.i64 = fp->val.i64[0];
+    case FPTYPE_INT64: ad->val.i64 = fp->val.i64[0];
         break;
-    case FPTYPE_UINT64:
-        ad->val.ui64 = fp->val.ui64[0];
+    case FPTYPE_UINT64: ad->val.ui64 = fp->val.ui64[0];
         break;
-    case FPTYPE_ONOFF:
-        ad->val.i64 = fp->val.i32[0];
+    case FPTYPE_ONOFF: ad->val.i64 = fp->val.i32[0];
         break;
-    case FPTYPE_PID:
-        ad->val.i64 =
-            (int64_t) fp->val.pid[0];
+    case FPTYPE_PID: ad->val.i64 = (int64_t) fp->val.pid[0];
         break;
     case FPTYPE_TIMESPEC:
-        ad->val.f64 =
-            (double) fp->val.ts[0].tv_sec
-            + (double) fp->val.ts[0]
-            .tv_nsec * 1e-9;
+        ad->val.f64 = (double) fp->val.ts[0].tv_sec + (double) fp->val.ts[0] .tv_nsec * 1e-9;
         break;
     case FPTYPE_STRING:
     case FPTYPE_STREAMNAME:
@@ -396,10 +355,7 @@ static void sync_fps_to_argdata(
     case FPTYPE_FPSNAME:
     case FPTYPE_PROCESS:
     case FPTYPE_STRING_NOT_STREAM:
-        strncpy(
-            ad->val.s,
-            fp->val.string[0],
-            STRINGMAXLEN_CLICMDARG - 1);
+        strncpy(ad->val.s, fp->val.string[0], STRINGMAXLEN_CLICMDARG - 1);
         break;
     }
 }
@@ -430,37 +386,21 @@ static void set_fps_from_clitoken(
 {
     switch(ptype)
     {
-    case FPTYPE_INT64:
-        functionparameter_SetParamValue_INT64(
-            fps, fpstag, numl);
+    case FPTYPE_INT64: functionparameter_SetParamValue_INT64(fps, fpstag, numl);
         break;
-    case FPTYPE_UINT64:
-        functionparameter_SetParamValue_UINT64(
-            fps, fpstag, numl);
+    case FPTYPE_UINT64: functionparameter_SetParamValue_UINT64(fps, fpstag, numl);
         break;
-    case FPTYPE_INT32:
-        functionparameter_SetParamValue_INT32(
-            fps, fpstag, numl);
+    case FPTYPE_INT32: functionparameter_SetParamValue_INT32(fps, fpstag, numl);
         break;
-    case FPTYPE_UINT32:
-        functionparameter_SetParamValue_UINT32(
-            fps, fpstag, numl);
+    case FPTYPE_UINT32: functionparameter_SetParamValue_UINT32(fps, fpstag, numl);
         break;
-    case FPTYPE_FLOAT64:
-        functionparameter_SetParamValue_FLOAT64(
-            fps, fpstag, numf);
+    case FPTYPE_FLOAT64: functionparameter_SetParamValue_FLOAT64(fps, fpstag, numf);
         break;
-    case FPTYPE_FLOAT32:
-        functionparameter_SetParamValue_FLOAT32(
-            fps, fpstag, (float) numf);
+    case FPTYPE_FLOAT32: functionparameter_SetParamValue_FLOAT32(fps, fpstag, (float) numf);
         break;
-    case FPTYPE_PID:
-        functionparameter_SetParamValue_INT64(
-            fps, fpstag, (int64_t) numl);
+    case FPTYPE_PID: functionparameter_SetParamValue_INT64(fps, fpstag, (int64_t) numl);
         break;
-    case FPTYPE_TIMESPEC:
-        functionparameter_SetParamValue_TIMESPEC(
-            fps, fpstag, numf);
+    case FPTYPE_TIMESPEC: functionparameter_SetParamValue_TIMESPEC(fps, fpstag, numf);
         break;
     case FPTYPE_STRING:
     case FPTYPE_STREAMNAME:
@@ -470,13 +410,9 @@ static void set_fps_from_clitoken(
     case FPTYPE_EXECFILENAME:
     case FPTYPE_FPSNAME:
     case FPTYPE_PROCESS:
-    case FPTYPE_STRING_NOT_STREAM:
-        functionparameter_SetParamValue_STRING(
-            fps, fpstag, str);
+    case FPTYPE_STRING_NOT_STREAM: functionparameter_SetParamValue_STRING(fps, fpstag, str);
         break;
-    case FPTYPE_ONOFF:
-        functionparameter_SetParamValue_ONOFF(
-            fps, fpstag, (int) numl);
+    case FPTYPE_ONOFF: functionparameter_SetParamValue_ONOFF(fps, fpstag, (int) numl);
         break;
     }
 }
@@ -502,17 +438,12 @@ errno_t CLI_checkarg_array(
     {
         for(int arg = 0; arg < nbarg; arg++)
         {
-            long pindex = functionparameter_GetParamIndex(dcfpsptr,
-                          fpscliarg[arg].fpstag);
+            long pindex = functionparameter_GetParamIndex(dcfpsptr, fpscliarg[arg].fpstag);
             if(pindex != -1)
             {
                 uint32_t ptype = dcfpsptr->parray[pindex].type;
                 sync_fps_to_argdata(
-                    ptype,
-                    &dcfpsptr->parray[pindex],
-                    &data.cmd[data.cmdindex]
-                    .argdata[arg]
-                );
+                    ptype, &dcfpsptr->parray[pindex], &data.cmd[data.cmdindex] .argdata[arg]);
             }
         }
     }
@@ -547,15 +478,10 @@ errno_t CLI_checkarg_array(
                     printf(
                         "\n\033[1;31mERROR\033[0m"
                         " Setting parameter %s :"
-                        " input missing\n",
-                        data.cmdargtoken[1]
-                        .val.string);
-                    help_command(
-                        data.cmd[data.cmdindex]
-                        .key);
+                        " input missing\n", data.cmdargtoken[1] .val.string);
+                    help_command(data.cmd[data.cmdindex] .key);
                     DEBUG_TRACE_FEXIT();
-                    return
-                        RETURN_CLICHECKARGARRAY_FAILURE;
+                    return RETURN_CLICHECKARGARRAY_FAILURE;
                 }
 
                 // Update the parameter in FPS
@@ -563,18 +489,14 @@ errno_t CLI_checkarg_array(
                 set_fps_from_clitoken(
                     dcfpsptr, fpstag, ptype,
                     data.cmdargtoken[2].val.numl,
-                    data.cmdargtoken[2].val.numf,
-                    data.cmdargtoken[2].val.string
-                );
+                    data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.string);
 
                 char valstr[STRINGMAXLEN_FPSCLIARG_TAG];
                 functionparameter_GetParamValueString(&dcfpsptr->parray[pindex],
-                                                      valstr,
-                                                      STRINGMAXLEN_FPSCLIARG_TAG);
+                                                      valstr, STRINGMAXLEN_FPSCLIARG_TAG);
 
                 printf("Parameter %s value updated to %s in FPS\n",
-                       data.cmdargtoken[1].val.string,
-                       valstr);
+                       data.cmdargtoken[1].val.string, valstr);
                 DEBUG_TRACE_FEXIT();
                 return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
             }
@@ -588,11 +510,8 @@ errno_t CLI_checkarg_array(
         {
             printf(
                 "\n\033[1;31mERROR\033[0m"
-                " Setting arg %s :"
-                " input missing\n",
-                fpscliarg[argindexmatch].fpstag);
-            help_command(
-                data.cmd[data.cmdindex].key);
+                " Setting arg %s :" " input missing\n", fpscliarg[argindexmatch].fpstag);
+            help_command(data.cmd[data.cmdindex].key);
             DEBUG_TRACE_FEXIT();
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
@@ -605,32 +524,25 @@ errno_t CLI_checkarg_array(
             switch(fpscliarg[argindexmatch].type)  // & 0x0000FFFF)
             {
             case CLIARG_FLOAT32:
-                data.cmd[cmdi].argdata[argindexmatch].val.f32 =
-                    data.cmdargtoken[2].val.numf;
+                data.cmd[cmdi].argdata[argindexmatch].val.f32 = data.cmdargtoken[2].val.numf;
                 break;
             case CLIARG_FLOAT64:
-                data.cmd[cmdi].argdata[argindexmatch].val.f64 =
-                    data.cmdargtoken[2].val.numf;
+                data.cmd[cmdi].argdata[argindexmatch].val.f64 = data.cmdargtoken[2].val.numf;
                 break;
             case CLIARG_INT32:
-                data.cmd[cmdi].argdata[argindexmatch].val.i32 =
-                    data.cmdargtoken[2].val.numl;
+                data.cmd[cmdi].argdata[argindexmatch].val.i32 = data.cmdargtoken[2].val.numl;
                 break;
             case CLIARG_INT64:
-                data.cmd[cmdi].argdata[argindexmatch].val.i64 =
-                    data.cmdargtoken[2].val.numl;
+                data.cmd[cmdi].argdata[argindexmatch].val.i64 = data.cmdargtoken[2].val.numl;
                 break;
             case CLIARG_UINT32:
-                data.cmd[cmdi].argdata[argindexmatch].val.ui32 =
-                    data.cmdargtoken[2].val.numl;
+                data.cmd[cmdi].argdata[argindexmatch].val.ui32 = data.cmdargtoken[2].val.numl;
                 break;
             case CLIARG_UINT64:
-                data.cmd[cmdi].argdata[argindexmatch].val.ui64 =
-                    data.cmdargtoken[2].val.numl;
+                data.cmd[cmdi].argdata[argindexmatch].val.ui64 = data.cmdargtoken[2].val.numl;
                 break;
             case CLIARG_ONOFF:
-                data.cmd[cmdi].argdata[argindexmatch].val.i64 =
-                    data.cmdargtoken[2].val.numl;
+                data.cmd[cmdi].argdata[argindexmatch].val.i64 = data.cmdargtoken[2].val.numl;
                 break;
             case CLIARG_STR_NOT_IMG:
             case CLIARG_IMG:
@@ -642,8 +554,7 @@ errno_t CLI_checkarg_array(
             case FPTYPE_EXECFILENAME:
             case FPTYPE_PROCESS:
                 strncpy(data.cmd[cmdi].argdata[argindexmatch].val.s,
-                        data.cmdargtoken[2].val.string,
-                        STRINGMAXLEN_CLICMDARG - 1);
+                        data.cmdargtoken[2].val.string, STRINGMAXLEN_CLICMDARG - 1);
                 break;
             case FPTYPE_PID:
                 data.cmd[cmdi].argdata[argindexmatch].val.i64 = data.cmdargtoken[2].val.numl;
@@ -667,12 +578,7 @@ errno_t CLI_checkarg_array(
                         dcfpsptr->parray[pindex]
                         .type,
                         data.cmdargtoken[2]
-                        .val.numl,
-                        data.cmdargtoken[2]
-                        .val.numf,
-                        data.cmdargtoken[2]
-                        .val.string
-                    );
+                        .val.numl, data.cmdargtoken[2] .val.numf, data.cmdargtoken[2] .val.string);
                 }
             }
         }
@@ -680,11 +586,8 @@ errno_t CLI_checkarg_array(
         {
             printf(
                 "\n\033[1;31mERROR\033[0m"
-                " Setting arg %s :"
-                " wrong type\n",
-                fpscliarg[argindexmatch].fpstag);
-            help_command(
-                data.cmd[data.cmdindex].key);
+                " Setting arg %s :" " wrong type\n", fpscliarg[argindexmatch].fpstag);
+            help_command(data.cmd[data.cmdindex].key);
             DEBUG_TRACE_FEXIT();
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
@@ -699,32 +602,26 @@ errno_t CLI_checkarg_array(
             }
             if(fpsi == -1) // If index not yet known, look it up
             {
-                fpsi = functionparameter_GetParamIndex(
-                           dcfpsptr,
-                           fpscliarg[argindexmatch].fpstag);
+                fpsi = functionparameter_GetParamIndex(dcfpsptr, fpscliarg[argindexmatch].fpstag);
             }
 
             if((fpsi >= 0) && (fpsi < dcfpsptr->md->NBparamMAX))
             {
                 functionparameter_GetParamValueString(&dcfpsptr->parray[fpsi],
-                                                      valstr,
-                                                      STRINGMAXLEN_FPSCLIARG_TAG);
+                                                      valstr, STRINGMAXLEN_FPSCLIARG_TAG);
                 printf("Argument %s value updated to %s\n",
-                       fpscliarg[argindexmatch].fpstag,
-                       valstr);
+                       fpscliarg[argindexmatch].fpstag, valstr);
             }
             else
             {
                 printf("Argument %s value updated to %s\n",
-                       fpscliarg[argindexmatch].fpstag,
-                       data.cmdargtoken[2].val.string);
+                       fpscliarg[argindexmatch].fpstag, data.cmdargtoken[2].val.string);
             }
         }
         else
         {
             printf("Argument %s value updated to %s\n",
-                   fpscliarg[argindexmatch].fpstag,
-                   data.cmdargtoken[2].val.string);
+                   fpscliarg[argindexmatch].fpstag, data.cmdargtoken[2].val.string);
         }
 
         //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
@@ -743,55 +640,25 @@ errno_t CLI_checkarg_array(
         char argtypestring[16];
         switch(fpscliarg[arg].type)
         {
-        case CLIARG_FLOAT32:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "FLT32");
+        case CLIARG_FLOAT32: snprintf(argtypestring, sizeof(argtypestring), "FLT32");
             break;
-        case CLIARG_FLOAT64:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "FLT64");
+        case CLIARG_FLOAT64: snprintf(argtypestring, sizeof(argtypestring), "FLT64");
             break;
-        case CLIARG_ONOFF:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "ONOFF");
+        case CLIARG_ONOFF: snprintf(argtypestring, sizeof(argtypestring), "ONOFF");
             break;
-        case CLIARG_INT32:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "INT32");
+        case CLIARG_INT32: snprintf(argtypestring, sizeof(argtypestring), "INT32");
             break;
-        case CLIARG_UINT32:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "UINT32");
+        case CLIARG_UINT32: snprintf(argtypestring, sizeof(argtypestring), "UINT32");
             break;
-        case CLIARG_INT64:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "INT64");
+        case CLIARG_INT64: snprintf(argtypestring, sizeof(argtypestring), "INT64");
             break;
-        case CLIARG_UINT64:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "UINT64");
+        case CLIARG_UINT64: snprintf(argtypestring, sizeof(argtypestring), "UINT64");
             break;
-        case CLIARG_STR_NOT_IMG:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "STRnIMG");
+        case CLIARG_STR_NOT_IMG: snprintf(argtypestring, sizeof(argtypestring), "STRnIMG");
             break;
-        case CLIARG_IMG:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "STREAM");
+        case CLIARG_IMG: snprintf(argtypestring, sizeof(argtypestring), "STREAM");
             break;
-        case CLIARG_STR:
-            snprintf(argtypestring,
-                     sizeof(argtypestring),
-                     "STRING");
+        case CLIARG_STR: snprintf(argtypestring, sizeof(argtypestring), "STRING");
             break;
         }
 
@@ -800,10 +667,7 @@ errno_t CLI_checkarg_array(
             int cmdi = data.cmdindex;
 
             DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s",
-                             arg,
-                             CLIarg,
-                             argtypestring,
-                             fpscliarg[arg].fpstag);
+                             arg, CLIarg, argtypestring, fpscliarg[arg].fpstag);
 
             if(CLIarg + 1 >= data.cmdNBarg) // Missing mandatory argument
             {
@@ -819,28 +683,21 @@ errno_t CLI_checkarg_array(
                     printf("  %-15s = ", fpscliarg[arg].fpstag);
                     switch(fpscliarg[arg].type)
                     {
-                    case CLIARG_FLOAT32:
-                        printf("%f\n", data.cmd[cmdi].argdata[arg].val.f32);
+                    case CLIARG_FLOAT32: printf("%f\n", data.cmd[cmdi].argdata[arg].val.f32);
                         break;
-                    case CLIARG_FLOAT64:
-                        printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
+                    case CLIARG_FLOAT64: printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
                         break;
-                    case CLIARG_INT32:
-                        printf("%d\n", data.cmd[cmdi].argdata[arg].val.i32);
+                    case CLIARG_INT32: printf("%d\n", data.cmd[cmdi].argdata[arg].val.i32);
                         break;
                     case CLIARG_INT64:
                     case CLIARG_ONOFF:
-                    case FPTYPE_PID:
-                        printf("%ld\n", data.cmd[cmdi].argdata[arg].val.i64);
+                    case FPTYPE_PID: printf("%ld\n", data.cmd[cmdi].argdata[arg].val.i64);
                         break;
-                    case CLIARG_UINT32:
-                        printf("%u\n", data.cmd[cmdi].argdata[arg].val.ui32);
+                    case CLIARG_UINT32: printf("%u\n", data.cmd[cmdi].argdata[arg].val.ui32);
                         break;
-                    case CLIARG_UINT64:
-                        printf("%lu\n", data.cmd[cmdi].argdata[arg].val.ui64);
+                    case CLIARG_UINT64: printf("%lu\n", data.cmd[cmdi].argdata[arg].val.ui64);
                         break;
-                    case FPTYPE_TIMESPEC:
-                        printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
+                    case FPTYPE_TIMESPEC: printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
                         break;
                     case CLIARG_STR_NOT_IMG:
                     case CLIARG_IMG:
@@ -850,11 +707,9 @@ errno_t CLI_checkarg_array(
                     case FPTYPE_FPSNAME:
                     case FPTYPE_DIRNAME:
                     case FPTYPE_EXECFILENAME:
-                    case FPTYPE_PROCESS:
-                        printf("\"%s\"\n", data.cmd[cmdi].argdata[arg].val.s);
+                    case FPTYPE_PROCESS: printf("\"%s\"\n", data.cmd[cmdi].argdata[arg].val.s);
                         break;
-                    default:
-                        printf("?\n");
+                    default: printf("?\n");
                         break;
                     }
 
@@ -866,16 +721,11 @@ errno_t CLI_checkarg_array(
                         "\n\033[1;31mERROR\033[0m"
                         " Missing mandatory"
                         " argument %d (%s: %s)\n",
-                        CLIarg,
-                        fpscliarg[arg].fpstag,
-                        fpscliarg[arg].descr);
-                    help_command(
-                        data.cmd[data.cmdindex]
-                        .key);
+                        CLIarg, fpscliarg[arg].fpstag, fpscliarg[arg].descr);
+                    help_command(data.cmd[data.cmdindex] .key);
                     argcheck_process_flag = 0;
                     DEBUG_TRACE_FEXIT();
-                    return
-                        RETURN_CLICHECKARGARRAY_FAILURE;
+                    return RETURN_CLICHECKARGARRAY_FAILURE;
                 }
             }
 
@@ -887,52 +737,44 @@ errno_t CLI_checkarg_array(
                 {
 
                 case CLIARG_FLOAT32: // if desired type is float single precision
-                    data.cmdargtoken[CLIarg + 1].val.numf =
-                        data.cmd[cmdi].argdata[arg].val.f32;
+                    data.cmdargtoken[CLIarg + 1].val.numf = data.cmd[cmdi].argdata[arg].val.f32;
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_FLOAT32;
                     break;
 
                 case CLIARG_FLOAT64: // if desired type is float double precision
-                    data.cmdargtoken[CLIarg + 1].val.numf =
-                        data.cmd[cmdi].argdata[arg].val.f64;
+                    data.cmdargtoken[CLIarg + 1].val.numf = data.cmd[cmdi].argdata[arg].val.f64;
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_FLOAT64;
                     break;
 
                 case CLIARG_INT32:
-                    data.cmdargtoken[CLIarg + 1].val.numl =
-                        data.cmd[cmdi].argdata[arg].val.i32;
+                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.i32;
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_INT32;
                     break;
 
                 case CLIARG_INT64:
-                    data.cmdargtoken[CLIarg + 1].val.numl =
-                        data.cmd[cmdi].argdata[arg].val.i64;
+                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.i64;
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_INT64;
                     break;
 
                 case CLIARG_UINT32:
-                    data.cmdargtoken[CLIarg + 1].val.numl =
-                        data.cmd[cmdi].argdata[arg].val.ui32;
+                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.ui32;
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_UINT32;
                     break;
 
                 case CLIARG_UINT64:
-                    data.cmdargtoken[CLIarg + 1].val.numl =
-                        data.cmd[cmdi].argdata[arg].val.ui64;
+                    data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.ui64;
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_UINT64;
                     break;
 
                 case CLIARG_STR_NOT_IMG: // if desired is string not image
                     strncpy(data.cmdargtoken[CLIarg + 1].val.string,
-                            data.cmd[cmdi].argdata[arg].val.s,
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                            data.cmd[cmdi].argdata[arg].val.s, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_STR_NOT_IMG;
                     break;
 
                 case CLIARG_IMG: // should be image
                     strncpy(data.cmdargtoken[CLIarg + 1].val.string,
-                            data.cmd[cmdi].argdata[arg].val.s,
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                            data.cmd[cmdi].argdata[arg].val.s, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
                     if(image_ID(data.cmd[cmdi].argdata[arg].val.s, dcimg, dcnimg) != -1)
                     {
                         // if image exists
@@ -947,8 +789,7 @@ errno_t CLI_checkarg_array(
 
                 case CLIARG_STR:
                     strncpy(data.cmdargtoken[CLIarg + 1].val.string,
-                            data.cmd[cmdi].argdata[arg].val.s,
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                            data.cmd[cmdi].argdata[arg].val.s, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
                     data.cmdargtoken[CLIarg + 1].type = CLIARG_STR;
                     break;
                 }
@@ -961,36 +802,28 @@ errno_t CLI_checkarg_array(
                 switch(fpscliarg[arg].type)  // & 0x0000FFFF)
                 {
                 case CLIARG_FLOAT32:
-                    data.cmd[cmdi].argdata[arg].val.f32 =
-                        data.cmdargtoken[CLIarg + 1].val.numf;
+                    data.cmd[cmdi].argdata[arg].val.f32 = data.cmdargtoken[CLIarg + 1].val.numf;
                     break;
                 case CLIARG_FLOAT64:
-                    data.cmd[cmdi].argdata[arg].val.f64 =
-                        data.cmdargtoken[CLIarg + 1].val.numf;
+                    data.cmd[cmdi].argdata[arg].val.f64 = data.cmdargtoken[CLIarg + 1].val.numf;
                     break;
                 case CLIARG_INT32:
-                    data.cmd[cmdi].argdata[arg].val.i32 =
-                        data.cmdargtoken[CLIarg + 1].val.numl;
+                    data.cmd[cmdi].argdata[arg].val.i32 = data.cmdargtoken[CLIarg + 1].val.numl;
                     break;
                 case CLIARG_INT64:
-                    data.cmd[cmdi].argdata[arg].val.i64 =
-                        data.cmdargtoken[CLIarg + 1].val.numl;
+                    data.cmd[cmdi].argdata[arg].val.i64 = data.cmdargtoken[CLIarg + 1].val.numl;
                     break;
                 case CLIARG_UINT32:
-                    data.cmd[cmdi].argdata[arg].val.ui32 =
-                        data.cmdargtoken[CLIarg + 1].val.numl;
+                    data.cmd[cmdi].argdata[arg].val.ui32 = data.cmdargtoken[CLIarg + 1].val.numl;
                     break;
                 case CLIARG_UINT64:
-                    data.cmd[cmdi].argdata[arg].val.ui64 =
-                        data.cmdargtoken[CLIarg + 1].val.numl;
+                    data.cmd[cmdi].argdata[arg].val.ui64 = data.cmdargtoken[CLIarg + 1].val.numl;
                     break;
                 case FPTYPE_PID:
-                    data.cmd[cmdi].argdata[arg].val.i64 =
-                        data.cmdargtoken[CLIarg + 1].val.numl;
+                    data.cmd[cmdi].argdata[arg].val.i64 = data.cmdargtoken[CLIarg + 1].val.numl;
                     break;
                 case FPTYPE_TIMESPEC:
-                    data.cmd[cmdi].argdata[arg].val.f64 =
-                        data.cmdargtoken[CLIarg + 1].val.numf;
+                    data.cmd[cmdi].argdata[arg].val.f64 = data.cmdargtoken[CLIarg + 1].val.numf;
                     break;
                 case CLIARG_STR_NOT_IMG:
                 case CLIARG_IMG:
@@ -1002,8 +835,7 @@ errno_t CLI_checkarg_array(
                 case FPTYPE_EXECFILENAME:
                 case FPTYPE_PROCESS:
                     strncpy(data.cmd[cmdi].argdata[arg].val.s,
-                            data.cmdargtoken[CLIarg + 1].val.string,
-                            STRINGMAXLEN_CLICMDARG - 1);
+                            data.cmdargtoken[CLIarg + 1].val.string, STRINGMAXLEN_CLICMDARG - 1);
                     break;
                 }
             }
@@ -1022,9 +854,7 @@ errno_t CLI_checkarg_array(
         {
             DEBUG_TRACEPOINT("argument not part of CLI");
             DEBUG_TRACEPOINT("  arg %d  IGNORED [%7s]  %s",
-                             arg,
-                             argtypestring,
-                             fpscliarg[arg].fpstag);
+                             arg, argtypestring, fpscliarg[arg].fpstag);
         }
     }
 
@@ -1037,13 +867,8 @@ errno_t CLI_checkarg_array(
     }
     else
     {
-        printf(
-            "\n\033[1;31mERROR\033[0m"
-            " %d argument(s) have wrong"
-            " type\n",
-            nberr);
-        help_command(
-            data.cmd[data.cmdindex].key);
+        printf("\n\033[1;31mERROR\033[0m" " %d argument(s) have wrong" " type\n", nberr);
+        help_command(data.cmd[data.cmdindex].key);
         DEBUG_TRACE_FEXIT();
         return RETURN_CLICHECKARGARRAY_FAILURE;
     }

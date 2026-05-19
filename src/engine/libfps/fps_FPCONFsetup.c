@@ -32,16 +32,12 @@ FPS function_parameter_FPCONFsetup_sized(
 
 
     FPS_TIMESTAMP = 0;
-    snprintf(FPS_PROCESS_TYPE,
-             STRINGMAXLEN_FPSPROCESSTYPE, "UNDEF");
+    snprintf(FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "UNDEF");
 
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
     {
-        if(getenv("FPS_DEBUG"))
-            printf("=== FPSINITCREATE "
-                   "NBparamMAX = %ld\n",
-                   NBparamMAX);
+        if(getenv("FPS_DEBUG")) printf("=== FPSINITCREATE " "NBparamMAX = %ld\n", NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
         fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     }
@@ -59,15 +55,10 @@ FPS function_parameter_FPCONFsetup_sized(
                 -1)
         {
             if(getenv("FPS_DEBUG"))
-                printf("DEBUG: [%s:%d] "
-                       "FPS DOES NOT EXIST "
-                       "-> CREATE\n",
-                       __FILE__, __LINE__);
+                printf("DEBUG: [%s:%d] " "FPS DOES NOT EXIST " "-> CREATE\n", __FILE__, __LINE__);
             int ret = function_parameter_struct_create(NBparamMAX, fpsname);
             if(getenv("FPS_DEBUG"))
-                printf("DEBUG: [%s:%d] "
-                       "CREATE RETURNED %d\n",
-                       __FILE__, __LINE__, ret);
+                printf("DEBUG: [%s:%d] " "CREATE RETURNED %d\n", __FILE__, __LINE__, ret);
             fps_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
         else

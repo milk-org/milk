@@ -31,18 +31,12 @@ int processinfo_WriteMessage(
              STRINGMAXLEN_PROCESSINFO_STATUSMSG,
              "%02d:%02d:%02d.%03d %s",
              tnowtm->tm_hour,
-             tnowtm->tm_min,
-             tnowtm->tm_sec,
-             (int)(0.000001 * (tnow.tv_nsec)),
-             msgstring);
+             tnowtm->tm_min, tnowtm->tm_sec, (int)(0.000001 * (tnow.tv_nsec)), msgstring);
 
     if(processinfo->PID == 0) // not initialized
     {
-        strncpy(processinfo->statusmsg,
-                msgstring,
-                STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
-        processinfo->statusmsg[
-        STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1] = '\0';
+        strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
+        processinfo->statusmsg[STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1] = '\0';
     }
 
 #ifdef PROCESSINFO_LOGFILE
@@ -51,11 +45,7 @@ int processinfo_WriteMessage(
         fprintf(processinfo->logFile,
                 "%02d:%02d:%02d.%09ld %06d %s\n",
                 tnowtm->tm_hour,
-                tnowtm->tm_min,
-                tnowtm->tm_sec,
-                tnow.tv_nsec,
-                (int) processinfo->PID,
-                msgstring);
+                tnowtm->tm_min, tnowtm->tm_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
 
         fflush(processinfo->logFile);
     }

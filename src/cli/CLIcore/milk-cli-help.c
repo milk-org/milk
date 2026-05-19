@@ -60,9 +60,7 @@ int main(
             if(help_format_mode == 0)
             {
                 fprintf(stderr,
-                        "\033[1;31mmilk-cli-help: unknown topic"
-                        " \"%s\"\033[0m\n\n",
-                        topic);
+                        "\033[1;31mmilk-cli-help: unknown topic" " \"%s\"\033[0m\n\n", topic);
                 print_help_topic_list();
             }
             return 1;

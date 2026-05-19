@@ -40,20 +40,15 @@ errno_t processinfo_waitoninputstream_init(
     if(image != NULL)
     {
         processinfo->triggerstreaminode = image->md[0].inode;
-        strncpy(processinfo->triggerstreamname,
-                image->md[0].name,
-                STRINGMAXLEN_IMAGE_NAME);
+        strncpy(processinfo->triggerstreamname, image->md[0].name, STRINGMAXLEN_IMAGE_NAME);
     }
     else
     {
         // convention : stream name single space : inactive
         DEBUG_TRACEPOINT("Setting trigger stream name to single space");
         processinfo->triggerstreaminode = 0;
-        strncpy(processinfo->triggerstreamname,
-                " ",
-                STRINGMAXLEN_IMAGE_NAME - 1);
-        processinfo->triggerstreamname[
-        STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
+        strncpy(processinfo->triggerstreamname, " ", STRINGMAXLEN_IMAGE_NAME - 1);
+        processinfo->triggerstreamname[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
     }
 
     processinfo->triggermissedframe_cumul = 0;
@@ -110,16 +105,14 @@ errno_t processinfo_waitoninputstream_init(
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = immediate",
-                         PROCESSINFO_TRIGGERMODE_IMMEDIATE);
+        DEBUG_TRACEPOINT("trigger mode %d = immediate", PROCESSINFO_TRIGGERMODE_IMMEDIATE);
         // immmediate trigger
         processinfo->triggerstreamcnt = 0;
     }
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = time delay",
-                         PROCESSINFO_TRIGGERMODE_DELAY);
+        DEBUG_TRACEPOINT("trigger mode %d = time delay", PROCESSINFO_TRIGGERMODE_DELAY);
         // time wait
         processinfo->triggerstreamcnt = 0;
     }
@@ -128,9 +121,7 @@ errno_t processinfo_waitoninputstream_init(
     if(triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE ||
             triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = semaphore %d",
-                         triggermode,
-                         semindexrequested);
+        DEBUG_TRACEPOINT("trigger mode %d = semaphore %d", triggermode, semindexrequested);
         if(semindexrequested < -1)
         {
             PRINT_ERROR("invalid semaphore index %d", semindexrequested);
@@ -141,8 +132,7 @@ errno_t processinfo_waitoninputstream_init(
             PRINT_ERROR("image not valid");
             return RETURN_FAILURE;
         }
-        processinfo->triggersem =
-            ImageStreamIO_getsemwaitindex(image, semindexrequested);
+        processinfo->triggersem = ImageStreamIO_getsemwaitindex(image, semindexrequested);
         if(processinfo->triggersem == -1)
         {
             // could not find available semaphore
@@ -191,14 +181,11 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
             // test if new frame exists
             usleep(5);
         }
-        processinfo->triggermissedframe =
-            image->md[0].cnt0 -
-            processinfo->triggerstreamcnt - 1;
+        processinfo->triggermissedframe = image->md[0].cnt0 - processinfo->triggerstreamcnt - 1;
         // update trigger counter
         processinfo->triggerstreamcnt = image->md[0].cnt0;
 
-        processinfo->triggermissedframe_cumul +=
-            processinfo->triggermissedframe;
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
 
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
 
@@ -219,14 +206,11 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
             // test if new frame exists
             usleep(5);
         }
-        processinfo->triggermissedframe =
-            image->md[0].cnt1 -
-            processinfo->triggerstreamcnt - 1;
+        processinfo->triggermissedframe = image->md[0].cnt1 - processinfo->triggerstreamcnt - 1;
         // update trigger counter
         processinfo->triggerstreamcnt = image->md[0].cnt1;
 
-        processinfo->triggermissedframe_cumul +=
-            processinfo->triggermissedframe;
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
 
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
 
@@ -252,8 +236,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         // update trigger counter
         processinfo->triggerstreamcnt = image->md[0].cnt0;
 
-        processinfo->triggermissedframe_cumul +=
-            processinfo->triggermissedframe;
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
 
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
 
@@ -314,8 +297,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 
         // expected state: NBmissedframe = 0, semr = -1, errno = EAGAIN
         // missed frame state: NBmissedframe>0, semr = -1, errno = EAGAIN
-        DEBUG_TRACEPOINT("triggermissedframe = %d",
-                         processinfo->triggermissedframe);
+        DEBUG_TRACEPOINT("triggermissedframe = %d", processinfo->triggermissedframe);
         if(processinfo->triggermissedframe == 0)
         {
             DEBUG_TRACEPOINT("timedwait");
@@ -328,9 +310,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
                 ts.tv_sec++;
             }
 
-            semr = ImageStreamIO_semtimedwait(image,
-                                              processinfo->triggersem,
-                                              &ts);
+            semr = ImageStreamIO_semtimedwait(image, processinfo->triggersem, &ts);
             if(semr == -1)
             {
                 if(errno == ETIMEDOUT)
@@ -346,8 +326,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
             }
         }
 
-        processinfo->triggermissedframe_cumul +=
-            processinfo->triggermissedframe;
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
 
         processinfo->triggerstatus = tmpstatus;
 

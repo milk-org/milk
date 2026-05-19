@@ -99,13 +99,11 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
     /* Parse prefix */
-    FPS_STREAMNAME_PARSED sp =
-        fps_streamname_parse(sname);
+    FPS_STREAMNAME_PARSED sp = fps_streamname_parse(sname);
 
     if(sp.error)
     {
-        printf("ERROR: invalid stream modifier "
-               "in \"%s\"\n", sname);
+        printf("ERROR: invalid stream modifier " "in \"%s\"\n", sname);
         return -1;
     }
 
@@ -121,8 +119,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if(existing >= 0)
         {
             printf("@N modifier: \"%s\" already "
-                   "exists locally (ID %ld)\n",
-                   name, (long) existing);
+                   "exists locally (ID %ld)\n", name, (long) existing);
             return -1;
         }
 
@@ -141,12 +138,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
                             &tmpimg, name)
                         == IMAGESTREAMIO_SUCCESS)
                 {
-                    ImageStreamIO_closeIm(
-                        &tmpimg);
-                    printf(
-                        "@N modifier: \"%s\" "
-                        "exists in SHM\n",
-                        name);
+                    ImageStreamIO_closeIm(&tmpimg);
+                    printf("@N modifier: \"%s\" " "exists in SHM\n", name);
                     return -1;
                 }
             }
@@ -159,14 +152,11 @@ imageID COREMOD_IOFITS_LoadMemStream(
         imageID id = find_in_local(name);
         if(id >= 0)
         {
-            *imLOC =
-                STREAM_LOAD_SOURCE_LOCALMEM;
+            *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
         }
         else if(sp.must_exist)
         {
-            printf("@LE modifier: \"%s\" not "
-                   "found in local memory\n",
-                   name);
+            printf("@LE modifier: \"%s\" not " "found in local memory\n", name);
         }
         return id;
     }
@@ -185,9 +175,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         {
             if(sp.must_exist)
             {
-                printf("@E modifier: \"%s\" "
-                       "not found in SHM\n",
-                       name);
+                printf("@E modifier: \"%s\" " "not found in SHM\n", name);
             }
             return -1;
         }
@@ -202,8 +190,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
         if(sp.must_exist)
         {
-            printf("@E modifier: \"%s\" not "
-                   "found in SHM\n", name);
+            printf("@E modifier: \"%s\" not " "found in SHM\n", name);
         }
         return -1;
     }
@@ -219,8 +206,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
                             STRINGMAXLEN_IMAGE_NAME)
                     == 0)
             {
-                *imLOC =
-                    STREAM_LOAD_SOURCE_SHAREMEM;
+                *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
                 return ii;
             }
         }
@@ -246,15 +232,13 @@ imageID COREMOD_IOFITS_LoadMemStream(
      *  for output streams not yet created) */
     {
         char shmpath[512];
-        snprintf(shmpath, sizeof(shmpath),
-                 "/milk/shm/%s.im.shm", name);
+        snprintf(shmpath, sizeof(shmpath), "/milk/shm/%s.im.shm", name);
         if(access(shmpath, F_OK) != 0)
         {
             /* SHM file does not exist */
             if(sp.must_exist)
             {
-                printf("@E modifier: \"%s\" "
-                       "not found\n", name);
+                printf("@E modifier: \"%s\" " "not found\n", name);
             }
             return -1;
         }
@@ -266,16 +250,14 @@ imageID COREMOD_IOFITS_LoadMemStream(
             == IMAGESTREAMIO_SUCCESS)
     {
         imarray[slot].used = 1;
-        strncpy(imarray[slot].name, name,
-                STRINGMAXLEN_IMAGE_NAME - 1);
+        strncpy(imarray[slot].name, name, STRINGMAXLEN_IMAGE_NAME - 1);
         *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
         return slot;
     }
 
     if(sp.must_exist)
     {
-        printf("@E modifier: \"%s\" not found\n",
-               name);
+        printf("@E modifier: \"%s\" not found\n", name);
     }
 
     return -1;

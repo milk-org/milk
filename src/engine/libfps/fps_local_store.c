@@ -13,14 +13,11 @@
 
 /** Local FPS store: array, usage flags, count */
 static int local_fps_count;
-static FPS
-local_fps_array[FPS_LOCAL_MAX];
+static FPS local_fps_array[FPS_LOCAL_MAX];
 static int local_fps_used[FPS_LOCAL_MAX];
 
 /** Creator fps_name for each slot */
-static char
-local_fps_creator[FPS_LOCAL_MAX]
-[FPS_CREATOR_NAME_MAX];
+static char local_fps_creator[FPS_LOCAL_MAX] [FPS_CREATOR_NAME_MAX];
 
 
 /**
@@ -80,17 +77,13 @@ FPS *fps_local_create(
     local_fps_used[idx] = 1;
     local_fps_creator[idx][0] = '\0';
 
-    FPS *fps =
-        &local_fps_array[idx];
+    FPS *fps = &local_fps_array[idx];
 
-    memset(fps, 0,
-           sizeof(FPS));
+    memset(fps, 0, sizeof(FPS));
     fps->SMfd = -1;
 
     /* Allocate metadata */
-    fps->md = (FUNCTION_PARAMETER_STRUCT_MD *)
-              calloc(1,
-                     sizeof(FUNCTION_PARAMETER_STRUCT_MD));
+    fps->md = (FUNCTION_PARAMETER_STRUCT_MD *) calloc(1, sizeof(FUNCTION_PARAMETER_STRUCT_MD));
     if(fps->md == NULL)
     {
         PRINT_ERROR("calloc md for '%s'", name);
@@ -99,14 +92,11 @@ FPS *fps_local_create(
         return NULL;
     }
 
-    strncpy(fps->md->name, name,
-            FPS_PNAME_STRMAXLEN - 1);
+    strncpy(fps->md->name, name, FPS_PNAME_STRMAXLEN - 1);
     fps->md->NBparamMAX = NBparamMAX;
 
     /* Allocate parameter array */
-    fps->parray = (FPS_PARAM *)
-                  calloc(NBparamMAX,
-                         sizeof(FPS_PARAM));
+    fps->parray = (FPS_PARAM *) calloc(NBparamMAX, sizeof(FPS_PARAM));
     if(fps->parray == NULL)
     {
         PRINT_ERROR("calloc parray for '%s'", name);
@@ -136,8 +126,7 @@ FPS *fps_local_get_or_create(
     long        NBparamMAX
 )
 {
-    FPS *fps =
-        fps_local_find(name);
+    FPS *fps = fps_local_find(name);
 
     if(fps != NULL)
     {
@@ -202,11 +191,8 @@ void fps_local_set_creator(
                         name,
                         FPS_PNAME_STRMAXLEN - 1) == 0)
         {
-            strncpy(local_fps_creator[ii],
-                    creator_name,
-                    FPS_CREATOR_NAME_MAX - 1);
-            local_fps_creator[ii][
-                FPS_CREATOR_NAME_MAX - 1] = '\0';
+            strncpy(local_fps_creator[ii], creator_name, FPS_CREATOR_NAME_MAX - 1);
+            local_fps_creator[ii][FPS_CREATOR_NAME_MAX - 1] = '\0';
             return;
         }
     }
@@ -237,12 +223,8 @@ const char *fps_local_get_creator(int idx)
 
 static int shared_track_count;
 
-static char
-shared_track_fps[FPS_SHARED_TRACK_MAX]
-[FPS_CREATOR_NAME_MAX];
-static char
-shared_track_creator[FPS_SHARED_TRACK_MAX]
-[FPS_CREATOR_NAME_MAX];
+static char shared_track_fps[FPS_SHARED_TRACK_MAX] [FPS_CREATOR_NAME_MAX];
+static char shared_track_creator[FPS_SHARED_TRACK_MAX] [FPS_CREATOR_NAME_MAX];
 
 
 /**
@@ -281,16 +263,10 @@ void fps_shared_record_usage(
         return;
     }
     int idx = shared_track_count++;
-    strncpy(shared_track_fps[idx],
-            fps_name,
-            FPS_CREATOR_NAME_MAX - 1);
-    shared_track_fps[idx][
-        FPS_CREATOR_NAME_MAX - 1] = '\0';
-    strncpy(shared_track_creator[idx],
-            creator_name,
-            FPS_CREATOR_NAME_MAX - 1);
-    shared_track_creator[idx][
-        FPS_CREATOR_NAME_MAX - 1] = '\0';
+    strncpy(shared_track_fps[idx], fps_name, FPS_CREATOR_NAME_MAX - 1);
+    shared_track_fps[idx][FPS_CREATOR_NAME_MAX - 1] = '\0';
+    strncpy(shared_track_creator[idx], creator_name, FPS_CREATOR_NAME_MAX - 1);
+    shared_track_creator[idx][FPS_CREATOR_NAME_MAX - 1] = '\0';
 }
 
 

@@ -73,28 +73,17 @@ const char *render_dtype(uint8_t dt)
 {
     switch(dt)
     {
-    case _DATATYPE_UINT8:
-        return "UI8";
-    case _DATATYPE_INT8:
-        return "SI8";
-    case _DATATYPE_UINT16:
-        return "U16";
-    case _DATATYPE_INT16:
-        return "S16";
-    case _DATATYPE_UINT32:
-        return "U32";
-    case _DATATYPE_INT32:
-        return "S32";
-    case _DATATYPE_UINT64:
-        return "U64";
-    case _DATATYPE_INT64:
-        return "S64";
-    case _DATATYPE_FLOAT:
-        return "F32";
-    case _DATATYPE_DOUBLE:
-        return "F64";
-    default:
-        return "???";
+    case _DATATYPE_UINT8: return "UI8";
+    case _DATATYPE_INT8: return "SI8";
+    case _DATATYPE_UINT16: return "U16";
+    case _DATATYPE_INT16: return "S16";
+    case _DATATYPE_UINT32: return "U32";
+    case _DATATYPE_INT32: return "S32";
+    case _DATATYPE_UINT64: return "U64";
+    case _DATATYPE_INT64: return "S64";
+    case _DATATYPE_FLOAT: return "F32";
+    case _DATATYPE_DOUBLE: return "F64";
+    default: return "???";
     }
 }
 
@@ -105,22 +94,11 @@ int dtype_bytesize(uint8_t dt)
 {
     switch(dt)
     {
-    case _DATATYPE_UINT8:
-    case _DATATYPE_INT8:
-        return 1;
-    case _DATATYPE_UINT16:
-    case _DATATYPE_INT16:
-        return 2;
-    case _DATATYPE_UINT32:
-    case _DATATYPE_INT32:
-    case _DATATYPE_FLOAT:
-        return 4;
-    case _DATATYPE_UINT64:
-    case _DATATYPE_INT64:
-    case _DATATYPE_DOUBLE:
-        return 8;
-    default:
-        return 1;
+    case _DATATYPE_UINT8: case _DATATYPE_INT8: return 1;
+    case _DATATYPE_UINT16: case _DATATYPE_INT16: return 2;
+    case _DATATYPE_UINT32: case _DATATYPE_INT32: case _DATATYPE_FLOAT: return 4;
+    case _DATATYPE_UINT64: case _DATATYPE_INT64: case _DATATYPE_DOUBLE: return 8;
+    default: return 1;
     }
 }
 

@@ -87,8 +87,7 @@ static MILK_HOT errno_t fpsexec(
     uint32_t yw = cropysize;
     uint32_t iw = input_image->md[0].size[0];
     uint32_t ih = input_image->md[0].size[1];
-    size_t ts = ImageStreamIO_typesize(
-        input_image->md[0].datatype);
+    size_t ts = ImageStreamIO_typesize(input_image->md[0].datatype);
 
     for (uint32_t j = 0; j < yw; j++) {
         uint32_t oj = j + ys;
@@ -98,11 +97,7 @@ static MILK_HOT errno_t fpsexec(
         __builtin_memcpy(
             ((char *)
              output_image->array.raw)
-            + j * xw * ts,
-            ((char *)
-             input_image->array.raw)
-            + (oj * iw + xs) * ts,
-            xw * ts);
+            + j * xw * ts, ((char *) input_image->array.raw) + (oj * iw + xs) * ts, xw * ts);
     }
     return RETURN_SUCCESS;
 }
@@ -154,24 +149,14 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    IMGID iin =
-        imgid_make_from_name(cropinsname);
-    resolveIMGID(
-        &iin,  ERRMODE_ABORT,
-        dcimg, dcnimg);
-    IMGID iout = stream_connect_create_2D(
-        outsname, cropxsize, cropysize,
-        iin.md->datatype);
+    IMGID iin = imgid_make_from_name(cropinsname);
+    resolveIMGID(&iin,  ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID iout = stream_connect_create_2D(outsname, cropxsize, cropysize, iin.md->datatype);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(iin.im, iout.im);
+    processinfo_update_output_stream(processinfo, iout.im, iin.im);
 
-    fpsexec(iin.im, iout.im);
-    processinfo_update_output_stream(
-        processinfo, iout.im, iin.im);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
 }
 
 
@@ -183,19 +168,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 errno_t CLIADDCMD_COREMODE_arith__crop2D()
 {
-    CLIcmddata.FPS_customCONFcheck =
-        crop2D_validate;
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
-    INSERT_STD_CLIREGISTERFUNC
-    return RETURN_SUCCESS;
+    CLIcmddata.FPS_customCONFcheck = crop2D_validate;
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 

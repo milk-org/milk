@@ -64,8 +64,7 @@ static int ov_fps__render_detail_stream(
     const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
     ov_draw_panel_tabs(
         r.row, r.col, r.height, r.width,
-        tabs, 3, lay->graph_tab_mode, OV_FG_STREAM,
-        lay->focus == OV_FOCUS_GRAPH);
+        tabs, 3, lay->graph_tab_mode, OV_FG_STREAM, lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;
     int line_idx = 0;
@@ -97,27 +96,22 @@ static int ov_fps__render_detail_stream(
         }
         else if(s->naxis == 2)
         {
-            snprintf(szb, sizeof(szb), "%ux%u",
-                     (unsigned) s->size[0], (unsigned) s->size[1]);
+            snprintf(szb, sizeof(szb), "%ux%u", (unsigned) s->size[0], (unsigned) s->size[1]);
         }
         else
         {
             snprintf(szb, sizeof(szb), "%ux%ux%u",
-                     (unsigned) s->size[0],
-                     (unsigned) s->size[1],
-                     (unsigned) s->size[2]);
+                     (unsigned) s->size[0], (unsigned) s->size[1], (unsigned) s->size[2]);
         }
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_DIM);
         int n = snprintf(NULL, 0,
                          " Type: %s  Size: %s  Elements: %" PRIu64,
-                         render_dtype(s->datatype), szb,
-                         (uint64_t) s->nelement);
+                         render_dtype(s->datatype), szb, (uint64_t) s->nelement);
         H_ov_buf_printf(
             " Type: %s  Size: %s  Elements: %" PRIu64,
-            render_dtype(s->datatype),         szb,
-            (uint64_t) s->nelement);
+            render_dtype(s->datatype),         szb, (uint64_t) s->nelement);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)
         {
@@ -138,8 +132,7 @@ static int ov_fps__render_detail_stream(
         H_ov_buf_printf("  Hz: ");
         H_ov_theme_fg(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM);
         int n = snprintf(NULL, 0,
-                         " cnt0: %" PRIu64 "  Hz: %.1f",
-                         (uint64_t) s->cnt0, s->update_hz);
+                         " cnt0: %" PRIu64 "  Hz: %.1f", (uint64_t) s->cnt0, s->update_hz);
         H_ov_buf_printf("%.1f", s->update_hz);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)
@@ -156,14 +149,10 @@ static int ov_fps__render_detail_stream(
         H_ov_theme_fg(OV_FG_DIM);
         int n = snprintf(NULL, 0,
                          " Creator: %d  Owner: %d  Inode: %" PRIu64,
-                         (int) s->creatorPID,
-                         (int) s->ownerPID,
-                         (uint64_t) s->inode);
+                         (int) s->creatorPID, (int) s->ownerPID, (uint64_t) s->inode);
         H_ov_buf_printf(
             " Creator: %d  Owner: %d  Inode: %" PRIu64,
-            (int) s->creatorPID,
-            (int) s->ownerPID,
-            (uint64_t) s->inode);
+            (int) s->creatorPID, (int) s->ownerPID, (uint64_t) s->inode);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)
         {
@@ -200,13 +189,10 @@ static int ov_fps__render_detail_stream(
             char rpid_str[32] = "";
             if(s->read_pids[ii] > 0)
             {
-                snprintf(rpid_str, sizeof(rpid_str),
-                         "reader:%d", (int) s->read_pids[ii]);
+                snprintf(rpid_str, sizeof(rpid_str), "reader:%d", (int) s->read_pids[ii]);
             }
-            int n = snprintf(NULL, 0,
-                             "  [%d] val:%d  %s", ii, val, rpid_str);
-            H_ov_buf_printf(
-                "  [%d] val:%d  %s", ii, val, rpid_str);
+            int n = snprintf(NULL, 0, "  [%d] val:%d  %s", ii, val, rpid_str);
+            H_ov_buf_printf("  [%d] val:%d  %s", ii, val, rpid_str);
             H_render_pad_spaces(n, r.width);
             if(!skip_draw)
             {
@@ -222,10 +208,8 @@ static int ov_fps__render_detail_stream(
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TITLE);
         H_ov_buf_bold();
-        int n = snprintf(NULL, 0,
-                         " Process trace (%d):", s->nb_proctrace);
-        H_ov_buf_printf(
-            " Process trace (%d):", s->nb_proctrace);
+        int n = snprintf(NULL, 0, " Process trace (%d):", s->nb_proctrace);
+        H_ov_buf_printf(" Process trace (%d):", s->nb_proctrace);
         H_ov_buf_reset_attr();
         H_ov_theme_bg(OV_BG_PANEL);
         H_render_pad_spaces(n, r.width);
@@ -253,13 +237,11 @@ static int ov_fps__render_detail_stream(
             int n2 = snprintf(NULL, 0,
                               "  PID %d (%s)  mode:%s",
                               (int) s->proctrace_pid[tt],
-                              pname,
-                              render_trigmode_label(s->proctrace_trigmode[tt]));
+                              pname, render_trigmode_label(s->proctrace_trigmode[tt]));
             H_ov_buf_printf(
                 "  PID %d (%s)  mode:%s",
                 (int) s->proctrace_pid[tt],
-                pname,
-                render_trigmode_label(s->proctrace_trigmode[tt]));
+                pname, render_trigmode_label(s->proctrace_trigmode[tt]));
             H_render_pad_spaces(n2, r.width);
             if(!skip_draw)
             {
@@ -270,8 +252,7 @@ static int ov_fps__render_detail_stream(
     } // if nb_proctrace > 0
 
     /* Stream lineage (ancestors + descendants) */
-    ov_fps__render_detail_stream_lineage(lay, m, ssel, r,
-                                         &ri, &line_idx, row, max_rows);
+    ov_fps__render_detail_stream_lineage(lay, m, ssel, r, &ri, &line_idx, row, max_rows);
 
     /* Clear remaining rows */
     lay->detail_total_lines = line_idx;
@@ -458,10 +439,7 @@ static int ov_fps__render_detail_stream_lineage(
     int            max_rows)
 {
     SG_LINEAGE lin;
-    sg_compute_lineage(
-        m, ssel,
-        (sg_mode_t) lay->lineage_mode,
-        &lin);
+    sg_compute_lineage(m, ssel, (sg_mode_t) lay->lineage_mode, &lin);
 
     int has_lineage = (lin.nb_ancestors > 0 || lin.nb_descendants > 0);
     if(!has_lineage)
@@ -482,16 +460,14 @@ static int ov_fps__render_detail_stream_lineage(
 
     if(lin.nb_ancestors > 0)
     {
-        snprintf(label_buf, sizeof(label_buf),
-                 " Ancestors [%s] (%d):", ml, lin.nb_ancestors);
+        snprintf(label_buf, sizeof(label_buf), " Ancestors [%s] (%d):", ml, lin.nb_ancestors);
         render_lineage_group(lay, m, lin.ancestors, lin.nb_ancestors,
                              label_buf, '-', ri, line_idx, r, row, max_rows);
     } // if ancestors
 
     if(lin.nb_descendants > 0)
     {
-        snprintf(label_buf, sizeof(label_buf),
-                 " Descendants [%s] (%d):", ml, lin.nb_descendants);
+        snprintf(label_buf, sizeof(label_buf), " Descendants [%s] (%d):", ml, lin.nb_descendants);
         render_lineage_group(lay, m, lin.descendants, lin.nb_descendants,
                              label_buf, '+', ri, line_idx, r, row, max_rows);
     } // if descendants
@@ -515,8 +491,7 @@ static int ov_fps__render_detail_proc(
     const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
     ov_draw_panel_tabs(
         r.row, r.col, r.height, r.width,
-        tabs, 3, lay->graph_tab_mode, OV_FG_PROC,
-        lay->focus == OV_FOCUS_GRAPH);
+        tabs, 3, lay->graph_tab_mode, OV_FG_PROC, lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;
     int line_idx = 0;
@@ -544,23 +519,17 @@ static int ov_fps__render_detail_proc(
         const char *sl;
         switch(p->loopstat)
         {
-        case 0:
-            sl = "IDLE";
+        case 0: sl = "IDLE";
             break;
-        case 1:
-            sl = "RUNNING";
+        case 1: sl = "RUNNING";
             break;
-        case 2:
-            sl = "PAUSED";
+        case 2: sl = "PAUSED";
             break;
-        case 3:
-            sl = "TERMINATING";
+        case 3: sl = "TERMINATING";
             break;
-        case 4:
-            sl = "ERROR";
+        case 4: sl = "ERROR";
             break;
-        default:
-            sl = "UNKNOWN";
+        default: sl = "UNKNOWN";
             break;
         }
         H_ov_buf_pos(row + ri, r.col + 1);
@@ -593,8 +562,7 @@ static int ov_fps__render_detail_proc(
                          " CPU: %5.1f%%  Mem: %" PRId64 " KB",
                          p->cpu_used, (int64_t) p->mem_rss_kb);
         H_ov_buf_printf(
-            " CPU: %5.1f%%  Mem: %" PRId64 " KB",
-            p->cpu_used, (int64_t) p->mem_rss_kb);
+            " CPU: %5.1f%%  Mem: %" PRId64 " KB", p->cpu_used, (int64_t) p->mem_rss_kb);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)
         {
@@ -608,16 +576,13 @@ static int ov_fps__render_detail_proc(
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_CONN);
-        const char *tstream = (p->trigstreamname[0] != '\0')
-                              ? p->trigstreamname : "-";
+        const char *tstream = (p->trigstreamname[0] != '\0') ? p->trigstreamname : "-";
         int n = snprintf(NULL, 0,
                          " Trigger: %s  stream: %s  sem: %d",
-                         render_trigmode_label(p->triggermode),
-                         tstream, p->triggersem);
+                         render_trigmode_label(p->triggermode), tstream, p->triggersem);
         H_ov_buf_printf(
             " Trigger: %s  stream: %s  sem: %d",
-            render_trigmode_label(p->triggermode),
-            tstream, p->triggersem);
+            render_trigmode_label(p->triggermode), tstream, p->triggersem);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)
         {
@@ -633,12 +598,10 @@ static int ov_fps__render_detail_proc(
         H_ov_theme_fg(p->triggermissed > 0 ? OV_FG_WARN : OV_FG_DIM);
         int n = snprintf(NULL, 0,
                          " Missed: %d (cumul: %" PRIu64 ")",
-                         p->triggermissed,
-                         (uint64_t) p->triggermissed_cumul);
+                         p->triggermissed, (uint64_t) p->triggermissed_cumul);
         H_ov_buf_printf(
             " Missed: %d (cumul: %" PRIu64 ")",
-            p->triggermissed,
-            (uint64_t) p->triggermissed_cumul);
+            p->triggermissed, (uint64_t) p->triggermissed_cumul);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)
         {
@@ -657,26 +620,21 @@ static int ov_fps__render_detail_proc(
             double overhead = 0.0;
             if(p->dtmedian_iter_ns > 0)
             {
-                overhead = 100.0
-                           * (double) p->dtmedian_exec_ns
-                           / (double) p->dtmedian_iter_ns;
+                overhead = 100.0 * (double) p->dtmedian_exec_ns / (double) p->dtmedian_iter_ns;
             }
             H_ov_theme_fg(OV_FG_TEXT);
             int n = snprintf(NULL, 0,
                              " Exec: %.3f ms  Load: %.1f%%  RT: %d",
                              exec_ms, overhead, p->rt_priority);
             H_ov_buf_printf(
-                " Exec: %.3f ms  Load: %.1f%%  RT: %d",
-                exec_ms, overhead, p->rt_priority);
+                " Exec: %.3f ms  Load: %.1f%%  RT: %d", exec_ms, overhead, p->rt_priority);
             H_render_pad_spaces(n, r.width);
         }
         else
         {
             H_ov_theme_fg(OV_FG_DIM);
-            int n = snprintf(NULL, 0,
-                             " Timing: disabled  RT: %d", p->rt_priority);
-            H_ov_buf_printf(
-                " Timing: disabled  RT: %d", p->rt_priority);
+            int n = snprintf(NULL, 0, " Timing: disabled  RT: %d", p->rt_priority);
+            H_ov_buf_printf(" Timing: disabled  RT: %d", p->rt_priority);
             H_render_pad_spaces(n, r.width);
         }
         if(!skip_draw)
@@ -708,8 +666,7 @@ static int ov_fps__render_detail_fps(
     const char *tabs[] = {"CONNECTIONS", "DETAILS", "RESOURCES"};
     ov_draw_panel_tabs(
         r.row, r.col, r.height, r.width,
-        tabs, 3, lay->graph_tab_mode, OV_FG_FPS,
-        lay->focus == OV_FOCUS_GRAPH);
+        tabs, 3, lay->graph_tab_mode, OV_FG_FPS, lay->focus == OV_FOCUS_GRAPH);
 
     int ri       = 0;
     int line_idx = 0;
@@ -755,16 +712,13 @@ static int ov_fps__render_detail_fps(
         H_ov_theme_fg(OV_FG_DIM);
         ov_pid_status_t cs = pid_get_status(f->confpid);
         ov_pid_status_t rs = pid_get_status(f->runpid);
-        const char *cst = (cs == OV_PID_ALIVE) ? "ALIVE"
-                          : (cs == OV_PID_ZOMBIE) ? "ZOMB" : "dead";
-        const char *rst = (rs == OV_PID_ALIVE) ? "ALIVE"
-                          : (rs == OV_PID_ZOMBIE) ? "ZOMB" : "dead";
+        const char *cst = (cs == OV_PID_ALIVE) ? "ALIVE" : (cs == OV_PID_ZOMBIE) ? "ZOMB" : "dead";
+        const char *rst = (rs == OV_PID_ALIVE) ? "ALIVE" : (rs == OV_PID_ZOMBIE) ? "ZOMB" : "dead";
         int n = snprintf(NULL, 0,
                          " Conf: %s (PID %d)  Run: %s (PID %d)",
                          cst, (int) f->confpid, rst, (int) f->runpid);
         H_ov_buf_printf(
-            " Conf: %s (PID %d)  Run: %s (PID %d)",
-            cst, (int) f->confpid, rst, (int) f->runpid);
+            " Conf: %s (PID %d)  Run: %s (PID %d)", cst, (int) f->confpid, rst, (int) f->runpid);
         H_render_pad_spaces(n, r.width);
         if(!skip_draw)
         {
@@ -780,12 +734,8 @@ static int ov_fps__render_detail_fps(
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TITLE);
         H_ov_buf_bold();
-        int n = snprintf(NULL, 0,
-                         " Parameters (%d):",
-                         f->nb_disp_params);
-        H_ov_buf_printf(
-            " Parameters (%d):",
-            f->nb_disp_params);
+        int n = snprintf(NULL, 0, " Parameters (%d):", f->nb_disp_params);
+        H_ov_buf_printf(" Parameters (%d):", f->nb_disp_params);
         H_ov_buf_reset_attr();
         H_ov_theme_bg(OV_BG_PANEL);
 
@@ -794,8 +744,7 @@ static int ov_fps__render_detail_fps(
                 && lay->graph_tab_mode == 1)
         {
             H_ov_theme_fg(OV_FG_DIM);
-            int h = snprintf(NULL, 0,
-                             "  [↑↓ ENTER]");
+            int h = snprintf(NULL, 0, "  [↑↓ ENTER]");
             H_ov_buf_printf("  [↑↓ ENTER]");
             H_render_pad_spaces(n + h, r.width);
         }
@@ -812,8 +761,7 @@ static int ov_fps__render_detail_fps(
         /* Clamp param_sel */
         if(lay->param_sel >= f->nb_disp_params)
         {
-            lay->param_sel =
-                f->nb_disp_params - 1;
+            lay->param_sel = f->nb_disp_params - 1;
         }
 
         /* Auto-scroll to keep selection visible */
@@ -828,16 +776,13 @@ static int ov_fps__render_detail_fps(
                 if(lay->param_sel
                         < lay->param_scroll)
                 {
-                    lay->param_scroll =
-                        lay->param_sel;
+                    lay->param_scroll = lay->param_sel;
                 }
                 if(lay->param_sel
                         >= lay->param_scroll
                         + vis_rows)
                 {
-                    lay->param_scroll =
-                        lay->param_sel
-                        - vis_rows + 1;
+                    lay->param_scroll = lay->param_sel - vis_rows + 1;
                 }
             }
             if(lay->param_scroll < 0)
@@ -857,29 +802,22 @@ static int ov_fps__render_detail_fps(
             }
 
             int is_sel = (dp == lay->param_sel
-                          && lay->focus == OV_FOCUS_GRAPH
-                          && lay->graph_tab_mode == 1);
+                          && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1);
             int header_rows = 3 + (f->description[0] != '\0' ? 1 : 0);
             int is_hover = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH
                             && lay->graph_tab_mode == 1 && lay->hover_idx == header_rows + (dp - lay->param_scroll));
 
-            ov_rgb_t row_bg = is_sel
-                              ? OV_BG_SELECTED : (is_hover ? OV_BG_HOVER : OV_BG_PANEL);
+            ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : (is_hover ? OV_BG_HOVER : OV_BG_PANEL);
 
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(row_bg);
 
             /* Writability indicator */
-            int writable =
-                (f->disp_param_flags[dp]
-                 & FPFLAG_WRITESTATUS) != 0;
+            int writable = (f->disp_param_flags[dp] & FPFLAG_WRITESTATUS) != 0;
             if(is_sel)
             {
-                H_ov_theme_fg(writable
-                              ? OV_FG_ACTIVE : OV_FG_DIM);
-                H_ov_buf_printf(
-                    writable ? " \xe2\x9c\x8e"
-                    : " \xf0\x9f\x94\x92");
+                H_ov_theme_fg(writable ? OV_FG_ACTIVE : OV_FG_DIM);
+                H_ov_buf_printf(writable ? " \xe2\x9c\x8e" : " \xf0\x9f\x94\x92");
             }
             else
             {
@@ -961,11 +899,8 @@ static int ov_fps__render_detail_fps(
             H_ov_buf_printf("[%-6s]", tbadge);
 
             /* Parameter name */
-            H_ov_theme_fg(is_sel
-                          ? OV_FG_BRIGHT : OV_FG_CONN);
-            H_ov_buf_printf(
-                " %-20.20s",
-                f->disp_param_name[dp]);
+            H_ov_theme_fg(is_sel ? OV_FG_BRIGHT : OV_FG_CONN);
+            H_ov_buf_printf(" %-20.20s", f->disp_param_name[dp]);
 
             /* Value */
             if(pt == FPTYPE_STREAMNAME)
@@ -1006,12 +941,8 @@ static int ov_fps__render_detail_fps(
                 H_ov_theme_fg(is_sel ? OV_FG_BRIGHT : OV_FG_TEXT);
             }
 
-            int n2 = snprintf(NULL, 0,
-                              " = %s",
-                              f->disp_param_value[dp]);
-            H_ov_buf_printf(
-                " = %s",
-                f->disp_param_value[dp]);
+            int n2 = snprintf(NULL, 0, " = %s", f->disp_param_value[dp]);
+            H_ov_buf_printf(" = %s", f->disp_param_value[dp]);
 
             if((is_sel || is_hover) && (pt == FPTYPE_STREAMNAME || pt == FPTYPE_ONOFF))
             {
@@ -1022,8 +953,7 @@ static int ov_fps__render_detail_fps(
             /* Pad remainder */
             /* 2 (icon) + 8 (badge) + 1 (sp)
              * + 20 (name) + n2 (val) */
-            H_render_pad_spaces(
-                2 + 8 + 1 + 20 + n2, r.width);
+            H_render_pad_spaces(2 + 8 + 1 + 20 + n2, r.width);
 
             if(!skip_draw)
             {
@@ -1232,8 +1162,7 @@ int ov_render_resources_panel(
             H_ov_theme_fg(OV_FG_TEXT);
             char buf[64];
             int nb = snprintf(buf, sizeof(buf),
-                              "   RSS: %4" PRIu64 " MB   VIRT: %4" PRIu64 " MB",
-                              vm_rss, vm_size);
+                              "   RSS: %4" PRIu64 " MB   VIRT: %4" PRIu64 " MB", vm_rss, vm_size);
             H_ov_buf_printf("%s", buf);
             H_render_pad_spaces(nb, r.width);
             if(!skip_draw)
@@ -1424,8 +1353,7 @@ int ov_render_resources_panel(
                         H_ov_buf_pos(row + ri, r.col + 1);
                         int nb2 = snprintf(buf, sizeof(buf),
                                            "   Inst/Iter:  %.1f    Cache Miss/Iter: %.1f",
-                                           perf_cnt.inst_per_loop,
-                                           perf_cnt.cache_miss_per_loop);
+                                           perf_cnt.inst_per_loop, perf_cnt.cache_miss_per_loop);
                         H_ov_buf_printf("%s", buf);
                         H_render_pad_spaces(nb2, r.width);
                         if(!skip_draw)
@@ -1439,8 +1367,7 @@ int ov_render_resources_panel(
                     {
                         H_ov_buf_pos(row + ri, r.col + 1);
                         H_ov_theme_fg(OV_FG_DIM);
-                        int nb2 = snprintf(buf, sizeof(buf),
-                                           "   Miss/Iter Breakdown:");
+                        int nb2 = snprintf(buf, sizeof(buf), "   Miss/Iter Breakdown:");
                         H_ov_buf_printf("%s", buf);
                         H_render_pad_spaces(nb2, r.width);
                         if(!skip_draw)

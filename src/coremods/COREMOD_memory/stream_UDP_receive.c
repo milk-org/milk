@@ -31,8 +31,7 @@
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
 static int MULTIGRAM_MAGIC = 0x3E;
-static int DGRAM_CHUNK_SIZE = 62 *
-                              1024;
+static int DGRAM_CHUNK_SIZE = 62 * 1024;
 
 /** continuously receives 2D image through TCP link
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
@@ -129,25 +128,12 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     sock_server.sin_port        = htons(port);
     sock_server.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    setsockopt(fds_server,
-               SOL_SOCKET,
-               SO_NO_CHECK,
-               (char *) & flag,
-               sizeof(flag));
-    setsockopt(fds_server,
-               SOL_SOCKET,
-               SO_REUSEADDR,
-               (char *) & flag,
-               sizeof(flag));
-    setsockopt(fds_server,
-               SOL_SOCKET,
-               SO_REUSEPORT,
-               (char *) & flag,
-               sizeof(flag));
+    setsockopt(fds_server, SOL_SOCKET, SO_NO_CHECK, (char *) & flag, sizeof(flag));
+    setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
+    setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
 
 #ifdef SO_ATTACH_REUSEPORT_CBPF
-    setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
-               sizeof(flag));
+    setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag, sizeof(flag));
 #endif
 
     //bind socket to port
@@ -224,18 +210,14 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     OKim = 0;
 
     {
-        IMGID img = imgid_make_from_name(
-                        imgmd[0].name);
-        resolveIMGID(
-            &img,  ERRMODE_NULL,
-            dcimg, dcnimg);
+        IMGID img = imgid_make_from_name(imgmd[0].name);
+        resolveIMGID(&img,  ERRMODE_NULL, dcimg, dcnimg);
         ID = img.ID;
     }
     if(ID == -1)
     {
         // is it in shared memory ?
-        ID = read_sharedmem_image(
-                 imgmd[0].name, dcimg, dcnimg);
+        ID = read_sharedmem_image(imgmd[0].name, dcimg, dcnimg);
     }
 
     list_image_ID();
@@ -285,31 +267,21 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     {
         printf("IMAGE %s HAS TO BE CREATED\n", imgmd[0].name);
         {
-            IMGID imgrcv =
-                imgid_make_from_name(
-                    imgmd[0].name);
-            imgrcv.mdt->naxis =
-                imgmd[0].naxis;
+            IMGID imgrcv = imgid_make_from_name(imgmd[0].name);
+            imgrcv.mdt->naxis = imgmd[0].naxis;
             for(int a = 0;
                     a < imgmd[0].naxis; a++)
             {
-                imgrcv.mdt->size[a] =
-                    imgmd[0].size[a];
+                imgrcv.mdt->size[a] = imgmd[0].size[a];
             }
-            imgrcv.mdt->datatype =
-                imgmd[0].datatype;
-            imgrcv.mdt->shared =
-                imgmd[0].shared;
+            imgrcv.mdt->datatype = imgmd[0].datatype;
+            imgrcv.mdt->shared = imgmd[0].shared;
             imgrcv.mdt->NBkw = nbkw;
-            imgrcv.im =
-                (IMAGE *) calloc(
-                    1, sizeof(IMAGE));
+            imgrcv.im = (IMAGE *) calloc(1, sizeof(IMAGE));
             imgid_mkimage(&imgrcv);
             ID = imgrcv.ID;
         }
-        printf("Created image stream %s - shared = %d\n",
-               imgmd[0].name,
-               imgmd[0].shared);
+        printf("Created image stream %s - shared = %d\n", imgmd[0].name, imgmd[0].shared);
         printf("Size = %d,%d\n", imgmd[0].size[0], imgmd[0].size[1]);
     }
     else
@@ -329,30 +301,19 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     if(dcprocinfo == 1)
     {
         char typestring[8];
-        snprintf(typestring, 8, "%s",
-                 ImageStreamIO_typename(dcimg[ID].md[0].datatype));
+        snprintf(typestring, 8, "%s", ImageStreamIO_typename(dcimg[ID].md[0].datatype));
         char msgstring[200];
         snprintf(msgstring,
                  200,
                  "<- %s [%d x %d x %ld] %s",
-                 imgmd[0].name,
-                 (int) xsize,
-                 (int) ysize,
-                 NBslices,
-                 typestring);
+                 imgmd[0].name, (int) xsize, (int) ysize, NBslices, typestring);
         snprintf(processinfo->description,
                  STRINGMAXLEN_PROCESSINFO_DESCRIPTION,
-                 "%s %dx%dx%ld %s",
-                 imgmd[0].name,
-                 (int) xsize,
-                 (int) ysize,
-                 NBslices,
-                 typestring);
+                 "%s %dx%dx%ld %s", imgmd[0].name, (int) xsize, (int) ysize, NBslices, typestring);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
-    framesize =
-        ImageStreamIO_typesize(dcimg[ID].md[0].datatype) * xsize * ysize;
+    framesize = ImageStreamIO_typesize(dcimg[ID].md[0].datatype) * xsize * ysize;
     printf("image frame size = %ld\n", framesize);
 
     ptr_dest_data_root = (char *) ImageStreamIO_get_image_d_ptr(&dcimg[ID]);
@@ -379,8 +340,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     {
         int total_udp_size = 3 * ((n_udp_dgrams - 1) * (DGRAM_CHUNK_SIZE + 2) +
                                   last_dgram_chunk + 2);
-        setsockopt(fds_server, SOL_SOCKET, SO_SNDBUF, &total_udp_size,
-                   sizeof(total_udp_size));
+        setsockopt(fds_server, SOL_SOCKET, SO_SNDBUF, &total_udp_size, sizeof(total_udp_size));
     }
 
     if(dcprocinfo == 1)
@@ -402,8 +362,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     long monitorloopindex = 0;
     long cnt0previous     = 0;
 
-    long first_dgram_bytes = n_udp_dgrams == 1 ? last_dgram_chunk + 2 :
-                             DGRAM_CHUNK_SIZE + 2;
+    long first_dgram_bytes = n_udp_dgrams == 1 ? last_dgram_chunk + 2 : DGRAM_CHUNK_SIZE + 2;
     long this_dgram_bytes;
     int abort_frame = 1; // Initial sync
 
@@ -453,9 +412,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                                     (struct sockaddr *)&sock_client, &slen_client);
                 if(recvsize < 0 || n_dgram_wait == MAX_DATAGRAM_WAIT - 1)
                 {
-                    PRINT_ERROR(
-                        "recvfrom() @ A [%d - %s]",
-                        errno, strerror(errno));
+                    PRINT_ERROR("recvfrom() @ A [%d - %s]", errno, strerror(errno));
                     loopOK = 0;
                     socketOpen = 0;
                     break;
@@ -481,9 +438,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             if(recvfrom(fds_server, buff_udp, first_dgram_bytes, 0,
                         (struct sockaddr *)&sock_client, &slen_client) < 0)
             {
-                PRINT_ERROR(
-                    "recvfrom() @ B [%d - %s]",
-                    errno, strerror(errno));
+                PRINT_ERROR("recvfrom() @ B [%d - %s]", errno, strerror(errno));
                 loopOK = 0;
                 socketOpen = 0;
                 break;
@@ -545,8 +500,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     break;
                 }
                 __builtin_memcpy(buff + k_dgram * DGRAM_CHUNK_SIZE,
-                                 buff_udp + 2,
-                                 this_dgram_bytes);
+                                 buff_udp + 2, this_dgram_bytes);
             }
         }
         if(socketOpen == 1 && abort_frame == 0)
@@ -568,9 +522,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             if(frameincr > 1)
             {
                 printf("Skipped %ld frame(s) at index %ld %ld\n",
-                       frameincr - 1,
-                       (long)(imgmd_remote[0].cnt0),
-                       (long)(imgmd_remote[0].cnt1));
+                       frameincr - 1, (long)(imgmd_remote[0].cnt0), (long)(imgmd_remote[0].cnt1));
             }
 
             cnt0previous = imgmd_remote[0].cnt0;
@@ -583,8 +535,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     monitorloopindex,
                     imgmd_remote[0].cnt0,
                     imgmd_remote[0].cnt0 - minputcnt,
-                    dcimg[ID].md[0].cnt0,
-                    dcimg[ID].md[0].cnt0 - moutputcnt);
+                    dcimg[ID].md[0].cnt0, dcimg[ID].md[0].cnt0 - moutputcnt);
 
                 minputcnt  = imgmd_remote[0].cnt0;
                 moutputcnt = dcimg[ID].md[0].cnt0;

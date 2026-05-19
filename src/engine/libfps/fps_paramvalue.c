@@ -50,8 +50,7 @@ int64_t *functionparameter_GetParamPtr_generic(FPS *fps,
 {
     int64_t *ptr;
 
-    long fpsi = functionparameter_GetParamIndex(
-                    fps, paramname);
+    long fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         if(paramindex != NULL)
@@ -88,8 +87,7 @@ int64_t functionparameter_GetParamValue_INT64(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0;
@@ -113,8 +111,7 @@ errno_t functionparameter_SetParamValue_INT64(
     const char *paramname,
     int64_t    value)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
@@ -153,24 +150,19 @@ errno_t function_parameter_SetValue_int64(
     // break full keyword into keywords
     strncpy(tmpstring,
             keywordfull,
-            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-            FUNCTION_PARAMETER_KEYWORD_MAXLEVEL -
-            1);
+            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL - 1);
     keywordlevel = 0;
     pch          = strtok(tmpstring, ".");
     while(pch != NULL)
     {
-        strncpy(keyword[keywordlevel],
-                pch,
-                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
+        strncpy(keyword[keywordlevel], pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
         keywordlevel++;
         pch = strtok(NULL, ".");
     }
 
     fps_connect(keyword[9], &fps, FPSCONNECT_SIMPLE);
 
-    int pindex = functionparameter_GetParamIndex(
-                     &fps, keywordfull);
+    int pindex = functionparameter_GetParamIndex(&fps, keywordfull);
     if(pindex < 0)
     {
         fps_disconnect(&fps);
@@ -195,8 +187,7 @@ int64_t *functionparameter_GetParamPtr_INT64(
     FPS        *fps,
     const char *paramname)
 {
-    long fpsi = functionparameter_GetParamIndex(
-                    fps, paramname);
+    long fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -219,8 +210,7 @@ uint64_t functionparameter_GetParamValue_UINT64(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0;
@@ -244,8 +234,7 @@ errno_t functionparameter_SetParamValue_UINT64(
     const char *paramname,
     uint64_t   value)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
@@ -268,8 +257,7 @@ uint64_t *functionparameter_GetParamPtr_UINT64(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -292,8 +280,7 @@ int32_t functionparameter_GetParamValue_INT32(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0;
@@ -317,8 +304,7 @@ errno_t functionparameter_SetParamValue_INT32(
     const char *paramname,
     int32_t    value)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
@@ -341,8 +327,7 @@ int32_t *functionparameter_GetParamPtr_INT32(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -365,8 +350,7 @@ uint32_t functionparameter_GetParamValue_UINT32(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0;
@@ -390,8 +374,7 @@ errno_t functionparameter_SetParamValue_UINT32(
     const char *paramname,
     uint32_t   value)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
@@ -414,8 +397,7 @@ uint32_t *functionparameter_GetParamPtr_UINT32(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -438,8 +420,7 @@ double functionparameter_GetParamValue_FLOAT64(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0.0;
@@ -463,8 +444,7 @@ errno_t functionparameter_SetParamValue_FLOAT64(
     const char *paramname,
     double     value)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
@@ -487,8 +467,7 @@ double *functionparameter_GetParamPtr_FLOAT64(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -511,8 +490,7 @@ float functionparameter_GetParamValue_FLOAT32(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0.0f;
@@ -536,8 +514,7 @@ int functionparameter_SetParamValue_FLOAT32(
     const char *paramname,
     float      value)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
@@ -560,8 +537,7 @@ float *functionparameter_GetParamPtr_FLOAT32(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -586,8 +562,7 @@ float functionparameter_GetParamValue_TIMESPEC(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0.0f;
@@ -615,16 +590,14 @@ int functionparameter_SetParamValue_TIMESPEC(
     const char *paramname,
     float      value)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
     }
 
     long valuesec  = (long) value;
-    long valuensec = (long)(1.0e9 *
-                            (value - valuesec));
+    long valuensec = (long)(1.0e9 * (value - valuesec));
     fps->parray[fpsi].val.ts[0].tv_sec  = valuesec;
     fps->parray[fpsi].val.ts[0].tv_nsec = valuensec;
 
@@ -646,8 +619,7 @@ functionparameter_GetParamPtr_TIMESPEC(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -670,8 +642,7 @@ char *functionparameter_GetParamPtr_STRING(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return NULL;
@@ -692,16 +663,13 @@ int functionparameter_SetParamValue_STRING(
     const char *paramname,
     const char *stringvalue)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
     }
 
-    strncpy(fps->parray[fpsi].val.string[0],
-            stringvalue,
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
+    strncpy(fps->parray[fpsi].val.string[0], stringvalue, FUNCTION_PARAMETER_STRMAXLEN - 1);
     fps->parray[fpsi].cnt0++;
     fps->parray[fpsi].value_cnt++;
 
@@ -725,8 +693,7 @@ int functionparameter_GetParamValue_ONOFF(
     FPS        *fps,
     const char *paramname)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return 0;
@@ -755,8 +722,7 @@ int functionparameter_SetParamValue_ONOFF(
     const char *paramname,
     int        ONOFFvalue)
 {
-    int fpsi = functionparameter_GetParamIndex(
-                   fps, paramname);
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
     if(fpsi < 0)
     {
         return EXIT_FAILURE;
@@ -764,14 +730,12 @@ int functionparameter_SetParamValue_ONOFF(
 
     if(ONOFFvalue == 1)
     {
-        fps->parray[fpsi].fpflag |=
-            FPFLAG_ONOFF;
+        fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
         fps->parray[fpsi].val.i64[0] = 1;
     }
     else
     {
-        fps->parray[fpsi].fpflag &=
-            ~FPFLAG_ONOFF;
+        fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
         fps->parray[fpsi].val.i64[0] = 0;
     }
 
@@ -953,11 +917,9 @@ int functionparameter_SetParamValue_fromString(
          * as OFF.
          */
         int is_on  = strcasecmp(strval, "ON")   == 0 ||
-                     strcasecmp(strval, "ON\n")  == 0 ||
-                     strcmp(strval, "1") == 0;
+                     strcasecmp(strval, "ON\n")  == 0 || strcmp(strval, "1") == 0;
         int is_off = strcasecmp(strval, "OFF")  == 0 ||
-                     strcasecmp(strval, "OFF\n") == 0 ||
-                     strcmp(strval, "0") == 0;
+                     strcasecmp(strval, "OFF\n") == 0 || strcmp(strval, "0") == 0;
 
         if(is_on)
         {

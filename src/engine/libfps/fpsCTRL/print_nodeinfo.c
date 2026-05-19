@@ -126,8 +126,7 @@ void fpsCTRLscreen_print_nodeinfo(
     {
         char typestring[100];
         functionparameter_GetTypeString(
-            fps[fpsindexSelected].parray[pindexSelected].type,
-            typestring);
+            fps[fpsindexSelected].parray[pindexSelected].type, typestring);
         TUI_printfw("    %-16s: %s\n", "Type", typestring);
     }
     else

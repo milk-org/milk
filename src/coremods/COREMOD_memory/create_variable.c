@@ -29,10 +29,7 @@ variableID create_variable_ID(
 
     if(imgid_exists(name))
     {
-        printf(
-            "ERROR: cannot create variable \"%s\": name already used as an "
-            "image\n",
-            name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
     }
     else
     {
@@ -48,9 +45,7 @@ variableID create_variable_ID(
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 0; /** floating point double */
-        snprintf(dcvar[ID].name,
-                 sizeof(dcvar[ID].name),
-                 "%s", name);
+        snprintf(dcvar[ID].name, sizeof(dcvar[ID].name), "%s", name);
         dcvar[ID].value.f = value;
     }
     return ID;
@@ -69,10 +64,7 @@ variableID create_variable_long_ID(
 
     if(imgid_exists(name))
     {
-        printf(
-            "ERROR: cannot create variable \"%s\": name already used as an "
-            "image\n",
-            name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
     }
     else
     {
@@ -88,9 +80,7 @@ variableID create_variable_long_ID(
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 1; /** long */
-        snprintf(dcvar[ID].name,
-                 sizeof(dcvar[ID].name),
-                 "%s", name);
+        snprintf(dcvar[ID].name, sizeof(dcvar[ID].name), "%s", name);
         dcvar[ID].value.l = value;
     }
 
@@ -110,10 +100,7 @@ variableID create_variable_string_ID(
 
     if(imgid_exists(name))
     {
-        printf(
-            "ERROR: cannot create variable \"%s\": name already used as an "
-            "image\n",
-            name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
     }
     else
     {
@@ -129,12 +116,8 @@ variableID create_variable_string_ID(
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 2; /** string */
-        snprintf(dcvar[ID].name,
-                 sizeof(dcvar[ID].name),
-                 "%s", name);
-        snprintf(dcvar[ID].value.s,
-                 sizeof(dcvar[ID].value.s),
-                 "%s", value);
+        snprintf(dcvar[ID].name, sizeof(dcvar[ID].name), "%s", name);
+        snprintf(dcvar[ID].value.s, sizeof(dcvar[ID].value.s), "%s", value);
     }
 
     return ID;

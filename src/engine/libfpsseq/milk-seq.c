@@ -96,10 +96,7 @@ static int daemonize(
     }
 
     /* Redirect stdout/stderr to log file (or /dev/null on failure) */
-    int logfd = open(
-                    logpath,
-                    O_WRONLY | O_CREAT | O_APPEND,
-                    0644);
+    int logfd = open(logpath, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if(logfd < 0)
     {
         /* Fall back to /dev/null to avoid inheriting the terminal */
@@ -204,8 +201,7 @@ int main(
     int  argc,
     char **argv)
 {
-    int help_action = milk_help_init(argc, argv,
-                                     SEQ_ONELINE, SEQ_DESC_LONG);
+    int help_action = milk_help_init(argc, argv, SEQ_ONELINE, SEQ_DESC_LONG);
     if(help_action == MH_ACTION_H1 || help_action == MH_ACTION_H2)
     {
         return 0;
@@ -282,12 +278,8 @@ int main(
     /* Build PID/log file paths */
     {
         const char *shmdir = get_shm_dir();
-        snprintf(pidpath, sizeof(pidpath),
-                 "%s/milkseq.%s.pid",
-                 shmdir, seq_name);
-        snprintf(logpath, sizeof(logpath),
-                 "%s/milkseq.%s.log",
-                 shmdir, seq_name);
+        snprintf(pidpath, sizeof(pidpath), "%s/milkseq.%s.pid", shmdir, seq_name);
+        snprintf(logpath, sizeof(logpath), "%s/milkseq.%s.log", shmdir, seq_name);
     }
 
     /* Daemonize if requested */

@@ -24,8 +24,7 @@ void streamCTRL__render_footer(
             if(above > 0)
             {
                 screenprint_setcolor(3); /* yellow */
-                TUI_printfw(" \033[1m\xe2\x86\x91\033[22m %d above ",
-                            above);
+                TUI_printfw(" \033[1m\xe2\x86\x91\033[22m %d above ", above);
                 screenprint_unsetcolor(3);
             }
             else
@@ -38,8 +37,7 @@ void streamCTRL__render_footer(
             if(below > 0)
             {
                 screenprint_setcolor(3); /* yellow */
-                TUI_printfw(" \033[1m\xe2\x86\x93\033[22m %d below ",
-                            below);
+                TUI_printfw(" \033[1m\xe2\x86\x93\033[22m %d below ", below);
                 screenprint_unsetcolor(3);
             }
             else

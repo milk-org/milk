@@ -357,9 +357,7 @@ static void procctrl_render_row_ctrl(
         long usec = (long)((pinfolist->createtime[pindex] - sec) * 1000000);
         struct tm *tm_info = gmtime(&sec);
         strftime(tbuf, 20, "%Y%m%dT%H:%M:%S", tm_info);
-        snprintf(tbuf + 19,
-                 sizeof(tbuf) - 19,
-                 ".%06ld", usec);
+        snprintf(tbuf + 19, sizeof(tbuf) - 19, ".%06ld", usec);
         TUI_printfw("%s ", tbuf);
         if(ctx->procinfoproc->selected_col == 4)
         {
@@ -1001,23 +999,17 @@ static void procctrl_render_process_list(
 
             switch(m)
             {
-            case PROCCTRL_DISPLAYMODE_CTRL:
-                procctrl_render_row_ctrl(ctx, m, pindex);
+            case PROCCTRL_DISPLAYMODE_CTRL: procctrl_render_row_ctrl(ctx, m, pindex);
                 break;
-            case PROCCTRL_DISPLAYMODE_RESOURCES:
-                procctrl_render_row_resources(ctx, m, pindex);
+            case PROCCTRL_DISPLAYMODE_RESOURCES: procctrl_render_row_resources(ctx, m, pindex);
                 break;
-            case PROCCTRL_DISPLAYMODE_TRIGGER:
-                procctrl_render_row_trigger(ctx, m, pindex);
+            case PROCCTRL_DISPLAYMODE_TRIGGER: procctrl_render_row_trigger(ctx, m, pindex);
                 break;
-            case PROCCTRL_DISPLAYMODE_TIMING:
-                procctrl_render_row_timing(ctx, m, pindex);
+            case PROCCTRL_DISPLAYMODE_TIMING: procctrl_render_row_timing(ctx, m, pindex);
                 break;
-            case PROCCTRL_DISPLAYMODE_PROCINFO:
-                procctrl_render_row_procinfo(ctx, m, pindex);
+            case PROCCTRL_DISPLAYMODE_PROCINFO: procctrl_render_row_procinfo(ctx, m, pindex);
                 break;
-            default:
-                TUI_printfw("(Mode %d not impl)", m);
+            default: TUI_printfw("(Mode %d not impl)", m);
                 break;
             }
 

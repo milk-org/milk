@@ -24,8 +24,7 @@ void fpsCTRL_crash_handler(int sig)
      *   \033[?25h    — show cursor
      *   \033[0m      — reset attributes
      */
-    static const char reset_seq[] =
-        "\033[?1049l\033[?25h\033[0m\n";
+    static const char reset_seq[] = "\033[?1049l\033[?25h\033[0m\n";
     if(write(STDERR_FILENO,
              reset_seq, sizeof(reset_seq) - 1) < 0) {}
 
@@ -52,40 +51,19 @@ void print_usage(const char *progname)
 {
     printf("Usage: %s [options]\n", progname);
     printf("Options:\n");
-    printf("  -m, --match       "
-           "Force match with "
-           "fpscmd/fpslist.txt "
-           "(default: 0)\n");
-    printf("  -n, --name NAME   "
-           "Filter FPS by name mask "
-           "(default: \"_ALL\")\n");
-    printf("  -f, --fifo FIFO   "
-           "Input FIFO name "
-           "(default: based on "
-           "terminal name)\n");
-    printf("  -q, --quiet       "
-           "Quiet mode (suppress "
-           "TUI output)\n");
-    printf("  -s, --stdio       "
-           "Use stdio line-by-line "
-           "display instead of TUI\n");
-    printf("  -h, --help        "
-           "Show this help message\n");
+    printf("  -m, --match       " "Force match with " "fpscmd/fpslist.txt " "(default: 0)\n");
+    printf("  -n, --name NAME   " "Filter FPS by name mask " "(default: \"_ALL\")\n");
+    printf("  -f, --fifo FIFO   " "Input FIFO name " "(default: based on " "terminal name)\n");
+    printf("  -q, --quiet       " "Quiet mode (suppress " "TUI output)\n");
+    printf("  -s, --stdio       " "Use stdio line-by-line " "display instead of TUI\n");
+    printf("  -h, --help        " "Show this help message\n");
     printf("\n");
     printf("Environment Variables:\n");
-    printf("  MILK_FPS_LOGFILE     "
-           "       output logfile for "
-           "milk-fpsCTRL\n");
-    printf("  FPS_FILTSTRING_NAME  "
-           "       filter by name\n");
-    printf("  FPS_FILTSTRING_KEYWORD"
-           "      filter by keyword\n");
-    printf("  FPS_FILTSTRING_CALLFUNC"
-           "     filter by call function"
-           " in source code\n");
-    printf("  FPS_FILTSTRING_MODULE"
-           "       filter by source code"
-           " module\n");
+    printf("  MILK_FPS_LOGFILE     " "       output logfile for " "milk-fpsCTRL\n");
+    printf("  FPS_FILTSTRING_NAME  " "       filter by name\n");
+    printf("  FPS_FILTSTRING_KEYWORD" "      filter by keyword\n");
+    printf("  FPS_FILTSTRING_CALLFUNC" "     filter by call function" " in source code\n");
+    printf("  FPS_FILTSTRING_MODULE" "       filter by source code" " module\n");
 }
 
 int main(
@@ -151,27 +129,19 @@ int main(
     {
         switch(opt)
         {
-        case 'm':
-            matchmode = 1;
+        case 'm': matchmode = 1;
             break;
-        case 'n':
-            strncpy(fpsnamemask, optarg, sizeof(fpsnamemask) - 1);
+        case 'n': strncpy(fpsnamemask, optarg, sizeof(fpsnamemask) - 1);
             break;
-        case 'f':
-            strncpy(fifoname, optarg, sizeof(fifoname) - 1);
+        case 'f': strncpy(fifoname, optarg, sizeof(fifoname) - 1);
             break;
-        case 'q':
-            setenv("MILK_TUIPRINT_NONE", "1", 1);
+        case 'q': setenv("MILK_TUIPRINT_NONE", "1", 1);
             break;
-        case 's':
-            setenv("MILK_TUIPRINT_STDIO", "1", 1);
+        case 's': setenv("MILK_TUIPRINT_STDIO", "1", 1);
             break;
-        case 'h':
-            print_usage(argv[0]);
+        case 'h': print_usage(argv[0]);
             return 0;
-        case '?':
-        default:
-            printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+        case '?': default: printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_usage(argv[0]);
             return 1;
         }
@@ -198,10 +168,7 @@ int main(
 
     // Call the main TUI function
     // functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname);
-    functionparameter_CTRLscreen((uint32_t)matchmode,
-                                 fpsnamemask,
-                                 fifoname,
-                                 0.0);
+    functionparameter_CTRLscreen((uint32_t)matchmode, fpsnamemask, fifoname, 0.0);
 
     return 0;
 }

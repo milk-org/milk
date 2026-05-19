@@ -29,14 +29,11 @@ errno_t cli_watch(void)
 {
     if(data.cmdNBarg < 3)
     {
-        printf(
-            "Usage: watch <interval_ms>"
-            " <command...>\n");
+        printf("Usage: watch <interval_ms>" " <command...>\n");
         return RETURN_FAILURE;
     }
 
-    long interval_ms =
-        data.cmdargtoken[1].val.numl;
+    long interval_ms = data.cmdargtoken[1].val.numl;
     if(interval_ms < 10)
     {
         interval_ms = 10;
@@ -49,14 +46,10 @@ errno_t cli_watch(void)
     {
         if(a > 2)
         {
-            strncat(watchcmd, " ",
-                    STRINGMAXLEN_CLICMDLINE
-                    - strlen(watchcmd) - 1);
+            strncat(watchcmd, " ", STRINGMAXLEN_CLICMDLINE - strlen(watchcmd) - 1);
         }
         strncat(watchcmd,
-                data.cmdargtoken[a].val.string,
-                STRINGMAXLEN_CLICMDLINE
-                - strlen(watchcmd) - 1);
+                data.cmdargtoken[a].val.string, STRINGMAXLEN_CLICMDLINE - strlen(watchcmd) - 1);
     }
 
     /* Switch terminal to raw mode so we can
@@ -67,12 +60,10 @@ errno_t cli_watch(void)
     struct termios raw_termios;
     tcgetattr(STDIN_FILENO, &orig_termios);
     raw_termios = orig_termios;
-    raw_termios.c_lflag &=
-        ~((tcflag_t) ICANON | (tcflag_t) ECHO);
+    raw_termios.c_lflag &= ~((tcflag_t) ICANON | (tcflag_t) ECHO);
     raw_termios.c_cc[VMIN]  = 0;
     raw_termios.c_cc[VTIME] = 0;
-    tcsetattr(STDIN_FILENO, TCSANOW,
-              &raw_termios);
+    tcsetattr(STDIN_FILENO, TCSANOW, &raw_termios);
 
     /* Loop until keypress */
     for(;;)
@@ -88,16 +79,12 @@ errno_t cli_watch(void)
                 "Every %ldms: %s   "
                 "%02d:%02d:%02d"
                 "  (press any key to stop)\n\n",
-                interval_ms, watchcmd,
-                tm->tm_hour, tm->tm_min,
-                tm->tm_sec);
+                interval_ms, watchcmd, tm->tm_hour, tm->tm_min, tm->tm_sec);
         }
 
         /* Execute the command */
-        strncpy(data.CLIcmdline, watchcmd,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        strncpy(data.CLIcmdline, watchcmd, STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
         CLI_execute_line();
 
         fflush(stdout);
@@ -115,9 +102,7 @@ errno_t cli_watch(void)
                 tv.tv_usec = step;
                 FD_ZERO(&fds);
                 FD_SET(STDIN_FILENO, &fds);
-                int r = select(
-                    STDIN_FILENO + 1,
-                    &fds,          NULL, NULL, &tv);
+                int r = select(STDIN_FILENO + 1, &fds,          NULL, NULL, &tv);
                 if(r > 0)
                 {
                     /* Consume the keypress */
@@ -136,8 +121,7 @@ errno_t cli_watch(void)
 
 watch_done:
     /* Restore original terminal settings */
-    tcsetattr(STDIN_FILENO, TCSANOW,
-              &orig_termios);
+    tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
     printf("\nwatch stopped.\n");
 
     return RETURN_SUCCESS;
@@ -155,9 +139,7 @@ watch_done:
 void cli_milkrc_load(void)
 {
     char rcpath[STRINGMAXLEN_FULLFILENAME];
-    snprintf(rcpath,
-             STRINGMAXLEN_FULLFILENAME,
-             "%s/.milkrc", getenv("HOME"));
+    snprintf(rcpath, STRINGMAXLEN_FULLFILENAME, "%s/.milkrc", getenv("HOME"));
 
     FILE *fp = fopen(rcpath, "r");
     if(fp == NULL)
@@ -183,10 +165,8 @@ void cli_milkrc_load(void)
         {
             continue;
         }
-        strncpy(data.CLIcmdline, line,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        strncpy(data.CLIcmdline, line, STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
         CLI_execute_line();
     }
     fclose(fp);
@@ -212,34 +192,24 @@ errno_t cli_time(void)
     {
         if(a > 1)
         {
-            strncat(timecmd, " ",
-                    STRINGMAXLEN_CLICMDLINE
-                    - strlen(timecmd) - 1);
+            strncat(timecmd, " ", STRINGMAXLEN_CLICMDLINE - strlen(timecmd) - 1);
         }
         strncat(timecmd,
-                data.cmdargtoken[a].val.string,
-                STRINGMAXLEN_CLICMDLINE
-                - strlen(timecmd) - 1);
+                data.cmdargtoken[a].val.string, STRINGMAXLEN_CLICMDLINE - strlen(timecmd) - 1);
     }
     struct timespec t0;
     struct timespec t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
-    strncpy(data.CLIcmdline, timecmd,
-            STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[
-        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    strncpy(data.CLIcmdline, timecmd, STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     CLI_execute_line();
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     {
         double elapsed =
-            (double)(t1.tv_sec - t0.tv_sec)
-            + 1.0e-9
-            * (double)(t1.tv_nsec - t0.tv_nsec);
-        printf(
-            "\n\033[33mElapsed: %.6f s\033[0m\n",
-            elapsed);
+            (double)(t1.tv_sec - t0.tv_sec) + 1.0e-9 * (double)(t1.tv_nsec - t0.tv_nsec);
+        printf("\n\033[33mElapsed: %.6f s\033[0m\n", elapsed);
     }
     return RETURN_SUCCESS;
 }
@@ -266,10 +236,8 @@ errno_t cli_cmdstats(void)
     {
         if(data.cmd[i].callcount > 0)
         {
-            entries[nused].key =
-                data.cmd[i].key;
-            entries[nused].count =
-                data.cmd[i].callcount;
+            entries[nused].key = data.cmd[i].key;
+            entries[nused].count = data.cmd[i].callcount;
             nused++;
         }
     }
@@ -291,17 +259,12 @@ errno_t cli_cmdstats(void)
         entries[j + 1] = tmp;
     }
     int show = nused < 20 ? nused : 20;
-    printf("\n\033[1mCommand usage "
-           "(top %d):\033[0m\n", show);
+    printf("\n\033[1mCommand usage " "(top %d):\033[0m\n", show);
     printf("  %-30s  %s\n", "COMMAND", "CALLS");
-    printf("  %-30s  %s\n",
-           "------------------------------",
-           "-----");
+    printf("  %-30s  %s\n", "------------------------------", "-----");
     for(int i = 0; i < show; i++)
     {
-        printf("  %-30s  %u\n",
-               entries[i].key,
-               entries[i].count);
+        printf("  %-30s  %u\n", entries[i].key, entries[i].count);
     }
     printf("\n");
     return RETURN_SUCCESS;
@@ -318,8 +281,7 @@ errno_t cli_timing_toggle(void)
 {
     if(data.cmdNBarg >= 2)
     {
-        const char *arg =
-            data.cmdargtoken[1].val.string;
+        const char *arg = data.cmdargtoken[1].val.string;
         if(strcmp(arg, "on") == 0
                 || strcmp(arg, "1") == 0)
         {
@@ -339,11 +301,8 @@ errno_t cli_timing_toggle(void)
     }
     else
     {
-        data.print_cmd_timing =
-            !data.print_cmd_timing;
-        printf("Command execution timing %s\n",
-               data.print_cmd_timing
-               ? "ON" : "OFF");
+        data.print_cmd_timing = !data.print_cmd_timing;
+        printf("Command execution timing %s\n", data.print_cmd_timing ? "ON" : "OFF");
     }
     return RETURN_SUCCESS;
 }
@@ -359,8 +318,7 @@ errno_t cli_syntax_highlight_toggle(void)
 {
     if(data.cmdNBarg >= 2)
     {
-        const char *arg =
-            data.cmdargtoken[1].val.string;
+        const char *arg = data.cmdargtoken[1].val.string;
         if(strcmp(arg, "on") == 0)
         {
             data.syntax_highlight = 2; // Default to full TS
@@ -407,13 +365,11 @@ errno_t cli_source(void)
         printf("Usage: source <filename>\n");
         return RETURN_FAILURE;
     }
-    const char *fname =
-        data.cmdargtoken[1].val.string;
+    const char *fname = data.cmdargtoken[1].val.string;
     FILE *fp = fopen(fname, "r");
     if(fp == NULL)
     {
-        printf("source: cannot open '%s'\n",
-               fname);
+        printf("source: cannot open '%s'\n", fname);
         return RETURN_FAILURE;
     }
 
@@ -423,14 +379,8 @@ errno_t cli_source(void)
        < CLI_SRC_STACK_DEPTH)
     {
         src_slot = cli_src_depth;
-        strncpy(
-            cli_src_stack[src_slot].file,
-            fname,
-            sizeof(cli_src_stack[0].file)
-            - 1);
-        cli_src_stack[src_slot].file[
-            sizeof(cli_src_stack[0].file)
-            - 1] = '\0';
+        strncpy(cli_src_stack[src_slot].file, fname, sizeof(cli_src_stack[0].file) - 1);
+        cli_src_stack[src_slot].file[sizeof(cli_src_stack[0].file) - 1] = '\0';
         cli_src_stack[src_slot].line = 0;
         cli_src_depth++;
     }
@@ -443,8 +393,7 @@ errno_t cli_source(void)
         lineno++;
         if(src_slot >= 0)
         {
-            cli_src_stack[src_slot].line =
-                lineno;
+            cli_src_stack[src_slot].line = lineno;
         }
         {
             size_t len = strlen(line);
@@ -463,21 +412,15 @@ errno_t cli_source(void)
         {
             continue;
         }
-        strncpy(data.CLIcmdline, line,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1]
-            = '\0';
+        strncpy(data.CLIcmdline, line, STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
         if (data.echo_input) {
             printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
         }
         errno_t ret = CLI_execute_line();
         if(ret != RETURN_SUCCESS)
         {
-            printf(
-                "\033[31m[source:%s:%d] "
-                "error\033[0m\n",
-                fname, lineno);
+            printf("\033[31m[source:%s:%d] " "error\033[0m\n", fname, lineno);
             cli_print_source_trace();
         }
     }
@@ -507,19 +450,16 @@ errno_t cli_savescript(void)
         printf("Usage: savescript <filename>\n");
         return RETURN_FAILURE;
     }
-    const char *fname =
-        data.cmdargtoken[1].val.string;
+    const char *fname = data.cmdargtoken[1].val.string;
     FILE *fp = fopen(fname, "w");
     if(fp == NULL)
     {
-        printf("savescript: cannot open "
-               "'%s' for writing\n", fname);
+        printf("savescript: cannot open " "'%s' for writing\n", fname);
         return RETURN_FAILURE;
     }
 
     fprintf(fp, "# milk-cli script\n");
-    fprintf(fp,
-            "# saved by savescript command\n\n");
+    fprintf(fp, "# saved by savescript command\n\n");
 
     /* Export variables */
     int nv = 0;
@@ -527,9 +467,7 @@ errno_t cli_savescript(void)
     {
         if(cli_vars[i].used)
         {
-            fprintf(fp, "%s=%s\n",
-                    cli_vars[i].name,
-                    cli_vars[i].val);
+            fprintf(fp, "%s=%s\n", cli_vars[i].name, cli_vars[i].val);
             nv++;
         }
     }
@@ -544,13 +482,11 @@ errno_t cli_savescript(void)
     {
         if(cli_funcs[i].used)
         {
-            fprintf(fp, "function %s {\n",
-                    cli_funcs[i].name);
+            fprintf(fp, "function %s {\n", cli_funcs[i].name);
             for(int j = 0;
                 j < cli_funcs[i].nbody; j++)
             {
-                fprintf(fp, "%s\n",
-                        cli_funcs[i].body[j]);
+                fprintf(fp, "%s\n", cli_funcs[i].body[j]);
             }
             fprintf(fp, "}\n\n");
             nf++;
@@ -558,8 +494,7 @@ errno_t cli_savescript(void)
     }
 
     fclose(fp);
-    printf("Saved %d variables, %d functions "
-           "to '%s'\n", nv, nf, fname);
+    printf("Saved %d variables, %d functions " "to '%s'\n", nv, nf, fname);
     return RETURN_SUCCESS;
 }
 
@@ -580,14 +515,11 @@ errno_t cli_sessionlog(void)
 {
     if(data.cmdNBarg < 2)
     {
-        printf("Usage: sessionlog "
-               "[on|off|<filename>]\n");
-        printf("Status: %s\n",
-               session_log_fp ? "ON" : "OFF");
+        printf("Usage: sessionlog " "[on|off|<filename>]\n");
+        printf("Status: %s\n", session_log_fp ? "ON" : "OFF");
         return RETURN_SUCCESS;
     }
-    const char *arg =
-        data.cmdargtoken[1].val.string;
+    const char *arg = data.cmdargtoken[1].val.string;
 
     if(strcmp(arg, "off") == 0)
     {
@@ -610,18 +542,12 @@ errno_t cli_sessionlog(void)
     char logpath[STRINGMAXLEN_FULLFILENAME];
     if(strcmp(arg, "on") == 0)
     {
-        snprintf(logpath,
-                 STRINGMAXLEN_FULLFILENAME,
-                 "%s/.milk_session.log",
-                 getenv("HOME"));
+        snprintf(logpath, STRINGMAXLEN_FULLFILENAME, "%s/.milk_session.log", getenv("HOME"));
     }
     else
     {
-        strncpy(logpath, arg,
-                STRINGMAXLEN_FULLFILENAME - 1);
-        logpath[
-            STRINGMAXLEN_FULLFILENAME - 1]
-            = '\0';
+        strncpy(logpath, arg, STRINGMAXLEN_FULLFILENAME - 1);
+        logpath[STRINGMAXLEN_FULLFILENAME - 1] = '\0';
     }
 
     session_log_fp = fopen(logpath, "a");
@@ -630,19 +556,15 @@ errno_t cli_sessionlog(void)
         printf("Cannot open '%s'\n", logpath);
         return RETURN_FAILURE;
     }
-    clock_gettime(CLOCK_MONOTONIC,
-                  &session_log_t0);
+    clock_gettime(CLOCK_MONOTONIC, &session_log_t0);
     printf("Session logging to '%s'\n", logpath);
 
     /* Write session start marker */
     {
         time_t now = time(NULL);
         char tbuf[64];
-        strftime(tbuf, sizeof(tbuf),
-                 "%Y-%m-%dT%H:%M:%S",
-                 localtime(&now));
-        fprintf(session_log_fp,
-                "# Session started %s\n", tbuf);
+        strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
+        fprintf(session_log_fp, "# Session started %s\n", tbuf);
         fflush(session_log_fp);
     }
     return RETURN_SUCCESS;
@@ -664,19 +586,12 @@ void cli_session_log_cmd(
     double elapsed_ms =
         (double)(now.tv_sec
                  - session_log_t0.tv_sec)
-        * 1000.0
-        + (double)(now.tv_nsec
-                   - session_log_t0.tv_nsec)
-        / 1.0e6;
+        * 1000.0 + (double)(now.tv_nsec - session_log_t0.tv_nsec) / 1.0e6;
     {
         time_t t = time(NULL);
         char tbuf[64];
-        strftime(tbuf, sizeof(tbuf),
-                 "%Y-%m-%dT%H:%M:%S",
-                 localtime(&t));
-        fprintf(session_log_fp,
-                "[%s] [%10.1f ms] %s\n",
-                tbuf, elapsed_ms, cmd);
+        strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&t));
+        fprintf(session_log_fp, "[%s] [%10.1f ms] %s\n", tbuf, elapsed_ms, cmd);
         fflush(session_log_fp);
     }
 }

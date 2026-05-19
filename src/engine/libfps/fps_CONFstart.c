@@ -20,8 +20,7 @@ errno_t functionparameter_CONFstart(FPS *fps)
     // Move to correct launch directory
     //
     EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" cd %s\" C-m",
-                                   fps->md->name,
-                                   fps->md->workdir);
+                                   fps->md->name, fps->md->workdir);
 
     char *exec_basename = strrchr(fps->md->execfullpath, '/');
     exec_basename = (exec_basename != NULL) ? exec_basename + 1 : fps->md->execfullpath;
@@ -32,9 +31,7 @@ errno_t functionparameter_CONFstart(FPS *fps)
             strcmp(exec_basename, "unknown") != 0)
     {
         EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:conf \" %s %s:confstart\" C-m",
-                                       fps->md->name,
-                                       fps->md->execfullpath,
-                                       fps->md->name);
+                                       fps->md->name, fps->md->execfullpath, fps->md->name);
     }
     else
     {

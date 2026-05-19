@@ -100,15 +100,13 @@ static int parse_one_axis(
 
         if(sstart[0] != '\0')
         {
-            s->start[axis] =
-                (int32_t) strtol(sstart, NULL, 10);
+            s->start[axis] = (int32_t) strtol(sstart, NULL, 10);
         }
         /* else: start=0 (default) */
 
         if(send[0] != '\0')
         {
-            s->end[axis] =
-                (int32_t) strtol(send, NULL, 10);
+            s->end[axis] = (int32_t) strtol(send, NULL, 10);
         }
         /* else: end=-1 (full) */
 
@@ -129,14 +127,12 @@ static int parse_one_axis(
 
         if(sstart[0] != '\0')
         {
-            s->start[axis] =
-                (int32_t) strtol(sstart, NULL, 10);
+            s->start[axis] = (int32_t) strtol(sstart, NULL, 10);
         }
 
         if(send[0] != '\0')
         {
-            s->end[axis] =
-                (int32_t) strtol(send, NULL, 10);
+            s->end[axis] = (int32_t) strtol(send, NULL, 10);
         }
 
         /* Check for 'b' suffix (binning mode) */
@@ -150,13 +146,11 @@ static int parse_one_axis(
             char stepnum[32];
             strncpy(stepnum, sstep, slen - 1);
             stepnum[slen - 1] = '\0';
-            s->step[axis] =
-                (int32_t) strtol(stepnum, NULL, 10);
+            s->step[axis] = (int32_t) strtol(stepnum, NULL, 10);
         }
         else
         {
-            s->step[axis] =
-                (int32_t) strtol(sstep, NULL, 10);
+            s->step[axis] = (int32_t) strtol(sstep, NULL, 10);
         }
 
         /* Step = 0 is invalid */
@@ -219,8 +213,7 @@ IMGID_SLICE imgid_slice_parse(
     if(naxis == 0)
     {
         s.error = 1;
-        snprintf(s.errmsg, sizeof(s.errmsg),
-                 "empty slice specification");
+        snprintf(s.errmsg, sizeof(s.errmsg), "empty slice specification");
         return s;
     }
 
@@ -241,10 +234,7 @@ IMGID_SLICE imgid_slice_parse(
         if(parse_one_axis(axes[aa], &s, aa) != 0)
         {
             s.error = 1;
-            snprintf(s.errmsg,
-                     sizeof(s.errmsg),
-                     "invalid axis %d spec: %s",
-                     aa, axes[aa]);
+            snprintf(s.errmsg, sizeof(s.errmsg), "invalid axis %d spec: %s", aa, axes[aa]);
             return s;
         }
     }
@@ -288,10 +278,7 @@ int imgid_slice_output_size(
     {
         if(aa >= src_naxis)
         {
-            snprintf(s->errmsg,
-                     sizeof(s->errmsg),
-                     "slice axis %d > naxis %d",
-                     aa, src_naxis);
+            snprintf(s->errmsg, sizeof(s->errmsg), "slice axis %d > naxis %d", aa, src_naxis);
             s->error = 1;
             return 1;
         }
@@ -318,18 +305,14 @@ int imgid_slice_output_size(
         if(s->start[aa] >= sz)
         {
             snprintf(s->errmsg,
-                     sizeof(s->errmsg),
-                     "axis %d start %d >= size %d",
-                     aa, s->start[aa], sz);
+                     sizeof(s->errmsg), "axis %d start %d >= size %d", aa, s->start[aa], sz);
             s->error = 1;
             return 1;
         }
         if(s->end[aa] >= sz)
         {
             snprintf(s->errmsg,
-                     sizeof(s->errmsg),
-                     "axis %d end %d >= size %d",
-                     aa, s->end[aa], sz);
+                     sizeof(s->errmsg), "axis %d end %d >= size %d", aa, s->end[aa], sz);
             s->error = 1;
             return 1;
         }
@@ -343,9 +326,7 @@ int imgid_slice_output_size(
         if(absstep == 0)
         {
             s->error = 1;
-            snprintf(s->errmsg,
-                     sizeof(s->errmsg),
-                     "axis %d step is 0", aa);
+            snprintf(s->errmsg, sizeof(s->errmsg), "axis %d step is 0", aa);
             return 1;
         }
 
@@ -365,9 +346,7 @@ int imgid_slice_output_size(
             snprintf(s->errmsg,
                      sizeof(s->errmsg),
                      "axis %d empty range "
-                     "[%d:%d] step %d",
-                     aa, s->start[aa],
-                     s->end[aa], s->step[aa]);
+                     "[%d:%d] step %d", aa, s->start[aa], s->end[aa], s->step[aa]);
             s->error = 1;
             return 1;
         }
@@ -375,15 +354,12 @@ int imgid_slice_output_size(
         if(s->bin[aa])
         {
             /* Binning: output = range / step */
-            out_size[aa] =
-                (uint32_t)(range / absstep);
+            out_size[aa] = (uint32_t)(range / absstep);
         }
         else
         {
             /* Stride: output = ceil(range/step) */
-            out_size[aa] =
-                (uint32_t)((range + absstep - 1)
-                           / absstep);
+            out_size[aa] = (uint32_t)((range + absstep - 1) / absstep);
         }
 
         if(out_size[aa] == 0)
@@ -429,41 +405,31 @@ void imgid_slice_format(
     {
         if(aa > 0)
         {
-            pos += snprintf(buf + pos,
-                            bufsz - pos, ",");
+            pos += snprintf(buf + pos, bufsz - pos, ",");
         }
 
         if(s->step[aa] == 1
                 && s->start[aa] == 0
                 && s->end[aa] == -1)
         {
-            pos += snprintf(buf + pos,
-                            bufsz - pos, "*");
+            pos += snprintf(buf + pos, bufsz - pos, "*");
         }
         else if(s->step[aa] == -1
                 && s->start[aa] == 0
                 && s->end[aa] == -1)
         {
-            pos += snprintf(buf + pos,
-                            bufsz - pos, "-*");
+            pos += snprintf(buf + pos, bufsz - pos, "-*");
         }
         else if(s->step[aa] == 1)
         {
-            pos += snprintf(buf + pos,
-                            bufsz - pos,
-                            "%d:%d",
-                            s->start[aa],
-                            s->end[aa]);
+            pos += snprintf(buf + pos, bufsz - pos, "%d:%d", s->start[aa], s->end[aa]);
         }
         else
         {
             pos += snprintf(buf + pos,
                             bufsz - pos,
                             "%d:%d:%d%s",
-                            s->start[aa],
-                            s->end[aa],
-                            s->step[aa],
-                            s->bin[aa] ? "b" : "");
+                            s->start[aa], s->end[aa], s->step[aa], s->bin[aa] ? "b" : "");
         }
     }
 
@@ -491,8 +457,7 @@ void imgid_slice_shmname(
     int               bufsz)
 {
     char slicestr[128];
-    imgid_slice_format(s, slicestr,
-                       sizeof(slicestr));
+    imgid_slice_format(s, slicestr, sizeof(slicestr));
 
     /* Replace [ ] : , with underscores */
     for(int ii = 0; slicestr[ii] != '\0'; ii++)
@@ -507,8 +472,7 @@ void imgid_slice_shmname(
         }
     }
 
-    snprintf(buf, bufsz, "%s__%s",
-             srcname, slicestr);
+    snprintf(buf, bufsz, "%s__%s", srcname, slicestr);
 }
 
 

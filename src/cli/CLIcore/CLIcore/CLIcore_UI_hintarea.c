@@ -80,8 +80,7 @@ int accept_suggestion(
         if(pending_replace_len > 0
                 && rl_end >= pending_replace_len)
         {
-            int del_start =
-                rl_end - pending_replace_len;
+            int del_start = rl_end - pending_replace_len;
             rl_delete_text(del_start, rl_end);
             rl_point = del_start;
         }
@@ -109,8 +108,7 @@ void set_pending_suggestion(
     pending_replace_len = 0;
     if(text && strlen(text) > 0)
     {
-        pending_suggestion =
-            dupstr((char *) text);
+        pending_suggestion = dupstr((char *) text);
         pending_replace_len = replace_len;
     }
 }
@@ -152,9 +150,7 @@ int find_command_match(const char *firstword)
  */
 int visible_prompt_len(void)
 {
-    const char *p = rl_display_prompt
-                    ? rl_display_prompt
-                    : "";
+    const char *p = rl_display_prompt ? rl_display_prompt : "";
     int   len = 0;
     int   invisible = 0;
 
@@ -193,9 +189,7 @@ int get_ghost_budget(void)
         cols = ws.ws_col;
     }
 
-    int cursor_col =
-        (visible_prompt_len() + rl_point)
-        % cols;
+    int cursor_col = (visible_prompt_len() + rl_point) % cols;
 
     int budget = cols - cursor_col - 1;
     if(budget < 0)
@@ -287,8 +281,7 @@ void CLI_cleanup_scroll_region(void)
     }
 
     printf("\033[s");
-    printf("\033[%d;1H\033[2K",
-           cached_term_rows);
+    printf("\033[%d;1H\033[2K", cached_term_rows);
     printf("\033[r");
     printf("\033[u");
     fflush(stdout);
@@ -326,27 +319,21 @@ void update_hint_area(void)
         {
             cached_term_rows = ws.ws_row;
             cached_term_cols = ws.ws_col;
-            printf("\033[1;%dr",
-                   cached_term_rows - 1);
-            printf("\033[%d;1H\033[2K",
-                   cached_term_rows);
+            printf("\033[1;%dr", cached_term_rows - 1);
+            printf("\033[%d;1H\033[2K", cached_term_rows);
         }
     }
 
     /* Move to hint line, clear it */
-    printf("\033[%d;1H\033[2K",
-           cached_term_rows);
+    printf("\033[%d;1H\033[2K", cached_term_rows);
 
     /* Check if first word is a known command */
     if(rl_line_buffer[0] != '\0')
     {
         char  buf[200];
         char *saveptr_hint = NULL;
-        snprintf(buf, sizeof(buf), "%s",
-                 rl_line_buffer);
-        char *fw = strtok_r(
-                       buf, " ",
-                       &saveptr_hint);
+        snprintf(buf, sizeof(buf), "%s", rl_line_buffer);
+        char *fw = strtok_r(buf, " ", &saveptr_hint);
 
         if(fw != NULL)
         {
@@ -358,8 +345,7 @@ void update_hint_area(void)
                  * argument index */
                 int argidx = 0;
                 {
-                    const char *p =
-                        rl_line_buffer;
+                    const char *p = rl_line_buffer;
                     while(*p && *p != ' ')
                     {
                         p++;
@@ -391,16 +377,13 @@ void update_hint_area(void)
                     }
                     else
                     {
-                        argidx = wcount > 0
-                                 ? wcount - 1
-                                 : 0;
+                        argidx = wcount > 0 ? wcount - 1 : 0;
                     }
                 }
 
                 /* Print syntax with <> tokens,
                  * highlighting current arg */
-                const char *syn =
-                    data.cmd[cmi].syntax;
+                const char *syn = data.cmd[cmi].syntax;
                 int col = 0;
                 int tidx = 0;
                 const char *p = syn;
@@ -437,28 +420,18 @@ void update_hint_area(void)
                             p++;
                         }
                     }
-                    int tlen =
-                        (int)(p - tstart);
-                    int avail =
-                        cached_term_cols
-                        - 1 - col;
-                    int plen = tlen < avail
-                               ? tlen : avail;
+                    int tlen = (int)(p - tstart);
+                    int avail = cached_term_cols - 1 - col;
+                    int plen = tlen < avail ? tlen : avail;
 
                     if(*tstart == '<'
                             && tidx == argidx)
                     {
-                        printf("\033[1;97m"
-                               "%.*s"
-                               "\033[0m",
-                               plen, tstart);
+                        printf("\033[1;97m" "%.*s" "\033[0m", plen, tstart);
                     }
                     else
                     {
-                        printf("\033[2m"
-                               "%.*s"
-                               "\033[0m",
-                               plen, tstart);
+                        printf("\033[2m" "%.*s" "\033[0m", plen, tstart);
                     }
                     col += plen;
                     if(*tstart == '<')
@@ -575,20 +548,14 @@ void CLI_redisplay(void)
                             hist[i]->line)
                         > rl_end)
                 {
-                    const char *suffix =
-                        hist[i]->line
-                        + rl_end;
-                    int n = print_ghost(
-                                "\033[38;5;245m",
-                                suffix,
-                                budget);
+                    const char *suffix = hist[i]->line + rl_end;
+                    int n = print_ghost("\033[38;5;245m", suffix, budget);
                     if(n > 0)
                     {
                         printf("\033[K");
                         printf("\033[%dD", n);
                         fflush(stdout);
-                        set_pending_suggestion(
-                            suffix, 0);
+                        set_pending_suggestion(suffix, 0);
                     }
                     update_hint_area();
                     return;
@@ -623,24 +590,20 @@ void CLI_redisplay(void)
     {
         char  str[200];
         char *saveptr_comp = NULL;
-        snprintf(str, 200, "%s",
-                 rl_line_buffer);
-        char *firstword = strtok_r(
-                              str, " ", &saveptr_comp);
+        snprintf(str, 200, "%s", rl_line_buffer);
+        char *firstword = strtok_r(str, " ", &saveptr_comp);
 
         int cmdimatch = -1;
         if(firstword != NULL)
         {
-            cmdimatch =
-                find_command_match(firstword);
+            cmdimatch = find_command_match(firstword);
         }
 
         /* If command has no <> argument tokens,
          * don't suggest arguments */
         if(cmdimatch >= 0)
         {
-            const char *syn =
-                data.cmd[cmdimatch].syntax;
+            const char *syn = data.cmd[cmdimatch].syntax;
             if(syn == NULL
                     || strchr(syn, '<') == NULL)
             {
@@ -668,32 +631,21 @@ void CLI_redisplay(void)
         if(strncmp(match, text,
                    strlen(text)) == 0)
         {
-            char *suffix =
-                match + strlen(text);
-            int n = print_ghost(
-                        "\033[38;5;245m",
-                        suffix,
-                        budget);
+            char *suffix = match + strlen(text);
+            int n = print_ghost("\033[38;5;245m", suffix, budget);
             if(n > 0)
             {
                 total_ghost += n;
-                set_pending_suggestion(
-                    suffix, 0);
+                set_pending_suggestion(suffix, 0);
             }
         }
         else if(data.autocomplete_fuzzy)
         {
             char fzbuf[256];
-            snprintf(fzbuf, sizeof(fzbuf),
-                     " [%s]", match);
-            int n = print_ghost(
-                        "\033[38;5;245m",
-                        fzbuf,
-                        budget);
+            snprintf(fzbuf, sizeof(fzbuf), " [%s]", match);
+            int n = print_ghost("\033[38;5;245m", fzbuf, budget);
             total_ghost += n;
-            set_pending_suggestion(
-                match,
-                (int) strlen(text));
+            set_pending_suggestion(match, (int) strlen(text));
         }
         free(match);
     }

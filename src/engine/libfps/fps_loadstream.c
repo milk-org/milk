@@ -40,38 +40,28 @@ imageID functionparameter_LoadStream(
     imageID  ID = -1;
     uint32_t imLOC;
 
-    const char *rawname =
-        fps->parray[pindex].val.string[0];
+    const char *rawname = fps->parray[pindex].val.string[0];
 
     /* Parse @X: prefix */
-    FPS_STREAMNAME_PARSED sp =
-        fps_streamname_parse(rawname);
+    FPS_STREAMNAME_PARSED sp = fps_streamname_parse(rawname);
 
     if(sp.error)
     {
-        PRINT_ERROR(
-            "invalid stream modifier "
-            "prefix in \"%s\"", rawname);
+        PRINT_ERROR("invalid stream modifier " "prefix in \"%s\"", rawname);
         return -1;
     }
     /* Apply location modifier to flags */
-    uint64_t saved_flags =
-        fps->parray[pindex].fpflag;
+    uint64_t saved_flags = fps->parray[pindex].fpflag;
 
     switch(sp.loc)
     {
-    case 'L':
-        fps->parray[pindex].fpflag |=
-            FPFLAG_STREAM_LOAD_FORCE_LOCALMEM;
+    case 'L': fps->parray[pindex].fpflag |= FPFLAG_STREAM_LOAD_FORCE_LOCALMEM;
         break;
 
-    case 'S':
-        fps->parray[pindex].fpflag |=
-            FPFLAG_STREAM_LOAD_FORCE_SHAREMEM;
+    case 'S': fps->parray[pindex].fpflag |= FPFLAG_STREAM_LOAD_FORCE_SHAREMEM;
         break;
 
-    default:
-        break;
+    default: break;
     }
 
     /* must-new check */
@@ -79,28 +69,20 @@ imageID functionparameter_LoadStream(
     {
         uint32_t probeLOC;
         uint64_t probeflags = 0;
-        imageID  probeID =
-            COREMOD_IOFITS_LoadMemStream(
-                sp.name, &probeflags, &probeLOC);
+        imageID  probeID = COREMOD_IOFITS_LoadMemStream(sp.name, &probeflags, &probeLOC);
 
         if(probeID != -1)
         {
             PRINT_ERROR(
                 "@N modifier -- "
-                "stream \"%s\" already "
-                "exists (ID %ld)",
-                sp.name, (long) probeID);
-            fps->parray[pindex].fpflag =
-                saved_flags;
+                "stream \"%s\" already " "exists (ID %ld)", sp.name, (long) probeID);
+            fps->parray[pindex].fpflag = saved_flags;
             return -1;
         }
     }
 
     /* Load using bare name */
-    ID = COREMOD_IOFITS_LoadMemStream(
-             sp.name,
-             &(fps->parray[pindex].fpflag),
-             &imLOC);
+    ID = COREMOD_IOFITS_LoadMemStream(sp.name, &(fps->parray[pindex].fpflag), &imLOC);
 
     /* Concise one-line status -- include the FPS key so empty stream
      * names can be traced back to the parameter that caused them.
@@ -115,8 +97,7 @@ imageID functionparameter_LoadStream(
     int conf_req = (fpsconnectmode == FPSCONNECT_CONF) &&
                    (fps->parray[pindex].fpflag & FPFLAG_STREAM_CONF_REQUIRED);
 
-    printf("  stream [%s] \"%s\"",
-           fps->parray[pindex].keywordfull, sp.name);
+    printf("  stream [%s] \"%s\"", fps->parray[pindex].keywordfull, sp.name);
     if(name_empty)
     {
         printf(" \033[33m[empty]\033[0m");
@@ -155,32 +136,20 @@ imageID functionparameter_LoadStream(
     if(sp.loc == 'L' && ID >= 0 &&
             imLOC == STREAM_LOAD_SOURCE_SHAREMEM)
     {
-        PRINT_ERROR(
-            "@L modifier -- "
-            "stream \"%s\" is in shared"
-            " memory, not local",
-            sp.name);
+        PRINT_ERROR("@L modifier -- " "stream \"%s\" is in shared" " memory, not local", sp.name);
         return -1;
     }
     if(sp.loc == 'S' && ID >= 0 &&
             imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
     {
-        PRINT_ERROR(
-            "@S modifier -- "
-            "stream \"%s\" is in local"
-            " memory, not shared",
-            sp.name);
+        PRINT_ERROR("@S modifier -- " "stream \"%s\" is in local" " memory, not shared", sp.name);
         return -1;
     }
 
     /* must-exist check */
     if(sp.must_exist && ID == -1)
     {
-        PRINT_ERROR(
-            "@E modifier -- "
-            "stream \"%s\""
-            " not found",
-            sp.name);
+        PRINT_ERROR("@E modifier -- " "stream \"%s\"" " not found", sp.name);
         return -1;
     }
 
@@ -195,8 +164,7 @@ imageID functionparameter_LoadStream(
                     "required stream parameter [%s] has no name set.\n"
                     "  Fix: milk-fps-set %s %s <stream_name>\n",
                     fps->parray[pindex].keywordfull,
-                    fps->md->name,
-                    fps->parray[pindex].keywordfull);
+                    fps->md->name, fps->parray[pindex].keywordfull);
         }
         else
         {
@@ -205,9 +173,7 @@ imageID functionparameter_LoadStream(
                     "required stream \"%s\" (parameter [%s]) "
                     "could not be loaded.\n"
                     "  Fix: create the stream or "
-                    "update the parameter value.\n",
-                    sp.name,
-                    fps->parray[pindex].keywordfull);
+                    "update the parameter value.\n", sp.name, fps->parray[pindex].keywordfull);
         }
         fflush(stderr);
         return -1;
@@ -222,8 +188,7 @@ imageID functionparameter_LoadStream(
                     "required stream parameter [%s] has no name set.\n"
                     "  Fix: milk-fps-set %s %s <stream_name>\n",
                     fps->parray[pindex].keywordfull,
-                    fps->md->name,
-                    fps->parray[pindex].keywordfull);
+                    fps->md->name, fps->parray[pindex].keywordfull);
         }
         else
         {
@@ -232,9 +197,7 @@ imageID functionparameter_LoadStream(
                     "required stream \"%s\" (parameter [%s]) "
                     "could not be loaded.\n"
                     "  Fix: create the stream or "
-                    "update the parameter value.\n",
-                    sp.name,
-                    fps->parray[pindex].keywordfull);
+                    "update the parameter value.\n", sp.name, fps->parray[pindex].keywordfull);
         }
         fflush(stderr);
         return -1;

@@ -195,9 +195,7 @@ void do_completion_scan(const char *word)
         char *param_prefix = dot + 1;
 
         FPS fps;
-        long NBparam = fps_connect(fpsname,
-                                   &fps,
-                                   FPSCONNECT_SIMPLE);
+        long NBparam = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
         if(NBparam != -1)
         {
             fps.NBparam = NBparam;
@@ -244,8 +242,7 @@ int main(
     int argc,
     char *argv[])
 {
-    int action = milk_help_init(argc, argv,
-                                FSET_DESC, FSET_DESC_LONG);
+    int action = milk_help_init(argc, argv, FSET_DESC, FSET_DESC_LONG);
     if(action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
@@ -284,8 +281,7 @@ int main(
         case 'h':
         case '1':
             break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
+        default: printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
             print_help(argv[0], 1);
             return 1;
         }
@@ -327,9 +323,7 @@ int main(
     char *keyword = dot; // Includes the dot
 
     FPS fps;
-    long NBparam = fps_connect(fpsname,
-                               &fps,
-                               FPSCONNECT_SIMPLE);
+    long NBparam = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     if(NBparam == -1)
     {
         PRINT_ERROR("Error: Could not connect to FPS '%s'", fpsname);

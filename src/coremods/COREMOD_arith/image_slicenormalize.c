@@ -24,15 +24,11 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // input image names
-static char inimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
-static char maskimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
-static char outimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN];
+static char maskimname[FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN];
 static uint32_t sliceaxis = 0;
-static char auxin[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char auxin[FUNCTION_PARAMETER_STRMAXLEN];
 
 // changed from uint64_t* to int32_t for V2
 static int32_t modeRMS = 0;
@@ -181,11 +177,8 @@ static errno_t image_slicenormalize_core(
 
                 switch(inimg.md->datatype)
                 {
-                    FOREACH_REAL_DATATYPE(MASKMUL_)
-                default:
-                    valm = 0.0;
-                    PRINT_ERROR(
-                        "unsupported datatype");
+                    FOREACH_REAL_DATATYPE(MASKMUL_) default: valm = 0.0;
+                    PRINT_ERROR("unsupported datatype");
                     break;
                 }
 #undef MASKMUL_
@@ -240,10 +233,7 @@ static errno_t image_slicenormalize_core(
 
                 switch(inimg.md->datatype)
                 {
-                    FOREACH_REAL_DATATYPE(NORMDIV_)
-                default:
-                    PRINT_ERROR(
-                        "unsupported datatype");
+                    FOREACH_REAL_DATATYPE(NORMDIV_) default: PRINT_ERROR("unsupported datatype");
                     break;
                 }
 #undef NORMDIV_
@@ -304,9 +294,7 @@ errno_t image_slicenormalize(
     double *__restrict maskcntarray = (double *) malloc(sizeof(double) * size);
 
     errno_t ret = image_slicenormalize_core(
-        inimg, maskimg, outimg, sliceaxis, imgaux, modeRMS,
-        normarray, avarray, maskcntarray
-    );
+        inimg, maskimg, outimg, sliceaxis, imgaux, modeRMS, normarray, avarray, maskcntarray);
 
     free(normarray);
     free(avarray);
@@ -365,22 +353,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
             image_slicenormalize_core(
                 inimg,
-                maskimg,
-                &outimg,
-                sliceaxis,
-                imgaux,
-                modeRMS,
-                normarray,
-                avarray,
-                maskcntarray
-            );
+                maskimg, &outimg, sliceaxis, imgaux, modeRMS, normarray, avarray, maskcntarray);
         }
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    if (normarray) free(normarray);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END  if (normarray) free(normarray);
     if (avarray) free(avarray);
     if (maskcntarray) free(maskcntarray);
 
@@ -397,21 +375,16 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
 }
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMOD_arith__image_slicenormalize()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
 }
 #endif
 

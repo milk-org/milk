@@ -113,8 +113,7 @@ static const help_line_t HELP[] =
 };
 /* clang-format on */
 
-static const int HELP_TOTAL =
-    (int)(sizeof(HELP) / sizeof(HELP[0]));
+static const int HELP_TOTAL = (int)(sizeof(HELP) / sizeof(HELP[0]));
 
 /**
  * help_is_expanded - check if a section is expanded.
@@ -256,8 +255,7 @@ void ov_render_help(const OV_LAYOUT *lay)
     /* Border */
     ov_draw_panel_border(
         pr,                                  pc, ph, pw,
-        "HELP  (↑↓ navigate  ENTER expand  h close)",
-        OV_FG_BRIGHT,                        1, 0);
+        "HELP  (↑↓ navigate  ENTER expand  h close)", OV_FG_BRIGHT,                        1, 0);
 
     /* Clear interior */
     for(int r = pr + 1; r < pr + ph - 1; r++)
@@ -313,10 +311,8 @@ void ov_render_help(const OV_LAYOUT *lay)
         if(h->flags & HF_SECTION)
         {
             /* Section header with chevron */
-            int expanded = help_is_expanded(
-                               lay, h->section);
-            const char *chev = expanded
-                               ? "▾" : "▸";
+            int expanded = help_is_expanded(lay, h->section);
+            const char *chev = expanded ? "▾" : "▸";
 
             if(is_sel)
             {
@@ -359,8 +355,7 @@ void ov_render_help(const OV_LAYOUT *lay)
         {
             /* Normal child row */
             ov_theme_fg(OV_FG_TEXT);
-            ov_buf_printf(" %-*s", inner_w - 1,
-                          h->text);
+            ov_buf_printf(" %-*s", inner_w - 1, h->text);
         }
 
         ov_buf_reset_attr();

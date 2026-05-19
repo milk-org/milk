@@ -287,14 +287,7 @@ int printERROR(
 {
     fprintf(stderr,
             "%c[%d;%dm ERROR [ %s:%d: %s ]  %c[%d;m\n",
-            (char) 27,
-            1,
-            31,
-            file,
-            line,
-            func,
-            (char) 27,
-            0);
+            (char) 27, 1, 31, file, line, func, (char) 27, 0);
     if(C_ERRNO != 0)
     {
         char buff[256];
@@ -312,14 +305,7 @@ int printERROR(
         PRINT_ERROR("No C error (errno = 0)");
     }
 
-    fprintf(stderr,
-            "%c[%d;%dm %s  %c[%d;m\n",
-            (char) 27,
-            1,
-            31,
-            errmessage,
-            (char) 27,
-            0);
+    fprintf(stderr, "%c[%d;%dm %s  %c[%d;m\n", (char) 27, 1, 31, errmessage, (char) 27, 0);
 
     C_ERRNO = 0;
 

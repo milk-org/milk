@@ -42,15 +42,11 @@ functionparameter_PrintParameterInfo(
 
 
         printf("%s [%ld] %d ERROR(s)\n",
-               fpsentry->md->name,
-               fpsentry->md->msgcnt,
-               fpsentry->md->conferrcnt);
+               fpsentry->md->name, fpsentry->md->msgcnt, fpsentry->md->conferrcnt);
         for(int msgi = 0; msgi < fpsentry->md->msgcnt; msgi++)
         {
             printf("%s [%3d] %s\n",
-                   fpsentry->md->name,
-                   fpsentry->md->msgpindex[msgi],
-                   fpsentry->md->message[msgi]);
+                   fpsentry->md->name, fpsentry->md->msgpindex[msgi], fpsentry->md->message[msgi]);
         }
     }
 
@@ -67,9 +63,7 @@ functionparameter_PrintParameterInfo(
         display_keyword += prefix_len + 1;
     }
 
-    printf("[%d] Parameter name : %s\n",
-           pindex,
-           display_keyword);
+    printf("[%d] Parameter name : %s\n", pindex, display_keyword);
 
     char typestring[STRINGMAXLEN_FPSTYPE];
     functionparameter_GetTypeString(fpsentry->parray[pindex].type, typestring);

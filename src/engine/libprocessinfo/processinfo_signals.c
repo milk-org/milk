@@ -21,32 +21,23 @@ void processinfo_sig_handler(int signo)
 {
     switch(signo)
     {
-    case SIGUSR1:
-        processinfo_signal_USR1 = 1;
+    case SIGUSR1: processinfo_signal_USR1 = 1;
         break;
-    case SIGUSR2:
-        processinfo_signal_USR2 = 1;
+    case SIGUSR2: processinfo_signal_USR2 = 1;
         break;
-    case SIGINT:
-        processinfo_signal_INT = 1;
+    case SIGINT: processinfo_signal_INT = 1;
         break;
-    case SIGTERM:
-        processinfo_signal_TERM = 1;
+    case SIGTERM: processinfo_signal_TERM = 1;
         break;
-    case SIGSEGV:
-        processinfo_signal_SEGV = 1;
+    case SIGSEGV: processinfo_signal_SEGV = 1;
         break;
-    case SIGABRT:
-        processinfo_signal_ABRT = 1;
+    case SIGABRT: processinfo_signal_ABRT = 1;
         break;
-    case SIGBUS:
-        processinfo_signal_BUS = 1;
+    case SIGBUS: processinfo_signal_BUS = 1;
         break;
-    case SIGHUP:
-        processinfo_signal_HUP = 1;
+    case SIGHUP: processinfo_signal_HUP = 1;
         break;
-    case SIGPIPE:
-        processinfo_signal_PIPE = 1;
+    case SIGPIPE: processinfo_signal_PIPE = 1;
         break;
     }
 }
@@ -167,12 +158,8 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
                      STRINGMAXLEN_PROCESSINFO_STATUSMSG,
                      "CTRLexit %02d:%02d:%02d.%03d",
                      tstoptm->tm_hour,
-                     tstoptm->tm_min,
-                     tstoptm->tm_sec,
-                     (int)(0.000001 * (tstop.tv_nsec)));
-            strncpy(processinfo->statusmsg,
-                    msgstring,
-                    STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
+                     tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
+            strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
         }
 
         if(processinfo->loopstat == 1)
@@ -181,12 +168,8 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
                      STRINGMAXLEN_PROCESSINFO_STATUSMSG,
                      "Loop exit %02d:%02d:%02d.%03d",
                      tstoptm->tm_hour,
-                     tstoptm->tm_min,
-                     tstoptm->tm_sec,
-                     (int)(0.000001 * (tstop.tv_nsec)));
-            strncpy(processinfo->statusmsg,
-                    msgstring,
-                    STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
+                     tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
+            strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
         }
 
         processinfo->loopstat = 3; // clean exit
@@ -198,10 +181,7 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
     char SM_fname[STRINGMAXLEN_FULLFILENAME];
     WRITE_FULLFILENAME(SM_fname,
-                       "%s/proc.%s.%06d.shm",
-                       procdname,
-                       processinfo->name,
-                       processinfo->PID);
+                       "%s/proc.%s.%06d.shm", procdname, processinfo->name, processinfo->PID);
     remove(SM_fname);
 
     return 0;
