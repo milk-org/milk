@@ -57,3 +57,19 @@ __pycache__
 .nox
 testing/gcov_html
 pyrightconfig.json
+
+# Node dependencies
+node_modules/
+
+# Shared libraries and executables
+*.so
+test_graph_panel
+
+# Generated source files
+lex.yy.c
+
+# Diagnostic dumps and execution scripts
+*.txt
+gdb_script.txt
+test_fps_stop.sh
+
