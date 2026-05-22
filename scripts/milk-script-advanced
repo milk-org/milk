@@ -35,7 +35,7 @@ MSopt+=( "v:verbose:verbosefunc::Enable verbose output" )
 function verbosefunc() { export SCRIPT_VERBOSE=1; }
 
 # parse arguments
-# milk-argparse automatically creates and exports uppercase ENV vars 
+# milk-argparse automatically creates and exports uppercase ENV vars
 # of our arguments ($STREAMNAME, $GAIN) for native use in milk-cli
 MSseealso+=( "milk-scriptexample:example milk script" )
 MSseealso+=( "milk-tutorial:milk tutorial by examples" )

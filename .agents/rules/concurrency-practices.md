@@ -74,4 +74,3 @@ CPU cores.
   semaphores instead.
 - `sched_setaffinity` — use `processinfo` CPU
   mask instead (see `performance-practices.md`).
-

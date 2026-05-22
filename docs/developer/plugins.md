@@ -42,7 +42,7 @@ Here is a standard template for a plugin's `CMakeLists.txt`:
 set(LIBNAME my_new_plugin)
 
 # 1. Source files
-set(SOURCEFILES 
+set(SOURCEFILES
     my_plugin_func.c
 )
 

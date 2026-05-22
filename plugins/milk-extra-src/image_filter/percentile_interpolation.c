@@ -15,12 +15,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -47,8 +47,8 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
     long    pixstep = 5;
     long    IDpercmask; // optional mask file
 
-    step = (long)(0.7 * boxrad);
-    if(step < 1)
+    step = (long) (0.7 * boxrad);
+    if (step < 1)
     {
         step = 1;
     }
@@ -57,8 +57,8 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
     xsize = dcimg[ID].md[0].size[0];
     ysize = dcimg[ID].md[0].size[1];
 
-    xsize1 = (long)(xsize / step);
-    ysize1 = (long)(ysize / step);
+    xsize1 = (long) (xsize / step);
+    ysize1 = (long) (ysize / step);
 
     create_2Dimage_ID("_tmppercintf", xsize1, ysize1, &ID1);
 
@@ -66,95 +66,99 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
     IDpercmask = image_ID("_percmask", dcimg, dcnimg);
 
     array = (double *) malloc(sizeof(double) * boxrad * boxrad * 4);
-    if(array == NULL)
+    if (array == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    for(ii1 = 0; ii1 < xsize1; ii1++)
-        for(jj1 = 0; jj1 < ysize1; jj1++)
+    for (ii1 = 0; ii1 < xsize1; ii1++)
+    {
+        for (jj1 = 0; jj1 < ysize1; jj1++)
         {
             x = 1.0 * (ii1 + 0.5) / xsize1 * xsize;
             y = 1.0 * (jj1 + 0.5) / ysize1 * ysize;
 
-            iis = (long)(x - boxrad);
-            if(iis < 0)
+            iis = (long) (x - boxrad);
+            if (iis < 0)
             {
                 iis = 0;
             }
 
-            iie = (long)(x + boxrad);
-            if(iie > xsize)
+            iie = (long) (x + boxrad);
+            if (iie > xsize)
             {
                 iie = xsize;
             }
 
-            jjs = (long)(y - boxrad);
-            if(jjs < 0)
+            jjs = (long) (y - boxrad);
+            if (jjs < 0)
             {
                 jjs = 0;
             }
 
-            jje = (long)(y + boxrad);
-            if(jje > ysize)
+            jje = (long) (y + boxrad);
+            if (jje > ysize)
             {
                 jje = ysize;
             }
 
             cnt = 0;
-            if(IDpercmask == -1)
+            if (IDpercmask == -1)
             {
-                for(ii = iis; ii < iie; ii += pixstep)
-                    for(jj = jjs; jj < jje; jj += pixstep)
+                for (ii = iis; ii < iie; ii += pixstep)
+                {
+                    for (jj = jjs; jj < jje; jj += pixstep)
                     {
                         array[cnt] = dcimg[ID].array.F[jj * xsize + ii];
                         cnt++;
                     }
+                }
             }
             else
             {
-                for(ii = iis; ii < iie; ii += pixstep)
-                    for(jj = jjs; jj < jje; jj += pixstep)
+                for (ii = iis; ii < iie; ii += pixstep)
+                {
+                    for (jj = jjs; jj < jje; jj += pixstep)
                     {
-                        if(dcimg[IDpercmask].array.F[jj * xsize + ii] >
-                                0.5)
+                        if (dcimg[IDpercmask].array.F[jj * xsize + ii] > 0.5)
                         {
-                            array[cnt] =
-                                dcimg[ID].array.F[jj * xsize + ii];
+                            array[cnt] = dcimg[ID].array.F[jj * xsize + ii];
                             cnt++;
                         }
                     }
+                }
             }
             quick_sort_double(array, cnt);
 
-            dcimg[ID1].array.F[jj1 * xsize1 + ii1] =
-                array[(long)(perc * cnt)];
+            dcimg[ID1].array.F[jj1 * xsize1 + ii1] = array[(long) (perc * cnt)];
             //	dcimg[IDx].array.F[jj1*xsize1+ii1] = 0.5f*(iis+iie);
             //dcimg[IDy].array.F[jj1*xsize1+ii1] = 0.5f*(jjs+jje);
         }
+    }
     free(array);
 
     create_2Dimage_ID(IDout_name, xsize, ysize, &IDout);
 
-    for(ii = 0; ii < xsize; ii++)
-        for(jj = 0; jj < ysize; jj++)
+    for (ii = 0; ii < xsize; ii++)
+    {
+        for (jj = 0; jj < ysize; jj++)
         {
             ii1f = 1.0 * ii / xsize * xsize1;
             jj1f = 1.0 * jj / ysize * ysize1;
-            ii1  = (long)(ii1f);
-            jj1  = (long)(jj1f);
+            ii1  = (long) (ii1f);
+            jj1  = (long) (jj1f);
 
             ii2 = ii1 + 1;
             jj2 = jj1 + 1;
 
-            while(ii2 > xsize1 - 1)
+            while (ii2 > xsize1 - 1)
             {
                 ii1--;
                 ii2--;
             }
 
-            while(jj2 > ysize1 - 1)
+            while (jj2 > ysize1 - 1)
             {
                 jj1--;
                 jj2--;
@@ -168,10 +172,11 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
             v01 = dcimg[ID1].array.F[jj2 * xsize1 + ii1];
             v11 = dcimg[ID1].array.F[jj2 * xsize1 + ii2];
 
-            dcimg[IDout].array.F[jj * xsize + ii] =
-                (1.0 - u) * (1.0 - t) * v00 + (1.0 - u) * t * v01 +
-                u * (1.0 - t) * v10 + u * t * v11;
+            dcimg[IDout].array.F[jj * xsize + ii] = (1.0 - u) * (1.0 - t) * v00 +
+                                                    (1.0 - u) * t * v01 + u * (1.0 - t) * v10 +
+                                                    u * t * v11;
         }
+    }
 
     delete_image_ID("_tmppercintf", DELETE_IMAGE_ERRMODE_WARNING);
 
@@ -214,20 +219,20 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
     ysize = dcimg[ID].md[0].size[1];
 
     array = (double *) malloc(sizeof(double) * xsize * ysize);
-    if(array == NULL)
+    if (array == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     varray = (double *) malloc(sizeof(double) * NBstep);
-    if(varray == NULL)
+    if (varray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    for(ii = 0; ii < xsize * ysize; ii++)
+    for (ii = 0; ii < xsize * ysize; ii++)
     {
         array[ii] = dcimg[ID].array.F[ii];
     }
@@ -235,23 +240,23 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
 
     pstart = 0.8 * perc - 0.05;
     pend   = 1.2 * perc + 0.05;
-    if(pstart < 0.01)
+    if (pstart < 0.01)
     {
         pstart = 0.01;
     }
-    if(pend > 0.99)
+    if (pend > 0.99)
     {
         pend = 0.99;
     }
 
-    Imin = array[(long)(pstart * xsize * ysize)];
-    Imax = array[(long)(pend * xsize * ysize)];
+    Imin = array[(long) (pstart * xsize * ysize)];
+    Imax = array[(long) (pend * xsize * ysize)];
 
     range = Imax - Imin;
     Imin -= 0.1 * range;
     Imax += 0.1 * range;
 
-    for(k = 0; k < NBstep; k++)
+    for (k = 0; k < NBstep; k++)
     {
         varray[k] = Imin + 1.0 * k / (NBstep - 1) * (Imax - Imin);
     }
@@ -265,23 +270,23 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
 
     IDkern = make_gauss("_kern", xsize, ysize, sigma, 1.0);
     tot    = 0.0;
-    for(ii = 0; ii < xsize * ysize; ii++)
+    for (ii = 0; ii < xsize * ysize; ii++)
     {
         tot += dcimg[IDkern].array.F[ii];
     }
-    for(ii = 0; ii < xsize * ysize; ii++)
+    for (ii = 0; ii < xsize * ysize; ii++)
     {
         dcimg[IDkern].array.F[ii] /= tot;
     }
 
     create_2Dimage_ID("_testpercim1", xsize, ysize, &IDtmp);
-    for(k = 0; k < NBstep; k++)
+    for (k = 0; k < NBstep; k++)
     {
         printf("   %ld/%ld threshold = %f\n", k, NBstep, varray[k]);
-        for(ii = 0; ii < xsize * ysize; ii++)
+        for (ii = 0; ii < xsize * ysize; ii++)
         {
             value = dcimg[ID].array.F[ii];
-            if(value < varray[k])
+            if (value < varray[k])
             {
                 dcimg[IDtmp].array.F[ii] = 1.0f;
             }
@@ -291,29 +296,25 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
             }
         }
 
-        fconvolve_padd("_testpercim1",
-                       "_kern",
-                       (long)(3.0 * sigma),
-                       "_testpercim2");
+        fconvolve_padd("_testpercim1", "_kern", (long) (3.0 * sigma), "_testpercim2");
 
         ID2 = image_ID("_testpercim2", dcimg, dcnimg);
-        for(ii = 0; ii < xsize * ysize; ii++)
+        for (ii = 0; ii < xsize * ysize; ii++)
         {
-            dcimg[IDc].array.F[k * xsize * ysize + ii] =
-                dcimg[ID2].array.F[ii];
+            dcimg[IDc].array.F[k * xsize * ysize + ii] = dcimg[ID2].array.F[ii];
         }
         delete_image_ID("_testpercim2", DELETE_IMAGE_ERRMODE_WARNING);
     }
 
     create_2Dimage_ID(IDout_name, xsize, ysize, &IDout);
-    for(ii = 0; ii < xsize * ysize; ii++)
+    for (ii = 0; ii < xsize * ysize; ii++)
     {
         k  = 0;
         k1 = 0;
         k2 = 0;
         v1 = 0.0;
         v2 = 0.0;
-        while((v2 < perc) && (k < NBstep - 1))
+        while ((v2 < perc) && (k < NBstep - 1))
         {
             k++;
             v1 = v2;
@@ -322,15 +323,14 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
             k2 = k;
         }
         // ideally, v1<perc<v2
-        if((v1 < perc) && (perc < v2))
+        if ((v1 < perc) && (perc < v2))
         {
-            x = (perc - v1) / (v2 - v1);
-            dcimg[IDout].array.F[ii] =
-                (1.0 - x) * varray[k1] + x * varray[k2];
+            x                        = (perc - v1) / (v2 - v1);
+            dcimg[IDout].array.F[ii] = (1.0 - x) * varray[k1] + x * varray[k2];
         }
         else
         {
-            if(v1 > perc)
+            if (v1 > perc)
             {
                 dcimg[IDout].array.F[ii] = varray[0];
             }

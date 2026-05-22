@@ -17,12 +17,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -63,45 +63,44 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
     NBfrequ = NBfrequ1D * (2 * NBfrequ1D - 1);
 
     coscoeff = (float *) malloc(sizeof(float) * NBfrequ);
-    if(coscoeff == NULL)
+    if (coscoeff == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     sincoeff = (float *) malloc(sizeof(float) * NBfrequ);
-    if(sincoeff == NULL)
+    if (sincoeff == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    for(i = 0; i < NBfrequ1D; i++)
-        for(j = 0; j < 2 * NBfrequ1D - 1; j++)
+    for (i = 0; i < NBfrequ1D; i++)
+    {
+        for (j = 0; j < 2 * NBfrequ1D - 1; j++)
         {
             coscoeff[j * NBfrequ1D + i] = 0.0;
             sincoeff[j * NBfrequ1D + i] = 0.0;
             //	printf("%ld %ld -> %g %g\n",i,(j-NBfrequ1D+1),coscoeff[j*NBfrequ1D+i],sincoeff[j*NBfrequ1D+i]);
         }
+    }
 
-    if(1 == 0)
+    if (1 == 0)
     {
         fp = fopen("fitcoeff.dat", "r");
-        for(i = 0; i < NBfrequ1D; i++)
-            for(j = 0; j < 2 * NBfrequ1D - 1; j++)
+        for (i = 0; i < NBfrequ1D; i++)
+        {
+            for (j = 0; j < 2 * NBfrequ1D - 1; j++)
             {
-                if(fscanf(fp,
-                          "%ld %ld %ld %g %g\n",
-                          &i,
-                          &j,
-                          &tmpl,
-                          &coscoeff[j * NBfrequ1D + i],
-                          &sincoeff[j * NBfrequ1D + i]) != 5)
+                if (fscanf(fp, "%ld %ld %ld %g %g\n", &i, &j, &tmpl, &coscoeff[j * NBfrequ1D + i],
+                           &sincoeff[j * NBfrequ1D + i]) != 5)
                 {
                     printf("ERROR: fscanf, %s line %d\n", __FILE__, __LINE__);
                     exit(0);
                 }
             }
+        }
         fclose(fp);
         /*
         fp = fopen("fitcoeff1.dat","w");
@@ -119,28 +118,29 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
     create_2Dimage_ID("fitim", size, size, &IDfit);
 
     xarray = (float *) malloc(sizeof(float) * size * size);
-    if(xarray == NULL)
+    if (xarray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     yarray = (float *) malloc(sizeof(float) * size * size);
-    if(yarray == NULL)
+    if (yarray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     rarray = (float *) malloc(sizeof(float) * size * size);
-    if(rarray == NULL)
+    if (rarray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    for(ii = 0; ii < size; ii += step)
-        for(jj = 0; jj < size; jj += step)
+    for (ii = 0; ii < size; ii += step)
+    {
+        for (jj = 0; jj < size; jj += step)
         {
             ii1         = jj * size + ii;
             x           = 1.0 * (ii - size / 2) / radius;
@@ -149,15 +149,16 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
             yarray[ii1] = y;
             rarray[ii1] = sqrt(x * x + y * y);
         }
+    }
 
-    for(ii = 0; ii < size * size; ii++)
+    for (ii = 0; ii < size * size; ii++)
     {
         dcimg[IDres].array.F[ii] = dcimg[ID].array.F[ii];
         dcimg[IDfit].array.F[ii] = 0.0f;
     }
-    for(iter = 0; iter < NBiter; iter++)
+    for (iter = 0; iter < NBiter; iter++)
     {
-        if((iter == 0) || (iter == NBiter - 1))
+        if ((iter == 0) || (iter == NBiter - 1))
         {
             gain = 0.0;
         }
@@ -166,49 +167,54 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
             gain = Gain;
         }
         // initialize IDfit
-        for(ii = 0; ii < size; ii += step)
-            for(jj = 0; jj < size; jj += step)
+        for (ii = 0; ii < size; ii += step)
+        {
+            for (jj = 0; jj < size; jj += step)
             {
                 dcimg[IDfit].array.F[jj * size + ii] = 0.0f;
             }
-        for(i1 = 0; i1 < NBfrequ1D; i1++)
-            for(j1 = 0; j1 < 2 * NBfrequ1D - 1; j1++)
+        }
+        for (i1 = 0; i1 < NBfrequ1D; i1++)
+        {
+            for (j1 = 0; j1 < 2 * NBfrequ1D - 1; j1++)
             {
                 coeffc = coscoeff[j1 * NBfrequ1D + i1];
                 coeffs = sincoeff[j1 * NBfrequ1D + i1];
-                for(ii = 0; ii < size; ii += step)
-                    for(jj = 0; jj < size; jj += step)
+                for (ii = 0; ii < size; ii += step)
+                {
+                    for (jj = 0; jj < size; jj += step)
                     {
                         ii1 = jj * size + ii;
-                        if(rarray[ii1] < rlim)
+                        if (rarray[ii1] < rlim)
                         {
-                            tmp = frequStep *
-                                  (xarray[ii1] * i1 +
-                                   yarray[ii1] * (j1 - NBfrequ1D + 1));
+                            tmp =
+                                frequStep * (xarray[ii1] * i1 + yarray[ii1] * (j1 - NBfrequ1D + 1));
                             tmpc = cos(tmp);
                             tmps = sin(tmp);
                             dcimg[IDfit].array.F[ii1] += coeffc * tmpc;
                             dcimg[IDfit].array.F[ii1] += coeffs * tmps;
                         }
                     }
+                }
             }
+        }
 
-        for(i = 0; i < NBfrequ1D; i++)
-            for(j = 0; j < 2 * NBfrequ1D - 1; j++)
+        for (i = 0; i < NBfrequ1D; i++)
+        {
+            for (j = 0; j < 2 * NBfrequ1D - 1; j++)
             {
                 tmpc1 = 0.0;
                 tmpc2 = 0.0;
                 tmps1 = 0.0;
                 tmps2 = 0.0;
-                for(ii = 0; ii < size; ii += step)
-                    for(jj = 0; jj < size; jj += step)
+                for (ii = 0; ii < size; ii += step)
+                {
+                    for (jj = 0; jj < size; jj += step)
                     {
                         ii1 = jj * size + ii;
-                        if(rarray[ii1] < rlim)
+                        if (rarray[ii1] < rlim)
                         {
-                            tmp =
-                                frequStep * (xarray[ii1] * i +
-                                             yarray[ii1] * (j - NBfrequ1D + 1));
+                            tmp = frequStep * (xarray[ii1] * i + yarray[ii1] * (j - NBfrequ1D + 1));
                             tmpc = cos(tmp);
                             tmps = sin(tmp);
 
@@ -219,7 +225,8 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
                             tmps2 += dcimg[IDres].array.F[ii1] * tmps;
                         }
                     }
-                if(tmpc1 > 1e-8)
+                }
+                if (tmpc1 > 1e-8)
                 {
                     tmpc = tmpc2 / tmpc1;
                 }
@@ -228,7 +235,7 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
                     tmpc = 0.0;
                 }
 
-                if(tmps1 > 1e-8)
+                if (tmps1 > 1e-8)
                 {
                     tmps = tmps2 / tmps1;
                 }
@@ -243,61 +250,56 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
                 gtmpc = gain * tmpc;
                 gtmps = gain * tmps;
 
-                for(ii = 0; ii < size; ii += step)
-                    for(jj = 0; jj < size; jj += step)
+                for (ii = 0; ii < size; ii += step)
+                {
+                    for (jj = 0; jj < size; jj += step)
                     {
                         ii1 = jj * size + ii;
-                        if(rarray[ii1] < 1.0)
+                        if (rarray[ii1] < 1.0)
                         {
-                            tmp =
-                                frequStep * (xarray[ii1] * i +
-                                             yarray[ii1] * (j - NBfrequ1D + 1));
+                            tmp = frequStep * (xarray[ii1] * i + yarray[ii1] * (j - NBfrequ1D + 1));
                             tmpc = cos(tmp);
                             tmps = sin(tmp);
                             dcimg[IDfit].array.F[ii1] += gtmpc * tmpc;
                             dcimg[IDfit].array.F[ii1] += gtmps * tmps;
                         }
                     }
+                }
 
                 error    = 0.0;
                 errorcnt = 0;
-                for(ii = 0; ii < size; ii += step)
-                    for(jj = 0; jj < size; jj += step)
+                for (ii = 0; ii < size; ii += step)
+                {
+                    for (jj = 0; jj < size; jj += step)
                     {
                         ii1 = jj * size + ii;
-                        if(rarray[ii1] < 1.0)
+                        if (rarray[ii1] < 1.0)
                         {
                             dcimg[IDres].array.F[ii1] =
-                                dcimg[ID].array.F[ii1] -
-                                dcimg[IDfit].array.F[ii1];
-                            if(rarray[ii1] < rlim)
+                                dcimg[ID].array.F[ii1] - dcimg[IDfit].array.F[ii1];
+                            if (rarray[ii1] < rlim)
                             {
-                                error += dcimg[IDres].array.F[ii1] *
-                                         dcimg[IDres].array.F[ii1];
+                                error += dcimg[IDres].array.F[ii1] * dcimg[IDres].array.F[ii1];
                                 errorcnt++;
                             }
                         }
                     }
+                }
             }
-        printf("iter %ld / %ld   error = %g\n",
-               iter,
-               NBiter,
-               sqrt(error / errorcnt));
+        }
+        printf("iter %ld / %ld   error = %g\n", iter, NBiter, sqrt(error / errorcnt));
         save_fl_fits("fitim", "fitim");
         save_fl_fits("residual", "residual");
 
         fp = fopen("fitcoeff.dat", "w");
-        for(i = 0; i < NBfrequ1D; i++)
-            for(j = 0; j < 2 * NBfrequ1D - 1; j++)
+        for (i = 0; i < NBfrequ1D; i++)
+        {
+            for (j = 0; j < 2 * NBfrequ1D - 1; j++)
             {
-                fprintf(fp,
-                        "%ld %ld %ld %.20g %.20g\n",
-                        i,
-                        j,
-                        j - NBfrequ1D + 1,
-                        coscoeff[j * NBfrequ1D + i],
-                        sincoeff[j * NBfrequ1D + i]);
+                fprintf(fp, "%ld %ld %ld %.20g %.20g\n", i, j, j - NBfrequ1D + 1,
+                        coscoeff[j * NBfrequ1D + i], sincoeff[j * NBfrequ1D + i]);
             }
+        }
         fclose(fp);
     }
     free(coscoeff);

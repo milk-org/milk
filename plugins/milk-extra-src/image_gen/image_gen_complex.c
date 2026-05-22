@@ -7,19 +7,19 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_memory/create_image.h"
-#include "COREMOD_tools/COREMOD_tools.h" 
+#include "COREMOD_tools/COREMOD_tools.h"
 #include "statistic/statistic.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -45,15 +45,17 @@ imageID make_jacquinot_pupil(const char *ID_name,
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            if((fabs(jj - y_center) / height) <
-                    exp(-((ii - x_center) * (ii - x_center) / width / width)))
+            if ((fabs(jj - y_center) / height) <
+                exp(-((ii - x_center) * (ii - x_center) / width / width)))
             {
                 dcimg[ID].array.F[jj * naxes[0] + ii] = 1;
             }
         }
+    }
 
     return (ID);
 }
@@ -74,23 +76,23 @@ imageID make_sectors(const char *ID_name,
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             theta = atan2((ii - x_center), (jj - y_center));
-            if(theta < 0.0)
+            if (theta < 0.0)
             {
                 theta += 2.0 * PI;
             }
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                step * ((long)(theta / 2.0 / PI * NB_sectors));
+            dcimg[ID].array.F[jj * naxes[0] + ii] = step * ((long) (theta / 2.0 / PI * NB_sectors));
         }
+    }
 
     return (ID);
 }
 
-imageID
-make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
+imageID make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -98,19 +100,19 @@ make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     uint64_t nelement;
 
     distrib = 0; /* uniform */
-    if(strstr(options, "gauss") != NULL)
+    if (strstr(options, "gauss") != NULL)
     {
         distrib = 1; /* gauss */
         printf("gaussian distribution\n");
     }
 
-    if(strstr(options, "trgauss") != NULL)
+    if (strstr(options, "trgauss") != NULL)
     {
         distrib = 2; /* truncated gauss */
         printf("truncated gaussian distribution\n");
     }
 
-    if(dcdebug > 1)
+    if (dcdebug > 1)
     {
         fprintf(stdout, "Image size = %u %u\n", l1, l2);
     }
@@ -121,23 +123,23 @@ make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     nelement = naxes[0] * naxes[1];
 
     // openMP is slow when calling gsl random number generator : do not use openMP here
-    if(distrib == 0)
+    if (distrib == 0)
     {
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             dcimg[ID].array.F[ii] = (double) ran1();
         }
     }
-    if(distrib == 1)
+    if (distrib == 1)
     {
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             dcimg[ID].array.F[ii] = (double) gauss();
         }
     }
-    if(distrib == 2)
+    if (distrib == 2)
     {
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             dcimg[ID].array.F[ii] = (double) gauss_trc();
         }
@@ -146,10 +148,7 @@ make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     return (ID);
 }
 
-imageID make_rnd_double(const char *ID_name,
-                        uint32_t    l1,
-                        uint32_t    l2,
-                        const char *options)
+imageID make_rnd_double(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -157,19 +156,19 @@ imageID make_rnd_double(const char *ID_name,
     uint64_t nelement;
 
     distrib = 0; /* uniform */
-    if(strstr(options, "gauss") != NULL)
+    if (strstr(options, "gauss") != NULL)
     {
         distrib = 1; /* gauss */
         printf("gaussian distribution\n");
     }
 
-    if(strstr(options, "trgauss") != NULL)
+    if (strstr(options, "trgauss") != NULL)
     {
         distrib = 2; /* truncated gauss */
         printf("truncated gaussian distribution\n");
     }
 
-    if(dcdebug > 1)
+    if (dcdebug > 1)
     {
         fprintf(stdout, "Image size = %u %u\n", l1, l2);
     }
@@ -180,23 +179,23 @@ imageID make_rnd_double(const char *ID_name,
     nelement = naxes[0] * naxes[1];
 
     // openMP is slow when calling gsl random number generator : do not use openMP here
-    if(distrib == 0)
+    if (distrib == 0)
     {
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             dcimg[ID].array.D[ii] = (double) ran1();
         }
     }
-    if(distrib == 1)
+    if (distrib == 1)
     {
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             dcimg[ID].array.D[ii] = (double) gauss();
         }
     }
-    if(distrib == 2)
+    if (distrib == 2)
     {
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
             dcimg[ID].array.D[ii] = (double) gauss_trc();
         }
@@ -254,8 +253,7 @@ int make_rnd1(const char *ID_name, long l1, long l2, const char *options)
 }
 */
 
-imageID
-make_gauss(const char *ID_name, uint32_t l1, uint32_t l2, double a, double A)
+imageID make_gauss(const char *ID_name, uint32_t l1, uint32_t l2, double a, double A)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -265,14 +263,15 @@ make_gauss(const char *ID_name, uint32_t l1, uint32_t l2, double a, double A)
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             distsq = (ii - naxes[0] / 2) * (ii - naxes[0] / 2) +
                      (jj - naxes[1] / 2) * (jj - naxes[1] / 2);
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                (double) A * exp(-distsq / a / a);
+            dcimg[ID].array.F[jj * naxes[0] + ii] = (double) A * exp(-distsq / a / a);
         }
+    }
     /*  printf("FWHM = %f\n",2.0*a*sqrt(log(2)));*/
     return (ID);
 }
@@ -298,9 +297,9 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
     create_2Dimage_ID("tem00", size, size, &IDtem00);
 
     double fluxtot = 0.0;
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
     {
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             float x     = 1.0 * (1.0 * ii - 0.5 * naxes[0]) / puprad;
             float y     = 1.0 * (1.0 * jj - 0.5 * naxes[1]) / puprad;
@@ -312,17 +311,17 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
         }
     }
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
     {
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             dcimg[IDtem00].array.F[jj * naxes[0] + ii] /= sqrt(fluxtot);
         }
     }
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
     {
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             double totre = 0.0;
             double totim = 0.0;
@@ -331,9 +330,9 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
             float TTy = 1.0 * (1.0 * jj - 0.5 * naxes[1]) * TTcoeff;
 
             fluxtot = 0.0;
-            for(uint32_t jj0 = 0; jj0 < naxes[1]; jj0++)
+            for (uint32_t jj0 = 0; jj0 < naxes[1]; jj0++)
             {
-                for(uint32_t ii0 = 0; ii0 < naxes[0]; ii0++)
+                for (uint32_t ii0 = 0; ii0 < naxes[0]; ii0++)
                 {
                     float pup_ampl;
                     float pup_pha;
@@ -347,16 +346,14 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
 
                     float r = sqrtf(dx * dx + dy * dy);
 
-                    float TEM00 =
-                        dcimg[IDtem00].array.F[jj0 * naxes[0] + ii0];
+                    float TEM00 = dcimg[IDtem00].array.F[jj0 * naxes[0] + ii0];
 
                     //dcimg[ID].array.F[jj * naxes[0] + ii] = -r;
 
-                    if((r < 1.0) && (r > 0.3))
+                    if ((r < 1.0) && (r > 0.3))
                     {
-                        pup_ampl =
-                            1.0f; //dcimg[IDtem00].array.F[jj0 * naxes[0] + ii0];
-                        pup_pha = x * TTx + y * TTy;
+                        pup_ampl = 1.0f; //dcimg[IDtem00].array.F[jj0 * naxes[0] + ii0];
+                        pup_pha  = x * TTx + y * TTy;
 
                         fluxtot += pup_ampl * pup_ampl;
 
@@ -366,13 +363,12 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
                     else
                     {
                         dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
-                        pup_ampl                                   = 0.0;
+                        pup_ampl                              = 0.0;
                     }
                 }
             }
 
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                (totre * totre + totim * totim) / sqrt(fluxtot);
+            dcimg[ID].array.F[jj * naxes[0] + ii] = (totre * totre + totim * totim) / sqrt(fluxtot);
         }
     }
 
@@ -396,23 +392,21 @@ imageID make_2axis_gauss(const char *ID_name,
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            iin = 1.0 * (ii - naxes[0] / 2) * cos(PA) +
-                  1.0 * (jj - naxes[1] / 2) * sin(PA);
-            jjn = 1.0 * (jj - naxes[1] / 2) * cos(PA) -
-                  1.0 * (ii - naxes[0] / 2) * sin(PA);
+            iin    = 1.0 * (ii - naxes[0] / 2) * cos(PA) + 1.0 * (jj - naxes[1] / 2) * sin(PA);
+            jjn    = 1.0 * (jj - naxes[1] / 2) * cos(PA) - 1.0 * (ii - naxes[0] / 2) * sin(PA);
             distsq = iin * iin + (1.0 / (1.0 + E)) * jjn * jjn;
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                (double) A * exp(-distsq / a / a);
+            dcimg[ID].array.F[jj * naxes[0] + ii] = (double) A * exp(-distsq / a / a);
         }
+    }
 
     return (ID);
 }
 
-imageID
-make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
+imageID make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -426,13 +420,13 @@ make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     int      sim = 0;
     long     lii, ljj, hii, hjj;
 
-    if(strstr(options, "-nbstars ") != NULL)
+    if (strstr(options, "-nbstars ") != NULL)
     {
         str_pos = strstr(options, "-nbstars ") - options;
         str_pos = str_pos + strlen("-nbstars ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -442,13 +436,13 @@ make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         printf("number of stars is %ld\n", nb_star);
     }
 
-    if(strstr(options, "-conc ") != NULL)
+    if (strstr(options, "-conc ") != NULL)
     {
         str_pos = strstr(options, "-conc ") - options;
         str_pos = str_pos + strlen("-conc ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -458,13 +452,13 @@ make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         printf("concentration is %f\n", concentration);
     }
 
-    if(strstr(options, "-size ") != NULL)
+    if (strstr(options, "-size ") != NULL)
     {
         str_pos = strstr(options, "-size ") - options;
         str_pos = str_pos + strlen("-size ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -474,7 +468,7 @@ make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         printf("cluster size is %f\n", cluster_size);
     }
 
-    if(strstr(options, "-sim") != NULL)
+    if (strstr(options, "-sim") != NULL)
     {
         printf("all sources in the central half array \n");
         sim = 1;
@@ -484,7 +478,7 @@ make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    if(sim == 0)
+    if (sim == 0)
     {
         lii = 0;
         ljj = 0;
@@ -500,18 +494,16 @@ make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     }
 
     i = 0;
-    while(i < nb_star)
+    while (i < nb_star)
     {
         dist        = gauss();
         dist        = sqrt(sqrt(dist * dist));
         dist        = powf(dist, concentration);
         angle       = 2 * PI * ran1();
-        uint32_t ii = (uint32_t)(naxes[0] / 2 + (cluster_size * naxes[0] / 2) *
-                                 dist * cos(angle));
-        uint32_t jj = (uint32_t)(naxes[1] / 2 + (cluster_size * naxes[1] / 2) *
-                                 dist * sin(angle));
+        uint32_t ii = (uint32_t) (naxes[0] / 2 + (cluster_size * naxes[0] / 2) * dist * cos(angle));
+        uint32_t jj = (uint32_t) (naxes[1] / 2 + (cluster_size * naxes[1] / 2) * dist * sin(angle));
 
-        if((ii > lii) && (jj > ljj) && (ii < hii) && (jj < hjj))
+        if ((ii > lii) && (jj > ljj) && (ii < hii) && (jj < hjj))
         {
             tmp = gauss();
             dcimg[ID].array.F[jj * naxes[0] + ii] += tmp * tmp;
@@ -550,53 +542,53 @@ imageID make_galaxy(const char *ID_name,
     aob = 1.0 / (1.0 - S_ell);
     boa = 1.0 - S_ell;
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[1] / 2 + 1; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[1] / 2 + 1; jj++)
         {
-            x = cos(S_PA) * (ii - naxes[0] / 2) +
-                sin(S_PA) * (jj - naxes[1] / 2);
-            y = -sin(S_PA) * (ii - naxes[0] / 2) +
-                cos(S_PA) * (jj - naxes[1] / 2);
+            x = cos(S_PA) * (ii - naxes[0] / 2) + sin(S_PA) * (jj - naxes[1] / 2);
+            y = -sin(S_PA) * (ii - naxes[0] / 2) + cos(S_PA) * (jj - naxes[1] / 2);
             r = sqrt(aob * x * x + boa * y * y);
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                S_L0 * exp(-r / S_radius);
+            dcimg[ID].array.F[jj * naxes[0] + ii] = S_L0 * exp(-r / S_radius);
         }
+    }
 
     /* Elliptical component */
     aob = 1.0 / (1.0 - E_ell);
     boa = 1.0 - E_ell;
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[1] / 2 + 1; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[1] / 2 + 1; jj++)
         {
-            x = cos(E_PA) * (ii - naxes[0] / 2) +
-                sin(E_PA) * (jj - naxes[1] / 2);
-            y = -sin(E_PA) * (ii - naxes[0] / 2) +
-                cos(E_PA) * (jj - naxes[1] / 2);
+            x = cos(E_PA) * (ii - naxes[0] / 2) + sin(E_PA) * (jj - naxes[1] / 2);
+            y = -sin(E_PA) * (ii - naxes[0] / 2) + cos(E_PA) * (jj - naxes[1] / 2);
             r = sqrt(aob * x * x + boa * y * y);
             dcimg[ID].array.F[jj * naxes[0] + ii] +=
                 E_L0 * powf(10.0f, (-3.3307f * (powf((r / E_radius), 0.25f) - 1.0f)));
         }
+    }
 
     /* filling other half */
-    for(uint32_t ii = 1; ii < naxes[0]; ii++)
-        for(uint32_t jj = 1; jj < naxes[1] / 2; jj++)
+    for (uint32_t ii = 1; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 1; jj < naxes[1] / 2; jj++)
         {
-            dcimg[ID]
-            .array.F[(naxes[1] - jj) * naxes[0] + (naxes[0] - ii)] =
+            dcimg[ID].array.F[(naxes[1] - jj) * naxes[0] + (naxes[0] - ii)] =
                 dcimg[ID].array.F[jj * naxes[0] + ii];
         }
+    }
     uint32_t ii = 0;
-    for(uint32_t jj = naxes[1] / 2; jj < naxes[1]; jj++)
+    for (uint32_t jj = naxes[1] / 2; jj < naxes[1]; jj++)
     {
         aob = 1.0 / (1.0 - S_ell);
         boa = 1.0 - S_ell;
         x   = cos(S_PA) * (ii - naxes[0] / 2) + sin(S_PA) * (jj - naxes[1] / 2);
-        y = -sin(S_PA) * (ii - naxes[0] / 2) + cos(S_PA) * (jj - naxes[1] / 2);
-        r = sqrt(aob * x * x + boa * y * y);
+        y   = -sin(S_PA) * (ii - naxes[0] / 2) + cos(S_PA) * (jj - naxes[1] / 2);
+        r   = sqrt(aob * x * x + boa * y * y);
         dcimg[ID].array.F[jj * naxes[0] + ii] = S_L0 * expf(-r / S_radius);
-        aob                                        = 1.0 / (1.0 - E_ell);
-        boa                                        = 1.0 - E_ell;
+        aob                                   = 1.0 / (1.0 - E_ell);
+        boa                                   = 1.0 - E_ell;
         x = cos(E_PA) * (ii - naxes[0] / 2) + sin(E_PA) * (jj - naxes[1] / 2);
         y = -sin(E_PA) * (ii - naxes[0] / 2) + cos(E_PA) * (jj - naxes[1] / 2);
         r = sqrt(aob * x * x + boa * y * y);
@@ -604,15 +596,13 @@ imageID make_galaxy(const char *ID_name,
             E_L0 * powf(10.0f, (-3.3307f * (powf((r / E_radius), 0.25f) - 1.0f)));
     }
 
-    total = 2.0 * PI * S_L0 * S_radius * S_radius +
-            23.02 * E_L0 * E_radius * E_radius;
+    total = 2.0 * PI * S_L0 * S_radius * S_radius + 23.02 * E_L0 * E_radius * E_radius;
     printf("total : %f (%f)\n", arith_image_total(ID_name), total);
 
     return (ID);
 }
 
-imageID
-make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
+imageID make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -628,13 +618,13 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     long     lii, ljj, hii, hjj;
     double   x, y, xcenter, ycenter, distsq;
 
-    if(strstr(options, "-conc ") != NULL)
+    if (strstr(options, "-conc ") != NULL)
     {
         str_pos = strstr(options, "-conc ") - options;
         str_pos = str_pos + strlen("-conc ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -644,13 +634,13 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         printf("concentration is %f\n", concentration);
     }
 
-    if(strstr(options, "-size ") != NULL)
+    if (strstr(options, "-size ") != NULL)
     {
         str_pos = strstr(options, "-size ") - options;
         str_pos = str_pos + strlen("-size ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -660,13 +650,13 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         printf("size is %f\n", galaxy_size);
     }
 
-    if(strstr(options, "-pa ") != NULL)
+    if (strstr(options, "-pa ") != NULL)
     {
         str_pos = strstr(options, "-pa ") - options;
         str_pos = str_pos + strlen("-pa ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -676,13 +666,13 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         printf("galaxy pa size is %f radians \n", PA);
     }
 
-    if(strstr(options, "-e ") != NULL)
+    if (strstr(options, "-e ") != NULL)
     {
         str_pos = strstr(options, "-e ") - options;
         str_pos = str_pos + strlen("-e ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -692,7 +682,7 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         printf("galaxy elipticity is %f \n", E);
     }
 
-    if(strstr(options, "-sim") != NULL)
+    if (strstr(options, "-sim") != NULL)
     {
         printf("all sources in the central half array \n");
         sim = 1;
@@ -704,7 +694,7 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     xcenter  = naxes[0] / 2;
     ycenter  = naxes[1] / 2;
 
-    if(sim == 0)
+    if (sim == 0)
     {
         lii = 0;
         ljj = 0;
@@ -719,8 +709,9 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
         hjj = 3 * naxes[1] / 4;
     }
 
-    for(uint32_t jj = ljj; jj < hjj; jj++)
-        for(uint32_t ii = lii; ii < hii; ii++)
+    for (uint32_t jj = ljj; jj < hjj; jj++)
+    {
+        for (uint32_t ii = lii; ii < hii; ii++)
         {
             x = cos(PA) * (ii - xcenter) + sin(PA) * (jj - ycenter);
             y = -sin(PA) * (ii - xcenter) + cos(PA) * (jj - ycenter);
@@ -728,12 +719,11 @@ make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
             /* a = 1 */
             x      = x;
             y      = y / sqrt(1 - E * E);
-            distsq = (x * x + y * y) /
-                     (naxes[0] * naxes[0] + naxes[1] * naxes[1]) / galaxy_size /
+            distsq = (x * x + y * y) / (naxes[0] * naxes[0] + naxes[1] * naxes[1]) / galaxy_size /
                      galaxy_size;
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                (double) peak * exp(-concentration * distsq);
+            dcimg[ID].array.F[jj * naxes[0] + ii] = (double) peak * exp(-concentration * distsq);
         }
+    }
 
     return (ID);
 }
@@ -751,14 +741,15 @@ imageID gen_image_EZdisk(const char *ID_name,
 
     create_2Dimage_ID(ID_name, size, size, &ID);
     r0 = 6.0;
-    for(uint32_t ii = 0; ii < size; ii++)
-        for(uint32_t jj = 0; jj < size; jj++)
+    for (uint32_t ii = 0; ii < size; ii++)
+    {
+        for (uint32_t jj = 0; jj < size; jj++)
         {
             x = 1.0 * (ii + 0.5) - size / 2;
             y = 1.0 * (jj + 0.5) - size / 2;
             y /= cos(Incl);
             r = sqrt(x * x + y * y);
-            if(r < InnerEdge)
+            if (r < InnerEdge)
             {
                 value = 0.0;
             }
@@ -771,12 +762,12 @@ imageID gen_image_EZdisk(const char *ID_name,
             value += powf(r0, -Index);
             dcimg[ID].array.F[jj * size + ii] = value;
         }
+    }
 
     return (ID);
 }
 
-imageID make_slopexy(
-    const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy)
+imageID make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -788,18 +779,18 @@ imageID make_slopexy(
 
     coeff = sx * (naxes[0] / 2) + sy * (naxes[1] / 2);
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            dcimg[ID].array.F[jj * naxes[0] + ii] =
-                sx * ii + sy * jj - coeff;
+            dcimg[ID].array.F[jj * naxes[0] + ii] = sx * ii + sy * jj - coeff;
         }
+    }
 
     return (ID);
 }
 
-imageID
-make_dist(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
+imageID make_dist(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -808,18 +799,19 @@ make_dist(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             dcimg[ID].array.F[jj * naxes[0] + ii] =
                 sqrt((f1 - ii) * (f1 - ii) + (f2 - jj) * (f2 - jj));
         }
+    }
 
     return (ID);
 }
 
-imageID make_PosAngle(
-    const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
+imageID make_PosAngle(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2)
 {
     imageID  ID;
     uint32_t naxes[2];
@@ -828,14 +820,16 @@ imageID make_PosAngle(
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             double x, y;
-            x                                          = 1.0 * ii - f1;
-            y                                          = 1.0 * jj - f2;
+            x                                     = 1.0 * ii - f1;
+            y                                     = 1.0 * jj - f2;
             dcimg[ID].array.F[jj * naxes[0] + ii] = atan2(y, x);
         }
+    }
 
     return (ID);
 }

@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
 import sys
+
 if len(sys.argv) > 1:
-    if sys.argv[1] in ('-h1', '--help-oneline'):
+    if sys.argv[1] in ("-h1", "--help-oneline"):
         print("shared memory stream live viewer v2 (pygame)")
         sys.exit(0)
-    if sys.argv[1] in ('-h2', '--help-description'):
-        print("Live display of shared memory image"
-              " streams using pygame (v2).")
+    if sys.argv[1] in ("-h2", "--help-description"):
+        print("Live display of shared memory image" " streams using pygame (v2).")
         sys.exit(0)
-    if sys.argv[1] in ('-h', '--help', '-hm', '--help-mono'):
-        print("Usage: shmimview2 <shmfile> [min] [max]"
-              " [zoom]")
+    if sys.argv[1] in ("-h", "--help", "-hm", "--help-mono"):
+        print("Usage: shmimview2 <shmfile> [min] [max]" " [zoom]")
         print("Shared memory stream live viewer v2.")
         print("")
         print("See Also:")
@@ -24,57 +23,61 @@ from pygame.locals import *
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-#import pyfits as pf
+
+# import pyfits as pf
 import threading
 import mmap
 import struct
 import os
-#import Image
+
+# import Image
 import time
 from PIL import Image
 
 
 class shm:
-    ''' -------------------------------------------------------------
+    """-------------------------------------------------------------
     Shared memory data structure for images
-    ------------------------------------------------------------- '''
+    -------------------------------------------------------------"""
 
     def __init__(self, fname=None, verbose=True):
         if fname == None:
             print("No shared memory file name provided")
-            return (None)
+            return None
         try:
             self.fd = os.open(fname, os.O_RDWR)
         except:
-            print("File %s is not a shared memory file" % (fname, ))
-            return (None)
+            print("File %s is not a shared memory file" % (fname,))
+            return None
 
         fsz = os.path.getsize(fname)
-        #print ("file %s size = %d bytes" % (fname, fsz))
+        # print ("file %s size = %d bytes" % (fname, fsz))
         self.buf = mmap.mmap(self.fd, 0, mmap.MAP_SHARED)
         self.read_meta_data(verbose=verbose)
 
-    def close(self, ):
+    def close(
+        self,
+    ):
         self.buf.close()
         os.close(self.fd)
 
     def read_meta_data(self, verbose=True):
         buf = self.buf
-        self.imname = str(buf[0:80]).strip('\x00')  # image name
-        self.naxis, = struct.unpack('l', buf[80:88])  # array dimension
-        self.size = struct.unpack('lll', buf[88:112])  # array size
-        self.nel, = struct.unpack('l', buf[112:120])  # nb. elements
-        self.idtype, = struct.unpack('l', buf[120:128])  # image dtype
-        self.crtime, = struct.unpack('d', buf[128:136])  # creation time
-        self.latime, = struct.unpack('d', buf[136:144])  # last access time
+        self.imname = str(buf[0:80]).strip("\x00")  # image name
+        (self.naxis,) = struct.unpack("l", buf[80:88])  # array dimension
+        self.size = struct.unpack("lll", buf[88:112])  # array size
+        (self.nel,) = struct.unpack("l", buf[112:120])  # nb. elements
+        (self.idtype,) = struct.unpack("l", buf[120:128])  # image dtype
+        (self.crtime,) = struct.unpack("d", buf[128:136])  # creation time
+        (self.latime,) = struct.unpack("d", buf[136:144])  # last access time
 
-        self.shared, = struct.unpack('i', buf[164:168])  # flag
-        self.write, = struct.unpack('i', buf[168:172])  # flag
+        (self.shared,) = struct.unpack("i", buf[164:168])  # flag
+        (self.write,) = struct.unpack("i", buf[168:172])  # flag
 
-        self.status, = struct.unpack('i', buf[172:176])
-        self.cnt0, = struct.unpack('l', buf[176:184])  # counter
-        self.cnt1, = struct.unpack('l', buf[184:192])  # counter
-        self.nbkw = struct.unpack('l', buf[192:200])  # nb of keywords
+        (self.status,) = struct.unpack("i", buf[172:176])
+        (self.cnt0,) = struct.unpack("l", buf[176:184])  # counter
+        (self.cnt1,) = struct.unpack("l", buf[184:192])  # counter
+        self.nbkw = struct.unpack("l", buf[192:200])  # nb of keywords
 
         self.naxis = 2
         self.size = (self.size[0], self.size[1], 0)
@@ -103,46 +106,47 @@ class shm:
             self.ddtype = np.ushort
 
         if verbose:
-            print("imname = %s" % (self.imname, ))
-            print("naxis = %d" % (self.naxis, ))
+            print("imname = %s" % (self.imname,))
+            print("naxis = %d" % (self.naxis,))
             print("xs, ys, zs = %d, %d, %d" % self.size)
-            print("image data type %d" % (self.idtype, ))
-            print("image counter = %d" % (self.cnt0, ))
-            print("SHARED %d" % (self.shared, ))
+            print("image data type %d" % (self.idtype,))
+            print("image counter = %d" % (self.cnt0,))
+            print("SHARED %d" % (self.shared,))
 
     # ------
     def get_data(self, check=False, reform=True):
         if check:
-            cnt, = struct.unpack('l', self.buf[176:184])  # current counter val
-            while (cnt <= self.cnt0):
+            (cnt,) = struct.unpack("l", self.buf[176:184])  # current counter val
+            while cnt <= self.cnt0:
                 time.sleep(0.001)
-                cnt, = struct.unpack('l', self.buf[168:176])
+                (cnt,) = struct.unpack("l", self.buf[168:176])
             self.cnt0 = cnt
 
-        data = np.fromstring(self.buf[200:200 + self.nel * self.elt_sz],
-                             dtype=self.ddtype)
+        data = np.fromstring(
+            self.buf[200 : 200 + self.nel * self.elt_sz], dtype=self.ddtype
+        )
 
         if reform:
-            data = data.reshape(self.size[:self.naxis][::-1])
+            data = data.reshape(self.size[: self.naxis][::-1])
 
-        return (data)
+        return data
 
     # ------
     def get_counter(self):
-        self.cnt0, = struct.unpack('l', self.buf[176:184])  # counter
+        (self.cnt0,) = struct.unpack("l", self.buf[176:184])  # counter
         return self.cnt0
 
     # ------
     def set_data(self, data):
-        aa = array.array('f', (np.hstack(data.astype('f'))).tolist())
+        aa = array.array("f", (np.hstack(data.astype("f"))).tolist())
         try:
-            self.buf[200:200 + self.nel * self.elt_sz] = aa.tostring()
-            counter, = struct.unpack('l', self.buf[176:184])
+            self.buf[200 : 200 + self.nel * self.elt_sz] = aa.tostring()
+            (counter,) = struct.unpack("l", self.buf[176:184])
             counter += 1
-            self.buf[176:184] = struct.pack('l', counter)
+            self.buf[176:184] = struct.pack("l", counter)
         except:
             print("Failed to write buffer to shared mem structure")
-        return (True)
+        return True
 
 
 hmsg = """
@@ -182,7 +186,7 @@ ESC   : quit shmview
 args = sys.argv[1:]
 if args == []:
     print(hmsg)
-    cam = shm("$MILK_SHM_DIR/ircam%d.im.shm" % (2, ))
+    cam = shm("$MILK_SHM_DIR/ircam%d.im.shm" % (2,))
 else:
     cam = shm(args[0])
 
@@ -208,9 +212,9 @@ else:
 # ------------------------------------------------------------------
 mycmap = cm.gray
 if cam.naxis == 1:
-    (xsize, ysize) = (cam.size[:cam.naxis], 1)
+    (xsize, ysize) = (cam.size[: cam.naxis], 1)
 else:
-    (xsize, ysize) = cam.size[:cam.naxis]
+    (xsize, ysize) = cam.size[: cam.naxis]
 
 # -----------------------
 #   set up the window
@@ -223,7 +227,7 @@ XW, YW = 650, 712
 XW, YW = zoom * xsize, zoom * ysize
 
 screen = pygame.display.set_mode((XW, YW), 0, 32)
-#pygame.display.set_caption('shared memory live viewer')
+# pygame.display.set_caption('shared memory live viewer')
 pygame.display.set_caption(args[0])
 
 
@@ -231,25 +235,26 @@ pygame.display.set_caption(args[0])
 #             short hands for shared memory data access
 # ------------------------------------------------------------------
 def get_img_data(check=False):
-    ''' ----------------------------------------
+    """----------------------------------------
     Return the current image data content,
     formatted as a 2D numpy array.
     Reads from the already-opened shared memory
     data structure.
-    ---------------------------------------- '''
-    return (cam.get_data(check, True).astype(float))
+    ----------------------------------------"""
+    return cam.get_data(check, True).astype(float)
 
 
 # ------------------------------------------------------------------
 #  another short hand to convert numpy array into image for display
 # ------------------------------------------------------------------
-def arr2im(arr, vmin=0., vmax=10000.0, pwr=1.0, mmin=None, mmax=None):
+def arr2im(arr, vmin=0.0, vmax=10000.0, pwr=1.0, mmin=None, mmax=None):
 
-    arr2 = arr.astype('float')
-    if mmin is None or mmax is None: mmin, mmax = arr2.min(), arr2.max()
-    #mmax = np.percentile(arr2, 99)
+    arr2 = arr.astype("float")
+    if mmin is None or mmax is None:
+        mmin, mmax = arr2.min(), arr2.max()
+    # mmax = np.percentile(arr2, 99)
     arr2 -= mmin
-    arr2 /= (mmax - mmin)
+    arr2 /= mmax - mmin
     if not lin_scale:
         arr2 = arr2**pwr
 
@@ -260,7 +265,7 @@ def arr2im(arr, vmin=0., vmax=10000.0, pwr=1.0, mmin=None, mmax=None):
         test = mycmap(rarr)
     else:
         test = mycmap(arr2)
-    return ((255 * test[:, :, :3]).astype('int'))
+    return (255 * test[:, :, :3]).astype("int")
 
 
 # ------------------------------------------------------------------
@@ -292,19 +297,19 @@ yws = ysize * zoom
 
 imin, imax = 0, 0
 surf_live = pygame.surface.Surface((zoom * xsize, zoom * ysize))
-#screen.blit(surf_live, (5,5))
+# screen.blit(surf_live, (5,5))
 
 rect1 = surf_live.get_rect()
 rect1.center = (xws / 2, yws / 2)
 
 temp = get_img_data()
 
-#plot_cross = True  # flag for display of the crosses
-#subt_bias  = False # flag for bias subtraction
-#cont_acq   = False
+# plot_cross = True  # flag for display of the crosses
+# subt_bias  = False # flag for bias subtraction
+# cont_acq   = False
 lin_scale = True  # flag for linear range
 clr_scale = False  # flag for the display color scale
-#bias = np.zeros_like(temp)
+# bias = np.zeros_like(temp)
 
 # =======================================================
 # =======================================================
@@ -326,8 +331,8 @@ while True:  # the main game loop
     temp -= imin
     myim = arr2im(temp.transpose(), pwr=pwr0, mmin=mindisp, mmax=maxdisp)
 
-    #imax = np.percentile(temp, 99.95)
-    #msg = "(min,max) = (%5d,%5d)" % (imin, imax)
+    # imax = np.percentile(temp, 99.95)
+    # msg = "(min,max) = (%5d,%5d)" % (imin, imax)
 
     # display information
     pygame.surfarray.blit_array(surf_live, myim)
@@ -362,7 +367,7 @@ while True:  # the main game loop
             if event.key == K_h:
                 print(hmsg)
 
-    #pygame.display.update([rect1, rect2, rct, rct2, rct_info, rct_dinfo])
+    # pygame.display.update([rect1, rect2, rct, rct2, rct_info, rct_dinfo])
     pygame.display.flip()
 
     fpsClock.tick(FPS)

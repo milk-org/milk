@@ -36,7 +36,6 @@
 #include <fitsio.h>
 
 
-
 #include <time.h>
 
 #include "CLIcore.h"
@@ -52,14 +51,13 @@
 
 #include "linARfilterPred/linARfilterPred.h"
 #include "linARfilterPred_internal.h"
-\
+
 #include "build_linPF.h"
 #include "applyPF.h"
 
 
-
 #ifdef HAVE_CUDA
-#include "linalgebra/linalgebra.h"
+#    include "linalgebra/linalgebra.h"
 #endif
 
 /* ================================================================== */

@@ -32,7 +32,7 @@ Use the standard `@param`, `@return`, and `@brief` tags to describe the function
  * @ingroup processing_module
  * @brief Computes the sum of two integers.
  *
- * Detailed description of the computation can go here. 
+ * Detailed description of the computation can go here.
  * You can also include formulas or extended methodology.
  *
  * @param[in]  a first number

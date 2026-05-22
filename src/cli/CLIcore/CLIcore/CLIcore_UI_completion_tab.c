@@ -717,7 +717,7 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
         matches = rl_completion_matches((char *) text, &CLI_generator);
     }
 
-    /* Prevent readline from falling back to default filename completion 
+    /* Prevent readline from falling back to default filename completion
      * when our custom generators return NULL. */
     rl_attempted_completion_over = 1;
 

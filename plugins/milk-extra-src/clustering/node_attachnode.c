@@ -12,12 +12,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
@@ -27,11 +27,7 @@
 
 
 // attach node CFindex to CFindexupnode
-errno_t node_attachnode(
-    CLUSTERTREE *ctree,
-    long CFindex,
-    long CFindexupnode
-)
+errno_t node_attachnode(CLUSTERTREE *ctree, long CFindex, long CFindexupnode)
 {
     DEBUG_TRACE_FSTART();
 
@@ -39,19 +35,16 @@ errno_t node_attachnode(
     ctree->CFarray[CFindexupnode].NBchild++;
 
     ctree->CFarray[CFindex].parentindex = CFindexupnode;
-    ctree->CFarray[CFindex].level = ctree->CFarray[CFindexupnode].level + 1;
+    ctree->CFarray[CFindex].level       = ctree->CFarray[CFindexupnode].level + 1;
 
     {
         long cfi = CFindexupnode;
-        while(cfi != -1)
+        while (cfi != -1)
         {
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
             int addOK = 1; // don't test radius
-            addCF_to_CF(ctree,
-                        ctree->CFarray[CFindex],
-                        cfi,
-                        &addOK);
+            addCF_to_CF(ctree, ctree->CFarray[CFindex], cfi, &addOK);
 
             // move upstream to propagate change
             cfi = ctree->CFarray[cfi].parentindex;

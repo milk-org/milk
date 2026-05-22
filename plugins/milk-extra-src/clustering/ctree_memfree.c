@@ -13,12 +13,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
@@ -26,9 +26,9 @@
 errno_t ctree_memfree(CLUSTERTREE *ctree)
 {
     DEBUG_TRACE_FSTART();
-    for(long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
+    for (long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
     {
-        if ( (ctree->CFarray[CFindex].status && CLUSTER_CF_STATUS_MEMALLOC) )
+        if ((ctree->CFarray[CFindex].status && CLUSTER_CF_STATUS_MEMALLOC))
         {
             free(ctree->CFarray[CFindex].childindex);
             //free(ctree->CFarray[CFindex].leafindex);

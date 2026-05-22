@@ -457,7 +457,7 @@ for MSopt in "${optactlist[@]}";do
         long_name="${OPTlong[$MSopt]}"
         var_name="OPT_${long_name^^}"
         var_name="${var_name//-/_}"
-        
+
         if [ -z "${OPTarg[$MSopt]}" ]; then
             export "${var_name}"=1
         else
@@ -524,4 +524,3 @@ fi
 
 # log command
 milkscriptcmdlog
-

@@ -32,9 +32,9 @@
 //#include <fitsio.h>  /* required by every program that uses CFITSIO  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 //#include "COREMOD_tools/COREMOD_tools.h"
 //#include "COREMOD_memory/COREMOD_memory.h"
 //#include "COREMOD_iofits/COREMOD_iofits.h"
@@ -52,20 +52,20 @@
 
 //#include "image_basic/image_basic.h"
 
-#include "cubecollapse.h"
-#include "im3Dto2D.h"
-#include "image_add.h"
-#include "imcontract.h"
-#include "imexpand.h"
-#include "imgetcircasym.h"
-#include "imgetcircsym.h"
-#include "imresize.h"
-#include "imrotate.h"
-#include "imswapaxis2D.h"
-#include "indexmap.h"
-#include "loadfitsimgcube.h"
-#include "streamfeed.h"
-#include "streamrecord.h"
+#    include "cubecollapse.h"
+#    include "im3Dto2D.h"
+#    include "image_add.h"
+#    include "imcontract.h"
+#    include "imexpand.h"
+#    include "imgetcircasym.h"
+#    include "imgetcircsym.h"
+#    include "imresize.h"
+#    include "imrotate.h"
+#    include "imswapaxis2D.h"
+#    include "indexmap.h"
+#    include "loadfitsimgcube.h"
+#    include "streamfeed.h"
+#    include "streamrecord.h"
 
 /*
 #define SBUFFERSIZE 1000
@@ -99,7 +99,6 @@ INIT_MODULE_LIB(image_basic)
 
 static errno_t init_module_CLI()
 {
-
     CLIADDCMD_image_basic__imswapaxis2D();
     CLIADDCMD_image_basic__im3Dto2D();
     CLIADDCMD_image_basic__image_add();

@@ -70,19 +70,18 @@ enum FPS_flags : uint64_t
 
 class pyFps
 {
-    std::string name_;
-    FUNCTION_PARAMETER_STRUCT fps_;
+    std::string                     name_;
+    FUNCTION_PARAMETER_STRUCT       fps_;
     std::map<std::string, FPS_type> keys_;
 
     int read_keys()
     {
         int k = 0;
-        while((k < fps_.md->NBparamMAX) &&
-                (fps_.parray[k].keywordfull[0] != '\0'))
+        while ((k < fps_.md->NBparamMAX) && (fps_.parray[k].keywordfull[0] != '\0'))
         {
-            int offset = strlen(fps_.parray[k].keyword[0]) + 1;
-            char *key = fps_.parray[k].keywordfull + offset;
-            keys_[key] = static_cast<FPS_type>(fps_.parray[k].type);
+            int   offset = strlen(fps_.parray[k].keyword[0]) + 1;
+            char *key    = fps_.parray[k].keywordfull + offset;
+            keys_[key]   = static_cast<FPS_type>(fps_.parray[k].type);
             k++;
         }
 
@@ -95,8 +94,7 @@ class pyFps
 
      * @param name : the name of the shared memory file to connect
      */
-    pyFps(std::string name)
-        : pyFps(name, false, FUNCTION_PARAMETER_NBPARAM_DEFAULT) {};
+    pyFps(std::string name) : pyFps(name, false, FUNCTION_PARAMETER_NBPARAM_DEFAULT) {};
 
     /**
      * @brief Read or create an shared FPS
@@ -107,24 +105,24 @@ class pyFps
      */
     pyFps(std::string fps_name, bool create, int NBparamMAX) : name_(fps_name)
     {
-        fps_.md = nullptr;
-        fps_.parray = nullptr;  // array of function parameters
+        fps_.md     = nullptr;
+        fps_.parray = nullptr; // array of function parameters
 
         // these variables are local to each process
-        fps_.localstatus = 0;  // 1 if conf loop should be active
-        fps_.SMfd = -1;
-        fps_.CMDmode = 0;
+        fps_.localstatus = 0; // 1 if conf loop should be active
+        fps_.SMfd        = -1;
+        fps_.CMDmode     = 0;
 
-        fps_.NBparam = 0;        // number of parameters in array
-        fps_.NBparamActive = 0;  // number of active parameters
+        fps_.NBparam       = 0; // number of parameters in array
+        fps_.NBparamActive = 0; // number of active parameters
 
-        if(create)
+        if (create)
         {
             create_and_connect(NBparamMAX);
         }
         else
         {
-            if(connect() == -1)
+            if (connect() == -1)
             {
                 throw std::runtime_error("FPS does not exist");
             }
@@ -139,7 +137,7 @@ class pyFps
      */
     ~pyFps()
     {
-        if(fps_.SMfd != -1)
+        if (fps_.SMfd != -1)
         {
             function_parameter_struct_disconnect(&fps_);
         }
@@ -174,7 +172,7 @@ class pyFps
      */
     int create_and_connect(int NBparamMAX)
     {
-        if(connect() == -1)
+        if (connect() == -1)
         {
             std::cout << "Creating FPS...";
             // OG FPS-STANDALONE-TOBEFIXED
@@ -197,8 +195,7 @@ class pyFps
      */
     int connect()
     {
-        return function_parameter_struct_connect(name_.c_str(), &fps_,
-                FPSCONNECT_SIMPLE);
+        return function_parameter_struct_connect(name_.c_str(), &fps_, FPSCONNECT_SIMPLE);
     };
 
     /**
@@ -219,15 +216,13 @@ class pyFps
      * @param fptype : entry type ("int","double","float","string")
      * @return int
      */
-    int add_entry(std::string entry_name, std::string entry_desc,
-                  uint32_t fptype)
+    int add_entry(std::string entry_name, std::string entry_desc, uint32_t fptype)
     {
         keys_[entry_name] = static_cast<FPS_type>(fptype);
         // We need to prepend a . to entry to abide by FPS conventions
         // See fps_add_entry.c
         std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(),
-                                            entry_desc.c_str(), fptype,
+        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(), fptype,
                                             FPFLAG_DEFAULT_INPUT, nullptr, nullptr);
     }
 
@@ -242,13 +237,14 @@ class pyFps
      * @param fpflag : entry flags
      * @return int
      */
-    int add_entry_w_flags(std::string entry_name, std::string entry_desc,
-                          uint32_t fptype, uint64_t fpflag)
+    int add_entry_w_flags(std::string entry_name,
+                          std::string entry_desc,
+                          uint32_t    fptype,
+                          uint64_t    fpflag)
     {
-        keys_[entry_name] = static_cast<FPS_type>(fptype);
+        keys_[entry_name]     = static_cast<FPS_type>(fptype);
         std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(),
-                                            entry_desc.c_str(), fptype,
+        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(), fptype,
                                             fpflag, nullptr, nullptr);
     }
 
@@ -283,12 +279,12 @@ class pyFps
     std::vector<std::string> get_levelKeys(int level)
     {
         std::vector<std::string> levelKeys = std::vector<std::string>();
-        int k = 0;
-        while(fps_.parray[k].keywordfull[0] != '\0' && k < fps_.md->NBparamMAX)
+        int                      k         = 0;
+        while (fps_.parray[k].keywordfull[0] != '\0' && k < fps_.md->NBparamMAX)
         {
-            std::string tmp = fps_.parray[k].keyword[level];
-            auto exist = std::find(levelKeys.begin(), levelKeys.end(), tmp);
-            if(exist == levelKeys.end())
+            std::string tmp   = fps_.parray[k].keyword[level];
+            auto        exist = std::find(levelKeys.begin(), levelKeys.end(), tmp);
+            if (exist == levelKeys.end())
             {
                 levelKeys.push_back(tmp);
             }
@@ -300,8 +296,7 @@ class pyFps
 
     void signal_update()
     {
-        fps_.md->signal |=
-            FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+        fps_.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
     }
 
     errno_t CONFstart()

@@ -18,8 +18,7 @@
 #define MODULE_SHORTNAME_DEFAULT "imgen"
 
 // Module short description
-#define MODULE_DESCRIPTION                                                     \
-    "Creating images (shapes, useful functions and patterns)"
+#define MODULE_DESCRIPTION "Creating images (shapes, useful functions and patterns)"
 
 #include <malloc.h>
 #include <math.h>
@@ -28,40 +27,40 @@
 #include <string.h>
 
 #ifdef USE_CFITSIO
-#include <fitsio.h> /* required by every program that uses CFITSIO  */
+#    include <fitsio.h> /* required by every program that uses CFITSIO  */
 #endif
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #ifdef USE_CFITSIO
-#include "COREMOD_iofits/COREMOD_iofits.h"
+#    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "statistic/statistic.h"
 
 #ifndef MILK_NO_CLI
-#include "image_gen/image_gen.h"
+#    include "image_gen/image_gen.h"
 
-#include "mkdisk.h"
-#include "mkpolygon.h"
-#include "mkrandomim.h"
-#include "mkspdisk.h"
-#include "voronoi.h"
+#    include "mkdisk.h"
+#    include "mkpolygon.h"
+#    include "mkrandomim.h"
+#    include "mkspdisk.h"
+#    include "voronoi.h"
 
-#define OMP_NELEMENT_LIMIT 1000000
+#    define OMP_NELEMENT_LIMIT 1000000
 
-#define SWAP(x, y)                                                             \
-    tmp = (x);                                                                 \
-    x   = (y);                                                                 \
-    y   = tmp;
+#    define SWAP(x, y) \
+        tmp = (x);     \
+        x   = (y);     \
+        y   = tmp;
 
-#define PI 3.14159265358979323846264338328
+#    define PI 3.14159265358979323846264338328
 
 /* ================================================================== */
 /* ================================================================== */
@@ -83,11 +82,9 @@ INIT_MODULE_LIB(image_gen)
 /* Placeholder for CLICMD_FIELDS_DEFAULTS macro which
  * hardcodes 'farg'. The constructor init_xx() functions
  * below overwrite nbarg and funcfpscliarg at runtime. */
-static CLICMDARGDEF farg[] = {
-    {CLIARG_FLOAT64, "", "", "", 0, NULL, NULL}
-};
+static CLICMDARGDEF farg[] = { { CLIARG_FLOAT64, "", "", "", 0, NULL, NULL } };
 
-#include "fps.h"
+#    include "fps.h"
 
 /* ==================================================================
  * CLI Command Registrations

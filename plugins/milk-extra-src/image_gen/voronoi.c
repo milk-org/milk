@@ -7,10 +7,10 @@
 #include <math.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 
 
@@ -21,11 +21,11 @@
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "voronoi",
-    .cmdkey      = "voronoi",
-    .description = "make Voronoi map from points file",
-    .description_long =
-        "Compute a Voronoi tessellation from a set of seed points. Each pixel is assigned to the nearest seed, creating a segmented map."
+    .fps_name         = "voronoi",
+    .cmdkey           = "voronoi",
+    .description      = "make Voronoi map from points file",
+    .description_long = "Compute a Voronoi tessellation from a set of seed points. Each pixel is "
+                        "assigned to the nearest seed, creating a segmented map."
 };
 
 
@@ -33,29 +33,20 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *inpos   = NULL;
+static char           *inpos = NULL;
 static LOCVAR_OUTIMG2D outim;
-static float    *radius  = NULL;
-static float    *gapsize = NULL;
+static float          *radius  = NULL;
+static float          *gapsize = NULL;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".inpos", &inpos, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "points positions, filename") \
-    X(".radius", &radius, \
-      FPTYPE_FLOAT32, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "radius") \
-    X(".gapsize", &gapsize, \
-      FPTYPE_FLOAT32, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "gap size")
+#define FPS_PARAMS(X)                                                                             \
+    X(".inpos", &inpos, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "points positions, filename") \
+    X(".radius", &radius, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "radius")                      \
+    X(".gapsize", &gapsize, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "gap size")
 
 
 /* ================================================================
@@ -78,12 +69,10 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * (x,y) coordinates in range [0:1]
  *
  */
-imageID
-image_gen_make_voronoi_map(
-    IMGID *imgpos,
-    IMGID *imgout,
-    float radius, // maximum radius of each Voronoi zone
-    float maxsep  // gap between Voronoi zones
+imageID image_gen_make_voronoi_map(IMGID *imgpos,
+                                   IMGID *imgout,
+                                   float  radius, // maximum radius of each Voronoi zone
+                                   float  maxsep  // gap between Voronoi zones
 )
 {
     // resolve imgpos
@@ -91,55 +80,56 @@ image_gen_make_voronoi_map(
 
     // Create output image if needed
     imcreateIMGID(imgout);
-    if (imgpos->ID == -1) {
+    if (imgpos->ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
 
-    uint32_t xsize = imgout->md->size[0];
-    uint32_t ysize = imgout->md->size[1];
+    uint32_t xsize  = imgout->md->size[0];
+    uint32_t ysize  = imgout->md->size[1];
     uint64_t xysize = xsize * ysize;
-    uint32_t NBpt = imgpos->md->size[1];
+    uint32_t NBpt   = imgpos->md->size[1];
 
 
     //printf("%u points\n", NBpt);
 
-    int64_t * __restrict nearest_index;
-    float   * __restrict nearest_distance2;
-    int64_t * __restrict nextnearest_index;
-    float   * __restrict nextnearest_distance2;
-    int     * __restrict gapim;
+    int64_t *__restrict nearest_index;
+    float *__restrict nearest_distance2;
+    int64_t *__restrict nextnearest_index;
+    float *__restrict nextnearest_distance2;
+    int *__restrict gapim;
 
     nearest_index = (int64_t *) malloc(sizeof(int64_t) * xysize);
-    if(nearest_index == NULL)
+    if (nearest_index == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     nearest_distance2 = (float *) malloc(sizeof(float) * xysize);
-    if(nearest_distance2 == NULL)
+    if (nearest_distance2 == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     nextnearest_index = (int64_t *) malloc(sizeof(int64_t) * xysize);
-    if(nextnearest_index == NULL)
+    if (nextnearest_index == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     nextnearest_distance2 = (float *) malloc(sizeof(float) * xysize);
-    if(nextnearest_distance2 == NULL)
+    if (nextnearest_distance2 == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     gapim = (int *) malloc(sizeof(int) * xysize);
-    if(gapim == NULL)
+    if (gapim == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -147,62 +137,67 @@ image_gen_make_voronoi_map(
 
     // initialize arrays
     float bigval = 1.0e20;
-    for(uint64_t ii = 0; ii < xysize; ii++)
+    for (uint64_t ii = 0; ii < xysize; ii++)
     {
-        nearest_index[ii]                = -1;
-        nearest_distance2[ii]            = bigval;
-        nextnearest_index[ii]            = -1;
-        nextnearest_distance2[ii]        = bigval;
-        imgout->im->array.SI32[ii]       = -1;
+        nearest_index[ii]          = -1;
+        nearest_distance2[ii]      = bigval;
+        nextnearest_index[ii]      = -1;
+        nextnearest_distance2[ii]  = bigval;
+        imgout->im->array.SI32[ii] = -1;
     }
 
-    for(uint32_t ii = 0; ii < xsize; ii++)
-        for(uint32_t jj = 0; jj < ysize; jj++)
+    for (uint32_t ii = 0; ii < xsize; ii++)
+    {
+        for (uint32_t jj = 0; jj < ysize; jj++)
         {
             int   pindex = jj * xsize + ii;
             float x      = 2.0 * ii / xsize - 1.0;
             float y      = 2.0 * jj / ysize - 1.0;
 
-            for(int pt = 0; pt < NBpt; pt++)
+            for (int pt = 0; pt < NBpt; pt++)
             {
-                float dx = x - imgpos->im->array.F[ 2*pt ];
-                float dy = y - imgpos->im->array.F[ 2*pt + 1 ];
+                float dx = x - imgpos->im->array.F[2 * pt];
+                float dy = y - imgpos->im->array.F[2 * pt + 1];
 
                 float dist2 = dx * dx + dy * dy;
 
-                if(dist2 < nearest_distance2[pindex])
+                if (dist2 < nearest_distance2[pindex])
                 {
-                    nextnearest_index[pindex]    = nearest_index[pindex];
+                    nextnearest_index[pindex]     = nearest_index[pindex];
                     nextnearest_distance2[pindex] = nearest_distance2[pindex];
 
-                    nearest_index[pindex]    = pt;
+                    nearest_index[pindex]     = pt;
                     nearest_distance2[pindex] = dist2;
                 }
-                else if(dist2 < nextnearest_distance2[pindex])
+                else if (dist2 < nextnearest_distance2[pindex])
                 {
-                    nextnearest_index[pindex]    = pt;
+                    nextnearest_index[pindex]     = pt;
                     nextnearest_distance2[pindex] = dist2;
                 }
             }
-            if((nearest_distance2[pindex] < radius*radius))
+            if ((nearest_distance2[pindex] < radius * radius))
             {
                 imgout->im->array.SI32[pindex] = nearest_index[pindex];
             }
         }
+    }
 
 
     // add gap
-    int gapsizepix = (int)(maxsep * xsize);
+    int gapsizepix = (int) (maxsep * xsize);
     // int gapsizepix2 = (int) (maxsep*xsize/sqrt(2.0));
 
-    for(uint32_t ii = 0; ii < xsize; ii++)
-        for(uint32_t jj = 0; jj < ysize; jj++)
+    for (uint32_t ii = 0; ii < xsize; ii++)
+    {
+        for (uint32_t jj = 0; jj < ysize; jj++)
         {
             gapim[jj * xsize + ii] = 0;
         }
+    }
 
-    for(uint32_t ii = gapsizepix; ii < xsize - gapsizepix; ii++)
-        for(uint32_t jj = gapsizepix; jj < ysize - gapsizepix; jj++)
+    for (uint32_t ii = gapsizepix; ii < xsize - gapsizepix; ii++)
+    {
+        for (uint32_t jj = gapsizepix; jj < ysize - gapsizepix; jj++)
         {
             int pindex0  = jj * xsize + ii;
             int pindex0p = jj * xsize + ii + gapsizepix;
@@ -225,22 +220,24 @@ image_gen_make_voronoi_map(
 
             gapim[pindex0] = 1;
 
-            if((pv0p != pv0m) || (pvp0 != pvm0) || (pvpp != pvmm) ||
-                    (pvpm != pvmp))
+            if ((pv0p != pv0m) || (pvp0 != pvm0) || (pvpp != pvmm) || (pvpm != pvmp))
             {
                 gapim[pindex0] = 0;
             }
         }
+    }
 
-    for(uint32_t ii = 0; ii < xsize; ii++)
-        for(uint32_t jj = 0; jj < ysize; jj++)
+    for (uint32_t ii = 0; ii < xsize; ii++)
+    {
+        for (uint32_t jj = 0; jj < ysize; jj++)
         {
             int pindex = jj * xsize + ii;
-            if(gapim[pindex] == 0)
+            if (gapim[pindex] == 0)
             {
                 imgout->im->array.SI32[pindex] = -1;
             }
         }
+    }
 
 
     free(nearest_index);
@@ -264,7 +261,8 @@ static MILK_HOT errno_t compute_function()
 
     // link/create output image/stream
     FARG_OUTIM2DCREATE(outim, imgout, _DATATYPE_INT32);
-    if (imgpos.ID == -1) {
+    if (imgpos.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -272,17 +270,13 @@ static MILK_HOT errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     {
-
-        image_gen_make_voronoi_map(
-            &imgpos,
-            &imgout,
-            *radius, // maximum radius of each Voronoi zone
-            *gapsize  // gap between Voronoi zones
+        image_gen_make_voronoi_map(&imgpos, &imgout,
+                                   *radius, // maximum radius of each Voronoi zone
+                                   *gapsize // gap between Voronoi zones
         );
 
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
-
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -301,17 +295,13 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t __attribute__((unused)) CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_image_gen__voronoi()
+errno_t CLIADDCMD_image_gen__voronoi()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
@@ -323,9 +313,5 @@ CLIADDCMD_image_gen__voronoi()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif
-

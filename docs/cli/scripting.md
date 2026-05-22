@@ -265,21 +265,21 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 ??? example "Example 1: Parameter Defaults and String Manipulation"
 
     Because `milk-cli` correctly delegates back to `bash`, you can safely use standard recursive shell expansions (e.g. `##` suffix stripping) to quickly parse paths:
-    
+
     ```bash
     #!/usr/bin/env milk-script
     function process_image {
         local img_path=${1:-/data/default.fits}
         local filename=${img_path##*/}   # strip path prefix
         local basename=${filename%.*}    # strip extension
-    
+
         echo "Processing ${basename}..."
     }
-    
+
     process_image
     process_image /tmp/test_image.fits
     ```
-    
+
     **Output:**
     ```text
     Processing default...
@@ -289,19 +289,19 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 ??? example "Example 2: Transparent OS Fallback"
 
     Combine Linux shell utilities directly with native `milk-cli` commands. In scripts, there is no need to prefix standard bash commands with `!` like inside interactive mode.
-    
+
     ```bash
     #!/usr/bin/env milk-script
     prefix="output_"
     ext=".fits"
-    
+
     # Run the native milk command to process the file
     milk-FITS2shm image.fits wfs_cam
-    
+
     # Use standard shell binaries to print system info
     count=$(ls -1 | grep -c "${ext}")
     echo "Found $count FITS files."
-    
+
     tag=$(date +%Y%m%d_%H%M%S)
     echo "Saving to: ${prefix}${tag}${ext}"
     ```
@@ -309,23 +309,23 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 ??? example "Example 3: Waiting for Streams and reading Metadata"
 
     Block until multiple shared-memory streams become available during startup, then dynamically read their geometry properties via native dot-expansion:
-    
+
     ```bash
     #!/usr/bin/env milk-script
     function wait_and_monitor {
         local stream=$1
         echo "Waiting for stream ${stream}..."
-    
+
         waitfor_stream $stream 60
         if [ $? -ne 0 ]; then
             echo "Error: Stream ${stream} timed out."
             return 1
         fi
-    
+
         # Read stream metadata via @ namespace
         echo "Ready! Shape: ${@s.${stream}.xsize} x ${@s.${stream}.ysize}"
     }
-    
+
     wait_and_monitor wfs_cam
     wait_and_monitor dm_disp
     ```
@@ -333,45 +333,45 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 ??? example "Example 4: Batch FPS Parameter Manipulation"
 
     Read and write FPS parameters from a script to automate configuration changes across multiple compute units, leveraging standard bash `for` loop integer evaluation to calculate vector indices:
-    
+
     ```bash
     #!/usr/bin/env milk-script
-    
+
     # Retrieve current value and log it
     gain=$(milk-fps-set dmcomb.loopgain)
     echo "DM combiner gain was: $gain"
-    
+
     # Set the loop gain on the DM combiner FPS native memory
     fpsset dmcomb loopgain 1.0
-    
+
     # Apply identical gain to all modal channels using a bash loop
     nmodes=50
     for m in $(seq 0 $(( nmodes - 1 ))); do
         fpsset dmcomb modesgain[$m] 0.1
     done
-    
+
     echo "Set $nmodes modal gains to 0.1"
     ```
 
 ??? example "Example 5: Stream Diagnostic Report"
 
     Collect live metadata from multiple streams and natively format a compact diagnostic table using string expansion and alignment flags.
-    
+
     ```bash
     #!/usr/bin/env milk-script
     streams=(wfs_cam dm_disp wfs_ref)
-    
+
     echo "--------------------------------------------"
     echo "  Stream           XSize  YSize  Frame"
     echo "--------------------------------------------"
-    
+
     for s in ${streams[@]}; do
         waitfor_stream $s 5
         if [ $? -ne 0 ]; then
             printf "  %-18s OFFLINE\n" $s
             continue
         fi
-    
+
         # The @s.${s}.prop syntax queries SHM image
         # metadata directly; $VAR substitution inside
         # @ tokens is supported so stream names can
@@ -381,47 +381,47 @@ Here are several examples demonstrating how `milk-cli` native features combine w
         cnt=@s.${s}.cnt0
         printf "  %-18s %-6s %-6s %s\n" $s $xs $ys $cnt
     done
-    
+
     echo "--------------------------------------------"
     ```
 
 ??? example "Example 6: AO Loop Startup Orchestration"
 
     A complete startup script that initialises an AO loop step by step, verifies each stage using `milk-cli` conditionals, and aborts cleanly on hardware failure:
-    
+
     ```bash
     #!/usr/bin/env milk-script
-    
+
     # ---------- helpers ----------
     function die {
         echo "FATAL: $1"
         exit 1
     }
-    
+
     function wait_stream {
         local s=$1 timeout=${2:-30}
         waitfor_stream $s $timeout
         [ $? -ne 0 ] && die "Stream '$s' not available after ${timeout}s"
         echo "  [OK] $s"
     }
-    
+
     # ---------- 1. verify hardware streams ----------
     echo "=== 1. Checking hardware streams ==="
     wait_stream wfs_cam 60
     wait_stream dm_volt
-    
+
     # ---------- 2. load reference PSF ----------
     echo "=== 2. Loading WFS reference ==="
     milk-FITS2shm wfs_ref.fits wfs_ref
     wait_stream wfs_ref
-    
+
     # ---------- 3. start modal decomposition FPS ----------
     echo "=== 3. Starting modal decomposition ==="
     milk-fpsexec-cacaoloop-WFS -n wfs01 -tmux
     sleep 2
     waitfor_stream wfs_modes 20
     [ $? -ne 0 ] && die "Modal decomposition failed to produce wfs_modes"
-    
+
     # ---------- 4. configure loop gains ----------
     echo "=== 4. Configuring loop gains ==="
     nmodes=100
@@ -430,7 +430,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     done
     fpsset dmcomb loopgain 1.0
     fpsset dmcomb loopON 1
-    
+
     # ---------- 5. confirm loop is running ----------
     echo "=== 5. Loop status ==="
     sleep 1
@@ -445,7 +445,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
     ```bash
     #!/usr/bin/env milk-script
-    
+
     # 1. Start the compute unit process
     milk-fpsexec-examplefunc2_FPS -tmux &
     sleep 1
@@ -453,16 +453,16 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     # 2. Configure it to be triggered by a stream (Mode 3 = SEMAPHORE)
     fpsset examplefunc2_FPS procinfo.triggermode 3
     fpsset examplefunc2_FPS procinfo.triggersname wfs_cam
-    
+
     # 3. Enable the background loop
     fpsset examplefunc2_FPS procinfo.enabled 1
-    
+
     # 4. Monitor its execution natively
     for i in {1..5}; do
         # Dot-expansion accesses the live telemetry via procinfo
         status=${examplefunc2_FPS.procinfo.status}
         loopcnt=${examplefunc2_FPS.procinfo.loopcnt}
-        
+
         echo "Check $i: Status=$status, Iterations=$loopcnt"
         sleep 2
     done
@@ -474,24 +474,24 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
     ```bash
     #!/usr/bin/env milk-script
-    
+
     # 1. Provide an initial constant to initialize variables
     a = 2 + 3 * 4
     echo "Variable 'a' evaluates natively to: $a"
-    
+
     # 2. Utilize mathematical functions like abs, max, min natively
     e = min(abs(-5), max(3, fmod(17, 5)))
     echo "Compound math 'e' limits safely to: $e"
 
     # 3. Quickly generate and fill a virtual flat dummy space.
-    mem.mk2Dim imtest 10 10 
+    mem.mk2Dim imtest 10 10
     imtest = imtest * 0.0 + 5.0
 
     # 4. Use vector constraints natively over memory blocks
     d_im_im = dot(imtest, imtest)
     n_im = norm(imtest)
     echo "Dot product: $d_im_im | Norm vector length: $n_im"
-    
+
     # 5. Native Ternary Mask mapping limits logic cleanly:
     imtest_plus = imtest + 3
     imtest_mask = (imtest_plus == 8)
@@ -521,30 +521,30 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 ??? example "Example 10: Advanced Hybrid Scripting (Bash + milk-cli Native)"
 
     Combine the robust argument parsing capabilities of `bash` with the zero-overhead execution of the `milk-cli` interpreter. By parsing arguments in bash and then dropping into a `milk-cli` heredoc, the script gains native access to FPS, streams, and image calculus without sacrificing traditional command-line interfaces.
-    
+
     See `scripts/milk-script-advanced` for the full template.
 
     ```bash
     #!/usr/bin/env bash
-    
+
     # 1. BASH HEADER: Argument Parsing
     MSdescr="Advanced Native milk-cli Script Template"
     MSarg+=( "streamname:string:Name of the input stream to wait for" )
-    
+
     # Parse arguments (milk-argparse automatically exports $STREAMNAME)
     source milk-argparse
-    
+
     # 2. NATIVE EXECUTION: Zero-Overhead milk-cli Block
     milk-cli -s << 'EOF'
-    
+
     echo "Waiting natively for stream: $STREAMNAME..."
     # Event-Driven Execution without polling loops
     waitfor_stream $STREAMNAME 10
-    
+
     # Fast Native Image Math & FPS
     mem.mk2Dim mask_img ${@s.in.xsize} ${@s.in.ysize}
     mask_img = mask_img * 0.0 + 1.0
-    
+
     on_update $STREAMNAME {
         echo "Frame arrived!"
     }

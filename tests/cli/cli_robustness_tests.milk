@@ -647,7 +647,7 @@ echo $_calc_f
 
 #DESC: Image arithmetic and masking
 #EXPECT:OK
-mem.mk2Dim _calc_imtest 10 10 
+mem.mk2Dim _calc_imtest 10 10
 _calc_imtest = _calc_imtest * 0.0 + 5.0
 _calc_imtest_plus = _calc_imtest + 3
 _calc_imtest_mask = (_calc_imtest_plus == 8)
@@ -729,11 +729,11 @@ _calc_err = 1 / 0
 
 #DESC: Mismatched parentheses
 #EXPECT:ERR
-_calc_err = ( 2 + 3 
+_calc_err = ( 2 + 3
 
-#DESC: Missing operand 
+#DESC: Missing operand
 #EXPECT:ERR
-_calc_err = 2 + 
+_calc_err = 2 +
 
 #DESC: Invalid mathematical function
 #EXPECT:ERR
@@ -970,7 +970,7 @@ echo $_c_loop_sum
 type type
 
 # ============================================
-# SECTION 27: Regex Matching 
+# SECTION 27: Regex Matching
 # ============================================
 
 #DESC: POSIX Regex operator =~
@@ -1002,7 +1002,7 @@ mem.mk2Dim _spipe_test 16 16
 _spipe_test |> mem.rm
 echo pipeline_done
 
-#DESC: Pipeline operator with cleanup 
+#DESC: Pipeline operator with cleanup
 #EXPECT:OK
 mem.mk2Dim _spipe_a 8 8
 mem.mk2Dim _spipe_b 8 8

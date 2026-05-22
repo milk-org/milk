@@ -65,14 +65,14 @@
 // CODING STANDARD NOTE: start with defines
 // CODING STANDARD NOTE: #define constants should be in all CAPS
 // CODING STANDARD NOTE: do not use names starting or ending with "_" (reserved for system)
-#define TWOPLUSTWO             4
-#define NAME_STRING_MAXSIZE    100
-#define FNAME_STRING_MAXSIZE   200
+#define TWOPLUSTWO 4
+#define NAME_STRING_MAXSIZE 100
+#define FNAME_STRING_MAXSIZE 200
 #define COMMAND_STRING_MAXSIZE 200
 
 // CODING STANDARD NOTE: list function macros after defines
 // CODING STANDARD NOTE: function macro start with module name when specific to current module
-#define ABS(x)                  (((x) < 0) ? -(x) : (x))
+#define ABS(x) (((x) < 0) ? -(x) : (x))
 #define EXAMPLEMODULE_MAX(a, b) ((a < b) ? (b) : (a))
 
 // CODING STANDARD NOTE: list typedefs after function macros
@@ -117,7 +117,7 @@
 // CODING STANDARD NOTE: CLI function name should be function name + "_cli", with no argument
 int_fast8_t templatemodule_examplefunction00_cli()
 {
-    if(CLI_checkarg(1, 2) == 0)
+    if (CLI_checkarg(1, 2) == 0)
     {
         templatemodule_examplefunction00(data.cmdargtoken[1].val.numl);
         return 0;
@@ -130,10 +130,9 @@ int_fast8_t templatemodule_examplefunction00_cli()
 
 int_fast8_t templatemodule_examplefunction01_cli()
 {
-    if(CLI_checkarg(1, 1) + CLI_checkarg(2, 2) == 0)
+    if (CLI_checkarg(1, 1) + CLI_checkarg(2, 2) == 0)
     {
-        templatemodule_examplefunction01(data.cmdargtoken[1].val.numl,
-                                         data.cmdargtoken[2].val.numf,
+        templatemodule_examplefunction01(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.numf,
                                          NULL);
         return 0;
     }
@@ -167,12 +166,8 @@ int_fast8_t init_templatemodule()
     // CODING STANDARD NOTE: arg6 : example call from CLI
     // CODING STANDARD NOTE: arg7 : C call syntax
 
-    RegisterCLIcommand("clicmdname",
-                       __FILE__,
-                       templatemodule_examplefunction_cli,
-                       "function purpose",
-                       "<mode [int]>",
-                       "clicmdname 3",
+    RegisterCLIcommand("clicmdname", __FILE__, templatemodule_examplefunction_cli,
+                       "function purpose", "<mode [int]>", "clicmdname 3",
                        "int templatemodule_examplefunc(int mode)");
 
     // CODING STANDARD NOTE: Link as many functions as desired
@@ -227,28 +222,27 @@ int templatemodule_examplefunc00(int mode)
     FILE *fp_test;
 
     farray = (float *) malloc(sizeof(float) * 10);
-    if(farray == NULL)
+    if (farray == NULL)
     {
         printERROR(__FILE__, __func__, __LINE__, "malloc returns zero value");
     }
 
     // CODING STANDARD NOTE: how to write an infinite loop
     // CODING STANDARD NOTE: Do not write infinite loop with while statement
-    for(;;)
+    for (;;)
     {
         // infinite loop
     }
     free(farray);
 
     fp_test = fopen("testfile.log", "w");
-    if(fp_test == NULL)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "Cannot open file testfile.log");
+    if (fp_test == NULL)
+    {
+        printERROR(__FILE__, __func__, __LINE__, "Cannot open file testfile.log");
+    }
     fclose(fp_test);
 
-    if(mode == 2)
+    if (mode == 2)
     {
         // CODING STANDARD NOTE: reduce variable scope as much as possible
         // CODING STANDARD NOTE: variables used inside code block declared at beginning of code block
@@ -260,30 +254,28 @@ int templatemodule_examplefunc00(int mode)
         // CODING STANDARD NOTE: 		printERROR(const char *file, const char *func, int line, char *errmessage)
         // CODING STANDARD NOTE: 		printWARNING(const char *file, const char *func, int line, char *warnmessage)
         // CODING STANDARD NOTE:  printERROR will exit code, printWARNING will issue warning and continue
-        if(sprintf(name, "image1", loop) < 1)
+        if (sprintf(name, "image1", loop) < 1)
         {
             printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
         }
-        if(sprintf(command, "ls %s.fits", name) < 1)
+        if (sprintf(command, "ls %s.fits", name) < 1)
         {
             printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
         }
-        if(system(command) != 0)
-            printERROR(__FILE__,
-                       __func__,
-                       __LINE__,
-                       "system() returns non-zero value");
+        if (system(command) != 0)
+        {
+            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        }
     }
 
     fp_test = fopen("testfile.log", "r");
-    if(fp_test == NULL)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "Cannot Read file testfile.log");
+    if (fp_test == NULL)
+    {
+        printERROR(__FILE__, __func__, __LINE__, "Cannot Read file testfile.log");
+    }
 
     // CODING STANDARD NOTE: include field width limits in fscanf and sscanf calls
-    if(fscanf(fp_test, "%8ld", &n2) != 1)
+    if (fscanf(fp_test, "%8ld", &n2) != 1)
     {
         printERROR(__FILE__, __func__, __LINE__, "fscanf returns value != 1");
     }
@@ -345,18 +337,14 @@ int templatemodule_examplefunc00(int mode)
  * ## Details
  *
  */
-int templatemodule_examplefunc01(const char *namein,
-                                 float       val1,
-                                 int         n1,
-                                 float *restrict farray)
+int templatemodule_examplefunc01(const char *namein, float val1, int n1, float *restrict farray)
 {
     /// ---
     /// # Code Description
     ///
     int Niteration;
 
-    int RT_priority =
-        95; // any number from 0-99. Higher number = higher priority
+    int                RT_priority = 95; // any number from 0-99. Higher number = higher priority
     struct sched_param schedpar;
 
     int retval;
@@ -366,27 +354,24 @@ int templatemodule_examplefunc01(const char *namein,
     /// ## Set up privileges
 
     iretval = seteuid(euid_called); //This goes up to maximum privileges
-    if(retval != 0)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "seteuid() returns non-zero value");
+    if (retval != 0)
+    {
+        printERROR(__FILE__, __func__, __LINE__, "seteuid() returns non-zero value");
+    }
 
-    sched_setscheduler(0,
-                       SCHED_FIFO,
+    sched_setscheduler(0, SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
 
     retval = seteuid(euid_real); //Go back to normal privileges
-    if(retval != 0)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "seteuid() returns non-zero value");
+    if (retval != 0)
+    {
+        printERROR(__FILE__, __func__, __LINE__, "seteuid() returns non-zero value");
+    }
 
     /// ## Execute loop
 
     // code here
-    for(;;)  // preferred way to write infinite loop
+    for (;;) // preferred way to write infinite loop
     {
     }
 

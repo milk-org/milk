@@ -9,7 +9,7 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT "info"
-#define MODULE_DESCRIPTION       "Image information and statistics"
+#define MODULE_DESCRIPTION "Image information and statistics"
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -36,10 +36,6 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
-
-
-
-
 
 
 /* uses the repartition function F of the normal distribution law */
