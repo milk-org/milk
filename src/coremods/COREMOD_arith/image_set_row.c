@@ -8,9 +8,9 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -22,11 +22,11 @@
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "setrow",
-    .cmdkey      = "setrow",
-    .description = "set image row pixel values",
-    .description_long =
-        "Set all pixels in a specified row of a 2D image to a given value. The row index and target value are specified as parameters."
+    .fps_name         = "setrow",
+    .cmdkey           = "setrow",
+    .description      = "set image row pixel values",
+    .description_long = "Set all pixels in a specified row of a 2D image to a given value. The row "
+                        "index and target value are specified as parameters."
 };
 
 
@@ -45,19 +45,10 @@ static uint32_t setrow_rowindex      = 0;
  * Syntax: X(keyword, ptr, type, is_primary, flag, descr)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".imname", setrow_inimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input image") \
-    X(".pixval", &setrow_pixval, \
-      FPTYPE_FLOAT32, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "pixel value") \
-    X(".row", &setrow_rowindex, \
-      FPTYPE_UINT32, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "row index")
+#define FPS_PARAMS(X)                                                                        \
+    X(".imname", setrow_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".pixval", &setrow_pixval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "pixel value")     \
+    X(".row", &setrow_rowindex, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "row index")
 
 
 /* ================================================================
@@ -71,22 +62,23 @@ static uint32_t setrow_rowindex      = 0;
  */
 static MILK_HOT errno_t fpsexec(IMAGE *inimg)
 {
-    float    val = setrow_pixval;
-    uint32_t row = setrow_rowindex;
+    float    val   = setrow_pixval;
+    uint32_t row   = setrow_rowindex;
     uint32_t xsize = inimg->md[0].size[0];
 
-    if (row >= inimg->md[0].size[1]) {
+    if (row >= inimg->md[0].size[1])
+    {
         return RETURN_FAILURE;
     }
-#define SETROW_CASE_(DT, ACC, CT)                   \
-    case DT:                                        \
-        for (uint32_t i = 0; i < xsize; i++)        \
-            inimg->array.ACC[row * xsize + i] =     \
-                (CT) val;                           \
+#define SETROW_CASE_(DT, ACC, CT)                         \
+    case DT:                                              \
+        for (uint32_t i = 0; i < xsize; i++)              \
+            inimg->array.ACC[row * xsize + i] = (CT) val; \
         break;
 
-    switch (inimg->md[0].datatype) {
-        FOREACH_REAL_DATATYPE(SETROW_CASE_) default: PRINT_ERROR("unsupported datatype");
+    switch (inimg->md[0].datatype)
+    {
+        FOREACH_REAL_DATATYPE(SETROW_CASE_) default : PRINT_ERROR("unsupported datatype");
         return RETURN_FAILURE;
     }
 #undef SETROW_CASE_
@@ -108,12 +100,12 @@ FPS_V2_SECTION5(FPS_PARAMS)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     IMGID in = imgid_make_from_name(setrow_inimname);
-    resolveIMGID(&in,   ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec(in.im);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START fpsexec(in.im);
     processinfo_update_output_stream(processinfo, in.im, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END return RETURN_SUCCESS;
 }
 
 
@@ -124,8 +116,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_arith__imset_row()
@@ -141,8 +133,5 @@ errno_t CLIADDCMD_COREMOD_arith__imset_row()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif

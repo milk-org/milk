@@ -41,17 +41,15 @@ errno_t write_tracedebugfile()
     printf("dctestptinit = %d\n", dctestptinit);
 
     FILE *fp = fopen(fname, "w");
-    if(fp != NULL)
+    if (fp != NULL)
     {
-        for(uint64_t i = 0;
-            i < CODETESTPOINTARRAY_NBCNT;
-            i++)
+        for (uint64_t i = 0; i < CODETESTPOINTARRAY_NBCNT; i++)
         {
             long j = (i + dctestptcnt) % CODETESTPOINTARRAY_NBCNT;
 
             uint64_t index = dctestptarr[j].loopcnt * CODETESTPOINTARRAY_NBCNT + j;
 
-            if(dctestptarr[j].line != 0)
+            if (dctestptarr[j].line != 0)
             {
                 char timestring[TIMESTRINGLEN];
                 mkUTtimestring_nanosec(timestring, dctestptarr[j].time);
@@ -59,23 +57,18 @@ errno_t write_tracedebugfile()
                 /* Extract last word from path */
                 char str[STRINGMAXLEN_FULLFILENAME];
                 snprintf(str, sizeof(str), "%s", dctestptarr[j].file);
-                char *slash = strrchr(str, '/');
+                char *slash    = strrchr(str, '/');
                 char *lastword = (slash != NULL) ? (slash + 1) : str;
 
                 fprintf(fp,
                         "T %6ld %s %-20s"
                         " %6d %-20s  %s\n",
-                        index,
-                        timestring,
-                        lastword, dctestptarr[j].line, dctestptarr[j].func, dctestptarr[j].msg);
+                        index, timestring, lastword, dctestptarr[j].line, dctestptarr[j].func,
+                        dctestptarr[j].msg);
                 fprintf(fp, "       FTRACE %d ", dctestptarr[j].funclevel);
-                for(int level = 0;
-                    level < dctestptarr[j].funclevel;
-                    level++)
+                for (int level = 0; level < dctestptarr[j].funclevel; level++)
                 {
-                    fprintf(fp,
-                            " (%d) >> %ld:%s",
-                            dctestptarr[j].linestack[level],
+                    fprintf(fp, " (%d) >> %ld:%s", dctestptarr[j].linestack[level],
                             dctestptarr[j].fcntstack[level], dctestptarr[j].funcstack[level]);
                 }
                 fprintf(fp, "\n\n");
@@ -110,7 +103,7 @@ errno_t CLI_execute_string(const char *cmd)
     save_cmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     strncpy(data.CLIcmdline, cmd, STRINGMAXLEN_CLICMDLINE - 1);
     data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    errno_t ret = CLI_execute_line();
+    errno_t ret                                  = CLI_execute_line();
     strncpy(data.CLIcmdline, save_cmdline, STRINGMAXLEN_CLICMDLINE - 1);
     data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     return ret;

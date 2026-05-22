@@ -32,7 +32,7 @@ errno_t processinfo_shm_list_create(long *pindex_out)
     int     SM_fd  = -1;
     long    pindex = 0;
 
-    if(pindex_out == NULL)
+    if (pindex_out == NULL)
     {
         FUNC_RETURN_FAILURE("pindex_out is NULL");
     }
@@ -47,41 +47,41 @@ errno_t processinfo_shm_list_create(long *pindex_out)
     struct stat buffer;
     int         exists = stat(SM_fname, &buffer);
 
-    if(exists == -1)
+    if (exists == -1)
     {
         printf("CREATING PROCESSINFO LIST\n");
 
         size_t sharedsize = sizeof(PROCESSINFOLIST);
         umask(0);
         SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
-        if(SM_fd == -1)
+        if (SM_fd == -1)
         {
             PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
             goto fail;
         }
 
-        if(lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
+        if (lseek(SM_fd, sharedsize - 1, SEEK_SET) == -1)
         {
             PRINT_ERROR("lseek failed: %s", strerror(errno));
             goto fail;
         }
 
-        if(write(SM_fd, "", 1) != 1)
+        if (write(SM_fd, "", 1) != 1)
         {
             PRINT_ERROR("write last byte failed: %s", strerror(errno));
             goto fail;
         }
 
-        pinfolist = (PROCESSINFOLIST *)
-                    mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-        if(pinfolist == MAP_FAILED)
+        pinfolist =
+            (PROCESSINFOLIST *) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+        if (pinfolist == MAP_FAILED)
         {
             PRINT_ERROR("mmap(%s) failed: %s", SM_fname, strerror(errno));
             pinfolist = NULL;
             goto fail;
         }
 
-        for(pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
+        for (pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
         {
             pinfolist->active[pindex] = 0;
         }
@@ -93,28 +93,27 @@ errno_t processinfo_shm_list_create(long *pindex_out)
         int link_fd;
 
         pinfolist = (PROCESSINFOLIST *) processinfo_shm_link(SM_fname, &link_fd);
-        if(pinfolist == MAP_FAILED)
+        if (pinfolist == MAP_FAILED)
         {
             FUNC_RETURN_FAILURE("processinfo_shm_link(%s) failed", SM_fname);
         }
 
-        while((pinfolist->active[pindex] != 0) &&
-                (pindex < PROCESSINFOLISTSIZE))
+        while ((pinfolist->active[pindex] != 0) && (pindex < PROCESSINFOLISTSIZE))
         {
             pindex++;
         }
 
-        if(pindex == PROCESSINFOLISTSIZE)
+        if (pindex == PROCESSINFOLISTSIZE)
         {
             FUNC_RETURN_FAILURE("pindex reached max value (%d)", PROCESSINFOLISTSIZE);
         }
     }
 
     *pindex_out = pindex;
-    rv = RETURN_SUCCESS;
+    rv          = RETURN_SUCCESS;
 
 fail:
-    if(SM_fd != -1)
+    if (SM_fd != -1)
     {
         close(SM_fd);
     }

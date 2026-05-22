@@ -17,12 +17,12 @@
 #include "standalone_dependencies.h"
 #include "streamCTRL.h"
 #ifdef USE_NCURSES
-#include <ncurses.h>
+#    include <ncurses.h>
 #else
-#define printw(...) printf(__VA_ARGS__)
-#define attron(a)
-#define attroff(a)
-#define A_BOLD 0
+#    define printw(...) printf(__VA_ARGS__)
+#    define attron(a)
+#    define attroff(a)
+#    define A_BOLD 0
 #endif
 #include <string.h>
 #include <time.h>
@@ -35,12 +35,10 @@ int        C_ERRNO = 0;
 /*                                         DUPLICATED CODE */
 /* ===============================================================================================
  */
-struct timespec timespec_diff(
-    struct timespec start,
-    struct timespec end)
+struct timespec timespec_diff(struct timespec start, struct timespec end)
 {
     struct timespec temp;
-    if((end.tv_nsec - start.tv_nsec) < 0)
+    if ((end.tv_nsec - start.tv_nsec) < 0)
     {
         temp.tv_sec  = end.tv_sec - start.tv_sec - 1;
         temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
@@ -56,21 +54,19 @@ struct timespec timespec_diff(
 /**
  * @brief Print the milk script engine header banner.
  */
-int print_header(
-    const char *str,
-    char       c)
+int print_header(const char *str, char c)
 {
     long n;
 
 
     attron(A_BOLD);
     n = strlen(str);
-    for(long i = 0; i < (wcol - n) / 2; i++)
+    for (long i = 0; i < (wcol - n) / 2; i++)
     {
         printw("%c", c);
     }
     printw("%s", str);
-    for(i = 0; i < (wcol - n) / 2 - 1; i++)
+    for (i = 0; i < (wcol - n) / 2 - 1; i++)
     {
         printw("%c", c);
     }
@@ -83,11 +79,7 @@ int print_header(
 /**
  * @brief Quicksort partition for long array.
  */
-void qs2l(
-    double *array,
-    long   *array1,
-    long   left,
-    long   right)
+void qs2l(double *array, long *array1, long left, long right)
 {
     register long i, j;
     double        x, y;
@@ -99,16 +91,16 @@ void qs2l(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left)
+        while (x < array[j] && j > left)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -121,14 +113,13 @@ void qs2l(
             i++;
             j--;
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs2l(array, array1, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs2l(array, array1, i, right);
     }
@@ -137,19 +128,12 @@ void qs2l(
 /**
  * @brief Quicksort two parallel long arrays.
  */
-void quick_sort2l(
-    double *array,
-    long   *array1,
-    long   count)
+void quick_sort2l(double *array, long *array1, long count)
 {
     qs2l(array, array1, 0, count - 1);
 }
 
-void qs2l_double(
-    double *array,
-    long   *array1,
-    long   left,
-    long   right)
+void qs2l_double(double *array, long *array1, long left, long right)
 {
     register long i, j;
     double        x, y;
@@ -161,16 +145,16 @@ void qs2l_double(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left)
+        while (x < array[j] && j > left)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -183,31 +167,24 @@ void qs2l_double(
             i++;
             j--;
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs2l_double(array, array1, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs2l_double(array, array1, i, right);
     }
 }
 
-void quick_sort2l_double(
-    double *array,
-    long   *array1,
-    long   count)
+void quick_sort2l_double(double *array, long *array1, long count)
 {
     qs2l_double(array, array1, 0, count - 1);
 }
 
-void qs_long(
-    long *array,
-    long left,
-    long right)
+void qs_long(long *array, long left, long right)
 {
     register long i, j;
     long          x, y;
@@ -218,16 +195,16 @@ void qs_long(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left)
+        while (x < array[j] && j > left)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -235,22 +212,19 @@ void qs_long(
             i++;
             j--;
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs_long(array, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs_long(array, i, right);
     }
 }
 
-void quick_sort_long(
-    long *array,
-    long count)
+void quick_sort_long(long *array, long count)
 {
     qs_long(array, 0, count - 1);
 }
@@ -279,19 +253,14 @@ void quick_sort_long(
  * 			error message to be printed
  *
  */
-int printERROR(
-    const char *file,
-    const char *func,
-    int        line,
-    char       *errmessage)
+int printERROR(const char *file, const char *func, int line, char *errmessage)
 {
-    fprintf(stderr,
-            "%c[%d;%dm ERROR [ %s:%d: %s ]  %c[%d;m\n",
-            (char) 27, 1, 31, file, line, func, (char) 27, 0);
-    if(C_ERRNO != 0)
+    fprintf(stderr, "%c[%d;%dm ERROR [ %s:%d: %s ]  %c[%d;m\n", (char) 27, 1, 31, file, line, func,
+            (char) 27, 0);
+    if (C_ERRNO != 0)
     {
         char buff[256];
-        if(strerror_r(errno, buff, 256) == 0)
+        if (strerror_r(errno, buff, 256) == 0)
         {
             PRINT_ERROR("C Error: %s", buff);
         }
@@ -317,7 +286,7 @@ int file_exists(const char *restrict file_name)
     FILE *fp;
     int   exists = 1;
 
-    if((fp = fopen(file_name, "r")) == NULL)
+    if ((fp = fopen(file_name, "r")) == NULL)
     {
         exists = 0;
         /*      printf("file %s does not exist\n",file_name);*/
@@ -335,7 +304,7 @@ int is_fits_file(const char *restrict file_name)
     FILE *fp;
     int   exists = 1;
 
-    if((fp = fopen(file_name, "r")) == NULL)
+    if ((fp = fopen(file_name, "r")) == NULL)
     {
         exists = 0;
         /*      printf("file %s does not exist\n",file_name);*/

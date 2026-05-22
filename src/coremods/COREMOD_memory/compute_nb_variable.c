@@ -8,10 +8,10 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "libmilkdata/milkdata.h"
+#    include "libmilkdata/milkdata.h"
 #endif
 
 /**
@@ -21,9 +21,9 @@ long compute_nb_variable()
 {
     long NBvar = 0;
 
-    for(variableID i = 0; i < dcnvar; i++)
+    for (variableID i = 0; i < dcnvar; i++)
     {
-        if(dcvar[i].used == 1)
+        if (dcvar[i].used == 1)
         {
             NBvar += 1;
         }

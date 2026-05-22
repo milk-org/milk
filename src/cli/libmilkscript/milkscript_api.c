@@ -9,7 +9,7 @@
  */
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#    define _GNU_SOURCE
 #endif
 
 #include <stdio.h>
@@ -41,11 +41,9 @@ extern void libinit_COREMOD_iofits(void);
  * Sets up the interpreter state, loads modules,
  * and prepares the command dispatch table.
  */
-errno_t milkscript_init(
-    int  argc,
-    char **argv)
+errno_t milkscript_init(int argc, char **argv)
 {
-    if(argc > 0 && argv && argv[0])
+    if (argc > 0 && argv && argv[0])
     {
         strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
     }
@@ -55,22 +53,22 @@ errno_t milkscript_init(
     }
 
     // Initialize struct data defaults specific to scripting
-    data.CLIlogON          = 0;
-    data.fifoON            = 0;
-    data.fifofd            = -1;
-    data.autocomplete      = 0;
+    data.CLIlogON             = 0;
+    data.fifoON               = 0;
+    data.fifofd               = -1;
+    data.autocomplete         = 0;
     data.autocomplete_history = 0;
     data.autocomplete_arghint = 0;
     data.autocomplete_fuzzy   = 0;
 
     // Use libmilkdata globals via macros defined in CLIcore.h
-    dcdebug         = 0;
-    dcoverwrite     = 0;
-    dcprecision     = 0;
-    dcshareddft    = 0;
+    dcdebug     = 0;
+    dcoverwrite = 0;
+    dcprecision = 0;
+    dcshareddft = 0;
     snprintf(dcsavedir, STRINGMAXLEN_DIRNAME, ".");
 
-    dcprocinfo       = 1;
+    dcprocinfo    = 1;
     dcprocinfoact = 0;
 
     // Setup SHM dir
@@ -103,7 +101,7 @@ errno_t milkscript_init(
  */
 errno_t milkscript_execute(const char *cmdline)
 {
-    if(!cmdline)
+    if (!cmdline)
     {
         return -1;
     }
@@ -116,31 +114,31 @@ errno_t milkscript_execute(const char *cmdline)
  */
 errno_t milkscript_run(FILE *fp)
 {
-    if(!fp)
+    if (!fp)
     {
         return -1;
     }
     char line[STRINGMAXLEN_CLICMDLINE];
     data.CLIloopON = 1;
 
-    while(data.CLIloopON && fgets(line, sizeof(line), fp))
+    while (data.CLIloopON && fgets(line, sizeof(line), fp))
     {
         /* Strip trailing newline */
         size_t len = strlen(line);
-        if(len > 0 && line[len - 1] == '\n')
+        if (len > 0 && line[len - 1] == '\n')
         {
             line[--len] = '\0';
         }
 
         /* -E: echo each input line verbatim before executing.
          * Skip the shebang line (first line starting with #!). */
-        if(data.echo_input && len > 0)
+        if (data.echo_input && len > 0)
         {
             static int first_line = 1;
-            int is_shebang = (first_line && line[0] == '#' && line[1] == '!');
-            first_line = 0;
+            int        is_shebang = (first_line && line[0] == '#' && line[1] == '!');
+            first_line            = 0;
 
-            if(!is_shebang)
+            if (!is_shebang)
             {
                 printf("\033[2;36m%s\033[0m\n", line);
             }

@@ -15,7 +15,7 @@ int processinfo_compute_status(PROCESSINFO *processinfo)
 {
     int processcompstatus = 1;
 
-    if(processinfo->CTRLval == 5)
+    if (processinfo->CTRLval == 5)
     {
         processcompstatus = 0;
     }

@@ -9,8 +9,6 @@
  */
 
 
-
-
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
 #endif
@@ -32,7 +30,7 @@ typedef int errno_t;
 
 // default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
 #ifndef SHAREDSHMDIR
-#define SHAREDSHMDIR  "/dev/shm"
+#    define SHAREDSHMDIR "/dev/shm"
 #endif
 
 #include "streamCTRL_TUI_internal.h"
@@ -43,9 +41,6 @@ typedef int errno_t;
 #include "streamCTRL_print_trace.h"
 #include "streamCTRL_scan.h"
 #include "streamCTRL_utilfuncs.h"
-
-
-
 
 
 /* Tab definitions: (display_mode, key_label, tab_label)
@@ -77,9 +72,9 @@ static void streamCTRL_TUI_exit()
 
 
 STREAMINFO *g_streaminfo_qsort = NULL;
-IMAGE *g_sort_images = NULL;
-int g_sort_col = 0;
-int g_sort_dir = 0;
+IMAGE      *g_sort_images      = NULL;
+int         g_sort_col         = 0;
+int         g_sort_dir         = 0;
 
 /**
  * cmp_stream_col - unified column comparator for streams
@@ -88,13 +83,11 @@ int g_sort_dir = 0;
  * g_sort_col. Uses g_sort_dir to flip order.
  * Elements a,b are pointers to long (sindex values).
  */
-int cmp_stream_col(
-    const void *a,
-    const void *b)
+int cmp_stream_col(const void *a, const void *b)
 {
-    long idxA = *(const long *)a;
-    long idxB = *(const long *)b;
-    int res = 0;
+    long idxA = *(const long *) a;
+    long idxB = *(const long *) b;
+    int  res  = 0;
 
     STREAMINFO *siA = &g_streaminfo_qsort[idxA];
     STREAMINFO *siB = &g_streaminfo_qsort[idxB];
@@ -103,15 +96,15 @@ int cmp_stream_col(
     imageID IDB = siB->ID;
 
     /* Streams with no valid ID sort to the bottom */
-    if(IDA < 0 && IDB < 0)
+    if (IDA < 0 && IDB < 0)
     {
         return 0;
     }
-    if(IDA < 0)
+    if (IDA < 0)
     {
         return 1;
     }
-    if(IDB < 0)
+    if (IDB < 0)
     {
         return -1;
     }
@@ -119,22 +112,23 @@ int cmp_stream_col(
     IMAGE_METADATA *mdA = g_sort_images[IDA].md;
     IMAGE_METADATA *mdB = g_sort_images[IDB].md;
 
-    if(mdA == NULL && mdB == NULL)
+    if (mdA == NULL && mdB == NULL)
     {
         return 0;
     }
-    if(mdA == NULL)
+    if (mdA == NULL)
     {
         return 1;
     }
-    if(mdB == NULL)
+    if (mdB == NULL)
     {
         return -1;
     }
 
-    switch(g_sort_col)
+    switch (g_sort_col)
     {
-    case STREAM_SORT_NAME: res = strcmp(siA->sname, siB->sname);
+    case STREAM_SORT_NAME:
+        res = strcmp(siA->sname, siB->sname);
         break;
 
     case STREAM_SORT_TYPE:
@@ -145,7 +139,7 @@ int cmp_stream_col(
     {
         uint64_t neA = mdA->nelement;
         uint64_t neB = mdB->nelement;
-        res = (neA < neB) ? -1 : (neA > neB) ? 1 : 0;
+        res          = (neA < neB) ? -1 : (neA > neB) ? 1 : 0;
         break;
     }
 
@@ -153,13 +147,14 @@ int cmp_stream_col(
     {
         uint64_t c0A = mdA->cnt0;
         uint64_t c0B = mdB->cnt0;
-        res = (c0A < c0B) ? -1 : (c0A > c0B) ? 1 : 0;
+        res          = (c0A < c0B) ? -1 : (c0A > c0B) ? 1 : 0;
         break;
     }
 
     case STREAM_SORT_CPID:
-        res = (mdA->creatorPID < mdB->creatorPID)
-              ? -1 : (mdA->creatorPID > mdB->creatorPID) ? 1 : 0;
+        res = (mdA->creatorPID < mdB->creatorPID)   ? -1
+              : (mdA->creatorPID > mdB->creatorPID) ? 1
+                                                    : 0;
         break;
 
     case STREAM_SORT_OPID:
@@ -167,12 +162,13 @@ int cmp_stream_col(
         break;
 
     case STREAM_SORT_FREQ:
-        res = (siA->frequ_disp < siB->frequ_disp)
-              ? -1 : (siA->frequ_disp > siB->frequ_disp) ? 1 : 0;
+        res = (siA->frequ_disp < siB->frequ_disp)   ? -1
+              : (siA->frequ_disp > siB->frequ_disp) ? 1
+                                                    : 0;
         break;
     }
 
-    if(g_sort_dir == 1)
+    if (g_sort_dir == 1)
     {
         res = -res;
     }
@@ -191,18 +187,18 @@ errno_t streamCTRL_CTRLscreen(void)
     DEBUG_TRACE_FSTART();
 
     // initialize sCTRLTUIparams
-    sTUIparam.loopOK = 1;
-    sTUIparam.dindexSelected = 0;
+    sTUIparam.loopOK             = 1;
+    sTUIparam.dindexSelected     = 0;
     sTUIparam.DisplayDetailLevel = 0;
-    sTUIparam.DisplayMode      = DISPLAY_MODE_SUMMARY;
-    sTUIparam.NBsindex = 0;
-    sTUIparam.SORTING     = 0;
-    sTUIparam.DISPLAY_ALL_SEMS = 1; // Display all semaphores / just the first 2.
-    sTUIparam.fuserScan = 0;
-    sTUIparam.SORT_TOGGLE = 0;
-    sTUIparam.sort_col = STREAM_SORT_NONE;
-    sTUIparam.sort_dir = 0;
-    sTUIparam.frequ = 10.0; // Hz
+    sTUIparam.DisplayMode        = DISPLAY_MODE_SUMMARY;
+    sTUIparam.NBsindex           = 0;
+    sTUIparam.SORTING            = 0;
+    sTUIparam.DISPLAY_ALL_SEMS   = 1; // Display all semaphores / just the first 2.
+    sTUIparam.fuserScan          = 0;
+    sTUIparam.SORT_TOGGLE        = 0;
+    sTUIparam.sort_col           = STREAM_SORT_NONE;
+    sTUIparam.sort_dir           = 0;
+    sTUIparam.frequ              = 10.0; // Hz
 
 
     // Display fields
@@ -219,16 +215,16 @@ errno_t streamCTRL_CTRLscreen(void)
     state.Dispcnt0_NBchar = 16;
     state.Dispfreq_NBchar = 8;
     state.DispPID_NBchar  = 8;
-    state.doffsetindex = 0;
-    state.inodeselected = 0;
-    state.monstrlen = 200;
-    state.monstring = (char *)malloc(state.monstrlen);
+    state.doffsetindex    = 0;
+    state.inodeselected   = 0;
+    state.monstrlen       = 200;
+    state.monstring       = (char *) malloc(state.monstrlen);
 
     state.PIDmax = get_PIDmax();
     DEBUG_TRACEPOINT("PID max = %d ", state.PIDmax);
 
     state.PIDname_array = (char **) malloc(sizeof(char *) * state.PIDmax);
-    for(int pidi = 0; pidi < state.PIDmax; pidi++)
+    for (int pidi = 0; pidi < state.PIDmax; pidi++)
     {
         state.PIDname_array[pidi] = NULL;
     }
@@ -238,7 +234,7 @@ errno_t streamCTRL_CTRLscreen(void)
     streaminfoproc.fuserUpdate      = 0;
 
     streaminfo = (STREAMINFO *) malloc(sizeof(STREAMINFO) * streamNBID_MAX);
-    for(int sindex = 0; sindex < streamNBID_MAX; sindex++)
+    for (int sindex = 0; sindex < streamNBID_MAX; sindex++)
     {
         streaminfo[sindex].ID                   = -1;
         streaminfo[sindex].ISIOretval           = IMAGESTREAMIO_FILEOPEN;
@@ -254,7 +250,7 @@ errno_t streamCTRL_CTRLscreen(void)
     streaminfoproc.PIDtable = state.PIDname_array;
 
     IMAGE *streamCTRLimages = (IMAGE *) malloc(sizeof(IMAGE) * streamNBID_MAX);
-    for(imageID imID = 0; imID < streamNBID_MAX; imID++)
+    for (imageID imID = 0; imID < streamNBID_MAX; imID++)
     {
         streamCTRLimages[imID].used    = 0;
         streamCTRLimages[imID].shmfd   = -1;
@@ -276,13 +272,13 @@ errno_t streamCTRL_CTRLscreen(void)
     // default: use TUI
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
-    if(getenv("MILK_TUIPRINT_STDIO"))
+    if (getenv("MILK_TUIPRINT_STDIO"))
     {
         // use stdio instead of TUI
         TUI_set_screenprintmode(SCREENPRINT_STDIO);
     }
 
-    if(getenv("MILK_TUIPRINT_NONE"))
+    if (getenv("MILK_TUIPRINT_NONE"))
     {
         TUI_set_screenprintmode(SCREENPRINT_NONE);
     }
@@ -292,23 +288,23 @@ errno_t streamCTRL_CTRLscreen(void)
     atexit(streamCTRL_TUI_exit);
 
 
-    long long loopcnt  = 0;
+    long long loopcnt = 0;
 
 
     streaminfoproc.filter       = 0;
     streaminfoproc.NBstream     = 0;
     streaminfoproc.twaitus      = 100000; // 10 Hz
-    streaminfoproc.fuserUpdate0 = 1;     //update on first instance
+    streaminfoproc.fuserUpdate0 = 1;      //update on first instance
 
     // inodes that are upstream of current selection
     state.NBupstreaminodeMAX = 100;
-    state.NBupstreaminode = 0;
-    state.upstreaminode = (ino_t *) malloc(sizeof(ino_t) * state.NBupstreaminodeMAX);
+    state.NBupstreaminode    = 0;
+    state.upstreaminode      = (ino_t *) malloc(sizeof(ino_t) * state.NBupstreaminodeMAX);
 
     // processes that are upstream of current selection
     state.NBupstreamprocMAX = 100;
-    state.NBupstreamproc = 0;
-    state.upstreamproc = (pid_t *) malloc(sizeof(pid_t) * state.NBupstreamprocMAX);
+    state.NBupstreamproc    = 0;
+    state.upstreamproc      = (pid_t *) malloc(sizeof(pid_t) * state.NBupstreamprocMAX);
 
     TUI_clearscreen(0, 0);
     DEBUG_TRACEPOINT(" ");
@@ -322,7 +318,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
     fflush(stderr);
     backstderr = dup(STDERR_FILENO);
-    WRITE_FULLFILENAME(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, (int)getpid());
+    WRITE_FULLFILENAME(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, (int) getpid());
     {
         umask(0);
         int newstderr = open(newstderrfname, O_WRONLY | O_CREAT, FILEMODE);
@@ -344,7 +340,7 @@ errno_t streamCTRL_CTRLscreen(void)
     //        TUI_get_terminal_size(&wrow, &wcol);
 
     state.body_start_row = 0;
-    while(sc_sigINT == 0 && sc_sigTERM == 0 && sTUIparam.loopOK == 1)
+    while (sc_sigINT == 0 && sc_sigTERM == 0 && sTUIparam.loopOK == 1)
     {
         DEBUG_TRACEPOINT("loop start");
 
@@ -352,12 +348,12 @@ errno_t streamCTRL_CTRLscreen(void)
          * string in the header. The accurate value is computed below
          * via sc_cursor_row after all headers have been drawn. */
         int NBsinfodisp = wrow - 6;
-        if(NBsinfodisp < 1)
+        if (NBsinfodisp < 1)
         {
             NBsinfodisp = 1;
         }
 
-        if(streaminfoproc.loopcnt == 1)
+        if (streaminfoproc.loopcnt == 1)
         {
             sTUIparam.SORTING     = 2;
             sTUIparam.SORT_TOGGLE = 1;
@@ -368,8 +364,8 @@ errno_t streamCTRL_CTRLscreen(void)
 
         {
             struct timeval tv;
-            tv.tv_sec = 0;
-            tv.tv_usec = (long)(1000000.0 / sTUIparam.frequ);
+            tv.tv_sec  = 0;
+            tv.tv_usec = (long) (1000000.0 / sTUIparam.frequ);
 
             fd_set fds;
             FD_ZERO(&fds);
@@ -380,7 +376,7 @@ errno_t streamCTRL_CTRLscreen(void)
         DEBUG_TRACEPOINT(" ");
 
         int ch;
-        while((ch = ansi_get_key()) != ANSI_KEY_NONE)
+        while ((ch = ansi_get_key()) != ANSI_KEY_NONE)
         {
             DEBUG_TRACEPOINT("Process input character");
             streamCTRL_keyinput_process(ch, &streamCTRLdata, &state);
@@ -402,18 +398,18 @@ errno_t streamCTRL_CTRLscreen(void)
     streaminfoproc.loop = 0;
     pthread_join(threadscan, NULL);
 
-    for(int pidi = 0; pidi < state.PIDmax; pidi++)
+    for (int pidi = 0; pidi < state.PIDmax; pidi++)
     {
-        if(state.PIDname_array[pidi] != NULL)
+        if (state.PIDname_array[pidi] != NULL)
         {
             free(state.PIDname_array[pidi]);
         }
     }
     free(state.PIDname_array);
 
-    for(imageID ID = 0; ID < streamNBID_MAX; ID++)
+    for (imageID ID = 0; ID < streamNBID_MAX; ID++)
     {
-        if(streamCTRLimages[ID].used == 1)
+        if (streamCTRLimages[ID].used == 1)
         {
             ImageStreamIO_closeIm(&streamCTRLimages[ID]);
         }

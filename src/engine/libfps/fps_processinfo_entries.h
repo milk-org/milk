@@ -9,12 +9,8 @@
 #include "fps.h"
 #include <processinfo.h>
 
-errno_t fps_add_processinfo_entries(
-    FPS *fps
-);
+errno_t fps_add_processinfo_entries(FPS *fps);
 
-errno_t fps_to_processinfo(
-    FPS         *fps,
-    PROCESSINFO *procinfo);
+errno_t fps_to_processinfo(FPS *fps, PROCESSINFO *procinfo);
 
 #endif

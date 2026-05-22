@@ -28,7 +28,7 @@
 
 /* Compile-time prerequisite check */
 #ifndef ANSI_KEY_NONE
-#error "Include your *_ansi.h before milkTUI_compat.h"
+#    error "Include your *_ansi.h before milkTUI_compat.h"
 #endif
 
 /* =========================================================
@@ -36,16 +36,16 @@
  * ========================================================= */
 
 /* Semantic color names */
-#define COLOR_OK              2
-#define COLOR_WARNING         3
-#define COLOR_ERROR           4
-#define COLOR_DIRECTORY       7
-#define COLOR_BLACK_ON_WHITE  1
-#define COLOR_TRIGGER_BG     13
+#define COLOR_OK 2
+#define COLOR_WARNING 3
+#define COLOR_ERROR 4
+#define COLOR_DIRECTORY 7
+#define COLOR_BLACK_ON_WHITE 1
+#define COLOR_TRIGGER_BG 13
 
-#define SCREENPRINT_STDIO   0
+#define SCREENPRINT_STDIO 0
 #define SCREENPRINT_NCURSES 1
-#define SCREENPRINT_NONE    2
+#define SCREENPRINT_NONE 2
 
 /* =========================================================
  * Frame buffer
@@ -65,21 +65,20 @@ extern int  sc_term_rows;
 extern int  sc_term_cols;
 
 /* Append formatted text to frame buffer */
-#define SC_APPEND(fmt, ...) \
-    do { \
-        int _sc_n = snprintf( \
-            sc_framebuf + sc_framebuf_pos, \
-            SC_FRAMEBUF_SIZE - sc_framebuf_pos, \
-            fmt, ##__VA_ARGS__); \
-        if(_sc_n > 0) { \
-            sc_framebuf_pos += _sc_n; \
-            if(sc_framebuf_pos >= SC_FRAMEBUF_SIZE) \
-            { \
-                sc_framebuf_pos = \
-                    SC_FRAMEBUF_SIZE - 1; \
-            } \
-        } \
-    } while(0)
+#define SC_APPEND(fmt, ...)                                                                     \
+    do                                                                                          \
+    {                                                                                           \
+        int _sc_n = snprintf(sc_framebuf + sc_framebuf_pos, SC_FRAMEBUF_SIZE - sc_framebuf_pos, \
+                             fmt, ##__VA_ARGS__);                                               \
+        if (_sc_n > 0)                                                                          \
+        {                                                                                       \
+            sc_framebuf_pos += _sc_n;                                                           \
+            if (sc_framebuf_pos >= SC_FRAMEBUF_SIZE)                                            \
+            {                                                                                   \
+                sc_framebuf_pos = SC_FRAMEBUF_SIZE - 1;                                         \
+            }                                                                                   \
+        }                                                                                       \
+    } while (0)
 
 /**
  * sc_frame_flush - write frame buffer to stdout.
@@ -90,11 +89,9 @@ extern int  sc_term_cols;
 static inline void sc_frame_flush(void)
 {
     SC_APPEND("\033[J");
-    if(sc_framebuf_pos > 0)
+    if (sc_framebuf_pos > 0)
     {
-        if(write(STDOUT_FILENO,
-                 sc_framebuf,
-                 (size_t) sc_framebuf_pos) < 0)
+        if (write(STDOUT_FILENO, sc_framebuf, (size_t) sc_framebuf_pos) < 0)
         {
         }
         sc_framebuf_pos = 0;
@@ -124,40 +121,33 @@ static inline void TUI_newline(void)
  * Handles embedded newlines and enforces column limits.
  * ========================================================= */
 
-__attribute__((format(printf, 1, 2)))
-static inline void TUI_printfw(
-    const char *fmt,
-    ...)
+__attribute__((format(printf, 1, 2))) static inline void TUI_printfw(const char *fmt, ...)
 {
     char    tmpbuf[2048];
     va_list ap;
 
     va_start(ap, fmt);
-    int n = vsnprintf(
-                tmpbuf, sizeof(tmpbuf), fmt, ap);
+    int n = vsnprintf(tmpbuf, sizeof(tmpbuf), fmt, ap);
     va_end(ap);
 
-    if(n <= 0)
+    if (n <= 0)
     {
         return;
     }
-    if(n >= (int) sizeof(tmpbuf))
+    if (n >= (int) sizeof(tmpbuf))
     {
         n = sizeof(tmpbuf) - 1;
     }
 
-    for(int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
-        if(tmpbuf[i] == '\n')
+        if (tmpbuf[i] == '\n')
         {
             TUI_newline();
         }
-        else if(sc_cursor_col < sc_term_cols
-                && sc_framebuf_pos
-                < SC_FRAMEBUF_SIZE - 1)
+        else if (sc_cursor_col < sc_term_cols && sc_framebuf_pos < SC_FRAMEBUF_SIZE - 1)
         {
-            sc_framebuf[sc_framebuf_pos++] =
-                tmpbuf[i];
+            sc_framebuf[sc_framebuf_pos++] = tmpbuf[i];
             sc_cursor_col++;
         }
     }
@@ -248,9 +238,9 @@ static inline void screenprint_setcolor(int idx)
 {
     ansi_detect_color_level();
 
-    if(ansi__color_level >= 3)
+    if (ansi__color_level >= 3)
     {
-        switch(idx)
+        switch (idx)
         {
         case 1:
             SC_APPEND("\033[30;47m");
@@ -293,9 +283,9 @@ static inline void screenprint_setcolor(int idx)
             break;
         }
     }
-    else if(ansi__color_level == 2)
+    else if (ansi__color_level == 2)
     {
-        switch(idx)
+        switch (idx)
         {
         case 1:
             SC_APPEND("\033[30;47m");
@@ -340,7 +330,7 @@ static inline void screenprint_setcolor(int idx)
     }
     else
     {
-        switch(idx)
+        switch (idx)
         {
         case 1:
             SC_APPEND("\033[30;47m");
@@ -393,15 +383,14 @@ static inline void screenprint_setcolor(int idx)
  * @brief Set background to the row-highlight color
  *        (steel blue).
  */
-static inline void
-screenprint_setbgcolor_highlight(void)
+static inline void screenprint_setbgcolor_highlight(void)
 {
     ansi_detect_color_level();
-    if(ansi__color_level >= 3)
+    if (ansi__color_level >= 3)
     {
         SC_APPEND("\033[48;2;70;130;180m");
     }
-    else if(ansi__color_level == 2)
+    else if (ansi__color_level == 2)
     {
         SC_APPEND("\033[48;5;67m");
     }
@@ -415,17 +404,15 @@ screenprint_setbgcolor_highlight(void)
  * @brief Set status-bar colors (white text on dark
  *        blue-grey background).
  */
-static inline void
-screenprint_set_status_bar(void)
+static inline void screenprint_set_status_bar(void)
 {
     ansi_detect_color_level();
-    if(ansi__color_level >= 3)
+    if (ansi__color_level >= 3)
     {
-        SC_APPEND(
-            "\033[38;2;255;255;255;"
-            "48;2;60;60;80m");
+        SC_APPEND("\033[38;2;255;255;255;"
+                  "48;2;60;60;80m");
     }
-    else if(ansi__color_level == 2)
+    else if (ansi__color_level == 2)
     {
         SC_APPEND("\033[38;5;255;48;5;60m");
     }
@@ -439,11 +426,11 @@ screenprint_set_status_bar(void)
 static inline void screenprint_color_string(void)
 {
     ansi_detect_color_level();
-    if(ansi__color_level >= 3)
+    if (ansi__color_level >= 3)
     {
         SC_APPEND("\033[38;2;0;255;255m");
     }
-    else if(ansi__color_level == 2)
+    else if (ansi__color_level == 2)
     {
         SC_APPEND("\033[38;5;51m");
     }
@@ -457,11 +444,11 @@ static inline void screenprint_color_string(void)
 static inline void screenprint_color_number(void)
 {
     ansi_detect_color_level();
-    if(ansi__color_level >= 3)
+    if (ansi__color_level >= 3)
     {
         SC_APPEND("\033[38;2;255;220;50m");
     }
-    else if(ansi__color_level == 2)
+    else if (ansi__color_level == 2)
     {
         SC_APPEND("\033[38;5;220m");
     }
@@ -475,11 +462,11 @@ static inline void screenprint_color_number(void)
 static inline void screenprint_color_flag(void)
 {
     ansi_detect_color_level();
-    if(ansi__color_level >= 3)
+    if (ansi__color_level >= 3)
     {
         SC_APPEND("\033[38;2;50;255;100m");
     }
-    else if(ansi__color_level == 2)
+    else if (ansi__color_level == 2)
     {
         SC_APPEND("\033[38;5;46m");
     }
@@ -493,11 +480,11 @@ static inline void screenprint_color_flag(void)
 static inline void screenprint_color_dim(void)
 {
     ansi_detect_color_level();
-    if(ansi__color_level >= 3)
+    if (ansi__color_level >= 3)
     {
         SC_APPEND("\033[38;2;120;120;120m");
     }
-    else if(ansi__color_level == 2)
+    else if (ansi__color_level == 2)
     {
         SC_APPEND("\033[38;5;243m");
     }
@@ -512,8 +499,7 @@ static inline void screenprint_color_dim(void)
  * attrs (bold, dim, reverse, blink).
  * Use screenprint_setnormal() for a full reset.
  */
-static inline void screenprint_unsetcolor(
-    int idx)
+static inline void screenprint_unsetcolor(int idx)
 {
     (void) idx;
     SC_APPEND("\033[39;49m");
@@ -529,17 +515,14 @@ static inline void screenprint_unsetbgcolor(void)
  * TUI_print_header -- header line padded with char
  * ========================================================= */
 
-static inline int TUI_print_header(
-    const char *str,
-    char       c)
+static inline int TUI_print_header(const char *str, char c)
 {
-    int col =
-        sc_term_cols > 0 ? sc_term_cols : 80;
+    int col = sc_term_cols > 0 ? sc_term_cols : 80;
     int len = (int) strlen(str);
     int pad = col - len - 2;
 
     TUI_printfw("%s", str);
-    for(int i = 0; i < pad; i++)
+    for (int i = 0; i < pad; i++)
     {
         SC_APPEND("%c", c);
     }
@@ -552,8 +535,7 @@ static inline int TUI_print_header(
  * ========================================================= */
 
 /** @brief No-op: screen print mode is always STDIO. */
-static inline void TUI_set_screenprintmode(
-    int mode)
+static inline void TUI_set_screenprintmode(int mode)
 {
     (void) mode;
 }
@@ -575,20 +557,18 @@ static inline int TUI_get_screenprintmode(void)
  * @param wcol  If non-NULL, receives terminal column count
  * @return Always 0
  */
-static inline int TUI_init_terminal(
-    short unsigned int *wrow,
-    short unsigned int *wcol)
+static inline int TUI_init_terminal(short unsigned int *wrow, short unsigned int *wcol)
 {
     ansi_raw_mode_enter();
     int r, c;
     ansi_get_terminal_size(&r, &c);
     sc_term_rows = r;
     sc_term_cols = c;
-    if(wrow)
+    if (wrow)
     {
         *wrow = (short unsigned int) r;
     }
-    if(wcol)
+    if (wcol)
     {
         *wcol = (short unsigned int) c;
     }
@@ -596,9 +576,7 @@ static inline int TUI_init_terminal(
 }
 
 /** @brief Re-query terminal size (alias for TUI_init_terminal). */
-static inline int TUI_get_terminal_size(
-    short unsigned int *wrow,
-    short unsigned int *wcol)
+static inline int TUI_get_terminal_size(short unsigned int *wrow, short unsigned int *wcol)
 {
     return TUI_init_terminal(wrow, wcol);
 }
@@ -616,19 +594,17 @@ static inline void TUI_exit(void)
  * @param wrow  If non-NULL, receives terminal row count
  * @param wcol  If non-NULL, receives terminal column count
  */
-static inline void TUI_clearscreen(
-    short unsigned int *wrow,
-    short unsigned int *wcol)
+static inline void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol)
 {
     int r, c;
     ansi_get_terminal_size(&r, &c);
     sc_term_rows = r;
     sc_term_cols = c;
-    if(wrow)
+    if (wrow)
     {
         *wrow = (short unsigned int) r;
     }
-    if(wcol)
+    if (wcol)
     {
         *wcol = (short unsigned int) c;
     }
@@ -671,7 +647,7 @@ static inline int get_singlechar_nonblock(void)
 static inline int get_singlechar_block(void)
 {
     int ch = ANSI_KEY_NONE;
-    while(ch == ANSI_KEY_NONE)
+    while (ch == ANSI_KEY_NONE)
     {
         usleep(10000);
         ch = ansi_get_key();
@@ -683,9 +659,7 @@ static inline int get_singlechar_block(void)
  * print_help_entry -- formatted help key line
  * ========================================================= */
 
-static inline void print_help_entry(
-    char *key,
-    char *descr)
+static inline void print_help_entry(char *key, char *descr)
 {
     screenprint_setbold();
     TUI_printfw("    %10s", key);

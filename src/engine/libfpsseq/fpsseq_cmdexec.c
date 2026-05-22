@@ -15,8 +15,6 @@
 #include "fps_FPSremove.h"
 
 
-
-
 /** @brief process command line
  *
  * ## Purpose
@@ -69,32 +67,31 @@
  * Dispatches: exit, rescan, cntinc, logsymlink, queueprio,
  * seq_send, wait_seq.
  */
-static void milkseq_cmd_handle_sys(
-    const char           *FPScommand,
-    const char           *FPScmdline,
-    int                  nbword,
-    const char           *FPSarg0,
-    const char           *FPSarg1,
-    uint32_t             cmdindex,
-    MILKSEQ_STATE        *state,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    FPS                  *fps,
-    KEYWORD_TREE_NODE    *keywnode,
-    int                  *cmdFOUND,
-    int                  *cmdOK,
-    uint64_t             *taskstatus,
-    int                  *testcnt)
+static void milkseq_cmd_handle_sys(const char           *FPScommand,
+                                   const char           *FPScmdline,
+                                   int                   nbword,
+                                   const char           *FPSarg0,
+                                   const char           *FPSarg1,
+                                   uint32_t              cmdindex,
+                                   MILKSEQ_STATE        *state,
+                                   FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+                                   FPS                  *fps,
+                                   KEYWORD_TREE_NODE    *keywnode,
+                                   int                  *cmdFOUND,
+                                   int                  *cmdOK,
+                                   uint64_t             *taskstatus,
+                                   int                  *testcnt)
 {
-    if(*cmdFOUND)
+    if (*cmdFOUND)
     {
         return;
     }
 
     // exit
-    if(strcmp(FPScommand, "exit") == 0)
+    if (strcmp(FPScommand, "exit") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 1)
+        if (nbword != 1)
         {
             functionparameter_outlog("ERROR", "COMMAND exit takes NBARGS = 0");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -109,10 +106,10 @@ static void milkseq_cmd_handle_sys(
     }
 
     // rescan
-    if(strcmp(FPScommand, "rescan") == 0)
+    if (strcmp(FPScommand, "rescan") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 1)
+        if (nbword != 1)
         {
             functionparameter_outlog("ERROR", "COMMAND rescan takes NBARGS = 0");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -120,22 +117,19 @@ static void milkseq_cmd_handle_sys(
         }
         else
         {
-            functionparameter_scan_fps(fpsCTRLvar->mode,
-                                       fpsCTRLvar->fpsnamemask,
-                                       fps,
-                                       keywnode,
-                                       &fpsCTRLvar->NBkwn,
-                                       &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex, 0);
+            functionparameter_scan_fps(fpsCTRLvar->mode, fpsCTRLvar->fpsnamemask, fps, keywnode,
+                                       &fpsCTRLvar->NBkwn, &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex,
+                                       0);
             functionparameter_outlog("DEBUG", "RESCAN");
         }
         return;
     }
 
     // cntinc
-    if(strcmp(FPScommand, "cntinc") == 0)
+    if (strcmp(FPScommand, "cntinc") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -150,12 +144,11 @@ static void milkseq_cmd_handle_sys(
     }
 
     // logsymlink
-    if(strcmp(FPScommand, "logsymlink") == 0)
+    if (strcmp(FPScommand, "logsymlink") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
-
             functionparameter_outlog("ERROR", "COMMAND logsymlink takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             *cmdOK = 0;
@@ -167,7 +160,7 @@ static void milkseq_cmd_handle_sys(
 
             functionparameter_outlog("DEBUG", "CREATE SYM LINK %s <- %s", FPSarg0, logfname);
 
-            if(symlink(logfname, FPSarg0) != 0)
+            if (symlink(logfname, FPSarg0) != 0)
             {
                 PRINT_ERROR("symlink error %s %s", logfname, FPSarg0);
             }
@@ -176,10 +169,10 @@ static void milkseq_cmd_handle_sys(
     }
 
     // queueprio
-    if(strcmp(FPScommand, "queueprio") == 0)
+    if (strcmp(FPScommand, "queueprio") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 3)
+        if (nbword != 3)
         {
             functionparameter_outlog("ERROR", "COMMAND queueprio takes NBARGS = 2");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -190,7 +183,7 @@ static void milkseq_cmd_handle_sys(
             int queue = atoi(FPSarg0);
             int prio  = atoi(FPSarg1);
 
-            if((queue >= 0) && (queue < NB_FPSCTRL_TASKQUEUE_MAX))
+            if ((queue >= 0) && (queue < NB_FPSCTRL_TASKQUEUE_MAX))
             {
                 state->queuelist[queue].priority = prio;
                 functionparameter_outlog("FPSCTRL", "%s", "QUEUE %d PRIO = %d", queue, prio);
@@ -200,14 +193,14 @@ static void milkseq_cmd_handle_sys(
     }
 
     // seq_send
-    if(strcmp(FPScommand, "seq_send") == 0)
+    if (strcmp(FPScommand, "seq_send") == 0)
     {
         *cmdFOUND = 1;
 
-        if(nbword < 3)
+        if (nbword < 3)
         {
-            functionparameter_outlog(
-                "ERROR", "COMMAND seq_send requires 2+ arguments (<seqname> <cmd...>)");
+            functionparameter_outlog("ERROR",
+                                     "COMMAND seq_send requires 2+ arguments (<seqname> <cmd...>)");
             *cmdOK = 0;
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
         }
@@ -216,7 +209,7 @@ static void milkseq_cmd_handle_sys(
             char fifo_path[256];
             snprintf(fifo_path, sizeof(fifo_path), "/tmp/milkseq.%s.fifo", FPSarg0);
             FILE *fp = fopen(fifo_path, "w");
-            if(fp == NULL)
+            if (fp == NULL)
             {
                 *cmdOK = 0;
                 functionparameter_outlog("ERROR", "seq_send: cannot open FIFO %s", fifo_path);
@@ -224,7 +217,7 @@ static void milkseq_cmd_handle_sys(
             else
             {
                 const char *cmd_start = strstr(FPScmdline, FPSarg1);
-                if(cmd_start)
+                if (cmd_start)
                 {
                     fprintf(fp, "%s\n", cmd_start);
                     fflush(fp);
@@ -241,14 +234,14 @@ static void milkseq_cmd_handle_sys(
     }
 
     // wait_seq
-    if(strcmp(FPScommand, "wait_seq") == 0)
+    if (strcmp(FPScommand, "wait_seq") == 0)
     {
         *cmdFOUND = 1;
 
-        if(nbword != 3 || strcmp(FPSarg1, "idle") != 0)
+        if (nbword != 3 || strcmp(FPSarg1, "idle") != 0)
         {
-            functionparameter_outlog(
-                "ERROR", "COMMAND wait_seq requires format: wait_seq <seqname> idle");
+            functionparameter_outlog("ERROR",
+                                     "COMMAND wait_seq requires format: wait_seq <seqname> idle");
             *cmdOK = 0;
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
         }
@@ -275,25 +268,24 @@ static void milkseq_cmd_handle_sys(
  *
  * Dispatches: tmuxstart, tmuxstop.
  */
-static void milkseq_cmd_handle_tmux(
-    const char *FPScommand,
-    int        nbword,
-    FPS        *fps,
-    int        fpsindex,
-    int        *cmdFOUND,
-    int        *cmdOK,
-    uint64_t   *taskstatus)
+static void milkseq_cmd_handle_tmux(const char *FPScommand,
+                                    int         nbword,
+                                    FPS        *fps,
+                                    int         fpsindex,
+                                    int        *cmdFOUND,
+                                    int        *cmdOK,
+                                    uint64_t   *taskstatus)
 {
-    if(*cmdFOUND)
+    if (*cmdFOUND)
     {
         return;
     }
 
     // tmuxstart
-    if(strcmp(FPScommand, "tmuxstart") == 0)
+    if (strcmp(FPScommand, "tmuxstart") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "%s", "COMMAND tmuxstart takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -311,10 +303,10 @@ static void milkseq_cmd_handle_tmux(
     }
 
     // tmuxstop
-    if(strcmp(FPScommand, "tmuxstop") == 0)
+    if (strcmp(FPScommand, "tmuxstop") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "%s", "COMMAND tmuxstop takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -346,25 +338,24 @@ static void milkseq_cmd_handle_tmux(
  * confwupdate polls until the FPS acknowledges the update
  * or a timeout is reached.
  */
-static void milkseq_cmd_handle_conf(
-    const char *FPScommand,
-    int        nbword,
-    FPS        *fps,
-    int        fpsindex,
-    int        *cmdFOUND,
-    int        *cmdOK,
-    uint64_t   *taskstatus)
+static void milkseq_cmd_handle_conf(const char *FPScommand,
+                                    int         nbword,
+                                    FPS        *fps,
+                                    int         fpsindex,
+                                    int        *cmdFOUND,
+                                    int        *cmdOK,
+                                    uint64_t   *taskstatus)
 {
-    if(*cmdFOUND)
+    if (*cmdFOUND)
     {
         return;
     }
 
     // confstart
-    if(strcmp(FPScommand, "confstart") == 0)
+    if (strcmp(FPScommand, "confstart") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "%s", "COMMAND confstart takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -382,10 +373,10 @@ static void milkseq_cmd_handle_conf(
     }
 
     // confstop
-    if(strcmp(FPScommand, "confstop") == 0)
+    if (strcmp(FPScommand, "confstop") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND confstop takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -402,10 +393,10 @@ static void milkseq_cmd_handle_conf(
     }
 
     // confupdate
-    if(strcmp(FPScommand, "confupdate") == 0)
+    if (strcmp(FPScommand, "confupdate") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND confupdate takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -424,10 +415,10 @@ static void milkseq_cmd_handle_conf(
     }
 
     // confwupdate
-    if(strcmp(FPScommand, "confwupdate") == 0)
+    if (strcmp(FPScommand, "confwupdate") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND confwupdate takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -441,15 +432,14 @@ static void milkseq_cmd_handle_conf(
             useconds_t   dt          = 100;
             unsigned int timercntmax = 10000;
 
-            while(looptry == 1)
+            while (looptry == 1)
             {
                 DEBUG_TRACEPOINT(" ");
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED;
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
-                while(((fps[fpsindex].md->signal &
-                        FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)) &&
-                        (timercnt < timercntmax))
+                while (((fps[fpsindex].md->signal & FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)) &&
+                       (timercnt < timercntmax))
                 {
                     usleep(dt);
                     timercnt++;
@@ -460,19 +450,17 @@ static void milkseq_cmd_handle_conf(
                 functionparameter_outlog("DEBUG",
                                          "CONFWUPDATE [%d] waited %d us on FPS %d %s. "
                                          "conferrcnt = %d",
-                                         looptrycnt,
-                                         dt * timercnt,
-                                         fpsindex,
+                                         looptrycnt, dt * timercnt, fpsindex,
                                          fps[fpsindex].md->name, fps[fpsindex].md->conferrcnt);
 
                 looptrycnt++;
 
-                if(fps[fpsindex].md->conferrcnt == 0)
+                if (fps[fpsindex].md->conferrcnt == 0)
                 {
                     looptry = 0;
                 }
 
-                if(timercnt > timercntmax)
+                if (timercnt > timercntmax)
                 {
                     looptry = 0;
                 }
@@ -498,25 +486,24 @@ static void milkseq_cmd_handle_conf(
  * runwait polls FPS status flags until CMDRUN clears
  * or a timeout is reached.
  */
-static void milkseq_cmd_handle_run(
-    const char *FPScommand,
-    int        nbword,
-    FPS        *fps,
-    int        fpsindex,
-    int        *cmdFOUND,
-    int        *cmdOK,
-    uint64_t   *taskstatus)
+static void milkseq_cmd_handle_run(const char *FPScommand,
+                                   int         nbword,
+                                   FPS        *fps,
+                                   int         fpsindex,
+                                   int        *cmdFOUND,
+                                   int        *cmdOK,
+                                   uint64_t   *taskstatus)
 {
-    if(*cmdFOUND)
+    if (*cmdFOUND)
     {
         return;
     }
 
     // runstart
-    if(strcmp(FPScommand, "runstart") == 0)
+    if (strcmp(FPScommand, "runstart") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND runstart takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -534,10 +521,10 @@ static void milkseq_cmd_handle_run(
     }
 
     // runwait
-    if(strcmp(FPScommand, "runwait") == 0)
+    if (strcmp(FPScommand, "runwait") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND runwait takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -551,26 +538,24 @@ static void milkseq_cmd_handle_run(
             useconds_t   dt          = 10000;
             unsigned int timercntmax = 100000;
 
-            while(((fps[fpsindex].md->status &
-                    FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)) &&
-                    (timercnt < timercntmax))
+            while (((fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)) &&
+                   (timercnt < timercntmax))
             {
                 usleep(dt);
                 timercnt++;
             }
-            functionparameter_outlog("FPSCTRL",
-                                     "RUNWAIT waited %d us on FPS %s",
-                                     dt * timercnt, fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", "RUNWAIT waited %d us on FPS %s", dt * timercnt,
+                                     fps[fpsindex].md->name);
             *cmdOK = 1;
         }
         return;
     }
 
     // runstop
-    if(strcmp(FPScommand, "runstop") == 0)
+    if (strcmp(FPScommand, "runstop") == 0)
     {
         *cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND runstop takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -604,17 +589,16 @@ static void milkseq_cmd_handle_run(
  *
  * Return: FPS index of the parameter accessed, or -1 if none
  */
-int milkseq_exec_cmd(
-    uint32_t             cmdindex,
-    MILKSEQ_STATE        *state,
-    FPS                  *fps,
-    KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    uint64_t             *taskstatus)
+int milkseq_exec_cmd(uint32_t              cmdindex,
+                     MILKSEQ_STATE        *state,
+                     FPS                  *fps,
+                     KEYWORD_TREE_NODE    *keywnode,
+                     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+                     uint64_t             *taskstatus)
 {
     const char *FPScmdline = state->tasklist[cmdindex].cmdstring;
-    int  fpsindex;
-    long pindex;
+    int         fpsindex;
+    long        pindex;
 
     // break FPScmdline in words
     // [FPScommand] [FPSentryname]
@@ -628,16 +612,16 @@ int milkseq_exec_cmd(
     char inputcmd[STRINGMAXLEN_FPS_CMDLINE];
     {
         int inputcmdOK = 0;
-        if(strlen(FPScmdline) > 0)
+        if (strlen(FPScmdline) > 0)
         {
             SNPRINTF_CHECK(inputcmd, STRINGMAXLEN_FPS_CMDLINE, "%s", FPScmdline);
             inputcmdOK = 1;
         }
-        if(inputcmdOK == 1 && inputcmd[0] == '#')
+        if (inputcmdOK == 1 && inputcmd[0] == '#')
         {
             inputcmdOK = 0;
         }
-        if(inputcmdOK == 0)
+        if (inputcmdOK == 0)
         {
             return (-1);
         }
@@ -645,7 +629,7 @@ int milkseq_exec_cmd(
 
     // Word-parse buffers: command, first arg, second arg
     char *pch;
-    int   nbword = 0;
+    int   nbword              = 0;
     int   commandstringmaxlen = 200;
     char  FPScommand[commandstringmaxlen];
     char  FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
@@ -656,7 +640,7 @@ int milkseq_exec_cmd(
 
     DEBUG_TRACEPOINT(" ");
 
-    if(strlen(inputcmd) > 1)
+    if (strlen(inputcmd) > 1)
     {
         pch = strtok(inputcmd, " \t");
         snprintf(FPScommand, commandstringmaxlen, "%s", pch);
@@ -675,34 +659,33 @@ int milkseq_exec_cmd(
     // FPSarg0
     // FPSarg1
 
-    while(pch != NULL)
+    while (pch != NULL)
     {
-
         nbword++;
         pch = strtok(NULL, " \t");
 
-        if(nbword == 1)  // first arg (0)
+        if (nbword == 1) // first arg (0)
         {
             char *pos;
             snprintf(FPSarg0,
                      FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL,
                      "%s", pch);
-            if((pos = strchr(FPSarg0, '\n')) != NULL)
+            if ((pos = strchr(FPSarg0, '\n')) != NULL)
             {
                 *pos = '\0';
             }
         }
 
-        if(nbword == 2)
+        if (nbword == 2)
         {
             char *pos;
-            if(snprintf(FPSarg1, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >=
-                    FUNCTION_PARAMETER_STRMAXLEN)
+            if (snprintf(FPSarg1, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >=
+                FUNCTION_PARAMETER_STRMAXLEN)
             {
                 printf("WARNING: string truncated\n");
                 printf("STRING: %s\n", pch);
             }
-            if((pos = strchr(FPSarg1, '\n')) != NULL)
+            if ((pos = strchr(FPSarg1, '\n')) != NULL)
             {
                 *pos = '\0';
             }
@@ -711,7 +694,7 @@ int milkseq_exec_cmd(
 
     DEBUG_TRACEPOINT(" ");
 
-    if(nbword == 0)
+    if (nbword == 0)
     {
         cmdFOUND = 1; // do nothing, proceed
         cmdOK    = 2;
@@ -720,10 +703,10 @@ int milkseq_exec_cmd(
     // Handle commands for which FPSarg0 is NOT an FPS entry
 
     // exit
-    if((cmdFOUND == 0) && (strcmp(FPScommand, "exit") == 0))
+    if ((cmdFOUND == 0) && (strcmp(FPScommand, "exit") == 0))
     {
         cmdFOUND = 1;
-        if(nbword != 1)
+        if (nbword != 1)
         {
             functionparameter_outlog("ERROR", "COMMAND exit takes NBARGS = 0");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -737,10 +720,10 @@ int milkseq_exec_cmd(
     }
 
     // rescan
-    if((cmdFOUND == 0) && (strcmp(FPScommand, "rescan") == 0))
+    if ((cmdFOUND == 0) && (strcmp(FPScommand, "rescan") == 0))
     {
         cmdFOUND = 1;
-        if(nbword != 1)
+        if (nbword != 1)
         {
             functionparameter_outlog("ERROR", "COMMAND rescan takes NBARGS = 0");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -748,21 +731,18 @@ int milkseq_exec_cmd(
         }
         else
         {
-            functionparameter_scan_fps(fpsCTRLvar->mode,
-                                       fpsCTRLvar->fpsnamemask,
-                                       fps,
-                                       keywnode,
-                                       &fpsCTRLvar->NBkwn,
-                                       &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex, 0);
+            functionparameter_scan_fps(fpsCTRLvar->mode, fpsCTRLvar->fpsnamemask, fps, keywnode,
+                                       &fpsCTRLvar->NBkwn, &fpsCTRLvar->NBfps, &fpsCTRLvar->NBindex,
+                                       0);
             functionparameter_outlog("DEBUG", "RESCAN");
         }
     }
 
     // cntinc
-    if((cmdFOUND == 0) && (strcmp(FPScommand, "cntinc") == 0))
+    if ((cmdFOUND == 0) && (strcmp(FPScommand, "cntinc") == 0))
     {
         cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
             functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -776,12 +756,11 @@ int milkseq_exec_cmd(
     }
 
     // logsymlink
-    if((cmdFOUND == 0) && (strcmp(FPScommand, "logsymlink") == 0))
+    if ((cmdFOUND == 0) && (strcmp(FPScommand, "logsymlink") == 0))
     {
         cmdFOUND = 1;
-        if(nbword != 2)
+        if (nbword != 2)
         {
-
             functionparameter_outlog("ERROR", "COMMAND logsymlink takes NBARGS = 1");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             cmdOK = 0;
@@ -793,7 +772,7 @@ int milkseq_exec_cmd(
 
             functionparameter_outlog("DEBUG", "CREATE SYM LINK %s <- %s", FPSarg0, logfname);
 
-            if(symlink(logfname, FPSarg0) != 0)
+            if (symlink(logfname, FPSarg0) != 0)
             {
                 PRINT_ERROR("symlink error %s %s", logfname, FPSarg0);
             }
@@ -801,10 +780,10 @@ int milkseq_exec_cmd(
     }
 
     // queueprio
-    if((cmdFOUND == 0) && (strcmp(FPScommand, "queueprio") == 0))
+    if ((cmdFOUND == 0) && (strcmp(FPScommand, "queueprio") == 0))
     {
         cmdFOUND = 1;
-        if(nbword != 3)
+        if (nbword != 3)
         {
             functionparameter_outlog("ERROR", "COMMAND queueprio takes NBARGS = 2");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -815,7 +794,7 @@ int milkseq_exec_cmd(
             int queue = atoi(FPSarg0);
             int prio  = atoi(FPSarg1);
 
-            if((queue >= 0) && (queue < NB_FPSCTRL_TASKQUEUE_MAX))
+            if ((queue >= 0) && (queue < NB_FPSCTRL_TASKQUEUE_MAX))
             {
                 state->queuelist[queue].priority = prio;
                 functionparameter_outlog("FPSCTRL", "%s", "QUEUE %d PRIO = %d", queue, prio);
@@ -825,14 +804,14 @@ int milkseq_exec_cmd(
 
     // seq_send
     //
-    if((cmdFOUND == 0) && (strcmp(FPScommand, "seq_send") == 0))
+    if ((cmdFOUND == 0) && (strcmp(FPScommand, "seq_send") == 0))
     {
         cmdFOUND = 1;
 
-        if(nbword < 3)
+        if (nbword < 3)
         {
-            functionparameter_outlog(
-                "ERROR", "COMMAND seq_send requires 2+ arguments (<seqname> <cmd...>)");
+            functionparameter_outlog("ERROR",
+                                     "COMMAND seq_send requires 2+ arguments (<seqname> <cmd...>)");
             cmdOK = 0;
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
         }
@@ -841,7 +820,7 @@ int milkseq_exec_cmd(
             char fifo_path[256];
             snprintf(fifo_path, sizeof(fifo_path), "/tmp/milkseq.%s.fifo", FPSarg0);
             FILE *fp = fopen(fifo_path, "w");
-            if(fp == NULL)
+            if (fp == NULL)
             {
                 cmdOK = 0;
                 functionparameter_outlog("ERROR", "seq_send: cannot open FIFO %s", fifo_path);
@@ -849,7 +828,7 @@ int milkseq_exec_cmd(
             else
             {
                 const char *cmd_start = strstr(FPScmdline, FPSarg1);
-                if(cmd_start)
+                if (cmd_start)
                 {
                     fprintf(fp, "%s\n", cmd_start);
                     fflush(fp);
@@ -866,14 +845,14 @@ int milkseq_exec_cmd(
 
     // wait_seq
     //
-    if((cmdFOUND == 0) && (strcmp(FPScommand, "wait_seq") == 0))
+    if ((cmdFOUND == 0) && (strcmp(FPScommand, "wait_seq") == 0))
     {
         cmdFOUND = 1;
 
-        if(nbword != 3 || strcmp(FPSarg1, "idle") != 0)
+        if (nbword != 3 || strcmp(FPSarg1, "idle") != 0)
         {
-            functionparameter_outlog(
-                "ERROR", "COMMAND wait_seq requires format: wait_seq <seqname> idle");
+            functionparameter_outlog("ERROR",
+                                     "COMMAND wait_seq requires format: wait_seq <seqname> idle");
             cmdOK = 0;
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
         }
@@ -885,35 +864,33 @@ int milkseq_exec_cmd(
         }
     }
 
-    milkseq_cmd_handle_sys(
-        FPScommand,        FPScmdline, nbword, FPSarg0, FPSarg1,
-        cmdindex,          state, fpsCTRLvar, fps, keywnode,
-        &cmdFOUND, &cmdOK, taskstatus, &testcnt);
+    milkseq_cmd_handle_sys(FPScommand, FPScmdline, nbword, FPSarg0, FPSarg1, cmdindex, state,
+                           fpsCTRLvar, fps, keywnode, &cmdFOUND, &cmdOK, taskstatus, &testcnt);
 
     // wait, we skip FPS resolution for these commands!
     // From this point on, FPSarg0 is expected to be a FPS entry
     // so we resolve it and look for fps
-    int kwnindex = -1;
+    int  kwnindex = -1;
     char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
     char msgstring[STRINGMAXLEN_FPS_LOGMSG];
     char errmsgstring[STRINGMAXLEN_FPS_LOGMSG] = "";
 
-    if(cmdFOUND == 0)
+    if (cmdFOUND == 0)
     {
-        char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+        char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
         snprintf(FPSentryname, sizeof(FPSentryname), "%s", FPSarg0);
         snprintf(FPScmdarg1, sizeof(FPScmdarg1), "%s", FPSarg1);
 
         // look for entry, if found, kwnindex points to it
-        if(nbword > 1)
+        if (nbword > 1)
         {
             //                printf("Looking for entry for %s\n", FPSentryname);
 
             int kwnindexscan = 0;
-            while((kwnindex == -1) && (kwnindexscan < fpsCTRLvar->NBkwn))
+            while ((kwnindex == -1) && (kwnindexscan < fpsCTRLvar->NBkwn))
             {
-                if(strcmp(keywnode[kwnindexscan].keywordfull, FPSentryname) ==
-                        0)
+                if (strcmp(keywnode[kwnindexscan].keywordfull, FPSentryname) == 0)
                 {
                     kwnindex = kwnindexscan;
                 }
@@ -921,13 +898,12 @@ int milkseq_exec_cmd(
             }
         }
 
-        if(kwnindex != -1)
+        if (kwnindex != -1)
         {
             fpsindex = keywnode[kwnindex].fpsindex;
             pindex   = keywnode[kwnindex].pindex;
-            functionparameter_outlog("DEBUG",
-                                     "FPS ENTRY FOUND : %-40s  %d %ld",
-                                     FPSentryname, fpsindex, pindex);
+            functionparameter_outlog("DEBUG", "FPS ENTRY FOUND : %-40s  %d %ld", FPSentryname,
+                                     fpsindex, pindex);
         }
         else
         {
@@ -937,9 +913,8 @@ int milkseq_exec_cmd(
         }
     }
 
-    if(kwnindex != -1)  // if FPS has been found
+    if (kwnindex != -1) // if FPS has been found
     {
-
         milkseq_cmd_handle_tmux(FPScommand, nbword, fps, fpsindex, &cmdFOUND, &cmdOK, taskstatus);
         milkseq_cmd_handle_conf(FPScommand, nbword, fps, fpsindex, &cmdFOUND, &cmdOK, taskstatus);
         milkseq_cmd_handle_run(FPScommand, nbword, fps, fpsindex, &cmdFOUND, &cmdOK, taskstatus);
@@ -947,10 +922,10 @@ int milkseq_exec_cmd(
 
         // fpswfile : write FPS to file
         //
-        if((cmdFOUND == 0) && (strcmp(FPScommand, "fpswfile") == 0))
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "fpswfile") == 0))
         {
             cmdFOUND = 1;
-            if(nbword != 2)
+            if (nbword != 2)
             {
                 functionparameter_outlog("ERROR", "COMMAND fpswfile takes NBARGS = 1");
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -968,10 +943,10 @@ int milkseq_exec_cmd(
 
         // fpsrm
         //
-        if((cmdFOUND == 0) && (strcmp(FPScommand, "fpsrm") == 0))
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "fpsrm") == 0))
         {
             cmdFOUND = 1;
-            if(nbword != 2)
+            if (nbword != 2)
             {
                 functionparameter_outlog("ERROR", "COMMAND fpsrm takes NBARGS = 1");
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -991,10 +966,10 @@ int milkseq_exec_cmd(
 
         // exec
         //
-        if((cmdFOUND == 0) && (strcmp(FPScommand, "exec") == 0))
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "exec") == 0))
         {
             cmdFOUND = 1;
-            if(nbword != 2)
+            if (nbword != 2)
             {
                 functionparameter_outlog("ERROR", "COMMAND exec takes NBARGS = 1");
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
@@ -1003,22 +978,23 @@ int milkseq_exec_cmd(
             else
             {
                 DEBUG_TRACEPOINT(" ");
-                if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
+                if (fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
                 {
-                    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-                        "tmux send-keys -t %s:run \"cd %s\" "
-                        "C-m", fps[fpsindex].md->name, fps[fpsindex].md->workdir);
-                    EXECUTE_SYSTEM_COMMAND_NOCHECK(
-                        "tmux send-keys -t %s:run \"%s %s\" "
-                        "C-m",
-                        fps[fpsindex].md->name,
-                        fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
+                    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \"cd %s\" "
+                                                   "C-m",
+                                                   fps[fpsindex].md->name,
+                                                   fps[fpsindex].md->workdir);
+                    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run \"%s %s\" "
+                                                   "C-m",
+                                                   fps[fpsindex].md->name,
+                                                   fps[fpsindex].parray[pindex].val.string[0],
+                                                   fps[fpsindex].md->name);
                     cmdOK = 1;
                 }
                 else
                 {
-                    functionparameter_outlog(
-                        "ERROR", "COMMAND exec requires EXECFILENAME " "type parameter");
+                    functionparameter_outlog("ERROR", "COMMAND exec requires EXECFILENAME "
+                                                      "type parameter");
                     *taskstatus |= FPSTASK_STATUS_ERR_ARGTYPE;
                     cmdOK = 0;
                 }
@@ -1028,13 +1004,13 @@ int milkseq_exec_cmd(
 
         // setval
         //
-        if((cmdFOUND == 0) && (strcmp(FPScommand, "setval") == 0))
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "setval") == 0))
         {
             cmdFOUND = 1;
-            if(nbword != 3)
+            if (nbword != 3)
             {
-                SNPRINTF_CHECK(errmsgstring,
-                               STRINGMAXLEN_FPS_LOGMSG, "COMMAND setval takes NBARGS = 2");
+                SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                               "COMMAND setval takes NBARGS = 2");
                 functionparameter_outlog("ERROR", "%s", errmsgstring);
                 *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
                 cmdOK = 0;
@@ -1044,7 +1020,8 @@ int milkseq_exec_cmd(
                 int updated = 0;
 
                 // Use the new consolidated API for parameter conversion, setting, and logging
-                if(functionparameter_SetParamValue_fromString(&fps[fpsindex], pindex, FPScmdarg1) == 0)
+                if (functionparameter_SetParamValue_fromString(&fps[fpsindex], pindex,
+                                                               FPScmdarg1) == 0)
                 {
                     updated = 1;
                 }
@@ -1052,16 +1029,17 @@ int milkseq_exec_cmd(
                 {
                     cmdOK = 0;
                     *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                    SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument conversion failed");
+                    SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                                   "argument conversion failed");
                     functionparameter_outlog("ERROR", "%s", errmsgstring);
                 }
 
                 // notify fpsCTRL that parameter has been updated
-                if(updated == 1)
+                if (updated == 1)
                 {
                     cmdOK = 1;
-                    functionparameter_WriteParameterToDisk(&fps[fpsindex],
-                                                           pindex, "setval", "InputCommandFile");
+                    functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval",
+                                                           "InputCommandFile");
                     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
                 }
                 else
@@ -1074,17 +1052,17 @@ int milkseq_exec_cmd(
 
         // getval or fwrval
         //
-        if((cmdFOUND == 0) && ((strcmp(FPScommand, "getval") == 0) ||
-                               (strcmp(FPScommand, "fwrval") == 0)))
+        if ((cmdFOUND == 0) &&
+            ((strcmp(FPScommand, "getval") == 0) || (strcmp(FPScommand, "fwrval") == 0)))
         {
             cmdFOUND = 1;
             cmdOK    = 0;
 
-            if((strcmp(FPScommand, "getval") == 0) && (nbword != 2))
+            if ((strcmp(FPScommand, "getval") == 0) && (nbword != 2))
             {
                 functionparameter_outlog("ERROR", "COMMAND getval NBARGS = 1");
             }
-            else if((strcmp(FPScommand, "fwrval") == 0) && (nbword != 3))
+            else if ((strcmp(FPScommand, "fwrval") == 0) && (nbword != 3))
             {
                 functionparameter_outlog("ERROR", "COMMAND fwrval NBARGS = 2");
             }
@@ -1092,9 +1070,9 @@ int milkseq_exec_cmd(
             {
                 errno_t ret;
                 ret = functionparameter_PrintParameter_ValueString(
-                          &fps[fpsindex].parray[pindex], msgstring, STRINGMAXLEN_FPS_LOGMSG);
+                    &fps[fpsindex].parray[pindex], msgstring, STRINGMAXLEN_FPS_LOGMSG);
 
-                if(ret == RETURN_SUCCESS)
+                if (ret == RETURN_SUCCESS)
                 {
                     cmdOK = 1;
                 }
@@ -1104,23 +1082,22 @@ int milkseq_exec_cmd(
                 }
 
 
-                if(cmdOK == 1)
+                if (cmdOK == 1)
                 {
-                    if(strcmp(FPScommand, "getval") == 0)
+                    if (strcmp(FPScommand, "getval") == 0)
                     {
                         functionparameter_outlog("GETVAL", "%s", msgstring);
                     }
-                    if(strcmp(FPScommand, "fwrval") == 0)
+                    if (strcmp(FPScommand, "fwrval") == 0)
                     {
-
                         FILE *fpouttmp = fopen(FPScmdarg1, "a");
                         functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
                         fclose(fpouttmp);
 
                         functionparameter_outlog("FWRVAL", "%s", msgstring);
                         char msgstring1[STRINGMAXLEN_FPS_LOGMSG];
-                        SNPRINTF_CHECK(msgstring1,
-                                       STRINGMAXLEN_FPS_LOGMSG, "WROTE to file %s", FPScmdarg1);
+                        SNPRINTF_CHECK(msgstring1, STRINGMAXLEN_FPS_LOGMSG, "WROTE to file %s",
+                                       FPScmdarg1);
                         functionparameter_outlog("FWRVAL", "%s", msgstring1);
                     }
                 }
@@ -1129,11 +1106,11 @@ int milkseq_exec_cmd(
 
         // wait_fps
         //
-        if((cmdFOUND == 0) && (strcmp(FPScommand, "wait_fps") == 0))
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "wait_fps") == 0))
         {
             cmdFOUND = 1;
 
-            if(nbword != 3)
+            if (nbword != 3)
             {
                 functionparameter_outlog(
                     "ERROR", "COMMAND wait_fps requires 2 arguments (<fpsname> <running|norun>)");
@@ -1141,14 +1118,14 @@ int milkseq_exec_cmd(
             }
             else
             {
-                cmdOK = 1;
+                cmdOK                              = 1;
                 state->tasklist[cmdindex].fpsindex = fpsindex; // store for scheduler
 
-                if(strcmp(FPSarg1, "running") == 0)
+                if (strcmp(FPSarg1, "running") == 0)
                 {
                     state->tasklist[cmdindex].flag |= MILKSEQ_TASKFLAG_WAITFPS_RUNNING;
                 }
-                else if(strcmp(FPSarg1, "norun") == 0)
+                else if (strcmp(FPSarg1, "norun") == 0)
                 {
                     state->tasklist[cmdindex].flag |= MILKSEQ_TASKFLAG_WAITFPS_NORUN;
                 }
@@ -1158,20 +1135,21 @@ int milkseq_exec_cmd(
                     functionparameter_outlog("ERROR", "wait_fps: invalid condition %s", FPSarg1);
                 }
 
-                if(cmdOK == 1)
+                if (cmdOK == 1)
                 {
-                    *taskstatus |= FPSTASK_STATUS_RUNNING; // Scheduler will hold task until completion
+                    *taskstatus |=
+                        FPSTASK_STATUS_RUNNING; // Scheduler will hold task until completion
                 }
             }
         }
 
         // seq_send
         //
-        if((cmdFOUND == 0) && (strcmp(FPScommand, "seq_send") == 0))
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "seq_send") == 0))
         {
             cmdFOUND = 1;
 
-            if(nbword < 3)
+            if (nbword < 3)
             {
                 functionparameter_outlog(
                     "ERROR", "COMMAND seq_send requires 2+ arguments (<seqname> <cmd...>)");
@@ -1182,7 +1160,7 @@ int milkseq_exec_cmd(
                 char fifo_path[256];
                 snprintf(fifo_path, sizeof(fifo_path), "/tmp/milkseq.%s.fifo", FPSarg0);
                 FILE *fp = fopen(fifo_path, "w");
-                if(fp == NULL)
+                if (fp == NULL)
                 {
                     cmdOK = 0;
                     functionparameter_outlog("ERROR", "seq_send: cannot open FIFO %s", fifo_path);
@@ -1190,7 +1168,7 @@ int milkseq_exec_cmd(
                 else
                 {
                     const char *cmd_start = strstr(FPScmdline, FPSarg1);
-                    if(cmd_start)
+                    if (cmd_start)
                     {
                         fprintf(fp, "%s\n", cmd_start);
                         fflush(fp);
@@ -1207,11 +1185,11 @@ int milkseq_exec_cmd(
 
         // wait_seq
         //
-        if((cmdFOUND == 0) && (strcmp(FPScommand, "wait_seq") == 0))
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "wait_seq") == 0))
         {
             cmdFOUND = 1;
 
-            if(nbword != 3 || strcmp(FPSarg1, "idle") != 0)
+            if (nbword != 3 || strcmp(FPSarg1, "idle") != 0)
             {
                 functionparameter_outlog(
                     "ERROR", "COMMAND wait_seq requires format: wait_seq <seqname> idle");
@@ -1226,22 +1204,21 @@ int milkseq_exec_cmd(
         }
     }
 
-    if(cmdOK == 0)
+    if (cmdOK == 0)
     {
-        SNPRINTF_CHECK(msgstring,
-                       STRINGMAXLEN_FPS_LOGMSG, "\"%s\" > %s", FPScmdline, errmsgstring);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\" > %s", FPScmdline, errmsgstring);
         functionparameter_outlog("CMDFAIL", "%s", msgstring);
         *taskstatus |= FPSTASK_STATUS_CMDFAIL;
     }
 
-    if(cmdOK == 1)
+    if (cmdOK == 1)
     {
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
         functionparameter_outlog("DEBUG", "CMDOK %s", msgstring);
         *taskstatus |= FPSTASK_STATUS_CMDOK;
     }
 
-    if(cmdFOUND == 0)
+    if (cmdFOUND == 0)
     {
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND NOT FOUND: %s", FPScommand);
         functionparameter_outlog("ERROR", "%s", msgstring);

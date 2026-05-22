@@ -19,17 +19,17 @@
  */
 int function_parameter_struct_isvalid(FPS *fps)
 {
-    if(fps == NULL)
+    if (fps == NULL)
     {
         return 0;
     }
 
-    if(fps->SMfd < 0)
+    if (fps->SMfd < 0)
     {
         return 0; // Not connected
     }
 
-    if(fps->md == NULL)
+    if (fps->md == NULL)
     {
         return 0; // No mapped memory
     }
@@ -38,9 +38,9 @@ int function_parameter_struct_isvalid(FPS *fps)
     // If the file was unlinked, fstat on the open fd succeeds,
     // but st_nlink will be 0.
     struct stat file_stat;
-    if(fstat(fps->SMfd, &file_stat) == 0)
+    if (fstat(fps->SMfd, &file_stat) == 0)
     {
-        if(file_stat.st_nlink == 0)
+        if (file_stat.st_nlink == 0)
         {
             return 0; // File was deleted
         }

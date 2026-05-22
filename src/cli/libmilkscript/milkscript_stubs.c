@@ -55,21 +55,21 @@ __attribute__((weak)) DATA data;
 
 __attribute__((weak)) void cli_expand_braces(char *line, int maxlen)
 {
-    (void)line;
-    (void)maxlen;
+    (void) line;
+    (void) maxlen;
 }
 
 __attribute__((weak)) int find_streams(void *streaminfo, int filter, const char *namefilter)
 {
-    (void)streaminfo;
-    (void)filter;
-    (void)namefilter;
+    (void) streaminfo;
+    (void) filter;
+    (void) namefilter;
     return 0;
 }
 
 __attribute__((weak)) int cli_is_command(const char *word)
 {
-    (void)word;
+    (void) word;
     return 0;
 }
 
@@ -80,17 +80,17 @@ __attribute__((weak)) int cli_savescript(void)
 
 __attribute__((weak)) void cli_history_log_cmd(const char *cmd)
 {
-    (void)cmd;
+    (void) cmd;
 }
 
 __attribute__((weak)) void cli_history_log_shell(const char *cmd)
 {
-    (void)cmd;
+    (void) cmd;
 }
 
 __attribute__((weak)) void cli_session_log_cmd(const char *cmd)
 {
-    (void)cmd;
+    (void) cmd;
 }
 
 __attribute__((weak)) void cli_history_expand(void)

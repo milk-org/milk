@@ -10,9 +10,7 @@
 
 /* forward declarations for scan API */
 
-void ov_render_status(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m)
+void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
     OV_RECT r = lay->r_status;
     ov_buf_pos(r.row, r.col);
@@ -28,13 +26,17 @@ void ov_render_status(
     {
         switch (lay->focus)
         {
-        case OV_FOCUS_FPS: ctrl_hint = "  r:run s:conf";
+        case OV_FOCUS_FPS:
+            ctrl_hint = "  r:run s:conf";
             break;
-        case OV_FOCUS_STREAMS: ctrl_hint = "  d:delete";
+        case OV_FOCUS_STREAMS:
+            ctrl_hint = "  d:delete";
             break;
-        case OV_FOCUS_PROCS: ctrl_hint = "  k:kill";
+        case OV_FOCUS_PROCS:
+            ctrl_hint = "  k:kill";
             break;
-        default: ctrl_hint = "";
+        default:
+            ctrl_hint = "";
             break;
         }
     }
@@ -46,45 +48,88 @@ void ov_render_status(
     case OV_FOCUS_STREAMS:
         switch (lay->sort_key_stream)
         {
-        case 1:  sort_label = " [sort:typ]";   break;
-        case 2:  sort_label = " [sort:size]";  break;
-        case 3:  sort_label = " [sort:Hz]";    break;
-        case 4:  sort_label = " [sort:MB/s]";  break;
-        case 5:  sort_label = " [sort:inode]"; break;
-        case 6:  sort_label = " [sort:count]"; break;
-        case 7:  sort_label = " [sort:ancestry]"; break;
-        default: sort_label = " [sort:name]";  break;
+        case 1:
+            sort_label = " [sort:typ]";
+            break;
+        case 2:
+            sort_label = " [sort:size]";
+            break;
+        case 3:
+            sort_label = " [sort:Hz]";
+            break;
+        case 4:
+            sort_label = " [sort:MB/s]";
+            break;
+        case 5:
+            sort_label = " [sort:inode]";
+            break;
+        case 6:
+            sort_label = " [sort:count]";
+            break;
+        case 7:
+            sort_label = " [sort:ancestry]";
+            break;
+        default:
+            sort_label = " [sort:name]";
+            break;
         }
         break;
     case OV_FOCUS_PROCS:
         switch (lay->sort_key_proc)
         {
-        case 1:  sort_label = " [sort:PID]";  break;
-        case 2:  sort_label = " [sort:stat]"; break;
-        case 3:  sort_label = " [sort:Hz]";   break;
-        case 4:  sort_label = " [sort:MEM]";  break;
-        case 5:  sort_label = " [sort:ancestry]"; break;
-        default: sort_label = " [sort:name]"; break;
+        case 1:
+            sort_label = " [sort:PID]";
+            break;
+        case 2:
+            sort_label = " [sort:stat]";
+            break;
+        case 3:
+            sort_label = " [sort:Hz]";
+            break;
+        case 4:
+            sort_label = " [sort:MEM]";
+            break;
+        case 5:
+            sort_label = " [sort:ancestry]";
+            break;
+        default:
+            sort_label = " [sort:name]";
+            break;
         }
         break;
     case OV_FOCUS_FPS:
         switch (lay->sort_key_fps)
         {
-        case 1:  sort_label = " [sort:alive]"; break;
-        case 2:  sort_label = " [sort:MEM]";   break;
-        case 3:  sort_label = " [sort:ancestry]"; break;
-        default: sort_label = " [sort:name]";  break;
+        case 1:
+            sort_label = " [sort:alive]";
+            break;
+        case 2:
+            sort_label = " [sort:MEM]";
+            break;
+        case 3:
+            sort_label = " [sort:ancestry]";
+            break;
+        default:
+            sort_label = " [sort:name]";
+            break;
         }
         break;
-    default: break;
+    default:
+        break;
     }
 
     const char *detail_label = "";
     switch (lay->graph_tab_mode)
     {
-    case 0: detail_label = " [CONN]";   break;
-    case 1: detail_label = " [DETAIL]"; break;
-    case 2: detail_label = " [RES]";    break;
+    case 0:
+        detail_label = " [CONN]";
+        break;
+    case 1:
+        detail_label = " [DETAIL]";
+        break;
+    case 2:
+        detail_label = " [RES]";
+        break;
     }
 
     /* Filter editing prompt overrides normal status */
@@ -93,17 +138,21 @@ void ov_render_status(
         const char *fstr = "";
         switch (lay->focus)
         {
-        case OV_FOCUS_STREAMS: fstr = lay->filter_stream;
+        case OV_FOCUS_STREAMS:
+            fstr = lay->filter_stream;
             break;
-        case OV_FOCUS_PROCS: fstr = lay->filter_proc;
+        case OV_FOCUS_PROCS:
+            fstr = lay->filter_proc;
             break;
-        case OV_FOCUS_FPS: fstr = lay->filter_fps;
+        case OV_FOCUS_FPS:
+            fstr = lay->filter_fps;
             break;
-        default: break;
+        default:
+            break;
         }
         ov_theme_fg(OV_FG_TEXT);
         char pfx = lay->filter_jump ? '?' : '/';
-        int np = snprintf(NULL, 0, " %c%s", pfx, fstr);
+        int  np  = snprintf(NULL, 0, " %c%s", pfx, fstr);
         ov_buf_printf(" %c%s", pfx, fstr);
 
         /* Blinking cursor */
@@ -142,26 +191,40 @@ void ov_render_status(
         const char *view_name = "";
         switch (lay->view)
         {
-        case OV_VIEW_DASHBOARD: view_name = "OVW"; break;
-        case OV_VIEW_STREAMS:  view_name = "STR"; break;
-        case OV_VIEW_FPS:      view_name = "FPS"; break;
-        case OV_VIEW_PROCS:    view_name = "PRC"; break;
-        default:               view_name = "???"; break;
+        case OV_VIEW_DASHBOARD:
+            view_name = "OVW";
+            break;
+        case OV_VIEW_STREAMS:
+            view_name = "STR";
+            break;
+        case OV_VIEW_FPS:
+            view_name = "FPS";
+            break;
+        case OV_VIEW_PROCS:
+            view_name = "PRC";
+            break;
+        default:
+            view_name = "???";
+            break;
         }
         const char *panel_name = "";
-        ov_rgb_t panel_fg = OV_FG_DIM;
+        ov_rgb_t    panel_fg   = OV_FG_DIM;
         switch (lay->focus)
         {
-        case OV_FOCUS_STREAMS: panel_name = "Streams";
-            panel_fg = OV_FG_STREAM;
+        case OV_FOCUS_STREAMS:
+            panel_name = "Streams";
+            panel_fg   = OV_FG_STREAM;
             break;
-        case OV_FOCUS_FPS: panel_name = "FPS";
-            panel_fg = OV_FG_FPS;
+        case OV_FOCUS_FPS:
+            panel_name = "FPS";
+            panel_fg   = OV_FG_FPS;
             break;
-        case OV_FOCUS_PROCS: panel_name = "Procs";
-            panel_fg = OV_FG_PROC;
+        case OV_FOCUS_PROCS:
+            panel_name = "Procs";
+            panel_fg   = OV_FG_PROC;
             break;
-        default: panel_name = "Graph";
+        default:
+            panel_name = "Graph";
             break;
         }
         ov_theme_fg(OV_FG_DIM);
@@ -173,18 +236,16 @@ void ov_render_status(
         ov_theme_fg(OV_FG_DIM);
     }
 
-    int n_hints = snprintf(NULL, 0,
-        "%s%s%s  +/- TAB D S/s / p c G h q  (Click headers/tabs)",
-        ctrl_hint, sort_label, detail_label);
-    ov_buf_printf(
-        "%s%s%s  +/- TAB D S/s / p c G h q  (Click headers/tabs)",
-        ctrl_hint, sort_label, detail_label);
+    int n_hints = snprintf(NULL, 0, "%s%s%s  +/- TAB D S/s / p c G h q  (Click headers/tabs)",
+                           ctrl_hint, sort_label, detail_label);
+    ov_buf_printf("%s%s%s  +/- TAB D S/s / p c G h q  (Click headers/tabs)", ctrl_hint, sort_label,
+                  detail_label);
     n1 += n_hints;
 
-    time_t now = time(NULL);
+    time_t     now    = time(NULL);
     struct tm *tm_ptr = localtime(&now);
-    char tstr[16];
-    int n2 = strftime(tstr, sizeof(tstr), "%H:%M:%S", tm_ptr);
+    char       tstr[16];
+    int        n2 = strftime(tstr, sizeof(tstr), "%H:%M:%S", tm_ptr);
 
     /* Leave 1 char at the end to prevent terminal auto-scroll on last row */
     int pad = r.width - n1 - n2 - 1;
@@ -196,4 +257,3 @@ void ov_render_status(
     ov_buf_printf("%s ", tstr);
     ov_buf_reset_attr();
 }
-

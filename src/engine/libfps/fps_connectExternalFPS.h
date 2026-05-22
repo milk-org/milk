@@ -8,9 +8,6 @@
 
 #include "fps_types.h"
 
-int functionparameter_ConnectExternalFPS(
-    FPS *fps,
-    int pindex,
-    FPS *FPSext);
+int functionparameter_ConnectExternalFPS(FPS *fps, int pindex, FPS *FPSext);
 
 #endif

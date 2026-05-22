@@ -5,3 +5,8 @@ tree, you **must** run the [`/compile-test`](../workflows/compile-test.md) workf
 still succeeds before considering the task complete.
 
 If the build fails, fix the errors and rebuild until it passes.
+
+The `/compile-test` workflow also runs `pre-commit`
+formatting checks using `clang-format`. If formatting
+fails, re-run the check (clang-format auto-fixes in
+place on the first run), then rebuild to confirm.

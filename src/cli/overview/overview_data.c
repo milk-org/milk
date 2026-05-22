@@ -27,10 +27,8 @@
 #include "fps_shmdirname.h"
 
 
-
 /* STRINGMAXLEN_FPS_DIRNAME defined in fps_types.h */
 #define OV_SHMDIR_MAXLEN STRINGMAXLEN_FPS_DIRNAME
-
 
 
 #include "overview_data_internal.h"
@@ -41,8 +39,8 @@
 
 void ov_model_full_scan(OV_MODEL *model)
 {
-    static struct timespec s_last_scan = {0, 0};
-    static int s_has_prev_scan = 0;
+    static struct timespec s_last_scan     = { 0, 0 };
+    static int             s_has_prev_scan = 0;
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
@@ -57,7 +55,7 @@ void ov_model_full_scan(OV_MODEL *model)
     if (s_has_prev_scan)
     {
         struct timespec dt_ts = ov_timespec_diff(s_last_scan, t0);
-        s_scan_dt_sec = (double) dt_ts.tv_sec + (double) dt_ts.tv_nsec * 1.0e-9;
+        s_scan_dt_sec         = (double) dt_ts.tv_sec + (double) dt_ts.tv_nsec * 1.0e-9;
     }
     else
     {
@@ -83,10 +81,10 @@ void ov_model_full_scan(OV_MODEL *model)
     ov_post_scan_enrich(model);
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
-    struct timespec dt = ov_timespec_diff(t0, t1);
-    model->scan_time_ms = (double) dt.tv_sec * 1000.0 + (double) dt.tv_nsec * 1.0e-6;
-    s_last_scan = t0;
-    s_has_prev_scan = 1;
+    struct timespec dt    = ov_timespec_diff(t0, t1);
+    model->scan_time_ms   = (double) dt.tv_sec * 1000.0 + (double) dt.tv_nsec * 1.0e-6;
+    s_last_scan           = t0;
+    s_has_prev_scan       = 1;
     model->last_scan_time = t0;
     model->scan_count++;
 }
@@ -103,9 +101,9 @@ void ov_model_export_snapshot(const OV_MODEL *m)
         return;
     }
 
-    time_t now = time(NULL);
+    time_t     now    = time(NULL);
     struct tm *tm_ptr = localtime(&now);
-    char fname[128];
+    char       fname[128];
     strftime(fname, sizeof(fname), "/tmp/milk-CTRL_snapshot_%Y%m%d_%H%M%S.txt", tm_ptr);
 
     FILE *fp = fopen(fname, "w");
@@ -117,22 +115,21 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     char tstr[64];
     strftime(tstr, sizeof(tstr), "%Y-%m-%d %H:%M:%S", tm_ptr);
     fprintf(fp,
-        "# milk-CTRL snapshot — %s\n"
-        "# streams: %d  procs: %d  fps: %d"
-        "  edges: %d\n\n", tstr, m->nb_streams, m->nb_procs, m->nb_fps, m->nb_edges);
+            "# milk-CTRL snapshot — %s\n"
+            "# streams: %d  procs: %d  fps: %d"
+            "  edges: %d\n\n",
+            tstr, m->nb_streams, m->nb_procs, m->nb_fps, m->nb_edges);
 
     /* Streams */
     fprintf(fp, "=== STREAMS (%d) ===\n", m->nb_streams);
-    fprintf(fp,
-        "%-20s %4s %12s %8s %10s %7s %10s\n",
-        "NAME", "TYP", "SIZE", "Hz", "INODE", "OWNER", "COUNT");
+    fprintf(fp, "%-20s %4s %12s %8s %10s %7s %10s\n", "NAME", "TYP", "SIZE", "Hz", "INODE", "OWNER",
+            "COUNT");
     for (int i = 0; i < m->nb_streams; i++)
     {
         const OV_STREAM *s = &m->streams[i];
-        fprintf(fp,
-            "%-20s %4d %12s %8.1f %10" PRIu64 " %7d %10" PRIu64 "\n",
-            s->name, s->datatype, s->size_str,
-            s->update_hz, (uint64_t) s->inode, (int) s->ownerPID, (uint64_t) s->cnt0);
+        fprintf(fp, "%-20s %4d %12s %8.1f %10" PRIu64 " %7d %10" PRIu64 "\n", s->name, s->datatype,
+                s->size_str, s->update_hz, (uint64_t) s->inode, (int) s->ownerPID,
+                (uint64_t) s->cnt0);
     }
 
     /* Processes */
@@ -141,20 +138,30 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     for (int i = 0; i < m->nb_procs; i++)
     {
         const OV_PROC *p = &m->procs[i];
-        const char *sl;
+        const char    *sl;
         switch (p->loopstat)
         {
-        case 0:  sl = "IDLE"; break;
-        case 1:  sl = "RUN";  break;
-        case 2:  sl = "PAUS"; break;
-        case 3:  sl = "TERM"; break;
-        case 4:  sl = "ERR";  break;
-        default: sl = "??";   break;
+        case 0:
+            sl = "IDLE";
+            break;
+        case 1:
+            sl = "RUN";
+            break;
+        case 2:
+            sl = "PAUS";
+            break;
+        case 3:
+            sl = "TERM";
+            break;
+        case 4:
+            sl = "ERR";
+            break;
+        default:
+            sl = "??";
+            break;
         }
-        fprintf(fp,
-            "%-20s %7d %6s %8.1f %10" PRId64 " %s\n",
-            p->name, (int) p->PID, sl,
-            p->loop_hz, (int64_t) p->mem_rss_kb, p->trigstreamname[0] ? p->trigstreamname : "-");
+        fprintf(fp, "%-20s %7d %6s %8.1f %10" PRId64 " %s\n", p->name, (int) p->PID, sl, p->loop_hz,
+                (int64_t) p->mem_rss_kb, p->trigstreamname[0] ? p->trigstreamname : "-");
     }
 
     /* FPS */
@@ -163,11 +170,8 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     for (int i = 0; i < m->nb_fps; i++)
     {
         const OV_FPS *f = &m->fps[i];
-        fprintf(fp,
-            "%-24s %4s %4s %10" PRId64 " %s\n",
-            f->name,
-            f->conf_alive ? "Y" : "-",
-            f->run_alive  ? "Y" : "-", (int64_t) f->mem_rss_kb, f->description);
+        fprintf(fp, "%-24s %4s %4s %10" PRId64 " %s\n", f->name, f->conf_alive ? "Y" : "-",
+                f->run_alive ? "Y" : "-", (int64_t) f->mem_rss_kb, f->description);
     }
 
     /* Edges */
@@ -175,13 +179,11 @@ void ov_model_export_snapshot(const OV_MODEL *m)
     for (int i = 0; i < m->nb_edges; i++)
     {
         const OV_EDGE *e = &m->edges[i];
-        if (e->src_node >= 0
-            && e->src_node < m->nb_nodes
-            && e->tgt_node >= 0
-            && e->tgt_node < m->nb_nodes)
+        if (e->src_node >= 0 && e->src_node < m->nb_nodes && e->tgt_node >= 0 &&
+            e->tgt_node < m->nb_nodes)
         {
-            fprintf(fp, "  %s -> %s  [%s]\n",
-                m->nodes[e->src_node].name, m->nodes[e->tgt_node].name, e->label);
+            fprintf(fp, "  %s -> %s  [%s]\n", m->nodes[e->src_node].name,
+                    m->nodes[e->tgt_node].name, e->label);
         }
     }
 

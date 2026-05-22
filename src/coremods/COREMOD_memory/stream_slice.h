@@ -59,8 +59,7 @@ static inline IMAGE *imgid_get_image(IMGID *img)
 
     /* Check if source has new data */
     uint64_t cnt = img->im->md[0].cnt0;
-    if (cnt != img->slice_last_cnt0
-        || img->slice_im == NULL)
+    if (cnt != img->slice_last_cnt0 || img->slice_im == NULL)
     {
         imgid_slice_materialize(img);
         img->slice_last_cnt0 = cnt;

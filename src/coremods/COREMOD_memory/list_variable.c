@@ -6,9 +6,9 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -33,10 +33,10 @@ errno_t list_variable_ID(const char *regexstr)
     regex_t re;
     int     use_regex = 0;
 
-    if(regexstr != NULL && regexstr[0] != '\0')
+    if (regexstr != NULL && regexstr[0] != '\0')
     {
         int rc = regcomp(&re, regexstr, REG_EXTENDED | REG_NOSUB);
-        if(rc != 0)
+        if (rc != 0)
         {
             char errbuf[128];
             regerror(rc, &re, errbuf, sizeof(errbuf));
@@ -46,38 +46,37 @@ errno_t list_variable_ID(const char *regexstr)
         use_regex = 1;
     }
 
-    for(variableID i = 0; i < dcnvar; i++)
+    for (variableID i = 0; i < dcnvar; i++)
     {
-        if(dcvar[i].used != 1)
+        if (dcvar[i].used != 1)
         {
             continue;
         }
 
-        if(use_regex)
+        if (use_regex)
         {
-            if(regexec(&re, dcvar[i].name,
-                       0, NULL, 0) != 0)
+            if (regexec(&re, dcvar[i].name, 0, NULL, 0) != 0)
             {
                 continue;
             }
         }
 
         printf("%4ld %16s ", i, dcvar[i].name);
-        if(dcvar[i].type == 0)
+        if (dcvar[i].type == 0)
         {
             printf("%25.18g\n", dcvar[i].value.f);
         }
-        else if(dcvar[i].type == 1)
+        else if (dcvar[i].type == 1)
         {
             printf("%25ld\n", dcvar[i].value.l);
         }
-        else if(dcvar[i].type == 2)
+        else if (dcvar[i].type == 2)
         {
             printf("%25s\n", dcvar[i].value.s);
         }
     }
 
-    if(use_regex)
+    if (use_regex)
     {
         regfree(&re);
     }
@@ -94,19 +93,19 @@ errno_t list_variable_ID_file(const char *fname)
     FILE   *fp;
 
     fp = fopen(fname, "w");
-    for(i = 0; i < dcnvar; i++)
+    for (i = 0; i < dcnvar; i++)
     {
-        if(dcvar[i].used == 1)
+        if (dcvar[i].used == 1)
         {
-            if(dcvar[i].type == 0)
+            if (dcvar[i].type == 0)
             {
                 fprintf(fp, "%s=%.18g\n", dcvar[i].name, dcvar[i].value.f);
             }
-            else if(dcvar[i].type == 1)
+            else if (dcvar[i].type == 1)
             {
                 fprintf(fp, "%s=%ld\n", dcvar[i].name, dcvar[i].value.l);
             }
-            else if(dcvar[i].type == 2)
+            else if (dcvar[i].type == 2)
             {
                 fprintf(fp, "%s=%s\n", dcvar[i].name, dcvar[i].value.s);
             }
@@ -124,47 +123,33 @@ errno_t list_variable_ID_file(const char *fname)
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_listvar = {
-    .fps_name    = "listvar",
-    .cmdkey      = "listvar",
-    .description = "list variables in memory",
-    .description_long =
-        "List all variables currently defined in the process memory space, showing name, type, and value."
+    .fps_name         = "listvar",
+    .cmdkey           = "listvar",
+    .description      = "list variables in memory",
+    .description_long = "List all variables currently defined in the process memory space, showing "
+                        "name, type, and value."
 };
 
 static char p_regex[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 #define FPS_PARAMS_listvar(X) \
-    X(".regex", p_regex, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "regex filter (empty = all)")
+    X(".regex", p_regex, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "regex filter (empty = all)")
 
-static FPS_CLI_BINDING my_bindings_listvar[] = {
-    FPS_PARAMS_listvar(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings_listvar[] = { FPS_PARAMS_listvar(FPS_X_BINDING) };
 
-static const int __attribute__((unused))
-    nb_bindings_listvar = sizeof(my_bindings_listvar) / sizeof(FPS_CLI_BINDING);
+static const int __attribute__((unused)) nb_bindings_listvar =
+    sizeof(my_bindings_listvar) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg_listvar[] = {
-    FPS_PARAMS_listvar(FPS_X_FARG)
-};
+static CLICMDARGDEF farg_listvar[] = { FPS_PARAMS_listvar(FPS_X_FARG) };
 
 static CLICMDDATA CLIcmddata_listvar = {
-    "",
-    "",
-    __FILE__,
-    sizeof(farg_listvar) / sizeof(CLICMDARGDEF),
-    farg_listvar, CLICMDFLAG_FPS,
+    "",   "",   __FILE__, sizeof(farg_listvar) / sizeof(CLICMDARGDEF), farg_listvar, CLICMDFLAG_FPS,
     NULL, NULL, NULL
 };
 
-FPS_CMDSETTINGS_INIT(
-    dft1, CLIcmddata_listvar,
-    FPS_app_info_listvar)
+FPS_CMDSETTINGS_INIT(dft1, CLIcmddata_listvar, FPS_app_info_listvar)
 
-static errno_t __attribute__((unused))
-compute_listvar()
+static errno_t __attribute__((unused)) compute_listvar()
 {
     FUNC_CHECK_RETURN(list_variable_ID(p_regex));
     return RETURN_SUCCESS;
@@ -176,49 +161,34 @@ compute_listvar()
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_listvarf = {
-    .fps_name    = "listvarf",
-    .cmdkey      = "listvarf",
-    .description =
-        "list variables to file",
-    .description_long =
-        "List all variables currently defined in the process memory space, showing name, type, and value."
+    .fps_name         = "listvarf",
+    .cmdkey           = "listvarf",
+    .description      = "list variables to file",
+    .description_long = "List all variables currently defined in the process memory space, showing "
+                        "name, type, and value."
 };
 
 static char p_fname[FUNCTION_PARAMETER_STRMAXLEN] = "var.txt";
 
 #define FPS_PARAMS_listvarf(X) \
-    X(".fname", p_fname, \
-      FPTYPE_FILENAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output filename")
+    X(".fname", p_fname, FPTYPE_FILENAME, 1, FPFLAG_DEFAULT_INPUT, "output filename")
 
-static FPS_CLI_BINDING my_bindings2[] = {
-    FPS_PARAMS_listvarf(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings2[] = { FPS_PARAMS_listvarf(FPS_X_BINDING) };
 
 static const int __attribute__((unused)) nb_bindings2 =
-    sizeof(my_bindings2) /
-    sizeof(FPS_CLI_BINDING);
+    sizeof(my_bindings2) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS_listvarf(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS_listvarf(FPS_X_FARG) };
 
-static CLICMDDATA CLIcmddata = {
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
 
-FPS_CMDSETTINGS_INIT(
-    dft2, CLIcmddata, FPS_app_info_listvarf)
+FPS_CMDSETTINGS_INIT(dft2, CLIcmddata, FPS_app_info_listvarf)
 
-static errno_t __attribute__((unused))
-compute_listvarf()
+static errno_t __attribute__((unused)) compute_listvarf()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START FUNC_CHECK_RETURN(list_variable_ID_file(p_fname));
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -231,32 +201,29 @@ compute_listvarf()
 
 static errno_t CLIfunction_listvar(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_listvar,
-        farg_listvar, &CLIcmddata_listvar,
-        my_bindings_listvar, nb_bindings_listvar, compute_listvar);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_listvar, farg_listvar, &CLIcmddata_listvar,
+                                        my_bindings_listvar, nb_bindings_listvar, compute_listvar);
 }
 
 static errno_t CLIfunction_listvarf(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_listvarf, farg, &CLIcmddata, my_bindings2, nb_bindings2, compute_listvarf);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_listvarf, farg, &CLIcmddata, my_bindings2,
+                                        nb_bindings2, compute_listvarf);
 }
 
-errno_t
-CLIADDCMD_COREMOD_memory__list_variable()
+errno_t CLIADDCMD_COREMOD_memory__list_variable()
 {
     {
         safe_fps_fill_farg_examples(farg_listvar, my_bindings_listvar, nb_bindings_listvar);
 
-        int cmdi = RegisterCLIcmd(CLIcmddata_listvar, CLIfunction_listvar);
+        int cmdi                       = RegisterCLIcmd(CLIcmddata_listvar, CLIfunction_listvar);
         CLIcmddata_listvar.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
         safe_fps_fill_farg_examples(farg, my_bindings2, nb_bindings2);
 
-        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction_listvarf);
+        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction_listvarf);
         CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 

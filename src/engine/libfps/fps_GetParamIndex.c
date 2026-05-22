@@ -12,9 +12,7 @@
  * Searches the FPS parameter array for a matching
  * keyword chain. Returns -1 if not found.
  */
-int functionparameter_GetParamIndex(
-    FPS        *fps,
-    const char *paramname)
+int functionparameter_GetParamIndex(FPS *fps, const char *paramname)
 {
     long index  = -1;
     long pindex = 0;
@@ -22,13 +20,13 @@ int functionparameter_GetParamIndex(
     long NBparamMAX = fps->md->NBparamMAX;
 
     int found = 0;
-    for(pindex = 0; pindex < NBparamMAX; pindex++)
+    for (pindex = 0; pindex < NBparamMAX; pindex++)
     {
-        if(found == 0)
+        if (found == 0)
         {
-            if(fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
+            if (fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
             {
-                if(strstr(fps->parray[pindex].keywordfull, paramname) != NULL)
+                if (strstr(fps->parray[pindex].keywordfull, paramname) != NULL)
                 {
                     index = pindex;
                     found = 1;

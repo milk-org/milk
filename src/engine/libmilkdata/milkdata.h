@@ -30,11 +30,11 @@ typedef int errno_t;
 #endif
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846264338328
+#    define M_PI 3.14159265358979323846264338328
 #endif
 
 /* Static allocation limits */
-#define STATIC_NB_MAX_IMAGE    520
+#define STATIC_NB_MAX_IMAGE 520
 #define STATIC_NB_MAX_VARIABLE 5030
 
 /* In STATIC mode, arrays are fixed-size */
@@ -79,8 +79,7 @@ typedef struct
     int  funclevel;
     long funccallcnt;
 
-    char funcstack[MAXNB_FUNCSTACK]
-    [STRINGMAXLEN_FUNCSTAK_FUNCNAME];
+    char funcstack[MAXNB_FUNCSTACK][STRINGMAXLEN_FUNCSTAK_FUNCNAME];
     long fcntstack[MAXNB_FUNCSTACK];
     int  linestack[MAXNB_FUNCSTACK];
 
@@ -153,14 +152,14 @@ typedef struct
     int    precision;
 
     /* Process monitoring */
-    int          processinfo;
-    int          processinfoActive;
+    int                 processinfo;
+    int                 processinfoActive;
     struct PROCESSINFO *pinfo;
 
     /* FPS */
-    long                       NB_MAX_FPS;
-    FPS *fpsarray;
-    FPS *fpsptr;
+    long     NB_MAX_FPS;
+    FPS     *fpsarray;
+    FPS     *fpsptr;
     char     FPS_name[STRINGMAXLEN_FPS_NAME];
     long     FPS_TIMESTAMP;
     uint32_t FPS_CMDCODE;

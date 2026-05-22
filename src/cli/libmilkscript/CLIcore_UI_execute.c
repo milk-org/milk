@@ -25,8 +25,8 @@
 #include <termios.h>
 
 #ifdef USE_READLINE
-#include <readline/history.h>
-#include <readline/readline.h>
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 
 
@@ -51,19 +51,19 @@
 #include "fps_paramvalue.h"
 
 #define CLICOMPLETIONMODE_COMMANDS 0
-#define CLICOMPLETIONMODE_IMAGES   1
-#define CLICOMPLETIONMODE_CMDARGS  2
-#define CLICOMPLETIONMODE_FILES    3
+#define CLICOMPLETIONMODE_IMAGES 1
+#define CLICOMPLETIONMODE_CMDARGS 2
+#define CLICOMPLETIONMODE_FILES 3
 
 #define CLICOMPLETIONMODE_FPSPARAMS 4
 
 // COLORRESET removed to prevent redefinition with fps.h
-#define COLORRED       "\001\033[31m\002" /* Red */
+#define COLORRED "\001\033[31m\002"       /* Red */
 #define COLORHBOLDCYAN "\001\e[0;96m\002" /* High Intensity Bold Cyan */
-#define COLORDIMYELLOW "\033[2;33m" /* Dim Yellow (no RL wrap) */
+#define COLORDIMYELLOW "\033[2;33m"       /* Dim Yellow (no RL wrap) */
 #include <wordexp.h>
-#define COLORRST       "\033[0m"    /* Reset (no RL wrap) */
-#define RL_COLORRESET  "\001\033[0m\002"
+#define COLORRST "\033[0m" /* Reset (no RL wrap) */
+#define RL_COLORRESET "\001\033[0m\002"
 
 extern void yy_scan_string(const char *);
 extern int  yylex_destroy(void);
@@ -96,13 +96,13 @@ errno_t CLI_execute_line()
     DEBUG_TRACE_FSTART();
 
     char            *cmdargstring __attribute__((unused));
-    int strmaxlen   = 200;
+    int              strmaxlen = 200;
     char             str[strmaxlen];
     FILE            *fp;
     time_t           t;
     struct tm       *uttime;
     struct timespec *thetime = (struct timespec *) malloc(sizeof(struct timespec));
-    char calctmpimname[STRINGMAXLEN_IMGNAME];
+    char             calctmpimname[STRINGMAXLEN_IMGNAME];
 
     /* Lines starting with # are comments —
      * skip before ANY expansion so $, !, @
@@ -172,7 +172,7 @@ errno_t CLI_execute_line()
      * Must run BEFORE expansion so block
      * accumulator stores raw lines with
      * $VAR unexpanded. */
-    if(cli_script_intercept(data.CLIcmdline))
+    if (cli_script_intercept(data.CLIcmdline))
     {
         data.CMDexecuted = 1;
         free(thetime);
@@ -194,7 +194,7 @@ errno_t CLI_execute_line()
     cli_session_log_cmd(data.CLIcmdline);
 
     /* set -x: trace output */
-    if(cli_flag_xtrace)
+    if (cli_flag_xtrace)
     {
         PRINT_ERROR("+ %s", data.CLIcmdline);
     }
@@ -288,7 +288,7 @@ errno_t CLI_execute_line()
     }
 
     /* Check for array assignment: arr=(a b c) */
-    if(cli_try_array_assign(data.CLIcmdline))
+    if (cli_try_array_assign(data.CLIcmdline))
     {
         data.CMDexecuted = 1;
         free(thetime);
@@ -303,17 +303,12 @@ errno_t CLI_execute_line()
      * Skip if this is a known internal keyword
      * or registered command, but NOT on the
      * basis of '=' alone — "a=b+1" is arithmetic. */
-    if(data.CLIcmdline[0] != '\0'
-       && data.CLIcmdline[0] != '!')
+    if (data.CLIcmdline[0] != '\0' && data.CLIcmdline[0] != '!')
     {
         char firstword[2048];
-        if(sscanf(data.CLIcmdline,
-                  " %2047s",
-                  firstword) == 1
-           && !is_internal_cmd(firstword, 0))
+        if (sscanf(data.CLIcmdline, " %2047s", firstword) == 1 && !is_internal_cmd(firstword, 0))
         {
-            if(cli_calc_eval_line(
-                   data.CLIcmdline))
+            if (cli_calc_eval_line(data.CLIcmdline))
             {
                 free(thetime);
                 return RETURN_SUCCESS;
@@ -322,7 +317,7 @@ errno_t CLI_execute_line()
     }
 
     /* Check for variable assignment (VAR=val) */
-    if(cli_try_var_assign(data.CLIcmdline))
+    if (cli_try_var_assign(data.CLIcmdline))
     {
         data.CMDexecuted = 1;
         free(thetime);
@@ -334,17 +329,12 @@ errno_t CLI_execute_line()
     /* If the first token is not a known internal
      * milk keyword or command, instantly delegate
      * the full line to the OS shell. */
-    if(data.CLIcmdline[0] != '\0'
-       && data.CLIcmdline[0] != '!'
-       && data.CLIloopON == 1)
+    if (data.CLIcmdline[0] != '\0' && data.CLIcmdline[0] != '!' && data.CLIloopON == 1)
     {
         char firstword[2048];
-        if(sscanf(data.CLIcmdline,
-                  " %2047s",
-                  firstword) == 1
-           && !is_internal_cmd(firstword, 1))
+        if (sscanf(data.CLIcmdline, " %2047s", firstword) == 1 && !is_internal_cmd(firstword, 1))
         {
-            if(dcquiet == 0)
+            if (dcquiet == 0)
             {
                 printf(COLORDIMYELLOW "[shell bypass] %s" COLORRST "\n", data.CLIcmdline);
             }
@@ -357,14 +347,14 @@ errno_t CLI_execute_line()
     }
 
     /* ---- Pipe to shell ---- */
-    FILE *pipe_fp = NULL;
+    FILE *pipe_fp         = NULL;
     int   saved_stdout_fd = -1;
     cli_pipe_setup(&pipe_fp, &saved_stdout_fd);
 
     /* ---- Output redirect to file ---- */
-    FILE *redir_fp = NULL;
+    FILE *redir_fp           = NULL;
     int   saved_stdout_redir = -1;
-    if(pipe_fp == NULL)
+    if (pipe_fp == NULL)
     {
         cli_redir_setup(&redir_fp, &saved_stdout_redir);
     }
@@ -379,7 +369,7 @@ errno_t CLI_execute_line()
     // If line starts with !, run as external
     // command via cli_run_external()
     //
-    if(cli_handle_shell_builtins())
+    if (cli_handle_shell_builtins())
     {
         // already handled
     }
@@ -388,50 +378,40 @@ errno_t CLI_execute_line()
         // some initialization
         data.parseerror      = 0;
         data.calctmp_imindex = 0;
-        for(int i = 0; i < NB_ARG_MAX; i++)
+        for (int i = 0; i < NB_ARG_MAX; i++)
         {
             data.cmdargtoken[i].type          = CMDARGTOKEN_TYPE_UNSOLVED;
             data.cmdargtoken[i].val.string[0] = '\0';
         }
 
         // log command if CLIlogON active
-        if(data.CLIlogON == 1)
+        if (data.CLIlogON == 1)
         {
             t      = time(NULL);
             uttime = gmtime(&t);
             clock_gettime(CLOCK_MILK, thetime);
 
-            snprintf(data.CLIlogname,
-                     STRINGMAXLEN_FULLFILENAME,
-                     "%s/logdir/%04d%02d%02d/%04d%02d%02d_CLI-%s.log",
-                     getenv("HOME"),
-                     1900 + uttime->tm_year,
-                     1 + uttime->tm_mon,
-                     uttime->tm_mday,
-                     1900 + uttime->tm_year,
-                     1 + uttime->tm_mon, uttime->tm_mday, data.processname);
+            snprintf(data.CLIlogname, STRINGMAXLEN_FULLFILENAME,
+                     "%s/logdir/%04d%02d%02d/%04d%02d%02d_CLI-%s.log", getenv("HOME"),
+                     1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday,
+                     1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, data.processname);
 
             fp = fopen(data.CLIlogname, "a");
-            if(fp == NULL)
+            if (fp == NULL)
             {
                 printf("ERROR: cannot log into file %s\n", data.CLIlogname);
-                EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s/logdir/%04d%02d%02d\n",
-                                       getenv("HOME"),
-                                       1900 + uttime->tm_year,
-                                       1 + uttime->tm_mon, uttime->tm_mday);
+                EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s/logdir/%04d%02d%02d\n", getenv("HOME"),
+                                               1900 + uttime->tm_year, 1 + uttime->tm_mon,
+                                               uttime->tm_mday);
             }
             else
             {
                 fprintf(fp,
                         "%04d/%02d/%02d %02d:%02d:%02d.%09ld %10s "
                         "%6ld %s\n",
-                        1900 + uttime->tm_year,
-                        1 + uttime->tm_mon,
-                        uttime->tm_mday,
-                        uttime->tm_hour,
-                        uttime->tm_min,
-                        uttime->tm_sec,
-                        thetime->tv_nsec, data.processname, (long) getpid(), data.CLIcmdline);
+                        1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday,
+                        uttime->tm_hour, uttime->tm_min, uttime->tm_sec, thetime->tv_nsec,
+                        data.processname, (long) getpid(), data.CLIcmdline);
                 fclose(fp);
             }
         }
@@ -440,55 +420,52 @@ errno_t CLI_execute_line()
         data.cmdNBarg = 0;
 
 
-        if(dcdebug > 0)
+        if (dcdebug > 0)
         {
         }
 
         // extract first word
         // Replaced internal tokenization with POSIX wordexp to handle nested quotes safely
-        
+
         cli_export_vars_to_env(); // export variables prior to wordexp evaluation
-        
+
         if (cli_check_unquoted_restricted_symbols(data.CLIcmdline) != 0)
         {
-            printf(
-                "\n%c[%d;%dm ERROR %c[%d;m Syntax error: flow process symbols must be quoted\n",
-                (char) 27, 1, 31, (char) 27, 0);
+            printf("\n%c[%d;%dm ERROR %c[%d;m Syntax error: flow process symbols must be quoted\n",
+                   (char) 27, 1, 31, (char) 27, 0);
             data.CMDexecuted = 1; // Prevent fallback to shell
-            data.parseerror = 1;
+            data.parseerror  = 1;
             return RETURN_FAILURE;
         }
 
         wordexp_t p;
-        int we_ret = wordexp(data.CLIcmdline, &p, WRDE_SHOWERR | WRDE_UNDEF);
-        if(we_ret == 0)
+        int       we_ret = wordexp(data.CLIcmdline, &p, WRDE_SHOWERR | WRDE_UNDEF);
+        if (we_ret == 0)
         {
-            for(size_t i = 0; i < p.we_wordc; i++)
+            for (size_t i = 0; i < p.we_wordc; i++)
             {
-                if (data.cmdNBarg >= NB_ARG_MAX - 1) break;
-                
-                char *cmdargstring = p.we_wordv[i];
-                
-                if(data.cmdNBarg > 0
-                   && data.cmdargtoken[0].type
-                      == CMDARGTOKEN_TYPE_COMMAND
-                   && (cmdargstring[0] == '-'
-                       || cmdargstring[0] == '/'))
+                if (data.cmdNBarg >= NB_ARG_MAX - 1)
                 {
-                    strncpy(
-                        data.cmdargtoken[data.cmdNBarg]
-                            .val.string, cmdargstring, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    data.cmdargtoken[data.cmdNBarg]
-                        .val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] = '\0';
-                    data.cmdargtoken[data.cmdNBarg] .type = CMDARGTOKEN_TYPE_RAWSTRING;
+                    break;
+                }
+
+                char *cmdargstring = p.we_wordv[i];
+
+                if (data.cmdNBarg > 0 && data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND &&
+                    (cmdargstring[0] == '-' || cmdargstring[0] == '/'))
+                {
+                    strncpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring,
+                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    data.cmdargtoken[data.cmdNBarg].val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] =
+                        '\0';
+                    data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
                 }
                 else
                 {
-                    strncpy(
-                        data.cmdargtoken[data.cmdNBarg].val.string,
-                        cmdargstring, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                    data.cmdargtoken[data.cmdNBarg]
-                        .val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] = '\0';
+                    strncpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring,
+                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    data.cmdargtoken[data.cmdNBarg].val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] =
+                        '\0';
 
                     snprintf(str, strmaxlen, "%s\n", cmdargstring);
                     cli_parse(str);
@@ -501,123 +478,117 @@ errno_t CLI_execute_line()
         {
             // Fallback if wordexp fails (e.g. WRDE_SYNTAX due to unmatched quotes)
             // It will trigger CMDARGTOKEN_TYPE_UNSOLVED which then correctly routes to bash transparently!
-            strncpy(data.cmdargtoken[0].val.string, data.CLIcmdline, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+            strncpy(data.cmdargtoken[0].val.string, data.CLIcmdline,
+                    STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
             data.cmdargtoken[0].val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] = '\0';
             data.cmdargtoken[0].type = CMDARGTOKEN_TYPE_RAWSTRING;
-            data.cmdNBarg = 1;
+            data.cmdNBarg            = 1;
         }
 
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
 
-        if(dcdebug > 0)
+        if (dcdebug > 0)
         {
             printf("DEBUG: %s %d: data.cmdNBarg = %ld\n", __func__, __LINE__, data.cmdNBarg);
         }
 
-        if(dcdebug > 1)
+        if (dcdebug > 1)
         {
             long i = 0;
 
-            if(dcdebug > 0)
+            if (dcdebug > 0)
             {
-                printf("DEBUG: %s %d: TOKEN %ld type : %d\n",
-                       __func__, __LINE__, i, data.cmdargtoken[i].type);
+                printf("DEBUG: %s %d: TOKEN %ld type : %d\n", __func__, __LINE__, i,
+                       data.cmdargtoken[i].type);
             }
 
-            while(data.cmdargtoken[i].type != 0)
+            while (data.cmdargtoken[i].type != 0)
             {
-
-                printf("DEBUG: %s %d: TOKEN %ld/%ld   \"%s\"  type : %d\n",
-                       __func__, __LINE__,
-                       i, data.cmdNBarg, data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
-                if(data.cmdargtoken[i].type ==
-                        CMDARGTOKEN_TYPE_FLOAT) // double
+                printf("DEBUG: %s %d: TOKEN %ld/%ld   \"%s\"  type : %d\n", __func__, __LINE__, i,
+                       data.cmdNBarg, data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
+                if (data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_FLOAT) // double
                 {
-                    printf(
-                        "\t CMDARGTOKEN_TYPE_FLOAT           : "
-                        "%g\n", data.cmdargtoken[i].val.numf);
+                    printf("\t CMDARGTOKEN_TYPE_FLOAT           : "
+                           "%g\n",
+                           data.cmdargtoken[i].val.numf);
                 }
-                if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_LONG)  // long
+                if (data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_LONG) // long
                 {
-                    printf(
-                        "\t CMDARGTOKEN_TYPE_LONG           : "
-                        "%ld\n", data.cmdargtoken[i].val.numl);
+                    printf("\t CMDARGTOKEN_TYPE_LONG           : "
+                           "%ld\n",
+                           data.cmdargtoken[i].val.numl);
                 }
-                if(data.cmdargtoken[i].type ==
-                        CMDARGTOKEN_TYPE_STRING) // new variable/image
+                if (data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_STRING) // new variable/image
                 {
-                    printf(
-                        "\t CMDARGTOKEN_TYPE_STRING        : "
-                        "%s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_STRING        : "
+                           "%s\n",
+                           data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type ==
-                        CMDARGTOKEN_TYPE_EXISTINGIMAGE) // existing image
+                if (data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) // existing image
                 {
-                    printf(
-                        "\t CMDARGTOKEN_TYPE_EXISTINGIMAGE : "
-                        "%s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_EXISTINGIMAGE : "
+                           "%s\n",
+                           data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type ==
-                        CMDARGTOKEN_TYPE_COMMAND) // command
+                if (data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_COMMAND) // command
                 {
-                    printf(
-                        "\t CMDARGTOKEN_TYPE_COMMAND       : "
-                        "%s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_COMMAND       : "
+                           "%s\n",
+                           data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type ==
-                        CMDARGTOKEN_TYPE_RAWSTRING) // unprocessed string
+                if (data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_RAWSTRING) // unprocessed string
                 {
-                    printf(
-                        "\t CMDARGTOKEN_TYPE_RAWSTRING    : "
-                        "%s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_RAWSTRING    : "
+                           "%s\n",
+                           data.cmdargtoken[i].val.string);
                 }
 
                 i++;
             }
         }
 
-        if(dcdebug > 0)
+        if (dcdebug > 0)
         {
             printf("DEBUG: %s %d: data.parseerror = %d\n", __func__, __LINE__, data.parseerror);
         }
 
-        if(data.parseerror == 0)
+        if (data.parseerror == 0)
         {
-            if(data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND)
+            if (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND)
             {
                 // Execute CLI command
-                data.cmd[data.cmdindex] .callcount++;
+                data.cmd[data.cmdindex].callcount++;
 
                 struct timespec t0, t1;
                 clock_gettime(CLOCK_MONOTONIC, &t0);
 
                 data.CMDerrstatus = data.cmd[data.cmdindex].fp();
 
-                if(data.print_cmd_timing)
+                if (data.print_cmd_timing)
                 {
                     clock_gettime(CLOCK_MONOTONIC, &t1);
-                    double elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + 
-                                        (t1.tv_nsec - t0.tv_nsec) / 1000000.0;
+                    double elapsed_ms =
+                        (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1000000.0;
                     printf("Execution time: %.3f ms\n", elapsed_ms);
                 }
 
                 cli_save_last_argument();
 
-                if(data.CMDerrstatus != RETURN_SUCCESS)
+                if (data.CMDerrstatus != RETURN_SUCCESS)
                 {
                     // CLI function returns error
                     // print function key name and error code
-                    printf(
-                        "\n%c[%d;%dm ERROR %c[%d;m CLI "
-                        "function %s returns %d\n",
-                        (char) 27,
-                        1, 31, (char) 27, 0, data.cmd[data.cmdindex].key, data.CMDerrstatus);
+                    printf("\n%c[%d;%dm ERROR %c[%d;m CLI "
+                           "function %s returns %d\n",
+                           (char) 27, 1, 31, (char) 27, 0, data.cmd[data.cmdindex].key,
+                           data.CMDerrstatus);
 
-                    if(dcerrorexit == 1)
+                    if (dcerrorexit == 1)
                     {
-                        printf(
-                            "%c[%d;%dm -> EXIT CLI " "%c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+                        printf("%c[%d;%dm -> EXIT CLI "
+                               "%c[%d;m\n",
+                               (char) 27, 1, 31, (char) 27, 0);
                         dcexitcode = data.CMDerrstatus;
 
 #ifndef NDEBUG
@@ -632,18 +603,18 @@ errno_t CLI_execute_line()
         }
         else
         {
-            if(dcerrorexit == 1)
+            if (dcerrorexit == 1)
             {
                 dcexitcode = 1;
             }
         }
 
-        for(int i = 0; i < data.calctmp_imindex; i++)
+        for (int i = 0; i < data.calctmp_imindex; i++)
         {
             CREATE_IMAGENAME(calctmpimname, "_tmpcalc%d", i);
-            if(image_ID(calctmpimname, dcimg, dcnimg) != -1)
+            if (image_ID(calctmpimname, dcimg, dcnimg) != -1)
             {
-                if(dcdebug == 1)
+                if (dcdebug == 1)
                 {
                     printf("Deleting %s\n", calctmpimname);
                 }
@@ -651,30 +622,30 @@ errno_t CLI_execute_line()
             }
         }
 
-        if(!((data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_STRING) ||
-                (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_RAWSTRING) ||
-                (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_UNSOLVED)))
+        if (!((data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_STRING) ||
+              (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_RAWSTRING) ||
+              (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_UNSOLVED)))
         {
             data.CMDexecuted = 1;
         }
     }
 
-    if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
+    if ((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
         /* Attempt transparent OS shell fallback.
          * Uses posix_spawnp() for simple commands
          * and /bin/sh -c only when needed. */
         cli_export_vars_to_env();
-        int sys_ret = cli_run_external(data.CLIcmdline);
+        int sys_ret      = cli_run_external(data.CLIcmdline);
         int os_not_found = (sys_ret == 127);
 
-        if(!os_not_found && sys_ret != -1)
+        if (!os_not_found && sys_ret != -1)
         {
             printf(COLORDIMYELLOW "[shell] %s" COLORRST "\n", data.CLIcmdline);
             cli_last_retval = sys_ret;
         }
 
-        if(os_not_found)
+        if (os_not_found)
         {
             const char *bad_cmd = (data.cmdNBarg > 0) ? data.cmdargtoken[0].val.string : NULL;
             handle_did_you_mean(bad_cmd);
@@ -690,4 +661,3 @@ errno_t CLI_execute_line()
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-

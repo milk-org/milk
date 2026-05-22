@@ -17,22 +17,17 @@ typedef int errno_t;
 #include "streamCTRL_print_procpid.h"
 
 
-
-
-
-
 /**
  * @brief Print stream processing trace details.
  *
  * Shows the semaphore post chain for debugging
  * stream propagation paths.
  */
-errno_t streamCTRL_print_SPTRACE_details(
-    IMAGE    *streamCTRLimages,
-    imageID  ID,
-    pid_t    *upstreamproc,
-    int      NBupstreamproc,
-    uint32_t print_pid_mode)
+errno_t streamCTRL_print_SPTRACE_details(IMAGE   *streamCTRLimages,
+                                         imageID  ID,
+                                         pid_t   *upstreamproc,
+                                         int      NBupstreamproc,
+                                         uint32_t print_pid_mode)
 {
     int Disp_inode_NBchar = 8;
 
@@ -49,17 +44,13 @@ errno_t streamCTRL_print_SPTRACE_details(
     DEBUG_TRACEPOINT(" ");
 
     TUI_newline();
-    TUI_printfw("   %*s %*s %*s %*s %*s",
-                Disp_inode_NBchar,
-                "inode",
-                Disp_sname_NBchar,
-                "stream",
+    TUI_printfw("   %*s %*s %*s %*s %*s", Disp_inode_NBchar, "inode", Disp_sname_NBchar, "stream",
                 Disp_cnt0_NBchar, "cnt0", Disp_PID_NBchar, "PID", Disp_type_NBchar, "type");
     TUI_newline();
 
     DEBUG_TRACEPOINT(" ");
 
-    for(int spti = 0; spti < streamCTRLimages[ID].md->NBproctrace; spti++)
+    for (int spti = 0; spti < streamCTRLimages[ID].md->NBproctrace; spti++)
     {
         DEBUG_TRACEPOINT("spti %d", spti);
         ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
@@ -77,11 +68,11 @@ errno_t streamCTRL_print_SPTRACE_details(
         // look for ID corresponding to inode
         int IDscan  = 0;
         int IDfound = -1;
-        while((IDfound == -1) && (IDscan < streamNBID_MAX))
+        while ((IDfound == -1) && (IDscan < streamNBID_MAX))
         {
-            if((streamCTRLimages[IDscan].used == 1) && (streamCTRLimages[IDscan].md != NULL))
+            if ((streamCTRLimages[IDscan].used == 1) && (streamCTRLimages[IDscan].md != NULL))
             {
-                if(streamCTRLimages[IDscan].md->inode == inode)
+                if (streamCTRLimages[IDscan].md->inode == inode)
                 {
                     IDfound = IDscan;
                 }
@@ -92,7 +83,7 @@ errno_t streamCTRL_print_SPTRACE_details(
         DEBUG_TRACEPOINT("spti %d", spti);
 
 
-        if(IDfound == -1)
+        if (IDfound == -1)
         {
             TUI_printfw(" %*s", Disp_sname_NBchar, "???");
         }
@@ -104,66 +95,60 @@ errno_t streamCTRL_print_SPTRACE_details(
         TUI_printfw(" %*llu", Disp_cnt0_NBchar, (unsigned long long) cnt0);
         TUI_printfw(" ");
 
-        Disp_PID_NBchar = streamCTRL_print_procpid(8,
-                          pid, upstreamproc, NBupstreamproc, PRINT_PID_FORCE_NOUPSTREAM);
+        Disp_PID_NBchar = streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc,
+                                                   PRINT_PID_FORCE_NOUPSTREAM);
 
         TUI_printfw(" ");
 
-        switch(streamCTRLimages[ID].streamproctrace[spti].triggermode)
+        switch (streamCTRLimages[ID].streamproctrace[spti].triggermode)
         {
         case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-            TUI_printfw("%d%*s",
-                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
                         Disp_type_NBchar - 1, "IMME");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT0:
-            TUI_printfw("%d%*s",
-                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
                         Disp_type_NBchar - 1, "CNT0");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT1:
-            TUI_printfw("%d%*s",
-                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
                         Disp_type_NBchar - 1, "CNT1");
             break;
 
         case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-            TUI_printfw("%d%*s",
-                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
                         Disp_type_NBchar - 4, "SM");
             TUI_printfw(" %2d", sem);
             break;
 
         case PROCESSINFO_TRIGGERMODE_DELAY:
-            TUI_printfw("%d%*s",
-                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
                         Disp_type_NBchar - 1, "DELA");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT2:
-            TUI_printfw("%d%*s",
-                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
                         Disp_type_NBchar - 1, "CNT2");
             break;
 
         default:
-            TUI_printfw("%d%*s",
-                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
                         Disp_type_NBchar - 1, "UNKN");
             break;
         }
         TUI_printfw(" ");
 
         int print_timing = 0;
-        switch(streamCTRLimages[ID].streamproctrace[spti].triggerstatus)
+        switch (streamCTRLimages[ID].streamproctrace[spti].triggerstatus)
         {
         case PROCESSINFO_TRIGGERSTATUS_WAITING:
             TUI_printfw("%*s", Disp_trigstat_NBchar, "WAITING");
             break;
 
-        case PROCESSINFO_TRIGGERSTATUS_RECEIVED: screenprint_setcolor(2);
+        case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
+            screenprint_setcolor(2);
             //attron(COLOR_PAIR(2));
             TUI_printfw("%*s", Disp_trigstat_NBchar, "RECEIVED");
             screenprint_unsetcolor(2);
@@ -180,17 +165,17 @@ errno_t streamCTRL_print_SPTRACE_details(
             print_timing = 1;
             break;
 
-        default: TUI_printfw("%*s", Disp_trigstat_NBchar, "unknown");
+        default:
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "unknown");
             break;
         }
 
         // trigger time
-        if(print_timing == 1)
+        if (print_timing == 1)
         {
-            TUI_printfw(
-                " at %ld.%09ld s",
-                streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_sec,
-                streamCTRLimages[ID] .streamproctrace[spti] .ts_procstart.tv_nsec);
+            TUI_printfw(" at %ld.%09ld s",
+                        streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_sec,
+                        streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_nsec);
 
             struct timespec tnow;
             clock_gettime(CLOCK_MILK, &tnow);

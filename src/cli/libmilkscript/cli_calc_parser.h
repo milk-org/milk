@@ -41,10 +41,6 @@ int cli_calc_eval_line(const char *input);
  * @param out_dval  Pointer to receive double value
  * @return 1 on success (pure math), 0 on failure/string
  */
-int cli_calc_eval_math_to_val(
-    const char *input,
-    int        *out_type,
-    long       *out_lval,
-    double     *out_dval);
+int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, double *out_dval);
 
 #endif /* CLI_CALC_PARSER_H */

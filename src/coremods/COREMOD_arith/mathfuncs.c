@@ -24,10 +24,10 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "libmilkdata/milkdata.h"
+#    include "libmilkdata/milkdata.h"
 #endif // complex types
 #include <math.h>
 
@@ -113,7 +113,7 @@ double Ptanh(double a)
 double Ppositive(double a)
 {
     double value = 0.0;
-    if(a > 0.0)
+    if (a > 0.0)
     {
         value = (double) 1.0;
     }
@@ -128,58 +128,42 @@ double Ppositive(double a)
  * Pdiv1(a,b) returns b/a (reverse divide).
  * ========================================================== */
 
-double Pfmod(
-    double a,
-    double b)
+double Pfmod(double a, double b)
 {
     return ((double) fmod(a, b));
 }
 
-double Ppow(
-    double a,
-    double b)
+double Ppow(double a, double b)
 {
     return ((double) pow(a, b));
 }
 
-double Padd(
-    double a,
-    double b)
+double Padd(double a, double b)
 {
     return ((double) a + b);
 }
 
-double Psubm(
-    double a,
-    double b)
+double Psubm(double a, double b)
 {
     return ((double) b - a);
 }
 
-double Psub(
-    double a,
-    double b)
+double Psub(double a, double b)
 {
     return ((double) a - b);
 }
 
-double Pmult(
-    double a,
-    double b)
+double Pmult(double a, double b)
 {
     return ((double) a * b);
 }
 
-double Pdiv(
-    double a,
-    double b)
+double Pdiv(double a, double b)
 {
     return ((double) a / b);
 }
 
-double Pdiv1(
-    double a,
-    double b)
+double Pdiv1(double a, double b)
 {
     return ((double) b / a);
 }
@@ -191,11 +175,9 @@ double Pdiv1(
 /**
  * @brief Element-wise minimum of two values
  */
-double Pminv(
-    double a,
-    double b)
+double Pminv(double a, double b)
 {
-    if(a < b)
+    if (a < b)
     {
         return (a);
     }
@@ -208,11 +190,9 @@ double Pminv(
 /**
  * @brief Element-wise maximum of two values
  */
-double Pmaxv(
-    double a,
-    double b)
+double Pmaxv(double a, double b)
 {
-    if(a > b)
+    if (a > b)
     {
         return (a);
     }
@@ -231,11 +211,9 @@ double Pmaxv(
  * ========================================================== */
 
 /** @brief a < b → 1.0 */
-double Ptestlt(
-    double a,
-    double b)
+double Ptestlt(double a, double b)
 {
-    if(a < b)
+    if (a < b)
     {
         return ((double) 1.0);
     }
@@ -246,11 +224,9 @@ double Ptestlt(
 }
 
 /** @brief a >= b → 1.0 ("mt" = more than) */
-double Ptestmt(
-    double a,
-    double b)
+double Ptestmt(double a, double b)
 {
-    if(a < b)
+    if (a < b)
     {
         return ((double) 0.0);
     }
@@ -261,11 +237,9 @@ double Ptestmt(
 }
 
 /** @brief a == b → 1.0 */
-double Pteste(
-    double a,
-    double b)
+double Pteste(double a, double b)
 {
-    if(a == b)
+    if (a == b)
     {
         return ((double) 1.0);
     }
@@ -276,11 +250,9 @@ double Pteste(
 }
 
 /** @brief a != b → 1.0 */
-double Ptestne(
-    double a,
-    double b)
+double Ptestne(double a, double b)
 {
-    if(a != b)
+    if (a != b)
     {
         return ((double) 1.0);
     }
@@ -291,11 +263,9 @@ double Ptestne(
 }
 
 /** @brief a <= b → 1.0 */
-double Ptestle(
-    double a,
-    double b)
+double Ptestle(double a, double b)
 {
-    if(a <= b)
+    if (a <= b)
     {
         return ((double) 1.0);
     }
@@ -306,11 +276,9 @@ double Ptestle(
 }
 
 /** @brief a >= b → 1.0 */
-double Ptestge(
-    double a,
-    double b)
+double Ptestge(double a, double b)
 {
-    if(a >= b)
+    if (a >= b)
     {
         return ((double) 1.0);
     }
@@ -325,11 +293,9 @@ double Ptestge(
  * ========================================================== */
 
 /** @brief Logical AND: (a!=0 && b!=0) → 1.0 */
-double Pand(
-    double a,
-    double b)
+double Pand(double a, double b)
 {
-    if((a != 0.0) && (b != 0.0))
+    if ((a != 0.0) && (b != 0.0))
     {
         return ((double) 1.0);
     }
@@ -340,11 +306,9 @@ double Pand(
 }
 
 /** @brief Logical OR: (a!=0 || b!=0) → 1.0 */
-double Por(
-    double a,
-    double b)
+double Por(double a, double b)
 {
-    if((a != 0.0) || (b != 0.0))
+    if ((a != 0.0) || (b != 0.0))
     {
         return ((double) 1.0);
     }
@@ -362,18 +326,15 @@ double Por(
  * @param c  Upper bound
  * @return Clamped value
  */
-double Ptrunc(
-    double a,
-    double b,
-    double c)
+double Ptrunc(double a, double b, double c)
 {
     double value;
     value = a;
-    if(a < b)
+    if (a < b)
     {
         value = b;
     };
-    if(a > c)
+    if (a > c)
     {
         value = c;
     };
@@ -389,9 +350,7 @@ double Ptrunc(
  * ========================================================== */
 
 /** @brief Complex double addition */
-complex_double CPadd_CD_CD(
-    complex_double a,
-    complex_double b)
+complex_double CPadd_CD_CD(complex_double a, complex_double b)
 {
     complex_double v;
     v.re = a.re + b.re;
@@ -400,9 +359,7 @@ complex_double CPadd_CD_CD(
 }
 
 /** @brief Complex double subtraction */
-complex_double CPsub_CD_CD(
-    complex_double a,
-    complex_double b)
+complex_double CPsub_CD_CD(complex_double a, complex_double b)
 {
     complex_double v;
     v.re = a.re - b.re;
@@ -411,9 +368,7 @@ complex_double CPsub_CD_CD(
 }
 
 /** @brief Complex double multiplication */
-complex_double CPmult_CD_CD(
-    complex_double a,
-    complex_double b)
+complex_double CPmult_CD_CD(complex_double a, complex_double b)
 {
     complex_double v;
     v.re = a.re * b.re - a.im * b.im;
@@ -427,9 +382,7 @@ complex_double CPmult_CD_CD(
  * Computes a/b = (a·conj(b)) / |b|² to avoid
  * transcendentals.
  */
-complex_double CPdiv_CD_CD(
-    complex_double a,
-    complex_double b)
+complex_double CPdiv_CD_CD(complex_double a, complex_double b)
 {
     complex_double v;
     double         den;
@@ -447,9 +400,7 @@ complex_double CPdiv_CD_CD(
  * ========================================================== */
 
 /** @brief Complex float addition */
-complex_float CPadd_CF_CF(
-    complex_float a,
-    complex_float b)
+complex_float CPadd_CF_CF(complex_float a, complex_float b)
 {
     complex_float v;
     v.re = a.re + b.re;
@@ -458,9 +409,7 @@ complex_float CPadd_CF_CF(
 }
 
 /** @brief Complex float subtraction */
-complex_float CPsub_CF_CF(
-    complex_float a,
-    complex_float b)
+complex_float CPsub_CF_CF(complex_float a, complex_float b)
 {
     complex_float v;
     v.re = a.re - b.re;
@@ -469,9 +418,7 @@ complex_float CPsub_CF_CF(
 }
 
 /** @brief Complex float multiplication */
-complex_float CPmult_CF_CF(
-    complex_float a,
-    complex_float b)
+complex_float CPmult_CF_CF(complex_float a, complex_float b)
 {
     complex_float v;
     v.re = a.re * b.re - a.im * b.im;
@@ -482,9 +429,7 @@ complex_float CPmult_CF_CF(
 /**
  * @brief Complex float division via conjugate
  */
-complex_float CPdiv_CF_CF(
-    complex_float a,
-    complex_float b)
+complex_float CPdiv_CF_CF(complex_float a, complex_float b)
 {
     complex_float v;
     float         den;

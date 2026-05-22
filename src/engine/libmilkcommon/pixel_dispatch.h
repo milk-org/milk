@@ -35,16 +35,16 @@
  *   - ACCESSOR array union member (UI8, F, ...)
  *   - CTYPE    C language type
  */
-#define FOREACH_REAL_DATATYPE(X)                \
-    X(_DATATYPE_UINT8,  UI8,  uint8_t)          \
-    X(_DATATYPE_INT8,   SI8,  int8_t)           \
-    X(_DATATYPE_UINT16, UI16, uint16_t)         \
-    X(_DATATYPE_INT16,  SI16, int16_t)          \
-    X(_DATATYPE_UINT32, UI32, uint32_t)         \
-    X(_DATATYPE_INT32,  SI32, int32_t)          \
-    X(_DATATYPE_UINT64, UI64, uint64_t)         \
-    X(_DATATYPE_INT64,  SI64, int64_t)          \
-    X(_DATATYPE_FLOAT,  F,    float)            \
-    X(_DATATYPE_DOUBLE, D,    double)
+#define FOREACH_REAL_DATATYPE(X)        \
+    X(_DATATYPE_UINT8, UI8, uint8_t)    \
+    X(_DATATYPE_INT8, SI8, int8_t)      \
+    X(_DATATYPE_UINT16, UI16, uint16_t) \
+    X(_DATATYPE_INT16, SI16, int16_t)   \
+    X(_DATATYPE_UINT32, UI32, uint32_t) \
+    X(_DATATYPE_INT32, SI32, int32_t)   \
+    X(_DATATYPE_UINT64, UI64, uint64_t) \
+    X(_DATATYPE_INT64, SI64, int64_t)   \
+    X(_DATATYPE_FLOAT, F, float)        \
+    X(_DATATYPE_DOUBLE, D, double)
 
 #endif /* PIXEL_DISPATCH_H */

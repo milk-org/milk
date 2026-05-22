@@ -12,9 +12,9 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 
@@ -23,23 +23,19 @@
 #define SBUFFERSIZE 1000
 
 /* forward decl */
-errno_t write_float_file(
-    const char *fname,
-    float      value);
+errno_t write_float_file(const char *fname, float value);
 
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info =
-{
-    .fps_name    = "writef2file",
-    .cmdkey      = "writef2file",
-    .description =
-    "write float to file",
-    .description_long =
-    "File system utility operations: count files matching a pattern, list directory contents, and check file existence."
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name         = "writef2file",
+    .cmdkey           = "writef2file",
+    .description      = "write float to file",
+    .description_long = "File system utility operations: count files matching a pattern, list "
+                        "directory contents, and check file existence."
 };
 
 
@@ -56,15 +52,9 @@ static double p_value = 0.0;
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".fname", p_fname, \
-      FPTYPE_FILENAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output filename") \
-    X(".value", &p_value, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "float value")
+#define FPS_PARAMS(X)                                                                 \
+    X(".fname", p_fname, FPTYPE_FILENAME, 1, FPFLAG_DEFAULT_INPUT, "output filename") \
+    X(".value", &p_value, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "float value")
 
 FPS_V2_SECTION5(FPS_PARAMS)
 
@@ -73,22 +63,22 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START FUNC_CHECK_RETURN(write_float_file(p_fname, p_value));
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_tools__fileutils()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
@@ -101,22 +91,20 @@ int file_exist(char *filename)
     return (stat(filename, &buffer) == 0);
 }
 
-int create_counter_file(
-    const char    *fname,
-    unsigned long NBpts)
+int create_counter_file(const char *fname, unsigned long NBpts)
 {
     unsigned long i;
     FILE         *fp;
 
-    if((fp = fopen(fname, "w")) == NULL)
+    if ((fp = fopen(fname, "w")) == NULL)
     {
         PRINT_ERROR("cannot create file \"%s\"", fname);
         abort();
     }
 
-    for(unsigned i = 0; i < NBpts; i++)
+    for (unsigned i = 0; i < NBpts; i++)
     {
-        fprintf(fp, "%ld %f\n", i, (double)((double) i / NBpts));
+        fprintf(fp, "%ld %f\n", i, (double) ((double) i / NBpts));
     }
 
     fclose(fp);
@@ -124,9 +112,7 @@ int create_counter_file(
     return (0);
 }
 
-int read_config_parameter_exists(
-    const char *config_file,
-    const char *keyword)
+int read_config_parameter_exists(const char *config_file, const char *keyword)
 {
     FILE *fp;
     char  line[1000];
@@ -134,21 +120,21 @@ int read_config_parameter_exists(
     int   read;
 
     read = 0;
-    if((fp = fopen(config_file, "r")) == NULL)
+    if ((fp = fopen(config_file, "r")) == NULL)
     {
         PRINT_ERROR("cannot open file \"%s\"", config_file);
         abort();
     }
 
-    while((fgets(line, 1000, fp) != NULL) && (read == 0))
+    while ((fgets(line, 1000, fp) != NULL) && (read == 0))
     {
         sscanf(line, " %20s", keyw);
-        if(strcmp(keyw, keyword) == 0)
+        if (strcmp(keyw, keyword) == 0)
         {
             read = 1;
         }
     }
-    if(read == 0)
+    if (read == 0)
     {
         PRINT_WARNING("parameter \"%s\" does not exist in file \"%s\"", keyword, config_file);
     }
@@ -158,10 +144,7 @@ int read_config_parameter_exists(
     return (read);
 }
 
-int read_config_parameter(
-    const char *config_file,
-    const char *keyword,
-    char       *content)
+int read_config_parameter(const char *config_file, const char *keyword, char *content)
 {
     FILE *fp;
     char  line[1000];
@@ -170,24 +153,24 @@ int read_config_parameter(
     int   read;
 
     read = 0;
-    if((fp = fopen(config_file, "r")) == NULL)
+    if ((fp = fopen(config_file, "r")) == NULL)
     {
         PRINT_ERROR("cannot open file \"%s\"", config_file);
         abort();
     }
 
     snprintf(content, SBUFFERSIZE, "---");
-    while(fgets(line, 1000, fp) != NULL)
+    while (fgets(line, 1000, fp) != NULL)
     {
         sscanf(line, "%100s %100s", keyw, cont);
-        if(strcmp(keyw, keyword) == 0)
+        if (strcmp(keyw, keyword) == 0)
         {
             snprintf(content, SBUFFERSIZE, "%s", cont);
             read = 1;
         }
         /*      printf("KEYWORD : \"%s\"   CONTENT : \"%s\"\n",keyw,cont);*/
     }
-    if(read == 0)
+    if (read == 0)
     {
         PRINT_ERROR("parameter \"%s\" does not exist in file \"%s\"", keyword, config_file);
         snprintf(content, SBUFFERSIZE, "-");
@@ -199,9 +182,7 @@ int read_config_parameter(
     return (read);
 }
 
-float read_config_parameter_float(
-    const char *config_file,
-    const char *keyword)
+float read_config_parameter_float(const char *config_file, const char *keyword)
 {
     float value;
     char  content[SBUFFERSIZE];
@@ -214,9 +195,7 @@ float read_config_parameter_float(
     return (value);
 }
 
-long read_config_parameter_long(
-    const char *config_file,
-    const char *keyword)
+long read_config_parameter_long(const char *config_file, const char *keyword)
 {
     long value;
     char content[SBUFFERSIZE];
@@ -227,9 +206,7 @@ long read_config_parameter_long(
     return (value);
 }
 
-int read_config_parameter_int(
-    const char *config_file,
-    const char *keyword)
+int read_config_parameter_int(const char *config_file, const char *keyword)
 {
     int  value;
     char content[SBUFFERSIZE];
@@ -246,18 +223,20 @@ long file_number_lines(const char *file_name)
     int   c;
     FILE *fp;
 
-    if((fp = fopen(file_name, "r")) == NULL)
+    if ((fp = fopen(file_name, "r")) == NULL)
     {
         PRINT_ERROR("cannot open file \"%s\"", file_name);
         abort();
     }
 
     cnt = 0;
-    while((c = fgetc(fp)) != EOF)
-        if(c == '\n')
+    while ((c = fgetc(fp)) != EOF)
+    {
+        if (c == '\n')
         {
             cnt++;
         }
+    }
     fclose(fp);
 
     return (cnt);
@@ -267,7 +246,7 @@ FILE *open_file_w(const char *filename)
 {
     FILE *fp;
 
-    if((fp = fopen(filename, "w")) == NULL)
+    if ((fp = fopen(filename, "w")) == NULL)
     {
         PRINT_ERROR("cannot create file \"%s\"", filename);
         abort();
@@ -280,7 +259,7 @@ FILE *open_file_r(const char *filename)
 {
     FILE *fp;
 
-    if((fp = fopen(filename, "r")) == NULL)
+    if ((fp = fopen(filename, "r")) == NULL)
     {
         PRINT_ERROR("cannot read file \"%s\"", filename);
         abort();
@@ -289,16 +268,13 @@ FILE *open_file_r(const char *filename)
     return (fp);
 }
 
-errno_t write_1D_array(
-    double     *array,
-    long       nbpoints,
-    const char *filename)
+errno_t write_1D_array(double *array, long nbpoints, const char *filename)
 {
     FILE *fp;
 
 
     fp = open_file_w(filename);
-    for(long ii = 0; ii < nbpoints; ii++)
+    for (long ii = 0; ii < nbpoints; ii++)
     {
         fprintf(fp, "%ld\t%f\n", ii, array[ii]);
     }
@@ -307,19 +283,16 @@ errno_t write_1D_array(
     return RETURN_SUCCESS;
 }
 
-errno_t read_1D_array(
-    double     *array,
-    long       nbpoints,
-    const char *filename)
+errno_t read_1D_array(double *array, long nbpoints, const char *filename)
 {
     FILE *fp;
 
-    long  tmpl;
+    long tmpl;
 
     fp = open_file_r(filename);
-    for(long ii = 0; ii < nbpoints; ii++)
+    for (long ii = 0; ii < nbpoints; ii++)
     {
-        if(fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
+        if (fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
         {
             PRINT_ERROR("fscanf error");
             fclose(fp);
@@ -336,13 +309,13 @@ int read_int_file(const char *fname)
     int   value;
     FILE *fp;
 
-    if((fp = fopen(fname, "r")) == NULL)
+    if ((fp = fopen(fname, "r")) == NULL)
     {
         value = 0;
     }
     else
     {
-        if(fscanf(fp, "%d", &value) != 1)
+        if (fscanf(fp, "%d", &value) != 1)
         {
             PRINT_ERROR("fscanf error");
             fclose(fp);
@@ -354,13 +327,11 @@ int read_int_file(const char *fname)
     return (value);
 }
 
-errno_t write_int_file(
-    const char *fname,
-    int        value)
+errno_t write_int_file(const char *fname, int value)
 {
     FILE *fp;
 
-    if((fp = fopen(fname, "w")) == NULL)
+    if ((fp = fopen(fname, "w")) == NULL)
     {
         PRINT_ERROR("cannot create file \"%s\"\n", fname);
         abort();
@@ -372,21 +343,19 @@ errno_t write_int_file(
     return RETURN_SUCCESS;
 }
 
-errno_t write_float_file(
-    const char *fname,
-    float      value)
+errno_t write_float_file(const char *fname, float value)
 {
     FILE *fp;
     int   mode = 0; // default, create single file
 
-    if(variable_ID("WRITE2FILE_APPEND") != -1)
+    if (variable_ID("WRITE2FILE_APPEND") != -1)
     {
         mode = 1;
     }
 
-    if(mode == 0)
+    if (mode == 0)
     {
-        if((fp = fopen(fname, "w")) == NULL)
+        if ((fp = fopen(fname, "w")) == NULL)
         {
             PRINT_ERROR("cannot create file \"%s\"\n", fname);
             abort();
@@ -395,9 +364,9 @@ errno_t write_float_file(
         fclose(fp);
     }
 
-    if(mode == 1)
+    if (mode == 1)
     {
-        if((fp = fopen(fname, "a")) == NULL)
+        if ((fp = fopen(fname, "a")) == NULL)
         {
             PRINT_ERROR("cannot create file \"%s\"\n", fname);
             abort();

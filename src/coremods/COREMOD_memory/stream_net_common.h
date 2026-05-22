@@ -26,7 +26,7 @@
 #include "milkdata.h"
 
 #ifndef CLOCK_MILK
-#define CLOCK_MILK CLOCK_REALTIME
+#    define CLOCK_MILK CLOCK_REALTIME
 #endif
 
 
@@ -42,21 +42,22 @@
  * Must be called only when DCSIG_ANY_SET() is true
  * and dcprocinfo == 1.
  */
-#define DCSIG_PROCESS_EXIT(pinfo) \
-    do { \
-        if (dcsigTERM) \
+#define DCSIG_PROCESS_EXIT(pinfo)                  \
+    do                                             \
+    {                                              \
+        if (dcsigTERM)                             \
             processinfo_SIGexit((pinfo), SIGTERM); \
-        else if (dcsigINT) \
-            processinfo_SIGexit((pinfo), SIGINT); \
-        else if (dcsigABRT) \
+        else if (dcsigINT)                         \
+            processinfo_SIGexit((pinfo), SIGINT);  \
+        else if (dcsigABRT)                        \
             processinfo_SIGexit((pinfo), SIGABRT); \
-        else if (dcsigBUS) \
-            processinfo_SIGexit((pinfo), SIGBUS); \
-        else if (dcsigSEGV) \
+        else if (dcsigBUS)                         \
+            processinfo_SIGexit((pinfo), SIGBUS);  \
+        else if (dcsigSEGV)                        \
             processinfo_SIGexit((pinfo), SIGSEGV); \
-        else if (dcsigHUP) \
-            processinfo_SIGexit((pinfo), SIGHUP); \
-        else if (dcsigPIPE) \
+        else if (dcsigHUP)                         \
+            processinfo_SIGexit((pinfo), SIGHUP);  \
+        else if (dcsigPIPE)                        \
             processinfo_SIGexit((pinfo), SIGPIPE); \
     } while (0)
 
@@ -78,14 +79,29 @@ static void stream_net_sig_handler_standalone(int signo)
 {
     switch (signo)
     {
-    case SIGTERM: dcsigTERM = 1; break;
-    case SIGINT:  dcsigINT  = 1; break;
-    case SIGABRT: dcsigABRT = 1; break;
-    case SIGBUS:  dcsigBUS  = 1; break;
-    case SIGSEGV: dcsigSEGV = 1; break;
-    case SIGHUP:  dcsigHUP  = 1; break;
-    case SIGPIPE: dcsigPIPE = 1; break;
-    default: break;
+    case SIGTERM:
+        dcsigTERM = 1;
+        break;
+    case SIGINT:
+        dcsigINT = 1;
+        break;
+    case SIGABRT:
+        dcsigABRT = 1;
+        break;
+    case SIGBUS:
+        dcsigBUS = 1;
+        break;
+    case SIGSEGV:
+        dcsigSEGV = 1;
+        break;
+    case SIGHUP:
+        dcsigHUP = 1;
+        break;
+    case SIGPIPE:
+        dcsigPIPE = 1;
+        break;
+    default:
+        break;
     }
 }
 #endif /* MILK_NO_CLI */
@@ -105,19 +121,33 @@ static inline void stream_net_signal_catch(void)
     dcsigact.sa_flags = 0;
 
     if (sigaction(SIGTERM, &dcsigact, NULL) == -1)
+    {
         PRINT_ERROR("can't catch SIGTERM");
+    }
     if (sigaction(SIGINT, &dcsigact, NULL) == -1)
+    {
         PRINT_ERROR("can't catch SIGINT");
+    }
     if (sigaction(SIGABRT, &dcsigact, NULL) == -1)
+    {
         PRINT_ERROR("can't catch SIGABRT");
+    }
     if (sigaction(SIGBUS, &dcsigact, NULL) == -1)
+    {
         PRINT_ERROR("can't catch SIGBUS");
+    }
     if (sigaction(SIGSEGV, &dcsigact, NULL) == -1)
+    {
         PRINT_ERROR("can't catch SIGSEGV");
+    }
     if (sigaction(SIGHUP, &dcsigact, NULL) == -1)
+    {
         PRINT_ERROR("can't catch SIGHUP");
+    }
     if (sigaction(SIGPIPE, &dcsigact, NULL) == -1)
+    {
         PRINT_ERROR("can't catch SIGPIPE");
+    }
 #else
     set_signal_catch();
 #endif
@@ -135,8 +165,7 @@ static inline void stream_net_signal_catch(void)
  * Temporarily elevates to euid, sets scheduler,
  * then drops back to ruid.
  */
-static inline void stream_net_rt_sched_set(
-    int priority)
+static inline void stream_net_rt_sched_set(int priority)
 {
     struct sched_param sp;
     sp.sched_priority = priority;
@@ -169,38 +198,30 @@ static inline void stream_net_rt_sched_set(
  * On the first call (*iter_p == 0), drains the
  * semaphore and increments *iter_p.
  */
-static inline void stream_net_sem_drain(
-    IMAGE       *img,
-    int         semtrig,
-    long long   *iter_p,
-    PROCESSINFO *pinfo)
+static inline void stream_net_sem_drain(IMAGE       *img,
+                                        int          semtrig,
+                                        long long   *iter_p,
+                                        PROCESSINFO *pinfo)
 {
     if (*iter_p == 0)
     {
-        processinfo_WriteMessage(
-            pinfo, "Driving sem to 0");
+        processinfo_WriteMessage(pinfo, "Driving sem to 0");
         printf("Driving semaphore to zero ... ");
         fflush(stdout);
 
-        int semval =
-            ImageStreamIO_semvalue(img, semtrig);
+        int semval    = ImageStreamIO_semvalue(img, semtrig);
         int semvalcnt = semval;
-        for (long scnt = 0;
-             scnt < semvalcnt; scnt++)
+        for (long scnt = 0; scnt < semvalcnt; scnt++)
         {
-            semval =
-                ImageStreamIO_semvalue(
-                    img, semtrig);
+            semval = ImageStreamIO_semvalue(img, semtrig);
             printf("sem = %d\n", semval);
             fflush(stdout);
-            ImageStreamIO_semtrywait(
-                img, semtrig);
+            ImageStreamIO_semtrywait(img, semtrig);
         }
         printf("done\n");
         fflush(stdout);
 
-        semval =
-            ImageStreamIO_semvalue(img, semtrig);
+        semval = ImageStreamIO_semvalue(img, semtrig);
         printf("-> sem = %d\n", semval);
         fflush(stdout);
 
@@ -221,10 +242,7 @@ static inline void stream_net_sem_drain(
  *
  * Returns the clamped slice index.
  */
-static inline int stream_net_clamp_slice(
-    int raw_slice,
-    int old_slice,
-    int nb_slices)
+static inline int stream_net_clamp_slice(int raw_slice, int old_slice, int nb_slices)
 {
     int slice = raw_slice;
 
@@ -261,22 +279,19 @@ static inline int stream_net_clamp_slice(
  *
  * Returns 1 for semaphore sync, 0 for counter sync.
  */
-static inline int stream_net_decide_sync(
-    int         sem_count,
-    int         force_cnt,
-    int         semtrig,
-    PROCESSINFO *pinfo)
+static inline int stream_net_decide_sync(int          sem_count,
+                                         int          force_cnt,
+                                         int          semtrig,
+                                         PROCESSINFO *pinfo)
 {
     if (sem_count == 0 || force_cnt == 1)
     {
-        processinfo_WriteMessage(
-            pinfo, "sync using counter");
+        processinfo_WriteMessage(pinfo, "sync using counter");
         return 0;
     }
 
     char msg[200];
-    snprintf(msg, 200,
-             "sync using semaphore %d", semtrig);
+    snprintf(msg, 200, "sync using semaphore %d", semtrig);
     processinfo_WriteMessage(pinfo, msg);
     return 1;
 }
@@ -293,9 +308,7 @@ static inline int stream_net_decide_sync(
  *
  * Returns 0 on success, non-zero on timeout.
  */
-static inline int stream_net_sem_wait(
-    IMAGE *img,
-    int   semtrig)
+static inline int stream_net_sem_wait(IMAGE *img, int semtrig)
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_MILK, &ts) == -1)
@@ -304,8 +317,7 @@ static inline int stream_net_sem_wait(
         exit(EXIT_FAILURE);
     }
     ts.tv_sec += 2;
-    return ImageStreamIO_semtimedwait(
-        img, semtrig, &ts);
+    return ImageStreamIO_semtimedwait(img, semtrig, &ts);
 }
 
 

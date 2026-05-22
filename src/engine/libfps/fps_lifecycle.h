@@ -31,12 +31,11 @@ typedef errno_t (*fps_compute_fn)(void);
  *                    entries to FPS
  * @return            0 on success, -1 on failure
  */
-int fps_generic_init(
-    const char      *fps_name,
-    FPS_APP_INFO    *app_info,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b,
-    int             procinfo);
+int fps_generic_init(const char      *fps_name,
+                     FPS_APP_INFO    *app_info,
+                     FPS_CLI_BINDING *bindings,
+                     int              nb_b,
+                     int              procinfo);
 
 
 /**
@@ -50,10 +49,7 @@ int fps_generic_init(
  * @param bindings  Parameter bindings array
  * @param nb_b      Number of bindings
  */
-void fps_loop_override_trigger(
-    FPS             *fps,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b);
+void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
 
 
 /**
@@ -65,9 +61,7 @@ void fps_loop_override_trigger(
  * @param fps       Connected FPS
  * @param delay_sec Delay between iterations (seconds)
  */
-void fps_loop_override_delay(
-    FPS    *fps,
-    double delay_sec);
+void fps_loop_override_delay(FPS *fps, double delay_sec);
 
 
 /**
@@ -81,10 +75,7 @@ void fps_loop_override_delay(
  * @param confcheck_fn  Called each iteration
  * @return              0 on success
  */
-int fps_generic_conf_cb(
-    const char *fps_name,
-    int loop,
-    errno_t (*confcheck_fn)(void));
+int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(void));
 
 
 /**
@@ -97,9 +88,7 @@ int fps_generic_conf_cb(
  * @param loop      Loop flag (1 = continuous)
  * @return          0 on success
  */
-int fps_generic_conf(
-    const char *fps_name,
-    int        loop);
+int fps_generic_conf(const char *fps_name, int loop);
 
 
 /**
@@ -116,13 +105,12 @@ int fps_generic_conf(
  * @param compute_fn  Module computation function
  * @return            0 on success
  */
-int fps_generic_run(
-    const char      *fps_name,
-    FPS_APP_INFO    *app_info,
-    CLICMDARGDEF    *farg,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b,
-    fps_compute_fn  compute_fn);
+int fps_generic_run(const char      *fps_name,
+                    FPS_APP_INFO    *app_info,
+                    CLICMDARGDEF    *farg,
+                    FPS_CLI_BINDING *bindings,
+                    int              nb_b,
+                    fps_compute_fn   compute_fn);
 
 
 /**
@@ -153,9 +141,7 @@ int fps_generic_confstop(const char *fps_name);
  * @param nb_b      Number of bindings
  * @return          1 if trigger stream found
  */
-int fps_check_has_trigger_binding(
-    FPS_CLI_BINDING *bindings,
-    int             nb_b);
+int fps_check_has_trigger_binding(FPS_CLI_BINDING *bindings, int nb_b);
 
 
 #endif /* FPS_LIFECYCLE_H */

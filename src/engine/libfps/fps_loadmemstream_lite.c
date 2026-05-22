@@ -23,8 +23,8 @@
  * Set via milkfps_set_image_array() from the V2
  * macro after CLI_data_init().
  */
-static IMAGE *milkfps_imarray  = NULL;
-static long   milkfps_nb_max   = 0;
+static IMAGE *milkfps_imarray = NULL;
+static long   milkfps_nb_max  = 0;
 
 /**
  * @brief Set the module-local image array for standalone
@@ -37,9 +37,7 @@ static long   milkfps_nb_max   = 0;
  * @param imarray  Image array allocated by CLI_data_init()
  * @param nb_max   Maximum number of images in the array
  */
-void milkfps_set_image_array(
-    IMAGE *imarray,
-    long  nb_max)
+void milkfps_set_image_array(IMAGE *imarray, long nb_max)
 {
     milkfps_imarray = imarray;
     milkfps_nb_max  = nb_max;
@@ -56,17 +54,14 @@ static imageID find_in_local(const char *sname)
     IMAGE *imarray = milkfps_imarray;
     long   nb_max  = milkfps_nb_max;
 
-    if(imarray == NULL || nb_max <= 0)
+    if (imarray == NULL || nb_max <= 0)
     {
         return -1;
     }
 
-    for(long ii = 0; ii < nb_max; ii++)
+    for (long ii = 0; ii < nb_max; ii++)
     {
-        if(imarray[ii].used == 1 &&
-                strncmp(imarray[ii].name, sname,
-                        STRINGMAXLEN_IMAGE_NAME)
-                == 0)
+        if (imarray[ii].used == 1 && strncmp(imarray[ii].name, sname, STRINGMAXLEN_IMAGE_NAME) == 0)
         {
             return ii;
         }
@@ -81,18 +76,14 @@ static imageID find_in_local(const char *sname)
  * Parses the sname for an optional modifier prefix
  * and adjusts load behavior accordingly.
  */
-imageID COREMOD_IOFITS_LoadMemStream(
-    const char *sname,
-    uint64_t   *streamflag,
-    uint32_t   *imLOC)
+imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, uint32_t *imLOC)
 {
     (void) streamflag;
 
     *imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
 
-    if(sname == NULL || strlen(sname) == 0 ||
-            strcmp(sname, " ") == 0 ||
-            strcmp(sname, "NULL") == 0)
+    if (sname == NULL || strlen(sname) == 0 || strcmp(sname, " ") == 0 ||
+        strcmp(sname, "NULL") == 0)
     {
         *imLOC = STREAM_LOAD_SOURCE_NULL;
         return -1;
@@ -101,9 +92,11 @@ imageID COREMOD_IOFITS_LoadMemStream(
     /* Parse prefix */
     FPS_STREAMNAME_PARSED sp = fps_streamname_parse(sname);
 
-    if(sp.error)
+    if (sp.error)
     {
-        printf("ERROR: invalid stream modifier " "in \"%s\"\n", sname);
+        printf("ERROR: invalid stream modifier "
+               "in \"%s\"\n",
+               sname);
         return -1;
     }
 
@@ -113,33 +106,31 @@ imageID COREMOD_IOFITS_LoadMemStream(
     long   nb_max  = milkfps_nb_max;
 
     /* @N: must-not-exist check */
-    if(sp.must_new)
+    if (sp.must_new)
     {
         imageID existing = find_in_local(name);
-        if(existing >= 0)
+        if (existing >= 0)
         {
             printf("@N modifier: \"%s\" already "
-                   "exists locally (ID %ld)\n", name, (long) existing);
+                   "exists locally (ID %ld)\n",
+                   name, (long) existing);
             return -1;
         }
 
-        if(imarray != NULL)
+        if (imarray != NULL)
         {
             char shmpath_n[512];
-            if(ImageStreamIO_filename(
-                        shmpath_n,
-                        sizeof(shmpath_n),
-                        name)
-                    == IMAGESTREAMIO_SUCCESS &&
-                    access(shmpath_n, F_OK) == 0)
+            if (ImageStreamIO_filename(shmpath_n, sizeof(shmpath_n), name) ==
+                    IMAGESTREAMIO_SUCCESS &&
+                access(shmpath_n, F_OK) == 0)
             {
                 IMAGE tmpimg;
-                if(ImageStreamIO_openIm(
-                            &tmpimg, name)
-                        == IMAGESTREAMIO_SUCCESS)
+                if (ImageStreamIO_openIm(&tmpimg, name) == IMAGESTREAMIO_SUCCESS)
                 {
                     ImageStreamIO_closeIm(&tmpimg);
-                    printf("@N modifier: \"%s\" " "exists in SHM\n", name);
+                    printf("@N modifier: \"%s\" "
+                           "exists in SHM\n",
+                           name);
                     return -1;
                 }
             }
@@ -147,64 +138,68 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
     /* @L: local-only -- skip SHM */
-    if(sp.loc == 'L')
+    if (sp.loc == 'L')
     {
         imageID id = find_in_local(name);
-        if(id >= 0)
+        if (id >= 0)
         {
             *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
         }
-        else if(sp.must_exist)
+        else if (sp.must_exist)
         {
-            printf("@LE modifier: \"%s\" not " "found in local memory\n", name);
+            printf("@LE modifier: \"%s\" not "
+                   "found in local memory\n",
+                   name);
         }
         return id;
     }
 
     /* Default / @S: shared memory path */
 
-    if(imarray == NULL || nb_max <= 0)
+    if (imarray == NULL || nb_max <= 0)
     {
         /*
          * No image array (pure library context).
          * Just check SHM existence.
          */
         char shmpath_lib[STRINGMAXLEN_FILE_NAME];
-        if(ImageStreamIO_filename(shmpath_lib, sizeof(shmpath_lib), name) != IMAGESTREAMIO_SUCCESS
-                || access(shmpath_lib, F_OK) != 0)
+        if (ImageStreamIO_filename(shmpath_lib, sizeof(shmpath_lib), name) !=
+                IMAGESTREAMIO_SUCCESS ||
+            access(shmpath_lib, F_OK) != 0)
         {
-            if(sp.must_exist)
+            if (sp.must_exist)
             {
-                printf("@E modifier: \"%s\" " "not found in SHM\n", name);
+                printf("@E modifier: \"%s\" "
+                       "not found in SHM\n",
+                       name);
             }
             return -1;
         }
 
         IMAGE tmpimg;
-        if(ImageStreamIO_openIm(&tmpimg, name)
-                == IMAGESTREAMIO_SUCCESS)
+        if (ImageStreamIO_openIm(&tmpimg, name) == IMAGESTREAMIO_SUCCESS)
         {
             *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
             ImageStreamIO_closeIm(&tmpimg);
             return 0;
         }
-        if(sp.must_exist)
+        if (sp.must_exist)
         {
-            printf("@E modifier: \"%s\" not " "found in SHM\n", name);
+            printf("@E modifier: \"%s\" not "
+                   "found in SHM\n",
+                   name);
         }
         return -1;
     }
 
     /* Check if already loaded locally */
-    if(sp.loc != 'S')
+    if (sp.loc != 'S')
     {
         /* Default: check local first */
-        for(long ii = 0; ii < nb_max; ii++)
+        for (long ii = 0; ii < nb_max; ii++)
         {
-            if(imarray[ii].used == 1 &&
-                    strncmp(imarray[ii].name, name,
-                            STRINGMAXLEN_IMAGE_NAME)
-                    == 0)
+            if (imarray[ii].used == 1 &&
+                strncmp(imarray[ii].name, name, STRINGMAXLEN_IMAGE_NAME) == 0)
             {
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
                 return ii;
@@ -214,15 +209,15 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
     /* Find a free slot */
     long slot = -1;
-    for(long ii = 0; ii < nb_max; ii++)
+    for (long ii = 0; ii < nb_max; ii++)
     {
-        if(imarray[ii].used == 0)
+        if (imarray[ii].used == 0)
         {
             slot = ii;
             break;
         }
     }
-    if(slot == -1)
+    if (slot == -1)
     {
         return -1;
     }
@@ -233,21 +228,21 @@ imageID COREMOD_IOFITS_LoadMemStream(
     {
         char shmpath[512];
         snprintf(shmpath, sizeof(shmpath), "/milk/shm/%s.im.shm", name);
-        if(access(shmpath, F_OK) != 0)
+        if (access(shmpath, F_OK) != 0)
         {
             /* SHM file does not exist */
-            if(sp.must_exist)
+            if (sp.must_exist)
             {
-                printf("@E modifier: \"%s\" " "not found\n", name);
+                printf("@E modifier: \"%s\" "
+                       "not found\n",
+                       name);
             }
             return -1;
         }
     }
 
     /* Open stream into the slot */
-    if(ImageStreamIO_openIm(
-                &imarray[slot], name)
-            == IMAGESTREAMIO_SUCCESS)
+    if (ImageStreamIO_openIm(&imarray[slot], name) == IMAGESTREAMIO_SUCCESS)
     {
         imarray[slot].used = 1;
         strncpy(imarray[slot].name, name, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -255,7 +250,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         return slot;
     }
 
-    if(sp.must_exist)
+    if (sp.must_exist)
     {
         printf("@E modifier: \"%s\" not found\n", name);
     }
@@ -282,8 +277,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
  * Overridden at link time by the real implementation
  * in COREMOD_iofits when building the full CLI.
  */
-__attribute__((weak, visibility("hidden")))
-int file_exists(const char *filename)
+__attribute__((weak, visibility("hidden"))) int file_exists(const char *filename)
 {
     return access(filename, F_OK) != -1;
 }
@@ -295,7 +289,7 @@ __attribute__((weak, visibility("hidden")))
 int is_fits_file(const char *filename)
 {
     const char *ext = strrchr(filename, '.');
-    if(ext && strcmp(ext, ".fits") == 0)
+    if (ext && strcmp(ext, ".fits") == 0)
     {
         return 1;
     }
@@ -308,10 +302,7 @@ int is_fits_file(const char *filename)
  * Returns -1 (no-op) unless overridden by
  * COREMOD_iofits at link time.
  */
-__attribute__((weak, visibility("hidden")))
-int save_fits(
-    const char *imname,
-    const char *filename)
+__attribute__((weak, visibility("hidden"))) int save_fits(const char *imname, const char *filename)
 {
     (void) imname;
     (void) filename;
@@ -324,12 +315,10 @@ int save_fits(
  * Returns -1 (no-op) unless overridden by
  * COREMOD_iofits at link time.
  */
-__attribute__((weak, visibility("hidden")))
-int load_fits(
-    const char *filename,
-    const char *imname,
-    int        verbose,
-    imageID    *ID)
+__attribute__((weak, visibility("hidden"))) int load_fits(const char *filename,
+                                                          const char *imname,
+                                                          int         verbose,
+                                                          imageID    *ID)
 {
     (void) filename;
     (void) imname;
@@ -344,11 +333,9 @@ int load_fits(
  * Returns -1 (no-op) unless overridden by
  * COREMOD_memory at link time.
  */
-__attribute__((weak, visibility("hidden")))
-int copy_image_ID(
-    const char *name1,
-    const char *name2,
-    int        shared)
+__attribute__((weak, visibility("hidden"))) int copy_image_ID(const char *name1,
+                                                              const char *name2,
+                                                              int         shared)
 {
     (void) name1;
     (void) name2;

@@ -37,7 +37,7 @@ errno_t memory_re_alloc()
     //printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %ld\n", current_NBimage, NB_IMAGES_BUFFER, dcnimg);
     //fflush(stdout);
 
-    if((current_NBimage + NB_IMAGES_BUFFER) > dcnimg)
+    if ((current_NBimage + NB_IMAGES_BUFFER) > dcnimg)
     {
         long   tmplong;
         IMAGE *ptrtmp;
@@ -45,32 +45,33 @@ errno_t memory_re_alloc()
         //   if(dcdebug>0)
         //    {
         printf("%p IMAGE STRUCT SIZE = %ld\n", dcimg, (long) sizeof(IMAGE));
-        printf("REALLOCATING IMAGE DATA BUFFER: %ld -> %ld\n",
-               dcnimg, dcnimg + NB_IMAGES_BUFFER_REALLOC);
+        printf("REALLOCATING IMAGE DATA BUFFER: %ld -> %ld\n", dcnimg,
+               dcnimg + NB_IMAGES_BUFFER_REALLOC);
         fflush(stdout);
         //    }
-        tmplong           = dcnimg;
-        dcnimg = dcnimg + NB_IMAGES_BUFFER_REALLOC;
-        ptrtmp = (IMAGE *) realloc(dcimg, sizeof(IMAGE) * dcnimg);
-        if(dcdebug > 0)
+        tmplong = dcnimg;
+        dcnimg  = dcnimg + NB_IMAGES_BUFFER_REALLOC;
+        ptrtmp  = (IMAGE *) realloc(dcimg, sizeof(IMAGE) * dcnimg);
+        if (dcdebug > 0)
         {
             printf("NEW POINTER = %p\n", ptrtmp);
             fflush(stdout);
         }
         dcimg = ptrtmp;
-        if(dcimg == NULL)
+        if (dcimg == NULL)
         {
-            PRINT_ERROR("Reallocation of dcimg has failed - exiting " "program");
+            PRINT_ERROR("Reallocation of dcimg has failed - exiting "
+                        "program");
             return -1; //  exit(0);
         }
-        if(dcdebug > 0)
+        if (dcdebug > 0)
         {
             printf("REALLOCATION DONE\n");
             fflush(stdout);
         }
 
         imageID i;
-        for(i = tmplong; i < dcnimg; i++)
+        for (i = tmplong; i < dcnimg; i++)
         {
             dcimg[i].used      = 0;
             dcimg[i].createcnt = 0;
@@ -89,26 +90,27 @@ errno_t memory_re_alloc()
 #ifdef DATA_STATIC_ALLOC
     // variable static allocation mode
 #else
-    if((compute_nb_variable() + NB_VARIABLES_BUFFER) > dcnvar)
+    if ((compute_nb_variable() + NB_VARIABLES_BUFFER) > dcnvar)
     {
         long tmplong;
 
-        if(dcdebug > 0)
+        if (dcdebug > 0)
         {
             printf("REALLOCATING VARIABLE DATA BUFFER\n");
             fflush(stdout);
         }
         tmplong = dcnvar;
-        dcnvar = dcnvar + NB_VARIABLES_BUFFER_REALLOC;
-        dcvar = (VARIABLE *) realloc(dcvar, sizeof(VARIABLE) * dcnvar);
-        if(dcvar == NULL)
+        dcnvar  = dcnvar + NB_VARIABLES_BUFFER_REALLOC;
+        dcvar   = (VARIABLE *) realloc(dcvar, sizeof(VARIABLE) * dcnvar);
+        if (dcvar == NULL)
         {
-            PRINT_ERROR("Reallocation of dcvar has failed - exiting " "program");
+            PRINT_ERROR("Reallocation of dcvar has failed - exiting "
+                        "program");
             return -1; // exit(0);
         }
 
         int i;
-        for(i = tmplong; i < dcnvar; i++)
+        for (i = tmplong; i < dcnvar; i++)
         {
             dcvar[i].used = 0;
             dcvar[i].type = -1;

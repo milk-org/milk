@@ -42,9 +42,7 @@ static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
  *
  * @param libname  Full path to the .so file
  */
-errno_t load_sharedobj(
-    const char *__restrict libname
-)
+errno_t load_sharedobj(const char *__restrict libname)
 {
     DEBUG_TRACE_FSTART();
 
@@ -54,15 +52,15 @@ errno_t load_sharedobj(
     // check if already loaded
     DEBUG_TRACEPOINT("--- %ld modules loaded ---", data.NBmodule);
     int mmatch = -1;
-    for(int m = 0; m < data.NBmodule; m++)
+    for (int m = 0; m < data.NBmodule; m++)
     {
         //printf("  [%03d] %s\n", m, data.module[m].sofilename);
-        if(strcmp(libnameloaded, data.module[m].sofilename) == 0)
+        if (strcmp(libnameloaded, data.module[m].sofilename) == 0)
         {
             mmatch = m;
         }
     }
-    if(mmatch > -1)
+    if (mmatch > -1)
     {
         printf("    Shared object %s already loaded - no action taken\n", libnameloaded);
         DEBUG_TRACE_FEXIT();
@@ -70,17 +68,20 @@ errno_t load_sharedobj(
     }
 
     void *handle = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-    if(!handle)
+    if (!handle)
     {
         printf(KRED "FAILED TO LOAD : %s\n" KRES, libname);
         const char *errstr = dlerror();
-        if(errstr) fprintf(stderr, KRED "%s\n" KRES, errstr);
+        if (errstr)
+        {
+            fprintf(stderr, KRED "%s\n" KRES, errstr);
+        }
         //exit(EXIT_FAILURE);
     }
     else
     {
         dlerror();
-        if(!getenv("MILK_QUIET") && dcquiet == 0)
+        if (!getenv("MILK_QUIET") && dcquiet == 0)
         {
             printf(KGRN "   LOADED : %s\n" KRES, libname);
         }
@@ -105,9 +106,7 @@ errno_t load_sharedobj(
  *
  * @param modulename  Module base name or absolute path
  */
-errno_t load_module_shared(
-    const char *__restrict modulename
-)
+errno_t load_module_shared(const char *__restrict modulename)
 {
     DEBUG_TRACE_FSTART();
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
@@ -117,19 +116,19 @@ errno_t load_module_shared(
 
     {
         int slen = snprintf(modulenameLC, STRINGMAXLEN_MODULE_SOFILENAME, "%s", modulename);
-        if(slen < 1)
+        if (slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= STRINGMAXLEN_MODULE_SOFILENAME)
+        if (slen >= STRINGMAXLEN_MODULE_SOFILENAME)
         {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
     }
 
-    if(modulename[0] == '/')
+    if (modulename[0] == '/')
     {
         strncpy(libname, modulename, STRINGMAXLEN_MODULE_SOFILENAME - 1);
     }
@@ -137,20 +136,19 @@ errno_t load_module_shared(
     {
         // Assemble absolute path module filename
         //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
-        DEBUG_TRACEPOINT(
-            "Searching for shared object in directory [dcinstalldir]/lib : "
-            "%s/lib", dcinstalldir);
+        DEBUG_TRACEPOINT("Searching for shared object in directory [dcinstalldir]/lib : "
+                         "%s/lib",
+                         dcinstalldir);
 
         {
-            int slen = snprintf(libname,
-                                STRINGMAXLEN_MODULE_SOFILENAME,
-                                "%.100s/lib/lib%.50s.so", dcinstalldir, modulenameLC);
-            if(slen < 1)
+            int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME, "%.100s/lib/lib%.50s.so",
+                                dcinstalldir, modulenameLC);
+            if (slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
-            if(slen >= STRINGMAXLEN_MODULE_SOFILENAME)
+            if (slen >= STRINGMAXLEN_MODULE_SOFILENAME)
             {
                 PRINT_ERROR("snprintf string truncation");
                 abort(); // can't handle this error any other way
@@ -161,9 +159,6 @@ errno_t load_module_shared(
     DEBUG_TRACEPOINT("libname = %s", libname);
 
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
-
-
-
 
 
     strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
@@ -189,10 +184,9 @@ errno_t load_module_shared(
     int target_idx = -1;
 
     // Case 1: sofilename already set by prior call
-    for(int m = 0; m < data.NBmodule; m++)
+    for (int m = 0; m < data.NBmodule; m++)
     {
-        if(strcmp(data.module[m].sofilename,
-                 libname) == 0)
+        if (strcmp(data.module[m].sofilename, libname) == 0)
         {
             target_idx = m;
             break;
@@ -203,18 +197,14 @@ errno_t load_module_shared(
     // name. Handles modules loaded transitively by
     // an earlier dlopen (sofilename still empty).
     // E.g. loadname "milkpsf" matches name "psf".
-    if(target_idx < 0)
+    if (target_idx < 0)
     {
         int llen = (int) strlen(modulenameLC);
-        for(long m = 0; m < data.NBmodule; m++)
+        for (long m = 0; m < data.NBmodule; m++)
         {
             const char *mname = data.module[m].name;
-            int mlen = (int) strlen(mname);
-            if(mlen > 0
-               && mlen <= llen
-               && strcmp(modulenameLC
-                         + llen - mlen,
-                         mname) == 0)
+            int         mlen  = (int) strlen(mname);
+            if (mlen > 0 && mlen <= llen && strcmp(modulenameLC + llen - mlen, mname) == 0)
             {
                 target_idx = (int) m;
                 break;
@@ -223,7 +213,7 @@ errno_t load_module_shared(
     }
 
     // Case 3: fallback
-    if(target_idx < 0)
+    if (target_idx < 0)
     {
         target_idx = (int) data.moduleindex;
     }
@@ -254,12 +244,12 @@ errno_t load_module_shared_local()
 {
     DEBUG_TRACE_FSTART();
 
-    char           libname[STRINGMAXLEN_FULLFILENAME + STRINGMAXLEN_DIRNAME];
-    char           dirname[STRINGMAXLEN_DIRNAME];
+    char libname[STRINGMAXLEN_FULLFILENAME + STRINGMAXLEN_DIRNAME];
+    char dirname[STRINGMAXLEN_DIRNAME];
 
     WRITE_DIRNAME(dirname, "./milklib");
 
-    if(dcquiet == 0)
+    if (dcquiet == 0)
     {
         printf("load modules from directory %s\n", dirname);
     }
@@ -267,34 +257,35 @@ errno_t load_module_shared_local()
     int loopOK  = 0;
     int iter    = 0;
     int itermax = 4; // number of passes
-    while((loopOK == 0) && (iter < itermax))
+    while ((loopOK == 0) && (iter < itermax))
     {
         DIR           *d;
         struct dirent *dir;
 
         loopOK = 1;
         d      = opendir(dirname);
-        if(d)
+        if (d)
         {
-            while((dir = readdir(d)) != NULL)
+            while ((dir = readdir(d)) != NULL)
             {
                 char *dot = strrchr(dir->d_name, '.');
-                if(dot && !strcmp(dot, ".so"))
+                if (dot && !strcmp(dot, ".so"))
                 {
                     snprintf(libname, sizeof(libname), "%s/lib/%s", dcinstalldir, dir->d_name);
                     //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
                     //fflush(stdout);
 
-                    printf("    [%5d] Loading shared object " "\"%s\"\n", DLib_index, libname);
+                    printf("    [%5d] Loading shared object "
+                           "\"%s\"\n",
+                           DLib_index, libname);
                     void *handle = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-                    if(!handle)
+                    if (!handle)
                     {
                         const char *errstr = dlerror();
                         fprintf(stderr,
-                                KMAG
-                                "        WARNING: linker "
-                                "pass # %d, module # %d\n  "
-                                "        %s\n" KRES,
+                                KMAG "        WARNING: linker "
+                                     "pass # %d, module # %d\n  "
+                                     "        %s\n" KRES,
                                 iter, DLib_index, errstr ? errstr : "Unknown error");
                         fflush(stderr);
                         //exit(EXIT_FAILURE);
@@ -312,15 +303,17 @@ errno_t load_module_shared_local()
 
             closedir(d);
         }
-        if(iter > 0)
-            if(loopOK == 1)
+        if (iter > 0)
+        {
+            if (loopOK == 1)
             {
                 printf(KGRN "        Linker pass #%d successful\n" KRES, iter);
             }
+        }
         iter++;
     }
 
-    if(loopOK != 1)
+    if (loopOK != 1)
     {
         printf("Some libraries could not be loaded -> EXITING\n");
         exit(2);
@@ -349,13 +342,12 @@ errno_t load_module_shared_local()
  * @param versionminor  Minor version number
  * @param versionpatch  Patch version number
  */
-errno_t RegisterModule(
-    const char *__restrict FileName,
-    const char *__restrict PackageName,
-    const char *__restrict InfoString,
-    int                    versionmajor,
-    int                    versionminor,
-    int                    versionpatch)
+errno_t RegisterModule(const char *__restrict FileName,
+                       const char *__restrict PackageName,
+                       const char *__restrict InfoString,
+                       int versionmajor,
+                       int versionminor,
+                       int versionpatch)
 {
     DEBUG_TRACE_FSTART();
 
@@ -374,24 +366,29 @@ errno_t RegisterModule(
             FILE *fp = fopen("/proc/self/cmdline", "r");
             if (fp)
             {
-                char buf[4096];
+                char   buf[4096];
                 size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
                 fclose(fp);
                 buf[n] = '\0';
 
                 /* Skip argv[0] */
                 size_t i = 0;
-                while (i < n && buf[i] != '\0') i++;
+                while (i < n && buf[i] != '\0')
+                {
+                    i++;
+                }
                 i++;
 
                 while (i < n)
                 {
                     const char *tok = buf + i;
                     /* Stop at bare '-' (stdin) or non-option */
-                    if (tok[0] != '-' || tok[1] == '\0') break;
+                    if (tok[0] != '-' || tok[1] == '\0')
+                    {
+                        break;
+                    }
 
-                    if (strcmp(tok, "--quiet") == 0 ||
-                        strcmp(tok, "-h1") == 0 ||
+                    if (strcmp(tok, "--quiet") == 0 || strcmp(tok, "-h1") == 0 ||
                         strcmp(tok, "--help-oneline") == 0)
                     {
                         setenv("MILK_QUIET", "1", 0);
@@ -414,10 +411,13 @@ errno_t RegisterModule(
                         }
                     }
 
-                    while (i < n && buf[i] != '\0') i++;
+                    while (i < n && buf[i] != '\0')
+                    {
+                        i++;
+                    }
                     i++;
                 }
-                quiet_found:;
+            quiet_found:;
             }
         }
     } // if (!quiet_scanned)
@@ -425,13 +425,13 @@ errno_t RegisterModule(
 
     int OKmsg = 0;
 
-    int moduleindex =  data.NBmodule;
+    int moduleindex  = data.NBmodule;
     data.moduleindex = moduleindex; // current module index
 
     data.NBmodule++;
 
 
-    if(strlen(data.modulename) == 0)
+    if (strlen(data.modulename) == 0)
     {
         strncpy(data.module[moduleindex].name, "???", STRINGMAXLEN_MODULE_NAME - 1);
     }
@@ -441,10 +441,10 @@ errno_t RegisterModule(
     }
 
     int stringlen = strlen(data.moduleshortname);
-    if(stringlen == 0)
+    if (stringlen == 0)
     {
         // if no shortname provided, try to use default
-        if(strlen(data.moduleshortname_default) > 0)
+        if (strlen(data.moduleshortname_default) > 0)
         {
             // otherwise, construct call key as <shortname_default>.<CLIkey>
             strncpy(data.moduleshortname, data.moduleshortname_default,
@@ -473,10 +473,10 @@ errno_t RegisterModule(
     //printf("--- libnameloaded : %s\n", libnameloaded);
 
 
-    if(dcprogstatus == 0)
+    if (dcprogstatus == 0)
     {
         OKmsg = 1;
-        if(!getenv("MILK_QUIET") && dcquiet == 0)
+        if (!getenv("MILK_QUIET") && dcquiet == 0)
         {
             printf(".");
         }
@@ -484,20 +484,20 @@ errno_t RegisterModule(
         //	fflush(stdout);
     }
 
-    if(dcprogstatus == 1)
+    if (dcprogstatus == 1)
     {
         OKmsg = 1;
-        DEBUG_TRACEPOINT(
-            "  %02d  Found unloaded shared object in ./libs/ -> LOADING "
-            "%10s  module %40s", moduleindex, PackageName, FileName);
+        DEBUG_TRACEPOINT("  %02d  Found unloaded shared object in ./libs/ -> LOADING "
+                         "%10s  module %40s",
+                         moduleindex, PackageName, FileName);
         fflush(stdout);
     }
 
-    if(OKmsg == 0)
+    if (OKmsg == 0)
     {
-        printf(
-            "  %02d  ERROR: module load requested outside of normal step "
-            "-> LOADING %10s  module %40s", moduleindex, PackageName, FileName);
+        printf("  %02d  ERROR: module load requested outside of normal step "
+               "-> LOADING %10s  module %40s",
+               moduleindex, PackageName, FileName);
         fflush(stdout);
     }
 
@@ -510,7 +510,7 @@ errno_t RegisterModule(
     data.module[data.moduleindex].type = MODULE_TYPE_STARTUP;
 
     //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
-    if(data.module[data.moduleindex].sofilename[0] != '/')
+    if (data.module[data.moduleindex].sofilename[0] != '/')
     {
         strncpy(data.module[data.moduleindex].sofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
     }
@@ -520,11 +520,10 @@ errno_t RegisterModule(
 
     // Copy dependency info from transient DATA fields
     data.module[data.moduleindex].nbdep = data.module_nbdep;
-    for(int di = 0; di < data.module_nbdep; di++)
+    for (int di = 0; di < data.module_nbdep; di++)
     {
-        strncpy(
-            data.module[data.moduleindex].depname[di],
-            data.module_depname[di], STRINGMAXLEN_MODULE_LOADNAME - 1);
+        strncpy(data.module[data.moduleindex].depname[di], data.module_depname[di],
+                STRINGMAXLEN_MODULE_LOADNAME - 1);
     }
     // Reset transient dep storage
     data.module_nbdep = 0;
@@ -547,45 +546,42 @@ errno_t RegisterModule(
  *
  * @return New data.NBcmd count
  */
-uint32_t RegisterCLIcommand(
-    const char *__restrict CLIkey,
-    const char *__restrict CLImodulesrc,
-    errno_t (*CLIfptr)(),
-    const char *__restrict CLIinfo,
-    const char *__restrict CLIsyntax,
-    const char *__restrict CLIexample,
-    const char *__restrict CLICcall)
+uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
+                            const char *__restrict CLImodulesrc,
+                            errno_t (*CLIfptr)(),
+                            const char *__restrict CLIinfo,
+                            const char *__restrict CLIsyntax,
+                            const char *__restrict CLIexample,
+                            const char *__restrict CLICcall)
 {
     DEBUG_TRACE_FSTART();
 
-    DEBUG_TRACEPOINT("FARG CLIkey %s -> command index %u / %d",
-                     CLIkey, data.NBcmd, DATA_NB_MAX_COMMAND);
+    DEBUG_TRACEPOINT("FARG CLIkey %s -> command index %u / %d", CLIkey, data.NBcmd,
+                     DATA_NB_MAX_COMMAND);
 
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
 
-    if(data.cmd[data.NBcmd].moduleindex == -1)
+    if (data.cmd[data.NBcmd].moduleindex == -1)
     {
         strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
         strncpy(data.cmd[data.NBcmd].key, CLIkey, STRINGMAXLEN_CMD_KEY - 1);
     }
     else
     {
-
-        if(strlen(data.module[data.moduleindex].shortname) == 0)
+        if (strlen(data.module[data.moduleindex].shortname) == 0)
         {
             strncpy(data.cmd[data.NBcmd].key, CLIkey, STRINGMAXLEN_CMD_KEY - 1);
         }
         else
         {
             // otherwise, construct call key as <shortname>.<CLIkey>
-            snprintf(data.cmd[data.NBcmd].key,
-                     STRINGMAXLEN_CMD_KEY,
-                     "%.30s.%.30s", data.module[data.moduleindex].shortname, CLIkey);
+            snprintf(data.cmd[data.NBcmd].key, STRINGMAXLEN_CMD_KEY, "%.30s.%.30s",
+                     data.module[data.moduleindex].shortname, CLIkey);
         }
     }
 
     DEBUG_TRACEPOINT("set module name");
-    if(strlen(data.modulename) == 0)
+    if (strlen(data.modulename) == 0)
     {
         strncpy(data.cmd[data.NBcmd].module, "unknown", STRINGMAXLEN_MODULE_NAME - 1);
     }
@@ -642,9 +638,7 @@ uint32_t RegisterCLIcommand(
  * @param CLIfptr     Function pointer to execute
  * @return Index of the newly registered command
  */
-uint32_t RegisterCLIcmd(
-    CLICMDDATA CLIcmddata,
-    errno_t (*CLIfptr)())
+uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
 {
     // Command registration logic
     DEBUG_TRACE_FSTART();
@@ -660,31 +654,28 @@ uint32_t RegisterCLIcmd(
     }
 
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
-    if(data.cmd[data.NBcmd].moduleindex == -1)
+    if (data.cmd[data.NBcmd].moduleindex == -1)
     {
         strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
         strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY - 1);
     }
     else
     {
-
-        if(strlen(data.module[data.moduleindex].shortname) == 0)
+        if (strlen(data.module[data.moduleindex].shortname) == 0)
         {
             strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY);
         }
         else
         {
             // otherwise, construct call key as <shortname>.<CLIkey>
-            int slen = snprintf(data.cmd[data.NBcmd].key,
-                                STRINGMAXLEN_CMD_KEY,
-                                "%.30s.%.30s",
+            int slen = snprintf(data.cmd[data.NBcmd].key, STRINGMAXLEN_CMD_KEY, "%.30s.%.30s",
                                 data.module[data.moduleindex].shortname, CLIcmddata.key);
-            if(slen < 1)
+            if (slen < 1)
             {
                 PRINT_ERROR("failed to write call key");
                 abort();
             }
-            if(slen >= STRINGMAXLEN_CMD_KEY)
+            if (slen >= STRINGMAXLEN_CMD_KEY)
             {
                 PRINT_ERROR("call key string too long");
                 abort();
@@ -692,7 +683,7 @@ uint32_t RegisterCLIcmd(
         }
     }
 
-    if(strlen(data.modulename) == 0)
+    if (strlen(data.modulename) == 0)
     {
         strncpy(data.cmd[data.NBcmd].module, "unknown", STRINGMAXLEN_MODULE_NAME - 1);
     }
@@ -709,12 +700,12 @@ uint32_t RegisterCLIcmd(
 
 
     // assemble argument syntax string for help
-    char argstring[STRINGMAXLEN_CMD_SYNTAX];
-    CLICMDARGDEF *farg_visible = (CLICMDARGDEF *) malloc(sizeof(CLICMDARGDEF) * CLIcmddata.nbarg);
-    int nbarg_visible = 0;
-    for(int argi = 0; argi < CLIcmddata.nbarg; argi++)
+    char          argstring[STRINGMAXLEN_CMD_SYNTAX];
+    CLICMDARGDEF *farg_visible  = (CLICMDARGDEF *) malloc(sizeof(CLICMDARGDEF) * CLIcmddata.nbarg);
+    int           nbarg_visible = 0;
+    for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
     {
-        if(CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        if (CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             farg_visible[nbarg_visible] = CLIcmddata.funcfpscliarg[argi];
             nbarg_visible++;
@@ -736,12 +727,12 @@ uint32_t RegisterCLIcmd(
     strncpy(data.cmd[data.NBcmd].Ccall, "--callstring--", STRINGMAXLEN_CMD_CCALL - 1);
 
 
-    DEBUG_TRACEPOINT(
-        "define arguments to CLI function from content of " "CLIcmddata.funcfpscliarg");
+    DEBUG_TRACEPOINT("define arguments to CLI function from content of "
+                     "CLIcmddata.funcfpscliarg");
     data.cmd[data.NBcmd].nbarg = 0; // count only primary mandatory arguments
-    for(int argi = 0; argi < CLIcmddata.nbarg; argi++)
+    for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
     {
-        if(CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        if (CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             data.cmd[data.NBcmd].nbarg++;
         }
@@ -749,18 +740,18 @@ uint32_t RegisterCLIcmd(
 
     // Still allocate the full array for all parameters (including hidden ones)
     data.cmd[data.NBcmd].nbparam = CLIcmddata.nbarg;
-    if(CLIcmddata.nbarg > 0)
+    if (CLIcmddata.nbarg > 0)
     {
         data.cmd[data.NBcmd].argdata =
             (CLICMDARGDATA *) malloc(sizeof(CLICMDARGDATA) * CLIcmddata.nbarg);
 
-        for(int argi = 0; argi < CLIcmddata.nbarg; argi++)
+        for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
         {
-            data.cmd[data.NBcmd].argdata[argi].type = CLIcmddata.funcfpscliarg[argi].type;
+            data.cmd[data.NBcmd].argdata[argi].type   = CLIcmddata.funcfpscliarg[argi].type;
             data.cmd[data.NBcmd].argdata[argi].fpflag = CLIcmddata.funcfpscliarg[argi].fpflag;
 
-            strncpy(data.cmd[data.NBcmd].argdata[argi].descr,
-                    CLIcmddata.funcfpscliarg[argi].descr, STRINGMAXLEN_FPSCLIARG_DESCR - 1);
+            strncpy(data.cmd[data.NBcmd].argdata[argi].descr, CLIcmddata.funcfpscliarg[argi].descr,
+                    STRINGMAXLEN_FPSCLIARG_DESCR - 1);
 
             strncpy(data.cmd[data.NBcmd].argdata[argi].fpstag,
                     CLIcmddata.funcfpscliarg[argi].fpstag, STRINGMAXLEN_FPSCLIARG_TAG - 1);
@@ -769,55 +760,54 @@ uint32_t RegisterCLIcmd(
                     CLIcmddata.funcfpscliarg[argi].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE - 1);
 
             // Set default values
-            switch(data.cmd[data.NBcmd].argdata[argi].type)
+            switch (data.cmd[data.NBcmd].argdata[argi].type)
             {
+            case FPTYPE_FLOAT32:
+                data.cmd[data.NBcmd].argdata[argi].val.f32 =
+                    atof(CLIcmddata.funcfpscliarg[argi].example);
+                break;
 
-                case FPTYPE_FLOAT32:
-                    data.cmd[data.NBcmd].argdata[argi].val.f32 =
-                        atof(CLIcmddata.funcfpscliarg[argi].example);
-                    break;
+            case FPTYPE_FLOAT64:
+                data.cmd[data.NBcmd].argdata[argi].val.f64 =
+                    atof(CLIcmddata.funcfpscliarg[argi].example);
+                break;
 
-                case FPTYPE_FLOAT64:
-                    data.cmd[data.NBcmd].argdata[argi].val.f64 =
-                        atof(CLIcmddata.funcfpscliarg[argi].example);
-                    break;
+            case FPTYPE_INT32:
+                data.cmd[data.NBcmd].argdata[argi].val.i32 =
+                    (int32_t) atol(CLIcmddata.funcfpscliarg[argi].example);
+                break;
 
-                case FPTYPE_INT32:
-                    data.cmd[data.NBcmd].argdata[argi].val.i32 =
-                        (int32_t) atol(CLIcmddata.funcfpscliarg[argi].example);
-                    break;
+            case FPTYPE_UINT32:
+                data.cmd[data.NBcmd].argdata[argi].val.ui32 =
+                    (uint32_t) atol(CLIcmddata.funcfpscliarg[argi].example);
+                break;
 
-                case FPTYPE_UINT32:
-                    data.cmd[data.NBcmd].argdata[argi].val.ui32 =
-                        (uint32_t) atol(CLIcmddata.funcfpscliarg[argi].example);
-                    break;
+            case FPTYPE_INT64:
+                data.cmd[data.NBcmd].argdata[argi].val.i64 =
+                    (int64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
+                break;
 
-                case FPTYPE_INT64:
-                    data.cmd[data.NBcmd].argdata[argi].val.i64 =
-                        (int64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
-                    break;
+            case FPTYPE_UINT64:
+                data.cmd[data.NBcmd].argdata[argi].val.ui64 =
+                    (uint64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
+                break;
 
-                case FPTYPE_UINT64:
-                    data.cmd[data.NBcmd].argdata[argi].val.ui64 =
-                        (uint64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
-                    break;
+            case FPTYPE_ONOFF:
+                data.cmd[data.NBcmd].argdata[argi].val.ui64 =
+                    (int64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
+                break;
 
-                case FPTYPE_ONOFF:
-                    data.cmd[data.NBcmd].argdata[argi].val.ui64 =
-                        (int64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
-                    break;
-
-                case FPTYPE_STRING:
-                case FPTYPE_STRING_NOT_STREAM:
-                case FPTYPE_STREAMNAME:
-                case FPTYPE_FILENAME:
-                case FPTYPE_FITSFILENAME:
-                case FPTYPE_FPSNAME:
-                case FPTYPE_DIRNAME:
-                case FPTYPE_EXECFILENAME:
-                    strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                            CLIcmddata.funcfpscliarg[argi].example, STRINGMAXLEN_CLICMDARG - 1);
-                    break;
+            case FPTYPE_STRING:
+            case FPTYPE_STRING_NOT_STREAM:
+            case FPTYPE_STREAMNAME:
+            case FPTYPE_FILENAME:
+            case FPTYPE_FITSFILENAME:
+            case FPTYPE_FPSNAME:
+            case FPTYPE_DIRNAME:
+            case FPTYPE_EXECFILENAME:
+                strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                        CLIcmddata.funcfpscliarg[argi].example, STRINGMAXLEN_CLICMDARG - 1);
+                break;
             }
         }
     }
@@ -843,5 +833,5 @@ uint32_t RegisterCLIcmd(
 
     DEBUG_TRACE_FEXIT();
 
-    return ((uint32_t)((int) data.NBcmd - 1));
+    return ((uint32_t) ((int) data.NBcmd - 1));
 }

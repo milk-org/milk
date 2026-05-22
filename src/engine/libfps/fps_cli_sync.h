@@ -19,9 +19,7 @@
  * @param argc  Argument count
  * @param argv  Argument vector
  */
-void fps_cli_set_standalone_args(
-    int  argc,
-    char **argv);
+void fps_cli_set_standalone_args(int argc, char **argv);
 
 
 /**
@@ -38,11 +36,7 @@ void fps_cli_set_standalone_args(
  * @param nb_b      Number of bindings
  * @return          RETURN_SUCCESS on success
  */
-errno_t fps_process_cli_and_sync(
-    FPS             *fps,
-    CLICMDARGDEF    *farg,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b);
+errno_t fps_process_cli_and_sync(FPS *fps, CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int nb_b);
 
 
 #endif /* FPS_CLI_SYNC_H */

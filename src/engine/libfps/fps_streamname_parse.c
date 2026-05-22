@@ -27,58 +27,60 @@
  * @param raw  Raw stream name string
  * @return     Parsed result with modifier flags
  */
-FPS_STREAMNAME_PARSED fps_streamname_parse(
-    const char *raw
-)
+FPS_STREAMNAME_PARSED fps_streamname_parse(const char *raw)
 {
     FPS_STREAMNAME_PARSED p;
     memset(&p, 0, sizeof(p));
     p.name = raw;
 
-    if(raw == NULL || raw[0] == '\0')
+    if (raw == NULL || raw[0] == '\0')
     {
         return p;
     }
 
     /* Must start with '@' */
-    if(raw[0] != '@')
+    if (raw[0] != '@')
     {
         return p;
     }
 
     /* Find the ':' separator */
     const char *colon = strchr(raw, ':');
-    if(colon == NULL)
+    if (colon == NULL)
     {
         /* No colon -> not a valid prefix */
         return p;
     }
 
     /* Empty modifier block "@:" -> no modifiers */
-    int modlen = (int)(colon - raw - 1);
-    if(modlen <= 0)
+    int modlen = (int) (colon - raw - 1);
+    if (modlen <= 0)
     {
         return p;
     }
 
     /* Scan modifier letters */
-    char loc = '\0';
+    char loc        = '\0';
     int  must_exist = 0;
-    int  must_new = 0;
-    int  nloc = 0;
+    int  must_new   = 0;
+    int  nloc       = 0;
 
-    for(int ii = 1; ii <= modlen; ii++)
+    for (int ii = 1; ii <= modlen; ii++)
     {
-        switch(raw[ii])
+        switch (raw[ii])
         {
-        case 'L': case 'S': loc = raw[ii];
+        case 'L':
+        case 'S':
+            loc = raw[ii];
             nloc++;
             break;
 
-        case 'E': must_exist = 1;
+        case 'E':
+            must_exist = 1;
             break;
 
-        case 'N': must_new = 1;
+        case 'N':
+            must_new = 1;
             break;
 
         default:
@@ -91,7 +93,7 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
     }
 
     /* Multiple location modifiers is an error */
-    if(nloc > 1)
+    if (nloc > 1)
     {
         memset(&p, 0, sizeof(p));
         p.name  = raw;
@@ -100,7 +102,7 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
     }
 
     /* E and N are mutually exclusive */
-    if(must_exist && must_new)
+    if (must_exist && must_new)
     {
         memset(&p, 0, sizeof(p));
         p.name  = raw;
@@ -127,12 +129,9 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
  * @param buf    Output buffer (>= 8 bytes)
  * @param bufsz  Buffer size
  */
-void fps_streamname_modifier_label(
-    const FPS_STREAMNAME_PARSED *p,
-    char                        *buf,
-    int                         bufsz)
+void fps_streamname_modifier_label(const FPS_STREAMNAME_PARSED *p, char *buf, int bufsz)
 {
-    if(bufsz < 2)
+    if (bufsz < 2)
     {
         return;
     }
@@ -140,21 +139,21 @@ void fps_streamname_modifier_label(
     char inner[6];
     int  pos = 0;
 
-    if(p->loc != '\0')
+    if (p->loc != '\0')
     {
         inner[pos++] = p->loc;
     }
-    if(p->must_exist)
+    if (p->must_exist)
     {
         inner[pos++] = 'E';
     }
-    if(p->must_new)
+    if (p->must_new)
     {
         inner[pos++] = 'N';
     }
     inner[pos] = '\0';
 
-    if(pos == 0)
+    if (pos == 0)
     {
         buf[0] = '\0';
     }
@@ -173,13 +172,11 @@ void fps_streamname_modifier_label(
  * @param raw  Raw stream name (possibly prefixed)
  * @return     1 for shared, 0 for local
  */
-int fps_streamname_is_shared(
-    const char *raw
-)
+int fps_streamname_is_shared(const char *raw)
 {
     FPS_STREAMNAME_PARSED p = fps_streamname_parse(raw);
 
-    if(p.loc == 'L')
+    if (p.loc == 'L')
     {
         return 0;
     }

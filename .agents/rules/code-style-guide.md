@@ -106,3 +106,27 @@ trigger: always_on
   `fpsCTRL`) for box-drawing symbols, status indicators,
   and progress bars. All other source files, headers,
   comments, and string literals must use ASCII only.
+
+## Automated Enforcement (clang-format)
+
+The pre-commit hook runs `clang-format` using the
+`.clang-format` config at the repo root. The same
+config is used by `clangd` for editor formatting.
+
+Key behaviors enforced automatically:
+- Allman brace style
+- 4-space indentation
+- 100-char max line length
+- Header padding (`if (...)` not `if(...)`)
+- Pointer alignment to name (`char *ptr`)
+- Braces added to single-line control bodies
+- One parameter per line in function declarations
+- No include reordering
+
+Rules NOT enforced by clang-format (manual/review):
+- Column-aligned parameter names
+  (see `parameter-alignment.md`)
+- Kernel-Doc documentation
+- Variable scope minimization with code blocks
+- Closing comments on long scopes
+- Loop index naming conventions

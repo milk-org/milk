@@ -13,7 +13,6 @@
 #include "fps_types.h"
 
 
-
 /* =========================================================================
  * SHM Lifecycle (fpsseq_shm.c)
  * ========================================================================= */
@@ -52,9 +51,7 @@ int milkseq_destroy(const char *name);
  * @param maxcount Maximum number of names to return
  * @return Number of sequencers found
  */
-int milkseq_list(
-    char names[][FPSSEQ_NAME_MAX],
-    int maxcount);
+int milkseq_list(char names[][FPSSEQ_NAME_MAX], int maxcount);
 
 
 /* =========================================================================
@@ -70,11 +67,10 @@ int milkseq_list(
  * @param vars TUI-level variables (for backwards compat logging)
  * @return Task index executed, or -1 if idle/no task
  */
-int milkseq_scheduler_step(
-    MILKSEQ_STATE        *state,
-    FPS                  *fps,
-    KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_PROCESS_VARS *vars);
+int milkseq_scheduler_step(MILKSEQ_STATE        *state,
+                           FPS                  *fps,
+                           KEYWORD_TREE_NODE    *keywnode,
+                           FPSCTRL_PROCESS_VARS *vars);
 
 
 /* =========================================================================
@@ -89,9 +85,7 @@ int milkseq_scheduler_step(
  * @param fifo_fd File descriptor of the opened FIFO (O_NONBLOCK)
  * @return Number of commands read
  */
-int milkseq_fifo_read(
-    MILKSEQ_STATE *state,
-    int           fifo_fd);
+int milkseq_fifo_read(MILKSEQ_STATE *state, int fifo_fd);
 
 
 /* =========================================================================
@@ -109,13 +103,12 @@ int milkseq_fifo_read(
  * @param taskstatus Output value OR-ed with the final status of the task
  * @return The 1D index of the functional parameter accessed, or -1 if none
  */
-int milkseq_exec_cmd(
-    uint32_t             cmdindex,
-    MILKSEQ_STATE        *state,
-    FPS                  *fps,
-    KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_PROCESS_VARS *vars,
-    uint64_t             *taskstatus);
+int milkseq_exec_cmd(uint32_t              cmdindex,
+                     MILKSEQ_STATE        *state,
+                     FPS                  *fps,
+                     KEYWORD_TREE_NODE    *keywnode,
+                     FPSCTRL_PROCESS_VARS *vars,
+                     uint64_t             *taskstatus);
 
 
 /* =========================================================================
@@ -131,10 +124,9 @@ int milkseq_exec_cmd(
  * @param keywnode Keyword tree root
  * @return 0 on success, or an errno value on failure
  */
-errno_t milkseq_load_script(
-    MILKSEQ_STATE     *state,
-    const char        *filename,
-    FPS               *fps,
-    KEYWORD_TREE_NODE *keywnode);
+errno_t milkseq_load_script(MILKSEQ_STATE     *state,
+                            const char        *filename,
+                            FPS               *fps,
+                            KEYWORD_TREE_NODE *keywnode);
 
 #endif // FPSSEQ_H

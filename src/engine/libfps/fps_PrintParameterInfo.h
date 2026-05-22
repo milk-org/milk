@@ -8,8 +8,6 @@
 
 #include "fps.h"
 
-errno_t
-functionparameter_PrintParameterInfo(FPS *fpsentry,
-                                     int                        pindex);
+errno_t functionparameter_PrintParameterInfo(FPS *fpsentry, int pindex);
 
 #endif

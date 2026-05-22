@@ -35,59 +35,59 @@
 #include <string.h>
 
 #ifdef _OPENMP
-#include <omp.h>
-#define OMP_NELEMENT_LIMIT 1000000
+#    include <omp.h>
+#    define OMP_NELEMENT_LIMIT 1000000
 #endif
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 
-#include "COREMOD_memory/COREMOD_memory.h"
-#include "COREMOD_tools/COREMOD_tools.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
+#    include "COREMOD_tools/COREMOD_tools.h"
 
 //#include "COREMOD_arith/COREMOD_arith.h"
 
-#include "image_crop.h"
-#include "image_crop2D.h"
-#include "image_multicrop2D.h"
-#include "image_cropmask.h"
+#    include "image_crop.h"
+#    include "image_crop2D.h"
+#    include "image_multicrop2D.h"
+#    include "image_cropmask.h"
 
-#include "image_dxdy.h"
-#include "image_norm.h"
-#include "image_slicenormalize.h"
-#include "image_merge3D.h"
-#include "image_stats.h"
+#    include "image_dxdy.h"
+#    include "image_norm.h"
+#    include "image_slicenormalize.h"
+#    include "image_merge3D.h"
+#    include "image_stats.h"
 
-#include "image_set_1Dpixrange.h"
-#include "image_set_2Dpix.h"
-#include "image_set_3Daxes.h"
-#include "image_set_col.h"
-#include "image_set_row.h"
-#include "image_setzero.h"
-#include "image_unfold.h"
+#    include "image_set_1Dpixrange.h"
+#    include "image_set_2Dpix.h"
+#    include "image_set_3Daxes.h"
+#    include "image_set_col.h"
+#    include "image_set_row.h"
+#    include "image_setzero.h"
+#    include "image_unfold.h"
 
-#include "image_pixremap.h"
-#include "image_pixunmap.h"
+#    include "image_pixremap.h"
+#    include "image_pixunmap.h"
 
-#include "image_total.h"
-#include "imfunctions.h"
+#    include "image_total.h"
+#    include "imfunctions.h"
 
-#include "image_arith__im__im.h"
-#include "image_arith__im_f__im.h"
-#include "image_arith__im_f_f__im.h"
-#include "image_arith__im_im__im.h"
+#    include "image_arith__im__im.h"
+#    include "image_arith__im_f__im.h"
+#    include "image_arith__im_f_f__im.h"
+#    include "image_arith__im_im__im.h"
 
-#include "image_vecmult.h"
+#    include "image_vecmult.h"
 
-#include "mathfuncs.h"
+#    include "mathfuncs.h"
 
-#include "execute_arith.h"
+#    include "execute_arith.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#    ifndef M_PI
+#        define M_PI 3.14159265358979323846
+#    endif
 
 INIT_MODULE_LIB(COREMOD_arith)
 
@@ -99,7 +99,6 @@ INIT_MODULE_LIB(COREMOD_arith)
  */
 static errno_t init_module_CLI()
 {
-
     CLIADDCMD_COREMOD_arith__image_crop();
 
     image_arith__im_f_f__im_addCLIcmd();

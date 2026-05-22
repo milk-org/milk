@@ -24,15 +24,15 @@
 typedef struct
 {
     /** Location modifier: 'L','S','F', or '\0' */
-    char        loc;
+    char loc;
     /** 1 if 'E' modifier present */
-    int         must_exist;
+    int must_exist;
     /** 1 if 'N' modifier present */
-    int         must_new;
+    int must_new;
     /** Pointer to bare name (past prefix) */
     const char *name;
     /** 1 if parse error (e.g. E+N conflict) */
-    int         error;
+    int error;
 } FPS_STREAMNAME_PARSED;
 
 /**
@@ -47,9 +47,7 @@ typedef struct
  * @param raw  Raw stream name (possibly prefixed)
  * @return     Parsed result
  */
-FPS_STREAMNAME_PARSED fps_streamname_parse(
-    const char *raw
-);
+FPS_STREAMNAME_PARSED fps_streamname_parse(const char *raw);
 
 /**
  * @brief Human-readable label for a modifier set.
@@ -61,10 +59,7 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(
  * @param buf    Output buffer (>= 8 bytes)
  * @param bufsz  Size of buf
  */
-void fps_streamname_modifier_label(
-    const FPS_STREAMNAME_PARSED *p,
-    char                        *buf,
-    int                         bufsz);
+void fps_streamname_modifier_label(const FPS_STREAMNAME_PARSED *p, char *buf, int bufsz);
 
 /**
  * @brief Determine shared flag from stream name.
@@ -75,8 +70,6 @@ void fps_streamname_modifier_label(
  * @param raw  Raw stream name (possibly prefixed)
  * @return     1 for shared, 0 for local
  */
-int fps_streamname_is_shared(
-    const char *raw
-);
+int fps_streamname_is_shared(const char *raw);
 
 #endif

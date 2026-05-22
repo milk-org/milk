@@ -12,22 +12,19 @@
  * Strips any @X: prefix modifiers and bracket
  * slice specifications from the string value.
  */
-static void fps_printparameter_bare_stream_name(
-    const char *streamspec,
-    char       *streamname,
-    size_t     streamname_size)
+static void fps_printparameter_bare_stream_name(const char *streamspec,
+                                                char       *streamname,
+                                                size_t      streamname_size)
 {
     const char *basename = streamspec;
 
-    if((streamspec != NULL) &&
-            (streamspec[0] == '@') &&
-            (streamspec[1] != '\0') &&
-            (streamspec[2] == ':'))
+    if ((streamspec != NULL) && (streamspec[0] == '@') && (streamspec[1] != '\0') &&
+        (streamspec[2] == ':'))
     {
         basename = streamspec + 3;
     }
 
-    if(streamname_size > 0)
+    if (streamname_size > 0)
     {
         strncpy(streamname, basename, streamname_size - 1);
         streamname[streamname_size - 1] = '\0';
@@ -40,21 +37,19 @@ static void fps_printparameter_bare_stream_name(
  * Writes type, keyword, and current value into a
  * single line suitable for .fps file output.
  */
-errno_t functionparameter_PrintParameter_ValueString(
-    FPS_PARAM *fpsentry,
-    char      *outstring,
-    int       stringmaxlen)
+errno_t functionparameter_PrintParameter_ValueString(FPS_PARAM *fpsentry,
+                                                     char      *outstring,
+                                                     int        stringmaxlen)
 {
     int cmdOK = 0;
 
-    switch(fpsentry->type)
+    switch (fpsentry->type)
     {
-
     case FPTYPE_UINT32:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s UINT32 %u", fpsentry->keywordfull,
                              fpsentry->val.ui32[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -65,7 +60,7 @@ errno_t functionparameter_PrintParameter_ValueString(
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s INT32  %d", fpsentry->keywordfull,
                              fpsentry->val.i32[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -76,7 +71,7 @@ errno_t functionparameter_PrintParameter_ValueString(
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s UINT64 %lu", fpsentry->keywordfull,
                              fpsentry->val.ui64[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -87,7 +82,7 @@ errno_t functionparameter_PrintParameter_ValueString(
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s INT64  %ld", fpsentry->keywordfull,
                              fpsentry->val.i64[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -98,7 +93,7 @@ errno_t functionparameter_PrintParameter_ValueString(
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s FLOAT64 %f", fpsentry->keywordfull,
                              fpsentry->val.f64[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -109,7 +104,7 @@ errno_t functionparameter_PrintParameter_ValueString(
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s FLOAT32 %f", fpsentry->keywordfull,
                              fpsentry->val.f32[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -119,8 +114,8 @@ errno_t functionparameter_PrintParameter_ValueString(
     case FPTYPE_PID:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s PID %ld", fpsentry->keywordfull,
-                             (long)fpsentry->val.pid[0]);
-        if(_slen >= 0)
+                             (long) fpsentry->val.pid[0]);
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -129,9 +124,10 @@ errno_t functionparameter_PrintParameter_ValueString(
 
     case FPTYPE_TIMESPEC:
     {
-        int _slen = snprintf(outstring, stringmaxlen, "%s TIMESPEC %ld.%09ld", fpsentry->keywordfull,
-                             fpsentry->val.ts[0].tv_sec, fpsentry->val.ts[0].tv_nsec);
-        if(_slen >= 0)
+        int _slen =
+            snprintf(outstring, stringmaxlen, "%s TIMESPEC %ld.%09ld", fpsentry->keywordfull,
+                     fpsentry->val.ts[0].tv_sec, fpsentry->val.ts[0].tv_nsec);
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -149,16 +145,17 @@ errno_t functionparameter_PrintParameter_ValueString(
     case FPTYPE_STRING_NOT_STREAM:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s %s %s", fpsentry->keywordfull,
-                             fpsentry->type == FPTYPE_FILENAME ? "FILENAME" :
-                             fpsentry->type == FPTYPE_FITSFILENAME ? "FITSFILENAME" :
-                             fpsentry->type == FPTYPE_EXECFILENAME ? "EXECFILENAME" :
-                             fpsentry->type == FPTYPE_DIRNAME ? "DIRNAME" :
-                             fpsentry->type == FPTYPE_STREAMNAME ? "STREAMNAME" :
-                             fpsentry->type == FPTYPE_FPSNAME ? "FPSNAME" :
-                             fpsentry->type == FPTYPE_PROCESS ? "PROCESS" :
-                             fpsentry->type == FPTYPE_STRING_NOT_STREAM ? "STRING_NOT_STREAM" : "STRING",
+                             fpsentry->type == FPTYPE_FILENAME            ? "FILENAME"
+                             : fpsentry->type == FPTYPE_FITSFILENAME      ? "FITSFILENAME"
+                             : fpsentry->type == FPTYPE_EXECFILENAME      ? "EXECFILENAME"
+                             : fpsentry->type == FPTYPE_DIRNAME           ? "DIRNAME"
+                             : fpsentry->type == FPTYPE_STREAMNAME        ? "STREAMNAME"
+                             : fpsentry->type == FPTYPE_FPSNAME           ? "FPSNAME"
+                             : fpsentry->type == FPTYPE_PROCESS           ? "PROCESS"
+                             : fpsentry->type == FPTYPE_STRING_NOT_STREAM ? "STRING_NOT_STREAM"
+                                                                          : "STRING",
                              fpsentry->val.string[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -169,7 +166,7 @@ errno_t functionparameter_PrintParameter_ValueString(
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s ONOFF %s", fpsentry->keywordfull,
                              (fpsentry->val.i32[0]) ? "ON" : "OFF");
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -177,7 +174,7 @@ errno_t functionparameter_PrintParameter_ValueString(
     break;
     }
 
-    if(cmdOK == 1)
+    if (cmdOK == 1)
     {
         return RETURN_SUCCESS;
     }
@@ -195,20 +192,18 @@ errno_t functionparameter_PrintParameter_ValueString(
  * only the formatted value, not the full keyword
  * line.
  */
-errno_t functionparameter_GetParamValueString(
-    FPS_PARAM *fpsentry,
-    char      *outstring,
-    int       stringmaxlen)
+errno_t functionparameter_GetParamValueString(FPS_PARAM *fpsentry,
+                                              char      *outstring,
+                                              int        stringmaxlen)
 {
     int cmdOK = 0;
 
-    switch(fpsentry->type)
+    switch (fpsentry->type)
     {
-
     case FPTYPE_UINT32:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%u", fpsentry->val.ui32[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -218,7 +213,7 @@ errno_t functionparameter_GetParamValueString(
     case FPTYPE_INT32:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%d", fpsentry->val.i32[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -228,7 +223,7 @@ errno_t functionparameter_GetParamValueString(
     case FPTYPE_UINT64:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%lu", fpsentry->val.ui64[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -238,7 +233,7 @@ errno_t functionparameter_GetParamValueString(
     case FPTYPE_INT64:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%ld", fpsentry->val.i64[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -248,7 +243,7 @@ errno_t functionparameter_GetParamValueString(
     case FPTYPE_FLOAT64:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%f", fpsentry->val.f64[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -258,7 +253,7 @@ errno_t functionparameter_GetParamValueString(
     case FPTYPE_FLOAT32:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%f", fpsentry->val.f32[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -267,8 +262,8 @@ errno_t functionparameter_GetParamValueString(
 
     case FPTYPE_PID:
     {
-        int _slen = snprintf(outstring, stringmaxlen, "%ld", (long)fpsentry->val.pid[0]);
-        if(_slen >= 0)
+        int _slen = snprintf(outstring, stringmaxlen, "%ld", (long) fpsentry->val.pid[0]);
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -279,7 +274,7 @@ errno_t functionparameter_GetParamValueString(
     {
         int _slen = snprintf(outstring, stringmaxlen, "%ld.%09ld", fpsentry->val.ts[0].tv_sec,
                              fpsentry->val.ts[0].tv_nsec);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -289,43 +284,38 @@ errno_t functionparameter_GetParamValueString(
     case FPTYPE_STREAMNAME:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s", fpsentry->val.string[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             char stream_name_pv[STRINGMAXLEN_FILE_NAME];
-            fps_printparameter_bare_stream_name(
-                fpsentry->val.string[0], stream_name_pv, sizeof(stream_name_pv));
+            fps_printparameter_bare_stream_name(fpsentry->val.string[0], stream_name_pv,
+                                                sizeof(stream_name_pv));
             char shmpath_pv[STRINGMAXLEN_FILE_NAME];
-            int shm_ok =
-                (ImageStreamIO_filename(
-                     shmpath_pv,
-                     sizeof(shmpath_pv),
-                     stream_name_pv) == IMAGESTREAMIO_SUCCESS) && (access(shmpath_pv, F_OK) == 0);
+            int  shm_ok = (ImageStreamIO_filename(shmpath_pv, sizeof(shmpath_pv), stream_name_pv) ==
+                          IMAGESTREAMIO_SUCCESS) &&
+                         (access(shmpath_pv, F_OK) == 0);
             IMAGE tmpimg;
-            if(shm_ok
-                    && ImageStreamIO_openIm(
-                        &tmpimg,
-                        stream_name_pv)
-                    == IMAGESTREAMIO_SUCCESS)
+            if (shm_ok && ImageStreamIO_openIm(&tmpimg, stream_name_pv) == IMAGESTREAMIO_SUCCESS)
             {
                 const char *type_str = ImageStreamIO_typename(tmpimg.md->datatype);
 
                 char size_str[64];
-                if(tmpimg.md->naxis == 1)
+                if (tmpimg.md->naxis == 1)
                 {
                     snprintf(size_str, 64, "%u", tmpimg.md->size[0]);
                 }
-                else if(tmpimg.md->naxis == 2)
+                else if (tmpimg.md->naxis == 2)
                 {
                     snprintf(size_str, 64, "%ux%u", tmpimg.md->size[0], tmpimg.md->size[1]);
                 }
                 else
                 {
-                    snprintf(size_str, 64, "%ux%ux%u", tmpimg.md->size[0], tmpimg.md->size[1], tmpimg.md->size[2]);
+                    snprintf(size_str, 64, "%ux%ux%u", tmpimg.md->size[0], tmpimg.md->size[1],
+                             tmpimg.md->size[2]);
                 }
 
-                int _slen2 = snprintf(outstring + _slen, stringmaxlen - _slen,
-                                      " [%s %s cnt=%lu]", type_str, size_str, tmpimg.md->cnt0);
-                if(_slen2 >= 0)
+                int _slen2 = snprintf(outstring + _slen, stringmaxlen - _slen, " [%s %s cnt=%lu]",
+                                      type_str, size_str, tmpimg.md->cnt0);
+                if (_slen2 >= 0)
                 {
                     cmdOK = 1;
                 }
@@ -335,7 +325,7 @@ errno_t functionparameter_GetParamValueString(
             {
                 // Stream not found
                 int _slen2 = snprintf(outstring + _slen, stringmaxlen - _slen, " [NOTFOUND]");
-                if(_slen2 >= 0)
+                if (_slen2 >= 0)
                 {
                     cmdOK = 1;
                 }
@@ -354,7 +344,7 @@ errno_t functionparameter_GetParamValueString(
     case FPTYPE_STRING_NOT_STREAM:
     {
         int _slen = snprintf(outstring, stringmaxlen, "%s", fpsentry->val.string[0]);
-        if(_slen >= 0)
+        if (_slen >= 0)
         {
             cmdOK = 1;
         }
@@ -362,10 +352,10 @@ errno_t functionparameter_GetParamValueString(
     break;
 
     case FPTYPE_ONOFF:
-        if(fpsentry->val.i32[0])
+        if (fpsentry->val.i32[0])
         {
             int _slen = snprintf(outstring, stringmaxlen, "ON");
-            if(_slen >= 0)
+            if (_slen >= 0)
             {
                 cmdOK = 1;
             }
@@ -373,7 +363,7 @@ errno_t functionparameter_GetParamValueString(
         else
         {
             int _slen = snprintf(outstring, stringmaxlen, "OFF");
-            if(_slen >= 0)
+            if (_slen >= 0)
             {
                 cmdOK = 1;
             }
@@ -381,7 +371,7 @@ errno_t functionparameter_GetParamValueString(
         break;
     }
 
-    if(cmdOK == 1)
+    if (cmdOK == 1)
     {
         return RETURN_SUCCESS;
     }

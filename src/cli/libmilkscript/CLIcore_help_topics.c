@@ -26,22 +26,22 @@
 #include "CLIcore.h"
 #include "CLIcore_help.h"
 
-#define C_RST    "\033[0m"
-#define C_TITLE  "\033[1;36m"
-#define C_HDR    "\033[1;35m"
-#define C_CMD    "\033[32m"
-#define C_BOLD   "\033[1m"
-#define C_NOTE   "\033[33m"
-#define C_ERR    "\033[1;31m"
+#define C_RST "\033[0m"
+#define C_TITLE "\033[1;36m"
+#define C_HDR "\033[1;35m"
+#define C_CMD "\033[32m"
+#define C_BOLD "\033[1m"
+#define C_NOTE "\033[33m"
+#define C_ERR "\033[1;31m"
 
 #ifndef COLORRESET
-#define COLORRESET     C_RST
+#    define COLORRESET C_RST
 #endif
 #ifndef COLORCMD
-#define COLORCMD       C_CMD
+#    define COLORCMD C_CMD
 #endif
 #ifndef COLORINFO
-#define COLORINFO      "\033[32m"
+#    define COLORINFO "\033[32m"
 #endif
 
 /**
@@ -117,12 +117,12 @@ void help_topic_cmdopts(void)
     printf(C_CMD "  -i, --info         " C_RST "print version, settings, info\n");
     printf(C_CMD "  --verbose          " C_RST "be verbose\n");
     printf(C_CMD "  -d <level>         " C_RST "set debug level at startup\n");
-    printf(C_CMD "  -o, --overwrite    " C_RST
-           "overwrite existing FITS files " C_NOTE "(USE WITH CAUTION)\n" C_RST);
+    printf(C_CMD "  -o, --overwrite    " C_RST "overwrite existing FITS files " C_NOTE
+                 "(USE WITH CAUTION)\n" C_RST);
     printf(C_CMD "  -e, --errorexit    " C_RST "exit on error\n");
     printf(C_CMD "  -Z, --idle         " C_RST "only run when X is idle\n");
-    printf(C_CMD "  -A, --autocomplete " C_RST
-           "enable inline autocomplete " C_NOTE "(ON by default)\n" C_RST);
+    printf(C_CMD "  -A, --autocomplete " C_RST "enable inline autocomplete " C_NOTE
+                 "(ON by default)\n" C_RST);
     printf(C_CMD "  --no-autocomplete  " C_RST "disable inline autocomplete\n");
     printf(C_CMD "  --no-history-suggest " C_RST "disable history suggestions\n");
     printf(C_CMD "  --no-arg-hints     " C_RST "disable argument hint line\n");
@@ -156,7 +156,8 @@ void help_topic_syntax(void)
     printf("  Example: " C_CMD "command arg1 arg2 # comment\n" C_RST);
     printf("\n");
     printf(C_HDR "Tab Completion & UX Features:\n" C_RST);
-    printf("  1st arg: Match commands, then images, " "then files.\n");
+    printf("  1st arg: Match commands, then images, "
+           "then files.\n");
     printf("  Subsequent: Match images, then files.\n");
     printf("  " C_NOTE "History:" C_RST " Commands saved across sessions (Up/Down).\n");
     printf("  " C_NOTE "Autocorrection:" C_RST " Mistyped commands suggest closest match.\n");
@@ -204,10 +205,10 @@ void help_topic_commands(void)
     printf(C_CMD "  mem.listim        " C_RST "List images in memory\n");
     printf("\n");
     printf(C_HDR "File I/O:\n" C_RST);
-    printf(C_CMD "  iofits.loadfits   " C_RST
-           "Load FITS file " C_NOTE "(requires CFITSIO)\n" C_RST);
-    printf(C_CMD "  iofits.savefits   " C_RST
-           "Save FITS file " C_NOTE "(requires CFITSIO)\n" C_RST);
+    printf(C_CMD "  iofits.loadfits   " C_RST "Load FITS file " C_NOTE
+                 "(requires CFITSIO)\n" C_RST);
+    printf(C_CMD "  iofits.savefits   " C_RST "Save FITS file " C_NOTE
+                 "(requires CFITSIO)\n" C_RST);
     printf("\n");
     printf(C_HDR "Session Control:\n" C_RST);
     printf(C_CMD "  quit / exit       " C_RST "Exit the milk shell\n");
@@ -310,20 +311,18 @@ void help_topic_flowcontrol(void)
     printf("  " C_CMD "else" C_RST "\n");
     printf("  " C_CMD "    echo small" C_RST "\n");
     printf("  " C_CMD "fi" C_RST "\n");
-    printf("  Tests: "
-           C_NOTE "-eq -ne -gt -ge -lt -le"
-           C_RST " (numeric), " C_NOTE "= !=" C_RST " (string)\n");
-    printf("  File tests: "
-           C_NOTE "-f" C_RST " (file), "
-           C_NOTE "-d" C_RST " (dir), " C_NOTE "-e" C_RST " (exists)\n");
+    printf("  Tests: " C_NOTE "-eq -ne -gt -ge -lt -le" C_RST " (numeric), " C_NOTE "= !=" C_RST
+           " (string)\n");
+    printf("  File tests: " C_NOTE "-f" C_RST " (file), " C_NOTE "-d" C_RST " (dir), " C_NOTE
+           "-e" C_RST " (exists)\n");
     printf("  Negate: " C_CMD "[ ! expr ]" C_RST " logical NOT\n");
     printf("  Extended: " C_CMD "[[$s =~ ^[0-9]+$]]" C_RST " regex\n");
     printf("\n");
     printf(C_HDR "Loops:\n" C_RST);
     printf("  " C_CMD "while [$n -lt 10]; do" C_RST " ... " C_CMD "done" C_RST "\n");
     printf("  " C_CMD "for x in a b c; do" C_RST " ... " C_CMD "done" C_RST "\n");
-    printf("  " C_CMD "for ((i=0; i<10; i++)); do"
-           C_RST " ... " C_CMD "done" C_RST "  ← C-style\n");
+    printf("  " C_CMD "for ((i=0; i<10; i++)); do" C_RST " ... " C_CMD "done" C_RST
+           "  ← C-style\n");
     printf("  " C_CMD "break" C_RST " exits loop, " C_CMD "continue" C_RST " next iter\n");
     printf("  " C_CMD "break 2" C_RST "  / " C_CMD "continue 2" C_RST "  (nested)\n");
     printf("\n");
@@ -354,21 +353,26 @@ void help_topic_flowcontrol(void)
     printf("  Waits for stream update then runs cmd\n");
     printf("\n");
     printf(C_HDR "Unified Event Wait:\n" C_RST);
-    printf("  " C_CMD "wait_any [-t T] " "S:s F:f.p=v P:n:STATE" C_RST "\n");
-    printf("  Block until any event fires; " "returns index as $?\n");
-    printf("  " C_NOTE "S:" C_RST
-           "stream  " C_NOTE "F:" C_RST "fps.param  " C_NOTE "P:" C_RST "proc:state\n");
+    printf("  " C_CMD "wait_any [-t T] "
+           "S:s F:f.p=v P:n:STATE" C_RST "\n");
+    printf("  Block until any event fires; "
+           "returns index as $?\n");
+    printf("  " C_NOTE "S:" C_RST "stream  " C_NOTE "F:" C_RST "fps.param  " C_NOTE "P:" C_RST
+           "proc:state\n");
     printf("  Comparisons: " C_CMD "= != >= <=" C_RST " (e.g. F:dmcomb.gain>=0.5)\n");
     printf("\n");
     printf(C_HDR "Engine Event Traps:\n" C_RST);
-    printf("  " C_CMD "trap 'cmd' " "STREAM:name" C_RST "  fire on stream update\n");
-    printf("  " C_CMD "trap 'cmd' " "FPS:f.p=v" C_RST "    fire on FPS match\n");
-    printf("  " C_CMD "trap 'cmd' " "PROC:n:STATE" C_RST "  fire on state\n");
-    printf("  " C_CMD "trap '' " "STREAM:name" C_RST "    clear trap\n");
+    printf("  " C_CMD "trap 'cmd' "
+           "STREAM:name" C_RST "  fire on stream update\n");
+    printf("  " C_CMD "trap 'cmd' "
+           "FPS:f.p=v" C_RST "    fire on FPS match\n");
+    printf("  " C_CMD "trap 'cmd' "
+           "PROC:n:STATE" C_RST "  fire on state\n");
+    printf("  " C_CMD "trap '' "
+           "STREAM:name" C_RST "    clear trap\n");
     printf("  " C_CMD "trap -l" C_RST "              list traps\n");
-    printf("  Flags: "
-           C_CMD "-i ms" C_RST
-           " throttle interval (def 100ms)" "  " C_CMD "-n N" C_RST " fire count limit\n");
+    printf("  Flags: " C_CMD "-i ms" C_RST " throttle interval (def 100ms)"
+           "  " C_CMD "-n N" C_RST " fire count limit\n");
     printf("\n");
 }
 
@@ -619,20 +623,27 @@ void print_milk_cli_help_json(void)
 {
     printf("{\n");
     printf("  \"topics\": [\n");
-    printf("    {\"name\": \"cmdopts\", \"description\": \"Command-line flags (-h, -s, -n...)\"},\n");
+    printf(
+        "    {\"name\": \"cmdopts\", \"description\": \"Command-line flags (-h, -s, -n...)\"},\n");
     printf("    {\"name\": \"syntax\", \"description\": \"Syntax, tab completion, piping\"},\n");
-    printf("    {\"name\": \"commands\", \"description\": \"Built-in CLI commands (?, cmd?...)\"},\n");
+    printf(
+        "    {\"name\": \"commands\", \"description\": \"Built-in CLI commands (?, cmd?...)\"},\n");
     printf("    {\"name\": \"variables\", \"description\": \"Variables, arrays, arithmetic\"},\n");
     printf("    {\"name\": \"flowcontrol\", \"description\": \"if/while/for/case/function\"},\n");
     printf("    {\"name\": \"scripting\", \"description\": \"Script files, I/O, builtins\"},\n");
     printf("    {\"name\": \"milk\", \"description\": \"Streams, FPS, milk-specific\"}\n");
     printf("  ],\n");
     printf("  \"quick_reference\": [\n");
-    printf("    {\"command\": \"cmd?\", \"args\": \"[name]\", \"description\": \"Help for a specific command\"},\n");
-    printf("    {\"command\": \"m?\", \"args\": \"[module]\", \"description\": \"List commands in a module\"},\n");
-    printf("    {\"command\": \"h?\", \"args\": \"[string]\", \"description\": \"Search command descriptions\"},\n");
-    printf("    {\"command\": \"fhelp\", \"args\": \"\", \"description\": \"Interactive fuzzy command search\"},\n");
-    printf("    {\"command\": \"quit / exit\", \"args\": \"\", \"description\": \"Exit the milk shell\"}\n");
+    printf("    {\"command\": \"cmd?\", \"args\": \"[name]\", \"description\": \"Help for a "
+           "specific command\"},\n");
+    printf("    {\"command\": \"m?\", \"args\": \"[module]\", \"description\": \"List commands in "
+           "a module\"},\n");
+    printf("    {\"command\": \"h?\", \"args\": \"[string]\", \"description\": \"Search command "
+           "descriptions\"},\n");
+    printf("    {\"command\": \"fhelp\", \"args\": \"\", \"description\": \"Interactive fuzzy "
+           "command search\"},\n");
+    printf("    {\"command\": \"quit / exit\", \"args\": \"\", \"description\": \"Exit the milk "
+           "shell\"}\n");
     printf("  ]\n");
     printf("}\n");
 }
@@ -677,10 +688,13 @@ void print_milk_cli_help_porcelain(void)
  */
 void print_milk_cli_help(void)
 {
-    if (help_format_mode == 1) {
+    if (help_format_mode == 1)
+    {
         print_milk_cli_help_json();
         return;
-    } else if (help_format_mode == 2) {
+    }
+    else if (help_format_mode == 2)
+    {
         print_milk_cli_help_porcelain();
         return;
     }
@@ -698,8 +712,7 @@ void print_milk_cli_help(void)
     printf(C_BOLD "SYNOPSIS\n" C_RST);
     printf("  " C_CMD "milk-cli" C_RST "                      Start interactive shell\n");
     printf("  " C_CMD "milk-cli -c <cmd>" C_RST "          Execute one command and exit\n");
-    printf("  " C_CMD "milk-cli -s <file>" C_RST
-           "         Run startup script, then enter shell\n");
+    printf("  " C_CMD "milk-cli -s <file>" C_RST "         Run startup script, then enter shell\n");
     printf("  " C_CMD "echo cmds | milk-cli" C_RST "       Read commands from stdin\n");
     printf("  " C_CMD "milk-script <file>" C_RST "         Run a script non-interactively\n");
     printf("\n");
@@ -718,19 +731,20 @@ void print_milk_cli_help(void)
     printf(C_CMD "  -c <cmd>             " C_RST "Execute single command and exit\n");
     printf(C_CMD "  -s <file>            " C_RST "Execute startup script on launch\n");
     printf(C_CMD "  -n <name>            " C_RST "Set process name\n");
-    printf(C_CMD "  -p <priority>        " C_RST
-           "Set real-time priority (0" "\xe2\x80\x93" "99)\n");
+    printf(C_CMD "  -p <priority>        " C_RST "Set real-time priority (0"
+                 "\xe2\x80\x93"
+                 "99)\n");
     printf(C_CMD "  -e, --errorexit      " C_RST "Exit on first error\n");
     printf(C_CMD "  -E, --echo-input     " C_RST "Echo each input line (colored)\n");
     printf(C_CMD "  -d <level>           " C_RST "Set debug level at startup\n");
-    printf(C_CMD "  -o, --overwrite      " C_RST
-           "Overwrite existing FITS files " C_NOTE "(caution)\n" C_RST);
+    printf(C_CMD "  -o, --overwrite      " C_RST "Overwrite existing FITS files " C_NOTE
+                 "(caution)\n" C_RST);
     printf(C_CMD "  -f, --fifoflag       " C_RST "Enable default FIFO input\n");
     printf(C_CMD "  -F <fifoname>        " C_RST "Specify custom FIFO name\n");
     printf(C_CMD "  -m <monitor>         " C_RST "Set memory monitor stream\n");
     printf(C_CMD "  -Z, --idle           " C_RST "Only run when display is idle\n");
-    printf(C_CMD "  -A, --autocomplete   " C_RST
-           "Enable inline autocomplete " C_NOTE "(on by default)\n" C_RST);
+    printf(C_CMD "  -A, --autocomplete   " C_RST "Enable inline autocomplete " C_NOTE
+                 "(on by default)\n" C_RST);
     printf(C_CMD "  --no-autocomplete    " C_RST "Disable inline autocomplete\n");
     printf(C_CMD "  --no-history-suggest " C_RST "Disable history suggestions\n");
     printf(C_CMD "  --no-arg-hints       " C_RST "Disable argument hint line\n");

@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <termios.h>
 #ifdef USE_READLINE
-#include <readline/history.h>
-#include <readline/readline.h>
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"

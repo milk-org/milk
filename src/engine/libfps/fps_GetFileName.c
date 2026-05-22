@@ -11,11 +11,7 @@
  * Most recent parameter value stored in this file
  *
  */
-int functionparameter_GetFileName(
-    FPS       *fps,
-    FPS_PARAM *fparam,
-    char      *outfname,
-    char      *tagname)
+int functionparameter_GetFileName(FPS *fps, FPS_PARAM *fparam, char *outfname, char *tagname)
 {
     char ffname[STRINGMAXLEN_FULLFILENAME];
 
@@ -31,23 +27,18 @@ int functionparameter_GetFileName(
 
         // Loop index `ll` is declared outside the loop because it is needed
         // after the loop to access the final keyword level for the filename.
-        int  ll;
+        int ll;
 
-        for(ll = 0; ll < fparam->keywordlevel - 1; ll++)
+        for (ll = 0; ll < fparam->keywordlevel - 1; ll++)
         {
-            if(snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.", fparam->keyword[ll]) <
-                    0)
+            if (snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.", fparam->keyword[ll]) < 0)
             {
                 PRINT_ERROR("snprintf error");
             }
             strncat(ffname, fname1, STRINGMAXLEN_DIRNAME - 1);
         }
 
-        if(snprintf(fname1,
-                    STRINGMAXLEN_FILENAME,
-                    "%s.%s.txt",
-                    fparam->keyword[ll],
-                    tagname) < 0)
+        if (snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.%s.txt", fparam->keyword[ll], tagname) < 0)
         {
             PRINT_ERROR("snprintf error");
         }

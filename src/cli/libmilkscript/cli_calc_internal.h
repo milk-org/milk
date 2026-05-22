@@ -29,20 +29,17 @@ cli_token *cur_parse(void);
 cli_token *advance_parse(void);
 cli_token *cur_eval(void);
 cli_token *advance_eval(void);
-void parse_errmsg(const char *msg);
-val_t parse_expr(int min_prec);
+void       parse_errmsg(const char *msg);
+val_t      parse_expr(int min_prec);
 
-val_t eval_binop(
-    cli_token_type op,
-    val_t          left,
-    val_t          right);
+val_t eval_binop(cli_token_type op, val_t left, val_t right);
 val_t parse_funccall(cli_token *ftok);
 
-double to_double(val_t v);
-val_t mk_long(long v);
-val_t mk_double(double v);
-val_t mk_string(const char *s);
-int check_image(const char *name);
+double      to_double(val_t v);
+val_t       mk_long(long v);
+val_t       mk_double(double v);
+val_t       mk_string(const char *s);
+int         check_image(const char *name);
 const char *alloc_tmpname(void);
 
 val_t parse_expr(int min_prec);

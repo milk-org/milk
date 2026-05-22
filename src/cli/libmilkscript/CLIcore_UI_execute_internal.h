@@ -25,9 +25,7 @@
  * @brief Detect shell meta-characters outside quotes.
  * @return 1 if restricted symbols found, 0 if clean
  */
-int cli_check_unquoted_restricted_symbols(
-    const char *cmdline
-);
+int cli_check_unquoted_restricted_symbols(const char *cmdline);
 
 /**
  * @brief Split command line at top-level && or ||.
@@ -78,11 +76,7 @@ int cli_rewrite_dot_source(void);
  *
  * @return Index of the matched character, or -1
  */
-int cli_find_unquoted_op(
-    const char *line,
-    char       primary,
-    char       reject,
-    char       accept);
+int cli_find_unquoted_op(const char *line, char primary, char reject, char accept);
 
 /* ---- I/O Redirection handlers (redir.c) ---- */
 
@@ -159,9 +153,7 @@ int cli_handle_shell_builtins(void);
  *                     path where "a=b+1" is arithmetic).
  * @return 1 if internal, 0 if external
  */
-int is_internal_cmd(
-    const char *firstword,
-    int        check_assign);
+int is_internal_cmd(const char *firstword, int check_assign);
 
 /**
  * @brief Set up pipe-to-shell stdout redirect.
@@ -171,18 +163,14 @@ int is_internal_cmd(
  * @param[out] pipe_fp           opened popen handle (or NULL)
  * @param[out] saved_stdout_fd   dup'd original stdout fd
  */
-void cli_pipe_setup(
-    FILE **pipe_fp,
-    int  *saved_stdout_fd);
+void cli_pipe_setup(FILE **pipe_fp, int *saved_stdout_fd);
 
 /**
  * @brief Restore stdout after pipe and close the pipe.
  * @param pipe_fp          handle returned by cli_pipe_setup
  * @param saved_stdout_fd  fd returned by cli_pipe_setup
  */
-void cli_pipe_teardown(
-    FILE *pipe_fp,
-    int  saved_stdout_fd);
+void cli_pipe_teardown(FILE *pipe_fp, int saved_stdout_fd);
 
 /**
  * @brief Set up file-redirect stdout (> file).
@@ -192,18 +180,14 @@ void cli_pipe_teardown(
  * @param[out] redir_fp           opened file handle (or NULL)
  * @param[out] saved_stdout_fd    dup'd original stdout fd
  */
-void cli_redir_setup(
-    FILE **redir_fp,
-    int  *saved_stdout_fd);
+void cli_redir_setup(FILE **redir_fp, int *saved_stdout_fd);
 
 /**
  * @brief Restore stdout after file redirect.
  * @param redir_fp         handle returned by cli_redir_setup
  * @param saved_stdout_fd  fd returned by cli_redir_setup
  */
-void cli_redir_teardown(
-    FILE *redir_fp,
-    int  saved_stdout_fd);
+void cli_redir_teardown(FILE *redir_fp, int saved_stdout_fd);
 
 /**
  * @brief Print "did you mean?" suggestions for an

@@ -6,19 +6,17 @@
 #include <string.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "libmilkdata/milkdata.h"
+#    include "libmilkdata/milkdata.h"
 #endif
 #include "image_ID.h"
 #include "COREMOD_memory/imageID.h"
 #include "variable_ID.h"
 
 /* creates floating point variable */
-variableID create_variable_ID(
-    const char *name,
-    double     value)
+variableID create_variable_ID(const char *name, double value)
 {
     variableID ID;
     long       i2;
@@ -27,13 +25,15 @@ variableID create_variable_ID(
 
     i2 = variable_ID(name);
 
-    if(imgid_exists(name))
+    if (imgid_exists(name))
     {
-        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an "
+               "image\n",
+               name);
     }
     else
     {
-        if(i2 != -1)
+        if (i2 != -1)
         {
             //	  printf("Warning : variable name \"%s\" is already in use\n",name);
             ID = i2;
@@ -52,9 +52,7 @@ variableID create_variable_ID(
 }
 
 /* creates long variable */
-variableID create_variable_long_ID(
-    const char *name,
-    long       value)
+variableID create_variable_long_ID(const char *name, long value)
 {
     variableID ID;
     long       i2;
@@ -62,13 +60,15 @@ variableID create_variable_long_ID(
     ID = -1;
     i2 = variable_ID(name);
 
-    if(imgid_exists(name))
+    if (imgid_exists(name))
     {
-        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an "
+               "image\n",
+               name);
     }
     else
     {
-        if(i2 != -1)
+        if (i2 != -1)
         {
             //	  printf("Warning : variable name \"%s\" is already in use\n",name);
             ID = i2;
@@ -88,9 +88,7 @@ variableID create_variable_long_ID(
 }
 
 /* creates long variable */
-variableID create_variable_string_ID(
-    const char *name,
-    const char *value)
+variableID create_variable_string_ID(const char *name, const char *value)
 {
     variableID ID;
     long       i2;
@@ -98,13 +96,15 @@ variableID create_variable_string_ID(
     ID = -1;
     i2 = variable_ID(name);
 
-    if(imgid_exists(name))
+    if (imgid_exists(name))
     {
-        printf("ERROR: cannot create variable \"%s\": name already used as an " "image\n", name);
+        printf("ERROR: cannot create variable \"%s\": name already used as an "
+               "image\n",
+               name);
     }
     else
     {
-        if(i2 != -1)
+        if (i2 != -1)
         {
             //	  printf("Warning : variable name \"%s\" is already in use\n",name);
             ID = i2;

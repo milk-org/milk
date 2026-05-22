@@ -14,22 +14,21 @@ long fps_ID(const char *name)
     int  loopOK;
     long tmpID = 0;
 
-    if(fpsarray == NULL)
+    if (fpsarray == NULL)
     {
         return -1;
     }
 
     i      = 0;
     loopOK = 1;
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
-
-        if(fpsarray[i].SMfd >= 0)
+        if (fpsarray[i].SMfd >= 0)
         {
             // fps in use
 
-            if((strncmp(name, fpsarray[i].md->name, strlen(name)) == 0) &&
-                    (fpsarray[i].md->name[strlen(name)] == '\0'))
+            if ((strncmp(name, fpsarray[i].md->name, strlen(name)) == 0) &&
+                (fpsarray[i].md->name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -38,7 +37,7 @@ long fps_ID(const char *name)
 
         i++;
 
-        if(i == NB_FPS_MAX)
+        if (i == NB_FPS_MAX)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -51,17 +50,16 @@ long fps_ID(const char *name)
 /* next available ID number */
 long next_avail_fps_ID()
 {
-
     long ID = -1;
 
-    if(fpsarray == NULL)
+    if (fpsarray == NULL)
     {
         return -1;
     }
 
-    for(long i = 0; i < NB_FPS_MAX; i++)
+    for (long i = 0; i < NB_FPS_MAX; i++)
     {
-        if(fpsarray[i].SMfd < 0)
+        if (fpsarray[i].SMfd < 0)
         {
             // fps is unused, lets grab it
             ID = i;
@@ -69,11 +67,12 @@ long next_avail_fps_ID()
         }
     }
 
-    if(ID == -1)
+    if (ID == -1)
     {
-        PRINT_ERROR(
-            "ran out of FPS IDs - cannot allocate new ID; "
-            "NB_FPS_MAX should be increased above current " "value (%d)", NB_FPS_MAX);
+        PRINT_ERROR("ran out of FPS IDs - cannot allocate new ID; "
+                    "NB_FPS_MAX should be increased above current "
+                    "value (%d)",
+                    NB_FPS_MAX);
     }
 
     return ID;

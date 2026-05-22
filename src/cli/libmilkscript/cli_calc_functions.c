@@ -49,17 +49,15 @@
  * else F. Works for both scalar and image arguments.
  * Extracted from parse_funccall() to reduce nesting depth.
  */
-static val_t func_where(
-    cli_token *(*cur_func)(void),
-    cli_token *(*advance_func)(void))
+static val_t func_where(cli_token *(*cur_func)(void), cli_token *(*advance_func)(void) )
 {
     val_t cond = parse_expr(0);
-    if(parse_error || eval_error)
+    if (parse_error || eval_error)
     {
         return mk_double(0);
     }
 
-    if(cur_func()->type != TOK_COMMA)
+    if (cur_func()->type != TOK_COMMA)
     {
         parse_errmsg("Expected ','");
         return mk_double(0);
@@ -67,12 +65,12 @@ static val_t func_where(
     advance_func();
 
     val_t argT = parse_expr(0);
-    if(parse_error || eval_error)
+    if (parse_error || eval_error)
     {
         return mk_double(0);
     }
 
-    if(cur_func()->type != TOK_COMMA)
+    if (cur_func()->type != TOK_COMMA)
     {
         parse_errmsg("Expected ','");
         return mk_double(0);
@@ -80,12 +78,12 @@ static val_t func_where(
     advance_func();
 
     val_t argF = parse_expr(0);
-    if(parse_error || eval_error)
+    if (parse_error || eval_error)
     {
         return mk_double(0);
     }
 
-    if(cur_func()->type != TOK_RPAREN)
+    if (cur_func()->type != TOK_RPAREN)
     {
         parse_errmsg("Expected ')'");
         return mk_double(0);
@@ -93,7 +91,7 @@ static val_t func_where(
     advance_func();
 
     /* Scalar condition */
-    if(cond.type != VAL_STRING)
+    if (cond.type != VAL_STRING)
     {
         double c = to_double(cond);
         return (c != 0) ? argT : argF;
@@ -102,23 +100,23 @@ static val_t func_where(
     /* Image condition — build mask and anti-mask */
     char tmp_mask[200], tmp_imask[200];
     char tmp_tpart[200], tmp_fpart[200], tmpn[200];
-    snprintf(tmp_mask,  200, "%s", alloc_tmpname());
+    snprintf(tmp_mask, 200, "%s", alloc_tmpname());
     snprintf(tmp_imask, 200, "%s", alloc_tmpname());
     snprintf(tmp_tpart, 200, "%s", alloc_tmpname());
     snprintf(tmp_fpart, 200, "%s", alloc_tmpname());
-    snprintf(tmpn,      200, "%s", alloc_tmpname());
+    snprintf(tmpn, 200, "%s", alloc_tmpname());
 
-    if(!check_image(cond.sval))
+    if (!check_image(cond.sval))
     {
         return mk_string("");
     }
 
     arith_image_csttestne(cond.sval, 0.0, tmp_mask);
-    arith_image_cstteste( cond.sval, 0.0, tmp_imask);
+    arith_image_cstteste(cond.sval, 0.0, tmp_imask);
 
-    if(argT.type == VAL_STRING)
+    if (argT.type == VAL_STRING)
     {
-        if(!check_image(argT.sval))
+        if (!check_image(argT.sval))
         {
             return mk_string("");
         }
@@ -129,9 +127,9 @@ static val_t func_where(
         arith_image_cstmult(tmp_mask, to_double(argT), tmp_tpart);
     }
 
-    if(argF.type == VAL_STRING)
+    if (argF.type == VAL_STRING)
     {
-        if(!check_image(argF.sval))
+        if (!check_image(argF.sval))
         {
             return mk_string("");
         }
@@ -156,16 +154,14 @@ static val_t func_where(
  * with all occurrences of old replaced by new.
  * Extracted from parse_funccall() to reduce nesting depth.
  */
-static val_t func_replace(
-    cli_token *(*cur_func)(void),
-    cli_token *(*advance_func)(void))
+static val_t func_replace(cli_token *(*cur_func)(void), cli_token *(*advance_func)(void) )
 {
     val_t arg1 = parse_expr(0);
-    if(parse_error || eval_error)
+    if (parse_error || eval_error)
     {
         return mk_double(0);
     }
-    if(cur_func()->type != TOK_COMMA)
+    if (cur_func()->type != TOK_COMMA)
     {
         parse_errmsg("replace: need 3 args");
         return mk_double(0);
@@ -173,11 +169,11 @@ static val_t func_replace(
     advance_func();
 
     val_t arg2 = parse_expr(0);
-    if(parse_error || eval_error)
+    if (parse_error || eval_error)
     {
         return mk_double(0);
     }
-    if(cur_func()->type != TOK_COMMA)
+    if (cur_func()->type != TOK_COMMA)
     {
         parse_errmsg("replace: need 3 args");
         return mk_double(0);
@@ -185,11 +181,11 @@ static val_t func_replace(
     advance_func();
 
     val_t arg3 = parse_expr(0);
-    if(parse_error || eval_error)
+    if (parse_error || eval_error)
     {
         return mk_double(0);
     }
-    if(cur_func()->type != TOK_RPAREN)
+    if (cur_func()->type != TOK_RPAREN)
     {
         parse_errmsg("Expected ')'");
         return mk_double(0);
@@ -199,22 +195,22 @@ static val_t func_replace(
     const char *s1 = NULL;
     const char *s2 = NULL;
     const char *s3 = NULL;
-    if(arg1.type == VAL_STRING)
+    if (arg1.type == VAL_STRING)
     {
         const char *cv = cli_var_get(arg1.sval);
-        s1 = cv ? cv : arg1.sval;
+        s1             = cv ? cv : arg1.sval;
     }
-    if(arg2.type == VAL_STRING)
+    if (arg2.type == VAL_STRING)
     {
         const char *cv = cli_var_get(arg2.sval);
-        s2 = cv ? cv : arg2.sval;
+        s2             = cv ? cv : arg2.sval;
     }
-    if(arg3.type == VAL_STRING)
+    if (arg3.type == VAL_STRING)
     {
         const char *cv = cli_var_get(arg3.sval);
-        s3 = cv ? cv : arg3.sval;
+        s3             = cv ? cv : arg3.sval;
     }
-    if(!s1 || !s2 || !s3)
+    if (!s1 || !s2 || !s3)
     {
         parse_errmsg("replace: all args must be strings");
         return mk_double(0);
@@ -223,7 +219,7 @@ static val_t func_replace(
     char result[CLI_CALC_TOKEN_MAXLEN];
     result[0] = '\0';
     int s2len = (int) strlen(s2);
-    if(s2len == 0)
+    if (s2len == 0)
     {
         strncpy(result, s1, sizeof(result) - 1);
         result[sizeof(result) - 1] = '\0';
@@ -233,12 +229,12 @@ static val_t func_replace(
         const char *p   = s1;
         char       *w   = result;
         char       *end = result + sizeof(result) - 1;
-        while(*p && w < end)
+        while (*p && w < end)
         {
-            if(strncmp(p, s2, (size_t) s2len) == 0)
+            if (strncmp(p, s2, (size_t) s2len) == 0)
             {
                 int rlen = (int) strlen(s3);
-                if(w + rlen < end)
+                if (w + rlen < end)
                 {
                     memcpy(w, s3, (size_t) rlen);
                     w += rlen;
@@ -273,21 +269,24 @@ static val_t func_replace(
  */
 val_t parse_funccall(cli_token *ftok)
 {
-
     cli_token *(*cur_func)(void);
     cli_token *(*advance_func)(void);
 
-    if (parse_error || eval_error) { // Check both error flags
+    if (parse_error || eval_error)
+    { // Check both error flags
         return mk_double(0);
     }
 
     // Determine which token stream to use based on which error flag is active
     // This is a bit of a hack, ideally the parser state would be passed explicitly
-    if (parse_mode == 0) { // cli_parse is active
-        cur_func = cur_parse;
+    if (parse_mode == 0)
+    { // cli_parse is active
+        cur_func     = cur_parse;
         advance_func = advance_parse;
-    } else { // cli_calc_eval_line is active
-        cur_func = cur_eval;
+    }
+    else
+    { // cli_calc_eval_line is active
+        cur_func     = cur_eval;
         advance_func = advance_eval;
     }
 
@@ -468,8 +467,8 @@ val_t parse_funccall(cli_token *ftok)
                 return mk_string("");
             }
             const char *tmpn = alloc_tmpname();
-            arith_image_function_imdd_im__ddd_d(
-                arg1.sval, to_double(arg2), to_double(arg3), tmpn, ftok->fnctptr);
+            arith_image_function_imdd_im__ddd_d(arg1.sval, to_double(arg2), to_double(arg3), tmpn,
+                                                ftok->fnctptr);
             return mk_string(tmpn);
         }
 
@@ -479,7 +478,7 @@ val_t parse_funccall(cli_token *ftok)
         return mk_double(((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3));
     }
 
-    if(ftok->type == TOK_FUNC_WHERE)
+    if (ftok->type == TOK_FUNC_WHERE)
     {
         return func_where(cur_func, advance_func);
     }
@@ -487,19 +486,37 @@ val_t parse_funccall(cli_token *ftok)
     if (ftok->type == TOK_FUNC_IMIM_D)
     {
         val_t arg1 = parse_expr(0);
-        if (parse_error || eval_error) return mk_double(0);
-        if (cur_func()->type != TOK_COMMA) { parse_errmsg("Expected ','"); return mk_double(0); }
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg("Expected ','");
+            return mk_double(0);
+        }
         advance_func();
         val_t arg2 = parse_expr(0);
-        if (parse_error || eval_error) return mk_double(0);
-        if (cur_func()->type != TOK_RPAREN) { parse_errmsg("Expected ')'"); return mk_double(0); }
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
         advance_func();
 
-        if (arg1.type != VAL_STRING || arg2.type != VAL_STRING) {
+        if (arg1.type != VAL_STRING || arg2.type != VAL_STRING)
+        {
             parse_errmsg("Expected two image arguments");
             return mk_double(0);
         }
-        if (!check_image(arg1.sval) || !check_image(arg2.sval)) return mk_double(0);
+        if (!check_image(arg1.sval) || !check_image(arg2.sval))
+        {
+            return mk_double(0);
+        }
 
         // Call ftok->fnctptr for vector operation (e.g. dot())
         double res = ((double (*)(const char *, const char *)) ftok->fnctptr)(arg1.sval, arg2.sval);
@@ -579,8 +596,7 @@ val_t parse_funccall(cli_token *ftok)
             return mk_double(0);
         }
 
-        double res = ((double (*)(const char *, double)) ftok->fnctptr)(
-            arg1.sval, to_double(arg2));
+        double res = ((double (*)(const char *, double)) ftok->fnctptr)(arg1.sval, to_double(arg2));
         return mk_double(res);
     }
 
@@ -642,11 +658,11 @@ val_t parse_funccall(cli_token *ftok)
 
         /* Resolve string value */
         const char *sv = NULL;
-        char numbuf[64];
+        char        numbuf[64];
         if (arg.type == VAL_STRING)
         {
             const char *cv = cli_var_get(arg.sval);
-            sv = cv ? cv : arg.sval;
+            sv             = cv ? cv : arg.sval;
         }
         else if (arg.type == VAL_LONG)
         {
@@ -666,16 +682,14 @@ val_t parse_funccall(cli_token *ftok)
         const char *fn = ftok->sval;
         if (strncmp(fn, "toupper(", 8) == 0)
         {
-            for (int i = 0;
-                 result[i]; i++)
+            for (int i = 0; result[i]; i++)
             {
                 result[i] = (char) toupper((unsigned char) result[i]);
             }
         }
         else /* tolower */
         {
-            for (int i = 0;
-                 result[i]; i++)
+            for (int i = 0; result[i]; i++)
             {
                 result[i] = (char) tolower((unsigned char) result[i]);
             }
@@ -728,20 +742,30 @@ val_t parse_funccall(cli_token *ftok)
         if (arg1.type == VAL_STRING)
         {
             const char *cv = cli_var_get(arg1.sval);
-            sv = cv ? cv : arg1.sval;
+            sv             = cv ? cv : arg1.sval;
         }
         else
         {
-            parse_errmsg("substr: first arg " "must be string");
+            parse_errmsg("substr: first arg "
+                         "must be string");
             return mk_double(0);
         }
 
         int slen = (int) strlen(sv);
-        int off = (int) to_double(arg2);
-        int len = (int) to_double(arg3);
-        if (off < 0) { off = 0; }
-        if (off > slen) { off = slen; }
-        if (len < 0) { len = 0; }
+        int off  = (int) to_double(arg2);
+        int len  = (int) to_double(arg3);
+        if (off < 0)
+        {
+            off = 0;
+        }
+        if (off > slen)
+        {
+            off = slen;
+        }
+        if (len < 0)
+        {
+            len = 0;
+        }
         if (off + len > slen)
         {
             len = slen - off;
@@ -757,7 +781,7 @@ val_t parse_funccall(cli_token *ftok)
     }
 
     /* replace(s, old, new) -> string */
-    if(ftok->type == TOK_FUNC_SSS_S)
+    if (ftok->type == TOK_FUNC_SSS_S)
     {
         return func_replace(cur_func, advance_func);
     }
@@ -779,22 +803,21 @@ val_t parse_funccall(cli_token *ftok)
 
         long iv = (arg.type == VAL_LONG) ? arg.lval : (long) to_double(arg);
 
-        char result[CLI_CALC_TOKEN_MAXLEN];
+        char        result[CLI_CALC_TOKEN_MAXLEN];
         const char *fn = ftok->sval;
         if (strncmp(fn, "hex(", 4) == 0)
         {
             snprintf(result, sizeof(result), "0x%lx", iv);
         }
-        else if (strncmp(fn, "oct(", 4)
-                 == 0)
+        else if (strncmp(fn, "oct(", 4) == 0)
         {
             snprintf(result, sizeof(result), "0o%lo", iv);
         }
         else /* bin */
         {
             char *w = result;
-            *w++ = '0';
-            *w++ = 'b';
+            *w++    = '0';
+            *w++    = 'b';
             if (iv == 0)
             {
                 *w++ = '0';
@@ -803,14 +826,13 @@ val_t parse_funccall(cli_token *ftok)
             {
                 long v = iv;
                 char bits[65];
-                int bi = 0;
+                int  bi = 0;
                 while (v > 0 && bi < 64)
                 {
                     bits[bi++] = (v & 1) ? '1' : '0';
                     v >>= 1;
                 }
-                for (int i = bi - 1;
-                     i >= 0; i--)
+                for (int i = bi - 1; i >= 0; i--)
                 {
                     *w++ = bits[i];
                 }

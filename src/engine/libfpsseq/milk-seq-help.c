@@ -6,20 +6,17 @@
 #include <stdio.h>
 #include <string.h>
 
-#define COLOR_RESET   "\033[0m"
-#define COLOR_BOLD    "\033[1m"
-#define COLOR_CYAN    "\033[36m"
-#define COLOR_GREEN   "\033[32m"
-#define COLOR_YELLOW  "\033[33m"
+#define COLOR_RESET "\033[0m"
+#define COLOR_BOLD "\033[1m"
+#define COLOR_CYAN "\033[36m"
+#define COLOR_GREEN "\033[32m"
+#define COLOR_YELLOW "\033[33m"
 
-int main(
-    int argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
-    for(int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
-        if(strcmp(argv[i], "-h1") == 0 ||
-                strcmp(argv[i], "--help-oneline") == 0)
+        if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("FPS sequencer scripting guide\n");
             return 0;
@@ -56,11 +53,14 @@ int main(
            "                 List all active sequencer instances\n");
     printf("    " COLOR_YELLOW "seq.start <name>" COLOR_RESET
            "         Start a daemonized sequencer\n");
-    printf("    " COLOR_YELLOW "seq.stop  <name>" COLOR_RESET "         Stop via SIGTERM (PID file)\n");
+    printf("    " COLOR_YELLOW "seq.stop  <name>" COLOR_RESET
+           "         Stop via SIGTERM (PID file)\n");
     printf("    " COLOR_YELLOW "seq.status <name>" COLOR_RESET
            "        View task status and error counts\n");
-    printf("    " COLOR_YELLOW "seq.submit <name> <cmd>" COLOR_RESET "  Inject a command via FIFO\n");
-    printf("    " COLOR_YELLOW "seq.log <name>" COLOR_RESET "           Show tail of daemon log\n\n");
+    printf("    " COLOR_YELLOW "seq.submit <name> <cmd>" COLOR_RESET
+           "  Inject a command via FIFO\n");
+    printf("    " COLOR_YELLOW "seq.log <name>" COLOR_RESET
+           "           Show tail of daemon log\n\n");
 
     printf(COLOR_BOLD "3. SCRIPTING COMMANDS\n" COLOR_RESET);
     printf("  Inside a `.seq` file, standard bash executable calls are valid.\n");

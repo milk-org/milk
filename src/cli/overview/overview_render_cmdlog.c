@@ -41,7 +41,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
     int start = (log->head - show + OV_CMDLOG_MAX) % OV_CMDLOG_MAX;
 
     /* Dark background for the log strip */
-    ov_rgb_t bg = {20, 20, 30};
+    ov_rgb_t bg = { 20, 20, 30 };
 
     /* Render each row */
     for (int row = 0; row < r.height; row++)
@@ -57,35 +57,35 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
             continue;
         }
 
-        int idx = (start + row) % OV_CMDLOG_MAX;
-        const OV_CMDLOG_ENTRY *e = &log->entries[idx];
+        int                    idx = (start + row) % OV_CMDLOG_MAX;
+        const OV_CMDLOG_ENTRY *e   = &log->entries[idx];
 
         /* Format timestamp HH:MM:SS */
         struct tm tm_buf;
         localtime_r(&e->ts.tv_sec, &tm_buf);
         char tstr[12];
-        snprintf(tstr, sizeof(tstr),
-                 "%02d:%02d:%02d", tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
+        snprintf(tstr, sizeof(tstr), "%02d:%02d:%02d", tm_buf.tm_hour, tm_buf.tm_min,
+                 tm_buf.tm_sec);
 
         /* Status bullet color */
-        ov_rgb_t bullet_fg;
+        ov_rgb_t    bullet_fg;
         const char *bullet;
         switch (e->level)
         {
         case OV_CMDLOG_OK:
-            bullet_fg = (ov_rgb_t){80, 220, 80};
+            bullet_fg = (ov_rgb_t) { 80, 220, 80 };
             bullet    = "✓";
             break;
         case OV_CMDLOG_FAIL:
-            bullet_fg = (ov_rgb_t){220, 60, 60};
+            bullet_fg = (ov_rgb_t) { 220, 60, 60 };
             bullet    = "✗";
             break;
         case OV_CMDLOG_WARN:
-            bullet_fg = (ov_rgb_t){220, 180, 40};
+            bullet_fg = (ov_rgb_t) { 220, 180, 40 };
             bullet    = "⚠";
             break;
         default: /* INFO */
-            bullet_fg = (ov_rgb_t){100, 140, 200};
+            bullet_fg = (ov_rgb_t) { 100, 140, 200 };
             bullet    = "ℹ";
             break;
         }
@@ -107,17 +107,21 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         {
             msg_max = 0;
         }
-        
+
         int msg_disp_len = 0;
-        int max_bytes = 0;
-        for (int i = 0; e->msg[i] != '\0'; ) {
-            int cw = utf8_char_length((unsigned char)e->msg[i]);
-            if (msg_disp_len + 1 > msg_max) break;
+        int max_bytes    = 0;
+        for (int i = 0; e->msg[i] != '\0';)
+        {
+            int cw = utf8_char_length((unsigned char) e->msg[i]);
+            if (msg_disp_len + 1 > msg_max)
+            {
+                break;
+            }
             msg_disp_len += 1;
             max_bytes += cw;
             i += cw;
         }
-        
+
         ov_buf_printf("%.*s", max_bytes, e->msg);
         nw += msg_disp_len;
 

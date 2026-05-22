@@ -8,9 +8,9 @@
 #include <dirent.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -20,14 +20,12 @@
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info =
-{
-    .fps_name    = "fpslist",
-    .cmdkey      = "fpslist",
-    .description =
-    "list function parameter structures",
-    .description_long =
-    "List all FPS (Function Parameter Structure) instances currently active in shared memory. Shows FPS name, status, and associated process."
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name         = "fpslist",
+    .cmdkey           = "fpslist",
+    .description      = "list function parameter structures",
+    .description_long = "List all FPS (Function Parameter Structure) instances currently active in "
+                        "shared memory. Shows FPS name, status, and associated process."
 };
 
 
@@ -42,7 +40,7 @@ static FPS_APP_INFO FPS_app_info =
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)  /* empty */
+#define FPS_PARAMS(X) /* empty */
 
 
 /* ================================================================
@@ -51,34 +49,28 @@ static FPS_APP_INFO FPS_app_info =
 
 errno_t fps_list()
 {
-
     long fpscnt = 0;
 
     int NBchar_fpsID   = 5;
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-    for(long fpsID = 0; fpsID < dcnfps; fpsID++)
+    for (long fpsID = 0; fpsID < dcnfps; fpsID++)
     {
-        if(dcfpsarr[fpsID].SMfd > -1)
+        if (dcfpsarr[fpsID].SMfd > -1)
         {
-            if(fpscnt == 0)
+            if (fpscnt == 0)
             {
                 printf("FPSs currently connected :\n");
             }
-            printf(
-                "%*ld  %*s  %*ld/%*ld entries\n",
-                NBchar_fpsID,
-                fpsID,
-                NBchar_fpsname,
-                dcfpsarr[fpsID].md[0].name,
-                NBchar_NBparam,
-                dcfpsarr[fpsID].NBparamActive, NBchar_NBparam, dcfpsarr[fpsID].NBparam);
+            printf("%*ld  %*s  %*ld/%*ld entries\n", NBchar_fpsID, fpsID, NBchar_fpsname,
+                   dcfpsarr[fpsID].md[0].name, NBchar_NBparam, dcfpsarr[fpsID].NBparamActive,
+                   NBchar_NBparam, dcfpsarr[fpsID].NBparam);
 
             fpscnt++;
         }
     }
-    if(fpscnt == 0)
+    if (fpscnt == 0)
     {
         printf("No FPS currently connected\n");
     }
@@ -89,16 +81,16 @@ errno_t fps_list()
     {
         struct dirent *de;
         DIR           *dr = opendir(dcshmdir);
-        if(dr == NULL)
+        if (dr == NULL)
         {
             printf("Could not open current directory");
             return RETURN_FAILURE;
         }
 
         fpscnt = 0;
-        while((de = readdir(dr)) != NULL)
+        while ((de = readdir(dr)) != NULL)
         {
-            if(strstr(de->d_name, ".fps.shm") != NULL)
+            if (strstr(de->d_name, ".fps.shm") != NULL)
             {
                 char fpsname[100];
                 int  slen1 = 100 - strlen(".fps.shm");
@@ -121,15 +113,11 @@ errno_t fps_list()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata =
-{
+CLICMDDATA CLIcmddata = {
 #else
-static CLICMDDATA CLIcmddata =
-{
+static CLICMDDATA CLIcmddata = {
 #endif
-    "",
-    "",
-    CLICMD_FIELDS_NOPARAM
+    "", "", CLICMD_FIELDS_NOPARAM
 };
 
 FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
@@ -157,14 +145,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-               &FPS_app_info, NULL, &CLIcmddata, NULL, 0, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, NULL, &CLIcmddata, NULL, 0,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_COREMOD_memory__fps_list()
+errno_t CLIADDCMD_COREMOD_memory__fps_list()
 {
-    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;

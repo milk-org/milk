@@ -26,7 +26,7 @@
 
 /* CLOCK_MILK — use ImageStreamIO's CLOCK_ISIO */
 #ifndef CLOCK_MILK
-#define CLOCK_MILK CLOCK_ISIO
+#    define CLOCK_MILK CLOCK_ISIO
 #endif
 
 /* =========================================================
@@ -44,11 +44,11 @@ typedef long imageID;
  * ========================================================= */
 
 #ifndef RETURN_SUCCESS
-#define RETURN_SUCCESS 0
+#    define RETURN_SUCCESS 0
 #endif
 
 #ifndef RETURN_FAILURE
-#define RETURN_FAILURE 1
+#    define RETURN_FAILURE 1
 #endif
 
 /* =========================================================
@@ -56,23 +56,23 @@ typedef long imageID;
  * ========================================================= */
 
 #ifndef STRINGMAXLEN_DEFAULT
-#define STRINGMAXLEN_DEFAULT 1000
+#    define STRINGMAXLEN_DEFAULT 1000
 #endif
 
 #ifndef STRINGMAXLEN_COMMAND
-#define STRINGMAXLEN_COMMAND 2000
+#    define STRINGMAXLEN_COMMAND 2000
 #endif
 
 #ifndef STRINGMAXLEN_FULLFILENAME
-#define STRINGMAXLEN_FULLFILENAME 2000
+#    define STRINGMAXLEN_FULLFILENAME 2000
 #endif
 
 #ifndef STRINGMAXLEN_IMAGE_NAME
-#define STRINGMAXLEN_IMAGE_NAME 80
+#    define STRINGMAXLEN_IMAGE_NAME 80
 #endif
 
 #ifndef STRINGMAXLEN_DIRNAME
-#define STRINGMAXLEN_DIRNAME 200
+#    define STRINGMAXLEN_DIRNAME 200
 #endif
 
 /* =========================================================
@@ -101,39 +101,37 @@ static inline const char *ov_get_shmdir(void)
  * ========================================================= */
 
 #define PRINT_ERROR(fmt, ...) \
-    fprintf(stderr, "ERROR [%s %s %d]: " fmt "\n", \
-            __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+    fprintf(stderr, "ERROR [%s %s %d]: " fmt "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
 /* =========================================================
  * Debug tracing — no-op unless OVERVIEW_VERBOSE defined
  * ========================================================= */
 
 #ifdef OVERVIEW_VERBOSE
-#define DEBUG_TRACEPOINT(fmt, ...) \
-    fprintf(stderr, "TRACE [%s:%d] " fmt "\n", \
-            __func__, __LINE__, ##__VA_ARGS__)
+#    define DEBUG_TRACEPOINT(fmt, ...) \
+        fprintf(stderr, "TRACE [%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__)
 #else
-#define DEBUG_TRACEPOINT(fmt, ...) do {} while (0)
+#    define DEBUG_TRACEPOINT(fmt, ...) \
+        do                             \
+        {                              \
+        } while (0)
 #endif
 
 /* =========================================================
  * Timespec diff helper
  * ========================================================= */
 
-static inline struct timespec ov_timespec_diff(
-    struct timespec start,
-    struct timespec end)
+static inline struct timespec ov_timespec_diff(struct timespec start, struct timespec end)
 {
     struct timespec result;
     if ((end.tv_nsec - start.tv_nsec) < 0)
     {
         result.tv_sec  = end.tv_sec - start.tv_sec - 1;
-        result.tv_nsec =
-            end.tv_nsec - start.tv_nsec + 1000000000L;
+        result.tv_nsec = end.tv_nsec - start.tv_nsec + 1000000000L;
     }
     else
     {
-        result.tv_sec  = end.tv_sec  - start.tv_sec;
+        result.tv_sec  = end.tv_sec - start.tv_sec;
         result.tv_nsec = end.tv_nsec - start.tv_nsec;
     }
     return result;

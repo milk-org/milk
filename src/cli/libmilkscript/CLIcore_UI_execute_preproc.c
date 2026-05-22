@@ -54,19 +54,17 @@ extern int cli_last_retval;
  * @param cmdline  Command line to scan
  * @return 1 if restricted symbols found, 0 if clean
  */
-int cli_check_unquoted_restricted_symbols(
-    const char *cmdline
-)
+int cli_check_unquoted_restricted_symbols(const char *cmdline)
 {
     int in_squote = 0;
     int in_dquote = 0;
-    int esc = 0;
+    int esc       = 0;
 
     /* '[' and ']' removed to allow stream
      * slicing syntax (e.g. im[0:19,10:29]). */
     const char *restricted = ";<>|()*&$";
 
-    int word_start = 1;
+    int word_start          = 1;
     int valid_assign_prefix = 0;
 
     for (int i = 0; cmdline[i] != '\0'; i++)
@@ -75,51 +73,57 @@ int cli_check_unquoted_restricted_symbols(
 
         if (esc)
         {
-            esc = 0;
-            word_start = 0;
+            esc                 = 0;
+            word_start          = 0;
             valid_assign_prefix = 0;
             continue;
         }
 
         if (c == '\\')
         {
-            esc = 1;
-            word_start = 0;
+            esc                 = 1;
+            word_start          = 0;
             valid_assign_prefix = 0;
             continue;
         }
 
         if (in_squote)
         {
-            if (c == '\'') in_squote = 0;
+            if (c == '\'')
+            {
+                in_squote = 0;
+            }
             continue;
         }
 
         if (in_dquote)
         {
-            if (c == '"') in_dquote = 0;
+            if (c == '"')
+            {
+                in_dquote = 0;
+            }
             continue;
         }
 
         if (c == '\'')
         {
-            in_squote = 1;
-            word_start = 0;
+            in_squote           = 1;
+            word_start          = 0;
             valid_assign_prefix = 0;
             continue;
         }
 
         if (c == '"')
         {
-            in_dquote = 1;
-            word_start = 0;
+            in_dquote           = 1;
+            word_start          = 0;
             valid_assign_prefix = 0;
             continue;
         }
 
         if (isspace(c))
         {
-            word_start = 1;
+            word_start          = 1;
             valid_assign_prefix = 0;
             continue;
         }
@@ -141,8 +145,7 @@ int cli_check_unquoted_restricted_symbols(
 
         if (word_start)
         {
-            if (isalpha(c) || c == '_'
-                || c == '@')
+            if (isalpha(c) || c == '_' || c == '@')
             {
                 valid_assign_prefix = 1;
             }
@@ -154,8 +157,7 @@ int cli_check_unquoted_restricted_symbols(
         }
         else
         {
-            if (!isalnum(c) && c != '_'
-                && c != '.' && c != '@')
+            if (!isalnum(c) && c != '_' && c != '.' && c != '@')
             {
                 valid_assign_prefix = 0;
             }
@@ -180,17 +182,16 @@ int cli_check_unquoted_restricted_symbols(
  */
 int cli_split_logical_op(errno_t *retval)
 {
-    const char *src = data.CLIcmdline;
-    int split_pos = -1;
-    int op_len = 0;
-    int op_is_and = 0;
+    const char *src       = data.CLIcmdline;
+    int         split_pos = -1;
+    int         op_len    = 0;
+    int         op_is_and = 0;
 
     /* Find first unquoted && and || and pick earliest */
     int pos_and = cli_find_unquoted_op(src, '&', 0, '&');
-    int pos_or = cli_find_unquoted_op(src, '|', 0, '|');
+    int pos_or  = cli_find_unquoted_op(src, '|', 0, '|');
 
-    if (pos_and >= 0 &&
-        (pos_or < 0 || pos_and < pos_or))
+    if (pos_and >= 0 && (pos_or < 0 || pos_and < pos_or))
     {
         split_pos = pos_and;
         op_len    = 2;
@@ -207,7 +208,7 @@ int cli_split_logical_op(errno_t *retval)
         return 0;
     }
 
-    char right[STRINGMAXLEN_CLICMDLINE];
+    char        right[STRINGMAXLEN_CLICMDLINE];
     const char *rp = src + split_pos + op_len;
     while (*rp == ' ' || *rp == '\t')
     {
@@ -222,14 +223,14 @@ int cli_split_logical_op(errno_t *retval)
     strncpy(data.CLIcmdline, left, STRINGMAXLEN_CLICMDLINE - 1);
     data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
-    errno_t lret = CLI_execute_line();
-    int ok = (cli_last_retval == 0);
-    int run_right = (op_is_and && ok) || (!op_is_and && !ok);
+    errno_t lret      = CLI_execute_line();
+    int     ok        = (cli_last_retval == 0);
+    int     run_right = (op_is_and && ok) || (!op_is_and && !ok);
     if (run_right)
     {
         strncpy(data.CLIcmdline, right, STRINGMAXLEN_CLICMDLINE - 1);
         data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-        *retval = CLI_execute_line();
+        *retval                                      = CLI_execute_line();
         return 1;
     }
     *retval = lret;
@@ -247,12 +248,10 @@ int cli_split_logical_op(errno_t *retval)
  *                     the line was consumed
  * @return 1 if the line was consumed, 0 otherwise
  */
-int cli_rewrite_stream_pipe(
-    errno_t *retval
-)
+int cli_rewrite_stream_pipe(errno_t *retval)
 {
-    const char *src = data.CLIcmdline;
-    int gpipe = cli_find_unquoted_op(src, '|', 0, '>');
+    const char *src   = data.CLIcmdline;
+    int         gpipe = cli_find_unquoted_op(src, '|', 0, '>');
     if (gpipe < 0)
     {
         return 0;
@@ -263,9 +262,7 @@ int cli_rewrite_stream_pipe(
     lhs[gpipe] = '\0';
     {
         int e = gpipe - 1;
-        while (e >= 0
-               && (lhs[e] == ' '
-                   || lhs[e] == '\t'))
+        while (e >= 0 && (lhs[e] == ' ' || lhs[e] == '\t'))
         {
             lhs[e--] = '\0';
         }
@@ -276,10 +273,10 @@ int cli_rewrite_stream_pipe(
         rhs++;
     }
     const char *sp = strchr(rhs, ' ');
-    char newcmd[STRINGMAXLEN_CLICMDLINE];
+    char        newcmd[STRINGMAXLEN_CLICMDLINE];
     if (sp != NULL)
     {
-        snprintf(newcmd, sizeof(newcmd), "%.*s %s %s", (int)(sp - rhs), rhs, lhs, sp + 1);
+        snprintf(newcmd, sizeof(newcmd), "%.*s %s %s", (int) (sp - rhs), rhs, lhs, sp + 1);
     }
     else
     {
@@ -287,8 +284,8 @@ int cli_rewrite_stream_pipe(
     }
     strncpy(data.CLIcmdline, newcmd, STRINGMAXLEN_CLICMDLINE - 1);
     data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    *retval = CLI_execute_line();
-    data.CMDexecuted = 1;
+    *retval                                      = CLI_execute_line();
+    data.CMDexecuted                             = 1;
     return 1;
 }
 
@@ -311,11 +308,10 @@ int cli_rewrite_stream_pipe(
  */
 int cli_split_pipe(errno_t *retval)
 {
-    const char *src = data.CLIcmdline;
-    int pipe_pos = cli_find_unquoted_op(src, '|', '|', 0);
+    const char *src      = data.CLIcmdline;
+    int         pipe_pos = cli_find_unquoted_op(src, '|', '|', 0);
     /* Also reject |> (stream pipe) */
-    if (pipe_pos >= 0
-        && src[pipe_pos + 1] == '>')
+    if (pipe_pos >= 0 && src[pipe_pos + 1] == '>')
     {
         pipe_pos = -1;
     }
@@ -339,17 +335,14 @@ int cli_split_pipe(errno_t *retval)
     /* Check if right side is a milk command;
      * if not, fall through for popen handler */
     {
-        char rword[200];
-        int rw = 0;
+        char        rword[200];
+        int         rw = 0;
         const char *rr = right;
         while (*rr == ' ' || *rr == '\t')
         {
             rr++;
         }
-        while (*rr != '\0'
-               && *rr != ' '
-               && *rr != '\t'
-               && rw < (int) sizeof(rword) - 1)
+        while (*rr != '\0' && *rr != ' ' && *rr != '\t' && rw < (int) sizeof(rword) - 1)
         {
             rword[rw++] = *rr++;
         }
@@ -402,9 +395,7 @@ int cli_split_pipe(errno_t *retval)
  * @param[out] retval  Return value if consumed
  * @return 1 if consumed, 0 otherwise
  */
-int cli_split_semicolon(
-    errno_t *retval
-)
+int cli_split_semicolon(errno_t *retval)
 {
     char fullline[STRINGMAXLEN_CLICMDLINE];
     strncpy(fullline, data.CLIcmdline, STRINGMAXLEN_CLICMDLINE - 1);
@@ -415,26 +406,26 @@ int cli_split_semicolon(
     int p_or   = cli_find_unquoted_op(fullline, '|', 0, '|');
 
     int chain_type = 0; /* 1=; 2=&& 3=|| */
-    int chain_off = -1;
-    int chain_len = 0;
+    int chain_off  = -1;
+    int chain_len  = 0;
 
     if (p_semi >= 0 && (chain_off < 0 || p_semi < chain_off))
     {
-        chain_off = p_semi;
+        chain_off  = p_semi;
         chain_type = 1;
-        chain_len = 1;
+        chain_len  = 1;
     }
     if (p_and >= 0 && (chain_off < 0 || p_and < chain_off))
     {
-        chain_off = p_and;
+        chain_off  = p_and;
         chain_type = 2;
-        chain_len = 2;
+        chain_len  = 2;
     }
     if (p_or >= 0 && (chain_off < 0 || p_or < chain_off))
     {
-        chain_off = p_or;
+        chain_off  = p_or;
         chain_type = 3;
-        chain_len = 2;
+        chain_len  = 2;
     }
     if (chain_off < 0)
     {
@@ -463,8 +454,7 @@ int cli_split_semicolon(
     if (run_rest)
     {
         const char *rest = fullline + chain_off + chain_len;
-        while (*rest == ' '
-               || *rest == '\t')
+        while (*rest == ' ' || *rest == '\t')
         {
             rest++;
         }

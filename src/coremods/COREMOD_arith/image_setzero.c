@@ -8,9 +8,9 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -21,11 +21,11 @@
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imzero",
-    .cmdkey      = "imzero",
-    .description = "set all image pixels to zero",
-    .description_long =
-        "Zero-fill all pixel values in the target image stream. Operates in-place on the existing shared memory buffer, setting every element to 0."
+    .fps_name         = "imzero",
+    .cmdkey           = "imzero",
+    .description      = "set all image pixels to zero",
+    .description_long = "Zero-fill all pixel values in the target image stream. Operates in-place "
+                        "on the existing shared memory buffer, setting every element to 0."
 };
 
 
@@ -43,10 +43,7 @@ static char imsetzero_imname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
  * ============================================================= */
 
 #define IMSETZERO_PARAMS(X) \
-    X(".imname", imsetzero_imname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input image")
+    X(".imname", imsetzero_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")
 
 
 /* ================================================================
@@ -59,13 +56,10 @@ static char imsetzero_imname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
  * Called from within the processinfo loop. The stream
  * is resolved before the loop starts.
  */
-static errno_t imsetzero_computation(
-    IMAGE *inimg
-)
+static errno_t imsetzero_computation(IMAGE *inimg)
 {
-    memset(
-        inimg->array.raw, 0,
-        ImageStreamIO_typesize(inimg->md[0].datatype) * inimg->md[0].nelement);
+    memset(inimg->array.raw, 0,
+           ImageStreamIO_typesize(inimg->md[0].datatype) * inimg->md[0].nelement);
     return RETURN_SUCCESS;
 }
 
@@ -77,25 +71,19 @@ static errno_t imsetzero_computation(
  * INSERT_STD_PROCINFO macros reference CLIcmddata.
  * ============================================================= */
 
-static FPS_CLI_BINDING my_bindings[] = {
-    IMSETZERO_PARAMS(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings[] = { IMSETZERO_PARAMS(FPS_X_BINDING) };
 
 static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    IMSETZERO_PARAMS(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { IMSETZERO_PARAMS(FPS_X_FARG) };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
 #endif
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
+    "", "", CLICMD_FIELDS_DEFAULTS
 };
 
 /*
@@ -121,12 +109,12 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     IMGID in = imgid_make_from_name(imsetzero_imname);
-    resolveIMGID(&in,   ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START  imsetzero_computation(in.im);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START imsetzero_computation(in.im);
     processinfo_update_output_stream(processinfo, in.im, NULL);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END return RETURN_SUCCESS;
 }
 
 
@@ -140,8 +128,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  */
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 /**
@@ -151,7 +139,7 @@ errno_t CLIADDCMD_COREMOD_arith__imsetzero()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    INSERT_STD_CLIREGISTERFUNC  return RETURN_SUCCESS;
+    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
 #endif
 
@@ -164,8 +152,5 @@ errno_t CLIADDCMD_COREMOD_arith__imsetzero()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    IMSETZERO_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, IMSETZERO_PARAMS, compute_function)
 #endif

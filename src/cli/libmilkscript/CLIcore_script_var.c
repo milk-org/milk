@@ -18,54 +18,68 @@
  * @param name  Variable name
  * @param val   Value string
  */
-void cli_var_set(
-    const char *name,
-    const char *val)
+void cli_var_set(const char *name, const char *val)
 {
-    int type = 2; // default string
-    long numl = 0;
+    int    type = 2; // default string
+    long   numl = 0;
     double numf = 0.0;
-    char valbuf[CLI_VAR_VALLEN];
+    char   valbuf[CLI_VAR_VALLEN];
 
-    if (val != NULL && *val != '\0') {
+    if (val != NULL && *val != '\0')
+    {
         char *endptr = NULL;
         strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
         valbuf[CLI_VAR_VALLEN - 1] = '\0';
-        size_t len = strlen(valbuf);
+        size_t len                 = strlen(valbuf);
 
         // Try parsing as integer
         numl = strtol(valbuf, &endptr, 10);
-        if (endptr != valbuf && *endptr == '\0') {
+        if (endptr != valbuf && *endptr == '\0')
+        {
             type = 1; // long
             strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
             valbuf[CLI_VAR_VALLEN - 1] = '\0';
-        } else {
+        }
+        else
+        {
             // Try parsing as float
-            if (len > 0 && (valbuf[len-1] == 'f' || valbuf[len-1] == 'F')) {
-                valbuf[len-1] = '\0';
+            if (len > 0 && (valbuf[len - 1] == 'f' || valbuf[len - 1] == 'F'))
+            {
+                valbuf[len - 1] = '\0';
             }
             numf = strtod(valbuf, &endptr);
-            if (endptr != valbuf && *endptr == '\0' && len > 0) {
+            if (endptr != valbuf && *endptr == '\0' && len > 0)
+            {
                 type = 0; // double
                 strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
                 valbuf[CLI_VAR_VALLEN - 1] = '\0';
-            } else {
-                int mtype;
-                long mlval;
+            }
+            else
+            {
+                int    mtype;
+                long   mlval;
                 double mdval;
-                if (cli_calc_eval_math_to_val(valbuf, &mtype, &mlval, &mdval)) {
-                    if (mtype == 1) {
+                if (cli_calc_eval_math_to_val(valbuf, &mtype, &mlval, &mdval))
+                {
+                    if (mtype == 1)
+                    {
                         type = 1; // long
                         numl = mlval;
                         snprintf(valbuf, CLI_VAR_VALLEN, "%ld", numl);
-                    } else if (mtype == 2) {
+                    }
+                    else if (mtype == 2)
+                    {
                         type = 0; // double
                         numf = mdval;
                         snprintf(valbuf, CLI_VAR_VALLEN, "%.*g", cli_float_digits, numf);
-                    } else {
+                    }
+                    else
+                    {
                         type = 2; // string
                     }
-                } else {
+                }
+                else
+                {
                     type = 2; // string
                     // Restore original value if we stripped trailing f from it
                     strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
@@ -73,26 +87,28 @@ void cli_var_set(
                 }
             }
         }
-    } else {
+    }
+    else
+    {
         // empty val
         valbuf[0] = '\0';
     }
 
     /* Update existing */
-    for(int i = 0; i < CLI_MAX_VARS; i++)
+    for (int i = 0; i < CLI_MAX_VARS; i++)
     {
-        if(cli_vars[i].used
-                && strcmp(cli_vars[i].name, name)
-                == 0)
+        if (cli_vars[i].used && strcmp(cli_vars[i].name, name) == 0)
         {
             strncpy(cli_vars[i].val, valbuf, CLI_VAR_VALLEN - 1);
             cli_vars[i].val[CLI_VAR_VALLEN - 1] = '\0';
-            cli_vars[i].type = type;
-            if (type == 1) { 
+            cli_vars[i].type                    = type;
+            if (type == 1)
+            {
                 cli_vars[i].num.l = numl;
                 create_variable_long_ID(name, numl);
             }
-            if (type == 0) {
+            if (type == 0)
+            {
                 cli_vars[i].num.f = numf;
                 create_variable_ID(name, numf);
             }
@@ -100,20 +116,22 @@ void cli_var_set(
         }
     }
     /* Find empty slot */
-    for(int i = 0; i < CLI_MAX_VARS; i++)
+    for (int i = 0; i < CLI_MAX_VARS; i++)
     {
-        if(!cli_vars[i].used)
+        if (!cli_vars[i].used)
         {
             strncpy(cli_vars[i].name, name, CLI_VAR_NAMELEN - 1);
             cli_vars[i].name[CLI_VAR_NAMELEN - 1] = '\0';
             strncpy(cli_vars[i].val, valbuf, CLI_VAR_VALLEN - 1);
             cli_vars[i].val[CLI_VAR_VALLEN - 1] = '\0';
-            cli_vars[i].type = type;
-            if (type == 1) {
+            cli_vars[i].type                    = type;
+            if (type == 1)
+            {
                 cli_vars[i].num.l = numl;
                 create_variable_long_ID(name, numl);
             }
-            if (type == 0) {
+            if (type == 0)
+            {
                 cli_vars[i].num.f = numf;
                 create_variable_ID(name, numf);
             }
@@ -121,7 +139,9 @@ void cli_var_set(
             return;
         }
     }
-    printf("Error: variable table full " "(max %d)\n", CLI_MAX_VARS);
+    printf("Error: variable table full "
+           "(max %d)\n",
+           CLI_MAX_VARS);
 }
 
 /**
@@ -131,15 +151,13 @@ void cli_var_set(
  */
 void cli_var_unset(const char *name)
 {
-    for(int i = 0; i < CLI_MAX_VARS; i++)
+    for (int i = 0; i < CLI_MAX_VARS; i++)
     {
-        if(cli_vars[i].used
-                && strcmp(cli_vars[i].name, name)
-                == 0)
+        if (cli_vars[i].used && strcmp(cli_vars[i].name, name) == 0)
         {
-            cli_vars[i].used = 0;
+            cli_vars[i].used    = 0;
             cli_vars[i].name[0] = '\0';
-            cli_vars[i].val[0] = '\0';
+            cli_vars[i].val[0]  = '\0';
             return;
         }
     }
@@ -162,43 +180,41 @@ int cli_try_var_assign(const char *line)
     const char *p = line;
 
     /* Skip leading whitespace */
-    while(*p == ' ' || *p == '\t')
+    while (*p == ' ' || *p == '\t')
     {
         p++;
     }
 
     /* Must start with alpha or underscore */
-    if(!isalpha((unsigned char) *p)
-            && *p != '_')
+    if (!isalpha((unsigned char) *p) && *p != '_')
     {
         return 0;
     }
 
     /* Scan variable name */
     const char *name_start = p;
-    while(isalnum((unsigned char) *p)
-            || *p == '_')
+    while (isalnum((unsigned char) *p) || *p == '_')
     {
         p++;
     }
 
-    int namelen = (int)(p - name_start);
+    int namelen = (int) (p - name_start);
 
     /* Skip spaces before '=' */
-    while(*p == ' ' || *p == '\t')
+    while (*p == ' ' || *p == '\t')
     {
         p++;
     }
 
     /* Must hit '=' */
-    if(*p != '=')
+    if (*p != '=')
     {
         return 0;
     }
 
     {
         char tmpname[CLI_VAR_NAMELEN];
-        if(namelen >= CLI_VAR_NAMELEN)
+        if (namelen >= CLI_VAR_NAMELEN)
         {
             namelen = CLI_VAR_NAMELEN - 1;
         }
@@ -214,10 +230,8 @@ int cli_try_var_assign(const char *line)
         valbuf[CLI_VAR_VALLEN - 1] = '\0';
         {
             size_t vl = strlen(valbuf);
-            while(vl > 0
-                    && (valbuf[vl - 1] == ' '
-                        || valbuf[vl - 1] == '\t'
-                        || valbuf[vl - 1] == '\n'))
+            while (vl > 0 &&
+                   (valbuf[vl - 1] == ' ' || valbuf[vl - 1] == '\t' || valbuf[vl - 1] == '\n'))
             {
                 valbuf[--vl] = '\0';
             }
@@ -226,12 +240,12 @@ int cli_try_var_assign(const char *line)
         /* Use wordexp to evaluate command substitution, variables, and quotes natively. */
         wordexp_t p;
         cli_export_vars_to_env();
-        if(wordexp(valbuf, &p, 0) == 0)
+        if (wordexp(valbuf, &p, 0) == 0)
         {
             char expanded_val[CLI_VAR_VALLEN] = "";
-            for(size_t i = 0; i < p.we_wordc; i++)
+            for (size_t i = 0; i < p.we_wordc; i++)
             {
-                if(i > 0)
+                if (i > 0)
                 {
                     strncat(expanded_val, " ", CLI_VAR_VALLEN - strlen(expanded_val) - 1);
                 }
@@ -250,9 +264,7 @@ int cli_try_var_assign(const char *line)
         {
             for (int i = 0; i < CLI_MAX_VARS; i++)
             {
-                if (cli_vars[i].used
-                    && strcmp(cli_vars[i].name,
-                              tmpname) == 0)
+                if (cli_vars[i].used && strcmp(cli_vars[i].name, tmpname) == 0)
                 {
                     if (cli_vars[i].type == 1)
                     {
@@ -260,8 +272,8 @@ int cli_try_var_assign(const char *line)
                     }
                     else if (cli_vars[i].type == 0)
                     {
-                        printf("    %s double: %.*g\n",
-                               cli_vars[i].name, cli_float_digits, cli_vars[i].num.f);
+                        printf("    %s double: %.*g\n", cli_vars[i].name, cli_float_digits,
+                               cli_vars[i].num.f);
                     }
                     else
                     {
@@ -286,33 +298,31 @@ int cli_try_var_assign(const char *line)
 int cli_try_array_assign(const char *line)
 {
     const char *p = line;
-    while(*p == ' ' || *p == '\t')
+    while (*p == ' ' || *p == '\t')
     {
         p++;
     }
-    if(!isalpha((unsigned char) *p)
-       && *p != '_')
+    if (!isalpha((unsigned char) *p) && *p != '_')
     {
         return 0;
     }
     const char *ns = p;
-    while(isalnum((unsigned char) *p)
-          || *p == '_')
+    while (isalnum((unsigned char) *p) || *p == '_')
     {
         p++;
     }
-    if(*p != '=')
+    if (*p != '=')
     {
         return 0;
     }
-    if(*(p + 1) != '(')
+    if (*(p + 1) != '(')
     {
         return 0;
     }
 
-    int nlen = (int)(p - ns);
+    int  nlen = (int) (p - ns);
     char aname[CLI_VAR_NAMELEN];
-    if(nlen >= CLI_VAR_NAMELEN)
+    if (nlen >= CLI_VAR_NAMELEN)
     {
         nlen = CLI_VAR_NAMELEN - 1;
     }
@@ -327,18 +337,18 @@ int cli_try_array_assign(const char *line)
      * check BEFORE mutating cli_arrays. */
     {
         const char *scan = p;
-        while(*scan != '\0' && *scan != ')')
+        while (*scan != '\0' && *scan != ')')
         {
             scan++;
         }
-        if(*scan == ')')
+        if (*scan == ')')
         {
             const char *q = scan + 1;
-            while(*q == ' ' || *q == '\t')
+            while (*q == ' ' || *q == '\t')
             {
                 q++;
             }
-            if(*q != '\0' && *q != '\n')
+            if (*q != '\0' && *q != '\n')
             {
                 return 0;
             }
@@ -347,65 +357,57 @@ int cli_try_array_assign(const char *line)
 
     /* Find or create array slot */
     int slot = -1;
-    for(int i = 0;
-        i < CLI_MAX_ARRAYS; i++)
+    for (int i = 0; i < CLI_MAX_ARRAYS; i++)
     {
-        if(cli_arrays[i].used
-           && strcmp(cli_arrays[i].name,
-                    aname) == 0)
+        if (cli_arrays[i].used && strcmp(cli_arrays[i].name, aname) == 0)
         {
             slot = i;
             break;
         }
     }
-    if(slot < 0)
+    if (slot < 0)
     {
-        for(int i = 0;
-            i < CLI_MAX_ARRAYS; i++)
+        for (int i = 0; i < CLI_MAX_ARRAYS; i++)
         {
-            if(!cli_arrays[i].used)
+            if (!cli_arrays[i].used)
             {
                 slot = i;
                 break;
             }
         }
     }
-    if(slot < 0)
+    if (slot < 0)
     {
         printf("Error: array table full\n");
         return 1;
     }
 
     strncpy(cli_arrays[slot].name, aname, CLI_VAR_NAMELEN - 1);
-    cli_arrays[slot].used = 1;
+    cli_arrays[slot].used  = 1;
     cli_arrays[slot].nelem = 0;
 
     /* Parse elements */
-    while(*p != '\0' && *p != ')')
+    while (*p != '\0' && *p != ')')
     {
-        while(*p == ' ' || *p == '\t')
+        while (*p == ' ' || *p == '\t')
         {
             p++;
         }
-        if(*p == ')' || *p == '\0')
+        if (*p == ')' || *p == '\0')
         {
             break;
         }
-        int ei = 0;
+        int ei  = 0;
         int idx = cli_arrays[slot].nelem;
-        if(idx >= CLI_ARRAY_MAXELEM)
+        if (idx >= CLI_ARRAY_MAXELEM)
         {
             break;
         }
-        while(*p != '\0'
-              && *p != ' '
-              && *p != '\t'
-              && *p != ')'
-              && ei < CLI_VAR_VALLEN - 1)
+        while (*p != '\0' && *p != ' ' && *p != '\t' && *p != ')' && ei < CLI_VAR_VALLEN - 1)
         {
-            cli_arrays[slot] .elem[idx][ei++] = *p++;
+            cli_arrays[slot].elem[idx][ei++] = *p++;
         }
-        cli_arrays[slot] .elem[idx][ei] = '\0';
+        cli_arrays[slot].elem[idx][ei] = '\0';
         cli_arrays[slot].nelem++;
     }
 
@@ -423,7 +425,7 @@ int cli_try_array_assign(const char *line)
  */
 errno_t cli_cmd_unset(void)
 {
-    if(data.cmdNBarg < 2)
+    if (data.cmdNBarg < 2)
     {
         printf("Usage: unset <varname>\n");
         return RETURN_FAILURE;
@@ -441,19 +443,25 @@ errno_t cli_cmd_vars(void)
     printf("\n  CLI Variables:\n");
     printf("  %-20s  %-6s  %s\n", "NAME", "TYPE", "VALUE");
     printf("  %-20s  %-6s  %s\n", "----", "----", "-----");
-    for(int i = 0; i < CLI_MAX_VARS; i++)
+    for (int i = 0; i < CLI_MAX_VARS; i++)
     {
-        if(cli_vars[i].used)
+        if (cli_vars[i].used)
         {
             const char *typestr = "STR";
-            if(cli_vars[i].type == 0) typestr = "FLT";
-            else if(cli_vars[i].type == 1) typestr = "INT";
-            
+            if (cli_vars[i].type == 0)
+            {
+                typestr = "FLT";
+            }
+            else if (cli_vars[i].type == 1)
+            {
+                typestr = "INT";
+            }
+
             printf("  %-20s  [%-3s]  %s\n", cli_vars[i].name, typestr, cli_vars[i].val);
             count++;
         }
     }
-    if(count == 0)
+    if (count == 0)
     {
         printf("  (none)\n");
     }

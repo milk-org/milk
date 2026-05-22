@@ -29,22 +29,22 @@ double Ppositive(double a);
  * ========================================================== */
 
 #define MILK_UNARY_OPS(X) \
-    X(acos,     Pacos)     \
-    X(asin,     Pasin)     \
-    X(atan,     Patan)     \
-    X(ceil,     Pceil)     \
-    X(cos,      Pcos)      \
-    X(cosh,     Pcosh)     \
-    X(exp,      Pexp)      \
-    X(fabs,     Pfabs)     \
-    X(floor,    Pfloor)    \
-    X(ln,       Pln)       \
-    X(log,      Plog)      \
-    X(sqrt,     Psqrt)     \
-    X(sin,      Psin)      \
-    X(sinh,     Psinh)     \
-    X(tan,      Ptan)      \
-    X(tanh,     Ptanh)     \
+    X(acos, Pacos)        \
+    X(asin, Pasin)        \
+    X(atan, Patan)        \
+    X(ceil, Pceil)        \
+    X(cos, Pcos)          \
+    X(cosh, Pcosh)        \
+    X(exp, Pexp)          \
+    X(fabs, Pfabs)        \
+    X(floor, Pfloor)      \
+    X(ln, Pln)            \
+    X(log, Plog)          \
+    X(sqrt, Psqrt)        \
+    X(sin, Psin)          \
+    X(sinh, Psinh)        \
+    X(tan, Ptan)          \
+    X(tanh, Ptanh)        \
     X(positive, Ppositive)
 
 
@@ -52,15 +52,10 @@ double Ppositive(double a);
  * Generated prototypes — IMGID, string, and inplace APIs
  * ---------------------------------------------------------- */
 
-#define IMAGE_ARITH_DECLARE_UNARY(op, fptr) \
-int arith_image_##op##_IMGID(               \
-    IMGID *imgin,                           \
-    IMGID *imgout);                         \
-int arith_image_##op(                       \
-    const char *ID_name,                    \
-    const char *ID_out);                    \
-int arith_image_##op##_inplace(             \
-    const char *ID_name);
+#define IMAGE_ARITH_DECLARE_UNARY(op, fptr)                        \
+    int arith_image_##op##_IMGID(IMGID *imgin, IMGID *imgout);     \
+    int arith_image_##op(const char *ID_name, const char *ID_out); \
+    int arith_image_##op##_inplace(const char *ID_name);
 
 MILK_UNARY_OPS(IMAGE_ARITH_DECLARE_UNARY)
 #undef IMAGE_ARITH_DECLARE_UNARY

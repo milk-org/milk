@@ -17,8 +17,6 @@
  * Renders into lay->r_fps_params. Call only when
  * view == OV_VIEW_FPS.
  */
-void ov_render_fps_params_panel(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m);
+void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m);
 
 #endif /* OVERVIEW_RENDER_FPS_PARAMS_H */

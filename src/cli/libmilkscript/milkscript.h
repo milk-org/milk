@@ -32,9 +32,7 @@ typedef int errno_t;
  * @param argv  Argument vector (from main)
  * @return 0 on success, non-zero on failure
  */
-errno_t milkscript_init(
-    int  argc,
-    char **argv);
+errno_t milkscript_init(int argc, char **argv);
 
 /**
  * @brief Execute a single command line string.
@@ -47,9 +45,7 @@ errno_t milkscript_init(
  * @param cmdline  Null-terminated command string
  * @return 0 on success
  */
-errno_t milkscript_execute(
-    const char *cmdline
-);
+errno_t milkscript_execute(const char *cmdline);
 
 /**
  * @brief Run a non-interactive REPL on a FILE stream.
@@ -61,9 +57,7 @@ errno_t milkscript_execute(
  * @param fp  Input stream (use stdin for a basic REPL)
  * @return 0 on normal exit
  */
-errno_t milkscript_run(
-    FILE *fp
-);
+errno_t milkscript_run(FILE *fp);
 
 /**
  * @brief Clean up and release scripting engine resources.

@@ -12,46 +12,46 @@
  * @param processinfo
  * @return int loop status
  */
-int processinfo_loopstep(
-    PROCESSINFO *processinfo
-)
+int processinfo_loopstep(PROCESSINFO *processinfo)
 {
     int loopstatus = 1;
 
-    if(processinfo->CTRLval == 1)  // pause
+    if (processinfo->CTRLval == 1) // pause
     {
-        int prev_stat = processinfo->loopstat;
+        int prev_stat         = processinfo->loopstat;
         processinfo->loopstat = 2; // PROCESSINFO_LOOPSTAT_PAUSE
-        while(processinfo->CTRLval == 1)
+        while (processinfo->CTRLval == 1)
         {
             usleep(50);
         }
         processinfo->loopstat = prev_stat;
     }
-    if(processinfo->CTRLval == 2)  // single iteration
+    if (processinfo->CTRLval == 2) // single iteration
     {
         processinfo->CTRLval = 1;
     }
-    if(processinfo->CTRLval == 3)  // exit loop
+    if (processinfo->CTRLval == 3) // exit loop
     {
         loopstatus = 0;
     }
 
-    if(processinfo_signal_INT == 1)  // CTRL-C
+    if (processinfo_signal_INT == 1) // CTRL-C
     {
         loopstatus = 0;
     }
 
-    if(processinfo_signal_HUP == 1)  // terminal has disappeared
+    if (processinfo_signal_HUP == 1) // terminal has disappeared
     {
         loopstatus = 0;
     }
 
-    if(processinfo->loopcntMax != -1)
-        if(processinfo->loopcnt >= processinfo->loopcntMax - 1)
+    if (processinfo->loopcntMax != -1)
+    {
+        if (processinfo->loopcnt >= processinfo->loopcntMax - 1)
         {
             loopstatus = 0;
         }
+    }
 
     return loopstatus;
 }

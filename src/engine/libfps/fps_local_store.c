@@ -17,7 +17,7 @@ static FPS local_fps_array[FPS_LOCAL_MAX];
 static int local_fps_used[FPS_LOCAL_MAX];
 
 /** Creator fps_name for each slot */
-static char local_fps_creator[FPS_LOCAL_MAX] [FPS_CREATOR_NAME_MAX];
+static char local_fps_creator[FPS_LOCAL_MAX][FPS_CREATOR_NAME_MAX];
 
 
 /**
@@ -29,20 +29,16 @@ static char local_fps_creator[FPS_LOCAL_MAX] [FPS_CREATOR_NAME_MAX];
  * @param name  FPS name to search for
  * @return Pointer to the local FPS, or NULL
  */
-FPS *fps_local_find(
-    const char *name
-)
+FPS *fps_local_find(const char *name)
 {
-    if(name == NULL)
+    if (name == NULL)
     {
         return NULL;
     }
-    for(int ii = 0; ii < local_fps_count; ii++)
+    for (int ii = 0; ii < local_fps_count; ii++)
     {
-        if(local_fps_used[ii] &&
-                strncmp(local_fps_array[ii].md->name,
-                        name,
-                        FPS_PNAME_STRMAXLEN - 1) == 0)
+        if (local_fps_used[ii] &&
+            strncmp(local_fps_array[ii].md->name, name, FPS_PNAME_STRMAXLEN - 1) == 0)
         {
             return &local_fps_array[ii];
         }
@@ -62,19 +58,16 @@ FPS *fps_local_find(
  * @param NBparamMAX Maximum number of parameters
  * @return Pointer to the new FPS, or NULL on failure
  */
-FPS *fps_local_create(
-    const char *name,
-    long        NBparamMAX
-)
+FPS *fps_local_create(const char *name, long NBparamMAX)
 {
-    if(local_fps_count >= FPS_LOCAL_MAX)
+    if (local_fps_count >= FPS_LOCAL_MAX)
     {
         PRINT_ERROR("local FPS store full (max %d)", FPS_LOCAL_MAX);
         return NULL;
     }
 
-    int idx = local_fps_count++;
-    local_fps_used[idx] = 1;
+    int idx                   = local_fps_count++;
+    local_fps_used[idx]       = 1;
     local_fps_creator[idx][0] = '\0';
 
     FPS *fps = &local_fps_array[idx];
@@ -84,7 +77,7 @@ FPS *fps_local_create(
 
     /* Allocate metadata */
     fps->md = (FUNCTION_PARAMETER_STRUCT_MD *) calloc(1, sizeof(FUNCTION_PARAMETER_STRUCT_MD));
-    if(fps->md == NULL)
+    if (fps->md == NULL)
     {
         PRINT_ERROR("calloc md for '%s'", name);
         local_fps_used[idx] = 0;
@@ -97,11 +90,11 @@ FPS *fps_local_create(
 
     /* Allocate parameter array */
     fps->parray = (FPS_PARAM *) calloc(NBparamMAX, sizeof(FPS_PARAM));
-    if(fps->parray == NULL)
+    if (fps->parray == NULL)
     {
         PRINT_ERROR("calloc parray for '%s'", name);
         free(fps->md);
-        fps->md = NULL;
+        fps->md             = NULL;
         local_fps_used[idx] = 0;
         local_fps_count--;
         return NULL;
@@ -121,14 +114,11 @@ FPS *fps_local_create(
  * @param NBparamMAX Capacity for new FPS (ignored if exists)
  * @return Pointer to the FPS, or NULL on failure
  */
-FPS *fps_local_get_or_create(
-    const char *name,
-    long        NBparamMAX
-)
+FPS *fps_local_get_or_create(const char *name, long NBparamMAX)
 {
     FPS *fps = fps_local_find(name);
 
-    if(fps != NULL)
+    if (fps != NULL)
     {
         return fps;
     }
@@ -151,15 +141,13 @@ int fps_local_count_entries(void)
  * @param idx  Index into the local FPS array
  * @return Pointer to the FPS, or NULL if invalid/unused
  */
-FPS *fps_local_get_by_index(
-    int idx
-)
+FPS *fps_local_get_by_index(int idx)
 {
-    if(idx < 0 || idx >= local_fps_count)
+    if (idx < 0 || idx >= local_fps_count)
     {
         return NULL;
     }
-    if(!local_fps_used[idx])
+    if (!local_fps_used[idx])
     {
         return NULL;
     }
@@ -176,20 +164,16 @@ FPS *fps_local_get_by_index(
  * @param name          FPS name to tag
  * @param creator_name  Creator identifier to store
  */
-void fps_local_set_creator(
-    const char *name,
-    const char *creator_name)
+void fps_local_set_creator(const char *name, const char *creator_name)
 {
-    if(name == NULL || creator_name == NULL)
+    if (name == NULL || creator_name == NULL)
     {
         return;
     }
-    for(int ii = 0; ii < local_fps_count; ii++)
+    for (int ii = 0; ii < local_fps_count; ii++)
     {
-        if(local_fps_used[ii] &&
-                strncmp(local_fps_array[ii].md->name,
-                        name,
-                        FPS_PNAME_STRMAXLEN - 1) == 0)
+        if (local_fps_used[ii] &&
+            strncmp(local_fps_array[ii].md->name, name, FPS_PNAME_STRMAXLEN - 1) == 0)
         {
             strncpy(local_fps_creator[ii], creator_name, FPS_CREATOR_NAME_MAX - 1);
             local_fps_creator[ii][FPS_CREATOR_NAME_MAX - 1] = '\0';
@@ -207,11 +191,11 @@ void fps_local_set_creator(
  */
 const char *fps_local_get_creator(int idx)
 {
-    if(idx < 0 || idx >= local_fps_count)
+    if (idx < 0 || idx >= local_fps_count)
     {
         return "";
     }
-    if(!local_fps_used[idx])
+    if (!local_fps_used[idx])
     {
         return "";
     }
@@ -223,8 +207,8 @@ const char *fps_local_get_creator(int idx)
 
 static int shared_track_count;
 
-static char shared_track_fps[FPS_SHARED_TRACK_MAX] [FPS_CREATOR_NAME_MAX];
-static char shared_track_creator[FPS_SHARED_TRACK_MAX] [FPS_CREATOR_NAME_MAX];
+static char shared_track_fps[FPS_SHARED_TRACK_MAX][FPS_CREATOR_NAME_MAX];
+static char shared_track_creator[FPS_SHARED_TRACK_MAX][FPS_CREATOR_NAME_MAX];
 
 
 /**
@@ -237,28 +221,22 @@ static char shared_track_creator[FPS_SHARED_TRACK_MAX] [FPS_CREATOR_NAME_MAX];
  * @param fps_name      Shared FPS name
  * @param creator_name  CLI command that used it
  */
-void fps_shared_record_usage(
-    const char *fps_name,
-    const char *creator_name)
+void fps_shared_record_usage(const char *fps_name, const char *creator_name)
 {
-    if(fps_name == NULL ||
-            creator_name == NULL)
+    if (fps_name == NULL || creator_name == NULL)
     {
         return;
     }
     /* Check if already recorded */
-    for(int ii = 0; ii < shared_track_count; ii++)
+    for (int ii = 0; ii < shared_track_count; ii++)
     {
-        if(strcmp(shared_track_fps[ii],
-                  fps_name) == 0 &&
-                strcmp(shared_track_creator[ii],
-                       creator_name) == 0)
+        if (strcmp(shared_track_fps[ii], fps_name) == 0 &&
+            strcmp(shared_track_creator[ii], creator_name) == 0)
         {
             return;
         }
     }
-    if(shared_track_count
-            >= FPS_SHARED_TRACK_MAX)
+    if (shared_track_count >= FPS_SHARED_TRACK_MAX)
     {
         return;
     }
@@ -278,21 +256,16 @@ void fps_shared_record_usage(
  * @param creator_name  CLI command to check
  * @return 1 if found, 0 otherwise
  */
-int fps_shared_was_used_by(
-    const char *fps_name,
-    const char *creator_name)
+int fps_shared_was_used_by(const char *fps_name, const char *creator_name)
 {
-    if(fps_name == NULL ||
-            creator_name == NULL)
+    if (fps_name == NULL || creator_name == NULL)
     {
         return 0;
     }
-    for(int ii = 0; ii < shared_track_count; ii++)
+    for (int ii = 0; ii < shared_track_count; ii++)
     {
-        if(strcmp(shared_track_fps[ii],
-                  fps_name) == 0 &&
-                strcmp(shared_track_creator[ii],
-                       creator_name) == 0)
+        if (strcmp(shared_track_fps[ii], fps_name) == 0 &&
+            strcmp(shared_track_creator[ii], creator_name) == 0)
         {
             return 1;
         }
