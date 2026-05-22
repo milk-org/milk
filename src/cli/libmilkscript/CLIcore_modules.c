@@ -701,8 +701,17 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
 
     // assemble argument syntax string for help
     char          argstring[STRINGMAXLEN_CMD_SYNTAX];
-    CLICMDARGDEF *farg_visible  = (CLICMDARGDEF *) malloc(sizeof(CLICMDARGDEF) * CLIcmddata.nbarg);
-    int           nbarg_visible = 0;
+    CLICMDARGDEF *farg_visible = NULL;
+    if (CLIcmddata.nbarg > 0)
+    {
+        farg_visible = (CLICMDARGDEF *) calloc(CLIcmddata.nbarg, sizeof(CLICMDARGDEF));
+        if (farg_visible == NULL)
+        {
+            PRINT_ERROR("calloc failed for farg_visible");
+            abort();
+        }
+    }
+    int nbarg_visible = 0;
     for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
     {
         if (CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
@@ -743,7 +752,13 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
     if (CLIcmddata.nbarg > 0)
     {
         data.cmd[data.NBcmd].argdata =
-            (CLICMDARGDATA *) malloc(sizeof(CLICMDARGDATA) * CLIcmddata.nbarg);
+            (CLICMDARGDATA *) calloc(CLIcmddata.nbarg, sizeof(CLICMDARGDATA));
+        if (data.cmd[data.NBcmd].argdata == NULL)
+        {
+            PRINT_ERROR("calloc failed for argdata");
+            free(farg_visible);
+            abort();
+        }
 
         for (int argi = 0; argi < CLIcmddata.nbarg; argi++)
         {

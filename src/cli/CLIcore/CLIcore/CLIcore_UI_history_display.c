@@ -366,15 +366,25 @@ void history_log_display(const HistDisplayOpts *opts)
         {
             cap *= 2;
             char **tmp1 = (char **) realloc(lines, (size_t) cap * sizeof(char *));
-            int   *tmp2 = (int *) realloc(is_self, (size_t) cap * sizeof(int));
-            char  *tmp3 = (char *) realloc(types, (size_t) cap * sizeof(char));
-            if (tmp1 == NULL || tmp2 == NULL || tmp3 == NULL)
+            if (tmp1 == NULL)
             {
                 break;
             }
-            lines   = tmp1;
+            lines = tmp1;
+
+            int *tmp2 = (int *) realloc(is_self, (size_t) cap * sizeof(int));
+            if (tmp2 == NULL)
+            {
+                break;
+            }
             is_self = tmp2;
-            types   = tmp3;
+
+            char *tmp3 = (char *) realloc(types, (size_t) cap * sizeof(char));
+            if (tmp3 == NULL)
+            {
+                break;
+            }
+            types = tmp3;
         }
         lines[total]   = strdup(line);
         is_self[total] = self;

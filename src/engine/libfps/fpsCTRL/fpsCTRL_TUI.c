@@ -140,8 +140,14 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
         if (line_cnt < 100)                                \
             snprintf(lines[line_cnt++], 256, __VA_ARGS__); \
     } while (0)
+#define ADD_BLANK()                      \
+    do                                   \
+    {                                    \
+        if (line_cnt < 100)              \
+            lines[line_cnt++][0] = '\0'; \
+    } while (0)
 
-    ADD_LINE("");
+    ADD_BLANK();
     ADD_LINE("  \033[1;38;5;111m============ SCREENS\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "v / V", "Verbose mode ON / OFF");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "F2", "Parameter control (Main Screen)");
@@ -151,7 +157,7 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "h", "Show this help screen");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "x", "Exit TUI");
 
-    ADD_LINE("");
+    ADD_BLANK();
     ADD_LINE("  \033[1;38;5;111m============ PARAMETER EDITING\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "ENTER", "Edit selected parameter value");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "SPACE", "Toggle ON/OFF parameter state");
@@ -163,7 +169,7 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "]", "Cycle sort: Default -> A-Z -> Status");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "y", "Yank parameter value to tmux buffer");
 
-    ADD_LINE("");
+    ADD_BLANK();
     ADD_LINE("  \033[1;38;5;111m============ PROCESS CONTROL\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "O / CTRL+o", "Start/stop conf process");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "R / CTRL+r", "Start/stop run process");
@@ -171,7 +177,7 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+e", "Stop conf/run, erase FPS");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "E", "Stop conf/run, erase FPS, kill tmux");
 
-    ADD_LINE("");
+    ADD_BLANK();
     ADD_LINE("  \033[1;38;5;111m============ OTHER UTILITIES\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "s", "Rescan shared memory directory");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "l", "List all entries");
@@ -212,6 +218,7 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     }
 
 #undef ADD_LINE
+#undef ADD_BLANK
 
     DEBUG_TRACE_FEXIT();
 }

@@ -726,9 +726,9 @@ uint16_t function_parameter_RUNexit(FPS *fps);
                         }                                                                          \
                         char ss[32] = "UNKNOWN";                                                   \
                         if (fpsarray[ii].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)       \
-                            strcpy(ss, "CONF");                                                    \
+                            strncpy(ss, "CONF", sizeof(ss) - 1);                                   \
                         else if (fpsarray[ii].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)   \
-                            strcpy(ss, "RUN");                                                     \
+                            strncpy(ss, "RUN", sizeof(ss) - 1);                                    \
                         printf("%-30s %-10s %s\n", fpsarray[ii].md->name, ss,                      \
                                fpsarray[ii].md->description);                                      \
                     }                                                                              \

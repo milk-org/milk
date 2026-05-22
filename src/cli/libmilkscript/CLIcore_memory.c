@@ -49,21 +49,21 @@ errno_t memory_re_alloc()
                dcnimg + NB_IMAGES_BUFFER_REALLOC);
         fflush(stdout);
         //    }
-        tmplong = dcnimg;
-        dcnimg  = dcnimg + NB_IMAGES_BUFFER_REALLOC;
-        ptrtmp  = (IMAGE *) realloc(dcimg, sizeof(IMAGE) * dcnimg);
+        long new_dcnimg = dcnimg + NB_IMAGES_BUFFER_REALLOC;
+        ptrtmp          = (IMAGE *) realloc(dcimg, sizeof(IMAGE) * new_dcnimg);
+        if (ptrtmp == NULL)
+        {
+            PRINT_ERROR("Reallocation of dcimg has failed - exiting program");
+            return -1;
+        }
         if (dcdebug > 0)
         {
             printf("NEW POINTER = %p\n", ptrtmp);
             fflush(stdout);
         }
-        dcimg = ptrtmp;
-        if (dcimg == NULL)
-        {
-            PRINT_ERROR("Reallocation of dcimg has failed - exiting "
-                        "program");
-            return -1; //  exit(0);
-        }
+        tmplong = dcnimg;
+        dcnimg  = new_dcnimg;
+        dcimg   = ptrtmp;
         if (dcdebug > 0)
         {
             printf("REALLOCATION DONE\n");
@@ -99,15 +99,16 @@ errno_t memory_re_alloc()
             printf("REALLOCATING VARIABLE DATA BUFFER\n");
             fflush(stdout);
         }
-        tmplong = dcnvar;
-        dcnvar  = dcnvar + NB_VARIABLES_BUFFER_REALLOC;
-        dcvar   = (VARIABLE *) realloc(dcvar, sizeof(VARIABLE) * dcnvar);
-        if (dcvar == NULL)
+        long      new_dcnvar = dcnvar + NB_VARIABLES_BUFFER_REALLOC;
+        VARIABLE *ptrtmp     = (VARIABLE *) realloc(dcvar, sizeof(VARIABLE) * new_dcnvar);
+        if (ptrtmp == NULL)
         {
-            PRINT_ERROR("Reallocation of dcvar has failed - exiting "
-                        "program");
-            return -1; // exit(0);
+            PRINT_ERROR("Reallocation of dcvar has failed - exiting program");
+            return -1;
         }
+        tmplong = dcnvar;
+        dcnvar  = new_dcnvar;
+        dcvar   = ptrtmp;
 
         int i;
         for (i = tmplong; i < dcnvar; i++)

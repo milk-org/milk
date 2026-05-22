@@ -14,7 +14,6 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-static FILE *fpgnuplot;
 
 /* forward decl */
 errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
@@ -82,8 +81,14 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     long    ii;
     char    cmd[512];
     FILE   *fp;
+    FILE   *fpgnuplot;
 
-    ID    = image_ID(IDname, dcimg, dcnimg);
+    ID = image_ID(IDname, dcimg, dcnimg);
+    if (ID == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", IDname);
+        return RETURN_FAILURE;
+    }
     xsize = dcimg[ID].md[0].size[0];
     ysize = dcimg[ID].md[0].size[1];
 
@@ -92,7 +97,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     if ((fpgnuplot = popen(cmd, "w")) == NULL)
     {
         PRINT_ERROR("could not connect to gnuplot");
-        return -1;
+        return RETURN_FAILURE;
     }
 
     printf("image: %s [%ld x %ld], step = %ld\n", IDname, xsize, ysize, step);
@@ -100,17 +105,19 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fprintf(fpgnuplot, "set pm3d\n");
     fprintf(fpgnuplot, "set hidden3d\n");
     fprintf(fpgnuplot, "set palette\n");
-    //fprintf(gnuplot, "set xrange [0:%li]\n", image.md[0].size[0]);
-    //fprintf(gnuplot, "set yrange [0:1e-5]\n");
-    //fprintf(gnuplot, "set xlabel \"Mode #\"\n");
-    //fprintf(gnuplot, "set ylabel \"Mode RMS\"\n");
     fflush(fpgnuplot);
 
     fp = fopen("pts.dat", "w");
+    if (fp == NULL)
+    {
+        PRINT_ERROR("cannot open file \"pts.dat\"");
+        pclose(fpgnuplot);
+        return RETURN_FAILURE;
+    }
     fprintf(fpgnuplot, "splot \"-\" w d notitle\n");
     for (ii = 0; ii < xsize; ii += step)
     {
-        for (long jj = 0; jj < xsize; jj += step)
+        for (long jj = 0; jj < ysize; jj += step)
         {
             fprintf(fpgnuplot, "%ld %ld %f\n", ii, jj, dcimg[ID].array.F[jj * xsize + ii]);
             fprintf(fp, "%ld %ld %f\n", ii, jj, dcimg[ID].array.F[jj * xsize + ii]);
@@ -121,7 +128,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fprintf(fpgnuplot, "e\n");
     fflush(fpgnuplot);
     fclose(fp);
-
+    pclose(fpgnuplot);
 
     return RETURN_SUCCESS;
 }

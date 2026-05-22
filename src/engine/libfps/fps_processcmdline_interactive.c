@@ -805,14 +805,24 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
                     if (strcmp(FPScommand, "fwrval") == 0)
                     {
                         FILE *fpouttmp = fopen(FPScmdarg1, "a");
-                        functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
-                        fclose(fpouttmp);
+                        if (fpouttmp == NULL)
+                        {
+                            PRINT_ERROR("cannot open file \"%s\"", FPScmdarg1);
+                            cmdOK = 0;
+                            snprintf(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                                     "cannot open output file %s", FPScmdarg1);
+                        }
+                        else
+                        {
+                            functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
+                            fclose(fpouttmp);
 
-                        functionparameter_outlog("FWRVAL", "%s", msgstring);
-                        char msgstring1[STRINGMAXLEN_FPS_LOGMSG];
-                        SNPRINTF_CHECK(msgstring1, STRINGMAXLEN_FPS_LOGMSG, "WROTE to file %s",
-                                       FPScmdarg1);
-                        functionparameter_outlog("FWRVAL", "%s", msgstring1);
+                            functionparameter_outlog("FWRVAL", "%s", msgstring);
+                            char msgstring1[STRINGMAXLEN_FPS_LOGMSG];
+                            SNPRINTF_CHECK(msgstring1, STRINGMAXLEN_FPS_LOGMSG, "WROTE to file %s",
+                                           FPScmdarg1);
+                            functionparameter_outlog("FWRVAL", "%s", msgstring1);
+                        }
                     }
                 }
             }

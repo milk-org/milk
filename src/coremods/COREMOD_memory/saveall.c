@@ -166,8 +166,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
         }
     }
 
-    long *IDarray   = (long *) malloc(sizeof(long) * imcnt);
-    long *IDarraycp = (long *) malloc(sizeof(long) * imcnt);
+    long *IDarray   = (long *) calloc(imcnt, sizeof(long));
+    long *IDarraycp = (long *) calloc(imcnt, sizeof(long));
 
     imcnt = 0;
     for (int i = 0; i < dcnimg; i++)
@@ -227,8 +227,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
         }
     }
 
-    imageID *IDarray    = (imageID *) malloc(sizeof(imageID) * imcnt);
-    imageID *IDarrayout = (imageID *) malloc(sizeof(imageID) * imcnt);
+    imageID *IDarray    = (imageID *) calloc(imcnt, sizeof(imageID));
+    imageID *IDarrayout = (imageID *) calloc(imcnt, sizeof(imageID));
 
     imcnt = 0;
     for (int i = 0; i < dcnimg; i++)
@@ -239,7 +239,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
             imcnt++;
         }
     }
-    uint32_t *imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * imcnt);
+    uint32_t *imsizearray = (uint32_t *) calloc(imcnt, sizeof(uint32_t));
 
     EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", dirname);
 

@@ -98,6 +98,17 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
             }
 
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                if (munmap(map, sizeof(IMAGE_METADATA)) == -1)
+                {
+                    printf("unmapping %s\n", SM_fname);
+                    PRINT_ERROR("Error un-mmapping the file: %s", strerror(errno));
+                }
+                close(SM_fd);
+                return -1;
+            }
             for (int i = 0; i < map[0].naxis; i++)
             {
                 fprintf(fp, "%ld ", (long) map[0].size[i]);
@@ -116,6 +127,11 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
     else
     {
         fp = fopen(fname, "w");
+        if (fp == NULL)
+        {
+            PRINT_ERROR("cannot open file \"%s\"", fname);
+            return -1;
+        }
         for (int i = 0; i < img.im->md[0].naxis; i++)
         {
             fprintf(fp, "%ld ", (long) img.im->md[0].size[i]);

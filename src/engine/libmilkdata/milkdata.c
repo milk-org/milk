@@ -80,26 +80,26 @@ errno_t milk_data_init(void)
         long tmplong = milk_data.NB_MAX_VARIABLE;
         milk_data.NB_MAX_VARIABLE += NB_VARIABLES_BUFFER_REALLOC;
 
-        milk_data.variable =
+        VARIABLE *tmpvar =
             (VARIABLE *) realloc(milk_data.variable, milk_data.NB_MAX_VARIABLE * sizeof(VARIABLE));
+        if (tmpvar == NULL)
+        {
+            PRINT_ERROR("variable realloc failed");
+            exit(1);
+        }
+        milk_data.variable = tmpvar;
 
         for (long i = tmplong; i < milk_data.NB_MAX_VARIABLE; i++)
         {
             milk_data.variable[i].used = 0;
             milk_data.variable[i].type = 0;
         }
-
-        if (milk_data.variable == NULL)
-        {
-            PRINT_ERROR("variable realloc failed");
-            exit(1);
-        }
     }
 #endif
 
     /* Allocate FPS array */
     {
-        milk_data.fpsarray = (FPS *) malloc(sizeof(FPS) * milk_data.NB_MAX_FPS);
+        milk_data.fpsarray = (FPS *) calloc(milk_data.NB_MAX_FPS, sizeof(FPS));
         if (milk_data.fpsarray == NULL)
         {
             PRINT_ERROR("FPS array alloc failed");

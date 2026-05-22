@@ -276,7 +276,7 @@ imageID arith_image_crop(const char *ID_name,
     printf("CROP: \n");
     for (int i = 0; i < 3; i++)
     {
-        printf("axis %ld: %ld -> %ld\n", i, start_c[i], end_c[i]);
+        printf("axis %d: %ld -> %ld\n", i, start_c[i], end_c[i]);
     }
 
     if (cropdim != naxis)

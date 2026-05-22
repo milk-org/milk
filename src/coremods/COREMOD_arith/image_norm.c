@@ -76,7 +76,7 @@ static errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t slicea
     outimg->mdt->datatype = _DATATYPE_FLOAT;
 
     /* Create output stream */
-    outimg->im = (IMAGE *) malloc(sizeof(IMAGE));
+    outimg->im = (IMAGE *) calloc(1, sizeof(IMAGE));
     strncpy(outimg->name, norm_outimname, 79);
     ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->mdt->naxis, outimg->mdt->size,
                                outimg->mdt->datatype, -1, 1, 10, 0, 0, 0);

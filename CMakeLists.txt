@@ -364,6 +364,26 @@ if(USE_STATIC_LTO)
   add_link_options(-flto=auto)
 endif()
 
+# =======================================
+# SANITIZERS (development opt-in)
+# =======================================
+# Usage:
+#   cmake .. -DUSE_SANITIZERS=ON
+# Enables AddressSanitizer and
+# UndefinedBehaviorSanitizer for catching
+# memory errors and undefined behavior.
+# Not for production — significant overhead.
+option(USE_SANITIZERS
+    "Enable ASan + UBSan (development only)" OFF)
+if(USE_SANITIZERS)
+  message(STATUS "SANITIZERS: ASan + UBSan enabled")
+  add_compile_options(
+      -fsanitize=address,undefined
+      -fno-omit-frame-pointer)
+  add_link_options(
+      -fsanitize=address,undefined)
+endif()
+
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
@@ -380,6 +400,17 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
   add_link_options(--coverage)
   link_libraries(gcov)
 endif()
+
+# =======================================
+# FORMAT STRING SAFETY (all build types)
+# =======================================
+# Catch printf-family format string bugs even in
+# Release builds. These are zero-cost at runtime.
+add_compile_options(
+    $<$<COMPILE_LANGUAGE:C>:-Wformat=2>
+    $<$<COMPILE_LANGUAGE:C>:-Wformat-overflow>
+    $<$<COMPILE_LANGUAGE:C>:-Wformat-truncation>
+)
 
 
 # =======================================

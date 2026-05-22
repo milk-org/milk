@@ -42,9 +42,9 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(int                         port,
                                            int                         RT_priority)
 {
     char           *buff        = NULL; // socket-side complete buffer
-    char           *buff_udp    = (char *) malloc(sizeof(char) * DGRAM_CHUNK_SIZE + 2);
-    char           *bigbuff_1MB = (char *) malloc(sizeof(char) * 1024 * 1024);
-    IMAGE_METADATA *imgmd       = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
+    char           *buff_udp    = (char *) calloc(DGRAM_CHUNK_SIZE + 2, sizeof(char));
+    char           *bigbuff_1MB = (char *) calloc(1024 * 1024, sizeof(char));
+    IMAGE_METADATA *imgmd       = (IMAGE_METADATA *) calloc(1, sizeof(IMAGE_METADATA));
 
     PROCESSINFO *processinfo = NULL;
     if (dcprocinfo == 1)
@@ -291,7 +291,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(int                         port,
     }
 
     // TODO
-    buff                    = (char *) malloc(sizeof(char) * framesizefull);
+    buff                    = (char *) calloc(framesizefull, sizeof(char));
     char *ptr_buff_metadata = buff;
     char *ptr_buff_data     = ptr_buff_metadata + sizeof(IMAGE_METADATA);
     char *ptr_buff_keywords = ptr_buff_data + framesize;

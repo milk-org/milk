@@ -206,7 +206,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imcreateIMGID(&bufferimg);
 
     struct timespec *timeinarray;
-    timeinarray = (struct timespec *) malloc(sizeof(struct timespec) * (timebuffsize));
+    timeinarray = (struct timespec *) calloc(timebuffsize, sizeof(struct timespec));
     struct timespec tnow;
     clock_gettime(CLOCK_MILK, &tnow);
     for (uint64_t i = 0; i < timebuffsize; i++)
@@ -216,7 +216,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     }
 
     int *warray;
-    warray = (int *) malloc(sizeof(int) * (timebuffsize));
+    warray = (int *) calloc(timebuffsize, sizeof(int));
     for (uint64_t i = 0; i < timebuffsize; i++)
     {
         warray[i] = 1;

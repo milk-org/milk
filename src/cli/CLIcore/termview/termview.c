@@ -1894,10 +1894,25 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
 
         if (wrow * wcol > ctx->screen_size)
         {
-            ctx->screen_size = wrow * wcol;
-            ctx->screen = (tv_cell_t *) realloc(ctx->screen, ctx->screen_size * sizeof(tv_cell_t));
-            ctx->prev_screen =
-                (tv_cell_t *) realloc(ctx->prev_screen, ctx->screen_size * sizeof(tv_cell_t));
+            int        new_size = wrow * wcol;
+            tv_cell_t *tmp_screen =
+                (tv_cell_t *) realloc(ctx->screen, new_size * sizeof(tv_cell_t));
+            if (tmp_screen == NULL)
+            {
+                loop = 0;
+                continue;
+            }
+            ctx->screen = tmp_screen;
+
+            tv_cell_t *tmp_prev =
+                (tv_cell_t *) realloc(ctx->prev_screen, new_size * sizeof(tv_cell_t));
+            if (tmp_prev == NULL)
+            {
+                loop = 0;
+                continue;
+            }
+            ctx->prev_screen = tmp_prev;
+            ctx->screen_size = new_size;
             memset(ctx->prev_screen, 0, ctx->screen_size * sizeof(tv_cell_t));
         }
 
@@ -1923,16 +1938,29 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
 
         if (disp_img_rows * disp_cols > ctx->buffer_size)
         {
-            ctx->buffer_size = disp_img_rows * disp_cols;
-            ctx->display_buffer =
-                (double *) realloc(ctx->display_buffer, ctx->buffer_size * sizeof(double));
+            int     new_buf_size = disp_img_rows * disp_cols;
+            double *tmp_buf =
+                (double *) realloc(ctx->display_buffer, new_buf_size * sizeof(double));
+            if (tmp_buf == NULL)
+            {
+                loop = 0;
+                continue;
+            }
+            ctx->display_buffer = tmp_buf;
+            ctx->buffer_size    = new_buf_size;
         }
 
         size_t needed_fb = tv_framebuf_size(wrow, wcol);
         if (needed_fb > ctx->frame_buffer_size)
         {
+            char *tmp_fb = (char *) realloc(ctx->frame_buffer, needed_fb);
+            if (tmp_fb == NULL)
+            {
+                loop = 0;
+                continue;
+            }
+            ctx->frame_buffer      = tmp_fb;
             ctx->frame_buffer_size = needed_fb;
-            ctx->frame_buffer      = (char *) realloc(ctx->frame_buffer, ctx->frame_buffer_size);
         }
 
         double view_w_img = (double) xsize / view_zoom;

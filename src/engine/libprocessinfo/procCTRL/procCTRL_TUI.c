@@ -293,7 +293,7 @@ static errno_t procctrl_init(procctrl_context_t *ctx)
     }
     ctx->procinfoproc->selected_col = 1;
 
-    ctx->CPUsetList = (STRINGLISTENTRY *) malloc(sizeof(STRINGLISTENTRY) * 1000);
+    ctx->CPUsetList = (STRINGLISTENTRY *) calloc(1000, sizeof(STRINGLISTENTRY));
     int NBCPUset __attribute__((unused)) =
         processinfo_CPUsets_List(ctx->CPUsetList, ctx->procinfoproc->has_cset);
 

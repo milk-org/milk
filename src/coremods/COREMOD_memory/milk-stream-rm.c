@@ -180,8 +180,21 @@ static int scan_streams(const char *shmdir, char ***names, int capacity)
 
         if (count >= capacity)
         {
-            capacity *= 2;
-            *names = realloc(*names, capacity * sizeof(char *));
+            int    new_capacity = capacity * 2;
+            char **tmp_names    = realloc(*names, new_capacity * sizeof(char *));
+            if (tmp_names == NULL)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    free((*names)[i]);
+                }
+                free(*names);
+                *names = NULL;
+                closedir(d);
+                return -1;
+            }
+            *names   = tmp_names;
+            capacity = new_capacity;
         }
         (*names)[count] = strdup(sname);
         count++;
@@ -416,8 +429,25 @@ int main(int argc, char *argv[])
                 {
                     if (match_count >= match_cap)
                     {
-                        match_cap *= 2;
-                        match_names = realloc(match_names, match_cap * sizeof(char *));
+                        int    new_match_cap = match_cap * 2;
+                        char **tmp_match     = realloc(match_names, new_match_cap * sizeof(char *));
+                        if (tmp_match == NULL)
+                        {
+                            for (int j = 0; j < match_count; j++)
+                            {
+                                free(match_names[j]);
+                            }
+                            free(match_names);
+                            for (int j = i; j < total; j++)
+                            {
+                                free(all_names[j]);
+                            }
+                            free(all_names);
+                            regfree(&regex);
+                            return 1;
+                        }
+                        match_names = tmp_match;
+                        match_cap   = new_match_cap;
                     }
                     match_names[match_count] = all_names[i];
                     match_count++;

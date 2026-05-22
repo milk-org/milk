@@ -68,7 +68,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     int32_t n_input = ptr_n_input;
 
-    IMGID *img_in_arr = (IMGID *) malloc(n_input * sizeof(IMGID));
+    IMGID *img_in_arr = (IMGID *) calloc(n_input, sizeof(IMGID));
     {
         char input_name[200];
         for (int ii = 0; ii < n_input; ++ii)
@@ -82,28 +82,28 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID img_out = imgid_make_from_name(stream_basename);
     resolveIMGID(&img_out, ERRMODE_WARN, dcimg, dcnimg);
 
-    int32_t *offset_bytes = (int32_t *) malloc(n_input * sizeof(int32_t));
+    int32_t *offset_bytes = (int32_t *) calloc(n_input, sizeof(int32_t));
     if (offset_bytes == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer,"
+        PRINT_ERROR("calloc returns NULL pointer,"
                     " size %ld",
                     (long) (n_input * sizeof(int32_t)));
         abort();
     }
 
-    int32_t *size_bytes = (int32_t *) malloc(n_input * sizeof(int32_t));
+    int32_t *size_bytes = (int32_t *) calloc(n_input, sizeof(int32_t));
     if (size_bytes == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer,"
+        PRINT_ERROR("calloc returns NULL pointer,"
                     " size %ld",
                     (long) (n_input * sizeof(int32_t)));
         abort();
     }
 
-    int32_t *sem_idxs = (int32_t *) malloc(n_input * sizeof(int32_t));
+    int32_t *sem_idxs = (int32_t *) calloc(n_input, sizeof(int32_t));
     if (sem_idxs == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer,"
+        PRINT_ERROR("calloc returns NULL pointer,"
                     " size %ld",
                     (long) (n_input * sizeof(int32_t)));
         abort();

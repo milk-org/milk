@@ -104,8 +104,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     printf("mapping table has %lu elements\n", nbpix);
 
-    uint64_t *MILK_RESTRICT map_outpixindex = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
-    uint64_t *MILK_RESTRICT map_inpixindex  = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t *MILK_RESTRICT map_outpixindex = (uint64_t *) calloc(nbpix, sizeof(uint64_t));
+    uint64_t *MILK_RESTRICT map_inpixindex  = (uint64_t *) calloc(nbpix, sizeof(uint64_t));
+    if (map_outpixindex == NULL || map_inpixindex == NULL)
+    {
+        PRINT_ERROR("calloc failed for pixel map arrays");
+        free(map_outpixindex);
+        free(map_inpixindex);
+        return RETURN_FAILURE;
+    }
 
     nbpix = 0;
     for (uint64_t ii = 0; ii < (uint64_t) xsize * ysize; ii++)
