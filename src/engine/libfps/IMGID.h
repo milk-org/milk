@@ -857,8 +857,9 @@ static inline errno_t imgid_connect(IMGID *img, int FLAG)
         // We have an image connected.
         img_connected.im = image;
         img_connected.md = image->md;
-        strcpy(img_connected.name, img->name);
-        img_connected.ID = 0;
+        strncpy(img_connected.name, img->name, sizeof(img_connected.name) - 1);
+        img_connected.name[sizeof(img_connected.name) - 1] = '\0';
+        img_connected.ID                                   = 0;
 
         // Now check if it matches the template 'img' if FLAG is set
         if (FLAG == IMGID_CONNECT_CHECK_FAIL || FLAG == IMGID_CONNECT_CHECK_CREATE)
@@ -874,8 +875,9 @@ static inline errno_t imgid_connect(IMGID *img, int FLAG)
                 // Copy connection info to *img
                 img->im = img_connected.im;
                 img->md = img_connected.md;
-                strcpy(img->name, img_connected.name);
-                img->ID = 0;
+                strncpy(img->name, img_connected.name, sizeof(img->name) - 1);
+                img->name[sizeof(img->name) - 1] = '\0';
+                img->ID                          = 0;
                 // Update creation params from what we found
                 imgid_update_creationparams(img);
                 retcode = IMGID_CONNECTED;
@@ -932,8 +934,9 @@ static inline errno_t imgid_connect(IMGID *img, int FLAG)
             // No check, just copy info
             img->im = img_connected.im;
             img->md = img_connected.md;
-            strcpy(img->name, img_connected.name);
-            img->ID = 0;
+            strncpy(img->name, img_connected.name, sizeof(img->name) - 1);
+            img->name[sizeof(img->name) - 1] = '\0';
+            img->ID                          = 0;
             // Update creation params from what we found
             imgid_update_creationparams(img);
             retcode = IMGID_CONNECTED;
