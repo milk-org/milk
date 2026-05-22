@@ -38,20 +38,15 @@
  * Registers a function body for later invocation
  * by name.
  */
-void cli_func_define(
-    const char *name,
-    char body[][STRINGMAXLEN_CLICMDLINE],
-    int nbody)
+void cli_func_define(const char *name, char body[][STRINGMAXLEN_CLICMDLINE], int nbody)
 {
     /* Update existing */
-    for(int i = 0; i < CLI_MAX_FUNCS; i++)
+    for (int i = 0; i < CLI_MAX_FUNCS; i++)
     {
-        if(cli_funcs[i].used
-                && strcmp(cli_funcs[i].name, name)
-                == 0)
+        if (cli_funcs[i].used && strcmp(cli_funcs[i].name, name) == 0)
         {
             cli_funcs[i].nbody = nbody;
-            for(int j = 0; j < nbody; j++)
+            for (int j = 0; j < nbody; j++)
             {
                 strncpy(cli_funcs[i].body[j], body[j], STRINGMAXLEN_CLICMDLINE - 1);
             }
@@ -59,22 +54,24 @@ void cli_func_define(
         }
     }
     /* Find empty slot */
-    for(int i = 0; i < CLI_MAX_FUNCS; i++)
+    for (int i = 0; i < CLI_MAX_FUNCS; i++)
     {
-        if(!cli_funcs[i].used)
+        if (!cli_funcs[i].used)
         {
             strncpy(cli_funcs[i].name, name, CLI_FUNC_NAMELEN - 1);
             cli_funcs[i].name[CLI_FUNC_NAMELEN - 1] = '\0';
-            cli_funcs[i].nbody = nbody;
-            cli_funcs[i].used = 1;
-            for(int j = 0; j < nbody; j++)
+            cli_funcs[i].nbody                      = nbody;
+            cli_funcs[i].used                       = 1;
+            for (int j = 0; j < nbody; j++)
             {
                 strncpy(cli_funcs[i].body[j], body[j], STRINGMAXLEN_CLICMDLINE - 1);
             }
             return;
         }
     }
-    printf("Error: function table full " "(max %d)\n", CLI_MAX_FUNCS);
+    printf("Error: function table full "
+           "(max %d)\n",
+           CLI_MAX_FUNCS);
 }
 
 
@@ -104,9 +101,7 @@ void cli_func_define(
  *     *) default ;;
  *   esac
  */
-void cli_exec_block_case(
-    char (*lines)[STRINGMAXLEN_CLICMDLINE],
-    int nlines)
+void cli_exec_block_case(char (*lines)[STRINGMAXLEN_CLICMDLINE], int nlines)
 {
     /* Line 0 = "case <word> in" */
     const char *hdr = strip_ws(lines[0]);
@@ -115,10 +110,7 @@ void cli_exec_block_case(
     char word[256];
     {
         int wi = 0;
-        while(*hdr != '\0'
-                && *hdr != ' '
-                && *hdr != '\t'
-                && wi < 255)
+        while (*hdr != '\0' && *hdr != ' ' && *hdr != '\t' && wi < 255)
         {
             word[wi++] = *hdr++;
         }
@@ -128,19 +120,19 @@ void cli_exec_block_case(
     cli_expand_env(word, 256);
 
     /* Scan patterns: "pat) body ;;" */
-    for(int i = 1; i < nlines; i++)
+    for (int i = 1; i < nlines; i++)
     {
         const char *lp = strip_ws(lines[i]);
         /* Find closing ')' */
         const char *cp = strchr(lp, ')');
-        if(cp == NULL)
+        if (cp == NULL)
         {
             continue;
         }
         /* Extract pattern(s) */
         char pat[256];
-        int plen = (int)(cp - lp);
-        if(plen >= 256)
+        int  plen = (int) (cp - lp);
+        if (plen >= 256)
         {
             plen = 255;
         }
@@ -154,19 +146,16 @@ void cli_exec_block_case(
             char ptmp[256];
             strncpy(ptmp, pat, sizeof(ptmp) - 1);
             ptmp[sizeof(ptmp) - 1] = '\0';
-            char *psave = NULL;
-            char *pp = strtok_r(ptmp, "|", &psave);
-            while(pp != NULL)
+            char *psave            = NULL;
+            char *pp               = strtok_r(ptmp, "|", &psave);
+            while (pp != NULL)
             {
                 /* strip ws */
-                while(*pp == ' '
-                        || *pp == '\t')
+                while (*pp == ' ' || *pp == '\t')
                 {
                     pp++;
                 }
-                if(strcmp(pp, "*") == 0
-                        || strcmp(pp, word)
-                        == 0)
+                if (strcmp(pp, "*") == 0 || strcmp(pp, word) == 0)
                 {
                     matched = 1;
                     break;
@@ -174,20 +163,19 @@ void cli_exec_block_case(
                 pp = strtok_r(NULL, "|", &psave);
             }
         }
-        if(!matched)
+        if (!matched)
         {
             continue;
         }
 
         /* Collect body lines until ;; */
         const char *body_start = cp + 1;
-        while(*body_start == ' '
-                || *body_start == '\t')
+        while (*body_start == ' ' || *body_start == '\t')
         {
             body_start++;
         }
         /* If body is on same line */
-        if(*body_start != '\0')
+        if (*body_start != '\0')
         {
             /* Strip ;; from end */
             char cmdline[STRINGMAXLEN_CLICMDLINE];
@@ -195,26 +183,18 @@ void cli_exec_block_case(
             cmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             {
                 int cl = (int) strlen(cmdline);
-                while(cl > 1
-                        && cmdline[cl - 1]
-                        == ';'
-                        && cmdline[cl - 2]
-                        == ';')
+                while (cl > 1 && cmdline[cl - 1] == ';' && cmdline[cl - 2] == ';')
                 {
                     cmdline[cl - 2] = '\0';
                     cl -= 2;
                 }
                 /* Trim trailing ws */
-                while(cl > 0
-                        && (cmdline[cl - 1]
-                            == ' '
-                            || cmdline[cl - 1]
-                            == '\t'))
+                while (cl > 0 && (cmdline[cl - 1] == ' ' || cmdline[cl - 1] == '\t'))
                 {
                     cmdline[--cl] = '\0';
                 }
             }
-            if(strlen(cmdline) > 0)
+            if (strlen(cmdline) > 0)
             {
                 strncpy(data.CLIcmdline, cmdline, STRINGMAXLEN_CLICMDLINE - 1);
                 CLI_execute_line();
@@ -223,11 +203,10 @@ void cli_exec_block_case(
         else
         {
             /* Multi-line body */
-            for(int j = i + 1;
-                    j < nlines; j++)
+            for (int j = i + 1; j < nlines; j++)
             {
                 const char *bl = strip_ws(lines[j]);
-                if(strcmp(bl, ";;") == 0)
+                if (strcmp(bl, ";;") == 0)
                 {
                     break;
                 }
@@ -236,33 +215,24 @@ void cli_exec_block_case(
                 strncpy(cmd2, bl, STRINGMAXLEN_CLICMDLINE - 1);
                 cmd2[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
                 {
-                    int c2l = (int) strlen(cmd2);
+                    int c2l        = (int) strlen(cmd2);
                     int ends_dsemi = 0;
-                    while(c2l > 1
-                            && cmd2[c2l - 1]
-                            == ';'
-                            && cmd2[c2l - 2]
-                            == ';')
+                    while (c2l > 1 && cmd2[c2l - 1] == ';' && cmd2[c2l - 2] == ';')
                     {
                         cmd2[c2l - 2] = '\0';
                         c2l -= 2;
                         ends_dsemi = 1;
                     }
-                    while(c2l > 0
-                            && (cmd2[c2l - 1]
-                                == ' '
-                                || cmd2[
-                                    c2l - 1]
-                                == '\t'))
+                    while (c2l > 0 && (cmd2[c2l - 1] == ' ' || cmd2[c2l - 1] == '\t'))
                     {
                         cmd2[--c2l] = '\0';
                     }
-                    if(strlen(cmd2) > 0)
+                    if (strlen(cmd2) > 0)
                     {
                         strncpy(data.CLIcmdline, cmd2, STRINGMAXLEN_CLICMDLINE - 1);
                         CLI_execute_line();
                     }
-                    if(ends_dsemi)
+                    if (ends_dsemi)
                     {
                         break;
                     }

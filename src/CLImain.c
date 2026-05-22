@@ -19,24 +19,23 @@
 
 #include "CLIcore/CLIcore_UI_execute.h"
 
-#define STYLE_BOLD    "\033[1m"
+#define STYLE_BOLD "\033[1m"
 #define STYLE_NO_BOLD "\033[22m"
 
 #define STRINGMAXLEN_VERSIONSTRING 80
-#define STRINGMAXLEN_APPNAME       40
+#define STRINGMAXLEN_APPNAME 40
 
 int main(int argc, char *argv[])
 {
-    for(int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
-        if(strcmp(argv[i], "-h1") == 0 ||
-           strcmp(argv[i], "--help-oneline") == 0)
+        if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("milk interactive command-line interface\n");
             return 0;
         }
 
-        if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
         {
             print_milk_cli_help();
             return 0;
@@ -46,7 +45,7 @@ int main(int argc, char *argv[])
     char AppName[STRINGMAXLEN_APPNAME];
 
     char *CLI_APPNAME = getenv("MILKCLI_APPNAME");
-    if(CLI_APPNAME != NULL)
+    if (CLI_APPNAME != NULL)
     {
         strncpy(AppName, CLI_APPNAME, STRINGMAXLEN_APPNAME - 1);
     }
@@ -55,7 +54,7 @@ int main(int argc, char *argv[])
         strncpy(AppName, "milk-cli", STRINGMAXLEN_APPNAME - 1);
     }
 
-    if(getenv("MILK_QUIET"))
+    if (getenv("MILK_QUIET"))
     {
         dcquiet = 1;
     }
@@ -64,7 +63,7 @@ int main(int argc, char *argv[])
         dcquiet = 0;
     }
 
-    if(getenv("MILK_ERROREXIT"))
+    if (getenv("MILK_ERROREXIT"))
     {
         dcerrorexit = 1;
     }
@@ -77,8 +76,7 @@ int main(int argc, char *argv[])
 #ifndef NDEBUG
     printf("        [ENABLED]  Code test point tracing\n");
     // allocate circular buffer memory
-    dctestptarr     = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) *
-                              CODETESTPOINTARRAY_NBCNT);
+    dctestptarr  = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
     dctestptinit = 1;
     // initialize loop counter
     // loop counter increments when reaching end of circular buffer
@@ -88,25 +86,19 @@ int main(int argc, char *argv[])
 #endif
 
     char versionstring[STRINGMAXLEN_VERSIONSTRING];
-    snprintf(versionstring,
-             STRINGMAXLEN_VERSIONSTRING,
-             "%d.%02d.%02d%s",
-             VERSION_MAJOR,
-             VERSION_MINOR,
-             VERSION_PATCH,
-             VERSION_OPTION);
+    snprintf(versionstring, STRINGMAXLEN_VERSIONSTRING, "%d.%02d.%02d%s", VERSION_MAJOR,
+             VERSION_MINOR, VERSION_PATCH, VERSION_OPTION);
 
-    if(dcquiet == 0)
+    if (dcquiet == 0)
     {
         printf(STYLE_BOLD);
         printf("\n        milk-cli  v %s  (compiled %s %s)\n", versionstring, __DATE__, __TIME__);
 #ifndef NDEBUG
-        printf(
-            "        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "
-            "===\n");
+        printf("        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "
+               "===\n");
 #endif
         printf(STYLE_NO_BOLD);
-        if(dcerrorexit == 1)
+        if (dcerrorexit == 1)
         {
             printf("        EXIT-ON-ERROR mode\n");
         }
@@ -124,7 +116,7 @@ int main(int argc, char *argv[])
     strcpy(dcconfigdir, CONFIGDIR);
     strcpy(dcinstalldir, INSTALLDIR);
 
-    if(dcquiet == 0)
+    if (dcquiet == 0)
     {
         //printf("        %s version %s\n", dcpkgname, dcpkgver);
 #ifdef IMAGESTRUCT_VERSION
@@ -143,7 +135,7 @@ int main(int argc, char *argv[])
 
     //errno_t CLIretval = RETURN_SUCCESS;
 
-    if(dcquiet == 0)
+    if (dcquiet == 0)
     {
         printf("EXIT CODE %d\n", dcexitcode);
     }
@@ -157,7 +149,7 @@ int main(int argc, char *argv[])
 
 #ifndef NDEBUG
 
-    if(getenv("MILK_WRITECODETRACE"))
+    if (getenv("MILK_WRITECODETRACE"))
     {
         write_tracedebugfile();
     }
@@ -177,48 +169,51 @@ int main(int argc, char *argv[])
      * the hint text with plain space characters. */
     {
         struct winsize ws;
-        if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0
-                && ws.ws_row > 0)
+        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0 && ws.ws_row > 0)
         {
-            int r = ws.ws_row;
-            int c = ws.ws_col;
+            int  r = ws.ws_row;
+            int  c = ws.ws_col;
             char esc[128];
-            int n;
+            int  n;
 
             fflush(stdout);
 
             /* 1. Move cursor to bottom row col 1 */
-            n = snprintf(esc, sizeof(esc),
-                         "\033[%d;1H", r);
-            if(write(STDOUT_FILENO, esc, n) < 0) {}
+            n = snprintf(esc, sizeof(esc), "\033[%d;1H", r);
+            if (write(STDOUT_FILENO, esc, n) < 0)
+            {
+            }
 
             /* 2. Overwrite entire row with spaces */
             {
                 char spaces[256];
-                int remain = c;
+                int  remain = c;
                 memset(spaces, ' ', sizeof(spaces));
-                while(remain > 0)
+                while (remain > 0)
                 {
                     int chunk = remain;
-                    if(chunk > (int) sizeof(spaces))
+                    if (chunk > (int) sizeof(spaces))
                     {
                         chunk = (int) sizeof(spaces);
                     }
-                    if(write(STDOUT_FILENO, spaces,
-                          chunk) < 0) {}
+                    if (write(STDOUT_FILENO, spaces, chunk) < 0)
+                    {
+                    }
                     remain -= chunk;
                 }
             }
 
             /* 3. Reset scroll region to full */
-            n = snprintf(esc, sizeof(esc),
-                         "\033[1;%dr", r);
-            if(write(STDOUT_FILENO, esc, n) < 0) {}
+            n = snprintf(esc, sizeof(esc), "\033[1;%dr", r);
+            if (write(STDOUT_FILENO, esc, n) < 0)
+            {
+            }
 
             /* 4. Position cursor for bash prompt */
-            n = snprintf(esc, sizeof(esc),
-                         "\033[%d;1H", r - 1);
-            if(write(STDOUT_FILENO, esc, n) < 0) {}
+            n = snprintf(esc, sizeof(esc), "\033[%d;1H", r - 1);
+            if (write(STDOUT_FILENO, esc, n) < 0)
+            {
+            }
         }
     }
 

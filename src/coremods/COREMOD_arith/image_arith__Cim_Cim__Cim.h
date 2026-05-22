@@ -19,19 +19,7 @@
 
 */
 
-int arith_image_Cadd(
-    const char *ID1_name,
-    const char *ID2_name,
-    const char *ID_out);
-int arith_image_Csub(
-    const char *ID1_name,
-    const char *ID2_name,
-    const char *ID_out);
-int arith_image_Cmult(
-    const char *ID1_name,
-    const char *ID2_name,
-    const char *ID_out);
-int arith_image_Cdiv(
-    const char *ID1_name,
-    const char *ID2_name,
-    const char *ID_out);
+int arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_Cmult(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_Cdiv(const char *ID1_name, const char *ID2_name, const char *ID_out);

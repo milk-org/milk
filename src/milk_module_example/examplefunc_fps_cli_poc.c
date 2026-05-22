@@ -84,9 +84,9 @@
  * ============================================================= */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -110,11 +110,9 @@
  *                shown in help and fps-info output.
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "exfpscli",
-    .cmdkey      = "fpsclitest",
-    .description = "Test FPS-CLI unification"
-};
+static FPS_APP_INFO FPS_app_info = { .fps_name    = "exfpscli",
+                                     .cmdkey      = "fpsclitest",
+                                     .description = "Test FPS-CLI unification" };
 
 
 /* ================================================================
@@ -163,31 +161,20 @@ static float    param_float32 = 3.14f;
 static double   param_float64 = 2.718;
 static pid_t    param_pid     = 1000;
 
-static struct timespec param_timespec =
-    {1709424000, 123456789};
+static struct timespec param_timespec = { 1709424000, 123456789 };
 
-static char param_filename[FUNCTION_PARAMETER_STRMAXLEN]
-    = "data.txt";
-static char param_fitsfilename[FUNCTION_PARAMETER_STRMAXLEN]
-    = "image.fits";
-static char param_execfilename[FUNCTION_PARAMETER_STRMAXLEN]
-    = "run_me.sh";
-static char param_dirname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "/tmp";
-static char param_streamname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "cam01";
-static char param_string[FUNCTION_PARAMETER_STRMAXLEN]
-    = "hello";
+static char param_filename[FUNCTION_PARAMETER_STRMAXLEN]     = "data.txt";
+static char param_fitsfilename[FUNCTION_PARAMETER_STRMAXLEN] = "image.fits";
+static char param_execfilename[FUNCTION_PARAMETER_STRMAXLEN] = "run_me.sh";
+static char param_dirname[FUNCTION_PARAMETER_STRMAXLEN]      = "/tmp";
+static char param_streamname[FUNCTION_PARAMETER_STRMAXLEN]   = "cam01";
+static char param_string[FUNCTION_PARAMETER_STRMAXLEN]       = "hello";
 
 static int32_t param_onoff = 0;
 
-static char param_processname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "process_a";
-static char param_fpsname[FUNCTION_PARAMETER_STRMAXLEN]
-    = "otherfps";
-static char
-    param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN]
-    = "not_a_stream";
+static char param_processname[FUNCTION_PARAMETER_STRMAXLEN]       = "process_a";
+static char param_fpsname[FUNCTION_PARAMETER_STRMAXLEN]           = "otherfps";
+static char param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_stream";
 
 
 /* ================================================================
@@ -254,63 +241,29 @@ static char
  *               shown in help output and fps-info.
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".p_int32",      &param_int32, \
-      FPTYPE_INT32,    1, \
-      FPFLAG_DEFAULT_INPUT, "Example INT32") \
-    X(".p_uint32",     &param_uint32, \
-      FPTYPE_UINT32,   0, \
-      FPFLAG_DEFAULT_INPUT, "Example UINT32") \
-    X(".p_int64",      &param_int64, \
-      FPTYPE_INT64,    0, \
-      FPFLAG_DEFAULT_INPUT, "Example INT64") \
-    X(".p_uint64",     &param_uint64, \
-      FPTYPE_UINT64,   0, \
-      FPFLAG_DEFAULT_INPUT, "Example UINT64") \
-    X(".p_float32",    &param_float32, \
-      FPTYPE_FLOAT32,  0, \
-      FPFLAG_DEFAULT_INPUT, "Example FLOAT32") \
-    X(".p_float64",    &param_float64, \
-      FPTYPE_FLOAT64,  0, \
-      FPFLAG_DEFAULT_INPUT, "Example FLOAT64") \
-    X(".p_onoff",      &param_onoff, \
-      FPTYPE_ONOFF,    0, \
-      FPFLAG_DEFAULT_INPUT, "Example ONOFF") \
-    X(".p_streamname", param_streamname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_TRIGGER_STREAM, \
-      "Example STREAMNAME (trigger)") \
-    X(".p_fitsfile",   param_fitsfilename, \
-      FPTYPE_FITSFILENAME, 0, \
-      FPFLAG_DEFAULT_INPUT, "Example FITSFILENAME") \
-    X(".p_string",     param_string, \
-      FPTYPE_STRING,   0, \
-      FPFLAG_DEFAULT_INPUT, "Example STRING") \
-    X(".p_pid",        &param_pid, \
-      FPTYPE_PID,      0, \
-      FPFLAG_DEFAULT_INPUT, "Example PID") \
-    X(".p_timespec",   &param_timespec, \
-      FPTYPE_TIMESPEC, 0, \
-      FPFLAG_DEFAULT_INPUT, "Example TIMESPEC") \
-    X(".p_filename",   param_filename, \
-      FPTYPE_FILENAME, 0, \
-      FPFLAG_DEFAULT_INPUT, "Example FILENAME") \
-    X(".p_execfile",   param_execfilename, \
-      FPTYPE_EXECFILENAME, 0, \
-      FPFLAG_DEFAULT_INPUT, "Example EXECFILENAME") \
-    X(".p_dirname",    param_dirname, \
-      FPTYPE_DIRNAME,  0, \
-      FPFLAG_DEFAULT_INPUT, "Example DIRNAME") \
-    X(".p_process",    param_processname, \
-      FPTYPE_PROCESS,  0, \
-      FPFLAG_DEFAULT_INPUT, "Example PROCESS") \
-    X(".p_fpsname",    param_fpsname, \
-      FPTYPE_FPSNAME,  0, \
-      FPFLAG_DEFAULT_INPUT, "Example FPSNAME") \
-    X(".p_strnotstrm", \
-      param_string_not_stream, \
-      FPTYPE_STRING_NOT_STREAM, 0, \
-      FPFLAG_DEFAULT_INPUT, \
+#define FPS_PARAMS(X)                                                                              \
+    X(".p_int32", &param_int32, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "Example INT32")            \
+    X(".p_uint32", &param_uint32, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT, "Example UINT32")        \
+    X(".p_int64", &param_int64, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT, "Example INT64")            \
+    X(".p_uint64", &param_uint64, FPTYPE_UINT64, 0, FPFLAG_DEFAULT_INPUT, "Example UINT64")        \
+    X(".p_float32", &param_float32, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT, "Example FLOAT32")    \
+    X(".p_float64", &param_float64, FPTYPE_FLOAT64, 0, FPFLAG_DEFAULT_INPUT, "Example FLOAT64")    \
+    X(".p_onoff", &param_onoff, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT, "Example ONOFF")            \
+    X(".p_streamname", param_streamname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_TRIGGER_STREAM,      \
+      "Example STREAMNAME (trigger)")                                                              \
+    X(".p_fitsfile", param_fitsfilename, FPTYPE_FITSFILENAME, 0, FPFLAG_DEFAULT_INPUT,             \
+      "Example FITSFILENAME")                                                                      \
+    X(".p_string", param_string, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT, "Example STRING")         \
+    X(".p_pid", &param_pid, FPTYPE_PID, 0, FPFLAG_DEFAULT_INPUT, "Example PID")                    \
+    X(".p_timespec", &param_timespec, FPTYPE_TIMESPEC, 0, FPFLAG_DEFAULT_INPUT,                    \
+      "Example TIMESPEC")                                                                          \
+    X(".p_filename", param_filename, FPTYPE_FILENAME, 0, FPFLAG_DEFAULT_INPUT, "Example FILENAME") \
+    X(".p_execfile", param_execfilename, FPTYPE_EXECFILENAME, 0, FPFLAG_DEFAULT_INPUT,             \
+      "Example EXECFILENAME")                                                                      \
+    X(".p_dirname", param_dirname, FPTYPE_DIRNAME, 0, FPFLAG_DEFAULT_INPUT, "Example DIRNAME")     \
+    X(".p_process", param_processname, FPTYPE_PROCESS, 0, FPFLAG_DEFAULT_INPUT, "Example PROCESS") \
+    X(".p_fpsname", param_fpsname, FPTYPE_FPSNAME, 0, FPFLAG_DEFAULT_INPUT, "Example FPSNAME")     \
+    X(".p_strnotstrm", param_string_not_stream, FPTYPE_STRING_NOT_STREAM, 0, FPFLAG_DEFAULT_INPUT, \
       "Example STRING_NOT_STREAM")
 
 
@@ -345,27 +298,18 @@ static MILK_HOT errno_t fpsexec()
     printf("  UINT64             = %lu\n", param_uint64);
     printf("  FLOAT32            = %f\n", param_float32);
     printf("  FLOAT64            = %f\n", param_float64);
-    printf("  PID                = %d\n",
-           (int) param_pid);
-    printf("  TIMESPEC           = %ld.%09ld\n",
-           param_timespec.tv_sec,
-           param_timespec.tv_nsec);
+    printf("  PID                = %d\n", (int) param_pid);
+    printf("  TIMESPEC           = %ld.%09ld\n", param_timespec.tv_sec, param_timespec.tv_nsec);
     printf("  FILENAME           = %s\n", param_filename);
-    printf("  FITSFILENAME       = %s\n",
-           param_fitsfilename);
-    printf("  EXECFILENAME       = %s\n",
-           param_execfilename);
+    printf("  FITSFILENAME       = %s\n", param_fitsfilename);
+    printf("  EXECFILENAME       = %s\n", param_execfilename);
     printf("  DIRNAME            = %s\n", param_dirname);
-    printf("  STREAMNAME         = %s\n",
-           param_streamname);
+    printf("  STREAMNAME         = %s\n", param_streamname);
     printf("  STRING             = %s\n", param_string);
-    printf("  ONOFF              = %s\n",
-           param_onoff ? "ON" : "OFF");
-    printf("  PROCESS            = %s\n",
-           param_processname);
+    printf("  ONOFF              = %s\n", param_onoff ? "ON" : "OFF");
+    printf("  PROCESS            = %s\n", param_processname);
     printf("  FPSNAME            = %s\n", param_fpsname);
-    printf("  STRING_NOT_STREAM  = %s\n",
-           param_string_not_stream);
+    printf("  STRING_NOT_STREAM  = %s\n", param_string_not_stream);
 
     return RETURN_SUCCESS;
 }
@@ -406,8 +350,7 @@ static MILK_COLD errno_t customCONFcheck()
 
     printf("[customCONFcheck] iteration %ld"
            "  fpsptr=%p\n",
-           confcheck_cnt,
-           (void *) dcfpsptr);
+           confcheck_cnt, (void *) dcfpsptr);
 
     if (dcfpsptr == NULL)
     {
@@ -418,56 +361,41 @@ static MILK_COLD errno_t customCONFcheck()
 
     /* --- Toggle p_float64 visibility --- */
     {
-        int idx_onoff =
-            functionparameter_GetParamIndex(
-                fps, ".p_onoff");
-        int idx_f64 =
-            functionparameter_GetParamIndex(
-                fps, ".p_float64");
+        int idx_onoff = functionparameter_GetParamIndex(fps, ".p_onoff");
+        int idx_f64   = functionparameter_GetParamIndex(fps, ".p_float64");
 
         if (idx_onoff >= 0 && idx_f64 >= 0)
         {
-            if (fps->parray[idx_onoff].fpflag
-                & FPFLAG_ONOFF)
+            if (fps->parray[idx_onoff].fpflag & FPFLAG_ONOFF)
             {
                 /* ON: show p_float64 */
-                fps->parray[idx_f64].fpflag
-                    |= FPFLAG_USED;
-                fps->parray[idx_f64].fpflag
-                    |= FPFLAG_VISIBLE;
+                fps->parray[idx_f64].fpflag |= FPFLAG_USED;
+                fps->parray[idx_f64].fpflag |= FPFLAG_VISIBLE;
             }
             else
             {
                 /* OFF: hide p_float64 */
-                fps->parray[idx_f64].fpflag
-                    &= ~FPFLAG_USED;
-                fps->parray[idx_f64].fpflag
-                    &= ~FPFLAG_VISIBLE;
+                fps->parray[idx_f64].fpflag &= ~FPFLAG_USED;
+                fps->parray[idx_f64].fpflag &= ~FPFLAG_VISIBLE;
             }
         }
     }
 
     /* --- Range-clamp p_float32 to [0, 100] --- */
     {
-        int idx_f32 =
-            functionparameter_GetParamIndex(
-                fps, ".p_float32");
+        int idx_f32 = functionparameter_GetParamIndex(fps, ".p_float32");
 
         if (idx_f32 >= 0)
         {
-            float val =
-                fps->parray[idx_f32]
-                    .val.f32[0];
+            float val = fps->parray[idx_f32].val.f32[0];
 
             if (val < 0.0f)
             {
-                fps->parray[idx_f32]
-                    .val.f32[0] = 0.0f;
+                fps->parray[idx_f32].val.f32[0] = 0.0f;
             }
             else if (val > 100.0f)
             {
-                fps->parray[idx_f32]
-                    .val.f32[0] = 100.0f;
+                fps->parray[idx_f32].val.f32[0] = 100.0f;
             }
         }
     }
@@ -503,22 +431,13 @@ static MILK_COLD errno_t customCONFcheck()
  * reference CLIcmddata.
  * ============================================================= */
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
 
-static const int nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
 
-CLICMDDATA CLIcmddata = {
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
-};
+CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
 
 /**
  * @brief Auto-initialize CLIcmddata from FPS_app_info.
@@ -533,7 +452,6 @@ CLICMDDATA CLIcmddata = {
  * from CLICMD_FIELDS_DEFAULTS.
  */
 FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
-
 
 
 /* ================================================================
@@ -609,13 +527,8 @@ static MILK_HOT errno_t compute_function()
  */
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info,
-        farg,
-        &CLIcmddata,
-        my_bindings,
-        nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 /**
@@ -628,11 +541,9 @@ static errno_t CLIfunction(void)
  */
 errno_t CLIADDCMD_milk_module_example__fpscli()
 {
-    CLIcmddata.FPS_customCONFcheck =
-        customCONFcheck;
+    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
 
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     INSERT_STD_CLIREGISTERFUNC
 
@@ -674,9 +585,5 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2_CONFCHECK(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function,
-    customCONFcheck)
+FPS_MAIN_STANDALONE_V2_CONFCHECK(FPS_app_info, FPS_PARAMS, compute_function, customCONFcheck)
 #endif

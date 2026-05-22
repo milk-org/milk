@@ -4,13 +4,13 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT "seq"
-#define MODULE_DESCRIPTION       "sequencer control module"
+#define MODULE_DESCRIPTION "sequencer control module"
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
-#include "seq_cli.h"
+#    include "CLIcore.h"
+#    include "seq_cli.h"
 
 INIT_MODULE_LIB(sequencer)
 

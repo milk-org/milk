@@ -8,10 +8,10 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "libmilkdata/milkdata.h"
+#    include "libmilkdata/milkdata.h"
 #endif
 
 
@@ -22,12 +22,12 @@ uint64_t compute_image_memory()
 {
     uint64_t totalmem = 0;
 
-    for(imageID i = 0; i < dcnimg; i++)
+    for (imageID i = 0; i < dcnimg; i++)
     {
         //printf("%5ld / %5ld  %d\n", i, dcnimg, dcimg[i].used);
         //	fflush(stdout);
 
-        if(dcimg[i].used == 1)
+        if (dcimg[i].used == 1)
         {
             totalmem += dcimg[i].md[0].nelement * ImageStreamIO_typesize(dcimg[i].md[0].datatype);
         }

@@ -9,10 +9,11 @@
 #include "fps.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/**
+    /**
  * @brief Print content of an FPS to stdout
  * 
  * @param fps Pointer to the FPS structure
@@ -20,10 +21,7 @@ extern "C" {
  * @param show_info Show detailed stream information
  * @return int 0 on success, -1 on error
  */
-int function_parameter_print_info(
-    FPS *fps,
-    int verbose,
-    int show_info);
+    int function_parameter_print_info(FPS *fps, int verbose, int show_info);
 
 #ifdef __cplusplus
 }

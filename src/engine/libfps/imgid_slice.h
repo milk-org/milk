@@ -79,9 +79,7 @@ typedef struct
  * @param bracket_str  Text between [ and ]
  * @return Populated IMGID_SLICE descriptor
  */
-IMGID_SLICE imgid_slice_parse(
-    const char *bracket_str
-);
+IMGID_SLICE imgid_slice_parse(const char *bracket_str);
 
 
 /**
@@ -97,11 +95,10 @@ IMGID_SLICE imgid_slice_parse(
  * @param out_size  Output axis sizes (written)
  * @return 0 on success, 1 on error
  */
-int imgid_slice_output_size(
-    IMGID_SLICE    *s,
-    int            src_naxis,
-    const uint32_t *src_size,
-    uint32_t       *out_size);
+int imgid_slice_output_size(IMGID_SLICE    *s,
+                            int             src_naxis,
+                            const uint32_t *src_size,
+                            uint32_t       *out_size);
 
 
 /**
@@ -115,10 +112,7 @@ int imgid_slice_output_size(
  * @param buf   Output buffer
  * @param bufsz Size of output buffer
  */
-void imgid_slice_format(
-    const IMGID_SLICE *s,
-    char              *buf,
-    int               bufsz);
+void imgid_slice_format(const IMGID_SLICE *s, char *buf, int bufsz);
 
 
 /**
@@ -133,11 +127,7 @@ void imgid_slice_format(
  * @param buf      Output buffer
  * @param bufsz    Size of output buffer
  */
-void imgid_slice_shmname(
-    const char        *srcname,
-    const IMGID_SLICE *s,
-    char              *buf,
-    int               bufsz);
+void imgid_slice_shmname(const char *srcname, const IMGID_SLICE *s, char *buf, int bufsz);
 
 
 /**
@@ -156,12 +146,11 @@ void imgid_slice_shmname(
  * @param slice_sz  Size of slice_buf
  * @return 1 if brackets found, 0 otherwise
  */
-int imgid_slice_split_name(
-    const char *raw,
-    char       *name_buf,
-    int        name_sz,
-    char       *slice_buf,
-    int        slice_sz);
+int imgid_slice_split_name(const char *raw,
+                           char       *name_buf,
+                           int         name_sz,
+                           char       *slice_buf,
+                           int         slice_sz);
 
 
 #endif

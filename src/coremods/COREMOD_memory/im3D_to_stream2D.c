@@ -6,9 +6,9 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -23,7 +23,8 @@ static FPS_APP_INFO FPS_app_info = {
     .cmdkey      = "im3D_to_stream2D",
     .description = "convert 3D image to 2D stream",
     .description_long =
-        "Convert a static 3D image cube into a 2D shared memory stream by sequentially playing back each slice as a frame. Useful for testing stream consumers with pre-recorded data."
+        "Convert a static 3D image cube into a 2D shared memory stream by sequentially playing "
+        "back each slice as a frame. Useful for testing stream consumers with pre-recorded data."
 };
 
 
@@ -32,32 +33,20 @@ static FPS_APP_INFO FPS_app_info = {
  * ============================================================= */
 
 static char    inimname[FUNCTION_PARAMETER_STRMAXLEN] = "im3d";
-static char    outname[FUNCTION_PARAMETER_STRMAXLEN] = "im2d";
-static int64_t slice_index = 0;
-static int32_t loop_mode   = 0;
+static char    outname[FUNCTION_PARAMETER_STRMAXLEN]  = "im2d";
+static int64_t slice_index                            = 0;
+static int32_t loop_mode                              = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".in_name", inimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input 3D image") \
-    X(".outname", outname, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output stream name") \
-    X(".slice_index", &slice_index, \
-      FPTYPE_INT64, 0, \
-      FPFLAG_DEFAULT_INPUT, \
-      "initial slice index") \
-    X(".loop_mode", &loop_mode, \
-      FPTYPE_ONOFF, 0, \
-      FPFLAG_DEFAULT_INPUT, \
-      "loop through slices")
+#define FPS_PARAMS(X)                                                                             \
+    X(".in_name", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input 3D image")         \
+    X(".outname", outname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output stream name")          \
+    X(".slice_index", &slice_index, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT, "initial slice index") \
+    X(".loop_mode", &loop_mode, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT, "loop through slices")
 
 
 /* ================================================================
@@ -67,16 +56,13 @@ static int32_t loop_mode   = 0;
 /**
  * @brief Extract 2D slice from 3D image.
  */
-static errno_t extract_slice_to_2D(
-    IMGID *inimg,
-    IMGID *outimg,
-    long  slice_idx)
+static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
 {
     DEBUG_TRACE_FSTART();
 
     resolveIMGID(inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
-    if(inimg->md->naxis != 3)
+    if (inimg->md->naxis != 3)
     {
         FUNC_RETURN_FAILURE("Input image is not 3D");
     }
@@ -85,7 +71,7 @@ static errno_t extract_slice_to_2D(
     uint32_t ysize = inimg->mdt->size[1];
     uint32_t zsize = inimg->mdt->size[2];
 
-    if(slice_idx < 0 || slice_idx >= zsize)
+    if (slice_idx < 0 || slice_idx >= zsize)
     {
         FUNC_RETURN_FAILURE("Slice index out of bounds");
     }
@@ -97,8 +83,8 @@ static errno_t extract_slice_to_2D(
 
     long framesize = xsize * ysize * ImageStreamIO_typesize(inimg->md->datatype);
 
-    __builtin_memcpy(outimg->im->array.raw,
-           inimg->im->array.raw + slice_idx * framesize, framesize);
+    __builtin_memcpy(outimg->im->array.raw, inimg->im->array.raw + slice_idx * framesize,
+                     framesize);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -121,11 +107,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = imgid_make_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg,  dcnimg);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID outimg;
-    outimg = imgid_make_from_name_2D(outname, inimg.mdt->size[0], inimg.mdt->size[1]);
-    outimg.mdt->shared = 1;
+    outimg               = imgid_make_from_name_2D(outname, inimg.mdt->size[0], inimg.mdt->size[1]);
+    outimg.mdt->shared   = 1;
     outimg.mdt->datatype = inimg.md->datatype;
 
     // Allocate output image once before the loop.
@@ -135,7 +121,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        if(loop_mode == 0)
+        if (loop_mode == 0)
         {
             extract_slice_to_2D(&inimg, &outimg, slice_index);
         }
@@ -147,7 +133,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END  imgid_free(&inimg);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END imgid_free(&inimg);
     imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
@@ -162,12 +148,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_COREMOD_memory__im3D_to_stream2D()
+errno_t CLIADDCMD_COREMOD_memory__im3D_to_stream2D()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
@@ -180,8 +165,5 @@ CLIADDCMD_COREMOD_memory__im3D_to_stream2D()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif

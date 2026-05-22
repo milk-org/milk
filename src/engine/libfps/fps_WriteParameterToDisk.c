@@ -8,7 +8,6 @@
 #include "fps.h"
 
 
-
 /** @brief Write parameter to disk
  *
  * ## TAG names
@@ -23,11 +22,10 @@
  *
  *
  */
-int functionparameter_WriteParameterToDisk(
-    FPS  *fpsentry,
-    int  pindex,
-    char *tagname,
-    char *commentstr)
+int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
+                                           int   pindex,
+                                           char *tagname,
+                                           char *commentstr)
 {
     char  fname[STRINGMAXLEN_FULLFILENAME];
     FILE *fp;
@@ -46,25 +44,18 @@ int functionparameter_WriteParameterToDisk(
     struct tm *uttime;
     uttime = gmtime(&now);
 
-    snprintf(timestring,
-             200,
-             "%04d%02d%02d%02d%02d%02d.%09ld %8ld [%6d %6d] %s",
-             1900 + uttime->tm_year,
-             1 + uttime->tm_mon,
-             uttime->tm_mday,
-             uttime->tm_hour,
-             uttime->tm_min,
-             uttime->tm_sec,
-             tnow.tv_nsec, fpsentry->parray[pindex].cnt0, getpid(), (int) tid, commentstr);
+    snprintf(timestring, 200, "%04d%02d%02d%02d%02d%02d.%09ld %8ld [%6d %6d] %s",
+             1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
+             uttime->tm_min, uttime->tm_sec, tnow.tv_nsec, fpsentry->parray[pindex].cnt0, getpid(),
+             (int) tid, commentstr);
 
-    if(strcmp(tagname, "setval") == 0)  // VALUE
+    if (strcmp(tagname, "setval") == 0) // VALUE
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
 
         fp = fopen(fname, "w");
-        switch(fpsentry->parray[pindex].type)
+        switch (fpsentry->parray[pindex].type)
         {
-
         case FPTYPE_INT64:
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[0], timestring);
             break;
@@ -82,9 +73,7 @@ int functionparameter_WriteParameterToDisk(
             break;
 
         case FPTYPE_TIMESPEC:
-            fprintf(fp,
-                    "%15ld %09ld  # %s\n",
-                    (long) fpsentry->parray[pindex].val.ts[0].tv_sec,
+            fprintf(fp, "%15ld %09ld  # %s\n", (long) fpsentry->parray[pindex].val.ts[0].tv_sec,
                     (long) fpsentry->parray[pindex].val.ts[0].tv_nsec, timestring);
             break;
 
@@ -113,7 +102,7 @@ int functionparameter_WriteParameterToDisk(
             break;
 
         case FPTYPE_ONOFF:
-            if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
+            if (fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
             {
                 fprintf(fp, "1  %10s # %s\n", fpsentry->parray[pindex].val.string[1], timestring);
             }
@@ -130,79 +119,85 @@ int functionparameter_WriteParameterToDisk(
         fclose(fp);
     }
 
-    if(strcmp(tagname, "minval") == 0)  // MIN VALUE
+    if (strcmp(tagname, "minval") == 0) // MIN VALUE
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
 
-        switch(fpsentry->parray[pindex].type)
+        switch (fpsentry->parray[pindex].type)
         {
-
-        case FPTYPE_INT64: fp = fopen(fname, "w");
+        case FPTYPE_INT64:
+            fp = fopen(fname, "w");
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[1], timestring);
             fclose(fp);
             break;
 
-        case FPTYPE_FLOAT64: fp = fopen(fname, "w");
+        case FPTYPE_FLOAT64:
+            fp = fopen(fname, "w");
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[1], timestring);
             fclose(fp);
             break;
 
-        case FPTYPE_FLOAT32: fp = fopen(fname, "w");
+        case FPTYPE_FLOAT32:
+            fp = fopen(fname, "w");
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[1], timestring);
             fclose(fp);
             break;
         }
     }
 
-    if(strcmp(tagname, "maxval") == 0)  // MAX VALUE
+    if (strcmp(tagname, "maxval") == 0) // MAX VALUE
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
 
-        switch(fpsentry->parray[pindex].type)
+        switch (fpsentry->parray[pindex].type)
         {
-
-        case FPTYPE_INT64: fp = fopen(fname, "w");
+        case FPTYPE_INT64:
+            fp = fopen(fname, "w");
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[2], timestring);
             fclose(fp);
             break;
 
-        case FPTYPE_FLOAT64: fp = fopen(fname, "w");
+        case FPTYPE_FLOAT64:
+            fp = fopen(fname, "w");
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[2], timestring);
             fclose(fp);
             break;
 
-        case FPTYPE_FLOAT32: fp = fopen(fname, "w");
+        case FPTYPE_FLOAT32:
+            fp = fopen(fname, "w");
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[2], timestring);
             fclose(fp);
             break;
         }
     }
 
-    if(strcmp(tagname, "currval") == 0)  // CURRENT VALUE
+    if (strcmp(tagname, "currval") == 0) // CURRENT VALUE
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
 
-        switch(fpsentry->parray[pindex].type)
+        switch (fpsentry->parray[pindex].type)
         {
-
-        case FPTYPE_INT64: fp = fopen(fname, "w");
+        case FPTYPE_INT64:
+            fp = fopen(fname, "w");
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[3], timestring);
             fclose(fp);
             break;
 
-        case FPTYPE_FLOAT64: fp = fopen(fname, "w");
+        case FPTYPE_FLOAT64:
+            fp = fopen(fname, "w");
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[3], timestring);
             fclose(fp);
             break;
 
-        case FPTYPE_FLOAT32: fp = fopen(fname, "w");
+        case FPTYPE_FLOAT32:
+            fp = fopen(fname, "w");
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[3], timestring);
             fclose(fp);
             break;
         }
     }
 
-    if(strcmp(tagname, "fpsname") == 0)  // FPS name
+    if (strcmp(tagname, "fpsname") == 0) // FPS name
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
         fp = fopen(fname, "w");
@@ -210,7 +205,7 @@ int functionparameter_WriteParameterToDisk(
         fclose(fp);
     }
 
-    if(strcmp(tagname, "fpsdir") == 0)  // FPS name
+    if (strcmp(tagname, "fpsdir") == 0) // FPS name
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
         fp = fopen(fname, "w");
@@ -218,7 +213,7 @@ int functionparameter_WriteParameterToDisk(
         fclose(fp);
     }
 
-    if(strcmp(tagname, "status") == 0)  // FPS name
+    if (strcmp(tagname, "status") == 0) // FPS name
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
         fp = fopen(fname, "w");

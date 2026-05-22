@@ -8,18 +8,15 @@
  */
 
 
-
 #ifndef FPS_STANDALONE
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #else
-#include "libmilkdata/milkdata.h"
+#    include "libmilkdata/milkdata.h"
 #endif
 #include "fps.h"
 
 
 #include "fps_globals.h"
-
-
 
 
 /**
@@ -37,19 +34,14 @@
  * @param bindings  Parameter bindings array
  * @param nb_b      Number of bindings
  */
-static void fps_autopopulate_trigger_stream(
-    FPS             *fps,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b)
+static void fps_autopopulate_trigger_stream(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
 {
     /* Find the first TRIGGER_STREAM binding */
     const char *trigger_name = NULL;
-    for(int ii = 0; ii < nb_b; ii++)
+    for (int ii = 0; ii < nb_b; ii++)
     {
-        if((bindings[ii].fpflag
-                & FPFLAG_TRIGGER_STREAM)
-                && (bindings[ii].type
-                    == FPTYPE_STREAMNAME))
+        if ((bindings[ii].fpflag & FPFLAG_TRIGGER_STREAM) &&
+            (bindings[ii].type == FPTYPE_STREAMNAME))
         {
             /*
              * ptr holds the default stream name
@@ -60,27 +52,27 @@ static void fps_autopopulate_trigger_stream(
         }
     }
 
-    if(trigger_name == NULL)
+    if (trigger_name == NULL)
     {
         return;
     }
 
-    if(trigger_name[0] == '\0')
+    if (trigger_name[0] == '\0')
     {
         return;
     }
 
     /* Only set if .procinfo.triggersname exists */
     int pidx = functionparameter_GetParamIndex(fps, ".procinfo.triggersname");
-    if(pidx < 0)
+    if (pidx < 0)
     {
         return;
     }
 
     functionparameter_SetParamValue_STRING(fps, ".procinfo.triggersname", trigger_name);
 
-    functionparameter_SetParamValue_INT64(
-        fps, ".procinfo.triggermode", PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+    functionparameter_SetParamValue_INT64(fps, ".procinfo.triggermode",
+                                          PROCESSINFO_TRIGGERMODE_SEMAPHORE);
 
     functionparameter_SetParamValue_INT64(fps, ".procinfo.loopcntMax", -1);
 
@@ -103,18 +95,17 @@ static void fps_autopopulate_trigger_stream(
  * @param procinfo   If nonzero, add processinfo entries
  * @return 0 on success, -1 on allocation failure
  */
-int fps_generic_init(
-    const char      *fps_name,
-    FPS_APP_INFO    *app_info,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b,
-    int             procinfo)
+int fps_generic_init(const char      *fps_name,
+                     FPS_APP_INFO    *app_info,
+                     FPS_CLI_BINDING *bindings,
+                     int              nb_b,
+                     int              procinfo)
 {
-    if(fps_name[0] == '_')
+    if (fps_name[0] == '_')
     {
         /* Local mode: in-process memory only */
         FPS *lfps = fps_local_get_or_create(fps_name, FUNCTION_PARAMETER_NBPARAM_DEFAULT);
-        if(lfps == NULL)
+        if (lfps == NULL)
         {
             return -1;
         }
@@ -123,12 +114,11 @@ int fps_generic_init(
 
         /* Count active params */
         {
-            int cnt = 0;
+            int  cnt   = 0;
             long nbmax = lfps->md->NBparamMAX;
-            for(int pi = 0; pi < nbmax; pi++)
+            for (int pi = 0; pi < nbmax; pi++)
             {
-                if(lfps->parray[pi].fpflag
-                        & FPFLAG_ACTIVE)
+                if (lfps->parray[pi].fpflag & FPFLAG_ACTIVE)
                 {
                     cnt++;
                 }
@@ -143,11 +133,9 @@ int fps_generic_init(
     FPS_INIT_STD_PREAMBLE(fps, fps_name, "", app_info->description, app_info->description);
 
 #ifndef FPS_STANDALONE
-    if(procinfo ||
-            (data.cmd[data.cmdindex].cmdsettings.flags
-             & CLICMDFLAG_PROCINFO))
+    if (procinfo || (data.cmd[data.cmdindex].cmdsettings.flags & CLICMDFLAG_PROCINFO))
 #else
-    if(procinfo)
+    if (procinfo)
 #endif
     {
         fps.cmdset.flags |= CLICMDFLAG_PROCINFO;
@@ -171,16 +159,12 @@ int fps_generic_init(
  * @param nb_b      Number of bindings
  * @return          1 if trigger stream found
  */
-int fps_check_has_trigger_binding(
-    FPS_CLI_BINDING *bindings,
-    int             nb_b)
+int fps_check_has_trigger_binding(FPS_CLI_BINDING *bindings, int nb_b)
 {
-    for(int ii = 0; ii < nb_b; ii++)
+    for (int ii = 0; ii < nb_b; ii++)
     {
-        if((bindings[ii].fpflag
-                & FPFLAG_TRIGGER_STREAM)
-                && (bindings[ii].type
-                    == FPTYPE_STREAMNAME))
+        if ((bindings[ii].fpflag & FPFLAG_TRIGGER_STREAM) &&
+            (bindings[ii].type == FPTYPE_STREAMNAME))
         {
             return 1;
         }
@@ -202,10 +186,7 @@ int fps_check_has_trigger_binding(
  * @param bindings  Parameter bindings array
  * @param nb_b      Number of bindings
  */
-void fps_loop_override_trigger(
-    FPS             *fps,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b)
+void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
 {
     /*
      * Find trigger stream from bindings.
@@ -213,21 +194,18 @@ void fps_loop_override_trigger(
      * If empty (CLI sync hasn't run yet),
      * read from FPS shared memory instead.
      */
-    const char *trigger_name = NULL;
-    char trigger_kw[FUNCTION_PARAMETER_STRMAXLEN] = "";
-    char current_ts[FUNCTION_PARAMETER_STRMAXLEN] = "";
+    const char *trigger_name                             = NULL;
+    char        trigger_kw[FUNCTION_PARAMETER_STRMAXLEN] = "";
+    char        current_ts[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
-    for(int ii = 0; ii < nb_b; ii++)
+    for (int ii = 0; ii < nb_b; ii++)
     {
-        if((bindings[ii].fpflag
-                & FPFLAG_TRIGGER_STREAM)
-                && (bindings[ii].type
-                    == FPTYPE_STREAMNAME))
+        if ((bindings[ii].fpflag & FPFLAG_TRIGGER_STREAM) &&
+            (bindings[ii].type == FPTYPE_STREAMNAME))
         {
             /* Try local variable first */
             const char *local = (const char *) bindings[ii].ptr;
-            if(local != NULL
-                    && local[0] != '\0')
+            if (local != NULL && local[0] != '\0')
             {
                 trigger_name = local;
             }
@@ -248,16 +226,14 @@ void fps_loop_override_trigger(
      * Read trigger name from FPS if local var
      * was empty but we found the binding keyword.
      */
-    if(trigger_name == NULL
-            && trigger_kw[0] != '\0')
+    if (trigger_name == NULL && trigger_kw[0] != '\0')
     {
         long pidx = functionparameter_GetParamIndex(fps, trigger_kw);
-        if(pidx >= 0)
+        if (pidx >= 0)
         {
-            strncpy(
-                current_ts,
-                functionparameter_GetParamPtr_STRING(fps, trigger_kw), sizeof(current_ts) - 1);
-            if(current_ts[0] != '\0')
+            strncpy(current_ts, functionparameter_GetParamPtr_STRING(fps, trigger_kw),
+                    sizeof(current_ts) - 1);
+            if (current_ts[0] != '\0')
             {
                 trigger_name = current_ts;
             }
@@ -268,51 +244,55 @@ void fps_loop_override_trigger(
      * If still no trigger stream, try
      * .procinfo.triggersname as last resort.
      */
-    if(trigger_name == NULL
-            || trigger_name[0] == '\0')
+    if (trigger_name == NULL || trigger_name[0] == '\0')
     {
         long pidx = functionparameter_GetParamIndex(fps, ".procinfo.triggersname");
-        if(pidx >= 0)
+        if (pidx >= 0)
         {
-            strncpy(
-                current_ts,
-                functionparameter_GetParamPtr_STRING(
-                    fps, ".procinfo.triggersname"), sizeof(current_ts) - 1);
-            if(current_ts[0] != '\0')
+            strncpy(current_ts, functionparameter_GetParamPtr_STRING(fps, ".procinfo.triggersname"),
+                    sizeof(current_ts) - 1);
+            if (current_ts[0] != '\0')
             {
                 trigger_name = current_ts;
             }
         }
     }
 
-    printf("\033[33m-loops\033[0m" " Stream semaphore trigger\n");
+    printf("\033[33m-loops\033[0m"
+           " Stream semaphore trigger\n");
 
     /* Force loop count and enable */
     functionparameter_SetParamValue_INT64(fps, ".procinfo.loopcntMax", -1);
-    printf("  .procinfo.loopcntMax  = -1" " (infinite)\n");
+    printf("  .procinfo.loopcntMax  = -1"
+           " (infinite)\n");
 
     functionparameter_SetParamValue_ONOFF(fps, ".procinfo.enabled", 1);
     printf("  .procinfo.enabled     = ON\n");
 
-    if(trigger_name != NULL
-            && trigger_name[0] != '\0')
+    if (trigger_name != NULL && trigger_name[0] != '\0')
     {
         functionparameter_SetParamValue_STRING(fps, ".procinfo.triggersname", trigger_name);
-        printf("  .procinfo.triggersname" " = %s\n", trigger_name);
+        printf("  .procinfo.triggersname"
+               " = %s\n",
+               trigger_name);
 
-        functionparameter_SetParamValue_INT64(
-            fps, ".procinfo.triggermode", PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+        functionparameter_SetParamValue_INT64(fps, ".procinfo.triggermode",
+                                              PROCESSINFO_TRIGGERMODE_SEMAPHORE);
         printf("  .procinfo.triggermode "
-               " = %d (SEMAPHORE)\n", PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+               " = %d (SEMAPHORE)\n",
+               PROCESSINFO_TRIGGERMODE_SEMAPHORE);
     }
     else
     {
         PRINT_WARNING("[-loops] No trigger stream found -- semaphore trigger not configured.");
-        PRINT_WARNING("  Loop will use delay mode. To fix, flag a stream parameter with FPFLAG_TRIGGER_STREAM.");
+        PRINT_WARNING("  Loop will use delay mode. To fix, flag a stream parameter with "
+                      "FPFLAG_TRIGGER_STREAM.");
 
-        functionparameter_SetParamValue_INT64(
-            fps, ".procinfo.triggermode", PROCESSINFO_TRIGGERMODE_DELAY);
-        printf("  .procinfo.triggermode " " = %d (DELAY)\n", PROCESSINFO_TRIGGERMODE_DELAY);
+        functionparameter_SetParamValue_INT64(fps, ".procinfo.triggermode",
+                                              PROCESSINFO_TRIGGERMODE_DELAY);
+        printf("  .procinfo.triggermode "
+               " = %d (DELAY)\n",
+               PROCESSINFO_TRIGGERMODE_DELAY);
     }
 }
 
@@ -326,24 +306,29 @@ void fps_loop_override_trigger(
  * @param fps       Connected FPS
  * @param delay_sec Delay between iterations (seconds)
  */
-void fps_loop_override_delay(
-    FPS    *fps,
-    double delay_sec)
+void fps_loop_override_delay(FPS *fps, double delay_sec)
 {
-    printf("\033[33m-loopd\033[0m" " Delay loop (%.6f sec)\n", delay_sec);
+    printf("\033[33m-loopd\033[0m"
+           " Delay loop (%.6f sec)\n",
+           delay_sec);
 
     functionparameter_SetParamValue_INT64(fps, ".procinfo.loopcntMax", -1);
-    printf("  .procinfo.loopcntMax  = -1" " (infinite)\n");
+    printf("  .procinfo.loopcntMax  = -1"
+           " (infinite)\n");
 
     functionparameter_SetParamValue_ONOFF(fps, ".procinfo.enabled", 1);
     printf("  .procinfo.enabled     = ON\n");
 
-    functionparameter_SetParamValue_INT64(
-        fps, ".procinfo.triggermode", PROCESSINFO_TRIGGERMODE_DELAY);
-    printf("  .procinfo.triggermode " " = %d (DELAY)\n", PROCESSINFO_TRIGGERMODE_DELAY);
+    functionparameter_SetParamValue_INT64(fps, ".procinfo.triggermode",
+                                          PROCESSINFO_TRIGGERMODE_DELAY);
+    printf("  .procinfo.triggermode "
+           " = %d (DELAY)\n",
+           PROCESSINFO_TRIGGERMODE_DELAY);
 
     functionparameter_SetParamValue_TIMESPEC(fps, ".procinfo.triggerdelay", (float) delay_sec);
-    printf("  .procinfo.triggerdelay" " = %.6f sec\n", delay_sec);
+    printf("  .procinfo.triggerdelay"
+           " = %.6f sec\n",
+           delay_sec);
 }
 
 
@@ -360,21 +345,17 @@ void fps_loop_override_delay(
  * @param confcheck_fn Optional callback for custom checks
  * @return 0 on success, nonzero on error
  */
-int fps_generic_conf_cb(
-    const char *fps_name,
-    int loop,
-    errno_t (*confcheck_fn)(void))
+int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(void))
 {
-    if(fps_name[0] == '_')
+    if (fps_name[0] == '_')
     {
-        printf("Local FPS '%s' -- " "monitoring loop skipped.\n", fps_name);
+        printf("Local FPS '%s' -- "
+               "monitoring loop skipped.\n",
+               fps_name);
         return 0;
     }
-    FPS_CONF_STD_BODY(
-        fps_name, loop,
-    {},
-    {
-        if(confcheck_fn != NULL)
+    FPS_CONF_STD_BODY(fps_name, loop, {}, {
+        if (confcheck_fn != NULL)
         {
 #ifndef FPS_STANDALONE
             dcfpsptr = &fps;
@@ -396,9 +377,7 @@ int fps_generic_conf_cb(
  * @param loop      If nonzero, run continuously
  * @return 0 on success
  */
-int fps_generic_conf(
-    const char *fps_name,
-    int        loop)
+int fps_generic_conf(const char *fps_name, int loop)
 {
     return fps_generic_conf_cb(fps_name, loop, NULL);
 }
@@ -424,25 +403,24 @@ int fps_generic_conf(
  *                    INSERT_STD_PROCINFO_COMPUTEFUNC
  * @return 0 on success, 1 if FPS not found
  */
-int fps_generic_run(
-    const char      *fps_name,
-    FPS_APP_INFO    *app_info,
-    CLICMDARGDEF    *farg,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b,
-    fps_compute_fn  compute_fn)
+int fps_generic_run(const char      *fps_name,
+                    FPS_APP_INFO    *app_info,
+                    CLICMDARGDEF    *farg,
+                    FPS_CLI_BINDING *bindings,
+                    int              nb_b,
+                    fps_compute_fn   compute_fn)
 {
-    FPS fps;
+    FPS  fps;
     long loopcnt = 0;
 
-    if(fps_name[0] == '_')
+    if (fps_name[0] == '_')
     {
         FPS *lfps = fps_local_get_or_create(fps_name, FUNCTION_PARAMETER_NBPARAM_DEFAULT);
-        if(lfps == NULL)
+        if (lfps == NULL)
         {
             return -1;
         }
-        if(lfps->NBparam == 0)
+        if (lfps->NBparam == 0)
         {
             fps_generic_init(fps_name, app_info, bindings, nb_b, 0);
         }
@@ -453,9 +431,7 @@ int fps_generic_run(
     {
         /* Phase 1: connect SIMPLE to apply CLI
          * args before streams are loaded. */
-        if(fps_connect(
-                    fps_name, &fps,
-                    FPSCONNECT_SIMPLE) == -1)
+        if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1)
         {
             PRINT_ERROR("FPS '%s' not found. Run 'fpsinit' first.", fps_name);
             return 1;
@@ -465,8 +441,7 @@ int fps_generic_run(
 
         /* Phase 2: reconnect as RUN -- streams
          * now load with CLI-updated values. */
-        FPS_RUN_STD_PREAMBLE(
-            fps_name, fps, {});
+        FPS_RUN_STD_PREAMBLE(fps_name, fps, {});
     }
 
     fflush(stdout);
@@ -500,7 +475,7 @@ int fps_generic_run(
     loopcnt = 1; /* reported by compute_fn's procinfo */
 
     dcfpsptr = NULL;
-    if(fps_name[0] != '_')
+    if (fps_name[0] != '_')
     {
         fps_disconnect(&fps);
     }
@@ -520,16 +495,16 @@ int fps_generic_runstop(const char *fps_name)
 
     printf("Stopping run process for '%s'\n", fps_name);
 
-    if(fps_name[0] == '_')
+    if (fps_name[0] == '_')
     {
         printf("Local FPS '%s' -- stop signal "
-               "ignored (lifetime limited to " "process).\n", fps_name);
+               "ignored (lifetime limited to "
+               "process).\n",
+               fps_name);
         return 0;
     }
 
-    if(fps_connect(
-                fps_name, &fps,
-                FPSCONNECT_SIMPLE) == -1)
+    if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1)
     {
         PRINT_ERROR("FPS '%s' not found.", fps_name);
         return 1;
@@ -548,7 +523,9 @@ int fps_generic_runstop(const char *fps_name)
      * 2. Clear the CMDRUN status flag
      * 3. Signal the GUI to update
      */
-    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run C-c" " 2>/dev/null", fps.md->name);
+    EXECUTE_SYSTEM_COMMAND_NOCHECK("tmux send-keys -t %s:run C-c"
+                                   " 2>/dev/null",
+                                   fps.md->name);
 
     fps.md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
     fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
@@ -566,18 +543,20 @@ int fps_generic_confstop(const char *fps_name)
 {
     FPS fps;
 
-    printf("Stopping configuration process " "for '%s'\n", fps_name);
+    printf("Stopping configuration process "
+           "for '%s'\n",
+           fps_name);
 
-    if(fps_name[0] == '_')
+    if (fps_name[0] == '_')
     {
         printf("Local FPS '%s' -- stop signal "
-               "ignored (lifetime limited to " "process).\n", fps_name);
+               "ignored (lifetime limited to "
+               "process).\n",
+               fps_name);
         return 0;
     }
 
-    if(fps_connect(
-                fps_name, &fps,
-                FPSCONNECT_SIMPLE) == -1)
+    if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1)
     {
         PRINT_ERROR("FPS '%s' not found.", fps_name);
         return 1;

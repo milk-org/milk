@@ -7,7 +7,7 @@ fi
 
 pip install pre-commit
 
-sudo apt install shellcheck astyle
+sudo apt install shellcheck
 
 
 pre-commit install

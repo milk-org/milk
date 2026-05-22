@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <termios.h>
 #ifdef USE_READLINE
-#include <readline/history.h>
-#include <readline/readline.h>
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
@@ -35,22 +35,21 @@ void cli_bookmark_load(void)
     char path[STRINGMAXLEN_FULLFILENAME];
     snprintf(path, STRINGMAXLEN_FULLFILENAME, "%s/.milk_bookmarks", getenv("HOME"));
     FILE *fp = fopen(path, "r");
-    if(fp == NULL)
+    if (fp == NULL)
     {
         return;
     }
     bookmark_count = 0;
     char line[1024];
-    while(fgets(line, (int) sizeof(line), fp)
-            && bookmark_count < BOOKMARK_MAX)
+    while (fgets(line, (int) sizeof(line), fp) && bookmark_count < BOOKMARK_MAX)
     {
         size_t len = strlen(line);
-        if(len > 0 && line[len - 1] == '\n')
+        if (len > 0 && line[len - 1] == '\n')
         {
             line[len - 1] = '\0';
         }
         char *tab = strchr(line, '\t');
-        if(tab == NULL)
+        if (tab == NULL)
         {
             continue;
         }
@@ -72,11 +71,11 @@ void cli_bookmark_save(void)
     char path[STRINGMAXLEN_FULLFILENAME];
     snprintf(path, STRINGMAXLEN_FULLFILENAME, "%s/.milk_bookmarks", getenv("HOME"));
     FILE *fp = fopen(path, "w");
-    if(fp == NULL)
+    if (fp == NULL)
     {
         return;
     }
-    for(int i = 0; i < bookmark_count; i++)
+    for (int i = 0; i < bookmark_count; i++)
     {
         fprintf(fp, "%s\t%s\n", bookmarks[i].name, bookmarks[i].cmd);
     }
@@ -90,55 +89,57 @@ void cli_bookmark_save(void)
  */
 errno_t cli_bookmark(void)
 {
-    if(data.cmdNBarg < 2)
+    if (data.cmdNBarg < 2)
     {
         printf("Usage:\n"
                "  bookmark save <name> "
                "\"cmd1 ; cmd2\"\n"
-               "  bookmark run  <name>\n" "  bookmark list\n" "  bookmark rm   <name>\n");
+               "  bookmark run  <name>\n"
+               "  bookmark list\n"
+               "  bookmark rm   <name>\n");
         return RETURN_SUCCESS;
     }
     const char *action = data.cmdargtoken[1].val.string;
 
-    if(strcmp(action, "list") == 0)
+    if (strcmp(action, "list") == 0)
     {
-        if(bookmark_count == 0)
+        if (bookmark_count == 0)
         {
             printf("No bookmarks saved\n");
         }
-        for(int i = 0; i < bookmark_count; i++)
+        for (int i = 0; i < bookmark_count; i++)
         {
             printf("  \033[1m%-16s\033[0m %s\n", bookmarks[i].name, bookmarks[i].cmd);
         }
         return RETURN_SUCCESS;
     }
 
-    if(strcmp(action, "save") == 0)
+    if (strcmp(action, "save") == 0)
     {
-        if(data.cmdNBarg < 4)
+        if (data.cmdNBarg < 4)
         {
-            printf("Usage: bookmark save " "<name> \"cmd\"\n");
+            printf("Usage: bookmark save "
+                   "<name> \"cmd\"\n");
             return RETURN_FAILURE;
         }
-        if(bookmark_count >= BOOKMARK_MAX)
+        if (bookmark_count >= BOOKMARK_MAX)
         {
             printf("Bookmark limit reached\n");
             return RETURN_FAILURE;
         }
-        strncpy(
-            bookmarks[bookmark_count].name, data.cmdargtoken[2].val.string, BOOKMARK_NAMELEN - 1);
+        strncpy(bookmarks[bookmark_count].name, data.cmdargtoken[2].val.string,
+                BOOKMARK_NAMELEN - 1);
         bookmarks[bookmark_count].name[BOOKMARK_NAMELEN - 1] = '\0';
         /* Join remaining args as command */
         {
             char cmd[BOOKMARK_CMDLEN] = "";
-            for(long a = 3;
-                    a < data.cmdNBarg; a++)
+            for (long a = 3; a < data.cmdNBarg; a++)
             {
-                if(a > 3)
+                if (a > 3)
                 {
                     strncat(cmd, " ", BOOKMARK_CMDLEN - strlen(cmd) - 1);
                 }
-                strncat(cmd, data.cmdargtoken[a] .val.string, BOOKMARK_CMDLEN - strlen(cmd) - 1);
+                strncat(cmd, data.cmdargtoken[a].val.string, BOOKMARK_CMDLEN - strlen(cmd) - 1);
             }
             strncpy(bookmarks[bookmark_count].cmd, cmd, BOOKMARK_CMDLEN - 1);
             bookmarks[bookmark_count].cmd[BOOKMARK_CMDLEN - 1] = '\0';
@@ -149,18 +150,18 @@ errno_t cli_bookmark(void)
         return RETURN_SUCCESS;
     }
 
-    if(strcmp(action, "run") == 0)
+    if (strcmp(action, "run") == 0)
     {
-        if(data.cmdNBarg < 3)
+        if (data.cmdNBarg < 3)
         {
-            printf("Usage: bookmark run " "<name>\n");
+            printf("Usage: bookmark run "
+                   "<name>\n");
             return RETURN_FAILURE;
         }
         const char *name = data.cmdargtoken[2].val.string;
-        for(int i = 0; i < bookmark_count; i++)
+        for (int i = 0; i < bookmark_count; i++)
         {
-            if(strcmp(bookmarks[i].name,
-                      name) == 0)
+            if (strcmp(bookmarks[i].name, name) == 0)
             {
                 strncpy(data.CLIcmdline, bookmarks[i].cmd, STRINGMAXLEN_CLICMDLINE - 1);
                 data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
@@ -171,28 +172,28 @@ errno_t cli_bookmark(void)
         return RETURN_FAILURE;
     }
 
-    if(strcmp(action, "rm") == 0)
+    if (strcmp(action, "rm") == 0)
     {
-        if(data.cmdNBarg < 3)
+        if (data.cmdNBarg < 3)
         {
-            printf("Usage: bookmark rm " "<name>\n");
+            printf("Usage: bookmark rm "
+                   "<name>\n");
             return RETURN_FAILURE;
         }
         const char *name = data.cmdargtoken[2].val.string;
-        for(int i = 0; i < bookmark_count; i++)
+        for (int i = 0; i < bookmark_count; i++)
         {
-            if(strcmp(bookmarks[i].name,
-                      name) == 0)
+            if (strcmp(bookmarks[i].name, name) == 0)
             {
-                for(int j = i;
-                        j < bookmark_count - 1;
-                        j++)
+                for (int j = i; j < bookmark_count - 1; j++)
                 {
                     bookmarks[j] = bookmarks[j + 1];
                 }
                 bookmark_count--;
                 cli_bookmark_save();
-                printf("Bookmark '%s' " "removed\n", name);
+                printf("Bookmark '%s' "
+                       "removed\n",
+                       name);
                 return RETURN_SUCCESS;
             }
         }

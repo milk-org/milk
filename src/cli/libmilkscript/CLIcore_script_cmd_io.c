@@ -55,98 +55,98 @@
  * @param valstr   Value to write (as string)
  * @return 0 on success, -1 on error
  */
-int cli_fps_set_param(
-    const char *fpsname,
-    const char *pname,
-    const char *valstr)
+int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr)
 {
     FPS fps;
     int fpsconn = fps_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
 
-    if(fpsconn == -1
-       || fps.parray == NULL)
+    if (fpsconn == -1 || fps.parray == NULL)
     {
-        printf("Error: cannot connect to " "FPS '%s'\n", fpsname);
+        printf("Error: cannot connect to "
+               "FPS '%s'\n",
+               fpsname);
         return -1;
     }
 
     int pindex = functionparameter_GetParamIndex(&fps, pname);
 
-    if(pindex < 0)
+    if (pindex < 0)
     {
         char dotname[512];
         snprintf(dotname, sizeof(dotname), ".%s", pname);
         pindex = functionparameter_GetParamIndex(&fps, dotname);
     }
 
-    if(pindex < 0)
+    if (pindex < 0)
     {
-        printf("Error: parameter '%s' not " "found in FPS '%s'\n", pname, fpsname);
+        printf("Error: parameter '%s' not "
+               "found in FPS '%s'\n",
+               pname, fpsname);
         fps_disconnect(&fps);
         return -1;
     }
 
     uint32_t ptype = fps.parray[pindex].type;
 
-    if(ptype & FPTYPE_INT32)
+    if (ptype & FPTYPE_INT32)
     {
         fps.parray[pindex].val.i32[0] = (int32_t) strtol(valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_UINT32)
+    else if (ptype & FPTYPE_UINT32)
     {
         fps.parray[pindex].val.ui32[0] = (uint32_t) strtoul(valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_INT64)
+    else if (ptype & FPTYPE_INT64)
     {
         fps.parray[pindex].val.i64[0] = (int64_t) strtoll(valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_UINT64)
+    else if (ptype & FPTYPE_UINT64)
     {
         fps.parray[pindex].val.ui64[0] = (uint64_t) strtoull(valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_FLOAT64)
+    else if (ptype & FPTYPE_FLOAT64)
     {
         fps.parray[pindex].val.f64[0] = strtod(valstr, NULL);
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_FLOAT32)
+    else if (ptype & FPTYPE_FLOAT32)
     {
         fps.parray[pindex].val.f32[0] = (float) strtod(valstr, NULL);
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_ONOFF)
+    else if (ptype & FPTYPE_ONOFF)
     {
-        if(strcmp(valstr, "ON") == 0
-           || strcmp(valstr, "on") == 0
-           || strcmp(valstr, "1") == 0)
+        if (strcmp(valstr, "ON") == 0 || strcmp(valstr, "on") == 0 || strcmp(valstr, "1") == 0)
         {
-            fps.parray[pindex] .val.i64[0] = 1;
+            fps.parray[pindex].val.i64[0] = 1;
         }
         else
         {
-            fps.parray[pindex] .val.i64[0] = 0;
+            fps.parray[pindex].val.i64[0] = 0;
         }
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_PID)
+    else if (ptype & FPTYPE_PID)
     {
         fps.parray[pindex].val.pid[0] = (pid_t) strtol(valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
-    else if(FPTYPE_IS_STRING(ptype))
+    else if (FPTYPE_IS_STRING(ptype))
     {
-        strncpy(fps.parray[pindex] .val.string[0], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
-        fps.parray[pindex] .val.string[0][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
+        strncpy(fps.parray[pindex].val.string[0], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
+        fps.parray[pindex].val.string[0][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
         fps.parray[pindex].cnt0++;
     }
     else
     {
         printf("Error: unsupported param "
-               "type 0x%x for '%s' in " "FPS '%s'\n", ptype, pname, fpsname);
+               "type 0x%x for '%s' in "
+               "FPS '%s'\n",
+               ptype, pname, fpsname);
         fps_disconnect(&fps);
         return -1;
     }
@@ -171,30 +171,31 @@ int cli_fps_set_param(
  */
 errno_t cli_cmd_fpsset(void)
 {
-    if(data.cmdNBarg < 3)
+    if (data.cmdNBarg < 3)
     {
-        printf("Usage: fpsset " "<fpsname.param> <value>\n");
+        printf("Usage: fpsset "
+               "<fpsname.param> <value>\n");
         return RETURN_FAILURE;
     }
 
     const char *fullname = data.cmdargtoken[1].val.string;
-    const char *valstr = data.cmdargtoken[2].val.string;
+    const char *valstr   = data.cmdargtoken[2].val.string;
 
     char fpsname[256];
     strncpy(fpsname, fullname, sizeof(fpsname) - 1);
     fpsname[sizeof(fpsname) - 1] = '\0';
 
     char *dot = strchr(fpsname, '.');
-    if(dot == NULL)
+    if (dot == NULL)
     {
-        printf("Error: fpsset requires " "fpsname.paramname\n");
+        printf("Error: fpsset requires "
+               "fpsname.paramname\n");
         return RETURN_FAILURE;
     }
-    *dot = '\0';
+    *dot              = '\0';
     const char *pname = dot + 1;
 
-    if(cli_fps_set_param(
-           fpsname, pname, valstr) != 0)
+    if (cli_fps_set_param(fpsname, pname, valstr) != 0)
     {
         return RETURN_FAILURE;
     }
@@ -219,27 +220,24 @@ errno_t cli_cmd_fpsset(void)
  */
 errno_t cli_cmd_echo(void)
 {
-    int start = 1;
+    int start   = 1;
     int newline = 1;
 
-    if(data.cmdNBarg >= 2
-            && strcmp(
-                data.cmdargtoken[1].val.string,
-                "-n") == 0)
+    if (data.cmdNBarg >= 2 && strcmp(data.cmdargtoken[1].val.string, "-n") == 0)
     {
         newline = 0;
-        start = 2;
+        start   = 2;
     }
 
-    for(int i = start; i < data.cmdNBarg; i++)
+    for (int i = start; i < data.cmdNBarg; i++)
     {
-        if(i > start)
+        if (i > start)
         {
             printf(" ");
         }
         printf("%s", data.cmdargtoken[i].val.string);
     }
-    if(newline)
+    if (newline)
     {
         printf("\n");
     }
@@ -268,55 +266,57 @@ errno_t cli_cmd_echo(void)
  */
 errno_t cli_cmd_read(void)
 {
-    if(data.cmdNBarg < 2)
+    if (data.cmdNBarg < 2)
     {
-        printf("Usage: read [-p prompt]" " [-t N] [-n N]" " [-a arr] <var>\n");
+        printf("Usage: read [-p prompt]"
+               " [-t N] [-n N]"
+               " [-a arr] <var>\n");
         return RETURN_FAILURE;
     }
 
-    const char *prompt = "";
-    int timeout_sec = -1;
-    int nchars = -1;
-    const char *arrayname = NULL;
-    const char *varname = NULL;
+    const char *prompt      = "";
+    int         timeout_sec = -1;
+    int         nchars      = -1;
+    const char *arrayname   = NULL;
+    const char *varname     = NULL;
 
     /* ---- Parse flags ---- */
     {
         int i = 1;
-        while(i < data.cmdNBarg)
+        while (i < data.cmdNBarg)
         {
-            const char *tok = data.cmdargtoken[i] .val.string;
+            const char *tok = data.cmdargtoken[i].val.string;
 
-            if(strcmp(tok, "-p") == 0)
+            if (strcmp(tok, "-p") == 0)
             {
                 i++;
-                if(i < data.cmdNBarg)
+                if (i < data.cmdNBarg)
                 {
-                    prompt = data.cmdargtoken[i] .val.string;
+                    prompt = data.cmdargtoken[i].val.string;
                 }
             }
-            else if(strcmp(tok, "-t") == 0)
+            else if (strcmp(tok, "-t") == 0)
             {
                 i++;
-                if(i < data.cmdNBarg)
+                if (i < data.cmdNBarg)
                 {
-                    timeout_sec = (int) strtol(data.cmdargtoken[i] .val.string, NULL, 10);
+                    timeout_sec = (int) strtol(data.cmdargtoken[i].val.string, NULL, 10);
                 }
             }
-            else if(strcmp(tok, "-n") == 0)
+            else if (strcmp(tok, "-n") == 0)
             {
                 i++;
-                if(i < data.cmdNBarg)
+                if (i < data.cmdNBarg)
                 {
-                    nchars = (int) strtol(data.cmdargtoken[i] .val.string, NULL, 10);
+                    nchars = (int) strtol(data.cmdargtoken[i].val.string, NULL, 10);
                 }
             }
-            else if(strcmp(tok, "-a") == 0)
+            else if (strcmp(tok, "-a") == 0)
             {
                 i++;
-                if(i < data.cmdNBarg)
+                if (i < data.cmdNBarg)
                 {
-                    arrayname = data.cmdargtoken[i] .val.string;
+                    arrayname = data.cmdargtoken[i].val.string;
                 }
             }
             else
@@ -327,14 +327,16 @@ errno_t cli_cmd_read(void)
         }
     }
 
-    if(varname == NULL && arrayname == NULL)
+    if (varname == NULL && arrayname == NULL)
     {
-        printf("Usage: read [-p prompt]" " [-t N] [-n N]" " [-a arr] <var>\n");
+        printf("Usage: read [-p prompt]"
+               " [-t N] [-n N]"
+               " [-a arr] <var>\n");
         return RETURN_FAILURE;
     }
 
     /* ---- Display prompt ---- */
-    if(prompt[0] != '\0')
+    if (prompt[0] != '\0')
     {
         printf("%s", prompt);
         fflush(stdout);
@@ -344,13 +346,13 @@ errno_t cli_cmd_read(void)
     buf[0] = '\0';
 
     /* ---- Timed read with poll() ---- */
-    if(timeout_sec >= 0)
+    if (timeout_sec >= 0)
     {
         struct pollfd pfd;
-        pfd.fd = STDIN_FILENO;
+        pfd.fd     = STDIN_FILENO;
         pfd.events = POLLIN;
-        int rc = poll(&pfd, 1, timeout_sec * 1000);
-        if(rc <= 0)
+        int rc     = poll(&pfd, 1, timeout_sec * 1000);
+        if (rc <= 0)
         {
             /* Timeout or error */
             cli_var_set("?", "1");
@@ -359,7 +361,7 @@ errno_t cli_cmd_read(void)
     }
 
     /* ---- Raw N-char read ---- */
-    if(nchars > 0)
+    if (nchars > 0)
     {
         struct termios oldt, newt;
         tcgetattr(STDIN_FILENO, &oldt);
@@ -368,24 +370,24 @@ errno_t cli_cmd_read(void)
         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
         int nc = nchars;
-        if(nc > (int) sizeof(buf) - 1)
+        if (nc > (int) sizeof(buf) - 1)
         {
             nc = (int) sizeof(buf) - 1;
         }
-        for(int ci = 0; ci < nc; ci++)
+        for (int ci = 0; ci < nc; ci++)
         {
             int ch = getchar();
-            if(ch == EOF)
+            if (ch == EOF)
             {
                 break;
             }
-            buf[ci] = (char) ch;
+            buf[ci]     = (char) ch;
             buf[ci + 1] = '\0';
         }
 
         tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
-        if(varname != NULL)
+        if (varname != NULL)
         {
             cli_var_set(varname, buf);
         }
@@ -394,29 +396,25 @@ errno_t cli_cmd_read(void)
     }
 
     /* ---- Normal line read ---- */
-    if(fgets(buf, (int) sizeof(buf),
-             stdin) == NULL)
+    if (fgets(buf, (int) sizeof(buf), stdin) == NULL)
     {
         cli_var_set("?", "1");
         return RETURN_SUCCESS;
     }
     {
         size_t bl = strlen(buf);
-        while(bl > 0
-              && (buf[bl - 1] == '\n'
-                  || buf[bl - 1] == '\r'))
+        while (bl > 0 && (buf[bl - 1] == '\n' || buf[bl - 1] == '\r'))
         {
             buf[--bl] = '\0';
         }
     }
 
     /* ---- Array split mode (-a) ---- */
-    if(arrayname != NULL)
+    if (arrayname != NULL)
     {
-        int ai = 0;
+        int   ai  = 0;
         char *tok = strtok(buf, " \t");
-        while(tok != NULL
-              && ai < CLI_ARRAY_MAXELEM)
+        while (tok != NULL && ai < CLI_ARRAY_MAXELEM)
         {
             char aelem[CLI_VAR_NAMELEN];
             snprintf(aelem, sizeof(aelem), "%s[%d]", arrayname, ai);
@@ -456,9 +454,10 @@ errno_t cli_cmd_read(void)
  */
 errno_t cli_cmd_export(void)
 {
-    if(data.cmdNBarg < 2)
+    if (data.cmdNBarg < 2)
     {
-        printf("Usage: export <varname>" "[=value]\n");
+        printf("Usage: export <varname>"
+               "[=value]\n");
         return RETURN_FAILURE;
     }
 
@@ -467,11 +466,11 @@ errno_t cli_cmd_export(void)
     char vname[CLI_VAR_NAMELEN];
     strncpy(vname, arg, CLI_VAR_NAMELEN - 1);
     vname[CLI_VAR_NAMELEN - 1] = '\0';
-    char *eq = strchr(vname, '=');
+    char *eq                   = strchr(vname, '=');
 
-    if(eq != NULL)
+    if (eq != NULL)
     {
-        *eq = '\0';
+        *eq             = '\0';
         const char *val = eq + 1;
         cli_var_set(vname, val);
         setenv(vname, val, 1);
@@ -479,13 +478,15 @@ errno_t cli_cmd_export(void)
     else
     {
         const char *val = cli_var_get(vname);
-        if(val != NULL)
+        if (val != NULL)
         {
             setenv(vname, val, 1);
         }
         else
         {
-            printf("export: variable '%s'" " not set\n", vname);
+            printf("export: variable '%s'"
+                   " not set\n",
+                   vname);
             return RETURN_FAILURE;
         }
     }
@@ -511,24 +512,23 @@ errno_t cli_cmd_export(void)
 errno_t cli_cmd_shift(void)
 {
     int n = 1;
-    if(data.cmdNBarg >= 2)
+    if (data.cmdNBarg >= 2)
     {
-        n = (int) data.cmdargtoken[1] .val.numl;
+        n = (int) data.cmdargtoken[1].val.numl;
     }
-    if(n < 1)
+    if (n < 1)
     {
         n = 1;
     }
 
     /* Read current $1..$N */
     char vals[CLI_FUNC_MAXARGS][CLI_VAR_VALLEN];
-    for(int i = 0;
-        i < CLI_FUNC_MAXARGS; i++)
+    for (int i = 0; i < CLI_FUNC_MAXARGS; i++)
     {
         char aname[4];
         snprintf(aname, sizeof(aname), "%d", i + 1);
         const char *v = cli_var_get(aname);
-        if(v != NULL)
+        if (v != NULL)
         {
             strncpy(vals[i], v, CLI_VAR_VALLEN - 1);
             vals[i][CLI_VAR_VALLEN - 1] = '\0';
@@ -540,14 +540,12 @@ errno_t cli_cmd_shift(void)
     }
 
     /* Shift left by n */
-    for(int i = 0;
-        i < CLI_FUNC_MAXARGS; i++)
+    for (int i = 0; i < CLI_FUNC_MAXARGS; i++)
     {
         char aname[4];
         snprintf(aname, sizeof(aname), "%d", i + 1);
         int src = i + n;
-        if(src < CLI_FUNC_MAXARGS
-           && vals[src][0] != '\0')
+        if (src < CLI_FUNC_MAXARGS && vals[src][0] != '\0')
         {
             cli_var_set(aname, vals[src]);
         }
@@ -578,46 +576,53 @@ errno_t cli_cmd_shift(void)
  */
 errno_t cli_cmd_printf(void)
 {
-    if(data.cmdNBarg < 2)
+    if (data.cmdNBarg < 2)
     {
-        printf("Usage: printf <format>" " [args...]\n");
+        printf("Usage: printf <format>"
+               " [args...]\n");
         return RETURN_FAILURE;
     }
 
     const char *fmt = data.cmdargtoken[1].val.string;
-    int ai = 2;
+    int         ai  = 2;
 
-    for(const char *p = fmt;
-        *p != '\0'; p++)
+    for (const char *p = fmt; *p != '\0'; p++)
     {
         /* Backslash escapes */
-        if(*p == '\\' && *(p + 1) != '\0')
+        if (*p == '\\' && *(p + 1) != '\0')
         {
             p++;
-            switch(*p)
+            switch (*p)
             {
-                case 'n': putchar('\n'); break;
-                case 't': putchar('\t'); break;
-                case '\\': putchar('\\'); break;
-                default: putchar('\\');
-                    putchar(*p);
-                    break;
+            case 'n':
+                putchar('\n');
+                break;
+            case 't':
+                putchar('\t');
+                break;
+            case '\\':
+                putchar('\\');
+                break;
+            default:
+                putchar('\\');
+                putchar(*p);
+                break;
             }
             continue;
         }
 
         /* Format specifiers */
-        if(*p == '%')
+        if (*p == '%')
         {
             const char *q = p + 1;
 
-            if(*q == '%')
+            if (*q == '%')
             {
                 putchar('%');
                 p = q;
                 continue;
             }
-            if(*q == '\0')
+            if (*q == '\0')
             {
                 break;
             }
@@ -633,30 +638,24 @@ errno_t cli_cmd_printf(void)
 
             spec[si++] = '%';
 
-            while(*q != '\0'
-                  && strchr("-+ #0", *q) != NULL
-                  && si < (int) sizeof(spec) - 2)
+            while (*q != '\0' && strchr("-+ #0", *q) != NULL && si < (int) sizeof(spec) - 2)
             {
                 spec[si++] = *q++;
             }
 
-            if(*q == '*')
+            if (*q == '*')
             {
                 valid = 0;
             }
 
-            while(valid
-                  && *q != '\0'
-                  && *q >= '0'
-                  && *q <= '9'
-                  && si < (int) sizeof(spec) - 2)
+            while (valid && *q != '\0' && *q >= '0' && *q <= '9' && si < (int) sizeof(spec) - 2)
             {
                 spec[si++] = *q++;
             }
 
-            if(valid && *q == '.')
+            if (valid && *q == '.')
             {
-                if(si >= (int) sizeof(spec) - 2)
+                if (si >= (int) sizeof(spec) - 2)
                 {
                     valid = 0;
                 }
@@ -665,48 +664,42 @@ errno_t cli_cmd_printf(void)
                     spec[si++] = *q++;
                 }
 
-                if(valid && *q == '*')
+                if (valid && *q == '*')
                 {
                     valid = 0;
                 }
 
-                while(valid
-                      && *q != '\0'
-                      && *q >= '0'
-                      && *q <= '9'
-                      && si < (int) sizeof(spec) - 2)
+                while (valid && *q != '\0' && *q >= '0' && *q <= '9' && si < (int) sizeof(spec) - 2)
                 {
                     spec[si++] = *q++;
                 }
             }
 
-            if(valid
-                  && *q != '\0'
-                  && strchr("hlLjzt", *q) != NULL)
+            if (valid && *q != '\0' && strchr("hlLjzt", *q) != NULL)
             {
                 valid = 0;
             }
 
-            if(!valid || *q == '\0')
+            if (!valid || *q == '\0')
             {
                 putchar('%');
                 continue;
             }
 
             fc = *q;
-            if(strchr("diouxXfFeEgGsc", fc) == NULL)
+            if (strchr("diouxXfFeEgGsc", fc) == NULL)
             {
                 putchar('%');
                 continue;
             }
 
             spec[si++] = fc;
-            spec[si] = '\0';
+            spec[si]   = '\0';
 
             const char *aval = "";
-            if(ai < data.cmdNBarg)
+            if (ai < data.cmdNBarg)
             {
-                aval = data.cmdargtoken[ai] .val.string;
+                aval = data.cmdargtoken[ai].val.string;
                 ai++;
             }
 
@@ -714,30 +707,26 @@ errno_t cli_cmd_printf(void)
                 char outbuf[256];
                 int  nw = -1;
 
-                if(fc == 's')
+                if (fc == 's')
                 {
                     nw = snprintf(outbuf, sizeof(outbuf), spec, aval);
                 }
-                else if(fc == 'c')
+                else if (fc == 'c')
                 {
                     nw = snprintf(outbuf, sizeof(outbuf), spec, (unsigned char) aval[0]);
                 }
-                else if(fc == 'd' || fc == 'i'
-                        || fc == 'o'
-                        || fc == 'u'
-                        || fc == 'x'
-                        || fc == 'X')
+                else if (fc == 'd' || fc == 'i' || fc == 'o' || fc == 'u' || fc == 'x' || fc == 'X')
                 {
                     long lv = strtol(aval, NULL, 0);
-                    nw = snprintf(outbuf, sizeof(outbuf), spec, lv);
+                    nw      = snprintf(outbuf, sizeof(outbuf), spec, lv);
                 }
                 else
                 {
                     double dv = strtod(aval, NULL);
-                    nw = snprintf(outbuf, sizeof(outbuf), spec, dv);
+                    nw        = snprintf(outbuf, sizeof(outbuf), spec, dv);
                 }
 
-                if(nw >= 0)
+                if (nw >= 0)
                 {
                     fputs(outbuf, stdout);
                 }

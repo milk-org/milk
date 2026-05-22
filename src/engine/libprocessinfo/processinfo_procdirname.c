@@ -20,18 +20,18 @@ errno_t processinfo_procdirname(char *procdname)
 
     // first, we try the env variable if it exists
     char *MILK_PROC_DIR = getenv("MILK_PROC_DIR");
-    if(MILK_PROC_DIR != NULL)
+    if (MILK_PROC_DIR != NULL)
     {
         // printf(" [ MILK_PROC_DIR ] '%s'\n", MILK_PROC_DIR);
 
         {
             int slen = snprintf(procdname, STRINGMAXLEN_FULLFILENAME, "%s", MILK_PROC_DIR);
-            if(slen < 1)
+            if (slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
-            if(slen >= STRINGMAXLEN_FULLFILENAME)
+            if (slen >= STRINGMAXLEN_FULLFILENAME)
             {
                 PRINT_ERROR("snprintf string truncation");
                 abort(); // can't handle this error any other way
@@ -40,7 +40,7 @@ errno_t processinfo_procdirname(char *procdname)
 
         // does this direcory exist ?
         tmpdir = opendir(procdname);
-        if(tmpdir)  // directory exits
+        if (tmpdir) // directory exits
         {
             procdirOK = 1;
             closedir(tmpdir);
@@ -52,10 +52,10 @@ errno_t processinfo_procdirname(char *procdname)
     }
 
     // second, we try SHAREDPROCDIR default
-    if(procdirOK == 0)
+    if (procdirOK == 0)
     {
         tmpdir = opendir(SHAREDPROCDIR);
-        if(tmpdir)  // directory exits
+        if (tmpdir) // directory exits
         {
             snprintf(procdname, STRINGMAXLEN_DIRNAME, "%s", SHAREDPROCDIR);
             procdirOK = 1;
@@ -64,10 +64,10 @@ errno_t processinfo_procdirname(char *procdname)
     }
 
     // if all above fails, set to /tmp
-    if(procdirOK == 0)
+    if (procdirOK == 0)
     {
         tmpdir = opendir("/tmp");
-        if(!tmpdir)
+        if (!tmpdir)
         {
             exit(EXIT_FAILURE);
         }

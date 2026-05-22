@@ -6,18 +6,15 @@
 #include <string.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
 #endif
 
 /* ID number corresponding to a name */
-imageID image_ID(
-    const char *name,
-    IMAGE      *imagearray,
-    long       NB_images)
+imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
 {
     DEBUG_TRACE_FSTART();
 
@@ -25,19 +22,19 @@ imageID image_ID(
     int     loopOK;
     imageID tmpID = 0;
 
-    if(imagearray == NULL)
+    if (imagearray == NULL)
     {
         return -1;
     }
 
     i      = 0;
     loopOK = 1;
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
-        if(imagearray[i].used == 1)
+        if (imagearray[i].used == 1)
         {
-            if((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
-                    (imagearray[i].name[strlen(name)] == '\0'))
+            if ((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
+                (imagearray[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -46,7 +43,7 @@ imageID image_ID(
         }
         i++;
 
-        if(i == NB_images)
+        if (i == NB_images)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -59,10 +56,7 @@ imageID image_ID(
 }
 
 /* ID number corresponding to a name */
-MILK_PURE imageID image_ID_noaccessupdate(
-    const char *name,
-    IMAGE      *imagearray,
-    long       NB_images)
+MILK_PURE imageID image_ID_noaccessupdate(const char *name, IMAGE *imagearray, long NB_images)
 {
     DEBUG_TRACE_FSTART();
 
@@ -70,19 +64,19 @@ MILK_PURE imageID image_ID_noaccessupdate(
     imageID tmpID = 0;
     int     loopOK;
 
-    if(imagearray == NULL)
+    if (imagearray == NULL)
     {
         return -1;
     }
 
     i      = 0;
     loopOK = 1;
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
-        if(imagearray[i].used == 1)
+        if (imagearray[i].used == 1)
         {
-            if((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
-                    (imagearray[i].name[strlen(name)] == '\0'))
+            if ((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
+                (imagearray[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -90,7 +84,7 @@ MILK_PURE imageID image_ID_noaccessupdate(
         }
         i++;
 
-        if(i == NB_images)
+        if (i == NB_images)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -102,9 +96,7 @@ MILK_PURE imageID image_ID_noaccessupdate(
 }
 
 /* next available ID number */
-imageID next_avail_image_ID(
-    imageID preferredID
-)
+imageID next_avail_image_ID(imageID preferredID)
 {
     DEBUG_TRACE_FSTART();
 
@@ -112,23 +104,21 @@ imageID next_avail_image_ID(
     imageID ID = -1;
 
 #ifdef _OPENMP
-    #pragma omp critical
+#    pragma omp critical
     {
 #endif
-        if((preferredID > -1)
-                && (preferredID < dcnimg)
-                && (dcimg[preferredID].used == 0))
+        if ((preferredID > -1) && (preferredID < dcnimg) && (dcimg[preferredID].used == 0))
         {
-            ID = preferredID;
+            ID             = preferredID;
             dcimg[ID].used = 1;
         }
         else
         {
-            for(i = 0; i < dcnimg; i++)
+            for (i = 0; i < dcnimg; i++)
             {
-                if(dcimg[i].used == 0)
+                if (dcimg[i].used == 0)
                 {
-                    ID = i;
+                    ID             = i;
                     dcimg[ID].used = 1;
                     break;
                 }
@@ -137,9 +127,11 @@ imageID next_avail_image_ID(
 #ifdef _OPENMP
     }
 #endif
-    if(ID == -1)
+    if (ID == -1)
     {
-        PRINT_ERROR("ran out of image IDs" " (NB_MAX_IMAGE=%ld)", dcnimg);
+        PRINT_ERROR("ran out of image IDs"
+                    " (NB_MAX_IMAGE=%ld)",
+                    dcnimg);
     }
 
     DEBUG_TRACEPOINT("FOUT ID : %ld", ID);

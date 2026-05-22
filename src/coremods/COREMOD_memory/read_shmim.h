@@ -13,13 +13,6 @@
 errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image();
 
 
-
-
-
-
-imageID read_sharedmem_image(
-    const char *sname,
-    IMAGE      *imagearray,
-    long       NB_images);
+imageID read_sharedmem_image(const char *sname, IMAGE *imagearray, long NB_images);
 
 #endif

@@ -8,13 +8,8 @@
 
 #include "fps.h"
 
-FPS function_parameter_FPCONFsetup_sized(
-    const char *fpsname,
-    uint32_t   CMDmode,
-    long       NBparamMAX);
+FPS function_parameter_FPCONFsetup_sized(const char *fpsname, uint32_t CMDmode, long NBparamMAX);
 
-FPS function_parameter_FPCONFsetup(
-    const char *fpsname,
-    uint32_t   CMDmode);
+FPS function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode);
 
 #endif

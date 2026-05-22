@@ -5,11 +5,11 @@
 
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
 #endif
 #include "create_image.h"
 #include "delete_image.h"
@@ -22,15 +22,11 @@
 #include "image_mk_amph_from_complex.h"
 #include "image_mk_reim_from_complex.h"
 
-errno_t mk_reim_from_amph_IMGID(
-    IMGID *imgam,
-    IMGID *imgph,
-    IMGID *imgre,
-    IMGID *imgim)
+errno_t mk_reim_from_amph_IMGID(IMGID *imgam, IMGID *imgph, IMGID *imgre, IMGID *imgim)
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgC = imgid_make_from_name("Ctmp");
+    IMGID imgC       = imgid_make_from_name("Ctmp");
     imgC.mdt->shared = 0;
 
     FUNC_CHECK_RETURN(mk_complex_from_amph_IMGID(imgam, imgph, &imgC));
@@ -44,17 +40,16 @@ errno_t mk_reim_from_amph_IMGID(
     return RETURN_SUCCESS;
 }
 
-errno_t mk_reim_from_amph(
-    const char *am_name,
-    const char *ph_name,
-    const char *re_out_name,
-    const char *im_out_name,
-    int        sharedmem)
+errno_t mk_reim_from_amph(const char *am_name,
+                          const char *ph_name,
+                          const char *re_out_name,
+                          const char *im_out_name,
+                          int         sharedmem)
 {
-    IMGID imgam = imgid_make_from_name(am_name);
-    IMGID imgph = imgid_make_from_name(ph_name);
-    IMGID imgre = imgid_make_from_name(re_out_name);
-    IMGID imgim = imgid_make_from_name(im_out_name);
+    IMGID imgam       = imgid_make_from_name(am_name);
+    IMGID imgph       = imgid_make_from_name(ph_name);
+    IMGID imgre       = imgid_make_from_name(re_out_name);
+    IMGID imgim       = imgid_make_from_name(im_out_name);
     imgre.mdt->shared = sharedmem;
     imgim.mdt->shared = sharedmem;
 
@@ -66,15 +61,11 @@ errno_t mk_reim_from_amph(
     return ret;
 }
 
-errno_t mk_amph_from_reim_IMGID(
-    IMGID *imgre,
-    IMGID *imgim,
-    IMGID *imgam,
-    IMGID *imgph)
+errno_t mk_amph_from_reim_IMGID(IMGID *imgre, IMGID *imgim, IMGID *imgam, IMGID *imgph)
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgC = imgid_make_from_name("Ctmp");
+    IMGID imgC       = imgid_make_from_name("Ctmp");
     imgC.mdt->shared = 0;
 
     FUNC_CHECK_RETURN(mk_complex_from_reim_IMGID(imgre, imgim, &imgC));
@@ -88,17 +79,16 @@ errno_t mk_amph_from_reim_IMGID(
     return RETURN_SUCCESS;
 }
 
-errno_t mk_amph_from_reim(
-    const char *re_name,
-    const char *im_name,
-    const char *am_out_name,
-    const char *ph_out_name,
-    int        sharedmem)
+errno_t mk_amph_from_reim(const char *re_name,
+                          const char *im_name,
+                          const char *am_out_name,
+                          const char *ph_out_name,
+                          int         sharedmem)
 {
-    IMGID imgre = imgid_make_from_name(re_name);
-    IMGID imgim = imgid_make_from_name(im_name);
-    IMGID imgam = imgid_make_from_name(am_out_name);
-    IMGID imgph = imgid_make_from_name(ph_out_name);
+    IMGID imgre       = imgid_make_from_name(re_name);
+    IMGID imgim       = imgid_make_from_name(im_name);
+    IMGID imgam       = imgid_make_from_name(am_out_name);
+    IMGID imgph       = imgid_make_from_name(ph_out_name);
     imgam.mdt->shared = sharedmem;
     imgph.mdt->shared = sharedmem;
 

@@ -4,9 +4,9 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -15,11 +15,9 @@
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imkwadd",
-    .cmdkey      = "imkwadd",
-    .description = "Add or update a keyword in an image"
-};
+static FPS_APP_INFO FPS_app_info = { .fps_name    = "imkwadd",
+                                     .cmdkey      = "imkwadd",
+                                     .description = "Add or update a keyword in an image" };
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
@@ -33,11 +31,11 @@ static char param_comment[FUNCTION_PARAMETER_STRMAXLEN]  = "keyword comment";
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
-#define FPS_PARAMS(X) \
-    X(".in_name", param_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
-    X(".kwname",  param_kwname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "keyword name") \
-    X(".kwtype",  param_kwtype, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "keyword type (L, D, S)") \
-    X(".kwval",   param_kwval, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "keyword value") \
+#define FPS_PARAMS(X)                                                                            \
+    X(".in_name", param_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")     \
+    X(".kwname", param_kwname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "keyword name")           \
+    X(".kwtype", param_kwtype, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "keyword type (L, D, S)") \
+    X(".kwval", param_kwval, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "keyword value")            \
     X(".comment", param_comment, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "keyword comment")
 
 /* ================================================================
@@ -46,15 +44,22 @@ static char param_comment[FUNCTION_PARAMETER_STRMAXLEN]  = "keyword comment";
 static MILK_HOT errno_t fpsexec()
 {
     char type = param_kwtype[0];
-    if (type == 'L' || type == 'l') {
+    if (type == 'L' || type == 'l')
+    {
         long val = atol(param_kwval);
         image_write_keyword_L(param_inimname, param_kwname, val, param_comment);
-    } else if (type == 'D' || type == 'd') {
+    }
+    else if (type == 'D' || type == 'd')
+    {
         double val = atof(param_kwval);
         image_write_keyword_D(param_inimname, param_kwname, val, param_comment);
-    } else if (type == 'S' || type == 's') {
+    }
+    else if (type == 'S' || type == 's')
+    {
         image_write_keyword_S(param_inimname, param_kwname, param_kwval, param_comment);
-    } else {
+    }
+    else
+    {
         PRINT_ERROR("Invalid keyword type '%c'. Must be L, D, or S.", type);
         return RETURN_FAILURE;
     }
@@ -64,21 +69,13 @@ static MILK_HOT errno_t fpsexec()
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
 
 static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
 
-CLICMDDATA CLIcmddata = {
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
-};
+CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
 
 FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
 
@@ -87,9 +84,9 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  * ============================================================= */
 static MILK_HOT errno_t compute_function()
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START  fpsexec();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START fpsexec();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END  return RETURN_SUCCESS;
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END return RETURN_SUCCESS;
 }
 
 /* ================================================================
@@ -98,8 +95,8 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_memory__image_keyword_add()

@@ -11,9 +11,9 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -33,7 +33,8 @@ static FPS_APP_INFO FPS_app_info = {
     .cmdkey      = "readshmim",
     .description = "read shared memory image",
     .description_long =
-        "Connect to an existing shared memory image stream by name. Maps the stream into the current process address space for reading. Returns failure if the stream does not exist."
+        "Connect to an existing shared memory image stream by name. Maps the stream into the "
+        "current process address space for reading. Returns failure if the stream does not exist."
 };
 
 
@@ -49,23 +50,17 @@ static char insname[FUNCTION_PARAMETER_STRMAXLEN] = "stream";
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_sname", insname, \
-      FPTYPE_STRING_NOT_STREAM, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input stream")
+    X(".in_sname", insname, FPTYPE_STRING_NOT_STREAM, 1, FPFLAG_DEFAULT_INPUT, "input stream")
 
 
 /* ================================================================
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-imageID read_sharedmem_image(
-    const char *restrict sname,
-    IMAGE                *imagearray,
-    long                 NB_images)
+imageID read_sharedmem_image(const char *restrict sname, IMAGE *imagearray, long NB_images)
 {
     IMGID img = imgid_make_from_name(sname);
-    resolveIMGID(&img,       ERRMODE_NULL, imagearray, NB_images);
+    resolveIMGID(&img, ERRMODE_NULL, imagearray, NB_images);
     imgid_connect(&img, IMGID_CONNECT_NOCHECK);
     if (img.ID == -1)
     {
@@ -91,9 +86,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START  read_sharedmem_image(insname, dcimg, dcnimg);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START read_sharedmem_image(insname, dcimg, dcnimg);
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END  DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -105,12 +100,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_COREMOD_memory__read_sharedmem_image()
+errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
@@ -123,8 +117,5 @@ CLIADDCMD_COREMOD_memory__read_sharedmem_image()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif

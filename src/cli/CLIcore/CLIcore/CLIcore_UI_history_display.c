@@ -1,5 +1,5 @@
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#    define _GNU_SOURCE
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,47 +53,44 @@ typedef struct
  *
  * @return 0 on success, -1 on parse error.
  */
-static int parse_time_arg(
-    const char *s,
-    time_t     *out)
+static int parse_time_arg(const char *s, time_t *out)
 {
-    if(s == NULL || out == NULL)
+    if (s == NULL || out == NULL)
     {
         return -1;
     }
     time_t now = time(NULL);
 
-    if(strcmp(s, "today") == 0)
+    if (strcmp(s, "today") == 0)
     {
         struct tm *t = localtime(&now);
-        t->tm_hour = 0;
-        t->tm_min  = 0;
-        t->tm_sec  = 0;
-        *out = mktime(t);
+        t->tm_hour   = 0;
+        t->tm_min    = 0;
+        t->tm_sec    = 0;
+        *out         = mktime(t);
         return 0;
     }
 
     /* Relative: Nm, Nh, Nd */
     {
         size_t slen = strlen(s);
-        if(slen >= 2
-           && isdigit((unsigned char) s[0]))
+        if (slen >= 2 && isdigit((unsigned char) s[0]))
         {
             char unit = s[slen - 1];
             int  val  = atoi(s);
-            if(val > 0)
+            if (val > 0)
             {
-                if(unit == 'm')
+                if (unit == 'm')
                 {
                     *out = now - (time_t) val * 60;
                     return 0;
                 }
-                if(unit == 'h')
+                if (unit == 'h')
                 {
                     *out = now - (time_t) val * 3600;
                     return 0;
                 }
-                if(unit == 'd')
+                if (unit == 'd')
                 {
                     *out = now - (time_t) val * 86400;
                     return 0;
@@ -106,12 +103,10 @@ static int parse_time_arg(
     {
         struct tm tm0;
         memset(&tm0, 0, sizeof(tm0));
-        if(strptime(s,
-                    "%Y-%m-%dT%H:%M:%S", &tm0)
-           || strptime(s, "%Y-%m-%d", &tm0))
+        if (strptime(s, "%Y-%m-%dT%H:%M:%S", &tm0) || strptime(s, "%Y-%m-%d", &tm0))
         {
             tm0.tm_isdst = -1;
-            *out = mktime(&tm0);
+            *out         = mktime(&tm0);
             return 0;
         }
     }
@@ -132,9 +127,7 @@ static int parse_time_arg(
  *             array of heap-allocated strings.
  *             Caller must free with cmdline_free.
  */
-static void cmdline_split(
-    int *argc_out,
-    char ***argv_out)
+static void cmdline_split(int *argc_out, char ***argv_out)
 {
     char buf[STRINGMAXLEN_CLICMDLINE];
     strncpy(buf, data.CLIcmdline, sizeof(buf) - 1);
@@ -142,54 +135,49 @@ static void cmdline_split(
 
 #define HIST_ARGV_MAX 64
     char *tokens[HIST_ARGV_MAX];
-    int   ntok    = 0;
+    int   ntok = 0;
 
     const char *p = buf;
-    while(*p != '\0'
-          && ntok < HIST_ARGV_MAX - 1)
+    while (*p != '\0' && ntok < HIST_ARGV_MAX - 1)
     {
-        while(*p == ' ' || *p == '\t')
+        while (*p == ' ' || *p == '\t')
         {
             p++;
         }
-        if(*p == '\0')
+        if (*p == '\0')
         {
             break;
         }
         char tmp[STRINGMAXLEN_CLICMDLINE];
         int  j = 0;
 
-        if(*p == '"')
+        if (*p == '"')
         {
             p++;
-            while(*p != '"' && *p != '\0'
-                  && j < (int) sizeof(tmp) - 1)
+            while (*p != '"' && *p != '\0' && j < (int) sizeof(tmp) - 1)
             {
                 tmp[j++] = *p++;
             }
-            if(*p == '"')
+            if (*p == '"')
             {
                 p++;
             }
         }
-        else if(*p == '\'')
+        else if (*p == '\'')
         {
             p++;
-            while(*p != '\'' && *p != '\0'
-                  && j < (int) sizeof(tmp) - 1)
+            while (*p != '\'' && *p != '\0' && j < (int) sizeof(tmp) - 1)
             {
                 tmp[j++] = *p++;
             }
-            if(*p == '\'')
+            if (*p == '\'')
             {
                 p++;
             }
         }
         else
         {
-            while(*p != ' ' && *p != '\t'
-                  && *p != '\0'
-                  && j < (int) sizeof(tmp) - 1)
+            while (*p != ' ' && *p != '\t' && *p != '\0' && j < (int) sizeof(tmp) - 1)
             {
                 tmp[j++] = *p++;
             }
@@ -200,8 +188,8 @@ static void cmdline_split(
     }
 
     *argc_out = ntok;
-    *argv_out = (char **) malloc((size_t)(ntok + 1) * sizeof(char *));
-    for(int i = 0; i < ntok; i++)
+    *argv_out = (char **) malloc((size_t) (ntok + 1) * sizeof(char *));
+    for (int i = 0; i < ntok; i++)
     {
         (*argv_out)[i] = tokens[i];
     }
@@ -211,11 +199,9 @@ static void cmdline_split(
 /**
  * @brief Free the argv array from cmdline_split().
  */
-static void cmdline_free(
-    int  argc,
-    char **argv)
+static void cmdline_free(int argc, char **argv)
 {
-    for(int i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         free(argv[i]);
     }
@@ -233,30 +219,36 @@ static void cmdline_free(
  *
  * @param opts  Pointer to filter/display options.
  */
-void history_log_display(
-    const HistDisplayOpts *opts
-)
+void history_log_display(const HistDisplayOpts *opts)
 {
     FILE *fp = fopen(CLI_history_log_file(), "r");
-    if(fp == NULL)
+    if (fp == NULL)
     {
         printf("No history log found (%s)\n", CLI_history_log_file());
         return;
     }
 
     char line[2048];
-    int  cap    = 1024;
+    int  cap = 1024;
 
     char **lines   = (char **) malloc((size_t) cap * sizeof(char *));
-    int  *is_self  = (int *)   malloc((size_t) cap * sizeof(int));
-    char *types    = (char *)  malloc((size_t) cap * sizeof(char));
+    int   *is_self = (int *) malloc((size_t) cap * sizeof(int));
+    char  *types   = (char *) malloc((size_t) cap * sizeof(char));
 
-    if(lines == NULL || is_self == NULL
-       || types == NULL)
+    if (lines == NULL || is_self == NULL || types == NULL)
     {
-        if(lines)   free(lines);
-        if(is_self) free(is_self);
-        if(types)   free(types);
+        if (lines)
+        {
+            free(lines);
+        }
+        if (is_self)
+        {
+            free(is_self);
+        }
+        if (types)
+        {
+            free(types);
+        }
         fclose(fp);
         printf("Memory allocation error\n");
         return;
@@ -264,14 +256,12 @@ void history_log_display(
 
     int total = 0;
 
-    while(fgets(line,
-                (int) sizeof(line), fp))
+    while (fgets(line, (int) sizeof(line), fp))
     {
         /* Remove trailing newline */
         {
             size_t len = strlen(line);
-            if(len > 0
-               && line[len - 1] == '\n')
+            if (len > 0 && line[len - 1] == '\n')
             {
                 line[len - 1] = '\0';
             }
@@ -279,31 +269,30 @@ void history_log_display(
 
         /* Parse: ts\tsid\ttty\t[type\t]text */
         char *tab1 = strchr(line, '\t');
-        if(tab1 == NULL)
+        if (tab1 == NULL)
         {
             continue;
         }
         char *tab2 = strchr(tab1 + 1, '\t');
-        if(tab2 == NULL)
+        if (tab2 == NULL)
         {
             continue;
         }
         char *tab3 = strchr(tab2 + 1, '\t');
-        if(tab3 == NULL)
+        if (tab3 == NULL)
         {
             continue;
         }
 
         char *sid_start = tab1 + 1;
-        int   sid_len   = (int)(tab2 - tab1 - 1);
+        int   sid_len   = (int) (tab2 - tab1 - 1);
 
         /* Detect 5-field vs 4-field */
         char  entry_type = 'C';
         char *text_start;
         {
             char *tab4 = strchr(tab3 + 1, '\t');
-            if(tab4 != NULL
-               && (tab4 - tab3) == 2)
+            if (tab4 != NULL && (tab4 - tab3) == 2)
             {
                 entry_type = *(tab3 + 1);
                 text_start = tab4 + 1;
@@ -315,47 +304,36 @@ void history_log_display(
         }
 
         /* Type filter */
-        if(opts->type_filter != '\0'
-           && entry_type
-              != opts->type_filter)
+        if (opts->type_filter != '\0' && entry_type != opts->type_filter)
         {
             continue;
         }
 
         /* Session filter */
-        if(opts->filter_session != NULL)
+        if (opts->filter_session != NULL)
         {
             int fslen = (int) strlen(opts->filter_session);
-            if(sid_len != fslen
-               || strncmp(
-                      sid_start,
-                      opts->filter_session,
-                      (size_t) sid_len)
-                  != 0)
+            if (sid_len != fslen || strncmp(sid_start, opts->filter_session, (size_t) sid_len) != 0)
             {
                 continue;
             }
         }
 
         /* Glob filter on text */
-        if(opts->glob_cmd != NULL)
+        if (opts->glob_cmd != NULL)
         {
-            if(fnmatch(opts->glob_cmd,
-                       text_start,
-                       FNM_CASEFOLD) != 0)
+            if (fnmatch(opts->glob_cmd, text_start, FNM_CASEFOLD) != 0)
             {
                 continue;
             }
         }
 
         /* Time filter (parse ts field) */
-        if(opts->time_after
-           || opts->time_before)
+        if (opts->time_after || opts->time_before)
         {
-            char     ts_buf[32];
-            int      tslen = (int)(tab1 - line);
-            if(tslen
-               >= (int) sizeof(ts_buf))
+            char ts_buf[32];
+            int  tslen = (int) (tab1 - line);
+            if (tslen >= (int) sizeof(ts_buf))
             {
                 tslen = (int) sizeof(ts_buf) - 1;
             }
@@ -364,21 +342,15 @@ void history_log_display(
 
             struct tm tm0;
             memset(&tm0, 0, sizeof(tm0));
-            if(strptime(ts_buf,
-                        "%Y-%m-%dT%H:%M:%S",
-                        &tm0))
+            if (strptime(ts_buf, "%Y-%m-%dT%H:%M:%S", &tm0))
             {
-                tm0.tm_isdst = -1;
+                tm0.tm_isdst   = -1;
                 time_t entry_t = mktime(&tm0);
-                if(opts->time_after
-                   && entry_t
-                      < opts->time_after)
+                if (opts->time_after && entry_t < opts->time_after)
                 {
                     continue;
                 }
-                if(opts->time_before
-                   && entry_t
-                      > opts->time_before)
+                if (opts->time_before && entry_t > opts->time_before)
                 {
                     continue;
                 }
@@ -386,21 +358,17 @@ void history_log_display(
         }
 
         /* Is this the current session? */
-        int self =
-            (sid_len
-             == (int) strlen(
-                    data.session_id)
-             && strncmp(sid_start, data.session_id, (size_t) sid_len) == 0);
+        int self = (sid_len == (int) strlen(data.session_id) &&
+                    strncmp(sid_start, data.session_id, (size_t) sid_len) == 0);
 
         /* Store */
-        if(total >= cap)
+        if (total >= cap)
         {
             cap *= 2;
             char **tmp1 = (char **) realloc(lines, (size_t) cap * sizeof(char *));
-            int  *tmp2  = (int *) realloc(is_self, (size_t) cap * sizeof(int));
-            char *tmp3  = (char *) realloc(types, (size_t) cap * sizeof(char));
-            if(tmp1 == NULL || tmp2 == NULL
-               || tmp3 == NULL)
+            int   *tmp2 = (int *) realloc(is_self, (size_t) cap * sizeof(int));
+            char  *tmp3 = (char *) realloc(types, (size_t) cap * sizeof(char));
+            if (tmp1 == NULL || tmp2 == NULL || tmp3 == NULL)
             {
                 break;
             }
@@ -415,7 +383,7 @@ void history_log_display(
     }
     fclose(fp);
 
-    if(total == 0)
+    if (total == 0)
     {
         printf("No matching history entries\n");
         free(lines);
@@ -426,43 +394,55 @@ void history_log_display(
 
     /* Determine start index */
     int start = 0;
-    if(opts->max_entries > 0
-       && opts->max_entries < total)
+    if (opts->max_entries > 0 && opts->max_entries < total)
     {
         start = total - opts->max_entries;
     }
 
     /* Header */
     int show_sess = (opts->filter_session == NULL);
-    if(show_sess)
+    if (show_sess)
     {
-        printf("\033[1;36m %-24s %-19s" "  T  %s\033[0m\n", "Session", "Time", "Entry");
+        printf("\033[1;36m %-24s %-19s"
+               "  T  %s\033[0m\n",
+               "Session", "Time", "Entry");
     }
     else
     {
-        printf("\033[1;36m %-19s" "  T  %s\033[0m\n", "Time", "Entry");
+        printf("\033[1;36m %-19s"
+               "  T  %s\033[0m\n",
+               "Time", "Entry");
     }
 
     /* Print entries */
     int shown = 0;
-    for(int i = start; i < total; i++)
+    for (int i = start; i < total; i++)
     {
         /* Re-parse for display */
         char buf[2048];
         strncpy(buf, lines[i], sizeof(buf) - 1);
         buf[sizeof(buf) - 1] = '\0';
 
-        char *ts   = buf;
-        char *p1   = strchr(ts,  '\t');
-        if(p1 == NULL) continue;
-        *p1 = '\0';
-        char *sid  = p1 + 1;
-        char *p2   = strchr(sid, '\t');
-        if(p2 == NULL) continue;
-        *p2 = '\0';
-        char *tty  = p2 + 1;
-        char *p3   = strchr(tty, '\t');
-        if(p3 == NULL) continue;
+        char *ts = buf;
+        char *p1 = strchr(ts, '\t');
+        if (p1 == NULL)
+        {
+            continue;
+        }
+        *p1       = '\0';
+        char *sid = p1 + 1;
+        char *p2  = strchr(sid, '\t');
+        if (p2 == NULL)
+        {
+            continue;
+        }
+        *p2       = '\0';
+        char *tty = p2 + 1;
+        char *p3  = strchr(tty, '\t');
+        if (p3 == NULL)
+        {
+            continue;
+        }
         *p3 = '\0';
 
         /* Detect 5-field vs 4-field */
@@ -470,8 +450,7 @@ void history_log_display(
         char *etext;
         {
             char *p4 = strchr(p3 + 1, '\t');
-            if(p4 != NULL
-               && (p4 - (p3 + 1)) == 1)
+            if (p4 != NULL && (p4 - (p3 + 1)) == 1)
             {
                 etext = p4 + 1;
             }
@@ -483,7 +462,7 @@ void history_log_display(
 
         /* Shorten tty */
         const char *tty_s = tty;
-        if(strncmp(tty, "/dev", 4) == 0)
+        if (strncmp(tty, "/dev", 4) == 0)
         {
             tty_s = tty + 4;
         }
@@ -491,39 +470,42 @@ void history_log_display(
         /* Color by entry type and session */
         const char *col_on  = "";
         const char *col_off = "";
-        if(etype == 'P')
+        if (etype == 'P')
         {
             col_on  = "\033[1;36m";
             col_off = "\033[0m";
         }
-        else if(etype == 'S')
+        else if (etype == 'S')
         {
             col_on  = "\033[2;33m";
             col_off = "\033[0m";
         }
-        else if(opts->highlight_self
-                && is_self[i])
+        else if (opts->highlight_self && is_self[i])
         {
             col_on  = "\033[1;32m";
             col_off = "\033[0m";
         }
 
-        if(show_sess)
+        if (show_sess)
         {
             char sess_col[40];
             snprintf(sess_col, sizeof(sess_col), "%s %s", sid, tty_s);
-            printf("%s %-24s %-19s" "  %c  %s%s\n", col_on, sess_col, ts, etype, etext, col_off);
+            printf("%s %-24s %-19s"
+                   "  %c  %s%s\n",
+                   col_on, sess_col, ts, etype, etext, col_off);
         }
         else
         {
-            printf("%s %-19s" "  %c  %s%s\n", col_on, ts, etype, etext, col_off);
+            printf("%s %-19s"
+                   "  %c  %s%s\n",
+                   col_on, ts, etype, etext, col_off);
         }
         shown++;
     }
 
     printf("(%d entr%s)\n", shown, shown == 1 ? "y" : "ies");
 
-    for(int i = 0; i < total; i++)
+    for (int i = 0; i < total; i++)
     {
         free(lines[i]);
     }
@@ -557,118 +539,113 @@ errno_t cli_ghistory(void)
     char **argv = NULL;
     cmdline_split(&argc, &argv);
 
-    for(int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         const char *a = argv[i];
 
-        if(strcmp(a, "-n") == 0
-           && i + 1 < argc)
+        if (strcmp(a, "-n") == 0 && i + 1 < argc)
         {
             i++;
             opts.max_entries = atoi(argv[i]);
-            if(opts.max_entries < 0)
+            if (opts.max_entries < 0)
             {
                 opts.max_entries = 0;
             }
         }
-        else if(strcmp(a, "-s") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "-s") == 0 && i + 1 < argc)
         {
             i++;
             opts.filter_session = argv[i];
             opts.max_entries    = 0;
         }
-        else if(strcmp(a, "-t") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "-t") == 0 && i + 1 < argc)
         {
             i++;
             const char *tv = argv[i];
-            if(strcmp(tv, "prompt") == 0
-               || strcmp(tv, "p") == 0)
+            if (strcmp(tv, "prompt") == 0 || strcmp(tv, "p") == 0)
             {
                 opts.type_filter = 'P';
             }
-            else if(strcmp(tv, "cmd") == 0
-                    || strcmp(tv, "c") == 0
-                    || strcmp(tv,
-                             "command") == 0)
+            else if (strcmp(tv, "cmd") == 0 || strcmp(tv, "c") == 0 || strcmp(tv, "command") == 0)
             {
                 opts.type_filter = 'C';
             }
-            else if(strcmp(tv, "shell") == 0
-                    || strcmp(tv, "s") == 0)
+            else if (strcmp(tv, "shell") == 0 || strcmp(tv, "s") == 0)
             {
                 opts.type_filter = 'S';
             }
             else
             {
-                printf("ghistory: unknown " "type '%s'\n" "  valid: prompt " "cmd shell\n", tv);
+                printf("ghistory: unknown "
+                       "type '%s'\n"
+                       "  valid: prompt "
+                       "cmd shell\n",
+                       tv);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
         }
-        else if(strcmp(a, "-g") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "-g") == 0 && i + 1 < argc)
         {
             i++;
             opts.glob_cmd = argv[i];
         }
-        else if(strcmp(a, "--since") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "--since") == 0 && i + 1 < argc)
         {
             i++;
-            if(parse_time_arg(argv[i],
-                              &opts.time_after)
-               != 0)
+            if (parse_time_arg(argv[i], &opts.time_after) != 0)
             {
-                printf("ghistory: bad time" " '%s'\n", argv[i]);
+                printf("ghistory: bad time"
+                       " '%s'\n",
+                       argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
             opts.max_entries = 0;
         }
-        else if(strcmp(a, "--until") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "--until") == 0 && i + 1 < argc)
         {
             i++;
-            if(parse_time_arg(argv[i],
-                              &opts.time_before)
-               != 0)
+            if (parse_time_arg(argv[i], &opts.time_before) != 0)
             {
-                printf("ghistory: bad time" " '%s'\n", argv[i]);
+                printf("ghistory: bad time"
+                       " '%s'\n",
+                       argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
             opts.max_entries = 0;
         }
-        else if(strcmp(a, "--today") == 0)
+        else if (strcmp(a, "--today") == 0)
         {
             parse_time_arg("today", &opts.time_after);
             opts.max_entries = 0;
         }
-        else if(isdigit(
-                    (unsigned char) a[0]))
+        else if (isdigit((unsigned char) a[0]))
         {
             int n = atoi(a);
-            if(n > 0)
+            if (n > 0)
             {
                 opts.max_entries = n;
             }
         }
         else
         {
-            printf("ghistory: unknown " "option '%s'\n", a);
-            printf(
-                "Usage: ghistory [N]\n"
-                "  -n N       last N\n"
-                "  -s SID     session\n"
-                "  -t TYPE    prompt/cmd/"
-                "shell\n"
-                "  -g PAT     glob\n"
-                "  --since T  after time\n"
-                "  --until T  before time\n"
-                "  --today    today only\n"
-                "T: today Nm Nh Nd " "YYYY-MM-DD " "YYYY-MM-DDTHH:MM:SS\n");
+            printf("ghistory: unknown "
+                   "option '%s'\n",
+                   a);
+            printf("Usage: ghistory [N]\n"
+                   "  -n N       last N\n"
+                   "  -s SID     session\n"
+                   "  -t TYPE    prompt/cmd/"
+                   "shell\n"
+                   "  -g PAT     glob\n"
+                   "  --since T  after time\n"
+                   "  --until T  before time\n"
+                   "  --today    today only\n"
+                   "T: today Nm Nh Nd "
+                   "YYYY-MM-DD "
+                   "YYYY-MM-DDTHH:MM:SS\n");
             cmdline_free(argc, argv);
             return RETURN_FAILURE;
         }
@@ -703,105 +680,100 @@ errno_t cli_lhistory(void)
     char **argv = NULL;
     cmdline_split(&argc, &argv);
 
-    for(int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         const char *a = argv[i];
 
-        if(strcmp(a, "-n") == 0
-           && i + 1 < argc)
+        if (strcmp(a, "-n") == 0 && i + 1 < argc)
         {
             i++;
             opts.max_entries = atoi(argv[i]);
-            if(opts.max_entries < 0)
+            if (opts.max_entries < 0)
             {
                 opts.max_entries = 0;
             }
         }
-        else if(strcmp(a, "-t") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "-t") == 0 && i + 1 < argc)
         {
             i++;
             const char *tv = argv[i];
-            if(strcmp(tv, "prompt") == 0
-               || strcmp(tv, "p") == 0)
+            if (strcmp(tv, "prompt") == 0 || strcmp(tv, "p") == 0)
             {
                 opts.type_filter = 'P';
             }
-            else if(strcmp(tv, "cmd") == 0
-                    || strcmp(tv, "c") == 0
-                    || strcmp(tv,
-                             "command") == 0)
+            else if (strcmp(tv, "cmd") == 0 || strcmp(tv, "c") == 0 || strcmp(tv, "command") == 0)
             {
                 opts.type_filter = 'C';
             }
-            else if(strcmp(tv, "shell") == 0
-                    || strcmp(tv, "s") == 0)
+            else if (strcmp(tv, "shell") == 0 || strcmp(tv, "s") == 0)
             {
                 opts.type_filter = 'S';
             }
             else
             {
-                printf("lhistory: unknown " "type '%s'\n" "  valid: prompt " "cmd shell\n", tv);
+                printf("lhistory: unknown "
+                       "type '%s'\n"
+                       "  valid: prompt "
+                       "cmd shell\n",
+                       tv);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
         }
-        else if(strcmp(a, "-g") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "-g") == 0 && i + 1 < argc)
         {
             i++;
             opts.glob_cmd = argv[i];
         }
-        else if(strcmp(a, "--since") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "--since") == 0 && i + 1 < argc)
         {
             i++;
-            if(parse_time_arg(argv[i],
-                              &opts.time_after)
-               != 0)
+            if (parse_time_arg(argv[i], &opts.time_after) != 0)
             {
-                printf("lhistory: bad time" " '%s'\n", argv[i]);
+                printf("lhistory: bad time"
+                       " '%s'\n",
+                       argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
         }
-        else if(strcmp(a, "--until") == 0
-                && i + 1 < argc)
+        else if (strcmp(a, "--until") == 0 && i + 1 < argc)
         {
             i++;
-            if(parse_time_arg(argv[i],
-                              &opts.time_before)
-               != 0)
+            if (parse_time_arg(argv[i], &opts.time_before) != 0)
             {
-                printf("lhistory: bad time" " '%s'\n", argv[i]);
+                printf("lhistory: bad time"
+                       " '%s'\n",
+                       argv[i]);
                 cmdline_free(argc, argv);
                 return RETURN_FAILURE;
             }
         }
-        else if(strcmp(a, "--today") == 0)
+        else if (strcmp(a, "--today") == 0)
         {
             parse_time_arg("today", &opts.time_after);
         }
-        else if(isdigit(
-                    (unsigned char) a[0]))
+        else if (isdigit((unsigned char) a[0]))
         {
             int n = atoi(a);
-            if(n > 0)
+            if (n > 0)
             {
                 opts.max_entries = n;
             }
         }
         else
         {
-            printf("lhistory: unknown " "option '%s'\n", a);
-            printf(
-                "Usage: lhistory [N]\n"
-                "  -n N       last N\n"
-                "  -t TYPE    prompt/cmd/"
-                "shell\n"
-                "  -g PAT     glob\n"
-                "  --since T  after time\n"
-                "  --until T  before time\n" "  --today    today only\n");
+            printf("lhistory: unknown "
+                   "option '%s'\n",
+                   a);
+            printf("Usage: lhistory [N]\n"
+                   "  -n N       last N\n"
+                   "  -t TYPE    prompt/cmd/"
+                   "shell\n"
+                   "  -g PAT     glob\n"
+                   "  --since T  after time\n"
+                   "  --until T  before time\n"
+                   "  --today    today only\n");
             cmdline_free(argc, argv);
             return RETURN_FAILURE;
         }

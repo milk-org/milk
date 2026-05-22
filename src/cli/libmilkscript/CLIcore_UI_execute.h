@@ -14,9 +14,7 @@
 void rl_cb_linehandler(char *linein);
 #endif
 
-errno_t runCLI_prompt(
-    char *promptstring,
-    char *prompt);
+errno_t runCLI_prompt(char *promptstring, char *prompt);
 
 #ifdef USE_READLINE
 char **CLI_completion(const char *, int, int);
@@ -34,22 +32,18 @@ void CLI_cleanup_scroll_region(void);
 /* -- Cross-file helpers (CLIcore_UI_*.c) -- */
 
 /* CLIcore_UI_completion.c */
-void *xmalloc(int size);
-char *dupstr(char *s);
+void      *xmalloc(int size);
+char      *dupstr(char *s);
 extern int ghost_chars_on_line;
 
 #ifdef USE_READLINE
-int  cli_accept_line(
-    int count,
-    int key);
+int   cli_accept_line(int count, int key);
 char *CLI_generator(const char *text, int state);
-int  levenshtein_distance(
-    const char *s1,
-    const char *s2);
+int   levenshtein_distance(const char *s1, const char *s2);
 #endif
 
 /* CLIcore_UI_highlight.c */
-int  cli_is_command(const char *word);
+int cli_is_command(const char *word);
 #ifdef USE_READLINE
 void cli_highlight_redisplay(void);
 #endif
@@ -57,9 +51,7 @@ void cli_highlight_redisplay(void);
 /* CLIcore_UI_hintarea.c */
 #ifdef USE_READLINE
 int  find_command_match(const char *firstword);
-void set_pending_suggestion(
-    const char *text,
-    int        replace_len);
+void set_pending_suggestion(const char *text, int replace_len);
 #endif
 
 /* Command aliases */
@@ -108,14 +100,11 @@ errno_t cli_savehistory(void);
 
 /* Configurable prompt */
 errno_t cli_setprompt(void);
-void cli_build_prompt(
-    const char *fmt,
-    char       *out,
-    int        maxlen);
+void    cli_build_prompt(const char *fmt, char *out, int maxlen);
 
 /* Command bookmarks */
 errno_t cli_bookmark(void);
-void cli_bookmark_load(void);
+void    cli_bookmark_load(void);
 
 /* Session logging */
 errno_t cli_sessionlog(void);
@@ -136,21 +125,19 @@ void    cli_history_log_init(void);
 errno_t cli_ghistory(void);
 errno_t cli_lhistory(void);
 
-#define BOOKMARK_MAX      64
-#define BOOKMARK_NAMELEN  200
-#define BOOKMARK_CMDLEN  2000
+#define BOOKMARK_MAX 64
+#define BOOKMARK_NAMELEN 200
+#define BOOKMARK_CMDLEN 2000
 
-void cli_history_expand(void);
-void cli_alias_expand(void);
-void cli_expand_braces(
-    char *line,
-    int  maxlen);
-void cli_session_log_cmd(const char *cmd);
-void cli_history_log_cmd(const char *cmd);
-void cli_history_log_prompt(const char *prompt);
-void cli_history_log_shell(const char *cmd);
+void        cli_history_expand(void);
+void        cli_alias_expand(void);
+void        cli_expand_braces(char *line, int maxlen);
+void        cli_session_log_cmd(const char *cmd);
+void        cli_history_log_cmd(const char *cmd);
+void        cli_history_log_prompt(const char *prompt);
+void        cli_history_log_shell(const char *cmd);
 const char *CLI_history_file(void);
-void cli_save_last_argument(void);
+void        cli_save_last_argument(void);
 const char *strip_ws(const char *s);
 
 #endif /* CLICORE_UI_H */

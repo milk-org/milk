@@ -12,12 +12,11 @@
  * Displays the node's full keyword path, type,
  * description, and value history.
  */
-void fpsCTRLscreen_print_nodeinfo(
-    FPS               *fps,
-    KEYWORD_TREE_NODE *keywnode,
-    int               nodeSelected,
-    int               fpsindexSelected,
-    long              pindexSelected)
+void fpsCTRLscreen_print_nodeinfo(FPS               *fps,
+                                  KEYWORD_TREE_NODE *keywnode,
+                                  int                nodeSelected,
+                                  int                fpsindexSelected,
+                                  long               pindexSelected)
 {
     TUI_newline();
     screenprint_setbold();
@@ -27,15 +26,15 @@ void fpsCTRLscreen_print_nodeinfo(
     screenprint_unsetbold();
 
     TUI_printfw("    %-16s: %d\n", "Index", fpsindexSelected);
-    TUI_printfw("    %-16s: %ld / %ld (active/max)\n", "Params", fps[fpsindexSelected].NBparamActive,
-                fps[fpsindexSelected].md->NBparamMAX);
+    TUI_printfw("    %-16s: %ld / %ld (active/max)\n", "Params",
+                fps[fpsindexSelected].NBparamActive, fps[fpsindexSelected].md->NBparamMAX);
     TUI_printfw("    %-16s: %s -> %s", "Call", fps[fpsindexSelected].md->callprogname,
                 fps[fpsindexSelected].md->callfuncname);
 
-    if(fps[fpsindexSelected].md->NBnameindex > 0)
+    if (fps[fpsindexSelected].md->NBnameindex > 0)
     {
         TUI_printfw(" [");
-        for(int name_idx = 0; name_idx < fps[fpsindexSelected].md->NBnameindex; name_idx++)
+        for (int name_idx = 0; name_idx < fps[fpsindexSelected].md->NBnameindex; name_idx++)
         {
             TUI_printfw(" %s", fps[fpsindexSelected].md->nameindexW[name_idx]);
         }
@@ -48,10 +47,10 @@ void fpsCTRLscreen_print_nodeinfo(
     TUI_printfw("    %-16s: %s:%d\n", "Source", fps[fpsindexSelected].md->sourcefname,
                 fps[fpsindexSelected].md->sourceline);
 
-    if(fps[fpsindexSelected].md->NBmodule > 0)
+    if (fps[fpsindexSelected].md->NBmodule > 0)
     {
         TUI_printfw("    %-16s:", "Libraries");
-        for(int mod_idx = 0; mod_idx < fps[fpsindexSelected].md->NBmodule; mod_idx++)
+        for (int mod_idx = 0; mod_idx < fps[fpsindexSelected].md->NBmodule; mod_idx++)
         {
             TUI_printfw(" [%s]", fps[fpsindexSelected].md->modulename[mod_idx]);
         }
@@ -68,7 +67,7 @@ void fpsCTRLscreen_print_nodeinfo(
 
     snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:ctrl 2> /dev/null",
              fps[fpsindexSelected].md->name);
-    if(system(cmd) == 0)
+    if (system(cmd) == 0)
     {
         screenprint_setcolor(COLOR_OK);
         TUI_printfw("[ctrl] ");
@@ -83,7 +82,7 @@ void fpsCTRLscreen_print_nodeinfo(
 
     snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:conf 2> /dev/null",
              fps[fpsindexSelected].md->name);
-    if(system(cmd) == 0)
+    if (system(cmd) == 0)
     {
         screenprint_setcolor(COLOR_OK);
         TUI_printfw("[conf] ");
@@ -98,7 +97,7 @@ void fpsCTRLscreen_print_nodeinfo(
 
     snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:run 2> /dev/null",
              fps[fpsindexSelected].md->name);
-    if(system(cmd) == 0)
+    if (system(cmd) == 0)
     {
         screenprint_setcolor(COLOR_OK);
         TUI_printfw("[run] ");
@@ -122,11 +121,11 @@ void fpsCTRLscreen_print_nodeinfo(
     TUI_printfw("    %-16s: %d\n", "Index", nodeSelected);
     TUI_printfw("    %-16s: %s\n", "Keyword", keywnode[nodeSelected].keywordfull);
 
-    if(keywnode[nodeSelected].leaf > 0)
+    if (keywnode[nodeSelected].leaf > 0)
     {
         char typestring[100];
-        functionparameter_GetTypeString(
-            fps[fpsindexSelected].parray[pindexSelected].type, typestring);
+        functionparameter_GetTypeString(fps[fpsindexSelected].parray[pindexSelected].type,
+                                        typestring);
         TUI_printfw("    %-16s: %s\n", "Type", typestring);
     }
     else

@@ -43,31 +43,19 @@ static double *scoeff; // matches CLIARG_FLOAT64
 // series of words separated by dot "."
 // For example: .input.xsize (note that first dot is optional)
 //
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG, // type of argument
-        ".in_name",
-        "input image",
-        "im1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), // This will be exposed as a function argument in the milk CLI, which has to be entered
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".scaling",
-        "scaling coefficient",
-        "1.0",
-        FPFLAG_DEFAULT_INPUT, // hidden argument is not part of CLI call, FPFLAG ignored
-        (void **) &scoeff,
-        NULL
-    }
+static CLICMDARGDEF farg[] = {
+    { CLIARG_IMG, // type of argument
+      ".in_name", "input image", "im1",
+      (FPFLAG_DEFAULT_INPUT |
+       FPFLAG_CLI_INPUT), // This will be exposed as a function argument in the milk CLI, which has to be entered
+      (void **) &inimname, NULL },
+    { CLIARG_FLOAT64, ".scaling", "scaling coefficient", "1.0",
+      FPFLAG_DEFAULT_INPUT, // hidden argument is not part of CLI call, FPFLAG ignored
+      (void **) &scoeff, NULL }
 };
 
 // CLI function initialization data
-static CLICMDDATA CLIcmddata =
-{
+static CLICMDDATA CLIcmddata = {
     "imsum1",                          // keyword to call function in from the milk CLI
     "compute total of image example1", // brief (1-line) description of what the function does
     CLICMD_FIELDS_NOFPS                // do NOT use Function Parameter Structure (FPS)
@@ -82,9 +70,7 @@ static CLICMDDATA CLIcmddata =
  * Functions should return error code of type errno_t (= int).
  * On success, return value is RETURN_SUCCESS (=0).
  */
-static errno_t example_compute_2Dimage_total(
-    IMGID  *imgptr,
-    double scalingcoeff)
+static errno_t example_compute_2Dimage_total(IMGID *imgptr, double scalingcoeff)
 {
     // The preferred way to have images and streams as function args is to pass a pointer to IMGID struct.
     // Here, the function needs to change the IMGID content (call to resolveIMGID).
@@ -103,24 +89,22 @@ static errno_t example_compute_2Dimage_total(
     // imgptr->name, imgptr->naxis, imgptr->ID, imgptr->size, imgptr->im
 
     // From now on, we access the image and its metadata through its IMGID
-    uint32_t  xsize  = imgptr->md->size[0];
-    if (imgptr->ID == -1) {
+    uint32_t xsize = imgptr->md->size[0];
+    if (imgptr->ID == -1)
+    {
         return RETURN_FAILURE;
     }
-    uint32_t  ysize  = imgptr->md->size[1];
-    uint64_t  xysize = xsize * ysize;
+    uint32_t ysize  = imgptr->md->size[1];
+    uint64_t xysize = xsize * ysize;
 
     double total = 0.0;
-    for(uint64_t ii = 0; ii < xysize; ii++)
+    for (uint64_t ii = 0; ii < xysize; ii++)
     {
         total += imgptr->im->array.F[ii];
     }
     total *= scalingcoeff;
 
-    printf("image %s total = %lf (scaling coeff %lf)\n",
-           imgptr->im->name,
-           total,
-           scalingcoeff);
+    printf("image %s total = %lf (scaling coeff %lf)\n", imgptr->im->name, total, scalingcoeff);
 
     // normal successful return from function :
     DEBUG_TRACE_FEXIT();
@@ -146,9 +130,7 @@ static MILK_HOT errno_t compute_function()
     // At this point the connection to the image has not been established. This will be done
     // on the first call of resolveIMGID inside the compute function.
 
-    example_compute_2Dimage_total(
-        &img,
-        *scoeff);
+    example_compute_2Dimage_total(&img, *scoeff);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -158,13 +140,13 @@ static MILK_HOT errno_t compute_function()
 INSERT_STD_CLIfunction
 
 
-/** @brief Register CLI command
+    /** @brief Register CLI command
 *
 * Adds function to list of CLI commands.
 * Called by main module initialization function init_module_CLI().
 */
-errno_t
-CLIADDCMD_milk_module_example__simplefunc()
+    errno_t
+    CLIADDCMD_milk_module_example__simplefunc()
 {
     INSERT_STD_CLIREGISTERFUNC
 

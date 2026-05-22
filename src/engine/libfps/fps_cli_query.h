@@ -18,10 +18,7 @@
  * @param bindings  Parameter bindings
  * @param nb_b      Number of bindings
  */
-void fps_print_query_info(
-    FPS_APP_INFO    *app_info,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b);
+void fps_print_query_info(FPS_APP_INFO *app_info, FPS_CLI_BINDING *bindings, int nb_b);
 
 
 #endif /* FPS_CLI_QUERY_H */

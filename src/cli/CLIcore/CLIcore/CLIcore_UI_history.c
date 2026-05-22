@@ -1,5 +1,5 @@
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#    define _GNU_SOURCE
 #endif
 #include <stdio.h>
 #include <string.h>
@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include <time.h>
 #ifdef USE_READLINE
-#include <readline/history.h>
-#include <readline/readline.h>
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 #include "CLIcore.h"
 
@@ -31,11 +31,11 @@
  */
 const char *CLI_history_file(void)
 {
-    static char path[1024] = {0};
-    if(path[0] == '\0')
+    static char path[1024] = { 0 };
+    if (path[0] == '\0')
     {
         const char *home = getenv("HOME");
-        if(home)
+        if (home)
         {
             snprintf(path, sizeof(path), "%s/.milk_history", home);
         }
@@ -100,11 +100,11 @@ void cli_history_save(void)
  */
 const char *CLI_history_log_file(void)
 {
-    static char path[1024] = {0};
-    if(path[0] == '\0')
+    static char path[1024] = { 0 };
+    if (path[0] == '\0')
     {
         const char *home = getenv("HOME");
-        if(home)
+        if (home)
         {
             snprintf(path, sizeof(path), "%s/.milk_history_log", home);
         }
@@ -130,7 +130,7 @@ void cli_history_log_init(void)
 
     {
         const char *tty = ttyname(STDIN_FILENO);
-        if(tty)
+        if (tty)
         {
             strncpy(data.session_tty, tty, sizeof(data.session_tty) - 1);
             data.session_tty[sizeof(data.session_tty) - 1] = '\0';
@@ -159,11 +159,9 @@ void cli_history_log_init(void)
  * @param text   The entry text to log.
  * @param type   Single-character type code.
  */
-static void cli_history_log_entry(
-    const char *text,
-    char       type)
+static void cli_history_log_entry(const char *text, char type)
 {
-    if(text == NULL || text[0] == '\0')
+    if (text == NULL || text[0] == '\0')
     {
         return;
     }
@@ -171,19 +169,12 @@ static void cli_history_log_entry(
     /* Do not log history-display commands —
      * they would pollute the log they read. */
     {
-        static const char *const skip[] =
-        {
-            "ghistory",
-            "lhistory",
-            NULL
-        };
-        for(int k = 0; skip[k] != NULL; k++)
+        static const char *const skip[] = { "ghistory", "lhistory", NULL };
+        for (int k = 0; skip[k] != NULL; k++)
         {
             size_t n = strlen(skip[k]);
-            if(strncmp(text, skip[k], n) == 0
-               && (text[n] == '\0'
-                   || text[n] == ' '
-                   || text[n] == '\t'))
+            if (strncmp(text, skip[k], n) == 0 &&
+                (text[n] == '\0' || text[n] == ' ' || text[n] == '\t'))
             {
                 return;
             }
@@ -191,14 +182,14 @@ static void cli_history_log_entry(
     }
 
     FILE *fp = fopen(CLI_history_log_file(), "a");
-    if(fp == NULL)
+    if (fp == NULL)
     {
         return;
     }
 
     {
         time_t now = time(NULL);
-        char tbuf[64];
+        char   tbuf[64];
         strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", localtime(&now));
         fprintf(fp, "%s\t%s\t%s\t%c\t%s\n", tbuf, data.session_id, data.session_tty, type, text);
     }
@@ -208,9 +199,7 @@ static void cli_history_log_entry(
 /**
  * @brief Log a resolved milk command (type C).
  */
-void cli_history_log_cmd(
-    const char *cmd
-)
+void cli_history_log_cmd(const char *cmd)
 {
     cli_history_log_entry(cmd, 'C');
 }
@@ -222,9 +211,7 @@ void cli_history_log_cmd(
  * fgets fallback to record exactly what the
  * user typed before alias/history expansion.
  */
-void cli_history_log_prompt(
-    const char *prompt
-)
+void cli_history_log_prompt(const char *prompt)
 {
     cli_history_log_entry(prompt, 'P');
 }
@@ -235,9 +222,7 @@ void cli_history_log_prompt(
  * Called when a command is delegated directly
  * to bash via system().
  */
-void cli_history_log_shell(
-    const char *cmd
-)
+void cli_history_log_shell(const char *cmd)
 {
     cli_history_log_entry(cmd, 'S');
 }

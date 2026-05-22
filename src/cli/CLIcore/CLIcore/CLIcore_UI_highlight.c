@@ -26,7 +26,7 @@
 #include <stdint.h>
 
 #ifdef USE_READLINE
-#include <readline/readline.h>
+#    include <readline/readline.h>
 #endif
 
 #include "CLIcore.h"
@@ -47,9 +47,9 @@
 int cli_is_command(const char *word)
 {
     /* Registered module commands */
-    for(uint32_t i = 0; i < data.NBcmd; i++)
+    for (uint32_t i = 0; i < data.NBcmd; i++)
     {
-        if(strcmp(data.cmd[i].key, word) == 0)
+        if (strcmp(data.cmd[i].key, word) == 0)
         {
             return 1;
         }
@@ -62,43 +62,22 @@ int cli_is_command(const char *word)
      * and cli_handle_shell_builtins. */
     static const char *builtins[] = {
         /* Flow control keywords */
-        "if", "elif", "else", "fi",
-        "for", "while", "until",
-        "do", "done",
-        "case", "esac",
-        "select",
-        "function",
-        ".", "source",
-        "break", "continue", "return",
-        "true", "false",
+        "if", "elif", "else", "fi", "for", "while", "until", "do", "done", "case", "esac", "select",
+        "function", ".", "source", "break", "continue", "return", "true", "false",
         /* Script intercept commands */
-        "exit", "shift",
-        "assert", "assigncheck",
-        "dpdigits",
-        "set", "export", "readonly",
-        "local", "declare", "let",
-        "eval", "type", "command",
-        "trap", "watch", "time",
-        "timeout", "wait",
-        "printf", "echo",
-        "getopts", "mapfile",
-        "alias", "unalias",
-        "basename", "dirname",
-        "pushd", "popd", "dirs",
-        "seq", "[[",
+        "exit", "shift", "assert", "assigncheck", "dpdigits", "set", "export", "readonly", "local",
+        "declare", "let", "eval", "type", "command", "trap", "watch", "time", "timeout", "wait",
+        "printf", "echo", "getopts", "mapfile", "alias", "unalias", "basename", "dirname", "pushd",
+        "popd", "dirs", "seq", "[[",
         /* Process and FPS commands */
-        "procctl", "procwait", "procstat",
-        "waitfor_stream", "waitfor_fps",
+        "procctl", "procwait", "procstat", "waitfor_stream", "waitfor_fps",
         /* Shell builtins */
-        "on_update", "on_fpschange",
-        "include_once",
-        "savescript", "savehistory",
-        NULL
+        "on_update", "on_fpschange", "include_once", "savescript", "savehistory", NULL
     };
 
-    for(int k = 0; builtins[k] != NULL; k++)
+    for (int k = 0; builtins[k] != NULL; k++)
     {
-        if(strcmp(word, builtins[k]) == 0)
+        if (strcmp(word, builtins[k]) == 0)
         {
             return 1;
         }
@@ -125,34 +104,34 @@ int cli_is_command(const char *word)
  */
 void cli_highlight_redisplay(void)
 {
-    if(!data.syntax_highlight)
+    if (!data.syntax_highlight)
     {
         rl_redisplay();
         return;
     }
 
-#ifdef USE_TREESITTER
-    if(data.syntax_highlight >= 2)
+#    ifdef USE_TREESITTER
+    if (data.syntax_highlight >= 2)
     {
         // Tree-sitter performs its own rendering
         // including cursor save/restore
         rl_redisplay();
         fprintf(rl_outstream, "\033[s"); // Save cursor
-        
+
         // Move to start of line in case readline cursor is in the middle
         int back = rl_point;
-        if(back > 0)
+        if (back > 0)
         {
             fprintf(rl_outstream, "\033[%dD", back);
         }
-        
+
         cli_ts_highlight_line(rl_line_buffer, strlen(rl_line_buffer), rl_outstream);
-        
+
         fprintf(rl_outstream, "\033[u"); // Restore cursor
         fflush(rl_outstream);
         return;
     }
-#endif
+#    endif
 
     /*
      * Let readline draw normally first so its
@@ -163,31 +142,28 @@ void cli_highlight_redisplay(void)
 
     /* Find the first word boundaries */
     int ws = 0;
-    while(rl_line_buffer[ws] == ' '
-            || rl_line_buffer[ws] == '\t')
+    while (rl_line_buffer[ws] == ' ' || rl_line_buffer[ws] == '\t')
     {
         ws++;
     }
     int we = ws;
-    while(rl_line_buffer[we] != '\0'
-            && rl_line_buffer[we] != ' '
-            && rl_line_buffer[we] != '\t')
+    while (rl_line_buffer[we] != '\0' && rl_line_buffer[we] != ' ' && rl_line_buffer[we] != '\t')
     {
         we++;
     }
-    if(we == ws)
+    if (we == ws)
     {
         fflush(stdout);
         return;
     }
 
     /* Comment lines: color entire line dim green */
-    if(rl_line_buffer[ws] == '#')
+    if (rl_line_buffer[ws] == '#')
     {
         fprintf(rl_outstream, "\033[s");
         {
             int back = rl_point;
-            if(back > 0)
+            if (back > 0)
             {
                 fprintf(rl_outstream, "\033[%dD", back);
             }
@@ -200,8 +176,8 @@ void cli_highlight_redisplay(void)
 
     /* Extract first word */
     char firstword[200];
-    int fwlen = we - ws;
-    if(fwlen > 199)
+    int  fwlen = we - ws;
+    if (fwlen > 199)
     {
         fwlen = 199;
     }
@@ -210,15 +186,12 @@ void cli_highlight_redisplay(void)
 
     /* Pick color */
     const char *col;
-    if(cli_is_command(firstword))
+    if (cli_is_command(firstword))
     {
         col = "\033[32m"; /* green */
     }
-    else if(strchr(firstword, '=')
-            || strchr(firstword, '+')
-            || strchr(firstword, '*')
-            || strchr(firstword, '/')
-            || strchr(firstword, '('))
+    else if (strchr(firstword, '=') || strchr(firstword, '+') || strchr(firstword, '*') ||
+             strchr(firstword, '/') || strchr(firstword, '('))
     {
         /* Math expression or assignment —
          * leave in default color */
@@ -238,16 +211,16 @@ void cli_highlight_redisplay(void)
      * column) to avoid prompt-width errors from
      * invisible escape sequences in the prompt.
      */
-    fprintf(rl_outstream, "\033[s");  /* save */
+    fprintf(rl_outstream, "\033[s"); /* save */
     {
         int back = rl_point - ws;
-        if(back > 0)
+        if (back > 0)
         {
             fprintf(rl_outstream, "\033[%dD", back);
         }
     }
     fprintf(rl_outstream, "%s%s\033[0m", col, firstword);
-    fprintf(rl_outstream, "\033[u");  /* restore */
+    fprintf(rl_outstream, "\033[u"); /* restore */
     fflush(rl_outstream);
 }
 #endif

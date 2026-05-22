@@ -9,7 +9,7 @@
 #include "processinfo_WriteMessage.h"
 
 #ifndef CLOCK_MILK
-#define CLOCK_MILK CLOCK_REALTIME
+#    define CLOCK_MILK CLOCK_REALTIME
 #endif
 
 
@@ -19,9 +19,7 @@
  * Records the signal number in processinfo metadata,
  * sets loopstat to error, and performs cleanup.
  */
-int processinfo_SIGexit(
-    PROCESSINFO *processinfo,
-    int         SignalNumber)
+int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 {
     char            timestring[200];
     struct timespec tstop;
@@ -31,18 +29,14 @@ int processinfo_SIGexit(
     clock_gettime(CLOCK_MILK, &tstop);
     tstoptm = gmtime(&tstop.tv_sec);
 
-    snprintf(timestring,
-             200,
-             "%02d:%02d:%02d.%03d",
-             tstoptm->tm_hour,
-             tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
+    snprintf(timestring, 200, "%02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min,
+             tstoptm->tm_sec, (int) (0.000001 * (tstop.tv_nsec)));
     processinfo->loopstat = 3; // clean exit
 
     char SIGstr[12];
     int  SIGflag = 0;
-    switch(SignalNumber)
+    switch (SignalNumber)
     {
-
     case SIGHUP: // Hangup detected on controlling terminal or death of controlling process
         snprintf(SIGstr, sizeof(SIGstr), "SIGHUP");
         SIGflag = 1;
@@ -184,16 +178,16 @@ int processinfo_SIGexit(
         break;
     }
 
-    if(SIGflag == 1)
+    if (SIGflag == 1)
     {
-        int slen = snprintf(msgstring,
-                            STRINGMAXLEN_PROCESSINFO_STATUSMSG, "%s at %s", SIGstr, timestring);
-        if(slen < 1)
+        int slen =
+            snprintf(msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG, "%s at %s", SIGstr, timestring);
+        if (slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
+        if (slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
         {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way

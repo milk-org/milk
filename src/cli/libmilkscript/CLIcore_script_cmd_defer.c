@@ -27,7 +27,7 @@
 
 #define CLI_DEFER_MAX 32
 
-static char cli_defer_stack [CLI_DEFER_MAX][STRINGMAXLEN_CLICMDLINE];
+static char cli_defer_stack[CLI_DEFER_MAX][STRINGMAXLEN_CLICMDLINE];
 static int  cli_defer_count = 0;
 
 /**
@@ -45,15 +45,17 @@ static int  cli_defer_count = 0;
  */
 errno_t cli_cmd_defer(void)
 {
-    if(data.cmdNBarg < 2)
+    if (data.cmdNBarg < 2)
     {
         printf("Usage: defer <command>\n");
         return RETURN_FAILURE;
     }
 
-    if(cli_defer_count >= CLI_DEFER_MAX)
+    if (cli_defer_count >= CLI_DEFER_MAX)
     {
-        printf("defer: stack full " "(max %d)\n", CLI_DEFER_MAX);
+        printf("defer: stack full "
+               "(max %d)\n",
+               CLI_DEFER_MAX);
         return RETURN_FAILURE;
     }
 
@@ -67,19 +69,19 @@ errno_t cli_cmd_defer(void)
     const char *p    = line;
 
     /* Skip leading whitespace */
-    while(*p == ' ' || *p == '\t')
+    while (*p == ' ' || *p == '\t')
     {
         p++;
     }
 
     /* Expect "defer" as the first token */
     const char keyword[] = "defer";
-    size_t      klen = sizeof(keyword) - 1;
+    size_t     klen      = sizeof(keyword) - 1;
 
-    if(strncmp(p, keyword, klen) == 0)
+    if (strncmp(p, keyword, klen) == 0)
     {
         p += klen;
-        while(*p == ' ' || *p == '\t')
+        while (*p == ' ' || *p == '\t')
         {
             p++;
         }
@@ -88,7 +90,7 @@ errno_t cli_cmd_defer(void)
     strncpy(cmd, p, sizeof(cmd) - 1);
     cmd[sizeof(cmd) - 1] = '\0';
     strncpy(cli_defer_stack[cli_defer_count], cmd, STRINGMAXLEN_CLICMDLINE - 1);
-    cli_defer_stack[cli_defer_count] [STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    cli_defer_stack[cli_defer_count][STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     cli_defer_count++;
 
     return RETURN_SUCCESS;
@@ -110,13 +112,13 @@ void cli_defer_run(void)
 {
     static int running = 0;
 
-    if(running)
+    if (running)
     {
         return;
     }
     running = 1;
 
-    while(cli_defer_count > 0)
+    while (cli_defer_count > 0)
     {
         cli_defer_count--;
         char cmd[STRINGMAXLEN_CLICMDLINE];

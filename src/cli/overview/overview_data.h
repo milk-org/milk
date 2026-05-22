@@ -23,13 +23,13 @@
  * Limits
  * ========================================================= */
 
-#define OV_MAX_STREAMS     2000
-#define OV_MAX_FPS          200
-#define OV_MAX_PROCS        500
-#define OV_MAX_NODES       2700
-#define OV_MAX_EDGES       5000
+#define OV_MAX_STREAMS 2000
+#define OV_MAX_FPS 200
+#define OV_MAX_PROCS 500
+#define OV_MAX_NODES 2700
+#define OV_MAX_EDGES 5000
 
-#define OV_SPARKLINE_LEN     40
+#define OV_SPARKLINE_LEN 40
 
 /* =========================================================
  * PID status (used for uniform PID coloring)
@@ -55,10 +55,7 @@ ov_pid_status_t pid_get_status(pid_t pid);
  *
  * Return: number of cores written to @cores.
  */
-int pid_get_core_utilization(
-    pid_t pid,
-    int   *cores,
-    int   max_cores);
+int pid_get_core_utilization(pid_t pid, int *cores, int max_cores);
 
 typedef struct
 {
@@ -73,9 +70,7 @@ typedef struct
 /**
  * pid_get_advanced_stats - get scheduling, memory faults, and thread counts
  */
-int pid_get_advanced_stats(
-    pid_t               pid,
-    ov_advanced_stats_t *out);
+int pid_get_advanced_stats(pid_t pid, ov_advanced_stats_t *out);
 
 typedef struct
 {
@@ -99,10 +94,7 @@ typedef struct
  * @loopcnt: current loop iteration count of the process, used to calculate per-loop rates.
  * Requires CAP_PERFMON or root, or perf_event_paranoid <= 2
  */
-int pid_read_perf_counters(
-    pid_t              pid,
-    int64_t            loopcnt,
-    ov_perf_counters_t *out);
+int pid_read_perf_counters(pid_t pid, int64_t loopcnt, ov_perf_counters_t *out);
 
 /* =========================================================
  * Node types
@@ -136,9 +128,9 @@ typedef enum
 
 typedef struct
 {
-    char     name[STRINGMAXLEN_IMAGE_NAME];
-    int      valid;
-    int      active;
+    char name[STRINGMAXLEN_IMAGE_NAME];
+    int  valid;
+    int  active;
 
     /* geometry */
     uint8_t  datatype;
@@ -150,41 +142,41 @@ typedef struct
     uint64_t cnt0;
     uint64_t cnt0_prev;
     double   update_hz;
-    int      cnt_active;  /**< cnt0 changed since last scan */
+    int      cnt_active; /**< cnt0 changed since last scan */
 
     /* ownership */
-    pid_t    creatorPID;
-    pid_t    ownerPID;
-    ino_t    inode;
+    pid_t creatorPID;
+    pid_t ownerPID;
+    ino_t inode;
 
     /* semaphores */
-    int      nb_sem;
-    int      semval[10];
+    int nb_sem;
+    int semval[10];
 
     /* Write / read PIDs */
-    pid_t    write_pid;       /**< writer PID (from proc trace) */
-    int      nb_read_pids;
-    pid_t    read_pids[IMAGE_NB_SEMAPHORE];
+    pid_t write_pid; /**< writer PID (from proc trace) */
+    int   nb_read_pids;
+    pid_t read_pids[IMAGE_NB_SEMAPHORE];
 
     /* process trace (from STREAM_PROC_TRACE) */
-    int      nb_proctrace;
-    pid_t    proctrace_pid[IMAGE_NB_PROCTRACE];
-    ino_t    proctrace_inode[IMAGE_NB_PROCTRACE];
-    int      proctrace_trigmode[IMAGE_NB_PROCTRACE];
-    int      proctrace_status[IMAGE_NB_PROCTRACE];
+    int   nb_proctrace;
+    pid_t proctrace_pid[IMAGE_NB_PROCTRACE];
+    ino_t proctrace_inode[IMAGE_NB_PROCTRACE];
+    int   proctrace_trigmode[IMAGE_NB_PROCTRACE];
+    int   proctrace_status[IMAGE_NB_PROCTRACE];
 
     /* static string cache */
-    char     size_str[32];
+    char size_str[32];
 
     /* sparkline history */
-    float    spark_rate[OV_SPARKLINE_LEN];
-    int      spark_idx;
+    float spark_rate[OV_SPARKLINE_LEN];
+    int   spark_idx;
 
     /* graph node index (-1 if not in graph) */
-    int      node_idx;
+    int node_idx;
 
     /* new-item flash counter (frames remaining) */
-    int      is_new;
+    int is_new;
 } OV_STREAM;
 
 
@@ -196,67 +188,61 @@ typedef struct
 
 typedef struct
 {
-    char     name[STRINGMAXLEN_FPS_NAME];
-    char     description[200];
-    int      valid;
+    char name[STRINGMAXLEN_FPS_NAME];
+    char description[200];
+    int  valid;
 
     /* status */
     uint32_t md_status;
     pid_t    confpid;
     pid_t    runpid;
 
-    int64_t  mem_rss_kb;
-    int      conf_alive;
-    int      run_alive;
+    int64_t mem_rss_kb;
+    int     conf_alive;
+    int     run_alive;
 
     /* tmux tracking */
-    uint8_t  tmux_flags;
+    uint8_t tmux_flags;
 #define OV_TMUX_CTRL 0x01
 #define OV_TMUX_CONF 0x02
-#define OV_TMUX_RUN  0x04
+#define OV_TMUX_RUN 0x04
 
     /* stream-type parameters (for edges) */
     int      nb_stream_params;
-    char     stream_param_name[OV_FPS_MAX_STREAM_PARAMS]
-    [FUNCTION_PARAMETER_STRMAXLEN];
-    char     stream_param_value[OV_FPS_MAX_STREAM_PARAMS]
-    [FUNCTION_PARAMETER_STRMAXLEN];
+    char     stream_param_name[OV_FPS_MAX_STREAM_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     stream_param_value[OV_FPS_MAX_STREAM_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
     uint64_t stream_param_flags[OV_FPS_MAX_STREAM_PARAMS];
 
 #define OV_FPS_MAX_DISP_PARAMS 100
     /* display parameters */
     int      nb_disp_params;
-    char     disp_param_name[OV_FPS_MAX_DISP_PARAMS]
-    [FUNCTION_PARAMETER_STRMAXLEN];
-    char     disp_param_value[OV_FPS_MAX_DISP_PARAMS]
-    [FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_name[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_value[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
     uint32_t disp_param_type[OV_FPS_MAX_DISP_PARAMS];
     uint64_t disp_param_flags[OV_FPS_MAX_DISP_PARAMS];
 
     /* graph node index */
-    int      node_idx;
+    int node_idx;
 
     /* sparkline history: run-process Hz */
-    float    hz_hist[OV_SPARKLINE_LEN];
-    int      hz_hist_idx;
+    float hz_hist[OV_SPARKLINE_LEN];
+    int   hz_hist_idx;
 
     /* new-item flash counter (frames remaining) */
-    int      is_new;
+    int is_new;
 } OV_FPS;
 
 typedef struct
 {
     char name[80];
-    int is_dir;
-    int param_idx;
+    int  is_dir;
+    int  param_idx;
 } fps_tree_item_t;
 
-int ov_get_fps_tree_items(
-    const OV_FPS    *fps,
-    const char      *path,
-    fps_tree_item_t *items,
-    int             max_items);
-
+int ov_get_fps_tree_items(const OV_FPS    *fps,
+                          const char      *path,
+                          fps_tree_item_t *items,
+                          int              max_items);
 
 
 /* =========================================================
@@ -265,23 +251,23 @@ int ov_get_fps_tree_items(
 
 typedef struct
 {
-    char     name[40];
-    pid_t    PID;
-    int      valid;
-    int      active;
+    char  name[40];
+    pid_t PID;
+    int   valid;
+    int   active;
 
     /* status */
-    int      loopstat;
-    int      CTRLval;
+    int loopstat;
+    int CTRLval;
 
     /* counters */
-    int64_t  loopcnt;
-    int      cnt_active;  /**< loopcnt changed since last scan */
+    int64_t loopcnt;
+    int     cnt_active; /**< loopcnt changed since last scan */
 
     /* timing */
-    int64_t  dtmedian_iter_ns;
-    int64_t  dtmedian_exec_ns;
-    double   loop_hz;
+    int64_t dtmedian_iter_ns;
+    int64_t dtmedian_exec_ns;
+    double  loop_hz;
 
     /* trigger */
     char     trigstreamname[200];
@@ -292,26 +278,26 @@ typedef struct
     int      MeasureTiming;
 
     /* CPU & Memory */
-    int      rt_priority;
-    float    cpu_used;
-    int64_t  mem_rss_kb;
+    int     rt_priority;
+    float   cpu_used;
+    int64_t mem_rss_kb;
 
     /* sparkline history */
-    float    spark_cpu[OV_SPARKLINE_LEN];
-    int      spark_idx;
+    float spark_cpu[OV_SPARKLINE_LEN];
+    int   spark_idx;
 
     /* graph node index */
-    int      node_idx;
+    int node_idx;
 
     /* process start time (seconds since boot) */
-    int64_t  start_time_sec;
+    int64_t start_time_sec;
 
     /* stale detection: number of consecutive scans
      * where alive but loopcnt unchanged */
-    int      stale_count;
+    int stale_count;
 
     /* new-item flash counter (frames remaining) */
-    int      is_new;
+    int is_new;
 } OV_PROC;
 
 
@@ -326,8 +312,8 @@ typedef struct
     char           name[100];
     int            active;
     /* layout coords (for graph view) */
-    int            gx;
-    int            gy;
+    int gx;
+    int gy;
 } OV_NODE;
 
 
@@ -355,22 +341,22 @@ typedef struct
     OV_STREAM streams[OV_MAX_STREAMS];
     int       nb_streams;
 
-    OV_FPS    fps[OV_MAX_FPS];
-    int       nb_fps;
+    OV_FPS fps[OV_MAX_FPS];
+    int    nb_fps;
 
-    OV_PROC   procs[OV_MAX_PROCS];
-    int       nb_procs;
+    OV_PROC procs[OV_MAX_PROCS];
+    int     nb_procs;
 
     /* graph */
-    OV_NODE   nodes[OV_MAX_NODES];
-    int       nb_nodes;
+    OV_NODE nodes[OV_MAX_NODES];
+    int     nb_nodes;
 
-    OV_EDGE   edges[OV_MAX_EDGES];
-    int       nb_edges;
+    OV_EDGE edges[OV_MAX_EDGES];
+    int     nb_edges;
 
     /* scan metadata */
-    double    scan_time_ms;
-    uint64_t  scan_count;
+    double          scan_time_ms;
+    uint64_t        scan_count;
     struct timespec last_scan_time;
 } OV_MODEL;
 
@@ -451,7 +437,6 @@ void ov_scan_force_update(void);
 void ov_scan_cache_cleanup(void);
 
 
-
 /* =========================================================
  * Node / edge lookup helpers
  * ========================================================= */
@@ -463,9 +448,7 @@ void ov_scan_cache_cleanup(void);
  *
  * Return: stream index, or -1 if not found.
  */
-int ov_find_stream_by_inode(
-    const OV_MODEL *model,
-    ino_t          inode);
+int ov_find_stream_by_inode(const OV_MODEL *model, ino_t inode);
 
 /**
  * ov_find_stream_by_name - find stream index by name.
@@ -474,9 +457,7 @@ int ov_find_stream_by_inode(
  *
  * Return: stream index, or -1 if not found.
  */
-int ov_find_stream_by_name(
-    const OV_MODEL *model,
-    const char     *name);
+int ov_find_stream_by_name(const OV_MODEL *model, const char *name);
 
 /**
  * ov_find_proc_by_pid - find process index by PID.
@@ -485,9 +466,7 @@ int ov_find_stream_by_name(
  *
  * Return: process index, or -1 if not found.
  */
-int ov_find_proc_by_pid(
-    const OV_MODEL *model,
-    pid_t          pid);
+int ov_find_proc_by_pid(const OV_MODEL *model, pid_t pid);
 
 /**
  * ov_add_edge - add an edge to the graph if not duplicate.
@@ -497,12 +476,7 @@ int ov_find_proc_by_pid(
  * @type:  edge type
  * @label: human-readable label
  */
-void ov_add_edge(
-    OV_MODEL       *model,
-    int            src,
-    int            tgt,
-    ov_edge_type_t type,
-    const char     *label);
+void ov_add_edge(OV_MODEL *model, int src, int tgt, ov_edge_type_t type, const char *label);
 
 /* =========================================================
  * Sorting helpers
@@ -519,10 +493,7 @@ void ov_sort_set_depths(const int8_t *depths);
  * @key:   0=name, 1=type, 2=size, 3=Hz, 4=inode, 5=count
  * @dir:   0=ascending, 1=descending
  */
-void ov_sort_streams(
-    OV_MODEL *model,
-    int      key,
-    int      dir);
+void ov_sort_streams(OV_MODEL *model, int key, int dir);
 
 /**
  * ov_sort_procs - sort procs array in-place.
@@ -530,10 +501,7 @@ void ov_sort_streams(
  * @key:   0=name, 1=PID, 2=status, 3=Hz
  * @dir:   0=ascending, 1=descending
  */
-void ov_sort_procs(
-    OV_MODEL *model,
-    int      key,
-    int      dir);
+void ov_sort_procs(OV_MODEL *model, int key, int dir);
 
 /**
  * ov_sort_fps - sort FPS array in-place.
@@ -541,10 +509,7 @@ void ov_sort_procs(
  * @key:   0=name, 1=conf+run alive status
  * @dir:   0=ascending, 1=descending
  */
-void ov_sort_fps(
-    OV_MODEL *model,
-    int      key,
-    int      dir);
+void ov_sort_fps(OV_MODEL *model, int key, int dir);
 
 /**
  * ov_filter_build - build filtered index array.
@@ -556,12 +521,7 @@ void ov_sort_fps(
  *
  * Return: number of matching indices written to @out.
  */
-int ov_filter_build(
-    const char *pattern,
-    const char **names,
-    int        count,
-    int        *out,
-    int        max_out);
+int ov_filter_build(const char *pattern, const char **names, int count, int *out, int max_out);
 /**
  * ov_model_export_snapshot - dump model to a text file.
  * @m: model to export

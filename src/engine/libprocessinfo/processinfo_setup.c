@@ -21,8 +21,8 @@
  *     and no real-time priority.
  */
 PROCESSINFO *processinfo_setup(
-    char         *
-    pinfoname, // short name for the processinfo instance, avoid spaces, name should be human-readable
+    char *
+        pinfoname, // short name for the processinfo instance, avoid spaces, name should be human-readable
     const char *descriptionstring,
     const char *msgstring,
     const char *functionname,
@@ -33,25 +33,25 @@ PROCESSINFO *processinfo_setup(
 
     //fflush(stdout);
 
-    static PROCESSINFO *processinfo = NULL;
-    static int processinfoActive = 0;
+    static PROCESSINFO *processinfo       = NULL;
+    static int          processinfoActive = 0;
 
     DEBUG_TRACEPOINT(" ");
 
     DEBUG_TRACEPOINT(" ");
-    if(processinfoActive == 0)
+    if (processinfoActive == 0)
     {
         DEBUG_TRACEPOINT(" ");
 
         char pinfoname0[STRINGMAXLEN_PROCESSINFO_NAME];
         {
             int slen = snprintf(pinfoname0, STRINGMAXLEN_PROCESSINFO_NAME, "%s", pinfoname);
-            if(slen < 1)
+            if (slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort();
             }
-            if(slen >= STRINGMAXLEN_PROCESSINFO_NAME)
+            if (slen >= STRINGMAXLEN_PROCESSINFO_NAME)
             {
                 PRINT_ERROR("snprintf string truncation");
                 abort();
@@ -61,7 +61,7 @@ PROCESSINFO *processinfo_setup(
         DEBUG_TRACEPOINT(" ");
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
-        if(processinfo == NULL)
+        if (processinfo == NULL)
         {
             PRINT_ERROR("processinfo_shm_create(%s) failed", pinfoname0);
             DEBUG_TRACE_FEXIT();
@@ -78,7 +78,7 @@ PROCESSINFO *processinfo_setup(
     processinfo->source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0';
     strncpy(processinfo->source_FILE, filename, STRINGMAXLEN_PROCESSINFO_SRCFILE - 1);
     processinfo->source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0';
-    processinfo->source_LINE = linenumber;
+    processinfo->source_LINE                                       = linenumber;
     strncpy(processinfo->description, descriptionstring, STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1);
     processinfo->description[STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0';
     processinfo_WriteMessage(processinfo, msgstring);
@@ -103,9 +103,7 @@ PROCESSINFO *processinfo_setup(
  * status to ERROR, writes the error message to SHM, and then calls
  * `processinfo_cleanExit` to detach.
  */
-errno_t processinfo_error(
-    PROCESSINFO *processinfo,
-    char        *errmsgstring)
+errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
 {
     processinfo->loopstat = 4; // ERROR
     processinfo_WriteMessage(processinfo, errmsgstring);
@@ -125,12 +123,12 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
     processinfo->loopcnt  = 0;
     processinfo->loopstat = 1;
 
-    if(processinfo->RT_priority > -1)
+    if (processinfo->RT_priority > -1)
     {
         struct sched_param schedpar;
         schedpar.sched_priority = processinfo->RT_priority;
 
-        if(sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0)
+        if (sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0)
         {
             // PRINT_ERROR("sched_setscheduler: %s", strerror(errno));
         }

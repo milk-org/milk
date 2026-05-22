@@ -22,7 +22,6 @@ struct termios ansi__orig_termios;
 int            ansi__raw_active = 0;
 
 /* Mouse event — populated by ansi_get_key() */
-struct ansi_mouse_event ansi__last_mouse = {0, 0, 0};
+struct ansi_mouse_event ansi__last_mouse = { 0, 0, 0 };
 
 /* Signal flags */
-

@@ -11,7 +11,7 @@
  * but we provide a fallback here just in case.
  */
 #ifndef LONGLONG
-#define LONGLONG long long
+#    define LONGLONG long long
 #endif
 
 #include "CLIcore.h"
@@ -37,8 +37,7 @@ DATA __attribute__((used)) data;
  * because CLIcore_standalone.h already
  * provides a static CLIPID.
  */
-#if !defined(FPS_STANDALONE_SKIP_STUBS) \
-    && !defined(MILK_NO_CLI)
+#if !defined(FPS_STANDALONE_SKIP_STUBS) && !defined(MILK_NO_CLI)
 pid_t CLIPID;
 #endif
 
@@ -51,18 +50,16 @@ pid_t CLIPID;
  * provides these as static inline stubs, so we skip them here.
  */
 
-#if !defined(FPS_STANDALONE_SKIP_STUBS) \
-    && !defined(MILK_NO_CLI)
+#if !defined(FPS_STANDALONE_SKIP_STUBS) && !defined(MILK_NO_CLI)
 /**
  * @brief Stub: no-op module registration for standalone.
  */
-errno_t RegisterModule(
-    const char *restrict FileName __attribute__((unused)),
-    const char *restrict PackageName __attribute__((unused)),
-    const char *restrict InfoString __attribute__((unused)),
-    int                  versionmajor __attribute__((unused)),
-    int                  versionminor __attribute__((unused)),
-    int                  versionpatch __attribute__((unused)))
+errno_t RegisterModule(const char *restrict FileName __attribute__((unused)),
+                       const char *restrict PackageName __attribute__((unused)),
+                       const char *restrict InfoString __attribute__((unused)),
+                       int versionmajor __attribute__((unused)),
+                       int versionminor __attribute__((unused)),
+                       int versionpatch __attribute__((unused)))
 {
     return RETURN_SUCCESS;
 }
@@ -70,14 +67,13 @@ errno_t RegisterModule(
 /**
  * @brief Stub: no-op CLI command registration.
  */
-uint32_t RegisterCLIcommand(
-    const char *restrict CLIkey __attribute__((unused)),
-    const char *restrict CLImodulesrc __attribute__((unused)),
-    errno_t (*CLIfptr)() __attribute__((unused)),
-    const char *restrict CLIinfo __attribute__((unused)),
-    const char *restrict CLIsyntax __attribute__((unused)),
-    const char *restrict CLIexample __attribute__((unused)),
-    const char *restrict CLICcall __attribute__((unused)))
+uint32_t RegisterCLIcommand(const char *restrict CLIkey __attribute__((unused)),
+                            const char *restrict CLImodulesrc __attribute__((unused)),
+                            errno_t (*CLIfptr)() __attribute__((unused)),
+                            const char *restrict CLIinfo __attribute__((unused)),
+                            const char *restrict CLIsyntax __attribute__((unused)),
+                            const char *restrict CLIexample __attribute__((unused)),
+                            const char *restrict CLICcall __attribute__((unused)))
 {
     return 0;
 }
@@ -85,9 +81,8 @@ uint32_t RegisterCLIcommand(
 /**
  * @brief Stub: no-op CLI command registration (v2).
  */
-uint32_t RegisterCLIcmd(
-    CLICMDDATA CLIcmddata __attribute__((unused)),
-    errno_t (*CLIfptr)() __attribute__((unused)))
+uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata __attribute__((unused)),
+                        errno_t (*CLIfptr)() __attribute__((unused)))
 {
     return 0;
 }
@@ -102,18 +97,14 @@ uint32_t RegisterCLIcmd(
  * @param NB_images   Number of entries in imagearray
  * @return imageID index or -1 if not found
  */
-imageID image_ID(
-    const char *name,
-    IMAGE      *imagearray __attribute__((unused)),
-    long       NB_images __attribute__((unused)))
+imageID image_ID(const char *name,
+                 IMAGE      *imagearray __attribute__((unused)),
+                 long        NB_images __attribute__((unused)))
 {
-    for(long ii = 0; ii < NB_images; ii++)
+    for (long ii = 0; ii < NB_images; ii++)
     {
-        if(imagearray[ii].used == 1 &&
-                strncmp(imagearray[ii].name,
-                        name,
-                        STRINGMAXLEN_IMAGE_NAME)
-                == 0)
+        if (imagearray[ii].used == 1 &&
+            strncmp(imagearray[ii].name, name, STRINGMAXLEN_IMAGE_NAME) == 0)
         {
             return ii;
         }
@@ -126,62 +117,55 @@ imageID image_ID(
  * ncurses stubs (always stub in no-CLI)
  * ===================================== */
 
-errno_t
-functionparameter_CTRLscreen(
-    uint32_t mode __attribute__((unused)),
-    char     *fpsnamemask __attribute__((unused)),
-    char     *fpsCTRLfifoname __attribute__((unused)),
-    double   timeout_sec __attribute__((unused)))
+errno_t functionparameter_CTRLscreen(uint32_t mode __attribute__((unused)),
+                                     char    *fpsnamemask __attribute__((unused)),
+                                     char    *fpsCTRLfifoname __attribute__((unused)),
+                                     double   timeout_sec __attribute__((unused)))
 {
     return 0;
 }
 
-errno_t
-processinfo_CTRLscreen(void)
+errno_t processinfo_CTRLscreen(void)
 {
     return 0;
 }
 
-void
-TUI_printfw(
-    const char *fmt __attribute__((unused)),
-    ...)
+void TUI_printfw(const char *fmt __attribute__((unused)), ...)
 {
 }
 
 /** @brief No-op stub: cursor newline (standalone). */
-void TUI_newline(void) {}
+void TUI_newline(void)
+{
+}
 /** @brief No-op stub: enable reverse video (standalone). */
-void screenprint_setreverse(void) {}
+void screenprint_setreverse(void)
+{
+}
 /** @brief No-op stub: disable reverse video (standalone). */
-void screenprint_unsetreverse(void) {}
-
-void
-screenprint_setcolor(int p __attribute__((unused)))
+void screenprint_unsetreverse(void)
 {
 }
 
-void
-screenprint_unsetcolor(int p __attribute__((unused)))
+void screenprint_setcolor(int p __attribute__((unused)))
 {
 }
 
-void
-TUI_set_screenprintmode(
-    int m __attribute__((unused)))
+void screenprint_unsetcolor(int p __attribute__((unused)))
 {
 }
 
-errno_t
-TUI_init_terminal(
-    short unsigned int *wrow __attribute__((unused)),
-    short unsigned int *wcol __attribute__((unused)))
+void TUI_set_screenprintmode(int m __attribute__((unused)))
+{
+}
+
+errno_t TUI_init_terminal(short unsigned int *wrow __attribute__((unused)),
+                          short unsigned int *wcol __attribute__((unused)))
 {
     return 0;
 }
 
-int
-get_singlechar_nonblock(void)
+int get_singlechar_nonblock(void)
 {
     return -1;
 }

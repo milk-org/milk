@@ -30,12 +30,11 @@
 /* ---- Bitset helpers for related-item tracking ---- */
 
 #define BITS_PER_WORD 64
-#define OV_BSET_WORDS(n) \
-    (((n) + BITS_PER_WORD - 1) / BITS_PER_WORD)
+#define OV_BSET_WORDS(n) (((n) + BITS_PER_WORD - 1) / BITS_PER_WORD)
 
 #define OV_STREAM_WORDS OV_BSET_WORDS(OV_MAX_STREAMS)
-#define OV_FPS_WORDS    OV_BSET_WORDS(OV_MAX_FPS)
-#define OV_PROC_WORDS   OV_BSET_WORDS(OV_MAX_PROCS)
+#define OV_FPS_WORDS OV_BSET_WORDS(OV_MAX_FPS)
+#define OV_PROC_WORDS OV_BSET_WORDS(OV_MAX_PROCS)
 
 typedef struct
 {
@@ -52,78 +51,43 @@ typedef struct
      *  negative = upstream (ancestor),
      *  positive = downstream (descendant),
      *  0 = not in lineage (or is the root). */
-    int8_t   stream_depth[OV_MAX_STREAMS];
+    int8_t stream_depth[OV_MAX_STREAMS];
 } OV_RELATED;
 
 /* ---- Shared render utilities ---- */
 
-void render_pad_spaces(
-    int chars_written,
-    int panel_width);
-int ov_render_header_text(
-    const char *text,
-    int        hs,
-    int        max_vis_width,
-    ov_rgb_t   base_fg);
+void render_pad_spaces(int chars_written, int panel_width);
+int  ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg);
 
-void render_scroll_indicators(
-    OV_RECT  r,
-    int      scroll,
-    int      max_rows,
-    int      total,
-    ov_rgb_t accent);
+void render_scroll_indicators(OV_RECT r, int scroll, int max_rows, int total, ov_rgb_t accent);
 
-void clear_row(
-    int      row,
-    int      col,
-    int      width,
-    ov_rgb_t bg);
+void clear_row(int row, int col, int width, ov_rgb_t bg);
 
-int ov_filter_build(
-    const char *filter,
-    const char *names[],
-    int count,
-    int *out_idx,
-    int max_out);
+int ov_filter_build(const char *filter, const char *names[], int count, int *out_idx, int max_out);
 
-void bset(
-    uint64_t *words,
-    int      idx);
-int  bget(
-    const uint64_t *words,
-    int            idx);
+void bset(uint64_t *words, int idx);
+int  bget(const uint64_t *words, int idx);
 
 const char *render_dtype(uint8_t dt);
 int         dtype_bytesize(uint8_t dt);
 
-void ov_compute_related(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m,
-    OV_RELATED      *rel);
+void ov_compute_related(const OV_LAYOUT *lay, const OV_MODEL *m, OV_RELATED *rel);
 
-void ov_hittest(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m,
-    int            mr,
-    int            mc);
+void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc);
 
-void ov_hittest_resolve_globals(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m);
+void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m);
 
-void render_highlighted_name(
-    const char *name,
-    int        max_len,
-    regex_t    *re,
-    int        has_re,
-    ov_rgb_t   normal_fg,
-    ov_rgb_t   row_bg);
+void render_highlighted_name(const char *name,
+                             int         max_len,
+                             regex_t    *re,
+                             int         has_re,
+                             ov_rgb_t    normal_fg,
+                             ov_rgb_t    row_bg);
 
 /* Inline trigger-mode short label */
-static inline const char *render_trigmode_label(
-    int mode)
+static inline const char *render_trigmode_label(int mode)
 {
-    switch(mode)
+    switch (mode)
     {
     case 0:
         return "IMM";
@@ -145,21 +109,17 @@ static inline const char *render_trigmode_label(
 }
 
 /* Inline memory-size formatter */
-static inline void format_mem_kb(
-    char    *buf,
-    size_t  sz,
-    int64_t kb)
+static inline void format_mem_kb(char *buf, size_t sz, int64_t kb)
 {
-    if(kb <= 0)
+    if (kb <= 0)
     {
         snprintf(buf, sz, "   -");
     }
-    else if(kb >= 1024 * 1024)
+    else if (kb >= 1024 * 1024)
     {
-        snprintf(buf, sz, "%4.1fG",
-                 (double)kb / (1024.0 * 1024.0));
+        snprintf(buf, sz, "%4.1fG", (double) kb / (1024.0 * 1024.0));
     }
-    else if(kb >= 1024)
+    else if (kb >= 1024)
     {
         snprintf(buf, sz, "%4" PRId64 "M", kb / 1024);
     }
@@ -170,21 +130,17 @@ static inline void format_mem_kb(
 }
 
 /* Inline sort column label builder */
-static inline int sort_col_label(
-    char       *buf,
-    int        bufsz,
-    const char *label,
-    int        col_key,
-    int        cur_key,
-    int        desc,
-    int        visual_width)
+static inline int sort_col_label(char       *buf,
+                                 int         bufsz,
+                                 const char *label,
+                                 int         col_key,
+                                 int         cur_key,
+                                 int         desc,
+                                 int         visual_width)
 {
-    if(col_key == cur_key)
+    if (col_key == cur_key)
     {
-        snprintf(buf, bufsz, "\x01%s%s\x02",
-                 label,
-                 desc ? "\xe2\x96\xbc"
-                 : "\xe2\x96\xb2");
+        snprintf(buf, bufsz, "\x01%s%s\x02", label, desc ? "\xe2\x96\xbc" : "\xe2\x96\xb2");
         return visual_width + 4;
     }
     else
@@ -197,27 +153,18 @@ static inline int sort_col_label(
 /* Inline semaphore color helper */
 static inline ov_rgb_t ov_get_sem_color(int val)
 {
-    if(val == 0)
+    if (val == 0)
     {
-        return (ov_rgb_t)
-        {
-            0, 150, 0
-        };
+        return (ov_rgb_t) { 0, 150, 0 };
     }
-    if(val >= 10)
+    if (val >= 10)
     {
-        return (ov_rgb_t)
-        {
-            160, 90, 30
-        };
+        return (ov_rgb_t) { 160, 90, 30 };
     }
     int r = 100 + (val - 1) * (180 - 100) / 9;
     int g = 120 - (val - 1) * (120 - 40) / 9;
     int b = 30;
-    return (ov_rgb_t)
-    {
-        r, g, b
-    };
+    return (ov_rgb_t) { r, g, b };
 }
 
 /**
@@ -229,12 +176,9 @@ static inline ov_rgb_t ov_get_sem_color(int val)
  * background (selected/frozen/related rows stay as-is).
  * Otherwise alternates between OV_BG_PANEL and OV_BG_PANEL_ALT.
  */
-static inline ov_rgb_t zebra_bg(
-    ov_rgb_t base_bg,
-    int      row_idx)
+static inline ov_rgb_t zebra_bg(ov_rgb_t base_bg, int row_idx)
 {
-    if(base_bg.r != 30 || base_bg.g != 32
-            || base_bg.b != 40)
+    if (base_bg.r != 30 || base_bg.g != 32 || base_bg.b != 40)
     {
         return base_bg;
     }
@@ -248,16 +192,12 @@ static inline ov_rgb_t zebra_bg(
  * @width:  panel inner width
  * @accent: foreground color for the separator
  */
-static inline void render_separator(
-    int      row,
-    int      col,
-    int      width,
-    ov_rgb_t accent)
+static inline void render_separator(int row, int col, int width, ov_rgb_t accent)
 {
     ov_buf_pos(row, col);
     ov_theme_bg(OV_BG_PANEL);
     ov_theme_fg(accent);
-    for(int cc = 0; cc < width; cc++)
+    for (int cc = 0; cc < width; cc++)
     {
         ov_buf_printf("\xe2\x94\x80"); /* ─ */
     }
@@ -272,15 +212,14 @@ static inline void render_separator(
  * @accent:   accent color for the strip
  * @row_bg:   current row background for non-focused
  */
-static inline void render_focus_strip(
-    int      row,
-    int      col,
-    int      focused,
-    ov_rgb_t accent,
-    ov_rgb_t row_bg)
+static inline void render_focus_strip(int      row,
+                                      int      col,
+                                      int      focused,
+                                      ov_rgb_t accent,
+                                      ov_rgb_t row_bg)
 {
     ov_buf_pos(row, col);
-    if(focused)
+    if (focused)
     {
         ov_theme_bg(accent);
         ov_buf_printf(" ");
@@ -295,54 +234,31 @@ static inline void render_focus_strip(
 
 /* ---- Panel functions (split files) ---- */
 
-void ov_render_streams_panel(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel);
+void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel);
 
-void ov_render_procs_panel(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel);
+void ov_render_procs_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel);
 
-void ov_render_fps_panel(
-    const OV_LAYOUT  *lay,
-    const OV_MODEL   *m,
-    const OV_RELATED *rel);
+void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel);
 
-int ov_render_detail_panel(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m);
+int ov_render_detail_panel(OV_LAYOUT *lay, const OV_MODEL *m);
 
-int ov_render_resources_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m);
+int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 
-void ov_render_graph_panel(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m);
+void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m);
 
-void ov_render_fps_params_panel(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m);
+void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m);
 
-void ov_render_status(
-    const OV_LAYOUT *lay,
-    const OV_MODEL  *m);
+void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m);
 
 void ov_render_cmdlog(const OV_LAYOUT *lay);
 
 void ov_render_help(const OV_LAYOUT *lay);
-void ov_render_preview_line(
-    OV_LAYOUT      *lay,
-    const OV_MODEL *m);
+void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m);
 
 /* Help panel utilities */
 int ov_help_nb_sections(void);
 int ov_help_visible_count(const OV_LAYOUT *lay);
-int ov_help_toggle_at(
-    OV_LAYOUT *lay,
-    int       vis_row);
+int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row);
 
 extern float ov_scan_get_interval(void);
 
@@ -354,50 +270,40 @@ extern float ov_scan_get_interval(void);
  * @width: number of characters to render
  * @fg:    foreground color
  */
-static inline void render_sparkline(
-    const float *hist,
-    int         hidx,
-    int         len,
-    int         width,
-    ov_rgb_t    fg)
+static inline void render_sparkline(const float *hist, int hidx, int len, int width, ov_rgb_t fg)
 {
     /* Unicode block elements: 1/8 to 8/8 */
-    static const char *bars[] =
-    {
-        "\xe2\x96\x81", "\xe2\x96\x82",
-        "\xe2\x96\x83", "\xe2\x96\x84",
-        "\xe2\x96\x85", "\xe2\x96\x86",
-        "\xe2\x96\x87", "\xe2\x96\x88"
-    };
+    static const char *bars[] = { "\xe2\x96\x81", "\xe2\x96\x82", "\xe2\x96\x83", "\xe2\x96\x84",
+                                  "\xe2\x96\x85", "\xe2\x96\x86", "\xe2\x96\x87", "\xe2\x96\x88" };
     /* Find max in history for scaling */
     float mx = 0.001f;
-    for(int ii = 0; ii < len; ii++)
+    for (int ii = 0; ii < len; ii++)
     {
-        if(hist[ii] > mx)
+        if (hist[ii] > mx)
         {
             mx = hist[ii];
         }
     }
     ov_theme_fg(fg);
     int start = hidx - width;
-    if(start < 0)
+    if (start < 0)
     {
         start += len;
     }
-    for(int ii = 0; ii < width; ii++)
+    for (int ii = 0; ii < width; ii++)
     {
-        int idx = (start + ii) % len;
-        float v = hist[idx];
-        int level = (int)(v / mx * 7.0f);
-        if(level < 0)
+        int   idx   = (start + ii) % len;
+        float v     = hist[idx];
+        int   level = (int) (v / mx * 7.0f);
+        if (level < 0)
         {
             level = 0;
         }
-        if(level > 7)
+        if (level > 7)
         {
             level = 7;
         }
-        if(v < 0.001f)
+        if (v < 0.001f)
         {
             ov_buf_printf(" ");
         }
@@ -415,40 +321,27 @@ static inline void render_sparkline(
  * @sz:   buffer size
  * @secs: uptime in seconds
  */
-static inline void format_uptime(
-    char    *buf,
-    int     sz,
-    int64_t secs)
+static inline void format_uptime(char *buf, int sz, int64_t secs)
 {
-    if(secs < 0)
+    if (secs < 0)
     {
         secs = 0;
     }
-    if(secs < 60)
+    if (secs < 60)
     {
-        snprintf(buf, (size_t) sz,
-                 "%ds", (int) secs);
+        snprintf(buf, (size_t) sz, "%ds", (int) secs);
     }
-    else if(secs < 3600)
+    else if (secs < 3600)
     {
-        snprintf(buf, (size_t) sz,
-                 "%dm%ds",
-                 (int)(secs / 60),
-                 (int)(secs % 60));
+        snprintf(buf, (size_t) sz, "%dm%ds", (int) (secs / 60), (int) (secs % 60));
     }
-    else if(secs < 86400)
+    else if (secs < 86400)
     {
-        snprintf(buf, (size_t) sz,
-                 "%dh%dm",
-                 (int)(secs / 3600),
-                 (int)((secs % 3600) / 60));
+        snprintf(buf, (size_t) sz, "%dh%dm", (int) (secs / 3600), (int) ((secs % 3600) / 60));
     }
     else
     {
-        snprintf(buf, (size_t) sz,
-                 "%dd%dh",
-                 (int)(secs / 86400),
-                 (int)((secs % 86400) / 3600));
+        snprintf(buf, (size_t) sz, "%dd%dh", (int) (secs / 86400), (int) ((secs % 86400) / 3600));
     }
 }
 

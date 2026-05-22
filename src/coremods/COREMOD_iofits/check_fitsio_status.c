@@ -19,26 +19,22 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
  * If the status is non-zero, prints the cfitsio
  * error message and optionally aborts.
  */
-int check_FITSIO_status(
-    const char *restrict cfile,
-    const char *restrict cfunc,
-    long                 cline,
-    int                  print)
+int check_FITSIO_status(const char *restrict cfile,
+                        const char *restrict cfunc,
+                        long cline,
+                        int  print)
 {
     int Ferr = 0;
 
-    if(COREMOD_iofits_data.FITSIO_status != 0)
+    if (COREMOD_iofits_data.FITSIO_status != 0)
     {
-        if(print == 1)
+        if (print == 1)
         {
             char errstr[STRINGMAXLEN_FITSIOCHECK_ERRSTRING];
             fits_get_errstatus(COREMOD_iofits_data.FITSIO_status, errstr);
-            fprintf(stderr,
-                    "%c[%d;%dmFITSIO error %d [%s, %s, %ld]: %s%c[%d;m\n\a",
-                    (char) 27,
-                    1,
-                    31,
-                    COREMOD_iofits_data.FITSIO_status, cfile, cfunc, cline, errstr, (char) 27, 0);
+            fprintf(stderr, "%c[%d;%dmFITSIO error %d [%s, %s, %ld]: %s%c[%d;m\n\a", (char) 27, 1,
+                    31, COREMOD_iofits_data.FITSIO_status, cfile, cfunc, cline, errstr, (char) 27,
+                    0);
         }
         Ferr = COREMOD_iofits_data.FITSIO_status;
     }

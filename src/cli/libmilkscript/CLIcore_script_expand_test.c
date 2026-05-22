@@ -31,10 +31,8 @@
 #include "CLIcore_script.h"
 
 /* processinfo functions — linked via milkprocessinfo */
-extern PROCESSINFO *processinfo_shm_link(
-    const char *pname, int *fd);
-extern errno_t processinfo_procdirname(
-    char *procdname);
+extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
+extern errno_t      processinfo_procdirname(char *procdname);
 
 
 /* ============================================================
@@ -54,51 +52,48 @@ extern errno_t processinfo_procdirname(
  *
  * Returns 1 if @op was recognised, 0 otherwise.
  */
-static int test_unary_file(
-    const char *op,
-    const char *arg,
-    int        *result)
+static int test_unary_file(const char *op, const char *arg, int *result)
 {
-    if(strcmp(op, "-r") == 0)
+    if (strcmp(op, "-r") == 0)
     {
         *result = access(arg, R_OK) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-w") == 0)
+    if (strcmp(op, "-w") == 0)
     {
         *result = access(arg, W_OK) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-x") == 0)
+    if (strcmp(op, "-x") == 0)
     {
         *result = access(arg, X_OK) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-L") == 0)
+    if (strcmp(op, "-L") == 0)
     {
         struct stat sb;
         *result = (lstat(arg, &sb) == 0 && S_ISLNK(sb.st_mode)) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-f") == 0)
+    if (strcmp(op, "-f") == 0)
     {
         struct stat sb;
         *result = (stat(arg, &sb) == 0 && S_ISREG(sb.st_mode)) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-d") == 0)
+    if (strcmp(op, "-d") == 0)
     {
         struct stat sb;
         *result = (stat(arg, &sb) == 0 && S_ISDIR(sb.st_mode)) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-e") == 0)
+    if (strcmp(op, "-e") == 0)
     {
         struct stat sb;
         *result = stat(arg, &sb) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-s") == 0)
+    if (strcmp(op, "-s") == 0)
     {
         struct stat sb;
         *result = (stat(arg, &sb) == 0 && sb.st_size > 0) ? 1 : 0;
@@ -130,25 +125,22 @@ static int test_unary_file(
  *
  * Returns 1 if @op was recognised, 0 otherwise.
  */
-static int test_unary_shm(
-    const char *op,
-    const char *arg,
-    int        *result)
+static int test_unary_shm(const char *op, const char *arg, int *result)
 {
-    if(strcmp(op, "-n") == 0)
+    if (strcmp(op, "-n") == 0)
     {
         *result = strlen(arg) > 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-z") == 0)
+    if (strcmp(op, "-z") == 0)
     {
         *result = strlen(arg) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-v") == 0)
+    if (strcmp(op, "-v") == 0)
     {
         const char *vv = cli_var_get(arg);
-        if(vv != NULL)
+        if (vv != NULL)
         {
             *result = 1;
             return 1;
@@ -156,36 +148,30 @@ static int test_unary_shm(
         *result = getenv(arg) != NULL ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-S") == 0)
+    if (strcmp(op, "-S") == 0)
     {
-        char shmpath[512];
+        char        shmpath[512];
         struct stat sb;
         snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, arg);
         *result = stat(shmpath, &sb) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-F") == 0)
+    if (strcmp(op, "-F") == 0)
     {
-        char shmpath[512];
+        char        shmpath[512];
         struct stat sb;
         snprintf(shmpath, sizeof(shmpath), "%s/fps.%s.shm", dcshmdir, arg);
         *result = stat(shmpath, &sb) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-P") == 0)
+    if (strcmp(op, "-P") == 0)
     {
         *result = 0;
-        if(pinfolist != NULL)
+        if (pinfolist != NULL)
         {
-            for(int pi = 0;
-                pi < PROCESSINFOLISTSIZE;
-                pi++)
+            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
             {
-                if(pinfolist->active[pi]
-                   && strcmp(
-                       pinfolist
-                           ->pnamearray[pi],
-                       arg) == 0)
+                if (pinfolist->active[pi] && strcmp(pinfolist->pnamearray[pi], arg) == 0)
                 {
                     *result = 1;
                     break;
@@ -194,43 +180,38 @@ static int test_unary_shm(
         }
         return 1;
     }
-    if(strcmp(op, "-R") == 0)
+    if (strcmp(op, "-R") == 0)
     {
         /* Process registered AND running */
         *result = 0;
-        if(pinfolist != NULL)
+        if (pinfolist != NULL)
         {
-            for(int pi = 0;
-                pi < PROCESSINFOLISTSIZE;
-                pi++)
+            for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
             {
-                if(pinfolist->active[pi]
-                   && strcmp(
-                       pinfolist
-                           ->pnamearray[pi],
-                       arg) == 0)
+                if (pinfolist->active[pi] && strcmp(pinfolist->pnamearray[pi], arg) == 0)
                 {
                     pid_t fpid = pinfolist->PIDarray[pi];
-                    if(fpid > 0)
+                    if (fpid > 0)
                     {
                         char pfn[512];
                         char pdname[256];
                         processinfo_procdirname(pdname);
-                        snprintf(pfn, sizeof(pfn), "%s/proc.%d" ".shm", pdname, (int) fpid);
-                        int pfd = -1;
+                        snprintf(pfn, sizeof(pfn),
+                                 "%s/proc.%d"
+                                 ".shm",
+                                 pdname, (int) fpid);
+                        int          pfd    = -1;
                         PROCESSINFO *pi_shm = processinfo_shm_link(pfn, &pfd);
-                        if(pi_shm != MAP_FAILED
-                           && pi_shm != NULL)
+                        if (pi_shm != MAP_FAILED && pi_shm != NULL)
                         {
-                            if(pi_shm->CTRLval
-                               == PROCESSINFO_CTRLVAL_RUN)
+                            if (pi_shm->CTRLval == PROCESSINFO_CTRLVAL_RUN)
                             {
                                 *result = 1;
                             }
                             munmap(pi_shm, sizeof(PROCESSINFO));
                             close(pfd);
                         }
-                        else if(pfd >= 0)
+                        else if (pfd >= 0)
                         {
                             close(pfd);
                         }
@@ -262,52 +243,47 @@ static int test_unary_shm(
  *
  * Returns 1 if @op was recognised, 0 otherwise.
  */
-static int test_binary_op(
-    const char *lhs,
-    const char *op,
-    const char *rhs,
-    int        *result)
+static int test_binary_op(const char *lhs, const char *op, const char *rhs, int *result)
 {
     double lv = strtod(lhs, NULL);
     double rv = strtod(rhs, NULL);
 
-    if(strcmp(op, "-eq") == 0)
+    if (strcmp(op, "-eq") == 0)
     {
         *result = (lv == rv) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-ne") == 0)
+    if (strcmp(op, "-ne") == 0)
     {
         *result = (lv != rv) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-lt") == 0)
+    if (strcmp(op, "-lt") == 0)
     {
         *result = (lv < rv) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-gt") == 0)
+    if (strcmp(op, "-gt") == 0)
     {
         *result = (lv > rv) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-le") == 0)
+    if (strcmp(op, "-le") == 0)
     {
         *result = (lv <= rv) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "-ge") == 0)
+    if (strcmp(op, "-ge") == 0)
     {
         *result = (lv >= rv) ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "==") == 0
-       || strcmp(op, "=") == 0)
+    if (strcmp(op, "==") == 0 || strcmp(op, "=") == 0)
     {
         *result = strcmp(lhs, rhs) == 0 ? 1 : 0;
         return 1;
     }
-    if(strcmp(op, "!=") == 0)
+    if (strcmp(op, "!=") == 0)
     {
         *result = strcmp(lhs, rhs) != 0 ? 1 : 0;
         return 1;
@@ -344,15 +320,13 @@ int cli_eval_test(const char *expr)
 
     /* Strip leading/trailing whitespace */
     char *p = buf;
-    while(*p == ' ' || *p == '\t')
+    while (*p == ' ' || *p == '\t')
     {
         p++;
     }
     {
         size_t len = strlen(p);
-        while(len > 0
-              && (p[len - 1] == ' '
-                  || p[len - 1] == '\t'))
+        while (len > 0 && (p[len - 1] == ' ' || p[len - 1] == '\t'))
         {
             p[--len] = '\0';
         }
@@ -360,45 +334,45 @@ int cli_eval_test(const char *expr)
 
     /* Tokenize into words */
     char *tokens[16];
-    int ntok = 0;
+    int   ntok = 0;
     {
         char *saveptr = NULL;
-        char *tok = strtok_r(p, " \t", &saveptr);
-        while(tok != NULL && ntok < 16)
+        char *tok     = strtok_r(p, " \t", &saveptr);
+        while (tok != NULL && ntok < 16)
         {
             tokens[ntok++] = tok;
-            tok = strtok_r(NULL, " \t", &saveptr);
+            tok            = strtok_r(NULL, " \t", &saveptr);
         }
     }
 
-    if(ntok == 0)
+    if (ntok == 0)
     {
         return 0;
     }
 
     /* Logical OR */
-    for(int i = 0; i < ntok; i++)
+    for (int i = 0; i < ntok; i++)
     {
-        if(strcmp(tokens[i], "-o") == 0)
+        if (strcmp(tokens[i], "-o") == 0)
         {
             char left[512]  = "";
             char right[512] = "";
-            for(int j = 0; j < i; j++)
+            for (int j = 0; j < i; j++)
             {
-                if(j > 0)
+                if (j > 0)
                 {
                     strncat(left, " ", sizeof(left) - strlen(left) - 1);
                 }
                 strncat(left, tokens[j], sizeof(left) - strlen(left) - 1);
             }
-            if(cli_eval_test(left))
+            if (cli_eval_test(left))
             {
                 return 1;
             }
 
-            for(int j = i + 1; j < ntok; j++)
+            for (int j = i + 1; j < ntok; j++)
             {
-                if(j > i + 1)
+                if (j > i + 1)
                 {
                     strncat(right, " ", sizeof(right) - strlen(right) - 1);
                 }
@@ -409,12 +383,11 @@ int cli_eval_test(const char *expr)
     }
 
     /* POSIX regex match: str =~ pattern */
-    if(ntok == 3
-       && strcmp(tokens[1], "=~") == 0)
+    if (ntok == 3 && strcmp(tokens[1], "=~") == 0)
     {
         regex_t regex;
-        int reti = regcomp(&regex, tokens[2], REG_EXTENDED);
-        if(reti)
+        int     reti = regcomp(&regex, tokens[2], REG_EXTENDED);
+        if (reti)
         {
             return 0;
         }
@@ -424,28 +397,28 @@ int cli_eval_test(const char *expr)
     }
 
     /* Logical AND */
-    for(int i = 0; i < ntok; i++)
+    for (int i = 0; i < ntok; i++)
     {
-        if(strcmp(tokens[i], "-a") == 0)
+        if (strcmp(tokens[i], "-a") == 0)
         {
             char left[512]  = "";
             char right[512] = "";
-            for(int j = 0; j < i; j++)
+            for (int j = 0; j < i; j++)
             {
-                if(j > 0)
+                if (j > 0)
                 {
                     strncat(left, " ", sizeof(left) - strlen(left) - 1);
                 }
                 strncat(left, tokens[j], sizeof(left) - strlen(left) - 1);
             }
-            if(!cli_eval_test(left))
+            if (!cli_eval_test(left))
             {
                 return 0;
             }
 
-            for(int j = i + 1; j < ntok; j++)
+            for (int j = i + 1; j < ntok; j++)
             {
-                if(j > i + 1)
+                if (j > i + 1)
                 {
                     strncat(right, " ", sizeof(right) - strlen(right) - 1);
                 }
@@ -456,32 +429,27 @@ int cli_eval_test(const char *expr)
     }
 
     /* Unary tests */
-    if(ntok == 2)
+    if (ntok == 2)
     {
         int result;
-        if(test_unary_shm(
-               tokens[0], tokens[1],
-               &result))
+        if (test_unary_shm(tokens[0], tokens[1], &result))
         {
             return result;
         }
-        if(test_unary_file(
-               tokens[0], tokens[1],
-               &result))
+        if (test_unary_file(tokens[0], tokens[1], &result))
         {
             return result;
         }
     }
 
     /* Logical NOT: ! expr */
-    if(ntok >= 2
-       && strcmp(tokens[0], "!") == 0)
+    if (ntok >= 2 && strcmp(tokens[0], "!") == 0)
     {
         char subexpr[512];
         subexpr[0] = '\0';
-        for(int i = 1; i < ntok; i++)
+        for (int i = 1; i < ntok; i++)
         {
-            if(i > 1)
+            if (i > 1)
             {
                 strncat(subexpr, " ", sizeof(subexpr) - strlen(subexpr) - 1);
             }
@@ -491,18 +459,16 @@ int cli_eval_test(const char *expr)
     }
 
     /* Single value: true if non-empty */
-    if(ntok == 1)
+    if (ntok == 1)
     {
         return strlen(tokens[0]) > 0 ? 1 : 0;
     }
 
     /* Binary: val1 op val2 */
-    if(ntok >= 3)
+    if (ntok >= 3)
     {
         int result;
-        if(test_binary_op(
-               tokens[0], tokens[1],
-               tokens[2], &result))
+        if (test_binary_op(tokens[0], tokens[1], tokens[2], &result))
         {
             return result;
         }

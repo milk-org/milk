@@ -77,10 +77,7 @@ typedef struct FPS_CLI_BINDING_
  *   };
  */
 #define FPS_X_FARG(kw, ptr, fctype, is_primary, flag, desc) \
-    { fctype, kw, desc, "", \
-      flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), \
-      NULL, NULL },
-
+    { fctype, kw, desc, "", flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), NULL, NULL },
 
 
 /**
@@ -99,22 +96,17 @@ typedef struct FPS_CLI_BINDING_
  *   FPS_CMDSETTINGS_INIT(rx, CLIcmddata_rx,
  *                        FPS_app_info_rx)
  */
-#define FPS_CMDSETTINGS_INIT(suffix, cmddata, appinfo) \
-static CMDSETTINGS fps_cms_##suffix = {0};             \
-static __attribute__((constructor))                    \
-void fps_init_cms_##suffix(void)                       \
-{                                                      \
-    strncpy((cmddata).key,                             \
-            (appinfo).cmdkey,                          \
-            sizeof((cmddata).key) - 1);                \
-    strncpy((cmddata).description,                     \
-            (appinfo).description,                     \
-            sizeof((cmddata).description) - 1);        \
-    if ((cmddata).cmdsettings == NULL) {                \
-        (cmddata).cmdsettings =                        \
-            &fps_cms_##suffix;                         \
-    }                                                  \
-}
+#define FPS_CMDSETTINGS_INIT(suffix, cmddata, appinfo)                                            \
+    static CMDSETTINGS                       fps_cms_##suffix = { 0 };                            \
+    static __attribute__((constructor)) void fps_init_cms_##suffix(void)                          \
+    {                                                                                             \
+        strncpy((cmddata).key, (appinfo).cmdkey, sizeof((cmddata).key) - 1);                      \
+        strncpy((cmddata).description, (appinfo).description, sizeof((cmddata).description) - 1); \
+        if ((cmddata).cmdsettings == NULL)                                                        \
+        {                                                                                         \
+            (cmddata).cmdsettings = &fps_cms_##suffix;                                            \
+        }                                                                                         \
+    }
 
 
 #endif /* FPS_CLI_BINDING_H */

@@ -47,107 +47,52 @@ double Ptanh(double a);
 
 double Ppositive(double a);
 
-double Pfmod(
-    double a,
-    double b);
+double Pfmod(double a, double b);
 
-double Ppow(
-    double a,
-    double b);
+double Ppow(double a, double b);
 
-double Padd(
-    double a,
-    double b);
+double Padd(double a, double b);
 
-double Psubm(
-    double a,
-    double b);
+double Psubm(double a, double b);
 
-double Psub(
-    double a,
-    double b);
+double Psub(double a, double b);
 
-double Pmult(
-    double a,
-    double b);
+double Pmult(double a, double b);
 
-double Pdiv(
-    double a,
-    double b);
+double Pdiv(double a, double b);
 
-double Pdiv1(
-    double a,
-    double b);
+double Pdiv1(double a, double b);
 
-double Pminv(
-    double a,
-    double b);
+double Pminv(double a, double b);
 
-double Pmaxv(
-    double a,
-    double b);
+double Pmaxv(double a, double b);
 
-double Ptestlt(
-    double a,
-    double b);
+double Ptestlt(double a, double b);
 
-double Ptestmt(
-    double a,
-    double b);
-double Pteste(
-    double a,
-    double b);
-double Ptestne(
-    double a,
-    double b);
-double Ptestle(
-    double a,
-    double b);
-double Ptestge(
-    double a,
-    double b);
-double Pand(
-    double a,
-    double b);
-double Por(
-    double a,
-    double b);
+double Ptestmt(double a, double b);
+double Pteste(double a, double b);
+double Ptestne(double a, double b);
+double Ptestle(double a, double b);
+double Ptestge(double a, double b);
+double Pand(double a, double b);
+double Por(double a, double b);
 
-double Ptrunc(
-    double a,
-    double b,
-    double c);
+double Ptrunc(double a, double b, double c);
 
-complex_double CPadd_CD_CD(
-    complex_double a,
-    complex_double b);
+complex_double CPadd_CD_CD(complex_double a, complex_double b);
 
-complex_double CPsub_CD_CD(
-    complex_double a,
-    complex_double b);
+complex_double CPsub_CD_CD(complex_double a, complex_double b);
 
-complex_double CPmult_CD_CD(
-    complex_double a,
-    complex_double b);
+complex_double CPmult_CD_CD(complex_double a, complex_double b);
 
-complex_double CPdiv_CD_CD(
-    complex_double a,
-    complex_double b);
+complex_double CPdiv_CD_CD(complex_double a, complex_double b);
 
-complex_float CPadd_CF_CF(
-    complex_float a,
-    complex_float b);
+complex_float CPadd_CF_CF(complex_float a, complex_float b);
 
-complex_float CPsub_CF_CF(
-    complex_float a,
-    complex_float b);
+complex_float CPsub_CF_CF(complex_float a, complex_float b);
 
-complex_float CPmult_CF_CF(
-    complex_float a,
-    complex_float b);
+complex_float CPmult_CF_CF(complex_float a, complex_float b);
 
-complex_float CPdiv_CF_CF(
-    complex_float a,
-    complex_float b);
+complex_float CPdiv_CF_CF(complex_float a, complex_float b);
 
 #endif

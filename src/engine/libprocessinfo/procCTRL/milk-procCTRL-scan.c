@@ -4,7 +4,7 @@
  */
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#    define _GNU_SOURCE
 #endif
 
 #include <signal.h>
@@ -32,7 +32,7 @@ static int loopOK = 1;
  */
 void handle_signal(int sig)
 {
-    (void)sig;
+    (void) sig;
     loopOK = 0;
 }
 
@@ -51,56 +51,57 @@ void Scan_GetCPUloads(PROCSCAN_SHM *scan_shm)
 {
     static long long prev_user[MAXNBCPU], prev_nice[MAXNBCPU], prev_system[MAXNBCPU];
     static long long prev_idle[MAXNBCPU], prev_iowait[MAXNBCPU], prev_irq[MAXNBCPU],
-           prev_softirq[MAXNBCPU], prev_steal[MAXNBCPU];
+        prev_softirq[MAXNBCPU], prev_steal[MAXNBCPU];
     static int initialized = 0;
 
     FILE *fp = fopen("/proc/stat", "r");
-    if(!fp)
+    if (!fp)
     {
         return;
     }
 
     char line[1024];
-    int cpu_idx = 0;
-    while(fgets(line, sizeof(line), fp) && cpu_idx < MAXNBCPU)
+    int  cpu_idx = 0;
+    while (fgets(line, sizeof(line), fp) && cpu_idx < MAXNBCPU)
     {
-        if(strncmp(line, "cpu", 3) == 0 && line[3] != ' ')    // cpu0, cpu1...
+        if (strncmp(line, "cpu", 3) == 0 && line[3] != ' ') // cpu0, cpu1...
         {
             long long user, nice, system, idle, iowait, irq, softirq, steal;
-            if(sscanf(line + 3, "%lld %lld %lld %lld %lld %lld %lld %lld",
-                      &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal) == 8)
+            if (sscanf(line + 3, "%lld %lld %lld %lld %lld %lld %lld %lld", &user, &nice, &system,
+                       &idle, &iowait, &irq, &softirq, &steal) == 8)
             {
-
-                if(initialized)
+                if (initialized)
                 {
-                    long long total_prev = prev_user[cpu_idx] + prev_nice[cpu_idx] + prev_system[cpu_idx] +
-                                           prev_idle[cpu_idx] +
-                                           prev_iowait[cpu_idx] + prev_irq[cpu_idx] + prev_softirq[cpu_idx] + prev_steal[cpu_idx];
-                    long long total_cur = user + nice + system + idle + iowait + irq + softirq + steal;
+                    long long total_prev = prev_user[cpu_idx] + prev_nice[cpu_idx] +
+                                           prev_system[cpu_idx] + prev_idle[cpu_idx] +
+                                           prev_iowait[cpu_idx] + prev_irq[cpu_idx] +
+                                           prev_softirq[cpu_idx] + prev_steal[cpu_idx];
+                    long long total_cur =
+                        user + nice + system + idle + iowait + irq + softirq + steal;
                     long long total_diff = total_cur - total_prev;
-                    long long idle_diff = idle - prev_idle[cpu_idx];
+                    long long idle_diff  = idle - prev_idle[cpu_idx];
 
-                    if(total_diff > 0)
+                    if (total_diff > 0)
                     {
-                        scan_shm->CPUload[cpu_idx] = (float)(total_diff - idle_diff) / total_diff;
+                        scan_shm->CPUload[cpu_idx] = (float) (total_diff - idle_diff) / total_diff;
                     }
                 }
 
-                prev_user[cpu_idx] = user;
-                prev_nice[cpu_idx] = nice;
-                prev_system[cpu_idx] = system;
-                prev_idle[cpu_idx] = idle;
-                prev_iowait[cpu_idx] = iowait;
-                prev_irq[cpu_idx] = irq;
+                prev_user[cpu_idx]    = user;
+                prev_nice[cpu_idx]    = nice;
+                prev_system[cpu_idx]  = system;
+                prev_idle[cpu_idx]    = idle;
+                prev_iowait[cpu_idx]  = iowait;
+                prev_irq[cpu_idx]     = irq;
                 prev_softirq[cpu_idx] = softirq;
-                prev_steal[cpu_idx] = steal;
+                prev_steal[cpu_idx]   = steal;
 
                 cpu_idx++;
             }
         }
     }
     scan_shm->NBcpus = cpu_idx;
-    initialized = 1;
+    initialized      = 1;
     fclose(fp);
 }
 
@@ -113,22 +114,22 @@ void Scan_GetCPUloads(PROCSCAN_SHM *scan_shm)
 void *create_scan_shm(const char *name, size_t size, int *fd)
 {
     *fd = open(name, O_RDWR | O_CREAT, 0666);
-    if(*fd == -1)
+    if (*fd == -1)
     {
         return MAP_FAILED;
     }
     // Do NOT ftruncate here to avoid zeroing if it already exists
     struct stat st;
-    if(fstat(*fd, &st) == 0 && (size_t)st.st_size < size)
+    if (fstat(*fd, &st) == 0 && (size_t) st.st_size < size)
     {
-        if(ftruncate(*fd, size) == -1)
+        if (ftruncate(*fd, size) == -1)
         {
             close(*fd);
             return MAP_FAILED;
         }
     }
     void *ptr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
-    if(ptr == MAP_FAILED)
+    if (ptr == MAP_FAILED)
     {
         close(*fd);
     }
@@ -141,23 +142,21 @@ void *create_scan_shm(const char *name, size_t size, int *fd)
  * Scans all processinfo SHM files and updates
  * the scanner shared memory with current data.
  */
-void rebuild_process_list(
-    const char   *procdname,
-    PROCSCAN_SHM *scan_shm)
+void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm)
 {
     printf("Rebuilding process list from %s...\n", procdname);
-    for(long i = 0; i < PROCESSINFOLISTSIZE; i++)
+    for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
     {
         pinfolist->active[i] = 0;
     }
     DIR *d = opendir(procdname);
-    if(d)
+    if (d)
     {
-        long pindex = 0;
+        long           pindex = 0;
         struct dirent *dir;
-        while((dir = readdir(d)) != NULL)
+        while ((dir = readdir(d)) != NULL)
         {
-            if(strncmp(dir->d_name, "proc.", 5) == 0 && strstr(dir->d_name, ".shm"))
+            if (strncmp(dir->d_name, "proc.", 5) == 0 && strstr(dir->d_name, ".shm"))
             {
                 char workbuf[512];
                 strncpy(workbuf, dir->d_name, 511);
@@ -167,48 +166,49 @@ void rebuild_process_list(
                 snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, dir->d_name);
 
                 char *shm_ext = strstr(workbuf, ".shm");
-                if(shm_ext)
+                if (shm_ext)
                 {
                     *shm_ext = '\0';
                 }
                 char *pid_str = strrchr(workbuf, '.');
-                if(pid_str)
+                if (pid_str)
                 {
                     *pid_str = '\0';
                     pid_str++;
-                    int pid = atoi(pid_str);
+                    int   pid  = atoi(pid_str);
                     char *name = workbuf + 5;
 
-                    if(pindex < PROCESSINFOLISTSIZE)
+                    if (pindex < PROCESSINFOLISTSIZE)
                     {
-                        int fd;
+                        int          fd;
                         PROCESSINFO *pinfo = processinfo_shm_link(fullpath, &fd);
-                        if(pinfo != (PROCESSINFO *)MAP_FAILED)
+                        if (pinfo != (PROCESSINFO *) MAP_FAILED)
                         {
                             // Check if still alive
-                            if(kill(pid, 0) == 0)
+                            if (kill(pid, 0) == 0)
                             {
                                 pinfolist->active[pindex] = 1;
                             }
                             else
                             {
-                                if(pinfo->loopstat == 3)
+                                if (pinfo->loopstat == 3)
                                 {
-                                    pinfolist->active[pindex] = 2;    // STOPPED
+                                    pinfolist->active[pindex] = 2; // STOPPED
                                 }
                                 else
                                 {
-                                    pinfolist->active[pindex] = 3;    // CRASHED
+                                    pinfolist->active[pindex] = 3; // CRASHED
                                 }
                             }
 
                             pinfolist->PIDarray[pindex] = pid;
-                            strncpy(pinfolist->pnamearray[pindex],
-                                    name, STRINGMAXLEN_PROCESSINFO_NAME - 1);
-                            pinfolist->createtime[pindex] = 1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
+                            strncpy(pinfolist->pnamearray[pindex], name,
+                                    STRINGMAXLEN_PROCESSINFO_NAME - 1);
+                            pinfolist->createtime[pindex] =
+                                1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
 
                             // Restore stats in scan_shm
-                            scan_shm->pinfodisp[pindex].PID = pid;
+                            scan_shm->pinfodisp[pindex].PID     = pid;
                             scan_shm->pinfodisp[pindex].loopcnt = pinfo->loopcnt;
                             strncpy(scan_shm->pinfodisp[pindex].name, pinfo->name, 39);
                             strncpy(scan_shm->pinfodisp[pindex].statusmsg, pinfo->statusmsg, 199);
@@ -224,46 +224,43 @@ void rebuild_process_list(
     }
 }
 
-int main(
-    int argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
     /* One-line help — before daemon check and SHM init */
-    for(int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
-        if(strcmp(argv[i], "-h1") == 0 ||
-                strcmp(argv[i], "--help-oneline") == 0)
+        if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("background process info scanner daemon\n");
             return 0;
         }
     }
 
-    double rate = 10.0;
-    int verbose = 0;
-    int rebuild = 0;
+    double rate    = 10.0;
+    int    verbose = 0;
+    int    rebuild = 0;
 
     // --- DAEMON CHECK ---
     {
-        pid_t my_pid = getpid();
-        int other_running = 0;
-        FILE *fp = popen("pgrep \"milk-procCTRL-s\"", "r");
-        if(fp != NULL)
+        pid_t my_pid        = getpid();
+        int   other_running = 0;
+        FILE *fp            = popen("pgrep \"milk-procCTRL-s\"", "r");
+        if (fp != NULL)
         {
             char pid_str[64];
-            while(fgets(pid_str, sizeof(pid_str), fp) != NULL)
+            while (fgets(pid_str, sizeof(pid_str), fp) != NULL)
             {
-                pid_t pid = (pid_t)atoi(pid_str);
-                if(pid != my_pid)
+                pid_t pid = (pid_t) atoi(pid_str);
+                if (pid != my_pid)
                 {
-                    printf("Scanner milk-procCTRL-scan is already running (PID %d)\n", (int)pid);
+                    printf("Scanner milk-procCTRL-scan is already running (PID %d)\n", (int) pid);
                     other_running = 1;
                     break;
                 }
             }
             pclose(fp);
         }
-        if(other_running)
+        if (other_running)
         {
             return 0;
         }
@@ -271,29 +268,32 @@ int main(
     // --- END DAEMON CHECK ---
 
     {
-        int opt;
-        static struct option long_options[] =
-        {
-            {"help",    no_argument,       0, 'h'},
-            {"rate",    required_argument, 0, 'r'},
-            {"verbose", no_argument,       0, 'v'},
-            {"rebuild", no_argument,       0, 'R'},
-            {0, 0, 0, 0}
-        };
+        int                  opt;
+        static struct option long_options[] = { { "help", no_argument, 0, 'h' },
+                                                { "rate", required_argument, 0, 'r' },
+                                                { "verbose", no_argument, 0, 'v' },
+                                                { "rebuild", no_argument, 0, 'R' },
+                                                { 0, 0, 0, 0 } };
 
-        while((opt = getopt_long(argc, argv, "hr:vR", long_options, NULL)) != -1)
+        while ((opt = getopt_long(argc, argv, "hr:vR", long_options, NULL)) != -1)
         {
-            switch(opt)
+            switch (opt)
             {
-            case 'h': printf("Usage: %s [-r rate_hz] [-v] [-R]\n", argv[0]);
+            case 'h':
+                printf("Usage: %s [-r rate_hz] [-v] [-R]\n", argv[0]);
                 return 0;
-            case 'r': rate = atof(optarg);
+            case 'r':
+                rate = atof(optarg);
                 break;
-            case 'v': verbose = 1;
+            case 'v':
+                verbose = 1;
                 break;
-            case 'R': rebuild = 1;
+            case 'R':
+                rebuild = 1;
                 break;
-            case '?': default: printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
+            case '?':
+            default:
+                printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
                 printf("Usage: %s [-r rate_hz] [-v] [-R]\n", argv[0]);
                 return 1;
             }
@@ -312,8 +312,7 @@ int main(
     // 1. Create/Open Process List SHM
     {
         long pindex_unused;
-        if(processinfo_shm_list_create(&pindex_unused)
-                != RETURN_SUCCESS)
+        if (processinfo_shm_list_create(&pindex_unused) != RETURN_SUCCESS)
         {
             PRINT_ERROR("Error connecting to process list shared memory");
             return 1;
@@ -323,23 +322,23 @@ int main(
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
-    int fd_scan;
+    int           fd_scan;
     PROCSCAN_SHM *scan_shm;
     // 2. Create/Open Scan Result SHM
     {
         char scan_shm_name[STRINGMAXLEN_FULLFILENAME];
-        snprintf(scan_shm_name, sizeof(scan_shm_name), "%s/%s", procdname, PROCESSINFO_SCAN_SHM_NAME);
+        snprintf(scan_shm_name, sizeof(scan_shm_name), "%s/%s", procdname,
+                 PROCESSINFO_SCAN_SHM_NAME);
 
-        scan_shm = (PROCSCAN_SHM *) create_scan_shm(scan_shm_name, sizeof(PROCSCAN_SHM),
-                                 &fd_scan);
-        if(scan_shm == MAP_FAILED)
+        scan_shm = (PROCSCAN_SHM *) create_scan_shm(scan_shm_name, sizeof(PROCSCAN_SHM), &fd_scan);
+        if (scan_shm == MAP_FAILED)
         {
             PRINT_ERROR("Error creating scan shared memory: %s", scan_shm_name);
             return 1;
         }
     }
 
-    if(rebuild)
+    if (rebuild)
     {
         rebuild_process_list(procdname, scan_shm);
     }
@@ -347,27 +346,27 @@ int main(
     printf("Scanner running at %.1f Hz\n", rate);
 
     {
-        long usleep_time = (long)(1000000.0 / rate);
+        long usleep_time  = (long) (1000000.0 / rate);
         long scan_counter = 0;
 
-        double *timearray = (double *) malloc(sizeof(double) * PROCESSINFOLISTSIZE);
-        long   *indexarray = (long *)   malloc(sizeof(long)  * PROCESSINFOLISTSIZE);
+        double *timearray  = (double *) malloc(sizeof(double) * PROCESSINFOLISTSIZE);
+        long   *indexarray = (long *) malloc(sizeof(long) * PROCESSINFOLISTSIZE);
 
-        while(loopOK)
+        while (loopOK)
         {
-            int active_count = 0;
-            int stopped_count = 0;
-            int crashed_count = 0;
+            int active_count   = 0;
+            int stopped_count  = 0;
+            int crashed_count  = 0;
             int serviced_count = 0;
-            int listcnt = 0;
+            int listcnt        = 0;
 
-            if(scan_counter % 10 == 0)
+            if (scan_counter % 10 == 0)
             {
                 FILE *pp = popen("pgrep -x milk-procCTRL | wc -l", "r");
-                if(pp)
+                if (pp)
                 {
                     int nb;
-                    if(fscanf(pp, "%d", &nb) == 1)
+                    if (fscanf(pp, "%d", &nb) == 1)
                     {
                         scan_shm->NBreaders = nb;
                     }
@@ -375,28 +374,28 @@ int main(
                 }
             }
 
-            if(pinfolist != NULL)
+            if (pinfolist != NULL)
             {
-                for(long i = 0; i < PROCESSINFOLISTSIZE; i++)
+                for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
                 {
-                    if(pinfolist->active[i] == 1)
+                    if (pinfolist->active[i] == 1)
                     {
-                        if(kill(pinfolist->PIDarray[i], 0) == -1 && errno == ESRCH)
+                        if (kill(pinfolist->PIDarray[i], 0) == -1 && errno == ESRCH)
                         {
                             char SM_fname[STRINGMAXLEN_FULLFILENAME];
-                            snprintf(SM_fname, sizeof(SM_fname), "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[i],
-                                     pinfolist->PIDarray[i]);
-                            int fd;
+                            snprintf(SM_fname, sizeof(SM_fname), "%s/proc.%s.%06d.shm", procdname,
+                                     pinfolist->pnamearray[i], pinfolist->PIDarray[i]);
+                            int          fd;
                             PROCESSINFO *pinfo = processinfo_shm_link(SM_fname, &fd);
-                            if(pinfo != (PROCESSINFO *)MAP_FAILED)
+                            if (pinfo != (PROCESSINFO *) MAP_FAILED)
                             {
-                                if(pinfo->loopstat == 3)
+                                if (pinfo->loopstat == 3)
                                 {
-                                    pinfolist->active[i] = 2;    // STOPPED
+                                    pinfolist->active[i] = 2; // STOPPED
                                 }
                                 else
                                 {
-                                    pinfolist->active[i] = 3;    // CRASHED
+                                    pinfolist->active[i] = 3; // CRASHED
                                 }
 
                                 // FINAL SNAPSHOT
@@ -405,7 +404,7 @@ int main(
                                 strncpy(scan_shm->pinfodisp[i].name, pinfo->name, 39);
 
                                 processinfo_shm_close(pinfo, fd);
-                                if(pinfo_mappings[i])
+                                if (pinfo_mappings[i])
                                 {
                                     // If we had it mapped, close it
                                     // (Actually handled by the mapping logic below too)
@@ -418,37 +417,37 @@ int main(
                         }
                     }
 
-                    if(pinfolist->active[i] != 0)
+                    if (pinfolist->active[i] != 0)
                     {
-                        if(pinfolist->active[i] == 1)
+                        if (pinfolist->active[i] == 1)
                         {
                             active_count++;
                         }
-                        else if(pinfolist->active[i] == 2)
+                        else if (pinfolist->active[i] == 2)
                         {
                             stopped_count++;
                         }
-                        else if(pinfolist->active[i] == 3)
+                        else if (pinfolist->active[i] == 3)
                         {
                             crashed_count++;
                         }
 
-                        if(listcnt < PROCESSINFOLISTSIZE)
+                        if (listcnt < PROCESSINFOLISTSIZE)
                         {
                             indexarray[listcnt] = i;
-                            timearray[listcnt] = -1.0 * pinfolist->createtime[i];
+                            timearray[listcnt]  = -1.0 * pinfolist->createtime[i];
                             listcnt++;
                         }
                     }
                 }
             }
 
-            if(listcnt > 0)
+            if (listcnt > 0)
             {
                 quick_sort2l_double(timearray, indexarray, listcnt);
-                for(int j = 0; j < listcnt; j++)
+                for (int j = 0; j < listcnt; j++)
                 {
-                    scan_shm->sorted_pindex[j] = (int)indexarray[j];
+                    scan_shm->sorted_pindex[j] = (int) indexarray[j];
                 }
             }
             scan_shm->NBactive = listcnt;
@@ -456,84 +455,95 @@ int main(
             Scan_GetCPUloads(scan_shm);
 
             // Update Process Details
-            for(long i = 0; i < PROCESSINFOLISTSIZE; i++)
+            for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
             {
-                if(pinfolist->active[i] == 1)
+                if (pinfolist->active[i] == 1)
                 {
-
                     scan_shm->pinfodisp[i].pindex = i;
                     // Track CPU usage for all active processes every cycle
                     PIDcollectSystemInfo(&scan_shm->pinfodisp[i], 0);
 
-                    if(scan_shm->request_scan[i] == 1)
+                    if (scan_shm->request_scan[i] == 1)
                     {
                         // Link if not already linked
-                        if(pinfo_mappings[i] == NULL)
+                        if (pinfo_mappings[i] == NULL)
                         {
                             char SM_fname[STRINGMAXLEN_FULLFILENAME];
-                            snprintf(SM_fname, sizeof(SM_fname), "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[i],
-                                     pinfolist->PIDarray[i]);
+                            snprintf(SM_fname, sizeof(SM_fname), "%s/proc.%s.%06d.shm", procdname,
+                                     pinfolist->pnamearray[i], pinfolist->PIDarray[i]);
                             pinfo_mappings[i] = processinfo_shm_link(SM_fname, &pinfo_fds[i]);
-                            if(pinfo_mappings[i] == (PROCESSINFO *)MAP_FAILED)
+                            if (pinfo_mappings[i] == (PROCESSINFO *) MAP_FAILED)
                             {
                                 pinfo_mappings[i] = NULL;
                             }
                         }
 
-                        if(pinfo_mappings[i] != NULL)
+                        if (pinfo_mappings[i] != NULL)
                         {
                             // Update live stats in scan_shm for readers
-                            scan_shm->pinfodisp[i].PID = pinfolist->PIDarray[i];
-                            scan_shm->pinfodisp[i].loopcnt = pinfo_mappings[i]->loopcnt;
-                            scan_shm->pinfodisp[i].loopcntMax = pinfo_mappings[i]->loopcntMax;
-                            scan_shm->pinfodisp[i].loopstat = pinfo_mappings[i]->loopstat;
+                            scan_shm->pinfodisp[i].PID         = pinfolist->PIDarray[i];
+                            scan_shm->pinfodisp[i].loopcnt     = pinfo_mappings[i]->loopcnt;
+                            scan_shm->pinfodisp[i].loopcntMax  = pinfo_mappings[i]->loopcntMax;
+                            scan_shm->pinfodisp[i].loopstat    = pinfo_mappings[i]->loopstat;
                             scan_shm->pinfodisp[i].rt_priority = pinfo_mappings[i]->RT_priority;
-                            strncpy(
-                                scan_shm->pinfodisp[i].statusmsg, pinfo_mappings[i]->statusmsg, 199);
+                            strncpy(scan_shm->pinfodisp[i].statusmsg, pinfo_mappings[i]->statusmsg,
+                                    199);
                             strncpy(scan_shm->pinfodisp[i].name, pinfo_mappings[i]->name, 39);
 
                             // Triggering info
                             scan_shm->pinfodisp[i].triggermode = pinfo_mappings[i]->triggermode;
-                            strncpy(
-                                scan_shm->pinfodisp[i].triggerstreamname,
-                                pinfo_mappings[i]->triggerstreamname, 79);
+                            strncpy(scan_shm->pinfodisp[i].triggerstreamname,
+                                    pinfo_mappings[i]->triggerstreamname, 79);
                             scan_shm->pinfodisp[i].triggersem = pinfo_mappings[i]->triggersem;
-                            scan_shm->pinfodisp[i].triggerstreamcnt = pinfo_mappings[i]->triggerstreamcnt;
-                            scan_shm->pinfodisp[i].triggertimeout = pinfo_mappings[i]->triggertimeout;
-                            scan_shm->pinfodisp[i].triggermissedframe = pinfo_mappings[i]->triggermissedframe;
-                            scan_shm->pinfodisp[i].triggermissedframe_cumul = pinfo_mappings[i]->triggermissedframe_cumul;
+                            scan_shm->pinfodisp[i].triggerstreamcnt =
+                                pinfo_mappings[i]->triggerstreamcnt;
+                            scan_shm->pinfodisp[i].triggertimeout =
+                                pinfo_mappings[i]->triggertimeout;
+                            scan_shm->pinfodisp[i].triggermissedframe =
+                                pinfo_mappings[i]->triggermissedframe;
+                            scan_shm->pinfodisp[i].triggermissedframe_cumul =
+                                pinfo_mappings[i]->triggermissedframe_cumul;
                             // Timing info
                             scan_shm->pinfodisp[i].MeasureTiming = pinfo_mappings[i]->MeasureTiming;
 
-                            if(pinfo_mappings[i]->MeasureTiming != 0)
+                            if (pinfo_mappings[i]->MeasureTiming != 0)
                             {
                                 long dtiter_array[PROCESSINFO_NBtimer - 1];
                                 long dtexec_array[PROCESSINFO_NBtimer - 1];
 
-                                for(int tindex = 0; tindex < PROCESSINFO_NBtimer - 1; tindex++)
+                                for (int tindex = 0; tindex < PROCESSINFO_NBtimer - 1; tindex++)
                                 {
-                                    int ti1 = (pinfo_mappings[i]->timerindex - tindex + PROCESSINFO_NBtimer) % PROCESSINFO_NBtimer;
+                                    int ti1 = (pinfo_mappings[i]->timerindex - tindex +
+                                               PROCESSINFO_NBtimer) %
+                                              PROCESSINFO_NBtimer;
                                     int ti0 = (ti1 - 1 + PROCESSINFO_NBtimer) % PROCESSINFO_NBtimer;
 
-                                    dtiter_array[tindex] = (pinfo_mappings[i]->texecstart[ti1].tv_nsec -
-                                                            pinfo_mappings[i]->texecstart[ti0].tv_nsec) +
-                                                           1000000000L * (pinfo_mappings[i]->texecstart[ti1].tv_sec -
-                                                                          pinfo_mappings[i]->texecstart[ti0].tv_sec);
+                                    dtiter_array[tindex] =
+                                        (pinfo_mappings[i]->texecstart[ti1].tv_nsec -
+                                         pinfo_mappings[i]->texecstart[ti0].tv_nsec) +
+                                        1000000000L * (pinfo_mappings[i]->texecstart[ti1].tv_sec -
+                                                       pinfo_mappings[i]->texecstart[ti0].tv_sec);
 
-                                    dtexec_array[tindex] = (pinfo_mappings[i]->texecend[ti0].tv_nsec -
-                                                            pinfo_mappings[i]->texecstart[ti0].tv_nsec) +
-                                                           1000000000L * (pinfo_mappings[i]->texecend[ti0].tv_sec - pinfo_mappings[i]->texecstart[ti0].tv_sec);
+                                    dtexec_array[tindex] =
+                                        (pinfo_mappings[i]->texecend[ti0].tv_nsec -
+                                         pinfo_mappings[i]->texecstart[ti0].tv_nsec) +
+                                        1000000000L * (pinfo_mappings[i]->texecend[ti0].tv_sec -
+                                                       pinfo_mappings[i]->texecstart[ti0].tv_sec);
                                 }
 
                                 quick_sort_long(dtiter_array, PROCESSINFO_NBtimer - 1);
                                 quick_sort_long(dtexec_array, PROCESSINFO_NBtimer - 1);
 
-                                pinfo_mappings[i]->dtmedian_iter_ns = dtiter_array[(PROCESSINFO_NBtimer - 1) / 2];
-                                pinfo_mappings[i]->dtmedian_exec_ns = dtexec_array[(PROCESSINFO_NBtimer - 1) / 2];
+                                pinfo_mappings[i]->dtmedian_iter_ns =
+                                    dtiter_array[(PROCESSINFO_NBtimer - 1) / 2];
+                                pinfo_mappings[i]->dtmedian_exec_ns =
+                                    dtexec_array[(PROCESSINFO_NBtimer - 1) / 2];
                             }
 
-                            scan_shm->pinfodisp[i].dtmedian_iter_ns = pinfo_mappings[i]->dtmedian_iter_ns;
-                            scan_shm->pinfodisp[i].dtmedian_exec_ns = pinfo_mappings[i]->dtmedian_exec_ns;
+                            scan_shm->pinfodisp[i].dtmedian_iter_ns =
+                                pinfo_mappings[i]->dtmedian_iter_ns;
+                            scan_shm->pinfodisp[i].dtmedian_exec_ns =
+                                pinfo_mappings[i]->dtmedian_exec_ns;
                         }
 
                         scan_shm->request_scan[i] = 0;
@@ -542,7 +552,7 @@ int main(
                     else
                     {
                         // ... close if inactive ...
-                        if(pinfolist->active[i] != 1 && pinfo_mappings[i] != NULL)
+                        if (pinfolist->active[i] != 1 && pinfo_mappings[i] != NULL)
                         {
                             processinfo_shm_close(pinfo_mappings[i], pinfo_fds[i]);
                             pinfo_mappings[i] = NULL;
@@ -551,10 +561,11 @@ int main(
                 }
             }
 
-            if(verbose)
+            if (verbose)
             {
-                printf("Scan %ld: Act:%d Stp:%d Cra:%d Srv:%d Readers:%d   \r",
-                       scan_counter, active_count, stopped_count, crashed_count, serviced_count, scan_shm->NBreaders);
+                printf("Scan %ld: Act:%d Stp:%d Cra:%d Srv:%d Readers:%d   \r", scan_counter,
+                       active_count, stopped_count, crashed_count, serviced_count,
+                       scan_shm->NBreaders);
                 fflush(stdout);
             }
 
@@ -562,8 +573,13 @@ int main(
             usleep(usleep_time);
         }
 
-        for(long i = 0; i < PROCESSINFOLISTSIZE;
-            i++) if(pinfo_mappings[i]) processinfo_shm_close(pinfo_mappings[i], pinfo_fds[i]);
+        for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
+        {
+            if (pinfo_mappings[i])
+            {
+                processinfo_shm_close(pinfo_mappings[i], pinfo_fds[i]);
+            }
+        }
         free(timearray);
         free(indexarray);
     }

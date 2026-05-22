@@ -19,10 +19,10 @@
 // Really we should go get CLOCK_ISIO here
 #include "ImageStreamIO/ImageStreamIO.h"
 #ifndef CLOCK_MILK
-#define CLOCK_MILK CLOCK_ISIO
+#    define CLOCK_MILK CLOCK_ISIO
 #endif
 
-#define TZ_MILK_STR "HST" // Name of timezone to use in FITS headers.
+#define TZ_MILK_STR "HST"        // Name of timezone to use in FITS headers.
 #define TZ_MILK_UTC_OFF -36000.0 // Offset east of UTC in seconds for TZ_MILK_STR
 
 #ifndef __STDC_LIB_EXT1__
@@ -31,33 +31,21 @@ typedef int errno_t;
 
 errno_t milk_clock_gettime(struct timespec *tnow_p);
 
-errno_t mkUTtimestring_nanosec(
-    char            *timestring,
-    struct timespec tnow);
+errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow);
 errno_t mkUTtimestring_nanosec_now(char *timestring);
 
-errno_t mkUTtimestring_microsec(
-    char            *timestring,
-    struct timespec tnow);
+errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow);
 errno_t mkUTtimestring_microsec_now(char *timestring);
 
-errno_t mkUTtimestring_millisec(
-    char            *timestring,
-    struct timespec tnow);
+errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow);
 errno_t mkUTtimestring_millisec_now(char *timestring);
 
-errno_t mkUTtimestring_sec(
-    char            *timestring,
-    struct timespec tnow);
+errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow);
 errno_t mkUTtimestring_sec_now(char *timestring);
 
-struct timespec timespec_diff(
-    struct timespec start,
-    struct timespec end);
+struct timespec timespec_diff(struct timespec start, struct timespec end);
 
-double timespec_diff_double(
-    struct timespec start,
-    struct timespec end);
+double timespec_diff_double(struct timespec start, struct timespec end);
 
 char *timedouble_to_UTC_timeofdaystring(double timedouble);
 

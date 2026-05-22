@@ -8,28 +8,26 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT "iofits"
-#define MODULE_DESCRIPTION       "Read/Write FITS files"
+#define MODULE_DESCRIPTION "Read/Write FITS files"
 
 #include "COREMOD_iofits_common.h"
 
 COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 
-#include "breakcube.h"
-#include "images2cube.h"
-#include "loadfits.h"
-#include "read_keyword.h"
-#include "savefits.h"
+#    include "breakcube.h"
+#    include "images2cube.h"
+#    include "loadfits.h"
+#    include "read_keyword.h"
+#    include "savefits.h"
 
 // External function from savefits.c
-extern errno_t save_fl_fits(
-    const char *inputimname,
-    const char *outputFITSname);
+extern errno_t save_fl_fits(const char *inputimname, const char *outputFITSname);
 
 INIT_MODULE_LIB(COREMOD_iofits)
 

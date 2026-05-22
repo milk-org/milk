@@ -30,21 +30,23 @@
  * @param count  Number of elements
  * @return 0 on success
  */
-int bubble_sort(
-    double *__restrict array,
-    unsigned long      count)
+int bubble_sort(double *__restrict array, unsigned long count)
 {
     unsigned long a;
     double        t;
 
-    for(unsigned a = 1; a < count; a++)
-        for(unsigned b = count - 1; b >= a; b--)
-            if(array[b - 1] > array[b])
+    for (unsigned a = 1; a < count; a++)
+    {
+        for (unsigned b = count - 1; b >= a; b--)
+        {
+            if (array[b - 1] > array[b])
             {
                 t            = array[b - 1];
                 array[b - 1] = array[b];
                 array[b]     = t;
             }
+        }
+    }
 
     return (0);
 }
@@ -58,10 +60,7 @@ int bubble_sort(
  * @param left   Left index of partition (inclusive)
  * @param right  Right index of partition (inclusive)
  */
-void qs_float(
-    float *__restrict array,
-    unsigned long     left,
-    unsigned long     right)
+void qs_float(float *__restrict array, unsigned long left, unsigned long right)
 {
     unsigned long i, j;
     float         x, y;
@@ -72,34 +71,33 @@ void qs_float(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs_float(array, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs_float(array, i, right);
     }
@@ -112,13 +110,10 @@ void qs_float(
  * @param left   Left index of partition (inclusive)
  * @param right  Right index of partition (inclusive)
  */
-void qs_long(
-    long *__restrict array,
-    unsigned long    left,
-    unsigned long    right)
+void qs_long(long *__restrict array, unsigned long left, unsigned long right)
 {
     unsigned long i, j;
-    long                   x, y;
+    long          x, y;
 
     i = left;
     j = right;
@@ -126,34 +121,33 @@ void qs_long(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs_long(array, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs_long(array, i, right);
     }
@@ -166,13 +160,10 @@ void qs_long(
  * @param left   Left index of partition (inclusive)
  * @param right  Right index of partition (inclusive)
  */
-void qs_double(
-    double *__restrict array,
-    unsigned long      left,
-    unsigned long      right)
+void qs_double(double *__restrict array, unsigned long left, unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
+    double        x, y;
 
     i = left;
     j = right;
@@ -180,35 +171,34 @@ void qs_double(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs_double(array, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs_double(array, i, right);
     }
@@ -221,13 +211,10 @@ void qs_double(
  * @param left   Left index (inclusive)
  * @param right  Right index (inclusive)
  */
-void qs_ushort(
-    unsigned short *__restrict array,
-    unsigned long              left,
-    unsigned long              right)
+void qs_ushort(unsigned short *__restrict array, unsigned long left, unsigned long right)
 {
-    unsigned long i, j;
-    unsigned short         x, y;
+    unsigned long  i, j;
+    unsigned short x, y;
 
     i = left;
     j = right;
@@ -235,35 +222,34 @@ void qs_ushort(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs_ushort(array, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs_ushort(array, i, right);
     }
@@ -282,9 +268,7 @@ void qs_ushort(
  * @param array  Float array to sort in-place
  * @param count  Number of elements
  */
-void quick_sort_float(
-    float *__restrict array,
-    unsigned long     count)
+void quick_sort_float(float *__restrict array, unsigned long count)
 {
     qs_float(array, 0, count - 1);
 }
@@ -295,9 +279,7 @@ void quick_sort_float(
  * @param array  Long array to sort in-place
  * @param count  Number of elements
  */
-void quick_sort_long(
-    long *__restrict array,
-    unsigned long    count)
+void quick_sort_long(long *__restrict array, unsigned long count)
 {
     qs_long(array, 0, count - 1);
 }
@@ -308,9 +290,7 @@ void quick_sort_long(
  * @param array  Double array to sort in-place
  * @param count  Number of elements
  */
-void quick_sort_double(
-    double *__restrict array,
-    unsigned long      count)
+void quick_sort_double(double *__restrict array, unsigned long count)
 {
     qs_double(array, 0, count - 1);
 }
@@ -321,9 +301,7 @@ void quick_sort_double(
  * @param array  Unsigned short array to sort
  * @param count  Number of elements
  */
-void quick_sort_ushort(
-    unsigned short *__restrict array,
-    unsigned long              count)
+void quick_sort_ushort(unsigned short *__restrict array, unsigned long count)
 {
     qs_ushort(array, 0, count - 1);
 }

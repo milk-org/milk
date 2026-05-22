@@ -29,15 +29,14 @@
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs2(
-    double *__restrict array,
-    double *__restrict array1,
-    unsigned long      left,
-    unsigned long      right)
+void qs2(double *__restrict array,
+         double *__restrict array1,
+         unsigned long left,
+         unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    double                 y1;
+    double        x, y;
+    double        y1;
 
     i = left;
     j = right;
@@ -45,16 +44,16 @@ void qs2(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -66,19 +65,18 @@ void qs2(
 
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs2(array, array1, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs2(array, array1, i, right);
     }
@@ -96,16 +94,15 @@ void qs2(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs3(
-    double *__restrict array,
-    double *__restrict array1,
-    double *__restrict array2,
-    unsigned long      left,
-    unsigned long      right)
+void qs3(double *__restrict array,
+         double *__restrict array1,
+         double *__restrict array2,
+         unsigned long left,
+         unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    double                 y1, y2;
+    double        x, y;
+    double        y1, y2;
 
     i = left;
     j = right;
@@ -113,16 +110,16 @@ void qs3(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -138,19 +135,18 @@ void qs3(
 
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs3(array, array1, array2, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs3(array, array1, array2, i, right);
     }
@@ -167,16 +163,15 @@ void qs3(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs3_float(
-    float *__restrict array,
-    float *__restrict array1,
-    float *__restrict array2,
-    unsigned long     left,
-    unsigned long     right)
+void qs3_float(float *__restrict array,
+               float *__restrict array1,
+               float *__restrict array2,
+               unsigned long left,
+               unsigned long right)
 {
     unsigned long i, j;
-    float                  x, y;
-    float                  y1, y2;
+    float         x, y;
+    float         y1, y2;
 
     i = left;
     j = right;
@@ -184,16 +179,16 @@ void qs3_float(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -209,19 +204,18 @@ void qs3_float(
 
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs3_float(array, array1, array2, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs3_float(array, array1, array2, i, right);
     }
@@ -238,16 +232,15 @@ void qs3_float(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs3_double(
-    double *__restrict array,
-    double *__restrict array1,
-    double *__restrict array2,
-    unsigned long      left,
-    unsigned long      right)
+void qs3_double(double *__restrict array,
+                double *__restrict array1,
+                double *__restrict array2,
+                unsigned long left,
+                unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    double                 y1, y2;
+    double        x, y;
+    double        y1, y2;
 
     i = left;
     j = right;
@@ -255,16 +248,16 @@ void qs3_double(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -280,19 +273,18 @@ void qs3_double(
 
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs3_double(array, array1, array2, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs3_double(array, array1, array2, i, right);
     }
@@ -309,15 +301,14 @@ void qs3_double(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs2l(
-    double *__restrict array,
-    long *__restrict   array1,
-    unsigned long      left,
-    unsigned long      right)
+void qs2l(double *__restrict array,
+          long *__restrict array1,
+          unsigned long left,
+          unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    long                   l1;
+    double        x, y;
+    long          l1;
 
     i = left;
     j = right;
@@ -325,16 +316,16 @@ void qs2l(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -346,19 +337,18 @@ void qs2l(
 
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs2l(array, array1, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs2l(array, array1, i, right);
     }
@@ -372,15 +362,14 @@ void qs2l(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs2ul(
-    double *__restrict        array,
-    unsigned long *__restrict array1,
-    unsigned long             left,
-    unsigned long             right)
+void qs2ul(double *__restrict array,
+           unsigned long *__restrict array1,
+           unsigned long left,
+           unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    unsigned long          l1;
+    double        x, y;
+    unsigned long l1;
 
     i = left;
     j = right;
@@ -388,16 +377,16 @@ void qs2ul(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -408,19 +397,18 @@ void qs2ul(
             array1[j] = l1;
 
             i++;
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs2ul(array, array1, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs2ul(array, array1, i, right);
     }
@@ -436,15 +424,14 @@ void qs2ul(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs2l_double(
-    double *__restrict array,
-    long *__restrict   array1,
-    unsigned long      left,
-    unsigned long      right)
+void qs2l_double(double *__restrict array,
+                 long *__restrict array1,
+                 unsigned long left,
+                 unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    long                   l1;
+    double        x, y;
+    long          l1;
 
     i = left;
     j = right;
@@ -452,16 +439,16 @@ void qs2l_double(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -473,19 +460,18 @@ void qs2l_double(
 
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs2l_double(array, array1, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs2l_double(array, array1, i, right);
     }
@@ -501,15 +487,14 @@ void qs2l_double(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs2ul_double(
-    double *__restrict        array,
-    unsigned long *__restrict array1,
-    unsigned long             left,
-    unsigned long             right)
+void qs2ul_double(double *__restrict array,
+                  unsigned long *__restrict array1,
+                  unsigned long left,
+                  unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    unsigned long          l1;
+    double        x, y;
+    unsigned long l1;
 
     i = left;
     j = right;
@@ -517,16 +502,16 @@ void qs2ul_double(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -538,19 +523,18 @@ void qs2ul_double(
 
             i++;
 
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs2ul_double(array, array1, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs2ul_double(array, array1, i, right);
     }
@@ -565,16 +549,15 @@ void qs2ul_double(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs3ll_double(
-    double *__restrict array,
-    long *__restrict   array1,
-    long *__restrict   array2,
-    unsigned long      left,
-    unsigned long      right)
+void qs3ll_double(double *__restrict array,
+                  long *__restrict array1,
+                  long *__restrict array2,
+                  unsigned long left,
+                  unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    long                   l1, l2;
+    double        x, y;
+    long          l1, l2;
 
     i = left;
     j = right;
@@ -582,16 +565,16 @@ void qs3ll_double(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -606,19 +589,18 @@ void qs3ll_double(
             array2[j] = l2;
 
             i++;
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs3ll_double(array, array1, array2, left, j);
     }
-    if(i < right)
+    if (i < right)
     {
         qs3ll_double(array, array1, array2, i, right);
     }
@@ -633,16 +615,15 @@ void qs3ll_double(
  * @param left    Left index (inclusive)
  * @param right   Right index (inclusive)
  */
-void qs3ulul_double(
-    double *__restrict        array,
-    unsigned long *__restrict array1,
-    unsigned long *__restrict array2,
-    unsigned long             left,
-    unsigned long             right)
+void qs3ulul_double(double *__restrict array,
+                    unsigned long *__restrict array1,
+                    unsigned long *__restrict array2,
+                    unsigned long left,
+                    unsigned long right)
 {
     unsigned long i, j;
-    double                 x, y;
-    unsigned long          l1, l2;
+    double        x, y;
+    unsigned long l1, l2;
 
     i = left;
     j = right;
@@ -650,16 +631,16 @@ void qs3ulul_double(
 
     do
     {
-        while(array[i] < x && i < right)
+        while (array[i] < x && i < right)
         {
             i++;
         }
-        while(x < array[j] && j > left && j > 0)
+        while (x < array[j] && j > left && j > 0)
         {
             j--;
         }
 
-        if(i <= j)
+        if (i <= j)
         {
             y        = array[i];
             array[i] = array[j];
@@ -674,20 +655,19 @@ void qs3ulul_double(
             array2[j] = l2;
 
             i++;
-            if(j > 0)
+            if (j > 0)
             {
                 j--;
             }
         }
-    }
-    while(i <= j);
+    } while (i <= j);
 
-    if(left < j)
+    if (left < j)
     {
         qs3ulul_double(array, array1, array2, left, j);
     }
 
-    if(i < right)
+    if (i < right)
     {
         qs3ulul_double(array, array1, array2, i, right);
     }
@@ -707,10 +687,7 @@ void qs3ulul_double(
  * @param array1  Satellite co-permuted with key
  * @param count   Number of elements
  */
-void quick_sort2(
-    double *__restrict array,
-    double *__restrict array1,
-    unsigned long      count)
+void quick_sort2(double *__restrict array, double *__restrict array1, unsigned long count)
 {
     qs2(array, array1, 0, count - 1);
 }
@@ -723,11 +700,10 @@ void quick_sort2(
  * @param array2  Second satellite
  * @param count   Number of elements
  */
-void quick_sort3(
-    double *__restrict array,
-    double *__restrict array1,
-    double *__restrict array2,
-    unsigned long      count)
+void quick_sort3(double *__restrict array,
+                 double *__restrict array1,
+                 double *__restrict array2,
+                 unsigned long count)
 {
     qs3(array, array1, array2, 0, count - 1);
 }
@@ -740,11 +716,10 @@ void quick_sort3(
  * @param array2  Second satellite
  * @param count   Number of elements
  */
-void quick_sort3_float(
-    float *__restrict array,
-    float *__restrict array1,
-    float *__restrict array2,
-    unsigned long     count)
+void quick_sort3_float(float *__restrict array,
+                       float *__restrict array1,
+                       float *__restrict array2,
+                       unsigned long count)
 {
     qs3_float(array, array1, array2, 0, count - 1);
 }
@@ -757,11 +732,10 @@ void quick_sort3_float(
  * @param array2  Second satellite
  * @param count   Number of elements
  */
-void quick_sort3_double(
-    double *__restrict array,
-    double *__restrict array1,
-    double *__restrict array2,
-    unsigned long      count)
+void quick_sort3_double(double *__restrict array,
+                        double *__restrict array1,
+                        double *__restrict array2,
+                        unsigned long count)
 {
     qs3_double(array, array1, array2, 0, count - 1);
 }
@@ -773,10 +747,7 @@ void quick_sort3_double(
  * @param array1  Satellite (long)
  * @param count   Number of elements
  */
-void quick_sort2l(
-    double *__restrict array,
-    long *__restrict   array1,
-    unsigned long      count)
+void quick_sort2l(double *__restrict array, long *__restrict array1, unsigned long count)
 {
     qs2l(array, array1, 0, count - 1);
 }
@@ -788,10 +759,7 @@ void quick_sort2l(
  * @param array1  Satellite (unsigned long)
  * @param count   Number of elements
  */
-void quick_sort2ul(
-    double *__restrict        array,
-    unsigned long *__restrict array1,
-    unsigned long             count)
+void quick_sort2ul(double *__restrict array, unsigned long *__restrict array1, unsigned long count)
 {
     qs2ul(array, array1, 0, count - 1);
 }
@@ -805,10 +773,7 @@ void quick_sort2ul(
  * @param array1  Satellite (long)
  * @param count   Number of elements
  */
-void quick_sort2l_double(
-    double *__restrict array,
-    long *__restrict   array1,
-    unsigned long      count)
+void quick_sort2l_double(double *__restrict array, long *__restrict array1, unsigned long count)
 {
     qs2l_double(array, array1, 0, count - 1);
 }
@@ -822,10 +787,9 @@ void quick_sort2l_double(
  * @param array1  Satellite (unsigned long)
  * @param count   Number of elements
  */
-void quick_sort2ul_double(
-    double *__restrict        array,
-    unsigned long *__restrict array1,
-    unsigned long             count)
+void quick_sort2ul_double(double *__restrict array,
+                          unsigned long *__restrict array1,
+                          unsigned long count)
 {
     qs2ul_double(array, array1, 0, count - 1);
 }
@@ -838,11 +802,10 @@ void quick_sort2ul_double(
  * @param array2  Second satellite (long)
  * @param count   Number of elements
  */
-void quick_sort3ll_double(
-    double *__restrict array,
-    long *__restrict   array1,
-    long *__restrict   array2,
-    unsigned long      count)
+void quick_sort3ll_double(double *__restrict array,
+                          long *__restrict array1,
+                          long *__restrict array2,
+                          unsigned long count)
 {
     qs3ll_double(array, array1, array2, 0, count - 1);
 }
@@ -855,11 +818,10 @@ void quick_sort3ll_double(
  * @param array2  Second satellite (unsigned long)
  * @param count   Number of elements
  */
-void quick_sort3ulul_double(
-    double *__restrict        array,
-    unsigned long *__restrict array1,
-    unsigned long *__restrict array2,
-    unsigned long             count)
+void quick_sort3ulul_double(double *__restrict array,
+                            unsigned long *__restrict array1,
+                            unsigned long *__restrict array2,
+                            unsigned long count)
 {
     qs3ulul_double(array, array1, array2, 0, count - 1);
 }

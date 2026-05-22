@@ -1,5 +1,6 @@
 build
 _build*
+_install*
 build_local/
 build_debug
 install_debug
@@ -73,3 +74,5 @@ lex.yy.c
 gdb_script.txt
 test_fps_stop.sh
 
+scratch/
+.antigravitycli/

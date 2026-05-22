@@ -40,10 +40,10 @@ static OV_MODEL ov_model_slots[3];
  *   ready_idx   — latest complete scan (swap target)
  *   display_idx — owned by display thread (reads here)
  */
-static int ov_write_idx   = 0;
-static int ov_ready_idx   = 1;
-static int ov_display_idx = 2;
-static atomic_int ov_new_data = 0;
+static int        ov_write_idx   = 0;
+static int        ov_ready_idx   = 1;
+static int        ov_display_idx = 2;
+static atomic_int ov_new_data    = 0;
 
 static pthread_mutex_t ov_model_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -53,8 +53,8 @@ static pthread_mutex_t ov_model_mutex = PTHREAD_MUTEX_INITIALIZER;
  * ========================================================= */
 
 static pthread_t      ov_scan_thread;
-static volatile int   ov_scan_running    = 0;
-static volatile float ov_scan_interval_s = 1.0f;
+static volatile int   ov_scan_running      = 0;
+static volatile float ov_scan_interval_s   = 1.0f;
 static atomic_int     ov_force_update_flag = 0;
 
 /**
@@ -97,8 +97,7 @@ int ov_scan_has_new_data(void)
  * Scan thread main loop
  * ========================================================= */
 
-static void *ov_scan_thread_func(
-    void *arg __attribute__((unused)))
+static void *ov_scan_thread_func(void *arg __attribute__((unused)))
 {
     memset(ov_model_slots, 0, sizeof(ov_model_slots));
 
@@ -112,9 +111,9 @@ static void *ov_scan_thread_func(
          * The old ready slot becomes our new write slot. */
         pthread_mutex_lock(&ov_model_mutex);
         {
-            int tmp       = ov_ready_idx;
-            ov_ready_idx  = ov_write_idx;
-            ov_write_idx  = tmp;
+            int tmp      = ov_ready_idx;
+            ov_ready_idx = ov_write_idx;
+            ov_write_idx = tmp;
             atomic_store_explicit(&ov_new_data, 1, memory_order_release);
         }
         pthread_mutex_unlock(&ov_model_mutex);
@@ -122,15 +121,16 @@ static void *ov_scan_thread_func(
         /* Sleep for the configured interval in small increments
          * so we can exit immediately if requested. */
         {
-            float interval = ov_scan_interval_s;
+            float           interval = ov_scan_interval_s;
             struct timespec ts;
             ts.tv_sec  = 0;
             ts.tv_nsec = 10000000L; /* 10 ms */
 
-            int num_sleeps = (int)(interval / 0.01f);
+            int num_sleeps = (int) (interval / 0.01f);
             for (int i = 0; i < num_sleeps; i++)
             {
-                if (!ov_scan_running || OV_SIG_ANY_SET() || atomic_load_explicit(&ov_force_update_flag, memory_order_acquire))
+                if (!ov_scan_running || OV_SIG_ANY_SET() ||
+                    atomic_load_explicit(&ov_force_update_flag, memory_order_acquire))
                 {
                     atomic_store_explicit(&ov_force_update_flag, 0, memory_order_release);
                     break;
@@ -161,8 +161,7 @@ int ov_scan_start(void)
     }
     ov_scan_running = 1;
 
-    if (pthread_create(&ov_scan_thread, NULL,
-                       ov_scan_thread_func, NULL) != 0)
+    if (pthread_create(&ov_scan_thread, NULL, ov_scan_thread_func, NULL) != 0)
     {
         ov_scan_running = 0;
         return -1;

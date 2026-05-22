@@ -42,28 +42,24 @@
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStruct.h"
 
-errno_t processinfo_waitoninputstream_init(
-    PROCESSINFO *processinfo,
-    IMAGE       *image,
-    int         triggermode,
-    int         semindexrequested);
+errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
+                                           IMAGE       *image,
+                                           int          triggermode,
+                                           int          semindexrequested);
 
 errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo);
 
-#define PROCINFO_TRIGGER_DELAYUS(delayus)                                      \
-    do                                                                         \
-    {                                                                          \
-        processinfo_waitoninputstream_init(processinfo,                        \
-                                           NULL,                               \
-                                           PROCESSINFO_TRIGGERMODE_DELAY,      \
-                                           -1);                                \
-        processinfo->triggerdelay.tv_sec  = 0;                                 \
-        processinfo->triggerdelay.tv_nsec = (long) ((delayus) *1000);          \
-        while (processinfo->triggerdelay.tv_nsec > 1000000000)                 \
-        {                                                                      \
-            processinfo->triggerdelay.tv_nsec -= 1000000000;                   \
-            processinfo->triggerdelay.tv_sec += 1;                             \
-        }                                                                      \
+#define PROCINFO_TRIGGER_DELAYUS(delayus)                                                         \
+    do                                                                                            \
+    {                                                                                             \
+        processinfo_waitoninputstream_init(processinfo, NULL, PROCESSINFO_TRIGGERMODE_DELAY, -1); \
+        processinfo->triggerdelay.tv_sec  = 0;                                                    \
+        processinfo->triggerdelay.tv_nsec = (long) ((delayus) * 1000);                            \
+        while (processinfo->triggerdelay.tv_nsec > 1000000000)                                    \
+        {                                                                                         \
+            processinfo->triggerdelay.tv_nsec -= 1000000000;                                      \
+            processinfo->triggerdelay.tv_sec += 1;                                                \
+        }                                                                                         \
     } while (0)
 
 #endif

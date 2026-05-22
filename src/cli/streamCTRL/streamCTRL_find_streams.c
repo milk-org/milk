@@ -1,5 +1,5 @@
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#    define _GNU_SOURCE
 #endif
 
 #include <string.h>
@@ -21,20 +21,17 @@
  *
  */
 
-int find_streams(
-    STREAMINFO             *streaminfo,
-    int                    filter,
-    const char *__restrict namefilter)
+int find_streams(STREAMINFO *streaminfo, int filter, const char *__restrict namefilter)
 {
     int            NBstream = 0;
     DIR           *d;
     struct dirent *dir;
 
     d = opendir(SHAREDSHMDIR);
-    if(d)
+    if (d)
     {
         int sindex = 0;
-        while(((dir = readdir(d)) != NULL))
+        while (((dir = readdir(d)) != NULL))
         {
             int   scanentryOK = 1;
             char *pch         = strstr(dir->d_name, ".im.shm");
@@ -42,32 +39,32 @@ int find_streams(
             int matchOK = 1;
 
             // check that .im.shm terminates the string
-            if((long)(pch - dir->d_name) != (long)(strlen(dir->d_name) - 7))
+            if ((long) (pch - dir->d_name) != (long) (strlen(dir->d_name) - 7))
             {
                 matchOK = 0;
             }
 
             // name filtering (first pass, not exclusive to stream name, includes path and extension
-            if(filter == 1)
+            if (filter == 1)
             {
-                if(strstr(dir->d_name, namefilter) == NULL)
+                if (strstr(dir->d_name, namefilter) == NULL)
                 {
                     matchOK = 0;
                 }
             }
 
 
-            if((pch) && (matchOK == 1))
+            if ((pch) && (matchOK == 1))
             {
                 // is file sym link ?
                 struct stat buf;
                 int         retv;
                 char        fullname[STRINGMAXLEN_FULLFILENAME];
 
-                snprintf(fullname, STRINGMAXLEN_FULLFILENAME,
-                         "%.700s/%.255s", SHAREDSHMDIR, dir->d_name);
+                snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%.700s/%.255s", SHAREDSHMDIR,
+                         dir->d_name);
                 retv = lstat(fullname, &buf);
-                if(retv == -1)
+                if (retv == -1)
                 {
                     printf("File \"%s\"", dir->d_name);
                     PRINT_ERROR("Error running lstat on file: %s", strerror(errno));
@@ -75,56 +72,56 @@ int find_streams(
                 }
 
 
-                if(S_ISLNK(buf.st_mode))  // resolve link name
+                if (S_ISLNK(buf.st_mode)) // resolve link name
                 {
-                    char  fullname_lnk[STRINGMAXLEN_FULLFILENAME];
-                    char  linkbuf[STRINGMAXLEN_FULLFILENAME];
-                    int   pathOK = 1;
+                    char fullname_lnk[STRINGMAXLEN_FULLFILENAME];
+                    char linkbuf[STRINGMAXLEN_FULLFILENAME];
+                    int  pathOK = 1;
 
                     streaminfo[sindex].SymLink = 1;
-                    snprintf(fullname_lnk, sizeof(fullname_lnk),
-                             "%.700s/%.255s", SHAREDSHMDIR, dir->d_name);
+                    snprintf(fullname_lnk, sizeof(fullname_lnk), "%.700s/%.255s", SHAREDSHMDIR,
+                             dir->d_name);
 
                     /* stat() follows the symlink: one syscall to check
                      * reachability, avoiding the expensive realpath(). */
                     struct stat target_buf;
-                    if(stat(fullname_lnk, &target_buf) == -1)
+                    if (stat(fullname_lnk, &target_buf) == -1)
                     {
-                        pathOK = 0;  /* broken or inaccessible symlink */
+                        pathOK = 0; /* broken or inaccessible symlink */
                     }
 
-                    if(pathOK == 1)
+                    if (pathOK == 1)
                     {
                         /* readlink() gives the raw target — one syscall. */
                         ssize_t llen = readlink(fullname_lnk, linkbuf, sizeof(linkbuf) - 1);
-                        if(llen <= 0)
+                        if (llen <= 0)
                         {
                             pathOK = 0;
                         }
                         else
                         {
                             linkbuf[llen] = '\0';
-                            char *bn = basename(linkbuf);
+                            char *bn      = basename(linkbuf);
 
                             /* Strip trailing ".im.shm" from basename. */
                             int          lOK = 1;
                             unsigned int ii  = 0;
-                            while((lOK == 1) && (ii < strlen(bn)))
+                            while ((lOK == 1) && (ii < strlen(bn)))
                             {
-                                if(bn[ii] == '.')
+                                if (bn[ii] == '.')
                                 {
                                     bn[ii] = '\0';
                                     lOK    = 0;
                                 }
                                 ii++;
                             }
-                            strncpy(streaminfo[sindex].linkname,
-                                    bn, STRINGMAXLEN_STREAMINFO_NAME - 1);
+                            strncpy(streaminfo[sindex].linkname, bn,
+                                    STRINGMAXLEN_STREAMINFO_NAME - 1);
                             streaminfo[sindex].linkname[STRINGMAXLEN_STREAMINFO_NAME - 1] = '\0';
                         }
                     }
 
-                    if(pathOK == 0)
+                    if (pathOK == 0)
                     {
                         scanentryOK = 0;
                     }
@@ -135,20 +132,20 @@ int find_streams(
                 }
 
                 // get stream name
-                if(scanentryOK == 1)
+                if (scanentryOK == 1)
                 {
                     int strlencp1 = STRINGMAXLEN_STREAMINFO_NAME;
                     int strlencp  = strlen(dir->d_name) - strlen(".im.shm");
-                    if(strlencp < strlencp1)
+                    if (strlencp < strlencp1)
                     {
                         strlencp1 = strlencp;
                     }
                     strncpy(streaminfo[sindex].sname, dir->d_name, strlencp1);
                     streaminfo[sindex].sname[strlen(dir->d_name) - strlen(".im.shm")] = '\0';
 
-                    if(filter == 1)
+                    if (filter == 1)
                     {
-                        if(strstr(streaminfo[sindex].sname, namefilter) != NULL)
+                        if (strstr(streaminfo[sindex].sname, namefilter) != NULL)
                         {
                             sindex++;
                         }

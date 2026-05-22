@@ -11,27 +11,18 @@
 #define _STREAMCTRL_H
 
 
-
 #include <stdint.h>
 #include <unistd.h> // getpid()
 
 
-
 #define STRINGLENMAX 32
 
-#define streamNBID_MAX      10000
+#define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 100
 
 #define STRINGMAXLEN_STREAMINFO_NAME 100
 
 #define PIDnameStringLen 12
-
-
-
-
-
-
-
 
 
 // shared memory access permission
@@ -40,33 +31,31 @@
 #define STRINGLENMAX 32
 
 #define streamOpenNBpid_MAX 100
-#define nameNBchar          100
-#define PIDnameStringLen    12
+#define nameNBchar 100
+#define PIDnameStringLen 12
 
 /* Sort column identifiers for streamCTRL */
-#define STREAM_SORT_NONE  0
-#define STREAM_SORT_NAME  1
-#define STREAM_SORT_TYPE  2
-#define STREAM_SORT_SIZE  3
-#define STREAM_SORT_CNT0  4
-#define STREAM_SORT_CPID  5
-#define STREAM_SORT_OPID  6
-#define STREAM_SORT_FREQ  7
+#define STREAM_SORT_NONE 0
+#define STREAM_SORT_NAME 1
+#define STREAM_SORT_TYPE 2
+#define STREAM_SORT_SIZE 3
+#define STREAM_SORT_CNT0 4
+#define STREAM_SORT_CPID 5
+#define STREAM_SORT_OPID 6
+#define STREAM_SORT_FREQ 7
 #define STREAM_NB_SORT_COLS 7
 
-#define DISPLAY_MODE_HELP     1
-#define DISPLAY_MODE_SUMMARY  2
-#define DISPLAY_MODE_WRITE    3
-#define DISPLAY_MODE_READ     4
-#define DISPLAY_MODE_SPTRACE  5
-#define DISPLAY_MODE_FUSER    6
+#define DISPLAY_MODE_HELP 1
+#define DISPLAY_MODE_SUMMARY 2
+#define DISPLAY_MODE_WRITE 3
+#define DISPLAY_MODE_READ 4
+#define DISPLAY_MODE_SPTRACE 5
+#define DISPLAY_MODE_FUSER 6
 
-#define PRINT_PID_DEFAULT          0
+#define PRINT_PID_DEFAULT 0
 #define PRINT_PID_FORCE_NOUPSTREAM 1
 
 #define NO_DOWNSTREAM_INDEX 100
-
-
 
 
 typedef struct
@@ -107,7 +96,6 @@ typedef struct
 } STREAMINFO;
 
 
-
 typedef struct
 {
     int    twaitus; // sleep time between scans
@@ -122,15 +110,13 @@ typedef struct
     int WriteFlistToFile; // 1 if output to file
 
     //STREAMINFO *sinfo;
-    long        NBstream;
-    int         fuserUpdate;
-    int         fuserUpdate0;
-    int         sindexscan;
-    char      **PIDtable; // stores names of PIDs
+    long   NBstream;
+    int    fuserUpdate;
+    int    fuserUpdate0;
+    int    sindexscan;
+    char **PIDtable; // stores names of PIDs
 
 } STREAMINFOPROC;
-
-
 
 
 // strructure holding data required for streamCTRL
@@ -141,12 +127,9 @@ typedef struct
     STREAMINFOPROC *streaminfoproc;
 
     // pointers to images
-    IMAGE          *images;
+    IMAGE *images;
 
 } streamCTRLarg_struct;
-
-
-
 
 
 #ifdef __cplusplus
@@ -155,11 +138,11 @@ extern "C"
 #endif
 
 #ifndef __STDC_LIB_EXT1__
-typedef int errno_t;
+    typedef int errno_t;
 #endif
 
-/** Main TUI entry point — runs until user presses 'x' or SIGINT */
-errno_t streamCTRL_CTRLscreen(void);
+    /** Main TUI entry point — runs until user presses 'x' or SIGINT */
+    errno_t streamCTRL_CTRLscreen(void);
 
 #ifdef __cplusplus
 }

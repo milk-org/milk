@@ -15,9 +15,9 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -31,31 +31,17 @@
 #include "image_copy.h"
 
 /* forward decls */
-imageID copy_image_ID(
-    const char *name,
-    const char *newname,
-    int        shared);
-imageID copy_image_ID_IMGID(
-    IMGID *imgin,
-    IMGID *imgout,
-    int   shared);
+imageID copy_image_ID(const char *name, const char *newname, int shared);
+imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared);
 /**
  * @brief Rename an image in the image array.
  *
  * Updates the name field without copying data.
  */
-imageID chname_image_ID(
-    const char *ID_name,
-    const char *new_name);
-imageID chname_image_ID_IMGID(
-    IMGID      *imgin,
-    const char *new_name);
-errno_t COREMOD_MEMORY_cp2shm(
-    const char *IDname,
-    const char *IDshmname);
-errno_t COREMOD_MEMORY_cp2shm_IMGID(
-    IMGID *imgin,
-    IMGID *imgout);
+imageID chname_image_ID(const char *ID_name, const char *new_name);
+imageID chname_image_ID_IMGID(IMGID *imgin, const char *new_name);
+errno_t COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname);
+errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout);
 
 
 /* ================================================================
@@ -65,34 +51,25 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
 static char p_srcname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static char p_dstname[FUNCTION_PARAMETER_STRMAXLEN] = "im4";
 
-#define FPS_PARAMS_2STR(X) \
-    X(".srcname", p_srcname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "source image") \
-    X(".dstname", p_dstname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_OUTPUT, \
-      "destination image")
+#define FPS_PARAMS_2STR(X)                                                               \
+    X(".srcname", p_srcname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "source image") \
+    X(".dstname", p_dstname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_OUTPUT, "destination image")
 
 
 /* ================================================================
  *  CMD 1: cp
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_cp =
-{
+static FPS_APP_INFO FPS_app_info_cp = {
     .fps_name    = "cp",
     .cmdkey      = "cp",
     .description = "copy image",
     .description_long =
-    "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and metadata. Can also rename an existing image in the process table."
+        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and "
+        "metadata. Can also rename an existing image in the process table."
 };
 
-static CLICMDDATA CLIcmddata_cp =
-{
-    "", "", CLICMD_FIELDS_NOPARAM
-};
+static CLICMDDATA CLIcmddata_cp = { "", "", CLICMD_FIELDS_NOPARAM };
 
 FPS_CMDSETTINGS_INIT(cp, CLIcmddata_cp, FPS_app_info_cp)
 
@@ -107,19 +84,16 @@ static errno_t __attribute__((unused)) compute_cp()
  *  CMD 2: mv
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info_mv =
-{
+static FPS_APP_INFO FPS_app_info_mv = {
     .fps_name    = "mv",
     .cmdkey      = "mv",
     .description = "change image name",
     .description_long =
-    "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and metadata. Can also rename an existing image in the process table."
+        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and "
+        "metadata. Can also rename an existing image in the process table."
 };
 
-static CLICMDDATA CLIcmddata_mv =
-{
-    "", "", CLICMD_FIELDS_NOPARAM
-};
+static CLICMDDATA CLIcmddata_mv = { "", "", CLICMD_FIELDS_NOPARAM };
 
 FPS_CMDSETTINGS_INIT(mv, CLIcmddata_mv, FPS_app_info_mv)
 
@@ -134,34 +108,23 @@ static errno_t __attribute__((unused)) compute_mv()
  *  CMD 3: imcp2shm (primary)
  * ============================================================= */
 
-static FPS_APP_INFO FPS_app_info =
-{
+static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "imcp2shm",
     .cmdkey      = "imcp2shm",
-    .description =
-    "copy image to shared memory",
+    .description = "copy image to shared memory",
     .description_long =
-    "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and metadata. Can also rename an existing image in the process table."
+        "Copy an image stream to a new name or location. Creates a deep copy of all pixel data and "
+        "metadata. Can also rename an existing image in the process table."
 };
 
-static FPS_CLI_BINDING my_bindings[] =
-{
-    FPS_PARAMS_2STR(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS_2STR(FPS_X_BINDING) };
 
 static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) /
-    sizeof(FPS_CLI_BINDING);
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] =
-{
-    FPS_PARAMS_2STR(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS_2STR(FPS_X_FARG) };
 
-static CLICMDDATA CLIcmddata =
-{
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
 
 FPS_CMDSETTINGS_INIT(shm, CLIcmddata, FPS_app_info)
 
@@ -169,7 +132,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START COREMOD_MEMORY_cp2shm(p_srcname, p_dstname);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -182,39 +145,38 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 static errno_t CLIfunction_cp(void)
 {
-    return safe_fps_generic_CLIfunction(
-               &FPS_app_info_cp, farg, &CLIcmddata_cp, my_bindings, nb_bindings, compute_cp);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_cp, farg, &CLIcmddata_cp, my_bindings,
+                                        nb_bindings, compute_cp);
 }
 
 static errno_t CLIfunction_mv(void)
 {
-    return safe_fps_generic_CLIfunction(
-               &FPS_app_info_mv, farg, &CLIcmddata_mv, my_bindings, nb_bindings, compute_mv);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_mv, farg, &CLIcmddata_mv, my_bindings,
+                                        nb_bindings, compute_mv);
 }
 
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-               &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_COREMOD_memory__image_copy()
+errno_t CLIADDCMD_COREMOD_memory__image_copy()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     {
-        int cmdi = RegisterCLIcmd(CLIcmddata_cp, CLIfunction_cp);
+        int cmdi                  = RegisterCLIcmd(CLIcmddata_cp, CLIfunction_cp);
         CLIcmddata_cp.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(CLIcmddata_mv, CLIfunction_mv);
+        int cmdi                  = RegisterCLIcmd(CLIcmddata_mv, CLIfunction_mv);
         CLIcmddata_mv.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
@@ -234,20 +196,17 @@ CLIADDCMD_COREMOD_memory__image_copy()
  * @param shared  1 for shared memory, 0 for local
  * @return Output image ID
  */
-imageID copy_image_ID_IMGID(
-    IMGID *imgin,
-    IMGID *imgout,
-    int   shared)
+imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t naxis = imgin->md[0].naxis;
-    if(imgin->ID == -1)
+    if (imgin->ID == -1)
     {
         return RETURN_FAILURE;
     }
     uint32_t size[3];
-    for(uint32_t i = 0; i < naxis; i++)
+    for (uint32_t i = 0; i < naxis; i++)
     {
         size[i] = imgin->md[0].size[i];
     }
@@ -257,10 +216,10 @@ imageID copy_image_ID_IMGID(
     resolveIMGID(imgout, ERRMODE_NULL, dcimg, dcnimg);
 
     int newim = 0;
-    if(imgout->ID != -1)
+    if (imgout->ID != -1)
     {
         // verify imgout has the right size and type
-        if(imgin->md[0].nelement != imgout->md[0].nelement)
+        if (imgin->md[0].nelement != imgout->md[0].nelement)
         {
             fprintf(stderr,
                     "ERROR [copy_image_ID_IMGID]: images %s and %s do not have "
@@ -269,7 +228,7 @@ imageID copy_image_ID_IMGID(
             newim = 1;
         }
 
-        if(imgin->md[0].datatype != imgout->md[0].datatype)
+        if (imgin->md[0].datatype != imgout->md[0].datatype)
         {
             fprintf(stderr,
                     "ERROR [copy_image_ID_IMGID]: images %s and %s do not have "
@@ -278,31 +237,31 @@ imageID copy_image_ID_IMGID(
             newim = 1;
         }
 
-        if(newim == 1)
+        if (newim == 1)
         {
             delete_image_ID(imgout->name, DELETE_IMAGE_ERRMODE_WARNING);
             imgout->ID = -1;
         }
     }
 
-    if(imgout->ID == -1)
+    if (imgout->ID == -1)
     {
         imgout->mdt->naxis = naxis;
-        for(uint32_t i = 0; i < naxis; i++)
+        for (uint32_t i = 0; i < naxis; i++)
         {
             imgout->mdt->size[i] = size[i];
         }
         imgout->mdt->datatype = datatype;
-        imgout->mdt->shared = shared;
-        imgout->mdt->NBkw = NB_KEYWNODE_MAX;
-        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+        imgout->mdt->shared   = shared;
+        imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
+        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
     }
 
     imgout->md[0].write = 1;
 
-    __builtin_memcpy(
-        imgout->im->array.raw, imgin->im->array.raw, ImageStreamIO_typesize(datatype) * nelement);
+    __builtin_memcpy(imgout->im->array.raw, imgin->im->array.raw,
+                     ImageStreamIO_typesize(datatype) * nelement);
 
     imgout->md[0].cnt0++;
     imgout->md[0].write = 0;
@@ -320,10 +279,7 @@ imageID copy_image_ID_IMGID(
  * @param shared   1 for shared memory output
  * @return Output image ID
  */
-imageID copy_image_ID(
-    const char *restrict name,
-    const char *restrict newname,
-    int                  shared)
+imageID copy_image_ID(const char *restrict name, const char *restrict newname, int shared)
 {
     IMGID imgin  = imgid_make_from_name(name);
     IMGID imgout = imgid_make_from_name(newname);
@@ -342,16 +298,14 @@ imageID copy_image_ID(
  * @param new_name  New name string
  * @return Image ID
  */
-imageID chname_image_ID_IMGID(
-    IMGID      *imgin,
-    const char *new_name)
+imageID chname_image_ID_IMGID(IMGID *imgin, const char *new_name)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
-    if((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
+    if ((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
     {
         snprintf(imgin->im->name, STRINGMAXLEN_IMAGE_NAME, "%s", new_name);
-        if(imgin->ID == -1)
+        if (imgin->ID == -1)
         {
             return RETURN_FAILURE;
         }
@@ -363,7 +317,6 @@ imageID chname_image_ID_IMGID(
     }
 
 
-
     return imgin->ID;
 }
 
@@ -372,9 +325,7 @@ imageID chname_image_ID_IMGID(
  *
  * Updates the name field without copying data.
  */
-imageID chname_image_ID(
-    const char *restrict ID_name,
-    const char *restrict new_name)
+imageID chname_image_ID(const char *restrict ID_name, const char *restrict new_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
 
@@ -393,19 +344,17 @@ imageID chname_image_ID(
  * @param imgout  Destination (will be shared)
  * @return RETURN_SUCCESS
  */
-errno_t COREMOD_MEMORY_cp2shm_IMGID(
-    IMGID *imgin,
-    IMGID *imgout)
+errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
 
     uint32_t naxis = imgin->md[0].naxis;
-    if(imgin->ID == -1)
+    if (imgin->ID == -1)
     {
         return RETURN_FAILURE;
     }
     uint32_t size[3];
-    for(uint32_t k = 0; k < naxis; k++)
+    for (uint32_t k = 0; k < naxis; k++)
     {
         size[k] = imgin->md[0].size[k];
     }
@@ -413,52 +362,52 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
 
     int shmOK = 1;
     resolveIMGID(imgout, ERRMODE_NULL, dcimg, dcnimg);
-    if(imgout->ID != -1)
+    if (imgout->ID != -1)
     {
         // verify type and size
-        if(imgin->md[0].naxis != imgout->md[0].naxis)
+        if (imgin->md[0].naxis != imgout->md[0].naxis)
         {
             shmOK = 0;
         }
-        if(shmOK == 1)
+        if (shmOK == 1)
         {
-            for(int axis = 0; axis < imgin->md[0].naxis; axis++)
-                if(imgin->md[0].size[axis] !=
-                        imgout->md[0].size[axis])
+            for (int axis = 0; axis < imgin->md[0].naxis; axis++)
+            {
+                if (imgin->md[0].size[axis] != imgout->md[0].size[axis])
                 {
                     shmOK = 0;
                 }
+            }
         }
-        if(imgin->md[0].datatype != imgout->md[0].datatype)
+        if (imgin->md[0].datatype != imgout->md[0].datatype)
         {
             shmOK = 0;
         }
 
-        if(shmOK == 0)
+        if (shmOK == 0)
         {
             delete_image_ID(imgout->name, DELETE_IMAGE_ERRMODE_WARNING);
             imgout->ID = -1;
         }
     }
 
-    if(imgout->ID == -1)
+    if (imgout->ID == -1)
     {
         imgout->mdt->naxis = naxis;
-        for(uint32_t k = 0; k < naxis; k++)
+        for (uint32_t k = 0; k < naxis; k++)
         {
             imgout->mdt->size[k] = size[k];
         }
         imgout->mdt->datatype = datatype;
-        imgout->mdt->shared = 1;
-        imgout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
+        imgout->mdt->shared   = 1;
+        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
     }
 
     imgout->md[0].write = 1;
 
-    __builtin_memcpy(
-        imgout->im->array.raw,
-        imgin->im->array.raw, ImageStreamIO_typesize(datatype) * imgin->md[0].nelement);
+    __builtin_memcpy(imgout->im->array.raw, imgin->im->array.raw,
+                     ImageStreamIO_typesize(datatype) * imgin->md[0].nelement);
 
     imgout->md[0].cnt0++;
     imgout->md[0].write = 0;
@@ -468,9 +417,7 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
     return RETURN_SUCCESS;
 }
 
-errno_t COREMOD_MEMORY_cp2shm(
-    const char *restrict IDname,
-    const char *restrict IDshmname)
+errno_t COREMOD_MEMORY_cp2shm(const char *restrict IDname, const char *restrict IDshmname)
 {
     IMGID imgin  = imgid_make_from_name(IDname);
     IMGID imgout = imgid_make_from_name(IDshmname);

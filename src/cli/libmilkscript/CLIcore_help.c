@@ -1,5 +1,5 @@
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#    define _GNU_SOURCE
 #endif
 
 #include <libgen.h>
@@ -7,7 +7,7 @@
 
 #include <fitsio.h>
 #ifdef USE_READLINE
-#include <readline/readline.h>
+#    include <readline/readline.h>
 #endif
 #include <regex.h>
 
@@ -24,33 +24,33 @@
 #include "fps_connect.h"
 
 
-#define C_RST    "\033[0m"
-#define C_TITLE  "\033[1;36m"
-#define C_HDR    "\033[1;35m"
-#define C_CMD    "\033[32m"
-#define C_BOLD   "\033[1m"
-#define C_NOTE   "\033[33m"
-#define C_ERR    "\033[1;31m"
+#define C_RST "\033[0m"
+#define C_TITLE "\033[1;36m"
+#define C_HDR "\033[1;35m"
+#define C_CMD "\033[32m"
+#define C_BOLD "\033[1m"
+#define C_NOTE "\033[33m"
+#define C_ERR "\033[1;31m"
 
 // Compatibility aliases
 #ifndef COLORRESET
-#define COLORRESET     C_RST
+#    define COLORRESET C_RST
 #endif
 
 #ifndef COLORCMD
-#define COLORCMD       C_CMD
+#    define COLORCMD C_CMD
 #endif
 
 #ifndef COLORINFO
-#define COLORINFO      "\033[32m" // green
+#    define COLORINFO "\033[32m" // green
 #endif
 
 #ifndef COLORARGCLI
-#define COLORARGCLI    "\033[36m" // argument part of CLI call: cyan
+#    define COLORARGCLI "\033[36m" // argument part of CLI call: cyan
 #endif
 
 #ifndef COLORARGnotCLI
-#define COLORARGnotCLI "\033[35m" // argument not part of CLI call: yellow
+#    define COLORARGnotCLI "\033[35m" // argument not part of CLI call: yellow
 #endif
 
 
@@ -79,11 +79,11 @@ errno_t printInfo()
     printf("--------------- SETTINGS ---------------------\n");
     printf("procinfo status = %d\n", dcprocinfo);
 
-    if(dcprecision == 0)
+    if (dcprecision == 0)
     {
         printf("Default precision upon startup : float\n");
     }
-    if(dcprecision == 1)
+    if (dcprecision == 1)
     {
         printf("Default precision upon startup : double\n");
     }
@@ -106,151 +106,151 @@ errno_t printInfo()
     size_t offsetval  = 0;
     size_t offsetval0 = 0;
 
-    printf(
-        "sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte "
-        "------------------\n", sizeof(IMAGE_METADATA) * 8, sizeof(IMAGE_METADATA));
+    printf("sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte "
+           "------------------\n",
+           sizeof(IMAGE_METADATA) * 8, sizeof(IMAGE_METADATA));
 
     offsetval = offsetof(IMAGE_METADATA, version);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, name);
-    printf(
-        "   version                     offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   version                     offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, naxis);
-    printf(
-        "   name                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   name                        offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, size);
-    printf(
-        "   naxis                       offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   naxis                       offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, nelement);
-    printf(
-        "   size                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   size                        offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, datatype);
-    printf(
-        "   nelement                    offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   nelement                    offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, imagetype);
-    printf(
-        "   datatype                    offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   datatype                    offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, creationtime);
-    printf(
-        "   imagetype                   offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   imagetype                   offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, lastaccesstime);
-    printf(
-        "   creationtime                offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   creationtime                offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, atime);
-    printf(
-        "   lastaccesstime              offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   lastaccesstime              offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, writetime);
-    printf(
-        "   atime                       offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   atime                       offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, location);
-    printf(
-        "   writetime                   offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   writetime                   offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, location);
-    printf(
-        "   shared                      offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   shared                      offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, status);
-    printf(
-        "   location                    offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   location                    offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, flag);
-    printf(
-        "   status                      offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   status                      offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, sem);
-    printf(
-        "   flag                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   flag                        offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, sem);
-    printf(
-        "   logflag                     offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   logflag                     offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cnt0);
-    printf(
-        "   sem                         offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   sem                         offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cnt1);
-    printf(
-        "   cnt0                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   cnt0                        offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cnt2);
-    printf(
-        "   cnt1                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   cnt1                        offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, write);
-    printf(
-        "   cnt2                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   cnt2                        offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, NBkw);
-    printf(
-        "   write                       offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval, offsetval - offsetval0);
+    printf("   write                       offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval, offsetval - offsetval0);
 
     offsetval0 = offsetval;
     offsetval  = offsetof(IMAGE_METADATA, cudaMemHandle);
-    printf(
-        "   NBkw                        offset = %4zu bit  = %4zu byte     "
-        "[%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+    printf("   NBkw                        offset = %4zu bit  = %4zu byte     "
+           "[%4zu byte]\n",
+           8 * offsetval0, offsetval0, offsetval - offsetval0);
 
     offsetval0 = offsetval;
-    printf("   cudaMemHandle               offset = %4zu bit  = %4zu byte\n",
-           8 * offsetval0, offsetval0);
+    printf("   cudaMemHandle               offset = %4zu bit  = %4zu byte\n", 8 * offsetval0,
+           offsetval0);
 
-    printf(
-        "sizeof(IMAGE)                  offset = %4zu bit  = %4zu byte "
-        "------------------\n", sizeof(IMAGE) * 8, sizeof(IMAGE));
+    printf("sizeof(IMAGE)                  offset = %4zu bit  = %4zu byte "
+           "------------------\n",
+           sizeof(IMAGE) * 8, sizeof(IMAGE));
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, name), offsetof(IMAGE, name));
 
@@ -290,9 +290,9 @@ errno_t printInfo()
     printf("   kw                          offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, kw), offsetof(IMAGE, kw));
 
-    printf(
-        "sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte "
-        "------------------\n", sizeof(IMAGE_KEYWORD) * 8, sizeof(IMAGE_KEYWORD));
+    printf("sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte "
+           "------------------\n",
+           sizeof(IMAGE_KEYWORD) * 8, sizeof(IMAGE_KEYWORD));
 
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
@@ -346,41 +346,54 @@ errno_t list_commands()
     int cols = 120; // default
 #ifdef TIOCGWINSZ
     struct winsize ws;
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0) {
-        if (ws.ws_col > 0) {
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0)
+    {
+        if (ws.ws_col > 0)
+        {
             cols = ws.ws_col;
         }
     }
 #endif
 
-    int  cmdinfoslen = 50;
-    
+    int cmdinfoslen = 50;
+
     // adjust cmdinfoslen if terminal is very small
     int base_length = 4 + 3 + 24 + 2 + 16 + 2; // 51
-    if (cols - base_length - 2 < cmdinfoslen) {
+    if (cols - base_length - 2 < cmdinfoslen)
+    {
         cmdinfoslen = cols - base_length - 2;
-        if (cmdinfoslen < 5) cmdinfoslen = 5;
+        if (cmdinfoslen < 5)
+        {
+            cmdinfoslen = 5;
+        }
     }
 
     char cmdinfoshort[cmdinfoslen];
 
-    printf("================================================ LIST OF COMMANDS ================================================\n");
-    for(unsigned int i = 0; i < data.NBcmd; i++)
+    printf("================================================ LIST OF COMMANDS "
+           "================================================\n");
+    for (unsigned int i = 0; i < data.NBcmd; i++)
     {
         strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
         cmdinfoshort[cmdinfoslen - 1] = '\0';
-        
-        int example_max_len = cols - (base_length + cmdinfoslen - 1 + 2);
+
+        int  example_max_len = cols - (base_length + cmdinfoslen - 1 + 2);
         char example_short[256];
-        if (example_max_len < 0) example_max_len = 0;
-        if (example_max_len > 255) example_max_len = 255;
-        
+        if (example_max_len < 0)
+        {
+            example_max_len = 0;
+        }
+        if (example_max_len > 255)
+        {
+            example_max_len = 255;
+        }
+
         strncpy(example_short, data.cmd[i].example, example_max_len);
         example_short[example_max_len] = '\0';
 
-        printf("%4u > " COLORCMD " %-24s " COLORRESET " %-16s " COLORINFO " %-*s " COLORRESET " %s\n",
-               i,
-               data.cmd[i].key, data.cmd[i].module, cmdinfoslen - 1, cmdinfoshort, example_short);
+        printf(
+            "%4u > " COLORCMD " %-24s " COLORRESET " %-16s " COLORINFO " %-*s " COLORRESET " %s\n",
+            i, data.cmd[i].key, data.cmd[i].module, cmdinfoslen - 1, cmdinfoshort, example_short);
     }
 
     return RETURN_SUCCESS;
@@ -396,41 +409,45 @@ errno_t list_commands()
  *
  * @param modulename  Module name to filter by
  */
-errno_t list_commands_module(
-    const char *__restrict modulename
-)
+errno_t list_commands_module(const char *__restrict modulename)
 {
     int cols = 120; // default
 #ifdef TIOCGWINSZ
     struct winsize ws;
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0) {
-        if (ws.ws_col > 0) {
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0)
+    {
+        if (ws.ws_col > 0)
+        {
             cols = ws.ws_col;
         }
     }
 #endif
 
-    int  mOK         = 0;
-    int  cmdinfoslen = 38;
-    
+    int mOK         = 0;
+    int cmdinfoslen = 38;
+
     // adjust cmdinfoslen if terminal is very small
     int base_length = 3 + 24 + 2; // 29
-    if (cols - base_length < cmdinfoslen) {
+    if (cols - base_length < cmdinfoslen)
+    {
         cmdinfoslen = cols - base_length;
-        if (cmdinfoslen < 5) cmdinfoslen = 5;
+        if (cmdinfoslen < 5)
+        {
+            cmdinfoslen = 5;
+        }
     }
 
     char cmdinfoshort[cmdinfoslen];
 
     int moduleindex = -1;
-    for(int m = 0; m < data.NBmodule; m++)
+    for (int m = 0; m < data.NBmodule; m++)
     {
-        if(strcmp(modulename, data.module[m].name) == 0)
+        if (strcmp(modulename, data.module[m].name) == 0)
         {
             moduleindex = m;
         }
     }
-    if(moduleindex == -1)
+    if (moduleindex == -1)
     {
         printf("---- MODULE %s DOES NOT EXIST / NOT LOADED ---------\n", modulename);
     }
@@ -442,40 +459,41 @@ errno_t list_commands_module(
         printf("   package      %s\n", data.module[moduleindex].package);
         printf("   loadname     %s\n", data.module[moduleindex].loadname);
         printf("   sofilename   %s\n", data.module[moduleindex].sofilename);
-        printf("   version      %d %d %d\n",
-               data.module[moduleindex].versionmajor,
+        printf("   version      %d %d %d\n", data.module[moduleindex].versionmajor,
                data.module[moduleindex].versionminor, data.module[moduleindex].versionpatch);
-        printf("   date         %s %s\n",
-               data.module[moduleindex].datestring, data.module[moduleindex].timestring);
+        printf("   date         %s %s\n", data.module[moduleindex].datestring,
+               data.module[moduleindex].timestring);
         printf("   info         %s\n", data.module[moduleindex].info);
 
-        for(unsigned int i = 0; i < data.NBcmd; i++)
+        for (unsigned int i = 0; i < data.NBcmd; i++)
         {
-            int cmdstrlen = 200;
+            int  cmdstrlen = 200;
             char cmpstring[cmdstrlen];
             snprintf(cmpstring, cmdstrlen, "%s", data.cmd[i].module);
 
-            if(strcmp(modulename, cmpstring) == 0)
+            if (strcmp(modulename, cmpstring) == 0)
             {
-                if(mOK == 0)
+                if (mOK == 0)
                 {
                     printf("---- MODULE %s COMMANDS ---------\n", modulename);
                 }
 
                 strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
                 cmdinfoshort[cmdinfoslen - 1] = '\0';
-                
-                printf(COLORCMD "   %-24s" COLORRESET COLORINFO
-                       "  %-*s\n" COLORRESET, data.cmd[i].key, cmdinfoslen - 1, cmdinfoshort);
+
+                printf(COLORCMD "   %-24s" COLORRESET COLORINFO "  %-*s\n" COLORRESET,
+                       data.cmd[i].key, cmdinfoslen - 1, cmdinfoshort);
                 mOK = 1;
             }
         }
 
-        if(mOK == 0)
+        if (mOK == 0)
         {
-            if(strlen(modulename) > 0)
+            if (strlen(modulename) > 0)
             {
-                printf("---- MODULE %s DOES NOT HAVE COMMANDS " "---------\n", modulename);
+                printf("---- MODULE %s DOES NOT HAVE COMMANDS "
+                       "---------\n",
+                       modulename);
             }
         }
     }
@@ -487,79 +505,88 @@ errno_t list_commands_module(
 /** @brief Construct command line (CLI) arguments help string
  *
  */
-int CLIhelp_make_argstring(
-    CLICMDARGDEF fpscliarg[],
-    int nbarg,
-    char *outargstring)
+int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstring)
 {
     char tmpstr[STRINGMAXLEN_CMD_SYNTAX];
     tmpstr[0] = '\0';
 
     int CLIargcnt = 0;
-    for(int arg = 0; arg < nbarg; arg++)
+    for (int arg = 0; arg < nbarg; arg++)
     {
-        if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        if (fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             char typestring[100] = "?";
 
-            switch(fpscliarg[arg].type)
+            switch (fpscliarg[arg].type)
             {
-            case CLIARG_FLOAT32: snprintf(typestring, sizeof(typestring), "FLOAT32");
+            case CLIARG_FLOAT32:
+                snprintf(typestring, sizeof(typestring), "FLOAT32");
                 break;
 
-            case CLIARG_FLOAT64: snprintf(typestring, sizeof(typestring), "FLOAT64");
+            case CLIARG_FLOAT64:
+                snprintf(typestring, sizeof(typestring), "FLOAT64");
                 break;
 
-            case CLIARG_INT32: snprintf(typestring, sizeof(typestring), "INT32");
+            case CLIARG_INT32:
+                snprintf(typestring, sizeof(typestring), "INT32");
                 break;
 
-            case CLIARG_UINT32: snprintf(typestring, sizeof(typestring), "UINT32");
+            case CLIARG_UINT32:
+                snprintf(typestring, sizeof(typestring), "UINT32");
                 break;
 
-            case CLIARG_INT64: snprintf(typestring, sizeof(typestring), "INT64");
+            case CLIARG_INT64:
+                snprintf(typestring, sizeof(typestring), "INT64");
                 break;
 
-            case CLIARG_UINT64: snprintf(typestring, sizeof(typestring), "UINT64");
+            case CLIARG_UINT64:
+                snprintf(typestring, sizeof(typestring), "UINT64");
                 break;
 
-            case CLIARG_STR_NOT_IMG: snprintf(typestring, sizeof(typestring), "STRING");
+            case CLIARG_STR_NOT_IMG:
+                snprintf(typestring, sizeof(typestring), "STRING");
                 break;
 
-            case CLIARG_IMG: snprintf(typestring, sizeof(typestring), "STREAMNAME");
+            case CLIARG_IMG:
+                snprintf(typestring, sizeof(typestring), "STREAMNAME");
                 break;
 
-            case CLIARG_STR: snprintf(typestring, sizeof(typestring), "STRING");
+            case CLIARG_STR:
+                snprintf(typestring, sizeof(typestring), "STRING");
                 break;
 
-            case CLIARG_ONOFF: snprintf(typestring, sizeof(typestring), "ONOFF");
+            case CLIARG_ONOFF:
+                snprintf(typestring, sizeof(typestring), "ONOFF");
                 break;
 
-            case CLIARG_FILENAME: snprintf(typestring, sizeof(typestring), "FILENAME");
+            case CLIARG_FILENAME:
+                snprintf(typestring, sizeof(typestring), "FILENAME");
                 break;
 
-            case CLIARG_FITSFILENAME: snprintf(typestring, sizeof(typestring), "FITSFILENAME");
+            case CLIARG_FITSFILENAME:
+                snprintf(typestring, sizeof(typestring), "FITSFILENAME");
                 break;
 
-            case CLIARG_FPSNAME: snprintf(typestring, sizeof(typestring), "FPSNAME");
+            case CLIARG_FPSNAME:
+                snprintf(typestring, sizeof(typestring), "FPSNAME");
                 break;
             }
 
             char tmpstr1[STRINGMAXLEN_CMD_SYNTAX];
-            if(CLIargcnt == 0)
+            if (CLIargcnt == 0)
             {
-                snprintf(tmpstr1,
-                         STRINGMAXLEN_CMD_SYNTAX, "<%s [%s]>", fpscliarg[arg].descr, typestring);
+                snprintf(tmpstr1, STRINGMAXLEN_CMD_SYNTAX, "<%s [%s]>", fpscliarg[arg].descr,
+                         typestring);
             }
             else
             {
-                snprintf(tmpstr1,
-                         STRINGMAXLEN_CMD_SYNTAX - 1,
-                         " <%s [%s]>", fpscliarg[arg].descr, typestring);
+                snprintf(tmpstr1, STRINGMAXLEN_CMD_SYNTAX - 1, " <%s [%s]>", fpscliarg[arg].descr,
+                         typestring);
             }
 
             // max number of chars we can write
             int n = STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr);
-            if(n > (int) strlen(tmpstr1))
+            if (n > (int) strlen(tmpstr1))
             {
                 strcat(tmpstr, tmpstr1);
             }
@@ -575,26 +602,25 @@ int CLIhelp_make_argstring(
 /** @brief Assemble command line (CLI) example command string
  *
  */
-int CLIhelp_make_cmdexamplestring(
-    CLICMDARGDEF fpscliarg[],
-    int nbarg,
-    char *shortname,
-    char *outcmdexstring)
+int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
+                                  int          nbarg,
+                                  char        *shortname,
+                                  char        *outcmdexstring)
 {
     char tmpstr[STRINGMAXLEN_CMD_EXAMPLE];
 
     snprintf(tmpstr, STRINGMAXLEN_CMD_EXAMPLE, "%s", shortname);
 
-    for(int arg = 0; arg < nbarg; arg++)
+    for (int arg = 0; arg < nbarg; arg++)
     {
-        if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        if (fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             char tmpstr1[STRINGMAXLEN_CMD_EXAMPLE];
             snprintf(tmpstr1, STRINGMAXLEN_CMD_EXAMPLE - 1, " %s", fpscliarg[arg].example);
 
             // max number of chars we can write
             int n = STRINGMAXLEN_CMD_EXAMPLE - strlen(tmpstr);
-            if(n > (int) strlen(tmpstr1))
+            if (n > (int) strlen(tmpstr1))
             {
                 strcat(tmpstr, tmpstr1);
             }

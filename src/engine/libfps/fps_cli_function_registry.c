@@ -14,5 +14,5 @@
 void *fps_generic_CLIfunction_ptr = NULL;
 void *fps_fill_farg_examples_ptr  = NULL;
 
-char fps_last_used_name[200] = "";
+char fps_last_used_name[200]   = "";
 char fps_last_used_cmdkey[200] = "";

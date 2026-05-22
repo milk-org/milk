@@ -6,21 +6,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#define C_TITLE "\033[1;36m"   /* Cyan Bold   -> Main section headers / separators */
-#define C_HDR   "\033[1;34m"   /* Blue Bold   -> Subheaders inside sections */
-#define C_CMD   "\033[1;32m"   /* Green Bold  -> Command names, syntax, execution */
-#define C_NOTE  "\033[1;33m"   /* Yellow Bold -> Tips, Notes, 'run X for more' */
-#define C_BOLD  "\033[1m"      /* White Bold  -> Emphasize specific words */
-#define C_RST   "\033[0m"      /* Reset */
+#define C_TITLE "\033[1;36m" /* Cyan Bold   -> Main section headers / separators */
+#define C_HDR "\033[1;34m"   /* Blue Bold   -> Subheaders inside sections */
+#define C_CMD "\033[1;32m"   /* Green Bold  -> Command names, syntax, execution */
+#define C_NOTE "\033[1;33m"  /* Yellow Bold -> Tips, Notes, 'run X for more' */
+#define C_BOLD "\033[1m"     /* White Bold  -> Emphasize specific words */
+#define C_RST "\033[0m"      /* Reset */
 
-int main(
-    int argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
-    for(int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
-        if(strcmp(argv[i], "-h1") == 0 ||
-                strcmp(argv[i], "--help-oneline") == 0)
+        if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("processinfo and real-time setup guide\n");
             return 0;
@@ -48,8 +45,10 @@ int main(
     printf("upon initialization), a new group (`.procinfo`) appears.\n");
     printf("\n");
     printf("Important Procinfo Parameters:\n");
-    printf("  " C_BOLD "procinfo.enabled" C_RST "      Turn ON/OFF the real-time background loop.\n");
-    printf("  " C_BOLD "procinfo.RTprio" C_RST "       Assign Linux thread priority (SCHED_FIFO).\n");
+    printf("  " C_BOLD "procinfo.enabled" C_RST
+           "      Turn ON/OFF the real-time background loop.\n");
+    printf("  " C_BOLD "procinfo.RTprio" C_RST
+           "       Assign Linux thread priority (SCHED_FIFO).\n");
     printf("  " C_BOLD "procinfo.taskset" C_RST "      Set CPU affinity mapping.\n");
     printf("  " C_BOLD "procinfo.triggermode" C_RST "  Determine what drives the computation:\n");
     printf("                          0: IMMEDIATE (Continuous loop)\n");

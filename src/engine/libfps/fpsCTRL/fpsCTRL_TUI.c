@@ -14,8 +14,8 @@
 #include "fpsCTRL_TUI_process_user_key.h"
 
 #ifdef MILK_MODULE
-#ifdef MILK_MODULE
-#endif
+#    ifdef MILK_MODULE
+#    endif
 #endif
 
 #include "fpsCTRL_TUIcompat.h"
@@ -27,34 +27,30 @@
 
 static short unsigned int wrow, wcol;
 
-#define DISPLAYMODE_HELP      1
-#define DISPLAYMODE_FPSLOG    2
-#define DISPLAYMODE_FPSCTRL   3
+#define DISPLAYMODE_HELP 1
+#define DISPLAYMODE_FPSLOG 2
+#define DISPLAYMODE_FPSCTRL 3
 #define DISPLAYMODE_SEQUENCER 4
 
 
-inline static void
-fpsCTRLscreen_print_footer_status(
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int NBfps
-)
+inline static void fpsCTRLscreen_print_footer_status(FPSCTRL_PROCESS_VARS *fpsCTRLvar, int NBfps)
 {
     DEBUG_TRACE_FSTART();
 
     int status_row = sc_term_rows;
-    if(fpsCTRLvar->search_mode > 0)
+    if (fpsCTRLvar->search_mode > 0)
     {
         SC_APPEND("\033[%d;1H", status_row - 1);
         SC_APPEND("\033[2K"); // Clear line
         screenprint_setbold();
-        if(fpsCTRLvar->search_mode == 1)
+        if (fpsCTRLvar->search_mode == 1)
         {
             ansi_detect_color_level();
-            if(ansi__color_level >= 3)
+            if (ansi__color_level >= 3)
             {
-                SC_APPEND("\033[38;2;255;165;0m");    // Orange
+                SC_APPEND("\033[38;2;255;165;0m"); // Orange
             }
-            else if(ansi__color_level == 2)
+            else if (ansi__color_level == 2)
             {
                 SC_APPEND("\033[38;5;214m");
             }
@@ -62,7 +58,8 @@ fpsCTRLscreen_print_footer_status(
             {
                 SC_APPEND("\033[33m");
             }
-            SC_APPEND(" \xE2\x9C\x94 Search: "); // Fallback magnifying glass equivalent or checkmark. Using '?' for safety in some terms, or just "Search:"
+            SC_APPEND(
+                " \xE2\x9C\x94 Search: "); // Fallback magnifying glass equivalent or checkmark. Using '?' for safety in some terms, or just "Search:"
             // Wait, we can use 🔍 if terminal supports it. The user specified "sleek", let's just use "Search:" to be safe with fonts or standard Unicode.
             SC_APPEND("Search: ");
         }
@@ -74,7 +71,7 @@ fpsCTRLscreen_print_footer_status(
         screenprint_unsetbold();
         screenprint_setnormal();
         SC_APPEND("%s", fpsCTRLvar->search_string);
-        if(fpsCTRLvar->search_mode == 1)
+        if (fpsCTRLvar->search_mode == 1)
         {
             SC_APPEND("\033[5m_\033[25m"); // Blinking cursor
         }
@@ -85,41 +82,38 @@ fpsCTRLscreen_print_footer_status(
     SC_APPEND("\033[2K"); // clear line with background color
 
     SC_APPEND(" [MODE: ");
-    if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
+    if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
     {
         SC_APPEND("HELP] ");
     }
-    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
+    else if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
     {
         SC_APPEND("LOG] ");
     }
-    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
+    else if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
     {
         SC_APPEND("CTRL] ");
     }
-    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
+    else if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
     {
         SC_APPEND("SEQ] ");
     }
 
-    if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
+    if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
     {
-        static const char *smode[] =
-        {
-            "Default", "A-Z", "Status"
-        };
-        int sm = fpsCTRLvar->sort_mode;
-        if(sm < 0 || sm > 2)
+        static const char *smode[] = { "Default", "A-Z", "Status" };
+        int                sm      = fpsCTRLvar->sort_mode;
+        if (sm < 0 || sm > 2)
         {
             sm = 0;
         }
         SC_APPEND("[SORT: %s] ", smode[sm]);
     }
 
-    SC_APPEND("[PID %d] [%d FPS] ", (int)getpid(), NBfps);
+    SC_APPEND("[PID %d] [%d FPS] ", (int) getpid(), NBfps);
     SC_APPEND("| (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search ");
 
-    if(fpsCTRLvar->fpsCTRL_DisplayVerbose)
+    if (fpsCTRLvar->fpsCTRL_DisplayVerbose)
     {
         SC_APPEND(" [VERBOSE] ");
     }
@@ -138,11 +132,14 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     DEBUG_TRACE_FSTART();
 
     char lines[100][256];
-    int line_cnt = 0;
+    int  line_cnt = 0;
 
-#define ADD_LINE(...) do { \
-        if (line_cnt < 100) snprintf(lines[line_cnt++], 256, __VA_ARGS__); \
-    } while(0)
+#define ADD_LINE(...)                                      \
+    do                                                     \
+    {                                                      \
+        if (line_cnt < 100)                                \
+            snprintf(lines[line_cnt++], 256, __VA_ARGS__); \
+    } while (0)
 
     ADD_LINE("");
     ADD_LINE("  \033[1;38;5;111m============ SCREENS\033[0m");
@@ -158,7 +155,8 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("  \033[1;38;5;111m============ PARAMETER EDITING\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "ENTER", "Edit selected parameter value");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "SPACE", "Toggle ON/OFF parameter state");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "UP / DOWN", "Navigate up and down between parameters");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "UP / DOWN",
+             "Navigate up and down between parameters");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "LEFT / RIGHT", "Collapse/expand tree depth");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "/", "Fuzzy search parameter tree");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "S", "Toggle alphabetical sorting");
@@ -185,29 +183,29 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 
     // Enforce scroll bounds
     int display_lines = sc_term_rows - 4; // leave margin for header/footer
-    if(display_lines < 5)
+    if (display_lines < 5)
     {
         display_lines = 5;
     }
 
     int max_scroll = line_cnt - display_lines;
-    if(max_scroll < 0)
+    if (max_scroll < 0)
     {
         max_scroll = 0;
     }
-    if(fpsCTRLvar->help_wrowstart > max_scroll)
+    if (fpsCTRLvar->help_wrowstart > max_scroll)
     {
         fpsCTRLvar->help_wrowstart = max_scroll;
     }
-    if(fpsCTRLvar->help_wrowstart < 0)
+    if (fpsCTRLvar->help_wrowstart < 0)
     {
         fpsCTRLvar->help_wrowstart = 0;
     }
 
-    for(int line_idx = 0; line_idx < display_lines; line_idx++)
+    for (int line_idx = 0; line_idx < display_lines; line_idx++)
     {
         int idx = fpsCTRLvar->help_wrowstart + line_idx;
-        if(idx < line_cnt)
+        if (idx < line_cnt)
         {
             TUI_printfw("%s\n", lines[idx]);
         }
@@ -223,9 +221,8 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
  * @brief Print help
  *
  */
-inline static void fpsCTRLscreen_print_FPShelp(
-    KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar)
+inline static void fpsCTRLscreen_print_FPShelp(KEYWORD_TREE_NODE    *keywnode,
+                                               FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     DEBUG_TRACE_FSTART();
     // int attrval = A_BOLD;
@@ -245,31 +242,26 @@ inline static void fpsCTRLscreen_print_FPShelp(
 
 
     // module load string
-    int mloadstring_maxlen = 2000;
+    int  mloadstring_maxlen = 2000;
     char mloadstring[mloadstring_maxlen];
     memset(mloadstring, 0, sizeof(mloadstring)); // We could macro this eventually
     char mloadstringcp[mloadstring_maxlen];
     memset(mloadstringcp, 0, sizeof(mloadstringcp));
     snprintf(mloadstring, mloadstring_maxlen, " ");
-    for(int mod_idx = 0;
-            mod_idx < fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule;
-            mod_idx++)
+    for (int mod_idx = 0;
+         mod_idx < fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule; mod_idx++)
     {
-        snprintf(mloadstringcp,
-                 mloadstring_maxlen,
-                 "%smload %s;",
-                 mloadstring,
+        snprintf(mloadstringcp, mloadstring_maxlen, "%smload %s;", mloadstring,
                  fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[mod_idx]);
         snprintf(mloadstring, mloadstring_maxlen, "%s", mloadstringcp);
     }
 
-    char helpfunctionstring[2000] = {0};
-    snprintf(helpfunctionstring,
-             2000,
+    char helpfunctionstring[2000] = { 0 };
+    snprintf(helpfunctionstring, 2000,
              "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;%s ?\"\n",
              fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
-             fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
-             mloadstring, fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
+             fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name, mloadstring,
+             fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
 
     //  TUI_printfw("%s", helpfunctionstring);
 
@@ -326,15 +318,14 @@ inline static void fpsCTRLscreen_print_FPShelp(
  *
  *
  */
-errno_t functionparameter_CTRLscreen(
-    uint32_t mode,
-    char     *fpsnamemask,
-    char     *fpsCTRLfifoname,
-    double   timeout_sec __attribute__((unused)))
+errno_t functionparameter_CTRLscreen(uint32_t mode,
+                                     char    *fpsnamemask,
+                                     char    *fpsCTRLfifoname,
+                                     double   timeout_sec __attribute__((unused)))
 {
     DEBUG_TRACE_FSTART();
 
-    FPSCTRL_PROCESS_VARS fpsCTRLvar = {0};
+    FPSCTRL_PROCESS_VARS fpsCTRLvar = { 0 };
 
     // keyword tree
     // KEYWORD_TREE_NODE *keywnode = NULL;
@@ -352,7 +343,7 @@ errno_t functionparameter_CTRLscreen(
     loopOK          = 1;
 
     {
-        struct timespec tnow = {0};
+        struct timespec tnow = { 0 };
         clock_gettime(CLOCK_REALTIME, &tnow);
         FPS_TIMESTAMP = tnow.tv_sec;
         snprintf(FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "ctrl");
@@ -361,7 +352,7 @@ errno_t functionparameter_CTRLscreen(
 
     {
         char cwd[PATH_MAX];
-        if(getcwd(cwd, sizeof(cwd)) == NULL)
+        if (getcwd(cwd, sizeof(cwd)) == NULL)
         {
             snprintf(cwd, sizeof(cwd), "ERROR");
         }
@@ -389,27 +380,26 @@ errno_t functionparameter_CTRLscreen(
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
 
-
     fpsCTRLvar.NBindex = 0;
 
-    for(int knode_idx = 0; knode_idx < NB_KEYWNODE_MAX; knode_idx++)
+    for (int knode_idx = 0; knode_idx < NB_KEYWNODE_MAX; knode_idx++)
     {
         keywnode[knode_idx].keywordfull[0] = '\0';
-        for(int child_idx = 0; child_idx < MAX_NB_CHILD; child_idx++)
+        for (int child_idx = 0; child_idx < MAX_NB_CHILD; child_idx++)
         {
             keywnode[knode_idx].child[child_idx] = 0;
         }
     }
 
-    fpsCTRLvar.milkseq_state = NULL;
+    fpsCTRLvar.milkseq_state   = NULL;
     fpsCTRLvar.milkseq_name[0] = '\0';
 
-    if(strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
+    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
     {
         // Create FIFO if it does not exist
-        if(access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1)
+        if (access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1)
         {
-            if(mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1)
+            if (mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1)
             {
                 PRINT_ERROR("mkfifo: %s", strerror(errno));
             }
@@ -422,27 +412,22 @@ errno_t functionparameter_CTRLscreen(
     }
     long fifocmdcnt = 0;
 
-    for(int level_idx = 0; level_idx < MAXNBLEVELS; level_idx++)
+    for (int level_idx = 0; level_idx < MAXNBLEVELS; level_idx++)
     {
         fpsCTRLvar.GUIlineSelected[level_idx] = 0;
     }
 
-    for(int keyw_idx = 0; keyw_idx < NB_KEYWNODE_MAX; keyw_idx++)
+    for (int keyw_idx = 0; keyw_idx < NB_KEYWNODE_MAX; keyw_idx++)
     {
         keywnode[keyw_idx].NBchild = 0;
     }
 
     {
         long NBpindex = 0;
-        functionparameter_scan_fps(fpsCTRLvar.mode,
-                                   fpsCTRLvar.fpsnamemask,
-                                   fpsarray,
-                                   keywnode,
-                                   &fpsCTRLvar.NBkwn,
-                                   &fpsCTRLvar.NBfps,
-                                   &NBpindex,
+        functionparameter_scan_fps(fpsCTRLvar.mode, fpsCTRLvar.fpsnamemask, fpsarray, keywnode,
+                                   &fpsCTRLvar.NBkwn, &fpsCTRLvar.NBfps, &NBpindex,
                                    1 // verbose
-                                  );
+        );
         TUI_printfw("%d function parameter structure(s) imported, %ld parameters\n",
                     fpsCTRLvar.NBfps, NBpindex);
     }
@@ -452,7 +437,7 @@ errno_t functionparameter_CTRLscreen(
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
     function_parameter_struct_shmdirname(shmdname);
 
-    if(run_display == 0)
+    if (run_display == 0)
     {
         loopOK = 0;
     }
@@ -462,18 +447,18 @@ errno_t functionparameter_CTRLscreen(
 
     int refresh_screen = 1; // 1 if screen should be refreshed
 
-    if(run_display == 1)
+    if (run_display == 1)
     {
         TUI_init_terminal(&wcol, &wrow);
     }
 
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
         // ==== VALIDATE ALL CONNECTED FPSs ====
         int needs_rescan = 0;
-        for(int fps_idx = 0; fps_idx < fpsCTRLvar.NBfps; fps_idx++)
+        for (int fps_idx = 0; fps_idx < fpsCTRLvar.NBfps; fps_idx++)
         {
-            if(!function_parameter_struct_isvalid(&fpsarray[fps_idx]))
+            if (!function_parameter_struct_isvalid(&fpsarray[fps_idx]))
             {
                 needs_rescan = 1;
                 fps_disconnect(&fpsarray[fps_idx]);
@@ -481,15 +466,15 @@ errno_t functionparameter_CTRLscreen(
         }
 
         // ==== CHECK FOR NEW OR REMOVED FPSs BY COUNT ====
-        static int last_shm_count = -1;
-        int current_shm_count = 0;
-        DIR *d = opendir(shmdname);
-        if(d)
+        static int last_shm_count    = -1;
+        int        current_shm_count = 0;
+        DIR       *d                 = opendir(shmdname);
+        if (d)
         {
             struct dirent *dir;
-            while((dir = readdir(d)) != NULL)
+            while ((dir = readdir(d)) != NULL)
             {
-                if(strstr(dir->d_name, ".fps.shm") != NULL)
+                if (strstr(dir->d_name, ".fps.shm") != NULL)
                 {
                     current_shm_count++;
                 }
@@ -497,61 +482,56 @@ errno_t functionparameter_CTRLscreen(
             closedir(d);
         }
 
-        if(last_shm_count == -1)
+        if (last_shm_count == -1)
         {
             last_shm_count = current_shm_count;
         }
-        else if(current_shm_count != last_shm_count)
+        else if (current_shm_count != last_shm_count)
         {
-            needs_rescan = 1;
+            needs_rescan   = 1;
             last_shm_count = current_shm_count;
         }
 
-        if(needs_rescan)
+        if (needs_rescan)
         {
             long NBpindex = 0;
-            functionparameter_scan_fps(fpsCTRLvar.mode,
-                                       fpsCTRLvar.fpsnamemask,
-                                       fpsarray,
-                                       keywnode,
-                                       &fpsCTRLvar.NBkwn,
-                                       &fpsCTRLvar.NBfps,
-                                       &NBpindex,
+            functionparameter_scan_fps(fpsCTRLvar.mode, fpsCTRLvar.fpsnamemask, fpsarray, keywnode,
+                                       &fpsCTRLvar.NBkwn, &fpsCTRLvar.NBfps, &NBpindex,
                                        0 // quiet
-                                      );
+            );
             refresh_screen = 2; // Force refresh
 
             // Adjust selected index if it's now out of bounds
-            if(fpsCTRLvar.fpsindexSelected >= fpsCTRLvar.NBfps && fpsCTRLvar.NBfps > 0)
+            if (fpsCTRLvar.fpsindexSelected >= fpsCTRLvar.NBfps && fpsCTRLvar.NBfps > 0)
             {
                 fpsCTRLvar.fpsindexSelected = fpsCTRLvar.NBfps - 1;
             }
-            else if(fpsCTRLvar.NBfps == 0)
+            else if (fpsCTRLvar.NBfps == 0)
             {
                 fpsCTRLvar.fpsindexSelected = 0;
             }
 
             // Clamping node indices to the keyword array bounds
-            if(fpsCTRLvar.nodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0)
+            if (fpsCTRLvar.nodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0)
             {
                 fpsCTRLvar.nodeSelected = fpsCTRLvar.NBkwn - 1;
             }
-            else if(fpsCTRLvar.NBkwn == 0)
+            else if (fpsCTRLvar.NBkwn == 0)
             {
                 fpsCTRLvar.nodeSelected = 0;
             }
-            if(fpsCTRLvar.directorynodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0)
+            if (fpsCTRLvar.directorynodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0)
             {
                 fpsCTRLvar.directorynodeSelected = 0; // fallback to ROOT
             }
-            else if(fpsCTRLvar.NBkwn == 0)
+            else if (fpsCTRLvar.NBkwn == 0)
             {
                 fpsCTRLvar.directorynodeSelected = 0;
             }
         }
 
         int NBtaskLaunched = 0;
-        int ch = ANSI_KEY_NONE;
+        int ch             = ANSI_KEY_NONE;
 
         // Event-driven input: poll() on stdin
         // Mirrors milkCTRL.c pattern
@@ -561,10 +541,10 @@ errno_t functionparameter_CTRLscreen(
             pfd.events = POLLIN;
 
             int pr = poll(&pfd, 1, poll_timeout_ms);
-            if(pr > 0 && (pfd.revents & POLLIN))
+            if (pr > 0 && (pfd.revents & POLLIN))
             {
                 ch = get_singlechar_nonblock();
-                if(ch != ANSI_KEY_NONE)
+                if (ch != ANSI_KEY_NONE)
                 {
                     refresh_screen = 2;
                 }
@@ -576,7 +556,7 @@ errno_t functionparameter_CTRLscreen(
             }
         }
 
-        if(refresh_screen > 0)
+        if (refresh_screen > 0)
         {
             refresh_screen--; // will wait next time we enter the loop
         }
@@ -589,35 +569,35 @@ errno_t functionparameter_CTRLscreen(
 
         DEBUG_TRACEPOINT(" ");
 
-        if(fpsCTRLvar.exitloop == 1)
+        if (fpsCTRLvar.exitloop == 1)
         {
             loopOK = 0;
         }
 
-        if(fpsCTRLvar.run_display == 1)
+        if (fpsCTRLvar.run_display == 1)
         {
-
             TUI_stdio_clear();
 
             DEBUG_TRACEPOINT(" ");
 
-            if(fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
+            if (fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
             {
-                TUI_printfw("======== FPSCTRL info  " "(screen refresh cnt %7lld)\n", loopcnt);
-                TUI_printfw(
-                    "    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
-                    "%ld   NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n",
-                    fpsCTRLvar.fpsCTRLfifoname,
-                    fpsCTRLvar.fpsCTRLfifofd,
-                    fifocmdcnt, NBtaskLaunched, NBtaskLaunchedcnt, fpsCTRLvar.NBfps);
+                TUI_printfw("======== FPSCTRL info  "
+                            "(screen refresh cnt %7lld)\n",
+                            loopcnt);
+                TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
+                            "%ld   NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n",
+                            fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt,
+                            NBtaskLaunched, NBtaskLaunchedcnt, fpsCTRLvar.NBfps);
 
                 DEBUG_TRACEPOINT(" ");
                 char logfname[STRINGMAXLEN_FULLFILENAME];
                 getFPSlogfname(logfname);
                 int flagFPSoutlog = get_FLAG_FPSOUTLOG();
-                if(flagFPSoutlog == 0)
+                if (flagFPSoutlog == 0)
                 {
-                    TUI_printfw("    OUTPUT LOG   [%2d] : DISABLED (G/g to toggle ON/OFF)", flagFPSoutlog);
+                    TUI_printfw("    OUTPUT LOG   [%2d] : DISABLED (G/g to toggle ON/OFF)",
+                                flagFPSoutlog);
                 }
                 else
                 {
@@ -625,32 +605,33 @@ errno_t functionparameter_CTRLscreen(
                 }
                 TUI_printfw("\n");
 
-                if(fpsCTRLvar.NBfps > 0 && fpsarray[fpsCTRLvar.fpsindexSelected].md != NULL)
+                if (fpsCTRLvar.NBfps > 0 && fpsarray[fpsCTRLvar.fpsindexSelected].md != NULL)
                 {
-                    TUI_printfw("    FPS keywords     :  %s\n", fpsarray[fpsCTRLvar.fpsindexSelected].md->keywordarray);
+                    TUI_printfw("    FPS keywords     :  %s\n",
+                                fpsarray[fpsCTRLvar.fpsindexSelected].md->keywordarray);
                 }
             }
             DEBUG_TRACEPOINT(" ");
 
 
-            if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
             {
                 fpsCTRLscreen_print_help(&fpsCTRLvar);
             }
 
-            if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
             {
                 fpsCTRL_FPSdisplay(keywnode, &fpsCTRLvar);
             }
 
             DEBUG_TRACEPOINT(" ");
 
-            if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
             {
                 fpsCTRL_scheduler_display(&fpsCTRLvar, wrow, &fpsCTRLvar.scheduler_wrowstart);
             }
 
-            if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
             {
                 fpsCTRL_FPSlog(keywnode, &fpsCTRLvar);
             }
@@ -672,10 +653,10 @@ errno_t functionparameter_CTRLscreen(
 
         loopcnt++;
 
-        if((processinfo_signal_TERM == 1) || (processinfo_signal_INT == 1) ||
-                (processinfo_signal_ABRT == 1) || (processinfo_signal_BUS == 1) ||
-                (processinfo_signal_SEGV == 1) || (processinfo_signal_HUP == 1) ||
-                (processinfo_signal_PIPE == 1))
+        if ((processinfo_signal_TERM == 1) || (processinfo_signal_INT == 1) ||
+            (processinfo_signal_ABRT == 1) || (processinfo_signal_BUS == 1) ||
+            (processinfo_signal_SEGV == 1) || (processinfo_signal_HUP == 1) ||
+            (processinfo_signal_PIPE == 1))
         {
             printf("Exit condition met\n");
             loopOK = 0;
@@ -683,7 +664,7 @@ errno_t functionparameter_CTRLscreen(
     }
 
 
-    if(run_display == 1)
+    if (run_display == 1)
     {
         // TUI_exit();
         TUI_exit();
@@ -692,7 +673,7 @@ errno_t functionparameter_CTRLscreen(
 
     {
         char cwd[PATH_MAX];
-        if(getcwd(cwd, sizeof(cwd)) == NULL)
+        if (getcwd(cwd, sizeof(cwd)) == NULL)
         {
             snprintf(cwd, sizeof(cwd), "ERROR");
         }
@@ -700,7 +681,7 @@ errno_t functionparameter_CTRLscreen(
     }
 
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
-    for(int fps_idx = 0; fps_idx < fpsCTRLvar.NBfps; fps_idx++)
+    for (int fps_idx = 0; fps_idx < fpsCTRLvar.NBfps; fps_idx++)
     {
         fps_disconnect(&fpsarray[fps_idx]);
     }
@@ -709,7 +690,7 @@ errno_t functionparameter_CTRLscreen(
     // free(keywnode);
 
     // No longer freeing local task queues
-    if(strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
+    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
     {
         unlink(fpsCTRLvar.fpsCTRLfifoname);
     }
