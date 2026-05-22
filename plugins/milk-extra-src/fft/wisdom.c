@@ -8,25 +8,25 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+#    include <math.h>
+#    include <stdint.h>
+#    include <stdbool.h>
+#    include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#endif
+#    ifdef MILK_NO_CLI
+#        include "CLIcore_standalone.h"
+#    else
+#        include "libmilkdata/milkdata.h"
+#        include "milkDebugTools.h"
+#        include "fps.h"
+#        include "ImageStreamIO/ImageStreamIO.h"
+#    endif
 #endif
 
 errno_t import_wisdom()
@@ -36,12 +36,8 @@ errno_t import_wisdom()
     char  wisdom_file_double[STRINGMAXLEN_FULLFILENAME];
 
 #ifdef FFTWMT
-    WRITE_FULLFILENAME(wisdom_file_single,
-                       "%s/fftwf_mt_wisdom.dat",
-                       FFTCONFIGDIR);
-    WRITE_FULLFILENAME(wisdom_file_double,
-                       "%s/fftw_mt_wisdom.dat",
-                       FFTCONFIGDIR);
+    WRITE_FULLFILENAME(wisdom_file_single, "%s/fftwf_mt_wisdom.dat", FFTCONFIGDIR);
+    WRITE_FULLFILENAME(wisdom_file_double, "%s/fftw_mt_wisdom.dat", FFTCONFIGDIR);
 #endif
 
 #ifndef FFTWMT
@@ -51,7 +47,7 @@ errno_t import_wisdom()
 
     int nowisdomWarning = 0;
 
-    if((fp = fopen(wisdom_file_single, "r")) == NULL)
+    if ((fp = fopen(wisdom_file_single, "r")) == NULL)
     {
         nowisdomWarning = 1;
         /*
@@ -71,7 +67,7 @@ errno_t import_wisdom()
     else
     {
 #ifdef MILK_MODULE
-        if(fftwf_import_wisdom_from_file(fp) == 0)
+        if (fftwf_import_wisdom_from_file(fp) == 0)
         {
             PRINT_WARNING("Error reading wisdom");
         }
@@ -79,7 +75,7 @@ errno_t import_wisdom()
         fclose(fp);
     }
 
-    if((fp = fopen(wisdom_file_double, "r")) == NULL)
+    if ((fp = fopen(wisdom_file_double, "r")) == NULL)
     {
         nowisdomWarning = 1;
         /*  n = snprintf(
@@ -96,7 +92,7 @@ errno_t import_wisdom()
     else
     {
 #ifdef MILK_MODULE
-        if(fftw_import_wisdom_from_file(fp) == 0)
+        if (fftw_import_wisdom_from_file(fp) == 0)
         {
             PRINT_WARNING("Error reading wisdom");
         }
@@ -104,10 +100,9 @@ errno_t import_wisdom()
         fclose(fp);
     }
 
-    if(nowisdomWarning == 1)
+    if (nowisdomWarning == 1)
     {
-        printf("    [no fftw wisdom file, run initfft to create in %s]\n",
-               FFTCONFIGDIR);
+        printf("    [no fftw wisdom file, run initfft to create in %s]\n", FFTCONFIGDIR);
     }
 
     return RETURN_SUCCESS;
@@ -122,12 +117,8 @@ errno_t export_wisdom()
     EXECUTE_SYSTEM_COMMAND_NOCHECK("mkdir -p %s", FFTCONFIGDIR);
 
 #ifdef FFTWMT
-    WRITE_FULLFILENAME(wisdom_file_single,
-                       "%s/fftwf_mt_wisdom.dat",
-                       FFTCONFIGDIR);
-    WRITE_FULLFILENAME(wisdom_file_double,
-                       "%s/fftw_mt_wisdom.dat",
-                       FFTCONFIGDIR);
+    WRITE_FULLFILENAME(wisdom_file_single, "%s/fftwf_mt_wisdom.dat", FFTCONFIGDIR);
+    WRITE_FULLFILENAME(wisdom_file_double, "%s/fftw_mt_wisdom.dat", FFTCONFIGDIR);
 #endif
 
 #ifndef FFTWMT
@@ -135,7 +126,7 @@ errno_t export_wisdom()
     WRITE_FULLFILENAME(wisdom_file_double, "%s/fftw_wisdom.dat", FFTCONFIGDIR);
 #endif
 
-    if((fp = fopen(wisdom_file_single, "w")) == NULL)
+    if ((fp = fopen(wisdom_file_single, "w")) == NULL)
     {
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_single);
         return RETURN_FAILURE;
@@ -145,7 +136,7 @@ errno_t export_wisdom()
 #endif
     fclose(fp);
 
-    if((fp = fopen(wisdom_file_double, "w")) == NULL)
+    if ((fp = fopen(wisdom_file_double, "w")) == NULL)
     {
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_double);
         return RETURN_FAILURE;

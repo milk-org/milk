@@ -12,7 +12,7 @@
 #include <string.h>
 
 #ifdef USE_CFITSIO
-#include <fitsio.h>
+#    include <fitsio.h>
 #endif
 
 #include <stdio.h>
@@ -24,17 +24,17 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #ifdef USE_CFITSIO
-#include "COREMOD_iofits/COREMOD_iofits.h"
+#    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 

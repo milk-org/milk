@@ -26,16 +26,16 @@
  *
    */
 
-imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
-        long        PForder,
-        float       PFlag,
-        double      SVDeps,
-        double      RegLambda,
-        const char *IDoutPF_name,
-        __attribute__((unused)) int outMode,
-        int                         LOOPmode,
-        float                       LOOPgain,
-        int                         testmode)
+imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name,
+                                           long                        PForder,
+                                           float                       PFlag,
+                                           double                      SVDeps,
+                                           double                      RegLambda,
+                                           const char                 *IDoutPF_name,
+                                           __attribute__((unused)) int outMode,
+                                           int                         LOOPmode,
+                                           float                       LOOPgain,
+                                           int                         testmode)
 {
     /// ---
     /// # Code Description
@@ -121,21 +121,21 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
     int  PSINV_MODE = 0;
     long IDv;
-    if((IDv = variable_ID("_SVD_PSINV")) != -1)
+    if ((IDv = variable_ID("_SVD_PSINV")) != -1)
     {
-        PSINV_MODE = (int)(dcvar[IDv].value.f + 0.1);
+        PSINV_MODE = (int) (dcvar[IDv].value.f + 0.1);
         printf("PSINV_MODE = %d\n", PSINV_MODE);
     }
 
     float PSINV_s = 1.0e-6;
-    if((IDv = variable_ID("_SVD_s")) != -1)
+    if ((IDv = variable_ID("_SVD_s")) != -1)
     {
         PSINV_s = dcvar[IDv].value.f;
         printf("PSINV_s = %f\n", PSINV_s);
     }
 
     float PSINV_tol = 1.0;
-    if((IDv = variable_ID("_SVD_tol")) != -1)
+    if ((IDv = variable_ID("_SVD_tol")) != -1)
     {
         PSINV_tol = dcvar[IDv].value.f;
         printf("PSINV_tol = %f\n", PSINV_tol);
@@ -148,10 +148,9 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// This mode is particularly useful in LOOP mode if the user needs
     /// to change the parameters between LOOP iterations.\n
 
-    snprintf(imname, sizeof(imname),
-             "%s_PFparam", IDoutPF_name);
+    snprintf(imname, sizeof(imname), "%s_PFparam", IDoutPF_name);
     imsize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-    if(imsize == NULL)
+    if (imsize == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -159,27 +158,21 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     imsize[0] = 4;
     imsize[1] = 1;
     {
-        IMGID imgparam =
-            imgid_make_from_name(imname);
-        imgparam.mdt->naxis = 2;
-        imgparam.mdt->size[0] =
-            imsize[0];
-        imgparam.mdt->size[1] =
-            imsize[1];
-        imgparam.mdt->datatype =
-            _DATATYPE_FLOAT;
-        imgparam.mdt->shared = 1;
-        imgparam.im =
-            (IMAGE *) calloc(
-                1, sizeof(IMAGE));
+        IMGID imgparam         = imgid_make_from_name(imname);
+        imgparam.mdt->naxis    = 2;
+        imgparam.mdt->size[0]  = imsize[0];
+        imgparam.mdt->size[1]  = imsize[1];
+        imgparam.mdt->datatype = _DATATYPE_FLOAT;
+        imgparam.mdt->shared   = 1;
+        imgparam.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(&imgparam);
         IDPFparam = imgparam.ID;
     }
     free(imsize);
 
-    if((IDPFparam = image_ID(imname, dcimg, dcnimg)) != -1)
+    if ((IDPFparam = image_ID(imname, dcimg, dcnimg)) != -1)
     {
-        ExternalPFparam                  = 1;
+        ExternalPFparam             = 1;
         dcimg[IDPFparam].array.F[0] = PFlag;
         dcimg[IDPFparam].array.F[1] = SVDeps;
         dcimg[IDPFparam].array.F[2] = RegLambda;
@@ -191,7 +184,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     }
 
     LOOPgain_run = LOOPgain;
-    if(LOOPmode == 0)
+    if (LOOPmode == 0)
     {
         LOOPgain_run = 1.0;
         NBiter       = 1;
@@ -215,46 +208,37 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// ### Read input telemetry image IDin_name to measure xsize, ysize and number of samples
     IDin = image_ID(IDin_name, dcimg, dcnimg);
 
-    switch(dcimg[IDin].md[0].naxis)
+    switch (dcimg[IDin].md[0].naxis)
     {
+    case 2:
+        /// If 2D image:
+        /// - xysize <- size[0] is number of variables
+        /// - nbspl <- size[1] is number of samples
+        nbspl = dcimg[IDin].md[0].size[1];
+        xsize = dcimg[IDin].md[0].size[0];
+        ysize = 1;
+        // copy of image to avoid input change during computation
+        create_2Dimage_ID("PFin_cp", dcimg[IDin].md[0].size[0], dcimg[IDin].md[0].size[1], &IDincp);
+        inNBelem = dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1];
+        break;
 
-        case 2:
-            /// If 2D image:
-            /// - xysize <- size[0] is number of variables
-            /// - nbspl <- size[1] is number of samples
-            nbspl = dcimg[IDin].md[0].size[1];
-            xsize = dcimg[IDin].md[0].size[0];
-            ysize = 1;
-            // copy of image to avoid input change during computation
-            create_2Dimage_ID("PFin_cp",
-                              dcimg[IDin].md[0].size[0],
-                              dcimg[IDin].md[0].size[1],
-                              &IDincp);
-            inNBelem =
-                dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1];
-            break;
+    case 3:
+        /// If 3D image
+        /// - xysize <- size[0] * size[1] is number of variables
+        /// - nbspl <- size[2] is number of samples
+        nbspl = dcimg[IDin].md[0].size[2];
+        xsize = dcimg[IDin].md[0].size[0];
+        ysize = dcimg[IDin].md[0].size[1];
+        create_3Dimage_ID("PFin_copy", dcimg[IDin].md[0].size[0], dcimg[IDin].md[0].size[1],
+                          dcimg[IDin].md[0].size[2], &IDincp);
 
-        case 3:
-            /// If 3D image
-            /// - xysize <- size[0] * size[1] is number of variables
-            /// - nbspl <- size[2] is number of samples
-            nbspl = dcimg[IDin].md[0].size[2];
-            xsize = dcimg[IDin].md[0].size[0];
-            ysize = dcimg[IDin].md[0].size[1];
-            create_3Dimage_ID("PFin_copy",
-                              dcimg[IDin].md[0].size[0],
-                              dcimg[IDin].md[0].size[1],
-                              dcimg[IDin].md[0].size[2],
-                              &IDincp);
+        inNBelem =
+            dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1] * dcimg[IDin].md[0].size[2];
+        break;
 
-            inNBelem = dcimg[IDin].md[0].size[0] *
-                       dcimg[IDin].md[0].size[1] *
-                       dcimg[IDin].md[0].size[2];
-            break;
-
-        default:
-            printf("Invalid image size\n");
-            break;
+    default:
+        printf("Invalid image size\n");
+        break;
     }
     xysize = xsize * ysize;
     printf("xysize = %ld\n", xysize);
@@ -266,28 +250,28 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// - ave_inarray : time averaged value, useful because the predictive filter often needs average to be zero, so we will remove it
 
     pixarray_x = (long *) malloc(sizeof(long) * xsize * ysize);
-    if(pixarray_x == NULL)
+    if (pixarray_x == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     pixarray_y = (long *) malloc(sizeof(long) * xsize * ysize);
-    if(pixarray_y == NULL)
+    if (pixarray_y == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     pixarray_xy = (long *) malloc(sizeof(long) * xsize * ysize);
-    if(pixarray_xy == NULL)
+    if (pixarray_xy == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     ave_inarray = (double *) malloc(sizeof(double) * xsize * ysize);
-    if(ave_inarray == NULL)
+    if (ave_inarray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -299,31 +283,37 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// The number of active input variables is stored in NBpixin.
 
     IDinmask = image_ID("inmask", dcimg, dcnimg);
-    if(IDinmask == -1)
+    if (IDinmask == -1)
     {
         NBpixin = 0; //xsize*ysize;
 
-        for(uint32_t ii = 0; ii < xsize; ii++)
-            for(uint32_t jj = 0; jj < ysize; jj++)
+        for (uint32_t ii = 0; ii < xsize; ii++)
+        {
+            for (uint32_t jj = 0; jj < ysize; jj++)
             {
                 pixarray_x[NBpixin]  = ii;
                 pixarray_y[NBpixin]  = jj;
                 pixarray_xy[NBpixin] = jj * xsize + ii;
                 NBpixin++;
             }
+        }
     }
     else
     {
         NBpixin = 0;
-        for(uint32_t ii = 0; ii < xsize; ii++)
-            for(uint32_t jj = 0; jj < ysize; jj++)
-                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5f)
+        for (uint32_t ii = 0; ii < xsize; ii++)
+        {
+            for (uint32_t jj = 0; jj < ysize; jj++)
+            {
+                if (dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     pixarray_x[NBpixin]  = ii;
                     pixarray_y[NBpixin]  = jj;
                     pixarray_xy[NBpixin] = jj * xsize + ii;
                     NBpixin++;
                 }
+            }
+        }
     }
     printf("NBpixin = %ld\n", NBpixin);
 
@@ -340,58 +330,64 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// - outpixarray_xy : combined output index (avoids re-computing index frequently)
 
     outpixarray_x = (long *) malloc(sizeof(long) * xsize * ysize);
-    if(outpixarray_x == NULL)
+    if (outpixarray_x == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     outpixarray_y = (long *) malloc(sizeof(long) * xsize * ysize);
-    if(outpixarray_y == NULL)
+    if (outpixarray_y == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     outpixarray_xy = (long *) malloc(sizeof(long) * xsize * ysize);
-    if(outpixarray_xy == NULL)
+    if (outpixarray_xy == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     IDoutmask = image_ID("outmask", dcimg, dcnimg);
-    if(IDoutmask == -1)
+    if (IDoutmask == -1)
     {
         NBpixout = 0; //xsize*ysize;
 
-        for(uint32_t ii = 0; ii < xsize; ii++)
-            for(uint32_t jj = 0; jj < ysize; jj++)
+        for (uint32_t ii = 0; ii < xsize; ii++)
+        {
+            for (uint32_t jj = 0; jj < ysize; jj++)
             {
                 outpixarray_x[NBpixout]  = ii;
                 outpixarray_y[NBpixout]  = jj;
                 outpixarray_xy[NBpixout] = jj * xsize + ii;
                 NBpixout++;
             }
+        }
     }
     else
     {
         NBpixout = 0;
-        for(uint32_t ii = 0; ii < xsize; ii++)
-            for(uint32_t jj = 0; jj < ysize; jj++)
-                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5f)
+        for (uint32_t ii = 0; ii < xsize; ii++)
+        {
+            for (uint32_t jj = 0; jj < ysize; jj++)
+            {
+                if (dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     outpixarray_x[NBpixout]  = ii;
                     outpixarray_y[NBpixout]  = jj;
                     outpixarray_xy[NBpixout] = jj * xsize + ii;
                     NBpixout++;
                 }
+            }
+        }
     }
 
     /// ## Reading PFlag from image (optional)
     /// PFlag_run needs to be read before entering the loop as some
     /// array sizes depend on its value.
-    if(ExternalPFparam == 1)
+    if (ExternalPFparam == 1)
     {
         PFlag_run = dcimg[IDPFparam].array.F[0];
     }
@@ -410,20 +406,18 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// - NBmvec is the number of telemetry vectors (each corresponding to a different time) in the data matrix.
     /// - mvecsize is the size of each vector, equal to NBpixin times PForder
     ///
-    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse 
+    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse
     // in linopt_imtools (CPU mode) or in linalgebra (GPU mode)\n
     ///
     NBmvec =
         nbspl - PForder -
-        (int)(PFlag_run) -
-        2; // could put "-1", but "-2" allows user to change PFlag_run by up to 1 frame without reading out of array
+        (int) (PFlag_run) -2; // could put "-1", but "-2" allows user to change PFlag_run by up to 1 frame without reading out of array
     mvecsize =
-        NBpixin *
-        PForder; // size of each sample vector for AR filter, excluding regularization
+        NBpixin * PForder; // size of each sample vector for AR filter, excluding regularization
 
     /// Regularization can be added to penalize strong coefficients in the predictive filter.
     /// It is optionally implemented by adding extra columns at the end of the data matrix.\n
-    if(REG == 0)  // no regularization
+    if (REG == 0) // no regularization
     {
         printf("NBmvec   = %ld  -> %ld \n", NBmvec, NBmvec);
         NBmvec1 = NBmvec;
@@ -458,18 +452,17 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// In LOOP mode, LOOP STARTS HERE \n
     ///
 
-    if(LOOPmode == 1)
+    if (LOOPmode == 1)
     {
         COREMOD_MEMORY_image_set_semflush(IDin_name, semtrig);
     }
 
-    for(iter = 0; iter < NBiter; iter++)
+    for (iter = 0; iter < NBiter; iter++)
     {
-
         /// ### Prepare data matrix PFmatD
 
         /// *STEP: Read parameters from external image (optional)*\n
-        if(ExternalPFparam == 1)
+        if (ExternalPFparam == 1)
         {
             PFlag_run     = dcimg[IDPFparam].array.F[0];
             SVDeps_run    = dcimg[IDPFparam].array.F[1];
@@ -484,10 +477,8 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             LOOPgain_run  = LOOPgain;
         }
 
-        printf(
-            "=========== LOOP ITERATION %6ld ======= [ExternalPFparam = %d ]\n",
-            iter,
-            ExternalPFparam);
+        printf("=========== LOOP ITERATION %6ld ======= [ExternalPFparam = %d ]\n", iter,
+               ExternalPFparam);
         printf(" parameters read from %s\n", dcimg[IDPFparam].md[0].name);
         printf("  PFlag     = %20f      ", PFlag_run);
         printf("  SVDeps    = %20f\n", SVDeps_run);
@@ -496,7 +487,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         printf("\n");
 
         gain = 1.0 / (iter + 1);
-        if(gain < LOOPgain_run)
+        if (gain < LOOPgain_run)
         {
             gain = LOOPgain_run;
         }
@@ -505,9 +496,9 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
         printf("WAITING FOR INPUT DATA ...... \n");
         clock_gettime(CLOCK_MILK, &t0);
-        if(LOOPmode == 1)
+        if (LOOPmode == 1)
         {
-            ImageStreamIO_semwait(dcimg+IDin, semtrig);
+            ImageStreamIO_semwait(dcimg + IDin, semtrig);
         }
 
         /// *STEP: Copy IDin to IDincp*
@@ -515,9 +506,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         /// Necessary as input may be continuously changing between consecutive loop iterations.
         ///
         IDincp = image_ID("PFin_copy", dcimg, dcnimg);
-        memcpy(dcimg[IDincp].array.F,
-               dcimg[IDin].array.F,
-               sizeof(float) * inNBelem);
+        memcpy(dcimg[IDincp].array.F, dcimg[IDin].array.F, sizeof(float) * inNBelem);
 
         //save_fits("PFin_copy", "test_PFin_copy.fits");
         //save_fits(IDin_name, "test_PFin.fits");
@@ -525,23 +514,21 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         clock_gettime(CLOCK_MILK, &t1);
 
         /// *STEP: if DC_MODE==1, compute average value from each variable*
-        if(DC_MODE == 1)  // remove average
+        if (DC_MODE == 1) // remove average
         {
-            for(pix = 0; pix < NBpixin; pix++)
+            for (pix = 0; pix < NBpixin; pix++)
             {
                 ave_inarray[pix] = 0.0;
-                for(m = 0; m < nbspl; m++)
+                for (m = 0; m < nbspl; m++)
                 {
-                    ave_inarray[pix] +=
-                        dcimg[IDincp]
-                        .array.F[m * xysize + pixarray_xy[pix]];
+                    ave_inarray[pix] += dcimg[IDincp].array.F[m * xysize + pixarray_xy[pix]];
                 }
                 ave_inarray[pix] /= nbspl;
             }
         }
         else
         {
-            for(pix = 0; pix < NBpixin; pix++)
+            for (pix = 0; pix < NBpixin; pix++)
             {
                 ave_inarray[pix] = 0.0;
             }
@@ -550,21 +537,21 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         ///
         /// *STEP: Fill up data matrix PFmatD from input telemetry*
         ///
-        for(m = 0; m < NBmvec1; m++)
+        for (m = 0; m < NBmvec1; m++)
         {
             k0 = m + PForder - 1; // dt=0 index
-            for(pix = 0; pix < NBpixin; pix++)
-                for(dt = 0; dt < PForder; dt++)
+            for (pix = 0; pix < NBpixin; pix++)
+            {
+                for (dt = 0; dt < PForder; dt++)
                 {
-                    dcimg[IDmatA]
-                    .array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
-                        dcimg[IDincp]
-                        .array.F[(k0 - dt) * xysize + pixarray_xy[pix]] -
+                    dcimg[IDmatA].array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
+                        dcimg[IDincp].array.F[(k0 - dt) * xysize + pixarray_xy[pix]] -
                         ave_inarray[pix];
                 }
+            }
         }
 
-        if(LOOPmode == 0)
+        if (LOOPmode == 0)
         {
             free(ave_inarray); // No need to hold on to array
         }
@@ -572,17 +559,16 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         ///
         /// *STEP: Write regularization coefficients (optional)*
         ///
-        if(REG == 1)
+        if (REG == 1)
         {
-            for(m = 0; m < mvecsize; m++)
+            for (m = 0; m < mvecsize; m++)
             {
                 //m1 = NBmvec + m;
-                dcimg[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] =
-                    RegLambda_run;
+                dcimg[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] = RegLambda_run;
             }
         }
 
-        if(Save == 1)
+        if (Save == 1)
         {
             save_fits("PFmatD", "PFmatD.fits");
         }
@@ -600,20 +586,18 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         create_2Dimage_ID("PFfmdat", NBmvec, NBpixout, &IDfm);
 
         alpha = PFlag_run - ((long) PFlag_run);
-        for(PFpix = 0; PFpix < NBpixout; PFpix++)
-            for(m = 0; m < NBmvec; m++)
+        for (PFpix = 0; PFpix < NBpixout; PFpix++)
+        {
+            for (m = 0; m < NBmvec; m++)
             {
                 k0 = m + PForder - 1;
                 k0 += (long) PFlag_run;
 
                 dcimg[IDfm].array.F[PFpix * NBmvec + m] =
-                    (1.0 - alpha) *
-                    dcimg[IDincp]
-                    .array.F[(k0) * xysize + outpixarray_xy[PFpix]] +
-                    alpha *
-                    dcimg[IDincp]
-                    .array.F[(k0 + 1) * xysize + outpixarray_xy[PFpix]];
+                    (1.0 - alpha) * dcimg[IDincp].array.F[(k0) *xysize + outpixarray_xy[PFpix]] +
+                    alpha * dcimg[IDincp].array.F[(k0 + 1) * xysize + outpixarray_xy[PFpix]];
             }
+        }
         save_fits("PFfmdat", "PFfmdat.fits");
 
         /// If using MAGMA, call function LINALGEBRA_magma_compute_SVDpseudoInverse()\n
@@ -623,23 +607,13 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
 #ifdef HAVE_MAGMA
         printf("Using magma ...\n");
-        LINALGEBRA_magma_compute_SVDpseudoInverse("PFmatD",
-                                                "PFmatC",
-                                                SVDeps_run,
-                                                NB_SVD_Modes,
-                                                "PF_VTmat",
-                                                LOOPmode,
-                                                testmode,
-                                                64,
-                                                0, // GPU device
-                                                NULL);
+        LINALGEBRA_magma_compute_SVDpseudoInverse("PFmatD", "PFmatC", SVDeps_run, NB_SVD_Modes,
+                                                  "PF_VTmat", LOOPmode, testmode, 64,
+                                                  0, // GPU device
+                                                  NULL);
 #else
         printf("Not using magma ...\n");
-        linopt_compute_SVDpseudoInverse("PFmatD",
-                                        "PFmatC",
-                                        SVDeps_run,
-                                        NB_SVD_Modes,
-                                        "PF_VTmat",
+        linopt_compute_SVDpseudoInverse("PFmatD", "PFmatC", SVDeps_run, NB_SVD_Modes, "PF_VTmat",
                                         NULL);
 #endif
 
@@ -647,7 +621,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         printf("Done assembling pseudoinverse\n");
         fflush(stdout);
 
-        if(Save == 1)
+        if (Save == 1)
         {
             save_fits("PF_VTmat", "PF_VTmat.fits");
             save_fits("PFmatC", "PFmatC.fits");
@@ -660,7 +634,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         printf("Compute filters\n");
         fflush(stdout);
 
-        if(system("mkdir -p pixfilters") != 0)
+        if (system("mkdir -p pixfilters") != 0)
         {
             PRINT_ERROR("system() returns non-zero value");
         }
@@ -674,20 +648,17 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         // axis 0 [ii1] : input mode x time step
         // axis 1 [jj1] : output mode
 
-        if(LOOPmode == 0)
+        if (LOOPmode == 0)
         {
-            create_2Dimage_ID(IDoutPF_name,
-                              NBpixin * PForder,
-                              NBpixout,
-                              &IDoutPF2D);
+            create_2Dimage_ID(IDoutPF_name, NBpixin * PForder, NBpixout, &IDoutPF2D);
         }
 
         else
         {
-            if(iter == 0)  // create 2D and 3D filters as shared memory
+            if (iter == 0) // create 2D and 3D filters as shared memory
             {
                 imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-                if(imsizearray == NULL)
+                if (imsizearray == NULL)
                 {
                     PRINT_ERROR("malloc returns NULL pointer");
                     abort();
@@ -695,50 +666,31 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
                 imsizearray[0] = NBpixin * PForder;
                 imsizearray[1] = NBpixout;
-                snprintf(IDoutPF_name_raw,
-                         sizeof(IDoutPF_name_raw),
-                         "%s_raw", IDoutPF_name);
+                snprintf(IDoutPF_name_raw, sizeof(IDoutPF_name_raw), "%s_raw", IDoutPF_name);
 
                 {
-                    IMGID imgpf =
-                        imgid_make_from_name(
-                            IDoutPF_name);
-                    imgpf.mdt->naxis = 2;
-                    imgpf.mdt->size[0] =
-                        imsizearray[0];
-                    imgpf.mdt->size[1] =
-                        imsizearray[1];
-                    imgpf.mdt->datatype =
-                        _DATATYPE_FLOAT;
-                    imgpf.mdt->shared = 1;
-                    imgpf.mdt->NBkw = 1;
-                    imgpf.im =
-                        (IMAGE *) calloc(
-                            1,
-                            sizeof(IMAGE));
+                    IMGID imgpf         = imgid_make_from_name(IDoutPF_name);
+                    imgpf.mdt->naxis    = 2;
+                    imgpf.mdt->size[0]  = imsizearray[0];
+                    imgpf.mdt->size[1]  = imsizearray[1];
+                    imgpf.mdt->datatype = _DATATYPE_FLOAT;
+                    imgpf.mdt->shared   = 1;
+                    imgpf.mdt->NBkw     = 1;
+                    imgpf.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
                     imgid_mkimage(&imgpf);
                     IDoutPF2D = imgpf.ID;
                 }
                 {
-                    IMGID imgpfr =
-                        imgid_make_from_name(
-                            IDoutPF_name_raw);
-                    imgpfr.mdt->naxis = 2;
-                    imgpfr.mdt->size[0] =
-                        imsizearray[0];
-                    imgpfr.mdt->size[1] =
-                        imsizearray[1];
-                    imgpfr.mdt->datatype =
-                        _DATATYPE_FLOAT;
-                    imgpfr.mdt->shared = 1;
-                    imgpfr.mdt->NBkw = 1;
-                    imgpfr.im =
-                        (IMAGE *) calloc(
-                            1,
-                            sizeof(IMAGE));
+                    IMGID imgpfr         = imgid_make_from_name(IDoutPF_name_raw);
+                    imgpfr.mdt->naxis    = 2;
+                    imgpfr.mdt->size[0]  = imsizearray[0];
+                    imgpfr.mdt->size[1]  = imsizearray[1];
+                    imgpfr.mdt->datatype = _DATATYPE_FLOAT;
+                    imgpfr.mdt->shared   = 1;
+                    imgpfr.mdt->NBkw     = 1;
+                    imgpfr.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
                     imgid_mkimage(&imgpfr);
-                    IDoutPF2Draw =
-                        imgpfr.ID;
+                    IDoutPF2Draw = imgpfr.ID;
                 }
                 free(imsizearray);
                 COREMOD_MEMORY_image_set_semflush(IDoutPF_name, -1);
@@ -762,35 +714,29 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         printf("===========================================================\n");
 
         long IDoutPF2Dn = image_ID("psinvPFmat", dcimg, dcnimg);
-        if(IDoutPF2Dn == -1)
+        if (IDoutPF2Dn == -1)
         {
             printf("------------------- CPU computing PF matrix\n");
 
-            create_2Dimage_ID("psinvPFmat",
-                              NBpixin * PForder,
-                              NBpixout,
-                              &IDoutPF2Dn);
-            for(
-                PFpix = 0; PFpix < NBpixout;
-                PFpix++) // PFpix is the pixel for which the filter is created (axis 1 in cube, jj)
+            create_2Dimage_ID("psinvPFmat", NBpixin * PForder, NBpixout, &IDoutPF2Dn);
+            for (PFpix = 0; PFpix < NBpixout;
+                 PFpix++) // PFpix is the pixel for which the filter is created (axis 1 in cube, jj)
             {
-
                 // loop on input values
-                for(pix = 0; pix < NBpixin; pix++)
+                for (pix = 0; pix < NBpixin; pix++)
                 {
-                    for(dt = 0; dt < PForder; dt++)
+                    for (dt = 0; dt < PForder; dt++)
                     {
                         val  = 0.0;
                         ind1 = (NBpixin * dt + pix) * NBmvec1;
-                        for(m = 0; m < NBmvec; m++)
+                        for (m = 0; m < NBmvec; m++)
                         {
                             val += dcimg[IDmatC].array.F[ind1 + m] *
                                    dcimg[IDfm].array.F[PFpix * NBmvec + m];
                         }
 
                         dcimg[IDoutPF2Dn]
-                        .array.F[PFpix * (PForder * NBpixin) +
-                                       dt * NBpixin + pix] = val;
+                            .array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix] = val;
                     }
                 }
             }
@@ -801,11 +747,10 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         }
         delete_image_ID("PFfmdat", DELETE_IMAGE_ERRMODE_WARNING);
 
-        if(LOOPmode == 1)
+        if (LOOPmode == 1)
         {
             dcimg[IDoutPF2Draw].md[0].write = 1;
-            memcpy(dcimg[IDoutPF2Draw].array.F,
-                   dcimg[IDoutPF2Dn].array.F,
+            memcpy(dcimg[IDoutPF2Draw].array.F, dcimg[IDoutPF2Dn].array.F,
                    sizeof(float) * NBpixout * NBpixin * PForder);
             COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
             dcimg[IDoutPF2Draw].md[0].cnt0++;
@@ -814,10 +759,9 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
         // Mix current PF with last one
         dcimg[IDoutPF2D].md[0].write = 1;
-        if(LOOPmode == 0)
+        if (LOOPmode == 0)
         {
-            memcpy(dcimg[IDoutPF2D].array.F,
-                   dcimg[IDoutPF2Dn].array.F,
+            memcpy(dcimg[IDoutPF2D].array.F, dcimg[IDoutPF2Dn].array.F,
                    sizeof(float) * NBpixout * NBpixin * PForder);
             save_fits(IDoutPF_name, "_outPF.fits");
         }
@@ -825,21 +769,21 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         {
             printf("Mixing PF matrix with gain = %f ....", gain);
             fflush(stdout);
-            for(PFpix = 0; PFpix < NBpixout; PFpix++)
-                for(pix = 0; pix < NBpixin; pix++)
-                    for(dt = 0; dt < PForder; dt++)
+            for (PFpix = 0; PFpix < NBpixout; PFpix++)
+            {
+                for (pix = 0; pix < NBpixin; pix++)
+                {
+                    for (dt = 0; dt < PForder; dt++)
                     {
-                        val0 = dcimg[IDoutPF2D]
-                               .array.F[PFpix * (PForder * NBpixin) +
-                                              dt * NBpixin + pix]; // Previous
-                        val = dcimg[IDoutPF2Dn]
-                              .array.F[PFpix * (PForder * NBpixin) +
-                                             dt * NBpixin + pix]; // New
-                        dcimg[IDoutPF2D]
-                        .array.F[PFpix * (PForder * NBpixin) +
-                                       dt * NBpixin + pix] =
-                                     (1.0 - gain) * val0 + gain * val;
+                        val0 = dcimg[IDoutPF2D].array.F[PFpix * (PForder * NBpixin) + dt * NBpixin +
+                                                        pix]; // Previous
+                        val  = dcimg[IDoutPF2Dn]
+                                  .array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix]; // New
+                        dcimg[IDoutPF2D].array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix] =
+                            (1.0 - gain) * val0 + gain * val;
                     }
+                }
+            }
             printf(" done\n");
             fflush(stdout);
         }
@@ -847,28 +791,26 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         dcimg[IDoutPF2D].md[0].cnt0++;
         dcimg[IDoutPF2D].md[0].write = 0;
 
-        if(testmode == 2)
+        if (testmode == 2)
         {
             printf("Prepare 3D output \n");
 
             imageID IDoutPF3D;
-            create_3Dimage_ID("outPF3D",
-                              NBpixin,
-                              NBpixout,
-                              PForder,
-                              &IDoutPF3D);
+            create_3Dimage_ID("outPF3D", NBpixin, NBpixout, PForder, &IDoutPF3D);
 
-            for(pix = 0; pix < NBpixin; pix++)
-                for(PFpix = 0; PFpix < NBpixout; PFpix++)
-                    for(dt = 0; dt < PForder; dt++)
+            for (pix = 0; pix < NBpixin; pix++)
+            {
+                for (PFpix = 0; PFpix < NBpixout; PFpix++)
+                {
+                    for (dt = 0; dt < PForder; dt++)
                     {
                         val = dcimg[IDoutPF2D]
-                              .array.F[PFpix * (PForder * NBpixin) +
-                                             dt * NBpixin + pix];
-                        dcimg[IDoutPF3D].array.F[NBpixout * NBpixin * dt +
-                                                      NBpixin * PFpix + pix] =
-                                                          val;
+                                  .array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix];
+                        dcimg[IDoutPF3D].array.F[NBpixout * NBpixin * dt + NBpixin * PFpix + pix] =
+                            val;
                     }
+                }
+            }
             save_fits("outPF3D", "_outPF3D.fits");
         }
 
@@ -882,10 +824,8 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         tdiff    = timespec_diff(t1, t2);
         tdiffv12 = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-        printf("Computing time = %5.3f s / %5.3f s -> fraction = %8.6f\n",
-               tdiffv12,
-               tdiffv01 + tdiffv12,
-               tdiffv12 / (tdiffv01 + tdiffv12));
+        printf("Computing time = %5.3f s / %5.3f s -> fraction = %8.6f\n", tdiffv12,
+               tdiffv01 + tdiffv12, tdiffv12 / (tdiffv01 + tdiffv12));
     }
     ///
     /// In LOOP mode, LOOP ENDS HERE \n
@@ -963,7 +903,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
     float *res0;
     int    optinit = 0;
 
-    if(framelag < 1.00000001)
+    if (framelag < 1.00000001)
     {
         printf("ERROR: framelag should be be > 1\n");
         exit(0);
@@ -973,13 +913,13 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
     naxis = dcimg[IDin].md[0].naxis;
 
     nbvar = 1;
-    for(axis = 0; axis < naxis - 1; axis++)
+    for (axis = 0; axis < naxis - 1; axis++)
     {
         nbvar *= dcimg[IDin].md[0].size[axis];
     }
 
     errval = (double *) malloc(sizeof(double) * nbvar);
-    if(errval == NULL)
+    if (errval == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -994,39 +934,40 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
     printf("alpha = %f    nbvar = %ld\n", alpha, nbvar);
 
     list_image_ID();
-    if(TEST == 1)
+    if (TEST == 1)
     {
-        for(ii = 0; ii < nbvar; ii++)
-            for(step = 0; step < nbstep; step++)
+        for (ii = 0; ii < nbvar; ii++)
+        {
+            for (step = 0; step < nbstep; step++)
             {
-                dcimg[IDin].array.F[step * nbvar + ii] =
-                    1.0 * sin(2.0 * M_PI * step / TESTperiod);
+                dcimg[IDin].array.F[step * nbvar + ii] = 1.0 * sin(2.0 * M_PI * step / TESTperiod);
             }
+        }
     }
 
     actval_array = (float *) malloc(sizeof(float) * nbstep);
-    if(actval_array == NULL)
+    if (actval_array == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     optgain = (float *) malloc(sizeof(float) * nbvar);
-    if(optgain == NULL)
+    if (optgain == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     optres = (float *) malloc(sizeof(float) * nbvar);
-    if(optres == NULL)
+    if (optres == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     res0 = (float *) malloc(sizeof(float) * nbvar);
-    if(res0 == NULL)
+    if (res0 == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -1039,34 +980,30 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
     fp            = fopen(fname, "w");
     residualblock = 1.0e20;
     optgainblock  = 0.0;
-    for(gain = 0; gain < gainmax; gain += gainstep)
+    for (gain = 0; gain < gainmax; gain += gainstep)
     {
         fprintf(fp, "%5.3f", gain);
 
         errvaltot = 0.0;
-        for(ii = 0; ii < nbvar; ii++)
+        for (ii = 0; ii < nbvar; ii++)
         {
             errval[ii] = 0.0;
             cnt        = 0.0;
-            for(step = 0; step < framelag1 + 2; step++)
+            for (step = 0; step < framelag1 + 2; step++)
             {
                 actval_array[step] = 0.0;
             }
-            for(step = framelag1; step < nbstep; step++)
+            for (step = framelag1; step < nbstep; step++)
             {
                 step0 = step - framelag0;
                 step1 = step - framelag1;
 
-                actval = (1.0 - alpha) * actval_array[step0] +
-                         alpha * actval_array[step1];
-                mval = ((1.0 - alpha) *
-                        dcimg[IDin].array.F[step0 * nbvar + ii] +
+                actval = (1.0 - alpha) * actval_array[step0] + alpha * actval_array[step1];
+                mval   = ((1.0 - alpha) * dcimg[IDin].array.F[step0 * nbvar + ii] +
                         alpha * dcimg[IDin].array.F[step1 * nbvar + ii]) -
                        actval;
-                actval_array[step] =
-                    multfact * (actval_array[step - 1] + gain * mval);
-                tmpv = dcimg[IDin].array.F[step * nbvar + ii] -
-                       actval_array[step];
+                actval_array[step] = multfact * (actval_array[step - 1] + gain * mval);
+                tmpv               = dcimg[IDin].array.F[step * nbvar + ii] - actval_array[step];
                 errval[ii] += tmpv * tmpv;
                 cnt++;
             }
@@ -1074,7 +1011,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
             fprintf(fp, " %10f", errval[ii]);
             errvaltot += errval[ii] * errval[ii];
 
-            if(optinit == 0)
+            if (optinit == 0)
             {
                 optgain[ii] = gain;
                 optres[ii]  = errval[ii];
@@ -1082,7 +1019,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
             }
             else
             {
-                if(errval[ii] < optres[ii])
+                if (errval[ii] < optres[ii])
                 {
                     optres[ii]  = errval[ii];
                     optgain[ii] = gain;
@@ -1090,7 +1027,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
             }
         }
 
-        if(optinit == 0)
+        if (optinit == 0)
         {
             residualblock0 = errvaltot;
         }
@@ -1098,7 +1035,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
         optinit = 1;
         fprintf(fp, "%10f\n", errvaltot);
 
-        if(errvaltot < residualblock)
+        if (errvaltot < residualblock)
         {
             residualblock = errvaltot;
             optgainblock  = gain;
@@ -1109,23 +1046,15 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
     free(actval_array);
     free(errval);
 
-    for(ii = 0; ii < nbvar; ii++)
+    for (ii = 0; ii < nbvar; ii++)
     {
-        printf(
-            "MODE %4ld    optimal gain = %5.2f     residual = %.6f -> %.6f \n",
-            ii,
-            optgain[ii],
-            res0[ii],
-            optres[ii]);
+        printf("MODE %4ld    optimal gain = %5.2f     residual = %.6f -> %.6f \n", ii, optgain[ii],
+               res0[ii], optres[ii]);
     }
 
-    printf("\noptimal block gain = %f     residual = %.6f -> %.6f\n\n",
-           optgainblock,
-           sqrt(residualblock0),
-           sqrt(residualblock));
-    printf("RMS per mode = %f -> %f\n",
-           sqrt(residualblock0 / nbvar),
-           sqrt(residualblock / nbvar));
+    printf("\noptimal block gain = %f     residual = %.6f -> %.6f\n\n", optgainblock,
+           sqrt(residualblock0), sqrt(residualblock));
+    printf("RMS per mode = %f -> %f\n", sqrt(residualblock0 / nbvar), sqrt(residualblock / nbvar));
 
     free(optgain);
     free(optres);

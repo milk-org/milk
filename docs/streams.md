@@ -36,7 +36,7 @@ sequenceDiagram
     Writer->>SHM: imgid_mkimage("stream1")
     Reader->>SHM: imgid_connect("stream1")
     Reader->>Reader: Wait for Semaphore
-    
+
     loop Frame processing
         Writer->>Writer: Compute new frame
         Writer->>SHM: Write direct memory pointer

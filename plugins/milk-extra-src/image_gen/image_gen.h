@@ -1,5 +1,5 @@
 #if !defined(GENIMAGE_H)
-#define GENIMAGE_H
+#    define GENIMAGE_H
 
 void __attribute__((constructor)) libinit_image_gen();
 
@@ -81,22 +81,18 @@ imageID make_hexagon(const char *IDname,
                      double      radius);
 
 /** @brief Create a regular N-sided polygon mask */
-imageID make_polygon(
-    const char *ID_name,
-    uint32_t    l1,
-    uint32_t    l2,
-    double      x_center,
-    double      y_center,
-    double      radius,
-    int32_t     nsides,
-    double      rotation_angle);
+imageID make_polygon(const char *ID_name,
+                     uint32_t    l1,
+                     uint32_t    l2,
+                     double      x_center,
+                     double      y_center,
+                     double      radius,
+                     int32_t     nsides,
+                     double      rotation_angle);
 
-imageID IMAGE_gen_segments2WFmodes(const char *prefix,
-                                   long        ndigit,
-                                   const char *IDout_name);
+imageID IMAGE_gen_segments2WFmodes(const char *prefix, long ndigit, const char *IDout_name);
 
-imageID make_hexsegpupil(
-    const char *IDname, uint32_t size, double radius, double gap, double step);
+imageID make_hexsegpupil(const char *IDname, uint32_t size, double radius, double gap, double step);
 
 imageID make_jacquinot_pupil(const char *ID_name,
                              uint32_t    l1,
@@ -114,17 +110,12 @@ imageID make_sectors(const char *ID_name,
                      double      step,
                      long        NB_sectors);
 
-imageID
-make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *options);
+imageID make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *options);
 
-imageID make_rnd_double(const char *ID_name,
-                        uint32_t    l1,
-                        uint32_t    l2,
-                        const char *options);
+imageID make_rnd_double(const char *ID_name, uint32_t l1, uint32_t l2, const char *options);
 /*int make_rnd1(const char *ID_name, long l1, long l2, const char *options);*/
 
-imageID
-make_gauss(const char *ID_name, uint32_t l1, uint32_t l2, double a, double A);
+imageID make_gauss(const char *ID_name, uint32_t l1, uint32_t l2, double a, double A);
 
 imageID make_FiberCouplingOverlap(const char *ID_name);
 
@@ -136,10 +127,7 @@ imageID make_2axis_gauss(const char *ID_name,
                          double      E,
                          double      PA);
 
-imageID make_cluster(const char *ID_name,
-                     uint32_t    l1,
-                     uint32_t    l2,
-                     const char *options);
+imageID make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options);
 
 imageID make_galaxy(const char *ID_name,
                     uint32_t    l1,
@@ -153,10 +141,7 @@ imageID make_galaxy(const char *ID_name,
                     double      E_ell,
                     double      E_PA);
 
-imageID make_Egalaxy(const char *ID_name,
-                     uint32_t    l1,
-                     uint32_t    l2,
-                     const char *options);
+imageID make_Egalaxy(const char *ID_name, uint32_t l1, uint32_t l2, const char *options);
 
 /** @brief  make image of EZ disk */
 imageID gen_image_EZdisk(const char *ID_name,
@@ -165,25 +150,20 @@ imageID gen_image_EZdisk(const char *ID_name,
                          double      Index,
                          double      Incl);
 
-imageID make_slopexy(
-    const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy);
+imageID make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy);
 
-imageID
-make_dist(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2);
+imageID make_dist(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2);
 
-imageID make_PosAngle(
-    const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2);
+imageID make_PosAngle(const char *ID_name, uint32_t l1, uint32_t l2, double f1, double f2);
 
 imageID make_psf_from_profile(const char *profile_name,
                               const char *ID_name,
                               uint32_t    l1,
                               uint32_t    l2);
 
-imageID make_offsetHyperGaussian(
-    uint32_t size, double a, double b, long n, const char *IDname);
+imageID make_offsetHyperGaussian(uint32_t size, double a, double b, long n, const char *IDname);
 
-imageID
-make_cosapoedgePupil(uint32_t size, double a, double b, const char *IDname);
+imageID make_cosapoedgePupil(uint32_t size, double a, double b, const char *IDname);
 
 imageID make_2Dgridpix(const char *IDname,
                        uint32_t    xsize,
@@ -195,16 +175,14 @@ imageID make_2Dgridpix(const char *IDname,
 
 imageID make_tile(const char *IDin_name, uint32_t size, const char *IDout_name);
 
-imageID
-image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDout_name);
+imageID image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDout_name);
 
-imageID
-image_gen_make_voronoi_map(const char *filename,
-                           const char *IDout_name,
-                           uint32_t    xsize,
-                           uint32_t    ysize,
-                           float radius, // maximum radius of each Voronoi zone
-                           float maxsep  // gap between Voronoi zones
-                          );
+imageID image_gen_make_voronoi_map(const char *filename,
+                                   const char *IDout_name,
+                                   uint32_t    xsize,
+                                   uint32_t    ysize,
+                                   float       radius, // maximum radius of each Voronoi zone
+                                   float       maxsep  // gap between Voronoi zones
+);
 
 #endif

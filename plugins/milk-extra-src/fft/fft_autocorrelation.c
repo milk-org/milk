@@ -16,12 +16,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -62,9 +62,7 @@ imageID autocorrelation(const char *IDin_name, const char *IDout_name)
     char sqaamp1name[STRINGMAXLEN_IMGNAME];
     WRITE_IMAGENAME(sqaamp1name, "_sqaamp1_%d", (int) getpid());
 
-    arith_image_cstmult(sqaampname,
-                        1.0 / sqrt(nelement) / (1.0 * nelement),
-                        sqaamp1name);
+    arith_image_cstmult(sqaampname, 1.0 / sqrt(nelement) / (1.0 * nelement), sqaamp1name);
     delete_image_ID(sqaampname, DELETE_IMAGE_ERRMODE_WARNING);
 
     do2drfft(sqaamp1name, atmp1name);

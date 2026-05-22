@@ -11,9 +11,9 @@ target_include_directories(${LIBNAME} INTERFACE
 )
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets)
-install(FILES 
-    milkDebugTools.h 
-    milk_compiler.h 
+install(FILES
+    milkDebugTools.h
+    milk_compiler.h
     pixel_dispatch.h
     milk_types.h
     multiselect_parse.h

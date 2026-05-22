@@ -25,7 +25,7 @@ All code in this example is designed to be built in two modes:
 2.  **CLI Module:** A shared object (`.so`) loadable into the `milk` shell. In this mode, the `milk` framework handles the boilerplate (setup, signal catching, etc.), while the module provides the core compute logic.
 
 #### Shared Parameter Management (X-Macros)
-To avoid duplicating parameter names, descriptions, and types between the FPS initialization and the CLI argument definitions, this example uses the **X-Macro** technique. 
+To avoid duplicating parameter names, descriptions, and types between the FPS initialization and the CLI argument definitions, this example uses the **X-Macro** technique.
 Parameters are defined once in a header file (e.g., `PROCESSOR_PARAMS` in `processor.h`) and then expanded into:
 - Global pointer declarations.
 - `function_parameter_add_entry` calls for FPS initialization.

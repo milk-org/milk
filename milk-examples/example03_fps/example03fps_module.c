@@ -1,7 +1,7 @@
 /**
  * @file example03fps_module.c
  * @brief Combined Milk CLI module for writer03 and processor03.
- * 
+ *
  * This file serves as the main entry point for the shared object 'example03fps.so'.
  * It aggregates multiple FPS-enabled commands into a single loadable unit.
  */
@@ -20,17 +20,18 @@ errno_t CLIADDCMD_processor03();
 
 /**
  * @brief Module Initialization logic.
- * 
- * This function is called by the INIT_MODULE_LIB constructor. 
+ *
+ * This function is called by the INIT_MODULE_LIB constructor.
  * It registers all CLI commands contained within this shared object.
  */
-static errno_t init_module_CLI() {
+static errno_t init_module_CLI()
+{
     CLIADDCMD_writer03();
     CLIADDCMD_processor03();
     return RETURN_SUCCESS;
 }
 
-/** 
+/**
  * @brief Boilerplate module constructor/destructor generation.
  * Registers 'example03fps' with the Milk framework.
  */

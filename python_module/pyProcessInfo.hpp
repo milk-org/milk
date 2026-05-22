@@ -20,7 +20,9 @@ class pyProcessInfo
     * @brief Construct a empty Process Info object
     *
     */
-    pyProcessInfo() : m_pinfo(nullptr) {}
+    pyProcessInfo() : m_pinfo(nullptr)
+    {
+    }
 
     /**
     * @brief Construct a new Process Info object
@@ -43,7 +45,7 @@ class pyProcessInfo
     */
     ~pyProcessInfo()
     {
-        if(m_pinfo != nullptr)
+        if (m_pinfo != nullptr)
         {
             processinfo_cleanExit(m_pinfo);
             m_pinfo = nullptr;
@@ -119,7 +121,7 @@ class pyProcessInfo
     */
     int sigexit(int sig)
     {
-        if(m_pinfo != nullptr)
+        if (m_pinfo != nullptr)
         {
             int ret = processinfo_SIGexit(m_pinfo, sig);
             m_pinfo = nullptr;
@@ -136,7 +138,7 @@ class pyProcessInfo
     */
     int writeMessage(const char *message)
     {
-        if(m_pinfo != nullptr)
+        if (m_pinfo != nullptr)
         {
             return processinfo_WriteMessage(m_pinfo, message);
         }
@@ -150,7 +152,7 @@ class pyProcessInfo
     */
     int exec_start()
     {
-        if((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
+        if ((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
         {
             return processinfo_exec_start(m_pinfo);
         }
@@ -164,7 +166,7 @@ class pyProcessInfo
     */
     int exec_end()
     {
-        if((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
+        if ((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
         {
             return processinfo_exec_end(m_pinfo);
         }

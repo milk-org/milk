@@ -23,18 +23,21 @@ static int keep_running = 1;
 /**
  * @brief Signal handler for SIGINT (CTRL+C)
  */
-void signal_handler(int sig) {
+void signal_handler(int sig)
+{
     keep_running = 0;
 }
 
 /**
  * @brief Main entry point for the processor example.
  */
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     // ------------------------------------------------------------------------
     // 1. HELP MESSAGE
     // ------------------------------------------------------------------------
-    if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+    if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
+    {
         printf("\nUsage: %s\n\n", "milk-example-01-processor");
         printf("Description:\n");
         printf("  This program consumes 'stream01' and produces 'stream01_proc'.\n");
@@ -52,14 +55,15 @@ int main(int argc, char *argv[]) {
 
     signal(SIGINT, signal_handler);
 
-    const char *in_name = "stream01";
+    const char *in_name  = "stream01";
     const char *out_name = "stream01_proc";
-    
+
     // ------------------------------------------------------------------------
     // 2. CONNECT TO INPUT STREAM
     // ------------------------------------------------------------------------
     IMAGE input_image;
-    if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name, &input_image) != IMAGESTREAMIO_SUCCESS) {
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name, &input_image) != IMAGESTREAMIO_SUCCESS)
+    {
         fprintf(stderr, "Error: Could not connect to stream '%s'. Start writer first.\n", in_name);
         return 1;
     }
@@ -67,33 +71,36 @@ int main(int argc, char *argv[]) {
     // ------------------------------------------------------------------------
     // 3. CREATE OUTPUT STREAM
     // ------------------------------------------------------------------------
-    uint32_t roi_w = 50;
-    uint32_t roi_h = 50;
-    uint32_t dims[2] = {roi_w, roi_h};
-    IMAGE output_image;
-    if (ImageStreamIO_createIm_gpu(&output_image, out_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != IMAGESTREAMIO_SUCCESS) {
+    uint32_t roi_w   = 50;
+    uint32_t roi_h   = 50;
+    uint32_t dims[2] = { roi_w, roi_h };
+    IMAGE    output_image;
+    if (ImageStreamIO_createIm_gpu(&output_image, out_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0,
+                                   0, 0) != IMAGESTREAMIO_SUCCESS)
+    {
         fprintf(stderr, "Error: Could not create output stream '%s'\n", out_name);
         return 1;
     }
 
-    printf("Processor: Monitoring '%s' (%dx%d) -> Producing '%s' (%dx%d)\n", 
-           in_name, (int)input_image.md[0].size[0], (int)input_image.md[0].size[1],
-           out_name, roi_w, roi_h);
+    printf("Processor: Monitoring '%s' (%dx%d) -> Producing '%s' (%dx%d)\n", in_name,
+           (int) input_image.md[0].size[0], (int) input_image.md[0].size[1], out_name, roi_w,
+           roi_h);
     printf("Press CTRL+C to stop.\n");
 
     // Local pointers to the shared memory data
-    float *in_data = (float*)input_image.array.raw;
-    float *out_data = (float*)output_image.array.raw;
-    uint32_t in_w = input_image.md[0].size[0];
+    float   *in_data  = (float *) input_image.array.raw;
+    float   *out_data = (float *) output_image.array.raw;
+    uint32_t in_w     = input_image.md[0].size[0];
 
     // Offsets for 4 corner ROIs (Top-Left, Top-Right, Bottom-Left, Bottom-Right)
-    int off_x[4] = {0, 150, 0, 150};
-    int off_y[4] = {0, 0, 150, 150};
+    int off_x[4] = { 0, 150, 0, 150 };
+    int off_y[4] = { 0, 0, 150, 150 };
 
     // ------------------------------------------------------------------------
     // 4. MAIN PROCESSING LOOP
     // ------------------------------------------------------------------------
-    while(keep_running) {
+    while (keep_running)
+    {
         // Blocks until the writer calls ImageStreamIO_UpdateIm on the input stream.
         // We use semaphore #0.
         ImageStreamIO_semwait(&input_image, 0);
@@ -103,15 +110,18 @@ int main(int argc, char *argv[]) {
 
         // ROI SUM OPERATION
         // For each pixel in the 50x50 output, sum pixels from 4 corners of input
-        for(uint32_t y=0; y<roi_h; y++) {
-            for(uint32_t x=0; x<roi_w; x++) {
+        for (uint32_t y = 0; y < roi_h; y++)
+        {
+            for (uint32_t x = 0; x < roi_w; x++)
+            {
                 float sum = 0.0;
-                for(int k=0; k<4; k++) {
+                for (int k = 0; k < 4; k++)
+                {
                     uint32_t ix = off_x[k] + x;
                     uint32_t iy = off_y[k] + y;
                     sum += in_data[iy * in_w + ix];
                 }
-                out_data[y*roi_w + x] = sum;
+                out_data[y * roi_w + x] = sum;
             }
         }
 

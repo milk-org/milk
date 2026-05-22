@@ -22,7 +22,7 @@ link_directories(${MILK_ROOT}/_build/src/libfps)
 link_directories(${MILK_ROOT}/_build/src/CommandLineInterface)
 
 # The libraries are targets in the parent project if added via add_subdirectory,
-# but here they might be built separately. 
+# but here they might be built separately.
 # We should prefer using the actual build artifact locations.
 
 add_executable(milk-fpsexec-example-03-writer writer.c)
@@ -43,23 +43,23 @@ target_link_libraries(milk-fpsexec-example-03-processor milkfps milkprocessinfo 
 
 
 
-add_library(example03fps MODULE 
+add_library(example03fps MODULE
 
 
 
-    example03fps_module.c 
+    example03fps_module.c
 
 
 
-    writer_module.c 
+    writer_module.c
 
 
 
-    writer.c 
+    writer.c
 
 
 
-    processor_module.c 
+    processor_module.c
 
 
 
@@ -80,11 +80,3 @@ target_compile_definitions(example03fps PRIVATE MILK_MODULE)
 
 
 target_link_libraries(example03fps milkfps milkprocessinfo ImageStreamIO CLIcore m rt)
-
-
-
-
-
-
-
-

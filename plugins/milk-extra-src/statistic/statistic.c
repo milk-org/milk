@@ -28,9 +28,9 @@
 /* =============================================================================================== */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 
 #include <math.h>
@@ -88,67 +88,43 @@ INIT_MODULE_LIB(statistic)
  * Command: putphnoise
  * ============================================ */
 
-long put_poisson_noise(
-    const char *ID_in_name,
-    const char *ID_out_name);
+long put_poisson_noise(const char *ID_in_name, const char *ID_out_name);
 
-static char phn_in[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im0";
-static char phn_out[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
+static char phn_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im0";
+static char phn_out[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
 static FPS_APP_INFO FPS_app_info_phn = {
-    .fps_name    = "putphnoise",
-    .cmdkey      = "putphnoise",
-    .description =
-        "add photon noise to image",
-    .description_long =
-        "Statistical tools for image processing: add Gaussian noise, compute histograms, and generate statistical test images."
+    .fps_name         = "putphnoise",
+    .cmdkey           = "putphnoise",
+    .description      = "add photon noise to image",
+    .description_long = "Statistical tools for image processing: add Gaussian noise, compute "
+                        "histograms, and generate statistical test images."
 };
 
-#define FPS_PARAMS_PHN(X) \
-    X(".in_name", phn_in, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input image") \
-    X(".out_name", phn_out, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output image")
+#    define FPS_PARAMS_PHN(X)                                                            \
+        X(".in_name", phn_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+        X(".out_name", phn_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-#include "fps.h"
+#    include "fps.h"
 
-static FPS_CLI_BINDING phn_bindings[] = {
-    FPS_PARAMS_PHN(FPS_X_BINDING)
-};
-static const int phn_nb_bindings =
-    sizeof(phn_bindings) /
-    sizeof(FPS_CLI_BINDING);
+static FPS_CLI_BINDING phn_bindings[]  = { FPS_PARAMS_PHN(FPS_X_BINDING) };
+static const int       phn_nb_bindings = sizeof(phn_bindings) / sizeof(FPS_CLI_BINDING);
 
 /* use standard names for INSERT_STD macro */
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS_PHN(FPS_X_FARG)
-};
-static CLICMDDATA CLIcmddata = {
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-static CMDSETTINGS phn_cms = {0};
+static CLICMDARGDEF farg[]     = { FPS_PARAMS_PHN(FPS_X_FARG) };
+static CLICMDDATA   CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS  phn_cms    = { 0 };
 
-static __attribute__((constructor))
-void init_phn_cms(void)
+static __attribute__((constructor)) void init_phn_cms(void)
 {
-    strncpy(CLIcmddata.key,
-            FPS_app_info_phn.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info_phn.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    CLIcmddata.nbarg =
-        sizeof(farg) / sizeof(CLICMDARGDEF);
+    strncpy(CLIcmddata.key, FPS_app_info_phn.cmdkey, sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description, FPS_app_info_phn.description,
+            sizeof(CLIcmddata.description) - 1);
+    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
     CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags = CLICMDFLAG_FPS;
-    if (CLIcmddata.cmdsettings == NULL) {
+    CLIcmddata.flags         = CLICMDFLAG_FPS;
+    if (CLIcmddata.cmdsettings == NULL)
+    {
         CLIcmddata.cmdsettings = &phn_cms;
     }
 }
@@ -161,80 +137,49 @@ static errno_t phn_compute(void)
 
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_phn, farg,
-        &CLIcmddata,
-        phn_bindings, phn_nb_bindings,
-        phn_compute);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_phn, farg, &CLIcmddata, phn_bindings,
+                                        phn_nb_bindings, phn_compute);
 }
 
 /* ============================================
  * Command: putgaussnoise
  * ============================================ */
 
-long put_gauss_noise(
-    const char *ID_in_name,
-    const char *ID_out_name,
-    double ampl);
+long put_gauss_noise(const char *ID_in_name, const char *ID_out_name, double ampl);
 
-static char gn_in[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im0";
-static char gn_out[FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
-static double gn_ampl = 0.2;
+static char   gn_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im0";
+static char   gn_out[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static double gn_ampl                              = 0.2;
 
 static FPS_APP_INFO FPS_app_info_gn = {
-    .fps_name    = "putgaussnoise",
-    .cmdkey      = "putgaussnoise",
-    .description =
-        "add gaussian noise to image",
-    .description_long =
-        "Statistical tools for image processing: add Gaussian noise, compute histograms, and generate statistical test images."
+    .fps_name         = "putgaussnoise",
+    .cmdkey           = "putgaussnoise",
+    .description      = "add gaussian noise to image",
+    .description_long = "Statistical tools for image processing: add Gaussian noise, compute "
+                        "histograms, and generate statistical test images."
 };
 
-#define FPS_PARAMS_GN(X) \
-    X(".in_name", gn_in, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input image") \
-    X(".out_name", gn_out, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output image") \
-    X(".ampl", &gn_ampl, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "noise amplitude")
+#    define FPS_PARAMS_GN(X)                                                            \
+        X(".in_name", gn_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+        X(".out_name", gn_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
+        X(".ampl", &gn_ampl, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "noise amplitude")
 
-static FPS_CLI_BINDING gn_bindings[] = {
-    FPS_PARAMS_GN(FPS_X_BINDING)
-};
-static const int gn_nb_bindings =
-    sizeof(gn_bindings) /
-    sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF gn_farg[] = {
-    FPS_PARAMS_GN(FPS_X_FARG)
-};
-static CLICMDDATA gn_CLIcmddata = {
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-static CMDSETTINGS gn_cms = {0};
+static FPS_CLI_BINDING gn_bindings[]  = { FPS_PARAMS_GN(FPS_X_BINDING) };
+static const int       gn_nb_bindings = sizeof(gn_bindings) / sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF    gn_farg[]      = { FPS_PARAMS_GN(FPS_X_FARG) };
+static CLICMDDATA      gn_CLIcmddata  = { "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS     gn_cms         = { 0 };
 
-static __attribute__((constructor))
-void init_gn_cms(void)
+static __attribute__((constructor)) void init_gn_cms(void)
 {
-    strncpy(gn_CLIcmddata.key,
-            FPS_app_info_gn.cmdkey,
-            sizeof(gn_CLIcmddata.key) - 1);
-    strncpy(gn_CLIcmddata.description,
-            FPS_app_info_gn.description,
-            sizeof(gn_CLIcmddata.description)
-            - 1);
-    gn_CLIcmddata.nbarg =
-        sizeof(gn_farg) / sizeof(CLICMDARGDEF);
+    strncpy(gn_CLIcmddata.key, FPS_app_info_gn.cmdkey, sizeof(gn_CLIcmddata.key) - 1);
+    strncpy(gn_CLIcmddata.description, FPS_app_info_gn.description,
+            sizeof(gn_CLIcmddata.description) - 1);
+    gn_CLIcmddata.nbarg         = sizeof(gn_farg) / sizeof(CLICMDARGDEF);
     gn_CLIcmddata.funcfpscliarg = gn_farg;
-    gn_CLIcmddata.flags = CLICMDFLAG_FPS;
-    if (gn_CLIcmddata.cmdsettings == NULL) {
+    gn_CLIcmddata.flags         = CLICMDFLAG_FPS;
+    if (gn_CLIcmddata.cmdsettings == NULL)
+    {
         gn_CLIcmddata.cmdsettings = &gn_cms;
     }
 }
@@ -247,11 +192,8 @@ static errno_t gn_compute(void)
 
 static errno_t gn_CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_gn, gn_farg,
-        &gn_CLIcmddata,
-        gn_bindings, gn_nb_bindings,
-        gn_compute);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_gn, gn_farg, &gn_CLIcmddata, gn_bindings,
+                                        gn_nb_bindings, gn_compute);
 }
 
 /* Module init */
@@ -260,24 +202,16 @@ static errno_t init_module_CLI()
 {
     /* putphnoise */
     {
-        safe_fps_fill_farg_examples(
-            farg, phn_bindings,
-            phn_nb_bindings);
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        safe_fps_fill_farg_examples(farg, phn_bindings, phn_nb_bindings);
+        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     /* putgaussnoise */
     {
-        safe_fps_fill_farg_examples(
-            gn_farg, gn_bindings,
-            gn_nb_bindings);
-        int cmdi = RegisterCLIcmd(
-            gn_CLIcmddata, gn_CLIfunction);
-        gn_CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        safe_fps_fill_farg_examples(gn_farg, gn_bindings, gn_nb_bindings);
+        int cmdi                  = RegisterCLIcmd(gn_CLIcmddata, gn_CLIfunction);
+        gn_CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     // add atexit functions here
@@ -320,7 +254,7 @@ double gauss_trc()
     double value;
 
     value = gauss();
-    while(fabs(value) > 1.0)
+    while (fabs(value) > 1.0)
     {
         value = gauss();
     }
@@ -355,7 +289,7 @@ double cfits_gammaln(double xx)
     y   = x;
     tmp = x + 5.5;
     tmp = (x + 0.5) * log(tmp) - tmp;
-    for(j = 0; j < 6; j++)
+    for (j = 0; j < 6; j++)
     {
         y   = y + 1;
         ser = ser + cof[j] / y;
@@ -370,8 +304,8 @@ double fast_poisson(double mu)
     double em;
 
     em = 0;
-    em = (double)((long long)(mu + gauss() * sqrt(mu)));
-    if(em < 0.0)
+    em = (double) ((long long) (mu + gauss() * sqrt(mu)));
+    if (em < 0.0)
     {
         em = 0.0;
     }
@@ -390,7 +324,7 @@ double better_poisson(double mu)
     inv_randmax = 1.0 / RAND_MAX;
 
     em = 0;
-    if(mu < 100)
+    if (mu < 100)
     {
         em = (double) poisson(mu);
     }
@@ -405,7 +339,7 @@ double better_poisson(double mu)
 
         y  = tan(PI * (inv_randmax * rand()));
         em = sq * y + mu;
-        while(em < 0)
+        while (em < 0)
         {
             y  = tan(PI * (inv_randmax * rand()));
             em = sq * y + mu;
@@ -413,17 +347,17 @@ double better_poisson(double mu)
         em = (int) em;
         t  = 0.9 * (1 + y * y) * exp(em * logmu - cfits_gammaln(em + 1) - g);
 
-        while((inv_randmax * rand()) > t)
+        while ((inv_randmax * rand()) > t)
         {
             y  = tan(PI * (inv_randmax * rand()));
             em = sq * y + mu;
-            while(em < 0)
+            while (em < 0)
             {
                 y  = tan(PI * (inv_randmax * rand()));
                 em = sq * y + mu;
             }
             em = (long) em;
-            t = 0.9 * (1 + y * y) * exp(em * logmu - cfits_gammaln(em + 1) - g);
+            t  = 0.9 * (1 + y * y) * exp(em * logmu - cfits_gammaln(em + 1) - g);
         }
     }
 
@@ -442,7 +376,7 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name)
     ID_in     = image_ID(ID_in_name, dcimg, dcnimg);
     naxis     = dcimg[ID_in].md[0].naxis;
     nelements = 1;
-    for(i = 0; i < naxis; i++)
+    for (i = 0; i < naxis; i++)
     {
         nelements *= dcimg[ID_in].md[0].size[i];
     }
@@ -452,7 +386,7 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name)
     ID_out = image_ID(ID_out_name, dcimg, dcnimg);
     //  srand(time(NULL));
 
-    for(ii = 0; ii < nelements; ii++)
+    for (ii = 0; ii < nelements; ii++)
     {
         dcimg[ID_out].array.F[ii] = poisson(dcimg[ID_in].array.F[ii]);
     }
@@ -460,9 +394,7 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name)
     return (ID_out);
 }
 
-long put_gauss_noise(const char *ID_in_name,
-                     const char *ID_out_name,
-                     double      ampl)
+long put_gauss_noise(const char *ID_in_name, const char *ID_out_name, double ampl)
 {
     long ID_in;
     long ID_out;
@@ -474,7 +406,7 @@ long put_gauss_noise(const char *ID_in_name,
     ID_in     = image_ID(ID_in_name, dcimg, dcnimg);
     naxis     = dcimg[ID_in].md[0].naxis;
     nelements = 1;
-    for(i = 0; i < naxis; i++)
+    for (i = 0; i < naxis; i++)
     {
         nelements *= dcimg[ID_in].md[0].size[i];
     }
@@ -484,10 +416,9 @@ long put_gauss_noise(const char *ID_in_name,
     ID_out = image_ID(ID_out_name, dcimg, dcnimg);
     //  srand(time(NULL));
 
-    for(ii = 0; ii < nelements; ii++)
+    for (ii = 0; ii < nelements; ii++)
     {
-        dcimg[ID_out].array.F[ii] =
-            dcimg[ID_in].array.F[ii] + ampl * gauss();
+        dcimg[ID_out].array.F[ii] = dcimg[ID_in].array.F[ii] + ampl * gauss();
     }
 
     return (ID_out);

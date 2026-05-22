@@ -8,12 +8,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
@@ -43,20 +43,13 @@
  *
  * Input node will be released
  */
-errno_t split_CF_node(
-    CLUSTERTREE *ctree,
-    long CFindex,
-    long *CFi0,
-    long *CFi1
-)
+errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
 {
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %ld", CFindex);
 
 
-
-
-    if(ctree->rootindex == CFindex)
+    if (ctree->rootindex == CFindex)
     {
         DEBUG_TRACEPOINT("Dropping tree: previous root is %ld", ctree->rootindex);
         droptree(ctree);
@@ -64,8 +57,7 @@ errno_t split_CF_node(
     }
 
     long parentCFindex __attribute__((unused)) = ctree->CFarray[CFindex].parentindex;
-    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g",
-                     parentCFindex,
+    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g", parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
                      ctree->CFarray[parentCFindex].pathcnt);
 
@@ -79,59 +71,53 @@ errno_t split_CF_node(
     int    maxdistindex0, maxdistindex1;
 
     long nCF; // number of CF entries to split
-    switch(ctree->CFarray[CFindex].type)
+    switch (ctree->CFarray[CFindex].type)
     {
     case CLUSTER_CF_TYPE_NODE:
         nCF = ctree->CFarray[CFindex].NBchild;
         break;
 
     default:
-        FUNC_RETURN_FAILURE("type = %d not valid",
-                            ctree->CFarray[CFindex].type);
+        FUNC_RETURN_FAILURE("type = %d not valid", ctree->CFarray[CFindex].type);
     }
 
     long *subCFarray = (long *) malloc(sizeof(long) * nCF);
-    if(subCFarray == NULL)
+    if (subCFarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
 
 
-
-    for(long ccf = 0; ccf < nCF; ccf++)
+    for (long ccf = 0; ccf < nCF; ccf++)
     {
         subCFarray[ccf] = ctree->CFarray[CFindex].childindex[ccf];
     }
 
     double *distarray = (double *) malloc(sizeof(double) * nCF * nCF);
-    if(distarray == NULL)
+    if (distarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
 
-    for(int ccf0 = 0; ccf0 < nCF; ccf0++)
+    for (int ccf0 = 0; ccf0 < nCF; ccf0++)
     {
         distarray[ccf0 * nCF + ccf0] = 0.0;
-        long CFindex00  = subCFarray[ccf0];
-        for(int ccf1 = ccf0 + 1; ccf1 < nCF; ccf1++)
+        long CFindex00               = subCFarray[ccf0];
+        for (int ccf1 = ccf0 + 1; ccf1 < nCF; ccf1++)
         {
             long   CFindex11 = subCFarray[ccf1];
             double distval;
-            if ( ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
+            if (ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
             {
-                FUNC_CHECK_RETURN(
-                    compute_imdistance_double(ctree,
-                                              ctree->CFarray[CFindex00].datasumvec,
-                                              ctree->CFarray[CFindex00].N,
-                                              ctree->CFarray[CFindex11].datasumvec,
-                                              ctree->CFarray[CFindex11].N,
-                                              &distval));
+                FUNC_CHECK_RETURN(compute_imdistance_double(
+                    ctree, ctree->CFarray[CFindex00].datasumvec, ctree->CFarray[CFindex00].N,
+                    ctree->CFarray[CFindex11].datasumvec, ctree->CFarray[CFindex11].N, &distval));
             }
             else
             {
                 compute_CF2CF_posdistance_double(ctree, CFindex00, CFindex11, &distval);
             }
-            if(distval > maxdist)
+            if (distval > maxdist)
             {
                 maxdist       = distval;
                 maxdistindex0 = ccf0;
@@ -144,13 +130,9 @@ errno_t split_CF_node(
     }
 
     // use max distance pair to split
-    DEBUG_TRACEPOINT("MAX dist within node: %d - %d = %g",
-                     maxdistindex0,
-                     maxdistindex1,
-                     maxdist);
+    DEBUG_TRACEPOINT("MAX dist within node: %d - %d = %g", maxdistindex0, maxdistindex1, maxdist);
 
-    DEBUG_TRACEPOINT("CREATE NODES POINTING TO PARENT %ld",
-                     ctree->CFarray[CFindex].parentindex);
+    DEBUG_TRACEPOINT("CREATE NODES POINTING TO PARENT %ld", ctree->CFarray[CFindex].parentindex);
 
 
     // create two new nodes
@@ -173,7 +155,7 @@ errno_t split_CF_node(
 
     // destination CF
     long *destCF = (long *) malloc(sizeof(long) * nCF);
-    if(destCF == NULL)
+    if (destCF == NULL)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
@@ -185,23 +167,24 @@ errno_t split_CF_node(
     long cnt1 = 0;
 
     // look for CF with highest number of points in each of the 2 sets
-    long maxN0 = 0;
-    long maxN1 = 0;
+    long maxN0                            = 0;
+    long maxN1                            = 0;
     long maxNccf0 __attribute__((unused)) = -1;
     long maxNccf1 __attribute__((unused)) = -1;
 
-    for(int ccf = 0; ccf < nCF; ccf++)
+    for (int ccf = 0; ccf < nCF; ccf++)
     {
-        long cfi = ctree->CFarray[CFindex].childindex[ccf];
+        long   cfi   = ctree->CFarray[CFindex].childindex[ccf];
         double dist0 = distarray[maxdistindex0 * nCF + ccf];
         double dist1 = distarray[maxdistindex1 * nCF + ccf];
 
-        if((dist0 <= dist1) && (cnt0 < nCF - 1))
+        if ((dist0 <= dist1) && (cnt0 < nCF - 1))
         {
             destCF[ccf] = CFindex0;
-            long N = ctree->CFarray[cfi].N;
-            if(N>maxN0) {
-                maxN0 = N;
+            long N      = ctree->CFarray[cfi].N;
+            if (N > maxN0)
+            {
+                maxN0    = N;
                 maxNccf0 = ccf;
             }
             cnt0++;
@@ -209,9 +192,10 @@ errno_t split_CF_node(
         else
         {
             destCF[ccf] = CFindex1;
-            long N = ctree->CFarray[cfi].N;
-            if(N>maxN1) {
-                maxN1 = N;
+            long N      = ctree->CFarray[cfi].N;
+            if (N > maxN1)
+            {
+                maxN1    = N;
                 maxNccf1 = ccf;
             }
             cnt1++;
@@ -229,25 +213,17 @@ errno_t split_CF_node(
     // Add ref nodes first to ensure position corresponds to most
     // distant nodes.
     //
-    FUNC_CHECK_RETURN(
-        node_attachnode(ctree,
-                        ctree->CFarray[CFindex].childindex[refCF0],
-                        CFindex0));
+    FUNC_CHECK_RETURN(node_attachnode(ctree, ctree->CFarray[CFindex].childindex[refCF0], CFindex0));
 
-    FUNC_CHECK_RETURN(
-        node_attachnode(ctree,
-                        ctree->CFarray[CFindex].childindex[refCF1],
-                        CFindex1));
+    FUNC_CHECK_RETURN(node_attachnode(ctree, ctree->CFarray[CFindex].childindex[refCF1], CFindex1));
 
 
-    for(int subindex = 0; subindex < nCF; subindex++)
+    for (int subindex = 0; subindex < nCF; subindex++)
     {
-        if( (subindex != refCF0) && (subindex != refCF1) )
+        if ((subindex != refCF0) && (subindex != refCF1))
         {
-            FUNC_CHECK_RETURN(
-                node_attachnode(ctree,
-                                ctree->CFarray[CFindex].childindex[subindex],
-                                destCF[subindex]));
+            FUNC_CHECK_RETURN(node_attachnode(ctree, ctree->CFarray[CFindex].childindex[subindex],
+                                              destCF[subindex]));
         }
     }
 
@@ -257,13 +233,12 @@ errno_t split_CF_node(
     free(subCFarray);
 
 
-    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g",
-                     parentCFindex,
+    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g", parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
                      ctree->CFarray[parentCFindex].pathcnt);
 
     // release input leafnode
-    if(ctree->rootindex == CFindex)
+    if (ctree->rootindex == CFindex)
     {
         FUNC_RETURN_FAILURE("cannot release root node %ld", CFindex);
     }
@@ -275,7 +250,7 @@ errno_t split_CF_node(
 
     FUNC_CHECK_RETURN(CFmeminit(ctree, CFindex, CFMEMINIT_CFUPDATE));
 
-    if(CFiparent != -1)
+    if (CFiparent != -1)
     {
         // attach node to parent
         DEBUG_TRACEPOINT("attach to parent %ld", CFiparent);
@@ -292,8 +267,7 @@ errno_t split_CF_node(
 
     DEBUG_TRACEPOINT("output nodes written to pointers\n");
 
-    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g",
-                     parentCFindex,
+    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g", parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
                      ctree->CFarray[parentCFindex].pathcnt);
 

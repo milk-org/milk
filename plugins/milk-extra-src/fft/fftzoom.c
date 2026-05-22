@@ -15,12 +15,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -57,22 +57,22 @@ int fftczoom(const char *ID_name, const char *IDout_name, long factor)
 
     create_2DCimage_ID(tmpz1name, factor * naxes[0], factor * naxes[1], &ID1);
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[1]; jj++)
         {
             dcimg[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .re = dcimg[ID].array.CF[jj * naxes[0] + ii].re * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .re = dcimg[ID].array.CF[jj * naxes[0] + ii].re * coeff;
             dcimg[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .im = dcimg[ID].array.CF[jj * naxes[0] + ii].im * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .im = dcimg[ID].array.CF[jj * naxes[0] + ii].im * coeff;
         }
+    }
     delete_image_ID(tmpzname, DELETE_IMAGE_ERRMODE_WARNING);
 
     permut(tmpz1name);
@@ -115,22 +115,22 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
 
     create_2DCimage_ID(tmpz1name, factor * naxes[0], factor * naxes[1], &ID1);
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[1]; jj++)
         {
             dcimg[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .re = dcimg[ID].array.CF[jj * naxes[0] + ii].re * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .re = dcimg[ID].array.CF[jj * naxes[0] + ii].re * coeff;
             dcimg[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .im = dcimg[ID].array.CF[jj * naxes[0] + ii].im * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .im = dcimg[ID].array.CF[jj * naxes[0] + ii].im * coeff;
         }
+    }
     delete_image_ID(tmpzname, DELETE_IMAGE_ERRMODE_WARNING);
 
     permut(tmpz1name);

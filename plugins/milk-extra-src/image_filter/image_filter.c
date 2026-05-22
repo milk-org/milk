@@ -14,22 +14,20 @@
 #define MODULE_DESCRIPTION "Image filtering"
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 
-#include "fconvolve.h"
-#include "gaussfilter.h"
-#include "im2Dfilter_1pixbblurr.h"
-
+#    include "fconvolve.h"
+#    include "gaussfilter.h"
+#    include "im2Dfilter_1pixbblurr.h"
 
 
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
 INIT_MODULE_LIB(image_filter)
-
 
 
 //long fconvolve(const char *ID_in, const char *ID_ke, const char *ID_out);

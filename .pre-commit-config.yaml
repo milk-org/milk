@@ -1,10 +1,9 @@
 exclude: "^.github/"
 repos:
--   repo: https://github.com/pre-commit/mirrors-yapf.git
-    rev: v0.32.0
+-   repo: https://github.com/psf/black
+    rev: 24.4.2
     hooks:
-    -   id: yapf
-        additional_dependencies: [toml]
+    -   id: black
 -   repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v21.1.5
     hooks:
@@ -19,6 +18,7 @@ repos:
     -   id: end-of-file-fixer
         exclude: \.fits
     -   id: check-yaml
+        exclude: mkdocs\.yml$
     -   id: debug-statements
     -   id: requirements-txt-fixer
     -   id: check-added-large-files

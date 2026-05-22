@@ -92,7 +92,7 @@ else
 
             fpsentry_addmodules
 			echo "${fpsname}           ${fpsfcall}     ${fpsarg0}" >> fpslist.txt
-			
+
 			if [ $WRITEFPSCMDS = "ON" ]; then
 			  addfpscmdheader
 			  fpsentry_addcmds

@@ -6,9 +6,9 @@
 #include <math.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 
@@ -19,74 +19,44 @@
 #include "permut.h"
 
 // Forward declaration
-imageID fft_correlation(const char *ID_name1,
-                        const char *ID_name2,
-                        const char *ID_nameout);
+imageID fft_correlation(const char *ID_name1, const char *ID_name2, const char *ID_nameout);
 
 /* =========================================
  *  V2 PARAMS
  * ======================================= */
 
-static char p_in1[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "im1";
-static char p_in2[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "im2";
-static char p_out[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "outim";
+static char p_in1[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_in2[FUNCTION_PARAMETER_STRMAXLEN] = "im2";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
 
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "fcorrel",
     .cmdkey      = "fcorrel",
-    .description =
-        "correlate two images",
+    .description = "correlate two images",
     .description_long =
-        "Compute the cross-correlation of two images via FFT. Multiplies the Fourier transforms and applies the inverse FFT to produce the correlation map."
+        "Compute the cross-correlation of two images via FFT. Multiplies the Fourier transforms "
+        "and applies the inverse FFT to produce the correlation map."
 };
 
-#define FPS_PARAMS(X) \
-    X(".in1", p_in1, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input image 1") \
-    X(".in2", p_in2, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input image 2") \
-    X(".out", p_out, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output correlation")
+#define FPS_PARAMS(X)                                                             \
+    X(".in1", p_in1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 1") \
+    X(".in2", p_in2, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 2") \
+    X(".out", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output correlation")
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
-static const int nb_bindings =
-    sizeof(my_bindings) /
-    sizeof(FPS_CLI_BINDING);
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
+static const int       nb_bindings   = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
 
-static CLICMDDATA CLIcmddata = {
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-static CMDSETTINGS cms = {0};
+static CLICMDDATA  CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS cms        = { 0 };
 
-static __attribute__((constructor))
-void init_cms(void)
+static __attribute__((constructor)) void init_cms(void)
 {
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
+    strncpy(CLIcmddata.key, FPS_app_info.cmdkey, sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description, FPS_app_info.description, sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL)
+    {
         CLIcmddata.cmdsettings = &cms;
     }
 }
@@ -100,26 +70,20 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t __attribute__((unused)) CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_milkfft__fftcorrelation()
+errno_t CLIADDCMD_milkfft__fftcorrelation()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 #endif
 
 
-imageID fft_correlation(const char *ID_name1,
-                        const char *ID_name2,
-                        const char *ID_nameout)
+imageID fft_correlation(const char *ID_name1, const char *ID_name2, const char *ID_nameout)
 {
     imageID ID1;
     imageID IDout;
@@ -166,8 +130,7 @@ imageID fft_correlation(const char *ID_name1,
     delete_image_ID(ftp1name, DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID(ftp2name, DELETE_IMAGE_ERRMODE_WARNING);
 
-    arith_image_cstmult_inplace(fta12name,
-                                1.0 / sqrt(nelement) / (1.0 * nelement));
+    arith_image_cstmult_inplace(fta12name, 1.0 / sqrt(nelement) / (1.0 * nelement));
 
     WRITE_IMAGENAME(fftname, "_fft_%d", (int) getpid());
 

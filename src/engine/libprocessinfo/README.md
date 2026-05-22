@@ -46,18 +46,18 @@ processinfo_loopstart(pinfo);
 while (processloopOK) {
     // 1. Handle signals and check if loop should exit/pause
     processloopOK = processinfo_loopstep(pinfo);
-    
+
     // 2. Wait for the trigger
     processinfo_waitoninputstream(pinfo);
-    
+
     // 3. Mark start of computation
     processinfo_exec_start(pinfo);
-    
+
     // --- Perform Work Here ---
-    
+
     // 4. Mark end of computation
     processinfo_exec_end(pinfo);
-    
+
     // 5. Update output stream metadata
     processinfo_update_output_stream(pinfo, output_image, input_image);
 }

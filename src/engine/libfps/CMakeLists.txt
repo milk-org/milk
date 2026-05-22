@@ -199,10 +199,10 @@ add_executable(milk-fpsCTRL ${SOURCEFILES_FPSCTRL})
 target_include_directories(milk-fpsCTRL PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL
 )
-target_link_libraries(milk-fpsCTRL PUBLIC 
+target_link_libraries(milk-fpsCTRL PUBLIC
     milkfpsseq
     milkfps
-    milkprocessinfo 
+    milkprocessinfo
     ImageStreamIO
     pthread
     m
@@ -235,7 +235,7 @@ install(TARGETS milk-fps-help DESTINATION bin)
 # --- FPS query tools ---
 
 add_executable(milk-fps-list milk-fps-list.c)
-target_link_libraries(milk-fps-list PUBLIC 
+target_link_libraries(milk-fps-list PUBLIC
     milkfpsStandalone
     pthread
     m
@@ -243,7 +243,7 @@ target_link_libraries(milk-fps-list PUBLIC
 install(TARGETS milk-fps-list DESTINATION bin)
 
 add_executable(milk-fps-search milk-fps-search.c)
-target_link_libraries(milk-fps-search PUBLIC 
+target_link_libraries(milk-fps-search PUBLIC
     milkfpsStandalone
     pthread
     m
@@ -274,7 +274,7 @@ target_link_libraries(milk-fps-info PUBLIC
 install(TARGETS milk-fps-info DESTINATION bin)
 
 add_executable(milk-fps-rm milk-fps-rm.c)
-target_link_libraries(milk-fps-rm PUBLIC 
+target_link_libraries(milk-fps-rm PUBLIC
     milkfpsStandalone
     pthread
     m
@@ -293,7 +293,7 @@ set(FPS_GENERIC_CMDS
 
 foreach(cmd ${FPS_GENERIC_CMDS})
     add_executable(${cmd} milk-fps-cmd.c)
-    target_link_libraries(${cmd} PUBLIC 
+    target_link_libraries(${cmd} PUBLIC
         milkfpsStandalone
         pthread
         m
@@ -304,7 +304,7 @@ endforeach()
 # --- milk-fps-set ---
 
 add_executable(milk-fps-set milk-fps-set.c)
-target_link_libraries(milk-fps-set PUBLIC 
+target_link_libraries(milk-fps-set PUBLIC
     milkfpsStandalone
     pthread
     m
@@ -314,10 +314,9 @@ install(TARGETS milk-fps-set DESTINATION bin)
 # --- milk-fps-track ---
 
 add_executable(milk-fps-track milk-fps-track.c)
-target_link_libraries(milk-fps-track PUBLIC 
+target_link_libraries(milk-fps-track PUBLIC
     milkfpsStandalone
     pthread
     m
 )
 install(TARGETS milk-fps-track DESTINATION bin)
-

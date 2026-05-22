@@ -5,6 +5,5 @@
 
 errno_t CLIADDCMD_image_format__floatbin_lock();
 
-imageID IMAGE_FORMAT_FITS_to_floatbin_lock(
-    const char *__restrict IDname,
-    const char *__restrict fname);
+imageID IMAGE_FORMAT_FITS_to_floatbin_lock(const char *__restrict IDname,
+                                           const char *__restrict fname);

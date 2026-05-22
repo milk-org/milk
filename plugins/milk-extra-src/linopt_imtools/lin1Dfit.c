@@ -10,8 +10,6 @@
 #include "image_fitModes.h"
 
 
-
-
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
  * ============================================================= */
@@ -29,38 +27,24 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char * infname = NULL;
-static long * NBptval = NULL;
-static long * maxorderval = NULL;
-static char * outfname = NULL;
-static long * modeval = NULL;
+static char *infname     = NULL;
+static long *NBptval     = NULL;
+static long *maxorderval = NULL;
+static char *outfname    = NULL;
+static long *modeval     = NULL;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".indat", &infname, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input file") \
-    X(".NBpt", &NBptval, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "number of sample points") \
-    X(".maxorder", &maxorderval, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "maximum polynomial order") \
-    X(".outdat", &outfname, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output file") \
-    X(".mode", &modeval, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "fit mode")
+#define FPS_PARAMS(X)                                                                      \
+    X(".indat", &infname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input file")            \
+    X(".NBpt", &NBptval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of sample points") \
+    X(".maxorder", &maxorderval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT,                    \
+      "maximum polynomial order")                                                          \
+    X(".outdat", &outfname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output file")         \
+    X(".mode", &modeval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "fit mode")
 
 
 /* ================================================================
@@ -95,17 +79,17 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
 
     //atexit(milk_memclean);
 
-    float * __restrict xarray;
+    float *__restrict xarray;
     xarray = (float *) malloc(sizeof(float) * NBpt);
-    if(xarray == NULL)
+    if (xarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
     //milk_atexit_free_add(xarray);
 
-    float * __restrict valarray;
+    float *__restrict valarray;
     valarray = (float *) malloc(sizeof(float) * NBpt);
-    if(valarray == NULL)
+    if (valarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
@@ -115,25 +99,24 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     {
         FILE *fp;
         fp = fopen(fnamein, "r");
-        for(int_fast32_t ii = 0; ii < NBpt; ii++)
+        for (int_fast32_t ii = 0; ii < NBpt; ii++)
         {
             int fscanfcnt = fscanf(fp, "%f %f\n", &xarray[ii], &valarray[ii]);
 
-            if(fscanfcnt == EOF)
+            if (fscanfcnt == EOF)
             {
-                if(ferror(fp))
+                if (ferror(fp))
                 {
                     perror("fscanf");
                 }
                 else
                 {
-                    fprintf(stderr,
-                            "Error: fscanf reached end of file, no matching "
-                            "characters, no matching failure\n");
+                    fprintf(stderr, "Error: fscanf reached end of file, no matching "
+                                    "characters, no matching failure\n");
                 }
                 exit(EXIT_FAILURE);
             }
-            else if(fscanfcnt != 2)
+            else if (fscanfcnt != 2)
             {
                 fprintf(stderr,
                         "Error: fscanf successfully matched and assigned %i input "
@@ -151,7 +134,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID("inmask", NBpt, 1, &IDmask));
 
-    for(uint_fast32_t ii = 0; ii < NBpt; ii++)
+    for (uint_fast32_t ii = 0; ii < NBpt; ii++)
     {
         //			printf("%18.16f  %+18.16f\n", xarray[ii], valarray[ii]);
         dcimg[IDin].array.F[ii]   = valarray[ii];
@@ -160,43 +143,41 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     }
 
     NBmodes = MaxOrder;
-    FUNC_CHECK_RETURN(
-        create_3Dimage_ID("fitmodes", NBpt, 1, NBmodes, &IDmodes));
+    FUNC_CHECK_RETURN(create_3Dimage_ID("fitmodes", NBpt, 1, NBmodes, &IDmodes));
 
     imageID IDout;
     FUNC_CHECK_RETURN(create_2Dimage_ID("outcoeff", NBmodes, 1, &IDout));
 
-    switch(MODE)
+    switch (MODE)
     {
     case 0:
-        for(uint_fast32_t m = 0; m < NBmodes; m++)
+        for (uint_fast32_t m = 0; m < NBmodes; m++)
         {
-            for(uint_fast32_t ii = 0; ii < NBpt; ii++)
+            for (uint_fast32_t ii = 0; ii < NBpt; ii++)
             {
                 float v;
-                if(m == 0)
+                if (m == 0)
                 {
                     v = 1.0f;
                 }
-                else if(m == 1)
+                else if (m == 1)
                 {
                     v = xarray[ii];
                 }
                 else
                 {
-                    v = powf(xarray[ii], (float)m);
+                    v = powf(xarray[ii], (float) m);
                 }
                 dcimg[IDmodes].array.F[m * NBpt + ii] = v;
             }
         }
         break;
     case 1:
-        for(uint_fast32_t m = 0; m < NBmodes; m++)
+        for (uint_fast32_t m = 0; m < NBmodes; m++)
         {
-            for(uint_fast32_t ii = 0; ii < NBpt; ii++)
+            for (uint_fast32_t ii = 0; ii < NBpt; ii++)
             {
-                dcimg[IDmodes].array.F[m * NBpt + ii] =
-                    cos(xarray[ii] * M_PI * m);
+                dcimg[IDmodes].array.F[m * NBpt + ii] = cos(xarray[ii] * M_PI * m);
             }
         }
         break;
@@ -207,48 +188,37 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     }
 
 
-    for(iter = 0; iter < NBiter; iter++)
+    for (iter = 0; iter < NBiter; iter++)
     {
-        FUNC_CHECK_RETURN(linopt_imtools_image_fitModes("invect0",
-                          "fitmodes",
-                          "inmask",
-                          SVDeps,
-                          "outcoeffim0",
-                          1,
-                          NULL));
+        FUNC_CHECK_RETURN(linopt_imtools_image_fitModes("invect0", "fitmodes", "inmask", SVDeps,
+                                                        "outcoeffim0", 1, NULL));
         imageID IDout0 = image_ID("outcoeffim0", dcimg, dcnimg);
 
-        for(uint_fast32_t m = 0; m < NBmodes; m++)
+        for (uint_fast32_t m = 0; m < NBmodes; m++)
         {
-            dcimg[IDout].array.F[m] +=
-                gain * dcimg[IDout0].array.F[m];
+            dcimg[IDout].array.F[m] += gain * dcimg[IDout0].array.F[m];
         }
 
         double err = 0.0;
-        for(int_fast32_t ii = 0; ii < NBpt; ii++)
+        for (int_fast32_t ii = 0; ii < NBpt; ii++)
         {
             double val = 0.0;
-            for(int_fast32_t m = 0; m < NBmodes; m++)
+            for (int_fast32_t m = 0; m < NBmodes; m++)
             {
-                val += dcimg[IDout].array.F[m] *
-                       dcimg[IDmodes].array.F[m * NBpt + ii];
+                val += dcimg[IDout].array.F[m] * dcimg[IDmodes].array.F[m * NBpt + ii];
             }
             dcimg[IDin0].array.F[ii] = dcimg[IDin].array.F[ii] - val;
-            err +=
-                dcimg[IDin0].array.F[ii] * dcimg[IDin0].array.F[ii];
+            err += dcimg[IDin0].array.F[ii] * dcimg[IDin0].array.F[ii];
         }
         err = sqrt(err / NBpt);
-        printf("ITERATION %4ld   residual = %20g   [gain = %20g]\n",
-               iter,
-               err,
-               gain);
+        printf("ITERATION %4ld   residual = %20g   [gain = %20g]\n", iter, err, gain);
         gain *= 0.95;
     }
 
     {
-        FILE * fp;
+        FILE *fp;
         fp = fopen(fnameout, "w");
-        for(long m = 0; m < NBmodes; m++)
+        for (long m = 0; m < NBmodes; m++)
         {
             fprintf(fp, "%4ld %+.8g\n", m, dcimg[IDout].array.F[m]);
         }
@@ -256,25 +226,19 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     }
 
     {
-        FILE * fp;
-        fp  = fopen("testout.txt", "w");
+        FILE *fp;
+        fp         = fopen("testout.txt", "w");
         double err = 0.0;
-        for(int_fast32_t ii = 0; ii < NBpt; ii++)
+        for (int_fast32_t ii = 0; ii < NBpt; ii++)
         {
             double val = 0.0;
-            for(int_fast32_t m = 0; m < NBmodes; m++)
+            for (int_fast32_t m = 0; m < NBmodes; m++)
             {
-                val += dcimg[IDout].array.F[m] *
-                       dcimg[IDmodes].array.F[m * NBpt + ii];
+                val += dcimg[IDout].array.F[m] * dcimg[IDmodes].array.F[m * NBpt + ii];
             }
             double vale = valarray[ii] - val;
             err += vale * vale;
-            fprintf(fp,
-                    "%05ld  %18.16f  %18.16f   %18.16f\n",
-                    ii,
-                    xarray[ii],
-                    valarray[ii],
-                    val);
+            fprintf(fp, "%05ld  %18.16f  %18.16f   %18.16f\n", ii, xarray[ii], valarray[ii], val);
         }
         fclose(fp);
 
@@ -285,7 +249,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     free(xarray);
     free(valarray);
 
-    if(outID != NULL)
+    if (outID != NULL)
     {
         *outID = IDout;
     }
@@ -301,12 +265,7 @@ static MILK_HOT errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    linopt_compute_1Dfit(infname,
-                         *NBptval,
-                         *maxorderval,
-                         outfname,
-                         *modeval,
-                         NULL);
+    linopt_compute_1Dfit(infname, *NBptval, *maxorderval, outfname, *modeval, NULL);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -322,17 +281,13 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_linopt_imtools__lin1Dfits()
+errno_t CLIADDCMD_linopt_imtools__lin1Dfits()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
@@ -344,9 +299,5 @@ CLIADDCMD_linopt_imtools__lin1Dfits()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif
-

@@ -15,7 +15,7 @@ extern "C"
 
     /**
  * @brief Print content of an FPS to stdout
- * 
+ *
  * @param fps Pointer to the FPS structure
  * @param verbose Verbose mode (shows workdir, source file, keywords)
  * @param show_info Show detailed stream information

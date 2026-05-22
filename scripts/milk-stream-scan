@@ -37,4 +37,3 @@ done
 
 column -t $fname
 rm $fname
-

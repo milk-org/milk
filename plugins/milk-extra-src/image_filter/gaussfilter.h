@@ -8,18 +8,8 @@
 
 errno_t gaussfilter_addCLIcmd();
 
-imageID gauss_filter(
-    const char *ID_name,
-    const char *out_name,
-    float       sigma,
-    int         filter_size
-);
+imageID gauss_filter(const char *ID_name, const char *out_name, float sigma, int filter_size);
 
-imageID gauss_3Dfilter(
-    const char *ID_name,
-    const char *out_name,
-    float       sigma,
-    int         filter_size
-);
+imageID gauss_3Dfilter(const char *ID_name, const char *out_name, float sigma, int filter_size);
 
 #endif

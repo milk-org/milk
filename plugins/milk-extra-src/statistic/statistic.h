@@ -43,8 +43,6 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name);
 
 /** @brief Apply Gaussian noise to image
  */
-long put_gauss_noise(const char *ID_in_name,
-                     const char *ID_out_name,
-                     double      ampl);
+long put_gauss_noise(const char *ID_in_name, const char *ID_out_name, double ampl);
 
 #endif

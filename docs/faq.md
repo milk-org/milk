@@ -108,7 +108,7 @@ See also: [Streams](streams.md)
     milk-shmimpurge              # (1)!
     milk-shmim-rm <streamname>   # (2)!
     ```
-    
+
     1. Remove all stale SHM files.
     2. Remove a specific stream.
 

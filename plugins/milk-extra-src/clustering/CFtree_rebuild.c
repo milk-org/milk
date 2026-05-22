@@ -14,12 +14,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
@@ -38,20 +38,14 @@
 //#define DEBUGPRINT
 
 
-errno_t CFtree_rebuild(
-    CLUSTERTREE *ctree,
-    long *frameleafCFindex,
-    long NBframe
-)
+errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
 {
     DEBUG_TRACE_FSTART();
 
     // MERGE LEAVES
 
 
-
     printf("REBUILDING\n");
-
 
 
     // collect current ctree stats
@@ -59,24 +53,24 @@ errno_t CFtree_rebuild(
     ctree->nbnode       = 0;
     ctree->nbleaf       = 0;
     ctree->nbleafsingle = 0;
-    int maxlevel = 0;
-    for(long cfi = 0; cfi < ctree->NBCF; cfi++)
+    int maxlevel        = 0;
+    for (long cfi = 0; cfi < ctree->NBCF; cfi++)
     {
-        if(ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
+        if (ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
         {
-            if(ctree->CFarray[cfi].level > maxlevel)
+            if (ctree->CFarray[cfi].level > maxlevel)
             {
                 maxlevel = ctree->CFarray[cfi].level;
             }
 
-            switch(ctree->CFarray[cfi].type)
+            switch (ctree->CFarray[cfi].type)
             {
             case CLUSTER_CF_TYPE_NODE:
                 ctree->nbnode++;
                 break;
 
             case CLUSTER_CF_TYPE_LEAF:
-                if(ctree->CFarray[cfi].N == 1)
+                if (ctree->CFarray[cfi].N == 1)
                 {
                     ctree->nbleafsingle++;
                 }
@@ -88,23 +82,16 @@ errno_t CFtree_rebuild(
     printf("\n");
     printf("    max level  = %5d\n", maxlevel);
     printf("    nbnode     = %5ld\n", ctree->nbnode);
-    printf("    nbleaf     = %5ld (incl %ld singles)\n",
-           ctree->nbleaf,
-           ctree->nbleafsingle);
+    printf("    nbleaf     = %5ld (incl %ld singles)\n", ctree->nbleaf, ctree->nbleafsingle);
 
     printf("\n");
-
-
-
-
-
 
 
     // agglomerative algorithm works by merging tips of subtrees
     // initially, tips = leafs
     //
     long *tipCFi = (long *) malloc(sizeof(long) * ctree->nbleaf);
-    if(tipCFi == NULL)
+    if (tipCFi == NULL)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
@@ -112,17 +99,17 @@ errno_t CFtree_rebuild(
     // pairwise distance between tips
     //
     double *tipdist = (double *) malloc(sizeof(double) * ctree->nbleaf * ctree->nbleaf);
-    if(tipdist == NULL)
+    if (tipdist == NULL)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
 
-    long nodeCFi_cnt     = 0;
+    long nodeCFi_cnt                             = 0;
     long nodeleafCFi_cnt __attribute__((unused)) = 0;
-    long leafCFi_cnt     = 0;
-    for(long cfi = 0; cfi < ctree->NBCF; cfi++)
+    long leafCFi_cnt                             = 0;
+    for (long cfi = 0; cfi < ctree->NBCF; cfi++)
     {
-        switch(ctree->CFarray[cfi].type)
+        switch (ctree->CFarray[cfi].type)
         {
         // modes are erased
         case CLUSTER_CF_TYPE_NODE:
@@ -147,22 +134,18 @@ errno_t CFtree_rebuild(
     printf("%s      Computing pairwise leaf distance matrix\n", __func__);
 #endif
     double maxldist = 0.0;
-    for(long lf0 = 0; lf0 < ctree->nbleaf; lf0++)
+    for (long lf0 = 0; lf0 < ctree->nbleaf; lf0++)
     {
         tipdist[lf0 * ctree->nbleaf + lf0] = 0.0;
         long cfi0                          = tipCFi[lf0];
-        for(long lf1 = lf0 + 1; lf1 < ctree->nbleaf; lf1++)
+        for (long lf1 = lf0 + 1; lf1 < ctree->nbleaf; lf1++)
         {
             long   cfi1    = tipCFi[lf1];
             double distval = 0.0;
-            FUNC_CHECK_RETURN(
-                compute_imdistance_double(ctree,
-                                          ctree->CFarray[cfi0].datasumvec,
-                                          ctree->CFarray[cfi0].N,
-                                          ctree->CFarray[cfi1].datasumvec,
-                                          ctree->CFarray[cfi1].N,
-                                          &distval));
-            if(distval > maxldist)
+            FUNC_CHECK_RETURN(compute_imdistance_double(
+                ctree, ctree->CFarray[cfi0].datasumvec, ctree->CFarray[cfi0].N,
+                ctree->CFarray[cfi1].datasumvec, ctree->CFarray[cfi1].N, &distval));
+            if (distval > maxldist)
             {
                 maxldist = distval;
             }
@@ -182,7 +165,7 @@ errno_t CFtree_rebuild(
     int    opOK        = 1;
 
     long toptip = 0;
-    while(opOK == 1)
+    while (opOK == 1)
     {
 #ifdef DEBUGPRINT
         printf("[%5d]\n", __LINE__);
@@ -199,21 +182,20 @@ errno_t CFtree_rebuild(
         long minleafdist_cfi1 = -1;
         minleafdist           = maxldist + 1.0e200;
         lf0cnt                = 0;
-        for(long lf0 = 0; lf0 < ctree->nbleaf; lf0++)
+        for (long lf0 = 0; lf0 < ctree->nbleaf; lf0++)
         {
             long cfi0 = tipCFi[lf0];
 
             // select tips only
-            if((cfi0 != -1) && (ctree->CFarray[cfi0].parentindex == -1) &&
-                    (ctree->CFarray[cfi0].type != CLUSTER_CF_TYPE_UNUSED))
+            if ((cfi0 != -1) && (ctree->CFarray[cfi0].parentindex == -1) &&
+                (ctree->CFarray[cfi0].type != CLUSTER_CF_TYPE_UNUSED))
             {
                 lf0cnt++;
-                for(long lf1 = lf0 + 1; lf1 < ctree->nbleaf; lf1++)
+                for (long lf1 = lf0 + 1; lf1 < ctree->nbleaf; lf1++)
                 {
                     long cfi1 = tipCFi[lf1];
-                    if((cfi1 != -1) &&
-                            (ctree->CFarray[cfi1].parentindex == -1) &&
-                            (ctree->CFarray[cfi1].type != CLUSTER_CF_TYPE_UNUSED))
+                    if ((cfi1 != -1) && (ctree->CFarray[cfi1].parentindex == -1) &&
+                        (ctree->CFarray[cfi1].type != CLUSTER_CF_TYPE_UNUSED))
                     {
                         double ldist = tipdist[lf1 * ctree->nbleaf + lf0];
 
@@ -221,7 +203,7 @@ errno_t CFtree_rebuild(
                         //ldist += ctree->CFarray[cfi0].N * ctree->T;
                         //ldist += ctree->CFarray[cfi1].N * ctree->T;
 
-                        if(ldist < minleafdist)
+                        if (ldist < minleafdist)
                         {
                             minleafdist_lf0  = lf0;
                             minleafdist_cfi0 = cfi0;
@@ -233,7 +215,7 @@ errno_t CFtree_rebuild(
                 }
             }
         }
-        if(minleafdist_lf0 == -1)
+        if (minleafdist_lf0 == -1)
         {
             break;
         }
@@ -266,10 +248,9 @@ errno_t CFtree_rebuild(
         // If both tips are leaf type, try to merge them into a single leaf
         //
         //
-        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
-                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAF))
+        if ((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
+            (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAF))
         {
-
 #ifdef DEBUGPRINT
             printf("    LEAF - LEAF\n");
 #endif
@@ -277,11 +258,8 @@ errno_t CFtree_rebuild(
             // Trying to merge cfi1 into cfi0
             int addOK = 0;
 
-            FUNC_CHECK_RETURN(addCF_to_CF(ctree,
-                                              ctree->CFarray[cfi1],
-                                              cfi0,
-                                              &addOK));
-            if(addOK == 1)
+            FUNC_CHECK_RETURN(addCF_to_CF(ctree, ctree->CFarray[cfi1], cfi0, &addOK));
+            if (addOK == 1)
             {
 #ifdef DEBUGPRINT
                 printf("        LEAF MERGE CF %ld into CF %ld\n", cfi1, cfi0);
@@ -290,9 +268,9 @@ errno_t CFtree_rebuild(
                 nbmergeop++;
 
                 // keep track of frames origin
-                for(long fr = 0; fr < NBframe; fr++)
+                for (long fr = 0; fr < NBframe; fr++)
                 {
-                    if(frameleafCFindex[fr] == cfi1)
+                    if (frameleafCFindex[fr] == cfi1)
                     {
                         frameleafCFindex[fr] = cfi0;
                     }
@@ -347,9 +325,8 @@ errno_t CFtree_rebuild(
         }
 
 
-
-        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
-                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
+        if ((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
+            (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
         {
 #ifdef DEBUGPRINT
             printf("    LEAF - NODE\n");
@@ -358,16 +335,14 @@ errno_t CFtree_rebuild(
             opOK = 1;
             FUNC_CHECK_RETURN(node_attachleaf(ctree, cfi0, cfi1));
 
-            if(ctree->CFarray[cfi1].NBchild > ctree->B)
+            if (ctree->CFarray[cfi1].NBchild > ctree->B)
             {
 #ifdef DEBUGPRINT
-                printf("%s          MAX LEAF NUMBER REACHED -> SPLIT LEAFNODE\n",
-                       __func__);
+                printf("%s          MAX LEAF NUMBER REACHED -> SPLIT LEAFNODE\n", __func__);
 #endif
                 long splitcfi0;
                 long splitcfi1;
-                FUNC_CHECK_RETURN(
-                    split_CF_node(ctree, cfi1, &splitcfi0, &splitcfi1));
+                FUNC_CHECK_RETURN(split_CF_node(ctree, cfi1, &splitcfi0, &splitcfi1));
 
                 // point to new CF indices
                 tipCFi[lf0] = splitcfi0;
@@ -376,9 +351,8 @@ errno_t CFtree_rebuild(
         }
 
 
-
-        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
-                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAF))
+        if ((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
+            (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAF))
         {
 #ifdef DEBUGPRINT
             printf("    NODE - LEAF\n");
@@ -388,18 +362,14 @@ errno_t CFtree_rebuild(
             FUNC_CHECK_RETURN(node_attachleaf(ctree, cfi1, cfi0));
             toptip = cfi0;
 
-            if(ctree->CFarray[cfi0].NBchild > ctree->B)
+            if (ctree->CFarray[cfi0].NBchild > ctree->B)
             {
 #ifdef DEBUGPRINT
-                printf(
-                    "%s         MAX BRANCH NUMBER REACHED -> SPLIT NODE %ld\n",
-                    __func__,
-                    cfi0);
+                printf("%s         MAX BRANCH NUMBER REACHED -> SPLIT NODE %ld\n", __func__, cfi0);
 #endif
                 long splitcfi0;
                 long splitcfi1;
-                FUNC_CHECK_RETURN(
-                    split_CF_node(ctree, cfi0, &splitcfi0, &splitcfi1));
+                FUNC_CHECK_RETURN(split_CF_node(ctree, cfi0, &splitcfi0, &splitcfi1));
 
                 // point to new CF indices
                 tipCFi[lf0] = splitcfi0;
@@ -408,12 +378,11 @@ errno_t CFtree_rebuild(
         }
 
 
-
         int nodemerge = 0;
-        if(opOK == 0)
+        if (opOK == 0)
         {
-            if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
-                    (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
+            if ((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
+                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
             {
 #ifdef DEBUGPRINT
                 printf("    NODE - NODE\n");
@@ -423,8 +392,7 @@ errno_t CFtree_rebuild(
         }
 
 
-
-        if(nodemerge == 1)
+        if (nodemerge == 1)
         {
             opOK = 1;
             // Create empty node
@@ -450,55 +418,42 @@ errno_t CFtree_rebuild(
         }
 
 
-
-
-
         // update distance matrix
 
-        if(lf0update == 1)
+        if (lf0update == 1)
         {
             // update distances involving cfi0
             //
-            for(long lf = 0; lf < ctree->nbleaf; lf++)
+            for (long lf = 0; lf < ctree->nbleaf; lf++)
             {
                 long cfi = tipCFi[lf];
-                if((cfi != -1) &&
-                        (ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED) &&
-                        (cfi != cfi0))
+                if ((cfi != -1) && (ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED) &&
+                    (cfi != cfi0))
                 {
                     double distval = 0.0;
                     FUNC_CHECK_RETURN(compute_imdistance_double(
-                                          ctree,
-                                          ctree->CFarray[cfi0].datasumvec,
-                                          ctree->CFarray[cfi0].N,
-                                          ctree->CFarray[cfi].datasumvec,
-                                          ctree->CFarray[cfi].N,
-                                          &distval));
+                        ctree, ctree->CFarray[cfi0].datasumvec, ctree->CFarray[cfi0].N,
+                        ctree->CFarray[cfi].datasumvec, ctree->CFarray[cfi].N, &distval));
                     tipdist[lf * ctree->nbleaf + lf0] = distval;
                     tipdist[lf0 * ctree->nbleaf + lf] = distval;
                 }
             }
         }
 
-        if(lf1update == 1)
+        if (lf1update == 1)
         {
             // update distances involving cfi1
             //
-            for(long lf = 0; lf < ctree->nbleaf; lf++)
+            for (long lf = 0; lf < ctree->nbleaf; lf++)
             {
                 long cfi = tipCFi[lf];
-                if((cfi != -1) &&
-                        (ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED) &&
-                        (cfi != cfi1))
+                if ((cfi != -1) && (ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED) &&
+                    (cfi != cfi1))
                 {
                     double distval = 0.0;
                     FUNC_CHECK_RETURN(compute_imdistance_double(
-                                          ctree,
-                                          ctree->CFarray[cfi1].datasumvec,
-                                          ctree->CFarray[cfi1].N,
-                                          ctree->CFarray[cfi].datasumvec,
-                                          ctree->CFarray[cfi].N,
-                                          &distval));
+                        ctree, ctree->CFarray[cfi1].datasumvec, ctree->CFarray[cfi1].N,
+                        ctree->CFarray[cfi].datasumvec, ctree->CFarray[cfi].N, &distval));
                     tipdist[lf * ctree->nbleaf + lf1] = distval;
                     tipdist[lf1 * ctree->nbleaf + lf] = distval;
                 }
@@ -506,17 +461,17 @@ errno_t CFtree_rebuild(
         }
 
 
-        if(tipCFi[lf0] == -1)
+        if (tipCFi[lf0] == -1)
         {
-            for(long lf = 0; lf < ctree->nbleaf; lf++)
+            for (long lf = 0; lf < ctree->nbleaf; lf++)
             {
                 tipdist[lf * ctree->nbleaf + lf0] = 0.0;
                 tipdist[lf0 * ctree->nbleaf + lf] = 0.0;
             }
         }
-        if(tipCFi[lf1] == -1)
+        if (tipCFi[lf1] == -1)
         {
-            for(long lf = 0; lf < ctree->nbleaf; lf++)
+            for (long lf = 0; lf < ctree->nbleaf; lf++)
             {
                 tipdist[lf * ctree->nbleaf + lf1] = 0.0;
                 tipdist[lf1 * ctree->nbleaf + lf] = 0.0;
@@ -535,12 +490,11 @@ errno_t CFtree_rebuild(
     }
 
 
-
     {
         int leveloffset = ctree->CFarray[toptip].level;
-        for(long cfi = 0; cfi < ctree->NBCF; cfi++)
+        for (long cfi = 0; cfi < ctree->NBCF; cfi++)
         {
-            if(ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
+            if (ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
             {
                 ctree->CFarray[cfi].level -= leveloffset;
             }
@@ -548,13 +502,13 @@ errno_t CFtree_rebuild(
     }
     ctree->rootindex = toptip;
 
-    if(ctree->CFarray[toptip].type == CLUSTER_CF_TYPE_LEAF)
+    if (ctree->CFarray[toptip].type == CLUSTER_CF_TYPE_LEAF)
     {
         droptree(ctree);
     }
 
 
-//#ifdef DEBUGPRINT
+    //#ifdef DEBUGPRINT
     printf("NUMBER OF MERGE OPERATION = %d\n", nbmergeop);
     printf("TOP CF INDEX = %ld\n", toptip);
 
@@ -562,32 +516,32 @@ errno_t CFtree_rebuild(
         ctree->nbnode       = 0;
         ctree->nbleaf       = 0;
         ctree->nbleafsingle = 0;
-        int maxlevel = 0;
-        for(long cfi = 0; cfi < ctree->NBCF; cfi++)
+        int maxlevel        = 0;
+        for (long cfi = 0; cfi < ctree->NBCF; cfi++)
         {
-            if(ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
+            if (ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
             {
-                if(ctree->CFarray[cfi].level > maxlevel)
+                if (ctree->CFarray[cfi].level > maxlevel)
                 {
                     maxlevel = ctree->CFarray[cfi].level;
                 }
 
-                switch(ctree->CFarray[cfi].type)
+                switch (ctree->CFarray[cfi].type)
                 {
                 case CLUSTER_CF_TYPE_NODE:
                     ctree->nbnode++;
-                    if(ctree->CFarray[cfi].level > maxlevel)
+                    if (ctree->CFarray[cfi].level > maxlevel)
                     {
                         maxlevel = ctree->CFarray[cfi].level;
                     }
                     break;
 
                 case CLUSTER_CF_TYPE_LEAF:
-                    if(ctree->CFarray[cfi].N == 1)
+                    if (ctree->CFarray[cfi].N == 1)
                     {
                         ctree->nbleafsingle++;
                     }
-                    if(ctree->CFarray[cfi].level > maxlevel)
+                    if (ctree->CFarray[cfi].level > maxlevel)
                     {
                         maxlevel = ctree->CFarray[cfi].level;
                     }
@@ -599,12 +553,10 @@ errno_t CFtree_rebuild(
         printf("\n");
         printf("    max level  = %d\n", maxlevel);
         printf("    nbnode     = %5ld\n", ctree->nbnode);
-        printf("    nbleaf     = %5ld (incl %ld singles)\n",
-               ctree->nbleaf,
-               ctree->nbleafsingle);
+        printf("    nbleaf     = %5ld (incl %ld singles)\n", ctree->nbleaf, ctree->nbleafsingle);
         printf("\n");
     }
-//#endif
+    //#endif
 
 
 #ifdef DEBUGPRINT

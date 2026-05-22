@@ -20,24 +20,24 @@
 #include <fitsio.h>
 
 #ifndef MILK_NO_CLI
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+#    include <math.h>
+#    include <stdint.h>
+#    include <stdbool.h>
+#    include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    ifdef MILK_NO_CLI
+#        include "CLIcore_standalone.h"
+#    else
+#        include "libmilkdata/milkdata.h"
+#        include "milkDebugTools.h"
+#        include "fps.h"
+#        include "ImageStreamIO/ImageStreamIO.h"
+#    endif
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#endif
-#else
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -50,8 +50,8 @@
 #include "img_reduce/img_reduce.h"
 
 #ifdef _OPENMP
-#include <omp.h>
-#define OMP_NELEMENT_LIMIT 1000000
+#    include <omp.h>
+#    define OMP_NELEMENT_LIMIT 1000000
 #endif
 
 extern int    badpixclean_init;
