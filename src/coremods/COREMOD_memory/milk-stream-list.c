@@ -252,13 +252,10 @@ int main(int argc, char *argv[])
                                 for (int i = 0; i < nbsem; i++)
                                 {
                                     long sval = ImageStreamIO_semvalue(&image, i);
-                                    char valbuf[16];
-                                    snprintf(valbuf, 16, "%ld", sval);
-                                    if (i > 0)
-                                    {
-                                        strcat(sem_str, ":");
-                                    }
-                                    strcat(sem_str, valbuf);
+                                    char valbuf[32];
+                                    snprintf(valbuf, sizeof(valbuf), "%s%ld", (i > 0) ? ":" : "",
+                                             sval);
+                                    strncat(sem_str, valbuf, sizeof(sem_str) - strlen(sem_str) - 1);
                                 }
                                 printf(" " C_SEM "%-40s" C_RST, sem_str);
                             }

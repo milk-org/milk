@@ -85,7 +85,8 @@ int main(int argc, char *argv[])
                     }
 
                     {
-                        strcpy(linkname, basename(linknamefull));
+                        strncpy(linkname, basename(linknamefull), sizeof(linkname) - 1);
+                        linkname[sizeof(linkname) - 1] = '\0';
 
                         int          lOK = 1;
                         unsigned int ii  = 0;

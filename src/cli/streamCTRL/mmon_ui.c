@@ -261,22 +261,26 @@ errno_t list_image_ID_ncurses()
     if (sizeGb > 0)
     {
         snprintf(str1, str1maxlen, "%s %ld GB", str, (long) (sizeGb));
-        strcpy(str, str1);
+        strncpy(str, str1, sizeof(str) - 1);
+        str[sizeof(str) - 1] = '\0';
     }
     if (sizeMb > 0)
     {
         snprintf(str1, str1maxlen, "%s %ld MB", str, (long) (sizeMb));
-        strcpy(str, str1);
+        strncpy(str, str1, sizeof(str) - 1);
+        str[sizeof(str) - 1] = '\0';
     }
     if (sizeKb > 0)
     {
         snprintf(str1, str1maxlen, "%s %ld KB", str, (long) (sizeKb));
-        strcpy(str, str1);
+        strncpy(str, str1, sizeof(str) - 1);
+        str[sizeof(str) - 1] = '\0';
     }
     if (sizeb > 0)
     {
         snprintf(str1, str1maxlen, "%s %ld B", str, (long) (sizeb));
-        strcpy(str, str1);
+        strncpy(str, str1, sizeof(str) - 1);
+        str[sizeof(str) - 1] = '\0';
     }
 
     mvprintw(listim_scr_wrow - 1, 0, "%s\n", str);
