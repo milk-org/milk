@@ -17,9 +17,6 @@
  *
  * Return: 0 on success/abort, -1 on error
  */
-int ov_fps_inline_edit(
-    OV_LAYOUT  *lay,
-    const char *fps_name,
-    int        disp_idx);
+int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx);
 
 #endif /* OVERVIEW_FPS_EDIT_H */

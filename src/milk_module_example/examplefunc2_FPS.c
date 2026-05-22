@@ -11,58 +11,44 @@
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "imsum2",
-    .cmdkey      = "imsum2",
-    .description = "compute total of image example2, FPS-compatible"
-};
+static FPS_APP_INFO FPS_app_info = { .fps_name = "imsum2",
+                                     .cmdkey   = "imsum2",
+                                     .description =
+                                         "compute total of image example2, FPS-compatible" };
 
 // Local variables pointers
 
-static char *inimname;
+static char   *inimname;
 static double *scoeff;
 
-#define FPS_PARAMS(X) \
-    X(".in_name", &inimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, "input image") \
-    X(".scaling", &scoeff, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "scaling coefficient")
+#define FPS_PARAMS(X)                                                                   \
+    X(".in_name", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".scaling", &scoeff, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "scaling coefficient")
 
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
 
 static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
 #endif
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
+    "", "", CLICMD_FIELDS_DEFAULTS
 };
 
 FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
-
 
 
 /**
  * @brief Sum pixel values
  *
  */
-static errno_t example_compute_2Dimage_total(
-    IMGID  *imgptr,
-    double scalingcoeff)
+static errno_t example_compute_2Dimage_total(IMGID *imgptr, double scalingcoeff)
 {
     DEBUG_TRACE_FSTART();
 
@@ -71,8 +57,9 @@ static errno_t example_compute_2Dimage_total(
     // as the overhead is very small if the image is already resolved
     resolveIMGID(imgptr, ERRMODE_WARN, dcimg, dcnimg);
 
-    uint32_t xsize  = imgptr->md->size[0];
-    if (imgptr->ID == -1) {
+    uint32_t xsize = imgptr->md->size[0];
+    if (imgptr->ID == -1)
+    {
         return RETURN_FAILURE;
     }
     uint32_t ysize  = imgptr->md->size[1];
@@ -80,16 +67,13 @@ static errno_t example_compute_2Dimage_total(
 
 
     double total = 0.0;
-    for(uint64_t ii = 0; ii < xysize; ii++)
+    for (uint64_t ii = 0; ii < xysize; ii++)
     {
         total += imgptr->im->array.F[ii];
     }
     total *= scalingcoeff;
 
-    printf("image %s total = %lf (scaling coeff %lf)\n",
-           imgptr->im->name,
-           total,
-           scalingcoeff);
+    printf("image %s total = %lf (scaling coeff %lf)\n", imgptr->im->name, total, scalingcoeff);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -113,7 +97,8 @@ static MILK_HOT errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     example_compute_2Dimage_total(&img, *scoeff);
-    if (img.ID == -1) {
+    if (img.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -127,18 +112,14 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 // Register function in CLI
-errno_t
-CLIADDCMD_milk_module_example__simplefunc_FPS()
+errno_t CLIADDCMD_milk_module_example__simplefunc_FPS()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     INSERT_STD_CLIREGISTERFUNC
 
@@ -150,8 +131,5 @@ CLIADDCMD_milk_module_example__simplefunc_FPS()
 #endif
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif

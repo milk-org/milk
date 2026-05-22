@@ -17,10 +17,7 @@
 
 #include <libfps/IMGID.h>
 
-double Ptrunc(
-    double a,
-    double b,
-    double c);
+double Ptrunc(double a, double b, double c);
 
 
 /* ==========================================================
@@ -38,27 +35,27 @@ double Ptrunc(
  * ========================================================== */
 
 #define MILK_BINARY_OPS_FULL(X) \
-    X(fmod,   Pfmod)            \
-    X(pow,    Ppow)             \
-    X(add,    Padd)             \
-    X(sub,    Psub)             \
-    X(mult,   Pmult)            \
-    X(div,    Pdiv)             \
-    X(minv,   Pminv)            \
-    X(maxv,   Pmaxv)            \
+    X(fmod, Pfmod)              \
+    X(pow, Ppow)                \
+    X(add, Padd)                \
+    X(sub, Psub)                \
+    X(mult, Pmult)              \
+    X(div, Pdiv)                \
+    X(minv, Pminv)              \
+    X(maxv, Pmaxv)              \
     X(testlt, Ptestlt)          \
     X(testmt, Ptestmt)
 
 #define MILK_BINARY_OPS_NOIP(X) \
-    X(teste,  Pteste)           \
+    X(teste, Pteste)            \
     X(testne, Ptestne)          \
     X(testle, Ptestle)          \
     X(testge, Ptestge)          \
-    X(and,    Pand)             \
-    X(or,     Por)
+    X(and, Pand)                \
+    X(or, Por)
 
-#define MILK_BINARY_OPS_ALL(X)  \
-    MILK_BINARY_OPS_FULL(X)     \
+#define MILK_BINARY_OPS_ALL(X) \
+    MILK_BINARY_OPS_FULL(X)    \
     MILK_BINARY_OPS_NOIP(X)
 
 
@@ -66,15 +63,9 @@ double Ptrunc(
  * Generated prototypes — IMGID and string APIs (all ops)
  * ---------------------------------------------------------- */
 
-#define MILK_DECLARE_BINARY(op, fptr) \
-int arith_image_##op##_IMGID(         \
-    IMGID *imgin1,                    \
-    IMGID *imgin2,                    \
-    IMGID *imgout);                   \
-int arith_image_##op(                 \
-    const char *ID1_name,             \
-    const char *ID2_name,             \
-    const char *ID_out);
+#define MILK_DECLARE_BINARY(op, fptr)                                          \
+    int arith_image_##op##_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout); \
+    int arith_image_##op(const char *ID1_name, const char *ID2_name, const char *ID_out);
 
 MILK_BINARY_OPS_ALL(MILK_DECLARE_BINARY)
 #undef MILK_DECLARE_BINARY
@@ -85,9 +76,7 @@ MILK_BINARY_OPS_ALL(MILK_DECLARE_BINARY)
  * ---------------------------------------------------------- */
 
 #define MILK_DECLARE_BINARY_INPLACE(op, fptr) \
-int arith_image_##op##_inplace(               \
-    const char *ID1_name,                     \
-    const char *ID2_name);
+    int arith_image_##op##_inplace(const char *ID1_name, const char *ID2_name);
 
 MILK_BINARY_OPS_FULL(MILK_DECLARE_BINARY_INPLACE)
 #undef MILK_DECLARE_BINARY_INPLACE

@@ -33,38 +33,33 @@
  *
  * Returns number of items selected, or -1 on cancel.
  */
-static inline int parse_multiselect(
-    const char *input,
-    int        *selected,
-    int        count)
+static inline int parse_multiselect(const char *input, int *selected, int count)
 {
     /* Clear selection array */
-    memset(selected, 0,
-           count * sizeof(int));
+    memset(selected, 0, count * sizeof(int));
 
     /* Skip leading whitespace */
-    while(*input && isspace(*input))
+    while (*input && isspace(*input))
     {
         input++;
     }
 
     /* Empty input => cancel */
-    if(*input == '\0')
+    if (*input == '\0')
     {
         return -1;
     }
 
     /* "0" => cancel */
-    if(strcmp(input, "0") == 0)
+    if (strcmp(input, "0") == 0)
     {
         return -1;
     }
 
     /* "all" or "a" => select everything */
-    if(strcasecmp(input, "all") == 0 ||
-            strcasecmp(input, "a") == 0)
+    if (strcasecmp(input, "all") == 0 || strcasecmp(input, "a") == 0)
     {
-        for(int i = 0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
             selected[i] = 1;
         }
@@ -77,32 +72,32 @@ static inline int parse_multiselect(
     strncpy(buf, input, sizeof(buf) - 1);
     buf[sizeof(buf) - 1] = '\0';
 
-    int nsel = 0;
+    int   nsel    = 0;
     char *saveptr = NULL;
-    char *tok = strtok_r(buf, " ,\t", &saveptr);
+    char *tok     = strtok_r(buf, " ,\t", &saveptr);
 
-    while(tok != NULL)
+    while (tok != NULL)
     {
         /* Check for range: "N-M" */
         char *dash = strchr(tok, '-');
 
-        if(dash != NULL && dash != tok)
+        if (dash != NULL && dash != tok)
         {
-            *dash = '\0';
+            *dash  = '\0';
             int lo = atoi(tok);
             int hi = atoi(dash + 1);
 
-            if(lo < 1)
+            if (lo < 1)
             {
                 lo = 1;
             }
-            if(hi > count)
+            if (hi > count)
             {
                 hi = count;
             }
-            for(int n = lo; n <= hi; n++)
+            for (int n = lo; n <= hi; n++)
             {
-                if(!selected[n - 1])
+                if (!selected[n - 1])
                 {
                     selected[n - 1] = 1;
                     nsel++;
@@ -113,9 +108,9 @@ static inline int parse_multiselect(
         {
             int n = atoi(tok);
 
-            if(n >= 1 && n <= count)
+            if (n >= 1 && n <= count)
             {
-                if(!selected[n - 1])
+                if (!selected[n - 1])
                 {
                     selected[n - 1] = 1;
                     nsel++;
@@ -126,7 +121,7 @@ static inline int parse_multiselect(
         tok = strtok_r(NULL, " ,\t", &saveptr);
     }
 
-    if(nsel == 0)
+    if (nsel == 0)
     {
         return -1;
     }

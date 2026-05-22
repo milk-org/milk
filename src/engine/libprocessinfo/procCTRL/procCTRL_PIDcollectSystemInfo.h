@@ -8,8 +8,6 @@
 
 #include "processtools.h"
 
-int PIDcollectSystemInfo(
-    PROCESSINFODISP *pinfodisp,
-    int             mode);
+int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int mode);
 
 #endif

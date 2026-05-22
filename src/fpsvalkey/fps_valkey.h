@@ -18,8 +18,8 @@
 #include "fps.h"
 
 #define FPS_VALKEY_HOSTNAME_LEN 64
-#define FPS_VALKEY_PREFIX_LEN   128
-#define FPS_VALKEY_MSGBUF_LEN   512
+#define FPS_VALKEY_PREFIX_LEN 128
+#define FPS_VALKEY_MSGBUF_LEN 512
 
 /**
  * @brief Valkey connection context
@@ -32,8 +32,8 @@ typedef struct
     valkeyContext *cmd_ctx;
     valkeyContext *sub_ctx;
 
-    pthread_t     sub_thread;
-    volatile int  sub_running;
+    pthread_t    sub_thread;
+    volatile int sub_running;
 
     char hostname[FPS_VALKEY_HOSTNAME_LEN];
     char prefix[FPS_VALKEY_PREFIX_LEN];
@@ -53,10 +53,7 @@ typedef struct
  * @param[in]  port    Valkey server port
  * @return 0 on success, -1 on failure
  */
-int fps_valkey_connect(
-    FPS_VALKEY_CTX *vctx,
-    const char     *server,
-    int            port);
+int fps_valkey_connect(FPS_VALKEY_CTX *vctx, const char *server, int port);
 
 /**
  * @brief Disconnect and free Valkey resources
@@ -82,13 +79,12 @@ void fps_valkey_disconnect(FPS_VALKEY_CTX *vctx);
  * @param[in] cnt0     Change counter
  * @return 0 on success, -1 on error
  */
-int fps_valkey_push_param(
-    FPS_VALKEY_CTX *vctx,
-    const char     *fpsname,
-    const char     *keyword,
-    const char     *value,
-    const char     *typestr,
-    long           cnt0);
+int fps_valkey_push_param(FPS_VALKEY_CTX *vctx,
+                          const char     *fpsname,
+                          const char     *keyword,
+                          const char     *value,
+                          const char     *typestr,
+                          long            cnt0);
 
 /**
  * @brief Push FPS metadata to Valkey
@@ -101,10 +97,9 @@ int fps_valkey_push_param(
  * @param[in] md       FPS metadata struct
  * @return 0 on success, -1 on error
  */
-int fps_valkey_push_metadata(
-    FPS_VALKEY_CTX               *vctx,
-    const char                   *fpsname,
-    FUNCTION_PARAMETER_STRUCT_MD *md);
+int fps_valkey_push_metadata(FPS_VALKEY_CTX               *vctx,
+                             const char                   *fpsname,
+                             FUNCTION_PARAMETER_STRUCT_MD *md);
 
 /**
  * @brief Register FPS in Valkey fps_list set
@@ -113,9 +108,7 @@ int fps_valkey_push_metadata(
  * @param[in] fpsname  FPS instance name
  * @return 0 on success, -1 on error
  */
-int fps_valkey_register_fps(
-    FPS_VALKEY_CTX *vctx,
-    const char     *fpsname);
+int fps_valkey_register_fps(FPS_VALKEY_CTX *vctx, const char *fpsname);
 
 /**
  * @brief Unregister FPS from Valkey
@@ -127,9 +120,7 @@ int fps_valkey_register_fps(
  * @param[in] fpsname  FPS instance name
  * @return 0 on success, -1 on error
  */
-int fps_valkey_unregister_fps(
-    FPS_VALKEY_CTX *vctx,
-    const char     *fpsname);
+int fps_valkey_unregister_fps(FPS_VALKEY_CTX *vctx, const char *fpsname);
 
 /**
  * @brief Start subscriber thread

@@ -38,10 +38,7 @@ int cli_ts_init(void);
  * @param len   Length of the line in bytes
  * @param out   Output stream (typically rl_outstream)
  */
-void cli_ts_highlight_line(
-    const char *line,
-    int        len,
-    FILE       *out);
+void cli_ts_highlight_line(const char *line, int len, FILE *out);
 
 /**
  * @brief Detect if terminal supports 256 colors

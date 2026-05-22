@@ -25,9 +25,7 @@
  * @param src   Source image for metadata copy
  * @param dst   Output image to prepare
  */
-static inline void imgid_ensure_output(
-    IMGID *src,
-    IMGID *dst)
+static inline void imgid_ensure_output(IMGID *src, IMGID *dst)
 {
     if (dst->im == NULL)
     {
@@ -35,13 +33,11 @@ static inline void imgid_ensure_output(
     }
     if (dst->im == NULL)
     {
-        dst->im =
-            (IMAGE *) calloc(1, sizeof(IMAGE));
+        dst->im = (IMAGE *) calloc(1, sizeof(IMAGE));
     }
     else
     {
-        if (dst->im->md
-            && dst->im->md->shared == 1)
+        if (dst->im->md && dst->im->md->shared == 1)
         {
             ImageStreamIO_closeIm(dst->im);
         }

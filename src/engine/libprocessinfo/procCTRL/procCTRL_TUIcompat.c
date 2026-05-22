@@ -22,4 +22,3 @@ struct termios ansi__orig_termios;
 int            ansi__raw_active = 0;
 
 /* Signal flags */
-

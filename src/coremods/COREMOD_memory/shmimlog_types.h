@@ -19,8 +19,8 @@ typedef struct
     int  partial;  // 1 if partial cube
     long cubesize; // size of the cube
 
-    float timespan; // measured execution time for saving
-    int writerRTprio; // writer real-time priority
+    float timespan;     // measured execution time for saving
+    int   writerRTprio; // writer real-time priority
 
     int saveascii;
     // 0 : Not saving ascii

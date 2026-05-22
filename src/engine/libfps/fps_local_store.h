@@ -24,9 +24,7 @@
  * @param name  FPS name to search for
  * @return      Pointer to the FPS, or NULL
  */
-FPS *fps_local_find(
-    const char *name
-);
+FPS *fps_local_find(const char *name);
 
 
 /**
@@ -36,10 +34,7 @@ FPS *fps_local_find(
  * @param NBparamMAX  Maximum number of parameters
  * @return            Pointer to the new slot, or NULL
  */
-FPS *fps_local_create(
-    const char *name,
-    long        NBparamMAX
-);
+FPS *fps_local_create(const char *name, long NBparamMAX);
 
 
 /**
@@ -49,10 +44,7 @@ FPS *fps_local_create(
  * @param NBparamMAX  Max params (used only if creating)
  * @return            Pointer to the FPS, or NULL
  */
-FPS *fps_local_get_or_create(
-    const char *name,
-    long        NBparamMAX
-);
+FPS *fps_local_get_or_create(const char *name, long NBparamMAX);
 
 
 /**
@@ -67,9 +59,7 @@ int fps_local_count_entries(void);
  * @param idx   Index (0-based)
  * @return      Pointer to FPS, or NULL if unused
  */
-FPS *fps_local_get_by_index(
-    int idx
-);
+FPS *fps_local_get_by_index(int idx);
 
 
 /**
@@ -78,9 +68,7 @@ FPS *fps_local_get_by_index(
  * @param name          FPS name (local store key)
  * @param creator_name  The app_info->fps_name
  */
-void fps_local_set_creator(
-    const char *name,
-    const char *creator_name);
+void fps_local_set_creator(const char *name, const char *creator_name);
 
 
 /**
@@ -103,9 +91,7 @@ const char *fps_local_get_creator(int idx);
  * @param fps_name     Shared FPS name
  * @param creator_name app_info->fps_name
  */
-void fps_shared_record_usage(
-    const char *fps_name,
-    const char *creator_name);
+void fps_shared_record_usage(const char *fps_name, const char *creator_name);
 
 
 /**
@@ -116,9 +102,7 @@ void fps_shared_record_usage(
  * @param creator_name app_info->fps_name
  * @return             1 if yes, 0 if no
  */
-int fps_shared_was_used_by(
-    const char *fps_name,
-    const char *creator_name);
+int fps_shared_was_used_by(const char *fps_name, const char *creator_name);
 
 
 #endif /* FPS_LOCAL_STORE_H */

@@ -22,8 +22,8 @@
  * Constants
  * ========================================================= */
 
-#define SG_MAX_LINEAGE   128
-#define SG_MAX_DEPTH      16
+#define SG_MAX_LINEAGE 128
+#define SG_MAX_DEPTH 16
 
 /* =========================================================
  * Traversal modes
@@ -71,12 +71,12 @@ typedef struct
  */
 typedef struct
 {
-    int node_idx;
-    int depth;
-    int order;
-    int type;
+    int  node_idx;
+    int  depth;
+    int  order;
+    int  type;
     char name[64];
-    int is_loop;
+    int  is_loop;
 } SG_RENDER_NODE;
 
 /**
@@ -84,13 +84,13 @@ typedef struct
  */
 typedef struct
 {
-    int stream_idx;          /* Index in m->streams */
-    int is_target;           /* 1 if this is the target root stream */
-    int is_target_proc;      /* 1 if the writer_name matches the target process */
-    int depth;               /* Graph depth */
-    char name[64];           /* Stream name */
-    char writer_name[64];    /* Name of the process/fps writing this stream */
-    char tree_prefix[128];   /* Prefix strings for rendering (e.g. "├── ") */
+    int  stream_idx;       /* Index in m->streams */
+    int  is_target;        /* 1 if this is the target root stream */
+    int  is_target_proc;   /* 1 if the writer_name matches the target process */
+    int  depth;            /* Graph depth */
+    char name[64];         /* Stream name */
+    char writer_name[64];  /* Name of the process/fps writing this stream */
+    char tree_prefix[128]; /* Prefix strings for rendering (e.g. "├── ") */
 } SG_TREE_NODE;
 
 /**
@@ -133,11 +133,7 @@ typedef struct
  * Detects cycles where the root stream appears as its
  * own ancestor or descendant.
  */
-void sg_compute_lineage(
-    const OV_MODEL *m,
-    int            stream_idx,
-    sg_mode_t      mode,
-    SG_LINEAGE     *out);
+void sg_compute_lineage(const OV_MODEL *m, int stream_idx, sg_mode_t mode, SG_LINEAGE *out);
 
 /**
  * sg_compute_node_depths - Generic BFS traversal for any node type.
@@ -149,11 +145,7 @@ void sg_compute_lineage(
  * Computes upstream (negative) and downstream (positive) depths
  * from start_node to all other reachable nodes.
  */
-void sg_compute_node_depths(
-    const OV_MODEL *m,
-    int            start_node,
-    sg_mode_t      mode,
-    int8_t         *node_depths);
+void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, int8_t *node_depths);
 
 /**
  * sg_mode_label - human-readable label for a mode.
@@ -172,11 +164,10 @@ const char *sg_mode_label(sg_mode_t mode);
  *
  * Returns: number of nodes placed in out_nodes.
  */
-int sg_compute_render_nodes(
-    const OV_MODEL *m,
-    int            start_node,
-    sg_mode_t      mode,
-    SG_RENDER_NODE *out_nodes);
+int sg_compute_render_nodes(const OV_MODEL *m,
+                            int             start_node,
+                            sg_mode_t       mode,
+                            SG_RENDER_NODE *out_nodes);
 
 /**
  * sg_compute_render_tree - Computes a top-down flattened list of stream nodes representing the lineage.
@@ -187,10 +178,9 @@ int sg_compute_render_nodes(
  *
  * Returns: number of nodes placed in out_nodes.
  */
-int sg_compute_render_tree(
-    const OV_MODEL *m,
-    int            start_node,
-    sg_mode_t      mode,
-    SG_TREE_NODE   *out_nodes);
+int sg_compute_render_tree(const OV_MODEL *m,
+                           int             start_node,
+                           sg_mode_t       mode,
+                           SG_TREE_NODE   *out_nodes);
 
 #endif /* STREAM_GRAPH_H */

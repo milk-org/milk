@@ -26,9 +26,9 @@
  *   if (LIKELY(frame_ready)) { process(); }
  */
 #ifdef __GNUC__
-#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#    define LIKELY(x) __builtin_expect(!!(x), 1)
 #else
-#define LIKELY(x)   (!!(x))
+#    define LIKELY(x) (!!(x))
 #endif
 
 /**
@@ -38,9 +38,9 @@
  *   if (UNLIKELY(err != 0)) { handle(); }
  */
 #ifdef __GNUC__
-#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#    define UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
-#define UNLIKELY(x) (!!(x))
+#    define UNLIKELY(x) (!!(x))
 #endif
 
 
@@ -57,9 +57,9 @@
  * and inner-loop helpers.
  */
 #ifdef __GNUC__
-#define MILK_HOT __attribute__((hot))
+#    define MILK_HOT __attribute__((hot))
 #else
-#define MILK_HOT
+#    define MILK_HOT
 #endif
 
 /**
@@ -70,9 +70,9 @@
  * error handlers, init/cleanup, signal handlers.
  */
 #ifdef __GNUC__
-#define MILK_COLD __attribute__((cold))
+#    define MILK_COLD __attribute__((cold))
 #else
-#define MILK_COLD
+#    define MILK_COLD
 #endif
 
 /**
@@ -84,9 +84,9 @@
  * like image_ID(), variable_ID().
  */
 #ifdef __GNUC__
-#define MILK_PURE __attribute__((pure))
+#    define MILK_PURE __attribute__((pure))
 #else
-#define MILK_PURE
+#    define MILK_PURE
 #endif
 
 /**
@@ -98,9 +98,9 @@
  * lookups.
  */
 #ifdef __GNUC__
-#define MILK_CONST __attribute__((const))
+#    define MILK_CONST __attribute__((const))
 #else
-#define MILK_CONST
+#    define MILK_CONST
 #endif
 
 /**
@@ -112,9 +112,9 @@
  * Avoid on large functions (icache bloat).
  */
 #ifdef __GNUC__
-#define MILK_FLATTEN __attribute__((flatten))
+#    define MILK_FLATTEN __attribute__((flatten))
 #else
-#define MILK_FLATTEN
+#    define MILK_FLATTEN
 #endif
 
 
@@ -134,11 +134,9 @@
  * arrays in telemetry/logging loops.
  */
 #ifdef __GNUC__
-#define MILK_PREFETCH(addr, rw, loc) \
-    __builtin_prefetch((addr), (rw), (loc))
+#    define MILK_PREFETCH(addr, rw, loc) __builtin_prefetch((addr), (rw), (loc))
 #else
-#define MILK_PREFETCH(addr, rw, loc) \
-    ((void)0)
+#    define MILK_PREFETCH(addr, rw, loc) ((void) 0)
 #endif
 
 /**
@@ -155,9 +153,9 @@
  *       dst[i] = src[i] * scale;
  */
 #ifdef __GNUC__
-#define MILK_IVDEP _Pragma("GCC ivdep")
+#    define MILK_IVDEP _Pragma("GCC ivdep")
 #else
-#define MILK_IVDEP
+#    define MILK_IVDEP
 #endif
 
 /**
@@ -170,10 +168,9 @@
  *   float buf[256] MILK_ALIGNED(32);
  */
 #ifdef __GNUC__
-#define MILK_ALIGNED(n) \
-    __attribute__((aligned(n)))
+#    define MILK_ALIGNED(n) __attribute__((aligned(n)))
 #else
-#define MILK_ALIGNED(n)
+#    define MILK_ALIGNED(n)
 #endif
 
 
@@ -191,13 +188,12 @@
  *       const float * MILK_RESTRICT src,
  *       long n);
  */
-#if defined(__STDC_VERSION__) \
-    && __STDC_VERSION__ >= 199901L
-#define MILK_RESTRICT restrict
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#    define MILK_RESTRICT restrict
 #elif defined(__GNUC__)
-#define MILK_RESTRICT __restrict
+#    define MILK_RESTRICT __restrict
 #else
-#define MILK_RESTRICT
+#    define MILK_RESTRICT
 #endif
 
 
@@ -212,9 +208,9 @@
  * to generate aligned vector instructions (e.g. AVX512).
  */
 #ifdef __GNUC__
-#define MILK_ASSUME_ALIGNED(ptr) __builtin_assume_aligned((ptr), 64)
+#    define MILK_ASSUME_ALIGNED(ptr) __builtin_assume_aligned((ptr), 64)
 #else
-#define MILK_ASSUME_ALIGNED(ptr) (ptr)
+#    define MILK_ASSUME_ALIGNED(ptr) (ptr)
 #endif
 
 

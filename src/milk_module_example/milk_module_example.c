@@ -96,7 +96,6 @@ INIT_MODULE_LIB(milk_module_example)
  */
 static errno_t init_module_CLI()
 {
-
     CLIADDCMD_milk_module_example__simplefunc();
     CLIADDCMD_milk_module_example__simplefunc_FPS();
     CLIADDCMD_milk_module_example__updatestreamloop();

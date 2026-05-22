@@ -8,12 +8,11 @@
 
 #include "fps.h"
 
-int fpsCTRL_TUI_process_user_key(
-    int                  ch,
-    FPS                  *fps,
-    KEYWORD_TREE_NODE    *keywnode,
-    FPSCTRL_TASK_ENTRY   *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar);
+int fpsCTRL_TUI_process_user_key(int                   ch,
+                                 FPS                  *fps,
+                                 KEYWORD_TREE_NODE    *keywnode,
+                                 FPSCTRL_TASK_ENTRY   *fpsctrltasklist,
+                                 FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
+                                 FPSCTRL_PROCESS_VARS *fpsCTRLvar);
 
 #endif

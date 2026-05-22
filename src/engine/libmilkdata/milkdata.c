@@ -21,7 +21,6 @@
 MILK_DATA milk_data;
 
 
-
 /* Buffer for variable reallocation */
 #define NB_VARIABLES_BUFFER_REALLOC 200
 
@@ -49,7 +48,7 @@ errno_t milk_data_init(void)
 #else
     {
         milk_data.image = (IMAGE *) calloc(milk_data.NB_MAX_IMAGE, sizeof(IMAGE));
-        if(milk_data.image == NULL)
+        if (milk_data.image == NULL)
         {
             PRINT_ERROR("image array alloc failed");
             exit(1);
@@ -57,7 +56,7 @@ errno_t milk_data_init(void)
     }
 #endif
 
-    for(long i = 0; i < milk_data.NB_MAX_IMAGE; i++)
+    for (long i = 0; i < milk_data.NB_MAX_IMAGE; i++)
     {
         milk_data.image[i].used      = 0;
         milk_data.image[i].createcnt = 0;
@@ -69,7 +68,7 @@ errno_t milk_data_init(void)
 #else
     {
         milk_data.variable = (VARIABLE *) calloc(milk_data.NB_MAX_VARIABLE, sizeof(VARIABLE));
-        if(milk_data.variable == NULL)
+        if (milk_data.variable == NULL)
         {
             PRINT_ERROR("variable array alloc failed");
             exit(1);
@@ -81,17 +80,16 @@ errno_t milk_data_init(void)
         long tmplong = milk_data.NB_MAX_VARIABLE;
         milk_data.NB_MAX_VARIABLE += NB_VARIABLES_BUFFER_REALLOC;
 
-        milk_data.variable = (VARIABLE *) realloc(
-                                 milk_data.variable, milk_data.NB_MAX_VARIABLE * sizeof(VARIABLE));
+        milk_data.variable =
+            (VARIABLE *) realloc(milk_data.variable, milk_data.NB_MAX_VARIABLE * sizeof(VARIABLE));
 
-        for(long i = tmplong;
-                i < milk_data.NB_MAX_VARIABLE; i++)
+        for (long i = tmplong; i < milk_data.NB_MAX_VARIABLE; i++)
         {
             milk_data.variable[i].used = 0;
             milk_data.variable[i].type = 0;
         }
 
-        if(milk_data.variable == NULL)
+        if (milk_data.variable == NULL)
         {
             PRINT_ERROR("variable realloc failed");
             exit(1);
@@ -102,13 +100,13 @@ errno_t milk_data_init(void)
     /* Allocate FPS array */
     {
         milk_data.fpsarray = (FPS *) malloc(sizeof(FPS) * milk_data.NB_MAX_FPS);
-        if(milk_data.fpsarray == NULL)
+        if (milk_data.fpsarray == NULL)
         {
             PRINT_ERROR("FPS array alloc failed");
             return RETURN_FAILURE;
         }
 
-        for(int i = 0; i < milk_data.NB_MAX_FPS; i++)
+        for (int i = 0; i < milk_data.NB_MAX_FPS; i++)
         {
             milk_data.fpsarray[i].SMfd   = -1;
             milk_data.fpsarray[i].md     = NULL;
@@ -152,15 +150,15 @@ typedef struct
 void milk_rng_init(uint64_t seed)
 {
     MILK_RNG *rng = (MILK_RNG *) calloc(1, sizeof(MILK_RNG));
-    if(rng == NULL)
+    if (rng == NULL)
     {
         PRINT_ERROR("MILK_RNG alloc failed");
         exit(1);
     }
     /* Avoid zero state (xorshift fixpoint) */
-    rng->state = (seed == 0) ? 1 : seed;
-    rng->has_spare = 0;
-    rng->spare     = 0.0;
+    rng->state       = (seed == 0) ? 1 : seed;
+    rng->has_spare   = 0;
+    rng->spare       = 0.0;
     milk_data.rndgen = rng;
 }
 
@@ -170,7 +168,7 @@ void milk_rng_init(uint64_t seed)
  */
 void milk_rng_free(void)
 {
-    if(milk_data.rndgen != NULL)
+    if (milk_data.rndgen != NULL)
     {
         free(milk_data.rndgen);
         milk_data.rndgen = NULL;
@@ -183,8 +181,7 @@ void milk_rng_free(void)
  *
  * Returns a uniform uint64 value.
  */
-static inline uint64_t xorshift64star(
-    MILK_RNG *rng)
+static inline uint64_t xorshift64star(MILK_RNG *rng)
 {
     uint64_t x = rng->state;
     x ^= x >> 12;
@@ -215,7 +212,7 @@ double milk_rng_gaussian(double sigma)
 {
     MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
 
-    if(rng->has_spare)
+    if (rng->has_spare)
     {
         rng->has_spare = 0;
         return rng->spare * sigma;
@@ -227,10 +224,9 @@ double milk_rng_gaussian(double sigma)
         u = 2.0 * milk_rng_uniform() - 1.0;
         v = 2.0 * milk_rng_uniform() - 1.0;
         s = u * u + v * v;
-    }
-    while(s >= 1.0 || s == 0.0);
+    } while (s >= 1.0 || s == 0.0);
 
-    double f = sqrt(-2.0 * log(s) / s);
+    double f       = sqrt(-2.0 * log(s) / s);
     rng->spare     = v * f;
     rng->has_spare = 1;
     return u * f * sigma;
@@ -245,7 +241,7 @@ double milk_rng_gaussian(double sigma)
  */
 long milk_rng_poisson(double mu)
 {
-    if(mu < 30.0)
+    if (mu < 30.0)
     {
         /* Knuth's algorithm */
         double L = exp(-mu);
@@ -256,15 +252,14 @@ long milk_rng_poisson(double mu)
         {
             k++;
             p *= milk_rng_uniform();
-        }
-        while(p > L);
+        } while (p > L);
         return k - 1;
     }
     else
     {
         /* Gaussian approximation for large mu */
         double val = mu + milk_rng_gaussian(1.0) * sqrt(mu);
-        if(val < 0.0)
+        if (val < 0.0)
         {
             val = 0.0;
         }

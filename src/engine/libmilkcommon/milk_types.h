@@ -32,45 +32,45 @@
 
 /* String length constants */
 #define STRINGMAXLEN_CLISTARTUPFILENAME 200
-#define STRINGMAXLEN_CLIPROMPT          200
+#define STRINGMAXLEN_CLIPROMPT 200
 
-#define CFITSEXIT                        \
-    printf("Abnormal termination, "      \
-           "File \"%s\", line %d\n",     \
-           __FILE__, __LINE__);          \
+#define CFITSEXIT                    \
+    printf("Abnormal termination, "  \
+           "File \"%s\", line %d\n", \
+           __FILE__, __LINE__);      \
     exit(0)
 
 #ifdef DEBUG
-#define nmalloc(f, type, n)              \
-    f = (type *) malloc(sizeof(type)*n); \
-    if (f == NULL) {                     \
-        printf("ERROR: \"" #f            \
-               "\" alloc failed\n");     \
-        exit(0);                         \
-    } else {                             \
-        printf("\nMALLOC: \"" #f          \
-               "\" allocated\n");        \
-    }
-#define nfree(f)                         \
-    free(f);                             \
-    printf("\nMALLOC: \"" #f             \
-           "\" freed\n");
+#    define nmalloc(f, type, n)                         \
+        f = (type *) malloc(sizeof(type) * n);          \
+        if (f == NULL)                                  \
+        {                                               \
+            printf("ERROR: \"" #f "\" alloc failed\n"); \
+            exit(0);                                    \
+        }                                               \
+        else                                            \
+        {                                               \
+            printf("\nMALLOC: \"" #f "\" allocated\n"); \
+        }
+#    define nfree(f) \
+        free(f);     \
+        printf("\nMALLOC: \"" #f "\" freed\n");
 #else
-#define nmalloc(f, type, n)              \
-    f = (type *) malloc(sizeof(type)*n); \
-    if (f == NULL) {                     \
-        printf("ERROR: \"" #f            \
-               "\" alloc failed\n");     \
-        exit(0);                         \
-    }
-#define nfree(f) free(f);
+#    define nmalloc(f, type, n)                         \
+        f = (type *) malloc(sizeof(type) * n);          \
+        if (f == NULL)                                  \
+        {                                               \
+            printf("ERROR: \"" #f "\" alloc failed\n"); \
+            exit(0);                                    \
+        }
+#    define nfree(f) free(f);
 #endif
 
-#define TEST_ALLOC(f)                    \
-    if (f == NULL) {                     \
-        printf("ERROR: \"" #f            \
-               "\" alloc failed\n");     \
-        exit(0);                         \
+#define TEST_ALLOC(f)                               \
+    if (f == NULL)                                  \
+    {                                               \
+        printf("ERROR: \"" #f "\" alloc failed\n"); \
+        exit(0);                                    \
     }
 
 #define NB_ARG_MAX 100

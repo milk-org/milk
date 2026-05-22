@@ -8,7 +8,6 @@
 
 #include <stdint.h>
 
-errno_t
-CLIADDCMD_COREMOD_memory__image_keyword_add();
+errno_t CLIADDCMD_COREMOD_memory__image_keyword_add();
 
 #endif

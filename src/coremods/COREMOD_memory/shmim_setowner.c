@@ -6,9 +6,9 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -25,7 +25,7 @@ imageID shmim_setowner_creator(const char *name)
 {
     IMGID img = imgid_make_from_name(name);
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
-    if(img.ID != -1)
+    if (img.ID != -1)
     {
         img.im->md[0].ownerPID = img.im->md[0].creatorPID;
     }
@@ -38,7 +38,7 @@ imageID shmim_setowner_current(const char *name)
 {
     IMGID img = imgid_make_from_name(name);
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
-    if(img.ID != -1)
+    if (img.ID != -1)
     {
         img.im->md[0].ownerPID = getpid();
     }
@@ -55,7 +55,7 @@ imageID shmim_setowner_init(const char *name)
 {
     IMGID img = imgid_make_from_name(name);
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
-    if(img.ID != -1)
+    if (img.ID != -1)
     {
         img.im->md[0].ownerPID = 1;
     }
@@ -71,10 +71,7 @@ imageID shmim_setowner_init(const char *name)
 static char p_sname[FUNCTION_PARAMETER_STRMAXLEN] = "stream0";
 
 #define FPS_PARAMS_1STREAM(X) \
-    X(".sname", p_sname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "stream name")
+    X(".sname", p_sname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "stream name")
 
 
 /* ================================================================
@@ -82,18 +79,14 @@ static char p_sname[FUNCTION_PARAMETER_STRMAXLEN] = "stream0";
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_creator = {
-    .fps_name    = "shmimsetowncreator",
-    .cmdkey      = "shmimsetowncreator",
-    .description = "set owner to creator PID",
-    .description_long =
-        "Change the owner PID of a shared memory image stream. Useful for transferring ownership when a process is restarted."
+    .fps_name         = "shmimsetowncreator",
+    .cmdkey           = "shmimsetowncreator",
+    .description      = "set owner to creator PID",
+    .description_long = "Change the owner PID of a shared memory image stream. Useful for "
+                        "transferring ownership when a process is restarted."
 };
 
-static CLICMDDATA CLIcmddata_creator = {
-    "",
-    "",
-    CLICMD_FIELDS_NOPARAM
-};
+static CLICMDDATA CLIcmddata_creator = { "", "", CLICMD_FIELDS_NOPARAM };
 
 FPS_CMDSETTINGS_INIT(cms1, CLIcmddata_creator, FPS_app_info_creator)
 
@@ -109,29 +102,21 @@ static errno_t __attribute__((unused)) compute_creator()
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "shmimsetowncurrent",
-    .cmdkey      = "shmimsetowncurrent",
-    .description = "set owner to current PID",
-    .description_long =
-        "Change the owner PID of a shared memory image stream. Useful for transferring ownership when a process is restarted."
+    .fps_name         = "shmimsetowncurrent",
+    .cmdkey           = "shmimsetowncurrent",
+    .description      = "set owner to current PID",
+    .description_long = "Change the owner PID of a shared memory image stream. Useful for "
+                        "transferring ownership when a process is restarted."
 };
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS_1STREAM(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS_1STREAM(FPS_X_BINDING) };
 
 static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS_1STREAM(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS_1STREAM(FPS_X_FARG) };
 
-static CLICMDDATA CLIcmddata = {
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
 
 FPS_CMDSETTINGS_INIT(cms2, CLIcmddata, FPS_app_info)
 
@@ -139,7 +124,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START shmim_setowner_current(p_sname);
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -149,18 +134,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_init = {
-    .fps_name    = "shmimsetowninit",
-    .cmdkey      = "shmimsetowninit",
-    .description = "set owner to init PID",
-    .description_long =
-        "Change the owner PID of a shared memory image stream. Useful for transferring ownership when a process is restarted."
+    .fps_name         = "shmimsetowninit",
+    .cmdkey           = "shmimsetowninit",
+    .description      = "set owner to init PID",
+    .description_long = "Change the owner PID of a shared memory image stream. Useful for "
+                        "transferring ownership when a process is restarted."
 };
 
-static CLICMDDATA CLIcmddata_init = {
-    "",
-    "",
-    CLICMD_FIELDS_NOPARAM
-};
+static CLICMDDATA CLIcmddata_init = { "", "", CLICMD_FIELDS_NOPARAM };
 
 FPS_CMDSETTINGS_INIT(cms3, CLIcmddata_init, FPS_app_info_init)
 
@@ -179,40 +160,38 @@ static errno_t __attribute__((unused)) compute_init()
 
 static errno_t CLIfunction_creator(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_creator,
-        farg, &CLIcmddata_creator, my_bindings, nb_bindings, compute_creator);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_creator, farg, &CLIcmddata_creator,
+                                        my_bindings, nb_bindings, compute_creator);
 }
 
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 static errno_t CLIfunction_init(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_init, farg, &CLIcmddata_init, my_bindings, nb_bindings, compute_init);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_init, farg, &CLIcmddata_init, my_bindings,
+                                        nb_bindings, compute_init);
 }
 
-errno_t
-CLIADDCMD_COREMOD_memory__shmim_setowner()
+errno_t CLIADDCMD_COREMOD_memory__shmim_setowner()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     {
-        int cmdi = RegisterCLIcmd(CLIcmddata_creator, CLIfunction_creator);
+        int cmdi                       = RegisterCLIcmd(CLIcmddata_creator, CLIfunction_creator);
         CLIcmddata_creator.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     {
-        int cmdi = RegisterCLIcmd(CLIcmddata_init, CLIfunction_init);
+        int cmdi                    = RegisterCLIcmd(CLIcmddata_init, CLIfunction_init);
         CLIcmddata_init.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 

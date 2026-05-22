@@ -6,10 +6,10 @@
 #include <math.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
 #endif
 
 #include "libmilkcommon/milk_compiler.h"
@@ -20,59 +20,55 @@
 #include "mathfuncs.h"
 
 #ifdef _OPENMP
-#include <omp.h>
-#define OMP_NELEMENT_LIMIT 100000
+#    include <omp.h>
+#    define OMP_NELEMENT_LIMIT 100000
 #endif
 
 /* ---------------------------------------------------------- */
 /* Unary optimized: calls float/double math directly          */
 /* ---------------------------------------------------------- */
-#define ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(         \
-    name, funcname, funcname_f)                       \
-errno_t arith_image_##name##_optimized_IMGID(         \
-    IMGID *imgin, IMGID *imgout)                      \
-{                                                     \
-    DEBUG_TRACE_FSTART();                             \
-    if (imgin->im == NULL)                            \
-    {                                                 \
-        return RETURN_FAILURE;                        \
-    }                                                 \
-    imgid_ensure_output(imgin, imgout);               \
-    uint64_t nelement = imgout->md->nelement;         \
-    if (imgin->md->datatype == _DATATYPE_FLOAT        \
-        && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
-    {                                                 \
-        float * MILK_RESTRICT p1 =                    \
-            MILK_ASSUME_ALIGNED(imgin->im->array.F);  \
-        float * MILK_RESTRICT po =                    \
-            MILK_ASSUME_ALIGNED(imgout->im->array.F); \
-        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
-        for (uint64_t i = 0; i < nelement; i++)       \
-        {                                             \
-            po[i] = funcname_f(p1[i]);                \
-        }                                             \
-    }                                                 \
-    else if (imgin->md->datatype == _DATATYPE_DOUBLE  \
-        && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
-    {                                                 \
-        double * MILK_RESTRICT p1 =                   \
-            MILK_ASSUME_ALIGNED(imgin->im->array.D);  \
-        double * MILK_RESTRICT po =                   \
-            MILK_ASSUME_ALIGNED(imgout->im->array.D); \
-        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
-        for (uint64_t i = 0; i < nelement; i++)       \
-        {                                             \
-            po[i] = funcname(p1[i]);                  \
-        }                                             \
-    }                                                 \
-    else                                              \
-    {                                                 \
-        arith_image_function_1_1_IMGID(               \
-            imgin, imgout, &P##name);                 \
-    }                                                 \
-    DEBUG_TRACE_FEXIT();                              \
-    return RETURN_SUCCESS;                            \
-}
+#define ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(name, funcname, funcname_f)                            \
+    errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout)                      \
+    {                                                                                              \
+        DEBUG_TRACE_FSTART();                                                                      \
+        if (imgin->im == NULL)                                                                     \
+        {                                                                                          \
+            return RETURN_FAILURE;                                                                 \
+        }                                                                                          \
+        imgid_ensure_output(imgin, imgout);                                                        \
+        uint64_t nelement = imgout->md->nelement;                                                  \
+        if (imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)    \
+        {                                                                                          \
+            float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin->im->array.F);                     \
+            float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                    \
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
+            {                                                                                      \
+                po[i] = funcname_f(p1[i]);                                                         \
+            }                                                                                      \
+        }                                                                                          \
+        else if (imgin->md->datatype == _DATATYPE_DOUBLE &&                                        \
+                 imgout->mdt->datatype == _DATATYPE_DOUBLE)                                        \
+        {                                                                                          \
+            double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin->im->array.D);                    \
+            double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);                   \
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
+            {                                                                                      \
+                po[i] = funcname(p1[i]);                                                           \
+            }                                                                                      \
+        }                                                                                          \
+        else                                                                                       \
+        {                                                                                          \
+            arith_image_function_1_1_IMGID(imgin, imgout, &P##name);                               \
+        }                                                                                          \
+        DEBUG_TRACE_FEXIT();                                                                       \
+        return RETURN_SUCCESS;                                                                     \
+    }
 
 ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(acos, acos, acosf)
 ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(asin, asin, asinf)

@@ -12,15 +12,11 @@
 /**
  * @brief Execute lines through CLI_execute_line
  */
-void cli_exec_lines(
-    char lines[][STRINGMAXLEN_CLICMDLINE],
-    int nlines)
+void cli_exec_lines(char lines[][STRINGMAXLEN_CLICMDLINE], int nlines)
 {
-    for(int i = 0; i < nlines; i++)
+    for (int i = 0; i < nlines; i++)
     {
-        if(cli_break_flag
-           || cli_continue_flag
-           || cli_return_flag)
+        if (cli_break_flag || cli_continue_flag || cli_return_flag)
         {
             break;
         }
@@ -37,11 +33,9 @@ void cli_exec_lines(
  */
 CLI_FUNC *cli_func_find(const char *name)
 {
-    for(int i = 0; i < CLI_MAX_FUNCS; i++)
+    for (int i = 0; i < CLI_MAX_FUNCS; i++)
     {
-        if(cli_funcs[i].used
-           && strcmp(cli_funcs[i].name, name)
-              == 0)
+        if (cli_funcs[i].used && strcmp(cli_funcs[i].name, name) == 0)
         {
             return &cli_funcs[i];
         }
@@ -66,9 +60,7 @@ int cli_try_func_call(const char *line)
     char fname[CLI_FUNC_NAMELEN];
     {
         int fn = 0;
-        while(*p != '\0' && *p != ' '
-              && *p != '\t'
-              && fn < CLI_FUNC_NAMELEN - 1)
+        while (*p != '\0' && *p != ' ' && *p != '\t' && fn < CLI_FUNC_NAMELEN - 1)
         {
             fname[fn++] = *p++;
         }
@@ -76,7 +68,7 @@ int cli_try_func_call(const char *line)
     }
 
     CLI_FUNC *func = cli_func_find(fname);
-    if(func == NULL)
+    if (func == NULL)
     {
         return 0;
     }
@@ -84,40 +76,37 @@ int cli_try_func_call(const char *line)
     /* Parse arguments */
     p = strip_ws(p);
     char *args[CLI_FUNC_MAXARGS];
-    char argbuf[CLI_FUNC_MAXARGS][CLI_VAR_VALLEN];
-    int nargs = 0;
+    char  argbuf[CLI_FUNC_MAXARGS][CLI_VAR_VALLEN];
+    int   nargs = 0;
 
-    while(*p != '\0'
-          && nargs < CLI_FUNC_MAXARGS)
+    while (*p != '\0' && nargs < CLI_FUNC_MAXARGS)
     {
         int ai = 0;
-        while(*p != '\0' && *p != ' '
-              && *p != '\t'
-              && ai < CLI_VAR_VALLEN - 1)
+        while (*p != '\0' && *p != ' ' && *p != '\t' && ai < CLI_VAR_VALLEN - 1)
         {
             argbuf[nargs][ai++] = *p++;
         }
         argbuf[nargs][ai] = '\0';
-        args[nargs] = argbuf[nargs];
+        args[nargs]       = argbuf[nargs];
         nargs++;
         p = strip_ws(p);
     }
 
     /* Save old $1..$9, set new ones */
     char old_args[CLI_FUNC_MAXARGS][CLI_VAR_VALLEN];
-    int old_used[CLI_FUNC_MAXARGS];
-    for(int i = 0; i < CLI_FUNC_MAXARGS; i++)
+    int  old_used[CLI_FUNC_MAXARGS];
+    for (int i = 0; i < CLI_FUNC_MAXARGS; i++)
     {
         char aname[4];
         snprintf(aname, sizeof(aname), "%d", i + 1);
         const char *ov = cli_var_get(aname);
-        old_used[i] = (ov != NULL) ? 1 : 0;
-        if(ov != NULL)
+        old_used[i]    = (ov != NULL) ? 1 : 0;
+        if (ov != NULL)
         {
             strncpy(old_args[i], ov, CLI_VAR_VALLEN - 1);
             old_args[i][CLI_VAR_VALLEN - 1] = '\0';
         }
-        if(i < nargs)
+        if (i < nargs)
         {
             cli_var_set(aname, args[i]);
         }
@@ -128,7 +117,7 @@ int cli_try_func_call(const char *line)
     }
 
     /* Push local variable scope */
-    if(cli_local_depth < CLI_MAX_LOCAL_DEPTH - 1)
+    if (cli_local_depth < CLI_MAX_LOCAL_DEPTH - 1)
     {
         cli_local_depth++;
         cli_local_shadow_count[cli_local_depth] = 0;
@@ -140,11 +129,11 @@ int cli_try_func_call(const char *line)
     cli_return_flag = 0;
 
     /* Restore old $1..$9 */
-    for(int i = 0; i < CLI_FUNC_MAXARGS; i++)
+    for (int i = 0; i < CLI_FUNC_MAXARGS; i++)
     {
         char aname[4];
         snprintf(aname, sizeof(aname), "%d", i + 1);
-        if(old_used[i])
+        if (old_used[i])
         {
             cli_var_set(aname, old_args[i]);
         }
@@ -155,13 +144,13 @@ int cli_try_func_call(const char *line)
     }
 
     /* Restore variables shadowed by 'local' */
-    if(cli_local_depth > 0)
+    if (cli_local_depth > 0)
     {
         int scount = cli_local_shadow_count[cli_local_depth];
-        for(int i = 0; i < scount; i++)
+        for (int i = 0; i < scount; i++)
         {
             CLI_LOCAL_SHADOW *sh = &cli_local_shadows[cli_local_depth][i];
-            if(sh->was_used)
+            if (sh->was_used)
             {
                 cli_var_set(sh->name, sh->val);
             }

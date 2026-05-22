@@ -22,11 +22,11 @@
 
 typedef long imageID;
 
-#define STRINGMAXLEN_PROCESSINFO_NAME        80
-#define STRINGMAXLEN_PROCESSINFO_SRCFUNC     200
-#define STRINGMAXLEN_PROCESSINFO_SRCFILE     200
-#define STRINGMAXLEN_PROCESSINFO_TMUXNAME    100
-#define STRINGMAXLEN_PROCESSINFO_STATUSMSG   200
+#define STRINGMAXLEN_PROCESSINFO_NAME 80
+#define STRINGMAXLEN_PROCESSINFO_SRCFUNC 200
+#define STRINGMAXLEN_PROCESSINFO_SRCFILE 200
+#define STRINGMAXLEN_PROCESSINFO_TMUXNAME 100
+#define STRINGMAXLEN_PROCESSINFO_STATUSMSG 200
 #define STRINGMAXLEN_PROCESSINFO_LOGFILENAME 250
 #define STRINGMAXLEN_PROCESSINFO_DESCRIPTION 200
 
@@ -34,17 +34,17 @@ typedef long imageID;
 #define PROCESSINFO_NBtimer 100
 
 
-#define PROCESSINFO_CTRLVAL_RUN   0
+#define PROCESSINFO_CTRLVAL_RUN 0
 #define PROCESSINFO_CTRLVAL_PAUSE 1
-#define PROCESSINFO_CTRLVAL_INCR  2
-#define PROCESSINFO_CTRLVAL_EXIT  3
+#define PROCESSINFO_CTRLVAL_INCR 2
+#define PROCESSINFO_CTRLVAL_EXIT 3
 
-#define PROCESSINFO_LOOPSTAT_INIT    0
-#define PROCESSINFO_LOOPSTAT_ACTIVE  1
-#define PROCESSINFO_LOOPSTAT_PAUSE   2
-#define PROCESSINFO_LOOPSTAT_STOP    3
-#define PROCESSINFO_LOOPSTAT_ERROR   4
-#define PROCESSINFO_LOOPSTAT_SPIN    5
+#define PROCESSINFO_LOOPSTAT_INIT 0
+#define PROCESSINFO_LOOPSTAT_ACTIVE 1
+#define PROCESSINFO_LOOPSTAT_PAUSE 2
+#define PROCESSINFO_LOOPSTAT_STOP 3
+#define PROCESSINFO_LOOPSTAT_ERROR 4
+#define PROCESSINFO_LOOPSTAT_SPIN 5
 #define PROCESSINFO_LOOPSTAT_CRASHED 6
 
 #define PROCESSINFOLISTSIZE 50000
@@ -59,10 +59,9 @@ typedef long imageID;
 //
 typedef struct
 {
-    pid_t PIDarray[PROCESSINFOLISTSIZE];
-    int   active[PROCESSINFOLISTSIZE];
-    char  pnamearray[PROCESSINFOLISTSIZE]
-    [STRINGMAXLEN_PROCESSINFO_NAME]; // short name
+    pid_t  PIDarray[PROCESSINFOLISTSIZE];
+    int    active[PROCESSINFOLISTSIZE];
+    char   pnamearray[PROCESSINFOLISTSIZE][STRINGMAXLEN_PROCESSINFO_NAME]; // short name
     double createtime[PROCESSINFOLISTSIZE];
 
 } PROCESSINFOLIST;
@@ -87,19 +86,17 @@ typedef struct PROCESSINFO
 {
     char name[STRINGMAXLEN_PROCESSINFO_NAME]; /// process name (human-readable)
 
-    char source_FUNCTION
-    [STRINGMAXLEN_PROCESSINFO_SRCFUNC];             /// source code function
-    char source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE]; /// source code file
-    int  source_LINE;                                   /// source code line
+    char source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC]; /// source code function
+    char source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE];     /// source code file
+    int  source_LINE;                                       /// source code line
 
     pid_t PID; /// process ID; file name is /tmp/proc.PID.shm
 
     struct timespec createtime; // time at which pinfo was created
 
-    long loopcnt; // counter, useful for loop processes to monitor activity
-    long
-    loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
-    int CTRLval; // control value to be externally written.
+    long loopcnt;    // counter, useful for loop processes to monitor activity
+    long loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
+    int  CTRLval;    // control value to be externally written.
     // 0: run                     (default)
     // 1: pause
     // 2: increment single step (will go back to 1)
@@ -131,17 +128,16 @@ typedef struct PROCESSINFO
     // Enables use of function processinfo_waitoninputstream()
     // Enables streamproctrace entry
     // Must be inialized by processinfo_waitoninputstream_init()
-    int     triggermode;     // see TRIGGERMODE codes
-    imageID triggerstreamID; // -1 if not initialized
-    ino_t   triggerstreaminode;
-    char    triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
-    int     triggersem; // semaphore index
-    uint64_t
-    triggerstreamcnt; // previous value of trigger counter, updates on trigger
-    struct timespec triggerdelay;   // for PROCESSINFO_TRIGGERMODE_DELAY
-    struct timespec triggertimeout; // how long to wait until trigger ?
+    int             triggermode;     // see TRIGGERMODE codes
+    imageID         triggerstreamID; // -1 if not initialized
+    ino_t           triggerstreaminode;
+    char            triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
+    int             triggersem;       // semaphore index
+    uint64_t        triggerstreamcnt; // previous value of trigger counter, updates on trigger
+    struct timespec triggerdelay;     // for PROCESSINFO_TRIGGERMODE_DELAY
+    struct timespec triggertimeout;   // how long to wait until trigger ?
     uint64_t        trigggertimeoutcnt;
-    int triggermissedframe; // have we missed any frame, if yes how many ?
+    int             triggermissedframe; // have we missed any frame, if yes how many ?
     //  0  : no missed frame, loop has been waiting for semaphore to be posted
     //  1  : no missed frame, but semaphore was already posted and at 1 when triggering
     //  2+ : frame(s) missed
@@ -163,8 +159,8 @@ typedef struct PROCESSINFO
 
     // the last PROCESSINFO_NBtimer times are stored in a circular buffer, from
     // which timing stats are derived
-    int timerindex;      // last written index in circular buffer
-    int timingbuffercnt; // increments every cycle of the circular buffer
+    int             timerindex;      // last written index in circular buffer
+    int             timingbuffercnt; // increments every cycle of the circular buffer
     struct timespec texecstart[PROCESSINFO_NBtimer]; // task starts
     struct timespec texecend[PROCESSINFO_NBtimer];   // task ends
 

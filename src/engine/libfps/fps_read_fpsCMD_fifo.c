@@ -19,17 +19,16 @@
  * Non-blocking read from the named pipe. Each line
  * is dispatched to the command processor.
  */
-int functionparameter_read_fpsCMD_fifo(
-    int                fpsCTRLfifofd,
-    FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist)
+int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
+                                       FPSCTRL_TASK_ENTRY *fpsctrltasklist,
+                                       FPSCTRL_TASK_QUEUE *fpsctrlqueuelist)
 {
     int cmdcnt = 0;
     int lineOK = 1; // keep reading
 
     DEBUG_TRACEPOINT(" ");
 
-    while(lineOK == 1)
+    while (lineOK == 1)
     {
         char buff[200];
         int  total_bytes = 0;
@@ -37,18 +36,18 @@ int functionparameter_read_fpsCMD_fifo(
         char buf0[1];
 
         lineOK = 0;
-        for(;;)
+        for (;;)
         {
             bytes = read(fpsCTRLfifofd, buf0, 1); // read one char at a time
             DEBUG_TRACEPOINT("ERRROR: BUFFER OVERFLOW %d %d\n", bytes, total_bytes);
-            if(bytes > 0)
+            if (bytes > 0)
             {
                 buff[total_bytes] = buf0[0];
                 total_bytes += (size_t) bytes;
             }
             else
             {
-                if(errno == EWOULDBLOCK)
+                if (errno == EWOULDBLOCK)
                 {
                     break;
                 }
@@ -61,27 +60,27 @@ int functionparameter_read_fpsCMD_fifo(
 
             DEBUG_TRACEPOINT(" ");
 
-            if(buf0[0] == '\n')
+            if (buf0[0] == '\n')
             {
                 // reached end of line
                 // -> process command
                 //
 
                 buff[total_bytes - 1] = '\0';
-                char *FPScmdline = buff;
+                char *FPScmdline      = buff;
 
                 // toggles
-                static uint32_t queue      = 0;
-                static int      waitonrun  = 0;
-                static int      waitonconf = 0;
+                static uint32_t queue       = 0;
+                static int      waitonrun   = 0;
+                static int      waitonconf  = 0;
                 static uint16_t cmdinputcnt = 0;
 
                 // find next index
                 int cmdindex   = 0;
                 int cmdindexOK = 0;
-                while((cmdindexOK == 0) && (cmdindex < NB_FPSCTRL_TASK_MAX))
+                while ((cmdindexOK == 0) && (cmdindex < NB_FPSCTRL_TASK_MAX))
                 {
-                    if(fpsctrltasklist[cmdindex].status == 0)
+                    if (fpsctrltasklist[cmdindex].status == 0)
                     {
                         cmdindexOK = 1;
                     }
@@ -91,11 +90,12 @@ int functionparameter_read_fpsCMD_fifo(
                     }
                 }
 
-                if(cmdindex == NB_FPSCTRL_TASK_MAX)
+                if (cmdindex == NB_FPSCTRL_TASK_MAX)
                 {
-                    PRINT_ERROR(
-                        "fpscmdarray is full, "
-                        "NB_FPSCTRL_TASK_MAX limit (%d) " "reached", NB_FPSCTRL_TASK_MAX);
+                    PRINT_ERROR("fpscmdarray is full, "
+                                "NB_FPSCTRL_TASK_MAX limit (%d) "
+                                "reached",
+                                NB_FPSCTRL_TASK_MAX);
                     return cmdcnt;
                 }
 
@@ -104,16 +104,15 @@ int functionparameter_read_fpsCMD_fifo(
                 // Some commands affect how the task list is configured instead of being inserted as entries
                 int cmdFOUND = 0;
 
-                if((FPScmdline[0] == '#') || (FPScmdline[0] == ' ') ||
-                        (total_bytes < 2)) // disregard line
+                if ((FPScmdline[0] == '#') || (FPScmdline[0] == ' ') ||
+                    (total_bytes < 2)) // disregard line
                 {
                     cmdFOUND = 1;
                 }
 
                 // set task counter to zero
-                if((cmdFOUND == 0) && (strncmp(FPScmdline,
-                                               "taskcntzero",
-                                               strlen("taskcntzero")) == 0))
+                if ((cmdFOUND == 0) &&
+                    (strncmp(FPScmdline, "taskcntzero", strlen("taskcntzero")) == 0))
                 {
                     cmdFOUND    = 1;
                     cmdinputcnt = 0;
@@ -121,32 +120,28 @@ int functionparameter_read_fpsCMD_fifo(
 
                 // Set queue index
                 // entries will now be placed in queue specified by this command
-                if((cmdFOUND == 0) &&
-                        (strncmp(FPScmdline, "setqindex", strlen("setqindex")) ==
-                         0))
+                if ((cmdFOUND == 0) && (strncmp(FPScmdline, "setqindex", strlen("setqindex")) == 0))
                 {
                     cmdFOUND = 1;
                     char stringtmp[200];
                     int  queue_index;
                     sscanf(FPScmdline, "%s %d", stringtmp, &queue_index);
 
-                    if((queue_index > -1) &&
-                            (queue_index < NB_FPSCTRL_TASKQUEUE_MAX))
+                    if ((queue_index > -1) && (queue_index < NB_FPSCTRL_TASKQUEUE_MAX))
                     {
                         queue = queue_index;
                     }
                 }
 
                 // Set current queue priority
-                if((cmdFOUND == 0) &&
-                        (strncmp(FPScmdline, "setqprio", strlen("setqprio")) == 0))
+                if ((cmdFOUND == 0) && (strncmp(FPScmdline, "setqprio", strlen("setqprio")) == 0))
                 {
                     cmdFOUND = 1;
                     char stringtmp[200];
                     int  queue_priority;
                     sscanf(FPScmdline, "%s %d", stringtmp, &queue_priority);
 
-                    if(queue_priority < 0)
+                    if (queue_priority < 0)
                     {
                         queue_priority = 0;
                     }
@@ -155,36 +150,32 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
                 // set wait on run ON
-                if((cmdFOUND == 0) && (strncmp(FPScmdline,
-                                               "waitonrunON",
-                                               strlen("waitonrunON")) == 0))
+                if ((cmdFOUND == 0) &&
+                    (strncmp(FPScmdline, "waitonrunON", strlen("waitonrunON")) == 0))
                 {
                     cmdFOUND  = 1;
                     waitonrun = 1;
                 }
 
                 // set wait on run OFF
-                if((cmdFOUND == 0) && (strncmp(FPScmdline,
-                                               "waitonrunOFF",
-                                               strlen("waitonrunOFF")) == 0))
+                if ((cmdFOUND == 0) &&
+                    (strncmp(FPScmdline, "waitonrunOFF", strlen("waitonrunOFF")) == 0))
                 {
                     cmdFOUND  = 1;
                     waitonrun = 0;
                 }
 
                 // set wait on conf ON
-                if((cmdFOUND == 0) && (strncmp(FPScmdline,
-                                               "waitonconfON",
-                                               strlen("waitonconfON")) == 0))
+                if ((cmdFOUND == 0) &&
+                    (strncmp(FPScmdline, "waitonconfON", strlen("waitonconfON")) == 0))
                 {
                     cmdFOUND   = 1;
                     waitonconf = 1;
                 }
 
                 // set wait on conf OFF
-                if((cmdFOUND == 0) && (strncmp(FPScmdline,
-                                               "waitonconfOFF",
-                                               strlen("waitonconfOFF")) == 0))
+                if ((cmdFOUND == 0) &&
+                    (strncmp(FPScmdline, "waitonconfOFF", strlen("waitonconfOFF")) == 0))
                 {
                     cmdFOUND   = 1;
                     waitonconf = 0;
@@ -195,10 +186,10 @@ int functionparameter_read_fpsCMD_fifo(
                 DEBUG_TRACEPOINT(" ");
 
                 // for all other commands, put in task list
-                if(cmdFOUND == 0)
+                if (cmdFOUND == 0)
                 {
-                    strncpy(fpsctrltasklist[cmdindex].cmdstring,
-                            FPScmdline, STRINGMAXLEN_FPS_CMDLINE - 1);
+                    strncpy(fpsctrltasklist[cmdindex].cmdstring, FPScmdline,
+                            STRINGMAXLEN_FPS_CMDLINE - 1);
 
                     fpsctrltasklist[cmdindex].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_SHOW;
                     fpsctrltasklist[cmdindex].inputindex = cmdinputcnt;
@@ -208,7 +199,7 @@ int functionparameter_read_fpsCMD_fifo(
                     // waiting to be processed
                     fpsctrltasklist[cmdindex].status |= FPSTASK_STATUS_WAITING;
 
-                    if(waitonrun == 1)
+                    if (waitonrun == 1)
                     {
                         fpsctrltasklist[cmdindex].flag |= FPSTASK_FLAG_WAITONRUN;
                     }
@@ -217,7 +208,7 @@ int functionparameter_read_fpsCMD_fifo(
                         fpsctrltasklist[cmdindex].flag &= ~FPSTASK_FLAG_WAITONRUN;
                     }
 
-                    if(waitonconf == 1)
+                    if (waitonconf == 1)
                     {
                         fpsctrltasklist[cmdindex].flag |= FPSTASK_FLAG_WAITONCONF;
                     }

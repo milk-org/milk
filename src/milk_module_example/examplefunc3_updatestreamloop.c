@@ -11,44 +11,32 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "streamupdate",
-    .cmdkey      = "streamupdate",
-    .description = "update stream"
-};
+static FPS_APP_INFO FPS_app_info = { .fps_name    = "streamupdate",
+                                     .cmdkey      = "streamupdate",
+                                     .description = "update stream" };
 
 // Variables local to this translation unit
 static char *inimname;
 
 #define FPS_PARAMS(X) \
-    X(".in_sname", &inimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, "input stream")
+    X(".in_sname", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream")
 
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
 
-static const int nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
 #endif
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
+    "", "", CLICMD_FIELDS_DEFAULTS
 };
 
 FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
-
 
 
 // Wrapper function, used by all CLI calls
@@ -64,7 +52,8 @@ static MILK_HOT errno_t compute_function()
     // Notify that the image is being changed.
     // This is required prior to modifying image content so that consumers can be informed.
     img.md->write = 1;
-    if (img.ID == -1) {
+    if (img.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -85,18 +74,14 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 // Register function in CLI
-errno_t
-CLIADDCMD_milk_module_example__updatestreamloop()
+errno_t CLIADDCMD_milk_module_example__updatestreamloop()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
     INSERT_STD_CLIREGISTERFUNC
 
@@ -105,8 +90,5 @@ CLIADDCMD_milk_module_example__updatestreamloop()
 #endif
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif

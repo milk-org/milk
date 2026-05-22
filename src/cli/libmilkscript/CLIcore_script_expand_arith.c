@@ -51,8 +51,7 @@
 /** @brief Skip whitespace in parser. */
 void arith_skip_ws(ArithParser *p)
 {
-    while(p->s[p->pos] == ' '
-            || p->s[p->pos] == '\t')
+    while (p->s[p->pos] == ' ' || p->s[p->pos] == '\t')
     {
         p->pos++;
     }
@@ -70,26 +69,26 @@ double arith_atom(ArithParser *p)
     arith_skip_ws(p);
 
     /* Unary minus */
-    if(p->s[p->pos] == '-')
+    if (p->s[p->pos] == '-')
     {
         p->pos++;
         return -arith_atom(p);
     }
 
     /* Bitwise NOT */
-    if(p->s[p->pos] == '~')
+    if (p->s[p->pos] == '~')
     {
         p->pos++;
-        return (double)(~(long)arith_atom(p));
+        return (double) (~(long) arith_atom(p));
     }
 
     /* Parenthesized sub-expression */
-    if(p->s[p->pos] == '(')
+    if (p->s[p->pos] == '(')
     {
         p->pos++;
         double v = arith_expr(p);
         arith_skip_ws(p);
-        if(p->s[p->pos] == ')')
+        if (p->s[p->pos] == ')')
         {
             p->pos++;
         }
@@ -97,22 +96,17 @@ double arith_atom(ArithParser *p)
     }
 
     /* Variable name (bare identifier) */
-    if(isalpha((unsigned char) p->s[p->pos])
-       || p->s[p->pos] == '_')
+    if (isalpha((unsigned char) p->s[p->pos]) || p->s[p->pos] == '_')
     {
         char vname[256];
-        int vn = 0;
-        while(vn < 255
-              && (isalnum(
-                      (unsigned char)
-                      p->s[p->pos])
-                  || p->s[p->pos] == '_'))
+        int  vn = 0;
+        while (vn < 255 && (isalnum((unsigned char) p->s[p->pos]) || p->s[p->pos] == '_'))
         {
             vname[vn++] = p->s[p->pos++];
         }
-        vname[vn] = '\0';
+        vname[vn]      = '\0';
         const char *vv = cli_var_lookup(vname);
-        if(vv != NULL)
+        if (vv != NULL)
         {
             return strtod(vv, NULL);
         }
@@ -122,11 +116,11 @@ double arith_atom(ArithParser *p)
     /* Numeric literal */
     arith_skip_ws(p);
     const char *start = p->s + p->pos;
-    char *end = NULL;
-    double v = strtod(start, &end);
-    if(end > start)
+    char       *end   = NULL;
+    double      v     = strtod(start, &end);
+    if (end > start)
     {
-        p->pos += (int)(end - start);
+        p->pos += (int) (end - start);
         return v;
     }
 
@@ -139,28 +133,26 @@ double arith_factor(ArithParser *p)
     double left = arith_atom(p);
     arith_skip_ws(p);
 
-    while(p->s[p->pos] == '*'
-            || p->s[p->pos] == '/'
-            || p->s[p->pos] == '%')
+    while (p->s[p->pos] == '*' || p->s[p->pos] == '/' || p->s[p->pos] == '%')
     {
         char op = p->s[p->pos];
         p->pos++;
         double right = arith_atom(p);
         arith_skip_ws(p);
-        if(op == '*')
+        if (op == '*')
         {
             left *= right;
         }
-        else if(op == '/')
+        else if (op == '/')
         {
-            if(right != 0.0)
+            if (right != 0.0)
             {
                 left /= right;
             }
         }
-        else if(op == '%')
+        else if (op == '%')
         {
-            if(right != 0.0)
+            if (right != 0.0)
             {
                 left = fmod(left, right);
             }
@@ -175,14 +167,13 @@ double arith_term(ArithParser *p)
     double left = arith_factor(p);
     arith_skip_ws(p);
 
-    while(p->s[p->pos] == '+'
-            || p->s[p->pos] == '-')
+    while (p->s[p->pos] == '+' || p->s[p->pos] == '-')
     {
         char op = p->s[p->pos];
         p->pos++;
         double right = arith_factor(p);
         arith_skip_ws(p);
-        if(op == '+')
+        if (op == '+')
         {
             left += right;
         }
@@ -200,22 +191,20 @@ double arith_shift(ArithParser *p)
     double left = arith_term(p);
     arith_skip_ws(p);
 
-    while((p->s[p->pos] == '<'
-           && p->s[p->pos + 1] == '<')
-          || (p->s[p->pos] == '>'
-              && p->s[p->pos + 1] == '>'))
+    while ((p->s[p->pos] == '<' && p->s[p->pos + 1] == '<') ||
+           (p->s[p->pos] == '>' && p->s[p->pos + 1] == '>'))
     {
         char op = p->s[p->pos];
         p->pos += 2;
         double right = arith_term(p);
         arith_skip_ws(p);
-        if(op == '<')
+        if (op == '<')
         {
-            left = (double)((long)left << (long)right);
+            left = (double) ((long) left << (long) right);
         }
         else
         {
-            left = (double)((long)left >> (long)right);
+            left = (double) ((long) left >> (long) right);
         }
     }
     return left;
@@ -227,41 +216,37 @@ double arith_compare(ArithParser *p)
     double left = arith_shift(p);
     arith_skip_ws(p);
 
-    if(p->s[p->pos] == '<'
-       && p->s[p->pos + 1] == '=')
+    if (p->s[p->pos] == '<' && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
         double right = arith_shift(p);
         return (left <= right) ? 1.0 : 0.0;
     }
-    if(p->s[p->pos] == '>'
-       && p->s[p->pos + 1] == '=')
+    if (p->s[p->pos] == '>' && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
         double right = arith_shift(p);
         return (left >= right) ? 1.0 : 0.0;
     }
-    if(p->s[p->pos] == '<')
+    if (p->s[p->pos] == '<')
     {
         p->pos++;
         double right = arith_shift(p);
         return (left < right) ? 1.0 : 0.0;
     }
-    if(p->s[p->pos] == '>')
+    if (p->s[p->pos] == '>')
     {
         p->pos++;
         double right = arith_shift(p);
         return (left > right) ? 1.0 : 0.0;
     }
-    if(p->s[p->pos] == '='
-       && p->s[p->pos + 1] == '=')
+    if (p->s[p->pos] == '=' && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
         double right = arith_shift(p);
         return (left == right) ? 1.0 : 0.0;
     }
-    if(p->s[p->pos] == '!'
-       && p->s[p->pos + 1] == '=')
+    if (p->s[p->pos] == '!' && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
         double right = arith_shift(p);
@@ -276,12 +261,12 @@ double arith_bitwise_and(ArithParser *p)
     double left = arith_compare(p);
     arith_skip_ws(p);
 
-    while(p->s[p->pos] == '&')
+    while (p->s[p->pos] == '&')
     {
         p->pos++;
         double right = arith_compare(p);
         arith_skip_ws(p);
-        left = (double)((long)left & (long)right);
+        left = (double) ((long) left & (long) right);
     }
     return left;
 }
@@ -292,12 +277,12 @@ double arith_bitwise_xor(ArithParser *p)
     double left = arith_bitwise_and(p);
     arith_skip_ws(p);
 
-    while(p->s[p->pos] == '^')
+    while (p->s[p->pos] == '^')
     {
         p->pos++;
         double right = arith_bitwise_and(p);
         arith_skip_ws(p);
-        left = (double)((long)left ^ (long)right);
+        left = (double) ((long) left ^ (long) right);
     }
     return left;
 }
@@ -308,12 +293,12 @@ double arith_bitwise_or(ArithParser *p)
     double left = arith_bitwise_xor(p);
     arith_skip_ws(p);
 
-    while(p->s[p->pos] == '|')
+    while (p->s[p->pos] == '|')
     {
         p->pos++;
         double right = arith_bitwise_xor(p);
         arith_skip_ws(p);
-        left = (double)((long)left | (long)right);
+        left = (double) ((long) left | (long) right);
     }
     return left;
 }
@@ -341,42 +326,34 @@ double arith_expr(ArithParser *p)
  * @param line    Buffer to expand in-place
  * @param maxlen  Buffer size
  */
-void cli_expand_arith(
-    char *line,
-    int  maxlen)
+void cli_expand_arith(char *line, int maxlen)
 {
     char out[STRINGMAXLEN_CLICMDLINE];
     int  opos = 0;
-    int  i = 0;
+    int  i    = 0;
 
-    while(line[i] != '\0'
-            && opos < maxlen - 1)
+    while (line[i] != '\0' && opos < maxlen - 1)
     {
-        if(line[i] == '$'
-                && line[i + 1] == '('
-                && line[i + 2] == '(')
+        if (line[i] == '$' && line[i + 1] == '(' && line[i + 2] == '(')
         {
             i += 3;
 
             char expr[512];
-            int  elen = 0;
+            int  elen  = 0;
             int  depth = 1;
-            while(line[i] != '\0'
-                    && elen < 511)
+            while (line[i] != '\0' && elen < 511)
             {
-                if(line[i] == '('
-                        && line[i + 1] == '(')
+                if (line[i] == '(' && line[i + 1] == '(')
                 {
                     depth++;
                     expr[elen++] = line[i++];
                     expr[elen++] = line[i++];
                     continue;
                 }
-                if(line[i] == ')'
-                        && line[i + 1] == ')')
+                if (line[i] == ')' && line[i + 1] == ')')
                 {
                     depth--;
-                    if(depth == 0)
+                    if (depth == 0)
                     {
                         i += 2;
                         break;
@@ -390,13 +367,12 @@ void cli_expand_arith(
             expr[elen] = '\0';
 
             ArithParser parser;
-            parser.s   = expr;
-            parser.pos = 0;
+            parser.s      = expr;
+            parser.pos    = 0;
             double result = arith_expr(&parser);
 
             char rbuf[64];
-            if(result == floor(result)
-                    && fabs(result) < 1e15)
+            if (result == floor(result) && fabs(result) < 1e15)
             {
                 snprintf(rbuf, sizeof(rbuf), "%ld", (long) result);
             }
@@ -405,9 +381,9 @@ void cli_expand_arith(
                 snprintf(rbuf, sizeof(rbuf), "%g", result);
             }
 
-            int rlen = (int) strlen(rbuf);
+            int rlen  = (int) strlen(rbuf);
             int avail = maxlen - 1 - opos;
-            int clen = rlen < avail ? rlen : avail;
+            int clen  = rlen < avail ? rlen : avail;
             memcpy(out + opos, rbuf, (size_t) clen);
             opos += clen;
         }

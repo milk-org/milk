@@ -17,8 +17,6 @@
 #include "imgid_slice.h"
 
 
-
-
 #ifdef __cplusplus
 typedef const char *CONST_WORD;
 #else
@@ -37,25 +35,22 @@ typedef int errno_t;
  * (FUNCTION_PARAMETER_KEYWORD_STRMAXLEN).
  * See fps_types.h for the component limits.
  */
-#define IMGID_FPSKEYWORD_STRMAXLEN \
-    (STRINGMAXLEN_FPS_NAME + \
-     FUNCTION_PARAMETER_KEYWORD_STRMAXLEN)
+#define IMGID_FPSKEYWORD_STRMAXLEN (STRINGMAXLEN_FPS_NAME + FUNCTION_PARAMETER_KEYWORD_STRMAXLEN)
 
-#define IMGID_CONNECT_NOCHECK      0
-#define IMGID_CONNECT_CHECK_FAIL   1
+#define IMGID_CONNECT_NOCHECK 0
+#define IMGID_CONNECT_CHECK_FAIL 1
 #define IMGID_CONNECT_CHECK_CREATE 2
 
-#define IMGID_CONNECTED            0
-#define IMGID_CREATED              1
-#define IMGID_RECREATED            2
+#define IMGID_CONNECTED 0
+#define IMGID_CREATED 1
+#define IMGID_RECREATED 2
 
-#define IMGID_SUCCESS              IMGID_CONNECTED
+#define IMGID_SUCCESS IMGID_CONNECTED
 
-#define IMGID_ERR_BADNAME          10
-#define IMGID_ERR_ALLOCATION       11
-#define IMGID_ERR_NOTFOUND         12
-#define IMGID_ERR_MISMATCH         13
-
+#define IMGID_ERR_BADNAME 10
+#define IMGID_ERR_ALLOCATION 11
+#define IMGID_ERR_NOTFOUND 12
+#define IMGID_ERR_MISMATCH 13
 
 
 // Image identifier for internal use by milk
@@ -78,10 +73,10 @@ typedef struct
     int64_t createcnt;
 
     // used to resolve if needed
-    char            name[STRINGMAXLEN_IMAGE_NAME];
+    char name[STRINGMAXLEN_IMAGE_NAME];
 
     // image content, data and metadata
-    IMAGE          *im;
+    IMAGE *im;
     // md points at im.md
     IMAGE_METADATA *md;
 
@@ -102,9 +97,9 @@ typedef struct
     IMGID_SLICE slice;
 
     // Materialized slice buffer
-    IMAGE      *slice_im;        // NULL until first use
-    uint64_t    slice_last_cnt0;  // source frame counter
-    int         slice_shared;    // 1 if @S: requested
+    IMAGE   *slice_im;        // NULL until first use
+    uint64_t slice_last_cnt0; // source frame counter
+    int      slice_shared;    // 1 if @S: requested
 
     // FPS parameter key that sourced this stream name.
     // Set by imgid_setfpskeyword(); empty if not from FPS.
@@ -112,7 +107,6 @@ typedef struct
     char fpskeyword[IMGID_FPSKEYWORD_STRMAXLEN];
 
 } IMGID;
-
 
 
 /** make blank IMGID
@@ -138,8 +132,7 @@ static inline IMGID imgid_make()
 
     img.ID        = -1;
     img.createcnt = 0;
-    strncpy(img.mdt->name, "",
-            STRINGMAXLEN_IMAGE_NAME - 1);
+    strncpy(img.mdt->name, "", STRINGMAXLEN_IMAGE_NAME - 1);
     img.im = NULL;
     img.md = NULL;
 
@@ -148,9 +141,9 @@ static inline IMGID imgid_make()
     img.stream_must_new   = 0;
 
     memset(&img.slice, 0, sizeof(IMGID_SLICE));
-    img.slice_im       = NULL;
+    img.slice_im        = NULL;
     img.slice_last_cnt0 = 0;
-    img.slice_shared   = 0;
+    img.slice_shared    = 0;
 
     img.fpskeyword[0] = '\0';
 
@@ -166,17 +159,15 @@ static inline IMGID imgid_make()
  *
  * @param img  IMGID whose owned allocations are freed
  */
-static inline void imgid_free(
-    IMGID *img
-)
+static inline void imgid_free(IMGID *img)
 {
-    if(img->mdt != NULL)
+    if (img->mdt != NULL)
     {
         free(img->mdt);
     }
     img->mdt = NULL;
 
-    if(img->slice_im != NULL)
+    if (img->slice_im != NULL)
     {
         free(img->slice_im);
         img->slice_im = NULL;
@@ -219,18 +210,15 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     /* Parse @X: modifier prefix first */
     const char *effective_name = name;
     {
-        FPS_STREAMNAME_PARSED sp =
-            fps_streamname_parse(name);
-        if(!sp.error)
+        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(name);
+        if (!sp.error)
         {
-            img.stream_loc = sp.loc;
-            img.stream_must_exist =
-                sp.must_exist;
-            img.stream_must_new =
-                sp.must_new;
-            effective_name = sp.name;
+            img.stream_loc        = sp.loc;
+            img.stream_must_exist = sp.must_exist;
+            img.stream_must_new   = sp.must_new;
+            effective_name        = sp.name;
 
-            if(sp.loc == 'L')
+            if (sp.loc == 'L')
             {
                 img.mdt->shared = 0;
             }
@@ -240,14 +228,14 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     char *pch;
     char *pch1;
 
-    char  namestring[200];
+    char namestring[200];
     strncpy(namestring, effective_name, 199);
 
     pch1 = namestring;
-    if(strlen(namestring) != 0)
+    if (strlen(namestring) != 0)
     {
         pch = strtok(namestring, ">");
-        while(pch != NULL)
+        while (pch != NULL)
         {
             pch1 = pch;
             //printf("[%2d] %s\n", nbword, pch);
@@ -256,53 +244,53 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
              * instead (shared is default).
              */
 
-            if(strcmp(pch, "tui8") == 0)
+            if (strcmp(pch, "tui8") == 0)
             {
                 printf("    data type unsigned 8-bit int\n");
                 img.mdt->datatype = _DATATYPE_UINT8;
             }
-            if(strcmp(pch, "tsi8") == 0)
+            if (strcmp(pch, "tsi8") == 0)
             {
                 printf("    data type signed 8-bit int\n");
                 img.mdt->datatype = _DATATYPE_INT8;
             }
-            if(strcmp(pch, "tui16") == 0)
+            if (strcmp(pch, "tui16") == 0)
             {
                 printf("    data type unsigned 16-bit int\n");
                 img.mdt->datatype = _DATATYPE_UINT16;
             }
-            if(strcmp(pch, "tsi16") == 0)
+            if (strcmp(pch, "tsi16") == 0)
             {
                 printf("    data type signed 16-bit int\n");
                 img.mdt->datatype = _DATATYPE_INT16;
             }
-            if(strcmp(pch, "tui32") == 0)
+            if (strcmp(pch, "tui32") == 0)
             {
                 printf("    data type unsigned 32-bit int\n");
                 img.mdt->datatype = _DATATYPE_UINT32;
             }
-            if(strcmp(pch, "tsi32") == 0)
+            if (strcmp(pch, "tsi32") == 0)
             {
                 printf("    data type signed 32-bit int\n");
                 img.mdt->datatype = _DATATYPE_INT32;
             }
-            if(strcmp(pch, "tui64") == 0)
+            if (strcmp(pch, "tui64") == 0)
             {
                 printf("    data type unsigned 64-bit int\n");
                 img.mdt->datatype = _DATATYPE_UINT64;
             }
-            if(strcmp(pch, "tsi64") == 0)
+            if (strcmp(pch, "tsi64") == 0)
             {
                 printf("    data type signed 64-bit int\n");
                 img.mdt->datatype = _DATATYPE_INT64;
             }
 
-            if(strcmp(pch, "tf32") == 0)
+            if (strcmp(pch, "tf32") == 0)
             {
                 printf("    data type double (32)\n");
                 img.mdt->datatype = _DATATYPE_FLOAT;
             }
-            if(strcmp(pch, "tf64") == 0)
+            if (strcmp(pch, "tf64") == 0)
             {
                 printf("    data type float (64)\n");
                 img.mdt->datatype = _DATATYPE_DOUBLE;
@@ -330,8 +318,8 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
 
     img.ID        = -1;
     img.createcnt = -1;
-    img.im = NULL;
-    img.md = NULL;
+    img.im        = NULL;
+    img.md        = NULL;
 
     /* Parse bracket slice from the final name.
      * e.g. "im[0:19,10:29]" -> bare name "im"
@@ -340,21 +328,14 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     {
         char bare[STRINGMAXLEN_IMAGE_NAME];
         char slicebuf[128];
-        int has_bracket =
-            imgid_slice_split_name(
-                pch1,
-                bare,
-                STRINGMAXLEN_IMAGE_NAME,
-                slicebuf,
-                sizeof(slicebuf));
+        int  has_bracket =
+            imgid_slice_split_name(pch1, bare, STRINGMAXLEN_IMAGE_NAME, slicebuf, sizeof(slicebuf));
 
-        strncpy(img.name, bare,
-                STRINGMAXLEN_IMAGE_NAME - 1);
+        strncpy(img.name, bare, STRINGMAXLEN_IMAGE_NAME - 1);
 
-        if(has_bracket)
+        if (has_bracket)
         {
-            img.slice =
-                imgid_slice_parse(slicebuf);
+            img.slice = imgid_slice_parse(slicebuf);
         }
     }
 
@@ -373,14 +354,9 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
  * @param fpsname  FPS instance name (e.g. "mfilt-00")
  * @param key      Parameter suffix  (e.g. ".inmval")
  */
-static inline void imgid_setfpskeyword(
-    IMGID      *img,
-    const char *fpsname,
-    const char *key)
+static inline void imgid_setfpskeyword(IMGID *img, const char *fpsname, const char *key)
 {
-    snprintf(img->fpskeyword,
-             sizeof(img->fpskeyword),
-             "%s%s", fpsname, key);
+    snprintf(img->fpskeyword, sizeof(img->fpskeyword), "%s%s", fpsname, key);
 }
 
 
@@ -391,16 +367,12 @@ static inline void imgid_setfpskeyword(
  * Convenience wrapper combining imgid_make_from_name
  * and imgid_setfpskeyword.
  */
-static inline IMGID imgid_make_from_fpskey(
-    CONST_WORD name,
-    const char *fpsname,
-    const char *key)
+static inline IMGID imgid_make_from_fpskey(CONST_WORD name, const char *fpsname, const char *key)
 {
     IMGID img = imgid_make_from_name(name);
     imgid_setfpskeyword(&img, fpsname, key);
     return img;
 }
-
 
 
 /**
@@ -414,12 +386,9 @@ static inline IMGID imgid_make_from_fpskey(
  * @param ysize  Height in pixels
  * @return Initialized IMGID with 2D template parameters
  */
-static inline IMGID imgid_make_from_name_2D(
-    CONST_WORD name,
-    uint32_t   xsize,
-    uint32_t   ysize)
+static inline IMGID imgid_make_from_name_2D(CONST_WORD name, uint32_t xsize, uint32_t ysize)
 {
-    IMGID img   = imgid_make_from_name(name);
+    IMGID img        = imgid_make_from_name(name);
     img.mdt->naxis   = 2;
     img.mdt->size[0] = xsize;
     img.mdt->size[1] = ysize;
@@ -439,13 +408,12 @@ static inline IMGID imgid_make_from_name_2D(
  * @param zsize  Depth (number of slices)
  * @return Initialized IMGID with 3D template parameters
  */
-static inline IMGID imgid_make_from_name_3D(
-    CONST_WORD name,
-    uint32_t   xsize,
-    uint32_t   ysize,
-    uint32_t   zsize)
+static inline IMGID imgid_make_from_name_3D(CONST_WORD name,
+                                            uint32_t   xsize,
+                                            uint32_t   ysize,
+                                            uint32_t   zsize)
 {
-    IMGID img   = imgid_make_from_name(name);
+    IMGID img        = imgid_make_from_name(name);
     img.mdt->naxis   = 3;
     img.mdt->size[0] = xsize;
     img.mdt->size[1] = ysize;
@@ -453,7 +421,6 @@ static inline IMGID imgid_make_from_name_3D(
 
     return img;
 }
-
 
 
 /**
@@ -466,9 +433,7 @@ static inline IMGID imgid_make_from_name_3D(
  * @param imgin   Source IMGID to copy template from
  * @param imgout  Destination IMGID to receive template
  */
-static inline void imgid_copy(
-    IMGID *imgin,
-    IMGID *imgout)
+static inline void imgid_copy(IMGID *imgin, IMGID *imgout)
 {
     imgout->mdt->datatype = imgin->mdt->datatype;
     imgout->mdt->shared   = imgin->mdt->shared;
@@ -482,7 +447,6 @@ static inline void imgid_copy(
     imgout->mdt->NBkw   = imgin->mdt->NBkw;
     imgout->mdt->CBsize = imgin->mdt->CBsize;
 }
-
 
 
 /**
@@ -499,7 +463,7 @@ static inline void imgid_update_creationparams(IMGID *img)
 {
     img->mdt->datatype = img->md->datatype;
     img->mdt->naxis    = img->md->naxis;
-    for(int ii = 0; ii < 3; ++ii)
+    for (int ii = 0; ii < 3; ++ii)
     {
         img->mdt->size[ii] = img->md->size[ii];
     }
@@ -521,41 +485,39 @@ static inline void imgid_update_creationparams(IMGID *img)
  * @param md2  Second metadata
  * @return 0 if all fields match; bitmask of differences
  */
-static inline uint64_t imgid_mdcompare(
-    IMAGE_METADATA *md1,
-    IMAGE_METADATA *md2)
+static inline uint64_t imgid_mdcompare(IMAGE_METADATA *md1, IMAGE_METADATA *md2)
 {
     uint64_t diff = 0;
 
-    if(md1->datatype != md2->datatype)
+    if (md1->datatype != md2->datatype)
     {
         diff |= (1ULL << 0);
     }
-    if(md1->naxis != md2->naxis)
+    if (md1->naxis != md2->naxis)
     {
         diff |= (1ULL << 1);
     }
-    if(md1->size[0] != md2->size[0])
+    if (md1->size[0] != md2->size[0])
     {
         diff |= (1ULL << 2);
     }
-    if(md1->size[1] != md2->size[1])
+    if (md1->size[1] != md2->size[1])
     {
         diff |= (1ULL << 3);
     }
-    if(md1->size[2] != md2->size[2])
+    if (md1->size[2] != md2->size[2])
     {
         diff |= (1ULL << 4);
     }
-    if(md1->shared != md2->shared)
+    if (md1->shared != md2->shared)
     {
         diff |= (1ULL << 5);
     }
-    if(md1->NBkw != md2->NBkw)
+    if (md1->NBkw != md2->NBkw)
     {
         diff |= (1ULL << 6);
     }
-    if(md1->CBsize != md2->CBsize)
+    if (md1->CBsize != md2->CBsize)
     {
         diff |= (1ULL << 7);
     }
@@ -568,16 +530,14 @@ static inline uint64_t imgid_mdcompare(
  * @brief Check if img complies to imgtemplate
  *
  */
-static inline uint64_t imgid_compare(
-    IMGID img,
-    IMGID imgtemplate)
+static inline uint64_t imgid_compare(IMGID img, IMGID imgtemplate)
 {
     int compErr = 0;
 
-    if(imgtemplate.mdt->datatype != _DATATYPE_UNINITIALIZED)
+    if (imgtemplate.mdt->datatype != _DATATYPE_UNINITIALIZED)
     {
         printf("Checking datatype       ");
-        if(imgtemplate.mdt->datatype != img.mdt->datatype)
+        if (imgtemplate.mdt->datatype != img.mdt->datatype)
         {
             printf("%d %d", imgtemplate.mdt->datatype, img.mdt->datatype);
             printf("  -> FAIL\n");
@@ -589,10 +549,10 @@ static inline uint64_t imgid_compare(
         }
     }
 
-    if((int8_t)imgtemplate.mdt->naxis != -1)
+    if ((int8_t) imgtemplate.mdt->naxis != -1)
     {
         printf("Checking naxis  %d %d    ", imgtemplate.mdt->naxis, img.mdt->naxis);
-        if(imgtemplate.mdt->naxis != img.mdt->naxis)
+        if (imgtemplate.mdt->naxis != img.mdt->naxis)
         {
             printf("  -> FAIL\n");
             compErr++;
@@ -603,10 +563,10 @@ static inline uint64_t imgid_compare(
         }
     }
 
-    if(imgtemplate.mdt->size[0] != 0)
+    if (imgtemplate.mdt->size[0] != 0)
     {
         printf("Checking size[0]        ");
-        if(imgtemplate.mdt->size[0] != img.mdt->size[0])
+        if (imgtemplate.mdt->size[0] != img.mdt->size[0])
         {
             printf(" %d %d", imgtemplate.mdt->size[0], img.mdt->size[0]);
             printf("  -> FAIL\n");
@@ -618,10 +578,10 @@ static inline uint64_t imgid_compare(
         }
     }
 
-    if(imgtemplate.mdt->size[1] != 0)
+    if (imgtemplate.mdt->size[1] != 0)
     {
         printf("Checking size[1]        ");
-        if(imgtemplate.mdt->size[1] != img.mdt->size[1])
+        if (imgtemplate.mdt->size[1] != img.mdt->size[1])
         {
             printf(" %d %d", imgtemplate.mdt->size[1], img.mdt->size[1]);
             printf("  -> FAIL\n");
@@ -633,10 +593,10 @@ static inline uint64_t imgid_compare(
         }
     }
 
-    if(imgtemplate.mdt->size[2] != 0)
+    if (imgtemplate.mdt->size[2] != 0)
     {
         printf("Checking size[2]        ");
-        if(imgtemplate.mdt->size[2] != img.mdt->size[2])
+        if (imgtemplate.mdt->size[2] != img.mdt->size[2])
         {
             printf(" %d %d", imgtemplate.mdt->size[2], img.mdt->size[2]);
             printf("  -> FAIL\n");
@@ -649,7 +609,7 @@ static inline uint64_t imgid_compare(
     }
 
     printf("Checking NBkw           ");
-    if(imgtemplate.mdt->NBkw != img.mdt->NBkw)
+    if (imgtemplate.mdt->NBkw != img.mdt->NBkw)
     {
         printf("FAIL\n");
         printf("   %4u  %s\n", imgtemplate.mdt->NBkw, imgtemplate.name);
@@ -666,24 +626,20 @@ static inline uint64_t imgid_compare(
 }
 
 
-
-
 /**
  * @brief Check if img complies to imgtemplate
  *
  */
-static inline uint64_t imgid_compare_md(
-    IMGID img,
-    IMGID imgtemplate)
+static inline uint64_t imgid_compare_md(IMGID img, IMGID imgtemplate)
 {
     int compErr = 0;
 
     printf("COMPARING %s %s\n", img.name, imgtemplate.name);
 
-    if(imgtemplate.md->datatype != _DATATYPE_UNINITIALIZED)
+    if (imgtemplate.md->datatype != _DATATYPE_UNINITIALIZED)
     {
         printf("Checking md->datatype       ");
-        if(imgtemplate.md->datatype != img.md->datatype)
+        if (imgtemplate.md->datatype != img.md->datatype)
         {
             printf("FAIL\n");
             compErr++;
@@ -694,10 +650,10 @@ static inline uint64_t imgid_compare_md(
         }
     }
 
-    if(imgtemplate.md->naxis != 0)
+    if (imgtemplate.md->naxis != 0)
     {
         printf("Checking md->naxis  %d %d    ", imgtemplate.md->naxis, img.md->naxis);
-        if(imgtemplate.md->naxis != img.md->naxis)
+        if (imgtemplate.md->naxis != img.md->naxis)
         {
             printf("FAIL\n");
             compErr++;
@@ -708,10 +664,10 @@ static inline uint64_t imgid_compare_md(
         }
     }
 
-    if(imgtemplate.md->size[0] != 0)
+    if (imgtemplate.md->size[0] != 0)
     {
         printf("Checking md->size[0]        ");
-        if(imgtemplate.md->size[0] != img.md->size[0])
+        if (imgtemplate.md->size[0] != img.md->size[0])
         {
             printf("FAIL\n");
             compErr++;
@@ -722,10 +678,10 @@ static inline uint64_t imgid_compare_md(
         }
     }
 
-    if(imgtemplate.md->size[1] != 0)
+    if (imgtemplate.md->size[1] != 0)
     {
         printf("Checking md->size[1]        ");
-        if(imgtemplate.md->size[1] != img.md->size[1])
+        if (imgtemplate.md->size[1] != img.md->size[1])
         {
             printf("FAIL\n");
             compErr++;
@@ -736,10 +692,10 @@ static inline uint64_t imgid_compare_md(
         }
     }
 
-    if(imgtemplate.md->size[2] != 0)
+    if (imgtemplate.md->size[2] != 0)
     {
         printf("Checking md->size[2]        ");
-        if(imgtemplate.md->size[2] != img.md->size[2])
+        if (imgtemplate.md->size[2] != img.md->size[2])
         {
             printf("FAIL\n");
             compErr++;
@@ -751,7 +707,7 @@ static inline uint64_t imgid_compare_md(
     }
 
     printf("Checking NBkw           ");
-    if(imgtemplate.md->NBkw != img.md->NBkw)
+    if (imgtemplate.md->NBkw != img.md->NBkw)
     {
         printf("FAIL\n");
         printf("   %4u  %s\n", imgtemplate.md->NBkw, imgtemplate.md->name);
@@ -801,7 +757,7 @@ static inline void imgid_mkimage(IMGID *img)
  */
 static inline const char *imgid_strerror(errno_t err)
 {
-    switch(err)
+    switch (err)
     {
     case IMGID_CONNECTED:
         return "CONNECTED";
@@ -821,8 +777,6 @@ static inline const char *imgid_strerror(errno_t err)
         return "UNKNOWN_ERROR";
     }
 }
-
-
 
 
 /**
@@ -845,9 +799,7 @@ static inline const char *imgid_strerror(errno_t err)
  * @return IMGID_CONNECTED, IMGID_CREATED, IMGID_RECREATED,
  *         or an IMGID_ERR_* code
  */
-static inline errno_t imgid_connect(
-    IMGID *img,
-    int   FLAG)
+static inline errno_t imgid_connect(IMGID *img, int FLAG)
 {
     printf("img template size:\n");
     printf("  naxes    = %d\n", img->mdt->naxis);
@@ -861,34 +813,33 @@ static inline errno_t imgid_connect(
     printf("  name     = %s\n", img->mdt->name);
 
 
-
-    IMGID img_connected = {0}; // Local variable to hold the connected image
-    IMAGE *image = NULL;
-    int success = 0;
-    errno_t retcode = IMGID_SUCCESS;
+    IMGID   img_connected = { 0 }; // Local variable to hold the connected image
+    IMAGE  *image         = NULL;
+    int     success       = 0;
+    errno_t retcode       = IMGID_SUCCESS;
 
     img_connected.ID = -1;
 
-    if(strlen(img->name) == 0)
+    if (strlen(img->name) == 0)
     {
         retcode = IMGID_ERR_BADNAME;
         goto imgid_connect_report;
     }
 
     image = (IMAGE *) malloc(sizeof(IMAGE));
-    if(image == NULL)
+    if (image == NULL)
     {
         retcode = IMGID_ERR_ALLOCATION;
         goto imgid_connect_report;
     }
 
-    if(ImageStreamIO_read_sharedmem_image_toIMAGE(img->name, image) == IMAGESTREAMIO_SUCCESS)
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(img->name, image) == IMAGESTREAMIO_SUCCESS)
     {
         success = 1;
     }
     else
     {
-        if(FLAG == IMGID_CONNECT_CHECK_CREATE)
+        if (FLAG == IMGID_CONNECT_CHECK_CREATE)
         {
             success = 0;
         }
@@ -901,7 +852,7 @@ static inline errno_t imgid_connect(
         }
     }
 
-    if(success)
+    if (success)
     {
         // We have an image connected.
         img_connected.im = image;
@@ -910,15 +861,14 @@ static inline errno_t imgid_connect(
         img_connected.ID = 0;
 
         // Now check if it matches the template 'img' if FLAG is set
-        if(FLAG == IMGID_CONNECT_CHECK_FAIL || FLAG == IMGID_CONNECT_CHECK_CREATE)
+        if (FLAG == IMGID_CONNECT_CHECK_FAIL || FLAG == IMGID_CONNECT_CHECK_CREATE)
         {
-
             // Compare img_connected with img (template)
             // img is the template here.
 
             uint64_t diff = imgid_compare(img_connected, *img);
 
-            if(diff == 0)
+            if (diff == 0)
             {
                 // Match!
                 // Copy connection info to *img
@@ -934,7 +884,7 @@ static inline errno_t imgid_connect(
             else
             {
                 // Mismatch
-                if(FLAG == IMGID_CONNECT_CHECK_FAIL)
+                if (FLAG == IMGID_CONNECT_CHECK_FAIL)
                 {
                     printf("Image format mismatch\n");
                     free(image);
@@ -942,7 +892,7 @@ static inline errno_t imgid_connect(
                     retcode = IMGID_ERR_MISMATCH;
                     goto imgid_connect_report;
                 }
-                if(FLAG == IMGID_CONNECT_CHECK_CREATE)
+                if (FLAG == IMGID_CONNECT_CHECK_CREATE)
                 {
                     // Re-create
                     // First free the memory of the image we connected to (but shouldn't close it, just free wrapper)
@@ -952,7 +902,7 @@ static inline errno_t imgid_connect(
 
                     // Allocate new IMAGE for it?
                     img->im = (IMAGE *) malloc(sizeof(IMAGE));
-                    if(img->im == NULL)
+                    if (img->im == NULL)
                     {
                         img->ID = -1;
                         retcode = IMGID_ERR_ALLOCATION;
@@ -961,7 +911,7 @@ static inline errno_t imgid_connect(
                     img->mdt->shared = 1; // Enforce shared for connect
                     imgid_mkimage(img);
 
-                    if(img->createcnt > 0)
+                    if (img->createcnt > 0)
                     {
                         img->ID = 0;
                         retcode = IMGID_RECREATED;
@@ -993,10 +943,10 @@ static inline errno_t imgid_connect(
     else
     {
         // Read failed (does not exist?)
-        if(FLAG == IMGID_CONNECT_CHECK_CREATE)
+        if (FLAG == IMGID_CONNECT_CHECK_CREATE)
         {
             // Create it
-            img->im = image; // use the allocated struct
+            img->im          = image; // use the allocated struct
             img->mdt->shared = 1;
             imgid_mkimage(img);
             img->ID = 0;
@@ -1026,10 +976,7 @@ imgid_connect_report:
  * @param xsize  Width in pixels
  * @param ysize  Height in pixels
  */
-static inline void imgid_connect_create_2Df32(
-    IMGID    *img,
-    uint32_t xsize,
-    uint32_t ysize)
+static inline void imgid_connect_create_2Df32(IMGID *img, uint32_t xsize, uint32_t ysize)
 {
     img->mdt->datatype = _DATATYPE_FLOAT;
     img->mdt->naxis    = 2;
@@ -1053,11 +1000,10 @@ static inline void imgid_connect_create_2Df32(
  * @param ysize  Height in pixels
  * @param zsize  Depth (number of slices)
  */
-static inline void imgid_connect_create_3Df32(
-    IMGID    *img,
-    uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize)
+static inline void imgid_connect_create_3Df32(IMGID   *img,
+                                              uint32_t xsize,
+                                              uint32_t ysize,
+                                              uint32_t zsize)
 {
     img->mdt->datatype = _DATATYPE_FLOAT;
     img->mdt->naxis    = 3;

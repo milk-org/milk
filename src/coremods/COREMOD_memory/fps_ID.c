@@ -4,11 +4,11 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include <fps.h>
+#    include "libmilkdata/milkdata.h"
+#    include <fps.h>
 #endif
 
 /* ID number corresponding to a name */
@@ -20,15 +20,14 @@ long fps_ID(const char *name)
 
     i      = 0;
     loopOK = 1;
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
-
-        if(dcfpsarr[i].SMfd >= 0)
+        if (dcfpsarr[i].SMfd >= 0)
         {
             // fps in use
 
-            if((strncmp(name, dcfpsarr[i].md->name, strlen(name)) == 0) &&
-                    (dcfpsarr[i].md->name[strlen(name)] == '\0'))
+            if ((strncmp(name, dcfpsarr[i].md->name, strlen(name)) == 0) &&
+                (dcfpsarr[i].md->name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -37,7 +36,7 @@ long fps_ID(const char *name)
 
         i++;
 
-        if(i == dcnfps)
+        if (i == dcnfps)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -50,16 +49,15 @@ long fps_ID(const char *name)
 /* next available ID number */
 long next_avail_fps_ID()
 {
-
     long ID = -1;
 
 #ifdef _OPENMP
-    #pragma omp critical
+#    pragma omp critical
     {
 #endif
-        for(long i = 0; i < dcnfps; i++)
+        for (long i = 0; i < dcnfps; i++)
         {
-            if(dcfpsarr[i].SMfd < 0)
+            if (dcfpsarr[i].SMfd < 0)
             {
                 // fps is unused, lets grab it
                 ID = i;
@@ -70,9 +68,11 @@ long next_avail_fps_ID()
     }
 #endif
 
-    if(ID == -1)
+    if (ID == -1)
     {
-        PRINT_ERROR("ran out of FPS IDs" " (NB_MAX_FPS=%ld)", dcnfps);
+        PRINT_ERROR("ran out of FPS IDs"
+                    " (NB_MAX_FPS=%ld)",
+                    dcnfps);
     }
 
     return ID;

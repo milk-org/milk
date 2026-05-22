@@ -9,9 +9,6 @@
 #include <errno.h>
 #include "fps_types.h"
 
-errno_t fpsCTRL_scheduler_display(
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    int                  wrow,
-    int                  *wrowstart);
+errno_t fpsCTRL_scheduler_display(FPSCTRL_PROCESS_VARS *fpsCTRLvar, int wrow, int *wrowstart);
 
 #endif

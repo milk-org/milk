@@ -35,8 +35,8 @@
 #include <termios.h>
 
 #ifdef USE_READLINE
-#include <readline/history.h>
-#include <readline/readline.h>
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 
 #include "CLIcore.h"
@@ -51,20 +51,20 @@
 
 #include "timeutils.h"
 
-#define CLICOMPLETIONMODE_COMMANDS  0
-#define CLICOMPLETIONMODE_IMAGES   1
-#define CLICOMPLETIONMODE_CMDARGS  2
-#define CLICOMPLETIONMODE_FILES    3
+#define CLICOMPLETIONMODE_COMMANDS 0
+#define CLICOMPLETIONMODE_IMAGES 1
+#define CLICOMPLETIONMODE_CMDARGS 2
+#define CLICOMPLETIONMODE_FILES 3
 #define CLICOMPLETIONMODE_FPSPARAMS 4
-#define CLICOMPLETIONMODE_VARS_FPS    5
-#define CLICOMPLETIONMODE_VARS_SEQ    6
+#define CLICOMPLETIONMODE_VARS_FPS 5
+#define CLICOMPLETIONMODE_VARS_SEQ 6
 #define CLICOMPLETIONMODE_VARS_STREAM 7
 
-#define COLORRED       "\001\033[31m\002"
+#define COLORRED "\001\033[31m\002"
 #define COLORHBOLDCYAN "\001\e[0;96m\002"
 #define COLORDIMYELLOW "\033[2;33m"
-#define COLORRST       "\033[0m"
-#define RL_COLORRESET  "\001\033[0m\002"
+#define COLORRST "\033[0m"
+#define RL_COLORRESET "\001\033[0m\002"
 
 
 /* ---- String utilities ---- */
@@ -74,7 +74,7 @@ void *xmalloc(int size)
     void *buf;
 
     buf = malloc(size);
-    if(!buf)
+    if (!buf)
     {
         fprintf(stderr, COLORRED "Error: Out of memory. Exiting.'n" COLORRESET);
         exit(1);
@@ -97,7 +97,7 @@ char *dupstr(char *s)
     char *r;
 
     size_t len = strlen(s) + 1;
-    r = (char *) xmalloc(len);
+    r          = (char *) xmalloc(len);
     memcpy(r, s, len);
     return (r);
 }
@@ -120,18 +120,16 @@ int ghost_chars_on_line = 0;
  * text with spaces before accepting the line, so
  * the terminal scrollback entry is clean.
  */
-int cli_accept_line(
-    int count,
-    int key)
+int cli_accept_line(int count, int key)
 {
-    if(ghost_chars_on_line > 0)
+    if (ghost_chars_on_line > 0)
     {
         int n = ghost_chars_on_line;
-        for(int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             putchar(' ');
         }
-        for(int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             putchar('\b');
         }
@@ -161,7 +159,7 @@ int cli_accept_line(
  */
 void rl_cb_linehandler(char *linein)
 {
-    if(NULL == linein)
+    if (NULL == linein)
     {
         data.CLIloopON = 0;
         return;
@@ -180,9 +178,7 @@ void rl_cb_linehandler(char *linein)
      * to read additional lines */
     {
         size_t len = strlen(data.CLIcmdline);
-        while(len > 0
-                && data.CLIcmdline[len - 1]
-                == '\\')
+        while (len > 0 && data.CLIcmdline[len - 1] == '\\')
         {
             data.CLIcmdline[len - 1] = ' ';
             /* Remove callback handler to avoid
@@ -195,12 +191,12 @@ void rl_cb_linehandler(char *linein)
              * with the proper prompt after this
              * handler returns */
             rl_callback_handler_install("", (rl_vcpfunc_t *) &rl_cb_linehandler);
-            if(cont == NULL)
+            if (cont == NULL)
             {
                 break;
             }
             int avail = STRINGMAXLEN_CLICMDLINE - (int) strlen(data.CLIcmdline) - 1;
-            if(avail > 0)
+            if (avail > 0)
             {
                 strncat(data.CLIcmdline, cont, (size_t) avail);
             }
@@ -212,7 +208,7 @@ void rl_cb_linehandler(char *linein)
     /* Expand history (!! and !$) now that the full line is assembled */
     cli_history_expand();
 
-    if(data.CLIcmdline[0] == '\0')
+    if (data.CLIcmdline[0] == '\0')
     {
         /* Expansion error. Exit loop and prevent execution. */
         free(linein);
@@ -223,18 +219,18 @@ void rl_cb_linehandler(char *linein)
      * and structured log BEFORE alias resolution.
      * This ensures up-arrow recalls the expanded command,
      * consistent with native bash behavior. */
-    if(data.CLIcmdline[0] != '\0')
+    if (data.CLIcmdline[0] != '\0')
     {
         add_history(data.CLIcmdline);
         cli_history_log_prompt(data.CLIcmdline);
-        if(data.autocomplete_history)
+        if (data.autocomplete_history)
         {
             append_history(1, CLI_history_file());
             history_truncate_file(CLI_history_file(), 10000);
         }
     }
 
-    if(data.echo_input)
+    if (data.echo_input)
     {
         printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
     }
@@ -251,9 +247,7 @@ void rl_cb_linehandler(char *linein)
  * environment. Falls back to the default colored
  * prompt with the process name.
  */
-errno_t runCLI_prompt(
-    char *promptstring,
-    char *prompt)
+errno_t runCLI_prompt(char *promptstring, char *prompt)
 {
     /* Use PS1 only from CLI vars (set inside
      * milk-cli).  Do NOT fall back to
@@ -263,7 +257,7 @@ errno_t runCLI_prompt(
      * would corrupt the prompt. */
     const char *ps1_val = cli_var_get("PS1");
 
-    if(ps1_val != NULL && strlen(ps1_val) > 0)
+    if (ps1_val != NULL && strlen(ps1_val) > 0)
     {
         char expanded_ps1[FPS_DIR_STRLENMAX];
         strncpy(expanded_ps1, ps1_val, FPS_DIR_STRLENMAX - 1);
@@ -274,24 +268,21 @@ errno_t runCLI_prompt(
         return RETURN_SUCCESS;
     }
 
-    if(strlen(promptstring) > 0)
+    if (strlen(promptstring) > 0)
     {
-        if(data.processnameflag == 0)
+        if (data.processnameflag == 0)
         {
-            snprintf(prompt, FPS_DIR_STRLENMAX,
-                     COLORHBOLDCYAN "%s > " RL_COLORRESET, promptstring);
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET, promptstring);
         }
         else
         {
-            snprintf(prompt,
-                     FPS_DIR_STRLENMAX,
-                     COLORHBOLDCYAN "%s-%s > " RL_COLORRESET, promptstring, data.processname);
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s-%s > " RL_COLORRESET,
+                     promptstring, data.processname);
         }
     }
     else
     {
-        snprintf(prompt, FPS_DIR_STRLENMAX,
-                 COLORHBOLDCYAN "%s > " RL_COLORRESET, data.processname);
+        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET, data.processname);
     }
 
     return RETURN_SUCCESS;
@@ -308,32 +299,30 @@ errno_t runCLI_prompt(
  * Used to suggest similar commands when a typed
  * command is not found ("did you mean?").
  */
-int levenshtein_distance(
-    const char *s1,
-    const char *s2)
+int levenshtein_distance(const char *s1, const char *s2)
 {
-    unsigned int len1 = strlen(s1);
-    unsigned int len2 = strlen(s2);
-    unsigned int *d = (unsigned int *) xmalloc((len1 + 1) * (len2 + 1) * sizeof(unsigned int));
+    unsigned int  len1 = strlen(s1);
+    unsigned int  len2 = strlen(s2);
+    unsigned int *d    = (unsigned int *) xmalloc((len1 + 1) * (len2 + 1) * sizeof(unsigned int));
 
-    for(unsigned int i = 0; i <= len1; i++)
+    for (unsigned int i = 0; i <= len1; i++)
     {
         d[i * (len2 + 1)] = i;
     }
-    for(unsigned int j = 0; j <= len2; j++)
+    for (unsigned int j = 0; j <= len2; j++)
     {
         d[j] = j;
     }
 
-    for(unsigned int i = 1; i <= len1; i++)
+    for (unsigned int i = 1; i <= len1; i++)
     {
-        for(unsigned int j = 1; j <= len2; j++)
+        for (unsigned int j = 1; j <= len2; j++)
         {
-            unsigned int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
-            unsigned int min1 = d[(i - 1) * (len2 + 1) + j] + 1;
-            unsigned int min2 = d[i * (len2 + 1) + j - 1] + 1;
-            unsigned int min3 = d[(i - 1) * (len2 + 1) + j - 1] + cost;
-            unsigned int m = (min1 < min2) ? min1 : min2;
+            unsigned int cost     = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+            unsigned int min1     = d[(i - 1) * (len2 + 1) + j] + 1;
+            unsigned int min2     = d[i * (len2 + 1) + j - 1] + 1;
+            unsigned int min3     = d[(i - 1) * (len2 + 1) + j - 1] + cost;
+            unsigned int m        = (min1 < min2) ? min1 : min2;
             d[i * (len2 + 1) + j] = (m < min3) ? m : min3;
         }
     }

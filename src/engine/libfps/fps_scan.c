@@ -13,24 +13,22 @@
 #include "fps.h"
 
 
-
 /** @brief scan and load FPSs
  *
  */
 
-errno_t functionparameter_scan_fps(
-    uint32_t          mode,
-    char              *fpsnamemask,
-    FPS               *fps,
-    KEYWORD_TREE_NODE *keywnode,
-    int               *ptr_NBkwn,
-    int               *ptr_fpsindex,
-    long              *ptr_pindex,
-    int               verbose)
+errno_t functionparameter_scan_fps(uint32_t           mode,
+                                   char              *fpsnamemask,
+                                   FPS               *fps,
+                                   KEYWORD_TREE_NODE *keywnode,
+                                   int               *ptr_NBkwn,
+                                   int               *ptr_fpsindex,
+                                   long              *ptr_pindex,
+                                   int                verbose)
 {
     // Static variables
-    static int  shmdirname_init = 0;
-    static char shmdname[STRINGMAXLEN_SHMDIRNAME] = {0};
+    static int  shmdirname_init                   = 0;
+    static char shmdname[STRINGMAXLEN_SHMDIRNAME] = { 0 };
 
 
     memset(keywnode, 0, NB_KEYWNODE_MAX * sizeof(*keywnode));
@@ -38,15 +36,14 @@ errno_t functionparameter_scan_fps(
 
     // scan filesystem for fps entries
 
-    if(verbose > 0)
+    if (verbose > 0)
     {
-        printf(
-            "\n\n\n====================== SCANNING FPS ON SYSTEM "
-            "==============================\n\n");
+        printf("\n\n\n====================== SCANNING FPS ON SYSTEM "
+               "==============================\n\n");
         fflush(stdout);
     }
 
-    if(shmdirname_init == 0)
+    if (shmdirname_init == 0)
     {
         function_parameter_struct_shmdirname(shmdname);
         shmdirname_init = 1;
@@ -57,13 +54,13 @@ errno_t functionparameter_scan_fps(
     int pindex;
     int NBkwn;
 
-    int  fpslistcnt              = 0;
-    char FPSlist[NB_FPS_MAX][200] = {0};
+    int  fpslistcnt               = 0;
+    char FPSlist[NB_FPS_MAX][200] = { 0 };
 
     // disconnect previous fps
-    for(fpsindex = 0; fpsindex < NB_FPS_MAX; fpsindex++)
+    for (fpsindex = 0; fpsindex < NB_FPS_MAX; fpsindex++)
     {
-        if(fps[fpsindex].SMfd > -1)  // connected
+        if (fps[fpsindex].SMfd > -1) // connected
         {
             fps_disconnect(&fps[fpsindex]);
         }
@@ -71,23 +68,23 @@ errno_t functionparameter_scan_fps(
 
 
     // request match to file ./fpscomd/fpslist.txt
-    if(mode & 0x0001)
+    if (mode & 0x0001)
     {
         FILE *fpfpslist = fopen("fpscmd/fpslist.txt", "r");
-        if(fpfpslist != NULL)
+        if (fpfpslist != NULL)
         {
             char   *FPSlistline = NULL;
             size_t  len         = 0;
             ssize_t read;
 
-            while((read = getline(&FPSlistline, &len, fpfpslist)) != -1)
+            while ((read = getline(&FPSlistline, &len, fpfpslist)) != -1)
             {
-                if(FPSlistline[0] != '#')
+                if (FPSlistline[0] != '#')
                 {
                     char *pch;
 
                     pch = strtok(FPSlistline, " \t\n\r");
-                    if(pch != NULL)
+                    if (pch != NULL)
                     {
                         snprintf(FPSlist[fpslistcnt], 200, "%s", pch);
                         fpslistcnt++;
@@ -98,16 +95,16 @@ errno_t functionparameter_scan_fps(
         }
         else
         {
-            if(verbose > 0)
+            if (verbose > 0)
             {
                 printf("Cannot open file fpscmd/fpslist.txt\n");
             }
         }
 
 
-        for(int fpsi = 0; fpsi < fpslistcnt; fpsi++)
+        for (int fpsi = 0; fpsi < fpslistcnt; fpsi++)
         {
-            if(verbose > 0)
+            if (verbose > 0)
             {
                 printf("FPSname must match %s\n", FPSlist[fpsi]);
             }
@@ -129,11 +126,11 @@ errno_t functionparameter_scan_fps(
     DIR           *d;
     struct dirent *dir;
     d = opendir(shmdname);
-    if(d)
+    if (d)
     {
         fpsindex = 0;
         pindex   = 0;
-        while(((dir = readdir(d)) != NULL))
+        while (((dir = readdir(d)) != NULL))
         {
             char *pch = strstr(dir->d_name, ".fps.shm");
 
@@ -144,25 +141,25 @@ errno_t functionparameter_scan_fps(
             // name filtering
             // if mask is "_ALL", display all
             //
-            if(strcmp(fpsnamemask, "_ALL") == 0)
+            if (strcmp(fpsnamemask, "_ALL") == 0)
             {
                 matchOK = 1;
             }
             else
             {
-                if(strncmp(dir->d_name, fpsnamemask, strlen(fpsnamemask)) == 0)
+                if (strncmp(dir->d_name, fpsnamemask, strlen(fpsnamemask)) == 0)
                 {
                     matchOK = 1;
                 }
             }
 
 
-            if(mode & 0x0001)  // enforce match to list
+            if (mode & 0x0001) // enforce match to list
             {
                 int matchOKlist = 0;
                 int fpsi;
 
-                for(fpsi = 0; fpsi < fpslistcnt; fpsi++)
+                for (fpsi = 0; fpsi < fpslistcnt; fpsi++)
                 {
                     regex_t reegex;
 
@@ -170,7 +167,7 @@ errno_t functionparameter_scan_fps(
                     int rmatch = regexec(&reegex, dir->d_name, 0, NULL, 0);
                     regfree(&reegex);
 
-                    if(rmatch == 0)
+                    if (rmatch == 0)
                     {
                         matchOKlist = 1;
                     }
@@ -180,11 +177,12 @@ errno_t functionparameter_scan_fps(
             }
 
 
-            if((pch) && (matchOK == 1))
+            if ((pch) && (matchOK == 1))
             {
-                if(fpsindex >= NB_FPS_MAX)
+                if (fpsindex >= NB_FPS_MAX)
                 {
-                    PRINT_ERROR("WARNING: Maximum number of FPS reached (%d). Skipping %s", NB_FPS_MAX, dir->d_name);
+                    PRINT_ERROR("WARNING: Maximum number of FPS reached (%d). Skipping %s",
+                                NB_FPS_MAX, dir->d_name);
                     continue;
                 }
 
@@ -198,14 +196,14 @@ errno_t functionparameter_scan_fps(
                 snprintf(fullname, sizeof(fullname), "%s/%s", shmdname, dir->d_name);
 
                 retv = lstat(fullname, &buf);
-                if(retv == -1)
+                if (retv == -1)
                 {
                     PRINT_ERROR("lstat(%s) failed: %s", fullname, strerror(errno));
                     closedir(d);
                     return RETURN_FAILURE;
                 }
 
-                if(S_ISLNK(buf.st_mode))  // resolve link name
+                if (S_ISLNK(buf.st_mode)) // resolve link name
                 {
                     char fullname[STRINGMAXLEN_FULLFILENAME];
                     char linknamefull[STRINGMAXLEN_FULLFILENAME];
@@ -215,16 +213,13 @@ errno_t functionparameter_scan_fps(
                     function_parameter_struct_shmdirname(shmdname);
 
                     //fps_symlink[fpsindex] = 1;
-                    if(snprintf(fullname,
-                                STRINGMAXLEN_FULLFILENAME,
-                                "%s/%s",
-                                shmdname,
-                                dir->d_name) < 0)
+                    if (snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", shmdname,
+                                 dir->d_name) < 0)
                     {
                         PRINT_ERROR("snprintf error");
                     }
 
-                    if(readlink(fullname, linknamefull, 200 - 1) == -1)
+                    if (readlink(fullname, linknamefull, 200 - 1) == -1)
                     {
                         // todo: replace with realpath()
                         PRINT_ERROR("readlink() error");
@@ -234,9 +229,9 @@ errno_t functionparameter_scan_fps(
 
                     int          lOK = 1;
                     unsigned int ii  = 0;
-                    while((lOK == 1) && (ii < strlen(linkname)))
+                    while ((lOK == 1) && (ii < strlen(linkname)))
                     {
-                        if(linkname[ii] == '.')
+                        if (linkname[ii] == '.')
                         {
                             linkname[ii] = '\0';
                             lOK          = 0;
@@ -255,7 +250,7 @@ errno_t functionparameter_scan_fps(
                 char fpsname[STRINGMAXLEN_FPS_NAME];
                 long strcplen  = strlen(dir->d_name) - strlen(".fps.shm");
                 int  strcplen1 = STRINGMAXLEN_FPS_NAME - 1;
-                if(strcplen < strcplen1)
+                if (strcplen < strcplen1)
                 {
                     strcplen1 = strcplen;
                 }
@@ -263,16 +258,18 @@ errno_t functionparameter_scan_fps(
                 strncpy(fpsname, dir->d_name, strcplen1);
                 fpsname[strcplen1] = '\0';
 
-                if(verbose > 0)
+                if (verbose > 0)
                 {
-                    printf("FOUND FPS %s - (RE)-CONNECTING  " "[%d]\n", fpsname, fpsindex);
+                    printf("FOUND FPS %s - (RE)-CONNECTING  "
+                           "[%d]\n",
+                           fpsname, fpsindex);
                     fflush(stdout);
                 }
 
 
                 long NBparamMAX = fps_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
 
-                if(NBparamMAX == -1)
+                if (NBparamMAX == -1)
                 {
                     continue;
                 }
@@ -283,10 +280,10 @@ errno_t functionparameter_scan_fps(
 
                 // name
                 char *fps_filtstring_name = getenv("FPS_FILTSTRING_NAME");
-                if(fps_filtstring_name)
+                if (fps_filtstring_name)
                 {
                     char *ptr = strstr(fps[fpsindex].md->name, fps_filtstring_name);
-                    if(ptr == NULL)  // string not found
+                    if (ptr == NULL) // string not found
                     {
                         fpskeep = 0;
                     }
@@ -295,10 +292,10 @@ errno_t functionparameter_scan_fps(
 
                 // keyword
                 char *fps_filtstring_keyword = getenv("FPS_FILTSTRING_KEYWORD");
-                if(fps_filtstring_keyword)
+                if (fps_filtstring_keyword)
                 {
                     char *ptr = strstr(fps[fpsindex].md->keywordarray, fps_filtstring_keyword);
-                    if(ptr == NULL)  // string not found
+                    if (ptr == NULL) // string not found
                     {
                         fpskeep = 0;
                     }
@@ -307,10 +304,10 @@ errno_t functionparameter_scan_fps(
 
                 // call function
                 char *fps_filtstring_callfunc = getenv("FPS_FILTSTRING_CALLFUNC");
-                if(fps_filtstring_callfunc)
+                if (fps_filtstring_callfunc)
                 {
                     char *ptr = strstr(fps[fpsindex].md->callfuncname, fps_filtstring_callfunc);
-                    if(ptr == NULL)  // string not found
+                    if (ptr == NULL) // string not found
                     {
                         fpskeep = 0;
                     }
@@ -319,23 +316,22 @@ errno_t functionparameter_scan_fps(
 
                 // module name
                 char *fps_filtstring_module = getenv("FPS_FILTSTRING_MODULE");
-                if(fps_filtstring_module)
+                if (fps_filtstring_module)
                 {
                     int modulematch = 0;
-                    for(int mdindex = 0; mdindex < FPS_MAXNB_MODULE; mdindex++)
+                    for (int mdindex = 0; mdindex < FPS_MAXNB_MODULE; mdindex++)
                     {
-                        if(strlen(fps[fpsindex].md->modulename[mdindex]) > 1)
+                        if (strlen(fps[fpsindex].md->modulename[mdindex]) > 1)
                         {
                             char *ptr = strstr(fps[fpsindex].md->modulename[mdindex],
                                                fps_filtstring_module);
-                            if(ptr != NULL)  // string found
+                            if (ptr != NULL) // string found
                             {
                                 modulematch = 1;
                             }
                         }
-
                     }
-                    if(modulematch == 0)
+                    if (modulematch == 0)
                     {
                         fpskeep = 0;
                     }
@@ -343,47 +339,38 @@ errno_t functionparameter_scan_fps(
 
 
                 DEBUG_TRACEPOINT("A tracepoint here (%s); fpskeep = %d\n", dir->d_name, fpskeep);
-                if(fpskeep == 1)
+                if (fpskeep == 1)
                 {
-
-
-
-                    for(long pindex0 = 0; pindex0 < NBparamMAX; pindex0++)
+                    for (long pindex0 = 0; pindex0 < NBparamMAX; pindex0++)
                     {
-                        if(fps[fpsindex].parray[pindex0].fpflag &
-                                FPFLAG_ACTIVE) // if entry is active
+                        if (fps[fpsindex].parray[pindex0].fpflag &
+                            FPFLAG_ACTIVE) // if entry is active
                         {
                             // find or allocate keyword node
                             int level;
-                            for(level = 1;
-                                    level < fps[fpsindex].parray[pindex0].keywordlevel + 1;
-                                    level++)
+                            for (level = 1; level < fps[fpsindex].parray[pindex0].keywordlevel + 1;
+                                 level++)
                             {
-
                                 // does node already exist ?
                                 int scanOK = 0;
                                 // scan existing nodes looking for match
-                                for(int kwnindex = 0; kwnindex < NBkwn; kwnindex++)
+                                for (int kwnindex = 0; kwnindex < NBkwn; kwnindex++)
                                 {
-
-                                    if(keywnode[kwnindex].keywordlevel ==
-                                            level) // levels have to match
+                                    if (keywnode[kwnindex].keywordlevel ==
+                                        level) // levels have to match
                                     {
                                         int match = 1;
                                         // keywords at all levels need to match
 
-                                        for(int ll = 0; ll < level; ll++)
+                                        for (int ll = 0; ll < level; ll++)
                                         {
-                                            if(strcmp(fps[fpsindex]
-                                                      .parray[pindex0]
-                                                      .keyword[ll],
-                                                      keywnode[kwnindex]
-                                                      .keyword[ll]) != 0)
+                                            if (strcmp(fps[fpsindex].parray[pindex0].keyword[ll],
+                                                       keywnode[kwnindex].keyword[ll]) != 0)
                                             {
                                                 match = 0;
                                             }
                                         }
-                                        if(match == 1)  // we have a match
+                                        if (match == 1) // we have a match
                                         {
                                             scanOK = 1;
                                         }
@@ -391,12 +378,13 @@ errno_t functionparameter_scan_fps(
                                     }
                                 }
 
-                                if(scanOK == 0)  // node does not exit -> create it
+                                if (scanOK == 0) // node does not exit -> create it
                                 {
                                     int kwnindex = NBkwn;
-                                    if(NBkwn >= NB_KEYWNODE_MAX)
+                                    if (NBkwn >= NB_KEYWNODE_MAX)
                                     {
-                                        PRINT_ERROR("WARNING: Maximum number of keyword nodes reached (%d). Skipping further parameters.",
+                                        PRINT_ERROR("WARNING: Maximum number of keyword nodes "
+                                                    "reached (%d). Skipping further parameters.",
                                                     NB_KEYWNODE_MAX);
                                         break;
                                     }
@@ -407,27 +395,24 @@ errno_t functionparameter_scan_fps(
                                     keywnode[kwnindex].parent_index =
                                         0; // default value, not found -> assigned to ROOT
 
-                                    while((kwnindexp < NBkwn) &&
-                                            (scanparentOK == 0))
+                                    while ((kwnindexp < NBkwn) && (scanparentOK == 0))
                                     {
-                                        if(keywnode[kwnindexp].keywordlevel ==
-                                                level - 1) // check parent has level-1
+                                        if (keywnode[kwnindexp].keywordlevel ==
+                                            level - 1) // check parent has level-1
                                         {
                                             int match = 1;
 
-                                            for(int ll = 0; ll < level - 1;
-                                                ll++) // keywords at all levels need to match
+                                            for (int ll = 0; ll < level - 1;
+                                                 ll++) // keywords at all levels need to match
                                             {
-                                                if(strcmp(fps[fpsindex]
-                                                          .parray[pindex0]
-                                                          .keyword[ll],
-                                                          keywnode[kwnindexp]
-                                                          .keyword[ll]) != 0)
+                                                if (strcmp(
+                                                        fps[fpsindex].parray[pindex0].keyword[ll],
+                                                        keywnode[kwnindexp].keyword[ll]) != 0)
                                                 {
                                                     match = 0;
                                                 }
                                             }
-                                            if(match == 1)  // we have a match
+                                            if (match == 1) // we have a match
                                             {
                                                 scanparentOK = 1;
                                             }
@@ -435,83 +420,68 @@ errno_t functionparameter_scan_fps(
                                         kwnindexp++;
                                     }
 
-                                    if(scanparentOK == 1)
+                                    if (scanparentOK == 1)
                                     {
                                         keywnode[kwnindex].parent_index = kwnindexp - 1;
                                         int cindex;
-                                        cindex = keywnode[keywnode[kwnindex]
-                                                          .parent_index] .NBchild;
-                                        if(cindex < MAX_NB_CHILD)
+                                        cindex = keywnode[keywnode[kwnindex].parent_index].NBchild;
+                                        if (cindex < MAX_NB_CHILD)
                                         {
                                             keywnode[keywnode[kwnindex].parent_index]
-                                            .child[cindex] = kwnindex;
-                                            keywnode[keywnode[kwnindex].parent_index] .NBchild++;
+                                                .child[cindex] = kwnindex;
+                                            keywnode[keywnode[kwnindex].parent_index].NBchild++;
                                         }
                                         else
                                         {
-                                            PRINT_ERROR("WARNING: Maximum number of children reached for node %d (%d). Skipping child.",
-                                                        keywnode[kwnindex].parent_index, MAX_NB_CHILD);
+                                            PRINT_ERROR("WARNING: Maximum number of children "
+                                                        "reached for node %d (%d). Skipping child.",
+                                                        keywnode[kwnindex].parent_index,
+                                                        MAX_NB_CHILD);
                                         }
                                     }
 
-                                    if(verbose > 0)
+                                    if (verbose > 0)
                                     {
                                         printf("CREATING NODE %d ", kwnindex);
                                     }
                                     keywnode[kwnindex].keywordlevel = level;
 
-                                    for(int ll = 0; ll < level; ll++)
+                                    for (int ll = 0; ll < level; ll++)
                                     {
                                         char tmpstring[200];
-                                        strncpy(
-                                            keywnode[kwnindex]
-                                            .keyword[ll],
-                                            fps[fpsindex]
-                                            .parray[pindex0]
-                                            .keyword[ll],
-                                            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
+                                        strncpy(keywnode[kwnindex].keyword[ll],
+                                                fps[fpsindex].parray[pindex0].keyword[ll],
+                                                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
                                         keywnode[kwnindex]
-                                        .keyword[ll][
-                                            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1] = '\0';
-                                        if(ll == 0)
+                                            .keyword[ll][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1] =
+                                            '\0';
+                                        if (ll == 0)
                                         {
-                                            strncpy(
-                                                keywnode[kwnindex]
-                                                .keywordfull,
-                                                keywnode[kwnindex]
-                                                .keyword[ll],
-                                                sizeof(keywnode[kwnindex] .keywordfull) - 1);
-                                            keywnode[kwnindex]
-                                            .keywordfull[
-                                                sizeof(keywnode[kwnindex]
-                                                       .keywordfull) - 1] = '\0';
+                                            strncpy(keywnode[kwnindex].keywordfull,
+                                                    keywnode[kwnindex].keyword[ll],
+                                                    sizeof(keywnode[kwnindex].keywordfull) - 1);
+                                            keywnode[kwnindex].keywordfull
+                                                [sizeof(keywnode[kwnindex].keywordfull) - 1] = '\0';
                                         }
                                         else
                                         {
-                                            snprintf(
-                                                tmpstring,
-                                                sizeof(tmpstring),
-                                                ".%s", keywnode[kwnindex] .keyword[ll]);
-                                            strncat(
-                                                keywnode[kwnindex]
-                                                .keywordfull,
-                                                tmpstring,
-                                                sizeof(keywnode[kwnindex]
-                                                       .keywordfull)
-                                                - strlen(keywnode[kwnindex] .keywordfull) - 1);
+                                            snprintf(tmpstring, sizeof(tmpstring), ".%s",
+                                                     keywnode[kwnindex].keyword[ll]);
+                                            strncat(keywnode[kwnindex].keywordfull, tmpstring,
+                                                    sizeof(keywnode[kwnindex].keywordfull) -
+                                                        strlen(keywnode[kwnindex].keywordfull) - 1);
                                         }
                                     }
 
-                                    if(verbose > 0)
+                                    if (verbose > 0)
                                     {
-                                        printf("   %d %d -- %s\n",
-                                               keywnode[kwnindex].keywordlevel,
+                                        printf("   %d %d -- %s\n", keywnode[kwnindex].keywordlevel,
                                                fps[fpsindex].parray[pindex0].keywordlevel,
                                                keywnode[kwnindex].keywordfull);
                                     }
 
-                                    if(keywnode[kwnindex].keywordlevel ==
-                                            fps[fpsindex].parray[pindex0].keywordlevel)
+                                    if (keywnode[kwnindex].keywordlevel ==
+                                        fps[fpsindex].parray[pindex0].keywordlevel)
                                     {
                                         keywnode[kwnindex].leaf     = 1;
                                         keywnode[kwnindex].fpsindex = fpsindex;
@@ -535,10 +505,10 @@ errno_t functionparameter_scan_fps(
 
                 DEBUG_TRACEPOINT("Another tracepoint %s\n", dir->d_name);
 
-                if(verbose > 0)
+                if (verbose > 0)
                 {
-                    printf("--- FPS %4d  %-20s %ld parameters\n",
-                           fpsindex, fpsname, fps[fpsindex].md->NBparamMAX);
+                    printf("--- FPS %4d  %-20s %ld parameters\n", fpsindex, fpsname,
+                           fps[fpsindex].md->NBparamMAX);
                 }
 
                 fpsindex++;
@@ -553,11 +523,11 @@ errno_t functionparameter_scan_fps(
         FUNC_RETURN_FAILURE("missing SHM directory %s", shmdname);
     }
 
-    if(verbose > 0)
+    if (verbose > 0)
     {
-        printf(
-            "\n\n=================[END] SCANNING FPS ON SYSTEM [END]=  %d  "
-            "========================\n\n\n", fpsindex);
+        printf("\n\n=================[END] SCANNING FPS ON SYSTEM [END]=  %d  "
+               "========================\n\n\n",
+               fpsindex);
         fflush(stdout);
     }
 

@@ -26,24 +26,18 @@ typedef errno_t (*fps_compute_fn)(void);
  * @brief Typed function pointer for
  *        fps_generic_CLIfunction.
  */
-typedef errno_t (*fps_generic_CLIfunction_fn)(
-    FPS_APP_INFO    *app_info,
-    CLICMDARGDEF    *farg,
-    CLICMDDATA      *CLIcmddata,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b,
-    fps_compute_fn   compute_fn
-);
+typedef errno_t (*fps_generic_CLIfunction_fn)(FPS_APP_INFO    *app_info,
+                                              CLICMDARGDEF    *farg,
+                                              CLICMDDATA      *CLIcmddata,
+                                              FPS_CLI_BINDING *bindings,
+                                              int              nb_b,
+                                              fps_compute_fn   compute_fn);
 
 /**
  * @brief Typed function pointer for
  *        fps_fill_farg_examples.
  */
-typedef void (*fps_fill_farg_examples_fn)(
-    CLICMDARGDEF    *farg,
-    FPS_CLI_BINDING *bindings,
-    int              nb_b
-);
+typedef void (*fps_fill_farg_examples_fn)(CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int nb_b);
 
 
 /* ---- NULL-safe wrappers ---- */
@@ -51,23 +45,17 @@ typedef void (*fps_fill_farg_examples_fn)(
 /**
  * @brief NULL-safe call to fps_generic_CLIfunction.
  */
-static inline errno_t
-safe_fps_generic_CLIfunction(
-    FPS_APP_INFO    *app_info,
-    CLICMDARGDEF    *farg,
-    CLICMDDATA      *cd,
-    FPS_CLI_BINDING *bindings,
-    int             nb_b,
-    fps_compute_fn   compute_fn
-)
+static inline errno_t safe_fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
+                                                   CLICMDARGDEF    *farg,
+                                                   CLICMDDATA      *cd,
+                                                   FPS_CLI_BINDING *bindings,
+                                                   int              nb_b,
+                                                   fps_compute_fn   compute_fn)
 {
-    if(fps_generic_CLIfunction_ptr)
+    if (fps_generic_CLIfunction_ptr)
     {
-        fps_generic_CLIfunction_fn fn =
-            (fps_generic_CLIfunction_fn)
-            fps_generic_CLIfunction_ptr;
-        return fn(app_info, farg, cd,
-                  bindings, nb_b, compute_fn);
+        fps_generic_CLIfunction_fn fn = (fps_generic_CLIfunction_fn) fps_generic_CLIfunction_ptr;
+        return fn(app_info, farg, cd, bindings, nb_b, compute_fn);
     }
     return 0;
 }
@@ -75,18 +63,13 @@ safe_fps_generic_CLIfunction(
 /**
  * @brief NULL-safe call to fps_fill_farg_examples.
  */
-static inline void
-safe_fps_fill_farg_examples(
-    CLICMDARGDEF    *farg,
-    FPS_CLI_BINDING *bindings,
-    int              nb_b
-)
+static inline void safe_fps_fill_farg_examples(CLICMDARGDEF    *farg,
+                                               FPS_CLI_BINDING *bindings,
+                                               int              nb_b)
 {
-    if(fps_fill_farg_examples_ptr)
+    if (fps_fill_farg_examples_ptr)
     {
-        fps_fill_farg_examples_fn fn =
-            (fps_fill_farg_examples_fn)
-            fps_fill_farg_examples_ptr;
+        fps_fill_farg_examples_fn fn = (fps_fill_farg_examples_fn) fps_fill_farg_examples_ptr;
         fn(farg, bindings, nb_b);
     }
 }

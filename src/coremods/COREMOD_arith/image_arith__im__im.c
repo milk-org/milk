@@ -18,9 +18,9 @@
 
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
+#    include "libmilkdata/milkdata.h"
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -33,19 +33,15 @@
 /* MILK_UNARY_OPS table is defined in image_arith__im__im.h */
 
 
-
 /* ----------------------------------------------------------
  * 1. Modern IMGID wrappers
  * ---------------------------------------------------------- */
 
-#define DEFINE_IMGID(op, fptr) \
-int arith_image_##op##_IMGID(  \
-    IMGID *imgin,              \
-    IMGID *imgout)             \
-{                              \
-    return arith_image_##op##_optimized_IMGID( \
-        imgin, imgout);        \
-}
+#define DEFINE_IMGID(op, fptr)                                    \
+    int arith_image_##op##_IMGID(IMGID *imgin, IMGID *imgout)     \
+    {                                                             \
+        return arith_image_##op##_optimized_IMGID(imgin, imgout); \
+    }
 
 MILK_UNARY_OPS(DEFINE_IMGID)
 #undef DEFINE_IMGID
@@ -55,18 +51,13 @@ MILK_UNARY_OPS(DEFINE_IMGID)
  * 2. String-based wrappers  (name → name)
  * ---------------------------------------------------------- */
 
-#define DEFINE_STRING(op, fptr) \
-int arith_image_##op(                        \
-    const char *ID_name,                     \
-    const char *ID_out)                      \
-{                                            \
-    IMGID imgin =                            \
-        imgid_make_from_name(ID_name);       \
-    IMGID imgout =                           \
-        imgid_make_from_name(ID_out);        \
-    return arith_image_##op##_IMGID(         \
-        &imgin, &imgout);                    \
-}
+#define DEFINE_STRING(op, fptr)                                   \
+    int arith_image_##op(const char *ID_name, const char *ID_out) \
+    {                                                             \
+        IMGID imgin  = imgid_make_from_name(ID_name);             \
+        IMGID imgout = imgid_make_from_name(ID_out);              \
+        return arith_image_##op##_IMGID(&imgin, &imgout);         \
+    }
 
 MILK_UNARY_OPS(DEFINE_STRING)
 #undef DEFINE_STRING
@@ -76,14 +67,12 @@ MILK_UNARY_OPS(DEFINE_STRING)
  * 3. In-place wrappers  (name → name modified)
  * ---------------------------------------------------------- */
 
-#define DEFINE_INPLACE(op, fptr) \
-int arith_image_##op##_inplace(   \
-    const char *ID_name)          \
-{                                 \
-    arith_image_function_1_1_inplace( \
-        ID_name, &fptr);          \
-    return 0;                     \
-}
+#define DEFINE_INPLACE(op, fptr)                          \
+    int arith_image_##op##_inplace(const char *ID_name)   \
+    {                                                     \
+        arith_image_function_1_1_inplace(ID_name, &fptr); \
+        return 0;                                         \
+    }
 
 MILK_UNARY_OPS(DEFINE_INPLACE)
 #undef DEFINE_INPLACE

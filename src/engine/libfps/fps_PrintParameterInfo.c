@@ -7,18 +7,14 @@
 
 
 #define AECBOLDHIGREEN ""
-#define AECNORMAL      ""
+#define AECNORMAL ""
 #define TUI_printfw(...) printf(__VA_ARGS__)
 
 
 #include "fps_PrintParameterInfo.h"
 
 
-errno_t
-functionparameter_PrintParameterInfo(
-    FPS *fpsentry,
-    int                        pindex
-)
+errno_t functionparameter_PrintParameterInfo(FPS *fpsentry, int pindex)
 {
     printf("%s\n", fpsentry->parray[pindex].description);
     printf("\n");
@@ -27,26 +23,24 @@ functionparameter_PrintParameterInfo(
     printf("FPS name       : %s\n", fpsentry->md->name);
     printf("   %s ", fpsentry->md->pname);
 
-    for(int i = 0; i < fpsentry->md->NBnameindex; i++)
+    for (int i = 0; i < fpsentry->md->NBnameindex; i++)
     {
         printf(" [%s]", fpsentry->md->nameindexW[i]);
     }
     printf("\n\n");
 
-    if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
+    if (fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
     {
         printf("[%ld] Scan OK\n", fpsentry->md->msgcnt);
     }
     else
     {
-
-
-        printf("%s [%ld] %d ERROR(s)\n",
-               fpsentry->md->name, fpsentry->md->msgcnt, fpsentry->md->conferrcnt);
-        for(int msgi = 0; msgi < fpsentry->md->msgcnt; msgi++)
+        printf("%s [%ld] %d ERROR(s)\n", fpsentry->md->name, fpsentry->md->msgcnt,
+               fpsentry->md->conferrcnt);
+        for (int msgi = 0; msgi < fpsentry->md->msgcnt; msgi++)
         {
-            printf("%s [%3d] %s\n",
-                   fpsentry->md->name, fpsentry->md->msgpindex[msgi], fpsentry->md->message[msgi]);
+            printf("%s [%3d] %s\n", fpsentry->md->name, fpsentry->md->msgpindex[msgi],
+                   fpsentry->md->message[msgi]);
         }
     }
 
@@ -56,9 +50,9 @@ functionparameter_PrintParameterInfo(
     printf("\n");
 
     const char *display_keyword = fpsentry->parray[pindex].keywordfull;
-    int prefix_len = strlen(fpsentry->md->name);
-    if(strncmp(display_keyword, fpsentry->md->name, prefix_len) == 0
-            && display_keyword[prefix_len] == '.')
+    int         prefix_len      = strlen(fpsentry->md->name);
+    if (strncmp(display_keyword, fpsentry->md->name, prefix_len) == 0 &&
+        display_keyword[prefix_len] == '.')
     {
         display_keyword += prefix_len + 1;
     }
@@ -75,10 +69,10 @@ functionparameter_PrintParameterInfo(
     // print binary flag
     TUI_printfw("FLAG : ");
     uint64_t mask = (uint64_t) 1 << (sizeof(uint64_t) * CHAR_BIT - 1);
-    while(mask)
+    while (mask)
     {
         int digit = fpsentry->parray[pindex].fpflag & mask ? 1 : 0;
-        if(digit == 1)
+        if (digit == 1)
         {
             printf("%s", AECBOLDHIGREEN);
             printf("%d", digit);
@@ -94,14 +88,14 @@ functionparameter_PrintParameterInfo(
 
     int flagstringlen = 32;
 
-#define PRINT_FPFLAG(FLAG_MACRO, STR_NAME) \
-    if(fpsentry->parray[pindex].fpflag & (FLAG_MACRO)) \
-    { \
+#define PRINT_FPFLAG(FLAG_MACRO, STR_NAME)                                     \
+    if (fpsentry->parray[pindex].fpflag & (FLAG_MACRO))                        \
+    {                                                                          \
         printf("%s%*s%s", AECBOLDHIGREEN, flagstringlen, STR_NAME, AECNORMAL); \
-    } \
-    else \
-    { \
-        printf("%*s", flagstringlen, STR_NAME); \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        printf("%*s", flagstringlen, STR_NAME);                                \
     }
 
 
@@ -243,86 +237,85 @@ functionparameter_PrintParameterInfo(
 
     printf("Current value : ");
 
-    if(fpsentry->parray[pindex].type == FPTYPE_UNDEF)
+    if (fpsentry->parray[pindex].type == FPTYPE_UNDEF)
     {
         printf("  %s", "-undef-");
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_INT32)
+    if (fpsentry->parray[pindex].type == FPTYPE_INT32)
     {
         printf("  %10d", fpsentry->parray[pindex].val.i32[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_UINT32)
+    if (fpsentry->parray[pindex].type == FPTYPE_UINT32)
     {
         printf("  %10u", fpsentry->parray[pindex].val.ui32[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_INT64)
+    if (fpsentry->parray[pindex].type == FPTYPE_INT64)
     {
         printf("  %10ld", (long) fpsentry->parray[pindex].val.i64[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_UINT64)
+    if (fpsentry->parray[pindex].type == FPTYPE_UINT64)
     {
         printf("  %10lu", (unsigned long) fpsentry->parray[pindex].val.ui64[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
+    if (fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
     {
         printf("  %10f", (float) fpsentry->parray[pindex].val.f64[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
+    if (fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
     {
         printf("  %10f", (float) fpsentry->parray[pindex].val.f32[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_PID)
+    if (fpsentry->parray[pindex].type == FPTYPE_PID)
     {
         printf("  %10ld", (long) fpsentry->parray[pindex].val.pid[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_TIMESPEC)
+    if (fpsentry->parray[pindex].type == FPTYPE_TIMESPEC)
     {
-        printf("  %10f",
-               1.0 * fpsentry->parray[pindex].val.ts[0].tv_sec +
-               1e-9 * fpsentry->parray[pindex].val.ts[0].tv_nsec);
+        printf("  %10f", 1.0 * fpsentry->parray[pindex].val.ts[0].tv_sec +
+                             1e-9 * fpsentry->parray[pindex].val.ts[0].tv_nsec);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_FILENAME)
+    if (fpsentry->parray[pindex].type == FPTYPE_FILENAME)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_FITSFILENAME)
+    if (fpsentry->parray[pindex].type == FPTYPE_FITSFILENAME)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME)
+    if (fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_DIRNAME)
+    if (fpsentry->parray[pindex].type == FPTYPE_DIRNAME)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_STREAMNAME)
+    if (fpsentry->parray[pindex].type == FPTYPE_STREAMNAME)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_STRING)
+    if (fpsentry->parray[pindex].type == FPTYPE_STRING)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_ONOFF)
+    if (fpsentry->parray[pindex].type == FPTYPE_ONOFF)
     {
-        if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
+        if (fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
         {
             printf("    ON  [ %s ]\n", fpsentry->parray[pindex].val.string[1]);
         }
@@ -332,17 +325,17 @@ functionparameter_PrintParameterInfo(
         }
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
+    if (fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_PROCESS)
+    if (fpsentry->parray[pindex].type == FPTYPE_PROCESS)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
-    if(fpsentry->parray[pindex].type == FPTYPE_STRING_NOT_STREAM)
+    if (fpsentry->parray[pindex].type == FPTYPE_STRING_NOT_STREAM)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }

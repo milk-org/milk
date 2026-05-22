@@ -33,23 +33,21 @@
 #include "processtools_trigger.h"
 #include "quicksort.h"
 #ifndef CLOCK_MILK
-#define CLOCK_MILK CLOCK_ISIO
+#    define CLOCK_MILK CLOCK_ISIO
 #endif
 
 /* timespec_diff - compute end - start, borrowed from libprocessinfo */
-static inline struct timespec sc_timespec_diff(
-    struct timespec start,
-    struct timespec end)
+static inline struct timespec sc_timespec_diff(struct timespec start, struct timespec end)
 {
     struct timespec result;
-    if((end.tv_nsec - start.tv_nsec) < 0)
+    if ((end.tv_nsec - start.tv_nsec) < 0)
     {
         result.tv_sec  = end.tv_sec - start.tv_sec - 1;
         result.tv_nsec = end.tv_nsec - start.tv_nsec + 1000000000L;
     }
     else
     {
-        result.tv_sec  = end.tv_sec  - start.tv_sec;
+        result.tv_sec  = end.tv_sec - start.tv_sec;
         result.tv_nsec = end.tv_nsec - start.tv_nsec;
     }
     return result;
@@ -60,7 +58,7 @@ static inline struct timespec sc_timespec_diff(
  * scan.c continues to compile without linking libprocessinfo.
  */
 #ifndef timespec_diff
-#define timespec_diff(s, e)  sc_timespec_diff((s), (e))
+#    define timespec_diff(s, e) sc_timespec_diff((s), (e))
 #endif
 
 
@@ -79,11 +77,11 @@ typedef long imageID;
  * ========================================================= */
 
 #ifndef RETURN_SUCCESS
-#define RETURN_SUCCESS 0
+#    define RETURN_SUCCESS 0
 #endif
 
 #ifndef RETURN_FAILURE
-#define RETURN_FAILURE 1
+#    define RETURN_FAILURE 1
 #endif
 
 /* =========================================================
@@ -92,19 +90,19 @@ typedef long imageID;
  * ========================================================= */
 
 #ifndef STRINGMAXLEN_DEFAULT
-#define STRINGMAXLEN_DEFAULT 1000
+#    define STRINGMAXLEN_DEFAULT 1000
 #endif
 
 #ifndef STRINGMAXLEN_COMMAND
-#define STRINGMAXLEN_COMMAND 2000
+#    define STRINGMAXLEN_COMMAND 2000
 #endif
 
 #ifndef STRINGMAXLEN_FULLFILENAME
-#define STRINGMAXLEN_FULLFILENAME 2000
+#    define STRINGMAXLEN_FULLFILENAME 2000
 #endif
 
 #ifndef STRINGMAXLEN_IMAGE_NAME
-#define STRINGMAXLEN_IMAGE_NAME 80
+#    define STRINGMAXLEN_IMAGE_NAME 80
 #endif
 
 /* =========================================================
@@ -119,7 +117,7 @@ typedef long imageID;
 static inline const char *streamctrl_get_shmdir(void)
 {
     const char *d = getenv("MILK_SHM_DIR");
-    if(d != NULL && d[0] != '\0')
+    if (d != NULL && d[0] != '\0')
     {
         return d;
     }
@@ -127,32 +125,37 @@ static inline const char *streamctrl_get_shmdir(void)
 }
 
 /* SHAREDSHMDIR expands to a run-time string expression */
-#define SHAREDSHMDIR  (streamctrl_get_shmdir())
+#define SHAREDSHMDIR (streamctrl_get_shmdir())
 
 /* =========================================================
  * Error printing
  * ========================================================= */
 
 #define PRINT_ERROR(fmt, ...) \
-    fprintf(stderr, "ERROR [%s %s %d]: " fmt "\n", \
-            __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+    fprintf(stderr, "ERROR [%s %s %d]: " fmt "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
 /* =========================================================
  * Debug tracing — no-op unless STREAMCTRL_VERBOSE is defined
  * ========================================================= */
 
 #ifdef STREAMCTRL_VERBOSE
-#define DEBUG_TRACEPOINT(fmt, ...) \
-    fprintf(stderr, "TRACE [%s:%d] " fmt "\n", \
-            __func__, __LINE__, ##__VA_ARGS__)
-#define DEBUG_TRACE_FSTART() \
-    fprintf(stderr, "FSTART [%s]\n", __func__)
-#define DEBUG_TRACE_FEXIT() \
-    fprintf(stderr, "FEXIT [%s]\n", __func__)
+#    define DEBUG_TRACEPOINT(fmt, ...) \
+        fprintf(stderr, "TRACE [%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__)
+#    define DEBUG_TRACE_FSTART() fprintf(stderr, "FSTART [%s]\n", __func__)
+#    define DEBUG_TRACE_FEXIT() fprintf(stderr, "FEXIT [%s]\n", __func__)
 #else
-#define DEBUG_TRACEPOINT(fmt, ...)  do {} while(0)
-#define DEBUG_TRACE_FSTART()        do {} while(0)
-#define DEBUG_TRACE_FEXIT()         do {} while(0)
+#    define DEBUG_TRACEPOINT(fmt, ...) \
+        do                             \
+        {                              \
+        } while (0)
+#    define DEBUG_TRACE_FSTART() \
+        do                       \
+        {                        \
+        } while (0)
+#    define DEBUG_TRACE_FEXIT() \
+        do                      \
+        {                       \
+        } while (0)
 #endif
 
 /* =========================================================
@@ -165,17 +168,19 @@ static inline const char *streamctrl_get_shmdir(void)
  * Formats the command with snprintf, then passes it to system().
  * On failure, prints a warning but does not abort.
  */
-#define EXECUTE_SYSTEM_COMMAND_NOCHECK(fmt, ...) \
-    do { \
-        char _escmd_buf[STRINGMAXLEN_COMMAND]; \
-        int  _escmd_n = snprintf(_escmd_buf, sizeof(_escmd_buf), \
-                                 fmt, ##__VA_ARGS__); \
-        if(_escmd_n > 0 && _escmd_n < STRINGMAXLEN_COMMAND) { \
-            if(system(_escmd_buf) == -1) { \
-                PRINT_ERROR("system() failed: %s", _escmd_buf); \
-            } \
-        } \
-    } while(0)
+#define EXECUTE_SYSTEM_COMMAND_NOCHECK(fmt, ...)                                      \
+    do                                                                                \
+    {                                                                                 \
+        char _escmd_buf[STRINGMAXLEN_COMMAND];                                        \
+        int  _escmd_n = snprintf(_escmd_buf, sizeof(_escmd_buf), fmt, ##__VA_ARGS__); \
+        if (_escmd_n > 0 && _escmd_n < STRINGMAXLEN_COMMAND)                          \
+        {                                                                             \
+            if (system(_escmd_buf) == -1)                                             \
+            {                                                                         \
+                PRINT_ERROR("system() failed: %s", _escmd_buf);                       \
+            }                                                                         \
+        }                                                                             \
+    } while (0)
 
 /* =========================================================
  * Full filename writer
@@ -188,15 +193,19 @@ static inline const char *streamctrl_get_shmdir(void)
  * an error.  The first argument must be a char array (not a
  * pointer), so sizeof() gives the correct size.
  */
-#define WRITE_FULLFILENAME(buf, fmt, ...) \
-    do { \
+#define WRITE_FULLFILENAME(buf, fmt, ...)                              \
+    do                                                                 \
+    {                                                                  \
         int _wff_n = snprintf((buf), sizeof(buf), fmt, ##__VA_ARGS__); \
-        if(_wff_n < 1) { \
-            PRINT_ERROR("snprintf wrote < 1 char"); \
-        } else if(_wff_n >= (int) sizeof(buf)) { \
-            PRINT_ERROR("snprintf: path truncated"); \
-        } \
-    } while(0)
+        if (_wff_n < 1)                                                \
+        {                                                              \
+            PRINT_ERROR("snprintf wrote < 1 char");                    \
+        }                                                              \
+        else if (_wff_n >= (int) sizeof(buf))                          \
+        {                                                              \
+            PRINT_ERROR("snprintf: path truncated");                   \
+        }                                                              \
+    } while (0)
 
 /* =========================================================
  * Signal flags (minimal subset used by streamCTRL_TUI_ansi.c)

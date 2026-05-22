@@ -27,10 +27,8 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 
 /* processinfo functions — linked via milkprocessinfo */
-extern PROCESSINFO *processinfo_shm_link(
-    const char *pname, int *fd);
-extern errno_t processinfo_procdirname(
-    char *procdname);
+extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
+extern errno_t      processinfo_procdirname(char *procdname);
 
 
 /* ============================================================
@@ -54,12 +52,9 @@ CLI_ENGINE_TRAP cli_engine_traps[CLI_ENGINE_TRAP_MAX];
  */
 void cli_trap_run(int signum)
 {
-    for(int i = 0;
-        i < CLI_TRAP_MAXSIGS; i++)
+    for (int i = 0; i < CLI_TRAP_MAXSIGS; i++)
     {
-        if(cli_traps[i].used
-           && cli_traps[i].signum
-           == signum)
+        if (cli_traps[i].used && cli_traps[i].signum == signum)
         {
             strncpy(data.CLIcmdline, cli_traps[i].cmd, STRINGMAXLEN_CLICMDLINE - 1);
             data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
@@ -98,19 +93,18 @@ void cli_trap_run_exit(void)
  */
 static int etrap_connect(CLI_ENGINE_TRAP *et)
 {
-    if(et->connected)
+    if (et->connected)
     {
         return 1;
     }
 
-    switch(et->type)
+    switch (et->type)
     {
     case CLI_ETRAP_STREAM:
     {
         memset(&et->img, 0, sizeof(IMAGE));
-        if(ImageStreamIO_read_sharedmem_image_toIMAGE(
-               et->target, &et->img)
-           != IMAGESTREAMIO_SUCCESS)
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(et->target, &et->img) !=
+            IMAGESTREAMIO_SUCCESS)
         {
             return 0;
         }
@@ -122,34 +116,31 @@ static int etrap_connect(CLI_ENGINE_TRAP *et)
     case CLI_ETRAP_FPS:
     {
         et->fps.SMfd = -1;
-        int rc = fps_connect(et->target, &et->fps, FPSCONNECT_SIMPLE);
-        if(rc == -1 || et->fps.md == NULL
-           || et->fps.parray == NULL)
+        int rc       = fps_connect(et->target, &et->fps, FPSCONNECT_SIMPLE);
+        if (rc == -1 || et->fps.md == NULL || et->fps.parray == NULL)
         {
             return 0;
         }
 
         int paramindex = functionparameter_GetParamIndex(&et->fps, et->param);
-        if(paramindex < 0)
+        if (paramindex < 0)
         {
             char dottedparam[STRINGMAXLEN_FULLFILENAME];
-            if(snprintf(dottedparam,
-                        sizeof(dottedparam),
-                        ".%s", et->param)
-               >= (int) sizeof(dottedparam))
+            if (snprintf(dottedparam, sizeof(dottedparam), ".%s", et->param) >=
+                (int) sizeof(dottedparam))
             {
                 return 0;
             }
             paramindex = functionparameter_GetParamIndex(&et->fps, dottedparam);
         }
-        if(paramindex < 0)
+        if (paramindex < 0)
         {
             return 0;
         }
 
         /* Record initial value */
-        functionparameter_GetParamValueString(
-            &et->fps.parray[paramindex], et->last_fpsval, (int) sizeof(et->last_fpsval));
+        functionparameter_GetParamValueString(&et->fps.parray[paramindex], et->last_fpsval,
+                                              (int) sizeof(et->last_fpsval));
         et->connected = 1;
         return 1;
     }
@@ -160,7 +151,8 @@ static int etrap_connect(CLI_ENGINE_TRAP *et)
         et->connected = 1;
         return 1;
 
-    default: return 0;
+    default:
+        return 0;
     }
 }
 
@@ -175,16 +167,16 @@ static int etrap_connect(CLI_ENGINE_TRAP *et)
  */
 static int etrap_check_fire(CLI_ENGINE_TRAP *et)
 {
-    switch(et->type)
+    switch (et->type)
     {
     case CLI_ETRAP_STREAM:
     {
-        if(et->img.md == NULL)
+        if (et->img.md == NULL)
         {
             return 0;
         }
         uint64_t cur = et->img.md->cnt0;
-        if(cur != et->last_cnt0)
+        if (cur != et->last_cnt0)
         {
             et->last_cnt0 = cur;
             return 1;
@@ -194,25 +186,17 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
 
     case CLI_ETRAP_FPS:
     {
-        if(et->fps.md == NULL
-           || et->fps.parray == NULL)
+        if (et->fps.md == NULL || et->fps.parray == NULL)
         {
             return 0;
         }
-        for(int pi = 0;
-            pi < et->fps.md->NBparamMAX;
-            pi++)
+        for (int pi = 0; pi < et->fps.md->NBparamMAX; pi++)
         {
-            if(!(et->fps.parray[pi].fpflag
-                 & FPFLAG_ACTIVE))
+            if (!(et->fps.parray[pi].fpflag & FPFLAG_ACTIVE))
             {
                 continue;
             }
-            if(strcmp(
-                   et->fps.parray[pi]
-                       .keyword[0],
-                   et->param)
-               != 0)
+            if (strcmp(et->fps.parray[pi].keyword[0], et->param) != 0)
             {
                 continue;
             }
@@ -220,12 +204,12 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
             functionparameter_GetParamValueString(&et->fps.parray[pi], cur, (int) sizeof(cur));
 
             /* Compare based on operator */
-            double dval = strtod(cur, NULL);
-            int match = 0;
-            switch(et->op)
+            double dval  = strtod(cur, NULL);
+            int    match = 0;
+            switch (et->op)
             {
             case CLI_ETRAP_OP_EQ:
-                if(et->has_cmp)
+                if (et->has_cmp)
                 {
                     match = (dval == et->cmpval);
                 }
@@ -235,11 +219,14 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
                     match = (strcmp(cur, et->last_fpsval) != 0);
                 }
                 break;
-            case CLI_ETRAP_OP_NE: match = (dval != et->cmpval);
+            case CLI_ETRAP_OP_NE:
+                match = (dval != et->cmpval);
                 break;
-            case CLI_ETRAP_OP_GE: match = (dval >= et->cmpval);
+            case CLI_ETRAP_OP_GE:
+                match = (dval >= et->cmpval);
                 break;
-            case CLI_ETRAP_OP_LE: match = (dval <= et->cmpval);
+            case CLI_ETRAP_OP_LE:
+                match = (dval <= et->cmpval);
                 break;
             }
 
@@ -248,10 +235,10 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
             int prev_match = 0;
             {
                 double pval = strtod(et->last_fpsval, NULL);
-                switch(et->op)
+                switch (et->op)
                 {
                 case CLI_ETRAP_OP_EQ:
-                    if(et->has_cmp)
+                    if (et->has_cmp)
                     {
                         prev_match = (pval == et->cmpval);
                     }
@@ -260,11 +247,14 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
                         prev_match = 0;
                     }
                     break;
-                case CLI_ETRAP_OP_NE: prev_match = (pval != et->cmpval);
+                case CLI_ETRAP_OP_NE:
+                    prev_match = (pval != et->cmpval);
                     break;
-                case CLI_ETRAP_OP_GE: prev_match = (pval >= et->cmpval);
+                case CLI_ETRAP_OP_GE:
+                    prev_match = (pval >= et->cmpval);
                     break;
-                case CLI_ETRAP_OP_LE: prev_match = (pval <= et->cmpval);
+                case CLI_ETRAP_OP_LE:
+                    prev_match = (pval <= et->cmpval);
                     break;
                 }
             }
@@ -272,7 +262,7 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
             strncpy(et->last_fpsval, cur, sizeof(et->last_fpsval) - 1);
             et->last_fpsval[sizeof(et->last_fpsval) - 1] = '\0';
 
-            if(match && !prev_match)
+            if (match && !prev_match)
             {
                 return 1;
             }
@@ -283,25 +273,22 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
 
     case CLI_ETRAP_PROC:
     {
-        if(pinfolist == NULL)
+        if (pinfolist == NULL)
         {
             return 0;
         }
-        for(int pi = 0;
-            pi < PROCESSINFOLISTSIZE; pi++)
+        for (int pi = 0; pi < PROCESSINFOLISTSIZE; pi++)
         {
-            if(!pinfolist->active[pi])
+            if (!pinfolist->active[pi])
             {
                 continue;
             }
-            if(strcmp(
-                   pinfolist->pnamearray[pi],
-                   et->target) != 0)
+            if (strcmp(pinfolist->pnamearray[pi], et->target) != 0)
             {
                 continue;
             }
             pid_t fpid = pinfolist->PIDarray[pi];
-            if(fpid <= 0)
+            if (fpid <= 0)
             {
                 continue;
             }
@@ -309,12 +296,11 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
             char pdname[256];
             processinfo_procdirname(pdname);
             snprintf(pfn, sizeof(pfn), "%s/proc.%d.shm", pdname, (int) fpid);
-            int pfd = -1;
+            int          pfd    = -1;
             PROCESSINFO *pi_shm = processinfo_shm_link(pfn, &pfd);
-            if(pi_shm == MAP_FAILED
-               || pi_shm == NULL)
+            if (pi_shm == MAP_FAILED || pi_shm == NULL)
             {
-                if(pfd >= 0)
+                if (pfd >= 0)
                 {
                     close(pfd);
                 }
@@ -324,7 +310,7 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
             munmap(pi_shm, sizeof(PROCESSINFO));
             close(pfd);
 
-            if(cur_state == et->proc_state)
+            if (cur_state == et->proc_state)
             {
                 return 1;
             }
@@ -333,7 +319,8 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
         return 0;
     }
 
-    default: return 0;
+    default:
+        return 0;
     }
 }
 
@@ -350,50 +337,44 @@ void cli_engine_traps_poll(void)
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
 
-    for(int i = 0;
-        i < CLI_ENGINE_TRAP_MAX; i++)
+    for (int i = 0; i < CLI_ENGINE_TRAP_MAX; i++)
     {
         CLI_ENGINE_TRAP *et = &cli_engine_traps[i];
-        if(!et->used)
+        if (!et->used)
         {
             continue;
         }
 
         /* Lazy connect */
-        if(!et->connected)
+        if (!et->connected)
         {
-            if(!etrap_connect(et))
+            if (!etrap_connect(et))
             {
                 continue;
             }
         }
 
         /* Check throttle interval */
-        if(et->min_interval_ms > 0)
+        if (et->min_interval_ms > 0)
         {
-            long elapsed_ms =
-                (now.tv_sec
-                 - et->last_fire_ts.tv_sec)
-                * 1000L + (now.tv_nsec - et->last_fire_ts .tv_nsec) / 1000000L;
-            if(elapsed_ms
-               < et->min_interval_ms)
+            long elapsed_ms = (now.tv_sec - et->last_fire_ts.tv_sec) * 1000L +
+                              (now.tv_nsec - et->last_fire_ts.tv_nsec) / 1000000L;
+            if (elapsed_ms < et->min_interval_ms)
             {
                 continue;
             }
         }
 
         /* Check fire count limit */
-        if(et->max_fires > 0
-           && et->fire_count
-           >= et->max_fires)
+        if (et->max_fires > 0 && et->fire_count >= et->max_fires)
         {
-            et->used = 0;
+            et->used      = 0;
             et->connected = 0;
             continue;
         }
 
         /* Check event and fire */
-        if(etrap_check_fire(et))
+        if (etrap_check_fire(et))
         {
             et->fire_count++;
             et->last_fire_ts = now;
@@ -410,22 +391,20 @@ void cli_engine_traps_poll(void)
  */
 void cli_engine_traps_cleanup(void)
 {
-    for(int i = 0;
-        i < CLI_ENGINE_TRAP_MAX; i++)
+    for (int i = 0; i < CLI_ENGINE_TRAP_MAX; i++)
     {
         CLI_ENGINE_TRAP *et = &cli_engine_traps[i];
-        if(!et->used)
+        if (!et->used)
         {
             continue;
         }
-        if(et->connected)
+        if (et->connected)
         {
-            if(et->type == CLI_ETRAP_FPS)
+            if (et->type == CLI_ETRAP_FPS)
             {
                 fps_disconnect(&et->fps);
             }
-            else if(et->type
-                    == CLI_ETRAP_STREAM)
+            else if (et->type == CLI_ETRAP_STREAM)
             {
                 ImageStreamIO_closeIm(&et->img);
             }

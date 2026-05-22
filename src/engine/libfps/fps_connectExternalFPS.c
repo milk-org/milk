@@ -13,10 +13,7 @@
  * parameter array, allowing cross-process parameter
  * access.
  */
-int functionparameter_ConnectExternalFPS(
-    FPS *fps,
-    int pindex,
-    FPS *FPSext)
+int functionparameter_ConnectExternalFPS(FPS *fps, int pindex, FPS *FPSext)
 {
     fps->parray[pindex].info.fps.FPSNBparamMAX =
         fps_connect(fps->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE);
@@ -24,14 +21,13 @@ int functionparameter_ConnectExternalFPS(
     fps->parray[pindex].info.fps.FPSNBparamActive = 0;
     fps->parray[pindex].info.fps.FPSNBparamUsed   = 0;
 
-    for(int pindexext = 0; pindexext < fps->parray[pindex].info.fps.FPSNBparamMAX;
-            pindexext++)
+    for (int pindexext = 0; pindexext < fps->parray[pindex].info.fps.FPSNBparamMAX; pindexext++)
     {
-        if(FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE)
+        if (FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE)
         {
             fps->parray[pindex].info.fps.FPSNBparamActive++;
         }
-        if(FPSext->parray[pindexext].fpflag & FPFLAG_USED)
+        if (FPSext->parray[pindexext].fpflag & FPFLAG_USED)
         {
             fps->parray[pindex].info.fps.FPSNBparamUsed++;
         }

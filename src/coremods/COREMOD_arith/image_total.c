@@ -6,10 +6,10 @@
  */
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
 #endif
 #include "image_total.h"
 
@@ -19,11 +19,11 @@
 #include "libmilkcommon/pixel_dispatch.h"
 
 #ifdef _OPENMP
-#include <omp.h>
-#define OMP_NELEMENT_LIMIT 100000
-#define OMP_FOR_SIMD _Pragma("omp for simd")
+#    include <omp.h>
+#    define OMP_NELEMENT_LIMIT 100000
+#    define OMP_FOR_SIMD _Pragma("omp for simd")
 #else
-#define OMP_FOR_SIMD
+#    define OMP_FOR_SIMD
 #endif
 
 /**
@@ -43,16 +43,15 @@
  * ACCUM_CAST and ELEM_EXPR(v) must be #defined
  * before invoking FOREACH_REAL_DATATYPE.
  */
-#define REDUCE_CASE(DTYPE, ACC, CTYPE)                  \
-    else if (datatype == DTYPE)                         \
-    {                                                   \
-        CTYPE * MILK_RESTRICT ptr =                     \
-            MILK_ASSUME_ALIGNED(imgin->im->array.ACC);  \
-        OMP_FOR_SIMD                                    \
-        for (uint64_t ii = 0; ii < nelement; ii++)      \
-        {                                               \
-            lvalue += (ACCUM_CAST) ELEM_EXPR(ptr[ii]);  \
-        }                                               \
+#define REDUCE_CASE(DTYPE, ACC, CTYPE)                                        \
+    else if (datatype == DTYPE)                                               \
+    {                                                                         \
+        CTYPE *MILK_RESTRICT ptr = MILK_ASSUME_ALIGNED(imgin->im->array.ACC); \
+        OMP_FOR_SIMD                                                          \
+        for (uint64_t ii = 0; ii < nelement; ii++)                            \
+        {                                                                     \
+            lvalue += (ACCUM_CAST) ELEM_EXPR(ptr[ii]);                        \
+        }                                                                     \
     }
 
 
@@ -64,7 +63,8 @@ double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
-    if (imgin->ID == -1) {
+    if (imgin->ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -76,17 +76,18 @@ double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 #define ELEM_EXPR(v) (v)
 
 #ifdef _OPENMP
-    #pragma omp parallel reduction(+:lvalue) \
-        if (nelement > OMP_NELEMENT_LIMIT)
+#    pragma omp parallel reduction(+ : lvalue) if (nelement > OMP_NELEMENT_LIMIT)
     {
 #endif
 
-    if (0) {}  // anchor for else-if chain
-    FOREACH_REAL_DATATYPE(REDUCE_CASE)
-    else
-    {
-        PRINT_ERROR("invalid data type");
-    }
+        if (0)
+        {
+        } // anchor for else-if chain
+        FOREACH_REAL_DATATYPE(REDUCE_CASE)
+        else
+        {
+            PRINT_ERROR("invalid data type");
+        }
 
 #ifdef _OPENMP
     } // omp parallel
@@ -112,7 +113,8 @@ double MILK_HOT arith_image_sumsquare_IMGID(IMGID *imgin)
 
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
-    if (imgin->ID == -1) {
+    if (imgin->ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -124,17 +126,18 @@ double MILK_HOT arith_image_sumsquare_IMGID(IMGID *imgin)
 #define ELEM_EXPR(v) ((v) * (v))
 
 #ifdef _OPENMP
-    #pragma omp parallel reduction(+:lvalue) \
-        if (nelement > OMP_NELEMENT_LIMIT)
+#    pragma omp parallel reduction(+ : lvalue) if (nelement > OMP_NELEMENT_LIMIT)
     {
 #endif
 
-    if (0) {}  // anchor for else-if chain
-    FOREACH_REAL_DATATYPE(REDUCE_CASE)
-    else
-    {
-        PRINT_ERROR("invalid data type");
-    }
+        if (0)
+        {
+        } // anchor for else-if chain
+        FOREACH_REAL_DATATYPE(REDUCE_CASE)
+        else
+        {
+            PRINT_ERROR("invalid data type");
+        }
 
 #ifdef _OPENMP
     } // omp parallel

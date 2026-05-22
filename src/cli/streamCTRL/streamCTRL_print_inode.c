@@ -19,20 +19,19 @@ typedef int errno_t;
 /**
  * @brief Print inode information for a stream file.
  */
-int streamCTRL_print_inode(
-    ino_t inode,
-    ino_t *upstreaminode,
-    int   NBupstreaminode,
-    int   downstreamindex)
+int streamCTRL_print_inode(ino_t  inode,
+                           ino_t *upstreaminode,
+                           int    NBupstreaminode,
+                           int    downstreamindex)
 {
     int Dispinode_NBchar = 9;
     int is_upstream      = 0;
     int is_downstream    = 0;
     int upstreamindex    = 0;
 
-    for(int i = 0; i < NBupstreaminode; i++)
+    for (int i = 0; i < NBupstreaminode; i++)
     {
-        if(inode == upstreaminode[i])
+        if (inode == upstreaminode[i])
         {
             is_upstream   = 1;
             upstreamindex = i;
@@ -40,20 +39,20 @@ int streamCTRL_print_inode(
         }
     }
 
-    if(downstreamindex < NO_DOWNSTREAM_INDEX)
+    if (downstreamindex < NO_DOWNSTREAM_INDEX)
     {
         is_downstream = 1;
     }
 
-    if(is_upstream || is_downstream)
+    if (is_upstream || is_downstream)
     {
         int colorcode = 3;
-        if(upstreamindex > 0)
+        if (upstreamindex > 0)
         {
             colorcode = 7;
         }
 
-        if(is_upstream)
+        if (is_upstream)
         {
             screenprint_setcolor(colorcode);
             TUI_printfw("%02d >", upstreamindex);
@@ -66,10 +65,10 @@ int streamCTRL_print_inode(
 
         TUI_printfw("-");
 
-        if(is_downstream)
+        if (is_downstream)
         {
             int colorcode = 3;
-            if(downstreamindex > 0)
+            if (downstreamindex > 0)
             {
                 colorcode = 7;
             }

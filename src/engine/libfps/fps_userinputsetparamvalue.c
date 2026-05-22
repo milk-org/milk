@@ -8,16 +8,14 @@
 
 
 #define AECBOLDHIRED ""
-#define AECNORMAL    ""
+#define AECNORMAL ""
 
 
 /** @brief Enter new value for parameter
  *
  *
  */
-int functionparameter_UserInputSetParamValue(
-    FPS *fpsentry,
-    int pindex)
+int functionparameter_UserInputSetParamValue(FPS *fpsentry, int pindex)
 {
     int  inputOK;
     int  strlenmax = 64;
@@ -26,7 +24,7 @@ int functionparameter_UserInputSetParamValue(
 
     functionparameter_PrintParameterInfo(fpsentry, pindex);
 
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS)
+    if (fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS)
     {
         inputOK = 0;
         fflush(stdout);
@@ -34,7 +32,7 @@ int functionparameter_UserInputSetParamValue(
 
         int esc_toggle = 0;
 
-        while(inputOK == 0)
+        while (inputOK == 0)
         {
             printf("\n Update value (ESC + ENTER to abort) : ");
             fflush(stdout);
@@ -47,16 +45,15 @@ int functionparameter_UserInputSetParamValue(
             // 27 : escape
             // 13 : carriage return
 
-            while((c != 10) && (c != 13) && (stringindex < strlenmax - 1))
+            while ((c != 10) && (c != 13) && (stringindex < strlenmax - 1))
             {
-
-                if(c == 27)
+                if (c == 27)
                 {
                     esc_toggle = 1;
                 }
 
                 buff[stringindex] = c;
-                if(c == 127)  // delete key
+                if (c == 127) // delete key
                 {
                     putchar(0x8);
                     putchar(' ');
@@ -69,7 +66,7 @@ int functionparameter_UserInputSetParamValue(
                     fflush(stdout);
                     stringindex++;
                 }
-                if(stringindex < 0)
+                if (stringindex < 0)
                 {
                     stringindex = 0;
                 }
@@ -81,17 +78,16 @@ int functionparameter_UserInputSetParamValue(
         }
 
 
-        if(esc_toggle == 0)  // update value if escape key has not been pressed
+        if (esc_toggle == 0) // update value if escape key has not been pressed
         {
-
-            if(functionparameter_SetParamValue_fromString(fpsentry, pindex, buff) != 0)
+            if (functionparameter_SetParamValue_fromString(fpsentry, pindex, buff) != 0)
             {
                 printf("\n%s Error: could not convert argument %s\n", AECBOLDHIRED, AECNORMAL);
                 sleep(1);
             }
             else
             {
-                if(strncmp(fpsentry->parray[pindex].keywordfull, ".procinfo.", 10) == 0)
+                if (strncmp(fpsentry->parray[pindex].keywordfull, ".procinfo.", 10) == 0)
                 {
                     fpsentry->md->processinfo_change_cnt++;
                 }
@@ -100,10 +96,10 @@ int functionparameter_UserInputSetParamValue(
                 fpsentry->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
                 // Save to disk
-                if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
+                if (fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
                 {
-                    functionparameter_WriteParameterToDisk(
-                        fpsentry, pindex, "setval", "UserInputSetParamValue");
+                    functionparameter_WriteParameterToDisk(fpsentry, pindex, "setval",
+                                                           "UserInputSetParamValue");
 
                     functionparameter_SaveFPS2disk(fpsentry);
                 }

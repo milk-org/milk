@@ -6,12 +6,12 @@
 #include "CLIcore.h"
 
 // Terminal color macros for help display
-#define C_RST    "\033[0m"
-#define C_TITLE  "\033[1;36m"
-#define C_HDR    "\033[1;33m"
-#define C_CMD    "\033[1;32m"
-#define C_NOTE   "\033[1;35m"
-#define C_BOLD   "\033[1m"
+#define C_RST "\033[0m"
+#define C_TITLE "\033[1;36m"
+#define C_HDR "\033[1;33m"
+#define C_CMD "\033[1;32m"
+#define C_NOTE "\033[1;35m"
+#define C_BOLD "\033[1m"
 
 /**
  * @brief Print help for the milk synchro debug tool.
@@ -92,15 +92,12 @@ void print_milk_synchro_help(void)
     printf("\n");
 }
 
-int main(
-    int argc,
-    char *argv[])
+int main(int argc, char *argv[])
 {
     /* One-line help - before CLI_startup() */
-    for(int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
-        if(strcmp(argv[i], "-h1") == 0 ||
-                strcmp(argv[i], "--help-oneline") == 0)
+        if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0)
         {
             printf("milk synchronization overview\n");
             return 0;

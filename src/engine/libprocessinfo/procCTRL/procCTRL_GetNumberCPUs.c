@@ -14,6 +14,6 @@
  */
 int GetNumberCPUs(PROCINFOPROC *pinfop)
 {
-    (void)pinfop;
-    return (int)sysconf(_SC_NPROCESSORS_ONLN);
+    (void) pinfop;
+    return (int) sysconf(_SC_NPROCESSORS_ONLN);
 }

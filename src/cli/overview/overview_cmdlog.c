@@ -24,13 +24,9 @@
  * Old entries are silently overwritten when the
  * ring is full.
  */
-void ov_cmdlog_push(
-    OV_CMDLOG *log,
-    ov_cmdlog_level_t level,
-    const char *fmt,
-    ...)
+void ov_cmdlog_push(OV_CMDLOG *log, ov_cmdlog_level_t level, const char *fmt, ...)
 {
-    if(log == NULL || fmt == NULL)
+    if (log == NULL || fmt == NULL)
     {
         return;
     }
@@ -45,7 +41,7 @@ void ov_cmdlog_push(
     va_end(ap);
 
     log->head = (log->head + 1) % OV_CMDLOG_MAX;
-    if(log->count < OV_CMDLOG_MAX)
+    if (log->count < OV_CMDLOG_MAX)
     {
         log->count++;
     }

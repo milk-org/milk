@@ -67,18 +67,18 @@ typedef enum
     TOK_OP_COLON,    /**< : (ternary) */
     TOK_FUNC_S_D,    /**< func(string)->double */
     /* Bitwise operators */
-    TOK_OP_BAND,     /**< & (bitwise AND) */
-    TOK_OP_BOR,      /**< | (bitwise OR)  */
-    TOK_OP_BXOR,     /**< ^ (bitwise XOR) */
-    TOK_OP_BNOT,     /**< ~ (bitwise NOT) */
-    TOK_OP_LSHIFT,   /**< <<              */
-    TOK_OP_RSHIFT,   /**< >>              */
+    TOK_OP_BAND,   /**< & (bitwise AND) */
+    TOK_OP_BOR,    /**< | (bitwise OR)  */
+    TOK_OP_BXOR,   /**< ^ (bitwise XOR) */
+    TOK_OP_BNOT,   /**< ~ (bitwise NOT) */
+    TOK_OP_LSHIFT, /**< <<              */
+    TOK_OP_RSHIFT, /**< >>              */
     /* String functions */
-    TOK_FUNC_S_S,    /**< func(string)->string */
-    TOK_FUNC_SDD_S,  /**< func(s,d,d)->string  */
-    TOK_FUNC_SSS_S,  /**< func(s,s,s)->string  */
+    TOK_FUNC_S_S,   /**< func(string)->string */
+    TOK_FUNC_SDD_S, /**< func(s,d,d)->string  */
+    TOK_FUNC_SSS_S, /**< func(s,s,s)->string  */
     /* Format conversions */
-    TOK_FUNC_D_S,    /**< func(double)->string */
+    TOK_FUNC_D_S, /**< func(double)->string */
     TOK_NEWLINE
 } cli_token_type;
 
@@ -90,8 +90,8 @@ typedef struct
     cli_token_type type;
     long           val_l;
     double         val_d;
-    double       (*fnctptr)();
-    char           sval[CLI_CALC_TOKEN_MAXLEN];
+    double (*fnctptr)();
+    char sval[CLI_CALC_TOKEN_MAXLEN];
 } cli_token;
 
 /**
@@ -102,9 +102,6 @@ typedef struct
  * @param max_tok   size of tokens array
  * @return          number of tokens produced, or -1 on error
  */
-int cli_tokenize(
-    const char *input,
-    cli_token  *tokens,
-    int        max_tok);
+int cli_tokenize(const char *input, cli_token *tokens, int max_tok);
 
 #endif /* CLI_CALC_TOKENIZER_H */

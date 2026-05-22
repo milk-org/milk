@@ -3,25 +3,24 @@
 /**
  * @brief Render the streamCTRL footer status bar.
  */
-void streamCTRL__render_footer(
-    streamCTRLarg_struct        *streamCTRLdata,
-    struct streamCTRL_TUI_state *state,
-    int                         NBsinfodisp)
+void streamCTRL__render_footer(streamCTRLarg_struct        *streamCTRLdata,
+                               struct streamCTRL_TUI_state *state,
+                               int                          NBsinfodisp)
 {
     /* ---- Scroll indicator footer ---- */
-    if(sTUIparam.DisplayMode != DISPLAY_MODE_HELP)
+    if (sTUIparam.DisplayMode != DISPLAY_MODE_HELP)
     {
         int above = doffsetindex;
         int below = sTUIparam.NBsindex - (doffsetindex + NBsinfodisp);
-        if(below < 0)
+        if (below < 0)
         {
             below = 0;
         }
 
-        if(above > 0 || below > 0)
+        if (above > 0 || below > 0)
         {
             screenprint_setdim();
-            if(above > 0)
+            if (above > 0)
             {
                 screenprint_setcolor(3); /* yellow */
                 TUI_printfw(" \033[1m\xe2\x86\x91\033[22m %d above ", above);
@@ -34,7 +33,7 @@ void streamCTRL__render_footer(
 
             TUI_printfw("|");
 
-            if(below > 0)
+            if (below > 0)
             {
                 screenprint_setcolor(3); /* yellow */
                 TUI_printfw(" \033[1m\xe2\x86\x93\033[22m %d below ", below);

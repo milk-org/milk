@@ -19,19 +19,15 @@ errno_t functionparameter_FPS_tmux_ensure(FPS *fps);
 
 errno_t functionparameter_FPS_tmux_standalone_setup(const char *fps_name);
 
-errno_t functionparameter_FPS_tmux_send(
-    const char *fps_name,
-    const char *window,
-    const char *cmd_str);
+errno_t functionparameter_FPS_tmux_send(const char *fps_name,
+                                        const char *window,
+                                        const char *cmd_str);
 
-errno_t functionparameter_FPS_tmux_send_dispatch(
-    const char *fps_name,
-    const char *command,
-    const char *exec_path,
-    const char *extra_args);
+errno_t functionparameter_FPS_tmux_send_dispatch(const char *fps_name,
+                                                 const char *command,
+                                                 const char *exec_path,
+                                                 const char *extra_args);
 
-char* functionparameter_FPS_get_executable_path(
-    char   *buffer,
-    size_t size);
+char *functionparameter_FPS_get_executable_path(char *buffer, size_t size);
 
 #endif
