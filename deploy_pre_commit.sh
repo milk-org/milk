@@ -15,7 +15,7 @@ pre-commit install
 
 for FOLD in $(ls -d ${MILK_ROOT}/plugins/milk-extra-src/*/); do
     echo "Installing pre-commit in ${FOLD}"
-    cp ${MILK_ROOT}/.style.yapf ${FOLD}/
+    cp ${MILK_ROOT}/.clang-format ${FOLD}/
     cp ${MILK_ROOT}/.pre-commit-config.yaml ${FOLD}/
     cd ${FOLD}
     pre-commit install
@@ -24,7 +24,7 @@ done
 
 FOLD=${MILK_ROOT}/plugins/cacao-src/
 echo "Installing pre-commit in ${FOLD}"
-cp ${MILK_ROOT}/.style.yapf ${FOLD}/
+cp ${MILK_ROOT}/.clang-format ${FOLD}/
 cp ${MILK_ROOT}/.pre-commit-config.yaml ${FOLD}/
 cd ${FOLD}
 pre-commit install
@@ -32,7 +32,7 @@ cd ${MILK_ROOT}
 
 FOLD=${MILK_ROOT}/plugins/coffee-src/
 echo "Installing pre-commit in ${FOLD}"
-cp ${MILK_ROOT}/.style.yapf ${FOLD}/
+cp ${MILK_ROOT}/.clang-format ${FOLD}/
 cp ${MILK_ROOT}/.pre-commit-config.yaml ${FOLD}/
 cd ${FOLD}
 pre-commit install
