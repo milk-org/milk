@@ -25,7 +25,7 @@ _milk_fpsexec_complete()
 {
     local cur prev words cword cmd
     COMPREPLY=()
-    
+
     # Simple fallback parsing
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -48,7 +48,7 @@ _milk_complete()
 {
     local cur prev words cword
     COMPREPLY=()
-    
+
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")

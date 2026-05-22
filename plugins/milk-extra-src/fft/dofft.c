@@ -20,7 +20,8 @@ static FPS_APP_INFO FPS_app_info = {
     .cmdkey      = "dofft",
     .description = "perform 2D complex FFT",
     .description_long =
-        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports real-to-complex and complex-to-complex transforms, forward and inverse directions."
+        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
+        "real-to-complex and complex-to-complex transforms, forward and inverse directions."
 };
 
 
@@ -28,10 +29,8 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char dofft_inimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
-static char dofft_outimname[
-    FUNCTION_PARAMETER_STRMAXLEN];
+static char    dofft_inimname[FUNCTION_PARAMETER_STRMAXLEN];
+static char    dofft_outimname[FUNCTION_PARAMETER_STRMAXLEN];
 static int32_t dofft_dir = 0;
 
 
@@ -39,82 +38,52 @@ static int32_t dofft_dir = 0;
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".in_name", dofft_inimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input complex image") \
-    X(".out_name", dofft_outimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output complex image") \
-    X(".dir", &dofft_dir, \
-      FPTYPE_INT32, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "FFT direction")
+#define FPS_PARAMS(X)                                                           \
+    X(".in_name", dofft_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,   \
+      "input complex image")                                                    \
+    X(".out_name", dofft_outimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, \
+      "output complex image")                                                   \
+    X(".dir", &dofft_dir, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "FFT direction")
 
 // Forward declarations
-imageID do1dfft(const char *in_name,
-                const char *out_name);
+imageID do1dfft(const char *in_name, const char *out_name);
 
-imageID do1drfft(const char *in_name,
-                 const char *out_name);
+imageID do1drfft(const char *in_name, const char *out_name);
 
-imageID do2dfft(const char *in_name,
-                const char *out_name);
+imageID do2dfft(const char *in_name, const char *out_name);
 
 
 /* =========================================
  *  CMD 2: do1Dfft (2 args)
  * ======================================= */
 
-static char p_1dfft_in[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "in";
-static char p_1dfft_out[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "out";
+static char p_1dfft_in[FUNCTION_PARAMETER_STRMAXLEN]  = "in";
+static char p_1dfft_out[FUNCTION_PARAMETER_STRMAXLEN] = "out";
 
 static FPS_APP_INFO FPS_app_info_1dfft = {
     .fps_name    = "do1Dfft",
     .cmdkey      = "do1Dfft",
-    .description =
-        "perform 1D complex->complex FFT",
+    .description = "perform 1D complex->complex FFT",
     .description_long =
-        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports real-to-complex and complex-to-complex transforms, forward and inverse directions."
+        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
+        "real-to-complex and complex-to-complex transforms, forward and inverse directions."
 };
 
-#define FPS_PARAMS_1DFFT(X) \
-    X(".in_name", p_1dfft_in, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input complex image") \
-    X(".out_name", p_1dfft_out, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output complex image")
+#define FPS_PARAMS_1DFFT(X)                                                                      \
+    X(".in_name", p_1dfft_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input complex image") \
+    X(".out_name", p_1dfft_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output complex image")
 
-static CLICMDDATA CLIcmddata_1dfft = {
-    "", "", CLICMD_FIELDS_NOPARAM
-};
-static CMDSETTINGS cms_1dfft = {0};
+static CLICMDDATA  CLIcmddata_1dfft = { "", "", CLICMD_FIELDS_NOPARAM };
+static CMDSETTINGS cms_1dfft        = { 0 };
 
-static __attribute__((constructor))
-void init_cms_1dfft(void)
+static __attribute__((constructor)) void init_cms_1dfft(void)
 {
-    strncpy(CLIcmddata_1dfft.key,
-            FPS_app_info_1dfft.cmdkey,
-            sizeof(CLIcmddata_1dfft.key)
-            - 1);
-    strncpy(CLIcmddata_1dfft.description,
-            FPS_app_info_1dfft.description,
-            sizeof(
-                CLIcmddata_1dfft
-                .description) - 1);
-    if (CLIcmddata_1dfft.cmdsettings
-        == NULL) {
-        CLIcmddata_1dfft.cmdsettings =
-            &cms_1dfft;
+    strncpy(CLIcmddata_1dfft.key, FPS_app_info_1dfft.cmdkey, sizeof(CLIcmddata_1dfft.key) - 1);
+    strncpy(CLIcmddata_1dfft.description, FPS_app_info_1dfft.description,
+            sizeof(CLIcmddata_1dfft.description) - 1);
+    if (CLIcmddata_1dfft.cmdsettings == NULL)
+    {
+        CLIcmddata_1dfft.cmdsettings = &cms_1dfft;
     }
 }
 
@@ -129,54 +98,33 @@ static errno_t __attribute__((unused)) compute_1dfft()
  *  CMD 3: do1Drfft (2 args)
  * ======================================= */
 
-static char p_1drfft_in[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "in";
-static char p_1drfft_out[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "out";
+static char p_1drfft_in[FUNCTION_PARAMETER_STRMAXLEN]  = "in";
+static char p_1drfft_out[FUNCTION_PARAMETER_STRMAXLEN] = "out";
 
 static FPS_APP_INFO FPS_app_info_1drfft = {
     .fps_name    = "do1Drfft",
     .cmdkey      = "do1Drfft",
-    .description =
-        "perform 1D real->complex FFT",
+    .description = "perform 1D real->complex FFT",
     .description_long =
-        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports real-to-complex and complex-to-complex transforms, forward and inverse directions."
+        "Compute the Fast Fourier Transform (FFT) of 1D or 2D data using FFTW. Supports "
+        "real-to-complex and complex-to-complex transforms, forward and inverse directions."
 };
 
-#define FPS_PARAMS_1DRFFT(X) \
-    X(".in_name", p_1drfft_in, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input real image") \
-    X(".out_name", p_1drfft_out, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output complex image")
+#define FPS_PARAMS_1DRFFT(X)                                                                   \
+    X(".in_name", p_1drfft_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input real image") \
+    X(".out_name", p_1drfft_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output complex image")
 
-static CLICMDDATA CLIcmddata_1drfft = {
-    "", "", CLICMD_FIELDS_NOPARAM
-};
-static CMDSETTINGS cms_1drfft = {0};
+static CLICMDDATA  CLIcmddata_1drfft = { "", "", CLICMD_FIELDS_NOPARAM };
+static CMDSETTINGS cms_1drfft        = { 0 };
 
-static __attribute__((constructor))
-void init_cms_1drfft(void)
+static __attribute__((constructor)) void init_cms_1drfft(void)
 {
-    strncpy(CLIcmddata_1drfft.key,
-            FPS_app_info_1drfft.cmdkey,
-            sizeof(CLIcmddata_1drfft.key)
-            - 1);
-    strncpy(
-        CLIcmddata_1drfft.description,
-        FPS_app_info_1drfft.description,
-        sizeof(
-            CLIcmddata_1drfft
-            .description) - 1);
-    if (CLIcmddata_1drfft.cmdsettings
-        == NULL) {
-        CLIcmddata_1drfft.cmdsettings =
-            &cms_1drfft;
+    strncpy(CLIcmddata_1drfft.key, FPS_app_info_1drfft.cmdkey, sizeof(CLIcmddata_1drfft.key) - 1);
+    strncpy(CLIcmddata_1drfft.description, FPS_app_info_1drfft.description,
+            sizeof(CLIcmddata_1drfft.description) - 1);
+    if (CLIcmddata_1drfft.cmdsettings == NULL)
+    {
+        CLIcmddata_1drfft.cmdsettings = &cms_1drfft;
     }
 }
 
@@ -194,15 +142,13 @@ static errno_t __attribute__((unused)) compute_1drfft()
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
 static MILK_HOT errno_t compute_function()
 {
-    do2dfft(dofft_inimname,
-            dofft_outimname);
+    do2dfft(dofft_inimname, dofft_outimname);
     return RETURN_SUCCESS;
 }
 
@@ -214,77 +160,44 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t __attribute__((unused)) CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-static FPS_CLI_BINDING b_1dfft[] = {
-    FPS_PARAMS_1DFFT(FPS_X_BINDING)
-};
-static CLICMDARGDEF fa_1dfft[] = {
-    FPS_PARAMS_1DFFT(FPS_X_FARG)
-};
+static FPS_CLI_BINDING b_1dfft[]  = { FPS_PARAMS_1DFFT(FPS_X_BINDING) };
+static CLICMDARGDEF    fa_1dfft[] = { FPS_PARAMS_1DFFT(FPS_X_FARG) };
 
 static errno_t CLIfunction_1dfft(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_1dfft,
-        fa_1dfft, &CLIcmddata_1dfft,
-        b_1dfft,
-        sizeof(b_1dfft) /
-        sizeof(FPS_CLI_BINDING),
-        compute_1dfft);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_1dfft, fa_1dfft, &CLIcmddata_1dfft, b_1dfft,
+                                        sizeof(b_1dfft) / sizeof(FPS_CLI_BINDING), compute_1dfft);
 }
 
-static FPS_CLI_BINDING b_1drfft[] = {
-    FPS_PARAMS_1DRFFT(FPS_X_BINDING)
-};
-static CLICMDARGDEF fa_1drfft[] = {
-    FPS_PARAMS_1DRFFT(FPS_X_FARG)
-};
+static FPS_CLI_BINDING b_1drfft[]  = { FPS_PARAMS_1DRFFT(FPS_X_BINDING) };
+static CLICMDARGDEF    fa_1drfft[] = { FPS_PARAMS_1DRFFT(FPS_X_FARG) };
 
 static errno_t CLIfunction_1drfft(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_1drfft,
-        fa_1drfft, &CLIcmddata_1drfft,
-        b_1drfft,
-        sizeof(b_1drfft) /
-        sizeof(FPS_CLI_BINDING),
-        compute_1drfft);
+    return safe_fps_generic_CLIfunction(&FPS_app_info_1drfft, fa_1drfft, &CLIcmddata_1drfft,
+                                        b_1drfft, sizeof(b_1drfft) / sizeof(FPS_CLI_BINDING),
+                                        compute_1drfft);
 }
 
-errno_t
-CLIADDCMD_milkfft__dofft()
+errno_t CLIADDCMD_milkfft__dofft()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
 
-    safe_fps_fill_farg_examples(
-        fa_1dfft, b_1dfft,
-        sizeof(b_1dfft) /
-        sizeof(FPS_CLI_BINDING));
+    safe_fps_fill_farg_examples(fa_1dfft, b_1dfft, sizeof(b_1dfft) / sizeof(FPS_CLI_BINDING));
     {
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata_1dfft,
-            CLIfunction_1dfft);
-        CLIcmddata_1dfft.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi                     = RegisterCLIcmd(CLIcmddata_1dfft, CLIfunction_1dfft);
+        CLIcmddata_1dfft.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
-    safe_fps_fill_farg_examples(
-        fa_1drfft, b_1drfft,
-        sizeof(b_1drfft) /
-        sizeof(FPS_CLI_BINDING));
+    safe_fps_fill_farg_examples(fa_1drfft, b_1drfft, sizeof(b_1drfft) / sizeof(FPS_CLI_BINDING));
     {
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata_1drfft,
-            CLIfunction_1drfft);
-        CLIcmddata_1drfft.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
+        int cmdi                      = RegisterCLIcmd(CLIcmddata_1drfft, CLIfunction_1drfft);
+        CLIcmddata_1drfft.cmdsettings = &data.cmd[cmdi].cmdsettings;
     }
 
     return RETURN_SUCCESS;
@@ -296,40 +209,20 @@ CLIADDCMD_milkfft__dofft()
  * 4b. Standalone-friendly FFT step
  * ============================================================= */
 
-static void MILK_HOT __attribute__((unused)) fpsexec(
-    IMAGE *imgin,
-    IMAGE *imgout,
-    int dir)
+static void MILK_HOT __attribute__((unused)) fpsexec(IMAGE *imgin, IMAGE *imgout, int dir)
 {
-    int naxes[2] = {
-        (int) imgin->md[0].size[1],
-        (int) imgin->md[0].size[0]
-    };
-    if (imgin->md[0].datatype
-        == _DATATYPE_COMPLEX_FLOAT)
+    int naxes[2] = { (int) imgin->md[0].size[1], (int) imgin->md[0].size[0] };
+    if (imgin->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
     {
-        fftwf_plan plan =
-            fftwf_plan_dft_2d(
-                naxes[0], naxes[1],
-                (fftwf_complex *)
-                    imgin->array.CF,
-                (fftwf_complex *)
-                    imgout->array.CF,
-                dir, FFTW_ESTIMATE);
+        fftwf_plan plan = fftwf_plan_dft_2d(naxes[0], naxes[1], (fftwf_complex *) imgin->array.CF,
+                                            (fftwf_complex *) imgout->array.CF, dir, FFTW_ESTIMATE);
         fftwf_execute(plan);
         fftwf_destroy_plan(plan);
     }
-    else if (imgin->md[0].datatype
-             == _DATATYPE_COMPLEX_DOUBLE)
+    else if (imgin->md[0].datatype == _DATATYPE_COMPLEX_DOUBLE)
     {
-        fftw_plan plan =
-            fftw_plan_dft_2d(
-                naxes[0], naxes[1],
-                (fftw_complex *)
-                    imgin->array.CD,
-                (fftw_complex *)
-                    imgout->array.CD,
-                dir, FFTW_ESTIMATE);
+        fftw_plan plan = fftw_plan_dft_2d(naxes[0], naxes[1], (fftw_complex *) imgin->array.CD,
+                                          (fftw_complex *) imgout->array.CD, dir, FFTW_ESTIMATE);
         fftw_execute(plan);
         fftw_destroy_plan(plan);
     }
@@ -341,8 +234,5 @@ static void MILK_HOT __attribute__((unused)) fpsexec(
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif

@@ -7,28 +7,28 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT "fft"
-#define MODULE_DESCRIPTION       "FFTW wrapper and FFT-related functions"
+#define MODULE_DESCRIPTION "FFTW wrapper and FFT-related functions"
 
 #include <fftw3.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include "CLIcore.h"
+#    include "CLIcore.h"
 #endif
 
 #include "wisdom.h"
 
 #ifndef MILK_NO_CLI
-#include "dofft.h"
-#include "fftcorrelation.h"
-#include "ffttranslate.h"
-#include "init_fftwplan.h"
-#include "permut.h"
-#include "testfftspeed.h"
+#    include "dofft.h"
+#    include "fftcorrelation.h"
+#    include "ffttranslate.h"
+#    include "init_fftwplan.h"
+#    include "permut.h"
+#    include "testfftspeed.h"
 
-#include "pup2foc.h"
+#    include "pup2foc.h"
 
 
 // auto-generate libinit_<modulename>
@@ -38,13 +38,11 @@ INIT_MODULE_LIB(fft)
 
 static errno_t init_module_CLI()
 {
-
-#ifdef FFTWMT
-    printf("Multi-threaded fft enabled, max threads = %d\n",
-           omp_get_max_threads());
+#    ifdef FFTWMT
+    printf("Multi-threaded fft enabled, max threads = %d\n", omp_get_max_threads());
     fftwf_init_threads();
     fftwf_plan_with_nthreads(omp_get_max_threads());
-#endif
+#    endif
 
     // load fftw wisdom
     import_wisdom();
@@ -66,20 +64,20 @@ static errno_t init_module_CLI()
 
 static void __attribute__((destructor)) close_fftwlib()
 {
-    if(INITSTATUS_fft == 1)
+    if (INITSTATUS_fft == 1)
     {
         fftw_forget_wisdom();
         fftwf_forget_wisdom();
 
-#ifdef FFTWMT
+#    ifdef FFTWMT
         fftw_cleanup_threads();
         fftwf_cleanup_threads();
-#endif
+#    endif
 
-#ifndef FFTWMT
+#    ifndef FFTWMT
         fftw_cleanup();
         fftwf_cleanup();
-#endif
+#    endif
     }
 }
 #endif /* MILK_NO_CLI */

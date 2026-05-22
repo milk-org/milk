@@ -12,12 +12,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
@@ -27,54 +27,45 @@
 #include "CFmeminit.h"
 
 
-
-
-errno_t CFmeminit(
-    CLUSTERTREE *ctree,
-    long CFindex,
-    uint32_t mode
-)
+errno_t CFmeminit(CLUSTERTREE *ctree, long CFindex, uint32_t mode)
 {
     DEBUG_TRACE_FSTART();
 
-    if(mode && CFMEMINIT_CFUPDATE)
+    if (mode && CFMEMINIT_CFUPDATE)
     {
         // if CF has parent, remove from upstream
         long cfi = ctree->CFarray[CFindex].parentindex;
 
-        if(cfi != -1)
+        if (cfi != -1)
         {
             // remove from list of childred or leafs
             long NBchild = ctree->CFarray[cfi].NBchild;
             int  found   = 0;
-            for(int chi = 0; chi < NBchild; chi++)
+            for (int chi = 0; chi < NBchild; chi++)
             {
-                if(ctree->CFarray[cfi].childindex[chi] == CFindex)
+                if (ctree->CFarray[cfi].childindex[chi] == CFindex)
                 {
                     found = 1;
                 }
-                if(found == 1)
+                if (found == 1)
                 {
-                    ctree->CFarray[cfi].childindex[chi] =
-                        ctree->CFarray[cfi].childindex[chi + 1];
+                    ctree->CFarray[cfi].childindex[chi] = ctree->CFarray[cfi].childindex[chi + 1];
                 }
             }
-            if(found == 1)
+            if (found == 1)
             {
                 ctree->CFarray[cfi].NBchild--;
             }
         }
 
-        while(cfi != -1)
+        while (cfi != -1)
         {
             //printf("========= SUBTRACTING NODE %ld FROM NODE %ld (%s)\n", CFindex, cfi, __FILE__);
             //fflush(stdout);
 
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
-            subvector_to_CF(ctree,
-                            ctree->CFarray[CFindex],
-                            cfi);
+            subvector_to_CF(ctree, ctree->CFarray[CFindex], cfi);
 
             // move upstream to propagate change
             cfi = ctree->CFarray[cfi].parentindex;
@@ -85,7 +76,7 @@ errno_t CFmeminit(
     ctree->CFarray[CFindex].level = 0;
 
     ctree->CFarray[CFindex].NBchild = 0;
-    for(int cind = 0; cind < ctree->B + 1; cind++)
+    for (int cind = 0; cind < ctree->B + 1; cind++)
     {
         ctree->CFarray[CFindex].childindex[cind] = -1;
     }
@@ -93,28 +84,28 @@ errno_t CFmeminit(
     ctree->CFarray[CFindex].parentindex = -1;
 
 
-    for(int ii = 0; ii < ctree->npix; ii++)
+    for (int ii = 0; ii < ctree->npix; ii++)
     {
         ctree->CFarray[CFindex].datasumvec[ii] = 0.0;
         ctree->CFarray[CFindex].dataposvec[ii] = 0.0;
     }
 
-    ctree->CFarray[CFindex].sum2    = 0.0;
-    ctree->CFarray[CFindex].datassq = 0.0;
-    ctree->CFarray[CFindex].radius2 = 0;
-    ctree->CFarray[CFindex].N       = 0;
+    ctree->CFarray[CFindex].sum2           = 0.0;
+    ctree->CFarray[CFindex].datassq        = 0.0;
+    ctree->CFarray[CFindex].radius2        = 0;
+    ctree->CFarray[CFindex].N              = 0;
     ctree->CFarray[CFindex].posvecsourceID = -1;
 
-    for(long cfi=0; cfi<ctree->NBCF; cfi++)
+    for (long cfi = 0; cfi < ctree->NBCF; cfi++)
     {
-        ctree->CFCFdist[CFindex*ctree->NBCF+cfi] = -1.0;
-        ctree->CFCFdist[cfi*ctree->NBCF+CFindex] = -1.0;
+        ctree->CFCFdist[CFindex * ctree->NBCF + cfi] = -1.0;
+        ctree->CFCFdist[cfi * ctree->NBCF + CFindex] = -1.0;
     }
 
 
     ctree->CFarray[CFindex].radius = 0.0;
 
-    ctree->CFarray[CFindex].pathcnt = 0.0;
+    ctree->CFarray[CFindex].pathcnt         = 0.0;
     ctree->CFarray[CFindex].pathdistcompcnt = 0.0;
 
     ctree->CFarray[CFindex].status = 0;

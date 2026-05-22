@@ -19,11 +19,11 @@
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "GramSchmidt",
-    .cmdkey      = "GramSchmidt",
-    .description = "Gram-Schmidt process",
-    .description_long =
-        "Orthogonalize a set of vectors using the Gram-Schmidt process. Produces an orthonormal basis from the input set."
+    .fps_name         = "GramSchmidt",
+    .cmdkey           = "GramSchmidt",
+    .description      = "Gram-Schmidt process",
+    .description_long = "Orthogonalize a set of vectors using the Gram-Schmidt process. Produces "
+                        "an orthonormal basis from the input set."
 };
 
 
@@ -31,25 +31,19 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char * inmodes = NULL;
-static char * outmodes = NULL;
-static char * auxmat = NULL;
-static int32_t * GPUdevice = NULL;
+static char    *inmodes   = NULL;
+static char    *outmodes  = NULL;
+static char    *auxmat    = NULL;
+static int32_t *GPUdevice = NULL;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".inmodes", &inmodes, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input modes") \
-    X(".outmodes", &outmodes, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output modes")
+#define FPS_PARAMS(X)                                                                  \
+    X(".inmodes", &inmodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes") \
+    X(".outmodes", &outmodes, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output modes")
 
 
 /* ================================================================
@@ -58,19 +52,15 @@ static int32_t * GPUdevice = NULL;
 
 FPS_V2_SECTION5(FPS_PARAMS)
 
-errno_t GramSchmidt(
-    IMGID imginm,
-    IMGID *imgoutm,
-    IMGID imgaux,
-    int GPUdev __attribute__((unused))
-)
+errno_t GramSchmidt(IMGID imginm, IMGID *imgoutm, IMGID imgaux, int GPUdev __attribute__((unused)))
 {
     DEBUG_TRACE_FSTART();
 
     resolveIMGID(&imginm, ERRMODE_WARN, dcimg, dcnimg);
 
     resolveIMGID(&imgaux, ERRMODE_WARN, dcimg, dcnimg);
-    if (imginm.ID == -1) {
+    if (imginm.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -83,14 +73,11 @@ errno_t GramSchmidt(
 
     // Create output
     //
-    imcreatelikewiseIMGID(
-        imgoutm,
-        &imginm
-    );
+    imcreatelikewiseIMGID(imgoutm, &imginm);
 
     uint32_t zsize;
     uint32_t xysize = imginm.md->size[0];
-    if(imginm.md->naxis == 3)
+    if (imginm.md->naxis == 3)
     {
         zsize = imginm.md->size[2];
         xysize *= imginm.md->size[1];
@@ -101,10 +88,10 @@ errno_t GramSchmidt(
     }
 
     uint32_t xysizeaux = 0;
-    if ( imgaux.ID != -1)
+    if (imgaux.ID != -1)
     {
         xysizeaux = imgaux.md->size[0];
-        if(imginm.md->naxis == 3)
+        if (imginm.md->naxis == 3)
         {
             xysizeaux *= imgaux.md->size[1];
         }
@@ -114,14 +101,15 @@ errno_t GramSchmidt(
     printf("xysize = %u, zsize = %u\n", xysize, zsize);
 
     printf("\n");
-    for ( uint32_t kk=0; kk<zsize; kk++ )
+    for (uint32_t kk = 0; kk < zsize; kk++)
     {
         printf("\rGS mode %6u / %6u     ", kk, zsize);
 
         // initialization
-        memcpy( &imgoutm->im->array.F[kk*xysize], &imginm.im->array.F[kk*xysize], sizeof(float)*xysize);
+        memcpy(&imgoutm->im->array.F[kk * xysize], &imginm.im->array.F[kk * xysize],
+               sizeof(float) * xysize);
 
-        for ( uint32_t kk0 = 0; kk0 < kk; kk0++ )
+        for (uint32_t kk0 = 0; kk0 < kk; kk0++)
         {
             // cross-product
             double xpval = 0.0;
@@ -129,29 +117,31 @@ errno_t GramSchmidt(
             // square sum v0
             double sqrsum0 = 0.0;
 
-            for( uint32_t ii=0; ii<xysize; ii++)
+            for (uint32_t ii = 0; ii < xysize; ii++)
             {
-                float v0 = imgoutm->im->array.F[ kk0*xysize + ii];
-                float v1 = imgoutm->im->array.F[ kk*xysize + ii];
+                float v0 = imgoutm->im->array.F[kk0 * xysize + ii];
+                float v1 = imgoutm->im->array.F[kk * xysize + ii];
 
-                xpval += v0*v1;
-                sqrsum0 += v0*v0;
+                xpval += v0 * v1;
+                sqrsum0 += v0 * v0;
             }
 
             float vcoeff = xpval / sqrsum0;
 
             //printf("  %5u  %5u   %f\n", kk, kk0, vcoeff);
 
-            for( uint32_t ii=0; ii<xysize; ii++)
+            for (uint32_t ii = 0; ii < xysize; ii++)
             {
-                imgoutm->im->array.F[ kk*xysize + ii] -= vcoeff * imgoutm->im->array.F[ kk0*xysize + ii];
+                imgoutm->im->array.F[kk * xysize + ii] -=
+                    vcoeff * imgoutm->im->array.F[kk0 * xysize + ii];
             }
 
-            if ( imgaux.ID != -1)
+            if (imgaux.ID != -1)
             {
-                for( uint32_t ii=0; ii<xysizeaux; ii++)
+                for (uint32_t ii = 0; ii < xysizeaux; ii++)
                 {
-                    imgaux.im->array.F[ kk*xysizeaux + ii] -= vcoeff * imgaux.im->array.F[ kk0*xysizeaux + ii];
+                    imgaux.im->array.F[kk * xysizeaux + ii] -=
+                        vcoeff * imgaux.im->array.F[kk0 * xysizeaux + ii];
                 }
             }
         }
@@ -174,8 +164,9 @@ static MILK_HOT errno_t compute_function()
     resolveIMGID(&imginm, ERRMODE_WARN, dcimg, dcnimg);
 
 
-    IMGID imgoutm  = imgid_make_from_name(outmodes);
-    if (imginm.ID == -1) {
+    IMGID imgoutm = imgid_make_from_name(outmodes);
+    if (imginm.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -205,17 +196,13 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_linalgebra__GramSchmidt()
+errno_t CLIADDCMD_linalgebra__GramSchmidt()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
@@ -227,9 +214,5 @@ CLIADDCMD_linalgebra__GramSchmidt()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif
-

@@ -68,13 +68,13 @@ sequenceDiagram
     participant Tmux as Tmux Session
     participant FPSData as /dev/shm/fps.* (Shared Config)
     participant FPS as Standalone fpsexec process
-    
+
     User->>Tmux: _run_<module> -tmux
     Tmux->>FPS: Execute Module Runloop
     FPS->>FPSData: Sync State (run/stop/conf)
-    
+
     loop Real-time configuration
-        User->>FPSData: Change Parameter via fpsCTRL 
+        User->>FPSData: Change Parameter via fpsCTRL
         FPSData-->>FPS: Synchronous Read
         FPS->>FPS: Adapt Compute Behavior
     end

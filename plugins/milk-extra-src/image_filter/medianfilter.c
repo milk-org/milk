@@ -15,12 +15,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -42,9 +42,8 @@ imageID median_filter(const char *__restrict ID_name,
         fflush(stdout);*/
     save_fl_fits(ID_name, "mf_in.fits");
 
-    array = (float *) malloc((2 * filter_size + 1) * (2 * filter_size + 1) *
-                             sizeof(float));
-    if(array == NULL)
+    array = (float *) malloc((2 * filter_size + 1) * (2 * filter_size + 1) * sizeof(float));
+    if (array == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -53,32 +52,30 @@ imageID median_filter(const char *__restrict ID_name,
     ID       = image_ID(ID_name, dcimg, dcnimg);
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
-    printf("name = %s, ID = %ld, Size = %ld %ld (%d)\n",
-           ID_name,
-           ID,
-           naxes[0],
-           naxes[1],
+    printf("name = %s, ID = %ld, Size = %ld %ld (%d)\n", ID_name, ID, naxes[0], naxes[1],
            filter_size);
     fflush(stdout);
     copy_image_ID(ID_name, out_name, 0);
     IDout = image_ID(out_name, dcimg, dcnimg);
 
-    for(jj = filter_size; jj < naxes[1] - filter_size; jj++)
-        for(ii = filter_size; ii < naxes[0] - filter_size; ii++)
+    for (jj = filter_size; jj < naxes[1] - filter_size; jj++)
+    {
+        for (ii = filter_size; ii < naxes[0] - filter_size; ii++)
         {
-            for(i = 0; i < (2 * filter_size + 1); i++)
-                for(j = 0; j < (2 * filter_size + 1); j++)
+            for (i = 0; i < (2 * filter_size + 1); i++)
+            {
+                for (j = 0; j < (2 * filter_size + 1); j++)
                 {
                     array[i * (2 * filter_size + 1) + j] =
                         dcimg[ID]
-                        .array.F[(jj - filter_size + j) * naxes[0] +
-                                                        (ii - filter_size + i)];
+                            .array.F[(jj - filter_size + j) * naxes[0] + (ii - filter_size + i)];
                 }
-            quick_sort_float(array,
-                             (2 * filter_size + 1) * (2 * filter_size + 1));
+            }
+            quick_sort_float(array, (2 * filter_size + 1) * (2 * filter_size + 1));
             dcimg[IDout].array.F[jj * naxes[0] + ii] =
                 array[((2 * filter_size + 1) * (2 * filter_size + 1) - 1) / 2];
         }
+    }
     free(array);
 
     save_fl_fits(out_name, "mf_out.fits");

@@ -17,7 +17,7 @@ non-GCC compilers.
   vectorize loops over those pointers.
 - Use `MILK_ASSUME_ALIGNED(ptr)` to inform GCC
   that a restricted pointer is aligned to a 64-byte
-  boundary, which forces the compiler to use 
+  boundary, which forces the compiler to use
   faster, strictly aligned vector instructions
   (e.g., AVX `vmovaps` vs `vmovups`).
 - **Not** required on `char*` parameters used as
@@ -64,7 +64,7 @@ non-GCC compilers.
 
 ## Math & Transcendentals
 
-- Avoid computing expensive scalar transcendentals 
+- Avoid computing expensive scalar transcendentals
   (e.g. `sinf()`, `cosf()`, `expf()`) inside tight
   SIMD or OpenMP inner loops if possible.
 - **Complex Math**: Replace polar coordinate conversions (`sqrt()` + `atan2()`) with direct algebraic alternatives (e.g., conjugate multiplication for complex division) to eliminate transcendental overhead in tight loops.
@@ -177,7 +177,7 @@ non-GCC compilers.
 
 - **Do NOT** manually call `sched_setaffinity` inside
   custom modules.
-- The `milk` framework native `PROCESSINFO` 
+- The `milk` framework native `PROCESSINFO`
   architecture handles this automatically via the
   `procinfo->CPUmask` attribute. Leverage this existing
   system when binding streams to isolated processing cores.

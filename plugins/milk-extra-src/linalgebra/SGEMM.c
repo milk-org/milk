@@ -15,12 +15,12 @@
 
 
 #ifdef HAVE_CUDA
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-#include <cusolverDn.h>
-#include <device_types.h>
-#include <pthread.h>
+#    include <cublas_v2.h>
+#    include <cuda_runtime.h>
+#    include <cuda_runtime_api.h>
+#    include <cusolverDn.h>
+#    include <device_types.h>
+#    include <pthread.h>
 #endif
 
 
@@ -28,15 +28,15 @@
 // Otherwise use openBLAS
 //
 #ifdef HAVE_MKL
-#include "mkl.h"
-#include "mkl_lapacke.h"
-#define BLASLIB "IntelMKL"
+#    include "mkl.h"
+#    include "mkl_lapacke.h"
+#    define BLASLIB "IntelMKL"
 #else
-#ifdef HAVE_OPENBLAS
-#include <cblas.h>
-#include <lapacke.h>
-#define BLASLIB "OpenBLAS"
-#endif
+#    ifdef HAVE_OPENBLAS
+#        include <cblas.h>
+#        include <lapacke.h>
+#        define BLASLIB "OpenBLAS"
+#    endif
 #endif
 
 
@@ -45,11 +45,11 @@
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "sgemm",
-    .cmdkey      = "sgemm",
-    .description = "matrix-matrix multiply",
-    .description_long =
-        "Perform single-precision matrix-matrix multiplication (SGEMM) using BLAS. Computes C = alpha * A * B + beta * C for dense matrices in shared memory."
+    .fps_name         = "sgemm",
+    .cmdkey           = "sgemm",
+    .description      = "matrix-matrix multiply",
+    .description_long = "Perform single-precision matrix-matrix multiplication (SGEMM) using BLAS. "
+                        "Computes C = alpha * A * B + beta * C for dense matrices in shared memory."
 };
 
 
@@ -57,31 +57,22 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char * inmatA = NULL;
-static char * inmatB = NULL;
-static uint64_t * transpA = NULL;
-static uint64_t * transpB = NULL;
-static char * outM = NULL;
-static int32_t * GPUdevice = NULL;
+static char     *inmatA    = NULL;
+static char     *inmatB    = NULL;
+static uint64_t *transpA   = NULL;
+static uint64_t *transpB   = NULL;
+static char     *outM      = NULL;
+static int32_t  *GPUdevice = NULL;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".matA", &inmatA, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input matrix A") \
-    X(".matB", &inmatB, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input matrix B") \
-    X(".outM", &outM, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output matrix")
+#define FPS_PARAMS(X)                                                                 \
+    X(".matA", &inmatA, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix A") \
+    X(".matB", &inmatB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix B") \
+    X(".outM", &outM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output matrix")
 
 
 /* ================================================================
@@ -107,14 +98,12 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * @param GPUdev The GPU device ID to use. If -1 or 99, CPU computation is used.
  * @return errno_t Returns RETURN_SUCCESS on successful computation, or an error code otherwise.
  */
-errno_t computeSGEMM(
-    IMGID imginA,
-    IMGID imginB,
-    IMGID *outimg,
-    int TranspA,
-    int TranspB,
-    int GPUdev
-)
+errno_t computeSGEMM(IMGID  imginA,
+                     IMGID  imginB,
+                     IMGID *outimg,
+                     int    TranspA,
+                     int    TranspB,
+                     int    GPUdev)
 {
     DEBUG_TRACE_FSTART();
 
@@ -138,32 +127,32 @@ errno_t computeSGEMM(
     fflush(stdout);
 
 
-    if(imginA.md->naxis == 3)
+    if (imginA.md->naxis == 3)
     {
         printf("inA_Mdim   : %d x %d\n", imginA.md->size[0], imginA.md->size[1]);
-        inA_Mdim = imginA.md->size[0] * imginA.md->size[1];
-        inA_Mdim0 = imginA.md->size[0];
-        inA_Mdim1 = imginA.md->size[1];
+        inA_Mdim         = imginA.md->size[0] * imginA.md->size[1];
+        inA_Mdim0        = imginA.md->size[0];
+        inA_Mdim1        = imginA.md->size[1];
         inA_Mdim1_active = 1;
 
         printf("inA_Ndim    : %d\n", imginA.md->size[2]);
-        inA_Ndim = imginA.md->size[2];
-        inA_Ndim0 = imginA.md->size[2];
-        inA_Ndim1 = 1;
+        inA_Ndim         = imginA.md->size[2];
+        inA_Ndim0        = imginA.md->size[2];
+        inA_Ndim1        = 1;
         inA_Ndim1_active = 0;
     }
     else
     {
         printf("inA_Mdim   : %d\n", imginA.md->size[0]);
-        inA_Mdim = imginA.md->size[0];
-        inA_Mdim0 = imginA.md->size[0];
-        inA_Mdim1 = 1;
+        inA_Mdim         = imginA.md->size[0];
+        inA_Mdim0        = imginA.md->size[0];
+        inA_Mdim1        = 1;
         inA_Mdim1_active = 0;
 
         printf("inNdim    : %d\n", imginA.md->size[1]);
-        inA_Ndim = imginA.md->size[1];
-        inA_Ndim0 = imginA.md->size[1];
-        inA_Ndim1 = 1;
+        inA_Ndim         = imginA.md->size[1];
+        inA_Ndim0        = imginA.md->size[1];
+        inA_Ndim1        = 1;
         inA_Ndim1_active = 0;
     }
 
@@ -178,16 +167,16 @@ errno_t computeSGEMM(
     int inB_Ndim1;
     //int inB_Ndim1_active = 1;
 
-    if(imginB.md->naxis == 3)
+    if (imginB.md->naxis == 3)
     {
         printf("inB_Mdim   : %d x %d\n", imginB.md->size[0], imginB.md->size[1]);
-        inB_Mdim = imginB.md->size[0] * imginB.md->size[1];
+        inB_Mdim  = imginB.md->size[0] * imginB.md->size[1];
         inB_Mdim0 = imginB.md->size[0];
         inB_Mdim1 = imginB.md->size[1];
         //inB_Mdim1_active = 1;
 
         printf("inB_Ndim    : %d\n", imginB.md->size[2]);
-        inB_Ndim = imginB.md->size[2];
+        inB_Ndim  = imginB.md->size[2];
         inB_Ndim0 = imginB.md->size[2];
         inB_Ndim1 = 1;
         //inB_Ndim1_active = 0;
@@ -195,13 +184,13 @@ errno_t computeSGEMM(
     else
     {
         printf("inB_Mdim   : %d\n", imginB.md->size[0]);
-        inB_Mdim = imginB.md->size[0];
+        inB_Mdim  = imginB.md->size[0];
         inB_Mdim0 = imginB.md->size[0];
         inB_Mdim1 = 1;
         //inB_Mdim1_active = 0;
 
         printf("inB_Ndim    : %d\n", imginB.md->size[1]);
-        inB_Ndim = imginB.md->size[1];
+        inB_Ndim  = imginB.md->size[1];
         inB_Ndim0 = imginB.md->size[1];
         inB_Ndim1 = 1;
         //inB_Ndim1_active = 0;
@@ -210,17 +199,17 @@ errno_t computeSGEMM(
 
     // input to SGEMM function
     int Mdim, Ndim, Kdim;
-    int Mdim0, Ndim0;//, Kdim0;
-    int Mdim1, Ndim1;//, Kdim1;
+    int Mdim0, Ndim0; //, Kdim0;
+    int Mdim1, Ndim1; //, Kdim1;
     int Mdim1_active = 1;
 
     //int Ndim1_active = 1;
 
 
     // if no transpose
-    Mdim = inA_Mdim;
-    Mdim0 = inA_Mdim0;
-    Mdim1 = inA_Mdim1;
+    Mdim         = inA_Mdim;
+    Mdim0        = inA_Mdim0;
+    Mdim1        = inA_Mdim1;
     Mdim1_active = inA_Mdim1_active;
 
 
@@ -231,17 +220,16 @@ errno_t computeSGEMM(
 
     Kdim = inA_Ndim;
 
-    if(TranspA == 1)
+    if (TranspA == 1)
     {
-        Mdim = inA_Ndim;
-        Mdim0 = inA_Ndim0;
-        Mdim1 = inA_Ndim1;
+        Mdim         = inA_Ndim;
+        Mdim0        = inA_Ndim0;
+        Mdim1        = inA_Ndim1;
         Mdim1_active = inA_Ndim1_active;
 
         Kdim = inA_Mdim;
-
     }
-    if(TranspB == 1)
+    if (TranspB == 1)
     {
         Ndim  = inB_Mdim;
         Ndim0 = inB_Mdim0;
@@ -249,13 +237,11 @@ errno_t computeSGEMM(
         //Ndim1_active = inB_Mdim1_active;
     }
 
-    printf("T %d %d  -> SGEMM  M=%d,(%d %d)  N=%d, (%d %d) K=%d\n",
-           TranspA, TranspB, Mdim, Mdim0, Mdim1, Ndim, Ndim0, Ndim1, Kdim);
-    printf("INPUT A  M %5d (%5d %5d)   x N %5d (%5d %5d)\n",
-           inA_Mdim, inA_Mdim0, inA_Mdim1,
+    printf("T %d %d  -> SGEMM  M=%d,(%d %d)  N=%d, (%d %d) K=%d\n", TranspA, TranspB, Mdim, Mdim0,
+           Mdim1, Ndim, Ndim0, Ndim1, Kdim);
+    printf("INPUT A  M %5d (%5d %5d)   x N %5d (%5d %5d)\n", inA_Mdim, inA_Mdim0, inA_Mdim1,
            inA_Ndim, inA_Ndim0, inA_Ndim1);
-    printf("INPUT B  M %5d (%5d %5d)   x N %5d (%5d %5d)\n",
-           inB_Mdim, inB_Mdim0, inB_Mdim1,
+    printf("INPUT B  M %5d (%5d %5d)   x N %5d (%5d %5d)\n", inB_Mdim, inB_Mdim0, inB_Mdim1,
            inB_Ndim, inB_Ndim0, inB_Ndim1);
 
 
@@ -263,19 +249,18 @@ errno_t computeSGEMM(
     //
     int outMdim = Mdim;
     int outNdim = Ndim;
-    if(Mdim1_active == 0)
+    if (Mdim1_active == 0)
     {
         // 2D output
-        outimg->mdt->naxis = 2;
+        outimg->mdt->naxis   = 2;
         outimg->mdt->size[0] = outMdim;
         outimg->mdt->size[1] = outNdim;
         outimg->mdt->size[2] = 1;
-
     }
     else
     {
         // 3D output
-        outimg->mdt->naxis = 3;
+        outimg->mdt->naxis   = 3;
         outimg->mdt->size[0] = Mdim0;
         outimg->mdt->size[1] = Mdim1;
         outimg->mdt->size[2] = outNdim;
@@ -285,7 +270,7 @@ errno_t computeSGEMM(
            outimg->mdt->size[1], outimg->mdt->size[2]);
 
     outimg->mdt->datatype = _DATATYPE_FLOAT;
-    if(outimg->ID == -1)
+    if (outimg->ID == -1)
     {
         createimagefromIMGID(outimg);
     }
@@ -297,7 +282,7 @@ errno_t computeSGEMM(
     // copy input to d_immatA
     // perform type conversion to float if needed
     //
-    if(imginA.md->datatype == _DATATYPE_FLOAT)
+    if (imginA.md->datatype == _DATATYPE_FLOAT)
     {
         imarrayA = imginA.im->array.F;
     }
@@ -307,66 +292,66 @@ errno_t computeSGEMM(
         //
         imarrayA = (float *) malloc(sizeof(float) * imginA.md->nelement);
 
-        switch(imginA.md->datatype)
+        switch (imginA.md->datatype)
         {
         case _DATATYPE_DOUBLE:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.D[ii];
             }
             break;
 
         case _DATATYPE_UINT8:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.UI8[ii];
             }
             break;
 
         case _DATATYPE_UINT16:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.UI16[ii];
             }
             break;
 
         case _DATATYPE_UINT32:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.UI32[ii];
             }
             break;
 
         case _DATATYPE_UINT64:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.UI64[ii];
             }
             break;
 
         case _DATATYPE_INT8:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.SI8[ii];
             }
             break;
 
         case _DATATYPE_INT16:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.SI16[ii];
             }
             break;
 
         case _DATATYPE_INT32:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.SI32[ii];
             }
             break;
 
         case _DATATYPE_INT64:
-            for(uint32_t ii = 0; ii < imginA.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
             {
                 imarrayA[ii] = imginA.im->array.SI64[ii];
             }
@@ -378,7 +363,7 @@ errno_t computeSGEMM(
     // copy input to d_immatA
     // perform type conversion to float if needed
     //
-    if(imginB.md->datatype == _DATATYPE_FLOAT)
+    if (imginB.md->datatype == _DATATYPE_FLOAT)
     {
         imarrayB = imginB.im->array.F;
     }
@@ -388,66 +373,66 @@ errno_t computeSGEMM(
         //
         imarrayB = (float *) malloc(sizeof(float) * imginB.md->nelement);
 
-        switch(imginB.md->datatype)
+        switch (imginB.md->datatype)
         {
         case _DATATYPE_DOUBLE:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.D[ii];
             }
             break;
 
         case _DATATYPE_UINT8:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.UI8[ii];
             }
             break;
 
         case _DATATYPE_UINT16:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.UI16[ii];
             }
             break;
 
         case _DATATYPE_UINT32:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.UI32[ii];
             }
             break;
 
         case _DATATYPE_UINT64:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.UI64[ii];
             }
             break;
 
         case _DATATYPE_INT8:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.SI8[ii];
             }
             break;
 
         case _DATATYPE_INT16:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.SI16[ii];
             }
             break;
 
         case _DATATYPE_INT32:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.SI32[ii];
             }
             break;
 
         case _DATATYPE_INT64:
-            for(uint32_t ii = 0; ii < imginB.md->nelement; ii++)
+            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
                 imarrayA[ii] = imginB.im->array.SI64[ii];
             }
@@ -456,24 +441,24 @@ errno_t computeSGEMM(
     }
 
 
-    if((GPUdev >= 0) && (GPUdev <= 99))
+    if ((GPUdev >= 0) && (GPUdev <= 99))
     {
 #ifdef HAVE_CUDA
         //printf("Running SGEMM on GPU device %d\n", GPUdev);
         //fflush(stdout);
 
-        const float alf = 1;
-        const float bet = 0;
+        const float  alf   = 1;
+        const float  bet   = 0;
         const float *alpha = &alf;
-        const float *beta = &bet;
+        const float *beta  = &bet;
 
 
         float *d_inmatA;
 
         {
-            cudaError_t cudaStat = cudaMalloc((void **)&d_inmatA,
-                                              imginA.md->nelement * sizeof(float));
-            if(cudaStat != cudaSuccess)
+            cudaError_t cudaStat =
+                cudaMalloc((void **) &d_inmatA, imginA.md->nelement * sizeof(float));
+            if (cudaStat != cudaSuccess)
             {
                 printf("device memory allocation failed");
                 return EXIT_FAILURE;
@@ -482,10 +467,9 @@ errno_t computeSGEMM(
 
 
         {
-            cudaError_t stat = cudaMemcpy(d_inmatA, imarrayA,
-                                          imginA.md->nelement * sizeof(float),
+            cudaError_t stat = cudaMemcpy(d_inmatA, imarrayA, imginA.md->nelement * sizeof(float),
                                           cudaMemcpyHostToDevice);
-            if(stat != cudaSuccess)
+            if (stat != cudaSuccess)
             {
                 printf("cudaMemcpy failed\n");
                 return EXIT_FAILURE;
@@ -496,9 +480,9 @@ errno_t computeSGEMM(
         float *d_inmatB;
 
         {
-            cudaError_t cudaStat = cudaMalloc((void **)&d_inmatB,
-                                              imginB.md->nelement * sizeof(float));
-            if(cudaStat != cudaSuccess)
+            cudaError_t cudaStat =
+                cudaMalloc((void **) &d_inmatB, imginB.md->nelement * sizeof(float));
+            if (cudaStat != cudaSuccess)
             {
                 printf("device memory allocation failed");
                 return EXIT_FAILURE;
@@ -507,10 +491,9 @@ errno_t computeSGEMM(
 
 
         {
-            cudaError_t stat = cudaMemcpy(d_inmatB, imarrayB,
-                                          imginB.md->nelement * sizeof(float),
+            cudaError_t stat = cudaMemcpy(d_inmatB, imarrayB, imginB.md->nelement * sizeof(float),
                                           cudaMemcpyHostToDevice);
-            if(stat != cudaSuccess)
+            if (stat != cudaSuccess)
             {
                 printf("cudaMemcpy failed\n");
                 return EXIT_FAILURE;
@@ -520,9 +503,9 @@ errno_t computeSGEMM(
 
         float *d_outmat;
         {
-            cudaError_t cudaStat = cudaMalloc((void **)&d_outmat,
-                                              outimg->md->nelement * sizeof(float));
-            if(cudaStat != cudaSuccess)
+            cudaError_t cudaStat =
+                cudaMalloc((void **) &d_outmat, outimg->md->nelement * sizeof(float));
+            if (cudaStat != cudaSuccess)
             {
                 printf("device memory allocation failed");
                 return EXIT_FAILURE;
@@ -534,7 +517,7 @@ errno_t computeSGEMM(
         cublasHandle_t handle;
         {
             cublasStatus_t stat = cublasCreate(&handle);
-            if(stat != CUBLAS_STATUS_SUCCESS)
+            if (stat != CUBLAS_STATUS_SUCCESS)
             {
                 printf("cublasCreate failed\n");
                 return EXIT_FAILURE;
@@ -546,24 +529,22 @@ errno_t computeSGEMM(
 
         cublasOperation_t OPA = CUBLAS_OP_N;
         cublasOperation_t OPB = CUBLAS_OP_N;
-        if(TranspA == 1)
+        if (TranspA == 1)
         {
             OPA = CUBLAS_OP_T;
         }
-        if(TranspB == 1)
+        if (TranspB == 1)
         {
             OPB = CUBLAS_OP_T;
         }
 
 
         {
-            cublasStatus_t stat = cublasSgemm(handle, OPA, OPB,
-                                              Mdim, Ndim, Kdim, alpha,
-                                              d_inmatA, inA_Mdim,
-                                              d_inmatB, inB_Mdim,
-                                              beta, d_outmat, outMdim);
+            cublasStatus_t stat =
+                cublasSgemm(handle, OPA, OPB, Mdim, Ndim, Kdim, alpha, d_inmatA, inA_Mdim, d_inmatB,
+                            inB_Mdim, beta, d_outmat, outMdim);
 
-            if(stat != CUBLAS_STATUS_SUCCESS)
+            if (stat != CUBLAS_STATUS_SUCCESS)
             {
                 printf("cublasSgemm failed\n");
                 return EXIT_FAILURE;
@@ -574,9 +555,10 @@ errno_t computeSGEMM(
 
 
         {
-            cudaError_t stat = cudaMemcpy(outimg->im->array.F, d_outmat,
-                                          outimg->md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
-            if(stat != cudaSuccess)
+            cudaError_t stat =
+                cudaMemcpy(outimg->im->array.F, d_outmat, outimg->md->nelement * sizeof(float),
+                           cudaMemcpyDeviceToHost);
+            if (stat != cudaSuccess)
             {
                 printf("cudaMemcpy failed\n");
                 return EXIT_FAILURE;
@@ -593,40 +575,37 @@ errno_t computeSGEMM(
     }
 
 
-    if(SGEMMcomputed == 0)
+    if (SGEMMcomputed == 0)
     {
         //printf("[%d] Running SGEMM on CPU\n", GPUdev);
         //fflush(stdout);
 
         CBLAS_TRANSPOSE OPA = CblasNoTrans;
-        if(TranspA == 1)
+        if (TranspA == 1)
         {
             OPA = CblasTrans;
         }
 
         CBLAS_TRANSPOSE OPB = CblasNoTrans;
-        if(TranspB == 1)
+        if (TranspB == 1)
         {
             OPB = CblasTrans;
         }
 
         // TODO why are alpha and beta not used here like in the GPU case ?
-        cblas_sgemm(CblasColMajor, OPA, OPB,
-                    Mdim, Ndim, Kdim, 1.0,
-                    imarrayA, inA_Mdim,
-                    imarrayB, inB_Mdim,
-                    0.0, outimg->im->array.F, outMdim);
+        cblas_sgemm(CblasColMajor, OPA, OPB, Mdim, Ndim, Kdim, 1.0, imarrayA, inA_Mdim, imarrayB,
+                    inB_Mdim, 0.0, outimg->im->array.F, outMdim);
     }
 
     printf("Freeing float arrays\n");
     fflush(stdout);
 
-    if(imginA.md->datatype != _DATATYPE_FLOAT)
+    if (imginA.md->datatype != _DATATYPE_FLOAT)
     {
         free(imarrayA);
     }
 
-    if(imginB.md->datatype != _DATATYPE_FLOAT)
+    if (imginB.md->datatype != _DATATYPE_FLOAT)
     {
         free(imarrayB);
     }
@@ -646,7 +625,8 @@ static MILK_HOT errno_t compute_function()
     resolveIMGID(&imginA, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imginB = imgid_make_from_name(inmatB);
-    if (imginA.ID == -1) {
+    if (imginA.ID == -1)
+    {
         return RETURN_FAILURE;
     }
     resolveIMGID(&imginB, ERRMODE_WARN, dcimg, dcnimg);
@@ -654,8 +634,9 @@ static MILK_HOT errno_t compute_function()
 
     // output
 
-    IMGID imgM  = imgid_make_from_name(outM);
-    if (imginB.ID == -1) {
+    IMGID imgM = imgid_make_from_name(outM);
+    if (imginB.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
@@ -665,11 +646,7 @@ static MILK_HOT errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-
-
         computeSGEMM(imginA, imginB, &imgM, *transpA, *transpB, *GPUdevice);
-
-
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -689,17 +666,13 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_linalgebra__SGEMM()
+errno_t CLIADDCMD_linalgebra__SGEMM()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
@@ -711,9 +684,5 @@ CLIADDCMD_linalgebra__SGEMM()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif
-

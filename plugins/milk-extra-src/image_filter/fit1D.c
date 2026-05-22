@@ -9,25 +9,25 @@
 #include <math.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#    include "CLIcore_standalone.h"
+#    include "COREMOD_memory/COREMOD_memory.h"
 #else
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+#    include <math.h>
+#    include <stdint.h>
+#    include <stdbool.h>
+#    include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#endif
+#    ifdef MILK_NO_CLI
+#        include "CLIcore_standalone.h"
+#    else
+#        include "libmilkdata/milkdata.h"
+#        include "milkDebugTools.h"
+#        include "fps.h"
+#        include "ImageStreamIO/ImageStreamIO.h"
+#    endif
 #endif
 #include "statistic/statistic.h"
 
@@ -48,37 +48,37 @@ int filter_fit1D(const char *__restrict fname, long NBpts)
     float  cnt, coeff;
 
     xarray = (float *) malloc(sizeof(float) * NBpts);
-    if(xarray == NULL)
+    if (xarray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     yarray = (float *) malloc(sizeof(float) * NBpts);
-    if(yarray == NULL)
+    if (yarray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     CX = (float *) malloc(sizeof(float) * PolyOrder);
-    if(CX == NULL)
+    if (CX == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     CXb = (float *) malloc(sizeof(float) * PolyOrder);
-    if(CXb == NULL)
+    if (CXb == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     fp = fopen(fname, "r");
-    for(i = 0; i < NBpts; i++)
+    for (i = 0; i < NBpts; i++)
     {
-        if(fscanf(fp, "%f %f\n", &xarray[i], &yarray[i]) != 2)
+        if (fscanf(fp, "%f %f\n", &xarray[i], &yarray[i]) != 2)
         {
             printf("ERROR: fscanf, %s line %d\n", __FILE__, __LINE__);
             exit(0);
@@ -87,12 +87,12 @@ int filter_fit1D(const char *__restrict fname, long NBpts)
     }
     fclose(fp);
 
-    for(k = 0; k < PolyOrder; k++)
+    for (k = 0; k < PolyOrder; k++)
     {
         CX[k] = 0.0;
     }
 
-    if(1 == 0)
+    if (1 == 0)
     {
         // + side
     }
@@ -106,28 +106,30 @@ int filter_fit1D(const char *__restrict fname, long NBpts)
         CX[4] = -6.17691e-05;
         CX[5] = -2.94572e-06;
     }
-    for(k = 0; k < PolyOrder; k++)
+    for (k = 0; k < PolyOrder; k++)
     {
         CXb[k] = CX[k];
     }
 
     bvalue = 1000000.0;
-    for(iter = 0; iter < NBiter; iter++)
+    for (iter = 0; iter < NBiter; iter++)
     {
         amp = 1.0e-7;
-        if(iter > 0)
-            for(k = 0; k < PolyOrder; k++)
+        if (iter > 0)
+        {
+            for (k = 0; k < PolyOrder; k++)
             {
                 CX[k] = CXb[k] + amp * 2.0 * (ran1() - 0.5);
             }
+        }
 
         value = 0.0;
         cnt   = 0.0;
-        for(i = 0; i < NBpts; i++)
+        for (i = 0; i < NBpts; i++)
         {
             x   = xarray[i];
             tmp = 0.0;
-            for(k = 0; k < PolyOrder; k++)
+            for (k = 0; k < PolyOrder; k++)
             {
                 tmp += CX[k] * pow(x, k);
             }
@@ -137,15 +139,15 @@ int filter_fit1D(const char *__restrict fname, long NBpts)
         }
         value = sqrt(value / cnt);
         //      printf("value = %g\n");
-        if(iter == 0)
+        if (iter == 0)
         {
             bvalue = value;
         }
         else
         {
-            if(value < bvalue)
+            if (value < bvalue)
             {
-                for(k = 0; k < PolyOrder; k++)
+                for (k = 0; k < PolyOrder; k++)
                 {
                     CXb[k] = CX[k];
                 }
@@ -153,13 +155,13 @@ int filter_fit1D(const char *__restrict fname, long NBpts)
                 printf("BEST VALUE = %g\n", value);
                 printf("f(r) = ");
                 printf(" %g", CX[0]);
-                for(k = 1; k < PolyOrder; k++)
+                for (k = 1; k < PolyOrder; k++)
                 {
                     printf(" + r**%ld*%g", k, CX[k]);
                 }
                 printf("\n");
 
-                for(k = 0; k < PolyOrder; k++)
+                for (k = 0; k < PolyOrder; k++)
                 {
                     printf("CX[%ld] = %g\n", k, CX[k]);
                 }

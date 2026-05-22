@@ -22,7 +22,7 @@ set(SOURCES
         quicksort_multiarray.c
         timeutils.c
     )
-    
+
     # Core library (no TUI/ncurses dependency)
     add_library(milkprocessinfo SHARED ${SOURCES})
     # Include directories
@@ -31,10 +31,10 @@ set(SOURCES
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
         $<INSTALL_INTERFACE:include>
     )
-    
+
     # Link dependencies
     target_link_libraries(milkprocessinfo PUBLIC ImageStreamIO milkcommon rt pthread m)
-        
+
     install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
 
 # Static archive for standalone LTO builds
@@ -55,7 +55,7 @@ if(USE_STATIC_LTO)
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
       $<INSTALL_INTERFACE:include>)
 endif()
-    
+
 # Add milk-procinfo-help executable
 add_executable(milk-procinfo-help milk-procinfo-help.c)
 install(TARGETS milk-procinfo-help DESTINATION bin)
@@ -63,8 +63,8 @@ install(TARGETS milk-procinfo-help DESTINATION bin)
 add_executable(milk-procinfo-rm milk-procinfo-rm.c)
 target_include_directories(milk-procinfo-rm PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
-target_link_libraries(milk-procinfo-rm PUBLIC 
-    milkprocessinfo 
+target_link_libraries(milk-procinfo-rm PUBLIC
+    milkprocessinfo
     ImageStreamIO
     pthread
     m
@@ -74,8 +74,8 @@ install(TARGETS milk-procinfo-rm DESTINATION bin)
 add_executable(milk-procinfo-list procCTRL/milk-procinfo-list.c)
 target_include_directories(milk-procinfo-list PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
-target_link_libraries(milk-procinfo-list PUBLIC 
-    milkprocessinfo 
+target_link_libraries(milk-procinfo-list PUBLIC
+    milkprocessinfo
     ImageStreamIO
     pthread
     m
@@ -83,7 +83,7 @@ target_link_libraries(milk-procinfo-list PUBLIC
 install(TARGETS milk-procinfo-list DESTINATION bin)
 
 
-install(FILES 
+install(FILES
     processinfo.h
     processtools.h
     processtools_trigger.h
@@ -120,8 +120,8 @@ add_executable(milk-procCTRL
     procCTRL/procCTRL_TUI_sort.c
     procCTRL/procCTRL_TUIcompat.c
 )
-target_link_libraries(milk-procCTRL PUBLIC 
-    milkprocessinfo 
+target_link_libraries(milk-procCTRL PUBLIC
+    milkprocessinfo
     ImageStreamIO
     pthread
     m

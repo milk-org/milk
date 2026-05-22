@@ -14,67 +14,41 @@
 static int CR2toFITS_NORM = 0;
 
 // Forward declaration
-imageID CR2toFITS(
-    const char *__restrict fnameCR2,
-    const char *__restrict fnameFITS);
+imageID CR2toFITS(const char *__restrict fnameCR2, const char *__restrict fnameFITS);
 
 /* =========================================
  *  V2 PARAMS
  * ======================================= */
 
-static char p_in[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "im01.CR2";
-static char p_out[
-    FUNCTION_PARAMETER_STRMAXLEN]
-    = "im01.fits";
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]  = "im01.CR2";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN] = "im01.fits";
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "cr2tofits",
-    .cmdkey      = "cr2tofits",
-    .description =
-        "convert cr2 file to fits",
-    .description_long =
-        "Convert Canon CR2 raw camera files to FITS format. Extracts the raw sensor data and writes it as a FITS image."
+    .fps_name         = "cr2tofits",
+    .cmdkey           = "cr2tofits",
+    .description      = "convert cr2 file to fits",
+    .description_long = "Convert Canon CR2 raw camera files to FITS format. Extracts the raw "
+                        "sensor data and writes it as a FITS image."
 };
 
-#define FPS_PARAMS(X) \
-    X(".in_name", p_in, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input CR2 file") \
-    X(".out_name", p_out, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output FITS file")
+#define FPS_PARAMS(X)                                                             \
+    X(".in_name", p_in, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input CR2 file") \
+    X(".out_name", p_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output FITS file")
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
-static const int nb_bindings =
-    sizeof(my_bindings) /
-    sizeof(FPS_CLI_BINDING);
+static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
+static const int       nb_bindings   = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
+static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
 
-static CLICMDDATA CLIcmddata = {
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-static CMDSETTINGS cms = {0};
+static CLICMDDATA  CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS cms        = { 0 };
 
-static __attribute__((constructor))
-void init_cms(void)
+static __attribute__((constructor)) void init_cms(void)
 {
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
+    strncpy(CLIcmddata.key, FPS_app_info.cmdkey, sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description, FPS_app_info.description, sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL)
+    {
         CLIcmddata.cmdsettings = &cms;
     }
 }
@@ -87,17 +61,13 @@ static MILK_HOT errno_t compute_function()
 
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_image_format__CR2toFITS()
+errno_t CLIADDCMD_image_format__CR2toFITS()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
@@ -109,8 +79,7 @@ CLIADDCMD_image_format__CR2toFITS()
  *
  * @note assumes dcraw is installed
  */
-imageID CR2toFITS(const char *__restrict fnameCR2,
-                  const char *__restrict fnameFITS)
+imageID CR2toFITS(const char *__restrict fnameCR2, const char *__restrict fnameFITS)
 {
     FILE *fp;
 
@@ -124,73 +93,70 @@ imageID CR2toFITS(const char *__restrict fnameCR2,
     EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -t 0 -D -4 -c %s > _tmppgm.pgm", fnameCR2);
 
     ID = read_PGMimage("_tmppgm.pgm", "tmpfits1");
-    if(system("rm _tmppgm.pgm") != 0)
+    if (system("rm _tmppgm.pgm") != 0)
     {
         PRINT_ERROR("system() returns non-zero value");
     }
 
-    if(CR2toFITS_NORM == 1)
+    if (CR2toFITS_NORM == 1)
     {
-        EXECUTE_SYSTEM_COMMAND_NOCHECK(
-            "dcraw -i -v %s | grep \"ISO speed\"| awk '{print $3}' > "
-            "iso_tmp.txt",
-            fnameCR2);
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -i -v %s | grep \"ISO speed\"| awk '{print $3}' > "
+                                       "iso_tmp.txt",
+                                       fnameCR2);
 
-        if((fp = fopen("iso_tmp.txt", "r")) == NULL)
+        if ((fp = fopen("iso_tmp.txt", "r")) == NULL)
         {
             PRINT_ERROR("Cannot open file");
         }
-        if(fscanf(fp, "%f\n", &iso) != 1)
+        if (fscanf(fp, "%f\n", &iso) != 1)
         {
             PRINT_ERROR("fscanf returns value != 1");
         }
         fclose(fp);
 
-        if(system("rm iso_tmp.txt") != 0)
+        if (system("rm iso_tmp.txt") != 0)
         {
             PRINT_ERROR("system() returns non-zero value");
         }
 
         printf("iso = %f\n", iso);
 
-        EXECUTE_SYSTEM_COMMAND_NOCHECK(
-            "dcraw -i -v %s | grep \"Shutter\"| awk '{print $2}' > "
-            "shutter_tmp.txt",
-            fnameCR2);
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -i -v %s | grep \"Shutter\"| awk '{print $2}' > "
+                                       "shutter_tmp.txt",
+                                       fnameCR2);
 
-        if((fp = fopen("shutter_tmp.txt", "r")) == NULL)
+        if ((fp = fopen("shutter_tmp.txt", "r")) == NULL)
         {
             PRINT_ERROR("Cannot open file");
         }
 
-        if(fscanf(fp, "%f\n", &shutter) != 1)
+        if (fscanf(fp, "%f\n", &shutter) != 1)
         {
             PRINT_ERROR("fscanf returns value != 1");
         }
         fclose(fp);
 
-        if(system("rm shutter_tmp.txt") != 0)
+        if (system("rm shutter_tmp.txt") != 0)
         {
             PRINT_ERROR("system() returns non-zero value");
         }
         printf("shutter = %f\n", shutter);
 
-        EXECUTE_SYSTEM_COMMAND_NOCHECK(
-            "dcraw -i -v %s | grep \"Aperture\"| awk '{print $2}' > "
-            "aperture_tmp.txt",
-            fnameCR2);
+        EXECUTE_SYSTEM_COMMAND_NOCHECK("dcraw -i -v %s | grep \"Aperture\"| awk '{print $2}' > "
+                                       "aperture_tmp.txt",
+                                       fnameCR2);
 
-        if((fp = fopen("aperture_tmp.txt", "r")) == NULL)
+        if ((fp = fopen("aperture_tmp.txt", "r")) == NULL)
         {
             PRINT_ERROR("Cannot open file");
         }
-        if(fscanf(fp, "f/%f\n", &aperture) != 1)
+        if (fscanf(fp, "f/%f\n", &aperture) != 1)
         {
             PRINT_ERROR("fscanf returns value != 1");
         }
         fclose(fp);
 
-        if(system("rm aperture_tmp.txt") != 0)
+        if (system("rm aperture_tmp.txt") != 0)
         {
             PRINT_ERROR("system() returns non-zero value");
         }
@@ -201,7 +167,7 @@ imageID CR2toFITS(const char *__restrict fnameCR2,
         xsize = dcimg[ID].md[0].size[0];
         ysize = dcimg[ID].md[0].size[1];
 
-        for(ii = 0; ii < xsize * ysize; ii++)
+        for (ii = 0; ii < xsize * ysize; ii++)
         {
             dcimg[ID].array.F[ii] /= (shutter * aperture * aperture * iso);
         }

@@ -8,12 +8,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
@@ -33,10 +33,7 @@
  * @param CFindex
  * @return errno_t
  */
-errno_t create_new_leaf(CLUSTERTREE *ctree,
-                        double      *datarray,
-                        long double  ssqr,
-                        long        *CFindex)
+errno_t create_new_leaf(CLUSTERTREE *ctree, double *datarray, long double ssqr, long *CFindex)
 {
     DEBUG_TRACE_FSTART();
 
@@ -49,9 +46,7 @@ errno_t create_new_leaf(CLUSTERTREE *ctree,
     ctree->CFarray[CFi].level       = -1;
     ctree->CFarray[CFi].parentindex = -1;
     ctree->CFarray[CFi].N           = 1;
-    memcpy(ctree->CFarray[CFi].datasumvec,
-           datarray,
-           sizeof(double) * ctree->npix);
+    memcpy(ctree->CFarray[CFi].datasumvec, datarray, sizeof(double) * ctree->npix);
     ctree->CFarray[CFi].datassq = ssqr;
 
     ctree->CFarray[CFi].sum2 = ssqr;
@@ -61,13 +56,11 @@ errno_t create_new_leaf(CLUSTERTREE *ctree,
 
     // for fixed leaf position
     // will not change as points are added
-    memcpy(ctree->CFarray[CFi].dataposvec,
-           datarray,
-           sizeof(double) * ctree->npix);
+    memcpy(ctree->CFarray[CFi].dataposvec, datarray, sizeof(double) * ctree->npix);
     // position vector source ID is current CFi
     ctree->CFarray[CFi].posvecsourceID = CFi;
 
-    ctree->CFarray[CFi].pathcnt = 0.0;
+    ctree->CFarray[CFi].pathcnt         = 0.0;
     ctree->CFarray[CFi].pathdistcompcnt = 0.0;
 
     ctree->CFarray[CFi].status |= CLUSTER_CF_STATUS_CREATE;

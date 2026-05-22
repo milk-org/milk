@@ -34,7 +34,7 @@ int cli_calc_eval_line(const char *input);
 
 /**
  * @brief Evaluate a string as a pure math expression, returning the result value silently.
- * 
+ *
  * @param input     Expression string
  * @param out_type  Pointer to receive the parsed type (1=long, 2=double)
  * @param out_lval  Pointer to receive long value

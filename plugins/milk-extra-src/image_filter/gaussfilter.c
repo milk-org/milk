@@ -19,12 +19,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "gaussfilter.h"
 #include "fps.h"
@@ -41,7 +41,8 @@ static FPS_APP_INFO FPS_app_info = {
     .cmdkey      = "gaussfilt",
     .description = "gaussian 2D filtering",
     .description_long =
-        "Apply a 2D Gaussian convolution filter to an image. The kernel width is specified as a standard deviation (sigma) in pixels. Implemented via FFT for efficiency."
+        "Apply a 2D Gaussian convolution filter to an image. The kernel width is specified as a "
+        "standard deviation (sigma) in pixels. Implemented via FFT for efficiency."
 };
 
 
@@ -49,32 +50,23 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char  gaussfilt_inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char  gaussfilt_outimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static float gaussfilt_sigma = 0.0;
-static int32_t gaussfilt_filtersize = 0;
+static char    gaussfilt_inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char    gaussfilt_outimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static float   gaussfilt_sigma                                   = 0.0;
+static int32_t gaussfilt_filtersize                              = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".in_name", gaussfilt_inimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, \
-      "input image") \
-    X(".out_name", gaussfilt_outimname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output image") \
-    X(".sigma", &gaussfilt_sigma, \
-      FPTYPE_FLOAT32, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "gaussian sigma") \
-    X(".filter_size", &gaussfilt_filtersize, \
-      FPTYPE_INT32, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+#define FPS_PARAMS(X)                                                                        \
+    X(".in_name", gaussfilt_inimname, FPTYPE_STREAMNAME, 1,                                  \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, "input image")                           \
+    X(".out_name", gaussfilt_outimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
+      "output image")                                                                        \
+    X(".sigma", &gaussfilt_sigma, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "gaussian sigma") \
+    X(".filter_size", &gaussfilt_filtersize, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,          \
       "filter box size")
 
 
@@ -82,76 +74,57 @@ static int32_t gaussfilt_filtersize = 0;
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static void gauss_filter_step(
-    IMAGE *imgin,
-    IMAGE *imgout,
-    float  sigma,
-    int    filter_size)
+static void gauss_filter_step(IMAGE *imgin, IMAGE *imgout, float sigma, int filter_size)
 {
-    uint32_t nx = imgin->md[0].size[0];
-    uint32_t ny = imgin->md[0].size[1];
-    uint32_t nz = (imgin->md[0].naxis == 3)
-        ? imgin->md[0].size[2] : 1;
-    int fsize = filter_size;
-    if (fsize > (int)nx / 2 - 1) {
+    uint32_t nx    = imgin->md[0].size[0];
+    uint32_t ny    = imgin->md[0].size[1];
+    uint32_t nz    = (imgin->md[0].naxis == 3) ? imgin->md[0].size[2] : 1;
+    int      fsize = filter_size;
+    if (fsize > (int) nx / 2 - 1)
+    {
         fsize = nx / 2 - 1;
     }
-    if (fsize > (int)ny / 2 - 1) {
+    if (fsize > (int) ny / 2 - 1)
+    {
         fsize = ny / 2 - 1;
     }
 
-    float *array = (float *) malloc(
-        (2 * fsize + 1) * sizeof(float));
-    float sum = 0.0;
-    for (int i = 0;
-         i < (2 * fsize + 1); i++)
+    float *array = (float *) malloc((2 * fsize + 1) * sizeof(float));
+    float  sum   = 0.0;
+    for (int i = 0; i < (2 * fsize + 1); i++)
     {
-        array[i] = exp(
-            -((i - fsize) * (i - fsize))
-            / sigma / sigma);
+        array[i] = exp(-((i - fsize) * (i - fsize)) / sigma / sigma);
         sum += array[i];
     }
-    for (int i = 0;
-         i < (2 * fsize + 1); i++)
+    for (int i = 0; i < (2 * fsize + 1); i++)
     {
         array[i] /= sum;
     }
 
-    float *tmp = (float *) calloc(
-        nx * ny, sizeof(float));
-    for (uint32_t k = 0; k < nz; k++) {
-        float *pl_in =
-            imgin->array.F + k * nx * ny;
-        float *pl_out =
-            imgout->array.F + k * nx * ny;
-        memset(tmp, 0,
-               nx * ny * sizeof(float));
-        for (uint32_t j = 0; j < ny; j++) {
-            for (uint32_t i = fsize;
-                 i < nx - fsize; i++)
+    float *tmp = (float *) calloc(nx * ny, sizeof(float));
+    for (uint32_t k = 0; k < nz; k++)
+    {
+        float *pl_in  = imgin->array.F + k * nx * ny;
+        float *pl_out = imgout->array.F + k * nx * ny;
+        memset(tmp, 0, nx * ny * sizeof(float));
+        for (uint32_t j = 0; j < ny; j++)
+        {
+            for (uint32_t i = fsize; i < nx - fsize; i++)
             {
-                for (int ii = -fsize;
-                     ii <= fsize; ii++)
+                for (int ii = -fsize; ii <= fsize; ii++)
                 {
-                    tmp[j * nx + i] +=
-                        array[ii + fsize]
-                        * pl_in[
-                            j * nx + i + ii];
+                    tmp[j * nx + i] += array[ii + fsize] * pl_in[j * nx + i + ii];
                 }
             }
         }
-        for (uint32_t i = 0; i < nx; i++) {
-            for (uint32_t j = fsize;
-                 j < ny - fsize; j++)
+        for (uint32_t i = 0; i < nx; i++)
+        {
+            for (uint32_t j = fsize; j < ny - fsize; j++)
             {
                 float v = 0;
-                for (int jj = -fsize;
-                     jj <= fsize; jj++)
+                for (int jj = -fsize; jj <= fsize; jj++)
                 {
-                    v += array[jj + fsize]
-                         * tmp[
-                            (j + jj) * nx
-                            + i];
+                    v += array[jj + fsize] * tmp[(j + jj) * nx + i];
                 }
                 pl_out[j * nx + i] = v;
             }
@@ -167,22 +140,12 @@ static void gauss_filter_step(
  * ========================================= */
 
 #ifndef FPS_STANDALONE
-imageID gauss_filter(
-    const char *ID_name,
-    const char *out_name,
-    float       sigma,
-    int         filter_size)
+imageID gauss_filter(const char *ID_name, const char *out_name, float sigma, int filter_size)
 {
-    IMGID in =
-        imgid_make_from_name(ID_name);
-    resolveIMGID(
-        &in, ERRMODE_ABORT,
-        dcimg, dcnimg);
-    IMGID out = stream_connect_create_2Df32(
-        out_name,
-        in.md->size[0], in.md->size[1]);
-    gauss_filter_step(
-        in.im, out.im, sigma, filter_size);
+    IMGID in = imgid_make_from_name(ID_name);
+    resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID out = stream_connect_create_2Df32(out_name, in.md->size[0], in.md->size[1]);
+    gauss_filter_step(in.im, out.im, sigma, filter_size);
     ImageStreamIO_UpdateIm(out.im);
     return out.ID;
 }
@@ -196,40 +159,31 @@ imageID gauss_filter(
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
 static MILK_HOT errno_t compute_function()
 {
-    IMGID in =
-        imgid_make_from_name(
-            gaussfilt_inimname);
-    resolveIMGID(
-        &in, ERRMODE_NULL,
-        dcimg, dcnimg);
+    IMGID in = imgid_make_from_name(gaussfilt_inimname);
+    resolveIMGID(&in, ERRMODE_NULL, dcimg, dcnimg);
 
-    if (in.im == NULL) {
+    if (in.im == NULL)
+    {
         return RETURN_FAILURE;
     }
 
-    IMGID out = stream_connect_create_2Df32(
-        gaussfilt_outimname,
-        in.md->size[0], in.md->size[1]);
+    IMGID out = stream_connect_create_2Df32(gaussfilt_outimname, in.md->size[0], in.md->size[1]);
 
-    if (out.im == NULL) {
+    if (out.im == NULL)
+    {
         return RETURN_FAILURE;
     }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    gauss_filter_step(
-        in.im, out.im,
-        gaussfilt_sigma,
-        gaussfilt_filtersize);
-    processinfo_update_output_stream(
-        processinfo, out.im, in.im);
+    gauss_filter_step(in.im, out.im, gaussfilt_sigma, gaussfilt_filtersize);
+    processinfo_update_output_stream(processinfo, out.im, in.im);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -244,16 +198,13 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t __attribute__((unused)) CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
 errno_t gaussfilter_addCLIcmd()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
@@ -265,8 +216,5 @@ errno_t gaussfilter_addCLIcmd()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif

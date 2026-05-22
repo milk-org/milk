@@ -8,7 +8,6 @@
 
 #include "CLIcore.h"
 
-errno_t
-CLIADDCMD_clustering__imcube_mkcluster();
+errno_t CLIADDCMD_clustering__imcube_mkcluster();
 
 #endif

@@ -7,12 +7,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
@@ -23,10 +23,6 @@
 //#define DEBUGPRINT
 
 
-
-
-
-
 /**
  * @brief Condense single node if possible
  *
@@ -34,11 +30,7 @@
  * to reduce tree depth.
  *
  */
-errno_t ctree_condense_node(
-    CLUSTERTREE *ctree,
-    long CFindex,
-    int *op
-)
+errno_t ctree_condense_node(CLUSTERTREE *ctree, long CFindex, int *op)
 {
     DEBUG_TRACE_FSTART();
 
@@ -47,13 +39,13 @@ errno_t ctree_condense_node(
     // if we were to condense this node, how many children would it have ?
     long nbnewchild = 0;
 
-    for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
+    for (int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
     {
         // scan children
         // cfic is child index
         long cfic = ctree->CFarray[CFindex].childindex[chi];
 
-        if(ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
+        if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
         {
             int ngchi = ctree->CFarray[cfic].NBchild;
             nbnewchild += ngchi;
@@ -66,27 +58,28 @@ errno_t ctree_condense_node(
 
     // If the total number of descendents is between 1 and B, we can condense (compress levels)
     //
-    if((nbnewchild > 0) && (nbnewchild < ctree->B) && (nbnewchild > ctree->CFarray[CFindex].NBchild))
+    if ((nbnewchild > 0) && (nbnewchild < ctree->B) &&
+        (nbnewchild > ctree->CFarray[CFindex].NBchild))
     {
-        long  nchild = 0;
-        long *nchiCFI   = (long *) malloc(sizeof(long) * nbnewchild);
-        if(nchiCFI == NULL)
+        long  nchild  = 0;
+        long *nchiCFI = (long *) malloc(sizeof(long) * nbnewchild);
+        if (nchiCFI == NULL)
         {
             FUNC_RETURN_FAILURE("malloc error");
         }
 
 
-        for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
+        for (int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
         {
             long cfic = ctree->CFarray[CFindex].childindex[chi];
 
-            if(ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
+            if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
             {
                 int ngchi = ctree->CFarray[cfic].NBchild;
-                for(int gchi = 0; gchi < ngchi; gchi++)
+                for (int gchi = 0; gchi < ngchi; gchi++)
                 {
                     long gchiCFindex = ctree->CFarray[cfic].childindex[gchi];
-                    nchiCFI[nchild] = gchiCFindex;
+                    nchiCFI[nchild]  = gchiCFindex;
                     nchild++;
                 }
 
@@ -102,9 +95,9 @@ errno_t ctree_condense_node(
 
 
         // update children
-        for(int nchi=0; nchi<nbnewchild; nchi++)
+        for (int nchi = 0; nchi < nbnewchild; nchi++)
         {
-            ctree->CFarray[CFindex].childindex[nchi] = nchiCFI[nchi];
+            ctree->CFarray[CFindex].childindex[nchi]  = nchiCFI[nchi];
             ctree->CFarray[nchiCFI[nchi]].parentindex = CFindex;
         }
         // update number of child
@@ -119,16 +112,9 @@ errno_t ctree_condense_node(
     }
 
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
-
-
-
 
 
 /**
@@ -140,10 +126,7 @@ errno_t ctree_condense_node(
  * @param ctree     pointer to tree
  * @return errno_t
  */
-errno_t ctree_condense(
-    CLUSTERTREE *ctree,
-    int *nbop
-)
+errno_t ctree_condense(CLUSTERTREE *ctree, int *nbop)
 {
     DEBUG_TRACE_FSTART();
 
@@ -153,14 +136,14 @@ errno_t ctree_condense(
 
     *nbop = 0;
 
-    for(long cfi = 0; cfi < ctree->NBCF; cfi++)
+    for (long cfi = 0; cfi < ctree->NBCF; cfi++)
     {
-        if(ctree->CFarray[cfi].type == CLUSTER_CF_TYPE_NODE)
+        if (ctree->CFarray[cfi].type == CLUSTER_CF_TYPE_NODE)
         {
             ctree_condense_node(ctree, cfi, nbop);
         }
 
-        if(*nbop > 0)
+        if (*nbop > 0)
         {
             // return from function
             // only one condense operation at a time

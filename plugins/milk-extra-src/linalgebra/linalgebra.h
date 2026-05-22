@@ -9,11 +9,11 @@
 
 #ifdef HAVE_CUDA
 
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-#include <device_types.h>
-#include <pthread.h>
+#    include <cublas_v2.h>
+#    include <cuda_runtime.h>
+#    include <cuda_runtime_api.h>
+#    include <device_types.h>
+#    include <pthread.h>
 
 #endif
 

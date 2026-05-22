@@ -187,7 +187,7 @@ X(FPTYPE_ONOFF, ".enabled", "ON",            \
    `FPTYPE_STRING`, using `static char *var` and
    passing `&var` will cause the FPS engine to
    overwrite the pointer location itself, causing
-   a severe buffer overflow and `SIGSEGV`. 
+   a severe buffer overflow and `SIGSEGV`.
    Always use `static char var[FUNCTION_PARAMETER_STRMAXLEN]`
    and pass `var` without the `&`. Use `&` only for scalar primitives.
 

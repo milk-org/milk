@@ -937,4 +937,3 @@ echo ""
 
 rm -f "${PERF_OUT}" "${PROCINFO_OUT}"
 rm -f "${PERF_OUT_TOTAL}" "${PERF_OUT_WARMUP}"
-

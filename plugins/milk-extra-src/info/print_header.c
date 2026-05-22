@@ -7,12 +7,12 @@
  */
 
 #ifdef USE_NCURSES
-#include <ncurses.h>
+#    include <ncurses.h>
 #else
-#define printw(...) printf(__VA_ARGS__)
-#define attron(a)
-#define attroff(a)
-#define A_BOLD 0
+#    define printw(...) printf(__VA_ARGS__)
+#    define attron(a)
+#    define attroff(a)
+#    define A_BOLD 0
 #endif
 
 #include <stdio.h>
@@ -24,12 +24,12 @@
 #include <unistd.h>
 
 #ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
+#    include "CLIcore_standalone.h"
 #else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -43,12 +43,12 @@ errno_t print_header(const char *str, char c)
 
     attron(A_BOLD);
     n = strlen(str);
-    for(i = 0; i < (infoscreen_wcol - n) / 2; i++)
+    for (i = 0; i < (infoscreen_wcol - n) / 2; i++)
     {
         printw("%c", c);
     }
     printw("%s", str);
-    for(i = 0; i < (infoscreen_wcol - n) / 2 - 1; i++)
+    for (i = 0; i < (infoscreen_wcol - n) / 2 - 1; i++)
     {
         printw("%c", c);
     }

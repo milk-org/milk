@@ -87,7 +87,7 @@ else
   outfile="$filename.header"
 fi
 
-    
+
 if [ -f $outfile ]; then
   CNTskipped=$((CNTskipped + 1))
   #echo "    File $outfile exists -> skipping"
@@ -101,7 +101,7 @@ if $writeoutput; then
   fi
 else
   if [[ $extension == "fz" ]];then
-    cat $filename | fold -w 80 | sed '1,/COMPRESSED_IMAGE/ d' | sed '/END                  /Q' 
+    cat $filename | fold -w 80 | sed '1,/COMPRESSED_IMAGE/ d' | sed '/END                  /Q'
   else
     cat $filename | fold -w 80 | sed '/END                  /Q'
   fi
@@ -117,7 +117,3 @@ done
 
 
 printf "%50s   %5d proc   %5d skip\n" "$PWD" $CNTproc $CNTskipped
-
-
-
-

@@ -7,7 +7,7 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT "imgformat"
-#define MODULE_DESCRIPTION       "Conversion between image format, I/O"
+#define MODULE_DESCRIPTION "Conversion between image format, I/O"
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -23,7 +23,6 @@
 #include "loadCR2toFITSRGB.h"
 #include "read_binary32f.h"
 #include "writeBMP.h"
-
 
 
 /*typedef struct
@@ -43,7 +42,6 @@ INIT_MODULE_LIB(image_format)
 
 static errno_t init_module_CLI()
 {
-
     CLIADDCMD_image_format__extractRGGBchan();
 
     CLIADDCMD_image_format__combineHDR();

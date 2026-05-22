@@ -45,7 +45,7 @@ else
 				echo "${fpsname}    cropmask         ${fpsarg0}"  >> fpslist.txt
 
 				addfpscmdheader
-	
+
 				addfpscmd "setval ${fpsfname}.insname ${CACAO_WFSSTREAM}"
 				addfpscmd "setval ${fpsfname}.procinfo.loopcntMax -1"
 				addfpscmd "setval ${fpsfname}.procinfo.triggermode 3"

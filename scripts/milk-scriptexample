@@ -13,7 +13,7 @@ MSextdescr="Example script long description
 Can span muliple lines
 
 $(tput bold)EXAMPLES:$(tput sgr0)
-	${pname} infname 100 outfname 
+	${pname} infname 100 outfname
 
 "
 

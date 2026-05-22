@@ -8,88 +8,75 @@
 
 #ifdef HAVE_CUDA
 
-#include <cublas_v2.h>
+#    include <cublas_v2.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+#    include <math.h>
+#    include <stdint.h>
+#    include <stdbool.h>
+#    include <unistd.h>
 
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#else
-#include "libmilkdata/milkdata.h"
-#include "milkDebugTools.h"
-#include "fps.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#endif
-#include "COREMOD_memory/COREMOD_memory.h"
-#include "linalgebra_types.h"
+#    ifdef MILK_NO_CLI
+#        include "CLIcore_standalone.h"
+#    else
+#        include "libmilkdata/milkdata.h"
+#        include "milkDebugTools.h"
+#        include "fps.h"
+#        include "ImageStreamIO/ImageStreamIO.h"
+#    endif
+#    include "COREMOD_memory/COREMOD_memory.h"
+#    include "linalgebra_types.h"
 
 extern GPUMATMULTCONF gpumatmultconf[20];
 
 errno_t GPUloadCmat(int index)
 {
-
     printf("LOADING MATRIX TO GPU ... ");
     fflush(stdout);
 
-    for(int device = 0; device < gpumatmultconf[index].NBstreams; device++)
+    for (int device = 0; device < gpumatmultconf[index].NBstreams; device++)
     {
-        for(unsigned int n = gpumatmultconf[index].Noffset[device];
-                n < gpumatmultconf[index].Noffset[device] +
-                gpumatmultconf[index].Nsize[device];
-                n++)
+        for (unsigned int n = gpumatmultconf[index].Noffset[device];
+             n < gpumatmultconf[index].Noffset[device] + gpumatmultconf[index].Nsize[device]; n++)
         {
-            if(gpumatmultconf[index].orientation == 0)
+            if (gpumatmultconf[index].orientation == 0)
             {
-                for(unsigned int m = 0; m < gpumatmultconf[index].M; m++)
+                for (unsigned int m = 0; m < gpumatmultconf[index].M; m++)
                 {
                     gpumatmultconf[index]
-                    .cMat_part[device]
-                    [(n - gpumatmultconf[index].Noffset[device]) *
-                                                                 gpumatmultconf[index].M +
-                                                                 m] =
-                         gpumatmultconf[index]
-                         .cMat[m * gpumatmultconf[index].N + n];
+                        .cMat_part[device][(n - gpumatmultconf[index].Noffset[device]) *
+                                               gpumatmultconf[index].M +
+                                           m] =
+                        gpumatmultconf[index].cMat[m * gpumatmultconf[index].N + n];
                 }
             }
             else
             {
-                for(unsigned int m = 0; m < gpumatmultconf[index].M; m++)
+                for (unsigned int m = 0; m < gpumatmultconf[index].M; m++)
                 {
                     gpumatmultconf[index]
-                    .cMat_part[device]
-                    [(n - gpumatmultconf[index].Noffset[device]) *
-                                                                 gpumatmultconf[index].M +
-                                                                 m] =
-                         gpumatmultconf[index]
-                         .cMat[n * gpumatmultconf[index].M + m];
+                        .cMat_part[device][(n - gpumatmultconf[index].Noffset[device]) *
+                                               gpumatmultconf[index].M +
+                                           m] =
+                        gpumatmultconf[index].cMat[n * gpumatmultconf[index].M + m];
                 }
             }
         }
     }
 
-    for(int device = 0; device < gpumatmultconf[index].NBstreams; device++)
+    for (int device = 0; device < gpumatmultconf[index].NBstreams; device++)
     {
         cudaSetDevice(gpumatmultconf[index].GPUdevice[device]);
-        cublasStatus_t error =
-            cublasSetMatrix(gpumatmultconf[index].M,
-                            gpumatmultconf[index].Nsize[device],
-                            sizeof(float),
-                            gpumatmultconf[index].cMat_part[device],
-                            gpumatmultconf[index].M,
-                            gpumatmultconf[index].d_cMat[device],
-                            gpumatmultconf[index].M);
+        cublasStatus_t error = cublasSetMatrix(
+            gpumatmultconf[index].M, gpumatmultconf[index].Nsize[device], sizeof(float),
+            gpumatmultconf[index].cMat_part[device], gpumatmultconf[index].M,
+            gpumatmultconf[index].d_cMat[device], gpumatmultconf[index].M);
 
-        if(error != CUBLAS_STATUS_SUCCESS)
+        if (error != CUBLAS_STATUS_SUCCESS)
         {
-            printf("cudblasSetMatrix returned error code %d, line(%d)\n",
-                   (int) error,
-                   __LINE__);
+            printf("cudblasSetMatrix returned error code %d, line(%d)\n", (int) error, __LINE__);
             exit(EXIT_FAILURE);
         }
     }

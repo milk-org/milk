@@ -24,43 +24,26 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char * imvecname = NULL;
-static char * inpixiname = NULL;
-static char * inpixmultname = NULL;
-static char * outimname = NULL;
-static long * xsizein = NULL;
-static long * ysizein = NULL;
+static char *imvecname     = NULL;
+static char *inpixiname    = NULL;
+static char *inpixmultname = NULL;
+static char *outimname     = NULL;
+static long *xsizein       = NULL;
+static long *ysizein       = NULL;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".inim", &imvecname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input vector") \
-    X(".inpixi", &inpixiname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "pixel index image") \
-    X(".inpixmult", &inpixmultname, \
-      FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "input pixel mult image") \
-    X(".outim", &outimname, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "output 2D image") \
-    X(".xsize", &xsizein, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "X size") \
-    X(".ysize", &ysizein, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, \
-      "Y size")
+#define FPS_PARAMS(X)                                                                          \
+    X(".inim", &imvecname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input vector")         \
+    X(".inpixi", &inpixiname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "pixel index image") \
+    X(".inpixmult", &inpixmultname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                \
+      "input pixel mult image")                                                                \
+    X(".outim", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output 2D image")         \
+    X(".xsize", &xsizein, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "X size")                     \
+    X(".ysize", &ysizein, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Y size")
 
 
 /* ================================================================
@@ -73,60 +56,51 @@ FPS_V2_SECTION5(FPS_PARAMS)
 //
 //
 //
-errno_t linopt_imtools_vec_to_2DImage(
-    const char *IDvec_name,
-    const char *IDpixindex_name,
-    const char *IDpixmult_name,
-    const char *ID_name,
-    long        xsize,
-    long        ysize,
-    imageID    *outID)
+errno_t linopt_imtools_vec_to_2DImage(const char *IDvec_name,
+                                      const char *IDpixindex_name,
+                                      const char *IDpixmult_name,
+                                      const char *ID_name,
+                                      long        xsize,
+                                      long        ysize,
+                                      imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgvec =
-        imgid_make_from_name(IDvec_name);
-    resolveIMGID(&imgvec, ERRMODE_WARN,
-                 dcimg, dcnimg);
-    if (imgvec.ID == -1) {
+    IMGID imgvec = imgid_make_from_name(IDvec_name);
+    resolveIMGID(&imgvec, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgvec.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
-    IMGID imgpixi =
-        imgid_make_from_name(IDpixindex_name);
-    resolveIMGID(&imgpixi, ERRMODE_WARN,
-                 dcimg, dcnimg);
-    if (imgpixi.ID == -1) {
+    IMGID imgpixi = imgid_make_from_name(IDpixindex_name);
+    resolveIMGID(&imgpixi, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgpixi.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
-    IMGID imgpixm =
-        imgid_make_from_name(IDpixmult_name);
-    resolveIMGID(&imgpixm, ERRMODE_WARN,
-                 dcimg, dcnimg);
-    if (imgpixm.ID == -1) {
+    IMGID imgpixm = imgid_make_from_name(IDpixmult_name);
+    resolveIMGID(&imgpixm, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgpixm.ID == -1)
+    {
         return RETURN_FAILURE;
     }
 
     long NBpix = imgpixi.md->nelement;
 
-    IMGID imgout =
-        imgid_make_from_name_2D(
-            ID_name, xsize, ysize);
+    IMGID imgout       = imgid_make_from_name_2D(ID_name, xsize, ysize);
     imgout.mdt->shared = 0;
-    imgout.im = (IMAGE *) calloc(
-        1, sizeof(IMAGE));
+    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
 
-    for(long k = 0; k < NBpix; k++)
+    for (long k = 0; k < NBpix; k++)
     {
-        imgout.im->array.F[
-            imgpixi.im->array.SI64[k]] =
-            imgvec.im->array.F[k]
-            / imgpixm.im->array.F[k];
+        imgout.im->array.F[imgpixi.im->array.SI64[k]] =
+            imgvec.im->array.F[k] / imgpixm.im->array.F[k];
     }
 
-    if(outID != NULL)
+    if (outID != NULL)
     {
         *outID = imgout.ID;
     }
@@ -141,13 +115,8 @@ static MILK_HOT errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    linopt_imtools_vec_to_2DImage(imvecname,
-                                  inpixiname,
-                                  inpixmultname,
-                                  outimname,
-                                  *xsizein,
-                                  *ysizein,
-                                  NULL);
+    linopt_imtools_vec_to_2DImage(imvecname, inpixiname, inpixmultname, outimname, *xsizein,
+                                  *ysizein, NULL);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -163,17 +132,13 @@ static MILK_HOT errno_t compute_function()
 #ifndef FPS_STANDALONE
 static errno_t CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info, farg, &CLIcmddata,
-        my_bindings, nb_bindings,
-        compute_function);
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
 
-errno_t
-CLIADDCMD_linopt_imtools__vec_to_2DImage()
+errno_t CLIADDCMD_linopt_imtools__vec_to_2DImage()
 {
-    safe_fps_fill_farg_examples(
-        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
@@ -185,9 +150,5 @@ CLIADDCMD_linopt_imtools__vec_to_2DImage()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
-    FPS_app_info,
-    FPS_PARAMS,
-    compute_function)
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif
-

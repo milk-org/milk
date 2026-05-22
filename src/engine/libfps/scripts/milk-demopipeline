@@ -309,4 +309,3 @@ echo "Run 'milk-CTRL' and press D on a stream"
 echo "to see ancestors/descendants."
 echo ""
 echo "Run 'milk-demopipeline cleanup' to stop."
-
