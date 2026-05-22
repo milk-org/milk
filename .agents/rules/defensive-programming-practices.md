@@ -37,3 +37,25 @@ The `milk` project adheres to strong defensive programming practices to guarante
 
 - **Avoid exhaustion:** Apply maximum bounds on iterations, file reads, or memory allocations to prevent infinite loops or Out-Of-Memory (OOM) scenarios.
 - **Milk context:** Enforce fixed bounds on the number of connected streams, FPS parameters, or loop iterations based on known milk macros (e.g., MAX variables). Do not allow unbounded dynamic allocations or parsing in real-time.
+
+## 7. Format String Safety
+
+- **Safe formatting:** Never pass user input or external data directly as the format string to `printf()`, `snprintf()`, or the `PRINT_ERROR` macros.
+- **Why:** Passing untrusted strings directly (e.g., `PRINT_ERROR(untrusted_string)`) exposes the application to format string vulnerabilities and memory corruption if the string contains specifiers like `%x` or `%n`.
+- **Enforcement:** Always use a literal format string: `PRINT_ERROR("%s", untrusted_string)`.
+
+## 8. Time-of-Check to Time-of-Use (TOCTOU) in Shared Memory
+
+- **Concurrent mutation:** When dealing with `/dev/shm` IPC, understand that shared memory can change between the time you check it and the time you use it. Another tmux session or compute unit might alter a stream's dimensions or state while you are reading it.
+- **Enforcement:** Rely on atomic operations, semaphores (as detailed in `concurrency-practices.md`), or local caching of immutable state before entering your compute loops.
+
+## 9. Safe Signal Handling
+
+- **Minimal handlers:** Keep signal handlers (e.g., for `SIGINT`, `SIGTERM`) strictly minimal.
+- **Why:** Signal handlers interrupt the normal flow of the program. Calling non-reentrant functions like `malloc()`, `printf()`, or even `PRINT_ERROR()` inside a signal handler can cause deadlocks or crashes.
+- **Enforcement:** Signal handlers should only set a `volatile sig_atomic_t` flag (e.g., `run_status = 0`) that the main loop safely checks.
+
+## 10. Compiler Sanitizers
+
+- **Automated detection:** Automated tooling catches edge cases that rules might miss. Use AddressSanitizer (ASAN) and UndefinedBehaviorSanitizer (UBSAN) to catch buffer overflows, dangling pointers, and undefined behavior at runtime.
+- **Enforcement:** Ensure that tests and CI workflows test the code with these sanitizers enabled (e.g., compiling with `-fsanitize=address,undefined`).
