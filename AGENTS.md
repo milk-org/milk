@@ -217,6 +217,7 @@ and enforced. Know what they require:
 | `code-style-guide.md` | 100-char lines, Kernel-Doc, Linux kernel style, explicit includes |
 | `compile-after-edit.md` | Always compile-test after C/CMake changes |
 | `concurrency-practices.md` | Semaphore protocol, FPS sync, process coordination |
+| `defensive-programming-practices.md` | Buffer safety, pointer discipline, bounded input validation |
 | `documentation-site.md` | MkDocs structure, page creation, tag categories |
 | `documentation-standards.md` | Consistent markdown, shell prompts, link checking |
 | `error-handling-practices.md` | Use milkDebugTools.h macros for errors |
