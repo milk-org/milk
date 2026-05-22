@@ -130,39 +130,40 @@ uint16_t function_parameter_RUNexit(FPS *fps);
     do                                        \
     {                                         \
         if (type == FPTYPE_INT32)             \
-            strcpy(ts, "INT32");              \
+            strncpy(ts, "INT32", 19);         \
         else if (type == FPTYPE_UINT32)       \
-            strcpy(ts, "UINT32");             \
+            strncpy(ts, "UINT32", 19);        \
         else if (type == FPTYPE_INT64)        \
-            strcpy(ts, "INT64");              \
+            strncpy(ts, "INT64", 19);         \
         else if (type == FPTYPE_UINT64)       \
-            strcpy(ts, "UINT64");             \
+            strncpy(ts, "UINT64", 19);        \
         else if (type == FPTYPE_FLOAT32)      \
-            strcpy(ts, "FLOAT32");            \
+            strncpy(ts, "FLOAT32", 19);       \
         else if (type == FPTYPE_FLOAT64)      \
-            strcpy(ts, "FLOAT64");            \
+            strncpy(ts, "FLOAT64", 19);       \
         else if (type == FPTYPE_ONOFF)        \
-            strcpy(ts, "ONOFF");              \
+            strncpy(ts, "ONOFF", 19);         \
         else if (type == FPTYPE_STREAMNAME)   \
-            strcpy(ts, "STREAMNAME");         \
+            strncpy(ts, "STREAMNAME", 19);    \
         else if (type == FPTYPE_FILENAME)     \
-            strcpy(ts, "FILENAME");           \
+            strncpy(ts, "FILENAME", 19);      \
         else if (type == FPTYPE_FITSFILENAME) \
-            strcpy(ts, "FITSFILE");           \
+            strncpy(ts, "FITSFILE", 19);      \
         else if (type == FPTYPE_EXECFILENAME) \
-            strcpy(ts, "EXECFILE");           \
+            strncpy(ts, "EXECFILE", 19);      \
         else if (type == FPTYPE_DIRNAME)      \
-            strcpy(ts, "DIRNAME");            \
+            strncpy(ts, "DIRNAME", 19);       \
         else if (type == FPTYPE_FPSNAME)      \
-            strcpy(ts, "FPSNAME");            \
+            strncpy(ts, "FPSNAME", 19);       \
         else if (type == FPTYPE_PROCESS)      \
-            strcpy(ts, "PROCESS");            \
+            strncpy(ts, "PROCESS", 19);       \
         else if (FPTYPE_IS_STRING(type))      \
-            strcpy(ts, "STRING");             \
+            strncpy(ts, "STRING", 19);        \
         else if (type == FPTYPE_PID)          \
-            strcpy(ts, "PID");                \
+            strncpy(ts, "PID", 19);           \
         else if (type == FPTYPE_TIMESPEC)     \
-            strcpy(ts, "TIMESPEC");           \
+            strncpy(ts, "TIMESPEC", 19);      \
+        ts[19] = '\0';                        \
     } while (0)
 
 /* ---- helper: fill val_str for V2 params ---- */
@@ -170,24 +171,24 @@ uint16_t function_parameter_RUNexit(FPS *fps);
     do                                                                                             \
     {                                                                                              \
         if (type == FPTYPE_INT32)                                                                  \
-            sprintf(vs, "%d", *(int32_t *) ptr);                                                   \
+            snprintf(vs, 64, "%d", *(int32_t *) ptr);                                              \
         else if (type == FPTYPE_UINT32)                                                            \
-            sprintf(vs, "%u", *(uint32_t *) ptr);                                                  \
+            snprintf(vs, 64, "%u", *(uint32_t *) ptr);                                             \
         else if (type == FPTYPE_INT64)                                                             \
-            sprintf(vs, "%ld", *(int64_t *) ptr);                                                  \
+            snprintf(vs, 64, "%ld", *(int64_t *) ptr);                                             \
         else if (type == FPTYPE_UINT64)                                                            \
-            sprintf(vs, "%lu", *(uint64_t *) ptr);                                                 \
+            snprintf(vs, 64, "%lu", *(uint64_t *) ptr);                                            \
         else if (type == FPTYPE_FLOAT32)                                                           \
-            sprintf(vs, "%f", *(float *) ptr);                                                     \
+            snprintf(vs, 64, "%f", *(float *) ptr);                                                \
         else if (type == FPTYPE_FLOAT64)                                                           \
-            sprintf(vs, "%f", *(double *) ptr);                                                    \
+            snprintf(vs, 64, "%f", *(double *) ptr);                                               \
         else if (type == FPTYPE_ONOFF)                                                             \
-            sprintf(vs, "%s", (*(int32_t *) ptr) ? "ON" : "OFF");                                  \
+            snprintf(vs, 64, "%s", (*(int32_t *) ptr) ? "ON" : "OFF");                             \
         else if (type == FPTYPE_PID)                                                               \
-            sprintf(vs, "%d", (int) *(pid_t *) ptr);                                               \
+            snprintf(vs, 64, "%d", (int) *(pid_t *) ptr);                                          \
         else if (type == FPTYPE_TIMESPEC)                                                          \
-            sprintf(vs, "%ld.%09ld", ((struct timespec *) ptr)->tv_sec,                            \
-                    ((struct timespec *) ptr)->tv_nsec);                                           \
+            snprintf(vs, 64, "%ld.%09ld", ((struct timespec *) ptr)->tv_sec,                       \
+                     ((struct timespec *) ptr)->tv_nsec);                                          \
         else if (FPTYPE_IS_STRING(type) || type == FPTYPE_STREAMNAME || type == FPTYPE_FILENAME || \
                  type == FPTYPE_FITSFILENAME || type == FPTYPE_EXECFILENAME ||                     \
                  type == FPTYPE_DIRNAME || type == FPTYPE_FPSNAME || type == FPTYPE_PROCESS)       \
@@ -228,9 +229,9 @@ uint16_t function_parameter_RUNexit(FPS *fps);
         char        type_str[20] = "???";                                                          \
         const char *disp_kw      = (kw[0] == '.') ? &kw[1] : kw;                                   \
         if (is_primary)                                                                            \
-            sprintf(cli_idx_str, "%3d", CLIargcnt);                                                \
+            snprintf(cli_idx_str, sizeof(cli_idx_str), "%3d", CLIargcnt);                          \
         else                                                                                       \
-            strcpy(cli_idx_str, " - ");                                                            \
+            strncpy(cli_idx_str, " - ", sizeof(cli_idx_str) - 1);                                  \
         X_HELP_V2_FILL_TYPESTR_(type, type_str);                                                   \
         X_HELP_V2_FILL_VALSTR_(type, ptr, val_str);                                                \
         const char *_trig_tag = "";                                                                \

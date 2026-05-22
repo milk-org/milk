@@ -153,8 +153,10 @@ int_fast8_t init_templatemodule()
 {
     FILE *fp;
 
-    strcpy(data.module[data.NBmodule].name, __FILE__);
-    strcpy(data.module[data.NBmodule].info, "AO loop control");
+    snprintf(data.module[data.NBmodule].name, sizeof(data.module[data.NBmodule].name), "%s",
+             __FILE__);
+    snprintf(data.module[data.NBmodule].info, sizeof(data.module[data.NBmodule].info),
+             "AO loop control");
     data.NBmodule++;
 
     // CODING STANDARD NOTE: follow this template to link function calls to the command line interface
@@ -254,11 +256,11 @@ int templatemodule_examplefunc00(int mode)
         // CODING STANDARD NOTE: 		printERROR(const char *file, const char *func, int line, char *errmessage)
         // CODING STANDARD NOTE: 		printWARNING(const char *file, const char *func, int line, char *warnmessage)
         // CODING STANDARD NOTE:  printERROR will exit code, printWARNING will issue warning and continue
-        if (sprintf(name, "image1", loop) < 1)
+        if (snprintf(name, sizeof(name), "image1", loop) < 1)
         {
-            printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
+            PRINT_ERROR("snprintf error");
         }
-        if (sprintf(command, "ls %s.fits", name) < 1)
+        if (snprintf(command, sizeof(command), "ls %s.fits", name) < 1)
         {
             printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
         }

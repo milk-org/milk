@@ -104,17 +104,22 @@ int main(int argc, char *argv[])
         }
     }
 
-    strcpy(dcpkgname, PACKAGE_NAME);
+    strncpy(dcpkgname, PACKAGE_NAME, sizeof(dcpkgname) - 1);
+    dcpkgname[sizeof(dcpkgname) - 1] = '\0';
 
     dcpkgmajor = VERSION_MAJOR;
     dcpkgminor = VERSION_MINOR;
     dcpkgpatch = VERSION_PATCH;
 
-    strcpy(dcpkgver, versionstring);
+    strncpy(dcpkgver, versionstring, sizeof(dcpkgver) - 1);
+    dcpkgver[sizeof(dcpkgver) - 1] = '\0';
 
-    strcpy(dcsourcedir, SOURCEDIR);
-    strcpy(dcconfigdir, CONFIGDIR);
-    strcpy(dcinstalldir, INSTALLDIR);
+    strncpy(dcsourcedir, SOURCEDIR, sizeof(dcsourcedir) - 1);
+    dcsourcedir[sizeof(dcsourcedir) - 1] = '\0';
+    strncpy(dcconfigdir, CONFIGDIR, sizeof(dcconfigdir) - 1);
+    dcconfigdir[sizeof(dcconfigdir) - 1] = '\0';
+    strncpy(dcinstalldir, INSTALLDIR, sizeof(dcinstalldir) - 1);
+    dcinstalldir[sizeof(dcinstalldir) - 1] = '\0';
 
     if (dcquiet == 0)
     {
