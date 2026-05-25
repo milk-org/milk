@@ -25,7 +25,7 @@ Code metrics (dev branch) :
 
 milk-core for **milk** package
 
-> **📖 [Documentation](https://milk-org.github.io/milk/)** · **📚 [API Reference](https://milk-org.github.io/milk/api/html/)** · **🚀 [Getting Started](https://milk-org.github.io/milk/install/compile/)**
+> **📖 [Documentation](https://milk-org.github.io/milk/)**  · **🚀 [Getting Started](https://milk-org.github.io/milk/install/compile/)**
 
 ## _Looking for something else?_
 
