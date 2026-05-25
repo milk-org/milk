@@ -56,10 +56,17 @@ errno_t create_image_ID_IMGID(IMGID *img)
 
     if (exist_img.ID == -1)
     {
-        img->ID = next_avail_image_ID(img->ID);
-        ImageStreamIO_createIm(&dcimg[img->ID], img->name, img->mdt->naxis, img->mdt->size,
-                               img->mdt->datatype, img->mdt->shared, img->mdt->NBkw,
-                               img->mdt->CBsize);
+        img->ID     = next_avail_image_ID(img->ID);
+        errno_t ret = ImageStreamIO_createIm(&dcimg[img->ID], img->name, img->mdt->naxis,
+                                             img->mdt->size, img->mdt->datatype, img->mdt->shared,
+                                             img->mdt->NBkw, img->mdt->CBsize);
+        if (ret != IMAGESTREAMIO_SUCCESS)
+        {
+            dcimg[img->ID].used = 0;
+            img->ID             = -1;
+            DEBUG_TRACE_FEXIT();
+            return RETURN_FAILURE;
+        }
     }
     else
     {
@@ -110,10 +117,17 @@ errno_t create_image_ID_IMGID(IMGID *img)
         if (mismatch)
         {
             delete_image_ID(img->name, DELETE_IMAGE_ERRMODE_WARNING);
-            img->ID = next_avail_image_ID(img->ID);
-            ImageStreamIO_createIm(&dcimg[img->ID], img->name, img->mdt->naxis, img->mdt->size,
-                                   img->mdt->datatype, img->mdt->shared, img->mdt->NBkw,
-                                   img->mdt->CBsize);
+            img->ID     = next_avail_image_ID(img->ID);
+            errno_t ret = ImageStreamIO_createIm(
+                &dcimg[img->ID], img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype,
+                img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
+            if (ret != IMAGESTREAMIO_SUCCESS)
+            {
+                dcimg[img->ID].used = 0;
+                img->ID             = -1;
+                DEBUG_TRACE_FEXIT();
+                return RETURN_FAILURE;
+            }
         }
     }
 

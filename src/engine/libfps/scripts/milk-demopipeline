@@ -2,6 +2,10 @@
 # milk-demopipeline
 # Start a multi-stage FPS pipeline for demonstration.
 
+# Ensure we use sibling executables in the same installation directory
+BINDIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+export PATH="${BINDIR}:${PATH}"
+
 FRAMERATE=100
 
 # Names of the pipeline nodes (tmux session == FPS name)
@@ -251,56 +255,74 @@ echo "              -> averaged_out -> [monitor]"
 echo ""
 
 # 1. Generate a 512x512 random image
+milk-fpsexec-imggen-mkrandom -procinfo -loopd "$DELAY" fpsinit random_in 512 512 0
+milk-fps-set mkrnd.procinfo.RTprio 1
 milk-fpsexec-imggen-mkrandom \
     -tmux -procinfo -loopd "$DELAY" \
     exec random_in 512 512 0
 wait_for_stream random_in
 
 # 2. Gaussian filter (sigma 5.0, size 15)
+milk-fpsexec-imgfilt-gaussfilt -procinfo -loops fpsinit random_in blurred_out 5.0 15
+milk-fps-set gaussfilt.procinfo.RTprio 2
 milk-fpsexec-imgfilt-gaussfilt \
     -tmux -procinfo -loops \
     exec random_in blurred_out 5.0 15
 wait_for_stream blurred_out
 
 # 3. Truncate pixel values [0.2, 0.8]
+milk-fpsexec-arith-imtrunc -procinfo -loops fpsinit blurred_out 0.2 0.8 truncated_out
+milk-fps-set imtrunc.procinfo.RTprio 3
 milk-fpsexec-arith-imtrunc \
     -tmux -procinfo -loops \
     exec blurred_out 0.2 0.8 truncated_out
 wait_for_stream truncated_out
 
 # 4. Second Gaussian filter (sigma 3.0, size 7)
+milk-fpsexec-imgfilt-gaussfilt -n gaussfilt2 -procinfo -loops fpsinit truncated_out smooth_out 3.0 7
+milk-fps-set gaussfilt2.procinfo.RTprio 4
 milk-fpsexec-imgfilt-gaussfilt \
     -n gaussfilt2 -tmux -procinfo -loops \
     exec truncated_out smooth_out 3.0 7
 wait_for_stream smooth_out
 
 # 5. Resize smoothed image to 256x256
+milk-fpsexec-imgbasic-resizeim -procinfo -loops fpsinit smooth_out resized_out 256 256
+milk-fps-set resizeim.procinfo.RTprio 5
 milk-fpsexec-imgbasic-resizeim \
     -tmux -procinfo -loops \
     exec smooth_out resized_out 256 256
 wait_for_stream resized_out
 
 # 6. Image rotation
+milk-fpsexec-imgbasic-rotateim -procinfo -loops fpsinit resized_out rotated_out 45.0
+milk-fps-set rotateim.procinfo.RTprio 6
 milk-fpsexec-imgbasic-rotateim \
     -tmux -procinfo -loops \
     exec resized_out rotated_out 45.0
 wait_for_stream rotated_out
 
 # 7. Image crop
+milk-fpsexec-arith-crop2D -n cropim -procinfo -loops fpsinit rotated_out cropped_out 64 128 64 128
+milk-fps-set cropim.procinfo.RTprio 7
 milk-fpsexec-arith-crop2D \
-    -tmux -procinfo -loops \
+    -n cropim -tmux -procinfo -loops \
     exec rotated_out cropped_out 64 128 64 128
 wait_for_stream cropped_out
 
 # 8. Running average (window 10)
+milk-fpsexec-mem-streamave -procinfo -loops fpsinit cropped_out averaged_out 10
+milk-fps-set streamave.procinfo.RTprio 8
 milk-fpsexec-mem-streamave \
     -tmux -procinfo -loops \
     exec cropped_out averaged_out 10
 wait_for_stream averaged_out 15
 
 # 9. Stream monitor on the final output
+milk-fpsexec-info-strmonproc -n streammon -procinfo -loops fpsinit averaged_out 1 100
+milk-fps-set streammon.procinfo.RTprio 9
 milk-fpsexec-info-strmonproc \
-    -tmux -procinfo -loops \
+    -n streammon -tmux -procinfo -loops \
     exec averaged_out 1 100
 
 echo ""

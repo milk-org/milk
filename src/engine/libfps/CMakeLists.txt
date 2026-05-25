@@ -91,6 +91,7 @@ set(SOURCEFILES_STANDALONE
     fps_cli_sync.c
     fps_cli_init.c
     fps_lifecycle.c
+    fps_apply_process_settings.c
 )
 
 add_library(milkfpsStandalone SHARED ${SOURCEFILES_STANDALONE})
@@ -147,6 +148,7 @@ set(SOURCEFILES_CLI
     fps_cli_function.c
     fps_cli_query.c
     fps_lifecycle.c
+    fps_apply_process_settings.c
 )
 
 add_library(milkfpsCLI SHARED ${SOURCEFILES_CLI})
@@ -174,6 +176,7 @@ install(FILES
     fps_cli_function.h
     fps_cli_function_registry.h
     fps_procinfo_macros.h
+    fps_apply_process_settings.h
     imgid_slice.h
     IMGID.h
     milk_help.h
