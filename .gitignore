@@ -76,3 +76,11 @@ test_fps_stop.sh
 
 scratch/
 .antigravitycli/
+
+# Editor swap and backup files
+*.swp
+*.swo
+*~
+
+# Test executables compiled in the source tree
+src/milk-fpsclitest
