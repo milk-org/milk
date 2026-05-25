@@ -291,9 +291,18 @@ static inline imageID createimagefromIMGID(IMGID *img)
     create_image_ID(img->name, img->mdt->naxis, img->mdt->size, img->mdt->datatype,
                     img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize, &img->ID);
 
-    img->im        = &dcimg[img->ID];
-    img->md        = &dcimg[img->ID].md[0];
-    img->createcnt = dcimg[img->ID].createcnt;
+    if (img->ID != -1)
+    {
+        img->im        = &dcimg[img->ID];
+        img->md        = &dcimg[img->ID].md[0];
+        img->createcnt = dcimg[img->ID].createcnt;
+    }
+    else
+    {
+        img->im        = NULL;
+        img->md        = NULL;
+        img->createcnt = 0;
+    }
 
     return img->ID;
 }
@@ -324,45 +333,55 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img, IMGID *source_img
                         source_img->mdt->datatype, source_img->mdt->shared, source_img->mdt->NBkw,
                         source_img->mdt->CBsize, &target_img->ID);
         DEBUG_TRACEPOINT(" ");
-        target_img->im        = &dcimg[target_img->ID];
-        target_img->md        = &dcimg[target_img->ID].md[0];
-        target_img->createcnt = dcimg[target_img->ID].createcnt;
 
-        /* Determine if image was re-used or
-         * (re-)created by comparing createcnt.
-         */
-        int reused = (existed && target_img->createcnt == old_createcnt);
-
-        if (reused)
+        if (target_img->ID != -1)
         {
-            /* Image already exists with matching
-             * parameters — nothing to do.
+            target_img->im        = &dcimg[target_img->ID];
+            target_img->md        = &dcimg[target_img->ID].md[0];
+            target_img->createcnt = dcimg[target_img->ID].createcnt;
+
+            /* Determine if image was re-used or
+             * (re-)created by comparing createcnt.
              */
-        }
-        else if (target_img != source_img)
-        {
-            printf("  "
-                   "\033[33mCreating\033[0m"
-                   " from %s,"
-                   " shared=%d, kw=%d\n",
-                   source_img->name, source_img->mdt->shared, source_img->mdt->NBkw);
+            int reused = (existed && target_img->createcnt == old_createcnt);
+
+            if (reused)
+            {
+                /* Image already exists with matching
+                 * parameters — nothing to do.
+                 */
+            }
+            else if (target_img != source_img)
+            {
+                printf("  "
+                       "\033[33mCreating\033[0m"
+                       " from %s,"
+                       " shared=%d, kw=%d\n",
+                       source_img->name, source_img->mdt->shared, source_img->mdt->NBkw);
+            }
+            else
+            {
+                printf("  "
+                       "\033[33mCreating\033[0m"
+                       " shared=%d, kw=%d\n",
+                       source_img->mdt->shared, source_img->mdt->NBkw);
+            }
+
+            target_img->mdt->size[0] = source_img->mdt->size[0];
+            if (source_img->mdt->naxis > 1)
+            {
+                target_img->mdt->size[1] = source_img->mdt->size[1];
+            }
+            if (source_img->mdt->naxis > 2)
+            {
+                target_img->mdt->size[2] = source_img->mdt->size[2];
+            }
         }
         else
         {
-            printf("  "
-                   "\033[33mCreating\033[0m"
-                   " shared=%d, kw=%d\n",
-                   source_img->mdt->shared, source_img->mdt->NBkw);
-        }
-
-        target_img->mdt->size[0] = source_img->mdt->size[0];
-        if (source_img->mdt->naxis > 1)
-        {
-            target_img->mdt->size[1] = source_img->mdt->size[1];
-        }
-        if (source_img->mdt->naxis > 2)
-        {
-            target_img->mdt->size[2] = source_img->mdt->size[2];
+            target_img->im        = NULL;
+            target_img->md        = NULL;
+            target_img->createcnt = 0;
         }
     }
     else
@@ -465,13 +484,20 @@ static inline IMGID _stream_connect_create_2D_impl(const char *__restrict imname
     }
 
 
-    if (img.ID != -1)
+    if (img.ID != -1 && dcimg[img.ID].md != NULL)
     {
         imageID ID    = img.ID;
         img.im        = &dcimg[ID];
         img.md        = dcimg[ID].md;
         img.createcnt = dcimg[ID].createcnt;
         imgid_update_creationparams(&img);
+    }
+    else
+    {
+        img.ID        = -1;
+        img.im        = NULL;
+        img.md        = NULL;
+        img.createcnt = 0;
     }
 
     return img;
@@ -570,13 +596,20 @@ static inline IMGID stream_connect_create_3D(const char *__restrict imname,
     }
 
 
-    if (img.ID != -1)
+    if (img.ID != -1 && dcimg[img.ID].md != NULL)
     {
         imageID ID    = img.ID;
         img.im        = &dcimg[ID];
         img.md        = dcimg[ID].md;
         img.createcnt = dcimg[ID].createcnt;
         imgid_update_creationparams(&img);
+    }
+    else
+    {
+        img.ID        = -1;
+        img.im        = NULL;
+        img.md        = NULL;
+        img.createcnt = 0;
     }
 
     return img;

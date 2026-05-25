@@ -73,13 +73,13 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
         int  w_hz   = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
         int  w_mem  = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
         hlen        = snprintf(htext, sizeof(htext),
-                               "%-*s %-*s %*s %*s %*s"
+                               "%-*s %-*s %*s %4s %*s %*s"
                                       " %6s"
                                       " %3s %-10s %7s %5s"
-                                      "  CPU%%  %10s %*s %10s %4s",
-                               w_anc, c_anc, w_name, c_name, w_pid, c_pid, w_stat, c_stat, w_hz, c_hz,
-                               "UPTIME", "TRG", "trig-strm", "exec", "DUTY", "LOOPCNT", w_mem, c_mem,
-                               "MISSED", "PRIO");
+                                      "  CPU%%  %10s %*s %10s",
+                               w_anc, c_anc, w_name, c_name, w_pid, c_pid, "PRIO", w_stat, c_stat, w_hz,
+                               c_hz, "UPTIME", "TRG", "trig-strm", "exec", "DUTY", "LOOPCNT", w_mem, c_mem,
+                               "MISSED");
     }
     int vis_width = r.width - 4;
     if (vis_width < 0)
@@ -568,6 +568,37 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
                     printed += vv;
                 }
             }
+            /* PRIO */
+            {
+                char fb[80];
+                int  fl;
+                if (p->rt_priority > -1)
+                {
+                    fl = snprintf(fb, sizeof(fb), "%4d ", p->rt_priority);
+                }
+                else
+                {
+                    fl = snprintf(fb, sizeof(fb), "   - ");
+                }
+                int skip = 0;
+                if (hs_rem > 0)
+                {
+                    skip = (hs_rem < fl) ? hs_rem : fl;
+                    hs_rem -= skip;
+                }
+                int vv = fl - skip;
+                int mx = avail - printed;
+                if (vv > mx)
+                {
+                    vv = mx;
+                }
+                if (vv > 0)
+                {
+                    ov_theme_fg(p->rt_priority > -1 ? OV_FG_WARN : OV_FG_DIM);
+                    ov_buf_printf("%.*s", vv, fb + skip);
+                    printed += vv;
+                }
+            }
             /* Status */
             {
                 char fb[80];
@@ -621,6 +652,34 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
                 if (vv > 0)
                 {
                     ov_theme_fg(hzc);
+                    ov_buf_printf("%.*s", vv, fb + skip);
+                    printed += vv;
+                }
+            }
+            /* UPTIME */
+            {
+                char uptstr[12] = "-";
+                if (p->start_time_sec > 0)
+                {
+                    format_uptime(uptstr, sizeof(uptstr), p->start_time_sec);
+                }
+                char fb[80];
+                int  fl   = snprintf(fb, sizeof(fb), "%6s ", uptstr);
+                int  skip = 0;
+                if (hs_rem > 0)
+                {
+                    skip = (hs_rem < fl) ? hs_rem : fl;
+                    hs_rem -= skip;
+                }
+                int vv = fl - skip;
+                int mx = avail - printed;
+                if (vv > mx)
+                {
+                    vv = mx;
+                }
+                if (vv > 0)
+                {
+                    ov_theme_fg(OV_FG_TEXT);
                     ov_buf_printf("%.*s", vv, fb + skip);
                     printed += vv;
                 }
@@ -751,7 +810,7 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
                 }
                 else
                 {
-                    fl = snprintf(fb, sizeof(fb), "    -");
+                    fl = snprintf(fb, sizeof(fb), "     -");
                 }
                 int skip = 0;
                 if (hs_rem > 0)
@@ -867,29 +926,7 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
                     printed += vv;
                 }
             }
-            /* PRIO */
-            {
-                char fb[80];
-                int  fl   = snprintf(fb, sizeof(fb), "%4d", p->rt_priority);
-                int  skip = 0;
-                if (hs_rem > 0)
-                {
-                    skip = (hs_rem < fl) ? hs_rem : fl;
-                    hs_rem -= skip;
-                }
-                int vv = fl - skip;
-                int mx = avail - printed;
-                if (vv > mx)
-                {
-                    vv = mx;
-                }
-                if (vv > 0)
-                {
-                    ov_theme_fg(p->rt_priority > 0 ? OV_FG_ACTIVE : OV_FG_DIM);
-                    ov_buf_printf("%.*s", vv, fb + skip);
-                    printed += vv;
-                }
-            }
+
 
 #undef PROC_FIELD
 

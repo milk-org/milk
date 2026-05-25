@@ -301,8 +301,14 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         {
             DEBUG_TRACEPOINT("timedwait");
             // add timeout
-            ts.tv_sec += processinfo->triggertimeout.tv_sec;
-            ts.tv_nsec += processinfo->triggertimeout.tv_nsec;
+            long timeout_sec  = processinfo->triggertimeout.tv_sec;
+            long timeout_nsec = processinfo->triggertimeout.tv_nsec;
+            if (timeout_sec == 0 && timeout_nsec == 0)
+            {
+                timeout_sec = 2;
+            }
+            ts.tv_sec += timeout_sec;
+            ts.tv_nsec += timeout_nsec;
             while (ts.tv_nsec > 1000000000)
             {
                 ts.tv_nsec -= 1000000000;

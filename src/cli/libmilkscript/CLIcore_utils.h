@@ -195,76 +195,94 @@ typedef struct
     }
 
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                                      \
-    int          processloopOK = 1;                                                               \
-    PROCESSINFO *processinfo   = NULL;                                                            \
-    /* set default timeout to 2 sec */                                                            \
-    CLIcmddata.cmdsettings->triggertimeout.tv_sec  = 2;                                           \
-    CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 0;                                           \
-    if (dcfpsptr != NULL)                                                                         \
-    { /* If FPS mode, then FPS settings override defaults*/                                       \
-        /* dcfpsptr->cmset entries are read by fps_connect */                                     \
-        /*CLIcmddata.cmdsettings->flags = dcfpsptr->cmdset.flags;*/                               \
-        CLIcmddata.cmdsettings->flags |= (dcfpsptr->cmdset.flags & CLICMDFLAG_PROCINFO);          \
-        CLIcmddata.cmdsettings->RT_priority         = dcfpsptr->cmdset.RT_priority;               \
-        CLIcmddata.cmdsettings->procinfo_loopcntMax = dcfpsptr->cmdset.procinfo_loopcntMax;       \
-        CLIcmddata.cmdsettings->triggermode         = dcfpsptr->cmdset.triggermode;               \
-        strncpy(CLIcmddata.cmdsettings->triggerstreamname, dcfpsptr->cmdset.triggerstreamname,    \
-                STRINGMAXLEN_IMAGE_NAME - 1);                                                     \
-        CLIcmddata.cmdsettings->semindexrequested      = dcfpsptr->cmdset.semindexrequested;      \
-        CLIcmddata.cmdsettings->triggerdelay.tv_sec    = dcfpsptr->cmdset.triggerdelay.tv_sec;    \
-        CLIcmddata.cmdsettings->triggerdelay.tv_nsec   = dcfpsptr->cmdset.triggerdelay.tv_nsec;   \
-        CLIcmddata.cmdsettings->triggertimeout.tv_sec  = dcfpsptr->cmdset.triggertimeout.tv_sec;  \
-        CLIcmddata.cmdsettings->triggertimeout.tv_nsec = dcfpsptr->cmdset.triggertimeout.tv_nsec; \
-    }                                                                                             \
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                      \
-    {                                                                                             \
-        char pinfodescr[200];                                                                     \
-        int  slen = snprintf(pinfodescr, 200, "function %.10s", CLIcmddata.key);                  \
-        if (slen < 1)                                                                             \
-        {                                                                                         \
-            PRINT_ERROR("snprintf wrote <1 char");                                                \
-            abort();                                                                              \
-        }                                                                                         \
-        if (slen >= 200)                                                                          \
-        {                                                                                         \
-            PRINT_ERROR("snprintf string truncation");                                            \
-            abort();                                                                              \
-        }                                                                                         \
-        if (dcfpsptr != NULL)                                                                     \
-        {                                                                                         \
-            /* dcfpsname may be empty when called via fps_generic_run     */                      \
-            /* which bypasses CLI arg parsing. Fall back to FPS SHM name. */                      \
-            const char *_piname_ = (dcfpsname[0] != '\0') ? dcfpsname : dcfpsptr->md->name;       \
-            processinfo          = processinfo_setup((char *) _piname_, pinfodescr, "startup",    \
-                                                     __FUNCTION__, __FILE__, __LINE__);           \
-            fps_to_processinfo(dcfpsptr, processinfo);                                            \
-        }                                                                                         \
-        else                                                                                      \
-        {                                                                                         \
-            processinfo = processinfo_setup(CLIcmddata.key, pinfodescr, "startup", __FUNCTION__,  \
-                                            __FILE__, __LINE__);                                  \
-        }                                                                                         \
-        DEBUG_TRACEPOINT("setting processinfo parameters");                                       \
-        processinfo->loopcntMax      = CLIcmddata.cmdsettings->procinfo_loopcntMax;               \
-        processinfo->triggerstreamID = -2;                                                        \
-        processinfo->triggermode     = CLIcmddata.cmdsettings->triggermode;                       \
-        strncpy(processinfo->triggerstreamname, CLIcmddata.cmdsettings->triggerstreamname,        \
-                STRINGMAXLEN_IMAGE_NAME - 1);                                                     \
-        processinfo->triggerdelay    = CLIcmddata.cmdsettings->triggerdelay;                      \
-        processinfo->triggertimeout  = CLIcmddata.cmdsettings->triggertimeout;                    \
-        processinfo->triggerstreamID = image_ID(processinfo->triggerstreamname, dcimg, dcnimg);   \
-        DEBUG_TRACEPOINT("triggerstreamID = %ld", processinfo->triggerstreamID);                  \
-        FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(                                     \
-            processinfo,                                                                          \
-            (processinfo->triggerstreamID > -1 ? &dcimg[processinfo->triggerstreamID] : NULL),    \
-            CLIcmddata.cmdsettings->triggermode, CLIcmddata.cmdsettings->semindexrequested));     \
-        DEBUG_TRACEPOINT("setting RT priority to %d", CLIcmddata.cmdsettings->RT_priority);       \
-        processinfo->RT_priority   = CLIcmddata.cmdsettings->RT_priority;                         \
-        processinfo->CPUmask       = CLIcmddata.cmdsettings->CPUmask;                             \
-        processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;              \
-        DEBUG_TRACEPOINT("loopstart");                                                            \
-        processinfo_loopstart(processinfo);                                                       \
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                                     \
+    int          processloopOK = 1;                                                              \
+    PROCESSINFO *processinfo   = NULL;                                                           \
+    /* set default timeout to 2 sec */                                                           \
+    CLIcmddata.cmdsettings->triggertimeout.tv_sec  = 2;                                          \
+    CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 0;                                          \
+    if (dcfpsptr != NULL)                                                                        \
+    { /* If FPS mode, then FPS settings override defaults*/                                      \
+        /* dcfpsptr->cmset entries are read by fps_connect */                                    \
+        /*CLIcmddata.cmdsettings->flags = dcfpsptr->cmdset.flags;*/                              \
+        CLIcmddata.cmdsettings->flags |= (dcfpsptr->cmdset.flags & CLICMDFLAG_PROCINFO);         \
+        CLIcmddata.cmdsettings->RT_priority         = dcfpsptr->cmdset.RT_priority;              \
+        CLIcmddata.cmdsettings->procinfo_loopcntMax = dcfpsptr->cmdset.procinfo_loopcntMax;      \
+        CLIcmddata.cmdsettings->triggermode         = dcfpsptr->cmdset.triggermode;              \
+        strncpy(CLIcmddata.cmdsettings->triggerstreamname, dcfpsptr->cmdset.triggerstreamname,   \
+                STRINGMAXLEN_IMAGE_NAME - 1);                                                    \
+        CLIcmddata.cmdsettings->semindexrequested    = dcfpsptr->cmdset.semindexrequested;       \
+        CLIcmddata.cmdsettings->triggerdelay.tv_sec  = dcfpsptr->cmdset.triggerdelay.tv_sec;     \
+        CLIcmddata.cmdsettings->triggerdelay.tv_nsec = dcfpsptr->cmdset.triggerdelay.tv_nsec;    \
+        if (dcfpsptr->cmdset.triggertimeout.tv_sec == 0 &&                                       \
+            dcfpsptr->cmdset.triggertimeout.tv_nsec == 0)                                        \
+        {                                                                                        \
+            CLIcmddata.cmdsettings->triggertimeout.tv_sec  = 2;                                  \
+            CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 0;                                  \
+        }                                                                                        \
+        else                                                                                     \
+        {                                                                                        \
+            CLIcmddata.cmdsettings->triggertimeout.tv_sec =                                      \
+                dcfpsptr->cmdset.triggertimeout.tv_sec;                                          \
+            CLIcmddata.cmdsettings->triggertimeout.tv_nsec =                                     \
+                dcfpsptr->cmdset.triggertimeout.tv_nsec;                                         \
+        }                                                                                        \
+    }                                                                                            \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                     \
+    {                                                                                            \
+        char pinfodescr[200];                                                                    \
+        int  slen = snprintf(pinfodescr, 200, "function %.10s", CLIcmddata.key);                 \
+        if (slen < 1)                                                                            \
+        {                                                                                        \
+            PRINT_ERROR("snprintf wrote <1 char");                                               \
+            abort();                                                                             \
+        }                                                                                        \
+        if (slen >= 200)                                                                         \
+        {                                                                                        \
+            PRINT_ERROR("snprintf string truncation");                                           \
+            abort();                                                                             \
+        }                                                                                        \
+        if (dcfpsptr != NULL)                                                                    \
+        {                                                                                        \
+            /* dcfpsname may be empty when called via fps_generic_run     */                     \
+            /* which bypasses CLI arg parsing. Fall back to FPS SHM name. */                     \
+            const char *_piname_ = (dcfpsname[0] != '\0') ? dcfpsname : dcfpsptr->md->name;      \
+            processinfo          = processinfo_setup((char *) _piname_, pinfodescr, "startup",   \
+                                                     __FUNCTION__, __FILE__, __LINE__);          \
+            fps_to_processinfo(dcfpsptr, processinfo);                                           \
+            /* Sync CLIcmddata.cmdsettings from processinfo to keep them in sync */              \
+            CLIcmddata.cmdsettings->procinfo_loopcntMax    = processinfo->loopcntMax;            \
+            CLIcmddata.cmdsettings->triggermode            = processinfo->triggermode;           \
+            CLIcmddata.cmdsettings->triggerdelay           = processinfo->triggerdelay;          \
+            CLIcmddata.cmdsettings->triggertimeout         = processinfo->triggertimeout;        \
+            CLIcmddata.cmdsettings->RT_priority            = processinfo->RT_priority;           \
+            CLIcmddata.cmdsettings->procinfo_MeasureTiming = processinfo->MeasureTiming;         \
+        }                                                                                        \
+        else                                                                                     \
+        {                                                                                        \
+            processinfo = processinfo_setup(CLIcmddata.key, pinfodescr, "startup", __FUNCTION__, \
+                                            __FILE__, __LINE__);                                 \
+        }                                                                                        \
+        DEBUG_TRACEPOINT("setting processinfo parameters");                                      \
+        processinfo->loopcntMax      = CLIcmddata.cmdsettings->procinfo_loopcntMax;              \
+        processinfo->triggerstreamID = -2;                                                       \
+        processinfo->triggermode     = CLIcmddata.cmdsettings->triggermode;                      \
+        strncpy(processinfo->triggerstreamname, CLIcmddata.cmdsettings->triggerstreamname,       \
+                STRINGMAXLEN_IMAGE_NAME - 1);                                                    \
+        processinfo->triggerdelay    = CLIcmddata.cmdsettings->triggerdelay;                     \
+        processinfo->triggertimeout  = CLIcmddata.cmdsettings->triggertimeout;                   \
+        processinfo->triggerstreamID = image_ID(processinfo->triggerstreamname, dcimg, dcnimg);  \
+        DEBUG_TRACEPOINT("triggerstreamID = %ld", processinfo->triggerstreamID);                 \
+        FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(                                    \
+            processinfo,                                                                         \
+            (processinfo->triggerstreamID > -1 ? &dcimg[processinfo->triggerstreamID] : NULL),   \
+            CLIcmddata.cmdsettings->triggermode, CLIcmddata.cmdsettings->semindexrequested));    \
+        DEBUG_TRACEPOINT("setting RT priority to %d", CLIcmddata.cmdsettings->RT_priority);      \
+        processinfo->RT_priority   = CLIcmddata.cmdsettings->RT_priority;                        \
+        processinfo->CPUmask       = CLIcmddata.cmdsettings->CPUmask;                            \
+        processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;             \
+        DEBUG_TRACEPOINT("loopstart");                                                           \
+        processinfo_loopstart(processinfo);                                                      \
     }
 
 
@@ -304,41 +322,50 @@ typedef struct
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                              \
-    }                                                                                    \
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                             \
-    {                                                                                    \
-        if (processinfo != NULL)                                                         \
-        {                                                                                \
-            if (dcfpsptr != NULL)                                                        \
-            {                                                                            \
-                if (dcfpsptr->cmdset.triggermodeptr != NULL)                             \
-                {                                                                        \
-                    processinfo->triggermode = *dcfpsptr->cmdset.triggermodeptr;         \
-                }                                                                        \
-                if (dcfpsptr->cmdset.procinfo_loopcntMax_ptr != NULL)                    \
-                {                                                                        \
-                    processinfo->loopcntMax = *dcfpsptr->cmdset.procinfo_loopcntMax_ptr; \
-                }                                                                        \
-                if (dcfpsptr->cmdset.triggerdelayptr != NULL)                            \
-                {                                                                        \
-                    processinfo->triggerdelay = dcfpsptr->cmdset.triggerdelayptr[0];     \
-                }                                                                        \
-                if (dcfpsptr->cmdset.triggertimeoutptr != NULL)                          \
-                {                                                                        \
-                    processinfo->triggertimeout = dcfpsptr->cmdset.triggertimeoutptr[0]; \
-                }                                                                        \
-            }                                                                            \
-        }                                                                                \
-        if (processinfo != NULL)                                                         \
-        {                                                                                \
-            processinfo_exec_end(processinfo);                                           \
-        }                                                                                \
-    }                                                                                    \
-    }                                                                                    \
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                             \
-    {                                                                                    \
-        processinfo_cleanExit(processinfo);                                              \
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                                  \
+    }                                                                                        \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                 \
+    {                                                                                        \
+        if (processinfo != NULL)                                                             \
+        {                                                                                    \
+            if (dcfpsptr != NULL)                                                            \
+            {                                                                                \
+                if (dcfpsptr->cmdset.triggermodeptr != NULL)                                 \
+                {                                                                            \
+                    processinfo->triggermode = *dcfpsptr->cmdset.triggermodeptr;             \
+                }                                                                            \
+                if (dcfpsptr->cmdset.procinfo_loopcntMax_ptr != NULL)                        \
+                {                                                                            \
+                    processinfo->loopcntMax = *dcfpsptr->cmdset.procinfo_loopcntMax_ptr;     \
+                }                                                                            \
+                if (dcfpsptr->cmdset.triggerdelayptr != NULL)                                \
+                {                                                                            \
+                    processinfo->triggerdelay = dcfpsptr->cmdset.triggerdelayptr[0];         \
+                }                                                                            \
+                if (dcfpsptr->cmdset.triggertimeoutptr != NULL)                              \
+                {                                                                            \
+                    if (dcfpsptr->cmdset.triggertimeoutptr[0].tv_sec == 0 &&                 \
+                        dcfpsptr->cmdset.triggertimeoutptr[0].tv_nsec == 0)                  \
+                    {                                                                        \
+                        processinfo->triggertimeout.tv_sec  = 2;                             \
+                        processinfo->triggertimeout.tv_nsec = 0;                             \
+                    }                                                                        \
+                    else                                                                     \
+                    {                                                                        \
+                        processinfo->triggertimeout = dcfpsptr->cmdset.triggertimeoutptr[0]; \
+                    }                                                                        \
+                }                                                                            \
+            }                                                                                \
+        }                                                                                    \
+        if (processinfo != NULL)                                                             \
+        {                                                                                    \
+            processinfo_exec_end(processinfo);                                               \
+        }                                                                                    \
+    }                                                                                        \
+    }                                                                                        \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                 \
+    {                                                                                        \
+        processinfo_cleanExit(processinfo);                                                  \
     }
 
 
