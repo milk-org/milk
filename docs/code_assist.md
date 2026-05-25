@@ -47,6 +47,7 @@ requiring you to remember every checklist.
 | Code style | [`code-style-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/code-style-guide.md) | 100-char lines, Kernel-Doc, Linux kernel style, explicit includes. |
 | Compile after edit | [`compile-after-edit.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/compile-after-edit.md) | Always run `/compile-test` after modifying C/CMake. |
 | Concurrency practices | [`concurrency-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/concurrency-practices.md) | Semaphore protocol, FPS sync, process coordination. |
+| Defensive programming | [`defensive-programming-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/defensive-programming-practices.md) | Buffer safety, pointer discipline, bounded input validation. |
 | Documentation site | [`documentation-site.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/documentation-site.md) | MkDocs structure, page creation, tag categories. |
 | Documentation standards | [`documentation-standards.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/documentation-standards.md) | Markdown formatting, shell prompts, link checking. |
 | Error handling | [`error-handling-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/error-handling-practices.md) | Use milkDebugTools.h macros for errors. |
