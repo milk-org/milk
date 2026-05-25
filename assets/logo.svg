@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <linearGradient id="teal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00bfa5"/>
+      <stop offset="100%" stop-color="#0097a7"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#4dd0e1" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#00bfa5" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer ring — deformable mirror -->
+  <circle cx="120" cy="120" r="105" fill="none"
+          stroke="url(#teal)" stroke-width="6"
+          opacity="0.85"/>
+
+  <!-- Inner ring — pupil aperture -->
+  <circle cx="120" cy="120" r="72" fill="none"
+          stroke="url(#teal)" stroke-width="4"
+          opacity="0.6"/>
+
+  <!-- Wavefront correction segments (6 petals) -->
+  <g opacity="0.5" fill="url(#teal)">
+    <path d="M120 48 Q140 84 120 120 Q100 84 120 48Z"/>
+    <path d="M120 192 Q100 156 120 120 Q140 156 120 192Z"/>
+    <path d="M48 120 Q84 100 120 120 Q84 140 48 120Z"/>
+    <path d="M192 120 Q156 140 120 120 Q156 100 192 120Z"/>
+    <path d="M62 62 Q96 80 120 120 Q80 96 62 62Z"/>
+    <path d="M178 178 Q144 160 120 120 Q160 144 178 178Z"/>
+  </g>
+
+  <!-- Central point — on-axis star -->
+  <circle cx="120" cy="120" r="10" fill="url(#beam)"/>
+  <circle cx="120" cy="120" r="4" fill="#e0f7fa"/>
+
+  <!-- Diffraction spikes -->
+  <g stroke="#4dd0e1" stroke-width="1.5" opacity="0.45">
+    <line x1="120" y1="30" x2="120" y2="210"/>
+    <line x1="30" y1="120" x2="210" y2="120"/>
+  </g>
+</svg>
