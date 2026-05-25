@@ -10,9 +10,6 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
-      - 'Doxyfile'
-      - 'src/**/*.h'
-      - 'plugins/**/*.h'
       - '.github/workflows/docs.yml'
   pull_request:
     branches:
@@ -60,17 +57,6 @@ jobs:
       - name: Build MkDocs site (lenient)
         if: steps.build_strict.outcome == 'failure'
         run: mkdocs build -d _site
-
-      - name: Install Doxygen
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y doxygen graphviz
-
-      - name: Build Doxygen API reference
-        if: hashFiles('Doxyfile') != ''
-        run: |
-          ( cat Doxyfile; echo "OUTPUT_DIRECTORY=_site/api" ) \
-            | doxygen -
 
       - name: Deploy to GitHub Pages
         if: >-
