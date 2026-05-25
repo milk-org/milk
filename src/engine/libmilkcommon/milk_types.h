@@ -42,7 +42,7 @@
 
 #ifdef DEBUG
 #    define nmalloc(f, type, n)                         \
-        f = (type *) malloc(sizeof(type) * n);          \
+        f = (type *) calloc(n, sizeof(type));           \
         if (f == NULL)                                  \
         {                                               \
             printf("ERROR: \"" #f "\" alloc failed\n"); \
@@ -57,7 +57,7 @@
         printf("\nMALLOC: \"" #f "\" freed\n");
 #else
 #    define nmalloc(f, type, n)                         \
-        f = (type *) malloc(sizeof(type) * n);          \
+        f = (type *) calloc(n, sizeof(type));           \
         if (f == NULL)                                  \
         {                                               \
             printf("ERROR: \"" #f "\" alloc failed\n"); \

@@ -146,7 +146,7 @@ static inline errno_t TUI_exit()
 
 #    ifdef DEBUG
 #        define nmalloc(f, type, n)                                      \
-            f = (type *) malloc(sizeof(type) * n);                       \
+            f = (type *) calloc(n, sizeof(type));                        \
             if (f == NULL)                                               \
             {                                                            \
                 printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
@@ -161,7 +161,7 @@ static inline errno_t TUI_exit()
             printf("\nMALLOC: \"" #f "\" freed\n");
 #    else
 #        define nmalloc(f, type, n)                                      \
-            f = (type *) malloc(sizeof(type) * n);                       \
+            f = (type *) calloc(n, sizeof(type));                        \
             if (f == NULL)                                               \
             {                                                            \
                 printf("ERROR: pointer \"" #f "\" allocation failed\n"); \

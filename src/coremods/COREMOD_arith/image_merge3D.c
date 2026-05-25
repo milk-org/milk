@@ -87,7 +87,7 @@ static MILK_HOT errno_t fpsexec(IMGID *id0, IMGID *id1, IMGID *idout)
     idout->mdt->naxis = (idout->mdt->size[2] > 1) ? 3 : ((idout->mdt->size[1] > 1) ? 2 : 1);
 
     /* Create output stream */
-    idout->im = (IMAGE *) malloc(sizeof(IMAGE));
+    idout->im = (IMAGE *) calloc(1, sizeof(IMAGE));
     strncpy(idout->name, immerge_outimname, 79);
     ImageStreamIO_createIm_gpu(idout->im, idout->name, idout->mdt->naxis, idout->mdt->size,
                                idout->mdt->datatype, -1, 1, 10, 0, 0, 0);

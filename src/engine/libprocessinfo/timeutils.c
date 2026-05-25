@@ -293,20 +293,18 @@ double timespec_diff_double(struct timespec start, struct timespec end)
 }
 
 
-/**
- * @brief Returns time string in form of HH:MM:SS.SS
- *
- * @param timedouble Unix time
- * @return char*
- */
-char *timedouble_to_UTC_timeofdaystring(double timedouble)
+void timedouble_to_UTC_timeofdaystring(double timedouble, char *buf, size_t buflen)
 {
-    char *tstring = malloc(12);
-
     time_t     timet  = (time_t) timedouble;
     struct tm *timetm = gmtime(&timet);
 
-    float sec = 1.0 * timetm->tm_sec + timedouble - (long) timedouble;
+    if (timetm == NULL)
+    {
+        snprintf(buf, buflen, "00:00:00.00");
+        return;
+    }
+
+    float sec = 1.0f * timetm->tm_sec + (float) (timedouble - (double) ((long) timedouble));
 
     printf("TIME double     : %lf\n", timedouble);
 
@@ -317,9 +315,7 @@ char *timedouble_to_UTC_timeofdaystring(double timedouble)
 
     printf("DATE from timedouble_to_UTC_timeofdaystring: %04d-%02d-%02d  %02d:%02d:%02d  %05.2f\n",
            1900 + timetm->tm_year, 1 + timetm->tm_mon, 1 + timetm->tm_mday, timetm->tm_hour,
-           timetm->tm_min, timetm->tm_sec, sec);
+           timetm->tm_min, timetm->tm_sec, (double) sec);
 
-    snprintf(tstring, 12, "%02d:%02d:%05.2f", timetm->tm_hour, timetm->tm_min, sec);
-
-    return tstring;
+    snprintf(buf, buflen, "%02d:%02d:%05.2f", timetm->tm_hour, timetm->tm_min, (double) sec);
 }

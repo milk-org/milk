@@ -93,6 +93,11 @@ errno_t list_variable_ID_file(const char *fname)
     FILE   *fp;
 
     fp = fopen(fname, "w");
+    if (fp == NULL)
+    {
+        PRINT_ERROR("cannot open file \"%s\"", fname);
+        return RETURN_FAILURE;
+    }
     for (i = 0; i < dcnvar; i++)
     {
         if (dcvar[i].used == 1)

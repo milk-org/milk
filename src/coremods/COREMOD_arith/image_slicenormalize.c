@@ -280,9 +280,9 @@ errno_t image_slicenormalize(IMGID   inimg,
     }
     uint32_t size = inimg.md->size[sliceaxis];
 
-    double *__restrict normarray    = (double *) malloc(sizeof(double) * size);
-    double *__restrict avarray      = (double *) malloc(sizeof(double) * size);
-    double *__restrict maskcntarray = (double *) malloc(sizeof(double) * size);
+    double *__restrict normarray    = (double *) calloc(size, sizeof(double));
+    double *__restrict avarray      = (double *) calloc(size, sizeof(double));
+    double *__restrict maskcntarray = (double *) calloc(size, sizeof(double));
 
     errno_t ret = image_slicenormalize_core(inimg, maskimg, outimg, sliceaxis, imgaux, modeRMS,
                                             normarray, avarray, maskcntarray);
@@ -340,10 +340,33 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             }
             if (alloc_sliceaxis_size < current_sliceaxis_size || normarray == NULL)
             {
-                normarray = (double *) realloc(normarray, sizeof(double) * current_sliceaxis_size);
-                avarray   = (double *) realloc(avarray, sizeof(double) * current_sliceaxis_size);
-                maskcntarray =
+                double *tmp_norm =
+                    (double *) realloc(normarray, sizeof(double) * current_sliceaxis_size);
+                if (tmp_norm == NULL)
+                {
+                    PRINT_ERROR("Memory allocation failed for normarray");
+                    break;
+                }
+                normarray = tmp_norm;
+
+                double *tmp_av =
+                    (double *) realloc(avarray, sizeof(double) * current_sliceaxis_size);
+                if (tmp_av == NULL)
+                {
+                    PRINT_ERROR("Memory allocation failed for avarray");
+                    break;
+                }
+                avarray = tmp_av;
+
+                double *tmp_mask =
                     (double *) realloc(maskcntarray, sizeof(double) * current_sliceaxis_size);
+                if (tmp_mask == NULL)
+                {
+                    PRINT_ERROR("Memory allocation failed for maskcntarray");
+                    break;
+                }
+                maskcntarray = tmp_mask;
+
                 alloc_sliceaxis_size = current_sliceaxis_size;
             }
 

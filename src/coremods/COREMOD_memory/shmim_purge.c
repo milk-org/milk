@@ -72,7 +72,7 @@ errno_t shmim_purge(const char *strfilter)
     STREAMINFO *streaminfo;
 
     DEBUG_TRACEPOINT("Searching for streams");
-    streaminfo   = (STREAMINFO *) malloc(sizeof(STREAMINFO) * NBstreamMAX);
+    streaminfo   = (STREAMINFO *) calloc(NBstreamMAX, sizeof(STREAMINFO));
     int NBstream = find_streams(streaminfo, 1, strfilter);
     printf("%d stream(s) found\n", NBstream);
 
