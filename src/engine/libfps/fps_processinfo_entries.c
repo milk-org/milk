@@ -50,8 +50,15 @@ errno_t fps_add_processinfo_entries(FPS *fps)
 
     // value = -1 indicates no RT priority
     long RTprio_default[4] = { fps->cmdset.RT_priority, -1, 49, 20 };
+    long pindex_RTprio     = -1;
     function_parameter_add_entry(fps, ".procinfo.RTprio", "RTprio", FPTYPE_INT64, FPFLAG,
-                                 &RTprio_default, NULL);
+                                 &RTprio_default, &pindex_RTprio);
+    if (pindex_RTprio >= 0)
+    {
+        fps->parray[pindex_RTprio].val.i64[1] = RTprio_default[1];
+        fps->parray[pindex_RTprio].val.i64[2] = RTprio_default[2];
+        fps->parray[pindex_RTprio].val.i64[3] = RTprio_default[3];
+    }
 
     // cset
     function_parameter_add_entry(fps, ".procinfo.cset", "CPUs set", FPTYPE_STRING, FPFLAG, "system",
@@ -62,9 +69,16 @@ errno_t fps_add_processinfo_entries(FPS *fps)
                                  "1-127", NULL);
 
     // value = 0 indicates process will adjust to available nb cores
-    long maxNBthread_default[4] = { 1, 0, 50, 1 };
+    long maxNBthread_default[4] = { 1, 1, 128, 1 };
+    long pindex_NBthread        = -1;
     function_parameter_add_entry(fps, ".procinfo.NBthread", "max NB threads", FPTYPE_INT64, FPFLAG,
-                                 &maxNBthread_default, NULL);
+                                 &maxNBthread_default, &pindex_NBthread);
+    if (pindex_NBthread >= 0)
+    {
+        fps->parray[pindex_NBthread].val.i64[1] = maxNBthread_default[1];
+        fps->parray[pindex_NBthread].val.i64[2] = maxNBthread_default[2];
+        fps->parray[pindex_NBthread].val.i64[3] = maxNBthread_default[3];
+    }
 
     // PROCESSINFO
     long fp_pinfoenabled = 0;
@@ -77,18 +91,34 @@ errno_t fps_add_processinfo_entries(FPS *fps)
     FPFLAG &= ~FPFLAG_WRITERUN;
     // value = -1 indicates infinite loop
     // default: loop once
-    long loopcntMax_default[4] = { 1, -1, 5000000, 1 };
+    long loopcntMax_default[4] = { 1, -1, 1000000, 1 };
 
     if (fps->cmdset.procinfo_loopcntMax != 0)
     {
         loopcntMax_default[0] = fps->cmdset.procinfo_loopcntMax;
     }
+    long pindex_loopcntMax = -1;
     function_parameter_add_entry(fps, ".procinfo.loopcntMax", "max loop cnt", FPTYPE_INT64,
-                                 FPFLAG | FPFLAG_WRITERUN, &loopcntMax_default, NULL);
+                                 FPFLAG | FPFLAG_WRITERUN | FPFLAG_MAXLIMIT, &loopcntMax_default,
+                                 &pindex_loopcntMax);
+    if (pindex_loopcntMax >= 0)
+    {
+        fps->parray[pindex_loopcntMax].val.i64[1] = loopcntMax_default[1];
+        fps->parray[pindex_loopcntMax].val.i64[2] = loopcntMax_default[2];
+        fps->parray[pindex_loopcntMax].val.i64[3] = loopcntMax_default[3];
+    }
 
     long triggermode_default[4] = { fps->cmdset.triggermode, -1, 10, 0 };
+    long pindex_triggermode     = -1;
     function_parameter_add_entry(fps, ".procinfo.triggermode", "trigger mode", FPTYPE_INT64,
-                                 FPFLAG | FPFLAG_WRITERUN, &triggermode_default, NULL);
+                                 FPFLAG | FPFLAG_WRITERUN, &triggermode_default,
+                                 &pindex_triggermode);
+    if (pindex_triggermode >= 0)
+    {
+        fps->parray[pindex_triggermode].val.i64[1] = triggermode_default[1];
+        fps->parray[pindex_triggermode].val.i64[2] = triggermode_default[2];
+        fps->parray[pindex_triggermode].val.i64[3] = triggermode_default[3];
+    }
 
     function_parameter_add_entry(fps, ".procinfo.triggersname", "trigger stream name",
                                  FPTYPE_STREAMNAME, FPFLAG, fps->cmdset.triggerstreamname, NULL);
@@ -101,15 +131,29 @@ errno_t fps_add_processinfo_entries(FPS *fps)
 
     // -1 : auto (recommended)
     long semindexrequested_default[4] = { fps->cmdset.semindexrequested, -1, 10, 0 };
+    long pindex_semindex              = -1;
     function_parameter_add_entry(fps, ".procinfo.semindexrequested",
                                  "trigger requested semaphore index", FPTYPE_INT64, FPFLAG,
-                                 &semindexrequested_default, NULL);
+                                 &semindexrequested_default, &pindex_semindex);
+    if (pindex_semindex >= 0)
+    {
+        fps->parray[pindex_semindex].val.i64[1] = semindexrequested_default[1];
+        fps->parray[pindex_semindex].val.i64[2] = semindexrequested_default[2];
+        fps->parray[pindex_semindex].val.i64[3] = semindexrequested_default[3];
+    }
 
     struct timespec triggerdelay_default[2] = { fps->cmdset.triggerdelay, { 1, 0 } };
     function_parameter_add_entry(fps, ".procinfo.triggerdelay", "trigger delay", FPTYPE_TIMESPEC,
                                  FPFLAG | FPFLAG_WRITERUN, &triggerdelay_default, NULL);
 
-    struct timespec triggertimeout_default[2] = { fps->cmdset.triggertimeout, { 1, 0 } };
+    struct timespec triggertimeout_default[2];
+    triggertimeout_default[0] = fps->cmdset.triggertimeout;
+    if (triggertimeout_default[0].tv_sec == 0 && triggertimeout_default[0].tv_nsec == 0)
+    {
+        triggertimeout_default[0].tv_sec = 2;
+    }
+    triggertimeout_default[1].tv_sec  = 1;
+    triggertimeout_default[1].tv_nsec = 0;
     function_parameter_add_entry(fps, ".procinfo.triggertimeout", "trigger timeout",
                                  FPTYPE_TIMESPEC, FPFLAG | FPFLAG_WRITERUN, &triggertimeout_default,
                                  NULL);
@@ -195,7 +239,15 @@ errno_t fps_to_processinfo(FPS *fps, PROCESSINFO *procinfo)
         {
             struct timespec *tsptr =
                 functionparameter_GetParamPtr_TIMESPEC(fps, ".procinfo.triggertimeout");
-            procinfo->triggertimeout = *tsptr;
+            if (tsptr->tv_sec == 0 && tsptr->tv_nsec == 0)
+            {
+                procinfo->triggertimeout.tv_sec  = 2;
+                procinfo->triggertimeout.tv_nsec = 0;
+            }
+            else
+            {
+                procinfo->triggertimeout = *tsptr;
+            }
         }
     }
 

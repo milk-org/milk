@@ -77,13 +77,24 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         int  w_mbps = sort_col_label(c_mbps, sizeof(c_mbps), "MB/s", 4, sk, sd, 7);
         int  w_ino  = sort_col_label(c_ino, sizeof(c_ino), "INODE", 5, sk, sd, 10);
         int  w_cnt  = sort_col_label(c_cnt, sizeof(c_cnt), "COUNT", 6, sk, sd, 10);
-        hlen =
-            snprintf(htext, sizeof(htext),
-                     "%-*s %-*s %*s %*s %*s"
-                     " %*s %*s %7s %*s %10s"
-                     " %7s %s",
-                     w_anc, c_anc, w_name, c_name, w_typ, c_typ, w_size, c_size, w_hz, c_hz, w_mbps,
-                     c_mbps, w_ino, c_ino, "OWNER", w_cnt, c_cnt, "SEMS", "WPID", "RPID");
+        if (lay->compact_mode)
+        {
+            hlen = snprintf(htext, sizeof(htext),
+                            "%-*s %-*s %*s %*s %*s"
+                            " %*s %7s %7s %s",
+                            w_anc, c_anc, w_name, c_name, w_typ, c_typ, w_size, c_size, w_hz, c_hz,
+                            w_mbps, c_mbps, "OWNER", "WPID", "RPID");
+        }
+        else
+        {
+            hlen = snprintf(htext, sizeof(htext),
+                            "%-*s %-*s %*s %*s %*s"
+                            " %*s %*s %7s %*s %10s"
+                            " %7s %s",
+                            w_anc, c_anc, w_name, c_name, w_typ, c_typ, w_size, c_size, w_hz, c_hz,
+                            w_mbps, c_mbps, w_ino, c_ino, "OWNER", w_cnt, c_cnt, "SEMS", "WPID",
+                            "RPID");
+        }
     }
 
     {

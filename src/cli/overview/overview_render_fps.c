@@ -67,11 +67,19 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         int  w_r    = sort_col_label(c_r, sizeof(c_r), "RPID", 4, sk, sd, 7);
         int  w_mem  = sort_col_label(c_mem, sizeof(c_mem), "MEM", 2, sk, sd, 5);
         int  desc_w = (lay->view == OV_VIEW_FPS) ? 30 : 20;
-        snprintf(htext, sizeof(htext),
-                 "%-*s %-*s %3s %*s %*s %3s %*s"
-                 " %-*s",
-                 w_anc, c_anc, w_name, c_name, "TMX", w_c, c_c, w_r, c_r, "STR", w_mem, c_mem,
-                 desc_w, "DESCRIPTION");
+        if (lay->compact_mode)
+        {
+            snprintf(htext, sizeof(htext), "%-*s %-*s %3s %*s %*s %3s %*s", w_anc, c_anc, w_name,
+                     c_name, "TMX", w_c, c_c, w_r, c_r, "STR", w_mem, c_mem);
+        }
+        else
+        {
+            snprintf(htext, sizeof(htext),
+                     "%-*s %-*s %3s %*s %*s %3s %*s"
+                     " %-*s",
+                     w_anc, c_anc, w_name, c_name, "TMX", w_c, c_c, w_r, c_r, "STR", w_mem, c_mem,
+                     desc_w, "DESCRIPTION");
+        }
 
         int vis_width = r.width - 4;
         if (vis_width < 0)
