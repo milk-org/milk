@@ -260,7 +260,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     /* Logging loop state and execution block */
     {
         STREAMSAVE_THREAD_MESSAGE *tmsg =
-            (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+            (STREAMSAVE_THREAD_MESSAGE *) calloc(1, sizeof(STREAMSAVE_THREAD_MESSAGE));
+        if (tmsg == NULL)
+        {
+            PRINT_ERROR("calloc failed for tmsg");
+            return RETURN_FAILURE;
+        }
 
         int saveON_last = saveON;
 
@@ -270,10 +275,20 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         char ASCIITIMEffilename[STRINGMAXLEN_FULLFILENAME];
         snprintf(ASCIITIMEffilename, sizeof(ASCIITIMEffilename), "null");
 
-        double   *array_time   = (double *) malloc(sizeof(double) * cubesize * 2);
-        double   *array_aqtime = (double *) malloc(sizeof(double) * cubesize * 2);
-        uint64_t *array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * cubesize * 2);
-        uint64_t *array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * cubesize * 2);
+        double   *array_time   = (double *) calloc(cubesize * 2, sizeof(double));
+        double   *array_aqtime = (double *) calloc(cubesize * 2, sizeof(double));
+        uint64_t *array_cnt0   = (uint64_t *) calloc(cubesize * 2, sizeof(uint64_t));
+        uint64_t *array_cnt1   = (uint64_t *) calloc(cubesize * 2, sizeof(uint64_t));
+        if (array_time == NULL || array_aqtime == NULL || array_cnt0 == NULL || array_cnt1 == NULL)
+        {
+            PRINT_ERROR("calloc failed for timing arrays");
+            free(array_time);
+            free(array_aqtime);
+            free(array_cnt0);
+            free(array_cnt1);
+            free(tmsg);
+            return RETURN_FAILURE;
+        }
 
         int thread_initialized = 0;
 

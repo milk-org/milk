@@ -68,7 +68,7 @@ errno_t read_sharedmem_image_all(const char *strfilter)
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
 
-    streaminfo = (STREAMINFO *) malloc(sizeof(STREAMINFO) * NBstreamMAX);
+    streaminfo = (STREAMINFO *) calloc(NBstreamMAX, sizeof(STREAMINFO));
 
     int NBstream = find_streams(streaminfo, 1, strfilter);
 

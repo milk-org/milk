@@ -102,9 +102,9 @@ int create_counter_file(const char *fname, unsigned long NBpts)
         abort();
     }
 
-    for (unsigned i = 0; i < NBpts; i++)
+    for (unsigned int i = 0; i < NBpts; i++)
     {
-        fprintf(fp, "%ld %f\n", i, (double) ((double) i / NBpts));
+        fprintf(fp, "%u %f\n", i, (double) ((double) i / NBpts));
     }
 
     fclose(fp);

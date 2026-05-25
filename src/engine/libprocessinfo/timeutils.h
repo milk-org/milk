@@ -47,6 +47,6 @@ struct timespec timespec_diff(struct timespec start, struct timespec end);
 
 double timespec_diff_double(struct timespec start, struct timespec end);
 
-char *timedouble_to_UTC_timeofdaystring(double timedouble);
+void timedouble_to_UTC_timeofdaystring(double timedouble, char *buf, size_t buflen);
 
 #endif

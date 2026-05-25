@@ -212,6 +212,10 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     if (LogFileCreated == 0)
     {
         pinfo->logFile = fopen(pinfo->logfilename, "w");
+        if (pinfo->logFile == NULL)
+        {
+            PRINT_ERROR("cannot open process log file %s", pinfo->logfilename);
+        }
         LogFileCreated = 1;
     }
 

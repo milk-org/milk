@@ -44,7 +44,7 @@
  */
 void *save_telemetry_fits_function(void *ptr)
 {
-    long *tret_ptr = (long *) malloc(sizeof(long));
+    long *tret_ptr = (long *) calloc(1, sizeof(long));
     if (tret_ptr == NULL)
     {
         return NULL;
@@ -72,30 +72,30 @@ void *save_telemetry_fits_function(void *ptr)
     }
 
     int            NBcustomKW = 9;
-    IMAGE_KEYWORD *imkwarray  = (IMAGE_KEYWORD *) malloc(sizeof(IMAGE_KEYWORD) * NBcustomKW);
+    IMAGE_KEYWORD *imkwarray  = (IMAGE_KEYWORD *) calloc(NBcustomKW, sizeof(IMAGE_KEYWORD));
 
     snprintf(imkwarray->name, KEYWORD_MAX_STRING, "UT");
     imkwarray->type = 'S';
 
-    snprintf(imkwarray->value.valstr, KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(0.5 * tmsg->arraytime[0] +
-                                               0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
+    timedouble_to_UTC_timeofdaystring(0.5 * tmsg->arraytime[0] +
+                                          0.5 * tmsg->arraytime[tmsg->cubesize - 1],
+                                      imkwarray->value.valstr, KEYWORD_MAX_STRING);
     snprintf(imkwarray->comment, KEYWORD_MAX_COMMENT,
              "HH:MM:SS.SS typical UTC"
              " at exposure");
 
     snprintf(imkwarray[1].name, KEYWORD_MAX_STRING, "UT-STR");
     imkwarray[1].type = 'S';
-    snprintf(imkwarray[1].value.valstr, KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0]));
+    timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0], imkwarray[1].value.valstr,
+                                      KEYWORD_MAX_STRING);
     snprintf(imkwarray[1].comment, KEYWORD_MAX_COMMENT,
              "HH:MM:SS.SS UTC at"
              " exposure start");
 
     snprintf(imkwarray[2].name, KEYWORD_MAX_STRING, "UT-END");
     imkwarray[2].type = 'S';
-    snprintf(imkwarray[2].value.valstr, KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
+    timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1],
+                                      imkwarray[2].value.valstr, KEYWORD_MAX_STRING);
     snprintf(imkwarray[2].comment, KEYWORD_MAX_COMMENT,
              "HH:MM:SS.SS UTC at"
              " exposure end");
@@ -124,10 +124,9 @@ void *save_telemetry_fits_function(void *ptr)
 
     snprintf(imkwarray[6].name, KEYWORD_MAX_STRING, "%s", TZ_MILK_STR);
     imkwarray[6].type = 'S';
-    snprintf(imkwarray[6].value.valstr, KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(
-                 (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) +
-                 TZ_MILK_UTC_OFF));
+    timedouble_to_UTC_timeofdaystring(
+        (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) + TZ_MILK_UTC_OFF,
+        imkwarray[6].value.valstr, KEYWORD_MAX_STRING);
     snprintf(imkwarray[6].comment, KEYWORD_MAX_COMMENT,
              "HH:MM:SS.SS typical %s"
              " at exposure",
@@ -135,8 +134,8 @@ void *save_telemetry_fits_function(void *ptr)
 
     snprintf(imkwarray[7].name, KEYWORD_MAX_STRING, "%s-STR", TZ_MILK_STR);
     imkwarray[7].type = 'S';
-    snprintf(imkwarray[7].value.valstr, KEYWORD_MAX_STRING, "%s",
-             timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF));
+    timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF,
+                                      imkwarray[7].value.valstr, KEYWORD_MAX_STRING);
     snprintf(imkwarray[7].comment, KEYWORD_MAX_COMMENT,
              "HH:MM:SS.SS typical %s"
              " at exposure start",
@@ -144,9 +143,8 @@ void *save_telemetry_fits_function(void *ptr)
 
     snprintf(imkwarray[8].name, KEYWORD_MAX_STRING, "%s-END", TZ_MILK_STR);
     imkwarray[8].type = 'S';
-    snprintf(
-        imkwarray[8].value.valstr, KEYWORD_MAX_STRING, "%s",
-        timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
+    timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF,
+                                      imkwarray[8].value.valstr, KEYWORD_MAX_STRING);
     snprintf(imkwarray[8].comment, KEYWORD_MAX_COMMENT,
              "HH:MM:SS.SS typical %s"
              " at exposure end",

@@ -588,7 +588,7 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstri
             int n = STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr);
             if (n > (int) strlen(tmpstr1))
             {
-                strcat(tmpstr, tmpstr1);
+                strncat(tmpstr, tmpstr1, STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr) - 1);
             }
             CLIargcnt++;
         }
@@ -622,7 +622,7 @@ int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
             int n = STRINGMAXLEN_CMD_EXAMPLE - strlen(tmpstr);
             if (n > (int) strlen(tmpstr1))
             {
-                strcat(tmpstr, tmpstr1);
+                strncat(tmpstr, tmpstr1, STRINGMAXLEN_CMD_EXAMPLE - strlen(tmpstr) - 1);
             }
         }
     }

@@ -40,9 +40,13 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
     time_t          now;
 
     clock_gettime(CLOCK_MILK, &tnow);
-    now = tnow.tv_sec;
-    struct tm *uttime;
-    uttime = gmtime(&now);
+    now               = tnow.tv_sec;
+    struct tm *uttime = gmtime(&now);
+    if (uttime == NULL)
+    {
+        PRINT_ERROR("gmtime failed");
+        return RETURN_FAILURE;
+    }
 
     snprintf(timestring, 200, "%04d%02d%02d%02d%02d%02d.%09ld %8ld [%6d %6d] %s",
              1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
@@ -54,6 +58,11 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
 
         fp = fopen(fname, "w");
+        if (fp == NULL)
+        {
+            PRINT_ERROR("cannot open file \"%s\"", fname);
+            return RETURN_FAILURE;
+        }
         switch (fpsentry->parray[pindex].type)
         {
         case FPTYPE_INT64:
@@ -127,18 +136,33 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
         {
         case FPTYPE_INT64:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[1], timestring);
             fclose(fp);
             break;
 
         case FPTYPE_FLOAT64:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[1], timestring);
             fclose(fp);
             break;
 
         case FPTYPE_FLOAT32:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[1], timestring);
             fclose(fp);
             break;
@@ -153,18 +177,33 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
         {
         case FPTYPE_INT64:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[2], timestring);
             fclose(fp);
             break;
 
         case FPTYPE_FLOAT64:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[2], timestring);
             fclose(fp);
             break;
 
         case FPTYPE_FLOAT32:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[2], timestring);
             fclose(fp);
             break;
@@ -179,18 +218,33 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
         {
         case FPTYPE_INT64:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[3], timestring);
             fclose(fp);
             break;
 
         case FPTYPE_FLOAT64:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[3], timestring);
             fclose(fp);
             break;
 
         case FPTYPE_FLOAT32:
             fp = fopen(fname, "w");
+            if (fp == NULL)
+            {
+                PRINT_ERROR("cannot open file \"%s\"", fname);
+                return RETURN_FAILURE;
+            }
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[3], timestring);
             fclose(fp);
             break;
@@ -201,6 +255,11 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
         fp = fopen(fname, "w");
+        if (fp == NULL)
+        {
+            PRINT_ERROR("cannot open file \"%s\"", fname);
+            return RETURN_FAILURE;
+        }
         fprintf(fp, "%10s    # %s\n", fpsentry->md->name, timestring);
         fclose(fp);
     }
@@ -209,6 +268,11 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
         fp = fopen(fname, "w");
+        if (fp == NULL)
+        {
+            PRINT_ERROR("cannot open file \"%s\"", fname);
+            return RETURN_FAILURE;
+        }
         fprintf(fp, "%10s    # %s\n", fpsentry->md->workdir, timestring);
         fclose(fp);
     }
@@ -217,6 +281,11 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
     {
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname, tagname);
         fp = fopen(fname, "w");
+        if (fp == NULL)
+        {
+            PRINT_ERROR("cannot open file \"%s\"", fname);
+            return RETURN_FAILURE;
+        }
         fprintf(fp, "%10ld    # %s\n", fpsentry->parray[pindex].fpflag, timestring);
         fclose(fp);
     }

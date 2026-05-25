@@ -161,10 +161,10 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
 
     processinfo_WriteMessage(processinfo, "Allocating memory");
 
-    uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+    uint32_t *sizearray = (uint32_t *) calloc(3, sizeof(uint32_t));
     if (sizearray == NULL)
     {
-        PRINT_ERROR("malloc error");
+        PRINT_ERROR("calloc error");
         abort();
     }
 
@@ -224,24 +224,24 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
                  dcimg[IDin].kw[kw].comment);
     }
 
-    double *dtarray = (double *) malloc(sizeof(double) * NBslice);
+    double *dtarray = (double *) calloc(NBslice, sizeof(double));
     if (dtarray == NULL)
     {
-        PRINT_ERROR("malloc error");
+        PRINT_ERROR("calloc error");
         abort();
     }
 
-    struct timespec *tarray = (struct timespec *) malloc(sizeof(struct timespec) * NBslice);
+    struct timespec *tarray = (struct timespec *) calloc(NBslice, sizeof(struct timespec));
     if (tarray == NULL)
     {
-        PRINT_ERROR("malloc error");
+        PRINT_ERROR("calloc error");
         abort();
     }
 
-    long *nbpixslice = (long *) malloc(sizeof(long) * NBslice);
+    long *nbpixslice = (long *) calloc(NBslice, sizeof(long));
     if (nbpixslice == NULL)
     {
-        PRINT_ERROR("malloc error");
+        PRINT_ERROR("calloc error");
         abort();
     }
 
@@ -273,15 +273,17 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
                     fprintf(stderr, "Error: fscanf reached end of file, no "
                                     "matching characters, no matching failure\n");
                 }
-                return RETURN_FAILURE;
+                fclose(fp);
+                goto fail_cleanup;
             }
             else if (fscanfcnt != 3)
             {
                 fprintf(stderr,
                         "Error: fscanf successfully matched and assigned "
-                        "%i input items, 2 expected\n",
+                        "%i input items, 3 expected\n",
                         fscanfcnt);
-                return RETURN_FAILURE;
+                fclose(fp);
+                goto fail_cleanup;
             }
         }
         fclose(fp);
@@ -460,16 +462,19 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
     // ==================================
     processinfo_cleanExit(processinfo);
 
-    /*    if((dcprocinfo == 1) && (processinfo->loopstat != 4)) {
-            processinfo_cleanExit(processinfo);
-        }*/
-
     free(nbpixslice);
     free(sizearray);
     free(dtarray);
     free(tarray);
 
     return IDout;
+
+fail_cleanup:
+    free(nbpixslice);
+    free(sizearray);
+    free(dtarray);
+    free(tarray);
+    return RETURN_FAILURE;
 }
 
 

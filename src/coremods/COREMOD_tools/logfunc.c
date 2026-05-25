@@ -114,15 +114,22 @@ void CORE_logFunctionCall(const int                           funclevel,
 
         snprintf(fname, sizeof(fname), ".%s.funccalls.log", FunctionName);
 
-        struct tm *uttime;
-        tnow   = time(NULL);
-        uttime = gmtime(&tnow);
+        tnow              = time(NULL);
+        struct tm *uttime = gmtime(&tnow);
+        if (uttime == NULL)
+        {
+            return;
+        }
         clock_gettime(CLOCK_MILK, &timenow);
         tid = syscall(SYS_gettid);
 
         // add custom parameter into string (optional)
 
         fp = fopen(fname, "a");
+        if (fp == NULL)
+        {
+            return;
+        }
         fprintf(fp, "%02d:%02d:%02ld.%09ld  %10d  %10d  %c %40s %6ld   %s\n", uttime->tm_hour,
                 uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec, getpid(), (int) tid, modechar,
                 FunctionName, line, comments);
