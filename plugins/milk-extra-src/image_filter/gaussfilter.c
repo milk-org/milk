@@ -76,10 +76,19 @@ static int32_t gaussfilt_filtersize                              = 0;
 
 static void gauss_filter_step(IMAGE *imgin, IMAGE *imgout, float sigma, int filter_size)
 {
+    if (imgin == NULL || imgout == NULL || imgin->array.F == NULL || imgout->array.F == NULL)
+    {
+        return;
+    }
+
     uint32_t nx    = imgin->md[0].size[0];
     uint32_t ny    = imgin->md[0].size[1];
     uint32_t nz    = (imgin->md[0].naxis == 3) ? imgin->md[0].size[2] : 1;
     int      fsize = filter_size;
+    if (fsize < 0)
+    {
+        fsize = 0;
+    }
     if (fsize > (int) nx / 2 - 1)
     {
         fsize = nx / 2 - 1;
@@ -89,19 +98,50 @@ static void gauss_filter_step(IMAGE *imgin, IMAGE *imgout, float sigma, int filt
         fsize = ny / 2 - 1;
     }
 
+    if (sigma <= 0.0f || fsize <= 0)
+    {
+        if (imgin->array.F != imgout->array.F)
+        {
+            uint32_t byte_copy_size = nx * ny * nz * sizeof(float);
+            __builtin_memcpy(imgout->array.F, imgin->array.F, byte_copy_size);
+        }
+        return;
+    }
+
     float *array = (float *) malloc((2 * fsize + 1) * sizeof(float));
-    float  sum   = 0.0;
+    if (array == NULL)
+    {
+        return;
+    }
+    float sum = 0.0;
     for (int i = 0; i < (2 * fsize + 1); i++)
     {
         array[i] = exp(-((i - fsize) * (i - fsize)) / sigma / sigma);
         sum += array[i];
     }
-    for (int i = 0; i < (2 * fsize + 1); i++)
+    if (sum > 0.0f)
     {
-        array[i] /= sum;
+        for (int i = 0; i < (2 * fsize + 1); i++)
+        {
+            array[i] /= sum;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < (2 * fsize + 1); i++)
+        {
+            array[i] = 0.0f;
+        }
+        array[fsize] = 1.0f;
     }
 
     float *tmp = (float *) calloc(nx * ny, sizeof(float));
+    if (tmp == NULL)
+    {
+        free(array);
+        return;
+    }
+    uint32_t ufsize = (uint32_t) fsize;
     for (uint32_t k = 0; k < nz; k++)
     {
         float *pl_in  = imgin->array.F + k * nx * ny;
@@ -109,7 +149,7 @@ static void gauss_filter_step(IMAGE *imgin, IMAGE *imgout, float sigma, int filt
         memset(tmp, 0, nx * ny * sizeof(float));
         for (uint32_t j = 0; j < ny; j++)
         {
-            for (uint32_t i = fsize; i < nx - fsize; i++)
+            for (uint32_t i = ufsize; i < nx - ufsize; i++)
             {
                 for (int ii = -fsize; ii <= fsize; ii++)
                 {
@@ -119,7 +159,7 @@ static void gauss_filter_step(IMAGE *imgin, IMAGE *imgout, float sigma, int filt
         }
         for (uint32_t i = 0; i < nx; i++)
         {
-            for (uint32_t j = fsize; j < ny - fsize; j++)
+            for (uint32_t j = ufsize; j < ny - ufsize; j++)
             {
                 float v = 0;
                 for (int jj = -fsize; jj <= fsize; jj++)
@@ -147,7 +187,10 @@ imageID gauss_filter(const char *ID_name, const char *out_name, float sigma, int
     IMGID out = stream_connect_create_2Df32(out_name, in.md->size[0], in.md->size[1]);
     gauss_filter_step(in.im, out.im, sigma, filter_size);
     ImageStreamIO_UpdateIm(out.im);
-    return out.ID;
+    imageID out_id = out.ID;
+    imgid_free(&in);
+    imgid_free(&out);
+    return out_id;
 }
 #endif
 
@@ -170,6 +213,7 @@ static MILK_HOT errno_t compute_function()
 
     if (in.im == NULL)
     {
+        imgid_free(&in);
         return RETURN_FAILURE;
     }
 
@@ -177,6 +221,8 @@ static MILK_HOT errno_t compute_function()
 
     if (out.im == NULL)
     {
+        imgid_free(&in);
+        imgid_free(&out);
         return RETURN_FAILURE;
     }
 
@@ -186,6 +232,9 @@ static MILK_HOT errno_t compute_function()
     processinfo_update_output_stream(processinfo, out.im, in.im);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&in);
+    imgid_free(&out);
 
     return RETURN_SUCCESS;
 }
