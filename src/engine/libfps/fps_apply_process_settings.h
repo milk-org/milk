@@ -15,12 +15,13 @@
 /**
  * @brief Apply process-level settings from FPS parameters.
  *
- * Reads .procinfo.NBthread, .procinfo.taskset, and
- * .procinfo.cset from the FPS and applies them to the
- * current process:
+ * Reads .procinfo.NBthread, .procinfo.taskset,
+ * .procinfo.cset, and .procinfo.RTprio from the FPS
+ * and applies them to the current process:
  *   - OMP_NUM_THREADS via setenv()
  *   - CPU affinity via sched_setaffinity()
  *   - cgroup migration via milk-makecsetandrt
+ *   - RT priority via sched_setscheduler(SCHED_FIFO)
  *
  * @param fps  Connected FPS to read settings from
  * @return RETURN_SUCCESS or RETURN_FAILURE
