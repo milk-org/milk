@@ -181,67 +181,16 @@ static int remove_fps(const char *name, int verbose, int force)
 
     int running = 0;
 
-    /*
-     * pid_is_alive() - check whether a process is alive
-     *
-     * Returns 1 if the process exists (kill returns 0 or
-     * EPERM), 0 if it has gone (ESRCH), and -1 for other
-     * errors. A PID of 0 is never considered alive because
-     * kill(0, ...) signals the entire process group.
-     */
-#define pid_is_alive(pid) ((pid) > 0 && (kill((pid), 0) == 0 || errno == EPERM))
-
-    /*
-     * wait_for_death() - poll until a process exits or
-     * timeout_ms elapses.  Returns 1 if the process
-     * died, 0 if it is still alive at the deadline.
-     */
-#define wait_for_death(pid, timeout_ms)                  \
-    __extension__({                                      \
-        int _dead = 0;                                   \
-        for (int _ms = 0; _ms < (timeout_ms); _ms += 50) \
-        {                                                \
-            usleep(50000);                               \
-            if (!pid_is_alive(pid))                      \
-            {                                            \
-                _dead = 1;                               \
-                break;                                   \
-            }                                            \
-        }                                                \
-        _dead;                                           \
-    })
-
     if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
     {
         pid_t cpid = (pid_t) fps.md->confpid;
-        if (pid_is_alive(cpid))
+        if (cpid > 0 && getpgid(cpid) >= 0)
         {
             if (force)
             {
-                if (verbose)
+                if (kill_proc(cpid, "conf", name, verbose) != 0)
                 {
-                    printf("Terminating conf process"
-                           " (PID %d) for '%s'...\n",
-                           (int) cpid, name);
-                }
-                kill(cpid, SIGTERM);
-                if (!wait_for_death(cpid, 2000))
-                {
-                    if (verbose)
-                    {
-                        printf("Process did not exit after"
-                               " SIGTERM, sending"
-                               " SIGKILL...\n");
-                    }
-                    kill(cpid, SIGKILL);
-                    if (!wait_for_death(cpid, 1000))
-                    {
-                        PRINT_ERROR("Error: conf process"
-                                    " (PID %d) could not be"
-                                    " terminated for '%s'.",
-                                    (int) cpid, name);
-                        running = 1;
-                    }
+                    running = 1;
                 }
             }
             else
@@ -255,34 +204,13 @@ static int remove_fps(const char *name, int verbose, int force)
     if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
     {
         pid_t rpid = (pid_t) fps.md->runpid;
-        if (pid_is_alive(rpid))
+        if (rpid > 0 && getpgid(rpid) >= 0)
         {
             if (force)
             {
-                if (verbose)
+                if (kill_proc(rpid, "run", name, verbose) != 0)
                 {
-                    printf("Terminating run process"
-                           " (PID %d) for '%s'...\n",
-                           (int) rpid, name);
-                }
-                kill(rpid, SIGTERM);
-                if (!wait_for_death(rpid, 2000))
-                {
-                    if (verbose)
-                    {
-                        printf("Process did not exit after"
-                               " SIGTERM, sending"
-                               " SIGKILL...\n");
-                    }
-                    kill(rpid, SIGKILL);
-                    if (!wait_for_death(rpid, 1000))
-                    {
-                        PRINT_ERROR("Error: run process"
-                                    " (PID %d) could not be"
-                                    " terminated for '%s'.",
-                                    (int) rpid, name);
-                        running = 1;
-                    }
+                    running = 1;
                 }
             }
             else
@@ -292,9 +220,6 @@ static int remove_fps(const char *name, int verbose, int force)
             }
         }
     }
-
-#undef pid_is_alive
-#undef wait_for_death
 
     if (running)
     {

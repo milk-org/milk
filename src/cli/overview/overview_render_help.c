@@ -133,27 +133,6 @@ static int help_nb_sections(void)
     return HS_COUNT;
 }
 
-/**
- * help_section_header_idx - return HELP[] index of the
- * Nth section header.
- * @n: 0-based section ordinal
- */
-static int help_section_header_idx(int n)
-{
-    int sec = 0;
-    for (int i = 0; i < HELP_TOTAL; i++)
-    {
-        if (HELP[i].flags & HF_SECTION)
-        {
-            if (sec == n)
-            {
-                return i;
-            }
-            sec++;
-        }
-    }
-    return 0;
-}
 
 /**
  * help_visible_rows - count how many rows are visible

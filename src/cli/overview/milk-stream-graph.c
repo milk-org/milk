@@ -79,15 +79,22 @@ typedef enum
  * Signal handler
  * ========================================================= */
 
-static volatile sig_atomic_t sg_quit = 0;
+volatile sig_atomic_t ov_sigINT  = 0;
+volatile sig_atomic_t ov_sigTERM = 0;
 
 /**
  * @brief Signal handler for stream graph tool.
  */
 static void sg_sighandler(int sig)
 {
-    (void) sig;
-    sg_quit = 1;
+    if (sig == SIGINT)
+    {
+        ov_sigINT = 1;
+    }
+    else if (sig == SIGTERM)
+    {
+        ov_sigTERM = 1;
+    }
 }
 
 /* =========================================================
@@ -441,7 +448,7 @@ static void sg_interactive(OV_MODEL *model, const char *initial_stream, sg_mode_
     SG_LINEAGE lin;
     int        total_items = 0;
 
-    while (!sg_quit)
+    while (!OV_SIG_ANY_SET())
     {
         if (need_scan)
         {
