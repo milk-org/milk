@@ -1,4 +1,5 @@
 #include "overview_render_internal.h"
+#include <sched.h>
 #include "fps_types.h"
 
 #define skip_draw (line_idx < lay->scroll_detail || ri >= max_rows)
@@ -1051,8 +1052,78 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             H_ov_theme_bg(OV_BG_PANEL);
             H_ov_theme_fg(OV_FG_TITLE);
             H_ov_buf_bold();
-            int n = snprintf(NULL, 0, " %s  (PID %d)", target_name, (int) target_pid);
-            H_ov_buf_printf(" %s  (PID %d)", target_name, (int) target_pid);
+
+            int policy   = sched_getscheduler(target_pid);
+            int priority = 0;
+            if (policy == SCHED_FIFO || policy == SCHED_RR)
+            {
+                struct sched_param param;
+                if (sched_getparam(target_pid, &param) == 0)
+                {
+                    priority = param.sched_priority;
+                }
+            }
+            else
+            {
+                priority = getpriority(PRIO_PROCESS, (id_t) target_pid);
+            }
+
+            const char *policy_name = "UNKNOWN";
+            if (policy == SCHED_OTHER)
+            {
+                policy_name = "OTHER";
+            }
+            else if (policy == SCHED_FIFO)
+            {
+                policy_name = "FIFO";
+            }
+            else if (policy == SCHED_RR)
+            {
+                policy_name = "RR";
+            }
+#ifdef SCHED_BATCH
+            else if (policy == SCHED_BATCH)
+            {
+                policy_name = "BATCH";
+            }
+#endif
+#ifdef SCHED_IDLE
+            else if (policy == SCHED_IDLE)
+            {
+                policy_name = "IDLE";
+            }
+#endif
+#ifdef SCHED_DEADLINE
+            else if (policy == SCHED_DEADLINE)
+            {
+                policy_name = "DEADLINE";
+            }
+#endif
+
+            int n;
+            if (policy != -1)
+            {
+                if (policy == SCHED_FIFO || policy == SCHED_RR)
+                {
+                    n = snprintf(NULL, 0, " %s  (PID %d, %s prio %d)", target_name,
+                                 (int) target_pid, policy_name, priority);
+                    H_ov_buf_printf(" %s  (PID %d, %s prio %d)", target_name, (int) target_pid,
+                                    policy_name, priority);
+                }
+                else
+                {
+                    n = snprintf(NULL, 0, " %s  (PID %d, %s nice %d)", target_name,
+                                 (int) target_pid, policy_name, priority);
+                    H_ov_buf_printf(" %s  (PID %d, %s nice %d)", target_name, (int) target_pid,
+                                    policy_name, priority);
+                }
+            }
+            else
+            {
+                n = snprintf(NULL, 0, " %s  (PID %d)", target_name, (int) target_pid);
+                H_ov_buf_printf(" %s  (PID %d)", target_name, (int) target_pid);
+            }
+
             H_ov_buf_reset_attr();
             H_ov_theme_bg(OV_BG_PANEL);
             H_render_pad_spaces(n, r.width);

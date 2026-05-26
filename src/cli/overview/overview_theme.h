@@ -522,4 +522,25 @@ static inline void ov_draw_panel_tabs(int          row,
     ov_buf_reset_attr();
 }
 
+static inline ov_rgb_t ov_theme_highlight_bg(ov_rgb_t base_bg)
+{
+    ov_rgb_t highlight;
+    highlight.r = base_bg.r + 15;
+    highlight.g = base_bg.g + 15;
+    highlight.b = base_bg.b + 18;
+    if (highlight.r > 255)
+    {
+        highlight.r = 255;
+    }
+    if (highlight.g > 255)
+    {
+        highlight.g = 255;
+    }
+    if (highlight.b > 255)
+    {
+        highlight.b = 255;
+    }
+    return highlight;
+}
+
 #endif /* OVERVIEW_THEME_H */
