@@ -24,6 +24,7 @@
 #include "overview_theme.h"
 #include "overview_data.h"
 #include "overview_layout.h"
+#include "processinfo_shm_list_create.h"
 
 /* =========================================================
  * Global state (defined here, declared extern elsewhere)
@@ -131,112 +132,102 @@ static void print_help(const char *prog, int mh_color)
     printf("  $ %s [%s %s]\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
 
     milk_help_section("Description", mh_color);
-    printf("  milk-CTRL is the unified system dashboard TUI for the milk framework.\n"
-           "  It provides a comprehensive, consolidated view of all shared-memory\n"
-           "  components across the machine, including data streams, Function\n"
-           "  Processing Systems (FPS), and active managed processes. Designed for\n"
-           "  low-latency, real-time environments, it allows operators to trace\n"
-           "  entire dataflow pipelines and diagnose bottlenecks dynamically.\n"
-           "\n"
-           "  Key capabilities include:\n"
-           "  - %s: Visually traces dataflow lineage between streams\n"
-           "    and the specific processes reading or writing to them.\n"
-           "  - %s: Monitors cache misses (L1D, LLC, dTLB),\n"
-           "    instructions per cycle, and branching via Linux perf counters.\n"
-           "  - %s: Manipulates execution states (pause, step, kill)\n"
-           "    and cleans up zombie streams or stale memory segments safely.\n"
-           "  - %s: Real-time metrics on process CPU usage, memory\n"
-           "    (RSS), context switching, sleep/run states, and pipeline throughput.\n\n",
-           MH(MH_BOLD, "Live Pipeline Topology"), MH(MH_BOLD, "Hardware Diagnostics"),
-           MH(MH_BOLD, "Process Orchestration"), MH(MH_BOLD, "System Telemetry"));
+    printf("  milk-CTRL is the unified real-time dashboard for the milk framework.\n"
+           "  It monitors and controls three core pillars of the shared-memory architecture:\n\n"
+           "  1. %s (Streams): Zero-copy n-dimensional data passing between processes.\n"
+           "     Files are located in /milk/shm/ (override via MILK_SHM_DIR or -d).\n"
+           "  2. %s (Function Processing System): Real-time parameter sync and state control\n"
+           "     (conf/run loop). Processes run in isolated tmux sessions for fault tolerance.\n"
+           "  3. %s (Process Info): Heartbeat telemetry, loop rate, and CPU profiling.\n\n"
+           "  Designed for low-latency adaptive optics, operators can trace pipeline topology,\n"
+           "  diagnose CPU/dTLB bottlenecks, and orchestrate compute loops dynamically.\n\n",
+           MH(MH_BOLD, "ImageStreamIO"), MH(MH_BOLD, "FPS"), MH(MH_BOLD, "processinfo"));
 
-    milk_help_section("Dashboard Layout", mh_color);
-    printf("  The TUI is organized into specialized views (tabs), selectable via F2-F6:\n"
-           "  - %s (F2): All panels (Streams, Processes, FPS) sharing the screen\n"
-           "  - %s (F3): Dedicated full-screen view of Streams\n"
-           "  - %s (F4): Dedicated full-screen view of Processes\n"
-           "  - %s  (F5): Dedicated full-screen view of FPS modules\n"
-           "  - %s (F6): Visual node graph showing data flow and lineage\n\n",
-           MH(MH_BOLD, "DASH"), MH(MH_BOLD, "STRM"), MH(MH_BOLD, "PROC"), MH(MH_BOLD, "FPS"),
-           MH(MH_BOLD, "CONN"));
+    milk_help_section("Dashboard Layout (F2 - F6)", mh_color);
+    printf(
+        "  - %s (F2): Grid overview of Streams, Processes, and FPS panels.\n"
+        "  - %s (F3): Full-screen Streams panel with detailed dimensions, semaphores, & IO rates.\n"
+        "  - %s (F4): Full-screen Process monitor with status (RUN/STOP/CRSH), CPU, & loop "
+        "counts.\n"
+        "  - %s  (F5): Full-screen FPS list (left) and interactive parameter tree (right).\n"
+        "  - %s (F6): Visual dataflow node graph tracing upstream/downstream lineage.\n\n",
+        MH(MH_BOLD, "DASH"), MH(MH_BOLD, "STRM"), MH(MH_BOLD, "PROC"), MH(MH_BOLD, "FPS"),
+        MH(MH_BOLD, "CONN"));
 
     milk_help_section("Options", mh_color);
-    printf("  %s                      Show this help\n", MH(MH_OPT, "-h, --help"));
-    printf("  %s             One-line description\n", MH(MH_OPT, "-h1, --help-oneline"));
-    printf("  %s                Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
-    printf("  %s %s                         Override SHM directory\n\n", MH(MH_OPT, "-d"),
-           MH(MH_ARG, "DIR"));
+    printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
+    printf("  %-30s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
+    printf("  %-30s Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
+    printf("  %-30s Override SHM/process directory\n\n", MH(MH_OPT, "-d <DIR>"));
 
-    milk_help_section("Navigation", mh_color);
-    printf("  %s, %s             Switch views (Dashboard, Streams, Procs, FPS, Graph)\n",
-           MH(MH_OPT, "F2-F6"), MH(MH_OPT, "^Left/^Right"));
-    printf("  %s                             Cycle focus between active panels\n",
-           MH(MH_OPT, "TAB"));
-    printf("  %s                           Navigate rows in focused list\n", MH(MH_OPT, "UP/DN"));
-    printf("  %s                       Ancestry navigation (jump to prev/next connected node)\n",
-           MH(MH_OPT, "SHIFT+UP/DN"));
-    printf("  %s                      Scroll panel horizontally (or cycle focus on F2)\n",
-           MH(MH_OPT, "Left/Right"));
-    printf("  %s                         Scroll page up/down\n", MH(MH_OPT, "PgUp/Dn"));
-    printf("  %s                        Jump to top/bottom of list\n", MH(MH_OPT, "Home/End"));
-    printf("  %s                               Filter (regex search) in focused panel\n\n",
-           MH(MH_OPT, "/"));
+    milk_help_section("Navigation & View Controls", mh_color);
+    printf("  %-30s Switch active panel focus (Dashboard / FPS view)\n", MH(MH_OPT, "TAB"));
+    printf("  %-30s Navigate rows in the currently focused list\n", MH(MH_OPT, "UP / DOWN"));
+    printf("  %-30s Scroll page up / down\n", MH(MH_OPT, "PgUp / PgDn"));
+    printf("  %-30s Jump to top / bottom of the list\n", MH(MH_OPT, "Home / End"));
+    printf("  %-30s Scroll list/table horizontally\n", MH(MH_OPT, "LEFT / RIGHT"));
+    printf("  %-30s Toggle detailed inspection pane / parameter edit mode\n", MH(MH_OPT, "ENTER"));
+    printf("  %-30s Toggle details tab on selected item / Graph details\n", MH(MH_OPT, "D"));
+    printf("  %-30s Filter items in the focused list (regex search)\n", MH(MH_OPT, "/"));
+    printf("  %-30s Freeze selection highlight (prevents jumping during updates)\n",
+           MH(MH_OPT, "SPACE"));
+    printf("  %-30s Export current dashboard state snapshot to file\n", MH(MH_OPT, "W"));
+    printf("  %-30s Toggle command log ring-buffer visibility\n", MH(MH_OPT, "G"));
+    printf("  %-30s Cycle graph lineage mode on F6 view (Trigger / Input)\n", MH(MH_OPT, "L"));
+    printf("  %-30s Pause/resume real-time UI data updates\n", MH(MH_OPT, "F"));
+    printf("  %-30s Increase / decrease scan updates speed (interval)\n", MH(MH_OPT, "+ / -"));
+    printf("  %-30s Quit milk-CTRL\n\n", MH(MH_OPT, "q / x"));
+
+    milk_help_section("Column Hiding & Layout Management", mh_color);
+    printf("  %-30s Move highlighted column cursor backward / forward\n",
+           MH(MH_OPT, "SHIFT + LEFT/RIGHT"));
+    printf("  %-30s Toggle visibility (hide/show) of the highlighted column\n",
+           MH(MH_OPT, "t / T"));
+    printf("  %-30s Toggle compact layout mode (hides secondary columns to fit terminal)\n",
+           MH(MH_OPT, "d"));
+    printf("  %-30s Adjust F5:FPS or F2:Dashboard vertical split panel ratio\n",
+           MH(MH_OPT, "{ / }"));
+    printf("  %-30s Adjust F2:Dashboard horizontal split panel ratio\n\n", MH(MH_OPT, "( / )"));
 
     milk_help_section("Sorting", mh_color);
-    printf("  %s, %s                        Cycle sort column backward/forward\n", MH(MH_OPT, "<"),
-           MH(MH_OPT, ">/]"));
-    printf("  %s                               Sort by Name\n", MH(MH_OPT, "s"));
-    printf("  %s                               Sort by Frequency/Status\n", MH(MH_OPT, "S"));
-    printf("  %s                               Sort by Ancestry/Topology\n", MH(MH_OPT, "A"));
-    printf("  %s                               Toggle sort direction (Ascending/Descending)\n\n",
-           MH(MH_OPT, "["));
+    printf("  %-30s Sort list by Name (alphabetical)\n", MH(MH_OPT, "s"));
+    printf("  %-30s Sort list by Frequency (Hz) or process execution status\n", MH(MH_OPT, "S"));
+    printf("  %-30s Sort list by Ancestry / pipeline dataflow topology\n", MH(MH_OPT, "A"));
+    printf("  %-30s Cycle active sort column backward / forward\n", MH(MH_OPT, "< / > or ]"));
+    printf("  %-30s Toggle sort direction (Ascending / Descending)\n\n", MH(MH_OPT, "["));
 
-    milk_help_section("Display & Layout", mh_color);
-    printf("  %s, %s                        Adjust F5:FPS vertical split panel size\n",
-           MH(MH_OPT, "{"), MH(MH_OPT, "}"));
-    printf("  %s, %s                        Adjust F2:Dashboard vertical split\n", MH(MH_OPT, "{"),
-           MH(MH_OPT, "}"));
-    printf("  %s, %s                        Adjust F2:Dashboard horizontal split\n",
-           MH(MH_OPT, "("), MH(MH_OPT, ")"));
-    printf("  %s                             Adjust scan rate (increase/decrease speed)\n",
-           MH(MH_OPT, "+/-"));
-    printf("  %s                         Toggle detail pane / Graph jump (on selected item)\n",
-           MH(MH_OPT, "ENTER/D"));
-    printf("  %s                               Cycle graph lineage mode (on Graph view)\n",
-           MH(MH_OPT, "L"));
-    printf("  %s                               Pause/resume display updates\n", MH(MH_OPT, "F"));
-    printf("  %s                           Freeze selection highlight (prevent jumping)\n",
-           MH(MH_OPT, "SPACE"));
-    printf("  %s                               Export current snapshot to file\n", MH(MH_OPT, "W"));
-    printf("  %s                               Toggle command log panel visibility\n",
-           MH(MH_OPT, "G"));
-    printf("  %s                               Spawn interactive CLI diagnostic tool\n",
-           MH(MH_OPT, "i"));
-    printf("  %s                               Show help overlay\n\n", MH(MH_OPT, "h"));
+    milk_help_section("Control Mode Actions (press 'c' to toggle Control Mode ON/OFF)", mh_color);
+    printf("  Global:\n"
+           "    %-28s Deletes selected stream, FPS config, or process registry entry.\n"
+           "                 For processes, this deactivates stale/crashed process slots in\n"
+           "                 processinfo.list.shm, removing them from the dashboard.\n\n"
+           "  Streams (STRM view):\n"
+           "    %-28s Delete stream shared-memory file on disk\n\n"
+           "  Processes (PROC view):\n"
+           "    %-28s Send SIGTERM signal to process\n"
+           "    %-28s Send SIGKILL signal to process\n"
+           "    %-28s Toggle Pause/Resume (sends SIGSTOP/SIGCONT to process PID)\n"
+           "    %-28s Send Step execution command (CTRLval=2)\n"
+           "    %-28s Send Exit execution command (CTRLval=3)\n"
+           "    %-28s Reset performance counter metrics to zero\n"
+           "    %-28s Perform cleanup / release allocations\n\n"
+           "  FPS Modules (FPS view):\n"
+           "    %-28s Send SIGTERM to FPS tmux session\n"
+           "    %-28s Send SIGKILL to FPS tmux session\n"
+           "    %-28s Toggle Run loop state (runstart / runstop)\n"
+           "    %-28s Toggle Configuration loop state (confstart / confstop)\n"
+           "    %-28s Cycle through run states / pause\n\n",
+           MH(MH_OPT, "CTRL + e"), MH(MH_OPT, "DEL / CTRL+e"), MH(MH_OPT, "k"), MH(MH_OPT, "K"),
+           MH(MH_OPT, "p"), MH(MH_OPT, "^s"), MH(MH_OPT, "e"), MH(MH_OPT, "z"), MH(MH_OPT, "C"),
+           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "r"), MH(MH_OPT, "s"), MH(MH_OPT, "x"));
 
-    milk_help_section("Control Mode Actions (press 'c' to toggle mode)", mh_color);
-    printf("  Global: %s=Delete selected (STRM/FPS/PROC)\n", MH(MH_OPT, "CTRL+e"));
-    printf("  STRM:   %s=Delete stream\n", MH(MH_OPT, "DEL"));
-    printf("  PROCS:  %s=Kill %s=SIGKILL %s=Ctrl(-1) %s=Ctrl(2) %s=Ctrl(3) %s=Zero %s=Cleanup\n",
-           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "p"), MH(MH_OPT, "^s"), MH(MH_OPT, "e"),
-           MH(MH_OPT, "z"), MH(MH_OPT, "C"));
-    printf("  FPS:    %s=SIGTERM %s=SIGKILL %s=Pause %s=Run %s=Conf\n\n", MH(MH_OPT, "k"),
-           MH(MH_OPT, "K"), MH(MH_OPT, "x"), MH(MH_OPT, "r"), MH(MH_OPT, "s"));
-
-    milk_help_section("Columns", mh_color);
-    printf(
-        "  STREAMS: NAME/ANCESTRY, TYP, SIZE, Hz, MB/s, INODE, OWNER, COUNT, SEMS, WPID, RPID\n");
-    printf("  PROCS:   NAME/ANCESTRY, PID, STAT, Hz, TRG, trig-strm, exec, DUTY, LOOPCNT, MEM, "
-           "MISSED, PRIO\n");
-    printf("  FPS:     NAME/ANCESTRY, CPID, RPID, STR, MEM, DESCRIPTION\n\n");
-
-    milk_help_section("Mouse", mh_color);
-    printf("  Click=select  DblClick=detail\n");
-    printf("  Scroll wheel=navigate list\n");
-    printf("  Click column headers to sort\n");
-    printf("  Click dashboard tabs to switch views\n");
-    printf("  Drag panel borders to resize\n\n");
-    printf("  %s                               Quit\n", MH(MH_OPT, "q"));
+    milk_help_section("Mouse Interactions", mh_color);
+    printf("  - Click anywhere on a row to select it.\n"
+           "  - Double-click a row to open the detailed inspector pane.\n"
+           "  - Scroll the mouse wheel to navigate lists vertically.\n"
+           "  - Click column headers to sort the table by that column.\n"
+           "  - Click dashboard tabs (DASH, STRM, etc.) to switch views.\n"
+           "  - Drag panel borders/separators to resize split panels.\n\n");
 }
 
 
@@ -249,7 +240,11 @@ int main(int argc, char *argv[])
     /* --- Help handling --- */
     int action = milk_help_init(
         argc, argv, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
-        NULL);
+        "milk-CTRL is the unified, real-time diagnostic and control dashboard for the\n"
+        "milk shared-memory micro-service framework. It connects directly to zero-copy\n"
+        "ImageStreamIO streams, maps the FPS parameters, and tracks managed processes.\n"
+        "Operators can trace dataflow lineage, configure running nodes, diagnose CPU\n"
+        "and hardware bottlenecks, and manage execution loops interactively.");
 
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
@@ -304,6 +299,17 @@ int main(int argc, char *argv[])
 
     /* --- Enter raw mode --- */
     ov_raw_mode_enter();
+
+    /* --- Connect to process list shared memory --- */
+    {
+        long pindex_unused;
+        if (processinfo_shm_list_create(&pindex_unused) != RETURN_SUCCESS)
+        {
+            ov_raw_mode_exit();
+            PRINT_ERROR("failed to connect to process list shared memory");
+            return 1;
+        }
+    }
 
     /* --- Start background scanner --- */
     if (ov_scan_start() != 0)

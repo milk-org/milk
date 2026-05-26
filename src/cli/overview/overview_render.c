@@ -285,6 +285,26 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_buf_pos(r.row, r.col);
     ov_theme_bg(OV_BG_HEADER);
 
+    /* ── Heartbeat: fast-pulsing indicator ── */
+    {
+        int beat = lay->ctrl_blink % 2;
+        if (beat == 0)
+        {
+            /* Bright beat — vivid red */
+            ov_buf_fg(255, 50, 50);
+            ov_buf_bold();
+            ov_buf_printf("\xe2\x99\xa5"); /* ♥ */
+            ov_buf_reset_attr();
+        }
+        else
+        {
+            /* Dim beat — dark red */
+            ov_buf_fg(100, 30, 30);
+            ov_buf_printf("\xe2\x99\xa5"); /* ♥ */
+        }
+        ov_theme_bg(OV_BG_HEADER);
+    }
+
     /* LCARS-style rounded end cap */
     ov_theme_fg(OV_GRAD_LO);
     ov_buf_printf("%s", OV_LCARS_LEFT);
@@ -357,7 +377,7 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         hover_w = 17; /* visual width of "  [m] HOVER: OFF " */
     }
 
-    int chars_left = 17 + ctrl_w + hover_w;
+    int chars_left = 17 + 1 + ctrl_w + hover_w; /* +1 for heartbeat */
 
     ov_theme_fg(OV_FG_STREAM);
     chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);
@@ -914,6 +934,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
      * The existing background is preserved on the terminal's screen. */
     if (!lay->show_help)
     {
+        ov_render_highlighted_column_description(lay);
         switch (lay->view)
         {
         case OV_VIEW_DASHBOARD:

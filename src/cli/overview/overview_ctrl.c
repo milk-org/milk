@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -26,6 +27,7 @@
 #include "overview_layout.h"
 #include "overview_ctrl.h"
 #include "overview_ansi.h"
+#include "processinfo_shm_list_create.h"
 
 /* fps_types.h for FPS and FPSCMDCODE_* */
 #include "fps_types.h"
@@ -516,17 +518,40 @@ void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
     char fname[1024];
     snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
 
-    int rc = unlink(fname);
+    int rc        = unlink(fname);
+    int file_gone = (rc == 0 || errno == ENOENT);
+
+    int deactivated = 0;
+    if (pinfolist == NULL)
+    {
+        long pindex_unused;
+        processinfo_shm_list_create(&pindex_unused);
+    }
+
+    if (pinfolist != NULL)
+    {
+        for (long i = 0; i < PROCESSINFOLISTSIZE; i++)
+        {
+            if (pinfolist->PIDarray[i] == p->PID)
+            {
+                pinfolist->active[i] = 0;
+                deactivated          = 1;
+                break;
+            }
+        }
+    }
 
     if (log != NULL)
     {
-        if (rc == 0)
+        if (deactivated || file_gone)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_OK, "file %s removed 🗑", fname);
+            ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑 Process \"%s\" (PID %d) entry removed", p->name,
+                           p->PID);
         }
         else
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "failed to remove file %s", fname);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "failed to remove entry for process \"%s\"",
+                           p->name);
         }
     }
 }

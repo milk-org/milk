@@ -22,6 +22,7 @@
 #include "procCTRL_PIDcollectSystemInfo.h"
 #include "processinfo_scan_shm.h"
 #include "quicksort.h"
+#include "milk_help.h"
 
 static int loopOK = 1;
 
@@ -224,16 +225,63 @@ void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm)
     }
 }
 
+static void print_help(const char *progname, int mh_color)
+{
+    milk_help_banner(progname, "background process info scanner daemon", mh_color);
+
+    milk_help_section("Usage", mh_color);
+    printf("  $ %s [%soptions%s]\n\n", progname, mh_color ? MH_OPT : "", mh_color ? MH_RST : "");
+
+    milk_help_section("Description", mh_color);
+    printf("  milk-procCTRL-scan is the background daemon that consolidates telemetry\n"
+           "  from all processinfo shared memory files (*.shm) on the machine. It scans\n"
+           "  the milk shared-memory directory, verifies the status of each PID via\n"
+           "  live checks, and updates the central scanner registry (processinfo.list.shm).\n"
+           "  This registry is queried by TUI clients like milk-CTRL to display real-time\n"
+           "  system health, CPU load, memory footprints, and pipeline topology.\n\n");
+
+    milk_help_section("Options", mh_color);
+    printf("  %-24s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
+    printf("  %-24s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
+    printf("  %-24s Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
+    printf("  %-24s Scanner update rate in Hz (default: 10.0)\n", MH(MH_OPT, "-r, --rate HZ"));
+    printf("  %-24s Enable verbose logging to stdout\n", MH(MH_OPT, "-v, --verbose"));
+    printf("  %-24s Rebuild the process list from scratch on startup\n\n",
+           MH(MH_OPT, "-R, --rebuild"));
+
+    milk_help_section("Examples", mh_color);
+    printf("  %s %s\n", MH(MH_DIM, "$"), MH(MH_CMD, "milk-procCTRL-scan"));
+    printf("  %s %s %s %s\n", MH(MH_DIM, "$"), MH(MH_CMD, "milk-procCTRL-scan"), MH(MH_OPT, "-r"),
+           MH(MH_ARG, "20.0"));
+    printf("  %s %s %s\n\n", MH(MH_DIM, "$"), MH(MH_CMD, "milk-procCTRL-scan"), MH(MH_OPT, "-R"));
+
+    const char *see_also[] = { "milk-procinfo-list:list processinfo shared-memory entries",
+                               "milk-procinfo-rm:remove processinfo registry and files",
+                               "milk-CTRL:launch the unified system dashboard TUI" };
+    milk_help_see_also(see_also, 3, mh_color);
+}
+
 int main(int argc, char *argv[])
 {
-    /* One-line help — before daemon check and SHM init */
-    for (int i = 1; i < argc; i++)
+    /* Help initialization -- BEFORE daemon check */
+    int action =
+        milk_help_init(argc, argv, "background process info scanner daemon",
+                       "milk-procCTRL-scan is the background process info scanner daemon.\n"
+                       "It periodically scans all processinfo shared memory files (*.shm) in the\n"
+                       "milk SHM directory, maps them to verify their state and live PIDs, and\n"
+                       "publishes a consolidated registry of active/stopped/crashed processes\n"
+                       "to communicate process listing data to dashboard clients like milk-CTRL.");
+
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
-        if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0)
-        {
-            printf("background process info scanner daemon\n");
-            return 0;
-        }
+        return 0;
+    }
+
+    int mh_color = (action == MH_ACTION_HELP);
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
+    {
+        print_help(argv[0], mh_color);
+        return 0;
     }
 
     double rate    = 10.0;
@@ -280,7 +328,7 @@ int main(int argc, char *argv[])
             switch (opt)
             {
             case 'h':
-                printf("Usage: %s [-r rate_hz] [-v] [-R]\n", argv[0]);
+                print_help(argv[0], 1);
                 return 0;
             case 'r':
                 rate = atof(optarg);
@@ -293,8 +341,8 @@ int main(int argc, char *argv[])
                 break;
             case '?':
             default:
-                printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
-                printf("Usage: %s [-r rate_hz] [-v] [-R]\n", argv[0]);
+                fprintf(stderr, "\n%s Invalid option.\n\n", MH(MH_ERR, "ERROR:"));
+                print_help(argv[0], 1);
                 return 1;
             }
         }

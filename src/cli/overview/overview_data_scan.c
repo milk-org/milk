@@ -1,4 +1,7 @@
 #include "overview_data_internal.h"
+#include "processinfo_shm_list_create.h"
+#include "processinfo_shm_link.h"
+#include "processinfo_procdirname.h"
 
 /* =========================================================
  * Stream scanning
@@ -729,107 +732,20 @@ static struct timespec s_proc_mtime = { 0, 0 };
  */
 void ov_scan_procs(OV_MODEL *model)
 {
-    char shmdir[OV_SHMDIR_MAXLEN];
-    function_parameter_struct_shmdirname(shmdir);
+    if (pinfolist == NULL)
+    {
+        long pindex_unused;
+        processinfo_shm_list_create(&pindex_unused);
+    }
 
-    /* Check directory mtime to skip readdir when
-     * no proc.*.shm files have been added or removed. */
-    struct stat dirstat;
-    if (stat(shmdir, &dirstat) != 0)
+    if (pinfolist == NULL)
     {
         model->nb_procs = 0;
         return;
     }
 
-    int dir_changed = (dirstat.st_mtim.tv_sec != s_proc_mtime.tv_sec) ||
-                      (dirstat.st_mtim.tv_nsec != s_proc_mtime.tv_nsec);
-
-    if (!dir_changed && s_pcache_nb > 0)
-    {
-        /* Fast path: refresh data from existing mappings */
-        int idx = 0;
-        for (int ci = 0; ci < s_pcache_nb && idx < OV_MAX_PROCS; ci++)
-        {
-            OV_PROC     *p     = &model->procs[idx];
-            PROCESSINFO *pinfo = s_pcache[ci].pinfo;
-            pid_t        pid   = s_pcache[ci].pid;
-
-            memset(p, 0, sizeof(OV_PROC));
-            strncpy(p->name, pinfo->name, sizeof(p->name) - 1);
-            p->PID      = pid;
-            p->valid    = 1;
-            p->active   = 1;
-            p->loopstat = pinfo->loopstat;
-
-            int alive = pid_is_alive(pid);
-            if (!alive)
-            {
-                p->loopstat = (pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP)
-                                  ? PROCESSINFO_LOOPSTAT_STOP
-                                  : PROCESSINFO_LOOPSTAT_CRASHED;
-            }
-
-            p->CTRLval          = pinfo->CTRLval;
-            p->loopcnt          = pinfo->loopcnt;
-            p->mem_rss_kb       = pid_get_rss_kb(pid);
-            p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
-            p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
-            if (p->dtmedian_iter_ns > 0)
-            {
-                p->loop_hz = 1.0e9 / (double) p->dtmedian_iter_ns;
-            }
-            strncpy(p->trigstreamname, pinfo->triggerstreamname, sizeof(p->trigstreamname) - 1);
-            p->triggermode         = pinfo->triggermode;
-            p->triggersem          = pinfo->triggersem;
-            p->triggermissed       = pinfo->triggermissedframe;
-            p->triggermissed_cumul = pinfo->triggermissedframe_cumul;
-            p->MeasureTiming       = pinfo->MeasureTiming;
-            p->rt_priority         = pinfo->RT_priority;
-
-            {
-                ov_proc_cache_t *ce = &s_pcache[ci];
-
-                /* Hz from loopcnt delta (fallback) */
-                if (p->loop_hz < 0.1 && ce->has_prev_loop && s_scan_dt_sec > 0.01)
-                {
-                    int64_t dlc = p->loopcnt - ce->prev_loopcnt;
-                    if (dlc > 0)
-                    {
-                        p->loop_hz = (double) dlc / s_scan_dt_sec;
-                    }
-                }
-                /* Flag whether counter is advancing */
-                p->cnt_active     = (ce->has_prev_loop && p->loopcnt != ce->prev_loopcnt);
-                ce->prev_loopcnt  = p->loopcnt;
-                ce->has_prev_loop = 1;
-
-                /* CPU percent from tick delta */
-                uint64_t ut = 0, st = 0;
-                if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
-                {
-                    if (ce->has_prev_cpu && s_scan_dt_sec > 0.01)
-                    {
-                        long     clk    = sysconf(_SC_CLK_TCK);
-                        uint64_t dticks = (ut - ce->prev_utime) + (st - ce->prev_stime);
-                        ce->cpu_pct =
-                            (float) ((double) dticks / ((double) clk * s_scan_dt_sec) * 100.0);
-                    }
-                    ce->prev_utime   = ut;
-                    ce->prev_stime   = st;
-                    ce->has_prev_cpu = 1;
-                }
-                p->cpu_used = ce->cpu_pct;
-            }
-
-            p->node_idx = -1;
-            idx++;
-        }
-        model->nb_procs = idx;
-        return;
-    }
-
-    /* Full path: directory changed — rescan via readdir */
-    s_proc_mtime = dirstat.st_mtim;
+    char shmdir[OV_SHMDIR_MAXLEN];
+    processinfo_procdirname(shmdir);
 
     /* Mark all proc cache entries as not-in-use */
     for (int i = 0; i < s_pcache_nb; i++)
@@ -837,137 +753,124 @@ void ov_scan_procs(OV_MODEL *model)
         s_pcache[i].in_use = 0;
     }
 
-    DIR *dp = opendir(shmdir);
-    if (dp == NULL)
-    {
-        model->nb_procs = 0;
-        return;
-    }
+    int idx = 0;
 
-    int            idx = 0;
-    struct dirent *ep;
-
-    while ((ep = readdir(dp)) != NULL && idx < OV_MAX_PROCS)
+    for (long i = 0; i < PROCESSINFOLISTSIZE && idx < OV_MAX_PROCS; i++)
     {
-        /* Match proc.*.shm — at minimum "proc.a.1.shm" */
-        const char *fname = ep->d_name;
-        if (strncmp(fname, "proc.", 5) != 0)
+        if (pinfolist->active[i] == 0)
         {
             continue;
         }
-        int flen = (int) strlen(fname);
-        if (flen < 10)
-        {
-            continue;
-        }
-        if (strcmp(fname + flen - 4, ".shm") != 0)
-        {
-            continue;
-        }
-        /* proc.NAME.PID.shm — find last dot before .shm
-         * to split NAME and PID. */
-        /* Find second-to-last '.' */
-        const char *p_sfx     = fname + flen - 4; /* points to .shm */
-        const char *p_pid_end = p_sfx;            /* one past PID digits */
-        /* Walk backward to the '.' before PID */
-        const char *q = p_pid_end - 1;
-        while (q > fname + 5 && *q != '.')
-        {
-            q--;
-        }
-        if (*q != '.')
-        {
-            continue;
-        }
-        /* Parse PID */
-        pid_t pid = (pid_t) atoi(q + 1);
+
+        pid_t pid = pinfolist->PIDarray[i];
         if (pid <= 0)
         {
             continue;
         }
-        /* Extract process name: fname+5 .. q-1 */
-        int pname_len = (int) (q - (fname + 5));
-        if (pname_len <= 0 || pname_len >= (int) sizeof(((OV_PROC *) 0)->name))
-        {
-            continue;
-        }
 
-        /* Full path for mmap */
+        char pname[STRINGMAXLEN_PROCESSINFO_NAME];
+        strncpy(pname, pinfolist->pnamearray[i], sizeof(pname) - 1);
+        pname[sizeof(pname) - 1] = '\0';
+
         char fpath[1024];
-        snprintf(fpath, sizeof(fpath), "%s/%s", shmdir, fname);
+        snprintf(fpath, sizeof(fpath), "%s/proc.%s.%06d.shm", shmdir, pname, (int) pid);
 
-        /* Look up in proc cache by PID */
-        int          ci    = pcache_find_pid(pid);
-        PROCESSINFO *pinfo = NULL;
-
-        if (ci >= 0)
+        int alive = 0;
+        if (pinfolist->active[i] == 1)
         {
-            /* Cache hit */
-            s_pcache[ci].in_use = 1;
-            pinfo               = s_pcache[ci].pinfo;
+            alive = pid_is_alive(pid);
         }
-        else
+
+        /* Transition state if active but died */
+        if (pinfolist->active[i] == 1 && !alive)
         {
-            /* Cache miss — open and mmap */
-            if (s_pcache_nb >= OV_MAX_PROCS)
+            int          fd;
+            PROCESSINFO *pinfo_tmp = processinfo_shm_link(fpath, &fd);
+            if (pinfo_tmp != (PROCESSINFO *) MAP_FAILED)
             {
-                continue;
+                if (pinfo_tmp->loopstat == PROCESSINFO_LOOPSTAT_STOP)
+                {
+                    pinfolist->active[i] = 2; /* STOPPED */
+                }
+                else
+                {
+                    pinfolist->active[i] = 3; /* CRASHED */
+                }
+                processinfo_shm_close(pinfo_tmp, fd);
             }
-
-            int pfd = open(fpath, O_RDONLY);
-            if (pfd == -1)
+            else
             {
-                continue;
+                pinfolist->active[i] = 2; /* default to STOPPED if file removed */
             }
+        }
 
-            PROCESSINFO *pm =
-                (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, pfd, 0);
+        PROCESSINFO *pinfo = NULL;
+        int          ci    = pcache_find_pid(pid);
 
-            if (pm == MAP_FAILED)
+        if (pinfolist->active[i] == 1 && alive)
+        {
+            if (ci >= 0)
             {
-                close(pfd);
-                continue;
+                s_pcache[ci].in_use = 1;
+                pinfo               = s_pcache[ci].pinfo;
             }
-
-            ci                  = s_pcache_nb;
-            s_pcache[ci].pid    = pid;
-            s_pcache[ci].pinfo  = pm;
-            s_pcache[ci].fd     = pfd;
-            s_pcache[ci].in_use = 1;
-            s_pcache_nb++;
-            pinfo = pm;
-        } // cache miss
+            else
+            {
+                int pfd = open(fpath, O_RDONLY);
+                if (pfd != -1)
+                {
+                    PROCESSINFO *pm = (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ,
+                                                           MAP_SHARED, pfd, 0);
+                    if (pm != MAP_FAILED)
+                    {
+                        ci                  = s_pcache_nb;
+                        s_pcache[ci].pid    = pid;
+                        s_pcache[ci].pinfo  = pm;
+                        s_pcache[ci].fd     = pfd;
+                        s_pcache[ci].in_use = 1;
+                        s_pcache_nb++;
+                        pinfo = pm;
+                    }
+                    else
+                    {
+                        close(pfd);
+                    }
+                }
+            }
+        }
 
         OV_PROC *p = &model->procs[idx];
         memset(p, 0, sizeof(OV_PROC));
 
-        /* Use name from PROCESSINFO struct if available,
-         * otherwise fall back to the name from the filename. */
         if (pinfo != NULL && pinfo->name[0] != '\0')
         {
             strncpy(p->name, pinfo->name, sizeof(p->name) - 1);
         }
         else
         {
-            memcpy(p->name, fname + 5, (size_t) pname_len);
-            p->name[pname_len] = '\0';
+            strncpy(p->name, pname, sizeof(p->name) - 1);
         }
 
         p->PID    = pid;
         p->valid  = 1;
-        p->active = 1;
+        p->active = (pinfolist->active[i] == 1 && alive);
 
         if (pinfo != NULL)
         {
             p->loopstat = pinfo->loopstat;
         }
+        else
+        {
+            p->loopstat = (pinfolist->active[i] == 2) ? PROCESSINFO_LOOPSTAT_STOP
+                                                      : PROCESSINFO_LOOPSTAT_CRASHED;
+        }
 
-        int alive = pid_is_alive(pid);
         if (!alive)
         {
             p->loopstat = (pinfo != NULL && pinfo->loopstat == PROCESSINFO_LOOPSTAT_STOP)
                               ? PROCESSINFO_LOOPSTAT_STOP
-                              : PROCESSINFO_LOOPSTAT_CRASHED;
+                              : ((pinfolist->active[i] == 2) ? PROCESSINFO_LOOPSTAT_STOP
+                                                             : PROCESSINFO_LOOPSTAT_CRASHED);
         }
 
         if (pinfo != NULL)
@@ -976,7 +879,6 @@ void ov_scan_procs(OV_MODEL *model)
             p->loopcnt    = pinfo->loopcnt;
             p->mem_rss_kb = pid_get_rss_kb(pinfo->PID);
 
-            /* Timing stats */
             p->dtmedian_iter_ns = pinfo->dtmedian_iter_ns;
             p->dtmedian_exec_ns = pinfo->dtmedian_exec_ns;
             if (p->dtmedian_iter_ns > 0)
@@ -984,7 +886,6 @@ void ov_scan_procs(OV_MODEL *model)
                 p->loop_hz = 1.0e9 / (double) p->dtmedian_iter_ns;
             }
 
-            /* Trigger info */
             strncpy(p->trigstreamname, pinfo->triggerstreamname, sizeof(p->trigstreamname) - 1);
             p->triggermode         = pinfo->triggermode;
             p->triggersem          = pinfo->triggersem;
@@ -992,12 +893,12 @@ void ov_scan_procs(OV_MODEL *model)
             p->triggermissed_cumul = pinfo->triggermissedframe_cumul;
             p->MeasureTiming       = pinfo->MeasureTiming;
             p->rt_priority         = pinfo->RT_priority;
+            strncpy(p->statusmsg, pinfo->statusmsg, sizeof(p->statusmsg) - 1);
 
-            /* CPU% and Hz tracking via cache delta */
+            if (ci >= 0)
             {
                 ov_proc_cache_t *ce = &s_pcache[ci];
 
-                /* Hz from loopcnt delta (fallback) */
                 if (p->loop_hz < 0.1 && ce->has_prev_loop && s_scan_dt_sec > 0.01)
                 {
                     int64_t dlc = p->loopcnt - ce->prev_loopcnt;
@@ -1006,12 +907,10 @@ void ov_scan_procs(OV_MODEL *model)
                         p->loop_hz = (double) dlc / s_scan_dt_sec;
                     }
                 }
-                /* Flag whether counter is advancing */
                 p->cnt_active     = (ce->has_prev_loop && p->loopcnt != ce->prev_loopcnt);
                 ce->prev_loopcnt  = p->loopcnt;
                 ce->has_prev_loop = 1;
 
-                /* CPU percent from tick delta */
                 uint64_t ut = 0, st = 0;
                 if (pid_get_cpu_ticks(pid, &ut, &st) == 0)
                 {
@@ -1028,16 +927,30 @@ void ov_scan_procs(OV_MODEL *model)
                 }
                 p->cpu_used = ce->cpu_pct;
             }
-        } // if (pinfo != NULL)
+        }
+        else
+        {
+            p->CTRLval             = 0;
+            p->loopcnt             = 0;
+            p->mem_rss_kb          = 0;
+            p->loop_hz             = 0.0;
+            p->trigstreamname[0]   = '\0';
+            p->triggermode         = 0;
+            p->triggersem          = 0;
+            p->triggermissed       = 0;
+            p->triggermissed_cumul = 0;
+            p->MeasureTiming       = 0;
+            p->rt_priority         = 0;
+            p->cpu_used            = 0.0f;
+            p->statusmsg[0]        = '\0';
+        }
 
         p->node_idx = -1;
         idx++;
-    } // while readdir
+    }
 
-    closedir(dp);
     model->nb_procs = idx;
 
-    /* Evict stale proc cache entries */
     for (int i = s_pcache_nb - 1; i >= 0; i--)
     {
         if (!s_pcache[i].in_use)

@@ -149,6 +149,14 @@ typedef struct
     int sort_dir_proc;
     int sort_dir_fps;
     int sort_pending;
+    /* Highlighted columns in panels */
+    int highlight_col_stream;
+    int highlight_col_proc;
+    int highlight_col_fps;
+    /* Collapsed columns in panels (bitmasks) */
+    uint32_t col_collapsed_stream;
+    uint32_t col_collapsed_proc;
+    uint32_t col_collapsed_fps;
     /* Freeze selection: preview + cross-highlights
      * stay locked while navigation continues */
     int        freeze;
@@ -217,5 +225,82 @@ typedef struct
 } OV_LAYOUT;
 
 void ov_layout_compute(OV_LAYOUT *lay);
+
+static inline int ov_get_num_cols(const OV_LAYOUT *lay, ov_focus_t focus)
+{
+    if (focus == OV_FOCUS_STREAMS)
+    {
+        return lay->compact_mode ? 9 : 12;
+    }
+    else if (focus == OV_FOCUS_PROCS)
+    {
+        return lay->compact_mode ? 11 : 16;
+    }
+    else if (focus == OV_FOCUS_FPS)
+    {
+        return lay->compact_mode ? 7 : 8;
+    }
+    return 1;
+}
+
+static inline int ov_get_logical_col_stream(int vis_col, int compact)
+{
+    if (!compact)
+    {
+        return vis_col;
+    }
+    if (vis_col <= 5)
+    {
+        return vis_col;
+    }
+    if (vis_col == 6)
+    {
+        return 7;
+    }
+    if (vis_col == 7)
+    {
+        return 10;
+    }
+    if (vis_col == 8)
+    {
+        return 11;
+    }
+    return vis_col;
+}
+
+static inline int ov_get_logical_col_fps(int vis_col, int compact)
+{
+    (void) compact;
+    return vis_col;
+}
+
+static inline int ov_get_logical_col_proc(int vis_col, int compact)
+{
+    if (!compact)
+    {
+        return vis_col;
+    }
+    if (vis_col <= 6)
+    {
+        return vis_col;
+    }
+    if (vis_col == 7)
+    {
+        return 11;
+    }
+    if (vis_col == 8)
+    {
+        return 12;
+    }
+    if (vis_col == 9)
+    {
+        return 13;
+    }
+    if (vis_col == 10)
+    {
+        return 15;
+    }
+    return vis_col;
+}
 
 #endif /* OVERVIEW_LAYOUT_H */

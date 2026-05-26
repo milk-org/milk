@@ -91,6 +91,11 @@ add_executable(milk-cli-help milk-cli-help.c)
 target_link_libraries(milk-cli-help PUBLIC CLIcore)
 install(TARGETS milk-cli-help DESTINATION bin)
 
+# Add milk-stream-help executable
+add_executable(milk-stream-help milk-stream-help.c)
+target_link_libraries(milk-stream-help PUBLIC CLIcore)
+install(TARGETS milk-stream-help DESTINATION bin)
+
 # Add milk-cli-help-synchro executable
 add_executable(milk-cli-help-synchro milk-cli-help-synchro.c)
 target_link_libraries(milk-cli-help-synchro PUBLIC CLIcore)
