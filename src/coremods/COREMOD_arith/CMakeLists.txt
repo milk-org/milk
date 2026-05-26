@@ -212,6 +212,13 @@ if(USE_STATIC_LTO)
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
       $<INSTALL_INTERFACE:include>)
+  if(USE_CFITSIO AND CFITSIO_LIBRARIES)
+    target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC
+        m ${CFITSIO_LIBRARIES} milkfps_static milkcommon
+        milkCOREMODiofits_compute_static)
+  else()
+    target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC m milkfps_static milkcommon)
+  endif()
 endif()
 
 add_milk_standalone(arith-crop2D image_crop2D.c)

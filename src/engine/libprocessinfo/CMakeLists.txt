@@ -54,6 +54,8 @@ if(USE_STATIC_LTO)
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
       $<INSTALL_INTERFACE:include>)
+  target_link_libraries(milkprocessinfo_static
+      PUBLIC ImageStreamIO_static milkcommon rt pthread m)
 endif()
 
 # Add milk-procinfo-help executable
@@ -138,6 +140,7 @@ target_link_libraries(milk-procCTRL-scan PUBLIC
     pthread
     m
 )
+target_include_directories(milk-procCTRL-scan PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 
 install(TARGETS milk-procCTRL DESTINATION bin)
 install(TARGETS milk-procCTRL-scan DESTINATION bin)

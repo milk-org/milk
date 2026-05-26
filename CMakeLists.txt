@@ -427,7 +427,10 @@ endif()
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
 
 # link-time optimizer
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
+option(USE_LTO "Enable Link-Time Optimization (-flto=auto)" ON)
+if(USE_LTO)
+  add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
+endif()
 # NOTE: -fwhole-program is applied only to standalone
 # executables (via MilkStandalone.cmake) where main()
 # is the sole entry point.  Applying it globally would
@@ -631,6 +634,8 @@ if(SETUP_CAPS)
         \"${CMAKE_INSTALL_PREFIX}/bin/milk-setup-caps\")
     if(EXISTS \${_caps_script})
       message(STATUS \"Running milk-setup-caps...\")
+      set(ENV{PATH}
+          \"${CMAKE_INSTALL_PREFIX}/bin:\$ENV{PATH}\")
       execute_process(
         COMMAND \${_caps_script}
         RESULT_VARIABLE _caps_rc)
