@@ -59,9 +59,9 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
         char htext[256];
         int  sk = lay->sort_key_fps;
         int  sd = lay->sort_dir_fps;
-        char c_anc[8], c_name[24];
-        char c_c[8], c_r[8], c_mem[10];
-        char c_tmx[8], c_str[8];
+        char c_anc[32], c_name[32];
+        char c_c[32], c_r[32], c_mem[32];
+        char c_tmx[32], c_str[32];
         int  w_anc  = sort_col_label(c_anc, sizeof(c_anc), "A", 3, sk, sd, 3);
         int  w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 18);
         int  w_tmx  = sort_col_label(c_tmx, sizeof(c_tmx), "TMX", 5, sk, sd, 3);

@@ -63,10 +63,10 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
     {
         int  sk = lay->sort_key_proc;
         int  sd = lay->sort_dir_proc;
-        char c_anc[8], c_name[20], c_pid[12];
-        char c_prio[10], c_stat[10], c_hz[10];
-        char c_upt[10], c_duty[10], c_cpu[10];
-        char c_lpcnt[14], c_mem[10];
+        char c_anc[32], c_name[32], c_pid[32];
+        char c_prio[32], c_stat[32], c_hz[32];
+        char c_upt[32], c_duty[32], c_cpu[32];
+        char c_lpcnt[32], c_mem[32];
         int  w_anc   = sort_col_label(c_anc, sizeof(c_anc), "A", 5, sk, sd, 3);
         int  w_name  = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
         int  w_pid   = sort_col_label(c_pid, sizeof(c_pid), "PID", 1, sk, sd, 7);

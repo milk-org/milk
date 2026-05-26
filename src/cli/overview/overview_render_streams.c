@@ -66,9 +66,9 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     {
         int  sk = lay->sort_key_stream;
         int  sd = lay->sort_dir_stream;
-        char c_anc[8], c_name[20], c_typ[10];
-        char c_size[16];
-        char c_hz[10], c_mbps[12], c_ino[16], c_cnt[16];
+        char c_anc[32], c_name[32], c_typ[32];
+        char c_size[32];
+        char c_hz[32], c_mbps[32], c_ino[32], c_cnt[32];
         int  w_anc  = sort_col_label(c_anc, sizeof(c_anc), "A", 7, sk, sd, 3);
         int  w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
         int  w_typ  = sort_col_label(c_typ, sizeof(c_typ), "TYP", 1, sk, sd, 4);
