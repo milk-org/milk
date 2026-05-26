@@ -139,16 +139,16 @@ static uint8_t TYPESIZE[32] __attribute__((unused));
         (int) (sizeof(_module_deps) / sizeof(_module_deps[0]));                  \
     static const int _module_deps_defined __attribute__((unused)) = 1
 
-#define INIT_MODULE_LIB(modname)          \
-    static errno_t init_module_CLI(void); \
-    static int     INITSTATUS_##modname = 0;
+#define INIT_MODULE_LIB(modname)                              \
+    static errno_t                     init_module_CLI(void); \
+    static int __attribute__((unused)) INITSTATUS_##modname = 0;
 
 /* INIT_MODULE_LIB_DEPS — same as INIT_MODULE_LIB
  * in standalone builds (no dep loading).
  */
-#define INIT_MODULE_LIB_DEPS(modname)     \
-    static errno_t init_module_CLI(void); \
-    static int     INITSTATUS_##modname = 0;
+#define INIT_MODULE_LIB_DEPS(modname)                         \
+    static errno_t                     init_module_CLI(void); \
+    static int __attribute__((unused)) INITSTATUS_##modname = 0;
 
 
 /* =====================================
