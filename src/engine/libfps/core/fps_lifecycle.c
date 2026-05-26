@@ -453,8 +453,7 @@ int fps_generic_run(const char      *fps_name,
                     int              nb_b,
                     fps_compute_fn   compute_fn)
 {
-    FPS  fps;
-    long loopcnt = 0;
+    FPS fps;
 
     if (fps_name[0] == '_')
     {
@@ -544,7 +543,6 @@ int fps_generic_run(const char      *fps_name,
     dcfpsptr = &fps;
 
     compute_fn();
-    loopcnt = 1; /* reported by compute_fn's procinfo */
 
     dcfpsptr = NULL;
     if (fps_name[0] != '_')
@@ -552,7 +550,7 @@ int fps_generic_run(const char      *fps_name,
         fps_disconnect(&fps);
     }
 
-    printf("ran as PID %ld for %ld step%s\n", (long) getpid(), loopcnt, (loopcnt == 1) ? "" : "s");
+    printf("ran as PID %ld\n", (long) getpid());
 
     return 0;
 }

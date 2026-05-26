@@ -258,16 +258,66 @@ static void apply_cset(FPS *fps)
 
 
 /**
+ * apply_rt_priority - Set RT scheduling from FPS
+ * @fps: Connected FPS
+ *
+ * Reads .procinfo.RTprio. If positive, attempts
+ * sched_setscheduler(SCHED_FIFO). This is called
+ * early (before compute_fn) to give an immediate
+ * diagnostic. processinfo_loopstart() will also
+ * attempt the same call later — the re-apply is
+ * harmless.
+ */
+static void apply_rt_priority(FPS *fps)
+{
+    long pindex = functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
+    if (pindex < 0)
+    {
+        return;
+    }
+
+    long rtprio = functionparameter_GetParamValue_INT64(fps, ".procinfo.RTprio");
+    if (rtprio < 0)
+    {
+        return;
+    }
+
+    struct sched_param schedpar;
+    schedpar.sched_priority = (int) rtprio;
+
+    if (sched_setscheduler(0, SCHED_FIFO, &schedpar) == 0)
+    {
+        printf("  RT priority = %ld"
+               " (SCHED_FIFO)\n",
+               rtprio);
+    }
+    else
+    {
+        fprintf(stderr,
+                "WARNING: RT priority %ld"
+                " requested but"
+                " sched_setscheduler"
+                " failed: %s\n"
+                "  Run 'sudo milk-setup-caps'"
+                " to grant CAP_SYS_NICE.\n",
+                rtprio, strerror(errno));
+    }
+}
+
+
+/**
  * fps_apply_process_settings - Apply process-level
  *     settings from FPS parameters
  * @fps: Connected FPS to read settings from
  *
- * Reads .procinfo.NBthread, .procinfo.taskset, and
- * .procinfo.cset from the FPS and applies them to the
- * current process. Order matters:
+ * Reads .procinfo.NBthread, .procinfo.taskset,
+ * .procinfo.cset, and .procinfo.RTprio from the FPS
+ * and applies them to the current process.
+ * Order matters:
  *   1. OMP_NUM_THREADS (must be set before OpenMP init)
  *   2. taskset (CPU affinity)
  *   3. cset (cgroup migration, may override taskset)
+ *   4. RT priority (SCHED_FIFO if configured)
  *
  * All operations are best-effort: failures print
  * warnings but do not abort the process.
@@ -284,6 +334,7 @@ errno_t fps_apply_process_settings(FPS *fps)
     apply_omp_num_threads(fps);
     apply_taskset(fps);
     apply_cset(fps);
+    apply_rt_priority(fps);
 
     return RETURN_SUCCESS;
 }
