@@ -753,17 +753,17 @@ void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
     if (panel == OV_FOCUS_STREAMS)
     {
         const OV_STREAM *s = (const OV_STREAM *) item;
-        snprintf(cmd, sizeof(cmd), "milk-stream-info %s | less -R", s->name);
+        snprintf(cmd, sizeof(cmd), "milk-stream-info %s", s->name);
     }
     else if (panel == OV_FOCUS_PROCS)
     {
         const OV_PROC *p = (const OV_PROC *) item;
-        snprintf(cmd, sizeof(cmd), "milk-procinfo-info %s | less -R", p->name);
+        snprintf(cmd, sizeof(cmd), "milk-procinfo-info %s", p->name);
     }
     else if (panel == OV_FOCUS_FPS)
     {
         const OV_FPS *f = (const OV_FPS *) item;
-        snprintf(cmd, sizeof(cmd), "milk-fps-info %s | less -R", f->name);
+        snprintf(cmd, sizeof(cmd), "milk-fps-info %s", f->name);
     }
     else
     {
@@ -775,9 +775,21 @@ void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
     int rc_clear = system("clear");
     (void) rc_clear;
 
-    /* Spawn interactive diagnostic tool */
+    /* Show the diagnostic output */
     int rc_cmd = system(cmd);
     (void) rc_cmd;
+
+    /* Prompt the user to return */
+    printf("\n\033[1;36m"
+           "--- Press ENTER to return to dashboard ---"
+           "\033[0m\n");
+    fflush(stdout);
+
+    /* Wait for ENTER (or any key) */
+    {
+        char buf[4];
+        (void) read(STDIN_FILENO, buf, sizeof(buf));
+    }
 
     /* Resume TUI */
     ov_raw_mode_enter();

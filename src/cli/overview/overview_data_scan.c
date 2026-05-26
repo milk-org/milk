@@ -480,6 +480,12 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
         case FPTYPE_PID:
             snprintf(valstr, sizeof(valstr), "%d", (int) fp->val.pid[0]);
             break;
+        case FPTYPE_TIMESPEC:
+        {
+            double secs = fp->val.ts[0].tv_sec + (fp->val.ts[0].tv_nsec / 1e9);
+            snprintf(valstr, sizeof(valstr), "%g s", secs);
+            break;
+        }
         case FPTYPE_ONOFF:
             snprintf(valstr, sizeof(valstr), "%s", fp->val.i64[0] ? "ON" : "OFF");
             break;
@@ -498,6 +504,88 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
         strncpy(f->disp_param_value[dp], valstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
         f->disp_param_type[dp]  = fp->type;
         f->disp_param_flags[dp] = fp->fpflag;
+
+        /* Description */
+        strncpy(f->disp_param_descr[dp], fp->description, FUNCTION_PARAMETER_DESCR_STRMAXLEN - 1);
+        f->disp_param_descr[dp][FUNCTION_PARAMETER_DESCR_STRMAXLEN - 1] = '\0';
+
+        /* Min & Max limits */
+        f->disp_param_has_min[dp] = (fp->fpflag & FPFLAG_MINLIMIT) != 0;
+        f->disp_param_has_max[dp] = (fp->fpflag & FPFLAG_MAXLIMIT) != 0;
+
+        if (f->disp_param_has_min[dp])
+        {
+            char minstr[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
+            switch (fp->type)
+            {
+            case FPTYPE_INT64:
+                snprintf(minstr, sizeof(minstr), "%" PRIi64, fp->val.i64[1]);
+                break;
+            case FPTYPE_INT32:
+                snprintf(minstr, sizeof(minstr), "%" PRIi32, fp->val.i32[1]);
+                break;
+            case FPTYPE_UINT64:
+                snprintf(minstr, sizeof(minstr), "%" PRIu64, fp->val.ui64[1]);
+                break;
+            case FPTYPE_UINT32:
+                snprintf(minstr, sizeof(minstr), "%" PRIu32, fp->val.ui32[1]);
+                break;
+            case FPTYPE_FLOAT64:
+                snprintf(minstr, sizeof(minstr), "%g", fp->val.f64[1]);
+                break;
+            case FPTYPE_FLOAT32:
+                snprintf(minstr, sizeof(minstr), "%g", (double) fp->val.f32[1]);
+                break;
+            case FPTYPE_TIMESPEC:
+            {
+                double secs = fp->val.ts[1].tv_sec + (fp->val.ts[1].tv_nsec / 1e9);
+                snprintf(minstr, sizeof(minstr), "%g s", secs);
+                break;
+            }
+            default:
+                f->disp_param_has_min[dp] = 0;
+                break;
+            }
+            strncpy(f->disp_param_min[dp], minstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
+            f->disp_param_min[dp][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
+        }
+
+        if (f->disp_param_has_max[dp])
+        {
+            char maxstr[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
+            switch (fp->type)
+            {
+            case FPTYPE_INT64:
+                snprintf(maxstr, sizeof(maxstr), "%" PRIi64, fp->val.i64[2]);
+                break;
+            case FPTYPE_INT32:
+                snprintf(maxstr, sizeof(maxstr), "%" PRIi32, fp->val.i32[2]);
+                break;
+            case FPTYPE_UINT64:
+                snprintf(maxstr, sizeof(maxstr), "%" PRIu64, fp->val.ui64[2]);
+                break;
+            case FPTYPE_UINT32:
+                snprintf(maxstr, sizeof(maxstr), "%" PRIu32, fp->val.ui32[2]);
+                break;
+            case FPTYPE_FLOAT64:
+                snprintf(maxstr, sizeof(maxstr), "%g", fp->val.f64[2]);
+                break;
+            case FPTYPE_FLOAT32:
+                snprintf(maxstr, sizeof(maxstr), "%g", (double) fp->val.f32[2]);
+                break;
+            case FPTYPE_TIMESPEC:
+            {
+                double secs = fp->val.ts[2].tv_sec + (fp->val.ts[2].tv_nsec / 1e9);
+                snprintf(maxstr, sizeof(maxstr), "%g s", secs);
+                break;
+            }
+            default:
+                f->disp_param_has_max[dp] = 0;
+                break;
+            }
+            strncpy(f->disp_param_max[dp], maxstr, FUNCTION_PARAMETER_STRMAXLEN - 1);
+            f->disp_param_max[dp][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
+        }
     }
     f->nb_disp_params = ce->dparam_nb;
 

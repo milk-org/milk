@@ -8,8 +8,11 @@
  *
  * Streams: 0=NAME 1=TYP 2=SIZE 3=Hz
  *          4=INODE 5=COUNT
- * Procs:   0=NAME 1=PID 2=STAT 3=Hz
- * FPS:     0=NAME 1=C(alive)
+ * Procs:   0=NAME 1=PID 2=STAT 3=Hz 4=MEM
+ *          5=ANCESTRY 6=PRIO 7=UPTIME
+ *          8=CPU% 9=LOOPCNT 10=DUTY
+ * FPS:     0=NAME 1=CPID 2=MEM 3=ANCESTRY
+ *          4=RPID 5=TMX 6=STR
  * ========================================================= */
 
 /**
@@ -323,8 +326,89 @@ static int sort_proc_by_ancestry(const void *a, const void *b)
     return sort_proc_by_name(a, b);
 }
 
+static int sort_proc_by_prio(const void *a, const void *b)
+{
+    int pa = ((const OV_PROC *) a)->rt_priority;
+    int pb = ((const OV_PROC *) b)->rt_priority;
+    if (pa < pb)
+    {
+        return -ov_sort_dir_mul;
+    }
+    if (pa > pb)
+    {
+        return ov_sort_dir_mul;
+    }
+    return 0;
+}
+
+static int sort_proc_by_uptime(const void *a, const void *b)
+{
+    int64_t ua = ((const OV_PROC *) a)->start_time_sec;
+    int64_t ub = ((const OV_PROC *) b)->start_time_sec;
+    if (ua < ub)
+    {
+        return -ov_sort_dir_mul;
+    }
+    if (ua > ub)
+    {
+        return ov_sort_dir_mul;
+    }
+    return 0;
+}
+
+static int sort_proc_by_cpu(const void *a, const void *b)
+{
+    float ca = ((const OV_PROC *) a)->cpu_used;
+    float cb = ((const OV_PROC *) b)->cpu_used;
+    if (ca < cb)
+    {
+        return -ov_sort_dir_mul;
+    }
+    if (ca > cb)
+    {
+        return ov_sort_dir_mul;
+    }
+    return 0;
+}
+
+static int sort_proc_by_loopcnt(const void *a, const void *b)
+{
+    int64_t la = ((const OV_PROC *) a)->loopcnt;
+    int64_t lb = ((const OV_PROC *) b)->loopcnt;
+    if (la < lb)
+    {
+        return -ov_sort_dir_mul;
+    }
+    if (la > lb)
+    {
+        return ov_sort_dir_mul;
+    }
+    return 0;
+}
+
+static int sort_proc_by_duty(const void *a, const void *b)
+{
+    const OV_PROC *pa = (const OV_PROC *) a;
+    const OV_PROC *pb = (const OV_PROC *) b;
+    double         da = (pa->dtmedian_iter_ns > 0)
+                            ? (double) pa->dtmedian_exec_ns / (double) pa->dtmedian_iter_ns
+                            : 0.0;
+    double         db = (pb->dtmedian_iter_ns > 0)
+                            ? (double) pb->dtmedian_exec_ns / (double) pb->dtmedian_iter_ns
+                            : 0.0;
+    if (da < db)
+    {
+        return -ov_sort_dir_mul;
+    }
+    if (da > db)
+    {
+        return ov_sort_dir_mul;
+    }
+    return 0;
+}
+
 /** Number of sortable proc columns. */
-#define OV_PROC_SORT_NCOL 5
+#define OV_PROC_SORT_NCOL 10
 
 void ov_sort_procs(OV_MODEL *model, int key, int dir)
 {
@@ -350,6 +434,21 @@ void ov_sort_procs(OV_MODEL *model, int key, int dir)
         break;
     case 5:
         cmp = sort_proc_by_ancestry;
+        break;
+    case 6:
+        cmp = sort_proc_by_prio;
+        break;
+    case 7:
+        cmp = sort_proc_by_uptime;
+        break;
+    case 8:
+        cmp = sort_proc_by_cpu;
+        break;
+    case 9:
+        cmp = sort_proc_by_loopcnt;
+        break;
+    case 10:
+        cmp = sort_proc_by_duty;
         break;
     default:
         cmp = sort_proc_by_name;
@@ -436,8 +535,38 @@ static int sort_fps_by_ancestry(const void *a, const void *b)
     return sort_fps_by_name(a, b);
 }
 
+static int sort_fps_by_tmux(const void *a, const void *b)
+{
+    int ta = ((const OV_FPS *) a)->tmux_flags;
+    int tb = ((const OV_FPS *) b)->tmux_flags;
+    if (ta < tb)
+    {
+        return -ov_sort_dir_mul;
+    }
+    if (ta > tb)
+    {
+        return ov_sort_dir_mul;
+    }
+    return 0;
+}
+
+static int sort_fps_by_nstreams(const void *a, const void *b)
+{
+    int sa = ((const OV_FPS *) a)->nb_stream_params;
+    int sb = ((const OV_FPS *) b)->nb_stream_params;
+    if (sa < sb)
+    {
+        return -ov_sort_dir_mul;
+    }
+    if (sa > sb)
+    {
+        return ov_sort_dir_mul;
+    }
+    return 0;
+}
+
 /** Number of sortable FPS columns. */
-#define OV_FPS_SORT_NCOL 4
+#define OV_FPS_SORT_NCOL 6
 
 void ov_sort_fps(OV_MODEL *model, int key, int dir)
 {
@@ -460,6 +589,12 @@ void ov_sort_fps(OV_MODEL *model, int key, int dir)
         break;
     case 4:
         cmp = sort_fps_by_rpid;
+        break;
+    case 5:
+        cmp = sort_fps_by_tmux;
+        break;
+    case 6:
+        cmp = sort_fps_by_nstreams;
         break;
     default:
         cmp = sort_fps_by_name;

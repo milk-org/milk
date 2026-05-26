@@ -218,6 +218,11 @@ typedef struct
     int      nb_disp_params;
     char     disp_param_name[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
     char     disp_param_value[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_descr[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+    char     disp_param_min[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    char     disp_param_max[OV_FPS_MAX_DISP_PARAMS][FUNCTION_PARAMETER_STRMAXLEN];
+    uint8_t  disp_param_has_min[OV_FPS_MAX_DISP_PARAMS];
+    uint8_t  disp_param_has_max[OV_FPS_MAX_DISP_PARAMS];
     uint32_t disp_param_type[OV_FPS_MAX_DISP_PARAMS];
     uint64_t disp_param_flags[OV_FPS_MAX_DISP_PARAMS];
 

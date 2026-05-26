@@ -471,3 +471,149 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
 
     ov_buf_reset_attr();
 }
+
+/**
+ * ov_render_fps_param_info - draw FPS parameter metadata header on rows 2 and 3.
+ * @lay: layout state
+ * @m:   data model
+ */
+void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    /* Clear rows 2 and 3 */
+    ov_buf_pos(2, 1);
+    ov_theme_bg(OV_BG_PANEL);
+    ov_buf_hline(' ', lay->term_cols);
+
+    ov_buf_pos(3, 1);
+    ov_theme_bg(OV_BG_PANEL);
+    ov_buf_hline(' ', lay->term_cols);
+
+    int fsel = lay->sel_fps;
+    if (fsel < 0 || fsel >= m->nb_fps)
+    {
+        return;
+    }
+
+    const OV_FPS *fps = &m->fps[fsel];
+
+    fps_tree_item_t items[1024];
+    int             nitems = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
+
+    if (lay->fps_param_sel < 0 || lay->fps_param_sel >= nitems)
+    {
+        return;
+    }
+
+    const fps_tree_item_t *item = &items[lay->fps_param_sel];
+    if (item->is_dir)
+    {
+        /* Draw directory info */
+        ov_buf_pos(2, 2);
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_bold();
+        ov_buf_printf("DIR: ");
+        ov_theme_fg(OV_FG_TEXT);
+        ov_buf_printf("%s%s%s", lay->fps_param_path, lay->fps_param_path[0] ? "." : "", item->name);
+
+        ov_buf_pos(3, 2);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("Description: (Directory)");
+        ov_buf_reset_attr();
+        return;
+    }
+
+    int pi = item->param_idx;
+
+    /* Format full parameter path/name */
+    char full_name[256];
+    if (lay->fps_param_path[0] != '\0')
+    {
+        snprintf(full_name, sizeof(full_name), "%s.%s", lay->fps_param_path, item->name);
+    }
+    else
+    {
+        snprintf(full_name, sizeof(full_name), "%s", item->name);
+    }
+
+    /* Type badge */
+    const char *type_name = "UNKNOWN";
+    uint32_t    type      = fps->disp_param_type[pi];
+    if (type == FPTYPE_INT64 || type == FPTYPE_INT32)
+    {
+        type_name = "INT";
+    }
+    else if (type == FPTYPE_UINT64 || type == FPTYPE_UINT32)
+    {
+        type_name = "UINT";
+    }
+    else if (type == FPTYPE_FLOAT64 || type == FPTYPE_FLOAT32)
+    {
+        type_name = "FLOAT";
+    }
+    else if (type == FPTYPE_ONOFF)
+    {
+        type_name = "ON/OFF";
+    }
+    else if (type == FPTYPE_STREAMNAME)
+    {
+        type_name = "STREAM";
+    }
+    else if (FPTYPE_IS_STRING(type))
+    {
+        type_name = "STRING";
+    }
+    else if (type == FPTYPE_PID)
+    {
+        type_name = "PID";
+    }
+    else if (type == FPTYPE_TIMESPEC)
+    {
+        type_name = "TIMESPEC";
+    }
+
+    /* Display values and limits on Row 2 */
+    ov_buf_pos(2, 2);
+    ov_theme_fg(OV_FG_FPS);
+    ov_buf_bold();
+    ov_buf_printf("PARAM: ");
+    ov_theme_fg(OV_FG_TEXT);
+    ov_buf_printf("%s ", full_name);
+
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("[%s]  ", type_name);
+
+    ov_theme_fg(OV_FG_FPS);
+    ov_buf_printf("Value: ");
+    ov_theme_fg(OV_FG_TEXT);
+    ov_buf_printf("%s  ", fps->disp_param_value[pi]);
+
+    if (fps->disp_param_has_min[pi])
+    {
+        ov_theme_fg(OV_FG_FPS);
+        ov_buf_printf("Min: ");
+        ov_theme_fg(OV_FG_TEXT);
+        ov_buf_printf("%s  ", fps->disp_param_min[pi]);
+    }
+    if (fps->disp_param_has_max[pi])
+    {
+        ov_theme_fg(OV_FG_FPS);
+        ov_buf_printf("Max: ");
+        ov_theme_fg(OV_FG_TEXT);
+        ov_buf_printf("%s  ", fps->disp_param_max[pi]);
+    }
+
+    /* Display description on Row 3 */
+    ov_buf_pos(3, 2);
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("Description: ");
+    ov_theme_fg(OV_FG_TEXT);
+    ov_buf_printf("%s", fps->disp_param_descr[pi][0] ? fps->disp_param_descr[pi] : "(none)");
+
+    if (type == FPTYPE_ONOFF)
+    {
+        ov_theme_fg(OV_FG_WARN);
+        ov_buf_printf("  (Press 'o' to toggle. Control mode must be ON [press 'c'])");
+    }
+
+    ov_buf_reset_attr();
+}

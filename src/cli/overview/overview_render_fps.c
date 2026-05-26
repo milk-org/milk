@@ -53,41 +53,44 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
 
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_printf("    ");
+    ov_buf_printf(" ");
     ov_theme_fg(OV_FG_FPS_HDR);
     {
         char htext[256];
         int  sk = lay->sort_key_fps;
         int  sd = lay->sort_dir_fps;
-        char c_anc[8], c_name[24];
-        char c_c[8], c_r[8], c_mem[10];
+        char c_anc[32], c_name[32];
+        char c_c[32], c_r[32], c_mem[32];
+        char c_tmx[32], c_str[32];
         int  w_anc  = sort_col_label(c_anc, sizeof(c_anc), "A", 3, sk, sd, 3);
         int  w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 18);
+        int  w_tmx  = sort_col_label(c_tmx, sizeof(c_tmx), "TMX", 5, sk, sd, 3);
         int  w_c    = sort_col_label(c_c, sizeof(c_c), "CPID", 1, sk, sd, 7);
         int  w_r    = sort_col_label(c_r, sizeof(c_r), "RPID", 4, sk, sd, 7);
+        int  w_str  = sort_col_label(c_str, sizeof(c_str), "STR", 6, sk, sd, 3);
         int  w_mem  = sort_col_label(c_mem, sizeof(c_mem), "MEM", 2, sk, sd, 5);
         int  desc_w = (lay->view == OV_VIEW_FPS) ? 30 : 20;
         if (lay->compact_mode)
         {
-            snprintf(htext, sizeof(htext), "%-*s %-*s %3s %*s %*s %3s %*s", w_anc, c_anc, w_name,
-                     c_name, "TMX", w_c, c_c, w_r, c_r, "STR", w_mem, c_mem);
+            snprintf(htext, sizeof(htext), "%-*s %-*s %*s %*s %*s %*s %*s", w_anc, c_anc, w_name,
+                     c_name, w_tmx, c_tmx, w_c, c_c, w_r, c_r, w_str, c_str, w_mem, c_mem);
         }
         else
         {
             snprintf(htext, sizeof(htext),
-                     "%-*s %-*s %3s %*s %*s %3s %*s"
+                     "%-*s %-*s %*s %*s %*s %*s %*s"
                      " %-*s",
-                     w_anc, c_anc, w_name, c_name, "TMX", w_c, c_c, w_r, c_r, "STR", w_mem, c_mem,
-                     desc_w, "DESCRIPTION");
+                     w_anc, c_anc, w_name, c_name, w_tmx, c_tmx, w_c, c_c, w_r, c_r, w_str, c_str,
+                     w_mem, c_mem, desc_w, "DESCRIPTION");
         }
 
-        int vis_width = r.width - 4;
+        int vis_width = r.width - 1;
         if (vis_width < 0)
         {
             vis_width = 0;
         }
         int printed = ov_render_header_text(htext, hs, vis_width, OV_FG_FPS_HDR);
-        render_pad_spaces(4 + printed, r.width);
+        render_pad_spaces(1 + printed, r.width);
     }
 
     /* Separator between header and data rows */
@@ -180,7 +183,7 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
             row_bg = zebra_bg(row_bg, i);
 
             int hs_rem  = hs;
-            int printed = 4;
+            int printed = 1;
             int avail   = r.width - 2;
 
             ov_buf_pos(row, r.col + 1);

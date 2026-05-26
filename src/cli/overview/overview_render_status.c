@@ -27,13 +27,13 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         switch (lay->focus)
         {
         case OV_FOCUS_FPS:
-            ctrl_hint = "  r:run s:conf";
+            ctrl_hint = "  r:run s:conf k:kill";
             break;
         case OV_FOCUS_STREAMS:
-            ctrl_hint = "  d:delete";
+            ctrl_hint = "  DEL:delete";
             break;
         case OV_FOCUS_PROCS:
-            ctrl_hint = "  k:kill";
+            ctrl_hint = "  p:pause e:exit k:kill";
             break;
         default:
             ctrl_hint = "";
@@ -92,6 +92,21 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         case 5:
             sort_label = " [sort:ancestry]";
             break;
+        case 6:
+            sort_label = " [sort:PRIO]";
+            break;
+        case 7:
+            sort_label = " [sort:UPTIME]";
+            break;
+        case 8:
+            sort_label = " [sort:CPU%]";
+            break;
+        case 9:
+            sort_label = " [sort:LOOPCNT]";
+            break;
+        case 10:
+            sort_label = " [sort:DUTY]";
+            break;
         default:
             sort_label = " [sort:name]";
             break;
@@ -101,13 +116,22 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         switch (lay->sort_key_fps)
         {
         case 1:
-            sort_label = " [sort:alive]";
+            sort_label = " [sort:CPID]";
             break;
         case 2:
             sort_label = " [sort:MEM]";
             break;
         case 3:
             sort_label = " [sort:ancestry]";
+            break;
+        case 4:
+            sort_label = " [sort:RPID]";
+            break;
+        case 5:
+            sort_label = " [sort:TMX]";
+            break;
+        case 6:
+            sort_label = " [sort:STR]";
             break;
         default:
             sort_label = " [sort:name]";

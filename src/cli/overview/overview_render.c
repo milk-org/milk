@@ -10,6 +10,7 @@
  */
 
 #include "overview_render_internal.h"
+#include "overview_render_fps_params.h"
 #include <math.h>
 
 
@@ -945,6 +946,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_render_procs_panel(lay, m, &rel);
             break;
         case OV_VIEW_FPS:
+            ov_render_fps_param_info(lay, m);
             ov_render_fps_panel(lay, m, &rel);
             if (lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps &&
                 m->fps[lay->sel_fps].nb_disp_params > 0)

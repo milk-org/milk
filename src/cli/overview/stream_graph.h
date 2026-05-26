@@ -86,10 +86,10 @@ typedef struct
 {
     int  stream_idx;       /* Index in m->streams */
     int  is_target;        /* 1 if this is the target root stream */
-    int  is_target_proc;   /* 1 if the writer_name matches the target process */
+    int  is_target_proc;   /* 1 if the reader_name matches the target process */
     int  depth;            /* Graph depth */
     char name[64];         /* Stream name */
-    char writer_name[64];  /* Name of the process/fps writing this stream */
+    char reader_name[64];  /* Name of the process/fps reading this stream */
     char tree_prefix[128]; /* Prefix strings for rendering (e.g. "├── ") */
 } SG_TREE_NODE;
 

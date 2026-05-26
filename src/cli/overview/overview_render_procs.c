@@ -56,38 +56,44 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
 {
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_printf("    ");
     ov_theme_fg(OV_FG_PROC_HDR);
 
-    char htext[256];
+    char htext[320];
     int  hlen;
     {
         int  sk = lay->sort_key_proc;
         int  sd = lay->sort_dir_proc;
-        char c_anc[8], c_name[20], c_pid[12];
-        char c_stat[10], c_hz[10], c_mem[10];
-        int  w_anc  = sort_col_label(c_anc, sizeof(c_anc), "A", 5, sk, sd, 3);
-        int  w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
-        int  w_pid  = sort_col_label(c_pid, sizeof(c_pid), "PID", 1, sk, sd, 7);
-        int  w_stat = sort_col_label(c_stat, sizeof(c_stat), "STAT", 2, sk, sd, 5);
-        int  w_hz   = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
-        int  w_mem  = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
-        hlen        = snprintf(htext, sizeof(htext),
-                               "%-*s %-*s %*s %4s %*s %*s"
-                                      " %6s"
-                                      " %3s %-10s %7s %5s"
-                                      "  CPU%%  %10s %*s %10s",
-                               w_anc, c_anc, w_name, c_name, w_pid, c_pid, "PRIO", w_stat, c_stat, w_hz,
-                               c_hz, "UPTIME", "TRG", "trig-strm", "exec", "DUTY", "LOOPCNT", w_mem, c_mem,
-                               "MISSED");
+        char c_anc[32], c_name[32], c_pid[32];
+        char c_prio[32], c_stat[32], c_hz[32];
+        char c_upt[32], c_duty[32], c_cpu[32];
+        char c_lpcnt[32], c_mem[32];
+        int  w_anc   = sort_col_label(c_anc, sizeof(c_anc), "A", 5, sk, sd, 3);
+        int  w_name  = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
+        int  w_pid   = sort_col_label(c_pid, sizeof(c_pid), "PID", 1, sk, sd, 7);
+        int  w_prio  = sort_col_label(c_prio, sizeof(c_prio), "PRIO", 6, sk, sd, 4);
+        int  w_stat  = sort_col_label(c_stat, sizeof(c_stat), "STAT", 2, sk, sd, 5);
+        int  w_hz    = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
+        int  w_upt   = sort_col_label(c_upt, sizeof(c_upt), "UPTIME", 7, sk, sd, 6);
+        int  w_duty  = sort_col_label(c_duty, sizeof(c_duty), "DUTY", 10, sk, sd, 5);
+        int  w_cpu   = sort_col_label(c_cpu, sizeof(c_cpu), "CPU%", 8, sk, sd, 6);
+        int  w_lpcnt = sort_col_label(c_lpcnt, sizeof(c_lpcnt), "LOOPCNT", 9, sk, sd, 10);
+        int  w_mem   = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
+        hlen         = snprintf(htext, sizeof(htext),
+                                "%-*s %-*s %*s %*s %*s %*s"
+                                        " %*s"
+                                        " %3s %-10s %7s %*s"
+                                        "  %*s  %*s %*s %10s",
+                                w_anc, c_anc, w_name, c_name, w_pid, c_pid, w_prio, c_prio, w_stat, c_stat,
+                                w_hz, c_hz, w_upt, c_upt, "TRG", "trig-strm", "exec", w_duty, c_duty, w_cpu,
+                                c_cpu, w_lpcnt, c_lpcnt, w_mem, c_mem, "MISSED");
     }
-    int vis_width = r.width - 4;
+    int vis_width = r.width;
     if (vis_width < 0)
     {
         vis_width = 0;
     }
     int printed = ov_render_header_text(htext, hs, vis_width, OV_FG_PROC_HDR);
-    render_pad_spaces(4 + printed, r.width);
+    render_pad_spaces(printed, r.width);
 
     /* Separator between header and data rows */
     render_separator(hrow + 1, r.col + 1, r.width - 2, OV_FG_PROC_HDR);
