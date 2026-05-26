@@ -483,7 +483,7 @@ FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
  * compute_function() to get proper processinfo
  * tracking.
  */
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
@@ -519,6 +519,8 @@ static MILK_HOT errno_t compute_function()
  * module's init function.
  * ============================================================= */
 
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
 /**
  * @brief CLI entry point for this compute unit.
  *
@@ -549,6 +551,7 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
 
     return RETURN_SUCCESS;
 }
+#endif /* !FPS_STANDALONE && !MILK_NO_CLI */
 
 
 /* ================================================================

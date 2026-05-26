@@ -74,6 +74,7 @@
 INIT_MODULE_LIB(linopt_imtools)
 
 
+#ifndef MILK_NO_CLI
 static errno_t init_module_CLI()
 {
     // CONVERSION
@@ -111,6 +112,7 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 /* =============================================================================================== */
 /* =============================================================================================== */
