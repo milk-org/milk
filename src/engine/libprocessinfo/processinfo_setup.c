@@ -86,7 +86,7 @@ PROCESSINFO *processinfo_setup(
 
     processinfo->loopcntMax = -1; // infinite loop
 
-    processinfo->MeasureTiming = 0;  // default: do not measure timing
+    processinfo->MeasureTiming = 1;  // default: measure timing
     processinfo->RT_priority   = -1; // default: do not assign RT priority
 
     DEBUG_TRACEPOINT(" ");
@@ -130,7 +130,15 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
 
         if (sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0)
         {
-            // PRINT_ERROR("sched_setscheduler: %s", strerror(errno));
+            fprintf(stderr,
+                    "WARNING: RT priority %d requested"
+                    " but sched_setscheduler failed:"
+                    " %s\n"
+                    "  Run 'sudo milk-setup-caps' to"
+                    " grant CAP_SYS_NICE.\n",
+                    processinfo->RT_priority, strerror(errno));
+            processinfo_WriteMessage(processinfo, "RT prio failed - "
+                                                  "run milk-setup-caps");
         }
     }
 

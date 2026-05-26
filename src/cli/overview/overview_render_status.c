@@ -271,7 +271,7 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     char       tstr[16];
     int        n2 = strftime(tstr, sizeof(tstr), "%H:%M:%S", tm_ptr);
 
-    /* Leave 1 char at the end to prevent terminal auto-scroll on last row */
+    /* Clock on the right edge */
     int pad = r.width - n1 - n2 - 1;
     if (pad > 0)
     {

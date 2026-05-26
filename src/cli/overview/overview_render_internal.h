@@ -58,6 +58,16 @@ typedef struct
 
 void render_pad_spaces(int chars_written, int panel_width);
 int  ov_render_header_text(const char *text, int hs, int max_vis_width, ov_rgb_t base_fg);
+void ov_render_cell(int         logical_col,
+                    int         vis_col,
+                    ov_rgb_t    fg,
+                    ov_rgb_t    bg,
+                    const char *str,
+                    int        *hs_rem,
+                    int        *printed,
+                    int         avail,
+                    int         highlighted_col,
+                    uint32_t    collapsed_mask);
 
 void render_scroll_indicators(OV_RECT r, int scroll, int max_rows, int total, ov_rgb_t accent);
 
@@ -254,6 +264,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay);
 
 void ov_render_help(const OV_LAYOUT *lay);
 void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m);
+void ov_render_highlighted_column_description(const OV_LAYOUT *lay);
 
 /* Help panel utilities */
 int ov_help_nb_sections(void);

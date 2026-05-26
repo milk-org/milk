@@ -2357,6 +2357,55 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     return 0;
 }
 
+static int ov_input__handle_column_highlights(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    (void) m;
+
+    if (key == OV_KEY_SHIFT_LEFT || key == OV_KEY_SHIFT_RIGHT)
+    {
+        int dir = (key == OV_KEY_SHIFT_LEFT) ? -1 : 1;
+        if (lay->focus == OV_FOCUS_STREAMS)
+        {
+            int num_cols              = ov_get_num_cols(lay, OV_FOCUS_STREAMS);
+            lay->highlight_col_stream = (lay->highlight_col_stream + dir + num_cols) % num_cols;
+        }
+        else if (lay->focus == OV_FOCUS_PROCS)
+        {
+            int num_cols            = ov_get_num_cols(lay, OV_FOCUS_PROCS);
+            lay->highlight_col_proc = (lay->highlight_col_proc + dir + num_cols) % num_cols;
+        }
+        else if (lay->focus == OV_FOCUS_FPS)
+        {
+            int num_cols           = ov_get_num_cols(lay, OV_FOCUS_FPS);
+            lay->highlight_col_fps = (lay->highlight_col_fps + dir + num_cols) % num_cols;
+        }
+        return 1;
+    }
+
+    if (key == 't' || key == 'T')
+    {
+        if (lay->focus == OV_FOCUS_STREAMS)
+        {
+            int logical_col =
+                ov_get_logical_col_stream(lay->highlight_col_stream, lay->compact_mode);
+            lay->col_collapsed_stream ^= (1U << logical_col);
+        }
+        else if (lay->focus == OV_FOCUS_PROCS)
+        {
+            int logical_col = ov_get_logical_col_proc(lay->highlight_col_proc, lay->compact_mode);
+            lay->col_collapsed_proc ^= (1U << logical_col);
+        }
+        else if (lay->focus == OV_FOCUS_FPS)
+        {
+            int logical_col = ov_get_logical_col_fps(lay->highlight_col_fps, lay->compact_mode);
+            lay->col_collapsed_fps ^= (1U << logical_col);
+        }
+        return 1;
+    }
+
+    return 0;
+}
+
 static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
 {
     if (key == 'S')
@@ -3714,6 +3763,10 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         return 0;
     }
     if (ov_input__handle_misc_toggles(key, lay, m))
+    {
+        return 0;
+    }
+    if (ov_input__handle_column_highlights(key, lay, m))
     {
         return 0;
     }

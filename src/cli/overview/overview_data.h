@@ -303,6 +303,9 @@ typedef struct
 
     /* new-item flash counter (frames remaining) */
     int is_new;
+
+    /* status message / log */
+    char statusmsg[200];
 } OV_PROC;
 
 

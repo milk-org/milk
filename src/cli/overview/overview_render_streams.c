@@ -59,52 +59,93 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
     ov_buf_printf(" ");
-    ov_theme_fg(OV_FG_STREAM_HDR);
 
-    char htext[300];
+    typedef struct
     {
-        int  sk = lay->sort_key_stream;
-        int  sd = lay->sort_dir_stream;
-        char c_anc[32], c_name[32], c_typ[32];
-        char c_size[32];
-        char c_hz[32], c_mbps[32], c_ino[32], c_cnt[32];
-        int  w_anc  = sort_col_label(c_anc, sizeof(c_anc), "A", 7, sk, sd, 3);
-        int  w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
-        int  w_typ  = sort_col_label(c_typ, sizeof(c_typ), "TYP", 1, sk, sd, 4);
-        int  w_size = sort_col_label(c_size, sizeof(c_size), "SIZE", 2, sk, sd, 11);
-        int  w_hz   = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
-        int  w_mbps = sort_col_label(c_mbps, sizeof(c_mbps), "MB/s", 4, sk, sd, 7);
-        int  w_ino  = sort_col_label(c_ino, sizeof(c_ino), "INODE", 5, sk, sd, 10);
-        int  w_cnt  = sort_col_label(c_cnt, sizeof(c_cnt), "COUNT", 6, sk, sd, 10);
-        if (lay->compact_mode)
+        int         logical_col;
+        const char *label;
+        int         width;
+        int         align_right;
+    } STRM_COL_SPEC;
+
+    STRM_COL_SPEC cols[12];
+    int           num_cols = 0;
+
+    {
+        int         sk = lay->sort_key_stream;
+        int         sd = lay->sort_dir_stream;
+        static char c_anc[32], c_name[32], c_typ[32];
+        static char c_size[32];
+        static char c_hz[32], c_mbps[32], c_ino[32], c_cnt[32];
+        int         w_anc  = sort_col_label(c_anc, sizeof(c_anc), "A", 7, sk, sd, 3);
+        int         w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
+        int         w_typ  = sort_col_label(c_typ, sizeof(c_typ), "TYP", 1, sk, sd, 4);
+        int         w_size = sort_col_label(c_size, sizeof(c_size), "SIZE", 2, sk, sd, 11);
+        int         w_hz   = sort_col_label(c_hz, sizeof(c_hz), "Hz", 3, sk, sd, 6);
+        int         w_mbps = sort_col_label(c_mbps, sizeof(c_mbps), "MB/s", 4, sk, sd, 7);
+        int         w_ino  = sort_col_label(c_ino, sizeof(c_ino), "INODE", 5, sk, sd, 10);
+        int         w_cnt  = sort_col_label(c_cnt, sizeof(c_cnt), "COUNT", 6, sk, sd, 10);
+
+        cols[num_cols++] = (STRM_COL_SPEC) { 0, c_anc, w_anc, 0 };
+        cols[num_cols++] = (STRM_COL_SPEC) { 1, c_name, w_name, 0 };
+        cols[num_cols++] = (STRM_COL_SPEC) { 2, c_typ, w_typ, 1 };
+        cols[num_cols++] = (STRM_COL_SPEC) { 3, c_size, w_size, 1 };
+        cols[num_cols++] = (STRM_COL_SPEC) { 4, c_hz, w_hz, 1 };
+        cols[num_cols++] = (STRM_COL_SPEC) { 5, c_mbps, w_mbps, 1 };
+        if (!lay->compact_mode)
         {
-            (void) snprintf(htext, sizeof(htext),
-                            "%-*s %-*s %*s %*s %*s"
-                            " %*s %7s %7s %s",
-                            w_anc, c_anc, w_name, c_name, w_typ, c_typ, w_size, c_size, w_hz, c_hz,
-                            w_mbps, c_mbps, "OWNER", "WPID", "RPID");
+            cols[num_cols++] = (STRM_COL_SPEC) { 6, c_ino, w_ino, 1 };
+        }
+        cols[num_cols++] = (STRM_COL_SPEC) { 7, "OWNER", 7, 1 };
+        if (!lay->compact_mode)
+        {
+            cols[num_cols++] = (STRM_COL_SPEC) { 8, c_cnt, w_cnt, 1 };
+            cols[num_cols++] = (STRM_COL_SPEC) { 9, "SEMS", 10, 1 };
+        }
+        cols[num_cols++] = (STRM_COL_SPEC) { 10, "WPID", 7, 1 };
+        cols[num_cols++] = (STRM_COL_SPEC) { 11, "RPID", 7, 0 };
+    }
+
+    int hs_rem  = hs;
+    int printed = 1;
+    int avail   = r.width - 2;
+
+    for (int c = 0; c < num_cols; c++)
+    {
+        if (c > 0)
+        {
+            int prev_logical   = cols[c - 1].logical_col;
+            int prev_collapsed = (lay->col_collapsed_stream & (1U << prev_logical)) != 0;
+            if (!prev_collapsed)
+            {
+                ov_theme_bg(OV_BG_HEADER);
+                if (hs_rem > 0)
+                {
+                    hs_rem--;
+                }
+                else if (printed < avail)
+                {
+                    ov_buf_printf(" ");
+                    printed++;
+                }
+            }
+        }
+
+        /* Format the header cell string with correct alignment */
+        char cell_buf[128];
+        if (cols[c].align_right)
+        {
+            snprintf(cell_buf, sizeof(cell_buf), "%*s", cols[c].width, cols[c].label);
         }
         else
         {
-            (void) snprintf(htext, sizeof(htext),
-                            "%-*s %-*s %*s %*s %*s"
-                            " %*s %*s %7s %*s %10s"
-                            " %7s %s",
-                            w_anc, c_anc, w_name, c_name, w_typ, c_typ, w_size, c_size, w_hz, c_hz,
-                            w_mbps, c_mbps, w_ino, c_ino, "OWNER", w_cnt, c_cnt, "SEMS", "WPID",
-                            "RPID");
+            snprintf(cell_buf, sizeof(cell_buf), "%-*s", cols[c].width, cols[c].label);
         }
-    }
 
-    {
-        int vis_width = r.width - 1;
-        if (vis_width < 0)
-        {
-            vis_width = 0;
-        }
-        int printed = ov_render_header_text(htext, hs, vis_width, OV_FG_STREAM_HDR);
-        render_pad_spaces(1 + printed, r.width);
+        ov_render_cell(cols[c].logical_col, c, OV_FG_STREAM_HDR, OV_BG_HEADER, cell_buf, &hs_rem,
+                       &printed, avail, lay->highlight_col_stream, lay->col_collapsed_stream);
     }
+    render_pad_spaces(printed, r.width);
 
     /* Separator between header and data rows */
     render_separator(hrow + 1, r.col + 1, r.width - 2, OV_FG_STREAM_HDR);
@@ -290,27 +331,21 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             int panel_focused = (lay->focus == OV_FOCUS_STREAMS);
             render_focus_strip(row, r.col + 1, panel_focused, OV_FG_STREAM, row_bg);
 
-#define STRM_FIELD(color, fmt, ...)                                  \
-    do                                                               \
-    {                                                                \
-        char _fb[80];                                                \
-        int  _fl   = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__); \
-        int  _skip = 0;                                              \
-        if (hs_rem > 0)                                              \
-        {                                                            \
-            _skip = (hs_rem < _fl) ? hs_rem : _fl;                   \
-            hs_rem -= _skip;                                         \
-        }                                                            \
-        int _vis = _fl - _skip;                                      \
-        int _max = avail - printed;                                  \
-        if (_vis > _max)                                             \
-            _vis = _max;                                             \
-        if (_vis > 0)                                                \
-        {                                                            \
-            ov_theme_fg(color);                                      \
-            ov_buf_printf("%.*s", _vis, _fb + _skip);                \
-            printed += _vis;                                         \
-        }                                                            \
+#define STRM_FIELD_WITH_COL(vcol_idx, logical_idx, color, bg_color, fmt, ...)                     \
+    do                                                                                            \
+    {                                                                                             \
+        char _fb[128];                                                                            \
+        int  _fl = snprintf(_fb, sizeof(_fb), fmt, ##__VA_ARGS__);                                \
+        ov_render_cell(logical_idx, vcol_idx, (color), (bg_color), _fb, &hs_rem, &printed, avail, \
+                       lay->highlight_col_stream, lay->col_collapsed_stream);                     \
+    } while (0)
+
+#define STRM_FIELD(color, fmt, ...)                                                   \
+    do                                                                                \
+    {                                                                                 \
+        int logical_idx = ov_get_logical_col_stream(vcol, lay->compact_mode);         \
+        STRM_FIELD_WITH_COL(vcol, logical_idx, (color), cell_bg, fmt, ##__VA_ARGS__); \
+        vcol++;                                                                       \
     } while (0)
 
             /* PID field with inverted highlight when it
@@ -319,10 +354,11 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 #define STRM_PID_FIELD(pid_val, fmt, ...)                                            \
     do                                                                               \
     {                                                                                \
-        int _match = (_spid > 0 && (pid_t) (pid_val) == _spid);                      \
+        int      _match  = (_spid > 0 && (pid_t) (pid_val) == _spid);                \
+        ov_rgb_t prev_bg = cell_bg;                                                  \
         if (_match)                                                                  \
         {                                                                            \
-            ov_theme_bg(OV_BG_PID_MATCH);                                            \
+            cell_bg = OV_BG_PID_MATCH;                                               \
             ov_buf_bold();                                                           \
         }                                                                            \
         STRM_FIELD(_match ? ((ov_rgb_t) { 0, 0, 0 }) : ov_pid_color((pid_val)), fmt, \
@@ -330,19 +366,19 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         if (_match)                                                                  \
         {                                                                            \
             ov_buf_reset_attr();                                                     \
-            if (is_sel || is_frozen || is_rel)                                       \
-            {                                                                        \
-                ov_theme_bg(row_bg);                                                 \
-            }                                                                        \
+            cell_bg = prev_bg;                                                       \
         }                                                                            \
     } while (0)
 
-            pid_t _spid = (rel != NULL) ? rel->sel_pid : 0;
+            pid_t    _spid   = (rel != NULL) ? rel->sel_pid : 0;
+            int      vcol    = 1;
+            ov_rgb_t cell_bg = row_bg;
 
             /* Ancestry column — rendered raw (UTF-8
              * arrows are 3 bytes / 1 display char).
              * Fixed width: 4 display chars. */
-            int8_t sdepth = local_depth[si];
+            int8_t sdepth      = local_depth[si];
+            char   anc_str[64] = "";
             if (sdepth != 0 && !is_sel && !is_frozen)
             {
                 int abs_d = sdepth < 0 ? -sdepth : sdepth;
@@ -350,28 +386,15 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                 {
                     abs_d = 99;
                 }
-                ov_theme_fg(OV_FG_WARN);
                 if (sdepth < 0)
                 {
-                    if (abs_d < 10)
-                    {
-                        ov_buf_printf("\xe2\x97\x80%d  ", abs_d);
-                    }
-                    else
-                    {
-                        ov_buf_printf("\xe2\x97\x80%d ", abs_d);
-                    }
+                    snprintf(anc_str, sizeof(anc_str),
+                             abs_d < 10 ? "\xe2\x97\x80%d  " : "\xe2\x97\x80%d ", abs_d);
                 }
                 else
                 {
-                    if (abs_d < 10)
-                    {
-                        ov_buf_printf("%d\xe2\x96\xb6  ", abs_d);
-                    }
-                    else
-                    {
-                        ov_buf_printf("%d\xe2\x96\xb6 ", abs_d);
-                    }
+                    snprintf(anc_str, sizeof(anc_str),
+                             abs_d < 10 ? "%d\xe2\x96\xb6  " : "%d\xe2\x96\xb6 ", abs_d);
                 }
             }
             else
@@ -379,12 +402,11 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                 /* Activity dot */
                 if (s->update_hz > 0.1)
                 {
-                    ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("\xe2\x97\x8f ");
+                    snprintf(anc_str, sizeof(anc_str), "\xe2\x97\x8f ");
                 }
                 else
                 {
-                    ov_buf_printf("  ");
+                    snprintf(anc_str, sizeof(anc_str), "  ");
                 }
 
                 /* R/W direction arrow */
@@ -392,23 +414,17 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                     rel != NULL)
                 {
                     int is_written = bget(rel->stream_written, si);
-                    if (is_written)
-                    {
-                        ov_theme_fg(OV_FG_ERROR);
-                        ov_buf_printf("\xe2\x96\xb6 ");
-                    }
-                    else
-                    {
-                        ov_theme_fg(OV_FG_ACTIVE);
-                        ov_buf_printf("\xe2\x97\x80 ");
-                    }
+                    strncat(anc_str, is_written ? "\xe2\x96\xb6 " : "\xe2\x97\x80 ",
+                            sizeof(anc_str) - strlen(anc_str) - 1);
                 }
                 else
                 {
-                    ov_buf_printf("  ");
+                    strncat(anc_str, "  ", sizeof(anc_str) - strlen(anc_str) - 1);
                 }
             }
-            printed += 4;
+
+            ov_render_cell(0, 0, OV_FG_WARN, row_bg, anc_str, &hs_rem, &printed, avail,
+                           lay->highlight_col_stream, lay->col_collapsed_stream);
 
             ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
 
@@ -456,32 +472,43 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
                 STRM_FIELD(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM, "%10" PRIu64 " ",
                            (uint64_t) s->cnt0);
 
-                for (int sm = 0; sm < 10; sm++)
+                int sem_logical   = ov_get_logical_col_stream(vcol, lay->compact_mode);
+                int sem_collapsed = (lay->col_collapsed_stream & (1U << sem_logical)) != 0;
+                if (sem_collapsed)
                 {
-                    if (sm < s->nb_sem)
+                    STRM_FIELD_WITH_COL(vcol, sem_logical, OV_FG_DIM, cell_bg, ".");
+                }
+                else
+                {
+                    for (int sm = 0; sm < 10; sm++)
                     {
-                        int  val = s->semval[sm];
-                        char c;
-                        if (val < 0)
+                        if (sm < s->nb_sem)
                         {
-                            c = '-';
-                        }
-                        else if (val > 9)
-                        {
-                            c = '+';
+                            int  val = s->semval[sm];
+                            char c;
+                            if (val < 0)
+                            {
+                                c = '-';
+                            }
+                            else if (val > 9)
+                            {
+                                c = '+';
+                            }
+                            else
+                            {
+                                c = '0' + val;
+                            }
+                            STRM_FIELD_WITH_COL(vcol, sem_logical, ov_get_sem_color(val), cell_bg,
+                                                "%c", c);
                         }
                         else
                         {
-                            c = '0' + val;
+                            STRM_FIELD_WITH_COL(vcol, sem_logical, OV_FG_DIM, cell_bg, ".");
                         }
-                        STRM_FIELD(ov_get_sem_color(val), "%c", c);
                     }
-                    else
-                    {
-                        STRM_FIELD(OV_FG_DIM, ".");
-                    }
+                    STRM_FIELD_WITH_COL(vcol, sem_logical, OV_FG_DIM, cell_bg, " ");
                 }
-                STRM_FIELD(OV_FG_DIM, " ");
+                vcol++;
             }
 
             /* Write PID */
@@ -495,21 +522,45 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             }
 
             /* Read PIDs (compact list) */
-            if (s->nb_read_pids > 0)
+            int rpid_logical   = ov_get_logical_col_stream(vcol, lay->compact_mode);
+            int rpid_collapsed = (lay->col_collapsed_stream & (1U << rpid_logical)) != 0;
+            if (rpid_collapsed)
             {
-                for (int rp = 0; rp < s->nb_read_pids; rp++)
-                {
-                    if (rp > 0)
-                    {
-                        STRM_FIELD(OV_FG_DIM, ":");
-                    }
-                    STRM_PID_FIELD(s->read_pids[rp], "%d", (int) s->read_pids[rp]);
-                }
-                STRM_FIELD(OV_FG_DIM, " ");
+                STRM_FIELD_WITH_COL(vcol, rpid_logical, OV_FG_DIM, cell_bg, "-");
             }
             else
             {
-                STRM_FIELD(OV_FG_DIM, "- ");
+                if (s->nb_read_pids > 0)
+                {
+                    for (int rp = 0; rp < s->nb_read_pids; rp++)
+                    {
+                        if (rp > 0)
+                        {
+                            STRM_FIELD_WITH_COL(vcol, rpid_logical, OV_FG_DIM, cell_bg, ":");
+                        }
+                        int      _match  = (_spid > 0 && (pid_t) s->read_pids[rp] == _spid);
+                        ov_rgb_t prev_bg = cell_bg;
+                        if (_match)
+                        {
+                            cell_bg = OV_BG_PID_MATCH;
+                            ov_buf_bold();
+                        }
+                        STRM_FIELD_WITH_COL(vcol, rpid_logical,
+                                            _match ? ((ov_rgb_t) { 0, 0, 0 })
+                                                   : ov_pid_color((s->read_pids[rp])),
+                                            cell_bg, "%d", (int) s->read_pids[rp]);
+                        if (_match)
+                        {
+                            ov_buf_reset_attr();
+                            cell_bg = prev_bg;
+                        }
+                    }
+                    STRM_FIELD_WITH_COL(vcol, rpid_logical, OV_FG_DIM, cell_bg, " ");
+                }
+                else
+                {
+                    STRM_FIELD_WITH_COL(vcol, rpid_logical, OV_FG_DIM, cell_bg, "- ");
+                }
             }
 
 #undef STRM_PID_FIELD
