@@ -170,26 +170,6 @@ imageID arith_make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double
     return ID;
 }
 
-/*
- * arith_image_dx_wrap / arith_image_dy_wrap
- *
- * Thin wrappers that adapt arith_image_dx/dy (which return
- * imageID = long) to the uniform image_fn_t signature used
- * in the unary dispatch table (return int).
- * The imageID return value is intentionally discarded.
- */
-static int arith_image_dx_wrap(const char *in, const char *out)
-{
-    arith_image_dx(in, out);
-    return 0;
-}
-
-static int arith_image_dy_wrap(const char *in, const char *out)
-{
-    arith_image_dy(in, out);
-    return 0;
-}
-
 
 /**
  * execute_arith - evaluate an arithmetic expression on

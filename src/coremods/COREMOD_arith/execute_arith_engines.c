@@ -193,6 +193,24 @@ int exec_arith_binary(const char *op,
     return 0;
 }
 
+/*
+ * Thin wrappers that adapt arith_image_dx/dy (which return
+ * imageID = long) to the uniform image_fn_t signature used
+ * in the unary dispatch table (return int).
+ * The imageID return value is intentionally discarded.
+ */
+static int arith_image_dx_wrap(const char *in, const char *out)
+{
+    arith_image_dx(in, out);
+    return 0;
+}
+
+static int arith_image_dy_wrap(const char *in, const char *out)
+{
+    arith_image_dy(in, out);
+    return 0;
+}
+
 int exec_arith_unary(const char *fname,
                      int         arg_wtype,
                      const char *arg_word,
@@ -234,6 +252,8 @@ int exec_arith_unary(const char *fname,
         { "tan", tan, arith_image_tan, NULL },
         { "tanh", tanh, arith_image_tanh, NULL },
         { "posi", Ppositive, arith_image_positive, NULL },
+        { "imdx", NULL, arith_image_dx_wrap, NULL },
+        { "imdy", NULL, arith_image_dy_wrap, NULL },
         /* image reducers -> scalar */
         { "imedian", NULL, NULL, arith_image_median },
         { "itot", NULL, NULL, arith_image_total },
