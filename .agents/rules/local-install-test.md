@@ -43,5 +43,9 @@ rm -rf _build/_install
 - Do **not** run `make install` or
   `cmake --install` without `--prefix`.
 - Do **not** use `sudo`.
+- Do **not** run `milk-setup-caps` when testing without `sudo`, as it requires root privileges
+  to set capabilities.
+- Disable capability setup in CMake when building/testing locally by configuring with
+  `-DSETUP_CAPS=OFF`.
 - Do **not** copy binaries into system directories.
 - Always use a local `--prefix` under `_build/`.

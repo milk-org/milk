@@ -45,4 +45,6 @@ if(USE_STATIC_LTO)
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>)
+  target_link_libraries(${LIBNAME}_static
+      PUBLIC ImageStreamIO_static milkcommon m rt)
 endif()
