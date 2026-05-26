@@ -288,9 +288,6 @@ errno_t streamCTRL_CTRLscreen(void)
     atexit(streamCTRL_TUI_exit);
 
 
-    long long loopcnt = 0;
-
-
     streaminfoproc.filter       = 0;
     streaminfoproc.NBstream     = 0;
     streaminfoproc.twaitus      = 100000; // 10 Hz

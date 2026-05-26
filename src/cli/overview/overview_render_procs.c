@@ -59,7 +59,6 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
     ov_theme_fg(OV_FG_PROC_HDR);
 
     char htext[320];
-    int  hlen;
     {
         int  sk = lay->sort_key_proc;
         int  sd = lay->sort_dir_proc;
@@ -78,14 +77,14 @@ static void ov_procs__render_header(const OV_LAYOUT *lay, int hrow, int hs, OV_R
         int  w_cpu   = sort_col_label(c_cpu, sizeof(c_cpu), "CPU%", 8, sk, sd, 6);
         int  w_lpcnt = sort_col_label(c_lpcnt, sizeof(c_lpcnt), "LOOPCNT", 9, sk, sd, 10);
         int  w_mem   = sort_col_label(c_mem, sizeof(c_mem), "MEM", 4, sk, sd, 5);
-        hlen         = snprintf(htext, sizeof(htext),
-                                "%-*s %-*s %*s %*s %*s %*s"
-                                        " %*s"
-                                        " %3s %-10s %7s %*s"
-                                        "  %*s  %*s %*s %10s",
-                                w_anc, c_anc, w_name, c_name, w_pid, c_pid, w_prio, c_prio, w_stat, c_stat,
-                                w_hz, c_hz, w_upt, c_upt, "TRG", "trig-strm", "exec", w_duty, c_duty, w_cpu,
-                                c_cpu, w_lpcnt, c_lpcnt, w_mem, c_mem, "MISSED");
+        (void) snprintf(htext, sizeof(htext),
+                        "%-*s %-*s %*s %*s %*s %*s"
+                        " %*s"
+                        " %3s %-10s %7s %*s"
+                        "  %*s  %*s %*s %10s",
+                        w_anc, c_anc, w_name, c_name, w_pid, c_pid, w_prio, c_prio, w_stat, c_stat,
+                        w_hz, c_hz, w_upt, c_upt, "TRG", "trig-strm", "exec", w_duty, c_duty, w_cpu,
+                        c_cpu, w_lpcnt, c_lpcnt, w_mem, c_mem, "MISSED");
     }
     int vis_width = r.width;
     if (vis_width < 0)
