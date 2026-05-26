@@ -3,8 +3,8 @@
 /**
  * @brief Render the streamCTRL footer status bar.
  */
-void streamCTRL__render_footer(streamCTRLarg_struct        *streamCTRLdata,
-                               struct streamCTRL_TUI_state *state,
+void streamCTRL__render_footer(streamCTRLarg_struct        *streamCTRLdata __attribute__((unused)),
+                               struct streamCTRL_TUI_state *state __attribute__((unused)),
                                int                          NBsinfodisp)
 {
     /* ---- Scroll indicator footer ---- */
