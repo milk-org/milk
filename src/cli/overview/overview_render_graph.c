@@ -150,13 +150,15 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* ---- Action buttons (right-aligned) ---- */
     {
-        /* Button definitions: label, bg color, id */
+        /* Button definitions: label, bg color, id,
+         * always_active (rendered even w/o ctrl_mode) */
         struct
         {
             const char *label;
             ov_rgb_t    bg;
             int         id;
-        } btns[5];
+            int         always_active;
+        } btns[6];
         int nb = 0;
 
         if (focus == OV_FOCUS_PROCS && psel >= 0 && psel < m->nb_procs)
@@ -165,33 +167,44 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             /* Pause / Resume */
             if (p->loopstat == 2)
             {
-                btns[nb].label = " [p] \xe2\x96\xb6 Resume ";
-                btns[nb].bg    = (ov_rgb_t) { 30, 120, 60 };
-                btns[nb].id    = OV_BTN_PROC_PAUSE;
+                btns[nb].label         = " [p] \xe2\x96\xb6 Resume ";
+                btns[nb].bg            = (ov_rgb_t) { 30, 120, 60 };
+                btns[nb].id            = OV_BTN_PROC_PAUSE;
+                btns[nb].always_active = 0;
                 nb++;
 
                 /* Step */
-                btns[nb].label = " [s] \xe2\x8f\xad Step ";
-                btns[nb].bg    = (ov_rgb_t) { 120, 100, 30 };
-                btns[nb].id    = OV_BTN_PROC_STEP;
+                btns[nb].label         = " [s] \xe2\x8f\xad Step ";
+                btns[nb].bg            = (ov_rgb_t) { 120, 100, 30 };
+                btns[nb].id            = OV_BTN_PROC_STEP;
+                btns[nb].always_active = 0;
                 nb++;
             }
             else
             {
-                btns[nb].label = " [p] \xe2\x8f\xb8 Pause ";
-                btns[nb].bg    = (ov_rgb_t) { 50, 90, 160 };
-                btns[nb].id    = OV_BTN_PROC_PAUSE;
+                btns[nb].label         = " [p] \xe2\x8f\xb8 Pause ";
+                btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+                btns[nb].id            = OV_BTN_PROC_PAUSE;
+                btns[nb].always_active = 0;
                 nb++;
             }
             /* Exit (clean stop) */
-            btns[nb].label = " [e] \xe2\x8f\xbb Exit ";
-            btns[nb].bg    = (ov_rgb_t) { 160, 120, 30 };
-            btns[nb].id    = OV_BTN_PROC_EXIT;
+            btns[nb].label         = " [e] \xe2\x8f\xbb Exit ";
+            btns[nb].bg            = (ov_rgb_t) { 160, 120, 30 };
+            btns[nb].id            = OV_BTN_PROC_EXIT;
+            btns[nb].always_active = 0;
             nb++;
             /* Kill (SIGTERM) */
-            btns[nb].label = " [k] \xe2\x98\xa0 Kill ";
-            btns[nb].bg    = (ov_rgb_t) { 180, 40, 40 };
-            btns[nb].id    = OV_BTN_PROC_KILL;
+            btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
+            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].id            = OV_BTN_PROC_KILL;
+            btns[nb].always_active = 0;
+            nb++;
+            /* Inspect */
+            btns[nb].label         = " [i] Inspect ";
+            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].id            = OV_BTN_INSPECT;
+            btns[nb].always_active = 1;
             nb++;
         }
         else if (focus == OV_FOCUS_FPS && fsel >= 0 && fsel < m->nb_fps)
@@ -201,16 +214,40 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             btns[nb].label = f->conf_alive ? " [s] \xe2\x96\xa0 Conf " : " [s] \xe2\x96\xb6 Conf ";
             btns[nb].bg = f->conf_alive ? (ov_rgb_t) { 160, 120, 30 } : (ov_rgb_t) { 30, 120, 60 };
             btns[nb].id = OV_BTN_FPS_CONF;
+            btns[nb].always_active = 0;
             nb++;
             /* Run toggle */
             btns[nb].label = f->run_alive ? " [r] \xe2\x96\xa0 Run " : " [r] \xe2\x96\xb6 Run ";
             btns[nb].bg = f->run_alive ? (ov_rgb_t) { 160, 120, 30 } : (ov_rgb_t) { 30, 120, 60 };
             btns[nb].id = OV_BTN_FPS_RUN;
+            btns[nb].always_active = 0;
             nb++;
             /* Kill */
-            btns[nb].label = " [k] \xe2\x98\xa0 Kill ";
-            btns[nb].bg    = (ov_rgb_t) { 180, 40, 40 };
-            btns[nb].id    = OV_BTN_FPS_KILL;
+            btns[nb].label         = " [k] \xe2\x98\xa0 Kill ";
+            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].id            = OV_BTN_FPS_KILL;
+            btns[nb].always_active = 0;
+            nb++;
+            /* Inspect */
+            btns[nb].label         = " [i] Inspect ";
+            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].id            = OV_BTN_INSPECT;
+            btns[nb].always_active = 1;
+            nb++;
+        }
+        else if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
+        {
+            /* Delete stream */
+            btns[nb].label         = " [DEL] \xe2\x9c\x95 Delete ";
+            btns[nb].bg            = (ov_rgb_t) { 180, 40, 40 };
+            btns[nb].id            = OV_BTN_STREAM_DEL;
+            btns[nb].always_active = 0;
+            nb++;
+            /* Inspect */
+            btns[nb].label         = " [i] Inspect ";
+            btns[nb].bg            = (ov_rgb_t) { 50, 90, 160 };
+            btns[nb].id            = OV_BTN_INSPECT;
+            btns[nb].always_active = 1;
             nb++;
         }
 
@@ -218,7 +255,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
         {
             /* Compute total width of all buttons
              * (1 space gap between each) */
-            int btn_widths[5];
+            int btn_widths[6];
             int total_w = 0;
             for (int bi = 0; bi < nb; bi++)
             {
@@ -254,7 +291,14 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             for (int bi = 0; bi < nb; bi++)
             {
                 ov_buf_pos(2, col);
-                if (!lay->ctrl_mode)
+                if (btns[bi].always_active)
+                {
+                    /* Always-active buttons (Inspect)
+                     * render in full color */
+                    ov_buf_bg(btns[bi].bg.r, btns[bi].bg.g, btns[bi].bg.b);
+                    ov_buf_fg(255, 255, 255);
+                }
+                else if (!lay->ctrl_mode)
                 {
                     ov_buf_bg(60, 60, 60);
                     ov_buf_fg(180, 180, 180);
@@ -269,7 +313,7 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_buf_reset_attr();
 
                 /* Record button position */
-                if (lay->nb_preview_btns < 4)
+                if (lay->nb_preview_btns < 6)
                 {
                     int idx                      = lay->nb_preview_btns;
                     lay->preview_btns[idx].col   = col;
@@ -397,11 +441,11 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_pos(row, r.col + 1);
 
         int      is_sel   = (ri == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
-        ov_rgb_t row_bg   = OV_BG_PANEL;
+        int      is_hover = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
+                        lay->graph_tab_mode == 0 && ri == lay->hover_idx);
+        ov_rgb_t row_bg   = is_hover ? OV_BG_HOVER : OV_BG_PANEL;
         int      use_ul   = 0;
         ov_rgb_t ul_color = { 0, 0, 0 };
-
-        /* We no longer highlight the entire row on hover, only the specific element */
 
         if (is_sel)
         {
@@ -460,8 +504,8 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_bg(row_bg);
         }
 
-        /* Draw writer proc */
-        if (rn->writer_name[0] != '\0')
+        /* Draw reader proc */
+        if (rn->reader_name[0] != '\0')
         {
             GRAPH_FIELD(OV_FG_DIM, " [");
             if (rn->is_target_proc)
@@ -473,7 +517,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             int proc_idx = -1;
             for (int i = 0; i < m->nb_procs; i++)
             {
-                if (strcmp(m->procs[i].name, rn->writer_name) == 0)
+                if (strcmp(m->procs[i].name, rn->reader_name) == 0)
                 {
                     proc_idx = i;
                     break;
@@ -486,7 +530,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 ov_theme_bg(OV_BG_HOVER);
             }
-            GRAPH_FIELD(proc_color, "%s", rn->writer_name);
+            GRAPH_FIELD(proc_color, "%s", rn->reader_name);
             if (hl_proc)
             {
                 ov_theme_bg(row_bg);

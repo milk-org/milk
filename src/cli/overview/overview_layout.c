@@ -85,9 +85,19 @@ void ov_layout_compute(OV_LAYOUT *lay)
     {
         body_top = 2;
         body_h   = H - 2 - log_h;
-        if (body_h < 4)
+        if (lay->view == OV_VIEW_FPS)
         {
-            body_h = 4;
+            if (body_h < 6)
+            {
+                body_h = 6;
+            }
+        }
+        else
+        {
+            if (body_h < 4)
+            {
+                body_h = 4;
+            }
         }
         /* Full-screen for single-view modes */
         lay->r_streams = (OV_RECT) { body_top, 1, body_h, W };
@@ -107,8 +117,8 @@ void ov_layout_compute(OV_LAYOUT *lay)
             {
                 lw = W - 20;
             }
-            lay->r_fps_list   = (OV_RECT) { body_top, 1, body_h, lw };
-            lay->r_fps_params = (OV_RECT) { body_top, lw + 1, body_h, W - lw };
+            lay->r_fps_list   = (OV_RECT) { body_top + 2, 1, body_h - 2, lw };
+            lay->r_fps_params = (OV_RECT) { body_top + 2, lw + 1, body_h - 2, W - lw };
             /* Keep r_fps pointing to list for panel rendering */
             lay->r_fps = lay->r_fps_list;
         }
