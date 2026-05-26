@@ -2953,10 +2953,10 @@ static int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL
 
 static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    int *sel    = NULL;
-    int *scroll = NULL;
-    int  count  = 0;
-    int  page_h = 10;
+    int *sel                            = NULL;
+    int *scroll __attribute__((unused)) = NULL;
+    int  count                          = 0;
+    int  page_h                         = 10;
 
     /* -------------------------------------------------------
      * F5 view (OV_VIEW_FPS) param-tree intercept.

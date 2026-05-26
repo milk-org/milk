@@ -21,9 +21,8 @@ errno_t lin_regress(double      *a,
                     double      *sig,
                     unsigned int nb_points)
 {
-    double       S, Sx, Sy, Sxx, Sxy, Syy;
-    unsigned int i;
-    double       delta;
+    double S, Sx, Sy, Sxx, Sxy, Syy;
+    double delta;
 
     S   = 0;
     Sx  = 0;

@@ -62,7 +62,6 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     ov_theme_fg(OV_FG_STREAM_HDR);
 
     char htext[300];
-    int  hlen;
     {
         int  sk = lay->sort_key_stream;
         int  sd = lay->sort_dir_stream;
@@ -79,7 +78,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         int  w_cnt  = sort_col_label(c_cnt, sizeof(c_cnt), "COUNT", 6, sk, sd, 10);
         if (lay->compact_mode)
         {
-            hlen = snprintf(htext, sizeof(htext),
+            (void) snprintf(htext, sizeof(htext),
                             "%-*s %-*s %*s %*s %*s"
                             " %*s %7s %7s %s",
                             w_anc, c_anc, w_name, c_name, w_typ, c_typ, w_size, c_size, w_hz, c_hz,
@@ -87,7 +86,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         }
         else
         {
-            hlen = snprintf(htext, sizeof(htext),
+            (void) snprintf(htext, sizeof(htext),
                             "%-*s %-*s %*s %*s %*s"
                             " %*s %*s %7s %*s %10s"
                             " %7s %s",

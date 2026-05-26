@@ -93,8 +93,7 @@ int file_exist(char *filename)
 
 int create_counter_file(const char *fname, unsigned long NBpts)
 {
-    unsigned long i;
-    FILE         *fp;
+    FILE *fp;
 
     if ((fp = fopen(fname, "w")) == NULL)
     {

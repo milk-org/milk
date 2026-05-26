@@ -70,11 +70,9 @@ typedef struct
     char    ch[4]; // utf-8 char (half-block is 3 bytes, full-block 3 bytes)
 } tv_cell_t;
 
-static rgb_t  colormap_lut[1024];
-static int    lut_colormap = -1;
-static int    lut_scale    = -1;
-static double lut_min      = -1.0;
-static double lut_max      = -1.0;
+static rgb_t colormap_lut[1024];
+static int   lut_colormap = -1;
+static int   lut_scale    = -1;
 
 static rgb_t get_colormap_color(termview_colormap_t cmap, double v)
 {

@@ -32,8 +32,7 @@
  */
 int bubble_sort(double *__restrict array, unsigned long count)
 {
-    unsigned long a;
-    double        t;
+    double t;
 
     for (unsigned a = 1; a < count; a++)
     {

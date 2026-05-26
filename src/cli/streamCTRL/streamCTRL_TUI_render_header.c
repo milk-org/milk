@@ -417,11 +417,6 @@ void streamCTRL__render_header_streams(streamCTRLarg_struct        *streamCTRLda
 
         TUI_newline();
     }
-
-    int DisplayFlag = 0;
-
-    int print_pid_mode = PRINT_PID_DEFAULT;
-
     /* Hoist time and color-level detection out of the per-stream loop
      * to avoid N system calls and repeated env-var checks per frame. */
     struct timespec frame_ts;
