@@ -67,3 +67,21 @@ all `cacao-fpsexec-*` commands.
 These lists are generated dynamically by invoking each executable's
 `-h1` flag, so a new fpsexec only needs a proper `.description` field
 in its `FPS_APP_INFO` to appear correctly in the list.
+
+## Handling Dual-Mode `_compute` Libraries
+
+If your module is configured to build a compute-only variant library (`_compute.so`) via CMake (which passes `-DMILK_NO_CLI`), you must guard the CLI registration code and mark the `compute_function` as unused to prevent compiler warnings.
+
+1. **Mark `compute_function` as unused** in Section 6:
+   ```c
+   static MILK_HOT errno_t __attribute__((unused)) compute_function()
+   ```
+   *(Because it becomes orphaned when both CLI and standalone sections are excluded).*
+
+2. **Check both `FPS_STANDALONE` and `MILK_NO_CLI`** in Section 7:
+   ```c
+   #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+   static errno_t CLIfunction(void) { ... }
+   errno_t CLIADDCMD_module__function() { ... }
+   #endif
+   ```
