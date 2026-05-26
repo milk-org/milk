@@ -123,8 +123,8 @@ errno_t fps_add_processinfo_entries(FPS *fps)
     function_parameter_add_entry(fps, ".procinfo.triggersname", "trigger stream name",
                                  FPTYPE_STREAMNAME, FPFLAG, fps->cmdset.triggerstreamname, NULL);
 
-    // Timing measurement
-    long fp_measuretiming = 0;
+    // Timing measurement (default ON)
+    long fp_measuretiming = 1;
     function_parameter_add_entry(fps, ".procinfo.MeasureTiming", "Measure timing", FPTYPE_ONOFF,
                                  FPFLAG | FPFLAG_WRITERUN, NULL, &fp_measuretiming);
     fps->parray[fp_measuretiming].fpflag |= FPFLAG_ONOFF;

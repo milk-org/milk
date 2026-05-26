@@ -333,9 +333,9 @@ __attribute__((weak, visibility("hidden"))) int load_fits(const char *filename,
  * Returns -1 (no-op) unless overridden by
  * COREMOD_memory at link time.
  */
-__attribute__((weak, visibility("hidden"))) int copy_image_ID(const char *name1,
-                                                              const char *name2,
-                                                              int         shared)
+__attribute__((weak, visibility("hidden"))) imageID copy_image_ID(const char *name1,
+                                                                  const char *name2,
+                                                                  int         shared)
 {
     (void) name1;
     (void) name2;
