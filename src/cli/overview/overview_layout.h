@@ -45,6 +45,8 @@ typedef enum
 #define OV_BTN_FPS_CONF 5   /* toggle conf          */
 #define OV_BTN_FPS_RUN 6    /* toggle run           */
 #define OV_BTN_FPS_KILL 7   /* SIGTERM FPS pids     */
+#define OV_BTN_STREAM_DEL 8 /* delete stream SHM    */
+#define OV_BTN_INSPECT 9    /* inspect sel. item    */
 
 /* ---- Command Log ---- */
 #define OV_CMDLOG_MAX 32 /* ring buffer capacity */
@@ -172,6 +174,22 @@ typedef struct
     char fps_param_path[200]; /* Current tree path, e.g. "conf" or "conf.sub" */
     int  fps_param_sel;       /* selected row in param tree */
     int  fps_param_scroll;    /* scroll offset in param tree */
+    /* FPS parameter tree history */
+    struct
+    {
+        char fps_name[80];
+        char path[200];
+    } fps_last_path[200];
+    int nb_fps_last_path;
+
+    struct
+    {
+        char fps_name[80];
+        char path[200];
+        int  sel;
+        int  scroll;
+    } fps_dir_history[1000];
+    int nb_fps_dir_history;
     /* F5 view split rects */
     OV_RECT r_fps_list;   /* left: FPS list  */
     OV_RECT r_fps_params; /* right: param tree */
@@ -181,7 +199,7 @@ typedef struct
         int col;   /* 1-based start column (0 = unused) */
         int width; /* visible width in columns */
         int id;    /* action ID: OV_BTN_* */
-    } preview_btns[4];
+    } preview_btns[6];
     int nb_preview_btns;
     /* F5 view drag state */
     float fps_split_ratio;

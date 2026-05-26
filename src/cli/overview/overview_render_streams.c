@@ -58,7 +58,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
 
     ov_buf_pos(hrow, r.col + 1);
     ov_theme_bg(OV_BG_HEADER);
-    ov_buf_printf("    ");
+    ov_buf_printf(" ");
     ov_theme_fg(OV_FG_STREAM_HDR);
 
     char htext[300];
@@ -66,9 +66,9 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     {
         int  sk = lay->sort_key_stream;
         int  sd = lay->sort_dir_stream;
-        char c_anc[8], c_name[20], c_typ[10];
-        char c_size[16];
-        char c_hz[10], c_mbps[12], c_ino[16], c_cnt[16];
+        char c_anc[32], c_name[32], c_typ[32];
+        char c_size[32];
+        char c_hz[32], c_mbps[32], c_ino[32], c_cnt[32];
         int  w_anc  = sort_col_label(c_anc, sizeof(c_anc), "A", 7, sk, sd, 3);
         int  w_name = sort_col_label(c_name, sizeof(c_name), "NAME", 0, sk, sd, 14);
         int  w_typ  = sort_col_label(c_typ, sizeof(c_typ), "TYP", 1, sk, sd, 4);
@@ -98,13 +98,13 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     }
 
     {
-        int vis_width = r.width - 4;
+        int vis_width = r.width - 1;
         if (vis_width < 0)
         {
             vis_width = 0;
         }
         int printed = ov_render_header_text(htext, hs, vis_width, OV_FG_STREAM_HDR);
-        render_pad_spaces(4 + printed, r.width);
+        render_pad_spaces(1 + printed, r.width);
     }
 
     /* Separator between header and data rows */
@@ -281,7 +281,7 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
             row_bg = zebra_bg(row_bg, i);
 
             int hs_rem  = hs;
-            int printed = 4;
+            int printed = 1;
             int avail   = r.width - 2;
 
             ov_buf_pos(row, r.col + 1);

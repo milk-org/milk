@@ -13,6 +13,17 @@
 #include "overview_ctrl.h"
 #include "overview_fps_edit.h"
 #include "stream_graph.h"
+#include "overview_data_internal.h"
+
+/* libfps headers after overview headers to
+ * avoid macro redefinition warnings */
+#undef STRINGMAXLEN_DIRNAME
+#undef STRINGMAXLEN_FULLFILENAME
+#undef STRINGMAXLEN_COMMAND
+#undef PRINT_ERROR
+#include "fps_types.h"
+#include "fps_WriteParameterToDisk.h"
+#include "fps_save2disk.h"
 
 static int get_graph_start_node(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
@@ -242,11 +253,15 @@ static int ov_input__handle_filter_mode(int key, OV_LAYOUT *lay)
  * enable ctrl_mode and log the action.
  */
 /* Forward declarations for helpers defined below */
-static const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m);
+static const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m);
+static const OV_PROC   *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m);
 /**
  * @brief Get the currently selected FPS entry.
  */
 static const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m);
+
+static void ov_input_save_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path);
+static void ov_input_load_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path);
 
 /**
  * @brief Count visible items after filtering.
@@ -361,7 +376,8 @@ static void ov_input__streams_header_click(OV_LAYOUT *lay, int mc)
     }
 }
 
-static const char *proc_col_names[] = { "NAME", "PID", "STAT", "Hz", "MEM", "ANCESTRY" };
+static const char *proc_col_names[] = { "NAME", "PID",    "STAT", "Hz",      "MEM", "ANCESTRY",
+                                        "PRIO", "UPTIME", "CPU%", "LOOPCNT", "DUTY" };
 
 static void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
 {
@@ -373,27 +389,47 @@ static void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
     int col_idx = -1;
     if (c < 4)
     {
-        col_idx = 5;
+        col_idx = 5; /* ANCESTRY */
     }
     else if (c < 19)
     {
-        col_idx = 0;
+        col_idx = 0; /* NAME */
     }
     else if (c < 27)
     {
-        col_idx = 1;
+        col_idx = 1; /* PID */
     }
-    else if (c < 33)
+    else if (c < 32)
     {
-        col_idx = 2;
+        col_idx = 6; /* PRIO */
     }
-    else if (c < 40)
+    else if (c < 37)
     {
-        col_idx = 3;
+        col_idx = 2; /* STAT */
     }
-    else if (c >= 88 && c < 94)
+    else if (c < 44)
     {
-        col_idx = 4;
+        col_idx = 3; /* Hz */
+    }
+    else if (c < 51)
+    {
+        col_idx = 7; /* UPTIME */
+    }
+    else if (c >= 73 && c < 79)
+    {
+        col_idx = 10; /* DUTY */
+    }
+    else if (c >= 79 && c < 86)
+    {
+        col_idx = 8; /* CPU% */
+    }
+    else if (c >= 86 && c < 96)
+    {
+        col_idx = 9; /* LOOPCNT */
+    }
+    else if (c >= 96 && c < 102)
+    {
+        col_idx = 4; /* MEM */
     }
 
     if (col_idx >= 0)
@@ -414,7 +450,7 @@ static void ov_input__procs_header_click(OV_LAYOUT *lay, int mc)
     }
 }
 
-static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID" };
+static const char *fps_col_names[] = { "NAME", "CPID", "MEM", "ANCESTRY", "RPID", "TMX", "STR" };
 
 static void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
 {
@@ -426,23 +462,31 @@ static void ov_input__fps_header_click(OV_LAYOUT *lay, int mc)
     int col_idx = -1;
     if (c < 4)
     {
-        col_idx = 3;
+        col_idx = 3; /* ANCESTRY */
     }
     else if (c <= 23)
     {
-        col_idx = 0;
+        col_idx = 0; /* NAME */
     }
-    else if (c >= 26 && c <= 34)
+    else if (c >= 24 && c <= 27)
     {
-        col_idx = 1;
+        col_idx = 5; /* TMX */
     }
-    else if (c >= 34 && c <= 42)
+    else if (c >= 28 && c <= 35)
     {
-        col_idx = 4;
+        col_idx = 1; /* CPID */
     }
-    else if (c >= 46 && c <= 52)
+    else if (c >= 36 && c <= 43)
     {
-        col_idx = 2;
+        col_idx = 4; /* RPID */
+    }
+    else if (c >= 44 && c <= 47)
+    {
+        col_idx = 6; /* STR */
+    }
+    else if (c >= 48 && c <= 53)
+    {
+        col_idx = 2; /* MEM */
     }
 
     if (col_idx >= 0)
@@ -467,10 +511,41 @@ static void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODE
 {
     OV_CMDLOG *log = &lay->cmdlog;
 
+    /* Inspect works without CONTROL mode */
+    if (btn_id == OV_BTN_INSPECT)
+    {
+        if (lay->focus == OV_FOCUS_STREAMS)
+        {
+            const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
+            if (s)
+            {
+                ov_ctrl_inspect_item(OV_FOCUS_STREAMS, s);
+            }
+        }
+        else if (lay->focus == OV_FOCUS_PROCS)
+        {
+            const OV_PROC *p = ov_input_get_sel_proc(lay, m);
+            if (p)
+            {
+                ov_ctrl_inspect_item(OV_FOCUS_PROCS, p);
+            }
+        }
+        else if (lay->focus == OV_FOCUS_FPS)
+        {
+            const OV_FPS *f = ov_input_get_sel_fps(lay, m);
+            if (f)
+            {
+                ov_ctrl_inspect_item(OV_FOCUS_FPS, f);
+            }
+        }
+        return;
+    }
+
     if (!lay->ctrl_mode)
     {
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                       "🚫 Action requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+                       "\xf0\x9f\x9a\xab Action requires CONTROL mode"
+                       " (press c to toggle CTRL mode ON/OFF)");
         return;
     }
 
@@ -536,6 +611,15 @@ static void ov_input__exec_preview_btn(int btn_id, OV_LAYOUT *lay, const OV_MODE
         if (f)
         {
             ov_ctrl_fps_signal_pid(f, SIGTERM, log);
+        }
+        break;
+    }
+    case OV_BTN_STREAM_DEL:
+    {
+        const OV_STREAM *s = ov_input_get_sel_stream(lay, m);
+        if (s)
+        {
+            ov_ctrl_stream_delete(s, log);
         }
         break;
     }
@@ -652,7 +736,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
     else if (lay->view == OV_VIEW_GRAPH && INSIDE(lay->r_graph, mr, mc))
     {
         lay->hover_view = OV_FOCUS_GRAPH;
-        int body_row    = mr - lay->r_graph.row - 1;
+        int body_row    = mr - lay->r_graph.row - 2;
         if (body_row >= 0)
         {
             if (lay->graph_tab_mode == 0)
@@ -725,7 +809,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         else if (INSIDE(lay->r_graph, mr, mc))
         {
             lay->hover_view = OV_FOCUS_GRAPH;
-            int body_row    = mr - lay->r_graph.row - 1;
+            int body_row    = mr - lay->r_graph.row - 2;
             if (body_row >= 0)
             {
                 if (lay->graph_tab_mode == 0)
@@ -835,11 +919,11 @@ void ov_hittest_resolve_globals(OV_LAYOUT *lay, const OV_MODEL *m)
                 {
                     const SG_TREE_NODE *rn       = &rnodes[lay->hover_idx];
                     int                 proc_idx = -1;
-                    if (rn->writer_name[0] != '\0')
+                    if (rn->reader_name[0] != '\0')
                     {
                         for (int i = 0; i < m->nb_procs; i++)
                         {
-                            if (strcmp(m->procs[i].name, rn->writer_name) == 0)
+                            if (strcmp(m->procs[i].name, rn->reader_name) == 0)
                             {
                                 proc_idx = i;
                                 break;
@@ -1178,11 +1262,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     {
                         if (lay->sel_fps != idx)
                         {
-                            lay->sel_fps           = idx;
-                            lay->sel_name_fps[0]   = '\0';
-                            lay->fps_param_path[0] = '\0';
-                            lay->fps_param_sel     = 0;
-                            lay->fps_param_scroll  = 0;
+                            lay->sel_fps         = idx;
+                            lay->sel_name_fps[0] = '\0';
                         }
                         if (is_dbl)
                         {
@@ -1253,7 +1334,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
             else
             {
-                int body_row = mr - lay->r_graph.row - 1;
+                int body_row = mr - lay->r_graph.row - 2;
                 if (body_row >= 0)
                 {
                     if (lay->graph_tab_mode == 0)
@@ -1272,11 +1353,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                                 const SG_TREE_NODE *rn = &rnodes[idx];
 
                                 int proc_idx = -1;
-                                if (rn->writer_name[0] != '\0')
+                                if (rn->reader_name[0] != '\0')
                                 {
                                     for (int i = 0; i < m->nb_procs; i++)
                                     {
-                                        if (strcmp(m->procs[i].name, rn->writer_name) == 0)
+                                        if (strcmp(m->procs[i].name, rn->reader_name) == 0)
                                         {
                                             proc_idx = i;
                                             break;
@@ -1416,7 +1497,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 else
                 {
-                    int body_row = mr - lay->r_graph.row - 1;
+                    int body_row = mr - lay->r_graph.row - 2;
                     if (body_row >= 0)
                     {
                         if (lay->graph_tab_mode == 0)
@@ -1435,11 +1516,11 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                                     const SG_TREE_NODE *rn = &rnodes[idx];
 
                                     int proc_idx = -1;
-                                    if (rn->writer_name[0] != '\0')
+                                    if (rn->reader_name[0] != '\0')
                                     {
                                         for (int i = 0; i < m->nb_procs; i++)
                                         {
-                                            if (strcmp(m->procs[i].name, rn->writer_name) == 0)
+                                            if (strcmp(m->procs[i].name, rn->reader_name) == 0)
                                             {
                                                 proc_idx = i;
                                                 break;
@@ -2350,10 +2431,10 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
             lay->sort_key_stream = (lay->sort_key_stream + 1) % 8;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = (lay->sort_key_proc + 1) % 6;
+            lay->sort_key_proc = (lay->sort_key_proc + 1) % 11;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_key_fps = (lay->sort_key_fps + 1) % 5;
+            lay->sort_key_fps = (lay->sort_key_fps + 1) % 7;
             break;
         default:
             break;
@@ -2370,10 +2451,10 @@ static int ov_input__handle_sorting(int key, OV_LAYOUT *lay)
             lay->sort_key_stream = (lay->sort_key_stream + 7) % 8;
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = (lay->sort_key_proc + 5) % 6;
+            lay->sort_key_proc = (lay->sort_key_proc + 10) % 11;
             break;
         case OV_FOCUS_FPS:
-            lay->sort_key_fps = (lay->sort_key_fps + 4) % 5;
+            lay->sort_key_fps = (lay->sort_key_fps + 6) % 7;
             break;
         default:
             break;
@@ -2862,11 +2943,9 @@ static int ov_input__handle_ancestry_nav(int key, OV_LAYOUT *lay, const OV_MODEL
         }
         else if (lay->focus == OV_FOCUS_FPS && tn->type == OV_NODE_FPS)
         {
-            lay->sel_fps          = tn->index;
-            lay->sel_name_fps[0]  = '\0';
-            lay->fps_param_sel    = 0;
-            lay->fps_param_scroll = 0;
-            lay->fps_param_focus  = 0;
+            lay->sel_fps         = tn->index;
+            lay->sel_name_fps[0] = '\0';
+            lay->fps_param_focus = 0;
         }
     }
     return 1;
@@ -2904,9 +2983,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
             (key == OV_KEY_RIGHT || key == OV_KEY_ENTER || key == '\r' || key == '\n') &&
             has_params)
         {
-            lay->fps_param_focus  = 1;
-            lay->fps_param_sel    = 0;
-            lay->fps_param_scroll = 0;
+            lay->fps_param_focus = 1;
             return 1;
         }
 
@@ -2922,18 +2999,45 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                 }
                 else
                 {
+                    ov_input_save_dir_history(lay, m->fps[fsel].name, lay->fps_param_path);
+
                     /* Ascend directory */
-                    char *last_dot = strrchr(lay->fps_param_path, '.');
+                    char  exited_dir[100] = { 0 };
+                    char *last_dot        = strrchr(lay->fps_param_path, '.');
                     if (last_dot)
                     {
+                        strncpy(exited_dir, last_dot + 1, sizeof(exited_dir) - 1);
                         *last_dot = '\0';
                     }
                     else
                     {
+                        strncpy(exited_dir, lay->fps_param_path, sizeof(exited_dir) - 1);
                         lay->fps_param_path[0] = '\0';
                     }
-                    lay->fps_param_sel    = 0;
-                    lay->fps_param_scroll = 0;
+
+                    ov_input_load_dir_history(lay, m->fps[fsel].name, lay->fps_param_path);
+
+                    int found_sel = -1;
+                    if (has_params)
+                    {
+                        fps_tree_item_t parent_items[1024];
+                        int             n_parent_items = ov_get_fps_tree_items(
+                            &m->fps[fsel], lay->fps_param_path, parent_items, 1024);
+
+                        for (int i = 0; i < n_parent_items; i++)
+                        {
+                            if (parent_items[i].is_dir &&
+                                strcmp(parent_items[i].name, exited_dir) == 0)
+                            {
+                                found_sel = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (found_sel != -1)
+                    {
+                        lay->fps_param_sel = found_sel;
+                    }
                 }
                 return 1;
             }
@@ -2999,6 +3103,8 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                     fps_tree_item_t *item = &items[lay->fps_param_sel];
                     if (item->is_dir)
                     {
+                        ov_input_save_dir_history(lay, m->fps[fsel].name, lay->fps_param_path);
+
                         /* Descend directory */
                         if (lay->fps_param_path[0] == '\0')
                         {
@@ -3011,8 +3117,8 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                             snprintf(tmp, sizeof(tmp), "%s.%s", lay->fps_param_path, item->name);
                             strncpy(lay->fps_param_path, tmp, sizeof(lay->fps_param_path) - 1);
                         }
-                        lay->fps_param_sel    = 0;
-                        lay->fps_param_scroll = 0;
+
+                        ov_input_load_dir_history(lay, m->fps[fsel].name, lay->fps_param_path);
                     }
                     else if (key == OV_KEY_ENTER || key == '\r' || key == '\n')
                     {
@@ -3025,6 +3131,55 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                         else
                         {
                             ov_fps_inline_edit(lay, m->fps[fsel].name, item->param_idx);
+                        }
+                    }
+                }
+                return 1;
+            }
+            if (key == 'o')
+            {
+                if (lay->fps_param_sel >= 0 && lay->fps_param_sel < nitems)
+                {
+                    fps_tree_item_t *item = &items[lay->fps_param_sel];
+                    if (!item->is_dir)
+                    {
+                        int pi = item->param_idx;
+                        if (m->fps[fsel].disp_param_type[pi] == FPTYPE_ONOFF)
+                        {
+                            if (!lay->ctrl_mode)
+                            {
+                                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
+                                               "Toggle requires CONTROL mode (press c to toggle "
+                                               "CTRL mode ON/OFF)");
+                            }
+                            else
+                            {
+                                FPS *fps = ov_fcache_get_fps(m->fps[fsel].name);
+                                if (fps != NULL && fps->md != NULL)
+                                {
+                                    int pindex = ov_fcache_get_param_index(m->fps[fsel].name, pi);
+                                    if (pindex >= 0)
+                                    {
+                                        FPS_PARAM *fp      = &fps->parray[pindex];
+                                        int        current = (fp->fpflag & FPFLAG_ONOFF) ? 1 : 0;
+                                        int        newval  = current ? 0 : 1;
+                                        functionparameter_SetParamValue_ONOFF(fps, fp->keywordfull,
+                                                                              newval);
+
+                                        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+
+                                        if (fp->fpflag & FPFLAG_SAVEONCHANGE)
+                                        {
+                                            functionparameter_WriteParameterToDisk(
+                                                fps, pindex, "setval", "milk-CTRL_toggle");
+                                            functionparameter_SaveFPS2disk(fps);
+                                        }
+                                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
+                                                       "Toggled parameter %s to %s",
+                                                       fp->keywordfull, newval ? "ON" : "OFF");
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -3330,9 +3485,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
                     /* Reset param tree cursor when FPS selection moves */
                     if (lay->view == OV_VIEW_FPS)
                     {
-                        lay->fps_param_sel    = 0;
-                        lay->fps_param_scroll = 0;
-                        lay->fps_param_focus  = 0;
+                        lay->fps_param_focus = 0;
                     }
                 }
 
@@ -3409,7 +3562,7 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
     return 0; /* Not a navigation key */
 }
 
-int ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     if (key == OV_KEY_NONE)
     {
@@ -3668,4 +3821,204 @@ int ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key code: %d", key);
     }
     return 0;
+}
+
+static void ov_input_save_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path)
+{
+    if (fps_name == NULL || fps_name[0] == '\0')
+    {
+        return;
+    }
+
+    int found_idx = -1;
+    for (int i = 0; i < lay->nb_fps_dir_history; i++)
+    {
+        if (strcmp(lay->fps_dir_history[i].fps_name, fps_name) == 0 &&
+            strcmp(lay->fps_dir_history[i].path, path) == 0)
+        {
+            found_idx = i;
+            break;
+        }
+    }
+
+    if (found_idx == -1)
+    {
+        if (lay->nb_fps_dir_history < 1000)
+        {
+            found_idx = lay->nb_fps_dir_history;
+            lay->nb_fps_dir_history++;
+            strncpy(lay->fps_dir_history[found_idx].fps_name, fps_name,
+                    sizeof(lay->fps_dir_history[found_idx].fps_name) - 1);
+            lay->fps_dir_history[found_idx]
+                .fps_name[sizeof(lay->fps_dir_history[found_idx].fps_name) - 1] = '\0';
+            strncpy(lay->fps_dir_history[found_idx].path, path,
+                    sizeof(lay->fps_dir_history[found_idx].path) - 1);
+            lay->fps_dir_history[found_idx].path[sizeof(lay->fps_dir_history[found_idx].path) - 1] =
+                '\0';
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    lay->fps_dir_history[found_idx].sel    = lay->fps_param_sel;
+    lay->fps_dir_history[found_idx].scroll = lay->fps_param_scroll;
+}
+
+static void ov_input_load_dir_history(OV_LAYOUT *lay, const char *fps_name, const char *path)
+{
+    if (fps_name == NULL || fps_name[0] == '\0')
+    {
+        return;
+    }
+
+    int found_idx = -1;
+    for (int i = 0; i < lay->nb_fps_dir_history; i++)
+    {
+        if (strcmp(lay->fps_dir_history[i].fps_name, fps_name) == 0 &&
+            strcmp(lay->fps_dir_history[i].path, path) == 0)
+        {
+            found_idx = i;
+            break;
+        }
+    }
+
+    if (found_idx != -1)
+    {
+        lay->fps_param_sel    = lay->fps_dir_history[found_idx].sel;
+        lay->fps_param_scroll = lay->fps_dir_history[found_idx].scroll;
+    }
+    else
+    {
+        lay->fps_param_sel    = 0;
+        lay->fps_param_scroll = 0;
+    }
+}
+
+static void ov_input_save_fps_history(OV_LAYOUT *lay, const char *fps_name)
+{
+    if (fps_name == NULL || fps_name[0] == '\0')
+    {
+        return;
+    }
+
+    /* 1. Save the directory history for the current path */
+    ov_input_save_dir_history(lay, fps_name, lay->fps_param_path);
+
+    /* 2. Save the last path visited for this FPS */
+    int found_idx = -1;
+    for (int i = 0; i < lay->nb_fps_last_path; i++)
+    {
+        if (strcmp(lay->fps_last_path[i].fps_name, fps_name) == 0)
+        {
+            found_idx = i;
+            break;
+        }
+    }
+
+    if (found_idx == -1)
+    {
+        if (lay->nb_fps_last_path < 200)
+        {
+            found_idx = lay->nb_fps_last_path;
+            lay->nb_fps_last_path++;
+            strncpy(lay->fps_last_path[found_idx].fps_name, fps_name,
+                    sizeof(lay->fps_last_path[found_idx].fps_name) - 1);
+            lay->fps_last_path[found_idx]
+                .fps_name[sizeof(lay->fps_last_path[found_idx].fps_name) - 1] = '\0';
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    strncpy(lay->fps_last_path[found_idx].path, lay->fps_param_path,
+            sizeof(lay->fps_last_path[found_idx].path) - 1);
+    lay->fps_last_path[found_idx].path[sizeof(lay->fps_last_path[found_idx].path) - 1] = '\0';
+}
+
+static void ov_input_load_fps_history(OV_LAYOUT *lay, const char *fps_name)
+{
+    if (fps_name == NULL || fps_name[0] == '\0')
+    {
+        return;
+    }
+
+    /* 1. Load the last path visited for this FPS */
+    int found_idx = -1;
+    for (int i = 0; i < lay->nb_fps_last_path; i++)
+    {
+        if (strcmp(lay->fps_last_path[i].fps_name, fps_name) == 0)
+        {
+            found_idx = i;
+            break;
+        }
+    }
+
+    if (found_idx != -1)
+    {
+        strncpy(lay->fps_param_path, lay->fps_last_path[found_idx].path,
+                sizeof(lay->fps_param_path) - 1);
+        lay->fps_param_path[sizeof(lay->fps_param_path) - 1] = '\0';
+    }
+    else
+    {
+        lay->fps_param_path[0] = '\0';
+    }
+
+    /* 2. Load the directory history for this path */
+    ov_input_load_dir_history(lay, fps_name, lay->fps_param_path);
+}
+
+int ov_handle_key(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    if (key == OV_KEY_NONE)
+    {
+        return 0;
+    }
+
+    char          old_fps_name[80] = { 0 };
+    const OV_FPS *old_fps          = ov_input_get_sel_fps(lay, m);
+    if (old_fps != NULL)
+    {
+        strncpy(old_fps_name, old_fps->name, sizeof(old_fps_name) - 1);
+    }
+
+    int old_view = lay->view;
+
+    int ret = ov_handle_key_internal(key, lay, m);
+
+    if (lay->view == OV_VIEW_FPS)
+    {
+        char          new_fps_name[80] = { 0 };
+        const OV_FPS *new_fps          = ov_input_get_sel_fps(lay, m);
+        if (new_fps != NULL)
+        {
+            strncpy(new_fps_name, new_fps->name, sizeof(new_fps_name) - 1);
+        }
+
+        if (old_view != OV_VIEW_FPS || strcmp(old_fps_name, new_fps_name) != 0)
+        {
+            if (old_view == OV_VIEW_FPS && old_fps_name[0] != '\0')
+            {
+                ov_input_save_fps_history(lay, old_fps_name);
+            }
+            if (new_fps_name[0] != '\0')
+            {
+                ov_input_load_fps_history(lay, new_fps_name);
+                lay->fps_param_focus = 0;
+            }
+        }
+    }
+    else if (old_view == OV_VIEW_FPS)
+    {
+        if (old_fps_name[0] != '\0')
+        {
+            ov_input_save_fps_history(lay, old_fps_name);
+        }
+    }
+
+    return ret;
 }

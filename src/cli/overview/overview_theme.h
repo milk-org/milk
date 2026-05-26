@@ -41,7 +41,7 @@ typedef struct
 #define OV_BG_SELECTED (ov_rgb_t){ 50, 60, 90 }
 #define OV_BG_RELATED (ov_rgb_t){ 38, 50, 42 } /* soft green tint for related items */
 #define OV_BG_FROZEN (ov_rgb_t){ 40, 90, 140 } /* bright blue tint for frozen selection */
-#define OV_BG_HOVER (ov_rgb_t){ 38, 42, 55 }
+#define OV_BG_HOVER (ov_rgb_t){ 45, 52, 72 }
 #define OV_BG_PID_MATCH (ov_rgb_t){ 50, 180, 50 } /* green bg for PID match */
 #define OV_BG_STALE (ov_rgb_t){ 55, 45, 20 }      /* amber tint for stale procs */
 #define OV_BG_NEW_ITEM (ov_rgb_t){ 40, 60, 50 }   /* green flash for new items */
