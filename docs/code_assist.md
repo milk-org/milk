@@ -78,6 +78,7 @@ contains a `SKILL.md` with detailed instructions.
 
 | Skill | Folder | What it provides |
 |-------|--------|------------------|
+| API quick reference | [`api-quick-reference`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/api-quick-reference/SKILL.md) | API cheat sheet for IMGID, processinfo macros, stream variables, datatypes, and parameter sync. |
 | Feature planner | [`feature-planner`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/feature-planner/SKILL.md) | Structured planning and architectural decomposition for new features. |
 | Batch Kernel-Doc | [`batch-kernel-doc`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/batch-kernel-doc/SKILL.md) | Systematic function documentation with scanning, templates, and batch processing. |
 | CLI test writer | [`cli-test-writer`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/cli-test-writer/SKILL.md) | Writing test cases for the CLI robustness suite with coverage analysis. |
@@ -89,7 +90,9 @@ contains a `SKILL.md` with detailed instructions.
 | Module loading internals | [`module-loading-internals`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/module-loading-internals/SKILL.md) | `dlopen` sequence, `data.moduleindex` race, constructor timing. |
 | Milk script writer | [`milk-script-writer`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/milk-script-writer/SKILL.md) | Generate correct milk-cli scripts from natural language prompts. |
 | Optimize compute function | [`optimize-compute-function`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/optimize-compute-function/SKILL.md) | Systematic performance optimization methodology. |
+| Plugin creator | [`plugin-creator`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/plugin-creator/SKILL.md) | Scaffolding a new plugin module with CMake and module registration. |
 | PR preparation | [`pr-preparation`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/pr-preparation/SKILL.md) | End-to-end PR packaging with template body and AI authorship. |
+| Pseudocode to compute unit | [`pseudocode-to-compute-unit`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/pseudocode-to-compute-unit/SKILL.md) | Translating algorithms to V2 compute units. |
 | Refactor C source | [`refactor-c-source`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/refactor-c-source/SKILL.md) | Safe file splitting with dependency analysis and CMake updates. |
 | Stream modifier guide | [`stream-modifier-guide`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/stream-modifier-guide/SKILL.md) | IMGID parsing pipeline, `@S:`/`@L:`/`@F:` modifiers, slice syntax. |
 
@@ -103,7 +106,8 @@ step-by-step checklists for common tasks.
 |---------|------|--------------|
 | `/compile-test` | [`compile-test.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/compile-test.md) | Incremental build, install, and test from `_build/`. |
 | `/create-fpsexec` | [`create-fpsexec.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/create-fpsexec.md) | Scaffold a new V2 fpsexec standalone executable. |
-| `/add-new-module` | [`add-new-module.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-new-module.md) | Scaffold a new plugin module (README, CMake, boilerplate). |
+| `/create-plugin` | [`create-plugin.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/create-plugin.md) | Scaffold a new plugin module with full boilerplate. |
+| `/add-new-module` | [`add-new-module.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-new-module.md) | Scaffold a new module (README, CMake, boilerplate). |
 | `/add-function` | [`add-function.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-function.md) | Add a function to an existing module (dispatches to sub-workflows). |
 | `/add-stream-processor` | [`add-stream-processor.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-stream-processor.md) | Scaffold a stream processing loop compute unit. |
 | `/add-cli-command` | [`add-cli-command.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-cli-command.md) | Add a CLI command to an existing module. |
