@@ -145,5 +145,14 @@ milk-fpsCTRL myfirstexec
 
 Congratulations! You've successfully written a milk module and an FPS compute block.
 
+## 5. Next Steps
+
+Now that you've written your first module, you can automate this process and learn more advanced patterns using our built-in tools:
+
+- Run the `/create-plugin` workflow to scaffold new plugins automatically.
+- Run the `/create-fpsexec` workflow to scaffold new compute units.
+- Consult the `api-quick-reference` skill for a cheat sheet on streams and FPS parameters.
+- Review the `pseudocode-to-compute-unit` skill to learn how to translate abstract algorithms into V2 templates.
+
 ---
 ← [Documentation Index](../index.md)

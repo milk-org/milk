@@ -18,7 +18,9 @@ See also: [Developer Tutorial](docs/developer/tutorial.md) ·
    - Whether this is a milk or cacao standalone
    - If cacao: whether it needs plugin libraries (fft/imagegen/imagefilter/imagebasic)
 
-2. Copy the template `~/src/milk/src/milk_module_example/examplefunc_fps_cli_poc.c` to the target directory with the given C filename.
+2. **Parameter Design**: Consult the `pseudocode-to-compute-unit` skill. Analyze the intended computation and explicitly map variables to `FPTYPE_*` parameters. Determine which inputs will trigger the computation and which are tunable scalars.
+
+3. Copy the template `~/src/milk/src/milk_module_example/examplefunc_fps_cli_poc.c` to the target directory with the given C filename.
 
 3. Update the newly created C file to replace the default placeholders with the user's specifics:
    - Locate the `FPS_APP_INFO` struct in section 1 and update:

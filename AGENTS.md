@@ -159,9 +159,10 @@ automatically.
 
 ```c
 IMGID img = imgid_make_from_name("mystream");
-img.naxis = 2;
-img.size[0] = 128;  img.size[1] = 128;
-img.shared = 1;
+img.mdt->naxis = 2;
+img.mdt->size[0] = 128;
+img.mdt->size[1] = 128;
+img.mdt->shared = 1;
 imgid_mkimage(&img);
 
 // Access pixel data:
@@ -252,18 +253,21 @@ when domain-specific tasks require extended capabilities.
 
 | Skill | When to use |
 |-------|-------------|
-| `feature-planner` | Structured planning and decomposition for new features |
+| `api-quick-reference` | API cheat sheet for IMGID, processinfo macros, stream variables, datatypes, and parameter sync |
 | `batch-kernel-doc` | Systematic Kernel-Doc documentation passes |
 | `cli-test-writer` | Writing CLI robustness test cases |
 | `cmake-patterns` | Module CMake setup, standalone builds, `_compute` variants |
 | `debug-cli-behavior` | Investigating CLI crashes, display bugs, missing errors |
 | `diagnose-build-failure` | Triaging CMake/GCC build errors |
+| `feature-planner` | Structured planning and decomposition for new features |
 | `fps-parameter-guide` | FPS parameter types, flags, X-macro patterns |
 | `imagestream-internals` | SHM stream layout, semaphore protocol, circular buffers |
 | `milk-script-writer` | Generate correct milk-cli scripts from natural language prompts |
 | `module-loading-internals` | Debugging module registration, empty commands |
 | `optimize-compute-function` | Systematic performance optimization methodology |
+| `plugin-creator` | Scaffolding a new plugin module with CMake and module registration |
 | `pr-preparation` | Packaging work into a pull request |
+| `pseudocode-to-compute-unit` | Translating algorithms to V2 compute units |
 | `refactor-c-source` | Splitting large C files into smaller modules |
 | `stream-modifier-guide` | IMGID parsing, `@S:`/`@L:`/`@F:` modifiers, slice syntax |
 
@@ -276,10 +280,13 @@ listed task types:
 
 | Command | When to use |
 |---------|-------------|
+| `/add-cli-command` | Adding a CLI command to a module |
+| `/add-function` | Adding a function to an existing module |
+| `/add-new-module` | Creating a new module (core or plugin) |
+| `/add-stream-processor` | Creating a stream processing loop |
 | `/compile-test` | After any C or CMake edit |
 | `/create-fpsexec` | Scaffolding a new standalone executable |
-| `/add-new-module` | Creating a new plugin module from scratch |
-| `/add-function` | Adding a function to an existing module |
+| `/create-plugin` | Scaffolding a new plugin module with full boilerplate |
 | `/add-stream-processor` | Creating a stream processing loop |
 | `/add-cli-command` | Adding a CLI command to a module |
 | `/fix-bug` | Investigating, fixing, and verifying a bug |
