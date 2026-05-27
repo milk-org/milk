@@ -260,112 +260,66 @@ errno_t function_parameter_add_entry(FPS        *fps,
 
         if (valueptr != NULL) // allocate value requested by function call
         {
+            int successful_switch = 1;
             switch (funcparamarray[pindex].type)
             {
             case FPTYPE_INT32:
                 funcparamarray[pindex].val.i32[0] = *((int32_t *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_UINT32:
                 funcparamarray[pindex].val.ui32[0] = *((uint32_t *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_INT64:
                 funcparamarray[pindex].val.i64[0] = *((int64_t *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_UINT64:
                 funcparamarray[pindex].val.ui64[0] = *((uint64_t *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_FLOAT64:
                 funcparamarray[pindex].val.f64[0] = *((double *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_FLOAT32:
                 funcparamarray[pindex].val.f32[0] = *((float *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_PID:
                 funcparamarray[pindex].val.pid[0] = *((pid_t *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_TIMESPEC:
                 funcparamarray[pindex].val.ts[0] = *((struct timespec *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
-                break;
-
-            case FPTYPE_FILENAME:
-                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
-                break;
-
-            case FPTYPE_FITSFILENAME:
-                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
-                break;
-
-            case FPTYPE_EXECFILENAME:
-                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
-                break;
-
-            case FPTYPE_DIRNAME:
-                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
-                break;
-
-            case FPTYPE_STREAMNAME:
-                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
-                break;
-
-            case FPTYPE_STRING:
-                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN - 1);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
             case FPTYPE_ONOFF:
                 funcparamarray[pindex].val.ui64[0] = *((uint64_t *) valueptr);
-                funcparamarray[pindex].cnt0++;
-                funcparamarray[pindex].value_cnt++;
                 break;
 
+            case FPTYPE_FILENAME:
+            case FPTYPE_FITSFILENAME:
+            case FPTYPE_EXECFILENAME:
+            case FPTYPE_DIRNAME:
+            case FPTYPE_STREAMNAME:
+            case FPTYPE_STRING:
             case FPTYPE_FPSNAME:
             case FPTYPE_PROCESS:
             case FPTYPE_STRING_NOT_STREAM:
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
                         FUNCTION_PARAMETER_STRMAXLEN - 1);
+                break;
+            default:
+                successful_switch = 0;
+                break;
+            }
+
+            if (successful_switch)
+            {
                 funcparamarray[pindex].cnt0++;
                 funcparamarray[pindex].value_cnt++;
-                break;
             }
 
             // RVAL = 2;  // default value entered
