@@ -266,17 +266,26 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
                   detail_label);
     n1 += n_hints;
 
+    /* [x] exit button */
+    const char *exit_label = " [x] exit ";
+    int         n_exit     = (int) strlen(exit_label);
+
     time_t     now    = time(NULL);
     struct tm *tm_ptr = localtime(&now);
     char       tstr[16];
     int        n2 = strftime(tstr, sizeof(tstr), "%H:%M:%S", tm_ptr);
 
     /* Clock on the right edge */
-    int pad = r.width - n1 - n2 - 1;
+    int pad = r.width - n1 - n_exit - n2 - 1;
     if (pad > 0)
     {
         ov_buf_hline(' ', pad);
     }
+
+    /* Render [x] exit with distinct color */
+    ov_buf_fg(200, 80, 80);
+    ov_buf_printf("%s", exit_label);
+
     ov_theme_fg(OV_FG_TEXT);
     ov_buf_printf("%s ", tstr);
     ov_buf_reset_attr();

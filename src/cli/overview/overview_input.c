@@ -2752,7 +2752,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
             return 0;
         }
-        if (key == 'k' || key == 'K' || key == 'x' || key == 'r' || key == 's')
+        if (key == 'k' || key == 'K' || key == 'r' || key == 's')
         {
             is_ctrl_action = 1;
             if (lay->ctrl_mode)
@@ -2776,10 +2776,6 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         {
                             ov_ctrl_fps_signal_pid(f, SIGKILL, log);
                         }
-                        else if (key == 'x')
-                        {
-                            ov_ctrl_fps_pause_toggle(f, log);
-                        }
                         else if (key == 'r')
                         {
                             ov_ctrl_fps_run_toggle(f, log);
@@ -2802,10 +2798,6 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         else if (key == 'K')
                         {
                             ov_ctrl_fps_signal_pid(f, SIGKILL, log);
-                        }
-                        else if (key == 'x')
-                        {
-                            ov_ctrl_fps_pause_toggle(f, log);
                         }
                         else if (key == 'r')
                         {
@@ -3838,7 +3830,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if (lay->focus == OV_FOCUS_FPS)
             {
-                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (FPS): x r s k K ^e");
+                snprintf(ctrl_str, sizeof(ctrl_str), " | CTRL (FPS): r s k K ^e");
             }
             else if (lay->focus == OV_FOCUS_PROCS)
             {
