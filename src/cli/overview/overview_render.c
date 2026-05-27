@@ -506,6 +506,26 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_hittest(lay, m, ov_mouse_row, ov_mouse_col);
     ov_hittest_resolve_globals(lay, m);
 
+    /* Ensure there exists a valid selected parameter when in the PARAMS panel on F5 view */
+    if (lay->view == OV_VIEW_FPS && lay->sel_fps >= 0 && lay->sel_fps < m->nb_fps)
+    {
+        const OV_FPS   *fps = &m->fps[lay->sel_fps];
+        fps_tree_item_t items[1024];
+        int             nitems = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
+
+        if (nitems > 0)
+        {
+            if (lay->fps_param_sel < 0)
+            {
+                lay->fps_param_sel = 0;
+            }
+            else if (lay->fps_param_sel >= nitems)
+            {
+                lay->fps_param_sel = nitems - 1;
+            }
+        }
+    }
+
     /* One-shot sort: only runs once when the user
      * presses S or s.  Order stays frozen until
      * the user explicitly presses S/s again. */

@@ -471,8 +471,20 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
         char valstr[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
         switch (fp->type)
         {
+        case FPTYPE_UNDEF:
+            snprintf(valstr, sizeof(valstr), "[UNDEF]");
+            break;
+        case FPTYPE_INT32:
+            snprintf(valstr, sizeof(valstr), "%" PRIi32, fp->val.i32[0]);
+            break;
+        case FPTYPE_UINT32:
+            snprintf(valstr, sizeof(valstr), "%" PRIu32, fp->val.ui32[0]);
+            break;
         case FPTYPE_INT64:
             snprintf(valstr, sizeof(valstr), "%" PRIi64, fp->val.i64[0]);
+            break;
+        case FPTYPE_UINT64:
+            snprintf(valstr, sizeof(valstr), "%" PRIu64, fp->val.ui64[0]);
             break;
         case FPTYPE_FLOAT64:
             snprintf(valstr, sizeof(valstr), "%g", fp->val.f64[0]);
@@ -498,6 +510,9 @@ static void fill_fps_from_struct(OV_FPS *f, ov_fps_cache_t *ce)
         case FPTYPE_DIRNAME:
         case FPTYPE_FILENAME:
         case FPTYPE_EXECFILENAME:
+        case FPTYPE_FITSFILENAME:
+        case FPTYPE_PROCESS:
+        case FPTYPE_STRING_NOT_STREAM:
             strncpy(valstr, fp->val.string[0], sizeof(valstr) - 1);
             break;
         default:

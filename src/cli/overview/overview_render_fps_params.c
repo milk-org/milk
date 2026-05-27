@@ -266,6 +266,18 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
     fps_tree_item_t items[1024];
     int             nitems = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
 
+    if (lay->fps_param_focus == 1 && nitems > 0)
+    {
+        if (lay->fps_param_sel < 0)
+        {
+            lay->fps_param_sel = 0;
+        }
+        else if (lay->fps_param_sel >= nitems)
+        {
+            lay->fps_param_sel = nitems - 1;
+        }
+    }
+
     render_param_breadcrumb(lay, fps, r);
 
     if (nitems <= 0)
@@ -479,6 +491,15 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
  */
 void ov_render_fps_param_info(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
+    if (lay->fps_param_focus == 0)
+    {
+        /* Clear row 3 to prevent stale parameter info */
+        ov_buf_pos(3, 1);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_buf_hline(' ', lay->term_cols);
+        return;
+    }
+
     /* Clear rows 2 and 3 */
     ov_buf_pos(2, 1);
     ov_theme_bg(OV_BG_PANEL);
