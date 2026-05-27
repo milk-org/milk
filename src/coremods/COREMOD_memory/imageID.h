@@ -459,7 +459,7 @@ static inline IMGID _stream_connect_create_2D_impl(const char *__restrict imname
         imgc.mdt->naxis    = 2;
         imgc.mdt->size[0]  = xsize;
         imgc.mdt->size[1]  = ysize;
-        imgc.mdt->NBkw     = NB_KEYWNODE_MAX;
+        imgc.mdt->NBkw     = IMGID_NB_KEYWO_MAX;
         uint64_t imgerr    = imgid_compare(img, imgc);
         imgid_free(&imgc);
         printf("%lu errors\n", imgerr);
@@ -480,7 +480,7 @@ static inline IMGID _stream_connect_create_2D_impl(const char *__restrict imname
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
 
-        create_image_ID(imname, 2, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
+        create_image_ID(imname, 2, arraytmp, datatype, 1, IMGID_NB_KEYWO_MAX, 0, &img.ID);
     }
 
 
@@ -568,7 +568,7 @@ static inline IMGID stream_connect_create_3D(const char *__restrict imname,
         imgc.mdt->size[0]  = xsize;
         imgc.mdt->size[1]  = ysize;
         imgc.mdt->size[2]  = zsize;
-        imgc.mdt->NBkw     = NB_KEYWNODE_MAX;
+        imgc.mdt->NBkw     = IMGID_NB_KEYWO_MAX;
         uint64_t imgerr    = imgid_compare(img, imgc);
         imgid_free(&imgc);
         printf("%lu errors\n", imgerr);
@@ -592,7 +592,7 @@ static inline IMGID stream_connect_create_3D(const char *__restrict imname,
 
         printf("CREATING image size %u %u %u\n", xsize, ysize, zsize);
 
-        create_image_ID(imname, 3, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
+        create_image_ID(imname, 3, arraytmp, datatype, 1, IMGID_NB_KEYWO_MAX, 0, &img.ID);
     }
 
 

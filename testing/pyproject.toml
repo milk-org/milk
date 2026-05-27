@@ -1,0 +1,41 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=58", "wheel", 'cmake']
+
+[project]
+authors = [
+  {name = "Vincent Deo", email = "vdeo@naoj.org"},
+]
+description = "Milk test package"
+name = "noop_milktest"
+version = "1.0"
+#dependencies = []
+
+#[project.urls]
+#"Homepage" = "http://www.github.com/milk-org/pyMilk"
+
+
+[tool.setuptools.packages.find]
+include=["noop_milktest*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--import-mode=importlib",
+    "--ignore=mains/*",
+]
+
+[tool.pyright]
+typeCheckingMode = "basic" # off | basic | standard | strict # Look there https://github.com/microsoft/pyright/blob/main/docs/configuration.md
+include = ["pyMilk"]
+exclude = ["build/", "_build/",
+           "**/__pycache__",
+           "**/.pytest_cache",
+           ".eggs",
+           "*ctypes*"
+           ]
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonVersion = "3.10"
+pythonPlatform = "Linux"

@@ -27,7 +27,7 @@ typedef const char *__restrict CONST_WORD;
 typedef int errno_t;
 #endif
 
-#define IMGID_NB_KEYWO_MAX 10
+#define IMGID_NB_KEYWO_MAX 50
 
 /* Buffer for a full FPS parameter key, e.g.
  * "mfilt-00.inmval": FPS name (STRINGMAXLEN_FPS_NAME)
@@ -609,7 +609,7 @@ static inline uint64_t imgid_compare(IMGID img, IMGID imgtemplate)
     }
 
     printf("Checking NBkw           ");
-    if (imgtemplate.mdt->NBkw != img.mdt->NBkw)
+    if (imgtemplate.mdt->NBkw > img.mdt->NBkw)
     {
         printf("FAIL\n");
         printf("   %4u  %s\n", imgtemplate.mdt->NBkw, imgtemplate.name);

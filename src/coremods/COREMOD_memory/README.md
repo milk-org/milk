@@ -63,9 +63,13 @@ Memory management for images
 
 ## Standalone Executables
 
-| Executable                   | Source File    | Description              |
-| ---------------------------- | -------------- | ------------------------ |
-| `milk-fpsexec-mem-streamave` | `stream_ave.c` | Average stream of images |
+| Executable                     | Source File           | Description              |
+| ------------------------------ | --------------------- | ------------------------ |
+| `milk-fpsexec-mem-streamave`   | `stream_ave.c`        | Average stream of images |
+| `milk-fpsexec-mem-streampoke`  | `stream_poke.c`       |                          |
+| `milk-fpsexec-mem-streamcopy`  | `stream_copy.c`       |                          |
+| `milk-fpsexec-mem-streamdelay` | `stream_delay.c`      |                          |
+| `milk-fpsexec-imkwadd`         | `image_keyword_add.c` |                          |
 
 ## Dependencies
 

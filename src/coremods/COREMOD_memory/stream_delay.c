@@ -142,6 +142,8 @@ static errno_t streamdelay(IMGID            inimg,
 
     int  updateflag              = 0;
     long bufferindex_output_last = 0;
+    printf("Entering streamDelay while\n");
+    fflush(stdout);
     while ((warray[bufferindex_output] == 0) && (tdiffv > (delaysec)))
     {
         updateflag                 = 1;
@@ -157,6 +159,8 @@ static errno_t streamdelay(IMGID            inimg,
         tdiff  = timespec_diff(tarray[bufferindex_output], tnow);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }
+    printf("Exiting streamDelay while\n");
+    fflush(stdout);
 
     if (updateflag == 1)
     {
@@ -190,19 +194,20 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t __attribute__((unused)) compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
+    // TODO: just doesn't work for not 2D streams. Because the buffer and all.
     IMGID inimg = imgid_make_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID outimg = imgid_make_from_name(outimname);
-    imcreatelikewiseIMGID(&outimg, &inimg);
-
-    IMGID bufferimg         = imgid_make_from_name_3D("streamdelaybuff", inimg.mdt->size[0],
-                                                      inimg.mdt->size[1], timebuffsize);
+    IMGID outimg    = stream_connect_create_2D(outimname, inimg.md->size[0], inimg.md->size[1],
+                                               inimg.md->datatype);
+    IMGID bufferimg = imgid_make_from_name_3D("streamdelaybuff", inimg.mdt->size[0],
+                                              inimg.mdt->size[1], timebuffsize);
     bufferimg.mdt->datatype = inimg.mdt->datatype;
+    bufferimg.mdt->shared   = 0;
     imcreateIMGID(&bufferimg);
 
     struct timespec *timeinarray;
@@ -225,8 +230,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     list_image_ID();
     int status = 0;
 
+    printf("----- Here\n");
+    fflush(stdout);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+
+    printf("----- Now there\n");
+    fflush(stdout);
 
     streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
     if (status != 0)
@@ -234,7 +245,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END free(timeinarray);
+    printf("----- Now tttthere\n");
+    fflush(stdout);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    free(timeinarray);
     free(warray);
     imgid_free(&inimg);
     imgid_free(&outimg);
