@@ -11,6 +11,9 @@ target_include_directories(milkfpsseq PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/libfpsseq>
 )
+target_include_directories(milkfpsseq PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps/cmd>
+)
 target_link_libraries(milkfpsseq PUBLIC
     milkfps milkprocessinfo ImageStreamIO rt)
 install(TARGETS milkfpsseq
