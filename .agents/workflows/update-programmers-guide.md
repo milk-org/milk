@@ -11,9 +11,11 @@ This workflow is used when the user explicitly requests an update to the `milk` 
 
 2. **Scan for Recent Changes:**
    Execute a search for recent changes utilizing `run_command` in git:
+
    ```bash
    git log --oneline -n 20
    ```
+
    Or explicitly request the user if there are any specific architectural shifts they want covered.
 
 3. **Check Core Layout Conventions:**

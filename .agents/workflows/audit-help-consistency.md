@@ -13,6 +13,7 @@ documentation is up to date.
 
 Read the cross-reference groups defined in the
 agent rule:
+
 ```
 .agents/rules/help-consistency.md
 ```
@@ -20,6 +21,7 @@ agent rule:
 ## 2. Scan Recent Changes
 
 Check which help-related files have changed recently:
+
 ```bash
 git log --oneline --name-only -n 30 -- \
   'src/cli/CLIcore/milk-cli-help*.c' \
@@ -55,9 +57,11 @@ were detected in step 2.
 
 Verify that every installed fpsexec has a meaningful
 `.description` in its `FPS_APP_INFO`. Run:
+
 ```bash
 milk-fpsexec-list
 ```
+
 and compare against the source code descriptions.
 Flag any placeholder or empty descriptions.
 
@@ -71,6 +75,7 @@ and explain each update in the task summary.
 ## 6. Report
 
 Notify the user with:
+
 - Number of cross-reference groups checked.
 - Number of inconsistencies found and fixed.
 - Any items that could not be auto-fixed (e.g.,

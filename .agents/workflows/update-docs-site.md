@@ -25,12 +25,12 @@ $ /tmp/mkdocs-venv/bin/pip install mkdocs-material
 Place new files under `docs/` in the appropriate
 subdirectory:
 
-| Content type | Directory |
-|-------------|-----------|
-| Installation / setup | `docs/install/` |
-| CLI documentation | `docs/cli/` |
-| Developer guides | `docs/developer/` |
-| Top-level concepts | `docs/` (root) |
+| Content type         | Directory         |
+| -------------------- | ----------------- |
+| Installation / setup | `docs/install/`   |
+| CLI documentation    | `docs/cli/`       |
+| Developer guides     | `docs/developer/` |
+| Top-level concepts   | `docs/` (root)    |
 
 Add YAML frontmatter to the very top of the new markdown
 file to categorize it in the Tag Index (`docs/tags.md`):
@@ -54,11 +54,11 @@ Add the new page to the correct tab section in the
 ```yaml
 nav:
   - Home: index.md
-  - Getting Started:    # install, build, CLI overview, FAQ
-  - User Guide:         # streams, FPS, procinfo, CLI, scripts
-  - Developer Guide:    # tutorial, coding standards, plugins
-  - Architecture:       # programmer's guide, dep graph
-  - Operations:         # performance, PGO/LTO, debugging
+  - Getting Started: # install, build, CLI overview, FAQ
+  - User Guide: # streams, FPS, procinfo, CLI, scripts
+  - Developer Guide: # tutorial, coding standards, plugins
+  - Architecture: # programmer's guide, dep graph
+  - Operations: # performance, PGO/LTO, debugging
   - API Reference: api/html/index.html
 ```
 
@@ -68,6 +68,7 @@ Add the new page link to the appropriate section on
 the homepage so it appears in the landing page index.
 
 // turbo
+
 ### 4. Test the build locally
 
 ```bash
@@ -79,6 +80,7 @@ Warnings about `../` links to files outside `docs/` are
 expected and can be ignored.
 
 // turbo
+
 ### 5. Preview locally (optional)
 
 ```bash
@@ -96,6 +98,7 @@ a PR targeting `framework-dev`.
 
 The documentation CI workflow triggers automatically
 when files matching these paths change:
+
 - `docs/**`
 - `mkdocs.yml`
 - `Doxyfile`

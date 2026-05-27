@@ -9,9 +9,9 @@ description: Architectural error-handling boundary —
 This rule complements `error-handling-practices.md`
 (logging macros, return codes, cleanup) and
 `cli-error-help.md` (CLIcore arg-parse error display).
-Where those documents cover *how* to report and
-propagate errors, this one covers *who* may end the
-process and *what* a function's signature must look
+Where those documents cover _how_ to report and
+propagate errors, this one covers _who_ may end the
+process and _what_ a function's signature must look
 like.
 
 ## 1. The Boundary: Who May Call `exit()` / `abort()`
@@ -98,7 +98,7 @@ and the codes must satisfy
 - `EXECUTE_SYSTEM_COMMAND_NOCHECK(format, ...)` is the
   opt-in silent variant. Use it only when the exit
   status genuinely doesn't matter (e.g. a `tmux
-  kill-session` whose absence is expected) and document
+kill-session` whose absence is expected) and document
   the reason in a one-line comment above the call.
 - New code reaches for the checked default. Existing
   `_NOCHECK` call sites should be audited
@@ -113,9 +113,9 @@ For executables with their own `main()` (`milkCTRL`,
 `milk-procinfo-info`, `milk-fps-*` wrappers,
 `milk-streamCTRL`, `milk-fpsCTRL`, `milk-procCTRL`):
 
-| Code | Meaning                                      |
-|------|----------------------------------------------|
-| `0`  | Success                                      |
+| Code | Meaning                                     |
+| ---- | ------------------------------------------- |
+| `0`  | Success                                     |
 | `1`  | Runtime error (file not found, IPC failure) |
 | `2`  | Usage error (bad args, missing required)    |
 

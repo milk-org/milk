@@ -14,20 +14,20 @@ exclusively on stream diagnostics with higher detail.
 
 ## Files
 
-| File | Description |
-|------|-------------|
-| `milk-streamCTRL.c` | Entry point |
-| `streamCTRL_TUI.c/.h` | Main TUI rendering and input loop |
-| `streamCTRL_TUIcompat.c/.h` | Terminal compatibility layer |
-| `streamCTRL_scan.c/.h` | SHM directory scanner |
-| `streamCTRL_find_streams.c/.h` | Stream discovery |
-| `streamCTRL_utilfuncs.c/.h` | Shared utility functions |
-| `streamCTRL_print_inode.c/.h` | Inode display helpers |
-| `streamCTRL_print_procpid.c/.h` | PID display helpers |
-| `streamCTRL_print_trace.c/.h` | Stream trace rendering |
-| `streamCTRL_defs.h` | Shared constants and struct defs |
-| `streamCTRL_ansi.h` | ANSI color/style definitions |
-| `mmon_ui.c` | Minimal stream monitor mode |
+| File                            | Description                       |
+| ------------------------------- | --------------------------------- |
+| `milk-streamCTRL.c`             | Entry point                       |
+| `streamCTRL_TUI.c/.h`           | Main TUI rendering and input loop |
+| `streamCTRL_TUIcompat.c/.h`     | Terminal compatibility layer      |
+| `streamCTRL_scan.c/.h`          | SHM directory scanner             |
+| `streamCTRL_find_streams.c/.h`  | Stream discovery                  |
+| `streamCTRL_utilfuncs.c/.h`     | Shared utility functions          |
+| `streamCTRL_print_inode.c/.h`   | Inode display helpers             |
+| `streamCTRL_print_procpid.c/.h` | PID display helpers               |
+| `streamCTRL_print_trace.c/.h`   | Stream trace rendering            |
+| `streamCTRL_defs.h`             | Shared constants and struct defs  |
+| `streamCTRL_ansi.h`             | ANSI color/style definitions      |
+| `mmon_ui.c`                     | Minimal stream monitor mode       |
 
 ## Build Tier
 

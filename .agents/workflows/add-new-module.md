@@ -10,6 +10,7 @@ for milk or cacao. It ensures nothing is missed.
 ## 1. Gather Information
 
 Ask the user for:
+
 - **Module name** (e.g., `image_filter`)
 - **Library name** (e.g., `milkimagefilter`)
 - **Location**: `src/` (core) or `plugins/` (plugin)
@@ -18,10 +19,10 @@ Ask the user for:
 
 > **Note:** If creating a plugin, refer to the `plugin-creator` skill and the `/create-plugin` workflow for plugin-specific guidance on group folder selection.
 
-
 ## 2. Create Directory Structure
 
 Create the module directory with these files:
+
 ```
 <module_name>/
 ├── <module_name>.c       # Module registration
@@ -34,6 +35,7 @@ Create the module directory with these files:
 
 Use `src/milk_module_example/milk_module_example.c`
 as the template. Update:
+
 - Module name, short name, package
 - Version numbers
 - `initModule()` function with the correct
@@ -44,6 +46,7 @@ as the template. Update:
 All source files in the module must use the
 conditional include pattern so they compile both
 as shared library and standalone executable:
+
 ```c
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
@@ -66,6 +69,7 @@ existing module's CMakeLists.txt as reference
 (e.g., `src/coremods/COREMOD_arith/CMakeLists.txt`).
 
 Key elements:
+
 - `add_library(<libname> SHARED ...)`
 - `target_link_libraries` with required dependencies
 - `target_include_directories`
@@ -77,6 +81,7 @@ Key elements:
 
 If the module will have standalone executables,
 **also** create a `_compute` variant:
+
 ```cmake
 set(LIBNAME_COMPUTE ${LIBNAME}_compute)
 add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
@@ -85,6 +90,7 @@ target_compile_definitions(
 target_link_libraries(
     ${LIBNAME_COMPUTE} PRIVATE milkdata ImageStreamIO)
 ```
+
 Standalone executables must **never** link `CLIcore`.
 The `_compute` variant is compiled with `MILK_NO_CLI`
 and links only engine libraries.
@@ -92,6 +98,7 @@ and links only engine libraries.
 ## 6. README.md
 
 Create a README following the standardized template:
+
 - One-line module description
 - Source file table (`| File | Description |`)
 - Dependency list
@@ -100,6 +107,7 @@ Create a README following the standardized template:
 
 Add `add_subdirectory(<module_name>)` in the
 appropriate parent `CMakeLists.txt`:
+
 - For core modules: `src/CMakeLists.txt`
 - For plugins: the plugin's root `CMakeLists.txt`
 

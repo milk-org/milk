@@ -12,6 +12,7 @@ updates.
 ## 1. Gather Information
 
 Ask the user for:
+
 - **Target module directory** (e.g.,
   `~/src/milk/src/coremods/COREMOD_arith`)
 - **C filename** for the new command (e.g.,
@@ -31,6 +32,7 @@ module directory. Use the V2 pattern from
 section 8 if no standalone is needed).
 
 ### Minimal non-FPS command structure:
+
 ```c
 #include "CLIcore.h"
 
@@ -77,6 +79,7 @@ errno_t CLIADDCMD_COREMOD_arith__mynewcmd()
 ## 3. Create the Header
 
 Create `<name>.h` with the function prototype:
+
 ```c
 #ifndef <MODULE>_<NAME>_H
 #define <MODULE>_<NAME>_H
@@ -90,6 +93,7 @@ errno_t CLIADDCMD_<module>__<name>();
 
 In the module's main `.c` file (e.g.,
 `COREMOD_arith.c`):
+
 1. `#include "<name>.h"`
 2. Add `CLIADDCMD_<module>__<name>();` inside
    `initModule()`

@@ -11,9 +11,9 @@ The interactive CLI is provided by the `milk-cli` executable
 `src/cli/CLIcore/`.
 
 !!! note
-    Standalone executables (`milk-fpsexec-*`) have their own
-    command-line interfaces. See
-    [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
+Standalone executables (`milk-fpsexec-*`) have their own
+command-line interfaces. See
+[FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
 
 See also: [FPS](../fps.md) ·
 [Streams](../streams.md) ·
@@ -32,31 +32,31 @@ behavior, and loading additional modules.
 When launching `milk-cli`, the following arguments are
 available:
 
-| Option | Description |
-|--------|-------------|
-| `-h`, `--help` | Print help and exit |
-| `-h1`, `--help-oneline` | Print one-line description and exit |
-| `-h2`, `--help-description` | Print verbose description and exit |
-| `-hm`, `--help-mono` | Print help message without ANSI colors and exit |
-| `-v`, `--version` | Print version and exit |
-| `-i`, `--info` | Print version, settings, info and exit |
-| `--verbose` | Be verbose |
-| `-d`, `--debug=LEVEL` | Set debug level at startup |
-| `-o`, `--overwrite` | Auto-overwrite FITS files (**use with caution**) |
-| `-e`, `--errorexit` | Exit on command error |
-| `-Z`, `--idle` | Only run process when X is idle |
-| `--listimf` | Write image list to `imlist.txt` |
-| `-n`, `--pname=NAME` | Rename process |
-| `-p`, `--priority=PR` | Set RT priority (0–99, higher = higher) |
-| `-f`, `--fifoflag` | Enable fifo input; auto-generate fifo path |
-| `-F`, `--fifoname=PATH` | Enable fifo input; use custom fifo path |
-| `-c`, `--command=CMD` | Execute single command and exit |
-| `-s`, `--startup=FILE` | Feed startup file into fifo (requires `-f` or `-F`) |
-| `-A`, `--autocomplete` | Enable autocomplete preview |
-| `--no-autocomplete` | Disable autocomplete |
-| `--no-history-suggest` | Disable ghost history suggestions |
-| `--no-arg-hints` | Disable argument hint bar |
-| `--no-fuzzy` | Disable fuzzy matching in completions |
+| Option                      | Description                                         |
+| --------------------------- | --------------------------------------------------- |
+| `-h`, `--help`              | Print help and exit                                 |
+| `-h1`, `--help-oneline`     | Print one-line description and exit                 |
+| `-h2`, `--help-description` | Print verbose description and exit                  |
+| `-hm`, `--help-mono`        | Print help message without ANSI colors and exit     |
+| `-v`, `--version`           | Print version and exit                              |
+| `-i`, `--info`              | Print version, settings, info and exit              |
+| `--verbose`                 | Be verbose                                          |
+| `-d`, `--debug=LEVEL`       | Set debug level at startup                          |
+| `-o`, `--overwrite`         | Auto-overwrite FITS files (**use with caution**)    |
+| `-e`, `--errorexit`         | Exit on command error                               |
+| `-Z`, `--idle`              | Only run process when X is idle                     |
+| `--listimf`                 | Write image list to `imlist.txt`                    |
+| `-n`, `--pname=NAME`        | Rename process                                      |
+| `-p`, `--priority=PR`       | Set RT priority (0–99, higher = higher)             |
+| `-f`, `--fifoflag`          | Enable fifo input; auto-generate fifo path          |
+| `-F`, `--fifoname=PATH`     | Enable fifo input; use custom fifo path             |
+| `-c`, `--command=CMD`       | Execute single command and exit                     |
+| `-s`, `--startup=FILE`      | Feed startup file into fifo (requires `-f` or `-F`) |
+| `-A`, `--autocomplete`      | Enable autocomplete preview                         |
+| `--no-autocomplete`         | Disable autocomplete                                |
+| `--no-history-suggest`      | Disable ghost history suggestions                   |
+| `--no-arg-hints`            | Disable argument hint bar                           |
+| `--no-fuzzy`                | Disable fuzzy matching in completions               |
 
 **Examples:**
 
@@ -88,13 +88,13 @@ milk-cli > setprompt "%u@%h %d > "
 user@host src >
 ```
 
-| Token | Expands to |
-|-------|------------|
-| `%h` | hostname |
-| `%u` | username |
-| `%d` | current directory basename |
-| `%t` | HH:MM:SS |
-| `%n` | process name |
+| Token | Expands to                 |
+| ----- | -------------------------- |
+| `%h`  | hostname                   |
+| `%u`  | username                   |
+| `%d`  | current directory basename |
+| `%t`  | HH:MM:SS                   |
+| `%n`  | process name               |
 
 ### Module Loading
 
@@ -183,8 +183,8 @@ milk-cli > synhl on              # enable (default)
 ```
 
 !!! tip
-    If you encounter rendering issues with syntax
-    highlighting, disable it with `synhl off`.
+If you encounter rendering issues with syntax
+highlighting, disable it with `synhl off`.
 
 ### Auto-Correction
 
@@ -266,12 +266,12 @@ history.
 
 ### History Expansion
 
-| Shortcut | Description |
-|----------|-------------|
-| `!!` | Re-run the last command |
-| `!! args` | Append `args` to the last command |
-| `!$` | Insert the last argument of the previous command |
-| `!prefix` | Re-run the last command starting with `prefix` |
+| Shortcut  | Description                                      |
+| --------- | ------------------------------------------------ |
+| `!!`      | Re-run the last command                          |
+| `!! args` | Append `args` to the last command                |
+| `!$`      | Insert the last argument of the previous command |
+| `!prefix` | Re-run the last command starting with `prefix`   |
 
 The expanded command is printed with a `>>` prefix before
 execution.
@@ -336,12 +336,12 @@ variables, arithmetic, flow control (`if`/`while`/`for`),
 and user-defined functions. See the
 [Scripting](scripting.md) page for full documentation.
 
-| Command | Description |
-|---------|-------------|
-| `source <file>` | Execute a script file |
-| `. <file>` | Same as `source` (dot-source) |
-| `savescript <file>` | Save variables and functions to file |
-| `savehistory <file>` | Save command history to file |
+| Command              | Description                          |
+| -------------------- | ------------------------------------ |
+| `source <file>`      | Execute a script file                |
+| `. <file>`           | Same as `source` (dot-source)        |
+| `savescript <file>`  | Save variables and functions to file |
+| `savehistory <file>` | Save command history to file         |
 
 ### Command Timing
 
@@ -514,9 +514,9 @@ external processes to send commands to a running
 
 **Enabling FIFO mode:**
 
-| Flag | Effect |
-|------|--------|
-| `-f` / `--fifoflag` | Enable fifo; path auto-generated |
+| Flag                          | Effect                               |
+| ----------------------------- | ------------------------------------ |
+| `-f` / `--fifoflag`           | Enable fifo; path auto-generated     |
 | `-F PATH` / `--fifoname=PATH` | Enable fifo; use `PATH` as fifo file |
 
 The auto-generated path follows the template:
@@ -613,4 +613,5 @@ milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
 ```
 
 ---
+
 ← [Documentation Index](../index.md)

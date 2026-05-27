@@ -71,6 +71,7 @@ typedef struct {
 ```
 
 Access pixel data through the typed union:
+
 ```c
 float *data = img->array.F;
 data[pixel_index] = value;
@@ -78,10 +79,10 @@ data[pixel_index] = value;
 
 ## IMGID vs IMAGE
 
-| Struct | Purpose |
-|--------|---------|
+| Struct  | Purpose                                                                   |
+| ------- | ------------------------------------------------------------------------- |
 | `IMGID` | High-level handle with name, size, modifiers. Use in function interfaces. |
-| `IMAGE` | Low-level SHM-mapped struct. Access via `imgid.im`. |
+| `IMAGE` | Low-level SHM-mapped struct. Access via `imgid.im`.                       |
 
 ```c
 IMGID imgid = imgid_make_from_name("mystream");
@@ -140,12 +141,12 @@ int semindex = ImageStreamIO_getsemwaitindex(
 
 ### Common Semaphore Issues
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Reader never wakes | Writer not posting | Add `ImageStreamIO_sempost(img, -1)` |
-| Reader busy-spins | Sem leaked (value > 0) | Reset with `sem_init()` or `ImageStreamIO_seminit()` |
-| Multiple readers miss frames | All on same semindex | Each reader needs unique index |
-| Frames arrive too fast | Reader slower than writer | Check loop timing, skip frames |
+| Symptom                      | Cause                     | Fix                                                  |
+| ---------------------------- | ------------------------- | ---------------------------------------------------- |
+| Reader never wakes           | Writer not posting        | Add `ImageStreamIO_sempost(img, -1)`                 |
+| Reader busy-spins            | Sem leaked (value > 0)    | Reset with `sem_init()` or `ImageStreamIO_seminit()` |
+| Multiple readers miss frames | All on same semindex      | Each reader needs unique index                       |
+| Frames arrive too fast       | Reader slower than writer | Check loop timing, skip frames                       |
 
 ## Circular Buffer (Cube) Mode
 
@@ -197,26 +198,26 @@ ImageStreamIO_createIm(
 
 ## Key Functions
 
-| Function | Purpose |
-|----------|---------|
-| `ImageStreamIO_createIm()` | Create a new SHM stream |
-| `ImageStreamIO_openIm()` | Connect to existing stream |
-| `ImageStreamIO_closeIm()` | Disconnect (don't destroy) |
-| `ImageStreamIO_destroyIm()` | Delete SHM file |
-| `ImageStreamIO_sempost()` | Post semaphore(s) |
-| `ImageStreamIO_semwait()` | Wait on semaphore |
-| `ImageStreamIO_getsemwaitindex()` | Get unique sem index |
-| `ImageStreamIO_seminit()` | Reset semaphore |
+| Function                          | Purpose                    |
+| --------------------------------- | -------------------------- |
+| `ImageStreamIO_createIm()`        | Create a new SHM stream    |
+| `ImageStreamIO_openIm()`          | Connect to existing stream |
+| `ImageStreamIO_closeIm()`         | Disconnect (don't destroy) |
+| `ImageStreamIO_destroyIm()`       | Delete SHM file            |
+| `ImageStreamIO_sempost()`         | Post semaphore(s)          |
+| `ImageStreamIO_semwait()`         | Wait on semaphore          |
+| `ImageStreamIO_getsemwaitindex()` | Get unique sem index       |
+| `ImageStreamIO_seminit()`         | Reset semaphore            |
 
 ## Source Files
 
-| File | Role |
-|------|------|
-| `src/engine/ImageStreamIO/ImageStreamIO.c` | Core SHM operations |
-| `src/engine/ImageStreamIO/ImageStreamIO.h` | Public API |
-| `src/engine/ImageStreamIO/ImageStruct.h` | IMAGE struct definition |
-| `src/engine/libmilkdata/imgid.c` | IMGID creation/parsing |
-| `src/engine/libmilkdata/imgid.h` | IMGID struct definition |
+| File                                       | Role                    |
+| ------------------------------------------ | ----------------------- |
+| `src/engine/ImageStreamIO/ImageStreamIO.c` | Core SHM operations     |
+| `src/engine/ImageStreamIO/ImageStreamIO.h` | Public API              |
+| `src/engine/ImageStreamIO/ImageStruct.h`   | IMAGE struct definition |
+| `src/engine/libmilkdata/imgid.c`           | IMGID creation/parsing  |
+| `src/engine/libmilkdata/imgid.h`           | IMGID struct definition |
 
 ## Debugging Tips
 

@@ -115,7 +115,7 @@ non-GCC compilers.
 
 - Replace manual struct copies or small array copies
   in hot paths with `__builtin_memcpy(dest, src,
-  size)`. This allows GCC to emit optimal inline
+size)`. This allows GCC to emit optimal inline
   move instructions instead of calling libc `memcpy`
   or generating sub-optimal loop code.
 - In stream-copy fallback paths that handle any
@@ -146,7 +146,7 @@ non-GCC compilers.
   `cblas_sgemv()` / `cblas_sgemm()` from
   MKL or OpenBLAS (already linked via CMake).
 - Provide a plain-C fallback with `restrict`
-  + `#pragma omp simd` for non-BLAS builds.
+  - `#pragma omp simd` for non-BLAS builds.
 - Remove `printf()` from CPU fallback
   functions — IO in hot paths is fatal to
   latency.

@@ -153,7 +153,7 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment, linking securely to only the `_compute` variants of libraries. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
 
 !!! tip
-    **Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to integrate custom plugins into the build system.
+**Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to integrate custom plugins into the build system.
 
 ## 5. Dependency Architecture
 
@@ -171,13 +171,13 @@ Compute unit source files use conditional includes to support both CLI and stand
 #include "fps.h"                  /* FPS types (always needed) */
 ```
 
-| Header | Provides | When to use |
-|--------|----------|-------------|
-| `CLIcore.h` | CLICMDDATA, CMDARGTOKEN, INSERT_STD macros, module registration | Dual-mode files (CLI + standalone) |
-| `CLIcore_standalone.h` | Stub types, static inline no-ops | Auto-selected when `MILK_NO_CLI` is defined |
-| `fps.h` | FPS types, X-macro expanders, FPS_MAIN_STANDALONE_V2 | Always needed for FPS compute units |
-| `libmilkdata/milkdata.h` | IMGID, imageID, dcimg, dcnimg | Compute-only files that work with images |
-| `milkDebugTools.h` | PRINT_ERROR, DEBUG_TRACE* | Compute-only files that use debug macros |
+| Header                   | Provides                                                        | When to use                                 |
+| ------------------------ | --------------------------------------------------------------- | ------------------------------------------- |
+| `CLIcore.h`              | CLICMDDATA, CMDARGTOKEN, INSERT_STD macros, module registration | Dual-mode files (CLI + standalone)          |
+| `CLIcore_standalone.h`   | Stub types, static inline no-ops                                | Auto-selected when `MILK_NO_CLI` is defined |
+| `fps.h`                  | FPS types, X-macro expanders, FPS_MAIN_STANDALONE_V2            | Always needed for FPS compute units         |
+| `libmilkdata/milkdata.h` | IMGID, imageID, dcimg, dcnimg                                   | Compute-only files that work with images    |
+| `milkDebugTools.h`       | PRINT_ERROR, DEBUG_TRACE\*                                      | Compute-only files that use debug macros    |
 
 </details>
 
@@ -187,10 +187,10 @@ Compute unit source files use conditional includes to support both CLI and stand
 The build system maintains two library variants
 for each module:
 
-| Variant | Suffix | Compiled with | Linked by |
-|---------|--------|--------------|----------|
-| Full | `.so` | *(default)* | `milk-cli`, module `.so` |
-| Compute-only | `_compute.so` | `MILK_NO_CLI` | `fpsexec` standalones |
+| Variant      | Suffix        | Compiled with | Linked by                |
+| ------------ | ------------- | ------------- | ------------------------ |
+| Full         | `.so`         | _(default)_   | `milk-cli`, module `.so` |
+| Compute-only | `_compute.so` | `MILK_NO_CLI` | `fpsexec` standalones    |
 
 `_compute` variants contain pure computation code
 with no CLI registration. This keeps standalones
@@ -200,10 +200,10 @@ When `USE_STATIC_LTO=ON`, a third variant is
 built — static archives (`.a`) of the same
 compute-only code:
 
-| Variant | File | Purpose |
-|---------|------|---------|
-| Dynamic compute | `_compute.so` | Default fpsexec link |
-| Static compute | `_compute.a` | LTO-optimized fpsexec link |
+| Variant         | File          | Purpose                    |
+| --------------- | ------------- | -------------------------- |
+| Dynamic compute | `_compute.so` | Default fpsexec link       |
+| Static compute  | `_compute.a`  | LTO-optimized fpsexec link |
 
 With static archives, GCC's LTO can inline and
 optimize across all library boundaries. See
@@ -211,11 +211,11 @@ optimize across all library boundaries. See
 
 **CMake standalone helpers:**
 
-| CMake function | Links | Use for |
-|----------------|-------|---------|
-| `add_milk_standalone()` | COREMOD _compute libs, milkfps, milkdata, ImageStreamIO | milk-fpsexec-* executables |
-| `add_cacao_standalone()` | Same as above | cacao-fpsexec-* (no plugin deps) |
-| `add_cacao_standalone_plugins()` | Above + selected plugin _compute libs | cacao-fpsexec-* that use plugin functions |
+| CMake function                   | Links                                                    | Use for                                    |
+| -------------------------------- | -------------------------------------------------------- | ------------------------------------------ |
+| `add_milk_standalone()`          | COREMOD \_compute libs, milkfps, milkdata, ImageStreamIO | milk-fpsexec-\* executables                |
+| `add_cacao_standalone()`         | Same as above                                            | cacao-fpsexec-\* (no plugin deps)          |
+| `add_cacao_standalone_plugins()` | Above + selected plugin \_compute libs                   | cacao-fpsexec-\* that use plugin functions |
 
 **💡 Tip:** Use `_compute` variants of libraries
 (e.g. `milkstatistic_compute`) when linking standalone
@@ -227,11 +227,11 @@ CLIcore.
 <details markdown="1">
 <summary><b>Compile-Time Guards</b></summary>
 
-| Macro | Set by | Effect |
-|-------|--------|--------|
-| `MILK_NO_CLI` | CMake (`-DMILK_NO_CLI`) | Excludes CLI registration code, uses `CLIcore_standalone.h` |
-| `FPS_STANDALONE` | CMake (`-DFPS_STANDALONE`) | Includes `main()` via `FPS_MAIN_STANDALONE_V2` |
-| `USE_CLI` | CMake option | Controls whether CLI targets are built |
+| Macro            | Set by                     | Effect                                                      |
+| ---------------- | -------------------------- | ----------------------------------------------------------- |
+| `MILK_NO_CLI`    | CMake (`-DMILK_NO_CLI`)    | Excludes CLI registration code, uses `CLIcore_standalone.h` |
+| `FPS_STANDALONE` | CMake (`-DFPS_STANDALONE`) | Includes `main()` via `FPS_MAIN_STANDALONE_V2`              |
+| `USE_CLI`        | CMake option               | Controls whether CLI targets are built                      |
 
 </details>
 
@@ -287,11 +287,11 @@ add_test(...)
 
 Defined in `cmake/MilkStandalone.cmake` (included by root CMakeLists):
 
-| Function | Creates | Plugin deps |
-|----------|---------|-------------|
-| `add_milk_standalone(name src)` | `milk-fpsexec-name` | None |
-| `add_cacao_standalone(name src)` | `cacao-fpsexec-name` | None |
-| `add_cacao_standalone_plugins(name src [p…])` | `cacao-fpsexec-name` | Selected |
+| Function                                      | Creates              | Plugin deps |
+| --------------------------------------------- | -------------------- | ----------- |
+| `add_milk_standalone(name src)`               | `milk-fpsexec-name`  | None        |
+| `add_cacao_standalone(name src)`              | `cacao-fpsexec-name` | None        |
+| `add_cacao_standalone_plugins(name src [p…])` | `cacao-fpsexec-name` | Selected    |
 
 </details>
 
@@ -364,11 +364,10 @@ Each module directory should have a `README.md` with:
 
 </details>
 
-***
+---
 
+_(This guide is automatically updated by your coding agent using the [/update-programmers-guide](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md) workflow)_
 
-*(This guide is automatically updated by your coding agent using the [/update-programmers-guide](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md) workflow)*
+---
 
-
-***
 ← [Documentation Index](index.md)

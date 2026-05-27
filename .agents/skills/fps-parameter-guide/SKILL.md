@@ -38,36 +38,36 @@ X-macro in section 3 of the V2 layout:
 
 ### X-Macro Fields
 
-| Position | Field | Description |
-|----------|-------|-------------|
-| 1 | Keyword | FPS parameter name (`.prefix`) |
-| 2 | Variable | Pointer to local C variable |
-| 3 | Type | `FPTYPE_*` constant |
-| 4 | is_primary | 1 if primary CLI argument, 0 otherwise |
-| 5 | Flags | `FPFLAG_*` bitfield |
-| 6 | Description | Human-readable description |
+| Position | Field       | Description                            |
+| -------- | ----------- | -------------------------------------- |
+| 1        | Keyword     | FPS parameter name (`.prefix`)         |
+| 2        | Variable    | Pointer to local C variable            |
+| 3        | Type        | `FPTYPE_*` constant                    |
+| 4        | is_primary  | 1 if primary CLI argument, 0 otherwise |
+| 5        | Flags       | `FPFLAG_*` bitfield                    |
+| 6        | Description | Human-readable description             |
 
 ## Parameter Types (`FPTYPE_*`)
 
-| Type | C Variable |
-|------|------------|
-| `FPTYPE_INT32` | `int32_t` |
-| `FPTYPE_UINT32` | `uint32_t` |
-| `FPTYPE_INT64` | `int64_t` |
-| `FPTYPE_UINT64` | `uint64_t` |
-| `FPTYPE_FLOAT32` | `float` |
-| `FPTYPE_FLOAT64` | `double` |
-| `FPTYPE_STRING` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
-| `FPTYPE_ONOFF` | `int32_t` |
-| `FPTYPE_FILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
-| `FPTYPE_FITSFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
-| `FPTYPE_EXECFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
-| `FPTYPE_DIRNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
-| `FPTYPE_STREAMNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
-| `FPTYPE_FPSNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
-| `FPTYPE_PID` | `pid_t` |
-| `FPTYPE_TIMESPEC` | `struct timespec` |
-| `FPTYPE_PROCESS` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| Type                       | C Variable                           |
+| -------------------------- | ------------------------------------ |
+| `FPTYPE_INT32`             | `int32_t`                            |
+| `FPTYPE_UINT32`            | `uint32_t`                           |
+| `FPTYPE_INT64`             | `int64_t`                            |
+| `FPTYPE_UINT64`            | `uint64_t`                           |
+| `FPTYPE_FLOAT32`           | `float`                              |
+| `FPTYPE_FLOAT64`           | `double`                             |
+| `FPTYPE_STRING`            | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_ONOFF`             | `int32_t`                            |
+| `FPTYPE_FILENAME`          | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_FITSFILENAME`      | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_EXECFILENAME`      | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_DIRNAME`           | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_STREAMNAME`        | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_FPSNAME`           | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_PID`               | `pid_t`                              |
+| `FPTYPE_TIMESPEC`          | `struct timespec`                    |
+| `FPTYPE_PROCESS`           | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
 | `FPTYPE_STRING_NOT_STREAM` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
 
 ### String-Type Parameters
@@ -109,10 +109,10 @@ X(".NBiter", &nbiter, FPTYPE_INT64, 0,
 
 ### CLI Input Flags
 
-| Flag | Effect |
-|------|--------|
-| `FPFLAG_DEFAULT_INPUT` | Standard CLI input parameter |
-| `FPFLAG_DEFAULT_OUTPUT` | Standard output parameter |
+| Flag                       | Effect                                                         |
+| -------------------------- | -------------------------------------------------------------- |
+| `FPFLAG_DEFAULT_INPUT`     | Standard CLI input parameter                                   |
+| `FPFLAG_DEFAULT_OUTPUT`    | Standard output parameter                                      |
 | `FPFLAG_PRIMARY_CLI_INPUT` | **Counted in `nbarg`** — marks this as a required CLI argument |
 
 > [!CAUTION]
@@ -128,8 +128,8 @@ reason not to.
 
 ### Limit Flags
 
-| Flag | Effect |
-|------|--------|
+| Flag              | Effect                |
+| ----------------- | --------------------- |
 | `FPFLAG_MINLIMIT` | Enforce minimum value |
 | `FPFLAG_MAXLIMIT` | Enforce maximum value |
 
@@ -139,11 +139,11 @@ or in a `customCONFcheck()`.
 
 ### Display Flags
 
-| Flag | Effect |
-|------|--------|
-| `FPFLAG_WRITERUN` | Allow modification while running |
-| `FPFLAG_WRITECONF` | Allow modification during config |
-| `FPFLAG_WRITESTATUS` | Show in status display |
+| Flag                 | Effect                           |
+| -------------------- | -------------------------------- |
+| `FPFLAG_WRITERUN`    | Allow modification while running |
+| `FPFLAG_WRITECONF`   | Allow modification during config |
+| `FPFLAG_WRITESTATUS` | Show in status display           |
 
 ## Common Patterns
 

@@ -26,12 +26,12 @@ The `milk` project adheres to strong defensive programming practices to guarante
 
 - **Safe arithmetic:** Prevent integer overflow and underflow. Be mindful of signed versus unsigned comparisons.
 - **Array access:** Validate array indices before accessing memory.
-- **Milk context:** Hoist bounds checking and size validation *outside* of `#pragma omp simd` or tight compute loops. Pre-compute safe loop boundaries based on `stream.size[x]` during the initialization phase to guarantee safety without impacting the performance of the hot path.
+- **Milk context:** Hoist bounds checking and size validation _outside_ of `#pragma omp simd` or tight compute loops. Pre-compute safe loop boundaries based on `stream.size[x]` during the initialization phase to guarantee safety without impacting the performance of the hot path.
 
 ## 5. State Initialization
 
 - **Zero-initialization:** Prefer `calloc()` over `malloc()` for allocating structs to avoid uninitialized memory bugs. If `malloc()` must be used, explicitly initialize all fields immediately after allocation.
-- **Milk context:** Allocate state structures *once* during module initialization (e.g., `init()` phases before real-time control starts) and reuse them across frames. Never use `malloc()` or `calloc()` inside per-frame `fpsexec()` compute loops.
+- **Milk context:** Allocate state structures _once_ during module initialization (e.g., `init()` phases before real-time control starts) and reuse them across frames. Never use `malloc()` or `calloc()` inside per-frame `fpsexec()` compute loops.
 
 ## 6. Resource Limits
 

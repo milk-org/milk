@@ -46,12 +46,12 @@ static errno_t fpsexec(void)
 }
 ```
 
-| Macro | Where to Use |
-|-------|-------------|
-| `MILK_HOT` | `fpsexec()`, inner-loop helpers |
-| `MILK_COLD` | Error handlers, init, cleanup |
-| `MILK_PURE` | Side-effect-free query functions |
-| `MILK_CONST` | Functions depending only on args |
+| Macro          | Where to Use                          |
+| -------------- | ------------------------------------- |
+| `MILK_HOT`     | `fpsexec()`, inner-loop helpers       |
+| `MILK_COLD`    | Error handlers, init, cleanup         |
+| `MILK_PURE`    | Side-effect-free query functions      |
+| `MILK_CONST`   | Functions depending only on args      |
 | `MILK_FLATTEN` | Small wrappers dispatching to helpers |
 
 ## Phase 3 — Pointer Qualification
@@ -77,10 +77,11 @@ static void process_frame(
 ```
 
 **Checklist:**
+
 - [ ] All non-aliased pixel pointers have `restrict`
 - [ ] Hot-path pointers have `MILK_ASSUME_ALIGNED`
 - [ ] String/path `char*` parameters do NOT have
-  `restrict` (not worth it)
+      `restrict` (not worth it)
 
 ## Phase 4 — Fix Float/Double Promotions
 
@@ -99,16 +100,16 @@ float s = sqrtf(x);
 **Common substitutions:**
 
 | Double Version | Float Version |
-|---------------|---------------|
-| `sqrt(x)` | `sqrtf(x)` |
-| `pow(x, y)` | `powf(x, y)` |
-| `sin(x)` | `sinf(x)` |
-| `cos(x)` | `cosf(x)` |
-| `exp(x)` | `expf(x)` |
-| `fabs(x)` | `fabsf(x)` |
-| `floor(x)` | `floorf(x)` |
-| `0.5` | `0.5f` |
-| `1.0` | `1.0f` |
+| -------------- | ------------- |
+| `sqrt(x)`      | `sqrtf(x)`    |
+| `pow(x, y)`    | `powf(x, y)`  |
+| `sin(x)`       | `sinf(x)`     |
+| `cos(x)`       | `cosf(x)`     |
+| `exp(x)`       | `expf(x)`     |
+| `fabs(x)`      | `fabsf(x)`    |
+| `floor(x)`     | `floorf(x)`   |
+| `0.5`          | `0.5f`        |
+| `1.0`          | `1.0f`        |
 
 ## Phase 5 — Vectorization Check
 
@@ -124,12 +125,12 @@ cmake --build . -- -j$(nproc) 2>&1 \
 
 Common vectorization blockers and fixes:
 
-| Reason | Fix |
-|--------|-----|
-| "possible aliasing" | Add `restrict` |
-| "call in loop body" | Inline the callee |
+| Reason                 | Fix                         |
+| ---------------------- | --------------------------- |
+| "possible aliasing"    | Add `restrict`              |
+| "call in loop body"    | Inline the callee           |
 | "unsupported data-ref" | Break complex struct access |
-| "data dependency" | Restructure loop |
+| "data dependency"      | Restructure loop            |
 
 ## Phase 6 — BLAS for Matrix Operations
 
@@ -152,7 +153,7 @@ cblas_sgemm(CblasRowMajor, CblasNoTrans,
 
 - [ ] No `malloc`/`free` inside per-frame loops
 - [ ] No `printf`/`fprintf` in hot paths
-  (guard with `if (VERBOSE > 0)`)
+      (guard with `if (VERBOSE > 0)`)
 - [ ] No `fflush` inside loops
 - [ ] Pre-allocate buffers in init, reuse
 - [ ] Use `calloc()` for zero-initialized state
@@ -175,4 +176,4 @@ assembly.
 - [ ] No alloc/IO in hot loop
 - [ ] `else if` for datatype dispatch (not `if`)
 - [ ] `MILK_IVDEP` or `#pragma omp for simd`
-  on element-wise loops
+      on element-wise loops

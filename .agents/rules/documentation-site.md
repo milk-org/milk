@@ -8,21 +8,21 @@ description: Documentation site structure, MkDocs config,
 The milk documentation is published at
 `https://milk-org.github.io/milk/` using two tools:
 
-| Tool | URL path | Source |
-|------|----------|--------|
-| MkDocs Material | `/` (root) | `docs/` directory |
-| Doxygen | `/api/html/` | C headers (`*.h`) |
+| Tool            | URL path     | Source            |
+| --------------- | ------------ | ----------------- |
+| MkDocs Material | `/` (root)   | `docs/` directory |
+| Doxygen         | `/api/html/` | C headers (`*.h`) |
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `mkdocs.yml` | MkDocs configuration (nav, theme, extensions) |
-| `docs/` | Markdown source files for MkDocs |
-| `docs/stylesheets/extra.css` | Custom CSS overrides |
-| `docs/index.md` | Homepage content |
-| `Doxyfile` | Doxygen configuration |
-| `.github/workflows/docs.yml` | CI: builds + deploys both |
+| File                         | Purpose                                       |
+| ---------------------------- | --------------------------------------------- |
+| `mkdocs.yml`                 | MkDocs configuration (nav, theme, extensions) |
+| `docs/`                      | Markdown source files for MkDocs              |
+| `docs/stylesheets/extra.css` | Custom CSS overrides                          |
+| `docs/index.md`              | Homepage content                              |
+| `Doxyfile`                   | Doxygen configuration                         |
+| `.github/workflows/docs.yml` | CI: builds + deploys both                     |
 
 ## Navigation Tabs
 

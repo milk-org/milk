@@ -39,11 +39,11 @@ system, and verifying correctness.
 
 4. **Propose the split** to the user as a table:
 
-   | New file | Functions | Rationale |
-   |----------|-----------|-----------|
-   | `foo_init.c` | `foo_init()`, `foo_cleanup()` | Lifecycle |
-   | `foo_compute.c` | `foo_run()`, `foo_step()` | Core logic |
-   | `foo_display.c` | `foo_print()`, `foo_tui()` | UI rendering |
+   | New file        | Functions                     | Rationale    |
+   | --------------- | ----------------------------- | ------------ |
+   | `foo_init.c`    | `foo_init()`, `foo_cleanup()` | Lifecycle    |
+   | `foo_compute.c` | `foo_run()`, `foo_step()`     | Core logic   |
+   | `foo_display.c` | `foo_print()`, `foo_tui()`    | UI rendering |
 
 5. **Check for static functions**. Static functions
    that are only used within their new group stay

@@ -5,6 +5,7 @@ trigger: always_on
 # Git Workflow — Branching & Commit Policy
 
 **CRITICAL BRANCHING RULE:**
+
 - You are **STRICTLY FORBIDDEN** from modifying
   or pushing to the `dev` branch for `milk`,
   `cacao`, and `ImageStreamIO`.
@@ -24,6 +25,7 @@ Examples of small changes:
 - Minor doc wording improvements
 
 For these changes:
+
 1. Commit directly to `framework-dev`.
 2. Use a clear commit message with a conventional
    prefix (e.g., `docs: fix typo in README`,
@@ -46,6 +48,7 @@ Then follow whichever path the user chooses.
 ### Option A: Direct Commit to `framework-dev`
 
 If the user says to commit directly:
+
 1. Commit to `framework-dev` with a clear,
    conventional-style message.
 2. Push to origin.
@@ -70,8 +73,8 @@ If the user says to use a PR:
      `docs:`, `chore:`, `test:`.
    - Subject line: max 72 characters, imperative
      mood (e.g., "feat: add stream filter").
-   - Body: wrap at 72 characters, explain *why*
-     not just *what*.
+   - Body: wrap at 72 characters, explain _why_
+     not just _what_.
    - Reference issues when applicable
      (e.g., `Fixes #42`).
 

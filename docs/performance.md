@@ -80,9 +80,9 @@ Then only explicitly pinned processes will run on those
 cores.
 
 !!! important
-    Isolated cores are invisible to normal scheduling.
-    All system services, interrupts, and other processes
-    will be confined to the remaining cores.
+Isolated cores are invisible to normal scheduling.
+All system services, interrupts, and other processes
+will be confined to the remaining cores.
 
 ---
 
@@ -199,20 +199,21 @@ See also: [Valkey Integration](valkey.md)
 
 ## 7. Quick Checklist
 
-| Item | Command / Config |
-|------|--------------------|
-| Check loop Hz | `milk-procinfo-list` |
-| Semaphore benchmark | `milk-semloopspeed 10000` |
-| Pin to core 4 | `taskset -c 4 <cmd>` |
-| RT priority 49 | `sudo chrt -f 49 <cmd>` |
-| Increase `/dev/shm` | `mount -o remount,size=16G /dev/shm` |
-| Huge pages for streams | `export MILK_SHM_HUGETLB=1` |
-| Enable CUDA | `cmake .. -DUSE_CUDA=ON` |
-| Vec missed report | `cmake .. -DVEC_REPORT=ON` |
-| PGO build | `cmake .. -DUSE_PGO=GENERATE` |
-| Static LTO build | `cmake .. -DUSE_STATIC_LTO=ON` |
-| PGO + Static LTO | `-DUSE_PGO=USE -DUSE_STATIC_LTO=ON` |
-| Valkey low-latency | `sysctl -w net.ipv4.tcp_nodelay=1` |
+| Item                   | Command / Config                     |
+| ---------------------- | ------------------------------------ |
+| Check loop Hz          | `milk-procinfo-list`                 |
+| Semaphore benchmark    | `milk-semloopspeed 10000`            |
+| Pin to core 4          | `taskset -c 4 <cmd>`                 |
+| RT priority 49         | `sudo chrt -f 49 <cmd>`              |
+| Increase `/dev/shm`    | `mount -o remount,size=16G /dev/shm` |
+| Huge pages for streams | `export MILK_SHM_HUGETLB=1`          |
+| Enable CUDA            | `cmake .. -DUSE_CUDA=ON`             |
+| Vec missed report      | `cmake .. -DVEC_REPORT=ON`           |
+| PGO build              | `cmake .. -DUSE_PGO=GENERATE`        |
+| Static LTO build       | `cmake .. -DUSE_STATIC_LTO=ON`       |
+| PGO + Static LTO       | `-DUSE_PGO=USE -DUSE_STATIC_LTO=ON`  |
+| Valkey low-latency     | `sysctl -w net.ipv4.tcp_nodelay=1`   |
 
 ---
+
 ← [Documentation Index](index.md)

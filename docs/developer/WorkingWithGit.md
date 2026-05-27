@@ -1,13 +1,13 @@
 # Working with git
 
 !!! note
-    This file: `docs/developer/WorkingWithGit.md`
+This file: `docs/developer/WorkingWithGit.md`
 
 See also: [Documenting Code](DocumentingCode.md) ·
 [Adding Plugins](plugins.md) ·
 [Compile Instructions](../install/compile.md)
 
-***
+---
 
 ## 1. Source Code and Modules
 
@@ -17,7 +17,6 @@ loaded by the main process at runtime.
 
 Some plugin directories (e.g., `plugins/cacao-src`) may be symbolic links
 to external source trees or git submodules.
-
 
 ## 2. Standard Development Workflow
 
@@ -72,7 +71,7 @@ Git worktrees allow you to have multiple isolated working directories that share
    ```
 
 !!! tip
-    A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout and initialize the build directories for you.
+A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout and initialize the build directories for you.
 
 ## 4. Releasing a New Version
 
@@ -91,17 +90,17 @@ $ git push origin main --tags
 ```
 
 !!! note
-    Modules that are shared between packages (e.g., `milk` and `cacao`) can have
-    parallel version number histories. Any new version, regardless of which
-    package it is associated with, includes all previous changes.
+Modules that are shared between packages (e.g., `milk` and `cacao`) can have
+parallel version number histories. Any new version, regardless of which
+package it is associated with, includes all previous changes.
 
-***
-
+---
 
 ## 5. Source Code Documentation (doxygen)
 
 For generating HTML source code documentation via Doxygen, refer to the
 up-to-date guide in [DocumentingCode.md](DocumentingCode.md).
 
-***
+---
+
 ← [Documentation Index](../index.md)

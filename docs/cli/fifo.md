@@ -39,15 +39,15 @@ The milk-cli session shows ingestion feedback:
 
 ## The `fifo` Command
 
-| Sub-command | Description |
-|---|---|
+| Sub-command          | Description                                                 |
+| -------------------- | ----------------------------------------------------------- |
 | `fifo create [path]` | Create and open a new FIFO. Auto-generates path if omitted. |
-| `fifo open <path>` | Connect to an existing FIFO at the given path. |
-| `fifo close` | Close and remove the current FIFO. |
-| `fifo on` | Re-enable FIFO input (after `fifo off`). |
-| `fifo off` | Temporarily disable FIFO input without destroying the pipe. |
-| `fifo status` | Print current FIFO state, path, and file descriptor. |
-| `fifo` | Same as `fifo status`. |
+| `fifo open <path>`   | Connect to an existing FIFO at the given path.              |
+| `fifo close`         | Close and remove the current FIFO.                          |
+| `fifo on`            | Re-enable FIFO input (after `fifo off`).                    |
+| `fifo off`           | Temporarily disable FIFO input without destroying the pipe. |
+| `fifo status`        | Print current FIFO state, path, and file descriptor.        |
+| `fifo`               | Same as `fifo status`.                                      |
 
 ## The `$MCLIFIFO` Variable
 
@@ -65,10 +65,10 @@ milk> !echo "echo hello" > $MCLIFIFO
 
 FIFOs can also be enabled at startup:
 
-| Flag | Description |
-|---|---|
-| `-f` | Auto-create a FIFO (path based on process name and PID) |
-| `-F <path>` | Create a FIFO at the specified path |
+| Flag        | Description                                             |
+| ----------- | ------------------------------------------------------- |
+| `-f`        | Auto-create a FIFO (path based on process name and PID) |
+| `-F <path>` | Create a FIFO at the specified path                     |
 
 These are equivalent to running `fifo create` or
 `fifo create <path>` immediately after startup.

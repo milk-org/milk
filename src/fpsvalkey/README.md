@@ -2,7 +2,7 @@
 
 Bidirectional real-time sync of [milk](https://github.com/milk-org/milk) FPS (Function Parameter Structure) parameters to a [Valkey](https://valkey.io/) key-value store, enabling parameter sharing and remote control across multiple computers.
 
-***
+---
 
 ## Table of Contents
 
@@ -17,7 +17,7 @@ Bidirectional real-time sync of [milk](https://github.com/milk-org/milk) FPS (Fu
 - [Troubleshooting](#troubleshooting)
 - [API Reference](#api-reference)
 
-***
+---
 
 ## Overview
 
@@ -39,7 +39,7 @@ This enables a real-time, low-latency bridge between FPS instances on different 
 - **Auto-reconnect** — the command connection recovers from transient Valkey failures.
 - **Standalone build** — not compiled by default; independent CMake project.
 
-***
+---
 
 ## Prerequisites
 
@@ -96,7 +96,7 @@ pkg-config --cflags --libs valkey
 ## Should output: -I/usr/local/include -L/usr/local/lib -lvalkey
 ```
 
-***
+---
 
 ## Building
 
@@ -136,7 +136,7 @@ sudo make install
 
 Installs `milk-fps-valkey` to `CMAKE_INSTALL_PREFIX/bin`.
 
-***
+---
 
 ## Usage
 
@@ -155,13 +155,13 @@ milk-fps-valkey
 
 ### Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-i, --interval SEC` | `0.1` | Polling interval in seconds |
-| `-V, --valkey-host H` | `127.0.0.1` | Valkey server address |
-| `-P, --valkey-port P` | `6379` | Valkey server port |
-| `-h, --help` | — | Show help |
-| `regex_pattern` | `.*` | Filter FPS names by regex |
+| Option                | Default     | Description                 |
+| --------------------- | ----------- | --------------------------- |
+| `-i, --interval SEC`  | `0.1`       | Polling interval in seconds |
+| `-V, --valkey-host H` | `127.0.0.1` | Valkey server address       |
+| `-P, --valkey-port P` | `6379`      | Valkey server port          |
+| `-h, --help`          | —           | Show help                   |
+| `regex_pattern`       | `.*`        | Filter FPS names by regex   |
 
 ### Examples
 
@@ -190,7 +190,7 @@ milk-fps-valkey -V 192.168.1.100
 
 Both hosts connect to the same Valkey server at `192.168.1.100`. Parameter changes on host A appear on host B within milliseconds, and vice versa.
 
-***
+---
 
 ## Architecture
 
@@ -226,10 +226,10 @@ Both hosts connect to the same Valkey server at `192.168.1.100`. Parameter chang
 
 ### Two Connections
 
-| Connection | Type | Thread | Purpose |
-|------------|------|--------|---------|
-| `cmd_ctx` | Synchronous `valkeyContext` | Main | `HSET`, `PUBLISH`, `SADD`, `SREM`, `DEL` |
-| `sub_ctx` | Synchronous `valkeyContext` (blocking) | Subscriber pthread | `PSUBSCRIBE fps_update:*` → `valkeyGetReply()` |
+| Connection | Type                                   | Thread             | Purpose                                        |
+| ---------- | -------------------------------------- | ------------------ | ---------------------------------------------- |
+| `cmd_ctx`  | Synchronous `valkeyContext`            | Main               | `HSET`, `PUBLISH`, `SADD`, `SREM`, `DEL`       |
+| `sub_ctx`  | Synchronous `valkeyContext` (blocking) | Subscriber pthread | `PSUBSCRIBE fps_update:*` → `valkeyGetReply()` |
 
 ### Push Path (Main Thread)
 
@@ -260,13 +260,13 @@ Both hosts connect to the same Valkey server at `192.168.1.100`. Parameter chang
 
 ### FPS Lifecycle Events
 
-| Event | Action |
-|-------|--------|
-| New FPS discovered | `SADD fps_list:<host> <name>`, push all params |
-| FPS deleted | `SREM fps_list:<host> <name>`, `DEL fps:<host>:<name>` |
-| Tracker shutdown | Subscriber thread stopped, connections freed |
+| Event              | Action                                                 |
+| ------------------ | ------------------------------------------------------ |
+| New FPS discovered | `SADD fps_list:<host> <name>`, push all params         |
+| FPS deleted        | `SREM fps_list:<host> <name>`, `DEL fps:<host>:<name>` |
+| Tracker shutdown   | Subscriber thread stopped, connections freed           |
 
-***
+---
 
 ## Valkey Key Schema
 
@@ -274,15 +274,15 @@ Both hosts connect to the same Valkey server at `192.168.1.100`. Parameter chang
 
 **Key**: `fps:<hostname>:<fpsname>`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `<keyword>` | String | Parameter value |
-| `_type.<keyword>` | String | Parameter type (e.g. `FLOAT64`, `UINT32`, `ONOFF`) |
-| `_cnt0.<keyword>` | Integer | Change counter |
-| `_status` | String | FPS status bitmask (hex) |
-| `_confpid` | Integer | Configuration process PID |
-| `_runpid` | Integer | Run process PID |
-| `_lastsync` | String | Last metadata sync (UTC ISO-8601) |
+| Field             | Type    | Description                                        |
+| ----------------- | ------- | -------------------------------------------------- |
+| `<keyword>`       | String  | Parameter value                                    |
+| `_type.<keyword>` | String  | Parameter type (e.g. `FLOAT64`, `UINT32`, `ONOFF`) |
+| `_cnt0.<keyword>` | Integer | Change counter                                     |
+| `_status`         | String  | FPS status bitmask (hex)                           |
+| `_confpid`        | Integer | Configuration process PID                          |
+| `_runpid`         | Integer | Run process PID                                    |
+| `_lastsync`       | String  | Last metadata sync (UTC ISO-8601)                  |
 
 Example:
 
@@ -335,7 +335,7 @@ Example:
 PUBLISH fps_update:dmcomb-00 "rtc1 dmcomb-00 .delayus 200 UINT32"
 ```
 
-***
+---
 
 ## Pub/Sub Protocol
 
@@ -349,13 +349,13 @@ Fields are space-separated:
 <source_hostname> <fpsname> <keyword> <value> <typename>
 ```
 
-| Field | Description |
-|-------|-------------|
+| Field             | Description                                  |
+| ----------------- | -------------------------------------------- |
 | `source_hostname` | Hostname of the machine that made the change |
-| `fpsname` | FPS instance name |
-| `keyword` | Full parameter keyword (e.g. `.delayus`) |
-| `value` | New value as a string |
-| `typename` | FPTYPE name (e.g. `FLOAT64`, `ONOFF`) |
+| `fpsname`         | FPS instance name                            |
+| `keyword`         | Full parameter keyword (e.g. `.delayus`)     |
+| `value`           | New value as a string                        |
+| `typename`        | FPTYPE name (e.g. `FLOAT64`, `ONOFF`)        |
 
 ### Subscribing from External Tools
 
@@ -381,7 +381,7 @@ valkey-cli PUBLISH fps_update:dmcomb-00 \
 
 Note: the `source_hostname` field should be different from the target host's hostname to avoid echo filtering.
 
-***
+---
 
 ## Configuration Examples
 
@@ -424,7 +424,7 @@ milk-fps-valkey -V 192.168.1.1
 
 Changes made on either host propagate to the other in real time.
 
-***
+---
 
 ## Troubleshooting
 
@@ -462,7 +462,7 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 cmake .. -DCMAKE_PREFIX_PATH=/usr/local/milk-1.03.00
 ```
 
-***
+---
 
 ## API Reference
 
@@ -470,44 +470,44 @@ cmake .. -DCMAKE_PREFIX_PATH=/usr/local/milk-1.03.00
 
 The C API is available for integration into other tools:
 
-| Function | Description |
-|----------|-------------|
-| `fps_valkey_connect(vctx, host, port)` | Open dual connections to Valkey |
-| `fps_valkey_disconnect(vctx)` | Stop subscriber + free connections |
+| Function                                                 | Description                         |
+| -------------------------------------------------------- | ----------------------------------- |
+| `fps_valkey_connect(vctx, host, port)`                   | Open dual connections to Valkey     |
+| `fps_valkey_disconnect(vctx)`                            | Stop subscriber + free connections  |
 | `fps_valkey_push_param(vctx, name, kw, val, type, cnt0)` | Push one parameter (HSET + PUBLISH) |
-| `fps_valkey_push_metadata(vctx, name, md)` | Push FPS status/PID metadata |
-| `fps_valkey_register_fps(vctx, name)` | Add to fps_list set |
-| `fps_valkey_unregister_fps(vctx, name)` | Remove from set + delete hash |
-| `fps_valkey_sub_start(vctx)` | Start PSUBSCRIBE subscriber thread |
-| `fps_valkey_sub_stop(vctx)` | Stop subscriber thread |
+| `fps_valkey_push_metadata(vctx, name, md)`               | Push FPS status/PID metadata        |
+| `fps_valkey_register_fps(vctx, name)`                    | Add to fps_list set                 |
+| `fps_valkey_unregister_fps(vctx, name)`                  | Remove from set + delete hash       |
+| `fps_valkey_sub_start(vctx)`                             | Start PSUBSCRIBE subscriber thread  |
+| `fps_valkey_sub_stop(vctx)`                              | Stop subscriber thread              |
 
 ### Supported Parameter Types
 
-| FPTYPE | Valkey Representation | Example |
-|--------|----------------------|---------|
-| `INT32` | Decimal integer | `-42` |
-| `UINT32` | Decimal integer | `200` |
-| `INT64` | Decimal integer | `-100000` |
-| `UINT64` | Decimal integer | `100000` |
-| `FLOAT32` | Decimal float (10 sig. digits) | `3.141592741` |
-| `FLOAT64` | Decimal float (17 sig. digits) | `3.1415926535897931` |
-| `ONOFF` | `ON` / `OFF` | `ON` |
-| `TIMESPEC` | `<sec>.<nsec>` | `1709654400.000000000` |
-| `PID` | Decimal integer | `12345` |
-| `STRING` | UTF-8 string | `hello` |
-| `FILENAME` | Path string | `/tmp/data.fits` |
-| `STREAMNAME` | Stream name | `dm01disp` |
-| `FPSNAME` | FPS name | `dmcomb-00` |
-| *other string types* | UTF-8 string | — |
+| FPTYPE               | Valkey Representation          | Example                |
+| -------------------- | ------------------------------ | ---------------------- |
+| `INT32`              | Decimal integer                | `-42`                  |
+| `UINT32`             | Decimal integer                | `200`                  |
+| `INT64`              | Decimal integer                | `-100000`              |
+| `UINT64`             | Decimal integer                | `100000`               |
+| `FLOAT32`            | Decimal float (10 sig. digits) | `3.141592741`          |
+| `FLOAT64`            | Decimal float (17 sig. digits) | `3.1415926535897931`   |
+| `ONOFF`              | `ON` / `OFF`                   | `ON`                   |
+| `TIMESPEC`           | `<sec>.<nsec>`                 | `1709654400.000000000` |
+| `PID`                | Decimal integer                | `12345`                |
+| `STRING`             | UTF-8 string                   | `hello`                |
+| `FILENAME`           | Path string                    | `/tmp/data.fits`       |
+| `STREAMNAME`         | Stream name                    | `dm01disp`             |
+| `FPSNAME`            | FPS name                       | `dmcomb-00`            |
+| _other string types_ | UTF-8 string                   | —                      |
 
-***
+---
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `CMakeLists.txt` | Standalone CMake build system |
-| `fps_valkey.h` | API header |
-| `fps_valkey.c` | Valkey client implementation (push + pull) |
-| `milk-fps-valkey.c` | Main executable (FPS scan loop + Valkey) |
-| `README.md` | This documentation |
+| File                | Purpose                                    |
+| ------------------- | ------------------------------------------ |
+| `CMakeLists.txt`    | Standalone CMake build system              |
+| `fps_valkey.h`      | API header                                 |
+| `fps_valkey.c`      | Valkey client implementation (push + pull) |
+| `milk-fps-valkey.c` | Main executable (FPS scan loop + Valkey)   |
+| `README.md`         | This documentation                         |

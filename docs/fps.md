@@ -92,11 +92,10 @@ To use FPS-enabled functions from the command line efficiently, the typical work
 
 Create a file named `fpslist.txt` to list the functions and their instance names:
 
-| FPS Root Name | CLI Command | Optional Arguments |
-|---------------|-------------|--------------------|
-| `fpsrootname0`| `CLIcommand0`|                    |
-| `fpsrootname1`| `CLIcommand1`| `optarg00` ...     |
-
+| FPS Root Name  | CLI Command   | Optional Arguments |
+| -------------- | ------------- | ------------------ |
+| `fpsrootname0` | `CLIcommand0` |                    |
+| `fpsrootname1` | `CLIcommand1` | `optarg00` ...     |
 
 Then run `milk-fpsmkcmd` to automatically generate startup scripts for initialization and running (`<fpsname>-confinit`, `<fpsname>-runstart`, etc.).
 
@@ -206,4 +205,5 @@ FPS instances can be highly coordinated via the `milk-seq` standalone sequencer,
 See the dedicated **[FPS Sequencer Documentation](sequencer.md)** for details on the `milk-seq` daemon, script syntax, and integrating `seq.*` commands from within `milk-cli`.
 
 ---
+
 ← [Documentation Index](index.md)

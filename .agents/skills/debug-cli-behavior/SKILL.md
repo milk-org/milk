@@ -78,6 +78,7 @@ echo "Signal: $?"
 ```
 
 Exit codes > 128 indicate signal death:
+
 - 139 = SIGSEGV (segfault)
 - 134 = SIGABRT (assertion / abort)
 - 136 = SIGFPE (division by zero)
@@ -108,14 +109,14 @@ echo "crashing_command" | gdb -batch \
 
 Common crash locations and their causes:
 
-| Crash location | Likely cause |
-|---------------|--------------|
-| `CLIcore_checkargs.c` | `nbarg` mismatch, missing `FPFLAG_PRIMARY_CLI_INPUT` |
-| `RegisterCLIcmd` | NULL function pointer, uninitialized `CLIcmddata` |
-| `cli_calc_eval.c` | Stack underflow in expression evaluator |
-| `cli_calc_tokenizer.c` | Buffer overflow on long expressions |
-| `CLIcore_modules.c` | Module load order, `dlopen` failure |
-| `image_ID()` / `variable_ID()` | Invalid image index, corrupted `data.image[]` array |
+| Crash location                 | Likely cause                                         |
+| ------------------------------ | ---------------------------------------------------- |
+| `CLIcore_checkargs.c`          | `nbarg` mismatch, missing `FPFLAG_PRIMARY_CLI_INPUT` |
+| `RegisterCLIcmd`               | NULL function pointer, uninitialized `CLIcmddata`    |
+| `cli_calc_eval.c`              | Stack underflow in expression evaluator              |
+| `cli_calc_tokenizer.c`         | Buffer overflow on long expressions                  |
+| `CLIcore_modules.c`            | Module load order, `dlopen` failure                  |
+| `image_ID()` / `variable_ID()` | Invalid image index, corrupted `data.image[]` array  |
 
 ## Command Registration Architecture
 
@@ -185,13 +186,13 @@ readline → intercept check
 
 ### Debugging each stage
 
-| Stage | How to trace |
-|-------|-------------|
-| Intercept | Check `CLIcore_script_intercept.c` for early returns |
-| Variable expansion | Print `line` before/after `expand_variables()` |
-| Calc expression | Check `cli_try_calc()` return value |
-| Command lookup | Check `find_cmd()` return value |
-| Shell bypass | Check `[shell bypass]` message on stderr |
+| Stage              | How to trace                                         |
+| ------------------ | ---------------------------------------------------- |
+| Intercept          | Check `CLIcore_script_intercept.c` for early returns |
+| Variable expansion | Print `line` before/after `expand_variables()`       |
+| Calc expression    | Check `cli_try_calc()` return value                  |
+| Command lookup     | Check `find_cmd()` return value                      |
+| Shell bypass       | Check `[shell bypass]` message on stderr             |
 
 ## Display / Prompt Issues
 
@@ -200,12 +201,14 @@ readline → intercept check
 The `milk-cli` prompt is set internally. If the
 user's `PS1` environment variable leaks in, the
 prompt becomes corrupted. Check:
+
 - `CLIcore_UI_prompt.c` — prompt construction
 - `unsetenv("PS1")` should happen early in init
 
 ### Readline echo issues
 
 If characters are not echoed during input:
+
 - Check `rl_redisplay()` calls in completion and
   hint callbacks
 - Check for `tcsetattr()` calls that might alter
@@ -235,17 +238,17 @@ tmux kill-session -t <name>
 
 Key files for CLI debugging:
 
-| File | Role |
-|------|------|
-| `CLIcore.c` | Main entry, module loading |
-| `CLIcore/CLIcore_modules.c` | `load_module_shared()`, module registration |
-| `CLIcore/CLIcore_UI_execute.c` | Command dispatch |
-| `CLIcore/CLIcore_script.c` | Script interpreter main loop |
-| `CLIcore/CLIcore_script_intercept.c` | Early interception (comments, blank lines) |
-| `CLIcore/CLIcore_script_var.c` | Variable assignment and lookup |
-| `CLIcore/CLIcore_script_expand.c` | Variable and command substitution |
-| `CLIcore/CLIcore_checkargs.c` | Argument validation |
-| `cli_calc_parser.c` | Arithmetic expression entry point |
-| `cli_calc_tokenizer.c` | Expression tokenizer |
-| `cli_calc_eval.c` | Expression evaluator (stack machine) |
-| `cli_calc_functions.c` | Built-in math functions |
+| File                                 | Role                                        |
+| ------------------------------------ | ------------------------------------------- |
+| `CLIcore.c`                          | Main entry, module loading                  |
+| `CLIcore/CLIcore_modules.c`          | `load_module_shared()`, module registration |
+| `CLIcore/CLIcore_UI_execute.c`       | Command dispatch                            |
+| `CLIcore/CLIcore_script.c`           | Script interpreter main loop                |
+| `CLIcore/CLIcore_script_intercept.c` | Early interception (comments, blank lines)  |
+| `CLIcore/CLIcore_script_var.c`       | Variable assignment and lookup              |
+| `CLIcore/CLIcore_script_expand.c`    | Variable and command substitution           |
+| `CLIcore/CLIcore_checkargs.c`        | Argument validation                         |
+| `cli_calc_parser.c`                  | Arithmetic expression entry point           |
+| `cli_calc_tokenizer.c`               | Expression tokenizer                        |
+| `cli_calc_eval.c`                    | Expression evaluator (stack machine)        |
+| `cli_calc_functions.c`               | Built-in math functions                     |

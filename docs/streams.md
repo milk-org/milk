@@ -86,21 +86,21 @@ module.
 Modifiers are composable: `@LE:name` means "local
 memory, must exist".
 
-*When writing modules using `fpsexec` patterns, passing
+_When writing modules using `fpsexec` patterns, passing
 a non-existent or disallowed modifier automatically alerts
 the user and aborts the module spin-up to prevent silent
-failures.*
+failures._
 
 ### Legacy `>` Prefixes
 
 Older code may use `>` as a separator for inline
 creation hints embedded in the stream name string:
 
-| Prefix | Example | Effect |
-|--------|---------|--------|
-| `t...>` | `tf32>im1` | Set data type (float32) |
-| `k...>` | `k10>im1` | Set keyword count |
-| `c...>` | `c20>im1` | Set circular buffer size |
+| Prefix  | Example    | Effect                   |
+| ------- | ---------- | ------------------------ |
+| `t...>` | `tf32>im1` | Set data type (float32)  |
+| `k...>` | `k10>im1`  | Set keyword count        |
+| `c...>` | `c20>im1`  | Set circular buffer size |
 
 These are parsed by `imgid_make_from_name()` and
 remain supported.
@@ -110,7 +110,6 @@ remain supported.
 > It was redundant with the default behavior
 > (shared memory is always the default). Use `@S:` for
 > explicit shared-memory annotation if needed.
-
 
 ## 4. Introspection
 
@@ -201,10 +200,11 @@ arguments.
     ```
 
 !!! tip
-    Functions should prefer passing parameters using
-    `IMGID` pointers and accessing pixels through
-    `img.im->array.F` or similar data type unions based
-    on `img.im->md[0].datatype`.
+Functions should prefer passing parameters using
+`IMGID` pointers and accessing pixels through
+`img.im->array.F` or similar data type unions based
+on `img.im->md[0].datatype`.
 
 ---
+
 ← [Documentation Index](index.md)

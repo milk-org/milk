@@ -9,8 +9,8 @@ license).
 
 ## Source Files
 
-| File | Description |
-|------|-------------|
+| File       | Description                                                                 |
+| ---------- | --------------------------------------------------------------------------- |
 | `kdtree.c` | Kd-tree construction, insertion, nearest-neighbor search, and range queries |
 
 ## Dependencies

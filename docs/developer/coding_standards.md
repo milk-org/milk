@@ -32,7 +32,7 @@ inline static errno_t example_compute_sum(
 
 - **Kernel-Doc Style:** Document functions using the standard Kernel-Doc (or Doxygen-compatible) style.
 - **`.h` Files:** Briefly document the function's overall purpose in the header file.
-- **`.c` Files:** Document the purpose and overall approach of the function *above* the function code in the source file, and detail the methodology *within* the function itself.
+- **`.c` Files:** Document the purpose and overall approach of the function _above_ the function code in the source file, and detail the methodology _within_ the function itself.
 
 ## Compilation and Headers
 
@@ -40,4 +40,5 @@ inline static errno_t example_compute_sum(
 - **Explicit Includes:** Make sure every `.c` file strictly includes the exact headers it relies on. Do **not** implicitly rely on another header to include them (e.g., relying on `CLIcore.h` to provide `<math.h>` or `<stdlib.h>`).
 
 ---
+
 ← [Documentation Index](../index.md)

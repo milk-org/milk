@@ -8,17 +8,20 @@ description: Deep reference for scaffolding a new plugin module with CMake and m
 Plugins in milk extend its core capabilities and reside under the `plugins/` directory. Use this reference when scaffolding a new plugin.
 
 ## 1. Directory Structure
+
 A plugin must exist inside a group folder within the `plugins/` directory:
 `plugins/<group_name>/<plugin_name>/`
 For example: `plugins/milk-extra-src/myplugin/`.
 
 Inside, create the following core files:
+
 - `<plugin_name>.c`
 - `<plugin_name>.h`
 - `CMakeLists.txt`
 - `README.md`
 
 ## 2. CMake Integration
+
 Your plugin's `CMakeLists.txt` must define the shared library, include directories, linking, and installation. If your plugin will provide compute functions for standalone executables, it must also build a `_compute` variant.
 
 ```cmake
@@ -64,6 +67,7 @@ endif()
 Don't forget to append `add_subdirectory(<plugin_name>)` to the parent `CMakeLists.txt` in the group folder.
 
 ## 3. Module Registration (C Code)
+
 Your plugin C file must register itself with the milk CLI framework.
 
 ```c
@@ -88,4 +92,5 @@ static errno_t init_module_CLI()
 ```
 
 ## 4. Dependencies
+
 Consult `docs/dependency_graph.md`. Plugins sit at the top of the hierarchy. If your plugin depends on another plugin, use `MODULE_DEPS("other_plugin")` and link it in CMake. Do not create circular dependencies.

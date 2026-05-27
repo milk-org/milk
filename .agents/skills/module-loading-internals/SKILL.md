@@ -45,11 +45,11 @@ main() [CLIcore.c]
 
 ### Key source files
 
-| File | Role |
-|------|------|
-| `CLIcore.c` | `main()`, module scan loop |
-| `CLIcore/CLIcore_modules.c` | `load_module_shared()` |
-| `CLIcore/CLIcore_modules.h` | Module data structures |
+| File                         | Role                         |
+| ---------------------------- | ---------------------------- |
+| `CLIcore.c`                  | `main()`, module scan loop   |
+| `CLIcore/CLIcore_modules.c`  | `load_module_shared()`       |
+| `CLIcore/CLIcore_modules.h`  | Module data structures       |
 | `CLIcore/CLIcore_datainit.c` | `data` struct initialization |
 
 ## Data Structures
@@ -243,14 +243,14 @@ MILK_QUIET=0 echo "exitCLI" | milk-cli 2>&1 | \
 When a new module's commands don't appear:
 
 - [ ] `initModule()` function exists and is
-  exported (not `static`)
+      exported (not `static`)
 - [ ] `initModule()` calls all `CLIADDCMD_*`
-  functions
+      functions
 - [ ] Each `CLIADDCMD_*` function calls
-  `RegisterCLIcmd` with valid `CLIcmddata`
+      `RegisterCLIcmd` with valid `CLIcmddata`
 - [ ] `CLIcmddata.key` is non-empty and unique
 - [ ] The `.so` file is installed to the plugin
-  directory
+      directory
 - [ ] The `.so` file is listed in module scan
-  output (check with `MILK_QUIET=0`)
+      output (check with `MILK_QUIET=0`)
 - [ ] No `dlopen` errors (check `dlerror()` output)

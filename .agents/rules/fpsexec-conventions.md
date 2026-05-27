@@ -10,8 +10,8 @@ trigger: always_on
    as the starting point. It contains the standardized 8-section layout.
 
 2. **Update identity** (section 1 — `FPS_APP_INFO`):
-   - `.fps_name`    — SHM name on disk (no spaces)
-   - `.cmdkey`      — milk CLI keyword
+   - `.fps_name` — SHM name on disk (no spaces)
+   - `.cmdkey` — milk CLI keyword
    - `.description` — one-line human-readable summary
 
 3. **Define parameters** (sections 2–3):
@@ -24,6 +24,7 @@ trigger: always_on
    - Pure computation; parameters are already synced.
 
 5. **CLIcmddata scoping** (section 5):
+
    ```c
    #ifdef FPS_STANDALONE
    CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
@@ -73,10 +74,12 @@ in its `FPS_APP_INFO` to appear correctly in the list.
 If your module is configured to build a compute-only variant library (`_compute.so`) via CMake (which passes `-DMILK_NO_CLI`), you must guard the CLI registration code and mark the `compute_function` as unused to prevent compiler warnings.
 
 1. **Mark `compute_function` as unused** in Section 6:
+
    ```c
    static MILK_HOT errno_t __attribute__((unused)) compute_function()
    ```
-   *(Because it becomes orphaned when both CLI and standalone sections are excluded).*
+
+   _(Because it becomes orphaned when both CLI and standalone sections are excluded)._
 
 2. **Check both `FPS_STANDALONE` and `MILK_NO_CLI`** in Section 7:
    ```c

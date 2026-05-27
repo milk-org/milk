@@ -39,6 +39,7 @@ done
 ### Manual scan approach
 
 For each `.c` file:
+
 1. Read the file
 2. Identify every function definition (non-static
    and static)
@@ -49,6 +50,7 @@ For each `.c` file:
 ### Prioritize files
 
 Order by impact:
+
 1. Public API functions (prototypes in `.h` files)
 2. Recently refactored or new files
 3. Complex functions with non-obvious behavior
@@ -82,7 +84,7 @@ Order by impact:
   `"Register CLI command for module"`)
 - **Parameters**: describe purpose and valid
   ranges, not just type restating
-- **Body**: explain the *why* and *how*, not
+- **Body**: explain the _why_ and _how_, not
   just restate what the code literally does
 - **Return**: document success/failure semantics,
   special return values
@@ -92,6 +94,7 @@ Order by impact:
 ### Categories with templates
 
 **Initialization function:**
+
 ```c
 /**
  * module_init - Initialize the FOO subsystem
@@ -107,6 +110,7 @@ Order by impact:
 ```
 
 **Compute / FPS exec function:**
+
 ```c
 /**
  * fpsexec - Execute the BAR computation
@@ -126,6 +130,7 @@ Order by impact:
 ```
 
 **CLI registration function:**
+
 ```c
 /**
  * CLIADDCMD_module__funcname - Register CLI cmd
@@ -147,9 +152,9 @@ with correctness:
 2. **Within each batch**:
    a. Add docs to all undocumented functions
    b. Run `/compile-test` to verify no
-      syntax errors in the doc comments
+   syntax errors in the doc comments
    c. Check that no functions were accidentally
-      modified (only comments added)
+   modified (only comments added)
 3. **Between batches**: commit the changes so
    that failures in a later batch don't lose
    earlier work

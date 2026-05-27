@@ -149,6 +149,6 @@ for the full history.
 
 ## dev
 
-*No recent significant changes. Entries will be
+_No recent significant changes. Entries will be
 added here when `framework-dev` features are merged
-into `dev`.*
+into `dev`._

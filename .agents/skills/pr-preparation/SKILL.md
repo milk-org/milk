@@ -53,6 +53,7 @@ git diff --stat ${TARGET}..HEAD | \
 Format: `<type>: <concise description>`
 
 Type prefixes (match branch prefix):
+
 - `feat:` — new feature
 - `fix:` — bug fix
 - `perf:` — performance improvement
@@ -77,10 +78,12 @@ Use this template:
 ## Changes
 
 ### [Component 1]
+
 - Change description
 - Change description
 
 ### [Component 2]
+
 - Change description
 
 ## Verification
@@ -107,6 +110,7 @@ why this approach was chosen.]
 
 Present the complete PR draft to the user via
 `notify_user`, including:
+
 - **Title**
 - **Body** (full markdown)
 - **Source branch**
@@ -122,6 +126,7 @@ Present the complete PR draft to the user via
 Only after the user approves:
 
 1. Push the branch if not already pushed:
+
    ```bash
    git push -u origin ${BRANCH}
    ```
@@ -148,14 +153,14 @@ Only after the user approves:
 Before creating the PR, verify the branch name
 follows conventions:
 
-| Prefix | For |
-|--------|-----|
-| `feat/` | New features |
-| `fix/` | Bug fixes |
-| `perf/` | Performance work |
-| `refactor/` | Restructuring |
-| `docs/` | Documentation |
-| `chore/` | Maintenance |
+| Prefix      | For              |
+| ----------- | ---------------- |
+| `feat/`     | New features     |
+| `fix/`      | Bug fixes        |
+| `perf/`     | Performance work |
+| `refactor/` | Restructuring    |
+| `docs/`     | Documentation    |
+| `chore/`    | Maintenance      |
 
 If the branch name doesn't follow convention,
 suggest renaming before PR creation (this

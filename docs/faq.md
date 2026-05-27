@@ -3,7 +3,7 @@
 Common issues and solutions when building, installing, and
 running `milk`.
 
-***
+---
 
 ## 1. Installation
 
@@ -72,7 +72,7 @@ running `milk`.
         export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
         ```
 
-***
+---
 
 ## 2. Shared Memory
 
@@ -120,7 +120,7 @@ See also: [Streams](streams.md)
     export MILK_SHM_DIR=/path/to/custom/shm
     ```
 
-***
+---
 
 ## 3. FPS / Process Control
 
@@ -161,7 +161,7 @@ See also: [FPS](fps.md) ·
     2. Check if the tmux session exists: `tmux ls`
     3. Verify the FPS name has no spaces or special characters.
 
-***
+---
 
 ## 4. CLI
 
@@ -193,7 +193,7 @@ See also: [CLI Reference](cli/CLIcore.md)
     If the module is a plugin, ensure it was compiled and the `.so`
     file is in the library path.
 
-***
+---
 
 ## 5. Performance
 
@@ -220,7 +220,7 @@ See also: [CLI Reference](cli/CLIcore.md)
 
     Typical values: >100 kHz on modern hardware.
 
-***
+---
 
 ## 6. Getting Help
 
@@ -230,5 +230,6 @@ See also: [CLI Reference](cli/CLIcore.md)
 - **Documentation:** See [docs/index.md](index.md)
 - **Issues:** Report on [GitHub Issues](https://github.com/milk-org/milk/issues)
 
-***
+---
+
 ← [Documentation Index](index.md)

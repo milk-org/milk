@@ -5,9 +5,10 @@ image management.
 
 ## Source Files
 
-| File | Description |
-|------|-------------|
+| File         | Description                              |
+| ------------ | ---------------------------------------- |
 | `milkdata.c` | Core milk data global and initialization |
 
 ## Dependencies
+
 - `ImageStreamIO`

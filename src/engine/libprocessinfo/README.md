@@ -16,18 +16,22 @@
 ## Core Concepts
 
 ### PROCESSINFO
+
 The main structure stored in shared memory (`$MILK_SHM_DIR/proc.<name>.<PID>.shm`, where `MILK_SHM_DIR` defaults to `/milk/shm`). It contains:
+
 - Process identification (PID, name, source code location).
 - Loop counters and control flags.
 - Timing buffers for performance analysis.
 - Input trigger configuration.
 
 ### Global Process List
+
 A shared memory registry of all active MILK processes, enabling discovery by monitoring tools like `milk-procCTRL`.
 
 ## Basic Usage
 
 ### 1. Loop Initialization
+
 ```c
 #include "processtools.h"
 
@@ -39,6 +43,7 @@ processinfo_waitoninputstream_init(pinfo, input_image, PROCESSINFO_TRIGGERMODE_S
 ```
 
 ### 2. Main Loop
+
 ```c
 int processloopOK = 1;
 processinfo_loopstart(pinfo);
@@ -66,5 +71,6 @@ processinfo_cleanExit(pinfo);
 ```
 
 ## Monitoring Tools
+
 - `milk-procCTRL`: A TUI tool for monitoring all active MILK processes, displaying CPU loads, timing stats, and providing control hooks.
 - `milk-procinfo-list`: A CLI tool to list basic info for all active processes.

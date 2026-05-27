@@ -74,10 +74,10 @@ $ tmux attach -t <session-name>
 ```
 
 !!! tip
-    Each tmux session typically has three windows:
-    `ctrl` (control commands), `run` (the main loop),
-    and `conf` (the configuration loop). Switch windows
-    with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
+Each tmux session typically has three windows:
+`ctrl` (control commands), `run` (the main loop),
+and `conf` (the configuration loop). Switch windows
+with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
 
 ---
 
@@ -182,9 +182,10 @@ $ sudo make install
 ```
 
 !!! important
-    Remember to switch back to `Release` or
-    `RelWithDebInfo` for production use — `Debug` builds
-    disable optimizations and are significantly slower.
+Remember to switch back to `Release` or
+`RelWithDebInfo` for production use — `Debug` builds
+disable optimizations and are significantly slower.
 
 ---
+
 ← [Documentation Index](index.md)
