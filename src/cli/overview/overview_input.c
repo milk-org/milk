@@ -1040,6 +1040,16 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             last_click_c  = mc;
         }
 
+        /* Check for status bar exit button clicks */
+        if (mr == lay->term_rows)
+        {
+            int col_start = lay->term_cols - 18;
+            if (mc >= col_start && mc < col_start + 10)
+            {
+                return 2; /* exit request */
+            }
+        }
+
         /* Check for header tab clicks */
         if (mr == lay->r_header.row && mc >= 1)
         {
@@ -1242,8 +1252,25 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 int body_row         = mr - lay->r_fps_params.row - 2;
                 if (body_row >= 0)
                 {
-                    int idx            = lay->fps_param_scroll + body_row;
-                    lay->fps_param_sel = idx;
+                    int fsel = lay->sel_fps;
+                    if (fsel >= 0 && fsel < m->nb_fps)
+                    {
+                        const OV_FPS   *fps = &m->fps[fsel];
+                        fps_tree_item_t items[1024];
+                        int nitems = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
+                        if (nitems > 0)
+                        {
+                            int idx = lay->fps_param_scroll + body_row;
+                            if (idx >= nitems)
+                            {
+                                lay->fps_param_sel = nitems - 1;
+                            }
+                            else
+                            {
+                                lay->fps_param_sel = idx;
+                            }
+                        }
+                    }
                 }
             }
             else if (INSIDE(lay->r_fps, mr, mc))
@@ -1799,9 +1826,16 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if (INSIDE(lay->r_fps_params, mr, mc))
             {
-                sel    = &lay->fps_param_sel;
-                scroll = &lay->fps_param_scroll;
-                count  = 1000;
+                sel      = &lay->fps_param_sel;
+                scroll   = &lay->fps_param_scroll;
+                count    = 0;
+                int fsel = lay->sel_fps;
+                if (fsel >= 0 && fsel < m->nb_fps)
+                {
+                    const OV_FPS   *fps = &m->fps[fsel];
+                    fps_tree_item_t items[1024];
+                    count = ov_get_fps_tree_items(fps, lay->fps_param_path, items, 1024);
+                }
                 page_h = lay->r_fps_params.height - 3;
             }
             else if (INSIDE(lay->r_fps, mr, mc))
@@ -3025,12 +3059,34 @@ static int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *
             has_params)
         {
             lay->fps_param_focus = 1;
+            if (nitems > 0)
+            {
+                if (lay->fps_param_sel < 0)
+                {
+                    lay->fps_param_sel = 0;
+                }
+                else if (lay->fps_param_sel >= nitems)
+                {
+                    lay->fps_param_sel = nitems - 1;
+                }
+            }
             return 1;
         }
 
         /* All nav/edit keys when param panel is focused */
         if (lay->fps_param_focus == 1)
         {
+            if (nitems > 0)
+            {
+                if (lay->fps_param_sel < 0)
+                {
+                    lay->fps_param_sel = 0;
+                }
+                else if (lay->fps_param_sel >= nitems)
+                {
+                    lay->fps_param_sel = nitems - 1;
+                }
+            }
             /* ESC / LEFT from param panel → back to list or ascend dir */
             if (key == OV_KEY_LEFT || key == OV_KEY_ESC)
             {
@@ -3746,7 +3802,12 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         return 0;
     }
-    if (ov_input__handle_mouse(key, lay, m))
+    int mouse_res = ov_input__handle_mouse(key, lay, m);
+    if (mouse_res == 2)
+    {
+        return 1;
+    }
+    if (mouse_res)
     {
         return 0;
     }

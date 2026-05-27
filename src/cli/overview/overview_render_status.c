@@ -282,10 +282,22 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_hline(' ', pad);
     }
 
-    /* Render [x] exit with distinct color */
-    ov_buf_fg(200, 80, 80);
+    /* Render [x] exit with distinct color or hover highlight */
+    int col_start = r.width - n_exit - n2;
+    if (lay->mouse_hover && (ov_mouse_row == r.row) && (ov_mouse_col >= col_start) &&
+        (ov_mouse_col < col_start + n_exit))
+    {
+        ov_buf_bg(220, 40, 40);   /* vibrant red background */
+        ov_buf_fg(255, 255, 255); /* white text */
+    }
+    else
+    {
+        ov_buf_fg(200, 80, 80);
+        ov_theme_bg(OV_BG_HEADER);
+    }
     ov_buf_printf("%s", exit_label);
 
+    ov_theme_bg(OV_BG_HEADER);
     ov_theme_fg(OV_FG_TEXT);
     ov_buf_printf("%s ", tstr);
     ov_buf_reset_attr();
