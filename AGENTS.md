@@ -253,6 +253,7 @@ when domain-specific tasks require extended capabilities.
 
 | Skill | When to use |
 |-------|-------------|
+| `advanced-math-patterns` | High-performance mathematical and DSP operations, BLAS, FFT, and vectorization |
 | `api-quick-reference` | API cheat sheet for IMGID, processinfo macros, stream variables, datatypes, and parameter sync |
 | `batch-kernel-doc` | Systematic Kernel-Doc documentation passes |
 | `cli-test-writer` | Writing CLI robustness test cases |
