@@ -215,11 +215,10 @@ static void print_help(const char *prog, int mh_color)
            "    %-28s Send SIGTERM to FPS tmux session\n"
            "    %-28s Send SIGKILL to FPS tmux session\n"
            "    %-28s Toggle Run loop state (runstart / runstop)\n"
-           "    %-28s Toggle Configuration loop state (confstart / confstop)\n"
-           "    %-28s Cycle through run states / pause\n\n",
+           "    %-28s Toggle Configuration loop state (confstart / confstop)\n\n",
            MH(MH_OPT, "CTRL + e"), MH(MH_OPT, "DEL / CTRL+e"), MH(MH_OPT, "k"), MH(MH_OPT, "K"),
            MH(MH_OPT, "p"), MH(MH_OPT, "^s"), MH(MH_OPT, "e"), MH(MH_OPT, "z"), MH(MH_OPT, "C"),
-           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "r"), MH(MH_OPT, "s"), MH(MH_OPT, "x"));
+           MH(MH_OPT, "k"), MH(MH_OPT, "K"), MH(MH_OPT, "r"), MH(MH_OPT, "s"));
 
     milk_help_section("Mouse Interactions", mh_color);
     printf("  - Click anywhere on a row to select it.\n"
@@ -434,13 +433,16 @@ int main(int argc, char *argv[])
                     if (pfd.revents & POLLIN)
                     {
                         int pk = ov_get_key();
-                        if (pk == 'q')
+                        if (pk == 'q' || pk == 'x')
                         {
                             quit_now = 1;
                         }
                         else if (pk != OV_KEY_NONE)
                         {
-                            ov_handle_key(pk, &lay, m);
+                            if (ov_handle_key(pk, &lay, m))
+                            {
+                                quit_now = 1;
+                            }
                             need_render = 1;
                         }
                         break;
