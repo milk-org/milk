@@ -25,49 +25,50 @@ Parameters are declared using the `FPS_PARAMS`
 X-macro in section 3 of the V2 layout:
 
 ```c
-#define FPS_PARAMS                              \
-    X(FPTYPE_STRING, ".in_name",  "input",      \
-      "Input stream",                           \
-      FPFLAG_DEFAULT_INPUT, in_name)            \
-    X(FPTYPE_STRING, ".out_name", "output",     \
-      "Output stream",                          \
-      FPFLAG_DEFAULT_OUTPUT, out_name)          \
-    X(FPTYPE_FLOAT64, ".gain",   "0.5",         \
-      "Loop gain",                              \
-      FPFLAG_DEFAULT_INPUT                      \
-      | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT,     \
-      &gain)
+#define FPS_PARAMS(X)                              \
+    X(".in_name", in_name, FPTYPE_STREAMNAME, 1,   \
+      FPFLAG_DEFAULT_INPUT, "Input stream")         \
+    X(".out_name", out_name, FPTYPE_STREAMNAME, 0,  \
+      FPFLAG_DEFAULT_OUTPUT, "Output stream")       \
+    X(".gain", &gain, FPTYPE_FLOAT64, 1,            \
+      FPFLAG_DEFAULT_INPUT                          \
+      | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT,         \
+      "Loop gain")
 ```
 
 ### X-Macro Fields
 
 | Position | Field | Description |
 |----------|-------|-------------|
-| 1 | Type | `FPTYPE_*` constant |
-| 2 | Keyword | FPS parameter name (`.prefix`) |
-| 3 | Default | Default value as string |
-| 4 | Description | Human-readable description |
+| 1 | Keyword | FPS parameter name (`.prefix`) |
+| 2 | Variable | Pointer to local C variable |
+| 3 | Type | `FPTYPE_*` constant |
+| 4 | is_primary | 1 if primary CLI argument, 0 otherwise |
 | 5 | Flags | `FPFLAG_*` bitfield |
-| 6 | Variable | Pointer to local C variable |
+| 6 | Description | Human-readable description |
 
 ## Parameter Types (`FPTYPE_*`)
 
-| Type | C Variable | Example Default |
-|------|-----------|-----------------|
-| `FPTYPE_INT64` | `int64_t` | `"100"` |
-| `FPTYPE_FLOAT64` | `double` | `"0.5"` |
-| `FPTYPE_FLOAT32` | `float` | `"1.0"` |
-| `FPTYPE_STRING` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"stream01"` |
-| `FPTYPE_ONOFF` | `int64_t` | `"ON"` or `"OFF"` |
-| `FPTYPE_FILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"/tmp/file.fits"` |
-| `FPTYPE_FITSFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"data.fits"` |
-| `FPTYPE_EXECFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"/usr/bin/prog"` |
-| `FPTYPE_DIRNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"/tmp/outdir"` |
-| `FPTYPE_STREAMNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"wfs0"` |
-| `FPTYPE_FPSNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"myfps"` |
-| `FPTYPE_PROCESS_PID` | `int64_t` | `"0"` |
-| `FPTYPE_TIMESPEC` | `double` | `"0.001"` |
-| `FPTYPE_AUTO` | *(varies)* | Auto-detect |
+| Type | C Variable |
+|------|------------|
+| `FPTYPE_INT32` | `int32_t` |
+| `FPTYPE_UINT32` | `uint32_t` |
+| `FPTYPE_INT64` | `int64_t` |
+| `FPTYPE_UINT64` | `uint64_t` |
+| `FPTYPE_FLOAT32` | `float` |
+| `FPTYPE_FLOAT64` | `double` |
+| `FPTYPE_STRING` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_ONOFF` | `int32_t` |
+| `FPTYPE_FILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_FITSFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_EXECFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_DIRNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_STREAMNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_FPSNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_PID` | `pid_t` |
+| `FPTYPE_TIMESPEC` | `struct timespec` |
+| `FPTYPE_PROCESS` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
+| `FPTYPE_STRING_NOT_STREAM` | `char[FUNCTION_PARAMETER_STRMAXLEN]` |
 
 ### String-Type Parameters
 
@@ -78,12 +79,12 @@ passed directly (as it decays to a pointer):
 
 ```c
 // Section 2 — local variables
-static char in_name[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char in_name[FUNCTION_PARAMETER_STRMAXLEN]
+    = "";
 
 // Section 3 — FPS_PARAMS
-X(FPTYPE_STRING, ".in_name", "stream01",
-  "Input stream name",
-  FPFLAG_DEFAULT_INPUT, in_name)
+X(".in_name", in_name, FPTYPE_STRING, 1,
+  FPFLAG_DEFAULT_INPUT, "Input stream name")
 ```
 
 ### Numeric Parameters
@@ -97,11 +98,11 @@ static double gain;
 static int64_t nbiter;
 
 // Section 3
-X(FPTYPE_FLOAT64, ".gain", "0.5",
-  "Loop gain", FPFLAG_DEFAULT_INPUT, &gain)
-X(FPTYPE_INT64, ".NBiter", "1000",
-  "Number of iterations",
-  FPFLAG_DEFAULT_INPUT, &nbiter)
+X(".gain", &gain, FPTYPE_FLOAT64, 1,
+  FPFLAG_DEFAULT_INPUT, "Loop gain")
+X(".NBiter", &nbiter, FPTYPE_INT64, 0,
+  FPFLAG_DEFAULT_INPUT,
+  "Number of iterations")
 ```
 
 ## Parameter Flags (`FPFLAG_*`)
@@ -149,32 +150,34 @@ or in a `customCONFcheck()`.
 ### Input/output stream pair
 
 ```c
-#define FPS_PARAMS                            \
-    X(FPTYPE_STRING, ".in_name", "in",        \
-      "Input stream",                         \
-      FPFLAG_DEFAULT_INPUT, in_name)          \
-    X(FPTYPE_STRING, ".out_name", "out",      \
-      "Output stream",                        \
-      FPFLAG_DEFAULT_OUTPUT, out_name)
+#define FPS_PARAMS(X)                          \
+    X(".in_name", in_name,                     \
+      FPTYPE_STREAMNAME, 1,                    \
+      FPFLAG_DEFAULT_INPUT,                    \
+      "Input stream")                          \
+    X(".out_name", out_name,                   \
+      FPTYPE_STREAMNAME, 0,                    \
+      FPFLAG_DEFAULT_OUTPUT,                   \
+      "Output stream")
 ```
 
 ### Tunable gain with limits
 
 ```c
-X(FPTYPE_FLOAT64, ".gain", "0.5",            \
-  "Loop gain [0.0 - 1.0]",                   \
-  FPFLAG_DEFAULT_INPUT                        \
-  | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT        \
-  | FPFLAG_WRITERUN, &gain)
+X(".gain", &gain, FPTYPE_FLOAT64, 1,          \
+  FPFLAG_DEFAULT_INPUT                         \
+  | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT         \
+  | FPFLAG_WRITERUN,                           \
+  "Loop gain [0.0 - 1.0]")
 ```
 
 ### On/off toggle
 
 ```c
-X(FPTYPE_ONOFF, ".enabled", "ON",            \
-  "Enable processing",                       \
-  FPFLAG_DEFAULT_INPUT                        \
-  | FPFLAG_WRITERUN, &enabled)
+X(".enabled", &enabled, FPTYPE_ONOFF, 0,      \
+  FPFLAG_DEFAULT_INPUT                         \
+  | FPFLAG_WRITERUN,                           \
+  "Enable processing")
 ```
 
 ## Common Mistakes
@@ -195,8 +198,9 @@ X(FPTYPE_ONOFF, ".enabled", "ON",            \
    parameter won't count toward `nbarg` and
    CLI argument parsing will be misaligned.
 
-4. **Default value type mismatch**: the default is
-   always a string. Use `"100"` not `100`.
+4. **Forgetting `is_primary`**: set field 4 to `1`
+   for required CLI positional arguments, `0` for
+   optional parameters.
 
 5. **Parameter name collision**: FPS parameter
    names must be unique within a function. Use

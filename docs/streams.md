@@ -34,7 +34,7 @@ sequenceDiagram
 
     Note over Writer, Reader: Zero-copy shared memory architecture
     Writer->>SHM: imgid_mkimage("stream1")
-    Reader->>SHM: imgid_connect("stream1")
+    Reader->>SHM: imgid_connect()
     Reader->>Reader: Wait for Semaphore
 
     loop Frame processing
@@ -147,10 +147,10 @@ arguments.
 
     ```c
     IMGID img = imgid_make_from_name("im1");
-    img.naxis = 2;
-    img.size[0] = 128;
-    img.size[1] = 128;
-    img.shared = 1; // 1 = SHM, 0 = local
+    img.mdt->naxis = 2;
+    img.mdt->size[0] = 128;
+    img.mdt->size[1] = 128;
+    img.mdt->shared = 1; // 1 = SHM, 0 = local
 
     imgid_mkimage(&img);
 
@@ -163,8 +163,8 @@ arguments.
     Connect to an existing stream:
 
     ```c
-    IMGID img1 = imgid_make();
-    imgid_connect("streamname1", &img1, 0);
+    IMGID img1 = imgid_make_from_name("streamname1");
+    imgid_connect(&img1, IMGID_CONNECT_NOCHECK);
     if (img1.ID == -1) {
         // handle failure
     }
@@ -180,13 +180,13 @@ arguments.
     if it doesn't match:
 
     ```c
-    IMGID img1 = imgid_make();
-    img1.naxis = 2;
-    img1.size[0] = 128;
-    img1.size[1] = 128;
+    IMGID img1 = imgid_make_from_name("streamname1");
+    img1.mdt->naxis = 2;
+    img1.mdt->size[0] = 128;
+    img1.mdt->size[1] = 128;
 
     // Create if format is wrong or doesn't exist
-    imgid_connect("streamname1", &img1,
+    imgid_connect(&img1,
         IMGID_CONNECT_CHECK_CREATE);
     ```
 
@@ -194,8 +194,9 @@ arguments.
 
     ```c
     // Force 2D float32 creation/connection
+    IMGID img1 = imgid_make_from_name("streamname1");
     imgid_connect_create_2Df32(
-        "streamname1", &img1, xsize, ysize
+        &img1, xsize, ysize
     );
     ```
 

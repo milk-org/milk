@@ -108,41 +108,96 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
 
 === ":material-format-list-bulleted: Data Types"
 
-    FPS natively supports the following parameter types:
+    FPS natively supports the following parameter types.
+    Use these `FPTYPE_*` constants in `FPS_PARAMS`
+    X-macro entries:
 
-    | Type | Description |
-    |------|-------------|
-    | `ONOFF` | Boolean (0/1) |
-    | `INT` | Integer value |
-    | `FLOAT` | Floating-point measurement |
-    | `STRING` | Text or path string |
-    | `TIMESPEC` | Timestamp structure |
-    | `STREAMNAME` | Name of a SHM stream |
-    | `FILENAME` | File path on disk |
+    | Constant | C Variable Type | Description |
+    |----------|----------------|-------------|
+    | `FPTYPE_INT32` | `int32_t` | 32-bit signed integer |
+    | `FPTYPE_UINT32` | `uint32_t` | 32-bit unsigned integer |
+    | `FPTYPE_INT64` | `int64_t` | 64-bit signed integer |
+    | `FPTYPE_UINT64` | `uint64_t` | 64-bit unsigned integer |
+    | `FPTYPE_FLOAT32` | `float` | 32-bit float |
+    | `FPTYPE_FLOAT64` | `double` | 64-bit double |
+    | `FPTYPE_ONOFF` | `int32_t` | Boolean (0=OFF, nonzero=ON) |
+    | `FPTYPE_STRING` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Generic text string |
+    | `FPTYPE_STREAMNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | SHM stream name |
+    | `FPTYPE_FILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | File path |
+    | `FPTYPE_FITSFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | FITS file path |
+    | `FPTYPE_EXECFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Executable path |
+    | `FPTYPE_DIRNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Directory path |
+    | `FPTYPE_FPSNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Another FPS name |
+    | `FPTYPE_PID` | `pid_t` | Process ID |
+    | `FPTYPE_TIMESPEC` | `struct timespec` | Timestamp |
+    | `FPTYPE_PROCESS` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Process name |
+    | `FPTYPE_STRING_NOT_STREAM` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | String (not a stream) |
+
+    For string-type parameters, pass the buffer name
+    directly (it decays to `char*`). For scalar types,
+    pass `&variable`.
 
 === ":material-flag: Flags"
 
-    Flags control parameter behavior and TUI visibility:
+    Flags control parameter behavior and TUI visibility.
+    Combine with bitwise OR (`|`):
+
+    **Input/Output presets:**
 
     | Flag | Effect |
     |------|--------|
-    | `FPFLAG_DEFAULT_INPUT` | Standard interactive input (combines ACTIVE, USED, VISIBLE, WRITE, WRITECONF, SAVEONCHANGE, FEEDBACK, WRITESTATUS) |
-    | `FPFLAG_CLI_INPUT` | Typically combined with default input |
-    | `FPFLAG_MINLIMIT` | Enforce minimum boundary |
-    | `FPFLAG_MAXLIMIT` | Enforce maximum boundary |
+    | `FPFLAG_DEFAULT_INPUT` | Standard input (active, visible, writable, save-on-change, CLI primary) |
+    | `FPFLAG_DEFAULT_OUTPUT` | Standard output (active, visible, read-only) |
+    | `FPFLAG_DEFAULT_INPUT_STREAM` | Input stream (adds run-required + stream-check) |
+    | `FPFLAG_DEFAULT_TRIGGER_STREAM` | Input stream that triggers computation |
+    | `FPFLAG_DEFAULT_OUTPUT_STREAM` | Output stream |
+
+    **Modifiers (combine with presets):**
+
+    | Flag | Effect |
+    |------|--------|
+    | `FPFLAG_MINLIMIT` | Enforce minimum value |
+    | `FPFLAG_MAXLIMIT` | Enforce maximum value |
+    | `FPFLAG_WRITERUN` | Allow modification while running |
+    | `FPFLAG_WRITECONF` | Allow modification during config |
+    | `FPFLAG_STREAM_ENFORCE_DATATYPE` | Validate stream datatype |
 
 === ":material-code-tags: Developer Integration"
 
-    Integrating with FPS entails three steps:
+    Integrating with FPS uses the V2 X-macro pattern.
+    Parameters are defined **once** and automatically
+    generate FPS entries, CLI arguments, and help text.
 
-    1. Fill out `FPS_APP_INFO` to register an identity
-       (SHM name, CLI keyword, description).
-    2. Define `FPS_PARAMS` with an X-macro to bind shared
-       memory to local C variables.
-    3. Wrap the core computation inside `fpsexec()`.
+    **X-macro field order:**
+    `X(keyword, ptr, type, is_primary, flag, descr)`
 
-    See the [Developer Tutorial](developer/tutorial.md) for
-    a step-by-step walkthrough.
+    ```c
+    // Local variables (section 2)
+    static char in_name[FUNCTION_PARAMETER_STRMAXLEN];
+    static double gain = 0.5;
+    static int64_t nbiter = 100;
+
+    // X-macro (section 3)
+    #define FPS_PARAMS(X)                           \
+        X(".in_name", in_name,                      \
+          FPTYPE_STREAMNAME, 1,                     \
+          FPFLAG_DEFAULT_TRIGGER_STREAM,            \
+          "Input stream")                           \
+        X(".gain", &gain,                           \
+          FPTYPE_FLOAT64, 1,                        \
+          FPFLAG_DEFAULT_INPUT                      \
+          | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT       \
+          | FPFLAG_WRITERUN,                        \
+          "Loop gain")                              \
+        X(".NBiter", &nbiter,                       \
+          FPTYPE_INT64, 0,                          \
+          FPFLAG_DEFAULT_INPUT,                     \
+          "Number of iterations")
+    ```
+
+    See the [Developer Tutorial](developer/tutorial.md)
+    and `src/milk_module_example/examplefunc_fps_cli_poc.c`
+    for a complete walkthrough.
 
 ### 5. Sequencer Integration
 

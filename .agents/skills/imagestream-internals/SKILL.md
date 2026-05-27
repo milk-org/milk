@@ -178,11 +178,11 @@ float *frame = img->array.F
 
 ```c
 IMGID img = imgid_make_from_name("mystream");
-img.naxis = 2;
-img.size[0] = 128;
-img.size[1] = 128;
-img.type = _DATATYPE_FLOAT;
-img.shared = 1;
+img.mdt->naxis = 2;
+img.mdt->size[0] = 128;
+img.mdt->size[1] = 128;
+img.mdt->datatype = _DATATYPE_FLOAT;
+img.mdt->shared = 1;
 imgid_mkimage(&img);
 ```
 

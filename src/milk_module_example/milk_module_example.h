@@ -9,7 +9,10 @@
 #ifndef _MILK_MODULE_EXAMPLE_H
 #define _MILK_MODULE_EXAMPLE_H
 
-#include "create_example_image.h"
-#include "stream_process_loop_simple.h"
+#include "examplefunc1.h"
+#include "examplefunc2_FPS.h"
+#include "examplefunc3_updatestreamloop.h"
+#include "examplefunc4_streamprocess.h"
+#include "fps_cli_poc.h"
 
 #endif
