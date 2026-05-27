@@ -6,8 +6,8 @@ centering and normalization, and correlation analysis.
 
 ## Source Files
 
-| File | Description |
-|------|-------------|
+| File           | Description                                                                           |
+| -------------- | ------------------------------------------------------------------------------------- |
 | `img_reduce.c` | Bad pixel removal, cube statistics, image centering/normalization, correlation matrix |
 
 ## Dependencies

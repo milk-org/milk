@@ -18,6 +18,7 @@ grep -n 'FPSPROCSYNC' <file>
 ```
 
 V1 indicators:
+
 - Uses `FPS_MAIN_STANDALONE` (not `_V2`)
 - Manual FPS parameter setup instead of
   `FPS_PARAMS` X-macro
@@ -27,6 +28,7 @@ V1 indicators:
 ## 2. Read the V2 Template
 
 Open the reference template:
+
 ```
 src/milk_module_example/examplefunc_fps_cli_poc.c
 ```

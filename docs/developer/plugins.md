@@ -22,7 +22,7 @@ Typically, plugins are placed inside an intermediate group folder such as:
 - `plugins/cacao-src/<your_plugin>` (For `cacao` AO loop modules)
 
 !!! note
-    Because plugins are decoupled, it's very common for them to be their own isolated git repositories. You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic links.
+Because plugins are decoupled, it's very common for them to be their own isolated git repositories. You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic links.
 
 ### Standalone Executables Relation to Core
 
@@ -103,4 +103,5 @@ Once your `CMakeLists.txt` and C sources are in progress:
 3. Look for the message `ADDING SUBDIR = plugins/milk-extra-src/my_new_plugin`. If you see that, `milk` has successfully hooked your plugin into the global project.
 
 ---
+
 ← [Documentation Index](../index.md)

@@ -18,15 +18,15 @@ CLI expressions and FPS stream-processing loops.
 Append `[axis0, axis1, axis2]` to any stream name.
 Each axis specification follows this grammar:
 
-| Form | Meaning |
-|------|---------|
-| `*` | Full axis, forward |
-| `-*` | Full axis, reversed (flip) |
-| `N` | Single index N |
-| `start:end` | Inclusive range [start, end] |
-| `start:end::step` | Range with stride |
+| Form               | Meaning                      |
+| ------------------ | ---------------------------- |
+| `*`                | Full axis, forward           |
+| `-*`               | Full axis, reversed (flip)   |
+| `N`                | Single index N               |
+| `start:end`        | Inclusive range [start, end] |
+| `start:end::step`  | Range with stride            |
 | `start:end::stepb` | Range with binning (average) |
-| *(empty)* | Same as `*` |
+| _(empty)_          | Same as `*`                  |
 
 **Indexing is 0-based, inclusive on both ends.**
 
@@ -49,13 +49,13 @@ im[-20:-1,0:9]       # Negative index: last 20 columns
 The parser lives in `src/engine/libfps/` (engine tier,
 no CLI dependency). Key functions:
 
-| Function | Purpose |
-|----------|---------|
-| `imgid_slice_split_name()` | Split `im[spec]` → bare name `im` + spec |
-| `imgid_slice_parse()` | Parse spec string → `IMGID_SLICE` descriptor |
-| `imgid_slice_output_size()` | Compute output dimensions from source + slice |
-| `imgid_slice_format()` | Format descriptor back to display string |
-| `imgid_slice_shmname()` | Generate deterministic SHM name for shared mode |
+| Function                    | Purpose                                         |
+| --------------------------- | ----------------------------------------------- |
+| `imgid_slice_split_name()`  | Split `im[spec]` → bare name `im` + spec        |
+| `imgid_slice_parse()`       | Parse spec string → `IMGID_SLICE` descriptor    |
+| `imgid_slice_output_size()` | Compute output dimensions from source + slice   |
+| `imgid_slice_format()`      | Format descriptor back to display string        |
+| `imgid_slice_shmname()`     | Generate deterministic SHM name for shared mode |
 
 ### IMGID Integration
 

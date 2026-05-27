@@ -38,7 +38,7 @@ Run this workflow when asked to review or audit code quality, or when you notice
    - Identify dependencies that can be simplified or decoupled.
    - Verify the code aligns with `performance-practices.md` (e.g., using `MILK_RESTRICT`, avoiding allocations in hot paths).
 
-6. **Implementation**:
+7. **Implementation**:
    - If large refactoring is needed, create an `implementation_plan.md` first.
    - Ensure all changes follow:
      - `code-style-guide.md`

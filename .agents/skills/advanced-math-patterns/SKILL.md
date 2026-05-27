@@ -12,6 +12,7 @@ When writing highly computational logic in milk (especially for Adaptive Optics)
 **NEVER** write manual nested `for` loops for matrix-vector multiplication (MVM) or matrix-matrix multiplication (SGEMM/DGEMM). Milk integrates with standard BLAS (MKL or OpenBLAS).
 
 ### Matrix-Vector Multiplication (MVM)
+
 To multiply a matrix $A$ by a vector $x$ to get $y$ ($y = \alpha Ax + \beta y$):
 
 ```c
@@ -27,6 +28,7 @@ cblas_sgemv(CblasRowMajor, CblasNoTrans,
 ```
 
 ### Matrix-Matrix Multiplication (SGEMM)
+
 To multiply matrix $A$ and matrix $B$ to get $C$ ($C = \alpha AB + \beta C$):
 
 ```c
@@ -39,7 +41,8 @@ cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
             matrixB_ptr, N_cols,
             0.0f, matrixC_ptr, N_cols);
 ```
-*Note: Make sure your module links against `${BLAS_LIBRARIES}` in its `CMakeLists.txt`.*
+
+_Note: Make sure your module links against `${BLAS_LIBRARIES}` in its `CMakeLists.txt`._
 
 ## 2. Fast Fourier Transforms (FFT)
 
@@ -72,11 +75,13 @@ for (uint64_t ii = 0; ii < xysize; ii++)
     out_ptr[ii] = in_ptr[ii] * 2.5f;
 }
 ```
-*Use `MILK_PREFETCH(addr, rw, locality)` inside loops that walk sequentially through massive multi-gigabyte arrays.*
+
+_Use `MILK_PREFETCH(addr, rw, locality)` inside loops that walk sequentially through massive multi-gigabyte arrays._
 
 ## 4. Avoiding Transcendentals in Hot Loops
 
 Mathematical function calls like `sinf()`, `cosf()`, `pow()`, and `sqrtf()` inside a pixel loop will destroy performance.
+
 - **`pow()` vs `powf()`:** Never use `pow()` or `sin()` on `float` data! It promotes the float to double, does expensive double-precision math, and truncates back to float. Always use `powf()`, `sinf()`, `sqrtf()`.
 - **Integer Powers:** Never use `powf(x, 2)`. Use `x * x`. Never use `pow(2, n)` for bitshifts; use `1 << n`.
 - **Precomputation (Look-Up Tables):** If calculating phase angles, pre-compute `sinf()` and `cosf()` arrays in `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT` and do an array lookup in the main loop.

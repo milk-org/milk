@@ -45,6 +45,7 @@ Error message
 **Symptom**: `undefined reference to 'function'`
 
 **Diagnosis**:
+
 1. Find which library provides the function:
    ```bash
    grep -r "function_name" src/ --include="*.h" -l
@@ -55,6 +56,7 @@ Error message
    dependency is allowed
 
 **Fixes**:
+
 - Add the missing library to
   `target_link_libraries`:
   ```cmake
@@ -69,14 +71,14 @@ Error message
 
 **Common missing libraries**:
 
-| Symbol | Library |
-|--------|---------|
-| `imgid_*`, `IMGID` | `milkdata` |
-| `fps_*`, `FPS_*` | `milkfps` |
-| `processinfo_*` | `milkprocessinfo` |
-| `RegisterCLIcmd` | `CLIcore` (never for standalone!) |
-| `cblas_sgemv` | `${BLAS_LIBRARIES}` |
-| Math functions | `m` (libm) |
+| Symbol             | Library                           |
+| ------------------ | --------------------------------- |
+| `imgid_*`, `IMGID` | `milkdata`                        |
+| `fps_*`, `FPS_*`   | `milkfps`                         |
+| `processinfo_*`    | `milkprocessinfo`                 |
+| `RegisterCLIcmd`   | `CLIcore` (never for standalone!) |
+| `cblas_sgemv`      | `${BLAS_LIBRARIES}`               |
+| Math functions     | `m` (libm)                        |
 
 ## §2 — Missing Header (Compiler)
 
@@ -84,6 +86,7 @@ Error message
 file or directory`
 
 **Diagnosis**:
+
 1. Find where the header lives:
    ```bash
    find src/ -name "bar.h" -type f
@@ -96,6 +99,7 @@ file or directory`
    ```
 
 **Fixes**:
+
 - Add include directory to the target:
   ```cmake
   target_include_directories(mylib PUBLIC
@@ -121,20 +125,21 @@ what it needs — no implicit transitive includes.
 
 Common missing includes:
 
-| Function | Header |
-|----------|--------|
-| `malloc`, `free`, `calloc` | `<stdlib.h>` |
-| `strlen`, `strcpy`, `memcpy` | `<string.h>` |
-| `printf`, `fprintf` | `<stdio.h>` |
-| `sqrt`, `pow`, `sin` | `<math.h>` |
-| `clock_gettime` | `<time.h>` |
-| `sem_post`, `sem_wait` | `<semaphore.h>` |
+| Function                     | Header          |
+| ---------------------------- | --------------- |
+| `malloc`, `free`, `calloc`   | `<stdlib.h>`    |
+| `strlen`, `strcpy`, `memcpy` | `<string.h>`    |
+| `printf`, `fprintf`          | `<stdio.h>`     |
+| `sqrt`, `pow`, `sin`         | `<math.h>`      |
+| `clock_gettime`              | `<time.h>`      |
+| `sem_post`, `sem_wait`       | `<semaphore.h>` |
 
 ## §4 — Multiple Definition (Linker)
 
 **Symptom**: `multiple definition of 'symbol'`
 
 **Common causes**:
+
 1. Non-static global defined in a `.h` file
    included by multiple `.c` files → make it
    `extern` in `.h`, define in one `.c`
@@ -151,6 +156,7 @@ symbol ... can not be used; recompile with -fPIC`
 position-independent code.
 
 **Fix**: ensure the static library target has:
+
 ```cmake
 set_target_properties(mylib_static PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
@@ -160,25 +166,25 @@ set_target_properties(mylib_static PROPERTIES
 
 **Common CMake issues**:
 
-| Error | Fix |
-|-------|-----|
-| `Could NOT find ...` | Install the dependency or set `-DCMAKE_PREFIX_PATH` |
-| `target ... not found` | Check spelling; target might be created conditionally |
-| `Cannot find source file` | File was moved/renamed but `CMakeLists.txt` not updated |
-| Path doubling in install | Use `CMAKE_INSTALL_PREFIX` only at configure time, not embedded in targets |
+| Error                     | Fix                                                                        |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `Could NOT find ...`      | Install the dependency or set `-DCMAKE_PREFIX_PATH`                        |
+| `target ... not found`    | Check spelling; target might be created conditionally                      |
+| `Cannot find source file` | File was moved/renamed but `CMakeLists.txt` not updated                    |
+| Path doubling in install  | Use `CMAKE_INSTALL_PREFIX` only at configure time, not embedded in targets |
 
 ## Build Tier Reference
 
 When diagnosing, know what's available at each
 tier:
 
-| Tier | Available libraries |
-|------|-------------------|
-| Engine | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
-| Core | Engine + COREMOD_{arith,memory,tools} |
-| Core+FITS | Core + COREMOD_iofits, cfitsio |
-| Full | Everything: CLIcore, all plugins |
-| Standalone | Engine + `_compute` variants only |
+| Tier       | Available libraries                               |
+| ---------- | ------------------------------------------------- |
+| Engine     | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
+| Core       | Engine + COREMOD\_{arith,memory,tools}            |
+| Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
+| Full       | Everything: CLIcore, all plugins                  |
+| Standalone | Engine + `_compute` variants only                 |
 
 ## Standalone Executable Checklist
 

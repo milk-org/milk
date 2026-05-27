@@ -13,6 +13,7 @@ The key template is
 ## 1. Gather Information
 
 Ask the user for:
+
 - **Target directory** (e.g.,
   `~/src/milk/plugins/milk-extra-src/mymodule`)
 - **C filename** (e.g., `mystream_proc.c`)
@@ -33,6 +34,7 @@ to the target directory with the given filename.
 ## 3. Update Identity (Section 1)
 
 In the `FPS_APP_INFO` struct, update:
+
 - `.fps_name` to the FPS shared memory name
 - `.cmdkey` to the CLI keyword
 - `.description` to the one-line description
@@ -48,6 +50,7 @@ In the `FPS_APP_INFO` struct, update:
 ## 5. Update the Stream Processing Function
 
 Modify `streamprocess()`:
+
 - Update `resolveIMGID()` and `imcreateIMGID()` calls
   to match parameter names.
 - Replace the per-pixel sqrt() example with the
@@ -67,6 +70,7 @@ differ from a basic FPS compute unit:
    match input format.
 
 2. **Loop structure**:
+
    ```c
    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
@@ -84,6 +88,7 @@ differ from a basic FPS compute unit:
 ## 7. Update CMake
 
 Append the standalone target to `CMakeLists.txt`:
+
 ```cmake
 # For milk:
 add_milk_standalone(cmdkey source_file.c)

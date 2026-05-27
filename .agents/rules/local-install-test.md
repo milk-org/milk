@@ -1,5 +1,3 @@
-
-
 # Local Install and Test
 
 **Never** attempt to install to the system prefix

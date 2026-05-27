@@ -23,6 +23,7 @@ for safe incremental delivery.
   existing architecture
 
 **Skip this skill** for:
+
 - Single-file bug fixes
 - Documentation-only changes
 - Straightforward template-based tasks (use the
@@ -32,12 +33,12 @@ for safe incremental delivery.
 
 Determine the scope by answering these questions:
 
-| Question | Options |
-|----------|---------|
-| **Build tier** | Engine / Core / Full? |
-| **New or extension?** | New module, new file in existing module, or modification? |
-| **Scope** | Single module / cross-module / framework-level? |
-| **Template** | V2 compute unit / stream processor / plain function / CLI builtin / none? |
+| Question              | Options                                                                   |
+| --------------------- | ------------------------------------------------------------------------- |
+| **Build tier**        | Engine / Core / Full?                                                     |
+| **New or extension?** | New module, new file in existing module, or modification?                 |
+| **Scope**             | Single module / cross-module / framework-level?                           |
+| **Template**          | V2 compute unit / stream processor / plain function / CLI builtin / none? |
 
 If the feature spans multiple tiers or modules,
 flag this early — it likely needs phased delivery.
@@ -62,11 +63,11 @@ flag this early — it likely needs phased delivery.
 
 For each new shared-memory object, document:
 
-| Object | Type | Name Pattern | Details |
-|--------|------|-------------|---------|
-| Stream | `IMAGE` | e.g., `wfs0_raw` | dtype, dimensions, shared flag |
-| FPS | `FUNCTION_PARAMETER_STRUCT` | e.g., `fps.myproc` | parameter list with types |
-| Processinfo | `PROCESSINFO` | auto | loop type (finite/infinite) |
+| Object      | Type                        | Name Pattern       | Details                        |
+| ----------- | --------------------------- | ------------------ | ------------------------------ |
+| Stream      | `IMAGE`                     | e.g., `wfs0_raw`   | dtype, dimensions, shared flag |
+| FPS         | `FUNCTION_PARAMETER_STRUCT` | e.g., `fps.myproc` | parameter list with types      |
+| Processinfo | `PROCESSINFO`               | auto               | loop type (finite/infinite)    |
 
 ### 2.3 CLI Surface
 
@@ -92,14 +93,14 @@ Group by component:
 
 Check which documentation rules will fire:
 
-| Rule | Applies? | Action needed |
-|------|----------|---------------|
-| `readme-update` | Module files added/removed? | Update module README |
-| `help-consistency` | CLI commands changed? | Cross-check help sources |
-| `whatsnew-update` | Significant feature? | Add entry to whatsnew.md |
-| `maintain-programmers-guide` | Architecture changed? | Update programmers_guide.md |
-| `script-docs` | Scripts changed? | Update docs/scripts.md |
-| `documentation-site` | New doc page needed? | Add to mkdocs.yml nav |
+| Rule                         | Applies?                    | Action needed               |
+| ---------------------------- | --------------------------- | --------------------------- |
+| `readme-update`              | Module files added/removed? | Update module README        |
+| `help-consistency`           | CLI commands changed?       | Cross-check help sources    |
+| `whatsnew-update`            | Significant feature?        | Add entry to whatsnew.md    |
+| `maintain-programmers-guide` | Architecture changed?       | Update programmers_guide.md |
+| `script-docs`                | Scripts changed?            | Update docs/scripts.md      |
+| `documentation-site`         | New doc page needed?        | Add to mkdocs.yml nav       |
 
 ### 3.3 Test Touchpoints
 
@@ -115,21 +116,25 @@ testable:
 
 ```markdown
 ### Phase 1: [Foundation]
+
 - What to implement
 - How to verify (compile, test)
 - Estimated complexity (low/med/high)
 
 ### Phase 2: [Core Logic]
+
 - What to implement
 - Dependencies on Phase 1
 - How to verify
 
 ### Phase 3: [Integration + Polish]
+
 - Wire up CLI / docs / tests
 - How to verify end-to-end
 ```
 
 **Rules for phasing:**
+
 - Each phase must compile and pass tests
 - Dependencies flow forward (Phase 2 depends on
   Phase 1, never backward)
@@ -143,14 +148,14 @@ testable:
 
 Flag any of these if they apply:
 
-| Risk | Mitigation |
-|------|------------|
+| Risk                          | Mitigation                                                     |
+| ----------------------------- | -------------------------------------------------------------- |
 | Cross-module dependency added | Verify with `dependency_graph.md`; consider `_compute` variant |
-| Performance-sensitive path | Consult `performance-practices.md`; plan benchmarking |
-| Breaking API change | Document migration path; consider deprecation period |
-| Standalone linkage | Verify with `add_milk_standalone()`; check `_compute` variants |
-| Large refactor | Use `refactor-c-source` skill; split into multiple PRs |
-| Concurrency / shared memory | Consult `concurrency-practices.md` |
+| Performance-sensitive path    | Consult `performance-practices.md`; plan benchmarking          |
+| Breaking API change           | Document migration path; consider deprecation period           |
+| Standalone linkage            | Verify with `add_milk_standalone()`; check `_compute` variants |
+| Large refactor                | Use `refactor-c-source` skill; split into multiple PRs         |
+| Concurrency / shared memory   | Consult `concurrency-practices.md`                             |
 
 ## Output Format
 
@@ -167,6 +172,7 @@ explicitly check which rules will fire during
 execution and account for them in the plan.
 
 Key rules to consult during planning:
+
 - `architecture-principles.md` — dependency
   direction
 - `cmake-conventions.md` — build target setup

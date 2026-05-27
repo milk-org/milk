@@ -14,7 +14,7 @@ the pieces fit together before diving into code.
 See also: [Programmer's Guide](programmers_guide.md) ·
 [Dependency Graph](dependency_graph.md)
 
-***
+---
 
 ## 1. Purpose
 
@@ -25,18 +25,18 @@ independent compute units that communicate through
 zero-copy shared memory, enabling microsecond-latency
 data pipelines.
 
-***
+---
 
 ## 2. Design Philosophy
 
-| Principle | How it manifests |
-|-----------|-----------------|
-| **Shared-memory microservices** | Each compute unit is a standalone process; data is exchanged via `/dev/shm/` with no serialization overhead. |
-| **Fault isolation** | Every process runs in its own `tmux` session — a crash never brings down the rest of the pipeline. |
-| **Live reconfiguration** | Parameters live in shared memory (FPS); any process, CLI, or TUI can change them while the pipeline runs. |
-| **Layered build** | The build system is tiered (Engine → Core → Full) so embedded or headless deployments only compile the minimal subset. |
+| Principle                       | How it manifests                                                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Shared-memory microservices** | Each compute unit is a standalone process; data is exchanged via `/dev/shm/` with no serialization overhead.           |
+| **Fault isolation**             | Every process runs in its own `tmux` session — a crash never brings down the rest of the pipeline.                     |
+| **Live reconfiguration**        | Parameters live in shared memory (FPS); any process, CLI, or TUI can change them while the pipeline runs.              |
+| **Layered build**               | The build system is tiered (Engine → Core → Full) so embedded or headless deployments only compile the minimal subset. |
 
-***
+---
 
 ## 3. The Three Pillars
 
@@ -71,13 +71,13 @@ graph TD
     class CLI,TUI,SCTRL ui
 ```
 
-| Pillar | Shared Memory Path | Deep-Dive Doc |
-|--------|--------------------|---------------|
-| **ImageStreamIO** (Streams) | `*.im.shm` | [streams.md](streams.md) |
-| **FPS** (Function Processing System) | `fps.*.shm` | [fps.md](fps.md) |
-| **processinfo** | `proc.*.shm` | [procinfo.md](procinfo.md) |
+| Pillar                               | Shared Memory Path | Deep-Dive Doc              |
+| ------------------------------------ | ------------------ | -------------------------- |
+| **ImageStreamIO** (Streams)          | `*.im.shm`         | [streams.md](streams.md)   |
+| **FPS** (Function Processing System) | `fps.*.shm`        | [fps.md](fps.md)           |
+| **processinfo**                      | `proc.*.shm`       | [procinfo.md](procinfo.md) |
 
-***
+---
 
 ## 4. Layered Architecture
 
@@ -111,17 +111,17 @@ Lower layers have no knowledge of higher ones.
 Each layer corresponds to a **build tier** that can be
 compiled independently:
 
-| Tier | CMake Flags | What is built |
-|------|-------------|---------------|
-| **Engine** | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
-| **Core** | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF` | Engine + COREMOD arith, memory, tools |
-| **Core+FITS** | `-DUSE_CLI=OFF` | Core + COREMOD_iofits |
-| **Full** | *(defaults)* | Everything: CLI + all plugins |
+| Tier          | CMake Flags                        | What is built                                     |
+| ------------- | ---------------------------------- | ------------------------------------------------- |
+| **Engine**    | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
+| **Core**      | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMOD arith, memory, tools             |
+| **Core+FITS** | `-DUSE_CLI=OFF`                    | Core + COREMOD_iofits                             |
+| **Full**      | _(defaults)_                       | Everything: CLI + all plugins                     |
 
 → Details: [Build Tiers](install/build_tiers.md) ·
 [Dependency Graph](dependency_graph.md)
 
-***
+---
 
 ## 5. Source Tree
 
@@ -183,7 +183,7 @@ milk/
 └── _build/                            ← Build output
 ```
 
-***
+---
 
 ## 6. Data Flow
 
@@ -218,7 +218,7 @@ Each box in this pipeline is an independent process:
 - Monitored via processinfo heartbeats
 - Running inside a dedicated tmux session
 
-***
+---
 
 ## 7. Compute Units (Standalone Executables)
 
@@ -263,7 +263,7 @@ They can run in two modes:
 [Programmer's Guide](programmers_guide.md) ·
 [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
 
-***
+---
 
 ## 8. Plugin System
 
@@ -333,23 +333,23 @@ graph TD
 
 → Details: [Adding Plugins](developer/plugins.md)
 
-***
+---
 
 ## 9. User Interfaces
 
-| Tool | Purpose | Interacts with |
-|------|---------|----------------|
-| `milk-cli` | Interactive shell for running commands, loading modules, scripting pipelines | FPS, Streams |
-| `milk-fpsCTRL` | TUI dashboard for monitoring and editing FPS parameters in real time | FPS, processinfo |
-| `milk-procCTRL` | TUI for process health monitoring | processinfo |
-| `milk-streamCTRL` | TUI for inspecting live stream metadata, frame rates, semaphore state | Streams |
-| `milk-fpsexec-*` | Standalone compute executables (one per function) | FPS, Streams, processinfo |
-| `milk-fps-*` | CLI utilities for FPS operations (set, list, search, deploy) | FPS |
+| Tool              | Purpose                                                                      | Interacts with            |
+| ----------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| `milk-cli`        | Interactive shell for running commands, loading modules, scripting pipelines | FPS, Streams              |
+| `milk-fpsCTRL`    | TUI dashboard for monitoring and editing FPS parameters in real time         | FPS, processinfo          |
+| `milk-procCTRL`   | TUI for process health monitoring                                            | processinfo               |
+| `milk-streamCTRL` | TUI for inspecting live stream metadata, frame rates, semaphore state        | Streams                   |
+| `milk-fpsexec-*`  | Standalone compute executables (one per function)                            | FPS, Streams, processinfo |
+| `milk-fps-*`      | CLI utilities for FPS operations (set, list, search, deploy)                 | FPS                       |
 
 → Details: [CLI Overview](cli/CLI_Overview.md) ·
 [Scripts Reference](scripts.md)
 
-***
+---
 
 ## 10. Multi-Host Operation
 
@@ -366,24 +366,25 @@ Host A  ←──►  Valkey Server  ←──►  Host B
 
 → Details: [Valkey Integration](valkey.md)
 
-***
+---
 
 ## 11. Document Map
 
-| Document | Scope |
-|----------|-------|
-| **This document** | System-level architecture overview |
-| [Programmer's Guide](programmers_guide.md) | Writing compute units, C API, CMake conventions |
-| [Dependency Graph](dependency_graph.md) | Library-level build dependencies (mermaid diagrams) |
-| [Streams](streams.md) | ImageStreamIO API, IMGID, semaphore model |
-| [FPS](fps.md) | Parameter types, fpsCTRL, fpslist.txt workflow |
-| [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) | CMD vs standalone execution contexts |
-| [Process Info](procinfo.md) | Heartbeat API, loop profiling |
-| [Performance Tuning](performance.md) | CPU pinning, RT scheduling, GPU, network |
-| [Debugging](debugging.md) | GDB, tmux logs, common failures |
-| [Valkey Integration](valkey.md) | Multi-host parameter sync |
-| [Build Tiers](install/build_tiers.md) | Compilation tier configuration |
-| [Adding Plugins](developer/plugins.md) | Plugin module creation guide |
+| Document                                            | Scope                                               |
+| --------------------------------------------------- | --------------------------------------------------- |
+| **This document**                                   | System-level architecture overview                  |
+| [Programmer's Guide](programmers_guide.md)          | Writing compute units, C API, CMake conventions     |
+| [Dependency Graph](dependency_graph.md)             | Library-level build dependencies (mermaid diagrams) |
+| [Streams](streams.md)                               | ImageStreamIO API, IMGID, semaphore model           |
+| [FPS](fps.md)                                       | Parameter types, fpsCTRL, fpslist.txt workflow      |
+| [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) | CMD vs standalone execution contexts                |
+| [Process Info](procinfo.md)                         | Heartbeat API, loop profiling                       |
+| [Performance Tuning](performance.md)                | CPU pinning, RT scheduling, GPU, network            |
+| [Debugging](debugging.md)                           | GDB, tmux logs, common failures                     |
+| [Valkey Integration](valkey.md)                     | Multi-host parameter sync                           |
+| [Build Tiers](install/build_tiers.md)               | Compilation tier configuration                      |
+| [Adding Plugins](developer/plugins.md)              | Plugin module creation guide                        |
 
-***
+---
+
 ← [Documentation Index](index.md)

@@ -36,6 +36,7 @@ trigger: always_on
   the existing codebase (~77% of control blocks).
   Use the brace style already present in a file
   when editing; use Allman for new files.
+
   ```c
   /* Function definition */
   static errno_t compute_stream(
@@ -57,6 +58,7 @@ trigger: always_on
       return RETURN_SUCCESS;
   }
   ```
+
 - Enable and enforce compiler warnings (`-Wall`, `-Wextra`)
   during development to catch missing declarations early.
   Treat them as errors (`-Werror`) in CI/CD.
@@ -70,6 +72,7 @@ trigger: always_on
   include should not be listed again.
 - Add a closing comment to any scope longer than
   ~10 lines:
+
   ```c
   #ifdef HAVE_CUDA
   // ... many lines ...
@@ -80,9 +83,11 @@ trigger: always_on
       // ... many lines ...
   } // if (condition_met)
   ```
+
 - Prefer early exit over deeply nested braces. The
   preferred control flow is the one that minimizes
   indentation:
+
   ```c
   /* GOOD — early exit */
   if (ptr == NULL)
@@ -97,6 +102,7 @@ trigger: always_on
       // main logic indented ...
   }
   ```
+
 - Use `restrict` on pointer parameters to pixel/array
   data in compute-heavy functions where pointers are
   guaranteed non-aliasing. See `performance-practices.md`
@@ -114,6 +120,7 @@ The pre-commit hook runs `clang-format` using the
 config is used by `clangd` for editor formatting.
 
 Key behaviors enforced automatically:
+
 - Allman brace style
 - 4-space indentation
 - 100-char max line length
@@ -124,6 +131,7 @@ Key behaviors enforced automatically:
 - No include reordering
 
 Rules NOT enforced by clang-format (manual/review):
+
 - Column-aligned parameter names
   (see `parameter-alignment.md`)
 - Kernel-Doc documentation

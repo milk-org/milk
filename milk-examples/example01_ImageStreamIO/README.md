@@ -14,6 +14,7 @@ make
 ## Running
 
 1. Start the writer in one terminal:
+
    ```bash
    ./milk-example-01-writer
    ```

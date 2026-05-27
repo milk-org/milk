@@ -32,17 +32,17 @@ FIFO input → milkseq_fifo_read()
 
 ## Files
 
-| File | Description |
-|------|-------------|
-| `fpsseq_types.h` | `MILKSEQ_STATE`, task struct, constants |
-| `fpsseq.h` | Public API declarations |
-| `fpsseq_shm.c` | SHM lifecycle (create, connect, destroy, list) |
-| `fpsseq_scheduler.c` | Task scheduling and priority logic |
-| `fpsseq_fifo.c` | Non-blocking FIFO command reader |
-| `fpsseq_cmdexec.c` | Command parser and executor |
-| `fpsseq_script.c` | `.seq` script loader and compiler |
-| `milk-seq.c` | `milk-seq` standalone executable |
-| `milk-seq-help.c` | Help text for `milk-seq` |
+| File                 | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `fpsseq_types.h`     | `MILKSEQ_STATE`, task struct, constants        |
+| `fpsseq.h`           | Public API declarations                        |
+| `fpsseq_shm.c`       | SHM lifecycle (create, connect, destroy, list) |
+| `fpsseq_scheduler.c` | Task scheduling and priority logic             |
+| `fpsseq_fifo.c`      | Non-blocking FIFO command reader               |
+| `fpsseq_cmdexec.c`   | Command parser and executor                    |
+| `fpsseq_script.c`    | `.seq` script loader and compiler              |
+| `milk-seq.c`         | `milk-seq` standalone executable               |
+| `milk-seq-help.c`    | Help text for `milk-seq`                       |
 
 ## Build Tier
 

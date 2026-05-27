@@ -35,38 +35,38 @@ pillars — **ImageStreamIO**, **FPS**, and
 
 <div class="grid cards" markdown>
 
--   :material-download-circle:{ .lg .middle } **Install**
+- :material-download-circle:{ .lg .middle } **Install**
 
-    ---
+  ***
 
-    Clone, build, and configure the milk framework.
+  Clone, build, and configure the milk framework.
 
-    [:octicons-arrow-right-24: Installation](install/compile.md)
+  [:octicons-arrow-right-24: Installation](install/compile.md)
 
--   :material-layers-outline:{ .lg .middle } **Build Tiers**
+- :material-layers-outline:{ .lg .middle } **Build Tiers**
 
-    ---
+  ***
 
-    Engine → Core → Full: compile only what you need.
+  Engine → Core → Full: compile only what you need.
 
-    [:octicons-arrow-right-24: Build tiers](install/build_tiers.md)
+  [:octicons-arrow-right-24: Build tiers](install/build_tiers.md)
 
--   :material-console:{ .lg .middle } **CLI Overview**
+- :material-console:{ .lg .middle } **CLI Overview**
 
-    ---
+  ***
 
-    Interactive shell, standalone executables, and
-    scripting basics.
+  Interactive shell, standalone executables, and
+  scripting basics.
 
-    [:octicons-arrow-right-24: CLI overview](cli/CLI_Overview.md)
+  [:octicons-arrow-right-24: CLI overview](cli/CLI_Overview.md)
 
--   :material-help-circle-outline:{ .lg .middle } **FAQ**
+- :material-help-circle-outline:{ .lg .middle } **FAQ**
 
-    ---
+  ***
 
-    Common issues with builds, SHM, FPS, and CLI.
+  Common issues with builds, SHM, FPS, and CLI.
 
-    [:octicons-arrow-right-24: FAQ & Troubleshooting](faq.md)
+  [:octicons-arrow-right-24: FAQ & Troubleshooting](faq.md)
 
 </div>
 
@@ -76,38 +76,38 @@ pillars — **ImageStreamIO**, **FPS**, and
 
 <div class="grid cards" markdown>
 
--   :material-memory:{ .lg .middle } **Streams**
+- :material-memory:{ .lg .middle } **Streams**
 
-    ---
+  ***
 
-    Zero-copy shared memory tensors (`ImageStreamIO`).
+  Zero-copy shared memory tensors (`ImageStreamIO`).
 
-    [:octicons-arrow-right-24: Streams](streams.md)
+  [:octicons-arrow-right-24: Streams](streams.md)
 
--   :material-tune-variant:{ .lg .middle } **FPS**
+- :material-tune-variant:{ .lg .middle } **FPS**
 
-    ---
+  ***
 
-    Live parameter sync, state control, TUI dashboards.
+  Live parameter sync, state control, TUI dashboards.
 
-    [:octicons-arrow-right-24: FPS](fps.md)
+  [:octicons-arrow-right-24: FPS](fps.md)
 
--   :material-heart-pulse:{ .lg .middle } **Process Info**
+- :material-heart-pulse:{ .lg .middle } **Process Info**
 
-    ---
+  ***
 
-    Heartbeat telemetry, loop-rate profiling, health
-    monitoring.
+  Heartbeat telemetry, loop-rate profiling, health
+  monitoring.
 
-    [:octicons-arrow-right-24: Process Info](procinfo.md)
+  [:octicons-arrow-right-24: Process Info](procinfo.md)
 
--   :material-sitemap-outline:{ .lg .middle } **Architecture**
+- :material-sitemap-outline:{ .lg .middle } **Architecture**
 
-    ---
+  ***
 
-    System overview, layered design, data flow diagrams.
+  System overview, layered design, data flow diagrams.
 
-    [:octicons-arrow-right-24: Architecture](architecture.md)
+  [:octicons-arrow-right-24: Architecture](architecture.md)
 
 </div>
 
@@ -117,37 +117,37 @@ pillars — **ImageStreamIO**, **FPS**, and
 
 <div class="grid cards" markdown>
 
--   :material-school-outline:{ .lg .middle } **Tutorial**
+- :material-school-outline:{ .lg .middle } **Tutorial**
 
-    ---
+  ***
 
-    Write your first compute module step by step.
+  Write your first compute module step by step.
 
-    [:octicons-arrow-right-24: Tutorial](developer/tutorial.md)
+  [:octicons-arrow-right-24: Tutorial](developer/tutorial.md)
 
--   :material-code-braces:{ .lg .middle } **Coding Standards**
+- :material-code-braces:{ .lg .middle } **Coding Standards**
 
-    ---
+  ***
 
-    C style, line length, includes, Kernel-Doc.
+  C style, line length, includes, Kernel-Doc.
 
-    [:octicons-arrow-right-24: Coding standards](developer/coding_standards.md)
+  [:octicons-arrow-right-24: Coding standards](developer/coding_standards.md)
 
--   :material-puzzle-outline:{ .lg .middle } **Adding Plugins**
+- :material-puzzle-outline:{ .lg .middle } **Adding Plugins**
 
-    ---
+  ***
 
-    Build modules that compile alongside the core.
+  Build modules that compile alongside the core.
 
-    [:octicons-arrow-right-24: Plugins](developer/plugins.md)
+  [:octicons-arrow-right-24: Plugins](developer/plugins.md)
 
--   :material-file-tree-outline:{ .lg .middle } **Template Code**
+- :material-file-tree-outline:{ .lg .middle } **Template Code**
 
-    ---
+  ***
 
-    Breakdown of `milk_module_example`.
+  Breakdown of `milk_module_example`.
 
-    [:octicons-arrow-right-24: Template source](developer/TemplateSourceCode.md)
+  [:octicons-arrow-right-24: Template source](developer/TemplateSourceCode.md)
 
 </div>
 
@@ -157,39 +157,39 @@ pillars — **ImageStreamIO**, **FPS**, and
 
 <div class="grid cards" markdown>
 
--   :material-speedometer:{ .lg .middle } **Performance**
+- :material-speedometer:{ .lg .middle } **Performance**
 
-    ---
+  ***
 
-    CPU pinning, RT scheduling, SIMD, BLAS, GPU.
+  CPU pinning, RT scheduling, SIMD, BLAS, GPU.
 
-    [:octicons-arrow-right-24: Performance](performance.md)
+  [:octicons-arrow-right-24: Performance](performance.md)
 
--   :material-chart-line:{ .lg .middle } **PGO & LTO**
+- :material-chart-line:{ .lg .middle } **PGO & LTO**
 
-    ---
+  ***
 
-    Profile-guided optimization + static link-time
-    optimization for 15–40 % speedup.
+  Profile-guided optimization + static link-time
+  optimization for 15–40 % speedup.
 
-    [:octicons-arrow-right-24: PGO & LTO](pgo.md)
+  [:octicons-arrow-right-24: PGO & LTO](pgo.md)
 
--   :material-bug-outline:{ .lg .middle } **Debugging**
+- :material-bug-outline:{ .lg .middle } **Debugging**
 
-    ---
+  ***
 
-    GDB, tmux logs, procinfo diagnostics, common
-    failures.
+  GDB, tmux logs, procinfo diagnostics, common
+  failures.
 
-    [:octicons-arrow-right-24: Debugging](debugging.md)
+  [:octicons-arrow-right-24: Debugging](debugging.md)
 
--   :material-api:{ .lg .middle } **API Reference**
+- :material-api:{ .lg .middle } **API Reference**
 
-    ---
+  ***
 
-    Auto-generated Doxygen C API docs with call graphs.
+  Auto-generated Doxygen C API docs with call graphs.
 
-    [:octicons-arrow-right-24: Doxygen API](api/html/index.html)
+  [:octicons-arrow-right-24: Doxygen API](api/html/index.html)
 
 </div>
 

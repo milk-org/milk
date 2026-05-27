@@ -6,8 +6,8 @@ simulation, and BIRCH clustering.
 
 ## Source Files
 
-| File | Description |
-|------|-------------|
+| File          | Description                                                                  |
+| ------------- | ---------------------------------------------------------------------------- |
 | `statistic.c` | Random number generators, Poisson/Gaussian noise injection, BIRCH clustering |
 
 ## Dependencies

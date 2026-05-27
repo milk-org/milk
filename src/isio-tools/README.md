@@ -4,8 +4,8 @@ ImageStreamIO command-line utilities.
 
 ## Executables
 
-| Command | Description |
-|---------|-------------|
+| Command            | Description                                        |
+| ------------------ | -------------------------------------------------- |
 | `isio-stream-info` | Display detailed info about a shared memory stream |
 
 ## Dependencies

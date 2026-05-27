@@ -11,18 +11,18 @@ help levels using the flags defined below.
 
 ## Required Flags
 
-| Flag | Long form | Behavior |
-|------|-----------|----------|
-| `-h1` | `--help-oneline` | Print one line (the `.description` string), exit 0 |
-| `-h2` | `--help-description` | Print verbose description only (plain text, no color), exit 0 |
-| `-h` | `--help` | Full help with ANSI color (auto-suppressed if stdout is not a tty), exit 0 |
-| `-hm` | `--help-mono` | Full help, forced monochrome (no ANSI escapes), exit 0 |
+| Flag  | Long form            | Behavior                                                                   |
+| ----- | -------------------- | -------------------------------------------------------------------------- |
+| `-h1` | `--help-oneline`     | Print one line (the `.description` string), exit 0                         |
+| `-h2` | `--help-description` | Print verbose description only (plain text, no color), exit 0              |
+| `-h`  | `--help`             | Full help with ANSI color (auto-suppressed if stdout is not a tty), exit 0 |
+| `-hm` | `--help-mono`        | Full help, forced monochrome (no ANSI escapes), exit 0                     |
 
 ### TTY Auto-Detection
 
 When `-h` is used and stdout is not a terminal
 (`!isatty(STDOUT_FILENO)`), color MUST be
-suppressed automatically.  The `-hm` flag forces
+suppressed automatically. The `-hm` flag forces
 monochrome regardless of terminal.
 
 ### `-h1` Behavior
@@ -30,26 +30,26 @@ monochrome regardless of terminal.
 `-h1` MUST be handled **before** `getopt` so it
 is never misinterpreted as `-h` plus `1`.
 Output is a single line: the description string
-followed by `\n`.  No color, no prefix.
+followed by `\n`. No color, no prefix.
 
 ## Color Palette
 
 All executables use the macros from `milk_help.h`
 (engine tier, no CLI dependency):
 
-| Macro | ANSI code | Role |
-|-------|-----------|------|
-| `MH_RST` | `\033[0m` | Reset |
-| `MH_BOLD` | `\033[1m` | Bold white |
-| `MH_DIM` | `\033[2m` | Dim gray |
+| Macro      | ANSI code    | Role                         |
+| ---------- | ------------ | ---------------------------- |
+| `MH_RST`   | `\033[0m`    | Reset                        |
+| `MH_BOLD`  | `\033[1m`    | Bold white                   |
+| `MH_DIM`   | `\033[2m`    | Dim gray                     |
 | `MH_TITLE` | `\033[1;36m` | Program name, primary params |
-| `MH_HDR` | `\033[1;34m` | Section headers |
-| `MH_CMD` | `\033[1;32m` | Commands, executables |
-| `MH_OPT` | `\033[33m` | Option flags |
-| `MH_ARG` | `\033[1;35m` | Required arguments |
-| `MH_DFLT` | `\033[36m` | Default values |
-| `MH_NOTE` | `\033[1;33m` | Notes, see-also text |
-| `MH_ERR` | `\033[1;31m` | Error messages |
+| `MH_HDR`   | `\033[1;34m` | Section headers              |
+| `MH_CMD`   | `\033[1;32m` | Commands, executables        |
+| `MH_OPT`   | `\033[33m`   | Option flags                 |
+| `MH_ARG`   | `\033[1;35m` | Required arguments           |
+| `MH_DFLT`  | `\033[36m`   | Default values               |
+| `MH_NOTE`  | `\033[1;33m` | Notes, see-also text         |
+| `MH_ERR`   | `\033[1;31m` | Error messages               |
 
 ### Color Dispatch
 
@@ -62,43 +62,43 @@ printf("  " MH(MH_OPT, "-h, --help")
 
 The `MH(color, text)` macro expands to
 `color text MH_RST` when `mh_color` is true,
-or just `text` when false.  The variable
+or just `text` when false. The variable
 `mh_color` is set by `milk_help_init()`.
 
 ## Section Ordering
 
 Full help (`-h` / `-hm`) MUST contain these
-sections in this exact order.  Sections marked
-*(optional)* may be omitted when not applicable.
+sections in this exact order. Sections marked
+_(optional)_ may be omitted when not applicable.
 
 1. **BANNER** — program name + one-line description
 2. **USAGE** — usage synopsis
 3. **DESCRIPTION** — 2–5 sentence overview
-4. **ARGUMENTS** — positional args *(if any)*
+4. **ARGUMENTS** — positional args _(if any)_
 5. **OPTIONS** — flags and options
-6. **COMMANDS** — sub-commands *(fpsexec only)*
-7. **PARAMETERS** — FPS params table *(fpsexec)*
+6. **COMMANDS** — sub-commands _(fpsexec only)_
+7. **PARAMETERS** — FPS params table _(fpsexec)_
 8. **EXAMPLES** — 1–3 concrete examples
-9. **ENVIRONMENT** — env vars *(optional)*
+9. **ENVIRONMENT** — env vars _(optional)_
 10. **SEE ALSO** — related commands
 
 ## Formatting Rules
 
 1. **Banner**: program name in `MH_TITLE`, then
-   ` — ` (em-dash), then description in normal text.
+   `—` (em-dash), then description in normal text.
 2. **Section headers**: `MH_HDR`, followed by colon
-   and newline.  No underlines, no `===` bars.
+   and newline. No underlines, no `===` bars.
 3. **Options**: flags in `MH_OPT`, arguments in
    `MH_ARG`, defaults in `MH_DFLT` inside `()`.
-   Two-space indent.  Align descriptions at a
+   Two-space indent. Align descriptions at a
    consistent column (14–18).
 4. **Commands**: command name in `MH_CMD`.
-   Two-space indent.  Align at column 14.
+   Two-space indent. Align at column 14.
 5. **Examples**: `$` prompt in `MH_DIM`, executable
    in `MH_CMD`, arguments in `MH_ARG`.
 6. **See Also**: one entry per line, two-space indent.
-   Command name in `MH_CMD`, followed by ` — ` (em-dash)
-   and a short description in normal text.  For shell
+   Command name in `MH_CMD`, followed by `—` (em-dash)
+   and a short description in normal text. For shell
    scripts using `milk-argparse`, populate the
    `MSseealso` array:
    ```bash
@@ -115,7 +115,7 @@ sections in this exact order.  Sections marked
 Help is auto-generated by the
 `FPS_MAIN_STANDALONE_V2` macro in `fps.h`.
 The macro uses `milk_help.h` macros and follows
-the section ordering above.  Developers only
+the section ordering above. Developers only
 need to provide `FPS_APP_INFO.description` and
 the `FPS_PARAMS` X-macro; the help output is
 produced automatically.
@@ -139,7 +139,7 @@ macro — no per-executable code is needed.
 ### Standalone tools
 
 Each standalone tool implements its own
-`print_help()` function.  It MUST:
+`print_help()` function. It MUST:
 
 1. `#include "milk_help.h"`
 2. Call `milk_help_init(argc, argv)` at the top

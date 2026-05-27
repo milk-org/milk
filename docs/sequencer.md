@@ -30,13 +30,13 @@ See also: [Function Processing System (FPS)](fps.md)
 
 You can manage sequencers directly from `milk-cli` or bash using the `seq.*` command suite:
 
-| Command | Description |
-|---------|-------------|
-| `seq.list` | List all running sequencer instances on the system. |
-| `seq.start <name> [-f script.seq]` | Launch a new `milk-seq` daemon headless. Optionally start a script. |
-| `seq.stop <name>` | Safely terminate a sequencer daemon. |
-| `seq.status <name>` | Display the current status, task counts, and errors for a specific sequencer. |
-| `seq.submit <name> <command>` | Push an arbitrary command into a sequencer's FIFO pipe for immediate execution. |
+| Command                            | Description                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------- |
+| `seq.list`                         | List all running sequencer instances on the system.                             |
+| `seq.start <name> [-f script.seq]` | Launch a new `milk-seq` daemon headless. Optionally start a script.             |
+| `seq.stop <name>`                  | Safely terminate a sequencer daemon.                                            |
+| `seq.status <name>`                | Display the current status, task counts, and errors for a specific sequencer.   |
+| `seq.submit <name> <command>`      | Push an arbitrary command into a sequencer's FIFO pipe for immediate execution. |
 
 **Example Workflow:**
 
@@ -119,4 +119,4 @@ To visually monitor a running sequencer, launch `milk-fpsCTRL` and press `s` to 
 
 The TUI will automatically locate the sequencer associated with the active module group. If multiple sequencers exist, rely on the unified `MILKSEQ_STATE` tracking to view real-time process rates, running tasks, and any reported errors.
 
-The TUI handles the sequencer purely as a *viewer*. Pressing keys to start/stop the sequencer within the TUI will inject commands into the sequencer's native FIFO path, ensuring thread-safe state management.
+The TUI handles the sequencer purely as a _viewer_. Pressing keys to start/stop the sequencer within the TUI will inject commands into the sequencer's native FIFO path, ensuring thread-safe state management.

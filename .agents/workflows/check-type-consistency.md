@@ -12,6 +12,7 @@ corruption or unsupported-type crashes.
 ## 1. Find All Type Switch Blocks
 
 Search for switch statements on data type variables:
+
 ```bash
 grep -rn 'switch.*datatype\|switch.*atype\|case _DATATYPE_\|case CLIARG_' \
   src/ plugins/ --include='*.c' | head -80
@@ -20,6 +21,7 @@ grep -rn 'switch.*datatype\|switch.*atype\|case _DATATYPE_\|case CLIARG_' \
 ## 2. Define the Complete Type Set
 
 The canonical set of image data types is:
+
 ```
 _DATATYPE_UINT8, _DATATYPE_INT8,
 _DATATYPE_UINT16, _DATATYPE_INT16,
@@ -33,6 +35,7 @@ _DATATYPE_COMPLEX_DOUBLE
 ## 3. Audit Each Switch Block
 
 For each `switch` block found:
+
 1. List all `case` labels present.
 2. Compare against the canonical set.
 3. Flag any missing types.
@@ -42,6 +45,7 @@ For each `switch` block found:
 ## 4. Categorize Findings
 
 Classify each incomplete switch as:
+
 - **Bug**: A type that should be handled but isn't
   (e.g., `INT8` missing where all other integer
   types are handled).

@@ -13,12 +13,12 @@ trigger: always_on
 Each module should organize its headers into these
 categories:
 
-| Category | Naming | Installed? | Purpose |
-|----------|--------|------------|---------|
-| **Public API** | `<module>.h` | Yes | External function declarations |
-| **Internal** | `<module>_internal.h` | No | Private functions, shared state across `.c` files |
-| **Types/structs** | `<module>_types.h` | Yes | Struct definitions, typedefs |
-| **Macros** | `<module>_macros.h` | Optional | Exported macro APIs |
+| Category          | Naming                | Installed? | Purpose                                           |
+| ----------------- | --------------------- | ---------- | ------------------------------------------------- |
+| **Public API**    | `<module>.h`          | Yes        | External function declarations                    |
+| **Internal**      | `<module>_internal.h` | No         | Private functions, shared state across `.c` files |
+| **Types/structs** | `<module>_types.h`    | Yes        | Struct definitions, typedefs                      |
+| **Macros**        | `<module>_macros.h`   | Optional   | Exported macro APIs                               |
 
 **Rules:**
 

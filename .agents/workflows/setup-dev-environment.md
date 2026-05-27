@@ -77,12 +77,12 @@ make install
 
 ### Optional Build Flags
 
-| Flag | Purpose |
-|------|---------|
-| `-DUSE_STATIC_LTO=ON` | Static LTO build |
-| `-DVEC_REPORT=ON` | Vectorization report |
-| `-DCMAKE_BUILD_TYPE=Debug` | Debug symbols |
-| `-DUSE_CFITSIO=OFF` | Build without FITS |
+| Flag                       | Purpose              |
+| -------------------------- | -------------------- |
+| `-DUSE_STATIC_LTO=ON`      | Static LTO build     |
+| `-DVEC_REPORT=ON`          | Vectorization report |
+| `-DCMAKE_BUILD_TYPE=Debug` | Debug symbols        |
+| `-DUSE_CFITSIO=OFF`        | Build without FITS   |
 
 ## 6. Source the Environment
 

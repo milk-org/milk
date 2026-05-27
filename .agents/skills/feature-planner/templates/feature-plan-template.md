@@ -19,9 +19,9 @@ plain function / CLI builtin / none]
 
 ### Shared Memory Objects
 
-| Object | Type | Name | Details |
-|--------|------|------|---------|
-| | Stream / FPS / Procinfo | | dtype, dims, params |
+| Object | Type                    | Name | Details             |
+| ------ | ----------------------- | ---- | ------------------- |
+|        | Stream / FPS / Procinfo |      | dtype, dims, params |
 
 ### CLI Surface
 
@@ -33,17 +33,17 @@ plain function / CLI builtin / none]
 
 ### [Component 1]
 
-| Action | File | Purpose |
-|--------|------|---------|
-| NEW | `file.c` | description |
-| MODIFY | `file.c` | what changes |
-| MODIFY | `CMakeLists.txt` | new targets |
+| Action | File             | Purpose      |
+| ------ | ---------------- | ------------ |
+| NEW    | `file.c`         | description  |
+| MODIFY | `file.c`         | what changes |
+| MODIFY | `CMakeLists.txt` | new targets  |
 
 ### [Component 2]
 
 | Action | File | Purpose |
-|--------|------|---------|
-| ... | ... | ... |
+| ------ | ---- | ------- |
+| ...    | ...  | ...     |
 
 ## Documentation Updates
 
@@ -77,9 +77,9 @@ plain function / CLI builtin / none]
 
 ## Risks
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| | low/med/high | |
+| Risk | Severity     | Mitigation |
+| ---- | ------------ | ---------- |
+|      | low/med/high |            |
 
 ## Open Questions
 

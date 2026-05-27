@@ -10,9 +10,9 @@ See also: [Build Tiers](build_tiers.md) ·
 ## 1. Download and install milk
 
 !!! warning
-    This page describes installation of the core package milk.
-    If you install an application package (cacao or coffee),
-    replace "milk" with "cacao" in these instructions.
+This page describes installation of the core package milk.
+If you install an application package (cacao or coffee),
+replace "milk" with "cacao" in these instructions.
 
 For download, build commands, and CMake options, see the
 [Quick Start section in README.md](../../README.md#download).
@@ -22,7 +22,6 @@ without cfitsio, etc.), see [Build Tiers](build_tiers.md).
 
 The sections below cover post-installation setup, dependencies,
 and optional configuration not covered in the README.
-
 
 ## 2. Post-installation
 
@@ -34,7 +33,6 @@ $ echo "/usr/local/lib" > usrlocal.conf
 $ sudo mv usrlocal.conf /etc/ld.so.conf.d/
 $ sudo ldconfig -v
 ```
-
 
 ## 3. tmpfs (optional)
 
@@ -52,12 +50,12 @@ $ sudo mount /milk/shm
 
 ### 4.1. Required (full build)
 
-| Dependency | Purpose |
-|------------|---------|
-| **gcc** | C compiler (C17) |
-| **cmake** ≥ 3.10 | Build system |
-| **pkg-config** | Locates installed libraries |
-| **pthreads** | POSIX threading (provided by libc) |
+| Dependency       | Purpose                            |
+| ---------------- | ---------------------------------- |
+| **gcc**          | C compiler (C17)                   |
+| **cmake** ≥ 3.10 | Build system                       |
+| **pkg-config**   | Locates installed libraries        |
+| **pthreads**     | POSIX threading (provided by libc) |
 
 ??? note "Optional dependencies"
 
@@ -171,4 +169,5 @@ $ sudo mount /milk/shm
     ```
 
 ---
+
 ← [Documentation Index](../index.md)

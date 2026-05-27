@@ -5,7 +5,7 @@
 ### 1.1 Source Files (`.c` / `.h`)
 
 | Category        | Pattern                  | Examples                   |
-|-----------------|--------------------------|----------------------------|
+| --------------- | ------------------------ | -------------------------- |
 | Module init     | `<module_name>.c/h`      | `COREMOD_arith.c`, `fft.c` |
 | Compute unit    | `<action>_<object>.c/h`  | `image_crop2D.c`           |
 | V2 fpsexec      | `<funcname>.c`           | `MVM_CPU.c`, `findspots.c` |
@@ -23,12 +23,12 @@
 
 ### 1.2 Directories (Modules)
 
-| Tier           | Pattern                  | Examples                     |
-|----------------|--------------------------|------------------------------|
-| Engine library | `lib<name>`              | `libfps`, `libmilkdata`      |
-| Core module    | `COREMOD_<domain>`       | `COREMOD_arith`              |
-| Plugin module  | `<domain>`               | `fft`, `linalgebra`          |
-| cacao module   | `AOloopControl_<subsys>` | `AOloopControl_DM`           |
+| Tier           | Pattern                  | Examples                |
+| -------------- | ------------------------ | ----------------------- |
+| Engine library | `lib<name>`              | `libfps`, `libmilkdata` |
+| Core module    | `COREMOD_<domain>`       | `COREMOD_arith`         |
+| Plugin module  | `<domain>`               | `fft`, `linalgebra`     |
+| cacao module   | `AOloopControl_<subsys>` | `AOloopControl_DM`      |
 
 - New milk modules: lowercase `snake_case`.
 - Established `CamelCase` prefixes (`AOloopControl`) are preserved.
@@ -37,12 +37,12 @@
 
 Use the following patterns for script names.
 
-| Type           | Pattern                    | Examples                  |
-|----------------|----------------------------|---------------------------|
-| OS executable  | `milk-<subsys>-<verb>`     | `milk-fps-set`            |
-| milk fpsexec   | `milk-fpsexec-<name>`      | `milk-fpsexec-MVM`        |
-| cacao fpsexec  | `cacao-fpsexec-<name>`     | `cacao-fpsexec-dmcomb`    |
-| CLI script     | `<descriptive>.milk`       | `makecircleofdisks.milk`  |
+| Type          | Pattern                | Examples                 |
+| ------------- | ---------------------- | ------------------------ |
+| OS executable | `milk-<subsys>-<verb>` | `milk-fps-set`           |
+| milk fpsexec  | `milk-fpsexec-<name>`  | `milk-fpsexec-MVM`       |
+| cacao fpsexec | `cacao-fpsexec-<name>` | `cacao-fpsexec-dmcomb`   |
+| CLI script    | `<descriptive>.milk`   | `makecircleofdisks.milk` |
 
 ---
 
@@ -50,13 +50,13 @@ Use the following patterns for script names.
 
 ### 2.1 Scope-Based Naming
 
-| Scope                      | Convention                          |
-|----------------------------|-------------------------------------|
-| **Public API** (in `.h`)   | `<subsystem>_<verb>_<object>()`     |
-| **Module-internal static** | `<verb>_<object>()` or descriptive  |
-| **CLI registration**       | `CLIADDCMD_<module>__<func>()`      |
-| **CLI entry point**        | `CLIfunction()`                     |
-| **Module init**            | `init_module_CLI()`                 |
+| Scope                      | Convention                         |
+| -------------------------- | ---------------------------------- |
+| **Public API** (in `.h`)   | `<subsystem>_<verb>_<object>()`    |
+| **Module-internal static** | `<verb>_<object>()` or descriptive |
+| **CLI registration**       | `CLIADDCMD_<module>__<func>()`     |
+| **CLI entry point**        | `CLIfunction()`                    |
+| **Module init**            | `init_module_CLI()`                |
 
 **Rules:**
 
@@ -76,18 +76,18 @@ Use the following patterns for script names.
 
 ### 2.2 Verb Conventions
 
-| Intent    | Verbs                            |
-|-----------|----------------------------------|
-| Create    | `create`, `make`, `init`         |
-| Destroy   | `destroy`, `free`, `remove`      |
-| Read      | `get`, `read`, `check`, `is`     |
-| Write     | `set`, `write`, `update`         |
-| Connect   | `connect`, `open`                |
-| Close     | `close`, `disconnect`            |
-| Compute   | `compute`, `process`, `exec`     |
-| Print     | `print`, `display`, `show`       |
-| Search    | `scan`, `search`, `find`         |
-| Persist   | `load`, `save`                   |
+| Intent  | Verbs                        |
+| ------- | ---------------------------- |
+| Create  | `create`, `make`, `init`     |
+| Destroy | `destroy`, `free`, `remove`  |
+| Read    | `get`, `read`, `check`, `is` |
+| Write   | `set`, `write`, `update`     |
+| Connect | `connect`, `open`            |
+| Close   | `close`, `disconnect`        |
+| Compute | `compute`, `process`, `exec` |
+| Print   | `print`, `display`, `show`   |
+| Search  | `scan`, `search`, `find`     |
+| Persist | `load`, `save`               |
 
 ### 2.3 Function Name Length
 
@@ -104,20 +104,21 @@ Use the following patterns for script names.
 ### 3.1 General Principles
 
 **Balance length against clarity.** A variable name should be:
+
 1. Long enough to convey **intent** without reading context.
 2. Short enough to fit in expressions within 100 characters.
 3. **Grep-searchable** — no single-letter names outside trivial loops.
 
 ### 3.2 Naming Rules by Scope
 
-| Scope                    | Length   | Convention               |
-|--------------------------|----------|--------------------------|
-| Loop index (< 10 lines)  | 1–2      | `ii`, `jj`, `kk`, `nn`  |
-| Block-local (< 20 lines) | 3–12     | `xsize`, `total`, `val`  |
-| Function-local (> 20 ln) | 5–20     | `byte_copy_size`         |
-| Static file-scope        | 6–25     | `param_streamname`       |
-| Global / extern          | 8–30     | `milk_data`, `dcimg`     |
-| FPS parameter local      | 8–25     | `param_loopgain` (recommended, not mandatory) |
+| Scope                    | Length | Convention                                    |
+| ------------------------ | ------ | --------------------------------------------- |
+| Loop index (< 10 lines)  | 1–2    | `ii`, `jj`, `kk`, `nn`                        |
+| Block-local (< 20 lines) | 3–12   | `xsize`, `total`, `val`                       |
+| Function-local (> 20 ln) | 5–20   | `byte_copy_size`                              |
+| Static file-scope        | 6–25   | `param_streamname`                            |
+| Global / extern          | 8–30   | `milk_data`, `dcimg`                          |
+| FPS parameter local      | 8–25   | `param_loopgain` (recommended, not mandatory) |
 
 ### 3.3 Loop Index Conventions
 
@@ -141,16 +142,16 @@ Use the following patterns for script names.
 Use these standard names. Types must match `IMAGE_METADATA` fields
 for vectorization (see §3.8).
 
-| Variable   | Type        | Source / Meaning                     |
-|------------|-------------|--------------------------------------|
-| `xsize`    | `uint32_t`  | `md->size[0]` — width (axis 0)      |
-| `ysize`    | `uint32_t`  | `md->size[1]` — height (axis 1)     |
-| `zsize`    | `uint32_t`  | `md->size[2]` — depth / slices      |
-| `xysize`   | `uint64_t`  | `(uint64_t)xsize * ysize`           |
-| `xyzsize`  | `uint64_t`  | `(uint64_t)xsize * ysize * zsize`   |
-| `naxis`    | `uint8_t`   | `md->naxis` — number of axes        |
-| `nelement` | `uint64_t`  | `md->nelement` — total pixel count  |
-| `datatype` | `uint8_t`   | `md->datatype` — pixel data type    |
+| Variable   | Type       | Source / Meaning                   |
+| ---------- | ---------- | ---------------------------------- |
+| `xsize`    | `uint32_t` | `md->size[0]` — width (axis 0)     |
+| `ysize`    | `uint32_t` | `md->size[1]` — height (axis 1)    |
+| `zsize`    | `uint32_t` | `md->size[2]` — depth / slices     |
+| `xysize`   | `uint64_t` | `(uint64_t)xsize * ysize`          |
+| `xyzsize`  | `uint64_t` | `(uint64_t)xsize * ysize * zsize`  |
+| `naxis`    | `uint8_t`  | `md->naxis` — number of axes       |
+| `nelement` | `uint64_t` | `md->nelement` — total pixel count |
+| `datatype` | `uint8_t`  | `md->datatype` — pixel data type   |
 
 ### 3.5 Pointer Naming
 
@@ -209,12 +210,12 @@ for vectorization (see §3.8).
 
 **Rule: match the index type to the bound type.**
 
-| Bound source                  | Bound type  | Index type  |
-|-------------------------------|-------------|-------------|
-| `md->size[]`, `xsize`        | `uint32_t`  | `uint32_t`  |
-| `md->nelement`, `xysize`     | `uint64_t`  | `uint64_t`  |
-| `strlen()`, `we_wordc`       | `size_t`    | `size_t`    |
-| Fixed small count (< ~100)   | `int`       | `int`       |
+| Bound source               | Bound type | Index type |
+| -------------------------- | ---------- | ---------- |
+| `md->size[]`, `xsize`      | `uint32_t` | `uint32_t` |
+| `md->nelement`, `xysize`   | `uint64_t` | `uint64_t` |
+| `strlen()`, `we_wordc`     | `size_t`   | `size_t`   |
+| Fixed small count (< ~100) | `int`      | `int`      |
 
 Do **not** use `size_t` for pixel loops — it mismatches
 `IMAGE_METADATA` fields and obscures intent (`size_t` means
@@ -251,12 +252,12 @@ uint64_t xysize = (uint64_t)xsize * ysize;
 All `typedef struct` names use `UPPER_CASE`. This is the
 established codebase convention and must not be changed.
 
-| Category       | Examples                                         |
-|----------------|--------------------------------------------------|
-| Core data      | `IMAGE`, `IMAGE_METADATA`, `VARIABLE`            |
-| API structs    | `FUNCTION_PARAMETER_STRUCT`, `MILK_DATA`         |
-| Helpers        | `CBFRAMEMD`, `FRAMEWRITEMD`, `SEMFILEDATA`       |
-| Handles / IDs  | `IMGID`, `CLICMDDATA`, `CLICMDARGDEF`            |
+| Category      | Examples                                   |
+| ------------- | ------------------------------------------ |
+| Core data     | `IMAGE`, `IMAGE_METADATA`, `VARIABLE`      |
+| API structs   | `FUNCTION_PARAMETER_STRUCT`, `MILK_DATA`   |
+| Helpers       | `CBFRAMEMD`, `FRAMEWRITEMD`, `SEMFILEDATA` |
+| Handles / IDs | `IMGID`, `CLICMDDATA`, `CLICMDARGDEF`      |
 
 ### 4.2 Enum Values
 
@@ -275,41 +276,41 @@ CLIARG_IMG
 
 Pre-approved abbreviations — prefer these over long forms:
 
-| Abbr           | Meaning                    | Context           |
-|----------------|----------------------------|--------------------|
-| `img`          | image                      | everywhere         |
-| `im`           | image (struct member)      | `IMAGE` fields     |
-| `shm`          | shared memory              | everywhere         |
-| `sem`          | semaphore                  | everywhere         |
-| `fps`          | function parameter struct  | everywhere         |
-| `proc`         | process                    | processinfo        |
-| `cmd`          | command                    | CLI                |
-| `cli`          | command-line interface     | CLI                |
-| `conf`         | configuration              | FPS                |
-| `param`        | parameter                  | FPS                |
-| `buf`          | buffer                     | data               |
-| `cb`           | circular buffer            | streams            |
-| `cnt`          | counter                    | everywhere         |
-| `nb`           | number of                  | counts             |
-| `idx`          | index                      | arrays             |
-| `ptr`          | pointer                    | everywhere         |
-| `val`          | value                      | FPS params         |
-| `str`          | string (**var only** §6.1) | FPS params         |
-| `fn` / `func`  | function                   | callbacks          |
-| `init`         | initialize                 | lifecycle          |
-| `alloc`        | allocate                   | memory             |
-| `sz`           | size                       | dimensions         |
-| `len`          | length                     | strings            |
-| `max` / `min`  | maximum / minimum          | limits             |
-| `avg`          | average                    | statistics         |
-| `rms`          | root mean square           | statistics         |
-| `dm`           | deformable mirror          | AO domain          |
-| `wfs`          | wavefront sensor           | AO domain          |
-| `ao`           | adaptive optics            | AO domain          |
-| `rm`           | response matrix            | AO domain          |
-| `cm`           | control matrix             | AO domain          |
-| `pf`           | predictive filter          | AO domain          |
-| `mvm`          | matrix-vector multiply     | compute            |
+| Abbr          | Meaning                    | Context        |
+| ------------- | -------------------------- | -------------- |
+| `img`         | image                      | everywhere     |
+| `im`          | image (struct member)      | `IMAGE` fields |
+| `shm`         | shared memory              | everywhere     |
+| `sem`         | semaphore                  | everywhere     |
+| `fps`         | function parameter struct  | everywhere     |
+| `proc`        | process                    | processinfo    |
+| `cmd`         | command                    | CLI            |
+| `cli`         | command-line interface     | CLI            |
+| `conf`        | configuration              | FPS            |
+| `param`       | parameter                  | FPS            |
+| `buf`         | buffer                     | data           |
+| `cb`          | circular buffer            | streams        |
+| `cnt`         | counter                    | everywhere     |
+| `nb`          | number of                  | counts         |
+| `idx`         | index                      | arrays         |
+| `ptr`         | pointer                    | everywhere     |
+| `val`         | value                      | FPS params     |
+| `str`         | string (**var only** §6.1) | FPS params     |
+| `fn` / `func` | function                   | callbacks      |
+| `init`        | initialize                 | lifecycle      |
+| `alloc`       | allocate                   | memory         |
+| `sz`          | size                       | dimensions     |
+| `len`         | length                     | strings        |
+| `max` / `min` | maximum / minimum          | limits         |
+| `avg`         | average                    | statistics     |
+| `rms`         | root mean square           | statistics     |
+| `dm`          | deformable mirror          | AO domain      |
+| `wfs`         | wavefront sensor           | AO domain      |
+| `ao`          | adaptive optics            | AO domain      |
+| `rm`          | response matrix            | AO domain      |
+| `cm`          | control matrix             | AO domain      |
+| `pf`          | predictive filter          | AO domain      |
+| `mvm`         | matrix-vector multiply     | compute        |
 
 This list is **guidance, not enforcement**. Agents must use these
 abbreviations in all new code they generate. If a new abbreviation
@@ -319,16 +320,16 @@ is needed, use it consistently and add it to this list.
 
 ## 6. Macros and Constants
 
-| Category        | Convention                | Examples                     |
-|-----------------|---------------------------|------------------------------|
-| Numeric const   | `UPPER_CASE`              | `IMAGE_NB_SEMAPHORE`         |
-| String limits   | `STRINGMAXLEN_<WHAT>`     | `STRINGMAXLEN_IMAGE_NAME`    |
-| Data types      | `_DATATYPE_<TYPE>`        | `_DATATYPE_FLOAT` (legacy)   |
-| FPS types       | `FPTYPE_<TYPE>`           | `FPTYPE_INT32`               |
-| FPS flags       | `FPFLAG_<NAME>`           | `FPFLAG_DEFAULT_INPUT`       |
-| CLI args        | `CLIARG_<TYPE>`           | `CLIARG_IMG`                 |
-| Size-of         | `SIZEOF_DATATYPE_<TYPE>`  | `SIZEOF_DATATYPE_FLOAT`      |
-| Feature-test    | `UPPER_CASE`              | `MILK_NO_CLI`, `USE_CLI`     |
+| Category      | Convention               | Examples                   |
+| ------------- | ------------------------ | -------------------------- |
+| Numeric const | `UPPER_CASE`             | `IMAGE_NB_SEMAPHORE`       |
+| String limits | `STRINGMAXLEN_<WHAT>`    | `STRINGMAXLEN_IMAGE_NAME`  |
+| Data types    | `_DATATYPE_<TYPE>`       | `_DATATYPE_FLOAT` (legacy) |
+| FPS types     | `FPTYPE_<TYPE>`          | `FPTYPE_INT32`             |
+| FPS flags     | `FPFLAG_<NAME>`          | `FPFLAG_DEFAULT_INPUT`     |
+| CLI args      | `CLIARG_<TYPE>`          | `CLIARG_IMG`               |
+| Size-of       | `SIZEOF_DATATYPE_<TYPE>` | `SIZEOF_DATATYPE_FLOAT`    |
+| Feature-test  | `UPPER_CASE`             | `MILK_NO_CLI`, `USE_CLI`   |
 
 All macros use `UPPER_CASE_WITH_UNDERSCORES`.
 
@@ -345,17 +346,17 @@ C11 (see §6.1).
 
 **Reserved patterns — avoid in new code:**
 
-| Pattern                    | Reserved by       | Risk                    |
-|----------------------------|-------------------|-------------------------|
-| `_Uppercase...`            | C11 §7.1.3        | UB; compiler internals  |
-| `__anything`               | C11 §7.1.3        | UB; compiler built-ins  |
-| `str` + lowercase (func)   | `<string.h>`      | libc name collision     |
-| `mem` + lowercase (func)   | `<string.h>`      | libc name collision     |
-| `is` + lowercase (func)    | `<ctype.h>`       | libc name collision     |
-| `to` + lowercase (func)    | `<ctype.h>`       | libc name collision     |
-| `SIG` + uppercase          | `<signal.h>`      | signal name collision   |
-| `E` + digit/uppercase      | `<errno.h>`       | errno code collision    |
-| names ending in `_t`       | POSIX             | type name collision     |
+| Pattern                  | Reserved by  | Risk                   |
+| ------------------------ | ------------ | ---------------------- |
+| `_Uppercase...`          | C11 §7.1.3   | UB; compiler internals |
+| `__anything`             | C11 §7.1.3   | UB; compiler built-ins |
+| `str` + lowercase (func) | `<string.h>` | libc name collision    |
+| `mem` + lowercase (func) | `<string.h>` | libc name collision    |
+| `is` + lowercase (func)  | `<ctype.h>`  | libc name collision    |
+| `to` + lowercase (func)  | `<ctype.h>`  | libc name collision    |
+| `SIG` + uppercase        | `<signal.h>` | signal name collision  |
+| `E` + digit/uppercase    | `<errno.h>`  | errno code collision   |
+| names ending in `_t`     | POSIX        | type name collision    |
 
 **Practical rules:**
 
@@ -372,16 +373,16 @@ C11 (see §6.1).
 
 **Known legacy conflicts** (preserved, not renamed):
 
-| Legacy identifier          | Conflict          | Status                  |
-|----------------------------|-------------------|-------------------------|
-| `_DATATYPE_FLOAT` etc.     | `_` + uppercase   | Entrenched; do not      |
-|                            |                   | rename without shim.    |
-| `_IMAGESTRUCT_H` etc.      | `_` + uppercase   | Legacy header guard.    |
-|                            |                   | Use `IMAGESTRUCT_H`     |
-|                            |                   | for new headers.        |
-| `errno_t`                  | POSIX `_t`        | Conditionally defined   |
-|                            |                   | in `milkdata.h`;        |
-|                            |                   | matches C11 Annex K.    |
+| Legacy identifier      | Conflict        | Status                |
+| ---------------------- | --------------- | --------------------- |
+| `_DATATYPE_FLOAT` etc. | `_` + uppercase | Entrenched; do not    |
+|                        |                 | rename without shim.  |
+| `_IMAGESTRUCT_H` etc.  | `_` + uppercase | Legacy header guard.  |
+|                        |                 | Use `IMAGESTRUCT_H`   |
+|                        |                 | for new headers.      |
+| `errno_t`              | POSIX `_t`      | Conditionally defined |
+|                        |                 | in `milkdata.h`;      |
+|                        |                 | matches C11 Annex K.  |
 
 ---
 
@@ -417,6 +418,7 @@ FPS keywords use dot-separated hierarchical names:
 > active refactoring.
 
 Known legacy patterns to preserve:
+
 - `ImageStreamIO_*` prefix (mixed case, well established)
 - `functionparameter_*` prefix (verbose but consistent)
 - `FUNCTION_PARAMETER_STRUCT` typedef (long but entrenched)

@@ -30,13 +30,13 @@ For each modified `.c` and `.h` file, verify:
 ## 3. Architecture Check
 
 - [ ] No new cross-module dependencies violating
-  `docs/dependency_graph.md`
+      `docs/dependency_graph.md`
 - [ ] Standalone executables link `_compute`
-  variants only (never `CLIcore`)
+      variants only (never `CLIcore`)
 - [ ] Dual-mode files use `#ifdef MILK_NO_CLI`
-  pattern
+      pattern
 - [ ] New modules follow
-  `milk_module_example` patterns
+      `milk_module_example` patterns
 
 ## 4. Performance Check
 
@@ -55,10 +55,10 @@ For compute-function changes:
 - [ ] Module README updated if files changed
 - [ ] Kernel-Doc on new/modified functions
 - [ ] `docs/programmers_guide.md` updated if
-  architecture changed
+      architecture changed
 - [ ] FPS_APP_INFO `.description` is descriptive
 - [ ] Help sources consistent (run
-  `/audit-help-consistency` if help changed)
+      `/audit-help-consistency` if help changed)
 
 ## 6. Build and Test
 
@@ -74,6 +74,7 @@ ctest --output-on-failure
 ## 7. Post Review
 
 Summarize findings:
+
 - Number of issues found by category
 - Suggested changes
 - Overall assessment (approve / request changes)

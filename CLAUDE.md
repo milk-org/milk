@@ -29,11 +29,11 @@ follow its reading order (section 2).
 
 ## Quick Reference
 
-| Task | Start Here |
-|------|------------|
-| New FPS compute unit | `.agents/workflows/create-fpsexec.md` |
-| New plugin module | `.agents/workflows/add-new-module.md` |
-| Stream processor | `.agents/workflows/add-stream-processor.md` |
-| Build & test | `.agents/workflows/compile-test.md` |
-| Prepare a PR | `.agents/skills/pr-preparation/SKILL.md` |
+| Task                 | Start Here                                       |
+| -------------------- | ------------------------------------------------ |
+| New FPS compute unit | `.agents/workflows/create-fpsexec.md`            |
+| New plugin module    | `.agents/workflows/add-new-module.md`            |
+| Stream processor     | `.agents/workflows/add-stream-processor.md`      |
+| Build & test         | `.agents/workflows/compile-test.md`              |
+| Prepare a PR         | `.agents/skills/pr-preparation/SKILL.md`         |
 | Diagnose build error | `.agents/skills/diagnose-build-failure/SKILL.md` |

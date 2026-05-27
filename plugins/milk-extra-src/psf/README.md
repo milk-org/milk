@@ -6,8 +6,8 @@ energy computation, and PSF sequence analysis.
 
 ## Source Files
 
-| File | Description |
-|------|-------------|
+| File    | Description                                                                                                                                          |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `psf.c` | Chromatic PSF generation, disk-center finding, photocenter measurement, FWHM measurement, encircled energy, PSF centering, and PSF sequence analysis |
 
 ## Dependencies

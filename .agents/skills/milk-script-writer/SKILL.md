@@ -163,17 +163,17 @@ on_update mystream { echo "stream updated" }
 
 ### Variables
 
-| Feature | Syntax |
-|---------|--------|
-| Set | `VAR=val` (no spaces) |
-| Math set | `VAR = expr` (spaces) |
-| Read | `$VAR` or `${VAR}` |
-| Unset | `unset VAR` |
-| List | `vars` |
-| Export | `export VAR=val` |
-| Readonly | `readonly VAR=val` |
-| Local | `local VAR=val` |
-| Last status | `$?` |
+| Feature     | Syntax                |
+| ----------- | --------------------- |
+| Set         | `VAR=val` (no spaces) |
+| Math set    | `VAR = expr` (spaces) |
+| Read        | `$VAR` or `${VAR}`    |
+| Unset       | `unset VAR`           |
+| List        | `vars`                |
+| Export      | `export VAR=val`      |
+| Readonly    | `readonly VAR=val`    |
+| Local       | `local VAR=val`       |
+| Last status | `$?`                  |
 
 **String operations:**
 `${#v}` length, `${v:n:m}` substr,
@@ -346,6 +346,7 @@ on_update name { cmd }   # Trigger on write
 > Note: `mem.rm` accepts an optional second argument
 > `errmode` (0=ignore, 1=warn, 2=err, 3=exit). If omitted,
 > the default is `0` (ignore).
+
 ### Process Control
 
 ```bash
@@ -501,11 +502,13 @@ fhelp                    # Fuzzy search
 ## Testing Generated Scripts
 
 Run a script:
+
 ```bash
 milk-cli -s script.milk
 ```
 
 Validate syntax interactively:
+
 ```bash
 milk-cli
 source script.milk

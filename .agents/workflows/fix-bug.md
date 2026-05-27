@@ -30,13 +30,13 @@ Document the exact reproduction steps.
 
 Determine which subsystem is affected:
 
-| Symptom | Component | Key Files |
-|---------|-----------|-----------|
-| CLI crash/error | CLIcore | `src/cli/CLIcore/` |
+| Symptom           | Component     | Key Files                   |
+| ----------------- | ------------- | --------------------------- |
+| CLI crash/error   | CLIcore       | `src/cli/CLIcore/`          |
 | Stream corruption | ImageStreamIO | `src/engine/ImageStreamIO/` |
-| FPS sync issue | libfps | `src/engine/libfps/` |
-| Standalone crash | fpsexec unit | Module source |
-| Build failure | CMake | `CMakeLists.txt` files |
+| FPS sync issue    | libfps        | `src/engine/libfps/`        |
+| Standalone crash  | fpsexec unit  | Module source               |
+| Build failure     | CMake         | `CMakeLists.txt` files      |
 
 ## 3. Diagnose
 
@@ -73,18 +73,21 @@ bug:
 // turbo-all
 
 1. Compile:
+
 ```bash
 cd /home/oguyon/src/milk/_build && \
 cmake --build . -- -j$(nproc)
 ```
 
 2. Run tests:
+
 ```bash
 cd /home/oguyon/src/milk/_build && \
 ctest --output-on-failure
 ```
 
 3. Run CLI tests (if CLI-related):
+
 ```bash
 cd /home/oguyon/src/milk && \
 bash tests/cli/run_cli_robustness_tests.sh \

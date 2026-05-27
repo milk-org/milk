@@ -65,11 +65,11 @@ install(FILES ${INSTALLHEADERS}
 
 ### PUBLIC vs PRIVATE vs INTERFACE
 
-| Scope | When to Use |
-|-------|-------------|
-| `PUBLIC` | Dependency used in both this module's headers AND implementation |
-| `PRIVATE` | Dependency used only in `.c` files (not exposed in headers) |
-| `INTERFACE` | Dependency used only in headers (rare) |
+| Scope       | When to Use                                                      |
+| ----------- | ---------------------------------------------------------------- |
+| `PUBLIC`    | Dependency used in both this module's headers AND implementation |
+| `PRIVATE`   | Dependency used only in `.c` files (not exposed in headers)      |
+| `INTERFACE` | Dependency used only in headers (rare)                           |
 
 **Rule of thumb**: use `PUBLIC` for `CLIcore`,
 `milkdata`, `ImageStreamIO`, `milkfps`. Use
@@ -117,6 +117,7 @@ add_cacao_standalone_plugins(
 ```
 
 These helpers automatically:
+
 - Set `FPS_STANDALONE` and `MILK_NO_CLI` defines
 - Link `_compute` variants instead of full libs
 - Set correct include directories
@@ -163,6 +164,7 @@ target_link_libraries(
 ```
 
 The `_compute` variant:
+
 - Includes `CLIcore_standalone.h` (stubs)
 - Does **not** register CLI commands
 - Links only engine-tier libraries
@@ -170,13 +172,13 @@ The `_compute` variant:
 
 ## Build Tier Constraints
 
-| Tier | Available Libraries |
-|------|-------------------|
-| Engine | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
-| Core | Engine + COREMOD_{arith,memory,tools} |
-| Core+FITS | Core + COREMOD_iofits, cfitsio |
-| Full | Everything: CLIcore, all plugins |
-| Standalone | Engine + `_compute` variants only |
+| Tier       | Available Libraries                               |
+| ---------- | ------------------------------------------------- |
+| Engine     | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
+| Core       | Engine + COREMOD\_{arith,memory,tools}            |
+| Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
+| Full       | Everything: CLIcore, all plugins                  |
+| Standalone | Engine + `_compute` variants only                 |
 
 Before adding a dependency, check
 `docs/dependency_graph.md` to verify the link
@@ -184,13 +186,13 @@ is allowed at your target's build tier.
 
 ## Conditional Compilation
 
-| Variable | Default | Controls |
-|----------|---------|----------|
-| `USE_CLI` | `ON` | Whether CLI targets are built |
-| `USE_CFITSIO` | `ON` | cfitsio-dependent modules |
-| `USE_COREMODS` | `ON` | COREMOD compilation |
-| `USE_STATIC_LTO` | `OFF` | Static LTO builds |
-| `VEC_REPORT` | `OFF` | GCC vectorization report |
+| Variable         | Default | Controls                      |
+| ---------------- | ------- | ----------------------------- |
+| `USE_CLI`        | `ON`    | Whether CLI targets are built |
+| `USE_CFITSIO`    | `ON`    | cfitsio-dependent modules     |
+| `USE_COREMODS`   | `ON`    | COREMOD compilation           |
+| `USE_STATIC_LTO` | `OFF`   | Static LTO builds             |
+| `VEC_REPORT`     | `OFF`   | GCC vectorization report      |
 
 Guard optional dependencies in CMake:
 
@@ -203,12 +205,12 @@ endif()
 
 ## Common Errors and Fixes
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `undefined reference` | Missing link dependency | Add to `target_link_libraries` |
-| `No such file or directory` (header) | Missing include dir | Add `target_include_directories` or link the owning lib |
-| `multiple definition` | Non-static global in `.h` | Make `extern` in `.h`, define in one `.c` |
-| Path doubling in install | `CMAKE_INSTALL_PREFIX` in target | Use only at configure time |
+| Error                                | Cause                            | Fix                                                     |
+| ------------------------------------ | -------------------------------- | ------------------------------------------------------- |
+| `undefined reference`                | Missing link dependency          | Add to `target_link_libraries`                          |
+| `No such file or directory` (header) | Missing include dir              | Add `target_include_directories` or link the owning lib |
+| `multiple definition`                | Non-static global in `.h`        | Make `extern` in `.h`, define in one `.c`               |
+| Path doubling in install             | `CMAKE_INSTALL_PREFIX` in target | Use only at configure time                              |
 
 ## Adding a Module to the Build
 

@@ -40,11 +40,11 @@ cd /home/oguyon/src/milk/_build && ctest --output-on-failure
 cd /home/oguyon/src/milk && pre-commit run clang-format --all-files
 ```
 
-   If clang-format reports failures, the files have been
-   auto-fixed in place. Re-run the command to verify
-   they now pass. If the fix changed any source files,
-   rebuild (step 1) to confirm compilation still
-   succeeds.
+If clang-format reports failures, the files have been
+auto-fixed in place. Re-run the command to verify
+they now pass. If the fix changed any source files,
+rebuild (step 1) to confirm compilation still
+succeeds.
 
 7. Report the result to the user:
    - Number of compiler warnings (if any)

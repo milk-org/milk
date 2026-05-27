@@ -19,6 +19,7 @@ create a fresh feature branch.
 2. **Fetch latest refs from origin:**
 
 // turbo
+
 ```bash
 git fetch origin
 ```
@@ -30,8 +31,8 @@ git checkout framework-dev
 git pull --ff-only origin framework-dev
 ```
 
-   If the fast-forward fails (local `framework-dev` has
-   diverged), stop and report the issue to the user.
+If the fast-forward fails (local `framework-dev` has
+diverged), stop and report the issue to the user.
 
 4. **Ask the user for the new branch name** if they
    haven't provided one. Follow the naming convention

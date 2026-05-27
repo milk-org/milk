@@ -58,7 +58,7 @@ cmake --build . -- -j$(nproc) 2>&1 \
 
 Parse the GCC `-fopt-info-vec-missed` output for
 vectorization failures. This phase is **more
-actionable** because GCC explains *why* each loop
+actionable** because GCC explains _why_ each loop
 was not vectorized and points to source lines.
 
 4. Extract unique vectorization failures:
@@ -75,14 +75,14 @@ grep -E 'note:.*not vectorized|missed:' \
 5. Categorize the failures by reading
    `vec_missed_summary.txt`. Common categories:
 
-| GCC reason | Typical fix |
-|-----------|------------|
-| "not vectorized: call in loop body" | Inline the callee or move it out of the loop |
-| "not vectorized: unsupported data-ref" | Add `restrict` to pointer params |
-| "not vectorized: possible aliasing" | Add `MILK_RESTRICT` and `MILK_ASSUME_ALIGNED` |
-| "not vectorized: not enough iterations" | Usually fine — small loops are not worth vectorizing |
-| "not vectorized: data dependency" | Restructure loop to break dependency chain |
-| "missed: couldn't vectorize loop" | Check for mixed types, function pointers, or volatile |
+| GCC reason                              | Typical fix                                           |
+| --------------------------------------- | ----------------------------------------------------- |
+| "not vectorized: call in loop body"     | Inline the callee or move it out of the loop          |
+| "not vectorized: unsupported data-ref"  | Add `restrict` to pointer params                      |
+| "not vectorized: possible aliasing"     | Add `MILK_RESTRICT` and `MILK_ASSUME_ALIGNED`         |
+| "not vectorized: not enough iterations" | Usually fine — small loops are not worth vectorizing  |
+| "not vectorized: data dependency"       | Restructure loop to break dependency chain            |
+| "missed: couldn't vectorize loop"       | Check for mixed types, function pointers, or volatile |
 
 6. For each failure in a **hot-path file** (compute
    functions, stream processors, FPS exec functions),
@@ -167,28 +167,28 @@ grep -rn 'divss\|divsd\|divps\|divpd' \
 
 11. For each finding, produce a report entry with:
 
-| Field | Content |
-|-------|---------|
-| **File** | Source file and line (from VEC_REPORT or manual mapping) |
-| **Issue** | What the compiler/assembly reveals |
-| **Category** | Vectorization / Precision / Inlining / Math / I-O / Allocation / Alignment |
-| **Severity** | High (hot loop) / Medium (warm path) / Low (cold path) |
-| **Suggested Fix** | Concrete code change referencing `performance-practices.md` |
+| Field             | Content                                                                    |
+| ----------------- | -------------------------------------------------------------------------- |
+| **File**          | Source file and line (from VEC_REPORT or manual mapping)                   |
+| **Issue**         | What the compiler/assembly reveals                                         |
+| **Category**      | Vectorization / Precision / Inlining / Math / I-O / Allocation / Alignment |
+| **Severity**      | High (hot loop) / Medium (warm path) / Low (cold path)                     |
+| **Suggested Fix** | Concrete code change referencing `performance-practices.md`                |
 
 12. Common fix suggestions by category:
 
-| Category | Fix |
-|----------|-----|
-| Vectorization / aliasing | Add `restrict` + `MILK_ASSUME_ALIGNED` to pointer params |
-| Vectorization / call in loop | Inline the callee as `static inline`, or use `MILK_FLATTEN` on wrapper |
-| Float↔double promotion | Use `sqrtf()` not `sqrt()`, `0.5f` not `0.5`, `powf()` not `pow()` |
-| PLT calls surviving LTO | Check if the callee's library is included in `_MILK_STANDALONE_STATIC_LIBS` |
-| Unaligned SIMD | Add `MILK_ASSUME_ALIGNED(ptr)` after `restrict` cast |
-| Expensive division | Consider reciprocal approximation `_mm_rcp_ps` or hoist invariant divisor |
-| I/O in hot path | Guard with `if (VERBOSE > 0)` |
-| Allocation in hot path | Move to init phase, reuse buffers |
-| `pow()` in loop | Specialize: `x*x` for exp=2, `sqrtf` for exp=0.5, `powf` for other |
-| Missing `MILK_HOT` | Add `MILK_HOT` to `fpsexec()` and compute functions |
+| Category                     | Fix                                                                         |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| Vectorization / aliasing     | Add `restrict` + `MILK_ASSUME_ALIGNED` to pointer params                    |
+| Vectorization / call in loop | Inline the callee as `static inline`, or use `MILK_FLATTEN` on wrapper      |
+| Float↔double promotion       | Use `sqrtf()` not `sqrt()`, `0.5f` not `0.5`, `powf()` not `pow()`          |
+| PLT calls surviving LTO      | Check if the callee's library is included in `_MILK_STANDALONE_STATIC_LIBS` |
+| Unaligned SIMD               | Add `MILK_ASSUME_ALIGNED(ptr)` after `restrict` cast                        |
+| Expensive division           | Consider reciprocal approximation `_mm_rcp_ps` or hoist invariant divisor   |
+| I/O in hot path              | Guard with `if (VERBOSE > 0)`                                               |
+| Allocation in hot path       | Move to init phase, reuse buffers                                           |
+| `pow()` in loop              | Specialize: `x*x` for exp=2, `sqrtf` for exp=0.5, `powf` for other          |
+| Missing `MILK_HOT`           | Add `MILK_HOT` to `fpsexec()` and compute functions                         |
 
 13. Present the report to the user, grouped by
     executable and severity.

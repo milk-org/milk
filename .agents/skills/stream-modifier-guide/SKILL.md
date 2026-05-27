@@ -44,11 +44,11 @@ typedef struct {
 Modifiers are appended to stream names using the
 `@` prefix:
 
-| Modifier | Syntax | Meaning |
-|----------|--------|---------|
-| Semaphore | `stream@S:N` | Use semaphore index N |
-| Slice | `stream@L:N` | Use 3D slice index N |
-| FITS file | `stream@F:path` | Load from FITS file |
+| Modifier  | Syntax          | Meaning               |
+| --------- | --------------- | --------------------- |
+| Semaphore | `stream@S:N`    | Use semaphore index N |
+| Slice     | `stream@L:N`    | Use 3D slice index N  |
+| FITS file | `stream@F:path` | Load from FITS file   |
 
 ### Examples
 
@@ -66,6 +66,7 @@ data@F:/path/to/file.fits
 ### Modifier chaining
 
 Multiple modifiers can be chained:
+
 ```
 stream@S:2@L:5
 ```
@@ -87,13 +88,13 @@ User input string
 
 ### Key source files
 
-| File | Role |
-|------|------|
-| `src/engine/libmilkdata/imgid.c` | IMGID creation and modifier parsing |
-| `src/engine/libmilkdata/imgid.h` | IMGID struct definition |
-| `src/engine/ImageStreamIO/ImageStreamIO.c` | Low-level SHM stream operations |
-| `src/cli/CLIcore/cli_calc_parser.c` | CLI expression parser (handles stream refs) |
-| `src/cli/CLIcore/cli_calc_tokenizer.c` | Tokenizer (handles bracket syntax) |
+| File                                       | Role                                        |
+| ------------------------------------------ | ------------------------------------------- |
+| `src/engine/libmilkdata/imgid.c`           | IMGID creation and modifier parsing         |
+| `src/engine/libmilkdata/imgid.h`           | IMGID struct definition                     |
+| `src/engine/ImageStreamIO/ImageStreamIO.c` | Low-level SHM stream operations             |
+| `src/cli/CLIcore/cli_calc_parser.c`        | CLI expression parser (handles stream refs) |
+| `src/cli/CLIcore/cli_calc_tokenizer.c`     | Tokenizer (handles bracket syntax)          |
 
 ## Modifier Parsing Details
 

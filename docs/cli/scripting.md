@@ -132,11 +132,11 @@ wait_any [-t timeout] event1 [event2] [event3] ...
 
 Each event is a single token with a prefix:
 
-| Prefix | Fires when | Example |
-|--------|------------|---------|
-| `S:<stream>` | Stream `cnt0` changes | `S:wfs_cam` |
-| `F:<fps>.<param><op><val>` | FPS param matches | `F:dmcomb.abort=1` |
-| `P:<proc>:<state>` | Process reaches state | `P:wfsloop:STOP` |
+| Prefix                     | Fires when            | Example            |
+| -------------------------- | --------------------- | ------------------ |
+| `S:<stream>`               | Stream `cnt0` changes | `S:wfs_cam`        |
+| `F:<fps>.<param><op><val>` | FPS param matches     | `F:dmcomb.abort=1` |
+| `P:<proc>:<state>`         | Process reaches state | `P:wfsloop:STOP`   |
 
 FPS comparison operators: `=`, `!=`, `>=`, `<=`.
 
@@ -233,7 +233,7 @@ fpsset myloop loopgain 0.5
 - **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element of the respective array.
 - **Array splat**: `${myarray[@]}` expands to all elements in the array joined by a space.
 - **Array size**: `${#myarray[@]}` returns the number of elements in the array.
-For mathematical expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
+  For mathematical expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
 
 - Basic operators: `+  -  *  /  %`
 - Bitwise operators: `&  |  ^  <<  >>  ~`
@@ -583,17 +583,17 @@ a Lua config snippet at
 
 ### What Gets Highlighted
 
-| Syntax Element | Highlight Group | Example |
-|----------------|-----------------|---------|
-| Flow control | `@keyword` | `if`, `for`, `while`, `fi` |
-| Shell builtins | `@function.builtin` | `echo`, `export`, `source` |
-| milk commands | `@function.macro` | `assigncheck`, `procctl` |
-| FPS variables | `@property` | `@fps.loop.gain` |
-| Stream metadata | `@type` | `${s.wfs.cnt0}` |
-| Variables | `@variable.builtin` | `$VAR`, `${VAR}` |
-| Strings | `@string` | `"hello"`, `'literal'` |
-| Numbers | `@number` | `42`, `3.14` |
-| Comments | `@comment` | `# comment` |
+| Syntax Element  | Highlight Group     | Example                    |
+| --------------- | ------------------- | -------------------------- |
+| Flow control    | `@keyword`          | `if`, `for`, `while`, `fi` |
+| Shell builtins  | `@function.builtin` | `echo`, `export`, `source` |
+| milk commands   | `@function.macro`   | `assigncheck`, `procctl`   |
+| FPS variables   | `@property`         | `@fps.loop.gain`           |
+| Stream metadata | `@type`             | `${s.wfs.cnt0}`            |
+| Variables       | `@variable.builtin` | `$VAR`, `${VAR}`           |
+| Strings         | `@string`           | `"hello"`, `'literal'`     |
+| Numbers         | `@number`           | `42`, `3.14`               |
+| Comments        | `@comment`          | `# comment`                |
 
 ### Dynamic Module Commands
 
@@ -625,11 +625,9 @@ installing new milk modules:
 ./scripts/build.sh --clean   # remove generated files
 ```
 
-!!! info "Requirements"
-    - **Node.js** — for the `tree-sitter-cli` build tool
-    - **Neovim ≥ 0.9** — with built-in tree-sitter support
-    - **nvim-treesitter** plugin — installed automatically
-      by `nvim-install.sh`
+!!! info "Requirements" - **Node.js** — for the `tree-sitter-cli` build tool - **Neovim ≥ 0.9** — with built-in tree-sitter support - **nvim-treesitter** plugin — installed automatically
+by `nvim-install.sh`
 
 ---
+
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)

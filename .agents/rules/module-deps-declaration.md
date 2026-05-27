@@ -1,5 +1,3 @@
-
-
 # Module Dependency Declaration
 
 When editing a module's main `.c` file (the file
@@ -32,25 +30,27 @@ updated.
 ### Mapping library names to loadnames
 
 The loadname used by `mload` is the CMake
-`LIBNAME` of the dependency module.  Typical
+`LIBNAME` of the dependency module. Typical
 examples:
 
-| CMake link target      | MODULE_DEPS loadname |
-|------------------------|----------------------|
-| `milkfft`              | `"milkfft"`          |
-| `milkimagegen`         | `"milkimagegen"`     |
-| `milkimagefilter`      | `"milkimagefilter"`  |
-| `milklinalgebra`       | `"milklinalgebra"`   |
-| `milkstatistic`        | `"milkstatistic"`    |
-| `milkimagebasic`       | `"milkimagebasic"`   |
-| `milkZernikePolyn`     | `"milkZernikePolyn"` |
+| CMake link target  | MODULE_DEPS loadname |
+| ------------------ | -------------------- |
+| `milkfft`          | `"milkfft"`          |
+| `milkimagegen`     | `"milkimagegen"`     |
+| `milkimagefilter`  | `"milkimagefilter"`  |
+| `milklinalgebra`   | `"milklinalgebra"`   |
+| `milkstatistic`    | `"milkstatistic"`    |
+| `milkimagebasic`   | `"milkimagebasic"`   |
+| `milkZernikePolyn` | `"milkZernikePolyn"` |
 
 ## How to apply
 
 1. Before `#include "CLIcore.h"`, add:
+
    ```c
    MODULE_DEPS("milkfft", "milkimagegen")
    ```
+
    listing each dependency loadname.
 
 2. Replace `INIT_MODULE_LIB(modname)` with
@@ -71,10 +71,12 @@ executables.
 
 After adding or changing `MODULE_DEPS`, run
 `/compile-test` and manually verify with:
+
 ```
 milk
 mload <module_loadname>
 m?
 ```
+
 Confirm that dependencies appear in the loaded
 module list.

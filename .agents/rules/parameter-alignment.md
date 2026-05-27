@@ -26,6 +26,7 @@ same column.
 ## Examples
 
 **BAD** — random padding:
+
 ```c
 int functionparameter_GetFileName(
     FPS *fps,
@@ -35,6 +36,7 @@ int functionparameter_GetFileName(
 ```
 
 **GOOD** — column-aligned:
+
 ```c
 int functionparameter_GetFileName(
     FPS       *fps,
@@ -44,6 +46,7 @@ int functionparameter_GetFileName(
 ```
 
 **GOOD** — no pointers, names align:
+
 ```c
 static errno_t compute_stream(
     const float *restrict in,
@@ -52,6 +55,7 @@ static errno_t compute_stream(
 ```
 
 **GOOD** — single short type, no padding needed:
+
 ```c
 static int parse_one_axis(
     const char  *spec,

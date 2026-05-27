@@ -62,19 +62,19 @@ command_that_should_fail
 Organize tests by category. Current categories
 in the test file:
 
-| Category | Tests for |
-|----------|-----------|
-| Arithmetic | `a=1+2`, `a=3.14*2`, operators |
-| Variables | Assignment, types, substitution |
-| Strings | Quoting, escaping, concatenation |
-| Control flow | `if`/`elif`/`else`, `while`, `for` |
-| Functions | `function` blocks, recursion |
-| Error handling | Invalid syntax, missing args |
-| Shell bypass | System commands via CLI |
-| Built-in commands | `listim`, `m?`, `help`, etc. |
-| Stream operations | Image creation, slicing |
-| Math functions | `sin()`, `cos()`, `sqrt()`, etc. |
-| Aliases | `alias`, `unalias` |
+| Category          | Tests for                          |
+| ----------------- | ---------------------------------- |
+| Arithmetic        | `a=1+2`, `a=3.14*2`, operators     |
+| Variables         | Assignment, types, substitution    |
+| Strings           | Quoting, escaping, concatenation   |
+| Control flow      | `if`/`elif`/`else`, `while`, `for` |
+| Functions         | `function` blocks, recursion       |
+| Error handling    | Invalid syntax, missing args       |
+| Shell bypass      | System commands via CLI            |
+| Built-in commands | `listim`, `m?`, `help`, etc.       |
+| Stream operations | Image creation, slicing            |
+| Math functions    | `sin()`, `cos()`, `sqrt()`, etc.   |
+| Aliases           | `alias`, `unalias`                 |
 
 ## Writing Good Tests
 
@@ -183,23 +183,25 @@ bash tests/cli/run_cli_robustness_tests.sh \
 
 ### Interpreting results
 
-| Status | Meaning |
-|--------|---------|
-| `PASS` | Behaved as expected |
-| `FAIL` | Expected OK but got error exit |
-| `MISSING_ERROR` | Expected ERR but no error msg |
-| `CRASH` | Process killed by signal |
-| `HANG` | Command timed out |
+| Status          | Meaning                        |
+| --------------- | ------------------------------ |
+| `PASS`          | Behaved as expected            |
+| `FAIL`          | Expected OK but got error exit |
+| `MISSING_ERROR` | Expected ERR but no error msg  |
+| `CRASH`         | Process killed by signal       |
+| `HANG`          | Command timed out              |
 
 ### Debugging failures
 
 For MISSING_ERROR:
+
 1. Run the command manually with piped input
 2. Check if the error path is actually reached
 3. The error message might not contain "ERROR"
    (fix the test or the error message)
 
 For CRASH:
+
 1. Use the `debug-cli-behavior` skill
 2. Check the exit report logs
 

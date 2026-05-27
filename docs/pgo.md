@@ -1,24 +1,23 @@
 # Profile-Guided Optimization (PGO) & Link-Time Optimization (LTO)
 
-
 The `milk` build system supports two complementary
 compiler optimization techniques for `fpsexec`
 standalone executables:
 
-| Technique | CMake Flag | Typical Speedup |
-|-----------|-----------|-----------------|
-| **PGO** | `-DUSE_PGO=GENERATE/USE` | 10–30% |
-| **LTO** | `-DUSE_STATIC_LTO=ON` | 5–15% |
-| **PGO + LTO** | Both | **15–40%** |
+| Technique     | CMake Flag               | Typical Speedup |
+| ------------- | ------------------------ | --------------- |
+| **PGO**       | `-DUSE_PGO=GENERATE/USE` | 10–30%          |
+| **LTO**       | `-DUSE_STATIC_LTO=ON`    | 5–15%           |
+| **PGO + LTO** | Both                     | **15–40%**      |
 
 !!! tip
-    For maximum performance on production AO systems,
-    enable **both** PGO and static LTO. The techniques
-    are complementary — LTO exposes cross-library code
-    to GCC, and PGO then trains the optimizer with
-    real branch/call data across that larger scope.
+For maximum performance on production AO systems,
+enable **both** PGO and static LTO. The techniques
+are complementary — LTO exposes cross-library code
+to GCC, and PGO then trains the optimizer with
+real branch/call data across that larger scope.
 
-***
+---
 
 ## 1. Link-Time Optimization (LTO)
 
@@ -112,8 +111,8 @@ it's needed.
 
 **Measured example:**
 
-| Binary | Dynamic | Static+LTO | Ratio |
-|--------|---------|-----------|-------|
+| Binary         | Dynamic                   | Static+LTO              | Ratio               |
+| -------------- | ------------------------- | ----------------------- | ------------------- |
 | `arith-crop2D` | 52 KB (.so deps: ~2.4 MB) | 173 KB (self-contained) | 3.3× larger on disk |
 
 The static binary is 3.3× larger than the dynamic
@@ -160,23 +159,23 @@ CPU's instruction prefetcher can stream this code
 sequentially, and the entire hot loop fits in L1i.
 
 !!! important
-    For real-time AO loops running at 1–10 kHz,
-    icache pressure is the dominant performance
-    bottleneck after algorithmic optimization.
-    Reducing the hot-path footprint from scattered
-    `.so` pages to a compact inlined binary is one
-    of the most impactful optimizations available.
+For real-time AO loops running at 1–10 kHz,
+icache pressure is the dominant performance
+bottleneck after algorithmic optimization.
+Reducing the hot-path footprint from scattered
+`.so` pages to a compact inlined binary is one
+of the most impactful optimizations available.
 
 ### 1.5. Summary: Static LTO Benefits
 
-| Benefit | Mechanism | Impact |
-|---------|----------|--------|
-| No PLT indirection | Direct calls replace GOT lookups | Lower per-call latency |
-| Cross-library inlining | GCC inlines across `.a` boundaries | Eliminates call overhead entirely |
-| Dead-code elimination | Unreachable code removed at link | Smaller binary, less icache pressure |
-| Constant propagation | GCC propagates constants across modules | Simpler generated code |
-| Compact hot path | Inlined code is sequential in memory | L1i cache stays warm |
-| Zero startup overhead | No `ld.so` symbol resolution | Faster process launch |
+| Benefit                | Mechanism                               | Impact                               |
+| ---------------------- | --------------------------------------- | ------------------------------------ |
+| No PLT indirection     | Direct calls replace GOT lookups        | Lower per-call latency               |
+| Cross-library inlining | GCC inlines across `.a` boundaries      | Eliminates call overhead entirely    |
+| Dead-code elimination  | Unreachable code removed at link        | Smaller binary, less icache pressure |
+| Constant propagation   | GCC propagates constants across modules | Simpler generated code               |
+| Compact hot path       | Inlined code is sequential in memory    | L1i cache stays warm                 |
+| Zero startup overhead  | No `ld.so` symbol resolution            | Faster process launch                |
 
 ### 1.6. Build Modes
 
@@ -228,12 +227,12 @@ sudo make install
 `milk-perfbench` build tag: **`O3 LTO [x86_64]`**
 
 !!! important
-    Always pass `-DUSE_STATIC_LTO=OFF` explicitly
-    when switching to Option B. CMake caches values
-    between runs — if `USE_STATIC_LTO=ON` was set
-    previously, it remains active until explicitly
-    cleared. Forgetting this causes a link error:
-    `cannot find -lImageStreamIO_static`.
+Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+when switching to Option B. CMake caches values
+between runs — if `USE_STATIC_LTO=ON` was set
+previously, it remains active until explicitly
+cleared. Forgetting this causes a link error:
+`cannot find -lImageStreamIO_static`.
 
 #### Restore Normal Build
 
@@ -279,17 +278,17 @@ automatically in its header line:
 
 Possible `Build:` values:
 
-| Shown | Meaning |
-|-------|---------|
-| `default (no PGO/LTO)` | Plain Release build |
-| `O3 [x86_64]` | `-O3`, no LTO |
-| `O3 LTO [x86_64]` | Option B (dynamic LTO) |
-| `O3 LTO-static [x86_64]` | Option A (static LTO) |
-| `O3 PGO [x86_64]` | PGO pass-2, no LTO |
-| `O3 PGO LTO [x86_64]` | PGO + dynamic LTO |
+| Shown                        | Meaning                    |
+| ---------------------------- | -------------------------- |
+| `default (no PGO/LTO)`       | Plain Release build        |
+| `O3 [x86_64]`                | `-O3`, no LTO              |
+| `O3 LTO [x86_64]`            | Option B (dynamic LTO)     |
+| `O3 LTO-static [x86_64]`     | Option A (static LTO)      |
+| `O3 PGO [x86_64]`            | PGO pass-2, no LTO         |
+| `O3 PGO LTO [x86_64]`        | PGO + dynamic LTO          |
 | `O3 PGO LTO-static [x86_64]` | PGO + static LTO (maximum) |
 
-***
+---
 
 ## 2. Profile-Guided Optimization (PGO)
 
@@ -318,11 +317,11 @@ $ make -j$(nproc) && sudo make install
 
 ### 2.2. How It Works
 
-| Step | CMake Flag | GCC Flags | Effect |
-|------|-----------|-----------|--------|
-| 1 | `-DUSE_PGO=GENERATE` | `-fprofile-generate` | Emits `.gcda` profile data at runtime |
-| 2 | *(run workload)* | — | Collects branch/call counts |
-| 3 | `-DUSE_PGO=USE` | `-fprofile-use -fprofile-correction` | Optimizes using collected data |
+| Step | CMake Flag           | GCC Flags                            | Effect                                |
+| ---- | -------------------- | ------------------------------------ | ------------------------------------- |
+| 1    | `-DUSE_PGO=GENERATE` | `-fprofile-generate`                 | Emits `.gcda` profile data at runtime |
+| 2    | _(run workload)_     | —                                    | Collects branch/call counts           |
+| 3    | `-DUSE_PGO=USE`      | `-fprofile-use -fprofile-correction` | Optimizes using collected data        |
 
 ### 2.3. Per-Executable Profile Isolation
 
@@ -369,19 +368,19 @@ PGO optimization. Others compile normally — GCC
 silently ignores missing profiles when
 `-fprofile-correction` is set.
 
-| Component | Profile directory | Scope |
-|-----------|------------------|-------|
-| Standalone `.c` | `pgo/<exe-name>/` | Independent per executable |
-| Shared libraries | `pgo/shared/` | Aggregated across all runs |
+| Component        | Profile directory | Scope                      |
+| ---------------- | ----------------- | -------------------------- |
+| Standalone `.c`  | `pgo/<exe-name>/` | Independent per executable |
+| Shared libraries | `pgo/shared/`     | Aggregated across all runs |
 
 !!! tip
-    For the best results, run each fpsexec with a
-    workload that closely matches production use:
-    same stream sizes, same number of modes, same
-    loop rate. The more representative the
-    training run, the better the optimization.
+For the best results, run each fpsexec with a
+workload that closely matches production use:
+same stream sizes, same number of modes, same
+loop rate. The more representative the
+training run, the better the optimization.
 
-***
+---
 
 ## 3. Combined PGO + Static LTO
 
@@ -425,11 +424,11 @@ graph LR
     end
 ```
 
-| Optimization | Scope | What it does |
-|-------------|-------|--------------|
-| LTO alone | Cross-module | Inlines library calls, removes dead code |
-| PGO alone | Per-module | Optimizes branch layout from runtime data |
-| PGO + LTO | **Cross-module + runtime** | Inlines AND profile-optimizes across all libraries |
+| Optimization | Scope                      | What it does                                       |
+| ------------ | -------------------------- | -------------------------------------------------- |
+| LTO alone    | Cross-module               | Inlines library calls, removes dead code           |
+| PGO alone    | Per-module                 | Optimizes branch layout from runtime data          |
+| PGO + LTO    | **Cross-module + runtime** | Inlines AND profile-optimizes across all libraries |
 
 PGO needs to **see** the function bodies to
 optimize them. Static LTO makes library function
@@ -439,7 +438,7 @@ code paths that span `fpsexec.c` →
 of a real-time loop becomes a single optimization
 unit.
 
-***
+---
 
 ## 4. Dual Library Architecture
 
@@ -533,15 +532,15 @@ libCOREMODiofits_compute.a
     └────────────────────────────────┘
 ```
 
-***
+---
 
 ## 5. CMake Build Options Summary
 
-| Option | Default | Effect |
-|--------|---------|--------|
-| `USE_PGO` | *(off)* | `GENERATE` or `USE` — profile-guided optimization |
-| `USE_STATIC_LTO` | `OFF` | Static archives + LTO for standalones |
-| `PGO_DIR` | `_build/pgo/` | Profile data directory |
+| Option           | Default       | Effect                                            |
+| ---------------- | ------------- | ------------------------------------------------- |
+| `USE_PGO`        | _(off)_       | `GENERATE` or `USE` — profile-guided optimization |
+| `USE_STATIC_LTO` | `OFF`         | Static archives + LTO for standalones             |
+| `PGO_DIR`        | `_build/pgo/` | Profile data directory                            |
 
 Build configurations:
 
@@ -577,11 +576,11 @@ cmake .. \
 ```
 
 !!! danger
-    CMake **caches** all `-D` options between runs.
-    Always pass `-DUSE_STATIC_LTO=OFF` explicitly
-    when switching away from static LTO. Omitting it
-    leaves `USE_STATIC_LTO=ON` in the cache and
-    causes `cannot find -lImageStreamIO_static`.
+CMake **caches** all `-D` options between runs.
+Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+when switching away from static LTO. Omitting it
+leaves `USE_STATIC_LTO=ON` in the cache and
+causes `cannot find -lImageStreamIO_static`.
 
 ### CMake Policy
 
@@ -591,7 +590,7 @@ suppress the `INTERPROCEDURAL_OPTIMIZATION`
 policy warning when `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`
 is set. This is already applied to `CLIcore`.
 
-***
+---
 
 ## 6. Manual CMake Flags (Dynamic Libs)
 
@@ -599,7 +598,7 @@ This is **Option B** from section 1.6 — applying
 PGO on top of dynamic-lib LTO when
 `USE_STATIC_LTO` is not used.
 
-***
+---
 
 ## 7. Notes
 
@@ -627,7 +626,7 @@ PGO on top of dynamic-lib LTO when
   `Build:` line, allowing unambiguous verification
   that the right optimization level was applied.
 
-***
+---
 
 ## 8. Fully Static Binaries with musl libc
 
@@ -638,10 +637,10 @@ installing any runtime libraries — you can build
 [musl libc](https://musl.libc.org/) instead of glibc.
 
 !!! note
-    The standard static LTO build (section 1.6 Option A)
-    still depends on the system glibc at runtime (3 libs:
-    `libc.so`, `ld-linux.so`, `libm.so`). The musl build
-    here produces a true **zero-dependency** binary.
+The standard static LTO build (section 1.6 Option A)
+still depends on the system glibc at runtime (3 libs:
+`libc.so`, `ld-linux.so`, `libm.so`). The musl build
+here produces a true **zero-dependency** binary.
 
 ### 8.1. Prerequisites
 
@@ -731,17 +730,17 @@ library installation is needed on the target.
 
 ### 8.5. Required CMake Flags and Why
 
-| Flag | Value | Reason |
-|------|-------|--------|
-| `CMAKE_C_COMPILER` | `musl-gcc` | Wrapper that redirects includes/libs to musl |
-| `CMAKE_EXE_LINKER_FLAGS` | `-static` | Tells the linker to produce a static binary |
-| `USE_STATIC_LTO` | `ON` | Builds `.a` archives; required by `-static` |
-| `USE_CFITSIO` | `OFF` | System cfitsio is glibc-linked; incompatible with musl static |
-| `USE_CLI` | `OFF` | CLI requires readline dynamic libs |
-| `USE_READLINE` | `OFF` | readline has no musl static variant by default |
-| `USE_OPENBLAS` | `OFF` | System OpenBLAS is glibc-linked |
-| `BUILD_SHARED_LIBS` | `OFF` | Prevents cmake from building `.so` targets that would fail the static link |
-| `-D_GNU_SOURCE` (C flag) | set | Exposes `cpu_set_t`, `pthread_setaffinity_np` and other POSIX extensions in musl |
+| Flag                     | Value      | Reason                                                                           |
+| ------------------------ | ---------- | -------------------------------------------------------------------------------- |
+| `CMAKE_C_COMPILER`       | `musl-gcc` | Wrapper that redirects includes/libs to musl                                     |
+| `CMAKE_EXE_LINKER_FLAGS` | `-static`  | Tells the linker to produce a static binary                                      |
+| `USE_STATIC_LTO`         | `ON`       | Builds `.a` archives; required by `-static`                                      |
+| `USE_CFITSIO`            | `OFF`      | System cfitsio is glibc-linked; incompatible with musl static                    |
+| `USE_CLI`                | `OFF`      | CLI requires readline dynamic libs                                               |
+| `USE_READLINE`           | `OFF`      | readline has no musl static variant by default                                   |
+| `USE_OPENBLAS`           | `OFF`      | System OpenBLAS is glibc-linked                                                  |
+| `BUILD_SHARED_LIBS`      | `OFF`      | Prevents cmake from building `.so` targets that would fail the static link       |
+| `-D_GNU_SOURCE` (C flag) | set        | Exposes `cpu_set_t`, `pthread_setaffinity_np` and other POSIX extensions in musl |
 
 ### 8.6. Known Warnings (Non-Fatal)
 
@@ -772,14 +771,14 @@ impact.
 
 ### 8.7. Limitations Compared to Standard Static LTO
 
-| Feature | Standard static LTO | musl static |
-|---------|--------------------|----|
-| CFITSIO support | ✓ | ✗ (glibc-only) |
-| OpenBLAS/MKL | ✓ | ✗ |
-| Dynamic library deps | 3 (libc family) | **0** |
-| Deploy without runtime | ✗ | **✓** |
-| Binary portability | Same glibc version | Any Linux x86-64 |
-| PGO compatible | ✓ | ✓ (same workflow) |
+| Feature                | Standard static LTO | musl static       |
+| ---------------------- | ------------------- | ----------------- |
+| CFITSIO support        | ✓                   | ✗ (glibc-only)    |
+| OpenBLAS/MKL           | ✓                   | ✗                 |
+| Dynamic library deps   | 3 (libc family)     | **0**             |
+| Deploy without runtime | ✗                   | **✓**             |
+| Binary portability     | Same glibc version  | Any Linux x86-64  |
+| PGO compatible         | ✓                   | ✓ (same workflow) |
 
 ### 8.8. musl vs glibc `strerror_r` ABI
 
@@ -790,5 +789,6 @@ The milk source correctly detects this via
 `#ifndef __GLIBC__` in `ImageStreamIO.c` — no
 user action needed.
 
-***
+---
+
 ← [Documentation Index](index.md)

@@ -10,6 +10,7 @@ any `milk-*` or `cacao-*` shell script.
 ## 1. Inventory Installed Scripts
 
 List all scripts that will be installed:
+
 ```bash
 find src/ plugins/ -name 'milk-*' -o -name 'cacao-*' \
   | grep -v '\.c$' | grep -v '\.h$' | sort
@@ -28,6 +29,7 @@ view_file docs/scripts.md
 ## 3. Compare and Update
 
 For each script:
+
 - Verify it appears in `docs/scripts.md`.
 - Verify the description is accurate.
 - If the script is new, add it to the appropriate
@@ -38,9 +40,11 @@ For each script:
 ## 4. Verify Script Help
 
 Ensure each script supports `--help` or `-h`:
+
 ```bash
 <script> --help
 ```
+
 If a script lacks `--help`, add a usage function
 to the script.
 

@@ -22,24 +22,24 @@ nvim examples/demo.milk
 
 ## What Gets Highlighted
 
-| Syntax | Color Group | Example |
-|--------|------------|---------|
-| Flow control | `@keyword` | `if`, `for`, `while`, `fi` |
-| Shell builtins | `@function.builtin` | `echo`, `export`, `source` |
-| milk commands | `@function.macro` | `assigncheck`, `procctl` |
-| FPS variables | `@property` | `@fps.loop.gain` |
-| Stream metadata | `@type` | `${s.wfs.cnt0}` |
-| Variables | `@variable.builtin` | `$VAR`, `${VAR}` |
-| Strings | `@string` | `"hello"`, `'literal'` |
-| Numbers | `@number` | `42`, `3.14` |
-| Comments | `@comment` | `# comment` |
+| Syntax          | Color Group         | Example                    |
+| --------------- | ------------------- | -------------------------- |
+| Flow control    | `@keyword`          | `if`, `for`, `while`, `fi` |
+| Shell builtins  | `@function.builtin` | `echo`, `export`, `source` |
+| milk commands   | `@function.macro`   | `assigncheck`, `procctl`   |
+| FPS variables   | `@property`         | `@fps.loop.gain`           |
+| Stream metadata | `@type`             | `${s.wfs.cnt0}`            |
+| Variables       | `@variable.builtin` | `$VAR`, `${VAR}`           |
+| Strings         | `@string`           | `"hello"`, `'literal'`     |
+| Numbers         | `@number`           | `42`, `3.14`               |
+| Comments        | `@comment`          | `# comment`                |
 
 ## Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/build.sh` | Build parser from `grammar.js` |
-| `scripts/nvim-install.sh` | Install queries + config into Neovim |
+| Script                             | Purpose                                         |
+| ---------------------------------- | ----------------------------------------------- |
+| `scripts/build.sh`                 | Build parser from `grammar.js`                  |
+| `scripts/nvim-install.sh`          | Install queries + config into Neovim            |
 | `scripts/gen-module-highlights.sh` | Generate highlights for runtime module commands |
 
 ### `build.sh`
@@ -59,6 +59,7 @@ nvim examples/demo.milk
 ```
 
 Installs:
+
 - `queries/highlights.scm` →
   `~/.config/nvim/after/queries/milkcli/`
 - Lua config snippet →

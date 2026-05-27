@@ -13,6 +13,7 @@ guidelines:
 
 The milk environment must be sourced before running
 any commands:
+
 ```bash
 source ~/src/milk/local/bin/milk-setup.bash
 ```
@@ -21,6 +22,7 @@ source ~/src/milk/local/bin/milk-setup.bash
 
 After a fresh clone, initialize submodules before
 building:
+
 ```bash
 git submodule update --init --recursive
 ```
@@ -30,6 +32,7 @@ git submodule update --init --recursive
 1. **Do not run `milk-cli` interactively** from the
    agent — it is a REPL and will block. Use
    standalone executables or pass commands via pipe:
+
    ```bash
    echo "command args" | milk-cli
    ```
@@ -37,6 +40,7 @@ git submodule update --init --recursive
 2. **Shared memory permissions** — streams and FPS
    live in `/dev/shm/`. If a previous process
    crashed, stale SHM files may remain. Clean with:
+
    ```bash
    rm /dev/shm/fps.<name>.shm
    ```

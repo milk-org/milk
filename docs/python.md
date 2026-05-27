@@ -167,10 +167,10 @@ while True:
 ```
 
 !!! warning
-    Python's GIL limits true parallel performance.
-    For latency-critical loops (>1 kHz), use C modules.
-    Python is best suited for monitoring, scripting,
-    and offline analysis.
+Python's GIL limits true parallel performance.
+For latency-critical loops (>1 kHz), use C modules.
+Python is best suited for monitoring, scripting,
+and offline analysis.
 
 ---
 
@@ -190,4 +190,5 @@ See
 for usage details.
 
 ---
+
 ← [Documentation Index](index.md)

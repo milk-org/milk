@@ -8,7 +8,7 @@ See also: [FPS](fps.md) ·
 [Performance Tuning](performance.md) ·
 [Programmer's Guide](programmers_guide.md)
 
-***
+---
 
 ## Overview
 
@@ -35,7 +35,7 @@ This enables:
   └──────────┘          └──────────────┘          └──────────┘
 ```
 
-***
+---
 
 ## Quick Start
 
@@ -73,19 +73,19 @@ $ milk-fps-valkey -V 192.168.1.100
 $ milk-fps-valkey -V 192.168.1.100
 ```
 
-***
+---
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| Bidirectional sync | Changes propagate both ways |
-| Low-latency pull | PubSub notifications (ms) |
-| Echo prevention | Local changes are not re-applied |
-| Auto-reconnect | Recovers from Valkey restarts |
-| Regex filtering | Sync only matching FPS names |
+| Feature            | Description                      |
+| ------------------ | -------------------------------- |
+| Bidirectional sync | Changes propagate both ways      |
+| Low-latency pull   | PubSub notifications (ms)        |
+| Echo prevention    | Local changes are not re-applied |
+| Auto-reconnect     | Recovers from Valkey restarts    |
+| Regex filtering    | Sync only matching FPS names     |
 
-***
+---
 
 ## Common Options
 
@@ -93,14 +93,14 @@ $ milk-fps-valkey -V 192.168.1.100
 $ milk-fps-valkey [OPTIONS] [regex_pattern]
 ```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-V, --valkey-host` | `127.0.0.1` | Valkey server address |
-| `-P, --valkey-port` | `6379` | Valkey server port |
-| `-i, --interval` | `0.1` | Poll interval (seconds) |
-| `-h, --help` | — | Show help |
+| Option              | Default     | Description             |
+| ------------------- | ----------- | ----------------------- |
+| `-V, --valkey-host` | `127.0.0.1` | Valkey server address   |
+| `-P, --valkey-port` | `6379`      | Valkey server port      |
+| `-i, --interval`    | `0.1`       | Poll interval (seconds) |
+| `-h, --help`        | —           | Show help               |
 
-***
+---
 
 ## Detailed Documentation
 
@@ -110,7 +110,7 @@ comprehensive README:
 
 → [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
 
-***
+---
 
 ## Building
 
@@ -129,5 +129,6 @@ See
 [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
 for detailed build instructions and prerequisites.
 
-***
+---
+
 ← [Documentation Index](index.md)
