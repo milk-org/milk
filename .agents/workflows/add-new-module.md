@@ -16,6 +16,9 @@ Ask the user for:
 - **One-line description** of the module
 - Whether it is a **milk** or **cacao** module
 
+> **Note:** If creating a plugin, refer to the `plugin-creator` skill and the `/create-plugin` workflow for plugin-specific guidance on group folder selection.
+
+
 ## 2. Create Directory Structure
 
 Create the module directory with these files:
