@@ -172,10 +172,10 @@ through to the expression evaluator.
 
 ```c
 IMGID img = imgid_make_from_name("mystream");
-img.naxis = 2;
-img.size[0] = 128;
-img.size[1] = 128;
-img.shared = 1;       // shared memory stream
+img.mdt->naxis = 2;
+img.mdt->size[0] = 128;
+img.mdt->size[1] = 128;
+img.mdt->shared = 1;       // shared memory stream
 img.type = _DATATYPE_FLOAT;
 imgid_mkimage(&img);
 
