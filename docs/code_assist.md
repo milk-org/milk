@@ -78,6 +78,7 @@ contains a `SKILL.md` with detailed instructions.
 
 | Skill | Folder | What it provides |
 |-------|--------|------------------|
+| Advanced math patterns | [`advanced-math-patterns`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/advanced-math-patterns/SKILL.md) | High-performance mathematical and DSP operations, BLAS, FFT, and vectorization. |
 | API quick reference | [`api-quick-reference`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/api-quick-reference/SKILL.md) | API cheat sheet for IMGID, processinfo macros, stream variables, datatypes, and parameter sync. |
 | Feature planner | [`feature-planner`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/feature-planner/SKILL.md) | Structured planning and architectural decomposition for new features. |
 | Batch Kernel-Doc | [`batch-kernel-doc`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/batch-kernel-doc/SKILL.md) | Systematic function documentation with scanning, templates, and batch processing. |
