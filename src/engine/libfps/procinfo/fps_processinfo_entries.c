@@ -69,7 +69,7 @@ errno_t fps_add_processinfo_entries(FPS *fps)
                                  "1-127", NULL);
 
     // value = 0 indicates process will adjust to available nb cores
-    long maxNBthread_default[4] = { 1, 1, 128, 1 };
+    long maxNBthread_default[4] = { 1, 0, 128, 1 };
     long pindex_NBthread        = -1;
     function_parameter_add_entry(fps, ".procinfo.NBthread", "max NB threads", FPTYPE_INT64, FPFLAG,
                                  &maxNBthread_default, &pindex_NBthread);
