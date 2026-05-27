@@ -180,7 +180,7 @@ for vectorization (see §3.8).
   `int` matches kernel style and avoids a `<stdbool.h>` dependency).
 - Prefix with `is_`, `has_`, `do_`, or `flag_`:
   ```c
-  int is_shared  = img.shared;
+  int is_shared  = img.mdt->shared;
   int do_verbose = (VERBOSE > 0);
   int has_gpu    = (gpu_count > 0);
   ```
