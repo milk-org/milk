@@ -11,7 +11,12 @@ Plugins in milk extend its core capabilities and reside under the `plugins/` dir
 
 A plugin must exist inside a group folder within the `plugins/` directory:
 `plugins/<group_name>/<plugin_name>/`
-For example: `plugins/milk-extra-src/myplugin/`.
+For example: `plugins/my-group/myplugin/`.
+
+> [!IMPORTANT]
+> Do NOT place new plugins under the `milk-extra-src` group folder (which is reserved
+> for core extra plugins compiled directly in the main repository). Create a custom
+> group folder instead.
 
 Inside, create the following core files:
 

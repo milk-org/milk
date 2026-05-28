@@ -72,14 +72,20 @@ FPS_app_info)` after the `CLIcmddata`
     add `add_subdirectory()`. (Only core engine modules under `src/`
     require manual registration in their parent `CMakeLists.txt`).
 
-11. **Wrong `_compute` CMake guard.** Do NOT
+11. **Placing new plugins under `milk-extra-src`**:
+    `milk-extra-src/` is reserved for core extra plugins included in the main
+    `milk` repository. New plugins must be created in a custom group folder directly
+    under `plugins/` (e.g. `plugins/mygroup/myplugin`) to ensure they remain
+    untracked by Git and separate from the core repository.
+
+12. **Wrong `_compute` CMake guard.** Do NOT
     use `if(NOT MILK_NO_CLI)` — `MILK_NO_CLI`
     is a compile definition, not a CMake
     variable (always evaluates true). Build
     the `_compute` target unconditionally or
     guard with `if(USE_CLI)`.
 
-12. **Missing `#ifdef MILK_NO_CLI` include
+13. **Missing `#ifdef MILK_NO_CLI` include
     guard.** Files compiled in dual mode need:
 
     ```c
@@ -90,13 +96,13 @@ FPS_app_info)` after the `CLIcmddata`
     #endif
     ```
 
-13. **Linking CLIcore in standalone targets.**
+14. **Linking CLIcore in standalone targets.**
     Standalone executables must link `_compute`
     variants only. Use `add_milk_standalone()`
     or `add_cacao_standalone()` which handle
     this automatically.
 
-14. **Accidentally tracking/committing new plugins**:
+15. **Accidentally tracking/committing new plugins**:
     New plugins must NEVER be added to the main `milk` repository index
     (except `plugins/milk-extra-src/`). They are ignored via
     `.gitignore`. Managing them is the user's responsibility (e.g., as
@@ -104,18 +110,18 @@ FPS_app_info)` after the `CLIcmddata`
 
 ## General Code
 
-15. **Implicit header includes.** Every `.c`
+16. **Implicit header includes.** Every `.c`
     file must include exactly the headers it
     uses. Do not rely on `CLIcore.h` pulling
     in `math.h` or `stdlib.h`.
 
-16. **Lines > 100 characters.** The project
+17. **Lines > 100 characters.** The project
     enforces short lines for readability.
 
-17. **Not compiling after edits.** Always run
+18. **Not compiling after edits.** Always run
     `/compile-test` after modifying C or CMake
     files.
 
-18. **Not updating `docs/dependency_graph.md`.**
+19. **Not updating `docs/dependency_graph.md`.**
     Required when adding new cross-module
     dependencies.
