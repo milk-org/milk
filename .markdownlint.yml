@@ -41,3 +41,7 @@ MD030: false
 # Allow indented code blocks — Material content tabs
 # (=== "tab") require 4-space-indented code fences.
 MD046: false
+
+# Allow mixed horizontal rule styles — Material grid cards
+# use *** as card separators while the rest of docs uses ---.
+MD035: false
