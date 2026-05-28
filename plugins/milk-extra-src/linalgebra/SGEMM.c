@@ -574,7 +574,7 @@ errno_t computeSGEMM(IMGID  imginA,
 #endif
     }
 
-
+#ifdef HAVE_OPENBLAS
     if (SGEMMcomputed == 0)
     {
         //printf("[%d] Running SGEMM on CPU\n", GPUdev);
@@ -596,6 +596,7 @@ errno_t computeSGEMM(IMGID  imginA,
         cblas_sgemm(CblasColMajor, OPA, OPB, Mdim, Ndim, Kdim, 1.0, imarrayA, inA_Mdim, imarrayB,
                     inB_Mdim, 0.0, outimg->im->array.F, outMdim);
     }
+#endif
 
     printf("Freeing float arrays\n");
     fflush(stdout);
@@ -611,6 +612,10 @@ errno_t computeSGEMM(IMGID  imginA,
     }
 
     DEBUG_TRACE_FEXIT();
+    if (SGEMMcomputed == 0)
+    {
+        return RETURN_FAILURE;
+    }
     return RETURN_SUCCESS;
 }
 
