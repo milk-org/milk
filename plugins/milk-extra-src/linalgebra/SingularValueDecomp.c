@@ -18,6 +18,7 @@
 // CPU mode: Use MKL if available
 // Otherwise use openBLAS
 //
+
 #ifdef HAVE_MKL
 #    include "mkl.h"
 #    include "mkl_lapacke.h"
@@ -27,6 +28,9 @@
 #        include <cblas.h>
 #        include <lapacke.h>
 #        define BLASLIB "OpenBLAS"
+#    else
+#        include <lapacke.h>
+#        define BLASLIB "Lapacke standalone"
 #    endif
 #endif
 
@@ -245,6 +249,7 @@ errno_t compute_SVD(IMGID    imgin,
 #ifdef HAVE_MKL
         mkl_set_interface_layer(MKL_INTERFACE_ILP64);
 #endif
+
         LAPACKE_ssytrd(LAPACK_COL_MAJOR, 'U', Ndim, (float *) imgATA.im->array.F, Ndim, d, e, t);
 
         // Assemble Q matrix

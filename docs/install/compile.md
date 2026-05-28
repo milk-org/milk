@@ -61,13 +61,27 @@ $ sudo mount /milk/shm
 
     ### Optional
 
-    | Dependency | CMake option | Default | Purpose |
-    |------------|-------------|---------|---------|
-    | **cfitsio** | `USE_CFITSIO` | ON | FITS file I/O (`COREMOD_iofits`) |
-    | **readline** | `USE_READLINE` | ON | Interactive CLI line editing |
-    | **GSL** | `USE_GSL` | ON | Numerical routines in plugins |
-    | **fftw3** | — | auto | FFT (used by some plugins) |
-    | **openMP** | — | auto | Parallel processing |
+    | Dependency   | CMake option   | Default | Purpose                          |
+    | ------------ | -------------- | ------- | -------------------------------- |
+    | **cfitsio**  | `USE_CFITSIO`  | ON      | FITS file I/O (`COREMOD_iofits`) |
+    | **readline** | `USE_READLINE` | ON      | Interactive CLI line editing     |
+    | **GSL**      | `USE_GSL`      | ON      | Numerical routines in plugins    |
+    | **fftw3**    | —              | auto    | FFT (used by some plugins)       |
+    | **openMP**   | —              | auto    | Parallel processing              |
+
+    ### Somewhat optional:
+
+    | Dependency          | Default | Purpose                                                     |
+    | ------------------- | ------- | ----------------------------------------------------------- |
+    | **MKL** (`mkl-sdl`) | auto    | Intel linear algebra; takes priority over OpenBLAS if found |
+    | **OpenBLAS**        | auto    | Linear algebra (plugins); preferred over standalone LAPACKE |
+    | **Lapacke**         | auto    | Linear algebra                                              |
+    | **tmux**            | runtime | Persistent shells for FPS compute units                     |
+
+    **tmux** is very often needed for all FPS operations in tmux screens.
+    **lapacke** is **required** but is provided by either MKL or OpenBLAS. If using neither,
+    standalone lapacke is needed: `apt install liblapacke-dev` or `yum install lapacke-devel`.
+
 
     !!! tip
         For a minimal POSIX-only build, all optional

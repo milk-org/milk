@@ -8,6 +8,7 @@
  */
 
 #include "COREMOD_iofits_common.h"
+#include "stdio.h"
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 

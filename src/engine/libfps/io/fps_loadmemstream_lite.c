@@ -227,7 +227,7 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
      *  for output streams not yet created) */
     {
         char shmpath[512];
-        snprintf(shmpath, sizeof(shmpath), "/milk/shm/%s.im.shm", name);
+        ImageStreamIO_filename(shmpath, sizeof(shmpath), name);
         if (access(shmpath, F_OK) != 0)
         {
             /* SHM file does not exist */

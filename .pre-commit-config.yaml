@@ -10,6 +10,10 @@ repos:
     -   id: clang-format
         types_or: [c, c++]
         exclude: 'tree-sitter-milkcli/'
+-   repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+    -   id: cmake-format
 -   repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:

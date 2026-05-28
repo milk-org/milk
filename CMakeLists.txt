@@ -2,75 +2,65 @@ cmake_minimum_required(VERSION 3.17)
 
 project(milk LANGUAGES C)
 
-
-# Examples :
-# cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON
-# cmake .. -DUSE_CUDA=ON -DUSE_MAGMA=ON
-# cmake .. -DCMAKE_BUILD_TYPE=Debug
+# Examples : cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON cmake ..
+# -DUSE_CUDA=ON -DUSE_MAGMA=ON cmake .. -DCMAKE_BUILD_TYPE=Debug
 
 # =======================================
 # BUILD PROFILE OPTIONS
 # =======================================
 #
-# USE_CLI (default ON):
-#   Build the interactive CLI (milk-cli), including
-#   CLIcore, readline, bison/flex parser, and TUI.
-#   When OFF, only core libraries and standalone
-#   fpsexec executables are built. This removes the
-#   need for readline, ncurses, bison, and flex.
+# USE_CLI (default ON): Build the interactive CLI (milk-cli), including CLIcore,
+# readline, bison/flex parser, and TUI. When OFF, only core libraries and
+# standalone fpsexec executables are built. This removes the need for readline,
+# ncurses, bison, and flex.
 #
-# USE_NCURSES (default ON, requires USE_CLI):
-#   Enable ncurses TUI (milk-fpsCTRL, streamCTRL).
+# USE_NCURSES (default ON, requires USE_CLI): Enable ncurses TUI (milk-fpsCTRL,
+# streamCTRL).
 #
-# USE_READLINE (default ON, requires USE_CLI):
-#   Enable readline for interactive CLI input.
+# USE_READLINE (default ON, requires USE_CLI): Enable readline for interactive
+# CLI input.
 #
-# USE_CFITSIO (default ON):
-#   Enable FITS file I/O (COREMOD_iofits). Requires
-#   cfitsio. Disable for a POSIX-only core build.
+# USE_CFITSIO (default ON): Enable FITS file I/O (COREMOD_iofits). Requires
+# cfitsio. Disable for a POSIX-only core build.
 #
 
 # Build tiers (see docs/install/build_tiers.md):
 #
-#   Engine-only (POSIX deps only):
-#     cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF
+# Engine-only (POSIX deps only): cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF
 #
-#   Core (engine + coremods, no CLI/plugins):
-#     cmake .. -DUSE_CLI=OFF
+# Core (engine + coremods, no CLI/plugins): cmake .. -DUSE_CLI=OFF
 #
-#   Core without cfitsio:
-#     cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF
+# Core without cfitsio: cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF
 #
-#   Full build (default):
-#     cmake ..
+# Full build (default): cmake ..
 #
-#   Full build with CUDA:
-#     cmake .. -DUSE_CUDA=ON
+# Full build with CUDA: cmake .. -DUSE_CUDA=ON
 #
 
-option(USE_COREMODS "Build core modules (COREMOD_*)"   ON)
-option(USE_CFITSIO  "Build FITS I/O (needs cfitsio)"   ON)
-option(USE_CLI      "Build interactive CLI (milk-cli)" ON)
-option(USE_SEQ      "Build sequencer module (requires CLI)" ON)
-option(USE_NCURSES  "Enable ncurses and TUI support"   ON)
-option(USE_READLINE "Enable readline support"          ON)
-option(USE_TREESITTER
-    "Enable tree-sitter syntax highlighting (CLI)" ON)
+option(USE_COREMODS "Build core modules (COREMOD_*)" ON)
+option(USE_CFITSIO "Build FITS I/O (needs cfitsio)" ON)
+option(USE_CLI "Build interactive CLI (milk-cli)" ON)
+option(USE_SEQ "Build sequencer module (requires CLI)" ON)
+option(USE_NCURSES "Enable ncurses and TUI support" ON)
+option(USE_READLINE "Enable readline support" ON)
+option(USE_TREESITTER "Enable tree-sitter syntax highlighting (CLI)" ON)
 
-option(USE_STATIC_LTO
-    "Static-link standalone exes for full LTO" OFF)
+option(USE_STATIC_LTO "Static-link standalone exes for full LTO" OFF)
 
-# Enforce dependency chain:
-# USE_CLI requires USE_COREMODS
+# Enforce dependency chain: USE_CLI requires USE_COREMODS
 if(USE_CLI AND NOT USE_COREMODS)
   message(STATUS "USE_CLI requires USE_COREMODS; enabling USE_COREMODS")
-  set(USE_COREMODS ON CACHE BOOL "" FORCE)
+  set(USE_COREMODS
+      ON
+      CACHE BOOL "" FORCE)
 endif()
 
 # USE_SEQ requires USE_CLI since it relies on CLIcore for commands
 if(USE_SEQ AND NOT USE_CLI)
   message(STATUS "USE_SEQ requires USE_CLI; disabling USE_SEQ")
-  set(USE_SEQ OFF CACHE BOOL "" FORCE)
+  set(USE_SEQ
+      OFF
+      CACHE BOOL "" FORCE)
 endif()
 
 include(CheckLanguage)
@@ -80,12 +70,12 @@ include(CheckLanguage)
 # =======================================
 
 # options
-option(DEBUG  "Enable Debug        library" OFF)
+option(DEBUG "Enable Debug        library" OFF)
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-option(USE_CUDA  "Use CUDA        library" OFF)
+option(USE_CUDA "Use CUDA        library" OFF)
 option(USE_MAGMA "Use MAGMA       library" OFF)
 
 if(USE_CUDA)
@@ -93,47 +83,31 @@ if(USE_CUDA)
   if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
   else()
-    #message(FATAL_ERROR "No CUDA support")
+    # message(FATAL_ERROR "No CUDA support")
     message(WARNING "No CUDA support found")
     set(CMAKE_CUDA_COMPILER "/usr/bin/nvcc")
     message(" setting CMAKE_CUDA_COMPILER to ${CMAKE_CUDA_COMPILER}")
   endif()
 endif(USE_CUDA)
 
-
-
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
-#find_package(MKL CONFIG)
-
-pkg_check_modules(OPENBLAS openblas)
-pkg_check_modules(MKL mkl-sdl)
-#pkg_check_modules(MKL mkl-static-ilp64-gomp)
-
 
 enable_language(C)
 
-
 # Version number
-set ( VERSION_MAJOR 1 )
-set ( VERSION_MINOR 03 )
-set ( VERSION_PATCH 00 )
-set ( MILK_VERSION_OPTION "" )
-set ( PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
-set ( PROJECT_DESCRIPTION "Modular Image processing tooLKit" )
+set(VERSION_MAJOR 1)
+set(VERSION_MINOR 03)
+set(VERSION_PATCH 00)
+set(MILK_VERSION_OPTION "")
+set(PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+set(PROJECT_DESCRIPTION "Modular Image processing tooLKit")
 
 set(SOURCEDIR "${PROJECT_SOURCE_DIR}")
 
+option(INSTALLMAKEDEFAULT "Make this installation the system default" OFF)
 
-
-
-
-
-option ( INSTALLMAKEDEFAULT "Make this installation the system default" OFF )
-
-# turn VERBOSE ON
-#set(CMAKE_VERBOSE_MAKEFILE ON)
-
+# turn VERBOSE ON set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_LINK_DEPENDS_NO_SHARED true)
 set(MILK_SUFFIX "milk-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
@@ -143,37 +117,26 @@ if(_suffix_pos EQUAL -1)
 endif()
 set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
+# Configure a header file to pass some of the CMake settings to the source code
+configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
+               "${PROJECT_SOURCE_DIR}/src/milk_config.h")
 
-# Configure a header file to pass some of the CMake settings
-# to the source code
-configure_file (
-  "${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/milk_config.h"
-  )
-
-configure_file (
-  "${PROJECT_SOURCE_DIR}/src/config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/config.h"
-  )
-
-
+configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
+               "${PROJECT_SOURCE_DIR}/src/config.h")
 
 # select most recent version available
-SET(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
-SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
+set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
+set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
 #
-# main libraries
-# linked to executable by default
+# main libraries linked to executable by default
 #
 find_package(PkgConfig REQUIRED)
 if(USE_CFITSIO)
-  pkg_check_modules(CFITSIO cfitsio)
-  if(${CFITSIO_FOUND})
-    message("Found cfitsio version ${CFITSIO_VERSION}")
-    message("CFITS library  : ${CFITSIO_LIBRARY}")
-    message("CFITS libraries: ${CFITSIO_LIBRARIES}")
-  endif()
+  pkg_check_modules(CFITSIO REQUIRED cfitsio)
+  message("Found cfitsio version ${CFITSIO_VERSION}")
+  message("CFITS library  : ${CFITSIO_LIBRARY}")
+  message("CFITS libraries: ${CFITSIO_LIBRARIES}")
 else()
   message(STATUS "USE_CFITSIO=OFF: FITS file I/O disabled")
 endif()
@@ -181,93 +144,94 @@ endif()
 # =======================================
 # MODULES INCLUDED
 # =======================================
-# modules are added to two lists:
-# libsrcdir : source code directory
-# libname   : shared object name
+# modules are added to two lists: libsrcdir : source code directory libname   :
+# shared object name
 
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
-# Update submodules as needed
-    option(GIT_SUBMODULE "Check submodules during build" ON)
-    if(GIT_SUBMODULE)
-        message(STATUS "Submodule update")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-        endif()
+  # Update submodules as needed
+  option(GIT_SUBMODULE "Check submodules during build" ON)
+  if(GIT_SUBMODULE)
+    message(STATUS "Submodule update")
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      RESULT_VARIABLE GIT_SUBMOD_RESULT)
+    if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+      message(
+        FATAL_ERROR
+          "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules"
+      )
     endif()
+  endif()
 endif()
 
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO/CMakeLists.txt")
-    message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+  message(
+    FATAL_ERROR
+      "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again."
+  )
 endif()
 
 if(USE_CLI)
-    list(APPEND libsrcdir src/cli/libmilkscript)
-    list(APPEND libname milkscript)
+  list(APPEND libsrcdir src/cli/libmilkscript)
+  list(APPEND libname milkscript)
 
-    list(APPEND libsrcdir src/cli/CLIcore)
-    list(APPEND libname CLIcore)
+  list(APPEND libsrcdir src/cli/CLIcore)
+  list(APPEND libname CLIcore)
 else()
-    # Without CLI, modules use CLIcore_standalone.h
-    # stubs via the MILK_NO_CLI compile definition.
-    add_definitions(-DMILK_NO_CLI)
-    # Provide CLI header paths so modules can find
-    # CLIcore.h (which redirects to standalone stubs)
-    include_directories(
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits
-    )
-    install(FILES
-        src/cli/CLIcore/CLIcore.h
-        src/cli/CLIcore/CLIcore_standalone.h
-        src/cli/CLIcore/cmdsettings.h
-        DESTINATION include/CommandLineInterface
-    )
-    # timeutils.h, milkDebugTools.h, and IMGID.h have moved to
-    # their respective engine modules (libprocessinfo, libmilkcommon,
-    # libfps) which install them unconditionally via their own
-    # CMakeLists.txt targets.
-    install(FILES
-        src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
-        DESTINATION include/CommandLineInterface/CLIcore
-    )
-    # Create an INTERFACE library target named CLIcore
-    # so that existing target_link_libraries(... CLIcore)
-    # calls in plugin CMakeLists work without modification.
-    # The INTERFACE target provides header paths only;
-    # CLIcore_standalone.h stubs handle all symbols.
-    add_library(CLIcore INTERFACE)
-    target_include_directories(CLIcore INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits>
-        $<INSTALL_INTERFACE:include>
-    )
-    install(TARGETS CLIcore EXPORT milkTargets)
+  # Without CLI, modules use CLIcore_standalone.h stubs via the MILK_NO_CLI
+  # compile definition.
+  add_definitions(-DMILK_NO_CLI)
+  # Provide CLI header paths so modules can find CLIcore.h (which redirects to
+  # standalone stubs)
+  include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkcommon
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits)
+  install(FILES src/cli/CLIcore/CLIcore.h src/cli/CLIcore/CLIcore_standalone.h
+                src/cli/CLIcore/cmdsettings.h
+          DESTINATION include/CommandLineInterface)
+  # timeutils.h, milkDebugTools.h, and IMGID.h have moved to their respective
+  # engine modules (libprocessinfo, libmilkcommon, libfps) which install them
+  # unconditionally via their own CMakeLists.txt targets.
+  install(FILES src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
+          DESTINATION include/CommandLineInterface/CLIcore)
+  # Create an INTERFACE library target named CLIcore so that existing
+  # target_link_libraries(... CLIcore) calls in plugin CMakeLists work without
+  # modification. The INTERFACE target provides header paths only;
+  # CLIcore_standalone.h stubs handle all symbols.
+  add_library(CLIcore INTERFACE)
+  target_include_directories(
+    CLIcore
+    INTERFACE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits>
+      $<INSTALL_INTERFACE:include>)
+  install(TARGETS CLIcore EXPORT milkTargets)
 endif()
 
 list(APPEND libsrcdir src/engine/ImageStreamIO)
@@ -299,96 +263,75 @@ endif()
 # BUILD TYPE
 # =======================================
 
-# Set Release build flags
-# cmake -DCMAKE_BUILD_TYPE=Debug
-# option: add -fanalyzer if gcc10+ (warning: this will take a while to run)
-set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
+# Set Release build flags cmake -DCMAKE_BUILD_TYPE=Debug option: add -fanalyzer
+# if gcc10+ (warning: this will take a while to run)
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
 
-# Set Release build flags
-# cmake -DCMAKE_BUILD_TYPE=Release
-set(CMAKE_C_FLAGS_RELEASE     "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
+# Set Release build flags cmake -DCMAKE_BUILD_TYPE=Release
+set(CMAKE_C_FLAGS_RELEASE "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
 
-# Set Coverage build flags
-# cmake -DCMAKE_BUILD_TYPE=Coverage
-set(CMAKE_C_FLAGS_COVERAGE     "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
-set(CMAKE_CXX_FLAGS_COVERAGE     "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
-
+# Set Coverage build flags cmake -DCMAKE_BUILD_TYPE=Coverage
+set(CMAKE_C_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
 
 # =======================================
 # PROFILE-GUIDED OPTIMIZATION (PGO)
 # =======================================
-# Usage:
-#   cmake -DUSE_PGO=GENERATE ..   # instrument
-#   cmake -DUSE_PGO=USE ..        # optimized
-# See docs/pgo.md for the full workflow.
+# Usage: cmake -DUSE_PGO=GENERATE ..   # instrument cmake -DUSE_PGO=USE .. #
+# optimized See docs/pgo.md for the full workflow.
 #
-# Global flags apply to shared libraries.
-# Standalone executables get per-target profile
-# directories via milk_pgo_target() in
-# MilkStandalone.cmake.
-set(USE_PGO "" CACHE STRING
-    "PGO mode: GENERATE or USE (empty = off)")
-set(PGO_DIR "${CMAKE_BINARY_DIR}/pgo" CACHE PATH
-    "Directory for PGO profile data")
+# Global flags apply to shared libraries. Standalone executables get per-target
+# profile directories via milk_pgo_target() in MilkStandalone.cmake.
+set(USE_PGO
+    ""
+    CACHE STRING "PGO mode: GENERATE or USE (empty = off)")
+set(PGO_DIR
+    "${CMAKE_BINARY_DIR}/pgo"
+    CACHE PATH "Directory for PGO profile data")
 if(USE_PGO STREQUAL "GENERATE")
-  message(STATUS "PGO: instrumentation build"
-    " (profiles → ${PGO_DIR})")
-  add_compile_options(
-      -fprofile-generate=${PGO_DIR}/shared)
-  add_link_options(
-      -fprofile-generate=${PGO_DIR}/shared)
+  message(STATUS "PGO: instrumentation build (profiles → ${PGO_DIR})")
+  add_compile_options(-fprofile-generate=${PGO_DIR}/shared)
+  add_link_options(-fprofile-generate=${PGO_DIR}/shared)
 elseif(USE_PGO STREQUAL "USE")
-  message(STATUS "PGO: optimized build"
-    " (profiles ← ${PGO_DIR})")
-  add_compile_options(
-      -fprofile-use=${PGO_DIR}/shared
-      -fprofile-correction)
-  add_link_options(
-      -fprofile-use=${PGO_DIR}/shared)
+  message(STATUS "PGO: optimized build (profiles ← ${PGO_DIR})")
+  add_compile_options(-fprofile-use=${PGO_DIR}/shared -fprofile-correction)
+  add_link_options(-fprofile-use=${PGO_DIR}/shared)
 endif()
 
 # =======================================
 # STATIC LTO FOR STANDALONE EXECUTABLES
 # =======================================
-# When USE_STATIC_LTO is ON, standalone fpsexec
-# executables link static archives (.a) of all
-# milk libraries so that the LTO linker has full
-# cross-module visibility.
+# When USE_STATIC_LTO is ON, standalone fpsexec executables link static archives
+# (.a) of all milk libraries so that the LTO linker has full cross-module
+# visibility.
 #
-# Usage:
-#   cmake .. -DUSE_STATIC_LTO=ON
+# Usage: cmake .. -DUSE_STATIC_LTO=ON
 #
 if(USE_STATIC_LTO)
-  message(STATUS "STATIC_LTO: standalones will"
-    " link static archives for full LTO")
+  message(
+    STATUS "STATIC_LTO: standalones will link static archives for full LTO")
   add_link_options(-flto=auto)
 endif()
 
 # =======================================
 # SANITIZERS (development opt-in)
 # =======================================
-# Usage:
-#   cmake .. -DUSE_SANITIZERS=ON
-# Enables AddressSanitizer and
-# UndefinedBehaviorSanitizer for catching
-# memory errors and undefined behavior.
+# Usage: cmake .. -DUSE_SANITIZERS=ON Enables AddressSanitizer and
+# UndefinedBehaviorSanitizer for catching memory errors and undefined behavior.
 # Not for production — significant overhead.
-option(USE_SANITIZERS
-    "Enable ASan + UBSan (development only)" OFF)
+option(USE_SANITIZERS "Enable ASan + UBSan (development only)" OFF)
 if(USE_SANITIZERS)
   message(STATUS "SANITIZERS: ASan + UBSan enabled")
-  add_compile_options(
-      -fsanitize=address,undefined
-      -fno-omit-frame-pointer)
-  add_link_options(
-      -fsanitize=address,undefined)
+  add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address,undefined)
 endif()
-
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE)
-  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  message(
+    STATUS
+      "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}")
 endif()
 
@@ -404,22 +347,19 @@ endif()
 # =======================================
 # FORMAT STRING SAFETY (all build types)
 # =======================================
-# Catch printf-family format string bugs even in
-# Release builds. These are zero-cost at runtime.
+# Catch printf-family format string bugs even in Release builds. These are
+# zero-cost at runtime.
 add_compile_options(
-    $<$<COMPILE_LANGUAGE:C>:-Wformat=2>
-    $<$<COMPILE_LANGUAGE:C>:-Wformat-overflow>
-    $<$<COMPILE_LANGUAGE:C>:-Wformat-truncation>
-)
-
+  $<$<COMPILE_LANGUAGE:C>:-Wformat=2>
+  $<$<COMPILE_LANGUAGE:C>:-Wformat-overflow>
+  $<$<COMPILE_LANGUAGE:C>:-Wformat-truncation>)
 
 # =======================================
 # COMPILE OPTIONS
 # =======================================
 
 # Vectorization diagnostics (development aid)
-option(VEC_REPORT
-    "Print GCC vectorization report" OFF)
+option(VEC_REPORT "Print GCC vectorization report" OFF)
 if(VEC_REPORT)
   add_compile_options(-fopt-info-vec-missed)
 endif()
@@ -431,20 +371,17 @@ option(USE_LTO "Enable Link-Time Optimization (-flto=auto)" ON)
 if(USE_LTO)
   add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
 endif()
-# NOTE: -fwhole-program is applied only to standalone
-# executables (via MilkStandalone.cmake) where main()
-# is the sole entry point.  Applying it globally would
-# cause GCC to discard exported symbols from shared
-# libraries.
+# NOTE: -fwhole-program is applied only to standalone executables (via
+# MilkStandalone.cmake) where main() is the sole entry point.  Applying it
+# globally would cause GCC to discard exported symbols from shared libraries.
 # NOTE: -fstack-usage is incompatible with link-time optimizer
-#add_compile_options(-fstack-usage)
+# add_compile_options(-fstack-usage)
 
-
-# A common flag is -pipe. This flag has no effect on the generated code,
-# but it makes the compilation process faster. It tells the compiler
-# to use pipes instead of temporary files during the different stages
-# of compilation, which uses more memory. On systems with low memory,
-# GCC might get killed. In those cases do not use this flag.
+# A common flag is -pipe. This flag has no effect on the generated code, but it
+# makes the compilation process faster. It tells the compiler to use pipes
+# instead of temporary files during the different stages of compilation, which
+# uses more memory. On systems with low memory, GCC might get killed. In those
+# cases do not use this flag.
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-pipe>)
 
 message("COMPILE_OPTIONS:  ${COMPILE_OPTIONS}")
@@ -456,7 +393,6 @@ message("CMAKE_THREAD_LIBS_INIT  :  ${CMAKE_THREAD_LIBS_INIT}")
 message("PROJECT_SOURCE_DIR       = ${PROJECT_SOURCE_DIR}")
 message("PROJECT_BINARY_DIR       = ${PROJECT_BINARY_DIR}")
 
-
 message("CMAKE_INSTALL_PREFIX     = ${CMAKE_INSTALL_PREFIX}")
 
 message("USE_CUDA                 = ${USE_CUDA}")
@@ -464,6 +400,29 @@ message("USE_MAGMA                = ${USE_MAGMA}")
 
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
+# =======================================
+# COMPUTATION LIBRARIES
+# =======================================
+pkg_check_modules(MKL IMPORTED_TARGET GLOBAL mkl-sdl)
+pkg_check_modules(OPENBLAS IMPORTED_TARGET GLOBAL openblas)
+if(MKL_FOUND)
+  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_MKL")
+  message("Computation libraries: using MKL [-DHAVE_MKL]")
+elseif(OPENBLAS_FOUND)
+  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_OPENBLAS")
+  message("Computation libraries: using openblas [-DHAVE_OPENBLAS]")
+else()
+  pkg_check_modules(LAPACKE REQUIRED IMPORTED_TARGET GLOBAL lapacke)
+  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_STANDALONE_LAPACKE")
+  message(
+    "Computation libraries: using standalone lapacke [-DHAVE_STANDALONE_LAPACKE]"
+  )
+endif()
+
+if(USE_CUDA)
+  find_package(CUDAToolkit 9.0 REQUIRED)
+  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA")
+endif(USE_CUDA)
 
 # =======================================
 # TESTING
@@ -475,11 +434,9 @@ include(CTest)
 # STANDALONE EXECUTABLE HELPERS
 # =======================================
 # Functions: add_milk_standalone, add_cacao_standalone,
-#            add_cacao_standalone_plugins
-# See cmake/MilkStandalone.cmake for docs.
+# add_cacao_standalone_plugins See cmake/MilkStandalone.cmake for docs.
 
 include(${PROJECT_SOURCE_DIR}/cmake/MilkStandalone.cmake)
-
 
 # =======================================
 # INSTALL PATHS
@@ -490,39 +447,39 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Expose architectural tiers globally so that legacy #include
 # =====================================================================
-#   3. INCLUDES
+# 1. INCLUDES
 # =====================================================================
 
-# Global includes removed in favor of target_include_directories
-# Exception: src/engine is needed globally so that all targets
-# can resolve #include "ImageStreamIO/ImageStreamIO.h"
+# Global includes removed in favor of target_include_directories Exception:
+# src/engine is needed globally so that all targets can resolve #include
+# "ImageStreamIO/ImageStreamIO.h"
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
-
 
 # =======================================
 # SOURCE DIRECTORIES
 # =======================================
-# Core modules (libsrcdir) and plugins (libextradir)
-# are discovered and added as subdirectories.
-# Discover plugins (only when coremods are enabled)
+# Core modules (libsrcdir) and plugins (libextradir) are discovered and added as
+# subdirectories. Discover plugins (only when coremods are enabled)
 if(USE_COREMODS)
-  execute_process(COMMAND bash -c
+  execute_process(
+    COMMAND
+      bash -c
       "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
-      OUTPUT_VARIABLE libextradir)
+    OUTPUT_VARIABLE libextradir)
   string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 endif()
 
 foreach(lsrcdir IN LISTS libsrcdir libextradir)
   string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
-  if (NOT "${lsrcdir}" STREQUAL "")
+  if(NOT "${lsrcdir}" STREQUAL "")
     if(IS_ABSOLUTE "${lsrcdir}")
-        set(abs_lsrcdir "${lsrcdir}")
+      set(abs_lsrcdir "${lsrcdir}")
     else()
-        set(abs_lsrcdir "${CMAKE_CURRENT_SOURCE_DIR}/${lsrcdir}")
+      set(abs_lsrcdir "${CMAKE_CURRENT_SOURCE_DIR}/${lsrcdir}")
     endif()
     if(EXISTS "${abs_lsrcdir}/CMakeLists.txt")
-        message("ADDING SUBDIR = ${lsrcdir}")
-        add_subdirectory ( ${lsrcdir} )
+      message("ADDING SUBDIR = ${lsrcdir}")
+      add_subdirectory(${lsrcdir})
     endif()
   endif()
 endforeach()
@@ -545,65 +502,62 @@ add_subdirectory(src/engine/libmilkdata)
 # add libprocessinfo
 add_subdirectory(src/engine/libprocessinfo)
 
-
-
 # Package definitions (needed by both CLI and standalone)
 add_definitions(
-    -DPACKAGE_NAME="milk"
-    -DCONFIGDIR="/config"
-    -DINSTALLDIR="${INSTALLDIR}"
-    -DSOURCEDIR="${SOURCEDIR}"
-    -DABSSRCTOPDIR="${SOURCEDIR}"
-    -DPACKAGE_BUGREPORT="https://github.com/milk-org/milk/issues"
-)
+  -DPACKAGE_NAME="milk" -DCONFIGDIR="/config" -DINSTALLDIR="${INSTALLDIR}"
+  -DSOURCEDIR="${SOURCEDIR}" -DABSSRCTOPDIR="${SOURCEDIR}"
+  -DPACKAGE_BUGREPORT="https://github.com/milk-org/milk/issues")
 
 set(PROGRAM_PERMISSIONS_DEFAULT
-    OWNER_WRITE OWNER_READ OWNER_EXECUTE
-    GROUP_READ GROUP_EXECUTE
-    WORLD_READ WORLD_EXECUTE)
+    OWNER_WRITE
+    OWNER_READ
+    OWNER_EXECUTE
+    GROUP_READ
+    GROUP_EXECUTE
+    WORLD_READ
+    WORLD_EXECUTE)
 
 # main CLI executable (only when USE_CLI is ON)
 if(USE_CLI)
 
-add_executable(milk-cli src/CLImain.c)
-target_link_libraries(milk-cli PUBLIC ${libname})
+  add_executable(milk-cli src/CLImain.c)
+  target_link_libraries(milk-cli PUBLIC ${libname})
 
-if(USE_CUDA)
-  find_package(CUDAToolkit 9.0 REQUIRED)
-  target_link_libraries(milk-cli PUBLIC CUDA::toolkit
-                             PUBLIC CUDA::cusolver
-                             PUBLIC CUDA::cudart
-                             PUBLIC CUDA::cublas)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
-endif(USE_CUDA)
+  if(USE_CUDA)
+    target_link_libraries(
+      milk-cli
+      PUBLIC CUDA::toolkit
+      PUBLIC CUDA::cusolver
+      PUBLIC CUDA::cudart
+      PUBLIC CUDA::cublas)
+  endif(USE_CUDA)
 
-message("====================================================")
-get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)
-message("CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
-message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
-message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
-message("COMPILE_OPTIONS         :  ${milkcompopts}")
-message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
-message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
-message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
-message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
-message("CMAKE_C_FLAGS_COVERAGE        : ${CMAKE_C_FLAGS_COVERAGE}")
-message("====================================================")
+  message("====================================================")
+  get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)
+  message("CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
+  message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
+  message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
+  message("COMPILE_OPTIONS         :  ${milkcompopts}")
+  message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
+  message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
+  message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
+  message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
+  message("CMAKE_C_FLAGS_COVERAGE        : ${CMAKE_C_FLAGS_COVERAGE}")
+  message("====================================================")
 
-install(TARGETS milk-cli
-      DESTINATION bin
-      PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
+  install(
+    TARGETS milk-cli
+    DESTINATION bin
+    PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
 
 else()
 
-message("====================================================")
-message("USE_CLI=OFF: Skipping milk-cli, CLIcore, TUI")
-message("  Only standalone fpsexec programs will be built")
-message("====================================================")
+  message("====================================================")
+  message("USE_CLI=OFF: Skipping milk-cli, CLIcore, TUI")
+  message("  Only standalone fpsexec programs will be built")
+  message("====================================================")
 
 endif(USE_CLI)
-
-
 
 # =======================================
 # MAKE DEFAULT
@@ -611,26 +565,25 @@ endif(USE_CLI)
 
 set(CMAKE_INSTALL_PREFIX_LINK "/usr/local/${PROJECT_NAME}")
 if(INSTALLMAKEDEFAULT)
-  install(CODE "
+  install(
+    CODE "
     EXECUTE_PROCESS(COMMAND ln -snf ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX_LINK})
     ")
 endif(INSTALLMAKEDEFAULT)
 
-
 # =======================================
 # SETUP CAPABILITIES (post-install)
 # =======================================
-# Run milk-setup-caps after install to grant:
-#   - CAP_SYS_NICE to fpsexec binaries (RT scheduling)
-#   - CAP_PERFMON + CAP_SYS_ADMIN to milk-CTRL (perf counters)
+# Run milk-setup-caps after install to grant: - CAP_SYS_NICE to fpsexec binaries
+# (RT scheduling) - CAP_PERFMON + CAP_SYS_ADMIN to milk-CTRL (perf counters)
 #
-# Requires setcap + root/sudo.
-# Enabled by default; disable with -DSETUP_CAPS=OFF.
+# Requires setcap + root/sudo. Enabled by default; disable with
+# -DSETUP_CAPS=OFF.
 #
-option(SETUP_CAPS
-    "Run milk-setup-caps post-install (needs root/sudo)" ON)
+option(SETUP_CAPS "Run milk-setup-caps post-install (needs root/sudo)" ON)
 if(SETUP_CAPS)
-  install(CODE "
+  install(
+    CODE "
     set(_caps_script \
         \"${CMAKE_INSTALL_PREFIX}/bin/milk-setup-caps\")
     if(EXISTS \${_caps_script})
@@ -658,61 +611,58 @@ endif()
 # CONFIG.CMAKE
 # =======================================
 
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include
-    CACHE PATH "Location of header files" )
-set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib
-    CACHE PATH "Location of libraries" )
+set(INCLUDE_INSTALL_DIR
+    ${CMAKE_INSTALL_PREFIX}/include
+    CACHE PATH "Location of header files")
+set(LIBRARY_INSTALL_DIR
+    ${CMAKE_INSTALL_PREFIX}/lib
+    CACHE PATH "Location of libraries")
 
 # Export the targets to a file for use in the Config.cmake file
-install(EXPORT ${PROJECT_NAME}Targets
-    FILE "${PROJECT_NAME}Targets.cmake"
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION lib/cmake
-)
+install(
+  EXPORT ${PROJECT_NAME}Targets
+  FILE "${PROJECT_NAME}Targets.cmake"
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION lib/cmake)
 
 # Set alias for collective milk::milk_all target as well
 add_library(${PROJECT_NAME}_all INTERFACE)
 target_link_libraries(${PROJECT_NAME}_all INTERFACE ${libname})
-target_include_directories(${PROJECT_NAME}_all INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
+target_include_directories(
+  ${PROJECT_NAME}_all INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                $<INSTALL_INTERFACE:include>)
 install(TARGETS ${PROJECT_NAME}_all EXPORT milkTargets)
 
 include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion)
 
 configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    INSTALL_DESTINATION lib/cmake
-    PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR
-)
+  "${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+  INSTALL_DESTINATION lib/cmake
+  PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR)
 
 # Install the Config.cmake and ConfigVersion.cmake files
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    DESTINATION lib/cmake
-)
-
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        DESTINATION lib/cmake)
 
 # =======================================
 # PKG-CONFIG
 # =======================================
 
 foreach(lname IN LISTS libname)
-string(APPEND LINKSTRING "-l${lname} ")
+  string(APPEND LINKSTRING "-l${lname} ")
 endforeach()
 
 message("LINKSTRING: ${LINKSTRING}")
 
-set(INSTALL_PKGCONFIG_DIR "lib/pkgconfig"
+set(INSTALL_PKGCONFIG_DIR
+    "lib/pkgconfig"
     CACHE PATH "Installation directory for pkgconfig (.pc) files")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
@@ -721,61 +671,53 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
         DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
-
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
-              ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h
-        DESTINATION include
-        )
-
+              ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h DESTINATION include)
 
 if(build_python_module)
-  add_subdirectory (python_module)
+  add_subdirectory(python_module)
 endif()
 
 if(USE_CLI)
 
-install(TARGETS CLIcore DESTINATION bin)
-install(PROGRAMS
-                        scripts/milk-cli-all
-                        scripts/milk-argparse
-                        scripts/milk-check
-                        scripts/milk-completion.sh
-      scripts/milk-commands
-                        scripts/milk-cubeslice2shm
-                        scripts/milk-exec
-                                                scripts/milk-fpslist-addentry
-                                                scripts/milk-cr2tofits
-                        scripts/milk-FITS2shm
-      scripts/milk-fitsheader
-                        scripts/milk-fpsmkcmd
-                        scripts/milk-fpsinit
-                        scripts/milk-logshim
-                        scripts/milk-logshimkill
-                        scripts/milk-logshimoff
-                        scripts/milk-logshimon
-                        scripts/milk-logshimstat
-                        scripts/merge3DfitsTelemetry
-      scripts/milk-images-merge
-                        scripts/milk-scriptexample
-                        scripts/milk-script-advanced
-                        scripts/milk-script-std-config
-                        scripts/milk-streamlink
-                        scripts/milk-shm2FITSloop
-
-                        scripts/tmuxkillall
-                        scripts/tmuxsessionname
-                        scripts/waitforfile
-      DESTINATION bin)
+  install(TARGETS CLIcore DESTINATION bin)
+  install(
+    PROGRAMS scripts/milk-cli-all
+             scripts/milk-argparse
+             scripts/milk-check
+             scripts/milk-completion.sh
+             scripts/milk-commands
+             scripts/milk-cubeslice2shm
+             scripts/milk-exec
+             scripts/milk-fpslist-addentry
+             scripts/milk-cr2tofits
+             scripts/milk-FITS2shm
+             scripts/milk-fitsheader
+             scripts/milk-fpsmkcmd
+             scripts/milk-fpsinit
+             scripts/milk-logshim
+             scripts/milk-logshimkill
+             scripts/milk-logshimoff
+             scripts/milk-logshimon
+             scripts/milk-logshimstat
+             scripts/merge3DfitsTelemetry
+             scripts/milk-images-merge
+             scripts/milk-scriptexample
+             scripts/milk-script-advanced
+             scripts/milk-script-std-config
+             scripts/milk-streamlink
+             scripts/milk-shm2FITSloop
+             scripts/tmuxkillall
+             scripts/tmuxsessionname
+             scripts/waitforfile
+    DESTINATION bin)
 
 endif(USE_CLI)
 
 install(FILES docs/cli/help.txt DESTINATION doc)
 
 # milk-cli script payloads (.milk files) – installed as data, not executables
-install(FILES scripts/makecircleofdisks.milk
-        DESTINATION share/milk/scripts)
-
-
+install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
 
 # Guard: verify no standalone links CLIcore unexpectedly
 add_test(NAME standalone-dep-check

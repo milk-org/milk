@@ -296,7 +296,7 @@ static void fpsCTRL__render_summary_and_breadcrumbs(KEYWORD_TREE_NODE    *keywno
             char shmpath_sum[STRINGMAXLEN_FILE_NAME];
             int  shm_sum_ok = (ImageStreamIO_filename(shmpath_sum, sizeof(shmpath_sum),
                                                       sp_sum.name) == IMAGESTREAMIO_SUCCESS) &&
-                             (access(shmpath_sum, F_OK) == 0);
+                              (access(shmpath_sum, F_OK) == 0);
             if (shm_sum_ok && ImageStreamIO_openIm(&tmpimg, sp_sum.name) == IMAGESTREAMIO_SUCCESS)
             {
                 char     stream_info[256];
@@ -929,7 +929,7 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
                     {
                         FPS_STREAMNAME_PARSED sp_v = fps_streamname_parse(valstring);
                         char                  shmpath[512];
-                        snprintf(shmpath, sizeof(shmpath), "/milk/shm/%s.im.shm", sp_v.name);
+                        ImageStreamIO_filename(shmpath, sizeof(shmpath), sp_v.name);
                         int exists = (stat(shmpath, &st) == 0);
                         if (sp_v.loc == 'L')
                         {
