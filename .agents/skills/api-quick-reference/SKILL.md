@@ -100,24 +100,39 @@ These global variables are defined by the framework and are always available in 
 
 ## 5. Stream Write Protocol
 
-When writing data to a shared memory stream (`IMAGE`), you must use the semaphore protocol so readers know when the data is ready.
+When writing data to a shared memory stream inside
+a compute unit, follow the pattern used by all
+existing templates and stream processors:
 
 ```c
-// 1. Acquire write lock (increments md->cnt0)
-SHMIM_WRITE_ACQUIRE(outimg.im->md);
+// 1. Signal write-in-progress
+outimg->md->write = 1;
 
-// 2. Modify data
-for(int i = 0; i < N; i++) outimg.im->array.F[i] = ...;
+// 2. Modify pixel data
+for (uint64_t ii = 0; ii < xysize; ii++)
+{
+    outimg->im->array.F[ii] = ...;
+}
 
-// 3. Release write lock (increments md->cnt1)
-SHMIM_WRITE_RELEASE(outimg.im->md);
+// 3. Finalize: updates cnt0, clears write flag,
+//    timestamps, posts all semaphores
+processinfo_update_output_stream(
+    processinfo, outimg.im, inimg.im);
+```
 
-// 4. Update timing and post semaphores
-// If inside a processinfo loop triggered by an input stream:
-processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
+`processinfo_update_output_stream()` internally
+calls `ImageStreamIO_UpdateIm()`, which handles
+`SHMIM_CNT0_INCREMENT`, `SHMIM_WRITE_RELEASE`,
+and `ImageStreamIO_sempost(image, -1)`. Do NOT
+call these low-level macros yourself in a compute
+unit — the framework does it for you.
 
-// Or if not using processinfo triggers (e.g. one-shot or generator):
-ImageStreamIO_UpdateIm(outimg.im);
+For generators (self-timed, no input trigger),
+pass `NULL` as the input image:
+
+```c
+processinfo_update_output_stream(
+    processinfo, outimg.im, NULL);
 ```
 
 ## 6. FPS Parameter Quick-Reference
@@ -134,3 +149,19 @@ Common `FPTYPE_*` mapped to C types:
 
 X-Macro Binding Column Order (Strict):
 `X(keyword, pointer, type, is_primary, flags, description)`
+
+## 7. Required Header Includes
+
+Every `.c` file must explicitly include the headers
+it uses. Here are the common APIs and their headers:
+
+| API / Function                                                                                           | Required `#include`                                          |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `IMGID`, `imgid_make_from_name`, `imgid_copy`, `imgid_free`, `imcreateIMGID`, `resolveIMGID`             | `"COREMOD_memory/COREMOD_memory.h"`                          |
+| `FPS_APP_INFO`, `FPS_PARAMS`, `FPS_MAIN_STANDALONE_V2`, `FPS_CLI_BINDING`, `FPS_X_BINDING`, `FPS_X_FARG` | `"fps.h"`                                                    |
+| `CLICMDDATA`, `CLICMDARGDEF`, `INSERT_STD_*` macros                                                      | `"CLIcore.h"` (or `"CLIcore_standalone.h"` if `MILK_NO_CLI`) |
+| `processinfo_update_output_stream`                                                                       | `"processtools.h"` (via `CLIcore.h`)                         |
+| `cblas_sgemv`, `cblas_sgemm`                                                                             | `<cblas.h>` (link `${BLAS_LIBRARIES}`)                       |
+| `sqrtf`, `powf`, `sinf`, `cosf`                                                                          | `<math.h>` (link `-lm`)                                      |
+| `MILK_HOT`, `MILK_COLD`, `UNLIKELY`, `MILK_ASSUME_ALIGNED`                                               | `"milkDebugTools.h"` (via `CLIcore.h`)                       |
+| `DEBUG_TRACE_FSTART`, `DEBUG_TRACE_FEXIT`                                                                | `"milkDebugTools.h"` (via `CLIcore.h`)                       |
