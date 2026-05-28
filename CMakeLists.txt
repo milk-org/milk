@@ -548,8 +548,7 @@ if(USE_CLI)
   install(
     TARGETS milk-cli
     DESTINATION bin
-    PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
-
+    PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT})
 else()
 
   message("====================================================")

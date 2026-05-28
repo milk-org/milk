@@ -14,8 +14,8 @@
 #else
 #    include "CLIcore.h"
 #endif
-#include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "fps.h"
 
 /* forward decls */
 int COREMOD_TOOLS_mvProcRTPrio(const int rtprio);
@@ -23,7 +23,6 @@ int COREMOD_TOOLS_mvProcTset(const char *tsetspec);
 int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec);
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
 int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio);
-
 
 /* ================================================================
  *  COMMON PARAMS
@@ -33,22 +32,18 @@ static long long p_pid                                = 0;
 static char      p_name[FUNCTION_PARAMETER_STRMAXLEN] = "realtime";
 static long long p_rtprio                             = 80;
 
-
 /* ================================================================
  *  CMD 1: rtprio (1 arg)
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_rtp = {
-    .fps_name    = "rtprio",
-    .cmdkey      = "rtprio",
-    .description = "set SCHED_FIFO priority",
-    .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning "
-        "PIDs to NUMA-aware CPU groups for real-time performance."
+    .fps_name         = "rtprio",
+    .cmdkey           = "rtprio",
+    .description      = "set SCHED_FIFO priority",
+    .description_long = "Move processes to specific CPU sets for core pinning and isolation."
 };
 
-#define FPS_PARAMS_RTP(X) \
-    X(".rtprio", &p_rtprio, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "RT priority")
+#define FPS_PARAMS_RTP(X)
 
 static CLICMDDATA CLIcmddata_rtp = { "", "", CLICMD_FIELDS_NOPARAM };
 FPS_CMDSETTINGS_INIT(rtp, CLIcmddata_rtp, FPS_app_info_rtp)
@@ -59,18 +54,15 @@ static errno_t __attribute__((unused)) compute_rtp()
     return RETURN_SUCCESS;
 }
 
-
 /* ================================================================
  *  CMD 2: tsetpmove (1 arg)
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_tset = {
-    .fps_name    = "tsetpmove",
-    .cmdkey      = "tsetpmove",
-    .description = "assign taskset to current process",
-    .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning "
-        "PIDs to NUMA-aware CPU groups for real-time performance."
+    .fps_name         = "tsetpmove",
+    .cmdkey           = "tsetpmove",
+    .description      = "assign taskset to current process",
+    .description_long = "Move processes to specific CPU sets for core pinning and isolation."
 };
 
 #define FPS_PARAMS_TSET(X) \
@@ -85,18 +77,15 @@ static errno_t __attribute__((unused)) compute_tset()
     return RETURN_SUCCESS;
 }
 
-
 /* ================================================================
  *  CMD 3: tsetpmoveext (2 args)
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_tsete = {
-    .fps_name    = "tsetpmoveext",
-    .cmdkey      = "tsetpmoveext",
-    .description = "assign taskset for any process",
-    .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning "
-        "PIDs to NUMA-aware CPU groups for real-time performance."
+    .fps_name         = "tsetpmoveext",
+    .cmdkey           = "tsetpmoveext",
+    .description      = "assign taskset for any process",
+    .description_long = "Move processes to specific CPU sets for core pinning and isolation."
 };
 
 #define FPS_PARAMS_TSETE(X)                                         \
@@ -112,18 +101,15 @@ static errno_t __attribute__((unused)) compute_tsete()
     return RETURN_SUCCESS;
 }
 
-
 /* ================================================================
  *  CMD 4: csetpmove (1 arg)
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info_cset = {
-    .fps_name    = "csetpmove",
-    .cmdkey      = "csetpmove",
-    .description = "move current process to CPU set",
-    .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning "
-        "PIDs to NUMA-aware CPU groups for real-time performance."
+    .fps_name         = "csetpmove",
+    .cmdkey           = "csetpmove",
+    .description      = "move current process to CPU set",
+    .description_long = "Move processes to specific CPU sets for core pinning and isolation."
 };
 
 static CLICMDDATA CLIcmddata_cset = { "", "", CLICMD_FIELDS_NOPARAM };
@@ -135,19 +121,16 @@ static errno_t __attribute__((unused)) compute_cset()
     return RETURN_SUCCESS;
 }
 
-
 /* ================================================================
  *  CMD 5: csetandprioext (3 args, primary)
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "csetandprioext",
-    .cmdkey      = "csetandprioext",
-    .description = "move PID to CPU set and assign "
-                   "RT priority",
-    .description_long =
-        "Move processes to specific CPU sets for core pinning and isolation. Supports assigning "
-        "PIDs to NUMA-aware CPU groups for real-time performance."
+    .fps_name         = "csetandprioext",
+    .cmdkey           = "csetandprioext",
+    .description      = "move PID to CPU set and assign "
+                        "RT priority",
+    .description_long = "Move processes to specific CPU sets for core pinning and isolation."
 };
 
 #define FPS_PARAMS(X)                                                          \
@@ -173,7 +156,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
 
 /* ================================================================
  *  REGISTRATION
@@ -266,26 +248,7 @@ int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
         return RETURN_SUCCESS;
     }
 
-    char command[200];
-
-    if (seteuid(dceuid) != 0 || setuid(dceuid) != 0) // This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid/setuid error");
-        return RETURN_FAILURE;
-    }
-
-    snprintf(command, sizeof(command), "chrt -f -p %d %d\n", rtprio, getpid());
-    printf("Executing command: %s\n", command);
-
-    EXECUTE_SYSTEM_COMMAND("%s", command);
-
-    if (setresuid(dcruid, dcruid, dceuid) != 0) // Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error after executing chrt");
-        //TODO probably should force a quit here... since we're remaining
-        //TODO at elevated privileges and we really shoudn't.
-        return RETURN_FAILURE;
-    }
+    EXECUTE_SYSTEM_COMMAND_ERRCHECK("milk-makecsetandrt -p %d %d", rtprio, getpid());
 
     return RETURN_SUCCESS;
 }
@@ -298,38 +261,9 @@ int COREMOD_TOOLS_mvProcTset(const char *tsetspec)
 
 int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
 {
-    char command[200];
-
-    // Must make TWO calls
-    // First call: promote the EUID to root,
-    // Second call: setuid promote the RUID to root
-    // Which is what we need for the cset call to pass without a sudo password prompt.
-
-    /* FOR DEBUG - WARNING dceuid and dcruid are NOT what they say
-    PRINT_ERROR("(data) EUID %d - (data) RUID %d ", dceuid, dcruid);
-    int euid, suid, ruid;
-    getresuid(&ruid, &euid, &suid);
-    PRINT_ERROR("AC EUID %d - SUID %d - RUID %d ", euid, suid, ruid);
-    //*/
-
-    if (seteuid(dceuid) != 0 || setuid(dceuid) != 0) // This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid/setuid error");
-    }
-
-    snprintf(command, sizeof(command), "taskset -pc %s %d\n", tsetspec, pid);
-    printf("Executing command: %s\n", command);
-
-    EXECUTE_SYSTEM_COMMAND("%s", command);
-
-    if (setresuid(dcruid, dcruid, dceuid) != 0) // Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-
-    return (0);
+    EXECUTE_SYSTEM_COMMAND("milk-makecsetandrt -t %s %d", tsetspec, pid);
+    return 0;
 }
-
 
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 {
@@ -337,67 +271,16 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
     return COREMOD_TOOLS_mvProcCPUsetExt(getpid(), csetname, -1);
 }
 
-
 int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio)
 {
-    char command[STRINGMAXLEN_COMMAND];
-
-    /* FOR DEBUG - WARNING dceuid and dcruid are NOT what they say
-    PRINT_ERROR("(data) EUID %d - (data) RUID %d ", dceuid, dcruid);
-    int euid, suid, ruid;
-    getresuid(&ruid, &euid, &suid);
-    PRINT_ERROR("AC EUID %d - SUID %d - RUID %d ", euid, suid, ruid);
-    //*/
-
-    // Must make TWO calls - see COREMOD_TOOLS_mvProcTset
-    if (seteuid(dceuid) != 0 || setuid(dceuid) != 0) // This goes up to maximum privileges
+    if (rtprio > 0)
     {
-        PRINT_ERROR("seteuid/setuid error");
-    }
-
-    snprintf(command, sizeof(command),
-             "cset proc --threads --force"
-             " -m -p %d -t %s\n",
-             pid, csetname);
-    printf("Executing command: %s\n", command);
-
-    if (system("which cset > /dev/null 2>&1"))
-    {
-        // Command doesn't exist...
-        printf("Error: cset command is not installed\n");
+        EXECUTE_SYSTEM_COMMAND("milk-makecsetandrt -c %s -p %d %d", csetname, rtprio, pid);
     }
     else
     {
-        // Command does exist
-        EXECUTE_SYSTEM_COMMAND_NOCHECK("%s", command);
-        if (dcretval != 0)
-        {
-            if (dcretval == 512)
-            {
-                PRINT_ERROR("Error: cset-proc returns error 512 - cpuset %s does not exist.\n",
-                            csetname);
-            }
-            else
-            {
-                // Re-raise as would EXECUTE_SYTEM_COMMAND_ERRCHECK
-                PRINT_ERROR("Error: cset-proc returns error %d.", dcretval);
-                abort();
-            }
-        }
+        EXECUTE_SYSTEM_COMMAND("milk-makecsetandrt -c %s %d", csetname, pid);
     }
 
-    if (rtprio > 0)
-    {
-        snprintf(command, sizeof(command), "chrt -f -p %d %d\n", rtprio, pid);
-        printf("Executing command: %s\n", command);
-
-        EXECUTE_SYSTEM_COMMAND("%s", command);
-    }
-
-    if (setresuid(dcruid, dcruid, dceuid) != 0) // Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-
-    return 0;
+    return EXIT_SUCCESS;
 }

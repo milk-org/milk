@@ -127,6 +127,28 @@ install(
   EXPORT milkTargets
   DESTINATION lib)
 
+# ==========================================
+# milk-makecsetandrt Move processes to cpusets and set RT priority. Installed
+# SUID root so unprivileged callers can raise scheduling priority.
+# ==========================================
+add_executable(milk-makecsetandrt milk-makecsetandrt.c)
+target_include_directories(
+  milk-makecsetandrt
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_link_libraries(milk-makecsetandrt PRIVATE milkcommon)
+install(
+  TARGETS milk-makecsetandrt
+  DESTINATION bin
+  PERMISSIONS
+    OWNER_READ
+    OWNER_WRITE
+    OWNER_EXECUTE
+    GROUP_READ
+    GROUP_EXECUTE
+    WORLD_READ
+    WORLD_EXECUTE
+    SETUID)
+
 # Static archive for standalone LTO builds
 if(USE_STATIC_LTO)
   set(LIBNAME_COMPUTE_STATIC "${LIBNAME_COMPUTE}_static")
