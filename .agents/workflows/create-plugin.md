@@ -21,9 +21,11 @@ Use this workflow to scaffold a new plugin module in the milk ecosystem.
 
 Use the `plugin-creator` skill to determine how to structure the plugin. You will need to ask the user:
 
-- **Plugin Name:** (e.g., `milk-extra-myplugin`)
+- **Plugin Name:** (e.g., `myplugin`)
 - **Description:** A short description for the README.
 - **Group Folder:** Plugins are stored in `plugins/<group>/`.
+  **IMPORTANT**: Do NOT use `milk-extra-src` for new plugins; create a new or custom
+  group folder directly under `plugins/` (e.g., `plugins/my-group/`).
 - **Compute Variant:** Does it need a `_compute` variant for standalone linking?
 
 ## 2. Scaffold the Plugin
