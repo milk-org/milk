@@ -10,6 +10,19 @@ writes to an output stream in a continuous loop.
 The key template is
 `src/milk_module_example/examplefunc4_streamprocess.c`.
 
+**Skills to consult** (in order):
+
+1. `fps-parameter-guide` — parameter types,
+   stream flag combos
+2. `imagestream-internals` — stream write
+   protocol, semaphore model
+3. `api-quick-reference` — IMGID lifecycle,
+   required headers
+4. `cmake-patterns` — standalone target setup
+
+**Rules to review**: `fpsexec-conventions`,
+`common-agent-mistakes`
+
 ## 1. Gather Information
 
 Ask the user for:
@@ -82,6 +95,11 @@ differ from a basic FPS compute unit:
    INSERT_STD_PROCINFO_COMPUTEFUNC_END
    ```
 
+   Set `outimg->md->write = 1` before modifying
+   pixels in your processing function.
+   `processinfo_update_output_stream()` handles
+   `write = 0` and semaphore posting.
+
 3. **Cleanup**: Call `imgid_free()` for all IMGIDs
    after the loop ends.
 
@@ -97,6 +115,9 @@ add_milk_standalone(cmdkey source_file.c)
 add_cacao_standalone(cmdkey source_file.c)
 ```
 
+Also add the `.c` file to `SOURCEFILES` in
+the module's library build.
+
 ## 8. Update CLI Registration
 
 Rename the `CLIADDCMD_milk_module_example__streamprocess`
@@ -105,7 +126,14 @@ Add the call to the module's `initModule()`.
 
 ## 9. Compile and Verify
 
-Run the [`/compile-test`](compile-test.md) workflow.
+Run the [`/compile-test`](compile-test.md)
+workflow, then verify:
+
+```bash
+milk-fpsexec-<name> -h
+milk-fpsexec-<name> -h1
+milk-fpsexec-list | grep <name>
+```
 
 ## 10. Notify
 

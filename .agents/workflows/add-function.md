@@ -9,6 +9,16 @@ Use this workflow when adding a single new function
 module. This is lighter than [`/add-new-module`](add-new-module.md) but
 ensures no steps are missed.
 
+**Skills to consult**:
+
+- `fps-parameter-guide` — if adding an FPS
+  compute unit
+- `cmake-patterns` — CMakeLists.txt setup
+- `api-quick-reference` — IMGID API reference
+
+**Rules to review**: `fpsexec-conventions`,
+`common-agent-mistakes`
+
 ## 1. Gather Information
 
 Ask the user for:
@@ -45,6 +55,10 @@ If the function is an FPS standalone, also add:
 ```cmake
 add_milk_standalone(cmdkey source_file.c)
 ```
+
+Also ensure `FPS_CMDSETTINGS_INIT(dft,
+CLIcmddata, FPS_app_info)` is present in
+Section 5 of the compute unit.
 
 ## 4. Register in Module Init
 

@@ -224,3 +224,58 @@ add_subdirectory(module_name)
 # For plugins: plugins/milk-extra-src/CMakeLists.txt
 add_subdirectory(module_name)
 ```
+
+## Linking External Libraries
+
+### BLAS (Matrix Operations)
+
+BLAS is found by CMake at the top level. Link
+it as `PRIVATE` since it's an implementation
+detail:
+
+```cmake
+target_link_libraries(${LIBNAME}
+    PRIVATE ${BLAS_LIBRARIES})
+```
+
+For standalone executables that need BLAS:
+
+```cmake
+add_milk_standalone(myname myname.c)
+target_link_libraries(
+    milk-fpsexec-myname
+    PRIVATE ${BLAS_LIBRARIES})
+```
+
+### FFTW
+
+FFTW is found via `pkg_check_modules` in the
+top-level CMake. Link via the milkfft module:
+
+```cmake
+target_link_libraries(${LIBNAME}
+    PRIVATE milkfft)
+```
+
+For standalone targets, use the `_compute`
+variant:
+
+```cmake
+add_milk_standalone(myname myname.c)
+target_link_libraries(
+    milk-fpsexec-myname
+    PRIVATE milkfft_compute)
+```
+
+### When to Create a `_compute` Variant
+
+Create a `_compute` variant if:
+
+- Your module provides functions that
+  standalone executables need to link against
+- Another module's standalone links your lib
+
+Do **not** create a `_compute` variant if:
+
+- Your module is CLI-only (TUI, interactive)
+- No standalone executable needs your code
