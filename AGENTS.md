@@ -241,6 +241,7 @@ and enforced. Know what they require:
 | `shared-memory-safety.md`            | SHM cleanup, stale detection, stream creation                                     |
 | `testing-practices.md`               | Run tests after changes; add regression tests                                     |
 | `tui-browser-testing.md`             | milk TUIs cannot be tested using browser testing tools                            |
+| `tui-conventions.md`                 | Delta Rendering, TrueColor compatibility, and input/help standards                |
 | `whatsnew-update.md`                 | Add entry to `docs/whatsnew.md` for significant features                          |
 
 ---
@@ -273,6 +274,7 @@ when domain-specific tasks require extended capabilities.
 | `pseudocode-to-compute-unit` | Translating algorithms to V2 compute units                                                     |
 | `refactor-c-source`          | Splitting large C files into smaller modules                                                   |
 | `stream-modifier-guide`      | IMGID parsing, `@S:`/`@L:`/`@F:` modifiers, slice syntax                                       |
+| `tui-creator`                | Developing high-performance, flicker-free terminal interfaces using Delta Rendering            |
 
 ---
 
