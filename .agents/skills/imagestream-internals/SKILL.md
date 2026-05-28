@@ -32,7 +32,8 @@ Each stream creates a file at
 │   - datatype, shared flag   │
 │   - write counter (cnt0)    │
 │   - timing metadata         │
-│   - semaphore states        │
+│   - semaphore config        │
+│   - NBproctrace count       │
 ├─────────────────────────────┤
 │ Pixel Data (array)          │
 │   - Typed union:            │
@@ -42,6 +43,22 @@ Each stream creates a file at
 ├─────────────────────────────┤
 │ Keywords (kw[])             │
 │   - Named metadata values   │
+├─────────────────────────────┤
+│ Semaphore File Data         │
+│   - sem_t per semaphore     │
+├─────────────────────────────┤
+│ semReadPID[]                │
+│ semWritePID[]               │
+│ semctrl[], semstatus[]      │
+├─────────────────────────────┤
+│ streamproctrace[]           │
+│   - STREAM_PROC_TRACE ×     │
+│     NBproctrace (default 10)│
+│   - Process ancestry chain  │
+├─────────────────────────────┤
+│ (optional) Circular Buffer  │
+│   atimearray, writetimearray│
+│   cntarray, flagarray       │
 └─────────────────────────────┘
 ```
 
@@ -65,8 +82,9 @@ typedef struct {
         double   *D;
         void     *raw;
     } array;
-    sem_t **semptr;        // semaphore array
-    IMAGE_KEYWORD *kw;     // keywords
+    sem_t **semptr;                   // semaphore array
+    IMAGE_KEYWORD *kw;                // keywords
+    STREAM_PROC_TRACE *streamproctrace; // process ancestry
 } IMAGE;
 ```
 
@@ -208,6 +226,102 @@ ImageStreamIO_createIm(
 | `ImageStreamIO_semwait()`         | Wait on semaphore          |
 | `ImageStreamIO_getsemwaitindex()` | Get unique sem index       |
 | `ImageStreamIO_seminit()`         | Reset semaphore            |
+| `ImageStreamIO_UpdateIm()`        | cnt0++, write=0, sem post  |
+
+## Stream Process Trace (Ancestry)
+
+Every stream carries an array of
+`STREAM_PROC_TRACE` entries that records the
+chain of processes that produced the data.
+This is the mechanism that lets `streamCTRL`
+and `milk-CTRL` display which process wrote
+a stream and which upstream stream triggered
+that process.
+
+### STREAM_PROC_TRACE Struct
+
+Defined in `ImageStruct.h`:
+
+```c
+typedef struct {
+    int             triggermode;     // PROCESSINFO_TRIGGERMODE_*
+    pid_t           procwrite_PID;   // PID of writing process
+    ino_t           trigger_inode;   // inode of trigger stream
+    struct timespec ts_procstart;    // when process was triggered
+    struct timespec ts_streamupdate; // when stream was written
+    int             trigsemindex;    // trigger semaphore index
+    int             triggerstatus;   // PROCESSINFO_TRIGGERSTATUS_*
+    uint64_t        cnt0;            // trigger stream cnt0
+} STREAM_PROC_TRACE;
+```
+
+### How Ancestry Propagates
+
+When a compute unit calls
+`processinfo_update_output_stream(processinfo,
+output_image, input_image)`, the function:
+
+1. Writes `streamproctrace[0]` on the output
+   with the current process's PID, trigger
+   mode, trigger inode, and timestamps.
+2. Copies `input_image->streamproctrace[0..N-2]`
+   into `output_image->streamproctrace[1..N-1]`,
+   shifting the input's ancestry down by one
+   slot.
+3. Calls `ImageStreamIO_UpdateIm()` which
+   increments `cnt0`, clears `write`, and posts
+   all semaphores.
+
+This creates a rolling history of up to
+`IMAGE_NB_PROCTRACE` (default 10) entries,
+where index 0 is the most recent writer and
+index N-1 is the oldest ancestor.
+
+```
+Stream A (camera)         Stream B (processed)      Stream C (output)
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│ [0] camera PID  │──────▶│ [0] procB PID   │──────▶│ [0] procC PID   │
+│ [1] (empty)     │       │ [1] camera PID  │       │ [1] procB PID   │
+│ [2] (empty)     │       │ [2] (empty)     │       │ [2] camera PID  │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
+```
+
+### Trigger Modes
+
+| Constant                            | Value | Description |
+| ----------------------------------- | ----- | ----------- |
+| `PROCESSINFO_TRIGGERMODE_IMMEDIATE` | 0     | No wait     |
+| `PROCESSINFO_TRIGGERMODE_CNT0`      | 1     | Poll cnt0   |
+| `PROCESSINFO_TRIGGERMODE_CNT1`      | 2     | Poll cnt1   |
+| `PROCESSINFO_TRIGGERMODE_SEMAPHORE` | 3     | sem_wait    |
+| `PROCESSINFO_TRIGGERMODE_DELAY`     | 4     | Fixed delay |
+| `PROCESSINFO_TRIGGERMODE_CNT2`      | 6     | Poll cnt2   |
+
+### Trigger Statuses
+
+| Constant                             | Value | Meaning             |
+| ------------------------------------ | ----- | ------------------- |
+| `PROCESSINFO_TRIGGERSTATUS_WAITING`  | 1     | Waiting for trigger |
+| `PROCESSINFO_TRIGGERSTATUS_RECEIVED` | 2     | Trigger received    |
+| `PROCESSINFO_TRIGGERSTATUS_TIMEDOUT` | 3     | Trigger timed out   |
+
+### For Compute Unit Authors
+
+Ancestry propagation is **automatic** if you
+call `processinfo_update_output_stream()`
+correctly. No extra code is needed. The two
+requirements are:
+
+1. Pass the correct `input_image` pointer so
+   the function can copy ancestry from it.
+2. For generators (no input), pass `NULL` —
+   only `streamproctrace[0]` is written.
+
+### Viewing Ancestry
+
+Use `streamCTRL` (press `t` on a selected
+stream) to see the full process trace chain,
+or view it in `milk-CTRL` overview.
 
 ## Source Files
 

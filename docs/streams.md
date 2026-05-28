@@ -205,6 +205,51 @@ Functions should prefer passing parameters using
 `img.im->array.F` or similar data type unions based
 on `img.im->md[0].datatype`.
 
+## 6. Stream Process Trace (Ancestry)
+
+Every stream carries an array of `STREAM_PROC_TRACE`
+entries (`IMAGE_NB_PROCTRACE` = 10 by default) that
+records which processes produced the data and which
+upstream streams triggered them.
+
+### Data Structure
+
+Each entry contains:
+
+| Field             | Type              | Description                                              |
+| ----------------- | ----------------- | -------------------------------------------------------- |
+| `procwrite_PID`   | `pid_t`           | PID of writing process                                   |
+| `trigger_inode`   | `ino_t`           | inode of triggering stream                               |
+| `triggermode`     | `int`             | How process was triggered (semaphore, cnt0, delay, etc.) |
+| `triggerstatus`   | `int`             | Trigger result (waiting, received, timed out)            |
+| `ts_procstart`    | `struct timespec` | When process computation started                         |
+| `ts_streamupdate` | `struct timespec` | When stream was written                                  |
+| `cnt0`            | `uint64_t`        | Trigger stream's frame counter at trigger time           |
+
+### How It Works
+
+When a compute unit calls
+`processinfo_update_output_stream(processinfo,
+output_image, input_image)`:
+
+1. The function writes the current process's info into
+   `output_image->streamproctrace[0]`.
+2. It copies `input_image->streamproctrace[0..N-2]` into
+   `output_image->streamproctrace[1..N-1]`, preserving the
+   upstream ancestry chain.
+3. It then calls `ImageStreamIO_UpdateIm()` to finalize.
+
+This creates a rolling history where `[0]` is always the
+most recent writer and `[N-1]` is the oldest ancestor in
+the chain.
+
+### Viewing the Trace
+
+- In `streamCTRL`: select a stream and press `t` to see
+  the full process trace.
+- In `milk-CTRL` overview: the trace is used to draw
+  stream→process→stream dependency graphs.
+
 ---
 
 ← [Documentation Index](index.md)
