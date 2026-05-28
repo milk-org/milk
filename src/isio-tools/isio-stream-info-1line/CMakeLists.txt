@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.17)
 
-project (isio-stream-info)
+project(isio-stream-info)
 
 find_package(PkgConfig REQUIRED)
 

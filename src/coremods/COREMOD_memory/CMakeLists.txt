@@ -61,8 +61,7 @@ set(SOURCEFILES
     stream_UDP_receive.c
     stream_updateloop.c
     stream_slice.c
-    variable_ID.c
-   )
+    variable_ID.c)
 
 set(INCLUDEFILES
     ${SRCNAME}.h
@@ -118,19 +117,17 @@ set(INCLUDEFILES
     stream_UDP.h
     stream_updateloop.h
     stream_slice.h
-    variable_ID.h
-   )
+    variable_ID.h)
 
 # list scripts that should be installed on system
 set(SCRIPTFILES
-  scripts/milk-nettransmit
-  scripts/milk-shmimave
-  scripts/milk-shmimcopy-semtrig
-  scripts/milk-shmimpoke
-  scripts/milk-shmimpoke-semtrig
-  scripts/milk-semloopspeed
-  scripts/milk-streamFITSlog
-)
+    scripts/milk-nettransmit
+    scripts/milk-shmimave
+    scripts/milk-shmimcopy-semtrig
+    scripts/milk-shmimpoke
+    scripts/milk-shmimpoke-semtrig
+    scripts/milk-semloopspeed
+    scripts/milk-streamFITSlog)
 
 # TESTING
 
@@ -138,10 +135,11 @@ include(CTest)
 
 # test module is loaded
 set(TESTNAME "CLIfunc-COREMOD_memory-module")
-add_test (NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
-set_property (TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
-set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
-set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_memory")
+add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
+set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
+set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
+set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
+                                         "COREMOD_memory")
 
 # test that commands are registered
 
@@ -149,31 +147,33 @@ list(APPEND commandlist "mk2Dim" "mk3Dim" "listim" "rmall")
 
 foreach(CLIcmdname IN LISTS commandlist)
 
-set(TESTCLIFUNC "${CLIcmdname}")
-set(TESTNAME "CLIfunc-COREMOD_memory-${TESTCLIFUNC}")
-add_test (NAME "${TESTNAME}" COMMAND milk-exec "-T" "cmd? mem.${CLIcmdname}")
-set_property (TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
-set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
-set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
+  set(TESTCLIFUNC "${CLIcmdname}")
+  set(TESTNAME "CLIfunc-COREMOD_memory-${TESTCLIFUNC}")
+  add_test(NAME "${TESTNAME}" COMMAND milk-exec "-T" "cmd? mem.${CLIcmdname}")
+  set_property(TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
+  set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
+  set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
 
 endforeach()
 
 # Semaphore latency - speed test
 
 set(TESTNAME "milksemloopspeed")
-add_test (NAME "${TESTNAME}" COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/milk-semloopspeed "-D" "123456")
-set_property (TEST "${TESTNAME}" PROPERTY LABELS "perf")
-set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 5)
-set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "cnt0 = 123457")
+add_test(NAME "${TESTNAME}"
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/milk-semloopspeed "-D"
+                 "123456")
+set_property(TEST "${TESTNAME}" PROPERTY LABELS "perf")
+set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 5)
+set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
+                                         "cnt0 = 123457")
 
-# DEFAULT SETTINGS
-# Do not change unless needed
+# DEFAULT SETTINGS Do not change unless needed
 # =====================================================================
 
 project(lib_${LIBNAME}_project)
 
-# Library can be compiled from multiple source files
-# Convention: the main souce file is named <libname>.c
+# Library can be compiled from multiple source files Convention: the main souce
+# file is named <libname>.c
 #
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
@@ -183,34 +183,41 @@ if(USE_CFITSIO)
   if(${CFITSIO_FOUND})
     link_directories(${CFITSIO_LIBRARY_DIRS})
     target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
-    target_include_directories(${LIBNAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${CFITSIO_INCLUDE_DIRS})
+    target_include_directories(
+      ${LIBNAME}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+             ${CFITSIO_INCLUDE_DIRS})
     target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
   endif()
 endif()
 
-target_include_directories(${LIBNAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-                                              $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-                                              $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
-											  $<INSTALL_INTERFACE:include>)
+target_include_directories(
+  ${LIBNAME}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
+         $<INSTALL_INTERFACE:include>)
 if(USE_CFITSIO AND CFITSIO_LIBRARIES)
   target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
 else()
   target_link_libraries(${LIBNAME} PUBLIC m milkfps)
 endif()
 
-install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
+install(
+  TARGETS ${LIBNAME}
+  EXPORT milkTargets
+  DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
@@ -220,70 +227,74 @@ add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
 target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
 if(USE_CFITSIO AND CFITSIO_FOUND)
   target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${CFITSIO_INCLUDE_DIRS})
+  target_include_directories(
+    ${LIBNAME_COMPUTE}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           ${CFITSIO_INCLUDE_DIRS})
   target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
-target_include_directories(${LIBNAME_COMPUTE} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-    $<INSTALL_INTERFACE:include>)
+target_include_directories(
+  ${LIBNAME_COMPUTE}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+         $<INSTALL_INTERFACE:include>)
 if(USE_CFITSIO AND CFITSIO_LIBRARIES)
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
-      m ${CFITSIO_LIBRARIES} milkfps)
+  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m ${CFITSIO_LIBRARIES}
+                                                  milkfps)
 else()
   target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
 endif()
-install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
-    DESTINATION lib)
+install(
+  TARGETS ${LIBNAME_COMPUTE}
+  EXPORT milkTargets
+  DESTINATION lib)
 
 # Static archive for standalone LTO builds
 if(USE_STATIC_LTO)
   set(LIBNAME_COMPUTE_STATIC "${LIBNAME_COMPUTE}_static")
-  add_library(${LIBNAME_COMPUTE_STATIC} STATIC
-      ${SOURCEFILES})
-  set_target_properties(${LIBNAME_COMPUTE_STATIC}
-      PROPERTIES OUTPUT_NAME ${LIBNAME_COMPUTE})
-  target_compile_definitions(${LIBNAME_COMPUTE_STATIC}
-      PRIVATE MILK_NO_CLI)
+  add_library(${LIBNAME_COMPUTE_STATIC} STATIC ${SOURCEFILES})
+  set_target_properties(${LIBNAME_COMPUTE_STATIC} PROPERTIES OUTPUT_NAME
+                                                             ${LIBNAME_COMPUTE})
+  target_compile_definitions(${LIBNAME_COMPUTE_STATIC} PRIVATE MILK_NO_CLI)
   if(USE_CFITSIO AND CFITSIO_FOUND)
-    target_compile_definitions(${LIBNAME_COMPUTE_STATIC}
-        PUBLIC USE_CFITSIO=1)
+    target_compile_definitions(${LIBNAME_COMPUTE_STATIC} PUBLIC USE_CFITSIO=1)
     target_include_directories(${LIBNAME_COMPUTE_STATIC}
-        PUBLIC ${CFITSIO_INCLUDE_DIRS})
-    target_link_directories(${LIBNAME_COMPUTE_STATIC}
-        PUBLIC ${CFITSIO_LIBRARY_DIRS})
+                               PUBLIC ${CFITSIO_INCLUDE_DIRS})
+    target_link_directories(${LIBNAME_COMPUTE_STATIC} PUBLIC
+                            ${CFITSIO_LIBRARY_DIRS})
   endif()
-  target_include_directories(${LIBNAME_COMPUTE_STATIC}
-      PUBLIC
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
-      $<INSTALL_INTERFACE:include>)
+  target_include_directories(
+    ${LIBNAME_COMPUTE_STATIC}
+    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
+           $<INSTALL_INTERFACE:include>)
   if(USE_CFITSIO AND CFITSIO_LIBRARIES)
-    target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC
-        m ${CFITSIO_LIBRARIES} milkfps_static milkcommon)
+    target_link_libraries(
+      ${LIBNAME_COMPUTE_STATIC} PUBLIC m ${CFITSIO_LIBRARIES} milkfps_static
+                                       milkcommon)
   else()
-    target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC m milkfps_static milkcommon)
+    target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC m milkfps_static
+                                                           milkcommon)
   endif()
 endif()
 
@@ -294,80 +305,85 @@ add_milk_standalone(imkwadd image_keyword_add.c)
 
 # Standalone executable
 add_executable(milk-fpsexec-cnt2push cnt2push_main.c)
-target_include_directories(milk-fpsexec-cnt2push PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+target_include_directories(milk-fpsexec-cnt2push
+                           PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
 target_link_libraries(milk-fpsexec-cnt2push ImageStreamIO m)
 install(TARGETS milk-fpsexec-cnt2push DESTINATION bin)
 
 add_executable(milk-stream-list milk-stream-list.c)
-target_include_directories(milk-stream-list PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_include_directories(
+  milk-stream-list
+  PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-stream-list ImageStreamIO)
 install(TARGETS milk-stream-list DESTINATION bin)
 
 add_executable(milk-stream-create milk-stream-create.c)
-target_include_directories(milk-stream-create PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_include_directories(
+  milk-stream-create
+  PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-stream-create ImageStreamIO)
 install(TARGETS milk-stream-create DESTINATION bin)
 
 add_executable(milk-stream-rm milk-stream-rm.c)
-target_include_directories(milk-stream-rm PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkscript>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_include_directories(
+  milk-stream-rm
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkscript>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-stream-rm ImageStreamIO)
 install(TARGETS milk-stream-rm DESTINATION bin)
 
 add_executable(milk-streamCTRL-cli milk-streamCTRL-cli.c)
-target_include_directories(milk-streamCTRL-cli PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_include_directories(
+  milk-streamCTRL-cli
+  PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-streamCTRL-cli ImageStreamIO)
 install(TARGETS milk-streamCTRL-cli DESTINATION bin)
 
 # ==========================================
-# milk-makecsetandrt
-# Replaces bash script milk-makecsetandrt
+# milk-makecsetandrt Replaces bash script milk-makecsetandrt
 # ==========================================
 add_executable(milk-makecsetandrt milk-makecsetandrt.c)
-target_include_directories(milk-makecsetandrt PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_include_directories(
+  milk-makecsetandrt
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-makecsetandrt PRIVATE milkcommon)
 install(TARGETS milk-makecsetandrt DESTINATION bin)
 
 # ==========================================
-# milk-shmimpurge
-# Replaces bash script milk-shmimpurge
+# milk-shmimpurge Replaces bash script milk-shmimpurge
 # ==========================================
 add_executable(milk-shmimpurge milk-shmimpurge.c)
-target_include_directories(milk-shmimpurge PRIVATE
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_include_directories(
+  milk-shmimpurge
+  PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-shmimpurge PRIVATE ImageStreamIO)
 install(TARGETS milk-shmimpurge DESTINATION bin)
 
 # ==========================================
-# milk-logshim-ctrl
-# Unified replacement for the 5 milk-logshim* scripts:
-#   milk-logshim, milk-logshimkill, milk-logshimon,
-#   milk-logshimoff, milk-logshimstat
+# milk-logshim-ctrl Unified replacement for the 5 milk-logshim* scripts:
+# milk-logshim, milk-logshimkill, milk-logshimon, milk-logshimoff,
+# milk-logshimstat
 # ==========================================
 add_executable(milk-logshim-ctrl milk-logshim-ctrl.c)
-target_include_directories(milk-logshim-ctrl PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+target_include_directories(
+  milk-logshim-ctrl
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
 install(TARGETS milk-logshim-ctrl DESTINATION bin)
 
 # ==========================================
-# milk-stream-link
-# C replacement for the milk-streamlink bash script.
-# Reads conf/streamlink.*.name.txt, creates SHM symlink,
-# writes imsize.txt via ImageStreamIO.
+# milk-stream-link C replacement for the milk-streamlink bash script. Reads
+# conf/streamlink.*.name.txt, creates SHM symlink, writes imsize.txt via
+# ImageStreamIO.
 # ==========================================
 add_executable(milk-stream-link milk-stream-link.c)
-target_include_directories(milk-stream-link PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>)
+target_include_directories(
+  milk-stream-link
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>)
 target_link_libraries(milk-stream-link PRIVATE ImageStreamIO)
 install(TARGETS milk-stream-link DESTINATION bin)
