@@ -161,8 +161,6 @@ static errno_t streamdelay(IMGID            inimg,
 
     int  updateflag              = 0;
     long bufferindex_output_last = 0;
-    printf("Entering streamDelay while\n");
-    fflush(stdout);
     while ((warray[bufferindex_output] == 0) && (tdiffv > (delaysec)))
     {
         updateflag                 = 1;
@@ -178,8 +176,6 @@ static errno_t streamdelay(IMGID            inimg,
         tdiff  = timespec_diff(tarray[bufferindex_output], t_now);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }
-    printf("Exiting streamDelay while\n");
-    fflush(stdout);
 
     if (updateflag == 1)
     {

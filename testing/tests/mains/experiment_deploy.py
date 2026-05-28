@@ -65,11 +65,10 @@ def fps_sanitize_start(fpss: list[FPS]) -> None:
 def configure_procinfo(fps: FPS) -> None:
     fps["procinfo.enabled"] = True
     fps["procinfo.NBthread"] = 0
-    fps["procinfo.triggermode"] = 5
+    fps["procinfo.triggermode"] = 3
     fps["procinfo.triggersname"] = fps["in_name"]
     fps["procinfo.semindexrequested"] = 0
     fps["procinfo.loopcntMax"] = -1
-    fps["procinfo.triggertimeout"] = 0.000001
 
 
 def test_main_deploy_a_loop():
@@ -89,10 +88,13 @@ def test_main_deploy_a_loop():
     configure_procinfo(fps_a)
     configure_procinfo(fps_b)
 
+    fps_a["delaysec"] = 0.0001
+    fps_b["delaysec"] = 0.0001
+    fps_a["naive_mode"] = True
+    fps_b["naive_mode"] = True
+
     fps_a.conf_start()
-    fps_a["delaysec"] = 0.01
     fps_b.conf_start()
-    fps_b["delaysec"] = 0.01
 
     ping = SHM("ping", np.zeros((20, 30), np.int32))
     pong = SHM("pong", np.zeros((20, 30), np.int32))
@@ -103,6 +105,12 @@ def test_main_deploy_a_loop():
     fps_b.run_start()
 
     # breakpoint()
-
     input("Stalling, loop is deployed and running...")
+
+    fps_a.run_stop()
+    fps_b.run_stop()
+
+    fps_a.conf_stop()
+    fps_b.conf_stop()
+
     print("Exiting.")
