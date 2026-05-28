@@ -64,7 +64,11 @@ install(TARGETS myplugin_compute
 )
 ```
 
-Don't forget to append `add_subdirectory(<plugin_name>)` to the parent `CMakeLists.txt` in the group folder.
+# Note: Plugins are dynamically discovered by the root CMakeLists.txt
+
+# (using find -L plugins -mindepth 2 -maxdepth 2 -type d).
+
+# There is NO need to edit any parent CMakeLists.txt to register the plugin.
 
 ## 3. Module Registration (C Code)
 
