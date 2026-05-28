@@ -14,4 +14,5 @@ add_executable(milk-example-02-writer writer.c)
 target_link_libraries(milk-example-02-writer ImageStreamIO m rt)
 
 add_executable(milk-example-02-processor processor.c)
-target_link_libraries(milk-example-02-processor milkprocessinfo ImageStreamIO m rt)
+target_link_libraries(milk-example-02-processor milkprocessinfo ImageStreamIO m
+                      rt)

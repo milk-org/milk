@@ -13,9 +13,8 @@ pkg_check_modules(CFITSIO cfitsio)
 # -------------------------------------------------------
 # libmilkscript — the readline-free scripting engine
 # -------------------------------------------------------
-# This library contains the command parser, dispatcher,
-# flow control, variable expansion, math evaluator,
-# module loader, signal handling, and help system.
+# This library contains the command parser, dispatcher, flow control, variable
+# expansion, math evaluator, module loader, signal handling, and help system.
 #
 # It does NOT link against readline or ncurses.
 # -------------------------------------------------------
@@ -66,81 +65,75 @@ set(MILKSCRIPT_SOURCES
     cli_calc_binops.c
     cli_calc_eval.c
     milkscript_stubs.c
-    milkscript_api.c
-)
+    milkscript_api.c)
 
 add_library(milkscript SHARED ${MILKSCRIPT_SOURCES})
 
 if(${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
-  target_compile_definitions(milkscript
-      PUBLIC USE_CFITSIO=1)
-  target_include_directories(milkscript
-      PUBLIC ${CFITSIO_INCLUDE_DIRS})
+  target_compile_definitions(milkscript PUBLIC USE_CFITSIO=1)
+  target_include_directories(milkscript PUBLIC ${CFITSIO_INCLUDE_DIRS})
 endif()
 
 if(OPENMP_C_FOUND)
-  target_link_libraries(milkscript
-      PUBLIC OpenMP::OpenMP_C)
+  target_link_libraries(milkscript PUBLIC OpenMP::OpenMP_C)
 endif()
 
 # NO readline, NO ncurses — this is the key constraint
-target_link_libraries(milkscript
-    PUBLIC m dl rt
-           ${CMAKE_THREAD_LIBS_INIT}
-           ${CFITSIO_LIBRARIES}
-           milkCOREMODarith
-           $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>
-           milkCOREMODmemory
-           milkCOREMODtools
-           milkprocessinfo
-           milkfps milkfpsseq milkdata
-)
+target_link_libraries(
+  milkscript
+  PUBLIC m
+         dl
+         rt
+         ${CMAKE_THREAD_LIBS_INIT}
+         ${CFITSIO_LIBRARIES}
+         milkCOREMODarith
+         $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>
+         milkCOREMODmemory
+         milkCOREMODtools
+         milkprocessinfo
+         milkfps
+         milkfpsseq
+         milkdata)
 
-target_include_directories(milkscript
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
-           $<INSTALL_INTERFACE:include/${SRCNAME}>
-)
+target_include_directories(
+  milkscript
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
+         $<INSTALL_INTERFACE:include/${SRCNAME}>)
 
-install(TARGETS milkscript
-    EXPORT milkTargets
-    DESTINATION lib)
+install(
+  TARGETS milkscript
+  EXPORT milkTargets
+  DESTINATION lib)
 
 # Install public headers
-install(FILES
-    CLIcore_UI_execute.h
-    CLIcore_checkargs.h
-    CLIcore_datainit.h
-    CLIcore_help.h
-    CLIcore_memory.h
-    CLIcore_modules.h
-    CLIcore_setSHMdir.h
-    CLIcore_script.h
-    CLIcore_signals.h
-    CLIcore_utils.h
-    cli_calc_parser.h
-    cli_calc_tokenizer.h
-    standalone_dependencies.h
-    script_includes.h
-    milkscript.h
-    DESTINATION include/${SRCNAME})
+install(
+  FILES CLIcore_UI_execute.h
+        CLIcore_checkargs.h
+        CLIcore_datainit.h
+        CLIcore_help.h
+        CLIcore_memory.h
+        CLIcore_modules.h
+        CLIcore_setSHMdir.h
+        CLIcore_script.h
+        CLIcore_signals.h
+        CLIcore_utils.h
+        cli_calc_parser.h
+        cli_calc_tokenizer.h
+        standalone_dependencies.h
+        script_includes.h
+        milkscript.h
+  DESTINATION include/${SRCNAME})
 
 add_executable(milk-script milkscript_main.c)
-target_link_libraries(milk-script
-    PRIVATE
-        milkscript
-        milkprocessinfo
-        milkdata
-)
-target_include_directories(milk-script
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore
-)
+target_link_libraries(milk-script PRIVATE milkscript milkprocessinfo milkdata)
+target_include_directories(
+  milk-script PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../CLIcore)
 
 install(TARGETS milk-script DESTINATION bin)

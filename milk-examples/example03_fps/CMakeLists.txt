@@ -22,61 +22,33 @@ link_directories(${MILK_ROOT}/_build/src/libfps)
 link_directories(${MILK_ROOT}/_build/src/CommandLineInterface)
 
 # The libraries are targets in the parent project if added via add_subdirectory,
-# but here they might be built separately.
-# We should prefer using the actual build artifact locations.
+# but here they might be built separately. We should prefer using the actual
+# build artifact locations.
 
 add_executable(milk-fpsexec-example-03-writer writer.c)
 
-
-
-target_link_libraries(milk-fpsexec-example-03-writer milkfps milkprocessinfo ImageStreamIO m rt)
-
-
+target_link_libraries(milk-fpsexec-example-03-writer milkfps milkprocessinfo
+                      ImageStreamIO m rt)
 
 add_executable(milk-fpsexec-example-03-processor processor.c)
 
-target_link_libraries(milk-fpsexec-example-03-processor milkfps milkprocessinfo ImageStreamIO m rt)
-
-
+target_link_libraries(milk-fpsexec-example-03-processor milkfps milkprocessinfo
+                      ImageStreamIO m rt)
 
 # Build as a single shared object module for milk-CLI
 
-
-
-add_library(example03fps MODULE
-
-
-
-    example03fps_module.c
-
-
-
-    writer_module.c
-
-
-
-    writer.c
-
-
-
-    processor_module.c
-
-
-
-    processor.c
-
-
-
-)
-
-
+add_library(example03fps MODULE example03fps_module.c writer_module.c writer.c
+                                processor_module.c processor.c)
 
 set_target_properties(example03fps PROPERTIES PREFIX "")
 
-
-
 target_compile_definitions(example03fps PRIVATE MILK_MODULE)
 
-
-
-target_link_libraries(example03fps milkfps milkprocessinfo ImageStreamIO CLIcore m rt)
+target_link_libraries(
+  example03fps
+  milkfps
+  milkprocessinfo
+  ImageStreamIO
+  CLIcore
+  m
+  rt)
