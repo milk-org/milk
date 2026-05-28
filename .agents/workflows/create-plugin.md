@@ -36,10 +36,10 @@ Following the guidelines in the `plugin-creator` skill, create the following fil
 4. `plugins/<group>/<pluginname>/README.md`
 5. The `#ifdef MILK_NO_CLI` conditional include
    guard in the main `.c` file.
-6. `add_subdirectory(<pluginname>)` in the parent
-   group's `CMakeLists.txt`.
-7. If adding new cross-module dependencies,
+6. If adding new cross-module dependencies,
    update `docs/dependency_graph.md`.
+
+Note: The parent directory does NOT need to be edited to add `add_subdirectory()`. The root `CMakeLists.txt` dynamically discovers all plugins at depth 2 under `plugins/`.
 
 ## 3. Verify
 

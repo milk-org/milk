@@ -66,9 +66,11 @@ FPS_app_info)` after the `CLIcmddata`
 
 ## New Module / Plugin
 
-10. **Forgetting `add_subdirectory()`.** The
-    new module directory must be registered in
-    the parent `CMakeLists.txt`.
+10. **Unnecessarily editing parent directories for plugins**:
+    Plugins under `plugins/` are dynamically discovered and added by
+    the root `CMakeLists.txt`. Do NOT edit parent directories to
+    add `add_subdirectory()`. (Only core engine modules under `src/`
+    require manual registration in their parent `CMakeLists.txt`).
 
 11. **Wrong `_compute` CMake guard.** Do NOT
     use `if(NOT MILK_NO_CLI)` — `MILK_NO_CLI`
