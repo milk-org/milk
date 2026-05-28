@@ -76,35 +76,6 @@ static long long p_rtprio                               = 80;
 static long long p_semtrig_tcp                          = 1;
 static long long p_testmode                             = 0;
 
-
-/* ================================================================
- *  CMD 1: testfuncsem (3 args)
- * ============================================================= */
-
-static FPS_APP_INFO FPS_app_info_tsem = {
-    .fps_name    = "testfuncsem",
-    .cmdkey      = "testfuncsem",
-    .description = "test semaphore loop",
-    .description_long =
-        "Transmit or receive image stream data over a TCP network connection. Enables sharing "
-        "shared memory streams between machines for distributed processing."
-};
-
-#define FPS_PARAMS_TSEM(X)                                                             \
-    X(".imname", p_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image name")   \
-    X(".semindex", &p_semtrig_tcp, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "sem index") \
-    X(".testmode", &p_testmode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "test mode")
-
-static CLICMDDATA CLIcmddata_tsem = { "", "", CLICMD_FIELDS_NOPARAM };
-FPS_CMDSETTINGS_INIT(tsem, CLIcmddata_tsem, FPS_app_info_tsem)
-
-static errno_t __attribute__((unused)) compute_tsem()
-{
-    COREMOD_MEMORY_testfunction_semaphore(p_imname, p_semtrig_tcp, p_testmode);
-    return RETURN_SUCCESS;
-}
-
-
 /* ================================================================
  *  CMD 2: imnetwtransmit (5 args, primary)
  * ============================================================= */
@@ -180,19 +151,9 @@ static errno_t __attribute__((unused)) compute_rx()
 
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
-static FPS_CLI_BINDING bindings_tsem[]  = { FPS_PARAMS_TSEM(FPS_X_BINDING) };
-static const int       nb_bindings_tsem = sizeof(bindings_tsem) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg_tsem[]      = { FPS_PARAMS_TSEM(FPS_X_FARG) };
-
 static FPS_CLI_BINDING bindings_rx[]  = { FPS_PARAMS_RX(FPS_X_BINDING) };
 static const int       nb_bindings_rx = sizeof(bindings_rx) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF    farg_rx[]      = { FPS_PARAMS_RX(FPS_X_FARG) };
-
-static errno_t CLIfunction_tsem(void)
-{
-    return safe_fps_generic_CLIfunction(&FPS_app_info_tsem, farg_tsem, &CLIcmddata_tsem,
-                                        bindings_tsem, nb_bindings_tsem, compute_tsem);
-}
 
 static errno_t CLIfunction(void)
 {
@@ -209,13 +170,8 @@ static errno_t CLIfunction_rx(void)
 errno_t CLIADDCMD_COREMOD_memory__stream_TCP()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
-    safe_fps_fill_farg_examples(farg_tsem, bindings_tsem, nb_bindings_tsem);
     safe_fps_fill_farg_examples(farg_rx, bindings_rx, nb_bindings_rx);
 
-    {
-        int cmdi                    = RegisterCLIcmd(CLIcmddata_tsem, CLIfunction_tsem);
-        CLIcmddata_tsem.cmdsettings = &data.cmd[cmdi].cmdsettings;
-    }
     {
         int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
         CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
@@ -228,92 +184,7 @@ errno_t CLIADDCMD_COREMOD_memory__stream_TCP()
     return RETURN_SUCCESS;
 }
 #endif
-errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig, int testmode)
-{
-    imageID ID;
-    int     semval;
-    int     rv;
-    long    loopcnt = 0;
 
-    {
-        IMGID img = imgid_make_from_name(IDname);
-        resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
-        ID = img.ID;
-    }
-    IMAGE *img_p = &dcimg[ID];
-
-    char pinfomsg[200];
-
-    // ===========================
-    // Start loop
-    // ===========================
-    int loopOK = 1;
-    while (loopOK == 1)
-    {
-        printf("\n");
-        usleep(500);
-
-        semval = ImageStreamIO_semvalue(img_p, semtrig);
-        snprintf(pinfomsg, 200, "%ld TEST 0 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
-        printf("MSG: %s\n", pinfomsg);
-        fflush(stdout);
-
-        if (testmode == 0)
-        {
-            rv = ImageStreamIO_semwait(img_p, semtrig);
-        }
-
-        if (testmode == 1)
-        {
-            rv = ImageStreamIO_semtrywait(img_p, semtrig);
-        }
-
-        if (testmode == 2)
-        {
-            ImageStreamIO_sempost(img_p, semtrig);
-            rv = ImageStreamIO_semwait(img_p, semtrig);
-        }
-
-        if (rv == -1)
-        {
-            switch (errno)
-            {
-            case EINTR:
-                printf("    sem_wait call was interrupted by a signal "
-                       "handler\n");
-                break;
-
-            case EINVAL:
-                printf("    not a valid semaphore\n");
-                break;
-
-            case EAGAIN:
-                printf("    The operation could not be performed "
-                       "without blocking (i.e., the semaphore "
-                       "currently has "
-                       "the value zero)\n");
-                break;
-
-            default:
-                printf("    ERROR: unknown code %d\n", rv);
-                break;
-            }
-        }
-        else
-        {
-            printf("    OK\n");
-        }
-
-        semval = ImageStreamIO_semvalue(img_p, semtrig);
-        snprintf(pinfomsg, 200, "%ld TEST 1 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
-        printf("MSG: %s\n", pinfomsg);
-        fflush(stdout);
-
-        loopcnt++;
-    }
-
-    return RETURN_SUCCESS;
-}
 
 /** continuously transmits 2D image through TCP link
  * mode = 1, force counter to be used for synchronization, ignore semaphores if they exist

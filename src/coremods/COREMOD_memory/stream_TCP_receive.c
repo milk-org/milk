@@ -29,6 +29,7 @@
 #include "stream_sem.h"
 #include "processinfo_setup.h"
 #include "stream_net_common.h"
+#include "milk_rt.h"
 
 static int TCPTRANSFERKW = 1;
 
@@ -73,7 +74,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     // CATCH SIGNALS
     stream_net_signal_catch();
 
-    stream_net_rt_sched_set(RT_priority);
+    milkrt_RTPrio(RT_priority);
 
     // create TCP socket
     {

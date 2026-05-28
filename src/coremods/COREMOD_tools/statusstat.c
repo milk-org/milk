@@ -16,6 +16,7 @@
 #include "fps.h"
 
 #include "timeutils.h"
+#include "milk_rt.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -98,12 +99,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
         imgout.im->array.SI64[st] = 0;
     }
 
-    {
-        int                RT_priority = 91;
-        struct sched_param schedpar;
-        schedpar.sched_priority = RT_priority;
-        sched_setscheduler(0, SCHED_FIFO, &schedpar);
-    }
+    milkrt_RTPrio(91); // Legacy direct call to priority for this instance
 
     {
         float     usec0   = 50.0;
