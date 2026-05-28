@@ -1,6 +1,8 @@
 #include "milk_rt.h"
 #include "milkDebugTools.h"
 
+#include "unistd.h" // getpid()
+
 int milkrt_RTPrio(const int rtprio)
 {
     if (rtprio <= 0)
