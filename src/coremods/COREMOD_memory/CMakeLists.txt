@@ -343,16 +343,6 @@ target_link_libraries(milk-streamCTRL-cli ImageStreamIO)
 install(TARGETS milk-streamCTRL-cli DESTINATION bin)
 
 # ==========================================
-# milk-makecsetandrt Replaces bash script milk-makecsetandrt
-# ==========================================
-add_executable(milk-makecsetandrt milk-makecsetandrt.c)
-target_include_directories(
-  milk-makecsetandrt
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
-target_link_libraries(milk-makecsetandrt PRIVATE milkcommon)
-install(TARGETS milk-makecsetandrt DESTINATION bin)
-
-# ==========================================
 # milk-shmimpurge Replaces bash script milk-shmimpurge
 # ==========================================
 add_executable(milk-shmimpurge milk-shmimpurge.c)
