@@ -45,23 +45,23 @@ install(TARGETS myplugin
 
 install(FILES myplugin.h DESTINATION include)
 
-# Only generate compute variant if standalone modules are needed
-if(NOT MILK_NO_CLI)
-    # The _compute target compiles the SAME source, but with -DMILK_NO_CLI
-    add_library(myplugin_compute SHARED myplugin.c)
-    target_include_directories(myplugin_compute PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${PROJECT_SOURCE_DIR}/src
-    )
-    # It must NOT link CLIcore, only the standalone-safe equivalents
-    target_link_libraries(myplugin_compute PUBLIC ImageStreamIO)
-    target_compile_definitions(myplugin_compute PRIVATE MILK_NO_CLI)
+# Build _compute variant for standalone linking.
+# This compiles the SAME source with -DMILK_NO_CLI.
+add_library(myplugin_compute SHARED myplugin.c)
+target_include_directories(myplugin_compute PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/src
+)
+# Must NOT link CLIcore — only standalone-safe libs
+target_link_libraries(
+    myplugin_compute PUBLIC ImageStreamIO)
+target_compile_definitions(
+    myplugin_compute PRIVATE MILK_NO_CLI)
 
-    install(TARGETS myplugin_compute
-        EXPORT milkTargets
-        LIBRARY DESTINATION lib
-    )
-endif()
+install(TARGETS myplugin_compute
+    EXPORT milkTargets
+    LIBRARY DESTINATION lib
+)
 ```
 
 Don't forget to append `add_subdirectory(<plugin_name>)` to the parent `CMakeLists.txt` in the group folder.

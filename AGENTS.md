@@ -217,6 +217,7 @@ and enforced. Know what they require:
 | `architecture-principles.md`         | Check dependency graph before adding deps                                         |
 | `cmake-conventions.md`               | Use `PUBLIC`/`INTERFACE` properties; modules own their headers                    |
 | `code-style-guide.md`                | 100-char lines, Kernel-Doc, Linux kernel style, explicit includes                 |
+| `common-agent-mistakes.md`           | Consolidated checklist of frequent AI code-generation pitfalls                    |
 | `compile-after-edit.md`              | Always compile-test after C/CMake changes                                         |
 | `concurrency-practices.md`           | Semaphore protocol, FPS sync, process coordination                                |
 | `defensive-programming-practices.md` | Buffer safety, pointer discipline, bounded input validation                       |

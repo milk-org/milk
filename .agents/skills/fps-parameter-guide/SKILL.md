@@ -73,19 +73,27 @@ X-macro in section 3 of the V2 layout:
 ### String-Type Parameters
 
 For any `FPTYPE_STRING` (or string subtypes like
-`FPTYPE_FILENAME`), the C variable must be a `char`
-array of size `FUNCTION_PARAMETER_STRMAXLEN` and
-passed directly (as it decays to a pointer):
+`FPTYPE_STREAMNAME`), use a `char` array with
+default value and pass directly in the X-macro:
 
 ```c
-// Section 2 — local variables
+// Section 2 — local variables (RECOMMENDED)
 static char in_name[FUNCTION_PARAMETER_STRMAXLEN]
-    = "";
+    = "default_stream";
 
-// Section 3 — FPS_PARAMS
-X(".in_name", in_name, FPTYPE_STRING, 1,
+// Section 3 — FPS_PARAMS (no & — array decays)
+X(".in_name", in_name, FPTYPE_STREAMNAME, 1,
   FPFLAG_DEFAULT_INPUT, "Input stream name")
 ```
+
+> [!NOTE]
+> **Legacy pattern**: Older code uses `char *ptr`
+> with `&ptr` in the X-macro. This works because
+> `sync_fps_to_local()` overwrites the pointer to
+> reference FPS shared memory. The `char[]` pattern
+> above is preferred for new code because it
+> provides a safe default value and works in both
+> FPS and direct-CLI modes.
 
 ### Numeric Parameters
 
@@ -145,6 +153,24 @@ or in a `customCONFcheck()`.
 | `FPFLAG_WRITECONF`   | Allow modification during config |
 | `FPFLAG_WRITESTATUS` | Show in status display           |
 
+### Stream-Specific Flag Combos
+
+For stream parameters, use these convenience
+macros instead of bare `FPFLAG_DEFAULT_INPUT`:
+
+| Macro                           | Includes                                                | Use When                                    |
+| ------------------------------- | ------------------------------------------------------- | ------------------------------------------- |
+| `FPFLAG_DEFAULT_INPUT_STREAM`   | `DEFAULT_INPUT` + `STREAM_RUN_REQUIRED` + `CHECKSTREAM` | Input stream that must exist at runtime     |
+| `FPFLAG_DEFAULT_TRIGGER_STREAM` | `DEFAULT_INPUT_STREAM` + `TRIGGER_STREAM`               | Input stream that triggers the compute loop |
+| `FPFLAG_DEFAULT_OUTPUT_STREAM`  | `DEFAULT_INPUT` + `CHECKSTREAM`                         | Output stream with runtime checking         |
+| `FPFLAG_DEFAULT_STATUS`         | `ACTIVE` + `USED` + `VISIBLE`                           | Read-only status display parameter          |
+
+For stream processors, use
+`FPFLAG_DEFAULT_TRIGGER_STREAM` on the primary
+input stream (the one driving the loop) and
+`FPFLAG_DEFAULT_INPUT` on the output name
+parameter.
+
 ## Common Patterns
 
 ### Input/output stream pair
@@ -153,11 +179,11 @@ or in a `customCONFcheck()`.
 #define FPS_PARAMS(X)                          \
     X(".in_name", in_name,                     \
       FPTYPE_STREAMNAME, 1,                    \
-      FPFLAG_DEFAULT_INPUT,                    \
+      FPFLAG_DEFAULT_TRIGGER_STREAM,           \
       "Input stream")                          \
     X(".out_name", out_name,                   \
-      FPTYPE_STREAMNAME, 0,                    \
-      FPFLAG_DEFAULT_OUTPUT,                   \
+      FPTYPE_STREAMNAME, 1,                    \
+      FPFLAG_DEFAULT_INPUT,                    \
       "Output stream")
 ```
 
@@ -186,13 +212,12 @@ X(".enabled", &enabled, FPTYPE_ONOFF, 0,      \
    `int64_t` for `FPTYPE_INT64` — causes undefined
    behavior on 32-bit targets.
 
-2. **Using Pointers Instead of Buffers**: for
-   `FPTYPE_STRING`, using `static char *var` and
-   passing `&var` will cause the FPS engine to
-   overwrite the pointer location itself, causing
-   a severe buffer overflow and `SIGSEGV`.
-   Always use `static char var[FUNCTION_PARAMETER_STRMAXLEN]`
-   and pass `var` without the `&`. Use `&` only for scalar primitives.
+2. **String variable type mismatch**: for
+   `FPTYPE_STRING` / `FPTYPE_STREAMNAME`, always
+   use `static char var[FUNCTION_PARAMETER_STRMAXLEN]`
+   and pass `var` (no `&`) in the X-macro. The
+   legacy `char *ptr` + `&ptr` pattern still works
+   but is not recommended for new code.
 
 3. **Missing `FPFLAG_PRIMARY_CLI_INPUT`**: the
    parameter won't count toward `nbarg` and

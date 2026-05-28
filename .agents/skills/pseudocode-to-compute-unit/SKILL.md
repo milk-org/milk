@@ -150,19 +150,23 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 /* Section 2: Local variables */
-static char  *inimname;
-static char  *outimname;
-static float *gain;
+static char  inimname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream_in";
+static char  outimname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream_out";
+static float gain = 1.0f;
 
 /* Section 3: FPS_PARAMS X-macro */
 #define FPS_PARAMS(X)                             \
-    X(".in_name", &inimname, FPTYPE_STREAMNAME,   \
+    X(".in_name", inimname, FPTYPE_STREAMNAME,    \
       1, FPFLAG_DEFAULT_TRIGGER_STREAM,           \
       "input stream")                             \
-    X(".out_name", &outimname, FPTYPE_STRING,     \
+    X(".out_name", outimname, FPTYPE_STREAMNAME,  \
       1, FPFLAG_DEFAULT_INPUT, "output stream")   \
     X(".gain", &gain, FPTYPE_FLOAT32,             \
-      0, FPFLAG_DEFAULT_INPUT, "gain factor")
+      0,                                          \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,     \
+      "gain factor")
 
 /* Section 4: Core computation */
 static errno_t streamprocess(
@@ -178,8 +182,6 @@ static errno_t streamprocess(
     }
     uint64_t xysize =
         inimg->mdt->size[0] * inimg->mdt->size[1];
-
-    outimg->md->write = 1;
 
     float * restrict in_ptr = inimg->im->array.F;
     float * restrict out_ptr = outimg->im->array.F;
@@ -227,7 +229,7 @@ compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        streamprocess(&inimg, &outimg, *gain);
+        streamprocess(&inimg, &outimg, gain);
         processinfo_update_output_stream(
             processinfo, outimg.im, inimg.im);
     }

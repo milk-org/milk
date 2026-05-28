@@ -17,20 +17,28 @@ trigger: always_on
 3. **Define parameters** (sections 2–3):
    - Add local C variables in section 2.
    - Map them in the `FPS_PARAMS` X-macro in section 3.
-   - Use `char*` for string-type params; pass `&ptr` in the X-macro.
+   - Use `char var[FUNCTION_PARAMETER_STRMAXLEN]`
+     for string-type params; pass `var` directly.
    - Use `&variable` for scalars.
 
 4. **Implement logic** (section 4 — `fpsexec()`):
    - Pure computation; parameters are already synced.
 
-5. **CLIcmddata scoping** (section 5):
+5. **CLIcmddata and bindings** (section 5):
 
    ```c
-   #ifdef FPS_STANDALONE
-   CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-   #else
-   static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-   #endif
+   static FPS_CLI_BINDING my_bindings[] = {
+       FPS_PARAMS(FPS_X_BINDING) };
+   static const int nb_bindings =
+       sizeof(my_bindings)
+       / sizeof(FPS_CLI_BINDING);
+   static CLICMDARGDEF farg[] = {
+       FPS_PARAMS(FPS_X_FARG) };
+
+   CLICMDDATA CLIcmddata = {
+       "", "", CLICMD_FIELDS_DEFAULTS };
+   FPS_CMDSETTINGS_INIT(
+       dft, CLIcmddata, FPS_app_info)
    ```
 
 6. **Registration** (section 7):
@@ -40,14 +48,12 @@ trigger: always_on
    - Use `FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)`
    - Or `FPS_MAIN_STANDALONE_V2_CONFCHECK(...)` if you have a `customCONFcheck`.
 
-8. **CMake targets** — add to the module's `CMakeLists.txt`:
+8. **CMake targets** — use the helper macros:
    ```cmake
-   add_executable(milk-fpsexec-<name> <source>.c)
-   target_link_libraries(milk-fpsexec-<name> CLIcore <module_lib> milkfpsCLI)
-   target_include_directories(milk-fpsexec-<name> PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-   target_compile_definitions(milk-fpsexec-<name> PRIVATE FPS_STANDALONE)
-   install(TARGETS milk-fpsexec-<name> DESTINATION bin)
+   add_milk_standalone(cmdkey source.c)
    ```
+   See the `cmake-patterns` skill for details.
+   **Do not** use the old 4-line manual pattern.
 
 ## Required: `-h1` one-line help option
 
