@@ -26,6 +26,7 @@
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "milk_rt.h"
 #include "timeutils.h"
 
 #ifdef USE_CFITSIO
@@ -57,19 +58,7 @@ void *save_telemetry_fits_function(void *ptr)
     struct timespec tstart;
     clock_gettime(CLOCK_MILK, &tstart);
 
-    int                RT_priority = tmsg->writerRTprio;
-    struct sched_param schedpar;
-
-    schedpar.sched_priority = RT_priority;
-    if (seteuid(dceuid) != 0)
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0, SCHED_FIFO, &schedpar);
-    if (seteuid(dcruid) != 0)
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    milkrt_RTPrio((int) tmsg->writerRTprio);
 
     int            NBcustomKW = 9;
     IMAGE_KEYWORD *imkwarray  = (IMAGE_KEYWORD *) calloc(NBcustomKW, sizeof(IMAGE_KEYWORD));

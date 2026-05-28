@@ -19,9 +19,7 @@
  * .procinfo.cset, and .procinfo.RTprio from the FPS
  * and applies them to the current process:
  *   - OMP_NUM_THREADS via setenv()
- *   - CPU affinity via sched_setaffinity()
- *   - cgroup migration via milk-makecsetandrt
- *   - RT priority via sched_setscheduler(SCHED_FIFO)
+ *   - CPU affinity, cgroup migration, RT priority via milk-makecsetandrt
  *
  * @param fps  Connected FPS to read settings from
  * @return RETURN_SUCCESS or RETURN_FAILURE

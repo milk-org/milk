@@ -155,34 +155,6 @@ static inline void stream_net_signal_catch(void)
 
 
 /* ============================================================
- * RT scheduling setup
- * ========================================================= */
-
-/**
- * stream_net_rt_sched_set - set SCHED_FIFO priority
- * @priority: 0-99, higher = more priority
- *
- * Temporarily elevates to euid, sets scheduler,
- * then drops back to ruid.
- */
-static inline void stream_net_rt_sched_set(int priority)
-{
-    struct sched_param sp;
-    sp.sched_priority = priority;
-
-    if (seteuid(dceuid) != 0)
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0, SCHED_FIFO, &sp);
-    if (seteuid(dcruid) != 0)
-    {
-        PRINT_ERROR("seteuid error");
-    }
-}
-
-
-/* ============================================================
  * Semaphore drain — drive semaphore to zero on
  * first iteration of transmit loop.
  * ========================================================= */
