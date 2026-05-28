@@ -20,6 +20,9 @@ trigger: always_on
    - Use `char var[FUNCTION_PARAMETER_STRMAXLEN]`
      for string-type params; pass `var` directly.
    - Use `&variable` for scalars.
+   - **Default Image Size**: For compute units processing images/streams, adopt a default
+     image size of 128x128 (e.g. `xsize = 128`, `ysize = 128`) to keep defaults lightweight
+     and consistent.
 
 4. **Implement logic** (section 4 — `fpsexec()`):
    - Pure computation; parameters are already synced.
@@ -94,3 +97,15 @@ If your module is configured to build a compute-only variant library (`_compute.
    errno_t CLIADDCMD_module__function() { ... }
    #endif
    ```
+
+## Plugins and Compute Units Mapping
+
+A plugin typically consists of multiple separate compute units (standalone executables) rather
+than a single monolithic executable with internal mode switching.
+
+- **Separate Compute Units**: Map different plugin functions or processing modes to individual
+  compute units (e.g. `tpgen_psf`, `tpgen_spiral` instead of a single `tpgen` with a `pattype`
+  selector parameter).
+- **Modularity**: This prevents complex parameter-toggling logic (visibility management in
+  `customCONFcheck`) and allows running different plugin functions concurrently in separate
+  process environments.

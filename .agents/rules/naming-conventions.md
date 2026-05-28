@@ -401,6 +401,10 @@ FPS keywords use dot-separated hierarchical names:
 **Rules:**
 
 - Always start with a leading dot: `.keyword`.
+- **Hard rule for descriptive parameter names**: Do not use generic, non-descriptive names like
+  `.param1`, `.param2`, `.param3`, or `.arg1`. Every parameter must have a descriptive name
+  reflecting its physical meaning or algorithmic function (e.g. `.fringe_period` instead of
+  `.param1`, `.fringe_angle` instead of `.param2`).
 - Use `snake_case` after the dot (preferred) or `camelCase` for
   established parameters.
 - Group related params with common prefix: `.loop_gain`,
