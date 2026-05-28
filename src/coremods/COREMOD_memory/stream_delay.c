@@ -44,6 +44,7 @@ static FPS_APP_INFO FPS_app_info = {
 static char     inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "imin";
 static char     outimname[FUNCTION_PARAMETER_STRMAXLEN] = "imout";
 static float    delaysec                                = 0.001;
+static uint8_t  naive_mode                              = 0;
 static uint64_t timebuffsize                            = 1000;
 static int32_t  avemode                                 = 0;
 static uint64_t avedtns                                 = 0;
@@ -60,6 +61,8 @@ static uint64_t statuskkout                             = 0;
     X(".in_name", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")            \
     X(".out_name", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")             \
     X(".delaysec", &delaysec, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "delay [s]")               \
+    X(".naive_mode", &naive_mode, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                          \
+      "Naive wait mode (ON: no buffer, busywait sleep)")                                          \
     X(".timebuffsize", &timebuffsize, FPTYPE_UINT64, 0, FPFLAG_DEFAULT_INPUT, "time buffer size") \
     X(".option.timeavemode", &avemode, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT,                     \
       "Enable time window averaging (>0)")                                                        \
@@ -113,15 +116,27 @@ static errno_t streamdelay(IMGID            inimg,
     static uint64_t bufferindex_input  = 0;
     static uint64_t bufferindex_output = 0;
 
-    struct timespec tnow;
-    clock_gettime(CLOCK_MILK, &tnow);
+    struct timespec t_now = inimg.md->writetime;
+    struct timespec t_new;
+
+    //milk_clock_gettime(&t_now);
+    if (naive_mode)
+    {
+        do
+        {
+            milk_clock_gettime(&t_new);
+            usleep(1);
+        } while ((t_new.tv_sec - t_now.tv_sec) + (t_new.tv_nsec - t_now.tv_nsec) / 1e9 < delaysec);
+        *status = 1;
+        return RETURN_SUCCESS;
+    }
 
     if (cnt0prev != inimg.md->cnt0)
     {
         cnt0prev = inimg.md->cnt0;
 
-        tarray[bufferindex_input].tv_sec  = tnow.tv_sec;
-        tarray[bufferindex_input].tv_nsec = tnow.tv_nsec;
+        tarray[bufferindex_input].tv_sec  = t_now.tv_sec;
+        tarray[bufferindex_input].tv_nsec = t_now.tv_nsec;
 
         char *destptr;
         destptr = (char *) bufferimg.im->array.raw;
@@ -137,13 +152,11 @@ static errno_t streamdelay(IMGID            inimg,
         }
     }
 
-    struct timespec tdiff  = timespec_diff(tarray[bufferindex_output], tnow);
+    struct timespec tdiff  = timespec_diff(tarray[bufferindex_output], t_now);
     double          tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
     int  updateflag              = 0;
     long bufferindex_output_last = 0;
-    printf("Entering streamDelay while\n");
-    fflush(stdout);
     while ((warray[bufferindex_output] == 0) && (tdiffv > (delaysec)))
     {
         updateflag                 = 1;
@@ -156,11 +169,9 @@ static errno_t streamdelay(IMGID            inimg,
             bufferindex_output = 0;
         }
 
-        tdiff  = timespec_diff(tarray[bufferindex_output], tnow);
+        tdiff  = timespec_diff(tarray[bufferindex_output], t_now);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }
-    printf("Exiting streamDelay while\n");
-    fflush(stdout);
 
     if (updateflag == 1)
     {
@@ -213,7 +224,7 @@ static MILK_HOT errno_t compute_function()
     struct timespec *timeinarray;
     timeinarray = (struct timespec *) calloc(timebuffsize, sizeof(struct timespec));
     struct timespec tnow;
-    clock_gettime(CLOCK_MILK, &tnow);
+    milk_clock_gettime(&tnow);
     for (uint64_t i = 0; i < timebuffsize; i++)
     {
         timeinarray[i].tv_sec  = tnow.tv_sec;
@@ -230,23 +241,14 @@ static MILK_HOT errno_t compute_function()
     list_image_ID();
     int status = 0;
 
-    printf("----- Here\n");
-    fflush(stdout);
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-
-    printf("----- Now there\n");
-    fflush(stdout);
 
     streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
     if (status != 0)
     {
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
-
-    printf("----- Now tttthere\n");
-    fflush(stdout);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
