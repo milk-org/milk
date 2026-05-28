@@ -571,42 +571,6 @@ if(INSTALLMAKEDEFAULT)
 endif(INSTALLMAKEDEFAULT)
 
 # =======================================
-# SETUP CAPABILITIES (post-install)
-# =======================================
-# Run milk-setup-caps after install to grant: - CAP_SYS_NICE to fpsexec binaries
-# (RT scheduling) - CAP_PERFMON + CAP_SYS_ADMIN to milk-CTRL (perf counters)
-#
-# Requires setcap + root/sudo. Enabled by default; disable with
-# -DSETUP_CAPS=OFF.
-#
-option(SETUP_CAPS "Run milk-setup-caps post-install (needs root/sudo)" ON)
-if(SETUP_CAPS)
-  install(
-    CODE "
-    set(_caps_script \
-        \"${CMAKE_INSTALL_PREFIX}/bin/milk-setup-caps\")
-    if(EXISTS \${_caps_script})
-      message(STATUS \"Running milk-setup-caps...\")
-      set(ENV{PATH}
-          \"${CMAKE_INSTALL_PREFIX}/bin:\$ENV{PATH}\")
-      execute_process(
-        COMMAND \${_caps_script}
-        RESULT_VARIABLE _caps_rc)
-      if(NOT _caps_rc EQUAL 0)
-        message(WARNING
-          \"milk-setup-caps failed (rc=\${_caps_rc}). \"
-          \"RT scheduling requires CAP_SYS_NICE. \"
-          \"Run manually: sudo \${_caps_script}\")
-      endif()
-    else()
-      message(STATUS
-        \"milk-setup-caps not found at \"
-        \"\${_caps_script} — skipping\")
-    endif()
-  ")
-endif()
-
-# =======================================
 # CONFIG.CMAKE
 # =======================================
 

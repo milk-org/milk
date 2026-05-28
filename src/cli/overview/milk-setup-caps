@@ -3,8 +3,6 @@
 #
 # Capabilities applied:
 #   milk-CTRL:          CAP_PERFMON + CAP_SYS_ADMIN  (HW perf counters)
-#   milk-fpsexec-*:     CAP_SYS_NICE                 (RT scheduling)
-#   cacao-fpsexec-*:    CAP_SYS_NICE                 (RT scheduling)
 
 # Early-exit for -h1 before sourcing
 case "${1-}" in
@@ -63,23 +61,3 @@ if [ -f "$CTRL" ]; then
 else
     echo "  milk-CTRL: not found (skipping)"
 fi
-
-# ── fpsexec binaries: RT scheduling ──
-count=0
-for exe in "${BINDIR}"/milk-fpsexec-* "${BINDIR}"/cacao-fpsexec-*; do
-    [ -f "$exe" ] || continue
-    name="$(basename "$exe")"
-    echo "  ${name}: cap_sys_nice+ep"
-    run_setcap "cap_sys_nice+ep" "$exe"
-    count=$((count + 1))
-done
-
-echo ""
-if [ "$count" -gt 0 ]; then
-    echo "Capabilities applied to ${count} fpsexec executable(s)."
-else
-    echo "No fpsexec executables found in ${BINDIR}."
-fi
-
-echo ""
-echo "Verify with:  getcap ${BINDIR}/milk-fpsexec-*"

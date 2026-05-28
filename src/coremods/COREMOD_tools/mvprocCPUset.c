@@ -16,13 +16,7 @@
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "fps.h"
-
-/* forward decls */
-int COREMOD_TOOLS_mvProcRTPrio(const int rtprio);
-int COREMOD_TOOLS_mvProcTset(const char *tsetspec);
-int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec);
-int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
-int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio);
+#include "milk_rt.h"
 
 /* ================================================================
  *  COMMON PARAMS
@@ -50,7 +44,7 @@ FPS_CMDSETTINGS_INIT(rtp, CLIcmddata_rtp, FPS_app_info_rtp)
 
 static errno_t __attribute__((unused)) compute_rtp()
 {
-    COREMOD_TOOLS_mvProcRTPrio(p_rtprio);
+    milkrt_RTPrio(p_rtprio);
     return RETURN_SUCCESS;
 }
 
@@ -73,7 +67,7 @@ FPS_CMDSETTINGS_INIT(tset, CLIcmddata_tset, FPS_app_info_tset)
 
 static errno_t __attribute__((unused)) compute_tset()
 {
-    COREMOD_TOOLS_mvProcTset(p_name);
+    milkrt_Tset(p_name);
     return RETURN_SUCCESS;
 }
 
@@ -97,7 +91,7 @@ FPS_CMDSETTINGS_INIT(tsete, CLIcmddata_tsete, FPS_app_info_tsete)
 
 static errno_t __attribute__((unused)) compute_tsete()
 {
-    COREMOD_TOOLS_mvProcTsetExt(p_pid, p_name);
+    milkrt_TsetExt(p_pid, p_name);
     return RETURN_SUCCESS;
 }
 
@@ -117,7 +111,7 @@ FPS_CMDSETTINGS_INIT(cset, CLIcmddata_cset, FPS_app_info_cset)
 
 static errno_t __attribute__((unused)) compute_cset()
 {
-    COREMOD_TOOLS_mvProcCPUset(p_name);
+    milkrt_CPUset(p_name);
     return RETURN_SUCCESS;
 }
 
@@ -152,7 +146,7 @@ FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START COREMOD_TOOLS_mvProcCPUsetExt(p_pid, p_name, p_rtprio);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START milkrt_CPUsetExt(p_pid, p_name, p_rtprio);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END   DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -239,48 +233,3 @@ errno_t CLIADDCMD_COREMOD_tools__mvprocCPUset()
     return RETURN_SUCCESS;
 }
 #endif
-
-int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
-{
-    if (rtprio <= 0)
-    {
-        PRINT_WARNING("Invoking RT prio with rtprio %d <= 0; skipping.", rtprio);
-        return RETURN_SUCCESS;
-    }
-
-    EXECUTE_SYSTEM_COMMAND_ERRCHECK("milk-makecsetandrt -p %d %d", rtprio, getpid());
-
-    return RETURN_SUCCESS;
-}
-
-int COREMOD_TOOLS_mvProcTset(const char *tsetspec)
-{
-    // Pass down to extended version and return retcode back up
-    return COREMOD_TOOLS_mvProcTsetExt(getpid(), tsetspec);
-}
-
-int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
-{
-    EXECUTE_SYSTEM_COMMAND("milk-makecsetandrt -t %s %d", tsetspec, pid);
-    return 0;
-}
-
-int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
-{
-    // Pass down to extended version and return retcode back up
-    return COREMOD_TOOLS_mvProcCPUsetExt(getpid(), csetname, -1);
-}
-
-int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio)
-{
-    if (rtprio > 0)
-    {
-        EXECUTE_SYSTEM_COMMAND("milk-makecsetandrt -c %s -p %d %d", csetname, rtprio, pid);
-    }
-    else
-    {
-        EXECUTE_SYSTEM_COMMAND("milk-makecsetandrt -c %s %d", csetname, pid);
-    }
-
-    return EXIT_SUCCESS;
-}

@@ -89,6 +89,8 @@
 #include "../libmilkscript/milkscript.h"
 #include "treesitter/cli_treesitter.h"
 
+#include "milk_rt.h"
+
 /*-----------------------------------------
 *       Globals exported to all modules
 */
@@ -409,13 +411,7 @@ errno_t CLI_startup()
 
     // to take advantage of kernel priority:
     // owner=root mode=4755
-
     getresuid(&dcruid, &dceuid, &dcsuid);
-    //This sets it to the privileges of the normal user
-    if (seteuid(dcruid) != 0)
-    {
-        PRINT_ERROR("seteuid error");
-    }
 
     // Initialize random-number generator
     // Pure-C xorshift64* (replaces GSL)
@@ -1080,9 +1076,8 @@ void fnExit1(void)
 
 static int command_line_process_options(int argc, char **argv)
 {
-    int                option_index = 0;
-    struct sched_param schedpar;
-    char               command[STRINGMAXLEN_COMMAND];
+    int  option_index = 0;
+    char command[STRINGMAXLEN_COMMAND];
 
     static struct option long_options[] = { /* These options set a flag. */
                                             { "verbose", no_argument, &Verbose, 1 },
@@ -1230,20 +1225,7 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'p':
-            schedpar.sched_priority = atoi(optarg);
-            printf("RUNNING WITH RT PRIORITY = %d\n", schedpar.sched_priority);
-
-            if (seteuid(dceuid) != 0) //This goes up to maximum privileges
-            {
-                PRINT_ERROR("seteuid() returns non-zero value");
-            }
-            sched_setscheduler(0, SCHED_FIFO,
-                               &schedpar); //other option is SCHED_RR, might be faster
-
-            if (seteuid(dcruid) != 0) //Go back to normal privileges
-            {
-                PRINT_ERROR("seteuid() returns non-zero value");
-            }
+            milkrt_RTPrio(atoi(optarg));
             break;
 
         case 'f':

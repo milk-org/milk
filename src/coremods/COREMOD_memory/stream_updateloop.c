@@ -18,6 +18,7 @@
 #include "image_ID.h"
 #include "stream_sem.h"
 #include "processinfo_setup.h"
+#include "milk_rt.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
@@ -223,10 +224,7 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
                                          const char *IDout_name,
                                          long        periodus)
 {
-    int                RT_priority = 80; //any number from 0-99
-    struct sched_param schedpar;
-    schedpar.sched_priority = RT_priority;
-    sched_setscheduler(0, SCHED_FIFO, &schedpar);
+    milkrt_RTPrio(80);
 
     imageID IDin;
     {
@@ -330,10 +328,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
 {
     int SyncSlice = 0;
 
-    int                RT_priority = 80; //any number from 0-99
-    struct sched_param schedpar;
-    schedpar.sched_priority = RT_priority;
-    sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
+    milkrt_RTPrio(80);
 
     PROCESSINFO *processinfo = NULL;
     if (dcprocinfo == 1)
@@ -522,7 +517,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
         char *ptr0s     = (char *) dcimg[IDin[cubeindex]].array.raw;
         char *ptr1      = (char *) dcimg[IDout].array.raw;
         long  framesize = dcimg[IDin[cubeindex]].md[0].size[0] *
-                         dcimg[IDin[cubeindex]].md[0].size[1] * ImageStreamIO_typesize(datatype);
+                          dcimg[IDin[cubeindex]].md[0].size[1] * ImageStreamIO_typesize(datatype);
 
         struct timespec t0;
         clock_gettime(CLOCK_MILK, &t0);
@@ -617,10 +612,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char                
                                                       int                         semtrig,
                                                       __attribute__((unused)) int timingmode)
 {
-    int                RT_priority = 80; //any number from 0-99
-    struct sched_param schedpar;
-    schedpar.sched_priority = RT_priority;
-    sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
+    milkrt_RTPrio(80);
 
     printf("Creating / connecting to image stream ...\n");
     fflush(stdout);
