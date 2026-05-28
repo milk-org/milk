@@ -44,3 +44,11 @@ Note: The parent directory does NOT need to be edited to add `add_subdirectory()
 ## 3. Verify
 
 Run `/compile-test` to ensure the new plugin builds successfully and installs correctly into `_build/_install/`.
+
+## 4. Git Tracking Policy
+
+**CRITICAL RULE**: New plugins must NEVER be committed to the `milk` repository.
+
+- All folders under `plugins/` (except `plugins/milk-extra-src/`) are ignored by the root `.gitignore`.
+- It is the user's responsibility to manage the new plugin directory (e.g., as a separate Git repository).
+- Do NOT stage or commit files inside the new plugin folder to the main `milk` repository.

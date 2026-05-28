@@ -96,20 +96,26 @@ FPS_app_info)` after the `CLIcmddata`
     or `add_cacao_standalone()` which handle
     this automatically.
 
+14. **Accidentally tracking/committing new plugins**:
+    New plugins must NEVER be added to the main `milk` repository index
+    (except `plugins/milk-extra-src/`). They are ignored via
+    `.gitignore`. Managing them is the user's responsibility (e.g., as
+    independent repositories).
+
 ## General Code
 
-14. **Implicit header includes.** Every `.c`
+15. **Implicit header includes.** Every `.c`
     file must include exactly the headers it
     uses. Do not rely on `CLIcore.h` pulling
     in `math.h` or `stdlib.h`.
 
-15. **Lines > 100 characters.** The project
+16. **Lines > 100 characters.** The project
     enforces short lines for readability.
 
-16. **Not compiling after edits.** Always run
+17. **Not compiling after edits.** Always run
     `/compile-test` after modifying C or CMake
     files.
 
-17. **Not updating `docs/dependency_graph.md`.**
+18. **Not updating `docs/dependency_graph.md`.**
     Required when adding new cross-module
     dependencies.

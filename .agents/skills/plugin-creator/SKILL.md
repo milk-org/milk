@@ -98,3 +98,11 @@ static errno_t init_module_CLI()
 ## 4. Dependencies
 
 Consult `docs/dependency_graph.md`. Plugins sit at the top of the hierarchy. If your plugin depends on another plugin, use `MODULE_DEPS("other_plugin")` and link it in CMake. Do not create circular dependencies.
+
+## 5. Git Tracking Policy
+
+**CRITICAL RULE**: Do NOT commit new plugins to the main `milk` repository.
+
+- All folders under `plugins/` (except `plugins/milk-extra-src/`) are ignored by default via `.gitignore`.
+- If a user creates a new plugin, it is their responsibility to initialize a new Git repository in that directory and push it to its own remote repository.
+- The new plugin files must remain untracked in the `milk` repository index.
