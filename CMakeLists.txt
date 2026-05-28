@@ -506,8 +506,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
 # are discovered and added as subdirectories.
 # Discover plugins (only when coremods are enabled)
 if(USE_COREMODS)
-  execute_process(COMMAND bash -c "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 2 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
-                  OUTPUT_VARIABLE libextradir)
+  execute_process(COMMAND bash -c
+      "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
+      OUTPUT_VARIABLE libextradir)
   string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 endif()
 

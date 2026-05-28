@@ -23,25 +23,27 @@ Use the `plugin-creator` skill to determine how to structure the plugin. You wil
 
 - **Plugin Name:** (e.g., `myplugin`)
 - **Description:** A short description for the README.
-- **Group Folder:** Plugins are stored in `plugins/<group>/`.
-  **IMPORTANT**: Do NOT use `milk-extra-src` for new plugins; create a new or custom
-  group folder directly under `plugins/` (e.g., `plugins/my-group/`).
+- **Plugin Directory**: By default, new plugins reside directly under `plugins/`
+  (e.g., `plugins/<pluginname>/`). Optionally, they can be nested under a custom group folder
+  (e.g., `plugins/<group>/<pluginname>/`).
+  **IMPORTANT**: Do NOT place new plugins under the `milk-extra-src` folder (which is reserved
+  for core extra plugins).
 - **Compute Variant:** Does it need a `_compute` variant for standalone linking?
 
 ## 2. Scaffold the Plugin
 
-Following the guidelines in the `plugin-creator` skill, create the following files:
+Following the guidelines in the `plugin-creator` skill, create the following files inside the new plugin folder:
 
-1. `plugins/<group>/<pluginname>/<pluginname>.c`
-2. `plugins/<group>/<pluginname>/<pluginname>.h`
-3. `plugins/<group>/<pluginname>/CMakeLists.txt`
-4. `plugins/<group>/<pluginname>/README.md`
+1. `<pluginname>.c`
+2. `<pluginname>.h`
+3. `CMakeLists.txt`
+4. `README.md`
 5. The `#ifdef MILK_NO_CLI` conditional include
    guard in the main `.c` file.
 6. If adding new cross-module dependencies,
    update `docs/dependency_graph.md`.
 
-Note: The parent directory does NOT need to be edited to add `add_subdirectory()`. The root `CMakeLists.txt` dynamically discovers all plugins at depth 2 under `plugins/`.
+Note: The parent directory does NOT need to be edited to add `add_subdirectory()`. The root `CMakeLists.txt` dynamically discovers all plugins at depth 1 and 2 under `plugins/`.
 
 ## 3. Verify
 

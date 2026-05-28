@@ -74,9 +74,9 @@ FPS_app_info)` after the `CLIcmddata`
 
 11. **Placing new plugins under `milk-extra-src`**:
     `milk-extra-src/` is reserved for core extra plugins included in the main
-    `milk` repository. New plugins must be created in a custom group folder directly
-    under `plugins/` (e.g. `plugins/mygroup/myplugin`) to ensure they remain
-    untracked by Git and separate from the core repository.
+    `milk` repository. New plugins must be created in a custom folder directly
+    under `plugins/` (e.g. `plugins/myplugin` or optionally a custom group folder)
+    to ensure they remain untracked by Git and separate from the core repository.
 
 12. **Wrong `_compute` CMake guard.** Do NOT
     use `if(NOT MILK_NO_CLI)` — `MILK_NO_CLI`
