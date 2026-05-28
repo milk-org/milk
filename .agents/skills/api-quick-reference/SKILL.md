@@ -135,6 +135,13 @@ processinfo_update_output_stream(
     processinfo, outimg.im, NULL);
 ```
 
+**Ancestry propagation:** This function also
+copies the input stream's `streamproctrace[]`
+ancestry chain into the output stream, shifted
+by one slot. This is automatic — no extra code
+needed. See the `imagestream-internals` skill
+for full details on `STREAM_PROC_TRACE`.
+
 ## 6. FPS Parameter Quick-Reference
 
 Common `FPTYPE_*` mapped to C types:
