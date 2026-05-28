@@ -68,6 +68,7 @@ requiring you to remember every checklist.
 | Shared memory safety    | [`shared-memory-safety.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/shared-memory-safety.md)                       | SHM cleanup, stale detection, stream creation.                                       |
 | Testing practices       | [`testing-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/testing-practices.md)                             | Run tests after changes; add regression tests.                                       |
 | TUI browser testing     | [`tui-browser-testing.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/tui-browser-testing.md)                         | milk TUIs cannot be tested using browser testing tools.                              |
+| TUI conventions         | [`tui-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/tui-conventions.md)                                 | Delta Rendering, TrueColor compatibility, and input/help standards.                  |
 | Workspace layout        | [`files-directories.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/files-directories.md)                             | cacao lives at `plugins/cacao-src` → `~/src/cacao`.                                  |
 | What's New              | [`whatsnew-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/whatsnew-update.md)                                 | Add entry to `docs/whatsnew.md` for significant features.                            |
 
@@ -97,6 +98,7 @@ contains a `SKILL.md` with detailed instructions.
 | Pseudocode to compute unit | [`pseudocode-to-compute-unit`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/pseudocode-to-compute-unit/SKILL.md) | Translating algorithms to V2 compute units.                                                     |
 | Refactor C source          | [`refactor-c-source`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/refactor-c-source/SKILL.md)                   | Safe file splitting with dependency analysis and CMake updates.                                 |
 | Stream modifier guide      | [`stream-modifier-guide`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/stream-modifier-guide/SKILL.md)           | IMGID parsing pipeline, `@S:`/`@L:`/`@F:` modifiers, slice syntax.                              |
+| TUI creator                | [`tui-creator`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/tui-creator/SKILL.md)                               | Developing high-performance, flicker-free terminal interfaces using Delta Rendering.            |
 
 ## Workflows
 
