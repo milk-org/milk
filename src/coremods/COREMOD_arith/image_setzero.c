@@ -71,27 +71,7 @@ static errno_t imsetzero_computation(IMAGE *inimg)
  * INSERT_STD_PROCINFO macros reference CLIcmddata.
  * ============================================================= */
 
-static FPS_CLI_BINDING my_bindings[] = { IMSETZERO_PARAMS(FPS_X_BINDING) };
-
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { IMSETZERO_PARAMS(FPS_X_FARG) };
-
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
-#else
-static CLICMDDATA CLIcmddata = {
-#endif
-    "", "", CLICMD_FIELDS_DEFAULTS
-};
-
-/*
- * Copy key and description from FPS_app_info so
- * they are defined in one place only.
- * Also provide a valid cmdsettings object.
- */
-FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
+FPS_V2_SECTION5(IMSETZERO_PARAMS)
 
 
 /* ================================================================

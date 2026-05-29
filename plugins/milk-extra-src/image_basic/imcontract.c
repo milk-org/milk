@@ -45,18 +45,8 @@ static CLICMDDATA      CLIcmddata_1    = {
     "",   "",   __FILE__, sizeof(farg_1) / sizeof(CLICMDARGDEF), farg_1, CLICMDFLAG_FPS,
     NULL, NULL, NULL
 };
-static CMDSETTINGS cms_1 = { 0 };
+FPS_CMDSETTINGS_INIT(1, CLIcmddata_1, FPS_app_info_1)
 
-static __attribute__((constructor)) void init_cms_1(void)
-{
-    strncpy(CLIcmddata_1.key, FPS_app_info_1.cmdkey, sizeof(CLIcmddata_1.key) - 1);
-    strncpy(CLIcmddata_1.description, FPS_app_info_1.description,
-            sizeof(CLIcmddata_1.description) - 1);
-    if (CLIcmddata_1.cmdsettings == NULL)
-    {
-        CLIcmddata_1.cmdsettings = &cms_1;
-    }
-}
 
 static MILK_HOT errno_t compute_function_1()
 {
@@ -100,18 +90,8 @@ static CLICMDDATA      CLIcmddata_2    = {
     "",   "",   __FILE__, sizeof(farg_2) / sizeof(CLICMDARGDEF), farg_2, CLICMDFLAG_FPS,
     NULL, NULL, NULL
 };
-static CMDSETTINGS cms_2 = { 0 };
+FPS_CMDSETTINGS_INIT(2, CLIcmddata_2, FPS_app_info_2)
 
-static __attribute__((constructor)) void init_cms_2(void)
-{
-    strncpy(CLIcmddata_2.key, FPS_app_info_2.cmdkey, sizeof(CLIcmddata_2.key) - 1);
-    strncpy(CLIcmddata_2.description, FPS_app_info_2.description,
-            sizeof(CLIcmddata_2.description) - 1);
-    if (CLIcmddata_2.cmdsettings == NULL)
-    {
-        CLIcmddata_2.cmdsettings = &cms_2;
-    }
-}
 
 static MILK_HOT errno_t compute_function_2()
 {
