@@ -12,6 +12,8 @@
 #    include "CLIcore.h"
 #endif
 
+#include "libmilkcommon/pixel_dispatch.h"
+
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
@@ -96,75 +98,21 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
 
     // copy input to tmpfim0
     //
+#define COPY_IN_CASE(DT, ACC, CTYPE)                       \
+    case DT:                                               \
+        for (uint32_t ii = 0; ii < xsize * ysize; ii++)    \
+        {                                                  \
+            tmpfim0[ii] = (float) imgin.im->array.ACC[ii]; \
+        }                                                  \
+        break;
+
     switch (imgin.md->datatype)
     {
-    case _DATATYPE_FLOAT:
-        memcpy(tmpfim0, imgin.im->array.F, sizeof(float) * xsize * ysize);
-        break;
-
-    case _DATATYPE_DOUBLE:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.D[ii];
-        }
-        break;
-
-    case _DATATYPE_UINT8:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.UI8[ii];
-        }
-        break;
-
-    case _DATATYPE_UINT16:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.UI16[ii];
-        }
-        break;
-
-    case _DATATYPE_UINT32:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.UI32[ii];
-        }
-        break;
-
-    case _DATATYPE_UINT64:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.UI64[ii];
-        }
-        break;
-
-    case _DATATYPE_INT8:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.SI8[ii];
-        }
-        break;
-
-    case _DATATYPE_INT16:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.SI16[ii];
-        }
-        break;
-
-    case _DATATYPE_INT32:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.SI32[ii];
-        }
-        break;
-
-    case _DATATYPE_INT64:
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)
-        {
-            tmpfim0[ii] = imgin.im->array.SI64[ii];
-        }
+        FOREACH_REAL_DATATYPE(COPY_IN_CASE)
+    default:
         break;
     }
+#undef COPY_IN_CASE
 
 
     for (int iter = 0; iter < NBiter; iter++)

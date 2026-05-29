@@ -34,6 +34,7 @@
 #include "milk_help.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
+#include "libmilkcommon/pixel_dispatch.h"
 
 
 /* ================================================================
@@ -155,42 +156,19 @@ static void compute_stats(IMAGE *img, StreamStats *stats)
         sum += v;                                 \
     }
 
+#define STAT_INIT_CASE(DT, ACC, CTYPE) \
+    case DT:                           \
+        STAT_INIT(ACC);                \
+        break;
+
     switch (dtype)
     {
-    case _DATATYPE_FLOAT:
-        STAT_INIT(F);
-        break;
-    case _DATATYPE_DOUBLE:
-        STAT_INIT(D);
-        break;
-    case _DATATYPE_UINT8:
-        STAT_INIT(UI8);
-        break;
-    case _DATATYPE_INT8:
-        STAT_INIT(SI8);
-        break;
-    case _DATATYPE_UINT16:
-        STAT_INIT(UI16);
-        break;
-    case _DATATYPE_INT16:
-        STAT_INIT(SI16);
-        break;
-    case _DATATYPE_UINT32:
-        STAT_INIT(UI32);
-        break;
-    case _DATATYPE_INT32:
-        STAT_INIT(SI32);
-        break;
-    case _DATATYPE_UINT64:
-        STAT_INIT(UI64);
-        break;
-    case _DATATYPE_INT64:
-        STAT_INIT(SI64);
-        break;
+        FOREACH_REAL_DATATYPE(STAT_INIT_CASE)
     default:
         /* Unsupported type — leave stats zeroed */
         return;
     }
+#undef STAT_INIT_CASE
 #undef STAT_INIT
 
     stats->minv  = minv;
@@ -224,41 +202,18 @@ static void compute_stats(IMAGE *img, StreamStats *stats)
         }                                               \
     }
 
+#define STAT_RMS_HIST_CASE(DT, ACC, CTYPE) \
+    case DT:                               \
+        STAT_RMS_HIST(ACC);                \
+        break;
+
     switch (dtype)
     {
-    case _DATATYPE_FLOAT:
-        STAT_RMS_HIST(F);
-        break;
-    case _DATATYPE_DOUBLE:
-        STAT_RMS_HIST(D);
-        break;
-    case _DATATYPE_UINT8:
-        STAT_RMS_HIST(UI8);
-        break;
-    case _DATATYPE_INT8:
-        STAT_RMS_HIST(SI8);
-        break;
-    case _DATATYPE_UINT16:
-        STAT_RMS_HIST(UI16);
-        break;
-    case _DATATYPE_INT16:
-        STAT_RMS_HIST(SI16);
-        break;
-    case _DATATYPE_UINT32:
-        STAT_RMS_HIST(UI32);
-        break;
-    case _DATATYPE_INT32:
-        STAT_RMS_HIST(SI32);
-        break;
-    case _DATATYPE_UINT64:
-        STAT_RMS_HIST(UI64);
-        break;
-    case _DATATYPE_INT64:
-        STAT_RMS_HIST(SI64);
-        break;
+        FOREACH_REAL_DATATYPE(STAT_RMS_HIST_CASE)
     default:
         break;
     }
+#undef STAT_RMS_HIST_CASE
 #undef STAT_RMS_HIST
 
     stats->rms = (nel > 0) ? sqrt(sumsq / (double) nel) : 0.0;

@@ -33,6 +33,7 @@
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
 
 #include "MVM_CPU.h"
@@ -796,75 +797,24 @@ static MILK_HOT errno_t compute_function()
 
                 if (imgin.md->datatype != _DATATYPE_FLOAT)
                 {
-                    imginfloatptr = imgin.im->array.F;
+                    // type conversion to float
+                    uint64_t npix = (uint64_t) imgin.md->size[0] * imgin.md->size[1];
 
+#    define _MVM_CONV_CASE(DT, ACC, CTYPE)                         \
+    case DT:                                                       \
+        for (uint64_t _ii = 0; _ii < npix; _ii++)                  \
+        {                                                          \
+            imginfloatptr[_ii] = (float) imgin.im->array.ACC[_ii]; \
+        }                                                          \
+        break;
 
-                    // type conversion (if needed)
                     switch (imgin.md->datatype)
                     {
-                    case _DATATYPE_DOUBLE:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.D[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_UINT8:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.UI8[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_INT8:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.SI8[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_UINT16:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.UI16[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_INT16:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.SI16[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_UINT32:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.UI32[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_INT32:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.SI32[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_UINT64:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.UI64[ii];
-                        }
-                        break;
-
-                    case _DATATYPE_INT64:
-                        for (int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-                        {
-                            imginfloatptr[ii] = (float) imgin.im->array.SI64[ii];
-                        }
+                        FOREACH_REAL_DATATYPE(_MVM_CONV_CASE)
+                    default:
                         break;
                     }
+#    undef _MVM_CONV_CASE
                 }
 
 

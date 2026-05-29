@@ -6,6 +6,7 @@
 #include "termview.h"
 #include "termview_ansi.h"
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkcommon/pixel_dispatch.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -622,31 +623,17 @@ static inline double get_pixel_value(IMAGE *img, int x, int y)
     {
         return 0.0;
     }
+#define GET_PIXEL_CASE(DT, ACC, CTYPE) \
+    case DT:                           \
+        return (double) img->array.ACC[idx];
+
     switch (img->md[0].datatype)
     {
-    case _DATATYPE_UINT8:
-        return (double) img->array.UI8[idx];
-    case _DATATYPE_INT8:
-        return (double) img->array.SI8[idx];
-    case _DATATYPE_UINT16:
-        return (double) img->array.UI16[idx];
-    case _DATATYPE_INT16:
-        return (double) img->array.SI16[idx];
-    case _DATATYPE_UINT32:
-        return (double) img->array.UI32[idx];
-    case _DATATYPE_INT32:
-        return (double) img->array.SI32[idx];
-    case _DATATYPE_UINT64:
-        return (double) img->array.UI64[idx];
-    case _DATATYPE_INT64:
-        return (double) img->array.SI64[idx];
-    case _DATATYPE_FLOAT:
-        return (double) img->array.F[idx];
-    case _DATATYPE_DOUBLE:
-        return (double) img->array.D[idx];
+        FOREACH_REAL_DATATYPE(GET_PIXEL_CASE)
     default:
         return 0.0;
     }
+#undef GET_PIXEL_CASE
 }
 
 
@@ -720,8 +707,8 @@ static void termview_update_fps_stats(tv_context_t *ctx)
     {
         struct timespec now_cpu;
         clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now_cpu);
-        double cpu_diff = (now_cpu.tv_sec - ctx->last_time_cpu.tv_sec) +
-                          (now_cpu.tv_nsec - ctx->last_time_cpu.tv_nsec) / 1e9;
+        double cpu_diff        = (now_cpu.tv_sec - ctx->last_time_cpu.tv_sec) +
+                                 (now_cpu.tv_nsec - ctx->last_time_cpu.tv_nsec) / 1e9;
         ctx->current_cpu_usage = (cpu_diff / real_diff) * 100.0;
 
         uint64_t current_cnt0   = ctx->img->md[0].cnt0;
@@ -1777,7 +1764,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
         clock_gettime(CLOCK_MONOTONIC, &now_real);
         long elapsed_since_last = (now_real.tv_sec - ctx->last_render_real.tv_sec) * 1000000L +
                                   (now_real.tv_nsec - ctx->last_render_real.tv_nsec) / 1000L;
-        ctx->timeout_us = target_us - elapsed_since_last;
+        ctx->timeout_us         = target_us - elapsed_since_last;
         if (ctx->timeout_us < 0)
         {
             ctx->timeout_us = 0;
