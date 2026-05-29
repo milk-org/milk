@@ -89,17 +89,7 @@ static char      p_comment[FUNCTION_PARAMETER_STRMAXLEN] = "my_keyword_comment";
     X(".kwval", &p_kwval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "keyword value")    \
     X(".comment", p_comment, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "comment")
 
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-
-FPS_CMDSETTINGS_INIT(writkw, CLIcmddata, FPS_app_info)
-
+FPS_V2_SECTION5(FPS_PARAMS)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();

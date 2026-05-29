@@ -117,17 +117,7 @@ static FPS_APP_INFO FPS_app_info = {
         "metadata. Can also rename an existing image in the process table."
 };
 
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS_2STR(FPS_X_BINDING) };
-
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS_2STR(FPS_X_FARG) };
-
-static CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-
-FPS_CMDSETTINGS_INIT(shm, CLIcmddata, FPS_app_info)
-
+FPS_V2_SECTION5(FPS_PARAMS_2STR)
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();

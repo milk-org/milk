@@ -32,23 +32,7 @@ static FPS_APP_INFO FPS_app_info = {
 
 #define FPS_PARAMS(X)
 
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING){ NULL, NULL, 0, 0, 0, NULL } };
-static const int       nb_bindings   = 0;
-
-static CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-static CLICMDDATA  CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS cms        = { 0 };
-
-static __attribute__((constructor)) void init_cms(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info.description, sizeof(CLIcmddata.description) - 1);
-    if (CLIcmddata.cmdsettings == NULL)
-    {
-        CLIcmddata.cmdsettings = &cms;
-    }
-}
+FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t compute_function()
 {

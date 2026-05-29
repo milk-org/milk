@@ -69,20 +69,7 @@ static MILK_HOT errno_t fpsexec()
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
-static __attribute__((unused)) FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-
-static const int __attribute__((unused)) nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static __attribute__((unused)) CLICMDARGDEF farg[] = { FPS_PARAMS(FPS_X_FARG) };
-
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-#else
-static __attribute__((unused)) CLICMDDATA CLIcmddata = { "", "", CLICMD_FIELDS_DEFAULTS };
-#endif
-
-FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER (processinfo loop support)

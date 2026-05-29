@@ -73,19 +73,10 @@ static FPS_APP_INFO FPS_app_info_1dfft = {
     X(".in_name", p_1dfft_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input complex image") \
     X(".out_name", p_1dfft_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output complex image")
 
-static CLICMDDATA  CLIcmddata_1dfft = { "", "", CLICMD_FIELDS_NOPARAM };
-static CMDSETTINGS cms_1dfft        = { 0 };
+static CLICMDDATA CLIcmddata_1dfft = { "", "", CLICMD_FIELDS_NOPARAM };
 
-static __attribute__((constructor)) void init_cms_1dfft(void)
-{
-    strncpy(CLIcmddata_1dfft.key, FPS_app_info_1dfft.cmdkey, sizeof(CLIcmddata_1dfft.key) - 1);
-    strncpy(CLIcmddata_1dfft.description, FPS_app_info_1dfft.description,
-            sizeof(CLIcmddata_1dfft.description) - 1);
-    if (CLIcmddata_1dfft.cmdsettings == NULL)
-    {
-        CLIcmddata_1dfft.cmdsettings = &cms_1dfft;
-    }
-}
+FPS_CMDSETTINGS_INIT(1dfft, CLIcmddata_1dfft, FPS_app_info_1dfft)
+
 
 static errno_t __attribute__((unused)) compute_1dfft()
 {
@@ -114,19 +105,10 @@ static FPS_APP_INFO FPS_app_info_1drfft = {
     X(".in_name", p_1drfft_in, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input real image") \
     X(".out_name", p_1drfft_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output complex image")
 
-static CLICMDDATA  CLIcmddata_1drfft = { "", "", CLICMD_FIELDS_NOPARAM };
-static CMDSETTINGS cms_1drfft        = { 0 };
+static CLICMDDATA CLIcmddata_1drfft = { "", "", CLICMD_FIELDS_NOPARAM };
 
-static __attribute__((constructor)) void init_cms_1drfft(void)
-{
-    strncpy(CLIcmddata_1drfft.key, FPS_app_info_1drfft.cmdkey, sizeof(CLIcmddata_1drfft.key) - 1);
-    strncpy(CLIcmddata_1drfft.description, FPS_app_info_1drfft.description,
-            sizeof(CLIcmddata_1drfft.description) - 1);
-    if (CLIcmddata_1drfft.cmdsettings == NULL)
-    {
-        CLIcmddata_1drfft.cmdsettings = &cms_1drfft;
-    }
-}
+FPS_CMDSETTINGS_INIT(1drfft, CLIcmddata_1drfft, FPS_app_info_1drfft)
+
 
 static errno_t __attribute__((unused)) compute_1drfft()
 {
