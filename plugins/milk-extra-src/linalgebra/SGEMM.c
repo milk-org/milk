@@ -4,11 +4,13 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
+#include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
 
 #include "SGEMM.h"
@@ -80,6 +82,49 @@ static int32_t  *GPUdevice = NULL;
  * ============================================================= */
 
 FPS_V2_SECTION5(FPS_PARAMS)
+
+/**
+ * @brief Convert image pixel data to a float array
+ *
+ * If the image is already FLOAT, returns the array pointer
+ * directly (no allocation). Otherwise allocates a float
+ * buffer and performs element-wise type conversion.
+ *
+ * Caller must free the returned pointer if and only if
+ * img.md->datatype != _DATATYPE_FLOAT.
+ *
+ * @param img  Input image
+ * @return Pointer to float pixel data
+ */
+static inline float *to_float_array(IMGID img)
+{
+    if (img.md->datatype == _DATATYPE_FLOAT)
+    {
+        return img.im->array.F;
+    }
+
+    uint64_t nel = img.md->nelement;
+    float   *buf = (float *) malloc(sizeof(float) * nel);
+
+#define _SGEMM_CONV_CASE(DT, ACC, CTYPE)               \
+    case DT:                                           \
+        for (uint64_t _ii = 0; _ii < nel; _ii++)       \
+        {                                              \
+            buf[_ii] = (float) img.im->array.ACC[_ii]; \
+        }                                              \
+        break;
+
+    switch (img.md->datatype)
+    {
+        FOREACH_REAL_DATATYPE(_SGEMM_CONV_CASE)
+    default:
+        break;
+    }
+#undef _SGEMM_CONV_CASE
+
+    return buf;
+}
+
 
 /**
  * @brief Computes the single-precision general matrix multiplication (SGEMM) of two matrices.
@@ -276,169 +321,9 @@ errno_t computeSGEMM(IMGID  imginA,
     }
 
 
-    float *imarrayA;
-    float *imarrayB;
-
-    // copy input to d_immatA
-    // perform type conversion to float if needed
-    //
-    if (imginA.md->datatype == _DATATYPE_FLOAT)
-    {
-        imarrayA = imginA.im->array.F;
-    }
-    else
-    {
-        // type conversion required
-        //
-        imarrayA = (float *) malloc(sizeof(float) * imginA.md->nelement);
-
-        switch (imginA.md->datatype)
-        {
-        case _DATATYPE_DOUBLE:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.D[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT8:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.UI8[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT16:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.UI16[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT32:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.UI32[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT64:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.UI64[ii];
-            }
-            break;
-
-        case _DATATYPE_INT8:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.SI8[ii];
-            }
-            break;
-
-        case _DATATYPE_INT16:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.SI16[ii];
-            }
-            break;
-
-        case _DATATYPE_INT32:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.SI32[ii];
-            }
-            break;
-
-        case _DATATYPE_INT64:
-            for (uint32_t ii = 0; ii < imginA.md->nelement; ii++)
-            {
-                imarrayA[ii] = imginA.im->array.SI64[ii];
-            }
-            break;
-        }
-    }
-
-
-    // copy input to d_immatB
-    // perform type conversion to float if needed
-    //
-    if (imginB.md->datatype == _DATATYPE_FLOAT)
-    {
-        imarrayB = imginB.im->array.F;
-    }
-    else
-    {
-        // type conversion required
-        //
-        imarrayB = (float *) malloc(sizeof(float) * imginB.md->nelement);
-
-        switch (imginB.md->datatype)
-        {
-        case _DATATYPE_DOUBLE:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.D[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT8:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.UI8[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT16:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.UI16[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT32:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.UI32[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT64:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.UI64[ii];
-            }
-            break;
-
-        case _DATATYPE_INT8:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.SI8[ii];
-            }
-            break;
-
-        case _DATATYPE_INT16:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.SI16[ii];
-            }
-            break;
-
-        case _DATATYPE_INT32:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.SI32[ii];
-            }
-            break;
-
-        case _DATATYPE_INT64:
-            for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
-            {
-                imarrayB[ii] = imginB.im->array.SI64[ii];
-            }
-            break;
-        }
-    }
+    // Convert inputs to float (allocates if not already float)
+    float *imarrayA = to_float_array(imginA);
+    float *imarrayB = to_float_array(imginB);
 
 
     if ((GPUdev >= 0) && (GPUdev <= 99))

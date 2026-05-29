@@ -1,4 +1,5 @@
 #include "ImageStreamIO/ImageStruct.h"
+#include "libmilkcommon/pixel_dispatch.h"
 /**
  * @file    stream_monproc.c
  * @brief   monitor stream with multi-level time binning, circular buffer, and dynamic histogram
@@ -442,39 +443,16 @@ errno_t stream_monitor_run(const char *inimname_arg,
         smon->hist_min_buf[mon_idx] = current_hist_min;
         smon->hist_max_buf[mon_idx] = current_hist_max;
 
+#define ACCUM_HIST_CASE(DT, ACC, CTYPE) \
+    case DT:                            \
+        ACCUMULATE_AND_HIST(CTYPE);     \
+        break;
+
         switch (datatype)
         {
-        case _DATATYPE_UINT8:
-            ACCUMULATE_AND_HIST(uint8_t);
-            break;
-        case _DATATYPE_INT8:
-            ACCUMULATE_AND_HIST(int8_t);
-            break;
-        case _DATATYPE_UINT16:
-            ACCUMULATE_AND_HIST(uint16_t);
-            break;
-        case _DATATYPE_INT16:
-            ACCUMULATE_AND_HIST(int16_t);
-            break;
-        case _DATATYPE_UINT32:
-            ACCUMULATE_AND_HIST(uint32_t);
-            break;
-        case _DATATYPE_INT32:
-            ACCUMULATE_AND_HIST(int32_t);
-            break;
-        case _DATATYPE_UINT64:
-            ACCUMULATE_AND_HIST(uint64_t);
-            break;
-        case _DATATYPE_INT64:
-            ACCUMULATE_AND_HIST(int64_t);
-            break;
-        case _DATATYPE_FLOAT:
-            ACCUMULATE_AND_HIST(float);
-            break;
-        case _DATATYPE_DOUBLE:
-            ACCUMULATE_AND_HIST(double);
-            break;
+            FOREACH_REAL_DATATYPE(ACCUM_HIST_CASE)
         }
+#undef ACCUM_HIST_CASE
 
         if (!hist_init_done)
         {
