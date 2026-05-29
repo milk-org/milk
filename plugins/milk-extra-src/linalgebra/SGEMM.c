@@ -360,7 +360,7 @@ errno_t computeSGEMM(IMGID  imginA,
     }
 
 
-    // copy input to d_immatA
+    // copy input to d_immatB
     // perform type conversion to float if needed
     //
     if (imginB.md->datatype == _DATATYPE_FLOAT)
@@ -378,63 +378,63 @@ errno_t computeSGEMM(IMGID  imginA,
         case _DATATYPE_DOUBLE:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.D[ii];
+                imarrayB[ii] = imginB.im->array.D[ii];
             }
             break;
 
         case _DATATYPE_UINT8:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.UI8[ii];
+                imarrayB[ii] = imginB.im->array.UI8[ii];
             }
             break;
 
         case _DATATYPE_UINT16:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.UI16[ii];
+                imarrayB[ii] = imginB.im->array.UI16[ii];
             }
             break;
 
         case _DATATYPE_UINT32:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.UI32[ii];
+                imarrayB[ii] = imginB.im->array.UI32[ii];
             }
             break;
 
         case _DATATYPE_UINT64:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.UI64[ii];
+                imarrayB[ii] = imginB.im->array.UI64[ii];
             }
             break;
 
         case _DATATYPE_INT8:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.SI8[ii];
+                imarrayB[ii] = imginB.im->array.SI8[ii];
             }
             break;
 
         case _DATATYPE_INT16:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.SI16[ii];
+                imarrayB[ii] = imginB.im->array.SI16[ii];
             }
             break;
 
         case _DATATYPE_INT32:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.SI32[ii];
+                imarrayB[ii] = imginB.im->array.SI32[ii];
             }
             break;
 
         case _DATATYPE_INT64:
             for (uint32_t ii = 0; ii < imginB.md->nelement; ii++)
             {
-                imarrayA[ii] = imginB.im->array.SI64[ii];
+                imarrayB[ii] = imginB.im->array.SI64[ii];
             }
             break;
         }
