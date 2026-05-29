@@ -183,14 +183,6 @@ pillars — **ImageStreamIO**, **FPS**, and
 
   [:octicons-arrow-right-24: Debugging](debugging.md)
 
-- :material-api:{ .lg .middle } **API Reference**
-
-  ***
-
-  Auto-generated Doxygen C API docs with call graphs.
-
-  [:octicons-arrow-right-24: Doxygen API](api/html/index.html)
-
 </div>
 
 ---
