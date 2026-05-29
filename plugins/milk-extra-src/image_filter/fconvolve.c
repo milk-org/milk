@@ -38,24 +38,7 @@ static FPS_APP_INFO FPS_app_info = { .fps_name    = "fconv",
     X(".ke_name", fconv_ke, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "kernel image") \
     X(".out_name", fconv_out, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
-static FPS_CLI_BINDING FPS_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-static const int       nb_bindings    = sizeof(FPS_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg[]         = { FPS_PARAMS(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata     = { "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS     cms            = { 0 };
-
-static __attribute__((constructor)) void init_cms(void)
-{
-    strncpy(CLIcmddata.key, FPS_app_info.cmdkey, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, FPS_app_info.description, sizeof(CLIcmddata.description) - 1);
-    CLIcmddata.nbarg         = sizeof(farg) / sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags         = CLICMDFLAG_FPS;
-    if (CLIcmddata.cmdsettings == NULL)
-    {
-        CLIcmddata.cmdsettings = &cms;
-    }
-}
+FPS_V2_SECTION5(FPS_PARAMS)
 
 static MILK_HOT errno_t compute_function()
 {
@@ -65,13 +48,13 @@ static MILK_HOT errno_t compute_function()
 
 static errno_t __attribute__((unused)) CLIfunction(void)
 {
-    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, FPS_bindings, nb_bindings,
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
                                         compute_function);
 }
 
 errno_t CLIADDCMD_image_filter__fconvolve()
 {
-    safe_fps_fill_farg_examples(farg, FPS_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }

@@ -36,12 +36,7 @@ static FPS_APP_INFO FPS_app_info = {
     X(".stream", p_stream, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output stream") \
     X(".freq", &p_freq, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "frequency [Hz]")
 
-static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };
-static const int       nb_bindings   = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF    farg[]        = { FPS_PARAMS(FPS_X_FARG) };
-static CLICMDDATA      CLIcmddata    = { "", "", CLICMD_FIELDS_DEFAULTS };
-FPS_CMDSETTINGS_INIT(streamfeed, CLIcmddata, FPS_app_info)
-
+FPS_V2_SECTION5(FPS_PARAMS)
 static MILK_HOT errno_t compute_function()
 {
     IMAGE_BASIC_streamfeed(p_in, p_stream, (float) p_freq);
