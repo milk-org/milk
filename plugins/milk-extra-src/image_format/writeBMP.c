@@ -31,21 +31,21 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *BMPfname = NULL;
-static char *imRname  = NULL;
-static char *imGname  = NULL;
-static char *imBname  = NULL;
+static char BMPfname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char imRname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char imGname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char imBname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                          \
-    X(".bmp_fname", &BMPfname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "BMP file name")        \
-    X(".imRname", &imRname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "Red channel image")   \
-    X(".imGname", &imGname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "Green channel image") \
-    X(".imBname", &imBname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "Blue channel image")
+#define FPS_PARAMS(X)                                                                         \
+    X(".bmp_fname", BMPfname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "BMP file name")        \
+    X(".imRname", imRname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "Red channel image")   \
+    X(".imGname", imGname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "Green channel image") \
+    X(".imBname", imBname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "Blue channel image")
 
 
 /* ================================================================

@@ -56,38 +56,38 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static int32_t                          *GPUindex     = NULL;
-static uint32_t *__attribute__((unused)) mmax         = NULL;
-static uint32_t *__attribute__((unused)) nmax         = NULL;
-static char                             *insname      = NULL;
-static char                             *inmasksname  = NULL;
-static char                             *immodes      = NULL;
-static char                             *outcoeff     = NULL;
-static int64_t *__attribute__((unused))  outinit      = NULL;
-static uint32_t                         *axmode       = NULL;
-static int64_t                          *PROCESS      = NULL;
-static int64_t                          *TRACEMODE    = NULL;
-static int64_t                          *MODENORM     = NULL;
-static char *__attribute__((unused))     intot_stream = NULL;
-static char                             *inrefsname   = NULL;
-static char                             *outrefsname  = NULL;
-static uint64_t *__attribute__((unused)) twait        = NULL;
+static int32_t                          *GPUindex                                  = NULL;
+static uint32_t *__attribute__((unused)) mmax                                      = NULL;
+static uint32_t *__attribute__((unused)) nmax                                      = NULL;
+static char                              insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static char                              inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char                              immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static char                              outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static int64_t *__attribute__((unused))  outinit                                   = NULL;
+static uint32_t                         *axmode                                    = NULL;
+static int64_t                          *PROCESS                                   = NULL;
+static int64_t                          *TRACEMODE                                 = NULL;
+static int64_t                          *MODENORM                                  = NULL;
+static char *__attribute__((unused))     intot_stream                              = NULL;
+static char                              inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char                              outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static uint64_t *__attribute__((unused)) twait                                     = NULL;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                            \
-    X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "GPU index, 99 for CPU")    \
-    X(".insname", &insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream name")     \
-    X(".inmasksname", &inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
-      "nput mask stream name")                                                                   \
-    X(".immodes", &immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes stream name")     \
-    X(".outcoeff", &outcoeff, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output coefficients") \
-    X(".option.sname_refin", &inrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,            \
-      "optional input reference to be subtracted stream")                                        \
-    X(".option.sname_refout", &outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
+#define FPS_PARAMS(X)                                                                           \
+    X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "GPU index, 99 for CPU")   \
+    X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream name")     \
+    X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
+      "nput mask stream name")                                                                  \
+    X(".immodes", immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes stream name")     \
+    X(".outcoeff", outcoeff, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output coefficients") \
+    X(".option.sname_refin", inrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,            \
+      "optional input reference to be subtracted stream")                                       \
+    X(".option.sname_refout", outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
       "optional output reference to be subtracted stream")
 
 

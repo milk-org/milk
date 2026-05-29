@@ -23,23 +23,23 @@ static FPS_APP_INFO FPS_app_info = { .fps_name    = "im2vec",
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *inimname      = NULL;
-static char *inpixiname    = NULL;
-static char *inpixmultname = NULL;
-static char *outvecname    = NULL;
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN]      = "";
+static char inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char outvecname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                \
-    X(".inim", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
-    X(".inpixi", &inpixiname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,            \
-      "input pixel index image")                                                     \
-    X(".inpixmult", &inpixmultname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,      \
-      "input pixel mult image")                                                      \
-    X(".outvec", &outvecname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output vector image")
+#define FPS_PARAMS(X)                                                               \
+    X(".inim", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".inpixi", inpixiname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,            \
+      "input pixel index image")                                                    \
+    X(".inpixmult", inpixmultname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,      \
+      "input pixel mult image")                                                     \
+    X(".outvec", outvecname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output vector image")
 
 
 /* ================================================================

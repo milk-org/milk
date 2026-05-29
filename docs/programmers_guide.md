@@ -102,7 +102,7 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 3. **Define parameters** (sections 2–3):
    - Add local C variables in section 2
    - Map them in the `FPS_PARAMS` X-macro in section 3
-   - Use `char*` for string-type params; pass `&ptr` in the X-macro
+   - Use `char var[FUNCTION_PARAMETER_STRMAXLEN]` for string-type params; pass `var` directly
    - Use `&variable` for scalars
 
 4. **Implement logic** (section 4 — `fpsexec()`):

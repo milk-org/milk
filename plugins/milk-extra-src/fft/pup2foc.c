@@ -36,21 +36,21 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *inamp  = NULL;
-static char *inpha  = NULL;
-static char *outamp = NULL;
-static char *outpha = NULL;
+static char inamp[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char inpha[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char outamp[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char outpha[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                 \
-    X(".inamp", &inamp, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input WF ampl")  \
-    X(".inpha", &inpha, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input WF phase") \
-    X(".outa", &outamp, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output WF ampl")     \
-    X(".outp", &outpha, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output WF phase")
+#define FPS_PARAMS(X)                                                                \
+    X(".inamp", inamp, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input WF ampl")  \
+    X(".inpha", inpha, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input WF phase") \
+    X(".outa", outamp, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output WF ampl")     \
+    X(".outp", outpha, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output WF phase")
 
 
 /* ================================================================

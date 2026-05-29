@@ -22,23 +22,23 @@ static FPS_APP_INFO FPS_app_info = { .fps_name    = "extractRGGBchan",
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *inim    = NULL;
-static char *outimR  = NULL;
-static char *outimG1 = NULL;
-static char *outimG2 = NULL;
-static char *outimB  = NULL;
+static char inim[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char outimR[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char outimG1[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char outimG2[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char outimB[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                  \
-    X(".inim", &inim, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input RGGB image")      \
-    X(".outimR", &outimR, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output R image")    \
-    X(".outimG1", &outimG1, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output G1 image") \
-    X(".outimG2", &outimG2, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output G2 image") \
-    X(".outimB", &outimB, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output B image")
+#define FPS_PARAMS(X)                                                                 \
+    X(".inim", inim, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input RGGB image")      \
+    X(".outimR", outimR, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output R image")    \
+    X(".outimG1", outimG1, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output G1 image") \
+    X(".outimG2", outimG2, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output G2 image") \
+    X(".outimB", outimB, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output B image")
 
 
 /* ================================================================

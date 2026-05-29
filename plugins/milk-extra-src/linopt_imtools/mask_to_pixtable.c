@@ -24,19 +24,19 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *inimname      = NULL;
-static char *outpixiimname = NULL;
-static char *outpixmimname = NULL;
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN]      = "";
+static char outpixiimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char outpixmimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                           \
-    X(".inim", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")            \
-    X(".outpixi", &outpixiimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output index image") \
-    X(".outpixm", &outpixmimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output mask image")
+#define FPS_PARAMS(X)                                                                          \
+    X(".inim", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")            \
+    X(".outpixi", outpixiimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output index image") \
+    X(".outpixm", outpixmimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output mask image")
 
 
 /* ================================================================

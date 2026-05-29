@@ -32,19 +32,19 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *imcinname    = NULL;
-static char *outimname    = NULL;
-static char *outcoeffname = NULL;
+static char imcinname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char outcoeffname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                  \
-    X(".inc", &imcinname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input 3D cube") \
-    X(".outm", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output modes")     \
-    X(".outcoeff", &outcoeffname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs")
+#define FPS_PARAMS(X)                                                                 \
+    X(".inc", imcinname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input 3D cube") \
+    X(".outm", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output modes")     \
+    X(".outcoeff", outcoeffname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs")
 
 
 /* ================================================================

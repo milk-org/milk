@@ -18,8 +18,8 @@ static FPS_APP_INFO FPS_app_info = { .fps_name    = "streamprocess",
 
 // Local variables pointers
 
-static char *inimname;
-static char *outimname;
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 static uint32_t *cntindex;
 static uint32_t *cntindexmax;
@@ -27,14 +27,14 @@ static uint32_t *cntindexmax;
 static int64_t *ex0mode;
 static int64_t *ex1mode;
 
-#define FPS_PARAMS(X)                                                                   \
-    X(".in_name", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
-    X(".out_name", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
-    X(".cntindex", &cntindex, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "counter index")  \
-    X(".cntindexmax", &cntindexmax, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT,             \
-      "counter index max value")                                                        \
-    X(".option.ex0mode", &ex0mode, FPTYPE_ONOFF, 1, FPFLAG_DEFAULT_INPUT, "toggle0")    \
-    X(".option.ex1mode", &ex1mode, FPTYPE_ONOFF, 1, FPFLAG_DEFAULT_INPUT,               \
+#define FPS_PARAMS(X)                                                                  \
+    X(".in_name", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".out_name", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
+    X(".cntindex", &cntindex, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "counter index") \
+    X(".cntindexmax", &cntindexmax, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT,            \
+      "counter index max value")                                                       \
+    X(".option.ex0mode", &ex0mode, FPTYPE_ONOFF, 1, FPFLAG_DEFAULT_INPUT, "toggle0")   \
+    X(".option.ex1mode", &ex1mode, FPTYPE_ONOFF, 1, FPFLAG_DEFAULT_INPUT,              \
       "toggle1 conditional on toggle0")
 
 // Optional custom configuration setup

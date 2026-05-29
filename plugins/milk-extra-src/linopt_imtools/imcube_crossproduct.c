@@ -29,21 +29,21 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *inimc0   = NULL;
-static char *inimc1   = NULL;
-static char *inimmask = NULL;
-static char *imout    = NULL;
+static char inimc0[FUNCTION_PARAMETER_STRMAXLEN]   = "";
+static char inimc1[FUNCTION_PARAMETER_STRMAXLEN]   = "";
+static char inimmask[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char imout[FUNCTION_PARAMETER_STRMAXLEN]    = "";
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                        \
-    X(".imcube0", &inimc0, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube 0") \
-    X(".imcube1", &inimc1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube 1") \
-    X(".immask", &inimmask, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "pixel mask")        \
-    X(".outim", &imout, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output matrix")
+#define FPS_PARAMS(X)                                                                       \
+    X(".imcube0", inimc0, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube 0") \
+    X(".imcube1", inimc1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube 1") \
+    X(".immask", inimmask, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "pixel mask")        \
+    X(".outim", imout, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output matrix")
 
 
 /* ================================================================

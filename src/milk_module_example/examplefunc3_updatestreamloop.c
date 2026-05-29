@@ -16,10 +16,10 @@ static FPS_APP_INFO FPS_app_info = { .fps_name    = "streamupdate",
                                      .description = "update stream" };
 
 // Variables local to this translation unit
-static char *inimname;
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 #define FPS_PARAMS(X) \
-    X(".in_sname", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream")
+    X(".in_sname", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream")
 
 
 static FPS_CLI_BINDING my_bindings[] = { FPS_PARAMS(FPS_X_BINDING) };

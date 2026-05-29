@@ -111,26 +111,26 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
     Use these `FPTYPE_*` constants in `FPS_PARAMS`
     X-macro entries:
 
-    | Constant | C Variable Type | Description |
-    |----------|----------------|-------------|
-    | `FPTYPE_INT32` | `int32_t` | 32-bit signed integer |
-    | `FPTYPE_UINT32` | `uint32_t` | 32-bit unsigned integer |
-    | `FPTYPE_INT64` | `int64_t` | 64-bit signed integer |
-    | `FPTYPE_UINT64` | `uint64_t` | 64-bit unsigned integer |
-    | `FPTYPE_FLOAT32` | `float` | 32-bit float |
-    | `FPTYPE_FLOAT64` | `double` | 64-bit double |
-    | `FPTYPE_ONOFF` | `int32_t` | Boolean (0=OFF, nonzero=ON) |
-    | `FPTYPE_STRING` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Generic text string |
-    | `FPTYPE_STREAMNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | SHM stream name |
-    | `FPTYPE_FILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | File path |
-    | `FPTYPE_FITSFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | FITS file path |
-    | `FPTYPE_EXECFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Executable path |
-    | `FPTYPE_DIRNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Directory path |
-    | `FPTYPE_FPSNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Another FPS name |
-    | `FPTYPE_PID` | `pid_t` | Process ID |
-    | `FPTYPE_TIMESPEC` | `struct timespec` | Timestamp |
-    | `FPTYPE_PROCESS` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Process name |
-    | `FPTYPE_STRING_NOT_STREAM` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | String (not a stream) |
+    | Constant                   | C Variable Type                      | Description                 |
+    | -------------------------- | ------------------------------------ | --------------------------- |
+    | `FPTYPE_INT32`             | `int32_t`                            | 32-bit signed integer       |
+    | `FPTYPE_UINT32`            | `uint32_t`                           | 32-bit unsigned integer     |
+    | `FPTYPE_INT64`             | `int64_t`                            | 64-bit signed integer       |
+    | `FPTYPE_UINT64`            | `uint64_t`                           | 64-bit unsigned integer     |
+    | `FPTYPE_FLOAT32`           | `float`                              | 32-bit float                |
+    | `FPTYPE_FLOAT64`           | `double`                             | 64-bit double               |
+    | `FPTYPE_ONOFF`             | `int32_t`                            | Boolean (0=OFF, nonzero=ON) |
+    | `FPTYPE_STRING`            | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Generic text string         |
+    | `FPTYPE_STREAMNAME`        | `char[FUNCTION_PARAMETER_STRMAXLEN]` | SHM stream name             |
+    | `FPTYPE_FILENAME`          | `char[FUNCTION_PARAMETER_STRMAXLEN]` | File path                   |
+    | `FPTYPE_FITSFILENAME`      | `char[FUNCTION_PARAMETER_STRMAXLEN]` | FITS file path              |
+    | `FPTYPE_EXECFILENAME`      | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Executable path             |
+    | `FPTYPE_DIRNAME`           | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Directory path              |
+    | `FPTYPE_FPSNAME`           | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Another FPS name            |
+    | `FPTYPE_PID`               | `pid_t`                              | Process ID                  |
+    | `FPTYPE_TIMESPEC`          | `struct timespec`                    | Timestamp                   |
+    | `FPTYPE_PROCESS`           | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Process name                |
+    | `FPTYPE_STRING_NOT_STREAM` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | String (not a stream)       |
 
     For string-type parameters, pass the buffer name
     directly (it decays to `char*`). For scalar types,
@@ -143,23 +143,23 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
 
     **Input/Output presets:**
 
-    | Flag | Effect |
-    |------|--------|
-    | `FPFLAG_DEFAULT_INPUT` | Standard input (active, visible, writable, save-on-change, CLI primary) |
-    | `FPFLAG_DEFAULT_OUTPUT` | Standard output (active, visible, read-only) |
-    | `FPFLAG_DEFAULT_INPUT_STREAM` | Input stream (adds run-required + stream-check) |
-    | `FPFLAG_DEFAULT_TRIGGER_STREAM` | Input stream that triggers computation |
-    | `FPFLAG_DEFAULT_OUTPUT_STREAM` | Output stream |
+    | Flag                            | Effect                                                                  |
+    | ------------------------------- | ----------------------------------------------------------------------- |
+    | `FPFLAG_DEFAULT_INPUT`          | Standard input (active, visible, writable, save-on-change, CLI primary) |
+    | `FPFLAG_DEFAULT_OUTPUT`         | Standard output (active, visible, read-only)                            |
+    | `FPFLAG_DEFAULT_INPUT_STREAM`   | Input stream (adds run-required + stream-check)                         |
+    | `FPFLAG_DEFAULT_TRIGGER_STREAM` | Input stream that triggers computation                                  |
+    | `FPFLAG_DEFAULT_OUTPUT_STREAM`  | Output stream                                                           |
 
     **Modifiers (combine with presets):**
 
-    | Flag | Effect |
-    |------|--------|
-    | `FPFLAG_MINLIMIT` | Enforce minimum value |
-    | `FPFLAG_MAXLIMIT` | Enforce maximum value |
-    | `FPFLAG_WRITERUN` | Allow modification while running |
-    | `FPFLAG_WRITECONF` | Allow modification during config |
-    | `FPFLAG_STREAM_ENFORCE_DATATYPE` | Validate stream datatype |
+    | Flag                             | Effect                           |
+    | -------------------------------- | -------------------------------- |
+    | `FPFLAG_MINLIMIT`                | Enforce minimum value            |
+    | `FPFLAG_MAXLIMIT`                | Enforce maximum value            |
+    | `FPFLAG_WRITERUN`                | Allow modification while running |
+    | `FPFLAG_WRITECONF`               | Allow modification during config |
+    | `FPFLAG_STREAM_ENFORCE_DATATYPE` | Validate stream datatype         |
 
 === ":material-code-tags: Developer Integration"
 

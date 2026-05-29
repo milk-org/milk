@@ -24,25 +24,25 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *imvecname     = NULL;
-static char *inpixiname    = NULL;
-static char *inpixmultname = NULL;
-static char *outimname     = NULL;
-static long *xsizein       = NULL;
-static long *ysizein       = NULL;
+static char  imvecname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static char  inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char  inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char  outimname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static long *xsizein                                     = NULL;
+static long *ysizein                                     = NULL;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                          \
-    X(".inim", &imvecname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input vector")         \
-    X(".inpixi", &inpixiname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "pixel index image") \
-    X(".inpixmult", &inpixmultname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                \
-      "input pixel mult image")                                                                \
-    X(".outim", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output 2D image")         \
-    X(".xsize", &xsizein, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "X size")                     \
+#define FPS_PARAMS(X)                                                                         \
+    X(".inim", imvecname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input vector")         \
+    X(".inpixi", inpixiname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "pixel index image") \
+    X(".inpixmult", inpixmultname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                \
+      "input pixel mult image")                                                               \
+    X(".outim", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output 2D image")         \
+    X(".xsize", &xsizein, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "X size")                    \
     X(".ysize", &ysizein, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Y size")
 
 

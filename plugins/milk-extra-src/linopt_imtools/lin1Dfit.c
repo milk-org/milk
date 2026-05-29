@@ -27,11 +27,11 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *infname     = NULL;
-static long *NBptval     = NULL;
-static long *maxorderval = NULL;
-static char *outfname    = NULL;
-static long *modeval     = NULL;
+static char  infname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static long *NBptval                                = NULL;
+static long *maxorderval                            = NULL;
+static char  outfname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static long *modeval                                = NULL;
 
 
 /* ================================================================
@@ -39,11 +39,11 @@ static long *modeval     = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                      \
-    X(".indat", &infname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input file")            \
+    X(".indat", infname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input file")             \
     X(".NBpt", &NBptval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of sample points") \
     X(".maxorder", &maxorderval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT,                    \
       "maximum polynomial order")                                                          \
-    X(".outdat", &outfname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output file")         \
+    X(".outdat", outfname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output file")          \
     X(".mode", &modeval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "fit mode")
 
 
