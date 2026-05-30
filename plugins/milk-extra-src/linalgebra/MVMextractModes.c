@@ -13,7 +13,6 @@
 #endif
 
 
-
 // Use MKL if available
 // Otherwise use openBLAS
 //
@@ -86,7 +85,7 @@ static char      outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
     X(".option.sname_refout", outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
       "optional output reference to be subtracted stream")                                      \
     X(".axmode", &axmode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                               \
-      "axis mode: 0=extract, 1=expand")                                                        \
+      "axis mode: 0=extract, 1=expand")                                                         \
     X(".option.PROCESS", &opt_process, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                   \
       "compute running statistics")                                                             \
     X(".option.TRACEMODE", &opt_tracemode, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,               \
@@ -188,9 +187,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     }
 
 
-
-
-
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
     imageID IDinref  = -1;
     IMGID   imginref = imgid_make_from_name(inrefsname);
@@ -288,8 +284,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 }
             }
         }
-
-
     }
 
     float *normcoeff = (float *) malloc(sizeof(float) * NBmodes);
@@ -460,8 +454,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 exit(EXIT_FAILURE);
             }
 
-            cudaStat = cudaMemcpy(d_modes, modesmat, sizeof(float) * matsz,
-                                   cudaMemcpyHostToDevice);
+            cudaStat = cudaMemcpy(d_modes, modesmat, sizeof(float) * matsz, cudaMemcpyHostToDevice);
 
             if (use_mask)
             {
@@ -655,7 +648,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     fflush(stdout);
 
 
-
     printf(" m       = %u\n", mask_npix);
     printf(" n       = %ld\n", n);
     printf(" NBmodes = %ld\n", NBmodes);
@@ -772,21 +764,19 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 }
 
 
-                cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m,
-                            1.0, ColMajorMatrix, (int) n,
-                            imginfloatptr, 1, beta, outarray, 1);
+                cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m, 1.0, ColMajorMatrix,
+                            (int) n, imginfloatptr, 1, beta, outarray, 1);
 
                 clock_gettime(CLOCK_MILK, &t1);
                 struct timespec tdiff;
                 tdiff       = timespec_diff(t0, t1);
                 double t01d = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                processinfo_WriteMessage_fmt(processinfo, "%s %dx%d MVM %.3f us",
-                                             BLASLIB, n, m, t01d * 1e6);
+                processinfo_WriteMessage_fmt(processinfo, "%s %dx%d MVM %.3f us", BLASLIB, n, m,
+                                             t01d * 1e6);
             }
 #else
             // CPU fallback without BLAS library
-            matrixMulCPU(ColMajorMatrix, imginfloatptr,
-                         outarray, (int) n, (int) m);
+            matrixMulCPU(ColMajorMatrix, imginfloatptr, outarray, (int) n, (int) m);
 #endif
 
             // update output
@@ -817,8 +807,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 }
                 else
                 {
-                    memcpy(masked_pix, dcimg[IDinref].array.F,
-                           sizeof(float) * mask_npix);
+                    memcpy(masked_pix, dcimg[IDinref].array.F, sizeof(float) * mask_npix);
                 }
                 cudaStat =
                     cudaMemcpy(d_in, masked_pix, sizeof(float) * mask_npix, cudaMemcpyHostToDevice);
@@ -834,8 +823,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 }
                 else
                 {
-                    memcpy(masked_pix, imginfloatptr,
-                           sizeof(float) * mask_npix);
+                    memcpy(masked_pix, imginfloatptr, sizeof(float) * mask_npix);
                 }
                 cudaStat =
                     cudaMemcpy(d_in, masked_pix, sizeof(float) * mask_npix, cudaMemcpyHostToDevice);
@@ -910,9 +898,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 imgout.md->write = 1;
                 for (long k = 0; k < NBmodes; k++)
                 {
-                    imgout.im->array.F[k] =
-                        (modevalarray[k] - modevalarrayref[k])
-                        / normcoeff[k];
+                    imgout.im->array.F[k] = (modevalarray[k] - modevalarrayref[k]) / normcoeff[k];
                 }
 
 

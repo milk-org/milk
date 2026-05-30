@@ -32,15 +32,15 @@
  * Test configuration
  * ------------------------------------------------------ */
 
-#define NPIX_X   16   /* image width */
-#define NPIX_Y   16   /* image height */
-#define NPIX     (NPIX_X * NPIX_Y)   /* = 256 */
-#define NMODES   5    /* number of modes */
-#define TOL      1.0e-4f  /* relative tolerance */
+#define NPIX_X 16              /* image width */
+#define NPIX_Y 16              /* image height */
+#define NPIX (NPIX_X * NPIX_Y) /* = 256 */
+#define NMODES 5               /* number of modes */
+#define TOL 1.0e-4f            /* relative tolerance */
 
 /* Stream names for SHM cleanup */
-#define SNAME_MODES  "test_mvm_modes"
-#define SNAME_INPUT  "test_mvm_input"
+#define SNAME_MODES "test_mvm_modes"
+#define SNAME_INPUT "test_mvm_input"
 
 
 /* --------------------------------------------------------
@@ -54,19 +54,15 @@
  * orthogonal rows for k < log2(npix).
  * ------------------------------------------------------ */
 
-static void build_orthogonal_modes(
-    float *modes,
-    int    nmodes,
-    int    npix)
+static void build_orthogonal_modes(float *modes, int nmodes, int npix)
 {
     for (int k = 0; k < nmodes; k++)
     {
-        int stride = 1 << k;  /* 1, 2, 4, 8, 16 */
+        int stride = 1 << k; /* 1, 2, 4, 8, 16 */
         for (int p = 0; p < npix; p++)
         {
-            int block = p / stride;
-            modes[k * npix + p] =
-                (block % 2 == 0) ? 1.0f : -1.0f;
+            int block           = p / stride;
+            modes[k * npix + p] = (block % 2 == 0) ? 1.0f : -1.0f;
         }
     } // for k
 }
@@ -76,11 +72,7 @@ static void build_orthogonal_modes(
  * Helper: compute mode norms for verification
  * ------------------------------------------------------ */
 
-static void compute_mode_norms(
-    const float *modes,
-    float       *norms,
-    int          nmodes,
-    int          npix)
+static void compute_mode_norms(const float *modes, float *norms, int nmodes, int npix)
 {
     for (int k = 0; k < nmodes; k++)
     {
@@ -101,24 +93,20 @@ static void compute_mode_norms(
  * Returns 0 on success, 1 on failure.
  * ------------------------------------------------------ */
 
-static int verify_coefficients(
-    const float *outarray,
-    const float *expected,
-    const float *norms,
-    int          nmodes,
-    int          verbose,
-    const char  *label)
+static int verify_coefficients(const float *outarray,
+                               const float *expected,
+                               const float *norms,
+                               int          nmodes,
+                               int          verbose,
+                               const char  *label)
 {
     int pass = 1;
     for (int k = 0; k < nmodes; k++)
     {
-        float extracted = (norms != NULL)
-                            ? outarray[k] / norms[k]
-                            : outarray[k];
+        float extracted = (norms != NULL) ? outarray[k] / norms[k] : outarray[k];
         float exp_val   = expected[k];
         float err       = fabsf(extracted - exp_val);
-        float ref       = fabsf(exp_val) > 1.0e-6f
-                            ? fabsf(exp_val) : 1.0f;
+        float ref       = fabsf(exp_val) > 1.0e-6f ? fabsf(exp_val) : 1.0f;
 
         if (verbose)
         {
@@ -152,12 +140,10 @@ static int test_cpu_roundtrip(int verbose)
 {
     printf("[CPU 1] Round-trip coefficient extraction\n");
 
-    float *modes = (float *) malloc(
-        sizeof(float) * NMODES * NPIX);
+    float *modes = (float *) malloc(sizeof(float) * NMODES * NPIX);
     build_orthogonal_modes(modes, NMODES, NPIX);
 
-    float coeff_in[NMODES] =
-        {1.0f, -2.5f, 3.0f, 0.5f, -1.0f};
+    float coeff_in[NMODES] = { 1.0f, -2.5f, 3.0f, 0.5f, -1.0f };
 
     /* Synthesize input: I[p] = sum_k c[k] * M[k][p] */
     float *input = (float *) calloc(NPIX, sizeof(float));
@@ -169,17 +155,13 @@ static int test_cpu_roundtrip(int verbose)
         }
     }
 
-    float *outarray = (float *) calloc(
-        NMODES, sizeof(float));
-    matrixMulCPU(modes, input,
-                 outarray, NMODES, NPIX);
+    float *outarray = (float *) calloc(NMODES, sizeof(float));
+    matrixMulCPU(modes, input, outarray, NMODES, NPIX);
 
     float norms[NMODES];
     compute_mode_norms(modes, norms, NMODES, NPIX);
 
-    int ret = verify_coefficients(
-        outarray, coeff_in, norms, NMODES,
-        verbose, "CPU");
+    int ret = verify_coefficients(outarray, coeff_in, norms, NMODES, verbose, "CPU");
 
     free(outarray);
     free(input);
@@ -201,24 +183,20 @@ static int test_cpu_zero_input(int verbose)
 {
     printf("[CPU 2] Zero input produces zero output\n");
 
-    float *modes = (float *) malloc(
-        sizeof(float) * NMODES * NPIX);
+    float *modes = (float *) malloc(sizeof(float) * NMODES * NPIX);
     build_orthogonal_modes(modes, NMODES, NPIX);
 
     float *input    = (float *) calloc(NPIX, sizeof(float));
-    float *outarray = (float *) calloc(
-        NMODES, sizeof(float));
+    float *outarray = (float *) calloc(NMODES, sizeof(float));
 
-    matrixMulCPU(modes, input,
-                 outarray, NMODES, NPIX);
+    matrixMulCPU(modes, input, outarray, NMODES, NPIX);
 
     int pass = 1;
     for (int k = 0; k < NMODES; k++)
     {
         if (fabsf(outarray[k]) > 1.0e-7f)
         {
-            printf("  FAIL mode %d: expected 0, got %e\n",
-                   k, outarray[k]);
+            printf("  FAIL mode %d: expected 0, got %e\n", k, outarray[k]);
             pass = 0;
         }
     }
@@ -249,8 +227,7 @@ static int test_cpu_orthogonality(int verbose)
     printf("[CPU 3] Single-mode isolation "
            "(orthogonality)\n");
 
-    float *modes = (float *) malloc(
-        sizeof(float) * NMODES * NPIX);
+    float *modes = (float *) malloc(sizeof(float) * NMODES * NPIX);
     build_orthogonal_modes(modes, NMODES, NPIX);
 
     float norms[NMODES];
@@ -259,22 +236,17 @@ static int test_cpu_orthogonality(int verbose)
     int pass = 1;
     for (int target = 0; target < NMODES; target++)
     {
-        float *input = (float *) malloc(
-            sizeof(float) * NPIX);
-        memcpy(input, &modes[target * NPIX],
-               sizeof(float) * NPIX);
+        float *input = (float *) malloc(sizeof(float) * NPIX);
+        memcpy(input, &modes[target * NPIX], sizeof(float) * NPIX);
 
-        float *outarray = (float *) calloc(
-            NMODES, sizeof(float));
-        matrixMulCPU(modes, input,
-                     outarray, NMODES, NPIX);
+        float *outarray = (float *) calloc(NMODES, sizeof(float));
+        matrixMulCPU(modes, input, outarray, NMODES, NPIX);
 
         for (int k = 0; k < NMODES; k++)
         {
             float normalized = outarray[k] / norms[k];
-            float expected =
-                (k == target) ? 1.0f : 0.0f;
-            float err = fabsf(normalized - expected);
+            float expected   = (k == target) ? 1.0f : 0.0f;
+            float err        = fabsf(normalized - expected);
 
             if (err > TOL)
             {
@@ -290,8 +262,7 @@ static int test_cpu_orthogonality(int verbose)
             printf("  target mode %d: ", target);
             for (int k = 0; k < NMODES; k++)
             {
-                printf("%+.3f ",
-                       outarray[k] / norms[k]);
+                printf("%+.3f ", outarray[k] / norms[k]);
             }
             printf("\n");
         }
@@ -322,10 +293,9 @@ static int test_cpu_shm_roundtrip(int verbose)
     IMAGE img_input;
 
     {
-        uint32_t sz[3] = {NPIX_X, NPIX_Y, NMODES};
-        errno_t ret = ImageStreamIO_createIm(
-            &img_modes, SNAME_MODES, 3, sz,
-            _DATATYPE_FLOAT, 1, 10, 0);
+        uint32_t sz[3] = { NPIX_X, NPIX_Y, NMODES };
+        errno_t  ret =
+            ImageStreamIO_createIm(&img_modes, SNAME_MODES, 3, sz, _DATATYPE_FLOAT, 1, 10, 0);
         if (ret != 0)
         {
             printf("  SKIP: cannot create SHM stream\n");
@@ -334,10 +304,9 @@ static int test_cpu_shm_roundtrip(int verbose)
     }
 
     {
-        uint32_t sz[2] = {NPIX_X, NPIX_Y};
-        errno_t ret = ImageStreamIO_createIm(
-            &img_input, SNAME_INPUT, 2, sz,
-            _DATATYPE_FLOAT, 1, 10, 0);
+        uint32_t sz[2] = { NPIX_X, NPIX_Y };
+        errno_t  ret =
+            ImageStreamIO_createIm(&img_input, SNAME_INPUT, 2, sz, _DATATYPE_FLOAT, 1, 10, 0);
         if (ret != 0)
         {
             printf("  SKIP: cannot create SHM stream\n");
@@ -346,36 +315,25 @@ static int test_cpu_shm_roundtrip(int verbose)
         }
     }
 
-    build_orthogonal_modes(
-        img_modes.array.F, NMODES, NPIX);
+    build_orthogonal_modes(img_modes.array.F, NMODES, NPIX);
 
-    float coeff_in[NMODES] =
-        {1.5f, -0.5f, 2.0f, -1.0f, 0.25f};
-    memset(img_input.array.F, 0,
-           sizeof(float) * NPIX);
+    float coeff_in[NMODES] = { 1.5f, -0.5f, 2.0f, -1.0f, 0.25f };
+    memset(img_input.array.F, 0, sizeof(float) * NPIX);
     for (int k = 0; k < NMODES; k++)
     {
         for (int p = 0; p < NPIX; p++)
         {
-            img_input.array.F[p] +=
-                coeff_in[k]
-                * img_modes.array.F[k * NPIX + p];
+            img_input.array.F[p] += coeff_in[k] * img_modes.array.F[k * NPIX + p];
         }
     }
 
-    float *outarray = (float *) calloc(
-        NMODES, sizeof(float));
-    matrixMulCPU(img_modes.array.F,
-                 img_input.array.F,
-                 outarray, NMODES, NPIX);
+    float *outarray = (float *) calloc(NMODES, sizeof(float));
+    matrixMulCPU(img_modes.array.F, img_input.array.F, outarray, NMODES, NPIX);
 
     float norms[NMODES];
-    compute_mode_norms(
-        img_modes.array.F, norms, NMODES, NPIX);
+    compute_mode_norms(img_modes.array.F, norms, NMODES, NPIX);
 
-    int ret = verify_coefficients(
-        outarray, coeff_in, norms, NMODES,
-        verbose, "CPU-SHM");
+    int ret = verify_coefficients(outarray, coeff_in, norms, NMODES, verbose, "CPU-SHM");
 
     free(outarray);
     ImageStreamIO_destroyIm(&img_input);
@@ -393,17 +351,16 @@ static int test_cpu_shm_roundtrip(int verbose)
  * CPU Test 5: Stress test (64×64, 20 delta modes)
  * ------------------------------------------------------ */
 
-#define STRESS_NX     64
-#define STRESS_NY     64
-#define STRESS_NPIX   (STRESS_NX * STRESS_NY)
+#define STRESS_NX 64
+#define STRESS_NY 64
+#define STRESS_NPIX (STRESS_NX * STRESS_NY)
 #define STRESS_NMODES 20
 
 static int test_cpu_stress(int verbose)
 {
-    printf("[CPU 5] Stress test (%dx%d, %d modes)\n",
-           STRESS_NX, STRESS_NY, STRESS_NMODES);
+    printf("[CPU 5] Stress test (%dx%d, %d modes)\n", STRESS_NX, STRESS_NY, STRESS_NMODES);
 
-    long total = (long) STRESS_NMODES * STRESS_NPIX;
+    long   total = (long) STRESS_NMODES * STRESS_NPIX;
     float *modes = (float *) calloc(total, sizeof(float));
     for (int k = 0; k < STRESS_NMODES; k++)
     {
@@ -413,31 +370,23 @@ static int test_cpu_stress(int verbose)
     float coeff_in[STRESS_NMODES];
     for (int k = 0; k < STRESS_NMODES; k++)
     {
-        coeff_in[k] =
-            sinf((float)(k + 1) * 1.7f) * 10.0f;
+        coeff_in[k] = sinf((float) (k + 1) * 1.7f) * 10.0f;
     }
 
-    float *input = (float *) calloc(
-        STRESS_NPIX, sizeof(float));
+    float *input = (float *) calloc(STRESS_NPIX, sizeof(float));
     for (int k = 0; k < STRESS_NMODES; k++)
     {
         for (int p = 0; p < STRESS_NPIX; p++)
         {
-            input[p] +=
-                coeff_in[k]
-                * modes[k * STRESS_NPIX + p];
+            input[p] += coeff_in[k] * modes[k * STRESS_NPIX + p];
         }
     }
 
-    float *outarray = (float *) calloc(
-        STRESS_NMODES, sizeof(float));
-    matrixMulCPU(modes, input,
-                 outarray, STRESS_NMODES, STRESS_NPIX);
+    float *outarray = (float *) calloc(STRESS_NMODES, sizeof(float));
+    matrixMulCPU(modes, input, outarray, STRESS_NMODES, STRESS_NPIX);
 
     /* Delta modes have norm=1, no normalization */
-    int ret = verify_coefficients(
-        outarray, coeff_in, NULL, STRESS_NMODES,
-        verbose, "CPU");
+    int ret = verify_coefficients(outarray, coeff_in, NULL, STRESS_NMODES, verbose, "CPU");
 
     free(outarray);
     free(input);
@@ -468,20 +417,19 @@ static int test_cpu_stress(int verbose)
  * Returns 0 on success, -1 on failure.
  * ------------------------------------------------------ */
 
-static int gpu_mvm(
-    const float *h_modes,
-    const float *h_input,
-    float       *h_output,
-    int          nmodes,
-    int          npix)
+static int gpu_mvm(const float *h_modes,
+                   const float *h_input,
+                   float       *h_output,
+                   int          nmodes,
+                   int          npix)
 {
     cublasHandle_t handle;
     cublasStatus_t stat;
     cudaError_t    cerr;
-    float *d_modes  = NULL;
-    float *d_input  = NULL;
-    float *d_output = NULL;
-    int    ret      = -1;
+    float         *d_modes  = NULL;
+    float         *d_input  = NULL;
+    float         *d_output = NULL;
+    int            ret      = -1;
 
     stat = cublasCreate(&handle);
     if (stat != CUBLAS_STATUS_SUCCESS)
@@ -491,39 +439,32 @@ static int gpu_mvm(
     }
 
     /* Allocate device memory */
-    cerr = cudaMalloc((void **) &d_modes,
-                      sizeof(float) * nmodes * npix);
+    cerr = cudaMalloc((void **) &d_modes, sizeof(float) * nmodes * npix);
     if (cerr != cudaSuccess)
     {
         goto cleanup;
     }
 
-    cerr = cudaMalloc((void **) &d_input,
-                      sizeof(float) * npix);
+    cerr = cudaMalloc((void **) &d_input, sizeof(float) * npix);
     if (cerr != cudaSuccess)
     {
         goto cleanup;
     }
 
-    cerr = cudaMalloc((void **) &d_output,
-                      sizeof(float) * nmodes);
+    cerr = cudaMalloc((void **) &d_output, sizeof(float) * nmodes);
     if (cerr != cudaSuccess)
     {
         goto cleanup;
     }
 
     /* Copy data to GPU */
-    cerr = cudaMemcpy(d_modes, h_modes,
-                      sizeof(float) * nmodes * npix,
-                      cudaMemcpyHostToDevice);
+    cerr = cudaMemcpy(d_modes, h_modes, sizeof(float) * nmodes * npix, cudaMemcpyHostToDevice);
     if (cerr != cudaSuccess)
     {
         goto cleanup;
     }
 
-    cerr = cudaMemcpy(d_input, h_input,
-                      sizeof(float) * npix,
-                      cudaMemcpyHostToDevice);
+    cerr = cudaMemcpy(d_input, h_input, sizeof(float) * npix, cudaMemcpyHostToDevice);
     if (cerr != cudaSuccess)
     {
         goto cleanup;
@@ -540,12 +481,8 @@ static int gpu_mvm(
         float alpha = 1.0f;
         float beta  = 0.0f;
 
-        stat = cublasSgemv(
-            handle, CUBLAS_OP_T,
-            npix, nmodes,
-            &alpha, d_modes, npix,
-            d_input, 1,
-            &beta, d_output, 1);
+        stat = cublasSgemv(handle, CUBLAS_OP_T, npix, nmodes, &alpha, d_modes, npix, d_input, 1,
+                           &beta, d_output, 1);
         if (stat != CUBLAS_STATUS_SUCCESS)
         {
             printf("  cublasSgemv failed: %d\n", stat);
@@ -554,9 +491,7 @@ static int gpu_mvm(
     }
 
     /* Copy result back */
-    cerr = cudaMemcpy(h_output, d_output,
-                      sizeof(float) * nmodes,
-                      cudaMemcpyDeviceToHost);
+    cerr = cudaMemcpy(h_output, d_output, sizeof(float) * nmodes, cudaMemcpyDeviceToHost);
     if (cerr != cudaSuccess)
     {
         goto cleanup;
@@ -590,12 +525,10 @@ static int test_gpu_roundtrip(int verbose)
 {
     printf("[GPU 1] Round-trip coefficient extraction\n");
 
-    float *modes = (float *) malloc(
-        sizeof(float) * NMODES * NPIX);
+    float *modes = (float *) malloc(sizeof(float) * NMODES * NPIX);
     build_orthogonal_modes(modes, NMODES, NPIX);
 
-    float coeff_in[NMODES] =
-        {1.0f, -2.5f, 3.0f, 0.5f, -1.0f};
+    float coeff_in[NMODES] = { 1.0f, -2.5f, 3.0f, 0.5f, -1.0f };
 
     float *input = (float *) calloc(NPIX, sizeof(float));
     for (int k = 0; k < NMODES; k++)
@@ -606,11 +539,9 @@ static int test_gpu_roundtrip(int verbose)
         }
     }
 
-    float *outarray = (float *) calloc(
-        NMODES, sizeof(float));
+    float *outarray = (float *) calloc(NMODES, sizeof(float));
 
-    if (gpu_mvm(modes, input, outarray,
-                NMODES, NPIX) != 0)
+    if (gpu_mvm(modes, input, outarray, NMODES, NPIX) != 0)
     {
         printf("  SKIP: GPU MVM failed\n");
         free(outarray);
@@ -622,9 +553,7 @@ static int test_gpu_roundtrip(int verbose)
     float norms[NMODES];
     compute_mode_norms(modes, norms, NMODES, NPIX);
 
-    int ret = verify_coefficients(
-        outarray, coeff_in, norms, NMODES,
-        verbose, "GPU");
+    int ret = verify_coefficients(outarray, coeff_in, norms, NMODES, verbose, "GPU");
 
     free(outarray);
     free(input);
@@ -647,8 +576,7 @@ static int test_gpu_orthogonality(int verbose)
     printf("[GPU 2] Single-mode isolation "
            "(orthogonality)\n");
 
-    float *modes = (float *) malloc(
-        sizeof(float) * NMODES * NPIX);
+    float *modes = (float *) malloc(sizeof(float) * NMODES * NPIX);
     build_orthogonal_modes(modes, NMODES, NPIX);
 
     float norms[NMODES];
@@ -657,16 +585,12 @@ static int test_gpu_orthogonality(int verbose)
     int pass = 1;
     for (int target = 0; target < NMODES; target++)
     {
-        float *input = (float *) malloc(
-            sizeof(float) * NPIX);
-        memcpy(input, &modes[target * NPIX],
-               sizeof(float) * NPIX);
+        float *input = (float *) malloc(sizeof(float) * NPIX);
+        memcpy(input, &modes[target * NPIX], sizeof(float) * NPIX);
 
-        float *outarray = (float *) calloc(
-            NMODES, sizeof(float));
+        float *outarray = (float *) calloc(NMODES, sizeof(float));
 
-        if (gpu_mvm(modes, input, outarray,
-                    NMODES, NPIX) != 0)
+        if (gpu_mvm(modes, input, outarray, NMODES, NPIX) != 0)
         {
             printf("  SKIP: GPU MVM failed\n");
             free(outarray);
@@ -678,9 +602,8 @@ static int test_gpu_orthogonality(int verbose)
         for (int k = 0; k < NMODES; k++)
         {
             float normalized = outarray[k] / norms[k];
-            float expected =
-                (k == target) ? 1.0f : 0.0f;
-            float err = fabsf(normalized - expected);
+            float expected   = (k == target) ? 1.0f : 0.0f;
+            float err        = fabsf(normalized - expected);
 
             if (err > TOL)
             {
@@ -696,8 +619,7 @@ static int test_gpu_orthogonality(int verbose)
             printf("  target mode %d: ", target);
             for (int k = 0; k < NMODES; k++)
             {
-                printf("%+.3f ",
-                       outarray[k] / norms[k]);
+                printf("%+.3f ", outarray[k] / norms[k]);
             }
             printf("\n");
         }
@@ -722,10 +644,9 @@ static int test_gpu_orthogonality(int verbose)
 
 static int test_gpu_stress(int verbose)
 {
-    printf("[GPU 3] Stress test (%dx%d, %d modes)\n",
-           STRESS_NX, STRESS_NY, STRESS_NMODES);
+    printf("[GPU 3] Stress test (%dx%d, %d modes)\n", STRESS_NX, STRESS_NY, STRESS_NMODES);
 
-    long total = (long) STRESS_NMODES * STRESS_NPIX;
+    long   total = (long) STRESS_NMODES * STRESS_NPIX;
     float *modes = (float *) calloc(total, sizeof(float));
     for (int k = 0; k < STRESS_NMODES; k++)
     {
@@ -735,27 +656,21 @@ static int test_gpu_stress(int verbose)
     float coeff_in[STRESS_NMODES];
     for (int k = 0; k < STRESS_NMODES; k++)
     {
-        coeff_in[k] =
-            sinf((float)(k + 1) * 1.7f) * 10.0f;
+        coeff_in[k] = sinf((float) (k + 1) * 1.7f) * 10.0f;
     }
 
-    float *input = (float *) calloc(
-        STRESS_NPIX, sizeof(float));
+    float *input = (float *) calloc(STRESS_NPIX, sizeof(float));
     for (int k = 0; k < STRESS_NMODES; k++)
     {
         for (int p = 0; p < STRESS_NPIX; p++)
         {
-            input[p] +=
-                coeff_in[k]
-                * modes[k * STRESS_NPIX + p];
+            input[p] += coeff_in[k] * modes[k * STRESS_NPIX + p];
         }
     }
 
-    float *outarray = (float *) calloc(
-        STRESS_NMODES, sizeof(float));
+    float *outarray = (float *) calloc(STRESS_NMODES, sizeof(float));
 
-    if (gpu_mvm(modes, input, outarray,
-                STRESS_NMODES, STRESS_NPIX) != 0)
+    if (gpu_mvm(modes, input, outarray, STRESS_NMODES, STRESS_NPIX) != 0)
     {
         printf("  SKIP: GPU MVM failed\n");
         free(outarray);
@@ -764,9 +679,7 @@ static int test_gpu_stress(int verbose)
         return 0;
     }
 
-    int ret = verify_coefficients(
-        outarray, coeff_in, NULL, STRESS_NMODES,
-        verbose, "GPU");
+    int ret = verify_coefficients(outarray, coeff_in, NULL, STRESS_NMODES, verbose, "GPU");
 
     free(outarray);
     free(input);
@@ -791,12 +704,10 @@ static int test_cpu_gpu_match(int verbose)
 {
     printf("[GPU 4] CPU vs GPU cross-validation\n");
 
-    float *modes = (float *) malloc(
-        sizeof(float) * NMODES * NPIX);
+    float *modes = (float *) malloc(sizeof(float) * NMODES * NPIX);
     build_orthogonal_modes(modes, NMODES, NPIX);
 
-    float coeff_in[NMODES] =
-        {3.14f, -1.41f, 2.72f, -0.58f, 1.62f};
+    float coeff_in[NMODES] = { 3.14f, -1.41f, 2.72f, -0.58f, 1.62f };
 
     float *input = (float *) calloc(NPIX, sizeof(float));
     for (int k = 0; k < NMODES; k++)
@@ -808,16 +719,12 @@ static int test_cpu_gpu_match(int verbose)
     }
 
     /* CPU result */
-    float *cpu_out = (float *) calloc(
-        NMODES, sizeof(float));
-    matrixMulCPU(modes, input,
-                 cpu_out, NMODES, NPIX);
+    float *cpu_out = (float *) calloc(NMODES, sizeof(float));
+    matrixMulCPU(modes, input, cpu_out, NMODES, NPIX);
 
     /* GPU result */
-    float *gpu_out = (float *) calloc(
-        NMODES, sizeof(float));
-    if (gpu_mvm(modes, input, gpu_out,
-                NMODES, NPIX) != 0)
+    float *gpu_out = (float *) calloc(NMODES, sizeof(float));
+    if (gpu_mvm(modes, input, gpu_out, NMODES, NPIX) != 0)
     {
         printf("  SKIP: GPU MVM failed\n");
         free(gpu_out);
@@ -832,8 +739,7 @@ static int test_cpu_gpu_match(int verbose)
     for (int k = 0; k < NMODES; k++)
     {
         float diff = fabsf(cpu_out[k] - gpu_out[k]);
-        float ref  = fabsf(cpu_out[k]) > 1.0e-6f
-                       ? fabsf(cpu_out[k]) : 1.0f;
+        float ref  = fabsf(cpu_out[k]) > 1.0e-6f ? fabsf(cpu_out[k]) : 1.0f;
 
         if (verbose)
         {
@@ -870,32 +776,25 @@ static int test_cpu_gpu_match(int verbose)
  * Help
  * ============================================================= */
 
-static const char *APP_DESCRIPTION =
-    "MVM mode extraction correctness tests";
+static const char *APP_DESCRIPTION = "MVM mode extraction correctness tests";
 
-static const char *APP_DESCRIPTION_LONG =
-    "Round-trip correctness test for matrix-vector\n"
-    "multiply (MVM) mode extraction. Creates\n"
-    "orthogonal modes, synthesizes an input image\n"
-    "from known coefficients, runs the MVM on CPU\n"
-    "and/or GPU, and verifies extracted coefficients\n"
-    "match the originals within tolerance.";
+static const char *APP_DESCRIPTION_LONG = "Round-trip correctness test for matrix-vector\n"
+                                          "multiply (MVM) mode extraction. Creates\n"
+                                          "orthogonal modes, synthesizes an input image\n"
+                                          "from known coefficients, runs the MVM on CPU\n"
+                                          "and/or GPU, and verifies extracted coefficients\n"
+                                          "match the originals within tolerance.";
 
 
-static void print_help(
-    const char *prog,
-    int         mh_color)
+static void print_help(const char *prog, int mh_color)
 {
-    milk_help_banner(
-        prog, APP_DESCRIPTION, mh_color);
+    milk_help_banner(prog, APP_DESCRIPTION, mh_color);
 
     /* Usage */
     milk_help_section("Usage", mh_color);
     if (mh_color)
     {
-        printf("  " MH_CMD "%s" MH_RST
-               " [" MH_OPT "options" MH_RST "]\n\n",
-               prog);
+        printf("  " MH_CMD "%s" MH_RST " [" MH_OPT "options" MH_RST "]\n\n", prog);
     }
     else
     {
@@ -908,20 +807,13 @@ static void print_help(
 
     /* Options */
     milk_help_section("Options", mh_color);
-    printf("  %s         Show this help\n",
-           MH(MH_OPT, "-h, --help"));
-    printf("  %s              One-line description\n",
-           MH(MH_OPT, "-h1"));
-    printf("  %s              Verbose description\n",
-           MH(MH_OPT, "-h2"));
-    printf("  %s              Monochrome help\n",
-           MH(MH_OPT, "-hm"));
-    printf("  %s      Per-mode expected/actual values\n",
-           MH(MH_OPT, "-v, --verbose"));
-    printf("  %s          Run CPU tests only\n",
-           MH(MH_OPT, "-c, --cpu"));
-    printf("  %s          Run GPU tests only\n",
-           MH(MH_OPT, "-g, --gpu"));
+    printf("  %s         Show this help\n", MH(MH_OPT, "-h, --help"));
+    printf("  %s              One-line description\n", MH(MH_OPT, "-h1"));
+    printf("  %s              Verbose description\n", MH(MH_OPT, "-h2"));
+    printf("  %s              Monochrome help\n", MH(MH_OPT, "-hm"));
+    printf("  %s      Per-mode expected/actual values\n", MH(MH_OPT, "-v, --verbose"));
+    printf("  %s          Run CPU tests only\n", MH(MH_OPT, "-c, --cpu"));
+    printf("  %s          Run GPU tests only\n", MH(MH_OPT, "-g, --gpu"));
     printf("  (default)          "
            "Run both CPU and GPU\n\n");
 
@@ -929,23 +821,14 @@ static void print_help(
     milk_help_section("Examples", mh_color);
     printf("  %s %s %s"
            "          # CPU tests, verbose\n",
-           MH(MH_DIM, "$"),
-           MH(MH_CMD, "test_MVMextract"),
-           MH(MH_OPT, "-v -c"));
+           MH(MH_DIM, "$"), MH(MH_CMD, "test_MVMextract"), MH(MH_OPT, "-v -c"));
     printf("  %s %s %s"
            "          # GPU tests, verbose\n",
-           MH(MH_DIM, "$"),
-           MH(MH_CMD, "test_MVMextract"),
-           MH(MH_OPT, "-v -g"));
+           MH(MH_DIM, "$"), MH(MH_CMD, "test_MVMextract"), MH(MH_OPT, "-v -g"));
     printf("  %s %s %s"
            "             # both, verbose\n",
-           MH(MH_DIM, "$"),
-           MH(MH_CMD, "test_MVMextract"),
-           MH(MH_OPT, "-v"));
-    printf("  %s %s %s %s\n\n",
-           MH(MH_DIM, "$"),
-           MH(MH_CMD, "ctest"),
-           MH(MH_OPT, "-R MVMextract"),
+           MH(MH_DIM, "$"), MH(MH_CMD, "test_MVMextract"), MH(MH_OPT, "-v"));
+    printf("  %s %s %s %s\n\n", MH(MH_DIM, "$"), MH(MH_CMD, "ctest"), MH(MH_OPT, "-R MVMextract"),
            MH(MH_OPT, "--output-on-failure"));
 
     /* See Also */
@@ -965,50 +848,43 @@ static void print_help(
 int main(int argc, char *argv[])
 {
     /* --- Handle help flags (before getopt) --- */
-    int action = milk_help_init(
-        argc, argv,
-        APP_DESCRIPTION, APP_DESCRIPTION_LONG);
+    int action = milk_help_init(argc, argv, APP_DESCRIPTION, APP_DESCRIPTION_LONG);
 
-    if (action == MH_ACTION_H1
-        || action == MH_ACTION_H2)
+    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;
     }
 
     int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP
-        || action == MH_ACTION_MONO)
+    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
     {
         print_help(argv[0], mh_color);
         return 0;
     }
 
     /* --- Parse test-specific flags --- */
-    int verbose  = 0;
-    int run_cpu  = 1;
-    int run_gpu  = 1;
+    int verbose            = 0;
+    int run_cpu            = 1;
+    int run_gpu            = 1;
     int explicit_selection = 0;
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-v") == 0
-            || strcmp(argv[i], "--verbose") == 0)
+        if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0)
         {
             verbose = 1;
         }
-        else if (strcmp(argv[i], "-c") == 0
-                 || strcmp(argv[i], "--cpu") == 0)
+        else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--cpu") == 0)
         {
             explicit_selection = 1;
-            run_cpu = 1;
-            run_gpu = 0;
+            run_cpu            = 1;
+            run_gpu            = 0;
         }
-        else if (strcmp(argv[i], "-g") == 0
-                 || strcmp(argv[i], "--gpu") == 0)
+        else if (strcmp(argv[i], "-g") == 0 || strcmp(argv[i], "--gpu") == 0)
         {
             explicit_selection = 1;
-            run_cpu = 0;
-            run_gpu = 1;
+            run_cpu            = 0;
+            run_gpu            = 1;
         }
     } // for args
 
@@ -1020,8 +896,7 @@ int main(int argc, char *argv[])
     }
 
     printf("=== MVM Extract Modes Test Suite ===\n");
-    printf("Image size: %dx%d (%d pixels), %d modes\n",
-           NPIX_X, NPIX_Y, NPIX, NMODES);
+    printf("Image size: %dx%d (%d pixels), %d modes\n", NPIX_X, NPIX_Y, NPIX, NMODES);
 
 #ifdef HAVE_CUDA
     {
@@ -1041,9 +916,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    printf("Running: %s%s%s\n\n",
-           run_cpu ? "CPU" : "",
-           (run_cpu && run_gpu) ? " + " : "",
+    printf("Running: %s%s%s\n\n", run_cpu ? "CPU" : "", (run_cpu && run_gpu) ? " + " : "",
            run_gpu ? "GPU" : "");
 
     int failures = 0;
@@ -1069,8 +942,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    printf("\n=== Results: %d test(s) failed ===\n",
-           failures);
+    printf("\n=== Results: %d test(s) failed ===\n", failures);
 
     return failures > 0 ? 1 : 0;
 }
