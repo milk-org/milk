@@ -74,13 +74,13 @@ For custom usage without the standard V2 template, here is how you initialize an
 int functiontemplate_usingprocessinfo() {
 
     PROCESSINFO *processinfo;
-    char pinfoname[200];   // short name for the processinfo instance, no spaces, no dot
-    sprintf(pinfoname, "aol%ld-acqRM", loop);
+    char pinfoname[STRINGMAXLEN_PROCESSINFO_NAME];
+    sprintf(pinfoname, "aol%ld-acqRM", loopindex);
 
-    char pinfodescr[200];
+    char pinfodescr[STRINGMAXLEN_PROCESSINFO_DESCRIPTION];
     sprintf(pinfodescr, "NBcycle=%ld", NBcycle);
 
-    char pinfomsg[200];
+    char pinfomsg[STRINGMAXLEN_PROCESSINFO_DESCRIPTION];
     sprintf(pinfomsg, "starting setup");
 
     processinfo = processinfo_setup(
@@ -134,6 +134,82 @@ int functiontemplate_usingprocessinfo() {
 
     return RETURN_SUCCESS;
 }
+```
+
+## 6. Important PROCESSINFO Struct Fields
+
+Beyond the fields set automatically by the framework,
+these commonly-used fields can be configured by the
+developer:
+
+| Field                 | Type           | Description                              |
+| --------------------- | -------------- | ---------------------------------------- |
+| `name`                | `char[80]`     | Short process name (no spaces, no dots)  |
+| `description`         | `char[200]`    | Human-readable description string        |
+| `tmuxname`            | `char[100]`    | Name of the tmux session hosting process |
+| `MeasureTiming`       | `int`          | Enable loop timing measurement           |
+| `RT_priority`         | `int`          | RT priority 0–99 (higher = more urgent)  |
+| `loopcntMax`          | `int64_t`      | Max loop iterations (−1 = infinite)      |
+| `CPUmask`             | `cpu_set_t`    | CPU affinity mask for core pinning       |
+| `triggermode`         | `int`          | Trigger type (semaphore, cnt, delay)     |
+| `triggerstreamname`   | `char[80]`     | Name of input trigger stream             |
+| `triggersem`          | `int`          | Semaphore index for trigger              |
+
+## 7. Compute Function Macros
+
+For V2 fpsexec compute units, the FPS framework
+provides macros (defined in `fps_procinfo_macros.h`)
+that wrap the `processinfo` API for a standard
+compute loop:
+
+| Macro                                      | Purpose                                                  |
+| ------------------------------------------ | -------------------------------------------------------- |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT`     | Allocate and register PROCESSINFO, set up signal handler |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART`| Start the compute loop, set loopOK flag                  |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_START`    | Per-iteration start (check signals, processinfo step)    |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_END`      | Per-iteration end (timing, counters, signal handling)    |
+
+These macros are used inside `compute_function()`
+(Section 6 of the V2 template):
+
+```c
+static errno_t compute_function()
+{
+    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    {
+        INSERT_STD_PROCINFO_COMPUTEFUNC_START
+        // ... per-iteration computation ...
+        processinfo_update_output_stream(
+            processinfo, imgout.im);
+        INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    }
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPEND
+}
+```
+
+### Output Stream Updates
+
+After writing to an output stream, call:
+
+```c
+processinfo_update_output_stream(processinfo, img.im);
+```
+
+This posts semaphores, increments `cnt0`/`cnt1`,
+clears the `write` flag, and updates timing metadata.
+Always set `img.im->md->write = 1` before modifying
+pixels.
+
+### Input Stream Triggers
+
+To wait on an input stream:
+
+```c
+processinfo_waitoninputstream_init(
+    processinfo, imgin.im, TRIGGERMODE_SEMAPHORE, -1);
+// ... inside loop:
+processinfo_waitoninputstream(processinfo);
 ```
 
 ---

@@ -134,17 +134,17 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 4. **Compute Function (`fpsexec()`):** Pure calculation core.
 5. **`CLIcmddata`:** CLI registry scoping.
 6. **Compute wrapper:** Processinfo loop via `INSERT_STD_PROCINFO_COMPUTEFUNC_*` macros.
-7. **Module registration:** `CLIADDCMD_*` function for CLI mode (guarded by `#ifndef FPS_STANDALONE`).
-8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` macro handles FPS lifecycle, `-h1`, `-tmux`.
+7. **Module registration:** `CLIADDCMD_*` function for CLI mode (guarded by `#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)`).
+8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` (or `_V2_CONFCHECK` if a `customCONFcheck` is needed) handles FPS lifecycle, `-h1`, `-tmux`.
 
 ## 4. Directory Map
 
-- `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS core library), `libprocessinfo`, and `libmilkdata`.
-- `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter), `CLIcore` (interactive shell), and `streamCTRL`.
+- `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS core library), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools), `libprocessinfo`, and `libmilkdata`.
+- `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter), `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
 - `src/milk_module_example`: Compute unit templates (start here!).
 - `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).
-- `plugins/cacao-src/`: Cacao AO loop modules.
+- `plugins/cacao-src/`: Cacao AO loop modules (user-created symlink to `~/src/cacao`; not present on a fresh clone).
 - `docs/`: Documentation.
 
 ### Standalone Executables vs Core Modules
@@ -171,13 +171,14 @@ Compute unit source files use conditional includes to support both CLI and stand
 #include "fps.h"                  /* FPS types (always needed) */
 ```
 
-| Header                   | Provides                                                        | When to use                                 |
-| ------------------------ | --------------------------------------------------------------- | ------------------------------------------- |
-| `CLIcore.h`              | CLICMDDATA, CMDARGTOKEN, INSERT_STD macros, module registration | Dual-mode files (CLI + standalone)          |
-| `CLIcore_standalone.h`   | Stub types, static inline no-ops                                | Auto-selected when `MILK_NO_CLI` is defined |
-| `fps.h`                  | FPS types, X-macro expanders, FPS_MAIN_STANDALONE_V2            | Always needed for FPS compute units         |
-| `libmilkdata/milkdata.h` | IMGID, imageID, dcimg, dcnimg                                   | Compute-only files that work with images    |
-| `milkDebugTools.h`       | PRINT_ERROR, DEBUG_TRACE\*                                      | Compute-only files that use debug macros    |
+| Header                   | Provides                                             | When to use                                 |
+| ------------------------ | ---------------------------------------------------- | ------------------------------------------- |
+| `CLIcore.h`              | CLICMDDATA, CMDARGTOKEN, INSERT_STD macros           | Dual-mode files (CLI + standalone)          |
+| `CLIcore_standalone.h`   | Stub types, static inline no-ops                     | Auto-selected when `MILK_NO_CLI` is defined |
+| `fps.h`                  | FPS types, X-macro expanders, FPS_MAIN_STANDALONE_V2 | Always needed for FPS compute units         |
+| `libfps/IMGID.h`         | IMGID struct, imgid_make\*, imgid_connect             | Compute-only files that work with images    |
+| `libmilkdata/milkdata.h` | MILK_DATA struct, milk_data_init                     | Core data arrays, RNG, global state         |
+| `milkDebugTools.h`       | imageID typedef, PRINT_ERROR, DEBUG_TRACE\*          | Compute-only files that use debug macros    |
 
 </details>
 

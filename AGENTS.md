@@ -63,7 +63,7 @@ isolation — a crash in one unit never takes down others.
 | ---------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | 🔴 **1st** | [`docs/programmers_guide.md`](docs/programmers_guide.md) | Architecture overview, V2 compute unit template, directory map, CMake conventions, header hierarchy |
 | 🔴 **2nd** | [`docs/dependency_graph.md`](docs/dependency_graph.md)   | Full build-tier diagrams, library link tables, `_compute` variant patterns                          |
-| 🟠 **3rd** | [`docs/streams.md`](docs/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`, `@F:`)  |
+| 🟠 **3rd** | [`docs/streams.md`](docs/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`)          |
 | 🟠 **4th** | [`docs/fps.md`](docs/fps.md)                             | FPS parameter types, tmux dispatch, `milk-fpsCTRL`, `fpslist.txt` workflow                          |
 | 🟡 **5th** | [`docs/code_assist.md`](docs/code_assist.md)             | Index of all agent rules and workflows                                                              |
 | 🟡 **6th** | [`docs/procinfo.md`](docs/procinfo.md)                   | `PROCESSINFO` C API, loop profiling                                                                 |
@@ -78,12 +78,14 @@ milk/
 │   ├── engine/                    ← Core libraries (POSIX only, no CLI)
 │   │   ├── ImageStreamIO/         ← Zero-copy shared memory streams
 │   │   ├── libfps/                ← FPS core (parameter management)
+│   │   ├── libfpsseq/             ← FPS sequencer library
+│   │   ├── libmilkcommon/         ← Common utilities, debug macros
 │   │   ├── libprocessinfo/        ← Heartbeat + process tracking
 │   │   └── libmilkdata/           ← IMGID struct, image utilities
 │   ├── cli/                       ← User-facing tools
 │   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework
-│   │   ├── libmilkTUI/            ← TUI widget library (ncurses)
+│   │   ├── overview/              ← TUI monitoring tool
 │   │   └── streamCTRL/            ← Stream monitor tool
 │   ├── coremods/                  ← Core computation modules
 │   │   └── COREMOD_{arith,memory,tools,iofits}/
@@ -122,7 +124,7 @@ Every FPS compute unit follows this standardized layout
 | 4       | `fpsexec()` — pure computation function                                   |
 | 5       | `CLIcmddata` — CLI registry scoping                                       |
 | 6       | Compute wrapper — `INSERT_STD_PROCINFO_COMPUTEFUNC_*`                     |
-| 7       | Module registration — `CLIADDCMD_*` (guarded by `#ifndef FPS_STANDALONE`) |
+| 7       | Module registration — `CLIADDCMD_*` (guarded by `#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)`) |
 | 8       | `FPS_MAIN_STANDALONE_V2` — standalone `main()`                            |
 
 ### 4.2 Dual-Mode Files
@@ -215,10 +217,12 @@ and enforced. Know what they require:
 | ------------------------------------ | --------------------------------------------------------------------------------- |
 | `agent-docs-update.md`               | Update AGENTS.md and code_assist.md when agent files change                       |
 | `architecture-principles.md`         | Check dependency graph before adding deps                                         |
+| `cli-error-help.md`                  | Print red error + colored help on CLI argument errors                             |
 | `cmake-conventions.md`               | Use `PUBLIC`/`INTERFACE` properties; modules own their headers                    |
 | `code-style-guide.md`                | 100-char lines, Kernel-Doc, Linux kernel style, explicit includes                 |
 | `common-agent-mistakes.md`           | Consolidated checklist of frequent AI code-generation pitfalls                    |
 | `compile-after-edit.md`              | Always compile-test after C/CMake changes                                         |
+| `const-correctness.md`               | Use `const` on read-only pointer params and input pixel-data pointers             |
 | `concurrency-practices.md`           | Semaphore protocol, FPS sync, process coordination                                |
 | `defensive-programming-practices.md` | Buffer safety, pointer discipline, bounded input validation                       |
 | `documentation-site.md`              | MkDocs structure, page creation, tag categories                                   |
@@ -226,6 +230,7 @@ and enforced. Know what they require:
 | `error-handling-practices.md`        | Use milkDebugTools.h macros for errors                                            |
 | `files-directories.md`               | cacao lives at `plugins/cacao-src` → `~/src/cacao`                                |
 | `fpsexec-conventions.md`             | V2 template, 8-section layout, `-h1` support                                      |
+| `library-vs-application-error-handling.md` | Libraries return errors; only app entry points may call `exit()`            |
 | `git-workflow.md`                    | Small changes direct to `framework-dev`; ask user for branch/PR on larger changes |
 | `help-consistency.md`                | Cross-check all sibling help sources                                              |
 | `help-message-standard.md`           | Unified help format, flags (`-h`/`-h1`/`-hm`), color palette via `milk_help.h`    |
@@ -233,6 +238,7 @@ and enforced. Know what they require:
 | `maintain-programmers-guide.md`      | Update programmer's guide on arch changes                                         |
 | `module-deps-declaration.md`         | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros                                       |
 | `naming-conventions.md`              | File, function, variable, macro naming; loop index types                          |
+| `parameter-alignment.md`             | Column-align parameter names in multi-line prototypes                             |
 | `performance-practices.md`           | SIMD, BLAS, pointer alignment, type dispatch, CPU pinning                         |
 | `readme-update.md`                   | Update module README when files change                                            |
 | `run-milk-commands.md`               | Environment setup, SHM cleanup, tmux guidance                                     |
@@ -273,7 +279,7 @@ when domain-specific tasks require extended capabilities.
 | `pr-preparation`             | Packaging work into a pull request                                                             |
 | `pseudocode-to-compute-unit` | Translating algorithms to V2 compute units                                                     |
 | `refactor-c-source`          | Splitting large C files into smaller modules                                                   |
-| `stream-modifier-guide`      | IMGID parsing, `@S:`/`@L:`/`@F:` modifiers, slice syntax                                       |
+| `stream-modifier-guide`      | IMGID parsing, `@S:`/`@L:` modifiers, slice syntax                                              |
 | `tui-creator`                | Developing high-performance, flicker-free terminal interfaces using Delta Rendering            |
 
 ---
@@ -292,8 +298,6 @@ listed task types:
 | `/compile-test`             | After any C or CMake edit                                |
 | `/create-fpsexec`           | Scaffolding a new standalone executable                  |
 | `/create-plugin`            | Scaffolding a new plugin module with full boilerplate    |
-| `/add-stream-processor`     | Creating a stream processing loop                        |
-| `/add-cli-command`          | Adding a CLI command to a module                         |
 | `/fix-bug`                  | Investigating, fixing, and verifying a bug               |
 | `/migrate-to-v2`            | Converting V1 fpsexec code to V2 template                |
 | `/review-pr`                | Reviewing a PR for standards compliance                  |
@@ -316,10 +320,10 @@ listed task types:
 
 | Tier      | CMake Flags                        | What's built                                      |
 | --------- | ---------------------------------- | ------------------------------------------------- |
-| Engine    | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
-| Core      | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMODs (arith, memory, tools)          |
-| Core+FITS | `-DUSE_CLI=OFF`                    | Core + COREMOD_iofits                             |
-| Full      | _(defaults)_                       | Everything: CLI + all plugins                     |
+| Engine         | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF`  | ImageStreamIO, milkcommon, milkfps, milkdata, milkprocessinfo |
+| Core           | `-DUSE_CLI=OFF`                     | Engine + COREMODs (arith, memory, tools, iofits)              |
+| Core (no FITS) | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`   | Core without COREMOD_iofits                                   |
+| Full           | _(defaults)_                        | Everything: CLI + all plugins                                 |
 
 ### Compile-test cycle
 

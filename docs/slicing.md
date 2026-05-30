@@ -35,7 +35,6 @@ Each axis specification follows this grammar:
 ```text
 im[0:19,10:29]       # 2D crop: x=0..19, y=10..29
 im[*,-*]             # Flip Y axis
-im[0:99:2,*]         # X stride: every other column  (WRONG, should be ::2)
 im[0:99::2,*]        # X stride: every other column
 im[0:99::4b,*]       # X binning: average groups of 4
 cube[*,*,-*]         # 3D: flip along Z axis
@@ -47,7 +46,9 @@ im[-20:-1,0:9]       # Negative index: last 20 columns
 ### Parser (`imgid_slice.h` / `imgid_slice.c`)
 
 The parser lives in `src/engine/libfps/` (engine tier,
-no CLI dependency). Key functions:
+no CLI dependency). Access functions are in
+`src/coremods/COREMOD_memory/stream_slice.h`.
+Key parser functions:
 
 | Function                    | Purpose                                         |
 | --------------------------- | ----------------------------------------------- |

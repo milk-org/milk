@@ -114,17 +114,24 @@ segment.
     trigger.
   - `-loopd <sec>`: Infinite loop with delay trigger
     (seconds).
-  - `-k`, `-d`: Pass keywords and descriptions for
-    `fpsinit`.
+  - `-k`, `--keywords`: Pass keywords for `fpsinit`
+    (parsed but currently reserved — not actively used).
+  - `-d`, `--description`: Pass description for
+    `fpsinit` (parsed but currently reserved — not
+    actively used).
 - **Commands** (placed last on the command line):
   - `fpsinit`: Create the FPS shared memory segment.
   - `confstart`, `confstep`, `confstop`: Manage the
     configuration loop.
   - `runstart`, `runstop`: Manage the execution loop.
+  - `run`: Alias for `runstart`.
+  - `set [args]`: Set positional arguments in FPS
+    (use `.` to skip a position).
   - `fps`: Print content of the FPS.
   - `fpslist`: List all FPS instances matching this
     executable.
-  - `exec`: Auto-init + set args + run (one-shot).
+  - `exec [args]`: Auto-init + set args + run
+    (one-shot).
 
 </details>
 

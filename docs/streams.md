@@ -76,12 +76,16 @@ module.
 - `@L:` (Local): Allocated in private local process
   memory. Used for internal buffering that doesn't need
   to be visible externally.
-- `@F:` (File / FITS): Bypasses shared memory to directly
-  read a physical file on disk.
 - `@E:` (Exists): The stream must already exist.
   Returns an error if not found.
 - `@N:` (New): The stream must **not** exist.
   Returns an error if it already exists.
+
+> [!NOTE]
+> FITS configuration files (`./conf/shmim.<name>.fits`)
+> are checked automatically in the default search order
+> when connecting to a stream. No explicit modifier is
+> needed.
 
 Modifiers are composable: `@LE:name` means "local
 memory, must exist".
@@ -96,14 +100,14 @@ failures._
 Older code may use `>` as a separator for inline
 creation hints embedded in the stream name string:
 
-| Prefix  | Example    | Effect                   |
-| ------- | ---------- | ------------------------ |
-| `t...>` | `tf32>im1` | Set data type (float32)  |
-| `k...>` | `k10>im1`  | Set keyword count        |
-| `c...>` | `c20>im1`  | Set circular buffer size |
+| Prefix  | Example    | Effect                  |
+| ------- | ---------- | ----------------------- |
+| `t...>` | `tf32>im1` | Set data type (float32) |
 
 These are parsed by `imgid_make_from_name()` and
-remain supported.
+remain supported. Keyword count and circular buffer
+size are set via `mdt->NBkw` and `mdt->CBsize`
+before calling `imgid_mkimage()`.
 
 > [!NOTE]
 > The `s>` prefix (shared memory) has been **removed**.
@@ -203,7 +207,7 @@ arguments.
 Functions should prefer passing parameters using
 `IMGID` pointers and accessing pixels through
 `img.im->array.F` or similar data type unions based
-on `img.im->md[0].datatype`.
+on `img.im->md->datatype`.
 
 ## 6. Stream Process Trace (Ancestry)
 
@@ -216,15 +220,16 @@ upstream streams triggered them.
 
 Each entry contains:
 
-| Field             | Type              | Description                                              |
-| ----------------- | ----------------- | -------------------------------------------------------- |
-| `procwrite_PID`   | `pid_t`           | PID of writing process                                   |
-| `trigger_inode`   | `ino_t`           | inode of triggering stream                               |
-| `triggermode`     | `int`             | How process was triggered (semaphore, cnt0, delay, etc.) |
-| `triggerstatus`   | `int`             | Trigger result (waiting, received, timed out)            |
-| `ts_procstart`    | `struct timespec` | When process computation started                         |
-| `ts_streamupdate` | `struct timespec` | When stream was written                                  |
-| `cnt0`            | `uint64_t`        | Trigger stream's frame counter at trigger time           |
+| Field             | Type              | Description                                    |
+| ----------------- | ----------------- | ---------------------------------------------- |
+| `procwrite_PID`   | `pid_t`           | PID of writing process                         |
+| `trigger_inode`   | `ino_t`           | inode of triggering stream                     |
+| `trigsemindex`    | `int`             | Trigger semaphore index                        |
+| `triggermode`     | `int`             | How process was triggered (sem, cnt0, delay)   |
+| `triggerstatus`   | `int`             | Trigger result (waiting, received, timed out)  |
+| `ts_procstart`    | `struct timespec` | When process computation started               |
+| `ts_streamupdate` | `struct timespec` | When stream was written                        |
+| `cnt0`            | `uint64_t`        | Trigger stream's frame counter at trigger time |
 
 ### How It Works
 

@@ -16,26 +16,27 @@ See also: [Streams](streams.md) ·
 
 ## 1. Core Scripts (`scripts/`)
 
-| Script                         | Description                                               |
-| ------------------------------ | --------------------------------------------------------- |
-| `milk-check`                   | Verify installation (libraries, paths, SHM)               |
-| `milk-check-standalone-deps`   | Check standalone build dependencies                       |
-| `milk-argparse`                | Argument parsing helper for milk scripts                  |
-| `milk-script-std-config`       | Standard configuration for milk scripts                   |
-| `milk-scriptexample`           | Example/template for writing new scripts                  |
-| `milk-script-advanced`         | Advanced script template combining bash & native milk-cli |
-| `milk-setup-worktrees`         | Set up parallel development Git worktrees                 |
-| `milk-exec`                    | Execute a milk CLI command non-interactively              |
-| `milk-cli-all`                 | Launch milk-cli on all accessible instances               |
-| `milk-commands`                | List all available milk CLI commands                      |
-| `milk-completion.sh`           | Bash tab-completion for milk commands                     |
-| `milk-debug`                   | Launch milk with GDB debugging                            |
-| `milk-demopipeline`            | Start a multi-stage FPS pipeline for demonstration        |
-| `milk-fpsinit`                 | Initialize FPS instances from configuration               |
-| `milk-fpslist-addentry`        | Add an entry to `fpslist.txt`                             |
-| `milk-fpsmkcmd`                | Generate FPS command scripts                              |
-| `milk-fps-set-completion.bash` | Bash completion for `milk-fps-set`                        |
-| `milk-latency-audit`           | Profile latency, cache misses, and IRQ affinities         |
+Installed from the root `CMakeLists.txt` into `bin/`:
+
+| Script                       | Description                                               |
+| ---------------------------- | --------------------------------------------------------- |
+| `milk-check`                 | Verify installation (libraries, paths, SHM)               |
+| `milk-check-standalone-deps` | Check standalone build dependencies                       |
+| `milk-argparse`              | Argument parsing helper for milk scripts                  |
+| `milk-script-std-config`     | Standard configuration for milk scripts                   |
+| `milk-scriptexample`         | Example/template for writing new scripts                  |
+| `milk-script-advanced`       | Advanced template combining bash & native milk-cli        |
+| `milk-exec`                  | Execute a milk CLI command non-interactively              |
+| `milk-cli-all`               | Launch milk-cli on all accessible instances                |
+| `milk-commands`              | List all available milk CLI commands                      |
+| `milk-completion.sh`         | Bash tab-completion for milk commands                     |
+| `milk-fpsinit`               | Initialize FPS instances from configuration               |
+| `milk-fpslist-addentry`      | Add an entry to `fpslist.txt`                             |
+| `milk-fpsmkcmd`              | Generate FPS command scripts                              |
+| `merge3DfitsTelemetry`       | Merge 3D FITS telemetry cubes                             |
+| `tmuxkillall`                | Kill all tmux sessions                                    |
+| `tmuxsessionname`            | Print the current tmux session name                       |
+| `waitforfile`                | Block until a specified file appears                       |
 
 ## 2. Stream Utilities (`scripts/`)
 
@@ -43,9 +44,7 @@ See also: [Streams](streams.md) ·
 | -------------------- | ------------------------------------------ |
 | `milk-FITS2shm`      | Load a FITS file into shared memory        |
 | `milk-cubeslice2shm` | Extract a slice from a FITS cube into SHM  |
-| `milk-stream-scan`   | Scan and list active shared memory streams |
 | `milk-streamlink`    | Create symbolic links to stream SHM files  |
-| `milk-shmim-rm`      | Remove a shared memory image               |
 | `milk-shm2FITSloop`  | Continuously save SHM stream to FITS files |
 
 ## 3. Logging Scripts (`scripts/`)
@@ -60,17 +59,24 @@ See also: [Streams](streams.md) ·
 
 ## 4. Image Utilities (`scripts/`)
 
-| Script               | Description                                |
-| -------------------- | ------------------------------------------ |
-| `milk-cr2tofits`     | Convert Canon RAW (CR2) files to FITS      |
-| `milk-fitsheader`    | Display FITS file header                   |
-| `milk-images-merge`  | Merge multiple FITS images                 |
-| `milk-makecsetandrt` | Create cpuset and set real-time scheduling |
+| Script              | Description                           |
+| ------------------- | ------------------------------------- |
+| `milk-cr2tofits`    | Convert Canon RAW (CR2) files to FITS |
+| `milk-fitsheader`   | Display FITS file header              |
+| `milk-images-merge` | Merge multiple FITS images            |
 
-## 5. milk-cli Script Payloads (`share/milk/scripts/`)
+## 5. FPS Scripts (`src/engine/libfps/scripts/`)
 
-These are `.milk` files evaluated by the milk-cli interpreter. They are
-installed as **data files** (no execute bit) under `share/milk/scripts/` and
+| Script               | Description                                       |
+| -------------------- | ------------------------------------------------- |
+| `milk-demopipeline`  | Start a multi-stage FPS pipeline for demonstration |
+| `milk-latency-audit` | Profile latency, cache misses, and IRQ affinities |
+
+## 6. milk-cli Script Payloads (`share/milk/scripts/`)
+
+These are `.milk` files evaluated by the milk-cli
+interpreter. They are installed as **data files**
+(no execute bit) under `share/milk/scripts/` and
 must be invoked via the CLI orchestrator:
 
 ```bash
@@ -82,24 +88,21 @@ milk-cli -s $(milk --install-prefix)/share/milk/scripts/makecircleofdisks.milk \
 | ------------------------ | -------------------------------------------- |
 | `makecircleofdisks.milk` | Generate a procedural ring of circular disks |
 
-## 6. COREMOD Scripts
+## 7. COREMOD Scripts
 
-### 6.1. COREMOD_memory (`src/coremods/COREMOD_memory/scripts/`)
+### 7.1. COREMOD_memory (`src/coremods/COREMOD_memory/scripts/`)
 
 | Script                   | Description                              |
 | ------------------------ | ---------------------------------------- |
 | `milk-semloopspeed`      | Benchmark semaphore loop speed           |
 | `milk-shmimave`          | Compute running average of a SHM stream  |
 | `milk-shmimcopy-semtrig` | Copy stream on semaphore trigger         |
-| `milk-shmimlog`          | Log shared memory stream to disk         |
 | `milk-shmimpoke`         | Write test pattern to a SHM image        |
 | `milk-shmimpoke-semtrig` | Poke SHM image on semaphore trigger      |
-| `milk-shmimpurge`        | Remove stale SHM files                   |
 | `milk-streamFITSlog`     | Log stream to FITS files with timestamps |
 | `milk-nettransmit`       | Transmit SHM stream over network         |
-| `milk-rmshmim`           | Remove a shared memory image             |
 
-### 6.2. COREMOD_arith (`src/coremods/COREMOD_arith/scripts/`)
+### 7.2. COREMOD_arith (`src/coremods/COREMOD_arith/scripts/`)
 
 | Script                        | Description                       |
 | ----------------------------- | --------------------------------- |

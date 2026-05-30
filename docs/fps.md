@@ -84,24 +84,46 @@ sequenceDiagram
 
 To use FPS-enabled functions from the command line efficiently, the typical workflow is:
 
-1. Define functions and their requested FPS names in `fpslist.txt`.
-2. Generate command scripts using `fpsmkcmd`.
+1. Define functions and their requested FPS names in
+   `fpslist.txt`.
+2. Generate command scripts using `milk-fpsmkcmd`.
 3. Launch and manage them via `milk-fpsCTRL`.
 
 ### The `fpslist.txt` and `fpsmkcmd` workflow
 
-Create a file named `fpslist.txt` to list the functions and their instance names:
+Create a space-delimited text file named `fpslist.txt`
+in your working directory. Lines starting with `#` are
+comments. Each non-comment line has the format:
 
-| FPS Root Name  | CLI Command   | Optional Arguments |
-| -------------- | ------------- | ------------------ |
-| `fpsrootname0` | `CLIcommand0` |                    |
-| `fpsrootname1` | `CLIcommand1` | `optarg00` ...     |
+```
+fpsrootname  CLIcommand  [optarg0 ...]
+```
 
-Then run `milk-fpsmkcmd` to automatically generate startup scripts for initialization and running (`<fpsname>-confinit`, `<fpsname>-runstart`, etc.).
+Example:
+
+```
+# FPS root name   CLI command   Optional arguments
+fpsrootname0       CLIcommand0
+fpsrootname1       CLIcommand1   optarg00 optarg01
+```
+
+Then run `milk-fpsmkcmd`, which reads `fpslist.txt`
+from the current directory and generates per-function
+scripts in the `fpscmd/` subdirectory:
+`<fpsrootname>-fpsinit`, `<fpsrootname>-confstart`,
+`<fpsrootname>-confstop`, `<fpsrootname>-runstart`,
+`<fpsrootname>-runstop`. It also writes the resolved
+FPS names to `fpscmd/fpslist.txt`, which is the file
+`milk-fpsCTRL` reads when scanning with `-m _ALL`.
 
 ### `milk-fpsCTRL`
 
-The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _ALL` scans and manages all FPS instances defined in `fpslist.txt`.
+The primary TUI control tool is `milk-fpsCTRL`. For
+example, `milk-fpsCTRL -m _ALL` scans and manages all
+FPS instances listed in `fpscmd/fpslist.txt`.
+
+For complete keyboard shortcuts and display modes, see
+[fpsCTRL Reference](fpsCTRL_reference.md).
 
 ## 4. Parameter Data Types and Flags
 
@@ -143,13 +165,15 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
 
     **Input/Output presets:**
 
-    | Flag                            | Effect                                                                  |
-    | ------------------------------- | ----------------------------------------------------------------------- |
-    | `FPFLAG_DEFAULT_INPUT`          | Standard input (active, visible, writable, save-on-change, CLI primary) |
-    | `FPFLAG_DEFAULT_OUTPUT`         | Standard output (active, visible, read-only)                            |
-    | `FPFLAG_DEFAULT_INPUT_STREAM`   | Input stream (adds run-required + stream-check)                         |
-    | `FPFLAG_DEFAULT_TRIGGER_STREAM` | Input stream that triggers computation                                  |
-    | `FPFLAG_DEFAULT_OUTPUT_STREAM`  | Output stream                                                           |
+    | Flag                            | Effect                                            |
+    | ------------------------------- | ------------------------------------------------- |
+    | `FPFLAG_DEFAULT_INPUT`          | Active, used, visible, writable, writeconf,       |
+    |                                 | saveonchange, feedback, writestatus                |
+    | `FPFLAG_DEFAULT_OUTPUT`         | Active, used, visible (read-only)                  |
+    | `FPFLAG_DEFAULT_INPUT_STREAM`   | `DEFAULT_INPUT` + run-required + stream-check      |
+    | `FPFLAG_DEFAULT_TRIGGER_STREAM` | `DEFAULT_INPUT_STREAM` + trigger                   |
+    | `FPFLAG_DEFAULT_OUTPUT_STREAM`  | `DEFAULT_INPUT` + stream-check (writable, saveable)|
+    | `FPFLAG_DEFAULT_STATUS`         | Active, used, visible (read-only status display)   |
 
     **Modifiers (combine with presets):**
 

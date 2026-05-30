@@ -1,7 +1,7 @@
 # Dependency Graph
 
 !!! note
-Generated from CMakeLists.txt — 2026-03-10.
+Generated from CMakeLists.txt — 2026-05-30.
 See [Build Tiers](install/build_tiers.md) for cmake
 commands.
 
@@ -30,10 +30,14 @@ graph TD
 
     subgraph engine ["Engine Tier — POSIX only"]
         ISIO["ImageStreamIO"]:::core
+        COMMON["milkcommon"]:::core
         PROCINFO["milkprocessinfo"]:::core
         FPS["milkfps"]:::core
         MILKDATA["milkdata"]:::core
+        FPSSEQ["milkfpsseq"]:::core
     end
+
+    MILKSCRIPT["milkscript"]:::fw
 
     FPSCLI["milkfpsCLI"]:::fw
     FPSSTANDALONE["milkfpsStandalone"]:::fw
@@ -56,11 +60,15 @@ graph TD
     FPSTOOLS["milk-fps-set/list/..."]:::exe
 
     ISIO -.->|headers only| CFITSIO
+    COMMON
     PROCINFO --> ISIO
+    PROCINFO --> COMMON
     FPS --> ISIO
     FPS --> PROCINFO
-    MILKDATA --> FPS
-    MILKDATA --> PROCINFO
+    FPS --> COMMON
+    MILKDATA --> ISIO
+    MILKDATA --> COMMON
+    FPSSEQ --> FPS
     IOFITS --> FPS
     IOFITS --> CFITSIO
     ARITH --> FPS
@@ -80,14 +88,20 @@ graph TD
     CLICORE --> MEMORY
     CLICORE --> TOOLS
     CLICORE --> FPS
+    CLICORE --> FPSSEQ
     CLICORE --> MILKDATA
+    CLICORE --> MILKSCRIPT
     CLICORE --> PROCINFO
     CLICORE --> READLINE
     CLICORE -.->|USE_CFITSIO| CFITSIO
 
-    FPSCTRL --> CLICORE
-    PROCCTRL --> CLICORE
-    STREAMCTRL --> CLICORE
+    FPSCTRL --> FPSSEQ
+    FPSCTRL --> FPS
+    FPSCTRL --> PROCINFO
+    FPSCTRL --> ISIO
+    PROCCTRL --> PROCINFO
+    PROCCTRL --> ISIO
+    STREAMCTRL --> PROCINFO
     STREAMCTRL --> ISIO
     MILKEXE --> FPSSTANDALONE
     CACAOEXE --> FPSSTANDALONE
@@ -149,7 +163,6 @@ graph TD
     LINALG --> CLICORE
     LINALG --> OPENBLAS
     LINOPT --> CLICORE
-    LINOPT --> GSL
     STAT --> CLICORE
     IMGGEN --> CLICORE
     IMGGEN --> STAT
@@ -241,7 +254,7 @@ graph TD
     ISIO -.->|headers only| CFITSIO
     PROCINFO --> ISIO
     FPS --> PROCINFO
-    MILKDATA --> FPS
+    MILKDATA --> ISIO
     FPSSA --> FPS
     FPSSA --> MILKDATA
 
@@ -296,24 +309,26 @@ graph TD
 
 | Tier            | CMake flags                        | What is built                                     |
 | --------------- | ---------------------------------- | ------------------------------------------------- |
-| **Engine**      | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkprocessinfo, milkfps, milkdata |
-| **Core**        | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMOD arith, memory, tools             |
-| **Core + FITS** | `-DUSE_CLI=OFF`                    | Core + COREMOD_iofits                             |
-| **Full**        | _(defaults)_                       | Core + FITS + CLI + all plugins                   |
+| **Engine**      | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkcommon, milkprocessinfo, milkfps, milkdata, milkfpsseq |
+| **Core**        | `-DUSE_CLI=OFF`                    | Engine + COREMOD arith, memory, tools, iofits                            |
+| **Core − FITS** | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Engine + COREMOD arith, memory, tools (no iofits)                        |
+| **Full**        | _(defaults)_                       | Core + CLI + all plugins                                                 |
 
 ```text
 cfitsio (headers only, optional)
   ╌╌ ImageStreamIO                    ← Engine
+       ├─ milkcommon
        └─ milkprocessinfo
             └─ milkfps
-                 └─ milkdata
-                      ├─ milkfpsStandalone  (standalone)
-                      └─ CLIcore            (full CLI)
+                 ├─ milkdata
+                 ├─ milkfpsseq
+                 ├─ milkfpsStandalone  (standalone)
+                 └─ CLIcore            (full CLI)
 
 COREMOD_arith ─┐
 COREMOD_memory ┼─ Core                ← USE_COREMODS
 COREMOD_tools ─┘
-COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
+COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 ```
 
 ---
@@ -326,20 +341,23 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 | Target          | Links to                                | Optional                |
 | --------------- | --------------------------------------- | ----------------------- |
 | ImageStreamIO   | _(none at link time)_                   | cfitsio (headers), CUDA |
-| milkprocessinfo | ImageStreamIO                           |                         |
-| milkfps         | ImageStreamIO, milkprocessinfo          |                         |
-| milkdata        | ImageStreamIO, milkfps, milkprocessinfo |                         |
+| milkcommon      | _(none)_                                |                         |
+| milkprocessinfo | ImageStreamIO, milkcommon               |                         |
+| milkfps         | ImageStreamIO, milkprocessinfo, milkcommon |                      |
+| milkdata        | ImageStreamIO, milkcommon               |                         |
+| milkfpsseq      | milkfps                                 |                         |
 
 </details>
 
 <details markdown="1">
 <summary><b>Framework Libraries</b></summary>
 
-| Target            | Links to                                                                                | Optional                                                   |
-| ----------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| milkfpsStandalone | milkfps, milkdata                                                                       |                                                            |
-| milkfpsCLI        | milkfps, CLIcore                                                                        |                                                            |
-| CLIcore           | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkdata, milkprocessinfo, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
+| Target            | Links to                                                                                             | Optional                                                   |
+| ----------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| milkfpsStandalone | milkfps, milkdata                                                                                    |                                                            |
+| milkfpsCLI        | milkfps, CLIcore                                                                                     |                                                            |
+| milkscript        | _(see CLIcore)_                                                                                      |                                                            |
+| CLIcore           | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkfpsseq, milkdata, milkprocessinfo, milkscript, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
 
 </details>
 
@@ -371,7 +389,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 | ------------------- | ---------------------- | ------------------------- |
 | milkfft             | CLIcore, fftw3, fftw3f |                           |
 | milklinalgebra      | CLIcore, OpenBLAS      | CUDA, MAGMA, MKL, lapacke |
-| milklinoptimtools   | CLIcore                | GSL                       |
+| milklinoptimtools   | CLIcore                |                           |
 | milkimagegen        | CLIcore, milkstatistic |                           |
 | milkstatistic       | CLIcore                |                           |
 | milkimagebasic      | CLIcore                |                           |
@@ -387,13 +405,17 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 **\_compute variants:**
 
-| Target                  | Links to                                     | Conditional                         |
-| ----------------------- | -------------------------------------------- | ----------------------------------- |
-| milkfft_compute         | fftw3, fftw3f, COREMODmemory_compute         | COREMODiofits_compute (USE_CFITSIO) |
-| milkimagebasic_compute  | COREMODmemory_compute                        | COREMODiofits_compute (USE_CFITSIO) |
-| milkimagefilter_compute | COREMODmemory_compute                        | COREMODiofits_compute (USE_CFITSIO) |
-| milkimagegen_compute    | milkstatistic_compute, COREMODmemory_compute | COREMODiofits_compute (USE_CFITSIO) |
-| milkstatistic_compute   | COREMODmemory_compute                        | COREMODiofits_compute (USE_CFITSIO) |
+| Target                       | Links to                                            |
+| ---------------------------- | --------------------------------------------------- |
+| milkfft_compute              | fftw3, fftw3f, COREMODmemory_compute, COREMODiofits_compute |
+| milkimagebasic_compute       | COREMODmemory_compute, COREMODiofits_compute        |
+| milkimagefilter_compute      | COREMODmemory_compute, COREMODiofits_compute        |
+| milkimagegen_compute         | milkstatistic_compute, COREMODmemory_compute, COREMODiofits_compute |
+| milkstatistic_compute        | COREMODmemory_compute, COREMODiofits_compute        |
+| milklinalgebra_compute       | COREMODmemory_compute                               |
+| milklinoptimtools_compute    | COREMODmemory_compute                               |
+| milkZernikePolyn_compute     | COREMODmemory_compute                               |
+| milklinARfilterPred_compute  | COREMODmemory_compute, milklinalgebra_compute       |
 
 </details>
 
@@ -420,26 +442,23 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 | Target                       | Links to                                                             |
 | ---------------------------- | -------------------------------------------------------------------- |
 | milk-cli                     | CLIcore + all module libs                                            |
-| milk-fpsCTRL                 | milkfps, milkprocessinfo, ImageStreamIO, CLIcore                     |
+| milk-fpsCTRL                 | milkfpsseq, milkfps, milkprocessinfo, ImageStreamIO                  |
 | milk-procCTRL                | milkprocessinfo, ImageStreamIO                                       |
-| milk-streamCTRL              | CLIcore, ImageStreamIO                                               |
-| milk-fps-list/search/info/rm | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
-| milk-fps-set/track           | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
-| milk-fps-conf*/run*          | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
-| milk-fps-valkey              | milkfps, milkprocessinfo, ImageStreamIO, valkey                      |
-| stream-monproc-runner        | milkinfo, CLIcore, ImageStreamIO                                     |
-| stream-monproc-disp          | milkdata, milkfps, ImageStreamIO                                     |
+| milk-streamCTRL              | ImageStreamIO, milkprocessinfo                                       |
+| milk-fps-list/search/info/rm | milkfpsStandalone (transitively: milkfps, milkdata)                  |
+| milk-fps-set/track           | milkfpsStandalone                                                    |
+| milk-fps-conf*/run*          | milkfpsStandalone                                                    |
 
 </details>
 
 <details markdown="1">
 <summary><b>Standalone CMake Functions</b></summary>
 
-| Function                         | Base link set                                                                                                                                                                 |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `add_milk_standalone()`          | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory_compute, COREMODtools_compute, COREMODarith_compute + COREMODiofits_compute (USE_CFITSIO) |
-| `add_cacao_standalone()`         | same as above                                                                                                                                                                 |
-| `add_cacao_standalone_plugins()` | above + selected plugin \_compute libs                                                                                                                                        |
+| Function                         | Base link set                                                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `add_milk_standalone()`          | milkfps, milkfpsStandalone, milkfpsseq, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory_compute, COREMODtools_compute, COREMODarith_compute, COREMODiofits_compute |
+| `add_cacao_standalone()`         | same as above                                                                                                                                                 |
+| `add_cacao_standalone_plugins()` | above + selected plugin \_compute libs                                                                                                                        |
 
 ```cmake
 add_cacao_standalone_plugins(name src.c)               # all 4 plugins
