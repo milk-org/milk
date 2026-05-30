@@ -13,9 +13,6 @@
 #endif
 
 
-#include <pthread.h>
-
-
 // Use MKL if available
 // Otherwise use openBLAS
 //
@@ -25,13 +22,16 @@
 #else
 #    ifdef HAVE_OPENBLAS
 #        include <cblas.h>
-#        include <lapacke.h>
 #        define BLASLIB "OpenBLAS"
 #    endif
 #endif
 
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#    include "CLIcore_standalone.h"
+#else
+#    include "CLIcore.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
@@ -56,22 +56,17 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static int32_t                          *GPUindex                                  = NULL;
-static uint32_t *__attribute__((unused)) mmax                                      = NULL;
-static uint32_t *__attribute__((unused)) nmax                                      = NULL;
-static char                              insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static char                              inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char                              immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static char                              outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static int64_t *__attribute__((unused))  outinit                                   = NULL;
-static uint32_t                         *axmode                                    = NULL;
-static int64_t                          *PROCESS                                   = NULL;
-static int64_t                          *TRACEMODE                                 = NULL;
-static int64_t                          *MODENORM                                  = NULL;
-static char *__attribute__((unused))     intot_stream                              = NULL;
-static char                              inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char                              outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static uint64_t *__attribute__((unused)) twait                                     = NULL;
+static int32_t  *GPUindex                                  = NULL;
+static char      insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static char      inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char      immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static char      outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static uint32_t *axmode                                    = NULL;
+static int64_t  *opt_process                               = NULL;
+static int64_t  *opt_tracemode                             = NULL;
+static int64_t  *opt_modenorm                              = NULL;
+static char      inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char      outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 
 /* ================================================================
@@ -82,13 +77,21 @@ static uint64_t *__attribute__((unused)) twait                                  
     X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "GPU index, 99 for CPU")   \
     X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream name")     \
     X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
-      "nput mask stream name")                                                                  \
+      "input mask stream name")                                                                 \
     X(".immodes", immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes stream name")     \
     X(".outcoeff", outcoeff, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output coefficients") \
     X(".option.sname_refin", inrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,            \
       "optional input reference to be subtracted stream")                                       \
     X(".option.sname_refout", outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
-      "optional output reference to be subtracted stream")
+      "optional output reference to be subtracted stream")                                      \
+    X(".axmode", &axmode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                               \
+      "axis mode: 0=extract, 1=expand")                                                         \
+    X(".option.PROCESS", &opt_process, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                   \
+      "compute running statistics")                                                             \
+    X(".option.TRACEMODE", &opt_tracemode, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,               \
+      "record coefficient time trace")                                                          \
+    X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
+      "normalize modes to unit 2-norm")
 
 
 /* ================================================================
@@ -97,11 +100,9 @@ static uint64_t *__attribute__((unused)) twait                                  
 
 FPS_V2_SECTION5(FPS_PARAMS)
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
-
-    int MODEVALCOMPUTE = 1; // 1 if compute, 0 if import
 
 
 #ifdef HAVE_CUDA
@@ -149,8 +150,6 @@ static MILK_HOT errno_t compute_function()
 
     printf("USE MASK = %d\n", use_mask);
 
-    //use_mask = 0; //for testing
-
     //setup the mask
     //
     if (use_mask)
@@ -163,7 +162,7 @@ static MILK_HOT errno_t compute_function()
             }
         }
 
-        mask_idx   = (uint32_t *) malloc(mask_npix * sizeof(long));
+        mask_idx   = (uint32_t *) malloc(mask_npix * sizeof(uint32_t));
         masked_pix = (float *) malloc(mask_npix * sizeof(float));
         long nn    = 0;
         for (long n = 0; n < imgmask.md->size[0] * imgmask.md->size[1]; ++n)
@@ -181,30 +180,11 @@ static MILK_HOT errno_t compute_function()
     else
     {
         //Just use full image
-        mask_npix = imgin.md->size[0] * imgin.md->size[1];
+        mask_npix  = imgin.md->size[0] * imgin.md->size[1];
+        masked_pix = (float *) malloc(mask_npix * sizeof(float));
         printf("No mask using : %u pixels (%f%%)\n", mask_npix,
                (100.0 * mask_npix) / (imgin.md->size[0] * imgin.md->size[1]));
     }
-
-
-    /* // This was probaly never implemented at all.
-    // NORMALIZATION
-    // CONNECT TO TOTAL FLUX STREAM
-    imageID IDintot;
-    IDintot = image_ID(intot_stream, dcimg, dcnimg);
-    int INNORMMODE = 0; // 1 if input normalized
-
-    if(IDintot == -1)
-    {
-        INNORMMODE = 0;
-        create_2Dimage_ID("intot_tmp", 1, 1, &IDintot);
-        dcimg[IDintot].array.F[0] = 1.0f;
-    }
-    else
-    {
-        INNORMMODE = 1;
-    }
-    */
 
 
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
@@ -304,13 +284,11 @@ static MILK_HOT errno_t compute_function()
                 }
             }
         }
-
-        // save_fits("_tmpmodes", "_test_tmpmodes.fits");
     }
 
     float *normcoeff = (float *) malloc(sizeof(float) * NBmodes);
 
-    if ((*MODENORM) == 1)
+    if ((*opt_modenorm) == 1)
     {
         // In this mode, the input modes are normalized to unity (vector 2-norm)
         // norm is computed here
@@ -369,15 +347,12 @@ static MILK_HOT errno_t compute_function()
     float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
 
-    MODEVALCOMPUTE = 1;
-
     free(arraytmp);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
 
 
-    if (MODEVALCOMPUTE == 1)
     {
         if (((*GPUindex) >= 0) && ((*GPUindex) != 99))
         {
@@ -480,7 +455,6 @@ static MILK_HOT errno_t compute_function()
             }
 
             cudaStat = cudaMemcpy(d_modes, modesmat, sizeof(float) * matsz, cudaMemcpyHostToDevice);
-            // cudaStat = cudaMemcpy(d_modes, imgmodes.im->array.F, sizeof(float) * m * NBmodes, cudaMemcpyHostToDevice);
 
             if (use_mask)
             {
@@ -517,7 +491,7 @@ static MILK_HOT errno_t compute_function()
         }
     }
 
-    if ((*TRACEMODE) == 1)
+    if ((*opt_tracemode) == 1)
     {
         char    traceim_name[STRINGMAXLEN_IMGNAME];
         long    TRACEsize = 2000;
@@ -568,7 +542,7 @@ static MILK_HOT errno_t compute_function()
         free(sizearraytmp);
     }
 
-    if ((*PROCESS) == 1)
+    if ((*opt_process) == 1)
     {
         char    process_ave_name[STRINGMAXLEN_IMGNAME];
         char    process_rms_name[STRINGMAXLEN_IMGNAME];
@@ -670,37 +644,9 @@ static MILK_HOT errno_t compute_function()
 
     initref = 0; // 1 when reference has been processed
 
-    // long twait1 = *twait;
-
-    printf("LOOP START   MODEVALCOMPUTE = %d\n", MODEVALCOMPUTE);
+    printf("LOOP START\n");
     fflush(stdout);
 
-    if (MODEVALCOMPUTE == 0)
-    {
-        printf("\n");
-        printf("This function is NOT computing mode values\n");
-        printf("Pre-existing stream %s was detected\n", outcoeff);
-        printf("\n");
-    }
-    else
-    {
-        char msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
-
-        {
-            int slen = snprintf(msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG, "Running on GPU %d",
-                                (*GPUindex));
-            if (slen < 1)
-            {
-                PRINT_ERROR("snprintf wrote <1 char");
-                abort(); // can't handle this error any other way
-            }
-            if (slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
-            {
-                PRINT_ERROR("snprintf string truncation");
-                abort(); // can't handle this error any other way
-            }
-        }
-    }
 
     printf(" m       = %u\n", mask_npix);
     printf(" n       = %ld\n", n);
@@ -818,16 +764,8 @@ static MILK_HOT errno_t compute_function()
                 }
 
 
-                if (*axmode == 1)
-                {
-                    cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m, 1.0, ColMajorMatrix,
-                                (int) n, imginfloatptr, 1, beta, outarray, 1);
-                }
-                else
-                {
-                    cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m, 1.0, ColMajorMatrix,
-                                (int) n, imginfloatptr, 1, beta, outarray, 1);
-                }
+                cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m, 1.0, ColMajorMatrix,
+                            (int) n, imginfloatptr, 1, beta, outarray, 1);
 
                 clock_gettime(CLOCK_MILK, &t1);
                 struct timespec tdiff;
@@ -837,43 +775,16 @@ static MILK_HOT errno_t compute_function()
                                              t01d * 1e6);
             }
 #else
-            // Run on CPU without lib
-            int mmax1 = (*mmax);
-            if (mmax1 > m)
-            {
-                mmax1 = m;
-            }
-
-            int nmax1 = (*nmax);
-            if (nmax1 > n)
-            {
-                nmax1 = n;
-            }
-
-            for (int jj = 0; jj < n; jj++)
-            {
-                outarray[jj] = 0.0;
-            }
-
-
-            for (int ii = 0; ii < m; ii++)
-            {
-                for (int jj = 0; jj < n; jj++)
-                {
-                    int index = ii * n + jj;
-                    outarray[jj] += imgmodes.im->array.F[index] * imginfloatptr[ii];
-                }
-            }
-
+            // CPU fallback without BLAS library
+            matrixMulCPU(ColMajorMatrix, imginfloatptr, outarray, (int) n, (int) m);
 #endif
 
             // update output
-            dcimg[imgout.ID].md->write = 1;
+            imgout.md->write = 1;
             for (int jj = 0; jj < n; jj++)
             {
                 imgout.im->array.F[jj] = outarray[jj] / normcoeff[jj];
             }
-            //            memcpy(imgout.im->array.F, outarray, sizeof(float)*n);
             processinfo_update_output_stream(processinfo, imgout.im, NULL);
         }
         else
@@ -896,7 +807,7 @@ static MILK_HOT errno_t compute_function()
                 }
                 else
                 {
-                    masked_pix = dcimg[IDinref].array.F;
+                    memcpy(masked_pix, dcimg[IDinref].array.F, sizeof(float) * mask_npix);
                 }
                 cudaStat =
                     cudaMemcpy(d_in, masked_pix, sizeof(float) * mask_npix, cudaMemcpyHostToDevice);
@@ -912,7 +823,7 @@ static MILK_HOT errno_t compute_function()
                 }
                 else
                 {
-                    masked_pix = imginfloatptr;
+                    memcpy(masked_pix, imginfloatptr, sizeof(float) * mask_npix);
                 }
                 cudaStat =
                     cudaMemcpy(d_in, masked_pix, sizeof(float) * mask_npix, cudaMemcpyHostToDevice);
@@ -961,7 +872,6 @@ static MILK_HOT errno_t compute_function()
             }
 
             // copy result
-            imgout.md->write = 1;
 
             if (initref == 0)
             {
@@ -985,11 +895,10 @@ static MILK_HOT errno_t compute_function()
                                       cudaMemcpyDeviceToHost);
 
 
+                imgout.md->write = 1;
                 for (long k = 0; k < NBmodes; k++)
                 {
                     imgout.im->array.F[k] = (modevalarray[k] - modevalarrayref[k]) / normcoeff[k];
-                    // Renorm was never implemented
-                    // (modevalarray[k] / dcimg[IDintot].array.F[0] - modevalarrayref[k]) / normcoeff[k];
                 }
 
 
@@ -1028,8 +937,9 @@ static MILK_HOT errno_t compute_function()
 
     if (use_mask)
     {
-        free(masked_pix);
+        free(mask_idx);
     }
+    free(masked_pix);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -1040,7 +950,7 @@ static MILK_HOT errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
