@@ -250,6 +250,7 @@ install(
 
 add_milk_standalone(linalg-gramschmidt GramSchmidt.c)
 add_milk_standalone(linalg-MVMextract MVMextractModes.c)
+target_link_libraries(milk-fpsexec-linalg-MVMextract PUBLIC ${LIBNAME_COMPUTE})
 if(USE_CUDA)
   target_link_libraries(milk-fpsexec-linalg-MVMextract PRIVATE CUDA::cudart
                                                                CUDA::cublas)
@@ -294,3 +295,40 @@ endif()
 target_link_libraries(milk-fpsexec-linalg-cublasPCA PUBLIC ${LIBNAME_COMPUTE})
 add_milk_standalone(linalg-modalremap modalremap.c)
 target_link_libraries(milk-fpsexec-linalg-modalremap PUBLIC ${LIBNAME_COMPUTE})
+
+
+# ---- MVM test ----
+# Convention: test executables are named milk-test-<module>-<name>
+if(USE_CLI)
+  set(TESTNAME "milk-test-linalg-MVMextract")
+  add_executable(${TESTNAME}
+                 test_MVMextract.c
+                 MVM_CPU.c)
+  target_link_libraries(${TESTNAME}
+                        PRIVATE ImageStreamIO
+                                m)
+  target_include_directories(${TESTNAME}
+                             PRIVATE ${PROJECT_SOURCE_DIR}/src/engine
+                                     ${CMAKE_CURRENT_SOURCE_DIR})
+  if(USE_OPENBLAS)
+    target_compile_definitions(${TESTNAME} PRIVATE HAVE_OPENBLAS)
+    target_link_libraries(${TESTNAME} PRIVATE ${BLAS_LIBRARIES})
+    target_link_directories(${TESTNAME}
+                            PRIVATE ${OPENBLAS_LIBRARY_DIRS})
+  elseif(USE_MKL)
+    target_compile_definitions(${TESTNAME} PRIVATE HAVE_MKL)
+    target_link_libraries(${TESTNAME} PRIVATE ${BLAS_LIBRARIES})
+  endif()
+  if(USE_CUDA)
+    target_compile_definitions(${TESTNAME} PRIVATE HAVE_CUDA)
+    target_link_libraries(${TESTNAME}
+                          PRIVATE CUDA::cudart CUDA::cublas)
+  endif()
+  install(TARGETS ${TESTNAME} DESTINATION bin)
+  add_test(NAME milk-test-linalg-MVMextract-cpu
+           COMMAND ${TESTNAME} -v -c)
+  if(USE_CUDA)
+    add_test(NAME milk-test-linalg-MVMextract-gpu
+             COMMAND ${TESTNAME} -v -g)
+  endif()
+endif()
