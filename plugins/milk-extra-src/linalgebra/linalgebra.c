@@ -28,7 +28,6 @@
 // Prototypes for all CLICommands from module files
 // clang-format off
 MILK_WEAK errno_t linalgebrainit_addCLIcmd() {return 0;};
-MILK_WEAK errno_t linalgebratest_addCLIcmd() {return 0;};
 
 errno_t           CLIADDCMD_linalgebra__basis_rotate_match();
 errno_t           CLIADDCMD_linalgebra__GramSchmidt();

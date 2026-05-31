@@ -23,6 +23,10 @@
 
 // Use MKL if available
 // Otherwise use openBLAS
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include "milk_blas_lapacke.h"
 
 #include "CLIcore.h"
@@ -31,7 +35,9 @@
 #include "timeutils.h"
 
 #include "linalgebra.h"
-
+#ifdef __cplusplus
+}
+#endif
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
@@ -55,7 +61,7 @@ static char     insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 static char     immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static uint32_t axis_mode                                 = 1;
+static uint32_t axmode                                    = 1;
 static int64_t  opt_modenorm                              = 1;
 static char     inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
@@ -215,7 +221,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imageID IDmodes __attribute__((unused)) = -1;
 
 
-    if (axis_mode == 0)
+    if (axmode == 0)
     {
         //
         // Extract modes.
@@ -303,7 +309,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imageID IDrefout = -1; // TODO handle this
     if (IDrefout == -1)
     {
-        if (axis_mode == 0)
+        if (axmode == 0)
         {
             arraytmp[0] = NBmodes;
             arraytmp[1] = 1;
@@ -335,7 +341,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
     {
-        if (GPUindex >= 0 && GPUindex != 98 && GPUindex != 99)
+        if ((GPUindex >= 0) && (GPUindex != 99))
         {
 #ifdef HAVE_CUDA
             int deviceCount;
@@ -507,7 +513,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
     float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
-    if (axis_mode == 0)
+    if (axmode == 0)
     {
         for (int ii = 0; ii < m; ii++)
         {
@@ -551,7 +557,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         }
 
 
-        if (GPUindex < 0 || GPUindex == 98 || GPUindex == 99)
+        if ((GPUindex < 0) || (GPUindex == 99))
         {
             // using CPU
 
