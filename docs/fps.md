@@ -95,13 +95,13 @@ Create a space-delimited text file named `fpslist.txt`
 in your working directory. Lines starting with `#` are
 comments. Each non-comment line has the format:
 
-```
+```text
 fpsrootname  CLIcommand  [optarg0 ...]
 ```
 
 Example:
 
-```
+```text
 # FPS root name   CLI command   Optional arguments
 fpsrootname0       CLIcommand0
 fpsrootname1       CLIcommand1   optarg00 optarg01

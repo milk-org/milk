@@ -83,6 +83,8 @@ nav:
     - Streams: streams.md
     - Stream Slicing: slicing.md
     - FPS: fps.md
+    - fpsCTRL TUI: fpsCTRL_reference.md
+    - FPS Sequencer: sequencer.md
     - Process Info: procinfo.md
     - CLI Syntax: cli/CLIcore.md
     - Scripting: cli/scripting.md

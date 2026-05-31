@@ -197,7 +197,8 @@ pillars — **ImageStreamIO**, **FPS**, and
   [Python API](python.md) ·
   [Valkey Integration](valkey.md)
 - [Programmer's Guide](programmers_guide.md) ·
-  [Dependency Graph](dependency_graph.md)
+  [Dependency Graph](dependency_graph.md) ·
+  [fpsCTRL Reference](fpsCTRL_reference.md)
 - [Working with Git](developer/WorkingWithGit.md) ·
   [Code Assist Tools](code_assist.md)
 - [All Markdown Files](Markdown_Index.md) ·
