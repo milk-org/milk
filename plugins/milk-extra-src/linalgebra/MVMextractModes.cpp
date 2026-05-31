@@ -33,11 +33,7 @@ extern "C"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
-
 #include "linalgebra.h"
-#ifdef __cplusplus
-}
-#endif
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
@@ -61,7 +57,7 @@ static char     insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 static char     immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static uint32_t axmode                                    = 1;
+static uint32_t axis_mode                                    = 1;
 static int64_t  opt_modenorm                              = 1;
 static char     inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
@@ -82,7 +78,7 @@ static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
       "optional input reference to be subtracted stream")                                       \
     X(".option.sname_refout", outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
       "optional output reference to be subtracted stream")                                      \
-    X(".axmode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
+    X(".axis_mode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
       "axis mode: 0=extract, 1=expand")                                                         \
     X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
       "normalize modes to unit 2-norm")
@@ -221,7 +217,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imageID IDmodes __attribute__((unused)) = -1;
 
 
-    if (axmode == 0)
+    if (axis_mode == 0)
     {
         //
         // Extract modes.
@@ -309,7 +305,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imageID IDrefout = -1; // TODO handle this
     if (IDrefout == -1)
     {
-        if (axmode == 0)
+        if (axis_mode == 0)
         {
             arraytmp[0] = NBmodes;
             arraytmp[1] = 1;
@@ -513,7 +509,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
     float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
-    if (axmode == 0)
+    if (axis_mode == 0)
     {
         for (int ii = 0; ii < m; ii++)
         {
@@ -805,4 +801,8 @@ errno_t CLIADDCMD_linalgebra__MVMextractModes()
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
