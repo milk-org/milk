@@ -9,9 +9,7 @@
  *   ctor                   — store I/O buffers and dimension metadata
  *   enable_masking()       — optional; must be called before load_matrix
  *   load_matrix()          — bind matrix; CUDA backend allocates GPU buffers
- *   matrixMulLoopPreload() — per-iter setup: gather + H2D (CUDA), no-op others
  *   matrixMul()            — compute MVM, including gather/scatter for CPU/BLAS
- *   matrixMulLoopUnload()  — per-iter teardown: D2H + scatter (CUDA), no-op others
  *   dtor                   — free all resources
  *
  * Caller always fills the full inVec (full_size_spatial or nb_modes elements)
@@ -58,9 +56,7 @@ class MVMBackend
                              uint64_t     mvm_size_spatial,
                              uint64_t     mvm_size_modes);
 
-    virtual void matrixMulLoopPreload() = 0;
-    virtual void matrixMul()            = 0;
-    virtual void matrixMulLoopUnload()  = 0;
+    virtual void matrixMul() = 0;
 
     /**
      * @brief Enable pixel masking for this backend.
@@ -98,9 +94,7 @@ class MVMBackendCPU : public MVMBackend
     using MVMBackend::MVMBackend;
     ~MVMBackendCPU() override = default;
 
-    void matrixMulLoopPreload() override;
     void matrixMul() override;
-    void matrixMulLoopUnload() override;
 };
 
 
@@ -114,9 +108,7 @@ class MVMBackendBLAS : public MVMBackend
     using MVMBackend::MVMBackend;
     ~MVMBackendBLAS() override = default;
 
-    void matrixMulLoopPreload() override;
     void matrixMul() override;
-    void matrixMulLoopUnload() override;
 };
 #endif /* HAVE_MKL || HAVE_OPENBLAS */
 
@@ -142,12 +134,8 @@ class MVMBackendCUBLAS : public MVMBackend
                      uint64_t     mvm_size_spatial,
                      uint64_t     mvm_size_modes) override;
 
-    /** H2D copy of inVec into d_in_ */
-    void matrixMulLoopPreload() override;
     /** cublasSgemv on GPU buffers only */
     void matrixMul() override;
-    /** D2H copy of d_out_ into outVec */
-    void matrixMulLoopUnload() override;
 
   private:
     cublasHandle_t handle_;

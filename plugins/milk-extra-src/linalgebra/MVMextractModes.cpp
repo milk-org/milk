@@ -20,12 +20,12 @@
 #    include <device_types.h>
 #endif
 
+#include <memory> // unique_ptr
 #include "mvm_auxiliaries.hpp"
 
-#ifdef __cplusplus
+
 extern "C"
 {
-#endif
 
 #include "milk_blas_lapacke.h"
 
@@ -66,7 +66,8 @@ static int64_t  opt_modenorm                              = 1;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                           \
-    X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "GPU index, 99 for CPU")   \
+    X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,                            \
+      "GPU index, 99 for CPU [BLAS if avail.], 98 for plain CPU [OMP if avail.]")               \
     X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream name")     \
     X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
       "spatial mask stream name")                                                               \
@@ -148,18 +149,27 @@ errno_t cuda_attempt_init(PROCESSINFO *processinfo)
 
 ComputeMode _compute_mode_determine(PROCESSINFO *processinfo)
 {
-    if (GPUindex >= 0 && GPUindex != 99 && RETURN_SUCCESS == cuda_attempt_init(processinfo))
+    if (GPUindex >= 0 && GPUindex != 99 && GPUindex != 98 &&
+        RETURN_SUCCESS == cuda_attempt_init(processinfo))
     {
         processinfo_WriteMessage_fmt(processinfo, "Successful CUDA init - GPU %d", GPUindex);
+        printf("-------------\nBACKEND: CUDA\n-------------\n");
         return ComputeMode::CUDA;
     }
-
-    GPUindex = 0;
 #ifdef BLASLIB
-    return ComputeMode::BLAS;
-#else
-    return ComputeMode::OMP_OR_PLAIN;
+    if (GPUindex == 99)
+    {
+        printf("-------------\nBACKEND: BLAS [%s]\n-------------\n", BLASLIB);
+        return ComputeMode::BLAS;
+    }
 #endif
+
+#ifdef _OPENMP
+    printf("-------------\nBACKEND: CPU [OPENMP]\n-------------\n");
+#else
+    printf("-------------\nBACKEND: CPU [BASIC]\n-------------\n");
+#endif
+    return ComputeMode::OMP_OR_PLAIN;
 }
 
 void initializer_new_data_imgmodes(float    *modes_copy,
@@ -259,30 +269,41 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     {
         return RETURN_FAILURE;
     }
-    uint64_t n_pixels_spatial_side = imgid_in.md->size[0] * imgid_in.md->size[1];
     uint64_t nb_modes; // later
 
     // CONNECT TO MASK STREAM
-    int       use_mask  = 0;    // flag indicating that the mask is being used
-    uint64_t  mask_npix = 0;    // The number of 1 pixels in the mask
-    uint32_t *mask_idx  = NULL; // Array holding the indices of the 1 pixels
+    int       use_mask  = 0;    //flag indicating that the mask is being used
+    uint64_t  mask_npix = 0;    //The number of 1 pixels in the mask
+    uint32_t *mask_idx  = NULL; //Array holding the indices of the 1 pixels
 
-    IMGID imgmask = imgid_make_from_name(inmasksname);
-    if (resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg) != -1)
+    // CONNECT TO MODES STREAM
+    IMGID imgid_modes         = imgid_make_from_name(immodes);
+    imgid_modes.mdt->datatype = _DATATYPE_FLOAT;
+    resolveIMGID(&imgid_modes, ERRMODE_FAIL, dcimg, dcnimg);
+
+    auto     modes_size            = imgid_modes.md->size;
+    uint64_t n_pixels_spatial_side = modes_size[0] * modes_size[1];
+    printf("Modes stream size : %u %u %u\n", modes_size[0], modes_size[1], modes_size[2]);
+    nb_modes = modes_size[2];
+
+    // CONNECT TO MASK, INITIALIZE MASKING
+    IMGID imgid_mask = imgid_make_from_name(inmasksname);
+    if (resolveIMGID(&imgid_mask, ERRMODE_WARN, dcimg, dcnimg) != -1)
     {
-        printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
-        use_mask = (imgmask.md->size[0] == imgid_in.md->size[0] &&
-                    imgmask.md->size[1] == imgid_in.md->size[1] &&
-                    imgmask.md->datatype == _DATATYPE_FLOAT);
+        printf("Mask stream size : %u %u\n", imgid_mask.md->size[0], imgid_mask.md->size[1]);
+        use_mask =
+            (imgid_mask.md->size[0] == modes_size[0] && imgid_mask.md->size[1] == modes_size[1] &&
+             imgid_mask.md->datatype == _DATATYPE_FLOAT);
     }
     printf("USE MASK = %d\n", use_mask);
 
-    // setup the mask
+
+    //setup the mask
     if (use_mask)
     {
         for (uint64_t n = 0; n < n_pixels_spatial_side; ++n)
         {
-            if (imgmask.im->array.F[n] == 1)
+            if (imgid_mask.im->array.F[n] == 1)
             {
                 ++mask_npix;
             }
@@ -292,7 +313,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         uint64_t nn = 0;
         for (uint64_t pp = 0; pp < n_pixels_spatial_side; ++pp)
         {
-            if (imgmask.im->array.F[pp] == 1.0f) // TODO why mask not integer???
+            if (imgid_mask.im->array.F[pp] == 1.0f) // TODO why mask not integer???
             {
                 mask_idx[nn] = (uint32_t) pp;
                 ++nn;
@@ -310,15 +331,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                (100.0 * mask_npix) / n_pixels_spatial_side);
     }
 
-    // CONNECT TO MODES STREAM
-    IMGID imgid_modes         = imgid_make_from_name(immodes);
-    imgid_modes.mdt->datatype = _DATATYPE_FLOAT;
-    resolveIMGID(&imgid_modes, ERRMODE_FAIL, dcimg, dcnimg);
 
-    auto modes_size = imgid_modes.md->size;
-    printf("Modes stream size : %u %u %u\n", modes_size[0], modes_size[1], modes_size[2]);
-    nb_modes = modes_size[2];
-
+    // NORMALIZATION AND POST-INIT FOR MODES MATRIX
     float *normcoeff         = (float *) calloc(nb_modes, sizeof(float));
     float *masked_modes_copy = (float *) malloc(mask_npix * nb_modes * SIZEOF_DATATYPE_FLOAT);
     // TODO what WAS the meaning of normalization when axis_mode = 1 ????
@@ -329,10 +343,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     IMGID imgid_out = stream_connect_create_2Df32(
         outcoeff, axis_mode == 0 ? nb_modes : modes_size[0], axis_mode == 0 ? 1 : modes_size[1]);
     memset(imgid_out.im->array.F, 0, imgid_out.md->imdatamemsize);
-
-    // Local working copy of output
-    // NO: we operate directly into output SHM.
-    // float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
     float *imgin_float_casted_ptr = NULL;
     if (imgid_in.md->datatype == _DATATYPE_FLOAT)
@@ -349,27 +359,27 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
     /* Runtime backend selector */
-    ComputeMode compute_mode = _compute_mode_determine(processinfo);
-    MVMBackend *backend      = nullptr;
+    ComputeMode                 compute_mode = _compute_mode_determine(processinfo);
+    std::unique_ptr<MVMBackend> backend      = nullptr;
 
 
     if (compute_mode == ComputeMode::BLAS)
     {
 #if defined(HAVE_MKL) || defined(HAVE_OPENBLAS)
-        backend = new MVMBackendBLAS(imgin_float_casted_ptr, imgid_out.im->array.F,
-                                     n_pixels_spatial_side, nb_modes, axis_mode);
+        backend = std::make_unique<MVMBackendBLAS>(imgin_float_casted_ptr, imgid_out.im->array.F,
+                                                   n_pixels_spatial_side, nb_modes, axis_mode);
 #endif
     }
     else if (compute_mode == ComputeMode::OMP_OR_PLAIN)
     {
-        backend = new MVMBackendCPU(imgin_float_casted_ptr, imgid_out.im->array.F,
-                                    n_pixels_spatial_side, nb_modes, axis_mode);
+        backend = std::make_unique<MVMBackendCPU>(imgin_float_casted_ptr, imgid_out.im->array.F,
+                                                  n_pixels_spatial_side, nb_modes, axis_mode);
     }
     else if (compute_mode == ComputeMode::CUDA)
     {
 #ifdef HAVE_CUDA
-        backend = new MVMBackendCUBLAS(imgin_float_casted_ptr, imgid_out.im->array.F,
-                                       n_pixels_spatial_side, nb_modes, axis_mode);
+        backend = std::make_unique<MVMBackendCUBLAS>(imgin_float_casted_ptr, imgid_out.im->array.F,
+                                                     n_pixels_spatial_side, nb_modes, axis_mode);
 #endif
     }
 
@@ -389,7 +399,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     printf("LOOP START\n");
     fflush(stdout);
 
-    printf("axmode     = %d [%s]", axis_mode,
+    printf("axmode     = %d [%s]\n", axis_mode,
            axis_mode == 0 ? "modal extraction" : "modal expansion");
     if (axis_mode == 0)
     {
@@ -412,37 +422,24 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     /*
-    Summary of steps:
-    - float cast [on CPU, common]
-
-    - backend load
-
-    - input masking (axmode == 0 + masking)
-    - backend MVM [maybe input masking, maybe output masking]
-
-
-    - backend unload
-
-    - output de-masking  (axmode == 1 + masking)
-    */
+        Summary of steps:
+        - float cast [on CPU, common]
+        - input masking (axmode == 0 + masking)
+        - MVM
+        - output de-masking  (axmode == 1 + masking)
+        */
     {
         /* Type conversion to float (all backends) */
         if (imgid_in.md->datatype != _DATATYPE_FLOAT)
         {
             cast_to_float(imgin_float_casted_ptr, imgid_in.im, n_pixels_spatial_side);
         }
-
-        backend->matrixMulLoopPreload();
         backend->matrixMul(); // Here we MVM
-        backend->matrixMulLoopUnload();
-
         // We're done
         processinfo_update_output_stream(processinfo, imgid_out.im, imgid_in.im);
     }
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    delete backend;
     free(normcoeff);
     free(masked_modes_copy);
 
@@ -483,13 +480,10 @@ errno_t CLIADDCMD_linalgebra__MVMextractModes()
 
 
 /* ================================================================
- * 8.  STANDALONE ENTRY POINT
- * ============================================================= */
+    * 8.  STANDALONE ENTRY POINT
+    * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 #endif
-
-#ifdef __cplusplus
-}
-#endif
+} // extern "C"

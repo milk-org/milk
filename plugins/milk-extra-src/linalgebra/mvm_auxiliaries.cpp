@@ -79,12 +79,6 @@ void MVMBackend::enable_masking(uint32_t *mask_idx, uint64_t mask_npix)
 /* ----------------------------------------------------------------
  * MVMBackendCPU
  * -------------------------------------------------------------- */
-void MVMBackendCPU::matrixMulLoopPreload()
-{
-}
-void MVMBackendCPU::matrixMulLoopUnload()
-{
-}
 
 void MVMBackendCPU::matrixMul()
 {
@@ -137,13 +131,6 @@ void MVMBackendCPU::matrixMul()
  * MVMBackendBLAS
  * -------------------------------------------------------------- */
 #if defined(HAVE_MKL) || defined(HAVE_OPENBLAS)
-
-void MVMBackendBLAS::matrixMulLoopPreload()
-{
-}
-void MVMBackendBLAS::matrixMulLoopUnload()
-{
-}
 
 void MVMBackendBLAS::matrixMul()
 {
@@ -276,10 +263,6 @@ MVMBackendCUBLAS::~MVMBackendCUBLAS()
     }
 }
 
-void MVMBackendCUBLAS::matrixMulLoopPreload()
-{
-}
-
 void MVMBackendCUBLAS::matrixMul()
 {
     const float alpha = 1.0f;
@@ -326,10 +309,6 @@ void MVMBackendCUBLAS::matrixMul()
             outVec_[mask_idx_[i]] = masked_array_storage_[i];
         }
     }
-}
-
-void MVMBackendCUBLAS::matrixMulLoopUnload()
-{
 }
 
 #endif /* HAVE_CUDA */
