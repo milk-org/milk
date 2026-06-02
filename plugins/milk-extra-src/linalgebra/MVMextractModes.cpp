@@ -20,13 +20,13 @@
 #    include <device_types.h>
 #endif
 
+#include "mvm_auxiliaries.hpp"
 
-// Use MKL if available
-// Otherwise use openBLAS
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
 #include "milk_blas_lapacke.h"
 
 #include "CLIcore.h"
@@ -59,8 +59,6 @@ static char     immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
 static uint32_t axis_mode                                 = 1;
 static int64_t  opt_modenorm                              = 1;
-static char     inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 
 /* ================================================================
@@ -71,13 +69,9 @@ static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
     X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "GPU index, 99 for CPU")   \
     X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream name")     \
     X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
-      "input mask stream name")                                                                 \
+      "spatial mask stream name")                                                               \
     X(".immodes", immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes stream name")     \
     X(".outcoeff", outcoeff, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output coefficients") \
-    X(".option.sname_refin", inrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,            \
-      "optional input reference to be subtracted stream")                                       \
-    X(".option.sname_refout", outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
-      "optional output reference to be subtracted stream")                                      \
     X(".axmode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
       "axis mode: 0=extract, 1=expand")                                                         \
     X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
@@ -90,61 +84,203 @@ static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 FPS_V2_SECTION5(FPS_PARAMS)
 
+
+enum class ComputeMode : int
+{
+    OMP_OR_PLAIN = 0,
+    BLAS         = 1,
+    CUDA         = 2
+};
+
+errno_t cuda_attempt_init(PROCESSINFO *processinfo)
+{
+#ifdef HAVE_CUDA
+    int                   deviceCount;
+    struct cudaDeviceProp deviceProp;
+
+    cudaGetDeviceCount(&deviceCount);
+    printf("%d devices found\n", deviceCount);
+    fflush(stdout);
+    processinfo_WriteMessage_fmt(processinfo, "CUDA : %d devices", deviceCount);
+
+    if (deviceCount < 0 || deviceCount > 100)
+    {
+        return RETURN_FAILURE;
+    }
+
+
+    for (int k = 0; k < deviceCount; k++)
+    {
+        cudaGetDeviceProperties(&deviceProp, k);
+
+        int clockRate;
+        cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
+
+        printf("Device %d / %d [ %20s ]  has compute capability %d.%d.\n", k + 1, deviceCount,
+               deviceProp.name, deviceProp.major, deviceProp.minor);
+        printf("  Total amount of global memory:                 %.0f MBytes "
+               "(%llu bytes)\n",
+               (float) deviceProp.totalGlobalMem / 1048576.0f,
+               (unsigned long long) deviceProp.totalGlobalMem);
+        printf("  (%2d) Multiprocessors\n", deviceProp.multiProcessorCount);
+        printf("  GPU Clock rate:                                %.0f MHz "
+               "(%0.2f GHz)\n\n",
+               clockRate * 1e-3f, clockRate * 1e-6f);
+    }
+
+    if (GPUindex < deviceCount)
+    {
+        cudaSetDevice(GPUindex);
+    }
+    else
+    {
+        printf("Invalid Device : %d / %d\n", GPUindex, deviceCount);
+        fflush(stdout);
+        processinfo_WriteMessage_fmt(processinfo, "Invalid GPU device %d", GPUindex);
+        return RETURN_FAILURE;
+    }
+
+    return RETURN_SUCCESS;
+#else // HAVE_CUDA
+    return RETURN_FAILURE;
+#endif
+}
+
+ComputeMode _compute_mode_determine(PROCESSINFO *processinfo)
+{
+    if (GPUindex >= 0 && GPUindex != 99 && RETURN_SUCCESS == cuda_attempt_init(processinfo))
+    {
+        processinfo_WriteMessage_fmt(processinfo, "Successful CUDA init - GPU %d", GPUindex);
+        return ComputeMode::CUDA;
+    }
+
+    GPUindex = 0;
+#ifdef BLASLIB
+    return ComputeMode::BLAS;
+#else
+    return ComputeMode::OMP_OR_PLAIN;
+#endif
+}
+
+void initializer_new_data_imgmodes(float    *modes_copy,
+                                   float    *norm_coeffs,
+                                   uint32_t *mask_idx,
+                                   uint64_t  mask_npix,
+                                   IMAGE    *im_modes)
+{
+    auto     s     = im_modes->md->size;
+    uint64_t n_pix = (uint64_t) s[0] * s[1];
+    float   *arr   = im_modes->array.F;
+    if (mask_idx != NULL)
+    {
+        if (opt_modenorm == 1)
+        {
+            for (uint32_t nn = 0; nn < s[2]; nn++)
+            {
+                for (uint64_t pp = 0; pp < mask_npix; pp++)
+                {
+                    norm_coeffs[nn] +=
+                        arr[nn * n_pix + mask_idx[pp]] * arr[nn * n_pix + mask_idx[pp]];
+                }
+                for (uint64_t pp = 0; pp < mask_npix; pp++)
+                {
+                    modes_copy[nn * mask_npix + pp] =
+                        arr[nn * s[0] * s[1] + mask_idx[pp]] / norm_coeffs[nn];
+                }
+            }
+        }
+        else
+        {
+            for (uint32_t nn = 0; nn < s[2]; nn++)
+            {
+                norm_coeffs[nn] = 1.0f;
+                for (uint64_t pp = 0; pp < mask_npix; pp++)
+                {
+                    modes_copy[nn * mask_npix + pp] = arr[nn * s[0] * s[1] + mask_idx[pp]];
+                }
+            }
+        }
+    }
+    else
+    {
+        if (opt_modenorm == 1)
+        {
+            for (uint32_t nn = 0; nn < s[2]; nn++)
+            {
+                for (uint64_t pp = 0; pp < n_pix; pp++)
+                {
+                    norm_coeffs[nn] += arr[nn * n_pix + pp] * arr[nn * n_pix + pp];
+                }
+                for (uint64_t pp = 0; pp < n_pix; pp++)
+                {
+                    modes_copy[nn * n_pix + pp] = arr[nn * n_pix + pp] / norm_coeffs[nn];
+                }
+            }
+        }
+        else
+        {
+            for (uint32_t nn = 0; nn < s[2]; nn++)
+            {
+                norm_coeffs[nn] = 1.0f;
+            }
+            memcpy(modes_copy, arr, im_modes->md->imdatamemsize);
+        }
+    }
+}
+
+void cast_to_float(float *target, IMAGE *source_image, uint64_t n)
+{
+#define _MVM_CONV_CASE(DT, ACC, CTYPE)                          \
+    case DT:                                                    \
+        for (uint64_t _ii = 0; _ii < n; _ii++)                  \
+        {                                                       \
+            target[_ii] = (float) source_image->array.ACC[_ii]; \
+        }                                                       \
+        break;
+
+    switch (source_image->md->datatype)
+    {
+        FOREACH_REAL_DATATYPE(_MVM_CONV_CASE)
+    default:
+        break;
+    }
+#undef _MVM_CONV_CASE
+}
+
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-
-#ifdef HAVE_CUDA
-    cublasHandle_t        cublasH       = NULL;
-    cublasStatus_t        cublas_status = CUBLAS_STATUS_SUCCESS;
-    cudaError_t           cudaStat      = cudaSuccess;
-    struct cudaDeviceProp deviceProp;
-#endif
-
-    float *d_modes __attribute__((unused))   = NULL; // linear memory of GPU
-    float *d_in __attribute__((unused))      = NULL;
-    float *d_modeval __attribute__((unused)) = NULL;
-
-
-    // each step is 2x longer average than previous step
-    uint32_t NBaveSTEP = 10;
-
-    int initref __attribute__((unused)) = 0; // 1 when reference has been processed
-
     // CONNECT TO INPUT STREAM
-    IMGID imgin = imgid_make_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
-    printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
-    if (imgin.ID == -1)
+    IMGID imgid_in = imgid_make_from_name(insname);
+    resolveIMGID(&imgid_in, ERRMODE_WARN, dcimg, dcnimg);
+    printf("Input stream size : %u %u\n", imgid_in.md->size[0], imgid_in.md->size[1]);
+    if (imgid_in.ID == -1)
     {
         return RETURN_FAILURE;
     }
-    long m = imgin.md->size[0] * imgin.md->size[1];
+    uint64_t n_pixels_spatial_side = imgid_in.md->size[0] * imgid_in.md->size[1];
+    uint64_t nb_modes; // later
 
     // CONNECT TO MASK STREAM
-    int       use_mask   = 0;    //flag indicating that the mask is being used
-    uint32_t  mask_npix  = 0;    //The number of 1 pixels in the mask
-    uint32_t *mask_idx   = NULL; //Array holding the indices of the 1 pixels
-    float    *masked_pix = NULL; //Array to hold the pixel values
+    int       use_mask  = 0;    // flag indicating that the mask is being used
+    uint64_t  mask_npix = 0;    // The number of 1 pixels in the mask
+    uint32_t *mask_idx  = NULL; // Array holding the indices of the 1 pixels
 
     IMGID imgmask = imgid_make_from_name(inmasksname);
     if (resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg) != -1)
     {
         printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
-        if (imgmask.md->size[0] == imgin.md->size[0] && imgmask.md->size[1] == imgin.md->size[1])
-        {
-            use_mask = 1;
-        }
+        use_mask = (imgmask.md->size[0] == imgid_in.md->size[0] &&
+                    imgmask.md->size[1] == imgid_in.md->size[1] &&
+                    imgmask.md->datatype == _DATATYPE_FLOAT);
     }
-
     printf("USE MASK = %d\n", use_mask);
 
-    //setup the mask
-    //
+    // setup the mask
     if (use_mask)
     {
-        for (long n = 0; n < imgmask.md->size[0] * imgmask.md->size[1]; ++n)
+        for (uint64_t n = 0; n < n_pixels_spatial_side; ++n)
         {
             if (imgmask.im->array.F[n] == 1)
             {
@@ -152,615 +288,167 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             }
         }
 
-        mask_idx   = (uint32_t *) malloc(mask_npix * sizeof(uint32_t));
-        masked_pix = (float *) malloc(mask_npix * sizeof(float));
-        long nn    = 0;
-        for (long n = 0; n < imgmask.md->size[0] * imgmask.md->size[1]; ++n)
+        mask_idx    = (uint32_t *) malloc(mask_npix * sizeof(uint32_t));
+        uint64_t nn = 0;
+        for (uint64_t pp = 0; pp < n_pixels_spatial_side; ++pp)
         {
-            if (imgmask.im->array.F[n] == 1)
+            if (imgmask.im->array.F[pp] == 1.0f) // TODO why mask not integer???
             {
-                mask_idx[nn] = n;
+                mask_idx[nn] = (uint32_t) pp;
                 ++nn;
             }
         }
 
-        printf("Mask has : %u pixels (%f%%)\n", mask_npix,
-               (100.0 * mask_npix) / (imgmask.md->size[0] * imgmask.md->size[1]));
+        printf("Mask has : %lu pixels (%f%%)\n", mask_npix,
+               (100.0 * mask_npix) / n_pixels_spatial_side);
     }
     else
     {
-        //Just use full image
-        mask_npix  = imgin.md->size[0] * imgin.md->size[1];
-        masked_pix = (float *) malloc(mask_npix * sizeof(float));
-        printf("No mask using : %u pixels (%f%%)\n", mask_npix,
-               (100.0 * mask_npix) / (imgin.md->size[0] * imgin.md->size[1]));
+        // Just use full image
+        mask_npix = n_pixels_spatial_side;
+        printf("No mask using : %lu pixels (%f%%)\n", mask_npix,
+               (100.0 * mask_npix) / n_pixels_spatial_side);
     }
-
-    // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
-    IMGID imgid_ref = imgid_make_from_name(inrefsname);
-    printf("-- imgref.ID = %ld\n", imgid_ref.ID);
-    fflush(stdout);
-    resolveIMGID(&imgid_ref, ERRMODE_WARN, dcimg, dcnimg);
-    if (imgid_ref.ID == -1)
-    {
-        imgid_ref = imgid_make_from_name_2D("_tmprefin", imgin.md->size[0], imgin.md->size[1]);
-        imgid_ref.mdt->shared = 0;
-        imgid_ref.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgid_ref);
-    }
-
-    // CONNECT TO OPTIONAL OUTPUT REFERENCE STREAM
-    IMGID imgoutref = imgid_make_from_name(outrefsname);
-    resolveIMGID(&imgoutref, ERRMODE_WARN, dcimg, dcnimg);
-
 
     // CONNECT TO MODES STREAM
-    IMGID imgmodes = imgid_make_from_name(immodes);
-    resolveIMGID(&imgmodes, ERRMODE_WARN, dcimg, dcnimg);
+    IMGID imgid_modes         = imgid_make_from_name(immodes);
+    imgid_modes.mdt->datatype = _DATATYPE_FLOAT;
+    resolveIMGID(&imgid_modes, ERRMODE_FAIL, dcimg, dcnimg);
 
-    // Could this be imgid_compare?
-    if (imgmodes.md->datatype != _DATATYPE_FLOAT)
-    {
-        PRINT_ERROR("Cannot operate with modes other than FP32!!!s");
-        if (imgmodes.ID == -1)
-        {
-            return RETURN_FAILURE;
-        }
-        abort();
-    }
+    auto modes_size = imgid_modes.md->size;
+    printf("Modes stream size : %u %u %u\n", modes_size[0], modes_size[1], modes_size[2]);
+    nb_modes = modes_size[2];
 
-    printf("Modes stream size : %u %u\n", imgmodes.md->size[0], imgmodes.md->size[1]);
-
-
-    long    n;
-    long    NBmodes                         = 1;
-    imageID IDmodes __attribute__((unused)) = -1;
-
-
-    if (axis_mode == 0)
-    {
-        //
-        // Extract modes.
-        // This is the default geometry, no need to remap
-        //
-        n       = imgmodes.md->size[2];
-        IDmodes = imgmodes.ID;
-        NBmodes = n;
-        printf("NBmodes = %ld\n", NBmodes);
-        fflush(stdout);
-
-
-        // make col-major storage
-    }
-    else
-    {
-        //
-        // Expand
-        // Remap to new matrix tmpmodes
-        //
-
-        NBmodes = imgmodes.md->size[0] * imgmodes.md->size[1];
-        n       = NBmodes;
-        printf("NBmodes = %ld\n", NBmodes);
-        fflush(stdout);
-
-        printf("creating _tmpmodes  %ld %ld %ld\n", (long) imgin.md->size[0],
-               (long) imgin.md->size[1], NBmodes);
-        fflush(stdout);
-
-        IMGID imgtmp =
-            imgid_make_from_name_3D("_tmpmodes", imgin.md->size[0], imgin.md->size[1], NBmodes);
-        imgtmp.mdt->shared = 0;
-        imgtmp.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgtmp);
-        IDmodes = imgtmp.ID;
-
-        for (uint32_t ii = 0; ii < imgin.md->size[0]; ii++)
-        {
-            for (uint32_t jj = 0; jj < imgin.md->size[1]; jj++)
-            {
-                for (long kk = 0; kk < NBmodes; kk++)
-                {
-                    imgtmp.im->array.F[kk * imgin.md->size[0] * imgin.md->size[1] +
-                                       jj * imgin.md->size[0] + ii] =
-                        imgmodes.im->array.F[NBmodes * (jj * imgin.md->size[0] + ii) + kk];
-                }
-            }
-        }
-    }
-
-    float *normcoeff = (float *) malloc(sizeof(float) * NBmodes);
-
-    if (opt_modenorm == 1)
-    {
-        // In this mode, the input modes are normalized to unity (vector 2-norm)
-        // norm is computed here
-
-
-        // compute normalization coeffs
-        for (long k = 0; k < NBmodes; k++)
-        {
-            normcoeff[k] = 0.0;
-            for (long ii = 0; ii < m; ii++)
-            {
-                normcoeff[k] += imgmodes.im->array.F[k * m + ii] * imgmodes.im->array.F[k * m + ii];
-            }
-        }
-    }
-    else
-    {
-        // or set them to 1
-        for (long k = 0; k < NBmodes; k++)
-        {
-            normcoeff[k] = 1.0;
-        }
-    }
-
-    float *modevalarray    = (float *) malloc(sizeof(float) * n);
-    float *modevalarrayref = (float *) malloc(sizeof(float) * n);
-
-    uint32_t *arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-
-    // IDrefout = image_ID(IDrefout_name, dcimg, dcnimg);
-    imageID IDrefout = -1; // TODO handle this
-    if (IDrefout == -1)
-    {
-        if (axis_mode == 0)
-        {
-            arraytmp[0] = NBmodes;
-            arraytmp[1] = 1;
-        }
-        else
-        {
-            arraytmp[0] = imgmodes.md->size[0];
-            arraytmp[1] = imgmodes.md->size[1];
-        }
-    }
-    else
-    {
-        arraytmp[0] = dcimg[IDrefout].md->size[0];
-        arraytmp[1] = dcimg[IDrefout].md->size[1];
-    }
-
+    float *normcoeff         = (float *) calloc(nb_modes, sizeof(float));
+    float *masked_modes_copy = (float *) malloc(mask_npix * nb_modes * SIZEOF_DATATYPE_FLOAT);
+    // TODO what WAS the meaning of normalization when axis_mode = 1 ????
+    initializer_new_data_imgmodes(masked_modes_copy, normcoeff, mask_idx, mask_npix,
+                                  imgid_modes.im);
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
-    IMGID imgout = stream_connect_create_2Df32(outcoeff, arraytmp[0], arraytmp[1]);
+    IMGID imgid_out = stream_connect_create_2Df32(
+        outcoeff, axis_mode == 0 ? nb_modes : modes_size[0], axis_mode == 0 ? 1 : modes_size[1]);
+    memset(imgid_out.im->array.F, 0, imgid_out.md->imdatamemsize);
 
     // Local working copy of output
-    float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
+    // NO: we operate directly into output SHM.
+    // float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
-
-    free(arraytmp);
+    float *imgin_float_casted_ptr = NULL;
+    if (imgid_in.md->datatype == _DATATYPE_FLOAT)
+    {
+        imgin_float_casted_ptr = imgid_in.im->array.F;
+        printf("INPUT is FLOAT  -> no type conversion required\n");
+    }
+    else
+    {
+        imgin_float_casted_ptr = (float *) malloc(sizeof(float) * n_pixels_spatial_side);
+        printf("INPUT NOT float -> type conversion to float enabled\n");
+    }
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
+    /* Runtime backend selector */
+    ComputeMode compute_mode = _compute_mode_determine(processinfo);
+    MVMBackend *backend      = nullptr;
 
 
+    if (compute_mode == ComputeMode::BLAS)
     {
-        if ((GPUindex >= 0) && (GPUindex != 99))
-        {
-#ifdef HAVE_CUDA
-            int deviceCount;
-            int devicecntMax = 100;
-
-            cudaGetDeviceCount(&deviceCount);
-            printf("%d devices found\n", deviceCount);
-            fflush(stdout);
-
-            processinfo_WriteMessage_fmt(processinfo, "CUDA : %d devices", deviceCount);
-
-            if (deviceCount > devicecntMax)
-            {
-                deviceCount = 0;
-            }
-            if (deviceCount < 0)
-            {
-                deviceCount = 0;
-            }
-
-            printf("\n");
-
-            for (int k = 0; k < deviceCount; k++)
-            {
-                cudaGetDeviceProperties(&deviceProp, k);
-
-                int clockRate;
-                cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
-
-                printf("Device %d / %d [ %20s ]  has compute capability %d.%d.\n", k + 1,
-                       deviceCount, deviceProp.name, deviceProp.major, deviceProp.minor);
-                printf("  Total amount of global memory:                 %.0f MBytes "
-                       "(%llu bytes)\n",
-                       (float) deviceProp.totalGlobalMem / 1048576.0f,
-                       (unsigned long long) deviceProp.totalGlobalMem);
-                printf("  (%2d) Multiprocessors\n", deviceProp.multiProcessorCount);
-                printf("  GPU Clock rate:                                %.0f MHz "
-                       "(%0.2f GHz)\n",
-                       clockRate * 1e-3f, clockRate * 1e-6f);
-                printf("\n");
-            }
-
-            if (GPUindex < deviceCount)
-            {
-                cudaSetDevice(GPUindex);
-            }
-            else
-            {
-                printf("Invalid Device : %d / %d\n", GPUindex, deviceCount);
-                processinfo_WriteMessage_fmt(processinfo, "Invalid GPU device %d", GPUindex);
-                exit(0);
-            }
-
-            printf("Create cublas handle ...");
-            fflush(stdout);
-            cublas_status = cublasCreate(&cublasH);
-            if (cublas_status != CUBLAS_STATUS_SUCCESS)
-            {
-                printf("CUBLAS initialization failed\n");
-                return EXIT_FAILURE;
-            }
-            printf(" done\n");
-            fflush(stdout);
-
-            long   matsz;
-            float *modesmat;
-
-            if (use_mask)
-            {
-                //reformat the matrix using the mask
-                matsz    = mask_npix * NBmodes;
-                modesmat = (float *) malloc(sizeof(float) * mask_npix * dcimg[IDmodes].md->size[2]);
-
-                uint32_t nrows = dcimg[IDmodes].md->size[2];
-                uint32_t ncols = dcimg[IDmodes].md->size[0] * dcimg[IDmodes].md->size[1];
-
-                for (uint32_t rr = 0; rr < nrows; ++rr)
-                {
-                    for (uint32_t cc = 0; cc < mask_npix; ++cc)
-                    {
-                        modesmat[rr * mask_npix + cc] =
-                            dcimg[IDmodes].array.F[rr * ncols + mask_idx[cc]];
-                    }
-                }
-            }
-            else
-            {
-                matsz    = m * NBmodes;
-                modesmat = dcimg[IDmodes].array.F;
-            }
-
-            // load modes to GPU
-            cudaStat = cudaMalloc((void **) &d_modes, sizeof(float) * matsz);
-            if (cudaStat != cudaSuccess)
-            {
-                printf("cudaMalloc d_modes returned error code %d, line %d\n", cudaStat, __LINE__);
-                exit(EXIT_FAILURE);
-            }
-
-            cudaStat = cudaMemcpy(d_modes, modesmat, sizeof(float) * matsz, cudaMemcpyHostToDevice);
-
-            if (use_mask)
-            {
-                free(modesmat);
-            }
-
-            if (cudaStat != cudaSuccess)
-            {
-                printf("cudaMemcpy returned error code %d, line %d\n", cudaStat, __LINE__);
-                exit(EXIT_FAILURE);
-            }
-
-
-            // create d_in
-            cudaStat = cudaMalloc((void **) &d_in, sizeof(float) * m);
-            if (cudaStat != cudaSuccess)
-            {
-                printf("cudaMalloc d_in returned error code %d, line %d\n", cudaStat, __LINE__);
-                exit(EXIT_FAILURE);
-            }
-
-            // create d_modeval
-            cudaStat = cudaMalloc((void **) &d_modeval, sizeof(float) * NBmodes);
-            if (cudaStat != cudaSuccess)
-            {
-                printf("cudaMalloc d_modeval returned error code %d, line %d\n", cudaStat,
-                       __LINE__);
-                exit(EXIT_FAILURE);
-            }
-#else
-            processinfo_WriteMessage(processinfo, "NO CUDA - CPU fallback");
-            GPUindex = 99;
+#if defined(HAVE_MKL) || defined(HAVE_OPENBLAS)
+        backend = new MVMBackendBLAS(imgin_float_casted_ptr, imgid_out.im->array.F,
+                                     n_pixels_spatial_side, nb_modes, axis_mode);
 #endif
-        }
+    }
+    else if (compute_mode == ComputeMode::OMP_OR_PLAIN)
+    {
+        backend = new MVMBackendCPU(imgin_float_casted_ptr, imgid_out.im->array.F,
+                                    n_pixels_spatial_side, nb_modes, axis_mode);
+    }
+    else if (compute_mode == ComputeMode::CUDA)
+    {
+#ifdef HAVE_CUDA
+        backend = new MVMBackendCUBLAS(imgin_float_casted_ptr, imgid_out.im->array.F,
+                                       n_pixels_spatial_side, nb_modes, axis_mode);
+#endif
     }
 
-    initref = 0; // 1 when reference has been processed
+    if (backend == nullptr)
+    {
+        // TODO print a very explicit error message and fail
+        // enum error? exit(0)
+    }
+
+    if (use_mask)
+    {
+        backend->enable_masking(mask_idx, mask_npix);
+    }
+
+    backend->load_matrix(masked_modes_copy, n_pixels_spatial_side, nb_modes);
 
     printf("LOOP START\n");
     fflush(stdout);
 
-
-    printf(" m       = %u\n", mask_npix);
-    printf(" n       = %ld\n", n);
-    printf(" NBmodes = %ld\n", NBmodes);
-
-    float    alpha __attribute__((unused)) = 1.0;
-    float    beta __attribute__((unused))  = 0.0;
-    uint64_t refindex                      = 0;
-
-#ifdef HAVE_OPENBLAS
-    printf("OpenBLASS  YES\n");
-#else
-    printf("OpenBLASS  NO\n");
-#endif
-
-#ifdef HAVE_MKL
-    printf("MKL        YES\n");
-#else
-    printf("MKL        NO\n");
-#endif
-
-
-#ifdef HAVE_CUDA
-    printf("CUDA       YES\n");
-#else
-    printf("CUDA       NO\n");
-#endif
-
-
-    float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
+    printf("axmode     = %d [%s]", axis_mode,
+           axis_mode == 0 ? "modal extraction" : "modal expansion");
     if (axis_mode == 0)
     {
-        for (int ii = 0; ii < m; ii++)
-        {
-            for (int jj = 0; jj < n; jj++)
-            {
-                ColMajorMatrix[ii * n + jj] = imgmodes.im->array.F[jj * m + ii];
-            }
-        }
+        printf("in_shape       = %u x %u\n", modes_size[0], modes_size[1]);
+        printf("out_shape       = %u\n", modes_size[2]);
     }
     else
     {
-        memcpy(ColMajorMatrix, imgmodes.im->array.F, sizeof(float) * m * n);
+        printf(" in_shape       = %u x 1\n", modes_size[2]);
+        printf("out_shape       = %u x %u\n", modes_size[0], modes_size[1]);
     }
 
-
-    float *imginfloatptr = NULL;
-
-
-    if (imgin.md->datatype == _DATATYPE_FLOAT)
-    {
-        imginfloatptr = imgin.im->array.F;
-        printf("INPUT type = FLOAT  - no type conversion required\n");
-    }
-    else
-    {
-        imginfloatptr = (float *) malloc(sizeof(float) * imgin.md->size[0] * imgin.md->size[1]);
-        printf("INPUT not float -> type conversion to float enabled\n");
-    }
+    processinfo_WriteMessage_fmt(processinfo, "Backend: %s",
+                                 compute_mode == ComputeMode::CUDA   ? "cuBLAS"
+                                 : compute_mode == ComputeMode::BLAS ? "BLAS"
+                                                                     : "CPU");
 
 
     printf(">>> START MVM loop\n");
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    /*
+    Summary of steps:
+    - float cast [on CPU, common]
+
+    - backend load
+
+    - input masking (axmode == 0 + masking)
+    - backend MVM [maybe input masking, maybe output masking]
+
+
+    - backend unload
+
+    - output de-masking  (axmode == 1 + masking)
+    */
     {
-        // Are we computing a new reference ?
-        // if yes, set initref to 0 (reference is NOT initialized)
-        if (refindex != imgid_ref.md->cnt0)
+        /* Type conversion to float (all backends) */
+        if (imgid_in.md->datatype != _DATATYPE_FLOAT)
         {
-            initref  = 0;
-            refindex = imgid_ref.md->cnt0;
+            cast_to_float(imgin_float_casted_ptr, imgid_in.im, n_pixels_spatial_side);
         }
 
+        backend->matrixMulLoopPreload();
+        backend->matrixMul(); // Here we MVM
+        backend->matrixMulLoopUnload();
 
-        if ((GPUindex < 0) || (GPUindex == 99))
-        {
-            // using CPU
-
-#ifdef HAVE_BLAS
-            struct timespec t0, t1;
-            clock_gettime(CLOCK_MILK, &t0);
-            processinfo_WriteMessage_fmt(processinfo, "imgout %s ID %d", imgout.md->name,
-                                         imgout.ID);
-            {
-                float beta = 0.0;
-
-                if (imgoutref.ID != -1)
-                {
-                    beta = 1.0;
-                    memcpy(outarray, imgoutref.im->array.F, sizeof(float) * n);
-                }
-
-                if (imgin.md->datatype != _DATATYPE_FLOAT)
-                {
-                    // type conversion to float
-                    uint64_t npix = (uint64_t) imgin.md->size[0] * imgin.md->size[1];
-
-#    define _MVM_CONV_CASE(DT, ACC, CTYPE)                         \
-    case DT:                                                       \
-        for (uint64_t _ii = 0; _ii < npix; _ii++)                  \
-        {                                                          \
-            imginfloatptr[_ii] = (float) imgin.im->array.ACC[_ii]; \
-        }                                                          \
-        break;
-
-                    switch (imgin.md->datatype)
-                    {
-                        FOREACH_REAL_DATATYPE(_MVM_CONV_CASE)
-                    default:
-                        break;
-                    }
-#    undef _MVM_CONV_CASE
-                }
-
-                cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m, 1.0, ColMajorMatrix,
-                            (int) n, imginfloatptr, 1, beta, outarray, 1);
-
-                clock_gettime(CLOCK_MILK, &t1);
-                struct timespec tdiff;
-                tdiff       = timespec_diff(t0, t1);
-                double t01d = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                processinfo_WriteMessage_fmt(processinfo, "BLAS %dx%d MVM %.3f us", n, m,
-                                             t01d * 1e6);
-            }
-#else
-            // CPU fallback without BLAS library
-            matrixMulCPU(ColMajorMatrix, imginfloatptr, outarray, (int) n, (int) m);
-#endif
-            // update output
-            imgout.md->write = 1;
-            for (int jj = 0; jj < n; jj++)
-            {
-                imgout.im->array.F[jj] = outarray[jj] / normcoeff[jj];
-            }
-            processinfo_update_output_stream(processinfo, imgout.im, NULL);
-        }
-        else
-        {
-            // running on GPU
-#ifdef HAVE_CUDA
-
-            struct timespec t0, t1;
-            clock_gettime(CLOCK_MILK, &t0);
-
-            // load in_stream to GPU
-            if (initref == 0)
-            {
-                if (use_mask == 1)
-                {
-                    for (uint32_t cc = 0; cc < mask_npix; ++cc)
-                    {
-                        masked_pix[cc] = imgid_ref.im->array.F[mask_idx[cc]];
-                    }
-                }
-                else
-                {
-                    memcpy(masked_pix, imgid_ref.im->array.F, sizeof(float) * mask_npix);
-                }
-                cudaStat =
-                    cudaMemcpy(d_in, masked_pix, sizeof(float) * mask_npix, cudaMemcpyHostToDevice);
-            }
-            else
-            {
-                if (use_mask == 1)
-                {
-                    for (uint32_t cc = 0; cc < mask_npix; ++cc)
-                    {
-                        masked_pix[cc] = imginfloatptr[mask_idx[cc]];
-                    }
-                }
-                else
-                {
-                    memcpy(masked_pix, imginfloatptr, sizeof(float) * mask_npix);
-                }
-                cudaStat =
-                    cudaMemcpy(d_in, masked_pix, sizeof(float) * mask_npix, cudaMemcpyHostToDevice);
-            }
-
-            if (cudaStat != cudaSuccess)
-            {
-                printf("initref = %d    %ld\n", initref, imgin.ID);
-                printf("cudaMemcpy returned error code %d, line %d\n", cudaStat, __LINE__);
-                exit(EXIT_FAILURE);
-            }
-
-            // compute
-            cublas_status = cublasSgemv(cublasH, CUBLAS_OP_T, mask_npix, NBmodes, &alpha, d_modes,
-                                        mask_npix, d_in, 1, &beta, d_modeval, 1);
-            if (cublas_status != CUBLAS_STATUS_SUCCESS)
-            {
-                printf("cublasSgemv returned error code %d, line(%d)\n", cublas_status, __LINE__);
-                fflush(stdout);
-                if (cublas_status == CUBLAS_STATUS_NOT_INITIALIZED)
-                {
-                    printf("   CUBLAS_STATUS_NOT_INITIALIZED\n");
-                }
-                if (cublas_status == CUBLAS_STATUS_INVALID_VALUE)
-                {
-                    printf("   CUBLAS_STATUS_INVALID_VALUE\n");
-                }
-                if (cublas_status == CUBLAS_STATUS_ARCH_MISMATCH)
-                {
-                    printf("   CUBLAS_STATUS_ARCH_MISMATCH\n");
-                }
-                if (cublas_status == CUBLAS_STATUS_EXECUTION_FAILED)
-                {
-                    printf("   CUBLAS_STATUS_EXECUTION_FAILED\n");
-                }
-
-                printf("GPU index                           = %d\n", GPUindex);
-
-                printf("CUBLAS_OP                           = %d\n", CUBLAS_OP_T);
-                printf("alpha                               = %f\n", alpha);
-                printf("beta                                = %f\n", beta);
-                printf("m                                   = %d\n", (int) m);
-                printf("NBmodes                             = %d\n", (int) NBmodes);
-                fflush(stdout);
-                exit(EXIT_FAILURE);
-            }
-
-            // copy result
-            if (initref == 0)
-            {
-                // construct reference to be subtracted
-                printf("... reference compute\n");
-                cudaStat = cudaMemcpy(modevalarrayref, d_modeval, sizeof(float) * NBmodes,
-                                      cudaMemcpyDeviceToHost);
-
-                IDrefout = image_ID(outrefsname, dcimg, dcnimg);
-                if (IDrefout != -1)
-                {
-                    for (long k = 0; k < NBmodes; k++)
-                    {
-                        // Aggregate input ref (now propagated through MVM)
-                        // and output ref into a single subtraction
-                        modevalarrayref[k] -= dcimg[IDrefout].array.F[k];
-                    }
-                }
-            }
-            else
-            {
-                cudaStat = cudaMemcpy(modevalarray, d_modeval, sizeof(float) * NBmodes,
-                                      cudaMemcpyDeviceToHost);
-
-
-                imgout.md->write = 1;
-                for (long k = 0; k < NBmodes; k++)
-                {
-                    imgout.im->array.F[k] = (modevalarray[k] - modevalarrayref[k]) / normcoeff[k];
-                }
-
-
-                clock_gettime(CLOCK_MILK, &t1);
-                struct timespec tdiff;
-                tdiff       = timespec_diff(t0, t1);
-                double t01d = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                processinfo_WriteMessage_fmt(processinfo, "GPU%d %dx%d MVM %.3f us", GPUindex, n, m,
-                                             t01d * 1e6);
-
-
-                processinfo_update_output_stream(processinfo, imgout.im, NULL);
-            }
-#endif
-        }
-
-        initref = 1;
+        // We're done
+        processinfo_update_output_stream(processinfo, imgid_out.im, imgid_in.im);
     }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    free(outarray);
-
-    free(ColMajorMatrix);
-
+    delete backend;
     free(normcoeff);
-    free(modevalarray);
-    free(modevalarrayref);
+    free(masked_modes_copy);
 
-
-    if (imgin.md->datatype != _DATATYPE_FLOAT)
+    if (imgid_in.md->datatype != _DATATYPE_FLOAT)
     {
-        free(imginfloatptr);
+        free(imgin_float_casted_ptr);
     }
 
 
@@ -768,7 +456,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     {
         free(mask_idx);
     }
-    free(masked_pix);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

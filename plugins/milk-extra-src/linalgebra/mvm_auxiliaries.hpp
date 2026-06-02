@@ -6,17 +6,21 @@
  * A is M×N, lda = M, A[i,j] = matrix[j*M + i].
  *
  * Lifetime:
- *   ctor                   — alloc + upload static matrix
- *   matrixMulLoopPreload() — per-iter H to device transfer
- *   matrixMul()            — pure compute, no memory movement
- *   matrixMulLoopUnload()  — per-iter device to H transfer
+ *   ctor                   — store I/O buffers and dimension metadata
+ *   enable_masking()       — optional; must be called before load_matrix
+ *   load_matrix()          — bind matrix; CUDA backend allocates GPU buffers
+ *   matrixMulLoopPreload() — per-iter setup: gather + H2D (CUDA), no-op others
+ *   matrixMul()            — compute MVM, including gather/scatter for CPU/BLAS
+ *   matrixMulLoopUnload()  — per-iter teardown: D2H + scatter (CUDA), no-op others
  *   dtor                   — free all resources
  *
- * Caller fills inVec[0..N-1] before matrixMulLoopPreload()
- * and reads outVec[0..M-1] after matrixMulLoopUnload().
+ * Caller always fills the full inVec (full_size_spatial or nb_modes elements)
+ * and reads the full outVec. Masking gather/scatter is handled internally.
  */
 
 #pragma once
+
+#include <cstdint>
 
 /* ----------------------------------------------------------------
  * Base class
@@ -25,26 +29,63 @@ class MVMBackend
 {
   public:
     /**
-     * @param matrix  col-major host matrix, M x N, lda=M (persistent)
-     * @param inVec   host input  vector, length N (updated each iter)
-     * @param outVec  host output vector, length M
-     * @param M       output dimension (NBmodes)
-     * @param N       input  dimension (pixels / mask_npix)
+     * @param inVec               host input  vector (updated each iter, caller owns)
+     * @param outVec              host output vector (caller owns)
+     * @param full_size_spatial   full spatial pixel count (before any masking)
+     * @param nb_modes            number of modes
+     * @param axmode              0 = extract (spatial→modes), 1 = expand (modes→spatial)
      */
-    MVMBackend(const float *matrix, const float *inVec, float *outVec, int M, int N);
+    MVMBackend(const float *inVec,
+               float       *outVec,
+               uint64_t     full_size_spatial,
+               uint64_t     nb_modes,
+               uint32_t     axmode);
 
-    virtual ~MVMBackend() = default;
+    virtual ~MVMBackend();
+
+    /**
+     * @brief Bind the matrix used for multiplication.
+     *
+     * Must be called after enable_masking() (if used) and before the
+     * first matrixMulLoopPreload().  For CUDA backends this also
+     * allocates GPU buffers and uploads the matrix.
+     *
+     * @param matrix            col-major host matrix (persistent, caller owns lifetime)
+     * @param mvm_size_spatial  spatial pixel count used in the MVM (may be mask_npix)
+     * @param mvm_size_modes    mode count used in the MVM
+     */
+    virtual void load_matrix(const float *matrix,
+                             uint64_t     mvm_size_spatial,
+                             uint64_t     mvm_size_modes);
 
     virtual void matrixMulLoopPreload() = 0;
     virtual void matrixMul()            = 0;
     virtual void matrixMulLoopUnload()  = 0;
 
+    /**
+     * @brief Enable pixel masking for this backend.
+     *
+     * @param mask_idx   array of pixel indices that belong to the mask
+     *                   (caller owns lifetime)
+     * @param mask_npix  number of entries in mask_idx
+     */
+    void enable_masking(uint32_t *mask_idx, uint64_t mask_npix);
+
   protected:
     const float *matrix_;
     const float *inVec_;
     float       *outVec_;
-    int          M_;
-    int          N_;
+    uint64_t     full_size_spatial_;
+    uint64_t     nb_modes_;
+    uint32_t     axmode_;
+
+    uint64_t mvm_size_in_;  /* MVM input  size (axmode-dependent) */
+    uint64_t mvm_size_out_; /* MVM output size (axmode-dependent) */
+
+    int       masking_;
+    uint32_t *mask_idx_;
+    uint64_t  mask_npix_;
+    float    *masked_array_storage_;
 };
 
 
@@ -89,8 +130,17 @@ class MVMBackendBLAS : public MVMBackend
 class MVMBackendCUBLAS : public MVMBackend
 {
   public:
-    MVMBackendCUBLAS(const float *matrix, const float *inVec, float *outVec, int M, int N);
+    MVMBackendCUBLAS(const float *inVec,
+                     float       *outVec,
+                     uint64_t     full_size_spatial,
+                     uint64_t     nb_modes,
+                     uint32_t     axmode);
     ~MVMBackendCUBLAS() override;
+
+    /** Allocate GPU buffers and upload matrix (call after enable_masking) */
+    void load_matrix(const float *matrix,
+                     uint64_t     mvm_size_spatial,
+                     uint64_t     mvm_size_modes) override;
 
     /** H2D copy of inVec into d_in_ */
     void matrixMulLoopPreload() override;
