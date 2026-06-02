@@ -57,7 +57,7 @@ static char     insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 static char     immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static uint32_t axis_mode                                    = 1;
+static uint32_t axis_mode                                 = 1;
 static int64_t  opt_modenorm                              = 1;
 static char     inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
@@ -78,7 +78,7 @@ static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
       "optional input reference to be subtracted stream")                                       \
     X(".option.sname_refout", outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
       "optional output reference to be subtracted stream")                                      \
-    X(".axis_mode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
+    X(".axmode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
       "axis mode: 0=extract, 1=expand")                                                         \
     X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
       "normalize modes to unit 2-norm")
