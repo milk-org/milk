@@ -434,6 +434,10 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         {
             cast_to_float(imgin_float_casted_ptr, imgid_in.im, n_pixels_spatial_side);
         }
+
+        imgid_out.md->write =
+            1; // We don't really know at which point the backend workflow will begin writes, so we flag early.
+
         backend->matrixMul(); // Here we MVM
         // We're done
         processinfo_update_output_stream(processinfo, imgid_out.im, imgid_in.im);
@@ -459,7 +463,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 }
 
 
-/* ================================================================
+/* =============================================================
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
