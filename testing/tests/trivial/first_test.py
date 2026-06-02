@@ -1,8 +1,8 @@
 """
-    My first test
-    Trying to get nox and gcovr happy
+My first test
+Trying to get nox and gcovr happy
 
-    Will just run any piece of milk code
+Will just run any piece of milk code
 """
 
 import subprocess
