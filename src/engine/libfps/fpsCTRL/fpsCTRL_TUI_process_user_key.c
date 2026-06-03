@@ -257,9 +257,9 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             {
                 // If the selected FPS is invalid (was deleted), ignore commands that operate on it,
                 // but allow navigation and quit commands.
-                if (ch == ' ' || ch == 'T' || ch == 't' || ch == 'E' || ch == 'R' || ch == 'r' ||
-                    ch == 'C' || ch == 'O' || ch == 'c' || ch == ctrl('e') || ch == ctrl('r') ||
-                    ch == ctrl('o'))
+                if (ch == ' ' || ch == 'T' || ch == ctrl('t') || ch == 'E' || ch == 'R' ||
+                    ch == 'r' || ch == 'C' || ch == 'O' || ch == 'c' || ch == ctrl('a') ||
+                    ch == ctrl('e') || ch == ctrl('r') || ch == ctrl('o'))
                 {
                     return loopOK;
                 }
@@ -492,10 +492,22 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             functionparameter_FPS_tmux_init(&fps[fps_idx]);
             break;
 
-        case 't': // kill tmux session
+        case ctrl('t'): // kill tmux session
             fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             functionparameter_FPS_tmux_kill(&fps[fps_idx]);
             break;
+
+        case ctrl('a'): // attach to tmux session
+        {
+            fps_idx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+            TUI_exit();
+            functionparameter_FPS_tmux_attach(&fps[fps_idx]);
+            {
+                short unsigned int wrow = 0, wcol = 0;
+                TUI_init_terminal(&wrow, &wcol);
+            }
+        }
+        break;
 
 
         case 'E': // Stop conf/run, erase FPS, kill tmux

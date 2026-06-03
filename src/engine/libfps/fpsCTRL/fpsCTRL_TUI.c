@@ -173,7 +173,8 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("  \033[1;38;5;111m============ PROCESS CONTROL\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "O / CTRL+o", "Start/stop conf process");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "R / CTRL+r", "Start/stop run process");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "T / t", "Initialize/kill tmux session");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "T / CTRL+t", "Initialize/kill tmux session");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+a", "Attach to tmux session");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+e", "Stop conf/run, erase FPS");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "E", "Stop conf/run, erase FPS, kill tmux");
 
