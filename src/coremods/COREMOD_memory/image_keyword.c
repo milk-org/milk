@@ -28,7 +28,7 @@ long image_write_keyword_L(const char *IDname, const char *kname, long value, co
 /**
  * @brief Print all keywords attached to an image.
  */
-imageID image_list_keywords(const char *restrict IDname);
+imageID image_list_keywords(const char *IDname);
 
 
 /* ================================================================
@@ -278,7 +278,7 @@ errno_t image_keyword_addS(IMGID img, const char *kwname, const char *kwval, con
  * @param IDname  Image name
  * @return Image ID
  */
-imageID image_list_keywords(const char *restrict IDname)
+imageID image_list_keywords(const char *IDname)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);

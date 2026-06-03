@@ -13,12 +13,7 @@
 
 imageID image_ID(const char *apzname, IMAGE *dcimage_array, long dcnbimg);
 
-#ifdef __cplusplus
-
-typedef const char *CONST_WORD;
-#else
 typedef const char *__restrict CONST_WORD;
-#endif
 
 #define CLICMD_FIELDS_FPSPROC                                                                  \
     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO, \

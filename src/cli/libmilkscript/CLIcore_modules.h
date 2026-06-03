@@ -8,11 +8,8 @@
 #ifndef CLICORE_MODULES_H
 #define CLICORE_MODULES_H
 
-#ifdef __cplusplus
-typedef const char *CONST_WORD;
-#else
-typedef const char *restrict CONST_WORD;
-#endif
+
+typedef const char *__restrict CONST_WORD;
 
 errno_t load_sharedobj(CONST_WORD libname);
 

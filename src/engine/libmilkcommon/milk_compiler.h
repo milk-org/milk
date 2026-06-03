@@ -188,13 +188,7 @@
  *       const float * MILK_RESTRICT src,
  *       long n);
  */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-#    define MILK_RESTRICT restrict
-#elif defined(__GNUC__)
-#    define MILK_RESTRICT __restrict
-#else
-#    define MILK_RESTRICT
-#endif
+#define MILK_RESTRICT __restrict
 
 
 /* ========================================

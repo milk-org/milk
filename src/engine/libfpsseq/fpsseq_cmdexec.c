@@ -96,7 +96,7 @@ static FPS_CMD_RESULT milkseq_cmd_handle_sys(const char           *FPScommand,
             return FPS_CMD_FAIL;
         }
         {
-            char fifo_path[256];
+            char fifo_path[4096];
             snprintf(fifo_path, sizeof(fifo_path), "/tmp/milkseq.%s.fifo", FPSarg0);
             FILE *fp = fopen(fifo_path, "w");
             if (fp == NULL)

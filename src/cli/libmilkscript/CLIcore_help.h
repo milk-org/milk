@@ -8,11 +8,7 @@
 #ifndef CLICORE_HELP_H
 #define CLICORE_HELP_H
 
-#ifdef __cplusplus
-typedef const char *CONST_WORD;
-#else
 typedef const char *__restrict CONST_WORD;
-#endif
 
 errno_t help();
 

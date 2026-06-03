@@ -21,7 +21,7 @@ errno_t image_keyword_addL(IMGID img, const char *kwname, long kwval, const char
 errno_t image_keyword_addD(IMGID img, const char *kwname, double kwval, const char *comment);
 errno_t image_keyword_addS(IMGID img, const char *kwname, const char *kwval, const char *comment);
 
-imageID image_list_keywords(const char *restrict IDname);
+imageID image_list_keywords(const char *IDname);
 
 long image_read_keyword_D(const char *IDname, const char *kname, double *val);
 

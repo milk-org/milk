@@ -7,11 +7,7 @@
 #ifndef CLICORE_UTILS_H
 #define CLICORE_UTILS_H
 
-#ifdef __cplusplus
-typedef const char *CONST_WORD;
-#else
 typedef const char *__restrict CONST_WORD;
-#endif
 
 #include <string.h>
 

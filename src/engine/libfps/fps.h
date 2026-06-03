@@ -506,7 +506,7 @@ uint16_t function_parameter_RUNexit(FPS *fps);
         }                                                                                          \
         if (command == NULL)                                                                       \
         {                                                                                          \
-            command = "run";                                                                       \
+            command = (char *) "run"; /* cast for C++ compilation compatibily */                   \
         }                                                                                          \
         else                                                                                       \
         {                                                                                          \
@@ -694,8 +694,9 @@ uint16_t function_parameter_RUNexit(FPS *fps);
             }                                                                                      \
             int  NBkwn = 0, NBfps = 0;                                                             \
             long NBpindex = 0;                                                                     \
-            functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex,   \
-                                       0);                                                         \
+            functionparameter_scan_fps(0,                                                          \
+                                       (char *) "_ALL", /* cast for C++ compilation compatibily */ \
+                                       fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, 0);          \
             if (NBfps > 0)                                                                         \
             {                                                                                      \
                 char *eb = strrchr(argv[0], '/');                                                  \
@@ -749,7 +750,7 @@ uint16_t function_parameter_RUNexit(FPS *fps);
         }                                                                                          \
         if (use_tmux)                                                                              \
         {                                                                                          \
-            char path[1024];                                                                       \
+            char path[PATH_MAX];                                                                   \
             if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL)             \
             {                                                                                      \
                 if (realpath(argv[0], path) == NULL)                                               \
