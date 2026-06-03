@@ -750,7 +750,7 @@ uint16_t function_parameter_RUNexit(FPS *fps);
         }                                                                                          \
         if (use_tmux)                                                                              \
         {                                                                                          \
-            char path[PATH_MAX];                                                                   \
+            char path[4096];                                                                       \
             if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL)             \
             {                                                                                      \
                 if (realpath(argv[0], path) == NULL)                                               \
