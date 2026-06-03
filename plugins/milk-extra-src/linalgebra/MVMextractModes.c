@@ -473,7 +473,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             }
 #else
             processinfo_WriteMessage(processinfo, "NO CUDA - CPU fallback");
-            *GPUindex = 99;
+            GPUindex = 99;
 #endif
         }
     }
