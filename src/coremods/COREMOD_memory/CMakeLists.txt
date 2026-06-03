@@ -301,6 +301,7 @@ endif()
 add_milk_standalone(mem-streamave stream_ave.c)
 add_milk_standalone(mem-streampoke stream_poke.c)
 add_milk_standalone(mem-streamcopy stream_copy.c)
+add_milk_standalone(mem-streamdelay stream_delay.c)
 add_milk_standalone(imkwadd image_keyword_add.c)
 
 # Standalone executable
