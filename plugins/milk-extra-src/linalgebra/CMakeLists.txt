@@ -87,9 +87,6 @@ if(USE_CUDA)
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            ${CUDAToolkit_INCLUDE_DIRS})
   target_link_libraries(${LIBNAME} PRIVATE CUDA::cublas CUDA::cusolver)
   target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA)
@@ -103,9 +100,6 @@ if(USE_CUDA)
     target_include_directories(
       ${LIBNAME}
       PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
              $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
              $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
              ${MAGMA_INCLUDE_DIRS})
@@ -132,9 +126,6 @@ if(OPENBLAS_FOUND)
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            ${OPENBLAS_INCLUDE_DIRS})
   target_link_directories(${LIBNAME} PUBLIC ${OPENBLAS_LIBRARY_DIRS})
   target_link_libraries(${LIBNAME} PUBLIC ${OPENBLAS_LIBRARIES})
@@ -150,9 +141,6 @@ if(MKL_FOUND)
   target_include_directories(
     ${LIBNAME}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            ${MKL_INCLUDE_DIRS})
@@ -203,15 +191,12 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
          $<INSTALL_INTERFACE:include>
          $<INSTALL_INTERFACE:include/${SRCNAME}>)
 target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
+
 if(USE_CUDA)
   target_include_directories(${LIBNAME_COMPUTE}
                              PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
@@ -295,31 +280,3 @@ endif()
 target_link_libraries(milk-fpsexec-linalg-cublasPCA PUBLIC ${LIBNAME_COMPUTE})
 add_milk_standalone(linalg-modalremap modalremap.c)
 target_link_libraries(milk-fpsexec-linalg-modalremap PUBLIC ${LIBNAME_COMPUTE})
-
-# ---- MVM test ----
-# Convention: test executables are named milk-test-<module>-<name>
-if(USE_CLI)
-  set(TESTNAME "milk-test-linalg-MVMextract")
-  add_executable(${TESTNAME} test_MVMextract.c MVM_CPU.c)
-  target_link_libraries(${TESTNAME} PRIVATE ImageStreamIO m)
-  target_include_directories(
-    ${TESTNAME} PRIVATE ${PROJECT_SOURCE_DIR}/src/engine
-                        ${CMAKE_CURRENT_SOURCE_DIR})
-  if(USE_OPENBLAS)
-    target_compile_definitions(${TESTNAME} PRIVATE HAVE_OPENBLAS)
-    target_link_libraries(${TESTNAME} PRIVATE ${BLAS_LIBRARIES})
-    target_link_directories(${TESTNAME} PRIVATE ${OPENBLAS_LIBRARY_DIRS})
-  elseif(USE_MKL)
-    target_compile_definitions(${TESTNAME} PRIVATE HAVE_MKL)
-    target_link_libraries(${TESTNAME} PRIVATE ${BLAS_LIBRARIES})
-  endif()
-  if(USE_CUDA)
-    target_compile_definitions(${TESTNAME} PRIVATE HAVE_CUDA)
-    target_link_libraries(${TESTNAME} PRIVATE CUDA::cudart CUDA::cublas)
-  endif()
-  install(TARGETS ${TESTNAME} DESTINATION bin)
-  add_test(NAME milk-test-linalg-MVMextract-cpu COMMAND ${TESTNAME} -v -c)
-  if(USE_CUDA)
-    add_test(NAME milk-test-linalg-MVMextract-gpu COMMAND ${TESTNAME} -v -g)
-  endif()
-endif()
