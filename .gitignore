@@ -57,7 +57,8 @@ __pycache__
 # Testing suite
 .nox
 testing/gcov_html
-pyrightconfig.json
+pyrightconfig.local.json
+c_cpp_properties.json
 
 # Node dependencies
 node_modules/
