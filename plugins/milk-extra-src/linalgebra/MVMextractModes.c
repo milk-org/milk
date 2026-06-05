@@ -628,7 +628,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             clock_gettime(CLOCK_MILK, &t0);
 
             // load in_stream to GPU
-            initref = 1; // BYPASS
             if (initref == 0)
             {
                 if (use_mask == 1)
