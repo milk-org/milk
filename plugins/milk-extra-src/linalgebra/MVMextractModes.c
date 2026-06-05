@@ -56,17 +56,15 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static int32_t  *GPUindex                                  = NULL;
-static char      insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static char      inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char      immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static char      outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static uint32_t *axmode                                    = NULL;
-static int64_t  *opt_process                               = NULL;
-static int64_t  *opt_tracemode                             = NULL;
-static int64_t  *opt_modenorm                              = NULL;
-static char      inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char      outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static int32_t  GPUindex                                  = 0;
+static char     insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static char     inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
+static char     outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static uint32_t axis_mode                                 = 1;
+static int64_t  opt_modenorm                              = 1;
+static char     inrefsname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char     outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 
 /* ================================================================
@@ -84,12 +82,8 @@ static char      outrefsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
       "optional input reference to be subtracted stream")                                       \
     X(".option.sname_refout", outrefsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,          \
       "optional output reference to be subtracted stream")                                      \
-    X(".axmode", &axmode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                               \
+    X(".axmode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
       "axis mode: 0=extract, 1=expand")                                                         \
-    X(".option.PROCESS", &opt_process, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                   \
-      "compute running statistics")                                                             \
-    X(".option.TRACEMODE", &opt_tracemode, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,               \
-      "record coefficient time trace")                                                          \
     X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
       "normalize modes to unit 2-norm")
 
@@ -186,25 +180,18 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                (100.0 * mask_npix) / (imgin.md->size[0] * imgin.md->size[1]));
     }
 
-
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
-    imageID IDinref  = -1;
-    IMGID   imginref = imgid_make_from_name(inrefsname);
-    resolveIMGID(&imginref, ERRMODE_WARN, dcimg, dcnimg);
-    if (imginref.ID == -1)
+    IMGID imgid_ref = imgid_make_from_name(inrefsname);
+    printf("-- imgref.ID = %ld\n", imgid_ref.ID);
+    fflush(stdout);
+    resolveIMGID(&imgid_ref, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgid_ref.ID == -1)
     {
-        IMGID imgref = imgid_make_from_name_2D("_tmprefin", imgin.md->size[0], imgin.md->size[1]);
-        imgref.mdt->shared = 0;
-        imgref.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgref);
-        /* calloc zeros the array */
-        IDinref = imgref.ID;
+        imgid_ref = imgid_make_from_name_2D("_tmprefin", imgin.md->size[0], imgin.md->size[1]);
+        imgid_ref.mdt->shared = 0;
+        imgid_ref.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
+        imgid_mkimage(&imgid_ref);
     }
-    else
-    {
-        IDinref = imginref.ID;
-    }
-
 
     // CONNECT TO OPTIONAL OUTPUT REFERENCE STREAM
     IMGID imgoutref = imgid_make_from_name(outrefsname);
@@ -234,7 +221,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imageID IDmodes __attribute__((unused)) = -1;
 
 
-    if ((*axmode) == 0)
+    if (axis_mode == 0)
     {
         //
         // Extract modes.
@@ -288,7 +275,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     float *normcoeff = (float *) malloc(sizeof(float) * NBmodes);
 
-    if ((*opt_modenorm) == 1)
+    if (opt_modenorm == 1)
     {
         // In this mode, the input modes are normalized to unity (vector 2-norm)
         // norm is computed here
@@ -322,7 +309,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     imageID IDrefout = -1; // TODO handle this
     if (IDrefout == -1)
     {
-        if ((*axmode) == 0)
+        if (axis_mode == 0)
         {
             arraytmp[0] = NBmodes;
             arraytmp[1] = 1;
@@ -354,7 +341,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
     {
-        if (((*GPUindex) >= 0) && ((*GPUindex) != 99))
+        if (GPUindex >= 0 && GPUindex != 98 && GPUindex != 99)
         {
 #ifdef HAVE_CUDA
             int deviceCount;
@@ -397,14 +384,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 printf("\n");
             }
 
-            if ((*GPUindex) < deviceCount)
+            if (GPUindex < deviceCount)
             {
-                cudaSetDevice(*GPUindex);
+                cudaSetDevice(GPUindex);
             }
             else
             {
-                printf("Invalid Device : %d / %d\n", *GPUindex, deviceCount);
-                processinfo_WriteMessage_fmt(processinfo, "Invalid GPU device %d", *GPUindex);
+                printf("Invalid Device : %d / %d\n", GPUindex, deviceCount);
+                processinfo_WriteMessage_fmt(processinfo, "Invalid GPU device %d", GPUindex);
                 exit(0);
             }
 
@@ -486,160 +473,9 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             }
 #else
             processinfo_WriteMessage(processinfo, "NO CUDA - CPU fallback");
-            *GPUindex = 99;
+            GPUindex = 99;
 #endif
         }
-    }
-
-    if ((*opt_tracemode) == 1)
-    {
-        char    traceim_name[STRINGMAXLEN_IMGNAME];
-        long    TRACEsize = 2000;
-        imageID IDtrace __attribute__((unused));
-
-        uint32_t *sizearraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-
-        {
-            int slen = snprintf(traceim_name, STRINGMAXLEN_IMGNAME, "%s_trace", outcoeff);
-            if (slen < 1)
-            {
-                PRINT_ERROR("snprintf wrote <1 char");
-                abort(); // can't handle this error any other way
-            }
-            if (slen >= STRINGMAXLEN_IMGNAME)
-            {
-                PRINT_ERROR("snprintf string truncation");
-                abort(); // can't handle this error any other way
-            }
-        }
-
-        IMGID imgtrace = imgid_make_from_name(traceim_name);
-        resolveIMGID(&imgtrace, ERRMODE_NULL, dcimg, dcnimg);
-        int imOK = 1;
-        if (imgtrace.ID == -1)
-        {
-            imOK = 0;
-        }
-        else
-        {
-            if ((imgtrace.md->size[0] != TRACEsize) || (imgtrace.md->size[1] != NBmodes))
-            {
-                imOK = 0;
-                delete_image_ID(traceim_name, DELETE_IMAGE_ERRMODE_WARNING);
-            }
-        }
-        if (imOK == 0)
-        {
-            imgtrace.mdt->naxis    = 2;
-            imgtrace.mdt->size[0]  = TRACEsize;
-            imgtrace.mdt->size[1]  = NBmodes;
-            imgtrace.mdt->datatype = _DATATYPE_FLOAT;
-            imgtrace.mdt->shared   = 1;
-            imgtrace.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgtrace);
-        }
-        IDtrace = imgtrace.ID;
-        free(sizearraytmp);
-    }
-
-    if ((*opt_process) == 1)
-    {
-        char    process_ave_name[STRINGMAXLEN_IMGNAME];
-        char    process_rms_name[STRINGMAXLEN_IMGNAME];
-        imageID IDprocave __attribute__((unused));
-        imageID IDprocrms __attribute__((unused));
-
-        uint32_t *sizearraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-
-        {
-            int slen = snprintf(process_ave_name, STRINGMAXLEN_IMGNAME, "%s_ave", outcoeff);
-            if (slen < 1)
-            {
-                PRINT_ERROR("snprintf wrote <1 char");
-                abort(); // can't handle this error any other way
-            }
-            if (slen >= STRINGMAXLEN_IMGNAME)
-            {
-                PRINT_ERROR("snprintf string truncation");
-                abort(); // can't handle this error any other way
-            }
-        }
-
-        sizearraytmp[0]  = NBmodes;
-        sizearraytmp[1]  = NBaveSTEP;
-        IMGID imgprocave = imgid_make_from_name(process_ave_name);
-        resolveIMGID(&imgprocave, ERRMODE_NULL, dcimg, dcnimg);
-        int imOK = 1;
-        if (imgprocave.ID == -1)
-        {
-            imOK = 0;
-        }
-        else
-        {
-            if ((imgprocave.md->size[0] != NBmodes) || (imgprocave.md->size[1] != NBaveSTEP))
-            {
-                imOK = 0;
-                delete_image_ID(process_ave_name, DELETE_IMAGE_ERRMODE_WARNING);
-            }
-        }
-        if (imOK == 0)
-        {
-            imgprocave.mdt->naxis    = 2;
-            imgprocave.mdt->size[0]  = NBmodes;
-            imgprocave.mdt->size[1]  = NBaveSTEP;
-            imgprocave.mdt->datatype = _DATATYPE_FLOAT;
-            imgprocave.mdt->shared   = 1;
-            imgprocave.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgprocave);
-        }
-        IDprocave = imgprocave.ID;
-        free(sizearraytmp);
-
-        sizearraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-
-        {
-            int slen = snprintf(process_rms_name, STRINGMAXLEN_IMGNAME, "%s_rms", outcoeff);
-            if (slen < 1)
-            {
-                PRINT_ERROR("snprintf wrote <1 char");
-                abort(); // can't handle this error any other way
-            }
-            if (slen >= STRINGMAXLEN_IMGNAME)
-            {
-                PRINT_ERROR("snprintf string truncation");
-                abort(); // can't handle this error any other way
-            }
-        }
-
-        sizearraytmp[0]  = NBmodes;
-        sizearraytmp[1]  = NBaveSTEP;
-        IMGID imgprocrms = imgid_make_from_name(process_rms_name);
-        resolveIMGID(&imgprocrms, ERRMODE_NULL, dcimg, dcnimg);
-        imOK = 1;
-        if (imgprocrms.ID == -1)
-        {
-            imOK = 0;
-        }
-        else
-        {
-            if ((imgprocrms.md->size[0] != NBmodes) || (imgprocrms.md->size[1] != NBaveSTEP))
-            {
-                imOK = 0;
-                delete_image_ID(process_rms_name, DELETE_IMAGE_ERRMODE_WARNING);
-            }
-        }
-        if (imOK == 0)
-        {
-            imgprocrms.mdt->naxis    = 2;
-            imgprocrms.mdt->size[0]  = NBmodes;
-            imgprocrms.mdt->size[1]  = NBaveSTEP;
-            imgprocrms.mdt->datatype = _DATATYPE_FLOAT;
-            imgprocrms.mdt->shared   = 1;
-            imgprocrms.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgprocrms);
-        }
-        IDprocrms = imgprocrms.ID;
-        free(sizearraytmp);
     }
 
     initref = 0; // 1 when reference has been processed
@@ -677,7 +513,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
 
     float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
-    if (*axmode == 0)
+    if (axis_mode == 0)
     {
         for (int ii = 0; ii < m; ii++)
         {
@@ -714,15 +550,14 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     {
         // Are we computing a new reference ?
         // if yes, set initref to 0 (reference is NOT initialized)
-        //
-        if (refindex != dcimg[IDinref].md->cnt0)
+        if (refindex != imgid_ref.md->cnt0)
         {
             initref  = 0;
-            refindex = dcimg[IDinref].md->cnt0;
+            refindex = imgid_ref.md->cnt0;
         }
 
 
-        if (((*GPUindex) < 0) || (*GPUindex == 99))
+        if (GPUindex < 0 || GPUindex == 98 || GPUindex == 99)
         {
             // using CPU
 
@@ -739,7 +574,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                     beta = 1.0;
                     memcpy(outarray, imgoutref.im->array.F, sizeof(float) * n);
                 }
-
 
                 if (imgin.md->datatype != _DATATYPE_FLOAT)
                 {
@@ -763,7 +597,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #    undef _MVM_CONV_CASE
                 }
 
-
                 cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m, 1.0, ColMajorMatrix,
                             (int) n, imginfloatptr, 1, beta, outarray, 1);
 
@@ -778,7 +611,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             // CPU fallback without BLAS library
             matrixMulCPU(ColMajorMatrix, imginfloatptr, outarray, (int) n, (int) m);
 #endif
-
             // update output
             imgout.md->write = 1;
             for (int jj = 0; jj < n; jj++)
@@ -802,12 +634,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 {
                     for (uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
-                        masked_pix[cc] = dcimg[IDinref].array.F[mask_idx[cc]];
+                        masked_pix[cc] = imgid_ref.im->array.F[mask_idx[cc]];
                     }
                 }
                 else
                 {
-                    memcpy(masked_pix, dcimg[IDinref].array.F, sizeof(float) * mask_npix);
+                    memcpy(masked_pix, imgid_ref.im->array.F, sizeof(float) * mask_npix);
                 }
                 cudaStat =
                     cudaMemcpy(d_in, masked_pix, sizeof(float) * mask_npix, cudaMemcpyHostToDevice);
@@ -831,7 +663,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
             if (cudaStat != cudaSuccess)
             {
-                printf("initref = %d    %ld  %ld\n", initref, IDinref, imgin.ID);
+                printf("initref = %d    %ld\n", initref, imgin.ID);
                 printf("cudaMemcpy returned error code %d, line %d\n", cudaStat, __LINE__);
                 exit(EXIT_FAILURE);
             }
@@ -860,11 +692,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                     printf("   CUBLAS_STATUS_EXECUTION_FAILED\n");
                 }
 
-                printf("GPU index                           = %d\n", (*GPUindex));
+                printf("GPU index                           = %d\n", GPUindex);
 
                 printf("CUBLAS_OP                           = %d\n", CUBLAS_OP_T);
                 printf("alpha                               = %f\n", alpha);
-                printf("alpha                               = %f\n", beta);
+                printf("beta                                = %f\n", beta);
                 printf("m                                   = %d\n", (int) m);
                 printf("NBmodes                             = %d\n", (int) NBmodes);
                 fflush(stdout);
@@ -872,7 +704,6 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
             }
 
             // copy result
-
             if (initref == 0)
             {
                 // construct reference to be subtracted
@@ -885,6 +716,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 {
                     for (long k = 0; k < NBmodes; k++)
                     {
+                        // Aggregate input ref (now propagated through MVM)
+                        // and output ref into a single subtraction
                         modevalarrayref[k] -= dcimg[IDrefout].array.F[k];
                     }
                 }
@@ -906,8 +739,8 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 struct timespec tdiff;
                 tdiff       = timespec_diff(t0, t1);
                 double t01d = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                processinfo_WriteMessage_fmt(processinfo, "GPU%d %dx%d MVM %.3f us", *GPUindex, n,
-                                             m, t01d * 1e6);
+                processinfo_WriteMessage_fmt(processinfo, "GPU%d %dx%d MVM %.3f us", GPUindex, n, m,
+                                             t01d * 1e6);
 
 
                 processinfo_update_output_stream(processinfo, imgout.im, NULL);
