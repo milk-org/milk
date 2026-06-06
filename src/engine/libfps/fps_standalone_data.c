@@ -117,6 +117,7 @@ imageID image_ID(const char *name,
  * ncurses stubs (always stub in no-CLI)
  * ===================================== */
 
+#ifdef USE_NCURSES
 errno_t functionparameter_CTRLscreen(uint32_t mode __attribute__((unused)),
                                      char    *fpsnamemask __attribute__((unused)),
                                      char    *fpsCTRLfifoname __attribute__((unused)),
@@ -175,3 +176,5 @@ errno_t TUI_exit(void)
 {
     return 0;
 }
+
+#endif /* USE_NCURSES */

@@ -85,8 +85,8 @@ errno_t linopt_imtools_makeCosRadModes(const char *ID_name,
         float x = (1.0f * ii - 0.5f * size) / radius;
         for (long jj = 0; jj < size; jj++)
         {
-            float y                                      = (1.0f * jj - 0.5f * size) / radius;
-            data.core.image[IDr].array.F[jj * size + ii] = sqrtf(x * x + y * y);
+            float y                            = (1.0f * jj - 0.5f * size) / radius;
+            dcimg[IDr].array.F[jj * size + ii] = sqrtf(x * x + y * y);
         }
     }
 
@@ -99,10 +99,10 @@ errno_t linopt_imtools_makeCosRadModes(const char *ID_name,
     {
         for (long ii = 0; ii < size2; ii++)
         {
-            float r = data.core.image[IDr].array.F[ii];
+            float r = dcimg[IDr].array.F[ii];
             if (r < radfactlim)
             {
-                data.core.image[IDout].array.F[k * size2 + ii] = cosf(r * (float) M_PI * k);
+                dcimg[IDout].array.F[k * size2 + ii] = cosf(r * (float) M_PI * k);
             }
         }
     }

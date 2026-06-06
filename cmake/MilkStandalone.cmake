@@ -16,9 +16,27 @@
 # after the call.
 #
 
-# Shared source file for FPS standalone data storage
-set(FPS_STANDALONE_DATA_SRC
-    "${PROJECT_SOURCE_DIR}/src/engine/libfps/fps_standalone_data.c")
+# Compile fps_standalone_data.c once as an OBJECT library so all standalone
+# executables share the same .o rather than recompiling it per target.
+add_library(fps_standalone_data_obj OBJECT
+            "${PROJECT_SOURCE_DIR}/src/engine/libfps/fps_standalone_data.c")
+target_compile_definitions(
+  fps_standalone_data_obj
+  PRIVATE FPS_STANDALONE $<$<BOOL:${USE_STATIC_LTO}>:FPS_STANDALONE_SKIP_STUBS>)
+target_include_directories(fps_standalone_data_obj
+                           PRIVATE ${PROJECT_SOURCE_DIR}/src)
+if(USE_CLI)
+  target_include_directories(
+    fps_standalone_data_obj
+    PRIVATE # ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/cli
+            ${PROJECT_SOURCE_DIR}/src/cli/CLIcore
+            ${PROJECT_SOURCE_DIR}/src/cli/libmilkscript
+            ${PROJECT_SOURCE_DIR}/src/coremods
+            ${PROJECT_SOURCE_DIR}/src/engine/libfps
+            ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
+            # ${PROJECT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
+            ${PROJECT_SOURCE_DIR}/src/engine/libmilkcommon)
+endif()
 
 # Common link set for all standalone executables
 set(_MILK_STANDALONE_LIBS

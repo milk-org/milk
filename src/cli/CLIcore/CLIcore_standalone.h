@@ -178,6 +178,13 @@ typedef struct
 
 typedef struct
 {
+    int type;
+    struct
+    {
+        double numf;
+        long   numl;
+        char   string[10];
+    } val;
 } CMDARGTOKEN;
 
 /* =====================================
@@ -193,6 +200,9 @@ typedef struct
     CMD         cmd[DATA_NB_MAX_COMMAND];
     CMDARGTOKEN cmdargtoken[2]; // minimal
     MODULE      module[DATA_NB_MAX_MODULE];
+    long        cmdNBarg;
+    long        cmdindex;
+    char        processname[STRINGMAXLEN_PROCESSNAME];
 } DATA;
 
 extern DATA data;
