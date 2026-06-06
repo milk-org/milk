@@ -36,6 +36,8 @@ project(milk LANGUAGES C)
 #
 # Full build with CUDA: cmake .. -DUSE_CUDA=ON
 #
+# Debug build:     -DCMAKE_BUILD_TYPE=Debug Coverage build:
+# -DCMAKE_BUILD_TYPE=Coverage
 
 option(USE_COREMODS "Build core modules (COREMOD_*)" ON)
 option(USE_CFITSIO "Build FITS I/O (needs cfitsio)" ON)
@@ -63,39 +65,19 @@ if(USE_SEQ AND NOT USE_CLI)
       CACHE BOOL "" FORCE)
 endif()
 
+# =======================================
+# CMAKE GENERAL CONFIG
+# =======================================
 include(CheckLanguage)
-
-# =======================================
-# GPU ACCELERATION
-# =======================================
-
-# options
-option(DEBUG "Enable Debug        library" OFF)
-if(DEBUG)
-  set(CMAKE_BUILD_TYPE "Debug")
-endif()
-
-option(USE_CUDA "Use CUDA        library" OFF)
-option(USE_MAGMA "Use MAGMA       library" OFF)
-
-if(USE_CUDA)
-  check_language(CUDA)
-  if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-  else()
-    # message(FATAL_ERROR "No CUDA support")
-    message(WARNING "No CUDA support found")
-    set(CMAKE_CUDA_COMPILER "/usr/bin/nvcc")
-    message(" setting CMAKE_CUDA_COMPILER to ${CMAKE_CUDA_COMPILER}")
-  endif()
-endif(USE_CUDA)
 
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 enable_language(C)
 
-# Version number
+# =======================================
+# PACKAGE GENERAL CONFIG
+# =======================================
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 03)
 set(VERSION_PATCH 00)
@@ -128,18 +110,44 @@ configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
-#
-# main libraries linked to executable by default
-#
-find_package(PkgConfig REQUIRED)
-if(USE_CFITSIO)
-  pkg_check_modules(CFITSIO REQUIRED cfitsio)
-  message("Found cfitsio version ${CFITSIO_VERSION}")
-  message("CFITS library  : ${CFITSIO_LIBRARY}")
-  message("CFITS libraries: ${CFITSIO_LIBRARIES}")
-else()
-  message(STATUS "USE_CFITSIO=OFF: FITS file I/O disabled")
+# =======================================
+# LIBRARIES
+# =======================================
+
+# options
+option(USE_CUDA "Use CUDA" OFF)
+option(USE_MAGMA "Use MAGMA" OFF)
+
+# BLAS + LAPACKE Options
+option(USE_MKL "Use MKL" OFF)
+option(USE_OPENBLAS "Use OpenBLAS" OFF)
+option(USE_LAPACKE "Use LAPACKE" OFF)
+
+if(USE_CUDA)
+  # --> Either HAVE_CUDA or USE_CUDA=OFF
+  include(cmake/have_cuda.cmake)
 endif()
+
+if(USE_CUDA AND USE_MAGMA)
+  # --> Either HAVE_MAGMA or USE_MAGMA=OFF
+  include(cmake/have_magma.cmake)
+endif()
+
+if(USE_CFITSIO)
+  # --> Either HAVE_CFITSIO or USE_CFITSIO=OFF
+  include(cmake/have_cfitsio.cmake)
+endif()
+
+if(USE_MKL
+   OR USE_OPENBLAS
+   OR USE_LAPACKE)
+  # --> Processes all 3 and sets HAVE_BLAS, HAVE_MKL, HAVE_OPENBLAS and
+  # HAVE_LAPACKE
+  include(cmake/have_blas_lapacke.cmake)
+endif()
+
+# apply_*_to_target() helpers are now defined; load the extension scanner.
+include(cmake/milk_extensions.cmake)
 
 # =======================================
 # MODULES INCLUDED
@@ -260,53 +268,34 @@ if(USE_SEQ)
 endif()
 
 # =======================================
-# BUILD TYPE
+# BUILD FLAGS
 # =======================================
 
-# Set Release build flags cmake -DCMAKE_BUILD_TYPE=Debug option: add -fanalyzer
-# if gcc10+ (warning: this will take a while to run)
+# Can add -fanalyzer if gcc10+ (warning: this will take a while to run)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
 
-# Set Release build flags cmake -DCMAKE_BUILD_TYPE=Release
 set(CMAKE_C_FLAGS_RELEASE "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
 
-# Set Coverage build flags cmake -DCMAKE_BUILD_TYPE=Coverage
 set(CMAKE_C_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
 set(CMAKE_CXX_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
 
-# =======================================
-# PROFILE-GUIDED OPTIMIZATION (PGO)
-# =======================================
-# Usage: cmake -DUSE_PGO=GENERATE ..   # instrument cmake -DUSE_PGO=USE .. #
-# optimized See docs/pgo.md for the full workflow.
-#
-# Global flags apply to shared libraries. Standalone executables get per-target
-# profile directories via milk_pgo_target() in MilkStandalone.cmake.
-set(USE_PGO
-    ""
-    CACHE STRING "PGO mode: GENERATE or USE (empty = off)")
-set(PGO_DIR
-    "${CMAKE_BINARY_DIR}/pgo"
-    CACHE PATH "Directory for PGO profile data")
-if(USE_PGO STREQUAL "GENERATE")
-  message(STATUS "PGO: instrumentation build (profiles → ${PGO_DIR})")
-  add_compile_options(-fprofile-generate=${PGO_DIR}/shared)
-  add_link_options(-fprofile-generate=${PGO_DIR}/shared)
-elseif(USE_PGO STREQUAL "USE")
-  message(STATUS "PGO: optimized build (profiles ← ${PGO_DIR})")
-  add_compile_options(-fprofile-use=${PGO_DIR}/shared -fprofile-correction)
-  add_link_options(-fprofile-use=${PGO_DIR}/shared)
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE "Release")
 endif()
+
+# ======== PGO ========
+include(cmake/pgo.cmake) # -DUSE_PGO=(""|GENERATE|USE)
 
 # =======================================
 # STATIC LTO FOR STANDALONE EXECUTABLES
 # =======================================
 # When USE_STATIC_LTO is ON, standalone fpsexec executables link static archives
 # (.a) of all milk libraries so that the LTO linker has full cross-module
-# visibility.
-#
-# Usage: cmake .. -DUSE_STATIC_LTO=ON
-#
+# visibility. Usage: cmake .. -DUSE_STATIC_LTO=ON
 if(USE_STATIC_LTO)
   message(
     STATUS "STATIC_LTO: standalones will link static archives for full LTO")
@@ -326,15 +315,6 @@ if(USE_SANITIZERS)
   add_link_options(-fsanitize=address,undefined)
 endif()
 
-# Set a default build type if none was specified
-set(default_build_type "Release")
-if(NOT CMAKE_BUILD_TYPE)
-  message(
-    STATUS
-      "Setting build type to '${default_build_type}' as none was specified.")
-  set(CMAKE_BUILD_TYPE "${default_build_type}")
-endif()
-
 # =======================================
 # COVERAGE BUILD — global propagation
 # =======================================
@@ -345,14 +325,16 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
 endif()
 
 # =======================================
-# FORMAT STRING SAFETY (all build types)
+# MISC OPTIONS
 # =======================================
-# Catch printf-family format string bugs even in Release builds. These are
-# zero-cost at runtime.
+# Catch printf-family format string bugs
 add_compile_options(
   $<$<COMPILE_LANGUAGE:C>:-Wformat=2>
   $<$<COMPILE_LANGUAGE:C>:-Wformat-overflow>
   $<$<COMPILE_LANGUAGE:C>:-Wformat-truncation>)
+# Some optims for faster compilation
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-pipe>)
 
 # =======================================
 # COMPILE OPTIONS
@@ -364,8 +346,6 @@ if(VEC_REPORT)
   add_compile_options(-fopt-info-vec-missed)
 endif()
 
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
-
 # link-time optimizer
 option(USE_LTO "Enable Link-Time Optimization (-flto=auto)" ON)
 if(USE_LTO)
@@ -376,13 +356,6 @@ endif()
 # globally would cause GCC to discard exported symbols from shared libraries.
 # NOTE: -fstack-usage is incompatible with link-time optimizer
 # add_compile_options(-fstack-usage)
-
-# A common flag is -pipe. This flag has no effect on the generated code, but it
-# makes the compilation process faster. It tells the compiler to use pipes
-# instead of temporary files during the different stages of compilation, which
-# uses more memory. On systems with low memory, GCC might get killed. In those
-# cases do not use this flag.
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-pipe>)
 
 message("COMPILE_OPTIONS:  ${COMPILE_OPTIONS}")
 
@@ -399,30 +372,6 @@ message("USE_CUDA                 = ${USE_CUDA}")
 message("USE_MAGMA                = ${USE_MAGMA}")
 
 message("EXTRAMODULES             = ${EXTRAMODULES}")
-
-# =======================================
-# COMPUTATION LIBRARIES
-# =======================================
-pkg_check_modules(MKL IMPORTED_TARGET GLOBAL mkl-sdl)
-pkg_check_modules(OPENBLAS IMPORTED_TARGET GLOBAL openblas)
-if(MKL_FOUND)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_MKL")
-  message("Computation libraries: using MKL [-DHAVE_MKL]")
-elseif(OPENBLAS_FOUND)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_OPENBLAS")
-  message("Computation libraries: using openblas [-DHAVE_OPENBLAS]")
-else()
-  pkg_check_modules(LAPACKE REQUIRED IMPORTED_TARGET GLOBAL lapacke)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_STANDALONE_LAPACKE")
-  message(
-    "Computation libraries: using standalone lapacke [-DHAVE_STANDALONE_LAPACKE]"
-  )
-endif()
-
-if(USE_CUDA)
-  find_package(CUDAToolkit 9.0 REQUIRED)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA")
-endif(USE_CUDA)
 
 # =======================================
 # TESTING
@@ -522,15 +471,6 @@ if(USE_CLI)
 
   add_executable(milk-cli src/CLImain.c)
   target_link_libraries(milk-cli PUBLIC ${libname})
-
-  if(USE_CUDA)
-    target_link_libraries(
-      milk-cli
-      PUBLIC CUDA::toolkit
-      PUBLIC CUDA::cusolver
-      PUBLIC CUDA::cudart
-      PUBLIC CUDA::cublas)
-  endif(USE_CUDA)
 
   message("====================================================")
   get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)

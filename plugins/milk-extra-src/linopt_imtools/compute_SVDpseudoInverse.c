@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef USE_MKL
+#ifdef HAVE_MKL
 #    include "mkl_lapacke.h"
 #else
-#    include <cblas.h>
-#    include <lapacke.h>
+#    ifdef HAVE_OPENBLAS
+#        include <cblas.h>
+#        include <lapacke.h>
+#    endif
 #endif
 
 #include "CLIcore.h"
@@ -165,8 +167,10 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
 
     /* DtD = D^T * D  (m x m) */
+#ifdef HAVE_BLAS
     cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, (int) m, (int) m, (int) n, 1.0, D, (int) n,
                 D, (int) n, 0.0, DtD, (int) m);
+#endif
 
     if (testmode == 1)
     {
@@ -192,6 +196,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
     /* Eigenvalue decomposition */
     {
+#ifdef HAVE_LAPACKE
         int info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', (int) m, DtD, (int) m, eval);
         if (info != 0)
         {
@@ -199,6 +204,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                    " failed: %d\n",
                    info);
         }
+#endif
     }
 
     if (timing == 1)
@@ -320,10 +326,12 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
     /* DtDinv = evec * diag^-1
      * * evec^T */
+#ifdef HAVE_BLAS
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, (int) m, (int) m, (int) m, 1.0, DtD,
                 (int) m, tmp1, (int) m, 0.0, tmp2, (int) m);
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, (int) m, (int) m, (int) m, 1.0, tmp2,
                 (int) m, DtD, (int) m, 0.0, DtDinv, (int) m);
+#endif
 
     if (testmode == 1)
     {
@@ -343,8 +351,10 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
 
     /* Ds = DtDinv * D^T  (m x n) */
+#ifdef HAVE_BLAS
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, (int) m, (int) n, (int) m, 1.0, DtDinv,
                 (int) m, D, (int) n, 0.0, Ds, (int) m);
+#endif
 
     IMGID imgC = imgid_make_from_name(ID_Cmatrix_name);
     if (imgin.md->naxis == 3)

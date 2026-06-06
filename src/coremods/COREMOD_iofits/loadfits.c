@@ -3,6 +3,8 @@
  * @brief   load FITS format files
  */
 
+#define REQUEST_CFITSIO
+
 #include <stdlib.h>
 
 #include "CLIcore.h"

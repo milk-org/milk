@@ -120,8 +120,10 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
     imgcoeff.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgcoeff);
 
+#ifdef HAVE_BLAS
     cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, 1.0, imgrecm.im->array.F, n, imgmvec.im->array.F,
                 1, 0.0, imgcoeff.im->array.F, 1);
+#endif
 
     FUNC_CHECK_RETURN(delete_image_ID("_fm_measvec", DELETE_IMAGE_ERRMODE_WARNING));
 

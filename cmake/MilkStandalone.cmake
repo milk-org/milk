@@ -182,22 +182,15 @@ endfunction()
 function(add_milk_standalone FUNC_NAME SRC_FILE)
   set(EXE_NAME "milk-fpsexec-${FUNC_NAME}")
   add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
-                             "${FPS_STANDALONE_DATA_SRC}")
+                             $<TARGET_OBJECTS:fps_standalone_data_obj>)
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
-  if(USE_STATIC_LTO)
-    # fps_standalone_data.c provides stub symbols that clash with real
-    # implementations in the static archives.  Compiling it with MILK_NO_CLI
-    # skips those stubs.
-    set_source_files_properties(
-      "${FPS_STANDALONE_DATA_SRC}" TARGET_DIRECTORY ${EXE_NAME}
-      PROPERTIES COMPILE_DEFINITIONS "FPS_STANDALONE_SKIP_STUBS")
-  endif()
   target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
   if(USE_STATIC_LTO)
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
   else()
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
   endif()
+  milk_apply_extensions(${EXE_NAME})
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})
@@ -214,13 +207,8 @@ endfunction()
 function(add_cacao_standalone FUNC_NAME SRC_FILE)
   set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
   add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
-                             "${FPS_STANDALONE_DATA_SRC}")
+                             $<TARGET_OBJECTS:fps_standalone_data_obj>)
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
-  if(USE_STATIC_LTO)
-    set_source_files_properties(
-      "${FPS_STANDALONE_DATA_SRC}" TARGET_DIRECTORY ${EXE_NAME}
-      PROPERTIES COMPILE_DEFINITIONS "FPS_STANDALONE_SKIP_STUBS")
-  endif()
   target_include_directories(
     ${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src
                         ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
@@ -229,6 +217,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
   else()
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
   endif()
+  milk_apply_extensions(${EXE_NAME})
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})
