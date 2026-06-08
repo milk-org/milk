@@ -28,8 +28,6 @@ static int   DLib_index;
 static void *DLib_handle[1000];
 static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
-errno_t new_style_module_initialization(void *handle, const char *libname);
-
 /**
  * @brief Load a shared library via dlopen.
  *
@@ -77,34 +75,30 @@ errno_t load_sharedobj(const char *__restrict libname)
         {
             fprintf(stderr, KRED "%s\n" KRES, errstr);
         }
-        //exit(EXIT_FAILURE);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
     }
-    else
-    {
-        dlerror();
-        if (!getenv("MILK_QUIET") && dcquiet == 0)
-        {
-            printf(KGRN "   LOADED : %s\n" KRES, libname);
-        }
-        DLib_handle[DLib_index] = handle;
-        // increment number of libs dynamically loaded
-        DLib_index++;
 
-        new_style_module_initialization(handle, libname);
+    dlerror();
+    if (!getenv("MILK_QUIET") && dcquiet == 0)
+    {
+        printf(KGRN "   LOADED : %s\n" KRES, libname);
     }
+    DLib_handle[DLib_index] = handle;
+    // increment number of libs dynamically loaded
+    DLib_index++;
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-errno_t new_style_module_initialization(void *handle, const char *libname)
+errno_t newstyle_milk_module_registration(void *handle, const char *libname)
 {
     /* New-style modules export __milk_module_info.
-         * Drive the full registration sequence here
-         * so no __attribute__((constructor)) is needed.
-         * Old-style modules (no __milk_module_info)
-         * rely on their constructor as before.
-         */
+    We perform the registration code that priorly belonged to INIT_MILK_MODULE macro.
+
+    Except that now this code lives within the CLI/script so, not the module so.
+    */
 
     MILK_MODULE_INFO *info = (MILK_MODULE_INFO *) dlsym(handle, "__milk_module_info");
     if (info == NULL || info->mod_registered == 1)
@@ -144,7 +138,7 @@ errno_t new_style_module_initialization(void *handle, const char *libname)
     strncpy(data.moduleshortname_default, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
     strncpy(data.moduleshortname, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
 
-    info->mod_registered == 1;
+    info->mod_registered = 1;
 
     return RETURN_SUCCESS;
 }
@@ -219,15 +213,20 @@ errno_t load_module_shared(const char *__restrict modulename)
     strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
     strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
-    load_sharedobj(libname);
+
+    if (load_sharedobj(libname) == RETURN_SUCCESS)
+    {
+        // We inherit DLib_index AFTER INCREMENT from load_sharedobj (which has no recursive calls)
+        // Now, WARNING, this function may recurse into other calls to load_module_shared
+        newstyle_milk_module_registration(DLib_handle[DLib_index - 1], libname);
+        // TODO fix load_module_shared_local to do the same new-style init
+    }
 
     // Find the correct module slot for metadata.
     //
-    // We cannot blindly use data.moduleindex because
-    // dlopen() may have transitively loaded other
+    // We cannot blindly use data.moduleindex because dlopen() may have transitively loaded other
     // libraries whose constructors changed it.
-    // If the .so was already loaded (transitive dep
-    // of a prior dlopen), the constructor does not
+    // If the .so was already loaded (transitive dep of a prior dlopen), the constructor does not
     // re-run and moduleindex is stale.
     //
     // Strategy:
@@ -418,6 +417,11 @@ errno_t RegisterModule(const char *__restrict FileName,
      * __attribute__((constructor)) in a linked .so, so it is
      * the only reliable place to intercept a command-line flag
      * at constructor time. */
+    /*
+    NOTE: deprecated requirement since this will NOT be called from constructors anymore,
+    since we fetch a struct from modules and the "constructor" is deferred to code that is
+    here and executes synchronously.
+    */
     static int quiet_scanned = 0;
     if (!quiet_scanned)
     {

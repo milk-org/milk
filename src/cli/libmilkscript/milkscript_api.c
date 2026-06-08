@@ -83,12 +83,13 @@ errno_t milkscript_init(int argc, char **argv)
     }
 
     // Explicitly call constructors of core dependencies
-    //libinit_COREMOD_memory();
+    load_module_shared("milkCOREMODmemory");
 #ifdef USE_CFITSIO
-    //libinit_COREMOD_iofits();
+    load_module_shared("milkCOREMODiofits");
 #endif
-    //libinit_COREMOD_arith();
-    //libinit_COREMOD_tools();
+    load_module_shared("milkCOREMODarith");
+    load_module_shared("milkCOREMODtools");
+
 
     // Auto-load local modules if configured
     load_module_shared_local();
