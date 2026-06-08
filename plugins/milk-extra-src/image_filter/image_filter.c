@@ -27,10 +27,6 @@
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
-INIT_MODULE_LIB(image_filter)
-
-
-//long fconvolve(const char *ID_in, const char *ID_ke, const char *ID_out);
 
 static errno_t init_module_CLI()
 {
@@ -43,4 +39,7 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+
+MILK_MODULE(image_filter, init_module_CLI, NULL);
+
 #endif /* MILK_NO_CLI */

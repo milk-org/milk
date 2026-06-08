@@ -28,11 +28,11 @@
 #include "CLIcore_setSHMdir.h"
 
 // Reference core module initializers explicitly to ensure they're linked
-extern void libinit_COREMOD_memory(void);
-extern void libinit_COREMOD_arith(void);
-extern void libinit_COREMOD_tools(void);
+//extern void libinit_COREMOD_memory(void);
+//extern void libinit_COREMOD_arith(void);
+//extern void libinit_COREMOD_tools(void);
 #ifdef USE_CFITSIO
-extern void libinit_COREMOD_iofits(void);
+//extern void libinit_COREMOD_iofits(void);
 #endif
 
 /**
@@ -83,12 +83,12 @@ errno_t milkscript_init(int argc, char **argv)
     }
 
     // Explicitly call constructors of core dependencies
-    libinit_COREMOD_memory();
+    //libinit_COREMOD_memory();
 #ifdef USE_CFITSIO
-    libinit_COREMOD_iofits();
+    //libinit_COREMOD_iofits();
 #endif
-    libinit_COREMOD_arith();
-    libinit_COREMOD_tools();
+    //libinit_COREMOD_arith();
+    //libinit_COREMOD_tools();
 
     // Auto-load local modules if configured
     load_module_shared_local();

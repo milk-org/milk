@@ -13,11 +13,6 @@
 
 #include "fpsCTRL_TUI_process_user_key.h"
 
-#ifdef MILK_MODULE
-#    ifdef MILK_MODULE
-#    endif
-#endif
-
 #include "fpsCTRL_TUIcompat.h"
 #include "fpsCTRL_globals.h"
 

@@ -199,6 +199,71 @@ static inline errno_t TUI_exit()
         static const int   _module_ndeps  = (int) (sizeof(_module_deps) / sizeof(_module_deps[0])); \
         static const int   _module_deps_defined = 1
 
+/** @brief CLI registration function type. */
+typedef errno_t (*module_cli_reg_fn)(void);
+
+/**
+ * @brief Per-module registration descriptor.
+ *
+ * Export as the symbol __milk_module_info from the
+ * module's main .c file.  load_sharedobj() reads it
+ * after dlopen() and drives the full registration
+ * sequence without __attribute__((constructor)).
+ *
+ * Use the MILK_MODULE() macro to define and export
+ * this struct.  Modules using INIT_MODULE_LIB()
+ * (old-style) are unaffected: their constructor
+ * fires as before and __milk_module_info is absent.
+ */
+typedef struct
+{
+    const char *name;              /**< module name token */
+    const char *shortname_default; /**< MODULE_SHORTNAME_DEFAULT */
+    const char *description;       /**< MODULE_DESCRIPTION */
+    const char *source_file;       /**< __FILE__ */
+    const char *package;           /**< PROJECT_NAME */
+    int         version_major;
+    int         version_minor;
+    int         version_patch;
+    const char *date_string; /**< __DATE__ */
+    const char *time_string; /**< __TIME__ */
+    /** Module CLI initializer (init_module_CLI) */
+    module_cli_reg_fn reg_call;
+    /** NULL-sentinel dep load names, or NULL */
+    const char **deps;
+    int          mod_registered;
+    int          constructor_called;
+} MILK_MODULE_INFO;
+
+/**
+ * @brief Define and export the module descriptor.
+ *
+ * Use in a module's main .c instead of
+ * INIT_MODULE_LIB().  load_sharedobj() reads the
+ * descriptor after dlopen() and calls the module's
+ * init_module_CLI(); no __attribute__((constructor))
+ * is emitted.
+ *
+ * @param modname       Module name token (unquoted)
+ * @param cli_reg_call  init_module_CLI function pointer
+ * @param _deps         NULL-sentinel dep array, or NULL
+ */
+#    define MILK_MODULE(modname, cli_reg_call, _deps)                                           \
+        MILK_MODULE_INFO __milk_module_info = { .name               = #modname,                 \
+                                                .shortname_default  = MODULE_SHORTNAME_DEFAULT, \
+                                                .description        = MODULE_DESCRIPTION,       \
+                                                .source_file        = __FILE__,                 \
+                                                .package            = PROJECT_NAME,             \
+                                                .version_major      = VERSION_MAJOR,            \
+                                                .version_minor      = VERSION_MINOR,            \
+                                                .version_patch      = VERSION_PATCH,            \
+                                                .date_string        = __DATE__,                 \
+                                                .time_string        = __TIME__,                 \
+                                                .reg_call           = cli_reg_call,             \
+                                                .deps               = (_deps),                  \
+                                                .mod_registered     = 0,                        \
+                                                .constructor_called = 0 }
+
 /** @brief Initialize module (no dependencies)
  */
 #    define INIT_MODULE_LIB(modname)                                                              \
@@ -214,63 +279,6 @@ static inline errno_t TUI_exit()
                 strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING - 1);     \
                 strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                   \
                 data.module_nbdep = 0;                                                            \
-                RegisterModule(__FILE__, PROJECT_NAME, MODULE_DESCRIPTION, VERSION_MAJOR,         \
-                               VERSION_MINOR, VERSION_PATCH);                                     \
-                init_module_CLI();                                                                \
-                INITSTATUS_##modname = 1;                                                         \
-                strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1); /* reset after use */ \
-                strncpy(data.moduleshortname_default, "",                                         \
-                        STRINGMAXLEN_MODULE_SHORTNAME - 1); /* reset after use */                 \
-                strncpy(data.moduleshortname, "",                                                 \
-                        STRINGMAXLEN_MODULE_SHORTNAME - 1); /* reset after use */                 \
-            }                                                                                     \
-        }                                                                                         \
-        void __attribute__((destructor)) libclose_##modname()                                     \
-        {                                                                                         \
-            if (INITSTATUS_##modname == 1)                                                        \
-            {                                                                                     \
-            }                                                                                     \
-        }
-
-/**
- * @brief Initialize module with auto-dep loading.
- *
- * Same as INIT_MODULE_LIB but iterates the dep
- * list declared by MODULE_DEPS() and calls
- * load_module_shared() for each before registration.
- *
- * Usage:
- *   MODULE_DEPS("milkfft", "milkimage_gen")
- *   INIT_MODULE_LIB_DEPS(mymodule)
- */
-#    define INIT_MODULE_LIB_DEPS(modname)                                                         \
-        static errno_t                    init_module_CLI(); /* forward declaration */            \
-        static int                        INITSTATUS_##modname = 0;                               \
-        void __attribute__((constructor)) libinit_##modname()                                     \
-        {                                                                                         \
-            if (INITSTATUS_##modname == 0) /* only run once */                                    \
-            {                                                                                     \
-                /* --- auto-load declared deps --- */                                             \
-                for (int _di = 0; _di < _module_ndeps; _di++)                                     \
-                {                                                                                 \
-                    load_module_shared(_module_deps[_di]);                                        \
-                }                                                                                 \
-                strncpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT,                   \
-                        STRINGMAXLEN_MODULE_SHORTNAME - 1);                                       \
-                strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING - 1);     \
-                strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING - 1);     \
-                strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                   \
-                /* Store dep list for RegisterModule */                                           \
-                {                                                                                 \
-                    int _ndcopy =                                                                 \
-                        (_module_ndeps > MODULE_MAX_DEPS) ? MODULE_MAX_DEPS : _module_ndeps;      \
-                    data.module_nbdep = _ndcopy;                                                  \
-                    for (int _di = 0; _di < _ndcopy; _di++)                                       \
-                    {                                                                             \
-                        strncpy(data.module_depname[_di], _module_deps[_di],                      \
-                                STRINGMAXLEN_MODULE_LOADNAME - 1);                                \
-                    }                                                                             \
-                }                                                                                 \
                 RegisterModule(__FILE__, PROJECT_NAME, MODULE_DESCRIPTION, VERSION_MAJOR,         \
                                VERSION_MINOR, VERSION_PATCH);                                     \
                 init_module_CLI();                                                                \
@@ -535,32 +543,14 @@ typedef struct
 
 } DATA;
 
-extern DATA data;
+__attribute__((weak)) DATA data = { .core = { 0 } };
+//extern DATA data;
 
 #    include "CLIcore_utils.h"
 
 errno_t set_signal_catch();
 
 void sig_handler(int signo);
-
-/*
-errno_t RegisterModule(
-    const char *restrict FileName,
-    const char *restrict PackageName,
-    const char *restrict InfoString,
-    int                  versionmajor,
-    int                  versionminor,
-    int                  versionpatch);
-
-uint32_t RegisterCLIcommand(
-    const char *restrict CLIkey,
-    const char *restrict CLImodulesrc,
-    errno_t (*CLIfptr)(),
-    const char *restrict CLIinfo,
-    const char *restrict CLIsyntax,
-    const char *restrict CLIexample,
-    const char *restrict CLICcall);
-*/
 
 errno_t runCLItest(int argc, char *argv[], char *promptstring);
 

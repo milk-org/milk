@@ -1,8 +1,6 @@
 #if !defined(GENIMAGE_H)
 #    define GENIMAGE_H
 
-void __attribute__((constructor)) libinit_image_gen();
-
 /** @brief creates a double star */
 imageID make_double_star(const char *ID_name,
                          uint32_t    l1,

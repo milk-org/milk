@@ -97,10 +97,6 @@
 /* ================================================================== */
 /* ================================================================== */
 
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-INIT_MODULE_LIB(COREMOD_memory)
 
 /**
  * @brief Register COREMOD_memory CLI commands.
@@ -185,4 +181,6 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+
+MILK_MODULE(COREMOD_memory, init_module_CLI, NULL);
 #endif /* MILK_NO_CLI */

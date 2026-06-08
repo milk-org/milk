@@ -30,6 +30,4 @@
 
 #include "linalgebra/MVM_CPU.h"
 
-void __attribute__((constructor)) libinit_linalgebra();
-
 #endif

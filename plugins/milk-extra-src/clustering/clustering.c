@@ -29,8 +29,6 @@
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
-INIT_MODULE_LIB(clustering)
-
 static errno_t init_module_CLI()
 {
     CLIADDCMD_clustering__imcube_mkcluster();
@@ -41,3 +39,5 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+
+MILK_MODULE(clustering, init_module_CLI, NULL);

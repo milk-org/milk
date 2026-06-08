@@ -28,6 +28,7 @@ static int   DLib_index;
 static void *DLib_handle[1000];
 static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
+errno_t new_style_module_initialization(void *handle, const char *libname);
 
 /**
  * @brief Load a shared library via dlopen.
@@ -88,9 +89,63 @@ errno_t load_sharedobj(const char *__restrict libname)
         DLib_handle[DLib_index] = handle;
         // increment number of libs dynamically loaded
         DLib_index++;
+
+        new_style_module_initialization(handle, libname);
     }
 
     DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+errno_t new_style_module_initialization(void *handle, const char *libname)
+{
+    /* New-style modules export __milk_module_info.
+         * Drive the full registration sequence here
+         * so no __attribute__((constructor)) is needed.
+         * Old-style modules (no __milk_module_info)
+         * rely on their constructor as before.
+         */
+
+    MILK_MODULE_INFO *info = (MILK_MODULE_INFO *) dlsym(handle, "__milk_module_info");
+    if (info == NULL || info->mod_registered == 1)
+    {
+        return RETURN_SUCCESS;
+    }
+
+    /* Load declared deps before registering */
+    if (info->deps)
+    {
+        for (int _di = 0; info->deps[_di]; _di++)
+        {
+            load_module_shared(info->deps[_di]);
+        }
+    }
+
+    strncpy(data.moduleshortname_default, info->shortname_default,
+            STRINGMAXLEN_MODULE_SHORTNAME - 1);
+    strncpy(data.moduledatestring, info->date_string, STRINGMAXLEN_MODULE_DATESTRING - 1);
+    strncpy(data.moduletimestring, info->time_string, STRINGMAXLEN_MODULE_TIMESTRING - 1);
+    strncpy(data.modulename, info->name, STRINGMAXLEN_MODULE_NAME - 1);
+    data.module_nbdep = 0;
+
+    RegisterModule(info->source_file, info->package, info->description, info->version_major,
+                   info->version_minor, info->version_patch);
+
+    /* Stamp sofilename so load_module_shared
+                 * can find this slot by Case-1 match. */
+    strncpy(data.module[data.moduleindex].sofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
+    if (info->reg_call)
+    {
+        (*(info->reg_call))();
+    }
+
+    strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1);
+    strncpy(data.moduleshortname_default, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
+    strncpy(data.moduleshortname, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
+
+    info->mod_registered == 1;
+
     return RETURN_SUCCESS;
 }
 
@@ -225,6 +280,8 @@ errno_t load_module_shared(const char *__restrict modulename)
     strncpy(data.module[target_idx].loadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
 
 
+    // HERE
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -334,6 +391,10 @@ errno_t load_module_shared_local()
  * init function during dlopen. Records the module
  * name, package, version, short name, and build
  * timestamps in data.module[].
+ *
+ * If the module exports a NULL-sentinel function-pointer
+ * array named @c __reg_calls, each entry is invoked to
+ * register the module's CLI commands.
  *
  * @param FileName      Source filename of the module
  * @param PackageName   Package the module belongs to

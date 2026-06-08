@@ -71,25 +71,11 @@
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
-INIT_MODULE_LIB(image_gen)
-
-/* ================================================================== */
-/* ================================================================== */
-/*            COMMAND LINE INTERFACE (CLI) FUNCTIONS                  */
-/* ================================================================== */
-/* ================================================================== */
-
-/* Placeholder for CLICMD_FIELDS_DEFAULTS macro which
- * hardcodes 'farg'. The constructor init_xx() functions
- * below overwrite nbarg and funcfpscliarg at runtime. */
-static CLICMDARGDEF farg[] = { { CLIARG_FLOAT64, "", "", "", 0, NULL, NULL } };
-
-#    include "fps.h"
-
 /* ==================================================================
  * CLI Command Registrations
  * ================================================================== */
 
+// Wut?
 extern errno_t CLIADDCMD_image_gen__segs2wfmodes(void);
 extern errno_t CLIADDCMD_image_gen__mkrect(void);
 extern errno_t CLIADDCMD_image_gen__mkgridpix(void);
@@ -103,13 +89,6 @@ extern errno_t CLIADDCMD_image_gen__mklincoord(void);
 extern errno_t CLIADDCMD_image_gen__im2coord(void);
 extern errno_t CLIADDCMD_image_gen__mkfiberclpoverlap(void);
 extern errno_t CLIADDCMD_image_gen__mkgauss(void);
-extern errno_t CLIADDCMD_image_gen__mkdisk(void);
-extern errno_t CLIADDCMD_image_gen__mkpolygon(void);
-extern errno_t CLIADDCMD_image_gen__mkspdisk(void);
-extern errno_t CLIADDCMD_image_gen__voronoi(void);
-extern errno_t CLIADDCMD_image_gen__mkrandomim(void);
-
-/* ===== Module init ===== */
 
 static errno_t init_module_CLI()
 {
@@ -136,5 +115,6 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+MILK_MODULE(image_gen, init_module_CLI, NULL);
 
 #endif /* MILK_NO_CLI */

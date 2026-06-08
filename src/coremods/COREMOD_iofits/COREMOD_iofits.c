@@ -12,7 +12,7 @@
 
 #include "COREMOD_iofits_common.h"
 
-COREMOD_IOFITS_DATA COREMOD_iofits_data;
+COREMOD_IOFITS_DATA COREMOD_iofits_data = { .FITSIO_status = 0 };
 
 #ifdef MILK_NO_CLI
 #    include "CLIcore_standalone.h"
@@ -27,9 +27,7 @@ COREMOD_IOFITS_DATA COREMOD_iofits_data;
 #    include "savefits.h"
 
 // External function from savefits.c
-extern errno_t save_fl_fits(const char *inputimname, const char *outputFITSname);
-
-INIT_MODULE_LIB(COREMOD_iofits)
+//extern errno_t save_fl_fits(const char *inputimname, const char *outputFITSname);
 
 /**
  * @brief Register COREMOD_iofits CLI commands.
@@ -56,9 +54,6 @@ static errno_t init_module_CLI()
  * Empty function referenced externally to prevent
  * the linker from discarding this module.
  */
-void COREMOD_iofits_export_dummy()
-{
-    saveFITS_opt_trunc(NULL, 0, NULL, 0, NULL, NULL, 0, NULL);
-    save_fl_fits(NULL, NULL);
-}
-#endif /* MILK_NO_CLI */
+MILK_MODULE(COREMOD_iofits, init_module_CLI, NULL);
+
+#endif /* ELSE MILK_NO_CLI */
