@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "mvm_auxiliaries.hpp"
 
@@ -312,3 +313,245 @@ void MVMBackendCUBLAS::matrixMul()
 }
 
 #endif /* HAVE_CUDA */
+
+
+/* ----------------------------------------------------------------
+ * MVMBackendCUDAGraph
+ *
+ * Three-node CUDA graph: H2D memcpy → cublasSgemv → D2H memcpy.
+ * The graph is captured once in load_matrix() and replayed with a
+ * single cudaGraphLaunch() each frame, cutting per-frame API
+ * overhead from ~3 blocking calls to one non-blocking dispatch.
+ *
+ * Pinned host staging buffers (h_in_pinned_, h_out_pinned_) serve
+ * as fixed-address intermediaries: the graph nodes always reference
+ * the same addresses, while the caller's inVec/outVec may live in
+ * pageable memory (/dev/shm).
+ * -------------------------------------------------------------- */
+#ifdef HAVE_CUDA
+
+MVMBackendCUDAGraph::MVMBackendCUDAGraph(const float *inVec,
+                                         float       *outVec,
+                                         uint64_t     full_size_spatial,
+                                         uint64_t     nb_modes,
+                                         uint32_t     axmode)
+    : MVMBackend(inVec, outVec, full_size_spatial, nb_modes, axmode), handle_(nullptr),
+      stream_(nullptr), d_matrix_(nullptr), d_in_(nullptr), d_out_(nullptr), h_in_pinned_(nullptr),
+      h_out_pinned_(nullptr), graph_(nullptr), graph_exec_(nullptr), graph_valid_(false)
+{
+    cublasStatus_t stat = cublasCreate(&handle_);
+    if (stat != CUBLAS_STATUS_SUCCESS)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cublasCreate failed (%d)\n", (int) stat);
+        exit(EXIT_FAILURE);
+    }
+
+    cudaError_t err = cudaStreamCreate(&stream_);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaStreamCreate failed (%d)\n", (int) err);
+        exit(EXIT_FAILURE);
+    }
+
+    cublasSetStream(handle_, stream_);
+}
+
+/* ------------------------------------------------------------------ */
+
+void MVMBackendCUDAGraph::free_buffers_()
+{
+    if (d_out_)
+    {
+        cudaFree(d_out_);
+        d_out_ = nullptr;
+    }
+    if (d_in_)
+    {
+        cudaFree(d_in_);
+        d_in_ = nullptr;
+    }
+    if (d_matrix_)
+    {
+        cudaFree(d_matrix_);
+        d_matrix_ = nullptr;
+    }
+    if (h_out_pinned_)
+    {
+        cudaFreeHost(h_out_pinned_);
+        h_out_pinned_ = nullptr;
+    }
+    if (h_in_pinned_)
+    {
+        cudaFreeHost(h_in_pinned_);
+        h_in_pinned_ = nullptr;
+    }
+}
+
+void MVMBackendCUDAGraph::destroy_graph_()
+{
+    if (graph_valid_)
+    {
+        cudaGraphExecDestroy(graph_exec_);
+        cudaGraphDestroy(graph_);
+        graph_exec_  = nullptr;
+        graph_       = nullptr;
+        graph_valid_ = false;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+
+void MVMBackendCUDAGraph::load_matrix(const float *matrix,
+                                      uint64_t     mvm_size_spatial,
+                                      uint64_t     mvm_size_modes)
+{
+    destroy_graph_();
+    free_buffers_();
+
+    /* Let the base class update mvm_size_in_ / mvm_size_out_ */
+    MVMBackend::load_matrix(matrix, mvm_size_spatial, mvm_size_modes);
+
+    cudaError_t  err;
+    const size_t sz_in  = sizeof(float) * (size_t) mvm_size_in_;
+    const size_t sz_out = sizeof(float) * (size_t) mvm_size_out_;
+    const size_t sz_mat = sizeof(float) * (size_t) (mvm_size_in_ * mvm_size_out_);
+
+    /* --- GPU device buffers --- */
+    err = cudaMalloc((void **) &d_matrix_, sz_mat);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaMalloc d_matrix_ failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMalloc((void **) &d_in_, sz_in);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaMalloc d_in_ failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMalloc((void **) &d_out_, sz_out);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaMalloc d_out_ failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Upload weight matrix (one-time, not part of the per-frame graph) */
+    cudaMemcpy(d_matrix_, matrix_, sz_mat, cudaMemcpyHostToDevice);
+
+    /* --- Pinned host staging buffers --- */
+    // TODO wrap the CUDA error checking
+    // TODO see if those mallocs can be avoided depending whether the input is a GPU SHM
+    err = cudaMallocHost((void **) &h_in_pinned_, sz_in);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaMallocHost h_in_pinned_ failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMallocHost((void **) &h_out_pinned_, sz_out);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaMallocHost h_out_pinned_ failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    build_graph_();
+}
+
+/* ------------------------------------------------------------------ */
+
+void MVMBackendCUDAGraph::build_graph_()
+{
+    const float alpha = 1.0f;
+    const float beta  = 0.0f;
+
+    cudaStreamBeginCapture(stream_, cudaStreamCaptureModeGlobal);
+
+    /* Node 1: H2D — pinned staging → d_in_ */
+    cudaMemcpyAsync(d_in_, h_in_pinned_, sizeof(float) * (size_t) mvm_size_in_,
+                    cudaMemcpyHostToDevice, stream_);
+
+    /* Node 2: cublasSgemv */
+    if (axmode_ == 0)
+    {
+        /* Extraction: out = M^T * x
+         * M is mvm_size_in_ × mvm_size_out_ col-major */
+        cublasSgemv(handle_, CUBLAS_OP_T, (int) mvm_size_in_, (int) mvm_size_out_, &alpha,
+                    d_matrix_, (int) mvm_size_in_, d_in_, 1, &beta, d_out_, 1);
+    }
+    else
+    {
+        /* Expansion: out = M * x
+         * M is mvm_size_out_ × mvm_size_in_ col-major */
+        cublasSgemv(handle_, CUBLAS_OP_N, (int) mvm_size_out_, (int) mvm_size_in_, &alpha,
+                    d_matrix_, (int) mvm_size_out_, d_in_, 1, &beta, d_out_, 1);
+    }
+
+    /* Node 3: D2H — d_out_ → pinned staging */
+    cudaMemcpyAsync(h_out_pinned_, d_out_, sizeof(float) * (size_t) mvm_size_out_,
+                    cudaMemcpyDeviceToHost, stream_);
+
+    cudaStreamEndCapture(stream_, &graph_);
+    cudaGraphInstantiate(&graph_exec_, graph_, nullptr, nullptr, 0);
+    graph_valid_ = true;
+}
+
+/* ------------------------------------------------------------------ */
+
+MVMBackendCUDAGraph::~MVMBackendCUDAGraph()
+{
+    destroy_graph_();
+    free_buffers_();
+    if (stream_)
+    {
+        cudaStreamDestroy(stream_);
+        stream_ = nullptr;
+    }
+    if (handle_)
+    {
+        cublasDestroy(handle_);
+        handle_ = nullptr;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+
+void MVMBackendCUDAGraph::matrixMul()
+{
+    /* --- CPU gather: fill h_in_pinned_ from caller's inVec_ --- */
+    if (masking_ && axmode_ == 0)
+    {
+        /* Sparse gather: pick only masked pixels */
+        for (uint64_t i = 0; i < mask_npix_; i++)
+        {
+            h_in_pinned_[i] = inVec_[mask_idx_[i]];
+        }
+    }
+    else
+    {
+        memcpy(h_in_pinned_, inVec_, sizeof(float) * (size_t) mvm_size_in_);
+    }
+
+    /* --- GPU: single graph dispatch (H2D + sgemv + D2H) --- */
+    cudaGraphLaunch(graph_exec_, stream_);
+    cudaStreamSynchronize(stream_);
+
+    /* --- CPU scatter: drain h_out_pinned_ into caller's outVec_ --- */
+    if (masking_ && axmode_ == 1)
+    {
+        /* Sparse scatter: write only to masked pixel positions */
+        for (uint64_t i = 0; i < mask_npix_; i++)
+        {
+            outVec_[mask_idx_[i]] = h_out_pinned_[i];
+        }
+    }
+    else
+    {
+        memcpy(outVec_, h_out_pinned_, sizeof(float) * (size_t) mvm_size_out_);
+    }
+}
+
+#endif /* HAVE_CUDA (MVMBackendCUDAGraph) */

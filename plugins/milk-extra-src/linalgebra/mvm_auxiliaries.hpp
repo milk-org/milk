@@ -143,4 +143,65 @@ class MVMBackendCUBLAS : public MVMBackend
     float         *d_in_;     /* GPU input  (N)      */
     float         *d_out_;    /* GPU output (M)      */
 };
+
+
+/* ----------------------------------------------------------------
+ * CUDA Graphs  (requires CUDA >= 11.0)
+ *
+ * Captures H2D + cublasSgemv + D2H into a single cudaGraph_t that
+ * is instantiated once in load_matrix() and replayed with a single
+ * cudaGraphLaunch() per frame.  Pinned host staging buffers bridge
+ * between the caller's (possibly pageable) inVec/outVec and the
+ * fixed-address device memory required by the captured graph nodes.
+ * -------------------------------------------------------------- */
+class MVMBackendCUDAGraph : public MVMBackend
+{
+  public:
+    MVMBackendCUDAGraph(const float *inVec,
+                        float       *outVec,
+                        uint64_t     full_size_spatial,
+                        uint64_t     nb_modes,
+                        uint32_t     axmode);
+    ~MVMBackendCUDAGraph() override;
+
+    /**
+     * Allocates GPU buffers, pinned host staging, uploads the
+     * matrix, and builds/instantiates the CUDA graph.
+     * Must be called after enable_masking() (if used).
+     */
+    void load_matrix(const float *matrix,
+                     uint64_t     mvm_size_spatial,
+                     uint64_t     mvm_size_modes) override;
+
+    /**
+     * Gathers input → pinned staging, launches the captured graph
+     * (H2D + sgemv + D2H), waits for completion, then scatters
+     * the output from pinned staging to outVec.
+     */
+    void matrixMul() override;
+
+  private:
+    cublasHandle_t handle_;
+    cudaStream_t   stream_;
+
+    float *d_matrix_; /* GPU col-major M x N             */
+    float *d_in_;     /* GPU input  (mvm_size_in_)       */
+    float *d_out_;    /* GPU output (mvm_size_out_)      */
+
+    float *h_in_pinned_;  /* pinned host input  staging      */
+    float *h_out_pinned_; /* pinned host output staging      */
+
+    cudaGraph_t     graph_;
+    cudaGraphExec_t graph_exec_;
+    bool            graph_valid_;
+
+    /** Capture and instantiate the three-node graph. */
+    void build_graph_();
+
+    /** Release graph objects (idempotent). */
+    void destroy_graph_();
+
+    /** Release all GPU / pinned allocations (idempotent). */
+    void free_buffers_();
+};
 #endif /* HAVE_CUDA */

@@ -256,6 +256,7 @@ def mvm_correctness_all_params(
     masking: bool,
     input_dtype: np.typing.DTypeLike,
 ):
+
     fps_m["GPUindex"] = GPUindex
     fps_m["axmode"] = axmode
     fps_m["option.MODENORM"] = normalize
@@ -362,7 +363,7 @@ class TestsAxmode0:
     # @pytest.mark.parametrize('masking', [False])
     # Full parametrizes
     @pytest.mark.parametrize("normalize", [False, True])
-    @pytest.mark.parametrize("GPUindex", [0, 98, 99])
+    @pytest.mark.parametrize("GPUindex", [-1, 0, 98, 99])
     @pytest.mark.parametrize("masking", [False, True])
     def test_mvm_correctness(
         self,
@@ -413,7 +414,7 @@ class TestsAxmode1:
     # @pytest.mark.parametrize('masking', [False])
     # Full parametrizes
     @pytest.mark.parametrize("normalize", [False, True])
-    @pytest.mark.parametrize("GPUindex", [0, 98, 99])
+    @pytest.mark.parametrize("GPUindex", [-1, 0, 98, 99])
     @pytest.mark.parametrize("masking", [False, True])
     def test_mvm_correctness(
         self,

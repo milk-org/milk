@@ -90,7 +90,8 @@ enum class ComputeMode : int
 {
     OMP_OR_PLAIN = 0,
     BLAS         = 1,
-    CUDA         = 2
+    CUBLAS       = 2,
+    CUDASTREAM   = 3
 };
 
 errno_t cuda_attempt_init(PROCESSINFO *processinfo)
@@ -129,9 +130,10 @@ errno_t cuda_attempt_init(PROCESSINFO *processinfo)
                clockRate * 1e-3f, clockRate * 1e-6f);
     }
 
-    if (GPUindex < deviceCount)
+    int32_t true_gpu_index = GPUindex < 0 ? -GPUindex - 1 : GPUindex;
+    if (true_gpu_index < deviceCount)
     {
-        cudaSetDevice(GPUindex);
+        cudaSetDevice(true_gpu_index);
     }
     else
     {
@@ -149,12 +151,23 @@ errno_t cuda_attempt_init(PROCESSINFO *processinfo)
 
 ComputeMode _compute_mode_determine(PROCESSINFO *processinfo)
 {
-    if (GPUindex >= 0 && GPUindex != 99 && GPUindex != 98 &&
-        RETURN_SUCCESS == cuda_attempt_init(processinfo))
+    int32_t true_gpu_indexxx = GPUindex < 0 ? -GPUindex - 1 : GPUindex;
+    printf("GPU index %d %d\n", GPUindex, true_gpu_indexxx);
+    fflush(stdout);
+
+    if (GPUindex != 99 && GPUindex != 98 && RETURN_SUCCESS == cuda_attempt_init(processinfo))
     {
-        processinfo_WriteMessage_fmt(processinfo, "Successful CUDA init - GPU %d", GPUindex);
+        int32_t true_gpu_index = GPUindex < 0 ? -GPUindex - 1 : GPUindex;
+        processinfo_WriteMessage_fmt(processinfo, "Successful CUDA init - GPU %d", true_gpu_index);
         printf("-------------\nBACKEND: CUDA\n-------------\n");
-        return ComputeMode::CUDA;
+        if (GPUindex < 0)
+        {
+            return ComputeMode::CUDASTREAM;
+        }
+        else
+        {
+            return ComputeMode::CUBLAS;
+        }
     }
 #ifdef BLASLIB
     if (GPUindex == 99)
@@ -375,11 +388,19 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         backend = std::make_unique<MVMBackendCPU>(imgin_float_casted_ptr, imgid_out.im->array.F,
                                                   n_pixels_spatial_side, nb_modes, axis_mode);
     }
-    else if (compute_mode == ComputeMode::CUDA)
+    else if (compute_mode == ComputeMode::CUBLAS)
     {
 #ifdef HAVE_CUDA
         backend = std::make_unique<MVMBackendCUBLAS>(imgin_float_casted_ptr, imgid_out.im->array.F,
                                                      n_pixels_spatial_side, nb_modes, axis_mode);
+#endif
+    }
+    else if (compute_mode == ComputeMode::CUDASTREAM)
+    {
+#ifdef HAVE_CUDA
+        backend =
+            std::make_unique<MVMBackendCUDAGraph>(imgin_float_casted_ptr, imgid_out.im->array.F,
+                                                  n_pixels_spatial_side, nb_modes, axis_mode);
 #endif
     }
 
@@ -413,7 +434,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     }
 
     processinfo_WriteMessage_fmt(processinfo, "Backend: %s",
-                                 compute_mode == ComputeMode::CUDA   ? "cuBLAS"
+                                 compute_mode == ComputeMode::CUBLAS ? "cuBLAS"
                                  : compute_mode == ComputeMode::BLAS ? "BLAS"
                                                                      : "CPU");
 
