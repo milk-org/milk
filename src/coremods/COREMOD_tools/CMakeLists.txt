@@ -73,8 +73,10 @@ project(lib_${LIBNAME}_project)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(CFITSIO cfitsio)
-if(${CFITSIO_FOUND})
+if(USE_CFITSIO)
+  pkg_check_modules(CFITSIO cfitsio)
+endif()
+if(USE_CFITSIO AND ${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
   target_include_directories(

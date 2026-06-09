@@ -8,7 +8,9 @@ find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenMP)
 
-pkg_check_modules(CFITSIO cfitsio)
+if(USE_CFITSIO)
+  pkg_check_modules(CFITSIO cfitsio)
+endif()
 
 # -------------------------------------------------------
 # libmilkscript — the readline-free scripting engine
@@ -69,7 +71,7 @@ set(MILKSCRIPT_SOURCES
 
 add_library(milkscript SHARED ${MILKSCRIPT_SOURCES})
 
-if(${CFITSIO_FOUND})
+if(USE_CFITSIO AND ${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(milkscript PUBLIC USE_CFITSIO=1)
   target_include_directories(milkscript PUBLIC ${CFITSIO_INCLUDE_DIRS})

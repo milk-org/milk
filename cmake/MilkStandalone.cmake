@@ -49,11 +49,14 @@ set(_MILK_STANDALONE_LIBS
     milkCOREMODmemory_compute
     milkCOREMODtools_compute
     milkCOREMODarith_compute
-    milkCOREMODiofits_compute
     ${CFITSIO_LIBRARIES}
     m
     rt
     -Wl,--allow-shlib-undefined)
+if(USE_CFITSIO AND CFITSIO_FOUND)
+  list(APPEND _MILK_STANDALONE_LIBS milkCOREMODiofits_compute
+       ${CFITSIO_LIBRARIES})
+endif()
 
 # Static link set for full LTO optimization Used when USE_STATIC_LTO=ON.  Static
 # archives give the LTO linker full cross-module visibility.

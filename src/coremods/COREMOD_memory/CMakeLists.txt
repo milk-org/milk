@@ -184,14 +184,7 @@ if(USE_CFITSIO)
     link_directories(${CFITSIO_LIBRARY_DIRS})
     target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
     target_include_directories(
-      ${LIBNAME}
-      PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             ${CFITSIO_INCLUDE_DIRS})
+      ${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
     target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
   endif()
 endif()
@@ -200,19 +193,13 @@ target_include_directories(
   ${LIBNAME}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
          $<INSTALL_INTERFACE:include>)
-if(USE_CFITSIO AND CFITSIO_LIBRARIES)
-  target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
-else()
-  target_link_libraries(${LIBNAME} PUBLIC m milkfps)
-endif()
+target_link_libraries(
+  ${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps
+                    $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>)
 
 install(
   TARGETS ${LIBNAME}
