@@ -68,39 +68,7 @@ install(
   DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
-# Compute-only variant: no CLI code, no CLIcore dependency
-set(LIBNAME_COMPUTE "${LIBNAME}_compute")
-add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-target_compile_definitions(${LIBNAME_COMPUTE}
-                           PRIVATE FFTCONFIGDIR="${PROJECT_SOURCE_DIR}/config")
-if(${CFITSIO_FOUND})
-  target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(
-    ${LIBNAME_COMPUTE}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
-endif()
-target_include_directories(
-  ${LIBNAME_COMPUTE}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-         $<INSTALL_INTERFACE:include>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>)
-target_link_libraries(
-  ${LIBNAME_COMPUTE}
-  PUBLIC ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES} m ${CFITSIO_LIBRARIES}
-         milkCOREMODmemory_compute milkCOREMODiofits_compute)
-install(
-  TARGETS ${LIBNAME_COMPUTE}
-  EXPORT milkTargets
-  DESTINATION lib)
-
 add_milk_standalone(fft-dofft dofft.c)
-target_link_libraries(milk-fpsexec-fft-dofft PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-fft-dofft PUBLIC ${LIBNAME})
 add_milk_standalone(fft-pup2foc pup2foc.c)
-target_link_libraries(milk-fpsexec-fft-pup2foc PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-fft-pup2foc PUBLIC ${LIBNAME})

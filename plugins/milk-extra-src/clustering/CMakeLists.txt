@@ -75,35 +75,6 @@ install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
-# Compute-only variant: no CLI code, no CLIcore dependency
-set(LIBNAME_COMPUTE "${LIBNAME}_compute")
-add_library(${LIBNAME_COMPUTE} SHARED ${SRCNAME}.c ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-if(USE_CFITSIO AND CFITSIO_FOUND)
-  target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
-endif()
-target_include_directories(
-  ${LIBNAME_COMPUTE}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
-         $<INSTALL_INTERFACE:include>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>)
-target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
-install(
-  TARGETS ${LIBNAME_COMPUTE}
-  EXPORT milkTargets
-  DESTINATION lib)
-
 add_milk_standalone(clustering-cubeclust cubecluster.c)
-target_link_libraries(milk-fpsexec-clustering-cubeclust
-                      PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-clustering-cubeclust PUBLIC ${LIBNAME})
 add_milk_standalone(clustering-mindiffscan mindiffscan.c)

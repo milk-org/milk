@@ -62,31 +62,6 @@ install(
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
-# Compute-only variant: no CLI code, no CLIcore dependency
-set(LIBNAME_COMPUTE "${LIBNAME}_compute")
-add_library(${LIBNAME_COMPUTE} SHARED ${SRCNAME}.c ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-if(USE_CFITSIO AND CFITSIO_FOUND)
-  target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
-endif()
-target_include_directories(
-  ${LIBNAME_COMPUTE}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
-         $<INSTALL_INTERFACE:include>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>)
-target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
-install(
-  TARGETS ${LIBNAME_COMPUTE}
-  EXPORT milkTargets
-  DESTINATION lib)
-
 add_milk_standalone(linopt-SVDdecomp compute_SVDdecomp.c)
 target_link_libraries(milk-fpsexec-linopt-SVDdecomp PUBLIC ${OPENBLAS_LIBRARIES}
                                                            lapacke)
@@ -96,25 +71,23 @@ target_link_libraries(milk-fpsexec-linopt-SVDpInverse
                       PUBLIC ${OPENBLAS_LIBRARIES} lapacke)
 
 add_milk_standalone(linopt-imgconstruct image_construct.c)
-target_link_libraries(milk-fpsexec-linopt-imgconstruct
-                      PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-imgconstruct PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-imgFitModes image_fitModes.c)
 target_link_libraries(milk-fpsexec-linopt-imgFitModes
-                      PUBLIC ${LIBNAME_COMPUTE} ${OPENBLAS_LIBRARIES})
+                      PUBLIC ${LIBNAME} ${OPENBLAS_LIBRARIES})
 add_milk_standalone(linopt-img2vec image_to_vec.c)
-target_link_libraries(milk-fpsexec-linopt-img2vec PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-img2vec PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-imcXprod imcube_crossproduct.c)
-target_link_libraries(milk-fpsexec-linopt-imcXprod PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-imcXprod PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-lin1Dfit lin1Dfit.c)
-target_link_libraries(milk-fpsexec-linopt-lin1Dfit PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-lin1Dfit PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-linRM linRM_from_inout.c)
-target_link_libraries(milk-fpsexec-linopt-linRM PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-linRM PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-mkCPAmodes makeCPAmodes.c)
-target_link_libraries(milk-fpsexec-linopt-mkCPAmodes PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-mkCPAmodes PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-mkCosRadModes makeCosRadModes.c)
-target_link_libraries(milk-fpsexec-linopt-mkCosRadModes
-                      PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-mkCosRadModes PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-mask2pixtab mask_to_pixtable.c)
-target_link_libraries(milk-fpsexec-linopt-mask2pixtab PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-mask2pixtab PUBLIC ${LIBNAME})
 add_milk_standalone(linopt-vec2Dimg vec_to_2Dimage.c)
-target_link_libraries(milk-fpsexec-linopt-vec2Dimg PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linopt-vec2Dimg PUBLIC ${LIBNAME})

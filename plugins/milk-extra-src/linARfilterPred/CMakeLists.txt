@@ -113,77 +113,35 @@ install(
   DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
-# Compute-only variant: no CLI code, no CLIcore dependency
-set(LIBNAME_COMPUTE "${LIBNAME}_compute")
-add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-target_include_directories(
-  ${LIBNAME_COMPUTE}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
-         $<INSTALL_INTERFACE:include>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>)
-target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps
-                                                milklinalgebra_compute)
-if(USE_CUDA)
-  target_include_directories(${LIBNAME_COMPUTE}
-                             PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
-  target_compile_options(${LIBNAME_COMPUTE} PUBLIC -DHAVE_CUDA)
-endif()
-if(OPENBLAS_FOUND)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${OPENBLAS_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${OPENBLAS_LIBRARY_DIRS})
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC ${OPENBLAS_LIBRARIES})
-  target_compile_options(${LIBNAME_COMPUTE} PUBLIC -DHAVE_OPENBLAS
-                                                   ${OPENBLAS_CFLAGS_OTHER})
-endif()
-if(MKL_FOUND)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${MKL_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${MKL_LIBRARY_DIRS})
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC ${MKL_LIBRARIES})
-  target_compile_options(${LIBNAME_COMPUTE} PUBLIC -DHAVE_MKL
-                                                   ${MKL_CFLAGS_OTHER})
-endif()
-install(
-  TARGETS ${LIBNAME_COMPUTE}
-  EXPORT milkTargets
-  DESTINATION lib)
-
 add_milk_standalone(linpred-applyPF applyPF.c)
-target_link_libraries(milk-fpsexec-linpred-applyPF PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linpred-applyPF PUBLIC ${LIBNAME}
+                                                          milklinalgebra)
 
 add_milk_standalone(linpred-buildlinPF build_linPF.c)
-target_link_libraries(milk-fpsexec-linpred-buildlinPF
-                      PUBLIC ${LIBNAME_COMPUTE} milklinalgebra_compute)
+target_link_libraries(milk-fpsexec-linpred-buildlinPF PUBLIC ${LIBNAME}
+                                                             milklinalgebra)
 
 add_milk_standalone(linAR-pfloadascii pfloadascii.c)
-target_link_libraries(milk-fpsexec-linAR-pfloadascii PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linAR-pfloadascii PUBLIC ${LIBNAME})
 
 add_milk_standalone(linAR-mselblock mselblock.c)
-target_link_libraries(milk-fpsexec-linAR-mselblock PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linAR-mselblock PUBLIC ${LIBNAME})
 
 add_milk_standalone(linAR-imrepshiftx imrepshiftx.c)
-target_link_libraries(milk-fpsexec-linAR-imrepshiftx PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linAR-imrepshiftx PUBLIC ${LIBNAME})
 
 add_milk_standalone(linAR-mkARpfilt mkARpfilt.c)
-target_link_libraries(milk-fpsexec-linAR-mkARpfilt
-                      PUBLIC ${LIBNAME_COMPUTE} milklinalgebra_compute)
+target_link_libraries(milk-fpsexec-linAR-mkARpfilt PUBLIC ${LIBNAME}
+                                                          milklinalgebra)
 
 add_milk_standalone(linAR-applyARpfilt applyARpfilt.c)
-target_link_libraries(milk-fpsexec-linAR-applyARpfilt PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linAR-applyARpfilt PUBLIC ${LIBNAME})
 
 add_milk_standalone(linAR-mscangain mscangain.c)
-target_link_libraries(milk-fpsexec-linAR-mscangain PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linAR-mscangain PUBLIC ${LIBNAME})
 
 add_milk_standalone(linAR-PFMupdate linARPFMupdate.c)
-target_link_libraries(milk-fpsexec-linAR-PFMupdate PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linAR-PFMupdate PUBLIC ${LIBNAME})
 
 add_milk_standalone(linAR-applyRT linARapplyRT.c)
-target_link_libraries(milk-fpsexec-linAR-applyRT PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linAR-applyRT PUBLIC ${LIBNAME})

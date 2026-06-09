@@ -34,7 +34,6 @@ if(USE_CLI)
             ${PROJECT_SOURCE_DIR}/src/coremods
             ${PROJECT_SOURCE_DIR}/src/engine/libfps
             ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
-            # ${PROJECT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
             ${PROJECT_SOURCE_DIR}/src/engine/libmilkcommon)
 endif()
 
@@ -46,16 +45,14 @@ set(_MILK_STANDALONE_LIBS
     milkdata
     milkprocessinfo
     ImageStreamIO
-    milkCOREMODmemory_compute
-    milkCOREMODtools_compute
-    milkCOREMODarith_compute
-    ${CFITSIO_LIBRARIES}
+    milkCOREMODmemory
+    milkCOREMODtools
+    milkCOREMODarith
     m
     rt
     -Wl,--allow-shlib-undefined)
 if(USE_CFITSIO AND CFITSIO_FOUND)
-  list(APPEND _MILK_STANDALONE_LIBS milkCOREMODiofits_compute
-       ${CFITSIO_LIBRARIES})
+  list(APPEND _MILK_STANDALONE_LIBS milkCOREMODiofits ${CFITSIO_LIBRARIES})
 endif()
 
 # Static link set for full LTO optimization Used when USE_STATIC_LTO=ON.  Static
@@ -67,9 +64,9 @@ if(USE_STATIC_LTO)
   # Core static libs always required
   set(_MILK_STANDALONE_STATIC_LIBS
       -Wl,--start-group
-      milkCOREMODmemory_compute_static
-      milkCOREMODtools_compute_static
-      milkCOREMODarith_compute_static
+      milkCOREMODmemory_static
+      milkCOREMODtools_static
+      milkCOREMODarith_static
       milkfpsStandalone_static
       milkfpsseq_static
       milkfps_static
@@ -82,7 +79,7 @@ if(USE_STATIC_LTO)
       -Wl,--allow-shlib-undefined)
   # CFITSIO-dependent libs only when CFITSIO is enabled
   if(USE_CFITSIO AND CFITSIO_FOUND)
-    list(INSERT _MILK_STANDALONE_STATIC_LIBS 1 milkCOREMODiofits_compute_static
+    list(INSERT _MILK_STANDALONE_STATIC_LIBS 1 milkCOREMODiofits_static
          ImageStreamIO_static ${CFITSIO_LIBRARIES})
   else()
     # Link ImageStreamIO static archive when CFITSIO is not used

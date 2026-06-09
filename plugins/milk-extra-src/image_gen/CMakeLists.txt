@@ -67,91 +67,34 @@ install(
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
-# Compute-only variant: no CLI code, no CLIcore dependency
-set(LIBNAME_COMPUTE "${LIBNAME}_compute")
-add_library(${LIBNAME_COMPUTE} SHARED ${SRCNAME}.c ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-if(USE_CFITSIO AND CFITSIO_FOUND)
-  target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(
-    ${LIBNAME_COMPUTE}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
-endif()
-target_include_directories(
-  ${LIBNAME_COMPUTE}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>)
-if(USE_CFITSIO AND CFITSIO_FOUND)
-  target_link_libraries(
-    ${LIBNAME_COMPUTE} PUBLIC m ${CFITSIO_LIBRARIES} milkCOREMODmemory_compute
-                              milkCOREMODiofits_compute milkstatistic_compute)
-else()
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkCOREMODmemory_compute
-                                                  milkstatistic_compute)
-endif()
-install(
-  TARGETS ${LIBNAME_COMPUTE}
-  EXPORT milkTargets
-  DESTINATION lib)
-
-# Static archive for USE_STATIC_LTO builds (standalone can't link .so)
+# Static archive for USE_STATIC_LTO builds
 if(USE_STATIC_LTO)
-  set(LIBNAME_COMPUTE_STATIC "${LIBNAME_COMPUTE}_static")
-  add_library(${LIBNAME_COMPUTE_STATIC} STATIC ${SRCNAME}.c ${SOURCEFILES})
-  set_target_properties(${LIBNAME_COMPUTE_STATIC} PROPERTIES OUTPUT_NAME
-                                                             ${LIBNAME_COMPUTE})
-  target_compile_definitions(${LIBNAME_COMPUTE_STATIC} PRIVATE MILK_NO_CLI)
+  set(LIBNAME_STATIC "${LIBNAME}_static")
+  add_library(${LIBNAME_STATIC} STATIC ${SRCNAME}.c ${SOURCEFILES})
+  set_target_properties(${LIBNAME_STATIC} PROPERTIES OUTPUT_NAME ${LIBNAME})
   target_include_directories(
-    ${LIBNAME_COMPUTE_STATIC}
+    ${LIBNAME_STATIC}
     PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
            $<INSTALL_INTERFACE:include>)
   if(USE_CFITSIO AND CFITSIO_FOUND)
-    target_compile_definitions(${LIBNAME_COMPUTE_STATIC} PUBLIC USE_CFITSIO=1)
-    target_include_directories(${LIBNAME_COMPUTE_STATIC}
-                               PUBLIC ${CFITSIO_INCLUDE_DIRS})
-    target_link_libraries(
-      ${LIBNAME_COMPUTE_STATIC}
-      PUBLIC m ${CFITSIO_LIBRARIES} milkCOREMODmemory_compute_static
-             milkCOREMODiofits_compute_static milkstatistic_compute_static)
+    target_link_libraries(${LIBNAME_STATIC} PUBLIC m ${CFITSIO_LIBRARIES}
+                                                   milkstatistic_static)
   else()
-    target_link_libraries(
-      ${LIBNAME_COMPUTE_STATIC} PUBLIC m milkCOREMODmemory_compute_static
-                                       milkstatistic_compute_static)
+    target_link_libraries(${LIBNAME_STATIC} PUBLIC m milkstatistic_static)
   endif()
+  install(
+    TARGETS ${LIBNAME_STATIC}
+    EXPORT milkTargets
+    DESTINATION lib)
 endif()
 
 add_milk_standalone(imggen-mkrandom mkrandomim.c)
-if(USE_STATIC_LTO)
-  target_link_libraries(
-    milk-fpsexec-imggen-mkrandom PUBLIC ${LIBNAME_COMPUTE_STATIC}
-                                        milkstatistic_compute_static)
-else()
-  target_link_libraries(milk-fpsexec-imggen-mkrandom
-                        PUBLIC ${LIBNAME} milkstatistic_compute)
-endif()
+target_link_libraries(milk-fpsexec-imggen-mkrandom PUBLIC ${LIBNAME}
+                                                          milkstatistic)
 add_milk_standalone(
   imggen-voronoi
   voronoi.c
@@ -169,37 +112,35 @@ add_milk_standalone(
   imgen_mkrndgim.c
   imgen_im2coord.c)
 add_milk_standalone(imggen-mkdisk mkdisk.c)
-target_link_libraries(milk-fpsexec-imggen-mkdisk PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkdisk PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkspdisk mkspdisk.c)
-target_link_libraries(milk-fpsexec-imggen-mkspdisk PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkspdisk PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkpolygon mkpolygon.c)
-target_link_libraries(milk-fpsexec-imggen-mkpolygon PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkpolygon PUBLIC ${LIBNAME})
 
 add_milk_standalone(imggen-mkgauss imgen_mkgauss.c)
-target_link_libraries(milk-fpsexec-imggen-mkgauss PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkgauss PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkfiberclpoverlap imgen_mkfiberclpoverlap.c)
-target_link_libraries(milk-fpsexec-imggen-mkfiberclpoverlap
-                      PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkfiberclpoverlap PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkslopexy imgen_mkslopexy.c)
-target_link_libraries(milk-fpsexec-imggen-mkslopexy PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkslopexy PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkdist imgen_mkdist.c)
-target_link_libraries(milk-fpsexec-imggen-mkdist PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkdist PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkhexsegpup imgen_mkhexsegpup.c)
-target_link_libraries(milk-fpsexec-imggen-mkhexsegpup PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkhexsegpup PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-segs2wfmodes imgen_segs2wfmodes.c)
-target_link_libraries(milk-fpsexec-imggen-segs2wfmodes
-                      PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-segs2wfmodes PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkrect imgen_mkrect.c)
-target_link_libraries(milk-fpsexec-imggen-mkrect PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkrect PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkline imgen_mkline.c)
-target_link_libraries(milk-fpsexec-imggen-mkline PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkline PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mklincoord imgen_mklincoord.c)
-target_link_libraries(milk-fpsexec-imggen-mklincoord PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mklincoord PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkgridpix imgen_mkgridpix.c)
-target_link_libraries(milk-fpsexec-imggen-mkgridpix PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkgridpix PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkrndim imgen_mkrndim.c)
-target_link_libraries(milk-fpsexec-imggen-mkrndim PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkrndim PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-mkrndgim imgen_mkrndgim.c)
-target_link_libraries(milk-fpsexec-imggen-mkrndgim PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-mkrndgim PUBLIC ${LIBNAME})
 add_milk_standalone(imggen-im2coord imgen_im2coord.c)
-target_link_libraries(milk-fpsexec-imggen-im2coord PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-imggen-im2coord PUBLIC ${LIBNAME})
