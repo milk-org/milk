@@ -9,7 +9,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef CFITSIO
-#include "COREMOD_iofits/COREMOD_iofits.h"
+#    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 #include "COREMOD_tools/COREMOD_tools.h"
 
@@ -224,10 +224,10 @@ static errno_t imcube_mindiffscan(IMGID img,
 
             if (fracdone > fracdonesavelim)
             {
-            #ifdef CFITSIO
+#ifdef CFITSIO
                 printf("\nsaving to filesystem\n");
                 save_fl_fits("distmat", "distmat.fits");
-            #endif
+#endif
                 fracdonesavelim += deltasave;
             }
         }

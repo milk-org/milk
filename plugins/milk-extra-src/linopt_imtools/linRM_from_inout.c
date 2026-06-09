@@ -9,7 +9,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef USE_CFITSIO
-#include "COREMOD_iofits/savefits.h"
+#    include "COREMOD_iofits/savefits.h"
 #endif
 
 #include "compute_SVDpseudoInverse.h"

@@ -12,7 +12,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #ifdef USE_CFITSIO
-#include "COREMOD_iofits/COREMOD_iofits.h"
+#    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 
 #include "image_filter/image_filter.h"
