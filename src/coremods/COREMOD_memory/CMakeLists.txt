@@ -197,8 +197,10 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
          $<INSTALL_INTERFACE:include>)
 target_link_libraries(
-  ${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps
-                    $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>)
+  ${LIBNAME}
+  PUBLIC
+    m ${CFITSIO_LIBRARIES} milkfps
+    $<$<AND:$<BOOL:${USE_CFITSIO}>,$<BOOL:${CFITSIO_FOUND}>>:milkCOREMODiofits>)
 
 install(
   TARGETS ${LIBNAME}

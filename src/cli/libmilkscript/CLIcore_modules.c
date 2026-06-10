@@ -273,16 +273,11 @@ errno_t load_module_shared(const char *__restrict modulename)
     }
 
     data.module[target_idx].type = MODULE_TYPE_CUSTOMLOAD;
-
     strncpy(data.module[target_idx].sofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
-
     strncpy(data.module[target_idx].loadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
 
-
-    // HERE
-
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return target_idx >= 0 ? RETURN_SUCCESS : RETURN_FAILURE;
 }
 
 
@@ -303,80 +298,70 @@ errno_t load_module_shared_local()
     char libname[STRINGMAXLEN_FULLFILENAME + STRINGMAXLEN_DIRNAME];
     char dirname[STRINGMAXLEN_DIRNAME];
 
+    char cwd[STRINGMAXLEN_DIRNAME];
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        PRINT_ERROR("getcwd failed");
+        return RETURN_FAILURE;
+    }
+
     WRITE_DIRNAME(dirname, "./milklib");
 
     if (dcquiet == 0)
     {
         printf("load modules from directory %s\n", dirname);
     }
-
-    int loopOK  = 0;
-    int iter    = 0;
-    int itermax = 4; // number of passes
-    while ((loopOK == 0) && (iter < itermax))
+    DIR           *d = opendir(dirname);
+    struct dirent *dir;
+    if (d == NULL)
     {
-        DIR           *d;
-        struct dirent *dir;
-
-        loopOK = 1;
-        d      = opendir(dirname);
-        if (d)
+        if (dcquiet == 0)
         {
-            while ((dir = readdir(d)) != NULL)
-            {
-                char *dot = strrchr(dir->d_name, '.');
-                if (dot && !strcmp(dot, ".so"))
-                {
-                    snprintf(libname, sizeof(libname), "%s/lib/%s", dcinstalldir, dir->d_name);
-                    //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
-                    //fflush(stdout);
+            printf("--> directory not found.\n");
+        }
+        return RETURN_SUCCESS;
+    }
+    int itermax             = 4; // number of passes
+    int any_so_link_failure = 0;
+    for (int iter = 0; iter < itermax; ++iter)
+    {
+        any_so_link_failure = 0;
 
-                    printf("    [%5d] Loading shared object "
-                           "\"%s\"\n",
-                           DLib_index, libname);
-                    void *handle = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-                    if (!handle)
-                    {
-                        const char *errstr = dlerror();
-                        fprintf(stderr,
-                                KMAG "        WARNING: linker "
-                                     "pass # %d, module # %d\n  "
-                                     "        %s\n" KRES,
-                                iter, DLib_index, errstr ? errstr : "Unknown error");
-                        fflush(stderr);
-                        //exit(EXIT_FAILURE);
-                        loopOK = 0;
-                    }
-                    else
-                    {
-                        dlerror();
-                        DLib_handle[DLib_index] = handle;
-                        // increment number of libs dynamically loaded
-                        DLib_index++;
-                    }
-                }
+        while ((dir = readdir(d)) != NULL) // iterate .so files
+        {
+            char *dot = strrchr(dir->d_name, '.');
+            if (dot == NULL || strcmp(dot, ".so") != 0)
+            {
+                continue;
             }
 
-            closedir(d);
-        }
-        if (iter > 0)
-        {
-            if (loopOK == 1)
+            // after
+            snprintf(libname, sizeof(libname), "%s/lib/%s", cwd, dir->d_name);
+            //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
+            //fflush(stdout);
+
+            // libname should be an abspath and start with a /
+            // load_module_shared handles that.
+            if (load_module_shared(libname) != RETURN_SUCCESS)
             {
-                printf(KGRN "        Linker pass #%d successful\n" KRES, iter);
+                any_so_link_failure = 1;
             }
         }
-        iter++;
+
+        if (any_so_link_failure == 0)
+        {
+            iter > 0 ? printf(KGRN "        Linker pass #%d successful\n" KRES, iter) : 0;
+            break;
+        }
     }
 
-    if (loopOK != 1)
+    closedir(d);
+
+    if (any_so_link_failure == 1)
     {
         printf("Some libraries could not be loaded -> EXITING\n");
-        exit(2);
+        return RETURN_FAILURE;
     }
-
-    //printf("All libraries successfully loaded\n");
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

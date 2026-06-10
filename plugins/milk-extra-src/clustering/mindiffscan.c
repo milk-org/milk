@@ -8,7 +8,7 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#ifdef CFITSIO
+#ifdef USE_CFITSIO
 #    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -174,7 +174,7 @@ static errno_t imcube_mindiffscan(IMGID img,
                 pixgain[ii] * img.im->array.F[zi * xysize + pixmap[ii]];
         }
     }
-#ifdef CFITSIO
+#ifdef USE_CFITSIO
     save_fl_fits("mindiffscan_imc", "mindiffscan_imc.fits");
 #endif
 

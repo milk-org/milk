@@ -40,6 +40,7 @@ static errno_t init_module_CLI()
     CLIADDCMD_milkfft__fftcorrelation();
 
     CLIADDCMD_milk_fft__pup2foc();
+    return RETURN_SUCCESS;
 }
 
 MILK_MODULE(fft, init_module_CLI, NULL);
@@ -54,7 +55,7 @@ static void __attribute__((constructor)) fftw_init()
     // load fftw wisdom
     import_wisdom();
 
-    __milk_module_info.constructor_called == 1;
+    __milk_module_info.constructor_called = 1;
 }
 
 
