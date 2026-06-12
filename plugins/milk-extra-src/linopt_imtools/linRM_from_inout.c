@@ -8,7 +8,9 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "COREMOD_iofits/savefits.h"
+#ifdef USE_CFITSIO
+#    include "COREMOD_iofits/savefits.h"
+#endif
 
 #include "compute_SVDpseudoInverse.h"
 #include "linalgebra/magma_compute_SVDpseudoInverse.h"
@@ -184,7 +186,9 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
                 dcimg[IDin].array.F[spl * xsizein * ysizein + inpixarray[act]];
         }
     }
+#ifdef USE_CFITSIO
     save_fits("pokeM", "_test_pokeM.fits");
+#endif
 
     // compute pokeM pseudo-inverse
 #ifdef HAVE_MAGMA
@@ -197,7 +201,9 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
 #endif
 
     list_image_ID();
+#ifdef USE_CFITSIO
     save_fits("pokeMinv", "pokeMinv.fits");
+#endif
     IDpinv = image_ID("pokeMinv", dcimg, dcnimg);
 
     // multiply measurements by pokeMinv
@@ -215,7 +221,9 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
             }
         }
     }
+#ifdef USE_CFITSIO
     save_fits("_respmat", "_test_RM.fits");
+#endif
     //exit(0);
 
     // COMPUTE SOLUTION QUALITY

@@ -123,30 +123,11 @@ static uint8_t TYPESIZE[32] __attribute__((unused));
 
 #define NB_ARG_MAX 100
 
+typedef errno_t (*module_cli_reg_fn)(void);
 
-/* =====================================
- * Module init — no-op in standalone
- * ===================================== */
-
-/* MODULE_DEPS — standalone stub.
- * Defines the arrays (they exist but are
- * never iterated since INIT_MODULE_LIB is
- * a no-op in standalone builds).
- */
-#define MODULE_DEPS(...)                                                         \
-    static const char *_module_deps[] __attribute__((unused)) = { __VA_ARGS__ }; \
-    static const int   _module_ndeps __attribute__((unused)) =                   \
-        (int) (sizeof(_module_deps) / sizeof(_module_deps[0]));                  \
-    static const int _module_deps_defined __attribute__((unused)) = 1
+#define MILK_MODULE(modname, _cli_reg_call, _deps) /* standalone: no descriptor table */
 
 #define INIT_MODULE_LIB(modname)                              \
-    static errno_t                     init_module_CLI(void); \
-    static int __attribute__((unused)) INITSTATUS_##modname = 0;
-
-/* INIT_MODULE_LIB_DEPS — same as INIT_MODULE_LIB
- * in standalone builds (no dep loading).
- */
-#define INIT_MODULE_LIB_DEPS(modname)                         \
     static errno_t                     init_module_CLI(void); \
     static int __attribute__((unused)) INITSTATUS_##modname = 0;
 

@@ -166,7 +166,8 @@ if(NOT MKL_FOUND)
 
 endif()
 
-target_link_libraries(${LIBNAME} PRIVATE CLIcore)
+target_include_directories(
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
 message("---------------------------------------")
 
@@ -177,84 +178,28 @@ install(
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
-# Compute-only variant: no CLI code, no CLIcore dependency
-set(LIBNAME_COMPUTE "${LIBNAME}_compute")
-add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-if(USE_CFITSIO AND CFITSIO_FOUND)
-  target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
-endif()
-target_include_directories(
-  ${LIBNAME_COMPUTE}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
-         $<INSTALL_INTERFACE:include>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>)
-target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
-
-if(USE_CUDA)
-  target_include_directories(${LIBNAME_COMPUTE}
-                             PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
-  target_link_libraries(${LIBNAME_COMPUTE} PRIVATE CUDA::cublas CUDA::cusolver)
-  target_compile_options(${LIBNAME_COMPUTE} PUBLIC -DHAVE_CUDA)
-  if(USE_MAGMA)
-    target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${MAGMA_INCLUDE_DIRS})
-    target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${MAGMA_LIBRARY_DIRS})
-    target_link_libraries(${LIBNAME_COMPUTE} PRIVATE ${MAGMA_LIBRARIES})
-    target_compile_options(${LIBNAME_COMPUTE} PRIVATE ${MAGMA_CFLAGS_OTHER})
-    target_compile_options(${LIBNAME_COMPUTE} PUBLIC -DHAVE_CUDA -DHAVE_MAGMA
-                                                     -DUSE_MAGMA)
-  endif()
-endif()
-if(OPENBLAS_FOUND)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${OPENBLAS_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${OPENBLAS_LIBRARY_DIRS})
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC ${OPENBLAS_LIBRARIES})
-  target_compile_options(${LIBNAME_COMPUTE} PUBLIC -DHAVE_OPENBLAS
-                                                   ${OPENBLAS_CFLAGS_OTHER})
-endif()
-if(MKL_FOUND)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${MKL_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${MKL_LIBRARY_DIRS})
-  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC ${MKL_LIBRARIES})
-  target_compile_options(${LIBNAME_COMPUTE} PUBLIC -DHAVE_MKL
-                                                   ${MKL_CFLAGS_OTHER})
-endif()
-if(NOT MKL_FOUND AND NOT DONT_NEED_LAPACKE)
-  target_link_libraries(${LIBNAME_COMPUTE} PRIVATE lapacke)
-endif()
-install(
-  TARGETS ${LIBNAME_COMPUTE}
-  EXPORT milkTargets
-  DESTINATION lib)
-
 add_milk_standalone(linalg-gramschmidt GramSchmidt.c)
 add_milk_standalone(linalg-MVMextract MVMextractModes.c)
-target_link_libraries(milk-fpsexec-linalg-MVMextract PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-MVMextract PUBLIC ${LIBNAME})
 if(USE_CUDA)
   target_link_libraries(milk-fpsexec-linalg-MVMextract PRIVATE CUDA::cudart
                                                                CUDA::cublas)
 endif()
 
 add_milk_standalone(linalg-PCAmatch PCAmatch.c)
-target_link_libraries(milk-fpsexec-linalg-PCAmatch PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-PCAmatch PUBLIC ${LIBNAME})
 
 add_milk_standalone(linalg-Qexpand Qexpand.c)
 
 add_milk_standalone(linalg-SGEMM SGEMM.c)
-target_link_libraries(milk-fpsexec-linalg-SGEMM PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-SGEMM PUBLIC ${LIBNAME})
 if(USE_CUDA)
   target_link_libraries(milk-fpsexec-linalg-SGEMM PRIVATE CUDA::cudart
                                                           CUDA::cublas)
 endif()
 
 add_milk_standalone(linalg-SVD SingularValueDecomp.c)
-target_link_libraries(milk-fpsexec-linalg-SVD PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-SVD PUBLIC ${LIBNAME})
 if(OPENBLAS_FOUND)
   target_link_libraries(milk-fpsexec-linalg-SVD PUBLIC ${OPENBLAS_LIBRARIES}
                                                        lapacke)
@@ -265,18 +210,17 @@ else()
 endif()
 
 add_milk_standalone(linalg-SVDmkM SingularValueDecomp_mkM.c)
-target_link_libraries(milk-fpsexec-linalg-SVDmkM PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-SVDmkM PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-SVDmkU SingularValueDecomp_mkU.c)
-target_link_libraries(milk-fpsexec-linalg-SVDmkU PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-SVDmkU PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-basisrotmatch basis_rotate_match.c)
-target_link_libraries(milk-fpsexec-linalg-basisrotmatch
-                      PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-basisrotmatch PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-cublasPCA cublas_PCA.c)
 if(USE_CUDA)
   target_link_libraries(milk-fpsexec-linalg-cublasPCA
                         PRIVATE CUDA::cudart CUDA::cublas CUDA::cusolver)
 endif()
 
-target_link_libraries(milk-fpsexec-linalg-cublasPCA PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-cublasPCA PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-modalremap modalremap.c)
-target_link_libraries(milk-fpsexec-linalg-modalremap PUBLIC ${LIBNAME_COMPUTE})
+target_link_libraries(milk-fpsexec-linalg-modalremap PUBLIC ${LIBNAME})

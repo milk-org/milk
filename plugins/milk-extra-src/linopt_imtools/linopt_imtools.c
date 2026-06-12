@@ -71,47 +71,36 @@
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
-INIT_MODULE_LIB(linopt_imtools)
-
-
 #ifndef MILK_NO_CLI
 static errno_t init_module_CLI()
 {
     // CONVERSION
-
     CLIADDCMD_linopt_imtools__mask_to_pixtable();
-
     CLIADDCMD_linopt_imtools__image_to_vec();
-
     CLIADDCMD_linopt_imtools__vec_to_2DImage();
 
     // CREATE MODES
-
     CLIADDCMD_linopt_imtools__makeCosRadModes();
-
     CLIADDCMD_linopt_imtools__makeCPAmodes();
 
     // LINEAR DECOMPOSITION
 
     CLIADDCMD_linopt_imtools__imcube_crossproduct();
-
     CLIADDCMD_linopt_imtools__image_fitModes();
-
     CLIADDCMD_linopt_imtools__image_construct();
 
 
     CLIADDCMD_linopt_imtools__compute_SVDdecomp();
-
     CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse();
-
     CLIADDCMD_linopt_imtools__lin1Dfits();
 
     // OPTIMIZATION
-
     CLIADDCMD_linopt_imtools__linRM_from_inout();
 
     return RETURN_SUCCESS;
 }
+
+MILK_MODULE(linopt_imtools, init_module_CLI, NULL);
 #endif /* MILK_NO_CLI */
 
 /* =============================================================================================== */

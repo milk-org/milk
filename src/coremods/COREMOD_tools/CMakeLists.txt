@@ -73,8 +73,10 @@ project(lib_${LIBNAME}_project)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(CFITSIO cfitsio)
-if(${CFITSIO_FOUND})
+if(USE_CFITSIO)
+  pkg_check_modules(CFITSIO cfitsio)
+endif()
+if(USE_CFITSIO AND ${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
   target_include_directories(
@@ -107,25 +109,28 @@ install(
   DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
-# Compute-only library for standalone builds (no CLI code)
-set(LIBNAME_COMPUTE "${LIBNAME}_compute")
-add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-target_include_directories(
-  ${LIBNAME_COMPUTE}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-         $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
-install(
-  TARGETS ${LIBNAME_COMPUTE}
-  EXPORT milkTargets
-  DESTINATION lib)
+# Static archive for USE_STATIC_LTO builds
+if(USE_STATIC_LTO)
+  set(LIBNAME_STATIC "${LIBNAME}_static")
+  add_library(${LIBNAME_STATIC} STATIC ${SOURCEFILES})
+  set_target_properties(${LIBNAME_STATIC} PROPERTIES OUTPUT_NAME ${LIBNAME})
+  target_include_directories(
+    ${LIBNAME_STATIC}
+    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
+           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
+           $<INSTALL_INTERFACE:include>)
+  target_link_libraries(${LIBNAME_STATIC} PUBLIC m milkfps_static milkcommon)
+  install(
+    TARGETS ${LIBNAME_STATIC}
+    EXPORT milkTargets
+    DESTINATION lib)
+endif()
 
 # ==========================================
 # milk-makecsetandrt Move processes to cpusets and set RT priority. Installed
@@ -148,29 +153,3 @@ install(
     WORLD_READ
     WORLD_EXECUTE
     SETUID)
-
-# Static archive for standalone LTO builds
-if(USE_STATIC_LTO)
-  set(LIBNAME_COMPUTE_STATIC "${LIBNAME_COMPUTE}_static")
-  add_library(${LIBNAME_COMPUTE_STATIC} STATIC ${SOURCEFILES})
-  set_target_properties(${LIBNAME_COMPUTE_STATIC} PROPERTIES OUTPUT_NAME
-                                                             ${LIBNAME_COMPUTE})
-  target_compile_definitions(${LIBNAME_COMPUTE_STATIC} PRIVATE MILK_NO_CLI)
-  target_include_directories(
-    ${LIBNAME_COMPUTE_STATIC}
-    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
-           $<INSTALL_INTERFACE:include>)
-  target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC m milkfps_static
-                                                         milkcommon)
-endif()

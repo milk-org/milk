@@ -28,7 +28,6 @@ static int   DLib_index;
 static void *DLib_handle[1000];
 static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
-
 /**
  * @brief Load a shared library via dlopen.
  *
@@ -76,21 +75,71 @@ errno_t load_sharedobj(const char *__restrict libname)
         {
             fprintf(stderr, KRED "%s\n" KRES, errstr);
         }
-        //exit(EXIT_FAILURE);
-    }
-    else
-    {
-        dlerror();
-        if (!getenv("MILK_QUIET") && dcquiet == 0)
-        {
-            printf(KGRN "   LOADED : %s\n" KRES, libname);
-        }
-        DLib_handle[DLib_index] = handle;
-        // increment number of libs dynamically loaded
-        DLib_index++;
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
     }
 
+    dlerror();
+    if (!getenv("MILK_QUIET") && dcquiet == 0)
+    {
+        printf(KGRN "   LOADED : %s\n" KRES, libname);
+    }
+    DLib_handle[DLib_index] = handle;
+    // increment number of libs dynamically loaded
+    DLib_index++;
+
     DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+errno_t newstyle_milk_module_registration(void *handle, const char *libname)
+{
+    /* New-style modules export __milk_module_info.
+    We perform the registration code that priorly belonged to INIT_MILK_MODULE macro.
+
+    Except that now this code lives within the CLI/script so, not the module so.
+    */
+
+    MILK_MODULE_INFO *info = (MILK_MODULE_INFO *) dlsym(handle, "__milk_module_info");
+    if (info == NULL || info->mod_registered == 1)
+    {
+        return RETURN_SUCCESS;
+    }
+
+    /* Load declared deps before registering */
+    if (info->deps)
+    {
+        for (int _di = 0; info->deps[_di]; _di++)
+        {
+            load_module_shared(info->deps[_di]);
+        }
+    }
+
+    strncpy(data.moduleshortname_default, info->shortname_default,
+            STRINGMAXLEN_MODULE_SHORTNAME - 1);
+    strncpy(data.moduledatestring, info->date_string, STRINGMAXLEN_MODULE_DATESTRING - 1);
+    strncpy(data.moduletimestring, info->time_string, STRINGMAXLEN_MODULE_TIMESTRING - 1);
+    strncpy(data.modulename, info->name, STRINGMAXLEN_MODULE_NAME - 1);
+    data.module_nbdep = 0;
+
+    RegisterModule(info->source_file, info->package, info->description, info->version_major,
+                   info->version_minor, info->version_patch);
+
+    /* Stamp sofilename so load_module_shared
+                 * can find this slot by Case-1 match. */
+    strncpy(data.module[data.moduleindex].sofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
+    if (info->reg_call)
+    {
+        (*(info->reg_call))();
+    }
+
+    strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1);
+    strncpy(data.moduleshortname_default, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
+    strncpy(data.moduleshortname, "", STRINGMAXLEN_MODULE_SHORTNAME - 1);
+
+    info->mod_registered = 1;
+
     return RETURN_SUCCESS;
 }
 
@@ -164,15 +213,20 @@ errno_t load_module_shared(const char *__restrict modulename)
     strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
     strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
-    load_sharedobj(libname);
+
+    if (load_sharedobj(libname) == RETURN_SUCCESS)
+    {
+        // We inherit DLib_index AFTER INCREMENT from load_sharedobj (which has no recursive calls)
+        // Now, WARNING, this function may recurse into other calls to load_module_shared
+        newstyle_milk_module_registration(DLib_handle[DLib_index - 1], libname);
+        // TODO fix load_module_shared_local to do the same new-style init
+    }
 
     // Find the correct module slot for metadata.
     //
-    // We cannot blindly use data.moduleindex because
-    // dlopen() may have transitively loaded other
+    // We cannot blindly use data.moduleindex because dlopen() may have transitively loaded other
     // libraries whose constructors changed it.
-    // If the .so was already loaded (transitive dep
-    // of a prior dlopen), the constructor does not
+    // If the .so was already loaded (transitive dep of a prior dlopen), the constructor does not
     // re-run and moduleindex is stale.
     //
     // Strategy:
@@ -219,14 +273,11 @@ errno_t load_module_shared(const char *__restrict modulename)
     }
 
     data.module[target_idx].type = MODULE_TYPE_CUSTOMLOAD;
-
     strncpy(data.module[target_idx].sofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
-
     strncpy(data.module[target_idx].loadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
 
-
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return target_idx >= 0 ? RETURN_SUCCESS : RETURN_FAILURE;
 }
 
 
@@ -247,80 +298,70 @@ errno_t load_module_shared_local()
     char libname[STRINGMAXLEN_FULLFILENAME + STRINGMAXLEN_DIRNAME];
     char dirname[STRINGMAXLEN_DIRNAME];
 
+    char cwd[STRINGMAXLEN_DIRNAME];
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        PRINT_ERROR("getcwd failed");
+        return RETURN_FAILURE;
+    }
+
     WRITE_DIRNAME(dirname, "./milklib");
 
     if (dcquiet == 0)
     {
         printf("load modules from directory %s\n", dirname);
     }
-
-    int loopOK  = 0;
-    int iter    = 0;
-    int itermax = 4; // number of passes
-    while ((loopOK == 0) && (iter < itermax))
+    DIR           *d = opendir(dirname);
+    struct dirent *dir;
+    if (d == NULL)
     {
-        DIR           *d;
-        struct dirent *dir;
-
-        loopOK = 1;
-        d      = opendir(dirname);
-        if (d)
+        if (dcquiet == 0)
         {
-            while ((dir = readdir(d)) != NULL)
-            {
-                char *dot = strrchr(dir->d_name, '.');
-                if (dot && !strcmp(dot, ".so"))
-                {
-                    snprintf(libname, sizeof(libname), "%s/lib/%s", dcinstalldir, dir->d_name);
-                    //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
-                    //fflush(stdout);
+            printf("--> directory not found.\n");
+        }
+        return RETURN_SUCCESS;
+    }
+    int itermax             = 4; // number of passes
+    int any_so_link_failure = 0;
+    for (int iter = 0; iter < itermax; ++iter)
+    {
+        any_so_link_failure = 0;
 
-                    printf("    [%5d] Loading shared object "
-                           "\"%s\"\n",
-                           DLib_index, libname);
-                    void *handle = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-                    if (!handle)
-                    {
-                        const char *errstr = dlerror();
-                        fprintf(stderr,
-                                KMAG "        WARNING: linker "
-                                     "pass # %d, module # %d\n  "
-                                     "        %s\n" KRES,
-                                iter, DLib_index, errstr ? errstr : "Unknown error");
-                        fflush(stderr);
-                        //exit(EXIT_FAILURE);
-                        loopOK = 0;
-                    }
-                    else
-                    {
-                        dlerror();
-                        DLib_handle[DLib_index] = handle;
-                        // increment number of libs dynamically loaded
-                        DLib_index++;
-                    }
-                }
+        while ((dir = readdir(d)) != NULL) // iterate .so files
+        {
+            char *dot = strrchr(dir->d_name, '.');
+            if (dot == NULL || strcmp(dot, ".so") != 0)
+            {
+                continue;
             }
 
-            closedir(d);
-        }
-        if (iter > 0)
-        {
-            if (loopOK == 1)
+            // after
+            snprintf(libname, sizeof(libname), "%s/lib/%s", cwd, dir->d_name);
+            //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
+            //fflush(stdout);
+
+            // libname should be an abspath and start with a /
+            // load_module_shared handles that.
+            if (load_module_shared(libname) != RETURN_SUCCESS)
             {
-                printf(KGRN "        Linker pass #%d successful\n" KRES, iter);
+                any_so_link_failure = 1;
             }
         }
-        iter++;
+
+        if (any_so_link_failure == 0)
+        {
+            iter > 0 ? printf(KGRN "        Linker pass #%d successful\n" KRES, iter) : 0;
+            break;
+        }
     }
 
-    if (loopOK != 1)
+    closedir(d);
+
+    if (any_so_link_failure == 1)
     {
         printf("Some libraries could not be loaded -> EXITING\n");
-        exit(2);
+        return RETURN_FAILURE;
     }
-
-    //printf("All libraries successfully loaded\n");
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -334,6 +375,10 @@ errno_t load_module_shared_local()
  * init function during dlopen. Records the module
  * name, package, version, short name, and build
  * timestamps in data.module[].
+ *
+ * If the module exports a NULL-sentinel function-pointer
+ * array named @c __reg_calls, each entry is invoked to
+ * register the module's CLI commands.
  *
  * @param FileName      Source filename of the module
  * @param PackageName   Package the module belongs to
@@ -357,6 +402,11 @@ errno_t RegisterModule(const char *__restrict FileName,
      * __attribute__((constructor)) in a linked .so, so it is
      * the only reliable place to intercept a command-line flag
      * at constructor time. */
+    /*
+    NOTE: deprecated requirement since this will NOT be called from constructors anymore,
+    since we fetch a struct from modules and the "constructor" is deferred to code that is
+    here and executes synchronously.
+    */
     static int quiet_scanned = 0;
     if (!quiet_scanned)
     {

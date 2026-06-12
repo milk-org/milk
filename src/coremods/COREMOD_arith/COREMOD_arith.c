@@ -89,7 +89,6 @@
 #        define M_PI 3.14159265358979323846
 #    endif
 
-INIT_MODULE_LIB(COREMOD_arith)
 
 /**
  * @brief Register COREMOD_arith CLI commands.
@@ -129,10 +128,7 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
-errno_t init_COREMOD_arith()
-{
-    init_module_CLI();
 
-    return RETURN_SUCCESS;
-}
+MILK_MODULE(COREMOD_arith, init_module_CLI, NULL);
+
 #endif /* MILK_NO_CLI */

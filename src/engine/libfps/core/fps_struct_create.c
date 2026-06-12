@@ -10,10 +10,6 @@
 #include "fps.h"
 #include "fps_globals.h"
 
-#ifdef MILK_MODULE
-#endif
-
-
 /**
  * @brief Create an FPS shared memory segment.
  *
@@ -147,32 +143,6 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
 
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;
-#ifdef MILK_MODULE
-    for (int mm = 0; mm < data.NBmodule; mm++)
-    {
-        if (data.module[mm].type != MODULE_TYPE_UNUSED)
-        {
-            char *mname = data.module[mm].name;
-            if (data.module[mm].type == MODULE_TYPE_CUSTOMLOAD)
-            {
-                if (strlen(data.module[mm].loadname) > 0)
-                {
-                    mname = data.module[mm].loadname;
-                }
-            }
-
-            if (strlen(mname) > 0)
-            {
-                strncpy(fps.md->modulename[fps.md->NBmodule], mname, FPS_MODULE_STRMAXLEN - 1);
-                fps.md->NBmodule++;
-            }
-        }
-        if (fps.md->NBmodule >= FPS_MAXNB_MODULE)
-        {
-            break;
-        }
-    }
-#endif
 
     fps.md->signal     = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
     fps.md->confwaitus = (uint64_t) 1000; // 1 kHz default

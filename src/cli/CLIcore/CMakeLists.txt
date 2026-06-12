@@ -89,7 +89,7 @@ add_executable(milk-cli-help-synchro milk-cli-help-synchro.c)
 target_link_libraries(milk-cli-help-synchro PUBLIC CLIcore)
 install(TARGETS milk-cli-help-synchro DESTINATION bin)
 
-if(${CFITSIO_FOUND})
+if(USE_CFITSIO AND ${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(CLIcore PUBLIC USE_CFITSIO=1)
   target_include_directories(CLIcore PUBLIC ${CFITSIO_INCLUDE_DIRS})

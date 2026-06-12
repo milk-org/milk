@@ -51,19 +51,16 @@ imageID IDtimerinit = 0;
 imageID IDtiming    = -1; // index to image where timing should be written
 
 #ifdef HAVE_CUDA
-int cuda_deviceCount;
-GPUMATMULTCONF
-gpumatmultconf[20]; // supports up to 20 configurations per process
-float cublasSgemv_alpha = 1.0;
-float cublasSgemv_beta  = 0.0;
+int            cuda_deviceCount;
+GPUMATMULTCONF gpumatmultconf[20]; // supports up to 20 cfgs per process
+float          cublasSgemv_alpha = 1.0;
+float          cublasSgemv_beta  = 0.0;
 #endif
 
 #ifdef HAVE_MAGMA
 int           INIT_MAGMA = 0;
 magma_queue_t magmaqueue;
 #endif
-
-INIT_MODULE_LIB(linalgebra)
 
 static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 {
@@ -73,6 +70,11 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
         printf("[CUDA %d]", dcquiet);
     }
 
+    for (int i = 0; i < 20; i++)
+    {
+        gpumatmultconf[i].init  = 0;
+        gpumatmultconf[i].alloc = 0;
+    }
 #endif
 
 #ifdef HAVE_MAGMA
@@ -86,12 +88,6 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 static errno_t init_module_CLI()
 {
 #ifdef HAVE_CUDA
-    //    printf("HAVE_CUDA defined\n");
-    for (int i = 0; i < 20; i++)
-    {
-        gpumatmultconf[i].init  = 0;
-        gpumatmultconf[i].alloc = 0;
-    }
 
     linalgebrainit_addCLIcmd();
     linalgebratest_addCLIcmd();
@@ -129,7 +125,4 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
-#ifdef HAVE_CUDA
-
-
-#endif
+MILK_MODULE(linalgebra, init_module_CLI, NULL);

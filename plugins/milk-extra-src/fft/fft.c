@@ -30,26 +30,8 @@
 
 #    include "pup2foc.h"
 
-
-// auto-generate libinit_<modulename>
-// initialize INITSTATUS_<modulename>
-INIT_MODULE_LIB(fft)
-
-
 static errno_t init_module_CLI()
 {
-#    ifdef FFTWMT
-    printf("Multi-threaded fft enabled, max threads = %d\n", omp_get_max_threads());
-    fftwf_init_threads();
-    fftwf_plan_with_nthreads(omp_get_max_threads());
-#    endif
-
-    // load fftw wisdom
-    import_wisdom();
-
-    //fftwf_set_timelimit(1000.0);
-    //fftw_set_timelimit(1000.0);
-
     CLIADDCMD_milkfft__init_fftwplan();
     CLIADDCMD_milkfft__permut();
     CLIADDCMD_milkfft__dofft();
@@ -58,13 +40,28 @@ static errno_t init_module_CLI()
     CLIADDCMD_milkfft__fftcorrelation();
 
     CLIADDCMD_milk_fft__pup2foc();
-
     return RETURN_SUCCESS;
 }
 
+MILK_MODULE(fft, init_module_CLI, NULL);
+
+static void __attribute__((constructor)) fftw_init()
+{
+#    ifdef FFTWMT
+    printf("Multi-threaded fft enabled, max threads = %d\n", omp_get_max_threads());
+    fftwf_init_threads();
+    fftwf_plan_with_nthreads(omp_get_max_threads());
+#    endif
+    // load fftw wisdom
+    import_wisdom();
+
+    __milk_module_info.constructor_called = 1;
+}
+
+
 static void __attribute__((destructor)) close_fftwlib()
 {
-    if (INITSTATUS_fft == 1)
+    if (__milk_module_info.constructor_called == 1)
     {
         fftw_forget_wisdom();
         fftwf_forget_wisdom();
@@ -72,9 +69,7 @@ static void __attribute__((destructor)) close_fftwlib()
 #    ifdef FFTWMT
         fftw_cleanup_threads();
         fftwf_cleanup_threads();
-#    endif
-
-#    ifndef FFTWMT
+#    else
         fftw_cleanup();
         fftwf_cleanup();
 #    endif
@@ -96,5 +91,5 @@ int fft_setNthreads(__attribute__((unused)) int nt)
 
     import_wisdom();
 
-    return (0);
+    return RETURN_SUCCESS;
 }

@@ -8,8 +8,8 @@
 # add_cacao_standalone_plugins(name src.c [plugin...])
 #
 # These functions are used in module CMakeLists.txt files. They compile the
-# source with -DFPS_STANDALONE and link against _compute variants of COREMOD
-# libraries (no CLIcore dependency).
+# source with -DFPS_STANDALONE and link against COREMOD libraries (no CLIcore
+# linkage).
 #
 # The module's shared library (${LIBNAME}) is NOT linked by default. If a
 # standalone needs module-lib symbols, add an explicit target_link_libraries()
@@ -34,7 +34,6 @@ if(USE_CLI)
             ${PROJECT_SOURCE_DIR}/src/coremods
             ${PROJECT_SOURCE_DIR}/src/engine/libfps
             ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
-            # ${PROJECT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
             ${PROJECT_SOURCE_DIR}/src/engine/libmilkcommon)
 endif()
 
@@ -46,14 +45,15 @@ set(_MILK_STANDALONE_LIBS
     milkdata
     milkprocessinfo
     ImageStreamIO
-    milkCOREMODmemory_compute
-    milkCOREMODtools_compute
-    milkCOREMODarith_compute
-    milkCOREMODiofits_compute
-    ${CFITSIO_LIBRARIES}
+    milkCOREMODmemory
+    milkCOREMODtools
+    milkCOREMODarith
     m
     rt
     -Wl,--allow-shlib-undefined)
+if(USE_CFITSIO AND CFITSIO_FOUND)
+  list(APPEND _MILK_STANDALONE_LIBS milkCOREMODiofits ${CFITSIO_LIBRARIES})
+endif()
 
 # Static link set for full LTO optimization Used when USE_STATIC_LTO=ON.  Static
 # archives give the LTO linker full cross-module visibility.
@@ -64,9 +64,9 @@ if(USE_STATIC_LTO)
   # Core static libs always required
   set(_MILK_STANDALONE_STATIC_LIBS
       -Wl,--start-group
-      milkCOREMODmemory_compute_static
-      milkCOREMODtools_compute_static
-      milkCOREMODarith_compute_static
+      milkCOREMODmemory_static
+      milkCOREMODtools_static
+      milkCOREMODarith_static
       milkfpsStandalone_static
       milkfpsseq_static
       milkfps_static
@@ -79,7 +79,7 @@ if(USE_STATIC_LTO)
       -Wl,--allow-shlib-undefined)
   # CFITSIO-dependent libs only when CFITSIO is enabled
   if(USE_CFITSIO AND CFITSIO_FOUND)
-    list(INSERT _MILK_STANDALONE_STATIC_LIBS 1 milkCOREMODiofits_compute_static
+    list(INSERT _MILK_STANDALONE_STATIC_LIBS 1 milkCOREMODiofits_static
          ImageStreamIO_static ${CFITSIO_LIBRARIES})
   else()
     # Link ImageStreamIO static archive when CFITSIO is not used
@@ -237,13 +237,12 @@ endfunction()
 
 # ── add_cacao_standalone_plugins ────────────────
 #
-# Like add_cacao_standalone(), but additionally links plugin _compute libraries.
+# Like add_cacao_standalone(), but additionally links plugin libraries.
 #
-# Usage: add_cacao_standalone_plugins(name src.c) → links ALL 4 plugin _compute
-# libs
+# Usage: add_cacao_standalone_plugins(name src.c) → links ALL 4 plugin libs
 #
 # add_cacao_standalone_plugins(name src.c fft imagegen) → links ONLY the listed
-# plugin _compute libs
+# plugin libs
 #
 # Valid plugin names: fft, imagegen, imagefilter, imagebasic
 #
@@ -259,13 +258,13 @@ function(add_cacao_standalone_plugins FUNC_NAME SRC_FILE)
 
   foreach(_p IN LISTS _requested)
     if(_p STREQUAL "fft")
-      target_link_libraries(${EXE_NAME} PUBLIC milkfft_compute)
+      target_link_libraries(${EXE_NAME} PUBLIC milkfft)
     elseif(_p STREQUAL "imagegen")
-      target_link_libraries(${EXE_NAME} PUBLIC milkimagegen_compute)
+      target_link_libraries(${EXE_NAME} PUBLIC milkimagegen)
     elseif(_p STREQUAL "imagefilter")
-      target_link_libraries(${EXE_NAME} PUBLIC milkimagefilter_compute)
+      target_link_libraries(${EXE_NAME} PUBLIC milkimagefilter)
     elseif(_p STREQUAL "imagebasic")
-      target_link_libraries(${EXE_NAME} PUBLIC milkimagebasic_compute)
+      target_link_libraries(${EXE_NAME} PUBLIC milkimagebasic)
     else()
       message(WARNING "Unknown plugin '${_p}' in "
                       "add_cacao_standalone_plugins()")

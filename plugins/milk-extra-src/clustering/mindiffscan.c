@@ -8,7 +8,9 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
+#ifdef USE_CFITSIO
+#    include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 #include "COREMOD_tools/COREMOD_tools.h"
 
 
@@ -172,8 +174,9 @@ static errno_t imcube_mindiffscan(IMGID img,
                 pixgain[ii] * img.im->array.F[zi * xysize + pixmap[ii]];
         }
     }
-
+#ifdef USE_CFITSIO
     save_fl_fits("mindiffscan_imc", "mindiffscan_imc.fits");
+#endif
 
     // looking for distmat image
     imageID IDdmat = image_ID("distmat", dcimg, dcnimg);
@@ -221,14 +224,17 @@ static errno_t imcube_mindiffscan(IMGID img,
 
             if (fracdone > fracdonesavelim)
             {
+#ifdef CFITSIO
                 printf("\nsaving to filesystem\n");
                 save_fl_fits("distmat", "distmat.fits");
+#endif
                 fracdonesavelim += deltasave;
             }
         }
         printf("\n\n");
-
+#ifdef USE_CFITSIO
         save_fl_fits("distmat", "distmat.fits");
+#endif
     }
     else
     {

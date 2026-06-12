@@ -69,16 +69,6 @@
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
-INIT_MODULE_LIB(linARfilterPred)
-
-/* ================================================================== */
-/* ================================================================== */
-/*            COMMAND LINE INTERFACE (CLI) FUNCTIONS                  */
-/* ================================================================== */
-/* ================================================================== */
-
-/* ===== Module init ===== */
-
 static errno_t init_module_CLI()
 {
     CLIADDCMD_linARfilterPred__pfloadascii();
@@ -97,5 +87,7 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+
+MILK_MODULE(linARfilterPred, init_module_CLI, NULL);
 
 /* =============================================================================================== */

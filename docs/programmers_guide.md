@@ -113,7 +113,8 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
    ```cmake
    # Shared library (for milk CLI usage)
    add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
-   target_link_libraries(${LIBNAME} PRIVATE CLIcore)
+   target_include_directories(${LIBNAME}
+       PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
    # Standalone executable (1 line per exe!)
    add_milk_standalone(myfunction myfunction.c)
@@ -176,7 +177,7 @@ Compute unit source files use conditional includes to support both CLI and stand
 | `CLIcore.h`              | CLICMDDATA, CMDARGTOKEN, INSERT_STD macros           | Dual-mode files (CLI + standalone)          |
 | `CLIcore_standalone.h`   | Stub types, static inline no-ops                     | Auto-selected when `MILK_NO_CLI` is defined |
 | `fps.h`                  | FPS types, X-macro expanders, FPS_MAIN_STANDALONE_V2 | Always needed for FPS compute units         |
-| `libfps/IMGID.h`         | IMGID struct, imgid_make\*, imgid_connect             | Compute-only files that work with images    |
+| `libfps/IMGID.h`         | IMGID struct, imgid_make\*, imgid_connect            | Compute-only files that work with images    |
 | `libmilkdata/milkdata.h` | MILK_DATA struct, milk_data_init                     | Core data arrays, RNG, global state         |
 | `milkDebugTools.h`       | imageID typedef, PRINT_ERROR, DEBUG_TRACE\*          | Compute-only files that use debug macros    |
 

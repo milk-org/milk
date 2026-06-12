@@ -38,9 +38,7 @@ errno_t import_wisdom()
 #ifdef FFTWMT
     WRITE_FULLFILENAME(wisdom_file_single, "%s/fftwf_mt_wisdom.dat", FFTCONFIGDIR);
     WRITE_FULLFILENAME(wisdom_file_double, "%s/fftw_mt_wisdom.dat", FFTCONFIGDIR);
-#endif
-
-#ifndef FFTWMT
+#else
     WRITE_FULLFILENAME(wisdom_file_single, "%s/fftwf_wisdom.dat", FFTCONFIGDIR);
     WRITE_FULLFILENAME(wisdom_file_double, "%s/fftw_wisdom.dat", FFTCONFIGDIR);
 #endif
@@ -66,12 +64,12 @@ errno_t import_wisdom()
     }
     else
     {
-#ifdef MILK_MODULE
-        if (fftwf_import_wisdom_from_file(fp) == 0)
-        {
-            PRINT_WARNING("Error reading wisdom");
-        }
-#endif
+        //#ifdef MILK_MODULE
+        //        if (fftwf_import_wisdom_from_file(fp) == 0)
+        //        {
+        //            PRINT_WARNING("Error reading wisdom");
+        //        }
+        //#endif
         fclose(fp);
     }
 
@@ -91,12 +89,12 @@ errno_t import_wisdom()
     }
     else
     {
-#ifdef MILK_MODULE
-        if (fftw_import_wisdom_from_file(fp) == 0)
-        {
-            PRINT_WARNING("Error reading wisdom");
-        }
-#endif
+        //#ifdef MILK_MODULE
+        //        if (fftw_import_wisdom_from_file(fp) == 0)
+        //        {
+        //            PRINT_WARNING("Error reading wisdom");
+        //        }
+        //#endif
         fclose(fp);
     }
 
@@ -131,9 +129,12 @@ errno_t export_wisdom()
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_single);
         return RETURN_FAILURE;
     }
-#ifdef MILK_MODULE
-    fftwf_export_wisdom_to_file(fp);
-#endif
+    // vdeo: well that's unfortunate but this stale #define
+    // that wasn't used uses the same name as something
+    // I just made !!
+    //#ifdef MILK_MODULE
+    //    fftwf_export_wisdom_to_file(fp);
+    //#endif
     fclose(fp);
 
     if ((fp = fopen(wisdom_file_double, "w")) == NULL)
@@ -141,9 +142,9 @@ errno_t export_wisdom()
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_double);
         return RETURN_FAILURE;
     }
-#ifdef MILK_MODULE
-    fftw_export_wisdom_to_file(fp);
-#endif
+    //#ifdef MILK_MODULE
+    //    fftw_export_wisdom_to_file(fp);
+    //#endif
     fclose(fp);
 
     return RETURN_SUCCESS;

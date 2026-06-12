@@ -22,9 +22,6 @@
 #    include "mvprocCPUset.h"
 #    include "statusstat.h"
 
-
-INIT_MODULE_LIB(COREMOD_tools)
-
 /**
  * @brief Register COREMOD_tools CLI commands.
  */
@@ -39,4 +36,7 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+
+MILK_MODULE(COREMOD_tools, init_module_CLI, NULL);
+
+#endif /* ELSE MILK_NO_CLI */

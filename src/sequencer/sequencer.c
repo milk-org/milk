@@ -12,11 +12,11 @@
 #    include "CLIcore.h"
 #    include "seq_cli.h"
 
-INIT_MODULE_LIB(sequencer)
-
 static errno_t init_module_CLI()
 {
     CLIADDCMD_sequencer__seq_cli();
     return RETURN_SUCCESS;
 }
+
+MILK_MODULE(sequencer, init_module_CLI, NULL);
 #endif /* MILK_NO_CLI */

@@ -31,8 +31,4 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
-/**
- * @brief Boilerplate module constructor/destructor generation.
- * Registers 'example03fps' with the Milk framework.
- */
-INIT_MODULE_LIB(example03fps)
+MILK_MODULE(example03fps, init_module_CLI, NULL);

@@ -85,15 +85,6 @@
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
-INIT_MODULE_LIB(milk_module_example)
-
-/**
- * @brief Initialize module CLI
- *
- * CLI entries are registered: CLI call names are connected to CLI functions.\n
- * Any other initialization is performed\n
- *
- */
 static errno_t init_module_CLI()
 {
     CLIADDCMD_milk_module_example__simplefunc();
@@ -106,3 +97,6 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+
+
+MILK_MODULE(milk_module_example, init_module_CLI, NULL);

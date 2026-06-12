@@ -11,7 +11,9 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
+#ifdef USE_CFITSIO
+#    include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 
 #include "image_filter/image_filter.h"
 
@@ -84,7 +86,12 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             printf("Input file [%11.6f] : %s\n", etime, FITSfname);
             etimearray[HDRindex] = etime;
             snprintf(imHDRin, sizeof(imHDRin), "imHRDin_%03d", HDRindex);
+#ifdef USE_CFITSIO
             load_fits(FITSfname, imHDRin, 2, &ID);
+#else
+            printf("Compiled without CFITSIO\n");
+            exit(1);
+#endif
             IDarray[HDRindex] = ID;
             HDRindex++;
         }
