@@ -48,7 +48,8 @@ set(SOURCEFILES
 
 # 2. Shared Library (used by the interactive milk-cli)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
-target_link_libraries(${LIBNAME} PRIVATE CLIcore)
+target_include_directories(${LIBNAME}
+    PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
 # 3. Compute-only variant (no CLI deps, for standalone executables linking it)
 set(LIBNAME_COMPUTE ${LIBNAME}_compute)

@@ -166,7 +166,8 @@ if(NOT MKL_FOUND)
 
 endif()
 
-target_link_libraries(${LIBNAME} PRIVATE CLIcore)
+target_include_directories(
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
 message("---------------------------------------")
 

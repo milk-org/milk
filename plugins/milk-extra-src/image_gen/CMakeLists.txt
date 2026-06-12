@@ -31,7 +31,7 @@ set(SOURCEFILES
 
 set(INCLUDEFILES mkdisk.h mkpolygon.h mkspdisk.h mkrandomim.h voronoi.h)
 
-set(LINKLIBS CLIcore milkstatistic)
+set(LINKLIBS milkstatistic)
 
 # DEFAULT SETTINGS Do not change unless needed
 # =====================================================================
@@ -50,13 +50,9 @@ project(lib_${LIBNAME}_project)
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
 target_include_directories(
-  ${LIBNAME}
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<INSTALL_INTERFACE:include>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>)
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(${LIBNAME}
+                           PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
 
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 

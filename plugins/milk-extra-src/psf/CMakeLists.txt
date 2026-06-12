@@ -21,7 +21,8 @@ include_directories("${PROJECT_SOURCE_DIR}/..")
 # file is named <libname>.c
 #
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
-target_link_libraries(${LIBNAME} PRIVATE CLIcore)
+target_include_directories(
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
 install(
   TARGETS ${LIBNAME}

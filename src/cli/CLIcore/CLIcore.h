@@ -266,6 +266,7 @@ typedef struct
 
 /** @brief Initialize module (no dependencies)
  */
+// TODO: remove when all modules migrated.
 #    define INIT_MODULE_LIB(modname)                                                              \
         static errno_t                    init_module_CLI(); /* forward declaration */            \
         static int                        INITSTATUS_##modname = 0;                               \

@@ -158,7 +158,9 @@ add_library(milkfpsCLI SHARED ${SOURCEFILES_CLI})
 target_include_directories(
   milkfpsCLI PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                     $<INSTALL_INTERFACE:include>)
-target_link_libraries(milkfpsCLI PUBLIC ${LIBNAME} CLIcore)
+target_link_libraries(milkfpsCLI PUBLIC ${LIBNAME})
+target_include_directories(
+  milkfpsCLI PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 install(
   TARGETS milkfpsCLI
   EXPORT milkTargets
