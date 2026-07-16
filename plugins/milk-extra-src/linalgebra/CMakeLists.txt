@@ -86,7 +86,6 @@ if(USE_CUDA)
     ${LIBNAME}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            ${CUDAToolkit_INCLUDE_DIRS})
   target_link_libraries(${LIBNAME} PRIVATE CUDA::cublas CUDA::cusolver)
   target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA)
@@ -100,7 +99,6 @@ if(USE_CUDA)
     target_include_directories(
       ${LIBNAME}
       PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
              $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
              ${MAGMA_INCLUDE_DIRS})
     target_link_directories(${LIBNAME} PUBLIC ${MAGMA_LIBRARY_DIRS})
@@ -125,7 +123,6 @@ if(OPENBLAS_FOUND)
     ${LIBNAME}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            ${OPENBLAS_INCLUDE_DIRS})
   target_link_directories(${LIBNAME} PUBLIC ${OPENBLAS_LIBRARY_DIRS})
   target_link_libraries(${LIBNAME} PUBLIC ${OPENBLAS_LIBRARIES})
@@ -141,7 +138,6 @@ if(MKL_FOUND)
   target_include_directories(
     ${LIBNAME}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
            ${MKL_INCLUDE_DIRS})
   target_link_directories(${LIBNAME} PUBLIC ${MKL_LIBRARY_DIRS})

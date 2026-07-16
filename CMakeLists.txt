@@ -371,6 +371,7 @@ message("CMAKE_INSTALL_PREFIX     = ${CMAKE_INSTALL_PREFIX}")
 message("USE_CUDA                 = ${USE_CUDA}")
 message("USE_MAGMA                = ${USE_MAGMA}")
 
+# TODO I can't find a trace of where EXTRAMODULES is used?
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
 # =======================================

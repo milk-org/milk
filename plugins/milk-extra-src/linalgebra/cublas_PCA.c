@@ -3,6 +3,8 @@
  * @brief Cublas pca module
  */
 
+// MILK_COMPILE_MANDATE_CUDA
+
 #include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
