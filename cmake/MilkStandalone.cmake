@@ -194,7 +194,10 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})
-  install(TARGETS ${EXE_NAME} DESTINATION bin)
+  get_target_property(_excl ${EXE_NAME} EXCLUDE_FROM_ALL)
+  if(NOT _excl)
+    install(TARGETS ${EXE_NAME} DESTINATION bin)
+  endif()
 endfunction()
 
 # ── add_cacao_standalone ────────────────────────
@@ -217,11 +220,16 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
   else()
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
   endif()
-  milk_apply_extensions(${EXE_NAME})
+  milk_apply_extensions(
+    ${EXE_NAME}) # May set EXCLUDE_FROM_ALL on a standalone target that misses
+                 # its MILK_CMAKE_MANDATE_X
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})
-  install(TARGETS ${EXE_NAME} DESTINATION bin)
+  get_target_property(_excl ${EXE_NAME} EXCLUDE_FROM_ALL)
+  if(NOT _excl)
+    install(TARGETS ${EXE_NAME} DESTINATION bin)
+  endif()
 endfunction()
 
 # ── add_cacao_standalone_plugins ────────────────
