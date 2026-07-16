@@ -1,0 +1,6 @@
+#ifndef REQUEST_CUDA_H
+#define REQUEST_CUDA_H
+
+errno_t COMPILERTEST_CLIADDCMD_REQUEST_CUDA();
+
+#endif // #ifndef REQUEST_CUDA_H

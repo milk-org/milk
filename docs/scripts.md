@@ -18,25 +18,25 @@ See also: [Streams](streams.md) ·
 
 Installed from the root `CMakeLists.txt` into `bin/`:
 
-| Script                       | Description                                               |
-| ---------------------------- | --------------------------------------------------------- |
-| `milk-check`                 | Verify installation (libraries, paths, SHM)               |
-| `milk-check-standalone-deps` | Check standalone build dependencies                       |
-| `milk-argparse`              | Argument parsing helper for milk scripts                  |
-| `milk-script-std-config`     | Standard configuration for milk scripts                   |
-| `milk-scriptexample`         | Example/template for writing new scripts                  |
-| `milk-script-advanced`       | Advanced template combining bash & native milk-cli        |
-| `milk-exec`                  | Execute a milk CLI command non-interactively              |
-| `milk-cli-all`               | Launch milk-cli on all accessible instances                |
-| `milk-commands`              | List all available milk CLI commands                      |
-| `milk-completion.sh`         | Bash tab-completion for milk commands                     |
-| `milk-fpsinit`               | Initialize FPS instances from configuration               |
-| `milk-fpslist-addentry`      | Add an entry to `fpslist.txt`                             |
-| `milk-fpsmkcmd`              | Generate FPS command scripts                              |
-| `merge3DfitsTelemetry`       | Merge 3D FITS telemetry cubes                             |
-| `tmuxkillall`                | Kill all tmux sessions                                    |
-| `tmuxsessionname`            | Print the current tmux session name                       |
-| `waitforfile`                | Block until a specified file appears                       |
+| Script                       | Description                                        |
+| ---------------------------- | -------------------------------------------------- |
+| `milk-check`                 | Verify installation (libraries, paths, SHM)        |
+| `milk-check-standalone-deps` | Check standalone build dependencies                |
+| `milk-argparse`              | Argument parsing helper for milk scripts           |
+| `milk-script-std-config`     | Standard configuration for milk scripts            |
+| `milk-scriptexample`         | Example/template for writing new scripts           |
+| `milk-script-advanced`       | Advanced template combining bash & native milk-cli |
+| `milk-exec`                  | Execute a milk CLI command non-interactively       |
+| `milk-cli-all`               | Launch milk-cli on all accessible instances        |
+| `milk-commands`              | List all available milk CLI commands               |
+| `milk-completion.sh`         | Bash tab-completion for milk commands              |
+| `milk-fpsinit`               | Initialize FPS instances from configuration        |
+| `milk-fpslist-addentry`      | Add an entry to `fpslist.txt`                      |
+| `milk-fpsmkcmd`              | Generate FPS command scripts                       |
+| `merge3DfitsTelemetry`       | Merge 3D FITS telemetry cubes                      |
+| `tmuxkillall`                | Kill all tmux sessions                             |
+| `tmuxsessionname`            | Print the current tmux session name                |
+| `waitforfile`                | Block until a specified file appears               |
 
 ## 2. Stream Utilities (`scripts/`)
 
@@ -67,10 +67,10 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 
 ## 5. FPS Scripts (`src/engine/libfps/scripts/`)
 
-| Script               | Description                                       |
-| -------------------- | ------------------------------------------------- |
+| Script               | Description                                        |
+| -------------------- | -------------------------------------------------- |
 | `milk-demopipeline`  | Start a multi-stage FPS pipeline for demonstration |
-| `milk-latency-audit` | Profile latency, cache misses, and IRQ affinities |
+| `milk-latency-audit` | Profile latency, cache misses, and IRQ affinities  |
 
 ## 6. milk-cli Script Payloads (`share/milk/scripts/`)
 
