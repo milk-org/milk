@@ -34,3 +34,4 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
 add_milk_standalone(compilertest-requestcuda request_cuda.c)
 add_milk_standalone(compilertest-mandatecuda mandate_cuda.c)
+add_milk_standalone(compilertest-mandatelapacke mandate_lapacke.c)
