@@ -1,6 +1,0 @@
-# typos spell-checker configuration
-# https://github.com/crate-ci/typos
-
-[default.extend-words]
-# Project-specific function/file names
-permut = "permut"

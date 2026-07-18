@@ -1,10 +1,5 @@
 # Loading, Creating Additional Modules
 
-!!! note
-This file: `docs/developer/LoadingModules.md`
-
----
-
 Users can create additional modules, and following a few milk-specific conventions, link their functions to the milk CLI. Additional modules can be added to the existing build process or compiled separately and then loaded at runtime.
 
 ---

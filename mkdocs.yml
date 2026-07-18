@@ -14,7 +14,7 @@ theme:
   favicon: assets/logo.svg
   font:
     text: Inter
-    code: JetBrains Mono
+    code: Consolas
   palette:
     - scheme: default
       primary: teal
@@ -100,6 +100,7 @@ nav:
     - Template Source Code: developer/TemplateSourceCode.md
     - Module Files: developer/ModuleFiles.md
     - Loading Modules: developer/LoadingModules.md
+    - Managing Dependencies: developer/dependency_system.md
     - Documenting Code: developer/DocumentingCode.md
     - Working with Git: developer/WorkingWithGit.md
     - Code Assist: code_assist.md
