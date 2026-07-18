@@ -8,11 +8,13 @@
 
 errno_t CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse();
 
-errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
-                                        const char *ID_Cmatrix_name,
-                                        double      SVDeps,
-                                        long        MaxNBmodes,
-                                        const char *ID_VTmatrix_name,
-                                        imageID    *outID);
+#include "milkDebugTools.h"
+
+MILK_WEAK errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
+                                                  const char *ID_Cmatrix_name,
+                                                  double      SVDeps,
+                                                  long        MaxNBmodes,
+                                                  const char *ID_VTmatrix_name,
+                                                  imageID    *outID) MILK_WEAK_FUNCDEF;
 
 #endif

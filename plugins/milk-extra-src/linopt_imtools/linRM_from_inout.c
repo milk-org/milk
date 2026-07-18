@@ -3,12 +3,15 @@
  * @brief Linrm from inout module
  */
 
+// MILK_CMAKE_MANDATE_BLAS // Actually a carry-over for linkage to linopt_compute_SVDpseudoInverse
+// MILK_CMAKE_REQUEST_MAGMA
+
 #include <math.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#ifdef USE_CFITSIO
+#ifdef HAVE_CFITSIO
 #    include "COREMOD_iofits/savefits.h"
 #endif
 
@@ -186,7 +189,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
                 dcimg[IDin].array.F[spl * xsizein * ysizein + inpixarray[act]];
         }
     }
-#ifdef USE_CFITSIO
+#ifdef HAVE_CFITSIO
     save_fits("pokeM", "_test_pokeM.fits");
 #endif
 
@@ -201,7 +204,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
 #endif
 
     list_image_ID();
-#ifdef USE_CFITSIO
+#ifdef HAVE_CFITSIO
     save_fits("pokeMinv", "pokeMinv.fits");
 #endif
     IDpinv = image_ID("pokeMinv", dcimg, dcnimg);
@@ -221,7 +224,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
             }
         }
     }
-#ifdef USE_CFITSIO
+#ifdef HAVE_CFITSIO
     save_fits("_respmat", "_test_RM.fits");
 #endif
     //exit(0);

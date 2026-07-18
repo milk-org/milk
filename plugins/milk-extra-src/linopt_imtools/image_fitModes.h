@@ -8,12 +8,14 @@
 
 errno_t CLIADDCMD_linopt_imtools__image_fitModes();
 
-errno_t linopt_imtools_image_fitModes(const char *ID_name,
-                                      const char *IDmodes_name,
-                                      const char *IDmask_name,
-                                      double      SVDeps,
-                                      const char *IDcoeff_name,
-                                      int         reuse,
-                                      imageID    *outIDcoeff);
+#include "milkDebugTools.h"
+
+MILK_WEAK errno_t linopt_imtools_image_fitModes(const char *ID_name,
+                                                const char *IDmodes_name,
+                                                const char *IDmask_name,
+                                                double      SVDeps,
+                                                const char *IDcoeff_name,
+                                                int         reuse,
+                                                imageID    *outIDcoeff) MILK_WEAK_FUNCDEF;
 
 #endif

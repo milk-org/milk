@@ -4,63 +4,66 @@
 #
 # Copy this CMakeLists.txt as the starting point for new modules. See also
 # examplefunc_fps_cli_poc.c for the compute unit template.
-#
 
 set(LIBNAME "milk_module_example")
+set(SRCNAME "milk_module_example") # <- if you <module.c> file has a different name
 
-# ── Source files ───────────────────────────────── Dual-mode files: compiled
-# into ${LIBNAME} for CLI use, AND as standalone executables (with
-# -DFPS_STANDALONE). Single-mode files should NOT appear in add_*_standalone()
-# calls below.
+message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
-set(SOURCEFILES
-    examplefunc1.c examplefunc2_FPS.c examplefunc3_updatestreamloop.c
-    examplefunc4_streamprocess.c examplefunc_fps_cli_poc.c)
-
-# Headers installed to ${prefix}/include/${SRCNAME}/
-set(INCLUDEFILES)
+# ── Source files ─────────────────────────────────
+# Dual-mode files: compiled into ${LIBNAME} for CLI use,
+# AND as standalone executables (with -DFPS_STANDALONE).
+# Single-mode files should NOT appear in add_*_standalone() calls below.
+# Collect all the h files and c files
+file(GLOB SOURCEFILES "*.c")
+file(GLOB INCLUDEFILES "*.h")
 
 # Scripts installed to ${prefix}/bin/
-set(SCRIPTFILES scripts/milk-tutorial scripts/milk-streampoke
-                scripts/milk-semtestspeed)
+# All the files in scripts/* are considered to be executable scripts
+file(GLOB SCRIPTS "scripts/*")
 
-set(LINKLIBS CLIcore)
-
-# ── Library ────────────────────────────────────── Shared library for CLI use
-# (loaded by milk-cli).
-
-set(NAME0 "${CMAKE_CURRENT_SOURCE_DIR}")
-string(REPLACE "/" " " NAME1 ${NAME0})
-string(REGEX MATCH "[a-zA-Z0-9_]+$" SRCNAME "${NAME0}")
-message(" SRCNAME = ${SRCNAME}")
+# ── Library ──────────────────────────────────────
+# Shared library for CLI use (loaded by milk-cli).
 
 project(lib_${LIBNAME}_project)
 
-add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
-target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/..
-                                              ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS} milkfpsCLI)
+include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/..")
+
+add_library(${LIBNAME} SHARED ${SOURCEFILES})
+target_include_directories(
+  ${LIBNAME} PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
 install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
   DESTINATION lib)
-install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
-# ── Standalone executables ─────────────────────── V2 pattern: each is a single
-# source file compiled with -DFPS_STANDALONE. add_milk_standalone() handles
-# linking, include paths, and install.
-#
-# ${LIBNAME} is NOT linked by default. If a standalone needs module-lib symbols,
-# add: target_link_libraries(milk-fpsexec-… PUBLIC ${LIBNAME})
+# ── Standalone executables ───────────────────────
+# V2 pattern: each is a single source file compiled with -DFPS_STANDALONE.
+# add_milk_standalone() handles linking, include paths, and install.
+# ${LIBNAME} is linked by default.
 
 add_milk_standalone(clitest examplefunc_fps_cli_poc.c)
 add_milk_standalone(imsum2 examplefunc2_FPS.c)
 add_milk_standalone(streamprocess examplefunc4_streamprocess.c)
 
-# ── Tests ──────────────────────────────────────── Smoke tests: verify template
-# standalones link correctly and run without segfault.
+# In case of optional dependency management, this block handles removing
+# the standalones that don't meet their needed dependencies.
+get_property(_stdalones DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t IN LISTS _stdalones)
+  get_target_property(_type ${_t} TYPE)
+  if(_type STREQUAL "EXECUTABLE")
+    target_link_libraries(${_t} PUBLIC ${LIBNAME})
+  endif()
+endforeach()
+
+
+# ── Tests ────────────────────────────────────────
+# Smoke tests: verify template standalones link correctly and run without segfault.
 
 add_test(NAME template-clitest-h1 COMMAND milk-fpsexec-clitest -h1)
 add_test(NAME template-imsum2-h1 COMMAND milk-fpsexec-imsum2 -h1)

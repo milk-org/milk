@@ -3,11 +3,8 @@
  * @brief   Repeat and shift image along X
  */
 
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+
+#include "CLIcore.h"
 #include "fps.h"
 
 #include "linARfilterPred.h"

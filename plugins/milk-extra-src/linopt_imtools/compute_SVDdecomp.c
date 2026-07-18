@@ -2,14 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_MKL
-#    include "mkl_lapacke.h"
-#else
-#    ifdef HAVE_OPENBLAS
-#        include <cblas.h>
-#    endif
-#    include <lapacke.h>
-#endif
+// MILK_CMAKE_MANDATE_LAPACKE
+// MILK_CMAKE_MANDATE_BLAS
+
+#include "milk_blas_lapacke.h"
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -91,14 +87,8 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     }
 
     /* DtD = D^T * D  (m x m) */
-#ifdef HAVE_OPENBLAS
     cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, (int) m, (int) m, (int) n, 1.0, D, (int) n,
                 D, (int) n, 0.0, DtD, (int) m);
-#else
-    printf("No openblas. No time to fix the entire cmake stack.");
-    fflush(stdout);
-    abort();
-#endif
 
     /* Eigenvalue decomposition */
     int info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', (int) m, DtD, (int) m, eval);

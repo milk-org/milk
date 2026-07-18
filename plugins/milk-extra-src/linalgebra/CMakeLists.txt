@@ -2,6 +2,8 @@
 set(LIBNAME "milklinalgebra")
 set(SRCNAME "linalgebra")
 
+message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
+
 # This is only good so far as we're taking everything
 # And no mixing of CPP files
 file(GLOB SOURCEFILES "*.c")
