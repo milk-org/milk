@@ -42,6 +42,8 @@ function(milk_apply_extensions target)
   get_target_property(_srcdir ${target} SOURCE_DIR)
   get_target_property(_sources ${target} SOURCES)
 
+  string(ASCII 27 _esc)
+
   set(_want_blas FALSE)
   set(_want_lapacke FALSE)
   set(_want_cuda FALSE)
@@ -121,8 +123,11 @@ function(milk_apply_extensions target)
       endif()
     endforeach() # foreach(_line IN LISTS _mnd_lines)
     if(_src_excluded)
-      message(WARNING "milk_apply_extensions: [${target}] excluding "
-                      "'${_src}' — unmet MILK_CMAKE_MANDATE_*")
+      get_filename_component(_src_name "${_src}" NAME)
+      message(
+        STATUS
+        "${_esc}[33m[SKIP] ${target}: ${_src_name} (unmet MANDATE_*)${_esc}[0m"
+      )
       set_source_files_properties("${_src}" PROPERTIES HEADER_FILE_ONLY TRUE)
       math(EXPR _excluded_src_count "${_excluded_src_count} + 1")
     endif()
@@ -134,7 +139,7 @@ function(milk_apply_extensions target)
   if(_tgt_type STREQUAL "EXECUTABLE"
      AND _valid_src_count GREATER 0
      AND _excluded_src_count GREATER_EQUAL _valid_src_count)
-    message(WARNING "milk_apply_extensions: [${target}] all sources excluded "
+    message(STATUS "milk_apply_extensions: [${target}] all sources excluded "
                     "due to unmet MILK_CMAKE_MANDATE_* — target disabled "
                     "(EXCLUDE_FROM_ALL)")
     set_target_properties(${target} PROPERTIES EXCLUDE_FROM_ALL TRUE)
