@@ -7,18 +7,6 @@
 # May disable USE_MAGMA  symbol (OFF   / ON)
 # ~~~
 
-pkg_check_modules(MAGMA magma)
-
-if(MAGMA_FOUND)
-  message(STATUS "Found MAGMA: ${MAGMA_LIBRARIES}")
-  set(HAVE_MAGMA TRUE)
-  add_compile_definitions(HAVE_MAGMA)
-  include_directories(${MAGMA_INCLUDE_DIRS})
-else()
-  message(WARNING "No MAGMA support found -- USE_MAGMA is deactivated")
-  set(USE_MAGMA OFF)
-endif()
-
 function(apply_magma_to_target target)
   if(NOT HAVE_MAGMA)
     message(
@@ -30,3 +18,15 @@ function(apply_magma_to_target target)
   target_link_libraries(${target} PRIVATE ${MAGMA_LIBRARIES})
   target_compile_options(${target} PRIVATE ${MAGMA_CFLAGS_OTHER})
 endfunction()
+
+pkg_check_modules(MAGMA magma)
+
+if(MAGMA_FOUND)
+  message(STATUS "Found MAGMA: ${MAGMA_LIBRARIES}")
+  set(HAVE_MAGMA TRUE)
+  add_compile_definitions(HAVE_MAGMA)
+  include_directories(${MAGMA_INCLUDE_DIRS})
+else()
+  message(WARNING "No MAGMA support found -- USE_MAGMA is deactivated")
+  set(USE_MAGMA OFF)
+endif()
