@@ -6,10 +6,7 @@
 /** @file linalgebratest.h
  */
 
-#ifdef HAVE_CUDA
+MILK_WEAK errno_t linalgebratest_addCLIcmd() {};
 
-errno_t linalgebratest_addCLIcmd();
-
-errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSsize, long GPUcnt);
-
-#endif
+MILK_WEAK errno_t GPUcomp_test(long NBact, long NBmodes, long WFSsize, long GPUcnt)
+    MILK_WEAK_FUNCDEF;

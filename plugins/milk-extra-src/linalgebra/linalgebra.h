@@ -8,13 +8,11 @@
 #define _LINALGEBRA_H
 
 #ifdef HAVE_CUDA
-
 #    include <cublas_v2.h>
 #    include <cuda_runtime.h>
 #    include <cuda_runtime_api.h>
 #    include <device_types.h>
 #    include <pthread.h>
-
 #endif
 
 #include "linalgebra/GPU_SVD_computeControlMatrix.h"

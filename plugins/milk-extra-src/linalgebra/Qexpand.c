@@ -1,4 +1,3 @@
-#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file PCAmatch.c
  *
@@ -11,6 +10,7 @@
 #include <math.h>
 
 #include "CLIcore.h"
+#include "ImageStreamIO/ImageStruct.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "SGEMM.h"

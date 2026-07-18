@@ -5,8 +5,6 @@
 
 /** @file MVM_CPU.h
  */
-
-
 #ifndef LINALGEBRA_MVM_CPU_H
 #define LINALGEBRA_MVM_CPU_H
 

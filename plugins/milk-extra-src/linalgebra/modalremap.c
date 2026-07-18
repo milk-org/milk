@@ -1,4 +1,3 @@
-#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file ModalRemap.c
  *
@@ -9,6 +8,7 @@
 #include <math.h>
 
 #include "CLIcore.h"
+#include "ImageStreamIO/ImageStruct.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 

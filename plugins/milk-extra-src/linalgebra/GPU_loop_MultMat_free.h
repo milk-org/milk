@@ -6,8 +6,4 @@
 /** @file GPU_loop_MultMat_free.h
  */
 
-#ifdef HAVE_CUDA
-
-int GPU_loop_MultMat_free(int index);
-
-#endif
+MILK_WEAK int GPU_loop_MultMat_free(int index) MILK_WEAK_FUNCDEF;

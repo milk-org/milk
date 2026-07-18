@@ -1,6 +1,9 @@
 /** @file linalgebrainit.c
  */
 
+// MILK_CMAKE_MANDATE_CUDA
+// MILK_CMAKE_REQUEST_MAGMA
+
 #ifdef HAVE_MAGMA
 #    include "magma_lapack.h"
 #    include "magma_v2.h"

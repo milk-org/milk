@@ -7,7 +7,6 @@
 #define _LINALGEBRA_TYPES_H
 
 #ifdef HAVE_CUDA
-#    define HAVE_CUBLAS
 #    include <cublas_v2.h>
 #    include <cuda_runtime.h>
 #    include <cuda_runtime_api.h>
@@ -29,6 +28,7 @@
 #    include "fps.h"
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
+
 #ifdef HAVE_MAGMA
 
 /******************* CPU memory */
@@ -59,7 +59,7 @@
 #    define TESTING_FREE_CPU(ptr) magma_free_cpu(ptr)
 
 /******************* Pinned CPU memory */
-#    ifdef HAVE_CUBLAS
+#    ifdef HAVE_CUDA
 // In CUDA, this allocates pinned memory.
 #        define TESTING_MALLOC_PIN(ptr, type, size)                                          \
             if (MAGMA_SUCCESS != magma_malloc_pinned((void **) &ptr, (size) * sizeof(type))) \

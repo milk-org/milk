@@ -3,17 +3,14 @@
  * @brief Gpu svd computecontrolmatrix module
  */
 
-/** @file GPU_SVD_computeControlMatrix.c
- */
+// MILK_CMAKE_MANDATE_CUDA
 
-#ifdef HAVE_CUDA
-#    include <cublas_v2.h>
-#    include <cuda_runtime.h>
-#    include <cuda_runtime_api.h>
-#    include <cusolverDn.h>
-#    include <device_types.h>
-#    include <pthread.h>
-#endif
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#include <cusolverDn.h>
+#include <device_types.h>
+#include <pthread.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,8 +30,6 @@
 #endif
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-#ifdef HAVE_CUDA
 
 extern int cuda_deviceCount;
 
@@ -174,8 +169,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     if (dcimg[ID_Rmatrix].md[0].naxis == 3)
     {
-        m = dcimg[ID_Rmatrix].md[0].size[0] *
-            dcimg[ID_Rmatrix].md[0].size[1];
+        m = dcimg[ID_Rmatrix].md[0].size[0] * dcimg[ID_Rmatrix].md[0].size[1];
         n = dcimg[ID_Rmatrix].md[0].size[2];
         printf("3D image -> %d %d\n", m, n);
         fflush(stdout);
@@ -197,9 +191,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     cudaStat = cudaMalloc((void **) &d_A, sizeof(float) * n * m);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc d_A returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc d_A returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
@@ -209,45 +201,35 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         cudaMemcpy(d_A, dcimg[ID_Rmatrix].array.F, sizeof(float) * m * n, cudaMemcpyHostToDevice);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMemcpy d_A returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMemcpy d_A returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
     cudaStat = cudaMalloc((void **) &d_S, sizeof(float) * n);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc d_S returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc d_S returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
     cudaStat = cudaMalloc((void **) &d_U, sizeof(float) * m * m);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc d_U returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc d_U returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
     cudaStat = cudaMalloc((void **) &d_VT, sizeof(float) * n * n);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc d_VT returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc d_VT returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
     cudaStat = cudaMalloc((void **) &devInfo, sizeof(int));
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc devInfo returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc devInfo returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
@@ -264,18 +246,13 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     cudaStat = cudaMalloc((void **) &d_Work, sizeof(float) * Lwork);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc d_Work returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc d_Work returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
     rwork = (float *) malloc(5 * sizeof(float) * n);
 
-    printf("START GPU COMPUTATION (%d x %d)  buffer size = %d ...",
-           m,
-           n,
-           Lwork);
+    printf("START GPU COMPUTATION (%d x %d)  buffer size = %d ...", m, n, Lwork);
     fflush(stdout);
     cusolverDnSgesvd(cudenseH, 'A', 'A', m, n, d_A, lda, d_S, d_U, ldu, d_VT, ldvt, d_Work, Lwork,
                      NULL, devInfo);
@@ -285,8 +262,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     printf(" DONE\n");
     fflush(stdout);
 
-    cudaStat =
-        cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaStat = cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost);
     printf("after gesvd: info_gpu = %d\n", info_gpu);
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(ID_VTmatrix_name, n, n, &ID_VTmatrix));
@@ -295,9 +271,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         cudaMemcpy(dcimg[ID_VTmatrix].array.F, d_VT, sizeof(float) * n * n, cudaMemcpyDeviceToHost);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMemcpy returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMemcpy returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
@@ -308,9 +282,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     cudaStat = cudaMemcpy(Sarray, d_S, sizeof(float) * n, cudaMemcpyDeviceToHost);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMemcpy returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMemcpy returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
@@ -328,19 +300,14 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID("matU", m, m, &ID));
 
-    cudaMemcpy(dcimg[ID].array.F,
-               d_U,
-               sizeof(float) * m * m,
-               cudaMemcpyDeviceToHost);
+    cudaMemcpy(dcimg[ID].array.F, d_U, sizeof(float) * m * m, cudaMemcpyDeviceToHost);
     save_fits("matU", "matU.fits");
 
     h_U1     = (float *) malloc(sizeof(float) * m * n);
     cudaStat = cudaMalloc((void **) &d_U1, sizeof(float) * m * n);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc d_U1 returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc d_U1 returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
     for (uint32_t ii = 0; ii < m; ii++)
@@ -355,10 +322,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID("matU1", m, n, &ID));
 
-    cudaMemcpy(dcimg[ID].array.F,
-               d_U1,
-               sizeof(float) * m * n,
-               cudaMemcpyDeviceToHost);
+    cudaMemcpy(dcimg[ID].array.F, d_U1, sizeof(float) * m * n, cudaMemcpyDeviceToHost);
     save_fits("matU1", "matU1.fits");
 
     printf("SVDeps = %f\n", SVDeps);
@@ -388,18 +352,14 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         cudaMemcpy(d_VT, dcimg[ID_VTmatrix].array.F, sizeof(float) * n * n, cudaMemcpyHostToDevice);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMemcpy returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMemcpy returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
     cudaStat = cudaMalloc((void **) &d_M, sizeof(float) * n * m);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMalloc d_M returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMalloc d_M returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
@@ -409,9 +369,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
                                             d_VT, n, d_U, m, &beta, d_M, n);
     if (cublasStat != CUBLAS_STATUS_SUCCESS)
     {
-        printf("cublasSgemm returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cublasSgemm returned error code %d, line(%d)\n", cudaStat, __LINE__);
         exit(EXIT_FAILURE);
     }
 
@@ -434,8 +392,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         imgcm.mdt->naxis = dcimg[ID_Rmatrix].md[0].naxis;
         for (int a = 0; a < imgcm.mdt->naxis; a++)
         {
-            imgcm.mdt->size[a] =
-                arraysizetmp[a];
+            imgcm.mdt->size[a] = arraysizetmp[a];
         }
         imgcm.mdt->datatype = _DATATYPE_FLOAT;
         imgcm.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
@@ -458,9 +415,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     //cudaStat = cudaMemcpy(dcimg[ID_Cmatrix].array.F, d_VT, sizeof(float)*n*n, cudaMemcpyDeviceToHost);
     if (cudaStat != cudaSuccess)
     {
-        printf("cudaMemcpy returned error code %d, line(%d)\n",
-               cudaStat,
-               __LINE__);
+        printf("cudaMemcpy returned error code %d, line(%d)\n", cudaStat, __LINE__);
         free(arraysizetmp);
         exit(EXIT_FAILURE);
     }
@@ -499,5 +454,3 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-#endif

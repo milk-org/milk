@@ -6,13 +6,13 @@
 /** @file GPU_loop_MultMat_free.c
  */
 
-#ifdef HAVE_CUDA
+// MILK_CMAKE_MANDATE_CUDA
 
-#    include <cublas_v2.h>
-#    include <cuda_runtime.h>
-#    include <cuda_runtime_api.h>
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 
-#    include "linalgebra_types.h"
+#include "linalgebra_types.h"
 
 extern GPUMATMULTCONF gpumatmultconf[20];
 
@@ -53,5 +53,3 @@ int GPU_loop_MultMat_free(int index)
 
     return (0);
 }
-
-#endif

@@ -3,11 +3,4 @@
  * @brief Printgpumatmultconf module
  */
 
-/** @file printGPUMATMULTCONF.h
- */
-
-#ifdef HAVE_CUDA
-
-errno_t LINALGEBRA_printGPUMATMULTCONF(int index);
-
-#endif
+MILK_WEAK errno_t LINALGEBRA_printGPUMATMULTCONF(int index) MILK_WEAK_FUNCDEF;

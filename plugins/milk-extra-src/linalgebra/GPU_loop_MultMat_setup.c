@@ -3,37 +3,34 @@
  * @brief Gpu loop multmat setup module
  */
 
-/** @file GPU_loop_MultMat_setup.c
- */
+// MILK_CMAKE_MANDATE_CUDA
 
-#ifdef HAVE_CUDA
+#include <cublas_v2.h>
+#include <fcntl.h>
+#include <pthread.h>
 
-#    include <cublas_v2.h>
-#    include <fcntl.h>
-#    include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
-#    include <stdio.h>
-#    include <stdlib.h>
-#    include <string.h>
-#    include <math.h>
-#    include <stdint.h>
-#    include <stdbool.h>
-#    include <unistd.h>
+#ifdef MILK_NO_CLI
+#    include "CLIcore_standalone.h"
+#else
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
+#endif
+#include "COREMOD_memory/COREMOD_memory.h"
 
-#    ifdef MILK_NO_CLI
-#        include "CLIcore_standalone.h"
-#    else
-#        include "libmilkdata/milkdata.h"
-#        include "milkDebugTools.h"
-#        include "fps.h"
-#        include "ImageStreamIO/ImageStreamIO.h"
-#    endif
-#    include "COREMOD_memory/COREMOD_memory.h"
-
-#    include "GPU_loop_MultMat_free.h"
-#    include "GPUloadCmat.h"
-#    include "linalgebra_types.h"
-#    include "linalgebrainit.h"
+#include "GPU_loop_MultMat_free.h"
+#include "GPUloadCmat.h"
+#include "linalgebra_types.h"
+#include "linalgebrainit.h"
 
 extern GPUMATMULTCONF gpumatmultconf[20];
 extern imageID        IDtimerinit;
@@ -755,5 +752,3 @@ errno_t GPU_loop_MultMat_setup(int         index,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-#endif

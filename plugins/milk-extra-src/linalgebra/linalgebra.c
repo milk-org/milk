@@ -87,8 +87,6 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 
 static errno_t init_module_CLI()
 {
-#ifdef HAVE_CUDA
-
     linalgebrainit_addCLIcmd();
     linalgebratest_addCLIcmd();
 
@@ -97,14 +95,11 @@ static errno_t init_module_CLI()
 
     CLIADDCMD_linalgebra__PCAdecomp();
 
-#    ifdef HAVE_MAGMA
     MatMatMult_testPseudoInverse_addCLIcmd();
     magma_compute_SVDpseudoInverse_addCLIcmd();
     magma_compute_SVDpseudoInverse_SVD_addCLIcmd();
-#    endif
 
     Coeff2Map_Loop_addCLIcmd();
-#endif
 
     CLIADDCMD_linalgebra__MVMextractModes();
 
