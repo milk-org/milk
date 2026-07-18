@@ -7,26 +7,32 @@
 # Scans all C/C++ source files belonging to <target> for two families of comment
 # directives and wires the corresponding build extensions.
 #
-# ── REQUEST directives (target-level) ─────────────────────────────────────
+# ── REQUEST directives ─────────────────────────────────────
 #
-# MILK_CMAKE_REQUEST_BLAS MILK_CMAKE_REQUEST_LAPACKE MILK_CMAKE_REQUEST_CUDA
-# MILK_CMAKE_REQUEST_MAGMA MILK_CMAKE_REQUEST_CFITSIO
+# MILK_CMAKE_REQUEST_BLAS
+# MILK_CMAKE_REQUEST_LAPACKE
+# MILK_CMAKE_REQUEST_CUDA
+# MILK_CMAKE_REQUEST_MAGMA
+# MILK_CMAKE_REQUEST_CFITSIO
 #
 # If any source in the target carries the directive, the corresponding
-# apply_*_to_target() function is called for the whole target.  When the
-# extension is unavailable (USE_<EXT>=OFF) the directive is silently ignored.
+# apply_*_to_target() function is called for the whole target.
+# When the extension is unavailable (USE_<EXT>=OFF) the directive is silently ignored.
 #
-# ── MANDATE directives (per-file) ─────────────────────────────────────────
+# ── MANDATE directives ─────────────────────────────────────────
 #
-# MILK_CMAKE_MANDATE_BLAS MILK_CMAKE_MANDATE_LAPACKE MILK_CMAKE_MANDATE_CUDA
-# MILK_CMAKE_MANDATE_MAGMA MILK_CMAKE_MANDATE_CFITSIO
+# MILK_CMAKE_MANDATE_BLAS
+# MILK_CMAKE_MANDATE_LAPACKE
+# MILK_CMAKE_MANDATE_CUDA
+# MILK_CMAKE_MANDATE_MAGMA
+# MILK_CMAKE_MANDATE_CFITSIO
 #
-# The source file declares a hard requirement on an extension. - Extension
-# AVAILABLE  (HAVE_<EXT> TRUE):  the directive implies REQUEST —
-# apply_*_to_target() is called for the whole target. - Extension UNAVAILABLE
-# (HAVE_<EXT> falsy): the source file is excluded from compilation
-# (HEADER_FILE_ONLY) and a CMake WARNING is emitted. Any single unmet mandate
-# triggers exclusion regardless of other mandates.
+# The source file declares a hard requirement on an extension.
+# - Extension AVAILABLE  (HAVE_<EXT> TRUE):  the directive implies REQUEST
+# -- apply_*_to_target() is called for the whole target.
+# - Extension UNAVAILABLE (HAVE_<EXT> falsy): the source file is excluded from compilation
+# (HEADER_FILE_ONLY) and a CMake WARNING is emitted.
+# Any single unmet mandate triggers exclusion regardless of other mandates.
 #
 # The apply_*_to_target() functions are defined in the have_*.cmake files.
 # ─────────────────────────────────────────────────────────────────────────────

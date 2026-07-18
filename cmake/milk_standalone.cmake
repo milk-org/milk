@@ -87,6 +87,15 @@ if(USE_STATIC_LTO)
   endif()
 endif()
 
+# ── milk_scan_standalone ────────────────────────
+# TODO
+# Take a list of source files
+# grep for FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
+# or FPS_MAIN_STANDALONE_V2_CONFIG()
+# figures out the target name
+# call add_milk_standalone
+
+
 # ── milk_pgo_target ─────────────────────────────
 #
 # Applies per-executable PGO profile directory. Each standalone gets its own

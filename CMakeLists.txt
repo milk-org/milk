@@ -352,7 +352,7 @@ if(USE_LTO)
   add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
 endif()
 # NOTE: -fwhole-program is applied only to standalone executables (via
-# MilkStandalone.cmake) where main() is the sole entry point.  Applying it
+# milk_standalone.cmake) where main() is the sole entry point.  Applying it
 # globally would cause GCC to discard exported symbols from shared libraries.
 # NOTE: -fstack-usage is incompatible with link-time optimizer
 # add_compile_options(-fstack-usage)
@@ -384,9 +384,9 @@ include(CTest)
 # STANDALONE EXECUTABLE HELPERS
 # =======================================
 # Functions: add_milk_standalone, add_cacao_standalone,
-# add_cacao_standalone_plugins See cmake/MilkStandalone.cmake for docs.
+# add_cacao_standalone_plugins See cmake/milk_standalone.cmake for docs.
 
-include(${PROJECT_SOURCE_DIR}/cmake/MilkStandalone.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/milk_standalone.cmake)
 
 # =======================================
 # INSTALL PATHS
