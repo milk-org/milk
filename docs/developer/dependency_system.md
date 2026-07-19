@@ -1,8 +1,10 @@
 # Dependency System: managing extra dependencies
 
 <!-- prettier-ignore -->
-!!! important
-    TL;DR: Do not try to modify the module's `CMakeLists.txt` into highly customized include and linkage rules. MILK provides magic tags `// MILK_CMAKE_REQUEST_<X>` and `// MILK_CMAKE_MANDATE_<X>`, with e.g. `<X> = CUDA`, from where all includes and linkage is handled automatically.
+!!! info "TL;DR:"
+    Do not try to modify the module's `CMakeLists.txt` into highly customized include and linkage rules. MILK provides magic tags `// MILK_CMAKE_REQUEST_<X>` and `// MILK_CMAKE_MANDATE_<X>`, with e.g. `<X> = CUDA`, from where all includes and linkage is handled automatically.
+
+    Some care is needed with header packaging.
 
 As discussed in [Build Tiers](../install/build_tiers.md), some optional dependencies are expected by MILK and enable additional features
 
@@ -90,39 +92,65 @@ int some_useful_computation() {
     // ...
 }
 
-// All the FPS V2 boilerplate
+/* All the FPS V2 boilerplate */
 
-int CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood() {
+errno_t CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood() {
 // ...
 
 
 // H file
 int some_useful_computation();
-int CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood();
+errno_t CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood();
 ```
 
-Now the problem is, when the mandate fails, the function definitions above will simply not exist.
-However:
+!!! danger
 
-- (1) The module file `module.c` above will still try to execute the `CLIADDCMD` upon initializing the module into the CLI.
-- (2) Other C files may try to use `some_useful_computation()`
+    Now the problem is, when the mandate fails, the function definitions above will simply not exist.
 
-The proposed fallback is the following:
+    1. The module file `module.c` above will still try to execute the `CLIADDCMD` upon initializing the module into the CLI.
+    2. Other C files may try to use `some_useful_computation()`
+
+#### Recommended way to sort declarations and missed-MANDATE definitions
+
+- Use one or few headers for an entire module (not mandatory)
+- In the `module.h` header file, add normal function prototypes for exportable functions:
 
 ```C
-MILK_WEAK int CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood() {};
+int some_useful_computation();
 ```
 
-`MILK_WEAK` is just `__attribute__((weak))`. Which means this function will be replaced by its proper implementation when the MANDATE is respected and the C file actually included.
-The `CLIADDCMD` can still be invoked by `module.c`. It does nothing.
+- C files, internally and externally, can include computation functions normally:
+
+```C
+// Internally
+#include "module.h"
+// Externally
+#include "module/module.h"
+```
+
+The `module.c` file _must not_ include the `module.h` file !
+Instead, it should contain weak prototypes for:
+
+- The `CLIADDCMD` functions for the compute sessions:
+
+```C
+// Declaration is enough if the command can never miss a MILK_CMAKE_MANDATE
+errno_t CLIADDCMD_the_useful_computation_that_is_always_there();
+// Declaration is enough if the command can never miss a MILK_CMAKE_MANDATE
+MILK_WEAK errno_t CLIADDCMD_the_useful_computation_that_uses_x_under_the_hood() {};
+```
+
+- Weak definitions for the exported helper functions (or only for those that may miss a `MILK_CMAKE_MANDATE`)
 
 ```C
 MILK_WEAK int some_useful_computation() MILK_WEAK_FUNCDEF;
 ```
 
-`MILK_WEAK_FUNCDEF` prints a meaningful error message and calls `abort()`. It avoid propagating the `MILK_CMAKE_MANDATE_<X>` to all the callers, but reports meaningful info that the feature is not available.
+??? info "MILK_WEAK and MILK_WEAK_FUNCDEF"
 
-`MILK_WEAK` and `MILK_WEAK_FUNCDEF` are defined in `libmilkcommon`.
+    `MILK_WEAK` is just `__attribute__((weak))`. Which means this function will be replaced by its proper implementation when the MANDATE is respected and the C file actually included.
 
-!!! Note
-In this approach, the header file should **NOT** be included by its corresponding C file -- this will cause function redefinition. The declarations can be directly in `module.h`.
+    The `CLIADDCMD` can still be invoked by `module.c`. It does nothing.
+
+    `MILK_WEAK_FUNCDEF` prints a meaningful error message and calls `abort()`. It avoid propagating the `MILK_CMAKE_MANDATE_<X>` to all the callers, but reports meaningful info that the feature is not available.
+    `MILK_WEAK` and `MILK_WEAK_FUNCDEF` are defined in `libmilkcommon`.

@@ -1,6 +1,7 @@
 # For compilation testing.
 
 To be tested:
+
 - standalones
 - cli
 - no cli
@@ -10,21 +11,22 @@ To be tested:
 These files test the new compilation system.
 
 The main CMakeLists.txt provides symbols for us
+
 - the user passes the -DUSE_<X>=ON symbols
 - the cmake/have_<X>.cmake files:
   - Success: set -DHAVE_<X>(=TRUE, but it's really a set/unset variable)
   - Failure: set -DUSE_<X>=OFF
 
 request_cuda.c:
+
 - Contains a // MILK_CMAKE_REQUEST_CUDA
 - Must use #ifdef HAVE_CUDA guards
 
 mandate_cuda.c:
+
 - Contains a // MILK_CMAKE_MANDATE_CUDA guard
 - Does not need to use #ifdef HAVE_CUDA guards
 - Will be excluded entirely if -DUSE_CUDA=OFF (because unset by user, forced OFF, or missing CUDA)
-
-
 
 ## Tests
 
