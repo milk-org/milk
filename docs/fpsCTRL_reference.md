@@ -19,7 +19,7 @@ See also: [FPS](fps.md) ·
 
 ## Command-Line Options
 
-```
+```bash
 milk-fpsCTRL [OPTIONS] [fpsnamemask]
 ```
 

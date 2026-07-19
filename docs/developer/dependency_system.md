@@ -14,7 +14,7 @@ As discussed in [Build Tiers](../install/build_tiers.md), some optional dependen
 | `USE_MAGMA`    | OFF     | MAGMA linear algebra on GPU routines  |
 | `USE_OPENBLAS` | OFF     | BLAS: multicore linear algebra on CPU |
 | `USE_MKL`      | OFF     | Intel MKL compute library             |
-| `USE_LAPACKE`  | OFF     | Lapacke linear algerba library        |
+| `USE_LAPACKE`  | OFF     | Lapacke linear algebra library        |
 
 ## 1. User build requests and CMake symbols
 

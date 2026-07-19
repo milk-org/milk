@@ -69,7 +69,7 @@ Some optional dependencies are expected by MILK and enable additional features
 | `USE_MAGMA`    | OFF     | MAGMA linear algebra on GPU routines  |
 | `USE_OPENBLAS` | OFF     | BLAS: multicore linear algebra on CPU |
 | `USE_MKL`      | OFF     | Intel MKL compute library             |
-| `USE_LAPACKE`  | OFF     | Lapacke linear algerba library        |
+| `USE_LAPACKE`  | OFF     | Lapacke linear algebra library        |
 
 If you have the dependency `<X>` installed, you may request MILK to fetch it with `-DUSE_<X>=ON`.
 
@@ -82,7 +82,7 @@ CMake will issue warnings when some features are disabled due to a missing depen
     - OpenBLAS always provides BLAS, sometimes LAPACKE
     - Lapacke can be installed standalone, and MKL and OpenBLAS deactivated (in which case BLAS features are missing, but Lapacke features are enabled).
 
-See [Dependency System](../develope/dependency_system.md) on how to integrate these optional dependencies as a developer.
+See [Dependency System](../developer/dependency_system.md) on how to integrate these optional dependencies as a developer.
 
 ## How to build each tier of MILK
 
