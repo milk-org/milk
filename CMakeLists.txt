@@ -53,16 +53,16 @@ option(USE_STATIC_LTO "Static-link standalone exes for full LTO" OFF)
 if(USE_CLI AND NOT USE_COREMODS)
   message(STATUS "USE_CLI requires USE_COREMODS; enabling USE_COREMODS")
   set(USE_COREMODS
-      ON
-      CACHE BOOL "" FORCE)
+    ON
+    CACHE BOOL "" FORCE)
 endif()
 
 # USE_SEQ requires USE_CLI since it relies on CLIcore for commands
 if(USE_SEQ AND NOT USE_CLI)
   message(STATUS "USE_SEQ requires USE_CLI; disabling USE_SEQ")
   set(USE_SEQ
-      OFF
-      CACHE BOOL "" FORCE)
+    OFF
+    CACHE BOOL "" FORCE)
 endif()
 
 # =======================================
@@ -101,10 +101,10 @@ set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
 # Configure a header file to pass some of the CMake settings to the source code
 configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-               "${PROJECT_SOURCE_DIR}/src/milk_config.h")
+  "${PROJECT_SOURCE_DIR}/src/milk_config.h")
 
 configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
-               "${PROJECT_SOURCE_DIR}/src/config.h")
+  "${PROJECT_SOURCE_DIR}/src/config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -139,8 +139,8 @@ if(USE_CFITSIO)
 endif()
 
 if(USE_MKL
-   OR USE_OPENBLAS
-   OR USE_LAPACKE)
+  OR USE_OPENBLAS
+  OR USE_LAPACKE)
   # --> Processes all 3 and sets HAVE_BLAS, HAVE_MKL, HAVE_OPENBLAS and
   # HAVE_LAPACKE
   include(cmake/have_blas_lapacke.cmake)
@@ -168,7 +168,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     if(NOT GIT_SUBMOD_RESULT EQUAL "0")
       message(
         FATAL_ERROR
-          "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules"
+        "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules"
       )
     endif()
   endif()
@@ -177,7 +177,7 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO/CMakeLists.txt")
   message(
     FATAL_ERROR
-      "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again."
+    "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again."
   )
 endif()
 
@@ -210,13 +210,13 @@ else()
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits)
   install(FILES src/cli/CLIcore/CLIcore.h src/cli/CLIcore/CLIcore_standalone.h
-                src/cli/CLIcore/cmdsettings.h
-          DESTINATION include/CommandLineInterface)
+    src/cli/CLIcore/cmdsettings.h
+    DESTINATION include/CommandLineInterface)
   # timeutils.h, milkDebugTools.h, and IMGID.h have moved to their respective
   # engine modules (libprocessinfo, libmilkcommon, libfps) which install them
   # unconditionally via their own CMakeLists.txt targets.
   install(FILES src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
-          DESTINATION include/CommandLineInterface/CLIcore)
+    DESTINATION include/CommandLineInterface/CLIcore)
   # Create an INTERFACE library target named CLIcore so that existing
   # target_link_libraries(... CLIcore) calls in plugin CMakeLists work without
   # modification. The INTERFACE target provides header paths only;
@@ -225,20 +225,20 @@ else()
   target_include_directories(
     CLIcore
     INTERFACE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits>
-      $<INSTALL_INTERFACE:include>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits>
+    $<INSTALL_INTERFACE:include>)
   install(TARGETS CLIcore EXPORT milkTargets)
 endif()
 
@@ -413,8 +413,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
 if(USE_COREMODS)
   execute_process(
     COMMAND
-      bash -c
-      "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
+    bash -c
+    "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
     OUTPUT_VARIABLE libextradir)
   string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 endif()
@@ -459,33 +459,39 @@ add_definitions(
   -DPACKAGE_BUGREPORT="https://github.com/milk-org/milk/issues")
 
 set(PROGRAM_PERMISSIONS_DEFAULT
-    OWNER_WRITE
-    OWNER_READ
-    OWNER_EXECUTE
-    GROUP_READ
-    GROUP_EXECUTE
-    WORLD_READ
-    WORLD_EXECUTE)
+  OWNER_WRITE
+  OWNER_READ
+  OWNER_EXECUTE
+  GROUP_READ
+  GROUP_EXECUTE
+  WORLD_READ
+  WORLD_EXECUTE)
 
-# main CLI executable (only when USE_CLI is ON)
+message("====================================================")
+message("CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
+message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
+message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
+message("CMAKE_C_FLAGS_COVERAGE        : ${CMAKE_C_FLAGS_COVERAGE}")
+get_cmake_property(_all_vars VARIABLES)
+set(_use_line "USE_*  :")
+set(_have_line "HAVE_* :")
+foreach(_v IN LISTS _all_vars)
+  if(_v MATCHES "^USE_")
+    string(APPEND _use_line "  ${_v}=${${_v}}")
+  elseif(_v MATCHES "^HAVE_")
+    string(APPEND _have_line "  ${_v}=${${_v}}")
+  endif()
+endforeach()
+unset(_all_vars)
+message("${_use_line}")
+message("${_have_line}")
+message("====================================================")
+
+
 if(USE_CLI)
-
+  # main CLI executable (only when USE_CLI is ON)
   add_executable(milk-cli src/CLImain.c)
   target_link_libraries(milk-cli PUBLIC ${libname})
-
-  message("====================================================")
-  get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)
-  message("CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
-  message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
-  message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
-  message("COMPILE_OPTIONS         :  ${milkcompopts}")
-  message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
-  message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
-  message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
-  message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
-  message("CMAKE_C_FLAGS_COVERAGE        : ${CMAKE_C_FLAGS_COVERAGE}")
-  message("====================================================")
-
   install(
     TARGETS milk-cli
     DESTINATION bin
@@ -516,11 +522,11 @@ endif(INSTALLMAKEDEFAULT)
 # =======================================
 
 set(INCLUDE_INSTALL_DIR
-    ${CMAKE_INSTALL_PREFIX}/include
-    CACHE PATH "Location of header files")
+  ${CMAKE_INSTALL_PREFIX}/include
+  CACHE PATH "Location of header files")
 set(LIBRARY_INSTALL_DIR
-    ${CMAKE_INSTALL_PREFIX}/lib
-    CACHE PATH "Location of libraries")
+  ${CMAKE_INSTALL_PREFIX}/lib
+  CACHE PATH "Location of libraries")
 
 # Export the targets to a file for use in the Config.cmake file
 install(
@@ -534,7 +540,7 @@ add_library(${PROJECT_NAME}_all INTERFACE)
 target_link_libraries(${PROJECT_NAME}_all INTERFACE ${libname})
 target_include_directories(
   ${PROJECT_NAME}_all INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                $<INSTALL_INTERFACE:include>)
+  $<INSTALL_INTERFACE:include>)
 install(TARGETS ${PROJECT_NAME}_all EXPORT milkTargets)
 
 include(CMakePackageConfigHelpers)
@@ -552,8 +558,8 @@ configure_package_config_file(
 
 # Install the Config.cmake and ConfigVersion.cmake files
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-        DESTINATION lib/cmake)
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+  DESTINATION lib/cmake)
 
 # =======================================
 # PKG-CONFIG
@@ -566,17 +572,17 @@ endforeach()
 message("LINKSTRING: ${LINKSTRING}")
 
 set(INSTALL_PKGCONFIG_DIR
-    "lib/pkgconfig"
-    CACHE PATH "Installation directory for pkgconfig (.pc) files")
+  "lib/pkgconfig"
+  CACHE PATH "Installation directory for pkgconfig (.pc) files")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
-               ${CMAKE_CURRENT_BINARY_DIR}/milk.pc @ONLY)
+  ${CMAKE_CURRENT_BINARY_DIR}/milk.pc @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
-        DESTINATION "${INSTALL_PKGCONFIG_DIR}")
+  DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
-              ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h DESTINATION include)
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h DESTINATION include)
 
 if(build_python_module)
   add_subdirectory(python_module)
@@ -587,33 +593,33 @@ if(USE_CLI)
   install(TARGETS CLIcore DESTINATION bin)
   install(
     PROGRAMS scripts/milk-cli-all
-             scripts/milk-argparse
-             scripts/milk-check
-             scripts/milk-completion.sh
-             scripts/milk-commands
-             scripts/milk-cubeslice2shm
-             scripts/milk-exec
-             scripts/milk-fpslist-addentry
-             scripts/milk-cr2tofits
-             scripts/milk-FITS2shm
-             scripts/milk-fitsheader
-             scripts/milk-fpsmkcmd
-             scripts/milk-fpsinit
-             scripts/milk-logshim
-             scripts/milk-logshimkill
-             scripts/milk-logshimoff
-             scripts/milk-logshimon
-             scripts/milk-logshimstat
-             scripts/merge3DfitsTelemetry
-             scripts/milk-images-merge
-             scripts/milk-scriptexample
-             scripts/milk-script-advanced
-             scripts/milk-script-std-config
-             scripts/milk-streamlink
-             scripts/milk-shm2FITSloop
-             scripts/tmuxkillall
-             scripts/tmuxsessionname
-             scripts/waitforfile
+    scripts/milk-argparse
+    scripts/milk-check
+    scripts/milk-completion.sh
+    scripts/milk-commands
+    scripts/milk-cubeslice2shm
+    scripts/milk-exec
+    scripts/milk-fpslist-addentry
+    scripts/milk-cr2tofits
+    scripts/milk-FITS2shm
+    scripts/milk-fitsheader
+    scripts/milk-fpsmkcmd
+    scripts/milk-fpsinit
+    scripts/milk-logshim
+    scripts/milk-logshimkill
+    scripts/milk-logshimoff
+    scripts/milk-logshimon
+    scripts/milk-logshimstat
+    scripts/merge3DfitsTelemetry
+    scripts/milk-images-merge
+    scripts/milk-scriptexample
+    scripts/milk-script-advanced
+    scripts/milk-script-std-config
+    scripts/milk-streamlink
+    scripts/milk-shm2FITSloop
+    scripts/tmuxkillall
+    scripts/tmuxsessionname
+    scripts/waitforfile
     DESTINATION bin)
 
 endif(USE_CLI)
@@ -625,7 +631,7 @@ install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
 
 # Guard: verify no standalone links CLIcore unexpectedly
 add_test(NAME standalone-dep-check
-         COMMAND ${PROJECT_SOURCE_DIR}/scripts/milk-check-standalone-deps
-                 ${CMAKE_CURRENT_BINARY_DIR})
+  COMMAND ${PROJECT_SOURCE_DIR}/scripts/milk-check-standalone-deps
+  ${CMAKE_CURRENT_BINARY_DIR})
 
 install(PROGRAMS scripts/milk-check-standalone-deps DESTINATION bin)
