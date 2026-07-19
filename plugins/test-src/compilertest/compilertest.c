@@ -11,7 +11,8 @@
 #include "CLIcore.h"
 // #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "compilertest.h"
+MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_CUDA() {};
+MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE() {};
 
 static errno_t init_module_CLI()
 {
@@ -27,3 +28,5 @@ static errno_t init_module_CLI()
 }
 
 MILK_MODULE(compilertest, init_module_CLI, NULL);
+
+// Additional weak function definitions for things that need exported and miss a MANDATE

@@ -1,8 +1,0 @@
-#ifndef MANDATE_CUDA_H
-#define MANDATE_CUDA_H
-
-MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE()
-{
-}
-
-#endif // #ifndef MANDATE_CUDA_H

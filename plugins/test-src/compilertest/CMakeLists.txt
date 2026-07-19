@@ -2,9 +2,9 @@
 set(LIBNAME "milkcompilertest")
 set(SRCNAME "compilertest")
 
-set(SOURCEFILES ${SRCNAME}.c mandate_cuda.c request_cuda.c)
-
-set(INCLUDEFILES ${SRCNAME}.h mandate_cuda.h request_cuda.h)
+file(GLOB SOURCEFILES "*.c")
+file(GLOB INCLUDEFILES "*.h")
+file(GLOB SCRIPTS "scripts/*")
 
 # DEFAULT SETTINGS Do not change unless needed
 # =====================================================================
