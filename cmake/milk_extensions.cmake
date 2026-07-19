@@ -17,7 +17,7 @@
 #
 # If any source in the target carries the directive, the corresponding
 # apply_*_to_target() function is called for the whole target.
-# When the extension is unavailable (USE_<EXT>=OFF) the directive is silently ignored.
+# When the extension is unavailable (USE_<EXT>=OFF) the directive is ignored.
 #
 # ── MANDATE directives ─────────────────────────────────────────
 #
@@ -153,7 +153,7 @@ function(milk_apply_extensions target)
   endif()
 
   # Apply collected extensions to the target. Guarded by if(COMMAND ...) so
-  # missing extensions (USE_X=OFF) are silent.
+  # missing extensions (USE_X=OFF) are non-crashing due to undefined function.
   if(_want_blas AND COMMAND apply_blas_to_target)
     apply_blas_to_target(${target})
   endif()

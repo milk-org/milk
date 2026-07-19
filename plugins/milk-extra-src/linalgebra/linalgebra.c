@@ -22,27 +22,29 @@
 #include "linalgebra_types.h"
 
 // Prototypes for all CLICommands from module files
-MILK_WEAK errno_t linalgebrainit_addCLIcmd() {};
-MILK_WEAK errno_t linalgebratest_addCLIcmd() {};
+// clang-format off
+MILK_WEAK errno_t linalgebrainit_addCLIcmd() {return 0;};
+MILK_WEAK errno_t linalgebratest_addCLIcmd() {return 0;};
 
 errno_t           CLIADDCMD_linalgebra__basis_rotate_match();
 errno_t           CLIADDCMD_linalgebra__GramSchmidt();
-MILK_WEAK errno_t CLIADDCMD_linalgebra__PCAdecomp() {};
+MILK_WEAK errno_t CLIADDCMD_linalgebra__PCAdecomp() {return 0;};
 
-MILK_WEAK errno_t MatMatMult_testPseudoInverse_addCLIcmd() {};
-MILK_WEAK errno_t magma_compute_SVDpseudoInverse_addCLIcmd() {};
-MILK_WEAK errno_t magma_compute_SVDpseudoInverse_SVD_addCLIcmd() {};
+MILK_WEAK errno_t MatMatMult_testPseudoInverse_addCLIcmd() {return 0;};
+MILK_WEAK errno_t magma_compute_SVDpseudoInverse_addCLIcmd() {return 0;};
+MILK_WEAK errno_t magma_compute_SVDpseudoInverse_SVD_addCLIcmd() {return 0;};
 
-MILK_WEAK errno_t Coeff2Map_Loop_addCLIcmd() {};
+MILK_WEAK errno_t Coeff2Map_Loop_addCLIcmd() {return 0;};
 
 errno_t           CLIADDCMD_linalgebra__ModalRemap();
 errno_t           CLIADDCMD_linalgebra__MVMextractModes();
 errno_t           CLIADDCMD_linalgebra__PCAmatch();
 errno_t           CLIADDCMD_linalgebra__Qexpand();
-MILK_WEAK errno_t CLIADDCMD_linalgebra__compSVD() {};
+MILK_WEAK errno_t CLIADDCMD_linalgebra__compSVD() {return 0;};
 errno_t           CLIADDCMD_linalgebra__compSVDU();
 errno_t           CLIADDCMD_linalgebra__SVDmkM();
 errno_t           CLIADDCMD_linalgebra__SGEMM();
+// clang-format on
 
 // globals
 

@@ -123,7 +123,7 @@ if(USE_STATIC_LTO)
 endif()
 
 milk_apply_extensions(${LIBNAME})
-if(TARGET LIBNAME_STATIC)
+if(TARGET ${LIBNAME_STATIC})
   milk_apply_extensions(${LIBNAME_STATIC})
 endif()
 

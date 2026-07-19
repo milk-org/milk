@@ -27,7 +27,6 @@ file(GLOB SCRIPTS "scripts/*")
 
 project(lib_${LIBNAME}_project)
 
-include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
@@ -39,7 +38,7 @@ install(
   EXPORT milkTargets
   DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
-install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
 # ── Standalone executables ───────────────────────
 # V2 pattern: each is a single source file compiled with -DFPS_STANDALONE.

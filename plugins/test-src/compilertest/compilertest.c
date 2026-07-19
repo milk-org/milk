@@ -11,8 +11,10 @@
 #include "CLIcore.h"
 // #include "COREMOD_memory/COREMOD_memory.h"
 
-MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_CUDA() {};
-MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE() {};
+// clang-format off
+MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_CUDA() {return 0;};
+MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE() {return 0;};
+// clang-format on
 
 static errno_t init_module_CLI()
 {

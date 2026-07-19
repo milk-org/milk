@@ -3,7 +3,7 @@
  * @brief   load FITS format files
  */
 
-#define REQUEST_CFITSIO
+// MILK_CMAKE_MANDATE_CFITSIO
 
 #include <stdlib.h>
 

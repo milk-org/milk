@@ -8,7 +8,7 @@
 # ~~~
 
 check_language(CUDA) # -> CMAKE_CUDA_COMPILER
-find_package(CUDAToolkit 9.0 REQUIRED) # -> CUDA_FOUND
+find_package(CUDAToolkit 9.0 QUIET) # -> CUDA_FOUND
 
 if(CMAKE_CUDA_COMPILER) # <- check_language
   enable_language(CUDA)
