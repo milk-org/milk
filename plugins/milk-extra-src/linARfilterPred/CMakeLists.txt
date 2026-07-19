@@ -25,6 +25,9 @@ message("---- module linalgebra ------------------")
 
 milk_apply_extensions(${LIBNAME})
 
+# Additional cross-module dependency
+target_link_libraries(${LIBNAME} PUBLIC milklinalgebra)
+
 install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
