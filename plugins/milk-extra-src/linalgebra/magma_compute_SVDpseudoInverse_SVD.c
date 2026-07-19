@@ -6,36 +6,37 @@
 /** @file magma_compute_SVDpseudoInverse_SVD.c
  */
 
-#ifdef HAVE_CUDA
+// MILK_CMAKE_MANDATE_CUDA
+// MILK_CMAKE_REQUEST_MAGMA
 
-#    ifdef HAVE_MAGMA
-#        include "magma_lapack.h"
-#        include "magma_v2.h"
+#ifdef HAVE_MAGMA
+#    include "magma_lapack.h"
+#    include "magma_v2.h"
 
-#        include <stdio.h>
-#        include <stdlib.h>
-#        include <string.h>
-#        include <math.h>
-#        include <stdint.h>
-#        include <stdbool.h>
-#        include <unistd.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+#    include <math.h>
+#    include <stdint.h>
+#    include <stdbool.h>
+#    include <unistd.h>
 
-#        ifdef MILK_NO_CLI
-#            include "CLIcore_standalone.h"
-#        else
-#            include "libmilkdata/milkdata.h"
-#            include "milkDebugTools.h"
-#            include "fps.h"
-#            include "ImageStreamIO/ImageStreamIO.h"
-#        endif
-#        include "COREMOD_memory/COREMOD_memory.h"
+#    ifdef MILK_NO_CLI
+#        include "CLIcore_standalone.h"
+#    else
+#        include "libmilkdata/milkdata.h"
+#        include "milkDebugTools.h"
+#        include "fps.h"
+#        include "ImageStreamIO/ImageStreamIO.h"
+#    endif
+#    include "COREMOD_memory/COREMOD_memory.h"
 
-#        ifndef max
-#            define max(a, b) ((a) > (b) ? (a) : (b))
-#        endif
-#        ifndef min
-#            define min(a, b) ((a) < (b) ? (a) : (b))
-#        endif
+#    ifndef max
+#        define max(a, b) ((a) > (b) ? (a) : (b))
+#    endif
+#    ifndef min
+#        define min(a, b) ((a) < (b) ? (a) : (b))
+#    endif
 
 // ==========================================
 // Forward declaration(s)
@@ -56,19 +57,19 @@ static char         ps_c[FUNCTION_PARAMETER_STRMAXLEN]  = "matAinv";
 static double       ps_eps                              = 0.01;
 static int64_t      ps_nm                               = 100;
 static char         ps_vt[FUNCTION_PARAMETER_STRMAXLEN] = "VTmat";
-static FPS_APP_INFO FPS_app_info_ps                     = { .fps_name    = "linalgebrapsinvSVD",
-                                                            .cmdkey      = "linalgebrapsinvSVD",
-                                                            .description = "pseudo inverse via direct SVD",
-                                                            .description_long =
-                                                                "Compute SVD for pseudo-inverse using MAGMA. Low-level "
-                                                                                    "SVD computation step with GPU acceleration." };
-#        define FPS_PARAMS_PS(X)                                                       \
-            X(".inmat", ps_r, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input mat") \
-            X(".outmat", ps_c, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")       \
-            X(".svdeps", &ps_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
-            X(".nbmodes", &ps_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
-            X(".vtmat", ps_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
-#        include "fps.h"
+static FPS_APP_INFO FPS_app_info_ps = { .fps_name    = "linalgebrapsinvSVD",
+                                        .cmdkey      = "linalgebrapsinvSVD",
+                                        .description = "pseudo inverse via direct SVD",
+                                        .description_long =
+                                            "Compute SVD for pseudo-inverse using MAGMA. Low-level "
+                                            "SVD computation step with GPU acceleration." };
+#    define FPS_PARAMS_PS(X)                                                       \
+        X(".inmat", ps_r, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input mat") \
+        X(".outmat", ps_c, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")       \
+        X(".svdeps", &ps_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
+        X(".nbmodes", &ps_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
+        X(".vtmat", ps_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
+#    include "fps.h"
 static FPS_CLI_BINDING                   ps_b[]     = { FPS_PARAMS_PS(FPS_X_BINDING) };
 static const int                         ps_nb      = sizeof(ps_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_PS(FPS_X_FARG) };
@@ -347,7 +348,5 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
 
     return (ID_Cmatrix);
 }
-
-#    endif
 
 #endif

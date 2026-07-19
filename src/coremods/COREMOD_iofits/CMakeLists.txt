@@ -74,26 +74,6 @@ project(lib_${LIBNAME}_project)
 
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
-find_package(PkgConfig REQUIRED)
-if(USE_CFITSIO)
-  pkg_check_modules(CFITSIO cfitsio)
-  if(${CFITSIO_FOUND})
-    message("Found cfitsio")
-    link_directories(${CFITSIO_LIBRARY_DIRS})
-    target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
-    target_include_directories(
-      ${LIBNAME}
-      PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-             ${CFITSIO_INCLUDE_DIRS})
-    target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
-  endif()
-endif()
-
 target_include_directories(
   ${LIBNAME}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
@@ -104,9 +84,7 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
          $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
-
-message(" CFITSIO_LIBRARIES : ${CFITSIO_LIBRARIES}")
+target_link_libraries(${LIBNAME} PUBLIC m milkfps)
 
 install(
   TARGETS ${LIBNAME}
@@ -120,6 +98,7 @@ if(USE_STATIC_LTO)
   set(LIBNAME_STATIC "${LIBNAME}_static")
   add_library(${LIBNAME_STATIC} STATIC ${SRCNAME}.c ${SOURCEFILES})
   set_target_properties(${LIBNAME_STATIC} PROPERTIES OUTPUT_NAME ${LIBNAME})
+  target_compile_definitions(${LIBNAME_STATIC} PRIVATE MILK_NO_CLI)
   target_include_directories(
     ${LIBNAME_STATIC}
     PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
@@ -131,7 +110,7 @@ if(USE_STATIC_LTO)
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
            $<INSTALL_INTERFACE:include>)
-  if(USE_CFITSIO AND CFITSIO_LIBRARIES)
+  if(HAVE_CFITSIO)
     target_link_libraries(${LIBNAME_STATIC} PUBLIC m ${CFITSIO_LIBRARIES}
                                                    milkfps_static milkcommon)
   else()
@@ -141,6 +120,11 @@ if(USE_STATIC_LTO)
     TARGETS ${LIBNAME_STATIC}
     EXPORT milkTargets
     DESTINATION lib)
+endif()
+
+milk_apply_extensions(${LIBNAME})
+if(TARGET ${LIBNAME_STATIC})
+  milk_apply_extensions(${LIBNAME_STATIC})
 endif()
 
 add_milk_standalone(iofits-saveFITS savefits.c)

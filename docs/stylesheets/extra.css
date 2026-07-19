@@ -103,6 +103,7 @@ html {
 .highlight pre {
   border-radius: 0.3rem;
   border-left: 3px solid rgba(0, 191, 165, 0.45);
+  font-family: var(--md-code-font-family);
 }
 
 [data-md-color-scheme="slate"] .highlight pre {

@@ -11,8 +11,7 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "SGEMM.h"
-
+#include "linalgebra.h"
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY

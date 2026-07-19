@@ -3,6 +3,9 @@
  *
  */
 
+// MILK_CMAKE_REQUEST_CUDA
+// MILK_CMAKE_REQUEST_BLAS
+
 #include <math.h>
 #include <stdlib.h>
 
@@ -12,9 +15,6 @@
 
 #include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
-
-#include "SGEMM.h"
-
 
 #ifdef HAVE_CUDA
 #    include <cublas_v2.h>
@@ -28,18 +28,7 @@
 
 // CPU mode: Use MKL if available
 // Otherwise use openBLAS
-//
-#ifdef HAVE_MKL
-#    include "mkl.h"
-#    include "mkl_lapacke.h"
-#    define BLASLIB "IntelMKL"
-#else
-#    ifdef HAVE_OPENBLAS
-#        include <cblas.h>
-#        include <lapacke.h>
-#        define BLASLIB "OpenBLAS"
-#    endif
-#endif
+#include "milk_blas_lapacke.h"
 
 
 /* ================================================================
@@ -459,7 +448,7 @@ errno_t computeSGEMM(IMGID  imginA,
 #endif
     }
 
-#ifdef HAVE_OPENBLAS
+#ifdef HAVE_BLAS
     if (SGEMMcomputed == 0)
     {
         //printf("[%d] Running SGEMM on CPU\n", GPUdev);

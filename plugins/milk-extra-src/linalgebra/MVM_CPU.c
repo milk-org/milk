@@ -10,19 +10,15 @@
  * restrict + OMP SIMD plain-C implementation.
  */
 
-#ifdef HAVE_MKL
-#    include "mkl.h"
-#elif defined(HAVE_OPENBLAS)
-#    include <cblas.h>
-#endif
+// MILK_CMAKE_REQUEST_BLAS
+
+#include "milk_blas_lapacke.h"
 
 #ifdef _OPENMP
 #    include <omp.h>
 #endif
 
-#if !defined(HAVE_MKL) && !defined(HAVE_OPENBLAS)
-#    include <string.h>
-#endif
+#include <string.h>
 
 
 /**
@@ -36,7 +32,7 @@
  */
 void matrixMulCPU(float *restrict cMat, float *restrict wfsVec, float *restrict dmVec, int M, int N)
 {
-#if defined(HAVE_MKL) || defined(HAVE_OPENBLAS)
+#ifdef HAVE_BLAS
     /* Use BLAS sgemv: y = alpha * A * x + beta * y
      * CblasRowMajor, CblasNoTrans,
      * M rows, N cols, alpha=1, lda=N,
@@ -46,9 +42,7 @@ void matrixMulCPU(float *restrict cMat, float *restrict wfsVec, float *restrict 
     /* Plain-C fallback with restrict + OMP */
     memset(dmVec, 0, sizeof(float) * M);
 
-#    ifdef _OPENMP
-#        pragma omp parallel for schedule(static) if (M > 64)
-#    endif
+#    pragma omp parallel for schedule(static) if (M > 64)
     for (int m = 0; m < M; m++)
     {
         const float *restrict row = &cMat[m * N];
@@ -61,5 +55,5 @@ void matrixMulCPU(float *restrict cMat, float *restrict wfsVec, float *restrict 
         }
         dmVec[m] = acc;
     }
-#endif
+#endif // #ifdef HAVE_BLAS #else
 }

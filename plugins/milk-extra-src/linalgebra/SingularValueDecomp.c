@@ -2,6 +2,7 @@
  * @file SingularValueDecomp.c
  *
  */
+// MILK_CMAKE_MANDATE_LAPACKE
 
 #include <math.h>
 
@@ -11,29 +12,10 @@
 
 #include "timeutils.h"
 
-#include "SingularValueDecomp.h"
-#include "SGEMM.h"
+#include "linalgebra.h"
+#include "linalgebra_types.h" // Flags for SVD operation type
 
-
-// CPU mode: Use MKL if available
-// Otherwise use openBLAS
-//
-
-#ifdef HAVE_MKL
-#    include "mkl.h"
-#    include "mkl_lapacke.h"
-#    define BLASLIB "IntelMKL"
-#else
-#    ifdef HAVE_OPENBLAS
-#        include <cblas.h>
-#        include <lapacke.h>
-#        define BLASLIB "OpenBLAS"
-#    else
-#        include <lapacke.h>
-#        define BLASLIB "Lapacke standalone"
-#    endif
-#endif
-
+#include "milk_blas_lapacke.h"
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY

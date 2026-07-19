@@ -1,43 +1,42 @@
 /** @file magma_compute_SVDpseudoInverse.c
  */
 
-#ifdef HAVE_CUDA
+// MILK_CMAKE_MANDATE_CUDA
+// MILK_CMAKE_MANDATE_MAGMA
 
-#    include <cublas_v2.h>
-#    include <cuda_runtime.h>
-#    include <cuda_runtime_api.h>
-#    include <cusolverDn.h>
-#    include <device_types.h>
-#    include <pthread.h>
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#include <cusolverDn.h>
+#include <device_types.h>
+#include <pthread.h>
 
-#    ifdef HAVE_MAGMA
+#include "magma_lapack.h"
+#include "magma_v2.h"
 
-#        include "magma_lapack.h"
-#        include "magma_v2.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
-#        include <stdio.h>
-#        include <stdlib.h>
-#        include <string.h>
-#        include <math.h>
-#        include <stdint.h>
-#        include <stdbool.h>
-#        include <unistd.h>
+#ifdef MILK_NO_CLI
+#    include "CLIcore_standalone.h"
+#else
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
+#endif
+#include "timeutils.h"
 
-#        ifdef MILK_NO_CLI
-#            include "CLIcore_standalone.h"
-#        else
-#            include "libmilkdata/milkdata.h"
-#            include "milkDebugTools.h"
-#            include "fps.h"
-#            include "ImageStreamIO/ImageStreamIO.h"
-#        endif
-#        include "timeutils.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
-#        include "COREMOD_iofits/COREMOD_iofits.h"
-#        include "COREMOD_memory/COREMOD_memory.h"
-#        include "COREMOD_tools/COREMOD_tools.h"
-
-#        include "linalgebra_types.h"
+#include "linalgebra_types.h"
 
 extern int INIT_MAGMA;
 
@@ -132,19 +131,19 @@ static double       pi_eps                              = 0.01;
 static int64_t      pi_nm                               = 100;
 static char         pi_vt[FUNCTION_PARAMETER_STRMAXLEN] = "VTmat";
 static FPS_APP_INFO FPS_app_info_pi                     = {
-                        .fps_name    = "linalgebrapsinv",
-                        .cmdkey      = "linalgebrapsinv",
-                        .description = "compute pseudo inverse",
-                        .description_long =
+    .fps_name    = "linalgebrapsinv",
+    .cmdkey      = "linalgebrapsinv",
+    .description = "compute pseudo inverse",
+    .description_long =
         "Compute the Moore-Penrose pseudo-inverse of a matrix via SVD using the MAGMA GPU library."
 };
-#        define FPS_PARAMS_PI(X)                                                       \
-            X(".inmat", pi_r, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input mat") \
-            X(".outmat", pi_c, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")       \
-            X(".svdeps", &pi_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
-            X(".nbmodes", &pi_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
-            X(".vtmat", pi_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
-#        include "fps.h"
+#define FPS_PARAMS_PI(X)                                                       \
+    X(".inmat", pi_r, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input mat") \
+    X(".outmat", pi_c, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")       \
+    X(".svdeps", &pi_eps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD eps")  \
+    X(".nbmodes", &pi_nm, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "max modes")  \
+    X(".vtmat", pi_vt, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "VT matrix")
+#include "fps.h"
 static FPS_CLI_BINDING                   pi_b[]     = { FPS_PARAMS_PI(FPS_X_BINDING) };
 static const int                         pi_nb      = sizeof(pi_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_PI(FPS_X_FARG) };
@@ -1671,7 +1670,5 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-#    endif
 
 #endif

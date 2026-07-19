@@ -87,6 +87,15 @@ if(USE_STATIC_LTO)
   endif()
 endif()
 
+# ── milk_scan_standalone ────────────────────────
+# TODO
+# Take a list of source files
+# grep for FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
+# or FPS_MAIN_STANDALONE_V2_CONFIG()
+# figures out the target name
+# call add_milk_standalone
+
+
 # ── milk_pgo_target ─────────────────────────────
 #
 # Applies per-executable PGO profile directory. Each standalone gets its own
@@ -182,26 +191,22 @@ endfunction()
 function(add_milk_standalone FUNC_NAME SRC_FILE)
   set(EXE_NAME "milk-fpsexec-${FUNC_NAME}")
   add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
-                             "${FPS_STANDALONE_DATA_SRC}")
+                             $<TARGET_OBJECTS:fps_standalone_data_obj>)
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
-  if(USE_STATIC_LTO)
-    # fps_standalone_data.c provides stub symbols that clash with real
-    # implementations in the static archives.  Compiling it with MILK_NO_CLI
-    # skips those stubs.
-    set_source_files_properties(
-      "${FPS_STANDALONE_DATA_SRC}" TARGET_DIRECTORY ${EXE_NAME}
-      PROPERTIES COMPILE_DEFINITIONS "FPS_STANDALONE_SKIP_STUBS")
-  endif()
   target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
   if(USE_STATIC_LTO)
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
   else()
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
   endif()
+  milk_apply_extensions(${EXE_NAME})
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})
-  install(TARGETS ${EXE_NAME} DESTINATION bin)
+  get_target_property(_excl ${EXE_NAME} EXCLUDE_FROM_ALL)
+  if(NOT _excl)
+    install(TARGETS ${EXE_NAME} DESTINATION bin)
+  endif()
 endfunction()
 
 # ── add_cacao_standalone ────────────────────────
@@ -214,13 +219,8 @@ endfunction()
 function(add_cacao_standalone FUNC_NAME SRC_FILE)
   set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
   add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
-                             "${FPS_STANDALONE_DATA_SRC}")
+                             $<TARGET_OBJECTS:fps_standalone_data_obj>)
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
-  if(USE_STATIC_LTO)
-    set_source_files_properties(
-      "${FPS_STANDALONE_DATA_SRC}" TARGET_DIRECTORY ${EXE_NAME}
-      PROPERTIES COMPILE_DEFINITIONS "FPS_STANDALONE_SKIP_STUBS")
-  endif()
   target_include_directories(
     ${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src
                         ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
@@ -229,10 +229,16 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
   else()
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_LIBS})
   endif()
+  milk_apply_extensions(
+    ${EXE_NAME}) # May set EXCLUDE_FROM_ALL on a standalone target that misses
+                 # its MILK_CMAKE_MANDATE_X
   milk_pgo_target(${EXE_NAME})
   milk_lto_target(${EXE_NAME})
   milk_build_tag_target(${EXE_NAME})
-  install(TARGETS ${EXE_NAME} DESTINATION bin)
+  get_target_property(_excl ${EXE_NAME} EXCLUDE_FROM_ALL)
+  if(NOT _excl)
+    install(TARGETS ${EXE_NAME} DESTINATION bin)
+  endif()
 endfunction()
 
 # ── add_cacao_standalone_plugins ────────────────

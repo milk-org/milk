@@ -142,18 +142,18 @@ Beyond the fields set automatically by the framework,
 these commonly-used fields can be configured by the
 developer:
 
-| Field                 | Type           | Description                              |
-| --------------------- | -------------- | ---------------------------------------- |
-| `name`                | `char[80]`     | Short process name (no spaces, no dots)  |
-| `description`         | `char[200]`    | Human-readable description string        |
-| `tmuxname`            | `char[100]`    | Name of the tmux session hosting process |
-| `MeasureTiming`       | `int`          | Enable loop timing measurement           |
-| `RT_priority`         | `int`          | RT priority 0–99 (higher = more urgent)  |
-| `loopcntMax`          | `int64_t`      | Max loop iterations (−1 = infinite)      |
-| `CPUmask`             | `cpu_set_t`    | CPU affinity mask for core pinning       |
-| `triggermode`         | `int`          | Trigger type (semaphore, cnt, delay)     |
-| `triggerstreamname`   | `char[80]`     | Name of input trigger stream             |
-| `triggersem`          | `int`          | Semaphore index for trigger              |
+| Field               | Type        | Description                              |
+| ------------------- | ----------- | ---------------------------------------- |
+| `name`              | `char[80]`  | Short process name (no spaces, no dots)  |
+| `description`       | `char[200]` | Human-readable description string        |
+| `tmuxname`          | `char[100]` | Name of the tmux session hosting process |
+| `MeasureTiming`     | `int`       | Enable loop timing measurement           |
+| `RT_priority`       | `int`       | RT priority 0–99 (higher = more urgent)  |
+| `loopcntMax`        | `int64_t`   | Max loop iterations (−1 = infinite)      |
+| `CPUmask`           | `cpu_set_t` | CPU affinity mask for core pinning       |
+| `triggermode`       | `int`       | Trigger type (semaphore, cnt, delay)     |
+| `triggerstreamname` | `char[80]`  | Name of input trigger stream             |
+| `triggersem`        | `int`       | Semaphore index for trigger              |
 
 ## 7. Compute Function Macros
 
@@ -162,12 +162,12 @@ provides macros (defined in `fps_procinfo_macros.h`)
 that wrap the `processinfo` API for a standard
 compute loop:
 
-| Macro                                      | Purpose                                                  |
-| ------------------------------------------ | -------------------------------------------------------- |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT`     | Allocate and register PROCESSINFO, set up signal handler |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART`| Start the compute loop, set loopOK flag                  |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_START`    | Per-iteration start (check signals, processinfo step)    |
-| `INSERT_STD_PROCINFO_COMPUTEFUNC_END`      | Per-iteration end (timing, counters, signal handling)    |
+| Macro                                       | Purpose                                                  |
+| ------------------------------------------- | -------------------------------------------------------- |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_INIT`      | Allocate and register PROCESSINFO, set up signal handler |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART` | Start the compute loop, set loopOK flag                  |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_START`     | Per-iteration start (check signals, processinfo step)    |
+| `INSERT_STD_PROCINFO_COMPUTEFUNC_END`       | Per-iteration end (timing, counters, signal handling)    |
 
 These macros are used inside `compute_function()`
 (Section 6 of the V2 template):

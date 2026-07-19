@@ -36,6 +36,8 @@ project(milk LANGUAGES C)
 #
 # Full build with CUDA: cmake .. -DUSE_CUDA=ON
 #
+# Debug build:     -DCMAKE_BUILD_TYPE=Debug Coverage build:
+# -DCMAKE_BUILD_TYPE=Coverage
 
 option(USE_COREMODS "Build core modules (COREMOD_*)" ON)
 option(USE_CFITSIO "Build FITS I/O (needs cfitsio)" ON)
@@ -51,51 +53,31 @@ option(USE_STATIC_LTO "Static-link standalone exes for full LTO" OFF)
 if(USE_CLI AND NOT USE_COREMODS)
   message(STATUS "USE_CLI requires USE_COREMODS; enabling USE_COREMODS")
   set(USE_COREMODS
-      ON
-      CACHE BOOL "" FORCE)
+    ON
+    CACHE BOOL "" FORCE)
 endif()
 
 # USE_SEQ requires USE_CLI since it relies on CLIcore for commands
 if(USE_SEQ AND NOT USE_CLI)
   message(STATUS "USE_SEQ requires USE_CLI; disabling USE_SEQ")
   set(USE_SEQ
-      OFF
-      CACHE BOOL "" FORCE)
+    OFF
+    CACHE BOOL "" FORCE)
 endif()
 
+# =======================================
+# CMAKE GENERAL CONFIG
+# =======================================
 include(CheckLanguage)
-
-# =======================================
-# GPU ACCELERATION
-# =======================================
-
-# options
-option(DEBUG "Enable Debug        library" OFF)
-if(DEBUG)
-  set(CMAKE_BUILD_TYPE "Debug")
-endif()
-
-option(USE_CUDA "Use CUDA        library" OFF)
-option(USE_MAGMA "Use MAGMA       library" OFF)
-
-if(USE_CUDA)
-  check_language(CUDA)
-  if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-  else()
-    # message(FATAL_ERROR "No CUDA support")
-    message(WARNING "No CUDA support found")
-    set(CMAKE_CUDA_COMPILER "/usr/bin/nvcc")
-    message(" setting CMAKE_CUDA_COMPILER to ${CMAKE_CUDA_COMPILER}")
-  endif()
-endif(USE_CUDA)
 
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 enable_language(C)
 
-# Version number
+# =======================================
+# PACKAGE GENERAL CONFIG
+# =======================================
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 03)
 set(VERSION_PATCH 00)
@@ -119,27 +101,53 @@ set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
 # Configure a header file to pass some of the CMake settings to the source code
 configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-               "${PROJECT_SOURCE_DIR}/src/milk_config.h")
+  "${PROJECT_SOURCE_DIR}/src/milk_config.h")
 
 configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
-               "${PROJECT_SOURCE_DIR}/src/config.h")
+  "${PROJECT_SOURCE_DIR}/src/config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
-#
-# main libraries linked to executable by default
-#
-find_package(PkgConfig REQUIRED)
-if(USE_CFITSIO)
-  pkg_check_modules(CFITSIO REQUIRED cfitsio)
-  message("Found cfitsio version ${CFITSIO_VERSION}")
-  message("CFITS library  : ${CFITSIO_LIBRARY}")
-  message("CFITS libraries: ${CFITSIO_LIBRARIES}")
-else()
-  message(STATUS "USE_CFITSIO=OFF: FITS file I/O disabled")
+# =======================================
+# LIBRARIES
+# =======================================
+
+# options
+option(USE_CUDA "Use CUDA" OFF)
+option(USE_MAGMA "Use MAGMA" OFF)
+
+# BLAS + LAPACKE Options
+option(USE_MKL "Use MKL" OFF)
+option(USE_OPENBLAS "Use OpenBLAS" OFF)
+option(USE_LAPACKE "Use LAPACKE" OFF)
+
+if(USE_CUDA)
+  # --> Either HAVE_CUDA or USE_CUDA=OFF
+  include(cmake/have_cuda.cmake)
 endif()
+
+if(USE_CUDA AND USE_MAGMA)
+  # --> Either HAVE_MAGMA or USE_MAGMA=OFF
+  include(cmake/have_magma.cmake)
+endif()
+
+if(USE_CFITSIO)
+  # --> Either HAVE_CFITSIO or USE_CFITSIO=OFF
+  include(cmake/have_cfitsio.cmake)
+endif()
+
+if(USE_MKL
+  OR USE_OPENBLAS
+  OR USE_LAPACKE)
+  # --> Processes all 3 and sets HAVE_BLAS, HAVE_MKL, HAVE_OPENBLAS and
+  # HAVE_LAPACKE
+  include(cmake/have_blas_lapacke.cmake)
+endif()
+
+# apply_*_to_target() helpers are now defined; load the extension scanner.
+include(cmake/milk_extensions.cmake)
 
 # =======================================
 # MODULES INCLUDED
@@ -160,7 +168,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     if(NOT GIT_SUBMOD_RESULT EQUAL "0")
       message(
         FATAL_ERROR
-          "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules"
+        "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules"
       )
     endif()
   endif()
@@ -169,7 +177,7 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO/CMakeLists.txt")
   message(
     FATAL_ERROR
-      "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again."
+    "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again."
   )
 endif()
 
@@ -202,13 +210,13 @@ else()
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits)
   install(FILES src/cli/CLIcore/CLIcore.h src/cli/CLIcore/CLIcore_standalone.h
-                src/cli/CLIcore/cmdsettings.h
-          DESTINATION include/CommandLineInterface)
+    src/cli/CLIcore/cmdsettings.h
+    DESTINATION include/CommandLineInterface)
   # timeutils.h, milkDebugTools.h, and IMGID.h have moved to their respective
   # engine modules (libprocessinfo, libmilkcommon, libfps) which install them
   # unconditionally via their own CMakeLists.txt targets.
   install(FILES src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
-          DESTINATION include/CommandLineInterface/CLIcore)
+    DESTINATION include/CommandLineInterface/CLIcore)
   # Create an INTERFACE library target named CLIcore so that existing
   # target_link_libraries(... CLIcore) calls in plugin CMakeLists work without
   # modification. The INTERFACE target provides header paths only;
@@ -217,20 +225,20 @@ else()
   target_include_directories(
     CLIcore
     INTERFACE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory>
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits>
-      $<INSTALL_INTERFACE:include>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits>
+    $<INSTALL_INTERFACE:include>)
   install(TARGETS CLIcore EXPORT milkTargets)
 endif()
 
@@ -260,53 +268,34 @@ if(USE_SEQ)
 endif()
 
 # =======================================
-# BUILD TYPE
+# BUILD FLAGS
 # =======================================
 
-# Set Release build flags cmake -DCMAKE_BUILD_TYPE=Debug option: add -fanalyzer
-# if gcc10+ (warning: this will take a while to run)
+# Can add -fanalyzer if gcc10+ (warning: this will take a while to run)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
 
-# Set Release build flags cmake -DCMAKE_BUILD_TYPE=Release
 set(CMAKE_C_FLAGS_RELEASE "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
 
-# Set Coverage build flags cmake -DCMAKE_BUILD_TYPE=Coverage
 set(CMAKE_C_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
 set(CMAKE_CXX_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
 
-# =======================================
-# PROFILE-GUIDED OPTIMIZATION (PGO)
-# =======================================
-# Usage: cmake -DUSE_PGO=GENERATE ..   # instrument cmake -DUSE_PGO=USE .. #
-# optimized See docs/pgo.md for the full workflow.
-#
-# Global flags apply to shared libraries. Standalone executables get per-target
-# profile directories via milk_pgo_target() in MilkStandalone.cmake.
-set(USE_PGO
-    ""
-    CACHE STRING "PGO mode: GENERATE or USE (empty = off)")
-set(PGO_DIR
-    "${CMAKE_BINARY_DIR}/pgo"
-    CACHE PATH "Directory for PGO profile data")
-if(USE_PGO STREQUAL "GENERATE")
-  message(STATUS "PGO: instrumentation build (profiles → ${PGO_DIR})")
-  add_compile_options(-fprofile-generate=${PGO_DIR}/shared)
-  add_link_options(-fprofile-generate=${PGO_DIR}/shared)
-elseif(USE_PGO STREQUAL "USE")
-  message(STATUS "PGO: optimized build (profiles ← ${PGO_DIR})")
-  add_compile_options(-fprofile-use=${PGO_DIR}/shared -fprofile-correction)
-  add_link_options(-fprofile-use=${PGO_DIR}/shared)
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE "Release")
 endif()
+
+# ======== PGO ========
+include(cmake/pgo.cmake) # -DUSE_PGO=(""|GENERATE|USE)
 
 # =======================================
 # STATIC LTO FOR STANDALONE EXECUTABLES
 # =======================================
 # When USE_STATIC_LTO is ON, standalone fpsexec executables link static archives
 # (.a) of all milk libraries so that the LTO linker has full cross-module
-# visibility.
-#
-# Usage: cmake .. -DUSE_STATIC_LTO=ON
-#
+# visibility. Usage: cmake .. -DUSE_STATIC_LTO=ON
 if(USE_STATIC_LTO)
   message(
     STATUS "STATIC_LTO: standalones will link static archives for full LTO")
@@ -326,15 +315,6 @@ if(USE_SANITIZERS)
   add_link_options(-fsanitize=address,undefined)
 endif()
 
-# Set a default build type if none was specified
-set(default_build_type "Release")
-if(NOT CMAKE_BUILD_TYPE)
-  message(
-    STATUS
-      "Setting build type to '${default_build_type}' as none was specified.")
-  set(CMAKE_BUILD_TYPE "${default_build_type}")
-endif()
-
 # =======================================
 # COVERAGE BUILD — global propagation
 # =======================================
@@ -345,14 +325,16 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
 endif()
 
 # =======================================
-# FORMAT STRING SAFETY (all build types)
+# MISC OPTIONS
 # =======================================
-# Catch printf-family format string bugs even in Release builds. These are
-# zero-cost at runtime.
+# Catch printf-family format string bugs
 add_compile_options(
   $<$<COMPILE_LANGUAGE:C>:-Wformat=2>
   $<$<COMPILE_LANGUAGE:C>:-Wformat-overflow>
   $<$<COMPILE_LANGUAGE:C>:-Wformat-truncation>)
+# Some optims for faster compilation
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-pipe>)
 
 # =======================================
 # COMPILE OPTIONS
@@ -364,25 +346,16 @@ if(VEC_REPORT)
   add_compile_options(-fopt-info-vec-missed)
 endif()
 
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
-
 # link-time optimizer
 option(USE_LTO "Enable Link-Time Optimization (-flto=auto)" ON)
 if(USE_LTO)
   add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
 endif()
 # NOTE: -fwhole-program is applied only to standalone executables (via
-# MilkStandalone.cmake) where main() is the sole entry point.  Applying it
+# milk_standalone.cmake) where main() is the sole entry point.  Applying it
 # globally would cause GCC to discard exported symbols from shared libraries.
 # NOTE: -fstack-usage is incompatible with link-time optimizer
 # add_compile_options(-fstack-usage)
-
-# A common flag is -pipe. This flag has no effect on the generated code, but it
-# makes the compilation process faster. It tells the compiler to use pipes
-# instead of temporary files during the different stages of compilation, which
-# uses more memory. On systems with low memory, GCC might get killed. In those
-# cases do not use this flag.
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-pipe>)
 
 message("COMPILE_OPTIONS:  ${COMPILE_OPTIONS}")
 
@@ -398,31 +371,8 @@ message("CMAKE_INSTALL_PREFIX     = ${CMAKE_INSTALL_PREFIX}")
 message("USE_CUDA                 = ${USE_CUDA}")
 message("USE_MAGMA                = ${USE_MAGMA}")
 
+# TODO I can't find a trace of where EXTRAMODULES is used?
 message("EXTRAMODULES             = ${EXTRAMODULES}")
-
-# =======================================
-# COMPUTATION LIBRARIES
-# =======================================
-pkg_check_modules(MKL IMPORTED_TARGET GLOBAL mkl-sdl)
-pkg_check_modules(OPENBLAS IMPORTED_TARGET GLOBAL openblas)
-if(MKL_FOUND)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_MKL")
-  message("Computation libraries: using MKL [-DHAVE_MKL]")
-elseif(OPENBLAS_FOUND)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_OPENBLAS")
-  message("Computation libraries: using openblas [-DHAVE_OPENBLAS]")
-else()
-  pkg_check_modules(LAPACKE REQUIRED IMPORTED_TARGET GLOBAL lapacke)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_STANDALONE_LAPACKE")
-  message(
-    "Computation libraries: using standalone lapacke [-DHAVE_STANDALONE_LAPACKE]"
-  )
-endif()
-
-if(USE_CUDA)
-  find_package(CUDAToolkit 9.0 REQUIRED)
-  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA")
-endif(USE_CUDA)
 
 # =======================================
 # TESTING
@@ -434,9 +384,9 @@ include(CTest)
 # STANDALONE EXECUTABLE HELPERS
 # =======================================
 # Functions: add_milk_standalone, add_cacao_standalone,
-# add_cacao_standalone_plugins See cmake/MilkStandalone.cmake for docs.
+# add_cacao_standalone_plugins See cmake/milk_standalone.cmake for docs.
 
-include(${PROJECT_SOURCE_DIR}/cmake/MilkStandalone.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/milk_standalone.cmake)
 
 # =======================================
 # INSTALL PATHS
@@ -463,8 +413,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
 if(USE_COREMODS)
   execute_process(
     COMMAND
-      bash -c
-      "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
+    bash -c
+    "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 1 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
     OUTPUT_VARIABLE libextradir)
   string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 endif()
@@ -509,42 +459,39 @@ add_definitions(
   -DPACKAGE_BUGREPORT="https://github.com/milk-org/milk/issues")
 
 set(PROGRAM_PERMISSIONS_DEFAULT
-    OWNER_WRITE
-    OWNER_READ
-    OWNER_EXECUTE
-    GROUP_READ
-    GROUP_EXECUTE
-    WORLD_READ
-    WORLD_EXECUTE)
+  OWNER_WRITE
+  OWNER_READ
+  OWNER_EXECUTE
+  GROUP_READ
+  GROUP_EXECUTE
+  WORLD_READ
+  WORLD_EXECUTE)
 
-# main CLI executable (only when USE_CLI is ON)
+message("====================================================")
+message("CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
+message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
+message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
+message("CMAKE_C_FLAGS_COVERAGE        : ${CMAKE_C_FLAGS_COVERAGE}")
+get_cmake_property(_all_vars VARIABLES)
+set(_use_line "USE_*  :")
+set(_have_line "HAVE_* :")
+foreach(_v IN LISTS _all_vars)
+  if(_v MATCHES "^USE_")
+    string(APPEND _use_line "  ${_v}=${${_v}}")
+  elseif(_v MATCHES "^HAVE_")
+    string(APPEND _have_line "  ${_v}=${${_v}}")
+  endif()
+endforeach()
+unset(_all_vars)
+message("${_use_line}")
+message("${_have_line}")
+message("====================================================")
+
+
 if(USE_CLI)
-
+  # main CLI executable (only when USE_CLI is ON)
   add_executable(milk-cli src/CLImain.c)
   target_link_libraries(milk-cli PUBLIC ${libname})
-
-  if(USE_CUDA)
-    target_link_libraries(
-      milk-cli
-      PUBLIC CUDA::toolkit
-      PUBLIC CUDA::cusolver
-      PUBLIC CUDA::cudart
-      PUBLIC CUDA::cublas)
-  endif(USE_CUDA)
-
-  message("====================================================")
-  get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)
-  message("CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
-  message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
-  message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
-  message("COMPILE_OPTIONS         :  ${milkcompopts}")
-  message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
-  message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
-  message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
-  message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
-  message("CMAKE_C_FLAGS_COVERAGE        : ${CMAKE_C_FLAGS_COVERAGE}")
-  message("====================================================")
-
   install(
     TARGETS milk-cli
     DESTINATION bin
@@ -575,11 +522,11 @@ endif(INSTALLMAKEDEFAULT)
 # =======================================
 
 set(INCLUDE_INSTALL_DIR
-    ${CMAKE_INSTALL_PREFIX}/include
-    CACHE PATH "Location of header files")
+  ${CMAKE_INSTALL_PREFIX}/include
+  CACHE PATH "Location of header files")
 set(LIBRARY_INSTALL_DIR
-    ${CMAKE_INSTALL_PREFIX}/lib
-    CACHE PATH "Location of libraries")
+  ${CMAKE_INSTALL_PREFIX}/lib
+  CACHE PATH "Location of libraries")
 
 # Export the targets to a file for use in the Config.cmake file
 install(
@@ -593,7 +540,7 @@ add_library(${PROJECT_NAME}_all INTERFACE)
 target_link_libraries(${PROJECT_NAME}_all INTERFACE ${libname})
 target_include_directories(
   ${PROJECT_NAME}_all INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                $<INSTALL_INTERFACE:include>)
+  $<INSTALL_INTERFACE:include>)
 install(TARGETS ${PROJECT_NAME}_all EXPORT milkTargets)
 
 include(CMakePackageConfigHelpers)
@@ -611,8 +558,8 @@ configure_package_config_file(
 
 # Install the Config.cmake and ConfigVersion.cmake files
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-        DESTINATION lib/cmake)
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+  DESTINATION lib/cmake)
 
 # =======================================
 # PKG-CONFIG
@@ -625,17 +572,17 @@ endforeach()
 message("LINKSTRING: ${LINKSTRING}")
 
 set(INSTALL_PKGCONFIG_DIR
-    "lib/pkgconfig"
-    CACHE PATH "Installation directory for pkgconfig (.pc) files")
+  "lib/pkgconfig"
+  CACHE PATH "Installation directory for pkgconfig (.pc) files")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
-               ${CMAKE_CURRENT_BINARY_DIR}/milk.pc @ONLY)
+  ${CMAKE_CURRENT_BINARY_DIR}/milk.pc @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
-        DESTINATION "${INSTALL_PKGCONFIG_DIR}")
+  DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
-              ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h DESTINATION include)
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h DESTINATION include)
 
 if(build_python_module)
   add_subdirectory(python_module)
@@ -646,33 +593,33 @@ if(USE_CLI)
   install(TARGETS CLIcore DESTINATION bin)
   install(
     PROGRAMS scripts/milk-cli-all
-             scripts/milk-argparse
-             scripts/milk-check
-             scripts/milk-completion.sh
-             scripts/milk-commands
-             scripts/milk-cubeslice2shm
-             scripts/milk-exec
-             scripts/milk-fpslist-addentry
-             scripts/milk-cr2tofits
-             scripts/milk-FITS2shm
-             scripts/milk-fitsheader
-             scripts/milk-fpsmkcmd
-             scripts/milk-fpsinit
-             scripts/milk-logshim
-             scripts/milk-logshimkill
-             scripts/milk-logshimoff
-             scripts/milk-logshimon
-             scripts/milk-logshimstat
-             scripts/merge3DfitsTelemetry
-             scripts/milk-images-merge
-             scripts/milk-scriptexample
-             scripts/milk-script-advanced
-             scripts/milk-script-std-config
-             scripts/milk-streamlink
-             scripts/milk-shm2FITSloop
-             scripts/tmuxkillall
-             scripts/tmuxsessionname
-             scripts/waitforfile
+    scripts/milk-argparse
+    scripts/milk-check
+    scripts/milk-completion.sh
+    scripts/milk-commands
+    scripts/milk-cubeslice2shm
+    scripts/milk-exec
+    scripts/milk-fpslist-addentry
+    scripts/milk-cr2tofits
+    scripts/milk-FITS2shm
+    scripts/milk-fitsheader
+    scripts/milk-fpsmkcmd
+    scripts/milk-fpsinit
+    scripts/milk-logshim
+    scripts/milk-logshimkill
+    scripts/milk-logshimoff
+    scripts/milk-logshimon
+    scripts/milk-logshimstat
+    scripts/merge3DfitsTelemetry
+    scripts/milk-images-merge
+    scripts/milk-scriptexample
+    scripts/milk-script-advanced
+    scripts/milk-script-std-config
+    scripts/milk-streamlink
+    scripts/milk-shm2FITSloop
+    scripts/tmuxkillall
+    scripts/tmuxsessionname
+    scripts/waitforfile
     DESTINATION bin)
 
 endif(USE_CLI)
@@ -684,7 +631,7 @@ install(FILES scripts/makecircleofdisks.milk DESTINATION share/milk/scripts)
 
 # Guard: verify no standalone links CLIcore unexpectedly
 add_test(NAME standalone-dep-check
-         COMMAND ${PROJECT_SOURCE_DIR}/scripts/milk-check-standalone-deps
-                 ${CMAKE_CURRENT_BINARY_DIR})
+  COMMAND ${PROJECT_SOURCE_DIR}/scripts/milk-check-standalone-deps
+  ${CMAKE_CURRENT_BINARY_DIR})
 
 install(PROGRAMS scripts/milk-check-standalone-deps DESTINATION bin)

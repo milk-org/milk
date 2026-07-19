@@ -1,5 +1,3 @@
-#include <gsl/gsl_cblas.h>
-
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -11,7 +9,26 @@
 #include "mask_to_pixtable.h"
 
 #include "compute_SVDpseudoInverse.h"
-#include "linalgebra/magma_compute_SVDpseudoInverse.h"
+#include "linalgebra/linalgebra.h"
+
+// MILK_CMAKE_MANDATE_BLAS
+// MILK_CMAKE_MANDATE_LAPACKE
+// ^----
+// if no MAGMA, we need linopt_compute_SVDpseudoInverse which mandates LAPACKE.
+// Two options:
+// - have a weak definition in the header file.
+// - carry the MANDATE here
+// -- have a smarter build system...
+
+
+// Get the correct BLAS include:
+#ifdef HAVE_MKL
+#    include "mkl.h"
+#else
+#    ifdef HAVE_OPENBLAS
+#        include <cblas.h>
+#    endif
+#endif
 
 static int fmInit = 0;
 

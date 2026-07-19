@@ -3,7 +3,11 @@
  * @brief Mvmextractmodes module
  */
 
+// MILK_CMAKE_REQUEST_CUDA
+// MILK_CMAKE_REQUEST_BLAS
+
 #include "ImageStreamIO/ImageStruct.h"
+
 #ifdef HAVE_CUDA
 #    include <cublas_v2.h>
 #    include <cuda_runtime.h>
@@ -15,28 +19,14 @@
 
 // Use MKL if available
 // Otherwise use openBLAS
-//
-#ifdef HAVE_MKL
-#    include "mkl.h"
-#    define BLASLIB "IntelMKL"
-#else
-#    ifdef HAVE_OPENBLAS
-#        include <cblas.h>
-#        define BLASLIB "OpenBLAS"
-#    endif
-#endif
+#include "milk_blas_lapacke.h"
 
-
-#ifdef MILK_NO_CLI
-#    include "CLIcore_standalone.h"
-#else
-#    include "CLIcore.h"
-#endif
+#include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
 
-#include "MVM_CPU.h"
+#include "linalgebra.h"
 
 
 /* ================================================================
@@ -561,7 +551,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         {
             // using CPU
 
-#ifdef BLASLIB
+#ifdef HAVE_BLAS
             struct timespec t0, t1;
             clock_gettime(CLOCK_MILK, &t0);
             processinfo_WriteMessage_fmt(processinfo, "imgout %s ID %d", imgout.md->name,
@@ -604,7 +594,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 struct timespec tdiff;
                 tdiff       = timespec_diff(t0, t1);
                 double t01d = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                processinfo_WriteMessage_fmt(processinfo, "%s %dx%d MVM %.3f us", BLASLIB, n, m,
+                processinfo_WriteMessage_fmt(processinfo, "BLAS %dx%d MVM %.3f us", n, m,
                                              t01d * 1e6);
             }
 #else

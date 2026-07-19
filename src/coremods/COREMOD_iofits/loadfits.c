@@ -3,6 +3,8 @@
  * @brief   load FITS format files
  */
 
+// MILK_CMAKE_MANDATE_CFITSIO
+
 #include <stdlib.h>
 
 #include "CLIcore.h"

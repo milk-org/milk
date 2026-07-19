@@ -3,6 +3,10 @@
  * @brief Cublas pca module
  */
 
+// MILK_CMAKE_MANDATE_CUDA
+// ^--- This is a CUDA "mandate", so HAVE_CUDA is assumed True
+//      and this file does not need #ifdef HAVE_CUDA guards.
+
 #include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -12,11 +16,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_CUDA
-#    include <cublas_v2.h>
-#    include <cuda_runtime.h>
-#    include <cusolverDn.h>
-#endif
+
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
+#include <cusolverDn.h>
 
 #include <math.h>
 
@@ -82,7 +85,6 @@ static imageID image_PCAdecomp(IMGID *img)
 
     printf("Image size : %u %u %u\n", img->md->size[0], img->md->size[1], img->md->size[2]);
 
-#ifdef HAVE_CUDA
     cusolverDnHandle_t cusolverH     = NULL;
     cublasHandle_t     cublasH       = NULL;
     cublasStatus_t     cublas_status = CUBLAS_STATUS_SUCCESS;
@@ -396,8 +398,6 @@ static imageID image_PCAdecomp(IMGID *img)
     free(A);
     free(U);
     free(VT);
-
-#endif
 
     DEBUG_TRACE_FEXIT();
     return (img->ID);

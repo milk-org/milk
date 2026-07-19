@@ -3,39 +3,36 @@
  * @brief Gpu loop multmat execute module
  */
 
-/** @file GPU_loop_MultMat_execute.c
- */
+// MILK_CMAKE_MANDATE_CUDA
 
-#ifdef HAVE_CUDA
+#include <pthread.h>
+#include <time.h>
 
-#    include <pthread.h>
-#    include <time.h>
+#include <cublas_v2.h>
 
-#    include <cublas_v2.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
-#    include <stdio.h>
-#    include <stdlib.h>
-#    include <string.h>
-#    include <math.h>
-#    include <stdint.h>
-#    include <stdbool.h>
-#    include <unistd.h>
+#ifdef MILK_NO_CLI
+#    include "CLIcore_standalone.h"
+#else
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
+#endif
+#include "timeutils.h"
 
-#    ifdef MILK_NO_CLI
-#        include "CLIcore_standalone.h"
-#    else
-#        include "libmilkdata/milkdata.h"
-#        include "milkDebugTools.h"
-#        include "fps.h"
-#        include "ImageStreamIO/ImageStreamIO.h"
-#    endif
-#    include "timeutils.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
-#    include "COREMOD_memory/COREMOD_memory.h"
-#    include "COREMOD_tools/COREMOD_tools.h"
-#    include "linalgebra_types.h"
-
-#    include "GPUloadCmat.h"
+#include "linalgebra.h"
+#include "linalgebra_types.h"
 
 extern imageID        IDtiming;
 extern float          cublasSgemv_alpha;
@@ -507,10 +504,10 @@ int GPU_loop_MultMat_execute(int   index,
     struct timespec tdt4[10];
     struct timespec tdt5[10];
 
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
     printf("[%s] [%d]  Start (index %d)\n", __FILE__, __LINE__, index);
     fflush(stdout);
-#    endif
+#endif
 
     TimerIndex = TimerOffsetIndex;
 
@@ -571,10 +568,10 @@ int GPU_loop_MultMat_execute(int   index,
         }
     }
 
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
     printf("[%s] [%d]  semaphores flushed\n", __FILE__, __LINE__);
     fflush(stdout);
-#    endif
+#endif
 
     if (timing == 1)
     {
@@ -648,19 +645,19 @@ int GPU_loop_MultMat_execute(int   index,
         TimerIndex++;
     }
 
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
     printf("[%s] [%d] - START COMPUTATION   gpumatmultconf[%d].sem = %d\n", __FILE__, __LINE__,
            index, gpumatmultconf[index].sem);
     fflush(stdout);
-#    endif
+#endif
 
     if (gpumatmultconf[index].sem == 0)
     {
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
         printf("[%s] [%d] - pthread join     %d streams\n", __FILE__, __LINE__,
                gpumatmultconf[index].NBstreams);
         fflush(stdout);
-#    endif
+#endif
 
         for (ptn = 0; ptn < gpumatmultconf[index].NBstreams; ptn++)
         {
@@ -675,21 +672,21 @@ int GPU_loop_MultMat_execute(int   index,
             sem_post(gpumatmultconf[index].semptr4[ptn]);
         }
 
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
         printf("[%s] [%d] - posted input semaphores  ( %d streams )\n", __FILE__, __LINE__,
                gpumatmultconf[index].NBstreams);
         fflush(stdout);
-#    endif
+#endif
 
         for (ptn = 0; ptn < gpumatmultconf[index].NBstreams; ptn++)
         {
             sem_wait(gpumatmultconf[index].semptr5[ptn]); // WAIT FOR RESULT
         }
 
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
         printf("[%s] [%d] - output semaphores wait complete\n", __FILE__, __LINE__);
         fflush(stdout);
-#    endif
+#endif
 
         // for safety, set semaphores to zerosem_getvalue(dcimg[IDarray[i]].semptr[s], &semval);
         if (FORCESEMINIT == 1)
@@ -709,10 +706,10 @@ int GPU_loop_MultMat_execute(int   index,
         }
     }
 
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
     printf("[%s] [%d] - \n", __FILE__, __LINE__);
     fflush(stdout);
-#    endif
+#endif
 
     if (timing == 1)
     {
@@ -738,10 +735,10 @@ int GPU_loop_MultMat_execute(int   index,
     }
 
     // SUM RESULTS FROM SEPARATE GPUs
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
     printf("[%s] [%d] - SUM RESULTS FROM SEPARATE GPUs\n", __FILE__, __LINE__);
     fflush(stdout);
-#    endif
+#endif
 
     if (timing == 1)
     {
@@ -786,12 +783,10 @@ int GPU_loop_MultMat_execute(int   index,
     COREMOD_MEMORY_image_set_sempost_byID(gpumatmultconf[index].IDout, -1);
     dcimg[gpumatmultconf[index].IDout].md[0].write = 0;
 
-#    ifdef _PRINT_TEST
+#ifdef _PRINT_TEST
     printf("[%s] [%d] - DONE\n", __FILE__, __LINE__);
     fflush(stdout);
-#    endif
+#endif
 
     return 0;
 }
-
-#endif

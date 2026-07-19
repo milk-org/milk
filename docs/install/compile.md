@@ -76,6 +76,8 @@ $ sudo mount /milk/shm
     | **MKL** (`mkl-sdl`) | auto    | Intel linear algebra; takes priority over OpenBLAS if found |
     | **OpenBLAS**        | auto    | Linear algebra (plugins); preferred over standalone LAPACKE |
     | **Lapacke**         | auto    | Linear algebra                                              |
+    | **CUDA**            | runtime | Nvidia GPU computation                                      |
+    | **MAGMA**           | runtime | Linear algebra library over CUDA                            |
     | **tmux**            | runtime | Persistent shells for FPS compute units                     |
 
     **tmux** is very often needed for all FPS operations in tmux screens.

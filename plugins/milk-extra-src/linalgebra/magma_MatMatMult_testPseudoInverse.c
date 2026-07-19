@@ -1,35 +1,35 @@
 /** @file MatMatMult_testPseudoInverse.c
  */
 
-#ifdef HAVE_CUDA
+// MILK_CMAKE_MANDATE_CUDA
+// MILK_CMAKE_MANDATE_MAGMA
 
-#    include <cublas_v2.h>
+#include <cublas_v2.h>
 
-#    ifdef HAVE_MAGMA
-#        include "magma_lapack.h"
-#        include "magma_v2.h"
+#include "magma_lapack.h"
+#include "magma_v2.h"
 extern int           INIT_MAGMA;
 extern magma_queue_t magmaqueue;
 
-#        include <stdio.h>
-#        include <stdlib.h>
-#        include <string.h>
-#        include <math.h>
-#        include <stdint.h>
-#        include <stdbool.h>
-#        include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
-#        ifdef MILK_NO_CLI
-#            include "CLIcore_standalone.h"
-#        else
-#            include "libmilkdata/milkdata.h"
-#            include "milkDebugTools.h"
-#            include "fps.h"
-#            include "ImageStreamIO/ImageStreamIO.h"
-#        endif
-#        include "COREMOD_memory/COREMOD_memory.h"
+#ifdef MILK_NO_CLI
+#    include "CLIcore_standalone.h"
+#else
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
+#endif
+#include "COREMOD_memory/COREMOD_memory.h"
 
-#        include "linalgebra_types.h"
+#include "linalgebra_types.h"
 
 // ==========================================
 // Forward declaration(s)
@@ -47,17 +47,17 @@ static char         tp_a[FUNCTION_PARAMETER_STRMAXLEN]  = "matA";
 static char         tp_ai[FUNCTION_PARAMETER_STRMAXLEN] = "matAinv";
 static char         tp_o[FUNCTION_PARAMETER_STRMAXLEN]  = "matOut";
 static FPS_APP_INFO FPS_app_info_tp                     = {
-                        .fps_name         = "cudatestpsinv",
-                        .cmdkey           = "cudatestpsinv",
-                        .description      = "test pseudo inverse",
-                        .description_long = "Test pseudo-inverse computation using MAGMA GPU library. Validates matrix "
-                                            "inversion accuracy and performance."
+    .fps_name         = "cudatestpsinv",
+    .cmdkey           = "cudatestpsinv",
+    .description      = "test pseudo inverse",
+    .description_long = "Test pseudo-inverse computation using MAGMA GPU library. Validates matrix "
+                        "inversion accuracy and performance."
 };
-#        define FPS_PARAMS_TP(X)                                                        \
-            X(".matA", tp_a, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matA")        \
-            X(".matAinv", tp_ai, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matAinv") \
-            X(".out_name", tp_o, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")
-#        include "fps.h"
+#define FPS_PARAMS_TP(X)                                                        \
+    X(".matA", tp_a, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matA")        \
+    X(".matAinv", tp_ai, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "matAinv") \
+    X(".out_name", tp_o, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output")
+#include "fps.h"
 static FPS_CLI_BINDING                   tp_b[]     = { FPS_PARAMS_TP(FPS_X_BINDING) };
 static const int                         tp_nb      = sizeof(tp_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_TP(FPS_X_FARG) };
@@ -234,7 +234,3 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
 
     return IDmatOut;
 }
-
-#    endif
-
-#endif

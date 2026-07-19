@@ -3,12 +3,6 @@
  * @brief Build linpf module
  */
 
-/**
- * @file build_linPF.c
- *
- *
- */
-
 
 #include <math.h>
 #include <time.h>
@@ -18,36 +12,10 @@
 #include "timeutils.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
+#include "milk_blas_lapacke.h"
 
-// Use MKL if available
-// Otherwise use openBLAS
-//
-#ifdef HAVE_MKL
-#    include "mkl.h"
-#    define BLASLIB "IntelMKL"
-#else
-#    ifdef HAVE_OPENBLAS
-#        include <cblas.h>
-#        include <lapacke.h>
-#        define BLASLIB "OpenBLAS"
-#    endif
-#endif
-
-
-#include "linalgebra/SingularValueDecomp.h"
-
-/*
-#ifdef HAVE_CUDA
-  #include <cublas_v2.h>
-  #include <cuda_runtime.h>
-  #include <cuda_runtime_api.h>
-  #include <cusolverDn.h>
-  #include <device_types.h>
-  #include <pthread.h>
-  #include "linalgebra/linalgebra.h"
-#endif
-*/
-
+#include "linalgebra/linalgebra.h"
+#include "linalgebra/linalgebra_types.h"
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY

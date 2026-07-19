@@ -624,6 +624,7 @@ errno_t help_module()
     else
     {
         printf("\n");
+        printf("%ld modules loaded\n", data.NBmodule);
         printf("%2s  %10s %32s %10s %7s    %20s %s\n", "#", "shortname", "Name", "Package",
                "Version", "last compiled", "description");
         printf("--------------------------------------------------------------"

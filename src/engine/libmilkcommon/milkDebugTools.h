@@ -233,4 +233,16 @@ typedef long variableID;
         } while (0)
 #endif
 
+// Shorthands for dependency management
+// when we don't want to carry mandates over from file to file
+
+#define MILK_WEAK __attribute__((weak))
+#define MILK_WEAK_FUNCDEF                                                                     \
+    {                                                                                         \
+        PRINT_ERROR("__attribute__((weak)) header function definition - here only because a " \
+                    "MILK_CMAKE_MANDATE_ "                                                    \
+                    "(dependency system) is not satisfied!");                                 \
+        abort();                                                                              \
+    }
+
 #endif

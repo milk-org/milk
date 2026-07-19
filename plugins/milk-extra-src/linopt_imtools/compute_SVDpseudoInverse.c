@@ -2,11 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef USE_MKL
+// MILK_CMAKE_MANDATE_LAPACKE
+// MILK_CMAKE_MANDATE_BLAS
+
+#ifdef HAVE_MKL
+#    include "mkl.h"
 #    include "mkl_lapacke.h"
 #else
-#    include <cblas.h>
-#    include <lapacke.h>
+#    ifdef HAVE_OPENBLAS
+#        include <cblas.h>
+#    endif
+#    include <lapacke.h> // OpenBLAS OR lapacke standalone
 #endif
 
 #include "CLIcore.h"

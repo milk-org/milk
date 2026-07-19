@@ -6,6 +6,8 @@
 /** @file linalgebratest.c
  */
 
+// MILK_CMAKE_MANDATE_CUDA
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,11 +26,7 @@
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "GPU_SVD_computeControlMatrix.h"
-#include "GPU_loop_MultMat_execute.h"
-#include "GPU_loop_MultMat_setup.h"
-
-#ifdef HAVE_CUDA
+#include "linalgebra.h"
 
 // ==========================================
 // Forward declaration(s)
@@ -51,12 +49,12 @@ static FPS_APP_INFO FPS_app_info_lt = {
     .description_long = "Test and benchmark cuBLAS linear algebra operations. Verifies GPU matrix "
                         "multiply correctness and measures throughput."
 };
-#    define FPS_PARAMS_LT(X)                                                       \
-        X(".nbact", &lt_nact, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB act")     \
-        X(".nbmodes", &lt_nmod, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB modes") \
-        X(".wfssize", &lt_wsz, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB pixels") \
-        X(".gpucnt", &lt_gpu, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB GPU")
-#    include "fps.h"
+#define FPS_PARAMS_LT(X)                                                       \
+    X(".nbact", &lt_nact, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB act")     \
+    X(".nbmodes", &lt_nmod, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB modes") \
+    X(".wfssize", &lt_wsz, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB pixels") \
+    X(".gpucnt", &lt_gpu, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "NB GPU")
+#include "fps.h"
 static FPS_CLI_BINDING                   lt_b[]     = { FPS_PARAMS_LT(FPS_X_BINDING) };
 static const int                         lt_nb      = sizeof(lt_b) / sizeof(FPS_CLI_BINDING);
 static CLICMDARGDEF                      farg[]     = { FPS_PARAMS_LT(FPS_X_FARG) };
@@ -246,5 +244,3 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSs
 
     return RETURN_SUCCESS;
 }
-
-#endif

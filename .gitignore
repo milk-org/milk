@@ -15,24 +15,14 @@ _tmplist.txt
 
 Testing/
 
-#
-# ignore all plugins by default
-#
+# Ignore all plugins by default
 plugins/**
 
-#plugins/cacao-src
-#plugins/coffee-src
-
-#
-# un-ignore milk-extra-src
-#
+# Un-ignore milk-extra-src
 !plugins/milk-extra-src/
 !plugins/milk-extra-src/**
-
-plugins/milk-extra-src/AtmosphereModel
-plugins/milk-extra-src/AtmosphericTurbulence
-plugins/milk-extra-src/OpticsMaterials
-plugins/milk-extra-src/WFpropagate
+!plugins/test-src/
+!plugins/test-src/**
 
 *-code-workspace
 

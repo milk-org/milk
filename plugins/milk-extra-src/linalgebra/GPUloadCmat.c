@@ -3,31 +3,28 @@
  * @brief Gpuloadcmat module
  */
 
-/** @file GPUloadCmat.c
- */
+// MILK_CMAKE_MANDATE_CUDA
 
-#ifdef HAVE_CUDA
+#include <cublas_v2.h>
 
-#    include <cublas_v2.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
 
-#    include <stdio.h>
-#    include <stdlib.h>
-#    include <string.h>
-#    include <math.h>
-#    include <stdint.h>
-#    include <stdbool.h>
-#    include <unistd.h>
-
-#    ifdef MILK_NO_CLI
-#        include "CLIcore_standalone.h"
-#    else
-#        include "libmilkdata/milkdata.h"
-#        include "milkDebugTools.h"
-#        include "fps.h"
-#        include "ImageStreamIO/ImageStreamIO.h"
-#    endif
-#    include "COREMOD_memory/COREMOD_memory.h"
-#    include "linalgebra_types.h"
+#ifdef MILK_NO_CLI
+#    include "CLIcore_standalone.h"
+#else
+#    include "libmilkdata/milkdata.h"
+#    include "milkDebugTools.h"
+#    include "fps.h"
+#    include "ImageStreamIO/ImageStreamIO.h"
+#endif
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "linalgebra_types.h"
 
 extern GPUMATMULTCONF gpumatmultconf[20];
 
@@ -85,5 +82,3 @@ errno_t GPUloadCmat(int index)
 
     return RETURN_SUCCESS;
 }
-
-#endif
