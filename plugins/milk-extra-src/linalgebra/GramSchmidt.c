@@ -11,8 +11,6 @@
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
-#include "SGEMM.h"
-
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY

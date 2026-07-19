@@ -16,9 +16,6 @@
 #include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
 
-#include "SGEMM.h"
-
-
 #ifdef HAVE_CUDA
 #    include <cublas_v2.h>
 #    include <cuda_runtime.h>

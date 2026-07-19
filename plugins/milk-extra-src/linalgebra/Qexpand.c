@@ -13,8 +13,6 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "SGEMM.h"
-
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY

@@ -14,8 +14,8 @@
 
 #include "milk_blas_lapacke.h"
 
-#include "linalgebra/SingularValueDecomp.h"
-#include "linalgebra/SingularValueDecomp_flags.h"
+#include "linalgebra/linalgebra.h"
+#include "linalgebra/linalgebra_types.h"
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY

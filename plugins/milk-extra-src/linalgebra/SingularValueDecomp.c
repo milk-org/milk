@@ -12,8 +12,8 @@
 
 #include "timeutils.h"
 
-#include "SGEMM.h"
-#include "SingularValueDecomp_flags.h"
+#include "linalgebra.h"
+#include "linalgebra_types.h" // Flags for SVD operation type
 
 #include "milk_blas_lapacke.h"
 

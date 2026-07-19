@@ -29,6 +29,12 @@
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 
+// Flags for SVD computations
+#define COMPSVD_SKIP_BIGMAT 0x1UL
+#define COMPSVD_COMP_PSINV 0x2UL
+#define COMPSVD_COMP_CHECKPSINV 0x4UL
+#define COMPSVD_COMP_RECONSTRUCT 0x8UL
+
 #ifdef HAVE_MAGMA
 
 /******************* CPU memory */

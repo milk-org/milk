@@ -26,7 +26,7 @@
 #include "libmilkcommon/pixel_dispatch.h"
 #include "timeutils.h"
 
-#include "MVM_CPU.h"
+#include "linalgebra.h"
 
 
 /* ================================================================

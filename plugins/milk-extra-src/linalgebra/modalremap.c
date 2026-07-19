@@ -12,7 +12,17 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-#include "SGEMM.h"
+#include "linalgebra.h"
+/*
+FUUUUUUCK SO NOW this is a problem.
+
+File A wants to include from file B from the same library.
+BUT file B may have a mandate, so now library.h contains a MILK_WEAK declaration
+BUT since I regrouped the includes, if this file also contains a mandate, library.h ALSO contains a
+MILK_WEAK declaration for functions that may be in this file.
+But this file should never include its own .h with the MILK_WEAK declaration, or we have a circular include.
+How fix ????
+*/
 
 
 /* ================================================================

@@ -9,7 +9,7 @@
 #include "mask_to_pixtable.h"
 
 #include "compute_SVDpseudoInverse.h"
-#include "linalgebra/magma_compute_SVDpseudoInverse.h"
+#include "linalgebra/linalgebra.h"
 
 // MILK_CMAKE_MANDATE_BLAS
 // MILK_CMAKE_MANDATE_LAPACKE

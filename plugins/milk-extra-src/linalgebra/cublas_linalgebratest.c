@@ -26,9 +26,7 @@
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "GPU_SVD_computeControlMatrix.h"
-#include "GPU_loop_MultMat_execute.h"
-#include "GPU_loop_MultMat_setup.h"
+#include "linalgebra.h"
 
 // ==========================================
 // Forward declaration(s)

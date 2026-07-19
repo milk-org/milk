@@ -16,7 +16,7 @@
 #endif
 
 #include "compute_SVDpseudoInverse.h"
-#include "linalgebra/magma_compute_SVDpseudoInverse.h"
+#include "linalgebra/linalgebra.h"
 
 
 /* ================================================================

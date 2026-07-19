@@ -30,9 +30,9 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
-#include "linalgebra_types.h"
 
-#include "GPUloadCmat.h"
+#include "linalgebra.h"
+#include "linalgebra_types.h"
 
 extern imageID        IDtiming;
 extern float          cublasSgemv_alpha;

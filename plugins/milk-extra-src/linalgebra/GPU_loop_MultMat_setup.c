@@ -27,10 +27,8 @@
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "GPU_loop_MultMat_free.h"
-#include "GPUloadCmat.h"
+#include "linalgebra.h"
 #include "linalgebra_types.h"
-#include "linalgebrainit.h"
 
 extern GPUMATMULTCONF gpumatmultconf[20];
 extern imageID        IDtimerinit;
