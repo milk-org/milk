@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef UPTHERAMP_CRED_CDS_UTR_H
 #define UPTHERAMP_CRED_CDS_UTR_H
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef COREMOD_MODULE_ARITH_IMSET_2DPIX_H
 #define COREMOD_MODULE_ARITH_IMSET_2DPIX_H
 

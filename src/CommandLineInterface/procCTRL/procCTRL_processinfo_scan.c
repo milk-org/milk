@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #include <sys/stat.h>
 #include <pthread.h>
 #include <sys/mman.h> // mmap()

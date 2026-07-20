@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef _IMAGEFORMATMODULE_H
 #define _IMAGEFORMATMODULE_H
 

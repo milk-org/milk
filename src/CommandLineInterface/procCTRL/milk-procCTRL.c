@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #include "milk_config.h"
 #include <CommandLineInterface/CLIcore.h>
 #include <CommandLineInterface/CLIcore/CLIcore_datainit.h>
