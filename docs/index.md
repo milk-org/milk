@@ -1,9 +1,9 @@
 **Contents**
-* TOC
-{:toc}
 
-***
+- TOC
+  {:toc}
 
+---
 
 # What is milk ?
 
@@ -21,12 +21,6 @@ milk's core design and capabilities are built around three data structures :
 - [Function Parameter Structures (FPS)](fps.md)
 - [Process info and status (procinfo)](procinfo.md)
 
-
-
-
-
-
-
 # Installing milk
 
     ./compile.sh $PWD/local
@@ -43,13 +37,6 @@ Compile with coffee plugins:
     ./fetch_coffee_dev.sh
     ./compile.sh $PWD/local
 
-
 # Contributing
-
-
-
-
-
-
 
 For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).

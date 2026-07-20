@@ -13,14 +13,9 @@
 // forward declarations
 // ==========================================
 
-long image_write_keyword_L(const char *IDname,
-                           const char *kname,
-                           long        value,
-                           const char *comment);
+long image_write_keyword_L(const char *IDname, const char *kname, long value, const char *comment);
 
-long image_list_keywords(
-    const char * __restrict IDname
-);
+long image_list_keywords(const char *__restrict IDname);
 
 // ==========================================
 // command line interface wrapper functions
@@ -28,15 +23,12 @@ long image_list_keywords(
 
 errno_t image_write_keyword_L__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) +
-            CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
-            0)
+    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
+            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
+        0)
     {
-        image_write_keyword_L(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.string,
-                              data.cmdargtoken[3].val.numl,
-                              data.cmdargtoken[4].val.string);
+        image_write_keyword_L(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
+                              data.cmdargtoken[3].val.numl, data.cmdargtoken[4].val.string);
         return CLICMD_SUCCESS;
     }
     else
@@ -47,7 +39,7 @@ errno_t image_write_keyword_L__cli()
 
 errno_t image_list_keywords__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
+    if (0 + CLI_checkarg(1, CLIARG_IMG) == 0)
     {
         image_list_keywords(data.cmdargtoken[1].val.string);
         return CLICMD_SUCCESS;
@@ -64,30 +56,19 @@ errno_t image_list_keywords__cli()
 
 errno_t image_keyword_addCLIcmd()
 {
-    RegisterCLIcommand("imwritekwL",
-                       __FILE__,
-                       image_write_keyword_L__cli,
-                       "write long type keyword",
-                       "<imname> <kname> <value [long]> <comment>",
+    RegisterCLIcommand("imwritekwL", __FILE__, image_write_keyword_L__cli,
+                       "write long type keyword", "<imname> <kname> <value [long]> <comment>",
                        "imwritekwL im1 kw2 34 my_keyword_comment",
                        "long image_write_keyword_L(const char *IDname, const "
                        "char *kname, long value, const char *comment)");
 
-    RegisterCLIcommand("imlistkw",
-                       __FILE__,
-                       image_list_keywords__cli,
-                       "list image keywords",
-                       "<imname>",
-                       "imlistkw im1",
-                       "long image_list_keywords(const char *IDname)");
+    RegisterCLIcommand("imlistkw", __FILE__, image_list_keywords__cli, "list image keywords",
+                       "<imname>", "imlistkw im1", "long image_list_keywords(const char *IDname)");
 
     return RETURN_SUCCESS;
 }
 
-long image_write_keyword_L(const char *IDname,
-                           const char *kname,
-                           long        value,
-                           const char *comment)
+long image_write_keyword_L(const char *IDname, const char *kname, long value, const char *comment)
 {
     imageID ID;
     long    kw, NBkw, kw0;
@@ -96,13 +77,13 @@ long image_write_keyword_L(const char *IDname,
     NBkw = data.image[ID].md[0].NBkw;
 
     kw = 0;
-    while((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while ((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
     {
         kw++;
     }
     kw0 = kw;
 
-    if(kw0 == NBkw)
+    if (kw0 == NBkw)
     {
         printf("ERROR: no available keyword entry\n");
         exit(0);
@@ -118,10 +99,7 @@ long image_write_keyword_L(const char *IDname,
     return kw0;
 }
 
-long image_write_keyword_D(const char *IDname,
-                           const char *kname,
-                           double      value,
-                           const char *comment)
+long image_write_keyword_D(const char *IDname, const char *kname, double value, const char *comment)
 {
     imageID ID;
     long    kw;
@@ -132,13 +110,13 @@ long image_write_keyword_D(const char *IDname,
     NBkw = data.image[ID].md[0].NBkw;
 
     kw = 0;
-    while((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while ((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
     {
         kw++;
     }
     kw0 = kw;
 
-    if(kw0 == NBkw)
+    if (kw0 == NBkw)
     {
         printf("ERROR: no available keyword entry\n");
         exit(0);
@@ -168,13 +146,13 @@ long image_write_keyword_S(const char *IDname,
     NBkw = data.image[ID].md[0].NBkw;
 
     kw = 0;
-    while((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while ((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
     {
         kw++;
     }
     kw0 = kw;
 
-    if(kw0 == NBkw)
+    if (kw0 == NBkw)
     {
         printf("ERROR: no available keyword entry\n");
         exit(0);
@@ -190,9 +168,7 @@ long image_write_keyword_S(const char *IDname,
     return kw0;
 }
 
-imageID image_list_keywords(
-    const char * __restrict IDname
-)
+imageID image_list_keywords(const char *__restrict IDname)
 {
     imageID ID;
     long    kw;
@@ -200,38 +176,31 @@ imageID image_list_keywords(
     ID = image_ID(IDname);
 
     int kwcnt = 0;
-    for(kw = 0; kw < data.image[ID].md->NBkw; kw++)
+    for (kw = 0; kw < data.image[ID].md->NBkw; kw++)
     {
-
         switch (data.image[ID].kw[kw].type)
         {
-        case 'L' :
-            printf("%18s  %20ld %s\n",
-                   data.image[ID].kw[kw].name,
-                   data.image[ID].kw[kw].value.numl,
+        case 'L':
+            printf("%18s  %20ld %s\n", data.image[ID].kw[kw].name, data.image[ID].kw[kw].value.numl,
                    data.image[ID].kw[kw].comment);
-            kwcnt ++;
+            kwcnt++;
             break;
 
-        case 'D' :
-            printf("%18s  %20lf %s\n",
-                   data.image[ID].kw[kw].name,
-                   data.image[ID].kw[kw].value.numf,
+        case 'D':
+            printf("%18s  %20lf %s\n", data.image[ID].kw[kw].name, data.image[ID].kw[kw].value.numf,
                    data.image[ID].kw[kw].comment);
-            kwcnt ++;
+            kwcnt++;
             break;
 
-        case 'S' :
-            printf("%18s  %20s %s\n",
-                   data.image[ID].kw[kw].name,
-                   data.image[ID].kw[kw].value.valstr,
-                   data.image[ID].kw[kw].comment);
-            kwcnt ++;
+        case 'S':
+            printf("%18s  %20s %s\n", data.image[ID].kw[kw].name,
+                   data.image[ID].kw[kw].value.valstr, data.image[ID].kw[kw].comment);
+            kwcnt++;
             break;
         }
     }
 
-    printf("%d / %d keywords set\n", kwcnt,  data.image[ID].md->NBkw);
+    printf("%d / %d keywords set\n", kwcnt, data.image[ID].md->NBkw);
 
     return ID;
 }
@@ -244,10 +213,10 @@ long image_read_keyword_D(const char *IDname, const char *kname, double *val)
 
     ID  = image_ID(IDname);
     kw0 = -1;
-    for(kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    for (kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
     {
-        if((data.image[ID].kw[kw].type == 'D') &&
-                (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
+        if ((data.image[ID].kw[kw].type == 'D') &&
+            (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
         {
             kw0  = kw;
             *val = data.image[ID].kw[kw].value.numf;
@@ -265,10 +234,10 @@ long image_read_keyword_L(const char *IDname, const char *kname, long *val)
 
     ID  = image_ID(IDname);
     kw0 = -1;
-    for(kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    for (kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
     {
-        if((data.image[ID].kw[kw].type == 'L') &&
-                (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
+        if ((data.image[ID].kw[kw].type == 'L') &&
+            (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
         {
             kw0  = kw;
             *val = data.image[ID].kw[kw].value.numl;

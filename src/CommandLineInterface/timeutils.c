@@ -11,19 +11,12 @@
 
 #include "timeutils.h"
 
-
-
 errno_t milk_clock_gettime(struct timespec *tnow_p)
 {
     return clock_gettime(CLOCK_MILK, tnow_p);
 }
 
-
-
-errno_t mkUTtimestring_nanosec(
-    char *timestring,
-    struct timespec tnow
-)
+errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;
@@ -31,24 +24,17 @@ errno_t mkUTtimestring_nanosec(
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
-
     {
-        int slen = snprintf(
-                       timestring,
-                       TIMESTRINGLEN,
-                       "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
-                       1900 + uttime->tm_year,
-                       1 + uttime->tm_mon,
-                       uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       tnow.tv_nsec);
-        if(slen<1) {
+        int slen = snprintf(timestring, TIMESTRINGLEN, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
+                            1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday,
+                            uttime->tm_hour, uttime->tm_min, uttime->tm_sec, tnow.tv_nsec);
+        if (slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if (slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
@@ -56,9 +42,6 @@ errno_t mkUTtimestring_nanosec(
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 errno_t mkUTtimestring_nanosec_now(char *timestring)
 {
@@ -70,12 +53,7 @@ errno_t mkUTtimestring_nanosec_now(char *timestring)
     return RETURN_SUCCESS;
 }
 
-
-
-errno_t mkUTtimestring_microsec(
-    char *timestring,
-    struct timespec tnow
-)
+errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;
@@ -84,32 +62,24 @@ errno_t mkUTtimestring_microsec(
     uttime = gmtime(&tvsec0);
 
     {
-        int slen = snprintf(
-                       timestring,
-                       TIMESTRINGLEN,
-                       "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ",
-                       1900 + uttime->tm_year,
-                       1 + uttime->tm_mon,
-                       uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       (long)(tnow.tv_nsec / 1000));
-        if(slen<1) {
+        int slen =
+            snprintf(timestring, TIMESTRINGLEN, "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ",
+                     1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
+                     uttime->tm_min, uttime->tm_sec, (long) (tnow.tv_nsec / 1000));
+        if (slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if (slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
     }
 
-
     return RETURN_SUCCESS;
 }
-
-
 
 errno_t mkUTtimestring_microsec_now(char *timestring)
 {
@@ -121,12 +91,7 @@ errno_t mkUTtimestring_microsec_now(char *timestring)
     return RETURN_SUCCESS;
 }
 
-
-
-errno_t mkUTtimestring_millisec(
-    char *timestring,
-    struct timespec tnow
-)
+errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;
@@ -134,24 +99,18 @@ errno_t mkUTtimestring_millisec(
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
-
     {
-        int slen = snprintf(
-                       timestring,
-                       TIMESTRINGLEN,
-                       "%04d-%02d-%02dT%02d:%02d:%02d.%03ldZ",
-                       1900 + uttime->tm_year,
-                       1 + uttime->tm_mon,
-                       uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       (long)(tnow.tv_nsec / 1000000));
-        if(slen<1) {
+        int slen =
+            snprintf(timestring, TIMESTRINGLEN, "%04d-%02d-%02dT%02d:%02d:%02d.%03ldZ",
+                     1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
+                     uttime->tm_min, uttime->tm_sec, (long) (tnow.tv_nsec / 1000000));
+        if (slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if (slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
@@ -170,12 +129,8 @@ errno_t mkUTtimestring_millisec_now(char *timestring)
     return RETURN_SUCCESS;
 }
 
-
 // timestring should be of length TIMESTRINGLEN
-errno_t mkUTtimestring_sec(
-    char *timestring,
-    struct timespec tnow
-)
+errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
 {
     struct tm *uttime;
     time_t     tvsec0;
@@ -183,21 +138,17 @@ errno_t mkUTtimestring_sec(
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
-
     {
-        int slen = snprintf(timestring, TIMESTRINGLEN,
-                            "%04d-%02d-%02dT%02d:%02d:%02dZ",
-                            1900 + uttime->tm_year,
-                            1 + uttime->tm_mon,
-                            uttime->tm_mday,
-                            uttime->tm_hour,
-                            uttime->tm_min,
-                            uttime->tm_sec);
-        if(slen<1) {
+        int slen = snprintf(timestring, TIMESTRINGLEN, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+                            1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday,
+                            uttime->tm_hour, uttime->tm_min, uttime->tm_sec);
+        if (slen < 1)
+        {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= TIMESTRINGLEN) {
+        if (slen >= TIMESTRINGLEN)
+        {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
         }
@@ -205,7 +156,6 @@ errno_t mkUTtimestring_sec(
 
     return RETURN_SUCCESS;
 }
-
 
 errno_t mkUTtimestring_sec_now(char *timestring)
 {
@@ -217,14 +167,11 @@ errno_t mkUTtimestring_sec_now(char *timestring)
     return RETURN_SUCCESS;
 }
 
-
-
-
 struct timespec timespec_diff(struct timespec start, struct timespec end)
 {
     struct timespec temp;
 
-    if((end.tv_nsec - start.tv_nsec) < 0)
+    if ((end.tv_nsec - start.tv_nsec) < 0)
     {
         temp.tv_sec  = end.tv_sec - start.tv_sec - 1;
         temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
@@ -237,14 +184,12 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
     return temp;
 }
 
-
-
 double timespec_diff_double(struct timespec start, struct timespec end)
 {
     struct timespec temp;
     double          val;
 
-    if((end.tv_nsec - start.tv_nsec) < 0)
+    if ((end.tv_nsec - start.tv_nsec) < 0)
     {
         temp.tv_sec  = end.tv_sec - start.tv_sec - 1;
         temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
@@ -260,9 +205,6 @@ double timespec_diff_double(struct timespec start, struct timespec end)
 
     return val;
 }
-
-
-
 
 /**
  * @brief Returns time string in form of HH:MM:SS.SS
@@ -286,14 +228,10 @@ char *timedouble_to_UTC_timeofdaystring(double timedouble)
     double tdoublenow = 1.0 * tsnow.tv_sec + 1.0e-9 * tsnow.tv_nsec;
     printf("TIME double NOW : %lf\n", tdoublenow);
 
-    printf("DATE from timedouble_to_UTC_timeofdaystring: %04d-%02d-%02d  %02d:%02d:%02d  %05.2f\n",
-           1900 + timetm->tm_year,
-           1 + timetm->tm_mon,
-           1 + timetm->tm_mday,
-           timetm->tm_hour,
-           timetm->tm_min,
-           timetm->tm_sec,
-           sec);
+    printf("DATE from timedouble_to_UTC_timeofdaystring: %04d-%02d-%02d  "
+           "%02d:%02d:%02d  %05.2f\n",
+           1900 + timetm->tm_year, 1 + timetm->tm_mon, 1 + timetm->tm_mday, timetm->tm_hour,
+           timetm->tm_min, timetm->tm_sec, sec);
 
     snprintf(tstring, 12, "%02d:%02d:%05.2f", timetm->tm_hour, timetm->tm_min, sec);
 

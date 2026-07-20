@@ -6,8 +6,8 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-#include "fps/fps_GetTypeString.h"
 #include "TUItools.h"
+#include "fps/fps_GetTypeString.h"
 
 /**
  * @brief Print node information
@@ -26,35 +26,25 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
 {
     DEBUG_TRACE_FSTART();
 
-    DEBUG_TRACEPOINT("Selected node %d in fps %d",
-                     nodeSelected,
-                     keywnode[nodeSelected].fpsindex);
+    DEBUG_TRACEPOINT("Selected node %d in fps %d", nodeSelected, keywnode[nodeSelected].fpsindex);
 
-    TUI_printfw("======== FPS info ( # %2d) fd = %d (sdterr = %d)",
-                keywnode[nodeSelected].fpsindex,
-                fps[keywnode[nodeSelected].fpsindex].SMfd,
-                fileno(stderr));
+    TUI_printfw("======== FPS info ( # %2d) fd = %d (sdterr = %d)", keywnode[nodeSelected].fpsindex,
+                fps[keywnode[nodeSelected].fpsindex].SMfd, fileno(stderr));
     TUI_newline();
 
     char teststring[200];
-    snprintf(teststring,
-             200,
-             "%s",
-             fps[keywnode[nodeSelected].fpsindex].md->sourcefname);
+    snprintf(teststring, 200, "%s", fps[keywnode[nodeSelected].fpsindex].md->sourcefname);
     DEBUG_TRACEPOINT("TEST STRING : %s", teststring);
 
-    DEBUG_TRACEPOINT("TEST LINE : %d",
-                     fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+    DEBUG_TRACEPOINT("TEST LINE : %d", fps[keywnode[nodeSelected].fpsindex].md->sourceline);
 
     TUI_printfw("    FPS call              : %s -> %s [",
                 fps[keywnode[nodeSelected].fpsindex].md->callprogname,
                 fps[keywnode[nodeSelected].fpsindex].md->callfuncname);
 
-    for(int i = 0; i < fps[keywnode[nodeSelected].fpsindex].md->NBnameindex;
-            i++)
+    for (int i = 0; i < fps[keywnode[nodeSelected].fpsindex].md->NBnameindex; i++)
     {
-        TUI_printfw(" %s",
-                    fps[keywnode[nodeSelected].fpsindex].md->nameindexW[i]);
+        TUI_printfw(" %s", fps[keywnode[nodeSelected].fpsindex].md->nameindexW[i]);
     }
     TUI_printfw(" ]");
     TUI_newline();
@@ -64,40 +54,34 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
                 fps[keywnode[nodeSelected].fpsindex].md->sourceline);
     TUI_newline();
 
-    TUI_printfw("   %d libs : ",
-                fps[keywnode[nodeSelected].fpsindex].md->NBmodule);
-    for(int m = 0; m < fps[keywnode[nodeSelected].fpsindex].md->NBmodule; m++)
+    TUI_printfw("   %d libs : ", fps[keywnode[nodeSelected].fpsindex].md->NBmodule);
+    for (int m = 0; m < fps[keywnode[nodeSelected].fpsindex].md->NBmodule; m++)
     {
-        TUI_printfw(" [%s]",
-                    fps[keywnode[nodeSelected].fpsindex].md->modulename[m]);
+        TUI_printfw(" [%s]", fps[keywnode[nodeSelected].fpsindex].md->modulename[m]);
     }
     TUI_newline();
 
     DEBUG_TRACEPOINT(" ");
 
-    TUI_printfw("    KEYWORDARRAY: %s",
-                fps[keywnode[nodeSelected].fpsindex].md->keywordarray);
+    TUI_printfw("    KEYWORDARRAY: %s", fps[keywnode[nodeSelected].fpsindex].md->keywordarray);
     TUI_newline();
 
-
-    TUI_printfw("    FPS work directory    : %s",
-                fps[keywnode[nodeSelected].fpsindex].md->workdir);
+    TUI_printfw("    FPS work directory    : %s", fps[keywnode[nodeSelected].fpsindex].md->workdir);
     TUI_newline();
 
-    TUI_printfw(
-        "    ( FPS output data directory : %s )  ( FPS input conf directory : "
-        "%s)",
-        fps[keywnode[nodeSelected].fpsindex].md->datadir,
-        fps[keywnode[nodeSelected].fpsindex].md->confdir);
+    TUI_printfw("    ( FPS output data directory : %s )  ( FPS input conf directory : "
+                "%s)",
+                fps[keywnode[nodeSelected].fpsindex].md->datadir,
+                fps[keywnode[nodeSelected].fpsindex].md->confdir);
     TUI_newline();
 
     DEBUG_TRACEPOINT(" ");
-    TUI_printfw("    FPS tmux sessions  [%2d] %s  :  ",
-                keywnode[nodeSelected].fpsindex, fps[keywnode[nodeSelected].fpsindex].md->name);
+    TUI_printfw("    FPS tmux sessions  [%2d] %s  :  ", keywnode[nodeSelected].fpsindex,
+                fps[keywnode[nodeSelected].fpsindex].md->name);
 
     EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:ctrl 2> /dev/null",
                            fps[keywnode[nodeSelected].fpsindex].md->name);
-    if(data.retvalue == 0)
+    if (data.retvalue == 0)
     {
         fps[keywnode[nodeSelected].fpsindex].md->status |=
             FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL;
@@ -110,7 +94,7 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
 
     EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:conf 2> /dev/null",
                            fps[keywnode[nodeSelected].fpsindex].md->name);
-    if(data.retvalue == 0)
+    if (data.retvalue == 0)
     {
         fps[keywnode[nodeSelected].fpsindex].md->status |=
             FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF;
@@ -123,10 +107,9 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
 
     EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:run 2> /dev/null",
                            fps[keywnode[nodeSelected].fpsindex].md->name);
-    if(data.retvalue == 0)
+    if (data.retvalue == 0)
     {
-        fps[keywnode[nodeSelected].fpsindex].md->status |=
-            FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN;
+        fps[keywnode[nodeSelected].fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN;
     }
     else
     {
@@ -134,8 +117,7 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
             ~FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN;
     }
 
-    if(fps[keywnode[nodeSelected].fpsindex].md->status &
-            FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL)
+    if (fps[keywnode[nodeSelected].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL)
     {
         screenprint_setcolor(COLOR_OK);
         TUI_printfw("%s:ctrl", fps[keywnode[nodeSelected].fpsindex].md->name);
@@ -148,8 +130,7 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
         screenprint_unsetcolor(COLOR_ERROR);
     }
     TUI_printfw(" ");
-    if(fps[keywnode[nodeSelected].fpsindex].md->status &
-            FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF)
+    if (fps[keywnode[nodeSelected].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF)
     {
         screenprint_setcolor(COLOR_OK);
         TUI_printfw("%s:conf", fps[keywnode[nodeSelected].fpsindex].md->name);
@@ -162,8 +143,7 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
         screenprint_unsetcolor(COLOR_ERROR);
     }
     TUI_printfw(" ");
-    if(fps[keywnode[nodeSelected].fpsindex].md->status &
-            FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN)
+    if (fps[keywnode[nodeSelected].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN)
     {
         screenprint_setcolor(COLOR_OK);
         TUI_printfw("%s:run", fps[keywnode[nodeSelected].fpsindex].md->name);
@@ -179,29 +159,25 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
 
     DEBUG_TRACEPOINT(" ");
 
-
     TUI_printfw("======== NODE info ( # %5ld)", nodeSelected);
     TUI_newline();
     TUI_printfw("%-30s ", keywnode[nodeSelected].keywordfull);
 
-    if(keywnode[nodeSelected].leaf > 0)  // If this is not a directory
+    if (keywnode[nodeSelected].leaf > 0) // If this is not a directory
     {
         char typestring[STRINGMAXLEN_FPSTYPE];
-        functionparameter_GetTypeString(
-            fps[fpsindexSelected].parray[pindexSelected].type,
-            typestring);
+        functionparameter_GetTypeString(fps[fpsindexSelected].parray[pindexSelected].type,
+                                        typestring);
         TUI_printfw("type %s", typestring);
         TUI_newline();
 
         // print binary flag
         TUI_printfw("FLAG : ");
         uint64_t mask = (uint64_t) 1 << (sizeof(uint64_t) * CHAR_BIT - 1);
-        while(mask)
+        while (mask)
         {
-            int digit =
-                fps[fpsindexSelected].parray[pindexSelected].fpflag & mask ? 1
-                : 0;
-            if(digit == 1)
+            int digit = fps[fpsindexSelected].parray[pindexSelected].fpflag & mask ? 1 : 0;
+            if (digit == 1)
             {
                 screenprint_setcolor(2);
                 TUI_printfw("%d", digit);

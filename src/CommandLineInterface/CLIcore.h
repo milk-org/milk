@@ -14,15 +14,14 @@
  *
  */
 
-
 #ifndef _CLICORE_H
 #define _CLICORE_H
 
 // include sem_timedwait
 
 #ifndef M_PI
-#define M_PI                                                                   \
-    3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803
+#    define M_PI \
+        3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803
 #endif
 
 #ifndef __STDC_LIB_EXT1__
@@ -52,8 +51,8 @@ typedef long variableID;
 
 #include "CommandLineInterface/function_parameters.h"
 #include "CommandLineInterface/processtools.h"
-#include "CommandLineInterface/timeutils.h"
 #include "CommandLineInterface/streamCTRL/streamCTRL_TUI.h"
+#include "CommandLineInterface/timeutils.h"
 
 #include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"
 #include "CommandLineInterface/CLIcore/CLIcore_help.h"
@@ -79,50 +78,46 @@ extern char  BuildTime[200];
 
 extern int C_ERRNO; // C errno (from errno.h)
 
-
 #define STRINGMAXLEN_CLISTARTUPFILENAME 200
 
 #define STRINGMAXLEN_CLIPROMPT 200
 
-
 /* #define DEBUG */
-#define CFITSEXIT                                                              \
-    printf("Program abnormally terminated, File \"%s\", line %d\n",            \
-           __FILE__,                                                           \
-           __LINE__);                                                          \
+#define CFITSEXIT                                                                        \
+    printf("Program abnormally terminated, File \"%s\", line %d\n", __FILE__, __LINE__); \
     exit(0)
 
 #ifdef DEBUG
-#define nmalloc(f, type, n)                                                    \
-    f = (type *) malloc(sizeof(type) * n);                                     \
-    if (f == NULL)                                                             \
-    {                                                                          \
-        printf("ERROR: pointer \"" #f "\" allocation failed\n");               \
-        exit(0);                                                               \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-        printf("\nMALLOC: \"" #f "\" allocated\n");                            \
-    }
-#define nfree(f)                                                               \
-    free(f);                                                                   \
-    printf("\nMALLOC: \"" #f "\" freed\n");
+#    define nmalloc(f, type, n)                                      \
+        f = (type *) malloc(sizeof(type) * n);                       \
+        if (f == NULL)                                               \
+        {                                                            \
+            printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
+            exit(0);                                                 \
+        }                                                            \
+        else                                                         \
+        {                                                            \
+            printf("\nMALLOC: \"" #f "\" allocated\n");              \
+        }
+#    define nfree(f) \
+        free(f);     \
+        printf("\nMALLOC: \"" #f "\" freed\n");
 #else
-#define nmalloc(f, type, n)                                                    \
-    f = (type *) malloc(sizeof(type) * n);                                     \
-    if (f == NULL)                                                             \
-    {                                                                          \
-        printf("ERROR: pointer \"" #f "\" allocation failed\n");               \
-        exit(0);                                                               \
-    }
-#define nfree(f) free(f);
+#    define nmalloc(f, type, n)                                      \
+        f = (type *) malloc(sizeof(type) * n);                       \
+        if (f == NULL)                                               \
+        {                                                            \
+            printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
+            exit(0);                                                 \
+        }
+#    define nfree(f) free(f);
 #endif
 
-#define TEST_ALLOC(f)                                                          \
-    if (f == NULL)                                                             \
-    {                                                                          \
-        printf("ERROR: pointer \"" #f "\" allocation failed\n");               \
-        exit(0);                                                               \
+#define TEST_ALLOC(f)                                            \
+    if (f == NULL)                                               \
+    {                                                            \
+        printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
+        exit(0);                                                 \
     }
 
 #define NB_ARG_MAX 100
@@ -133,57 +128,57 @@ extern int C_ERRNO; // C errno (from errno.h)
 
 /** @brief Initialize module
  */
-#define INIT_MODULE_LIB(modname)                                               \
-    static errno_t init_module_CLI(); /* forward declaration */                \
-    static int     INITSTATUS_##modname = 0;                                   \
-    void __attribute__((constructor)) libinit_##modname()                      \
-    {                                                                          \
-        if (INITSTATUS_##modname == 0) /* only run once */                     \
-        {                                                                      \
-            strncpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT, STRINGMAXLEN_MODULE_SHORTNAME-1);    \
-            strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING-1);                           \
-            strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING-1);                           \
-            strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                               \
-            RegisterModule(__FILE__,                                           \
-                           PROJECT_NAME,                                       \
-                           MODULE_DESCRIPTION,                                 \
-                           VERSION_MAJOR,                                      \
-                           VERSION_MINOR,                                      \
-                           VERSION_PATCH);                                     \
-            init_module_CLI();                                                 \
-            INITSTATUS_##modname = 1;                                          \
-            strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME-1);              /* reset after use */    \
-            strncpy(data.moduleshortname_default, "", STRINGMAXLEN_MODULE_SHORTNAME-1); /* reset after use */    \
-            strncpy(data.moduleshortname, "", STRINGMAXLEN_MODULE_SHORTNAME-1);         /* reset after use */    \
-        }                                                                      \
-    }                                                                          \
-    void __attribute__((destructor)) libclose_##modname()                      \
-    {                                                                          \
-        if (INITSTATUS_##modname == 1)                                         \
-        {                                                                      \
-        }                                                                      \
+#define INIT_MODULE_LIB(modname)                                                              \
+    static errno_t                    init_module_CLI(); /* forward declaration */            \
+    static int                        INITSTATUS_##modname = 0;                               \
+    void __attribute__((constructor)) libinit_##modname()                                     \
+    {                                                                                         \
+        if (INITSTATUS_##modname == 0) /* only run once */                                    \
+        {                                                                                     \
+            strncpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT,                   \
+                    STRINGMAXLEN_MODULE_SHORTNAME - 1);                                       \
+            strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING - 1);     \
+            strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING - 1);     \
+            strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                   \
+            RegisterModule(__FILE__, PROJECT_NAME, MODULE_DESCRIPTION, VERSION_MAJOR,         \
+                           VERSION_MINOR, VERSION_PATCH);                                     \
+            init_module_CLI();                                                                \
+            INITSTATUS_##modname = 1;                                                         \
+            strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME - 1); /* reset after use */ \
+            strncpy(data.moduleshortname_default, "",                                         \
+                    STRINGMAXLEN_MODULE_SHORTNAME - 1); /* reset after use */                 \
+            strncpy(data.moduleshortname, "",                                                 \
+                    STRINGMAXLEN_MODULE_SHORTNAME - 1); /* reset after use */                 \
+        }                                                                                     \
+    }                                                                                         \
+    void __attribute__((destructor)) libclose_##modname()                                     \
+    {                                                                                         \
+        if (INITSTATUS_##modname == 1)                                                        \
+        {                                                                                     \
+        }                                                                                     \
     }
 
 #define MAX_NB_FRAMENAME_CHAR 500
-#define MAX_NB_EXCLUSIONS     40
+#define MAX_NB_EXCLUSIONS 40
 
 // declare a boolean type "BOOL"
 // TRUE and FALSE improve code readability
 //
 typedef uint_fast8_t BOOL;
 #define FALSE 0
-#define TRUE  1
+#define TRUE 1
 
 #define DATA_NB_MAX_COMMAND 2000
-#define DATA_NB_MAX_MODULE  200
+#define DATA_NB_MAX_MODULE 200
 
 // In STATIC allocation mode, IMAGE and VARIABLE arrays are allocated statically
 
-//#define DATA_STATIC_ALLOC // comment if DYNAMIC
-#define STATIC_NB_MAX_IMAGE    520
+// #define DATA_STATIC_ALLOC // comment if DYNAMIC
+#define STATIC_NB_MAX_IMAGE 520
 #define STATIC_NB_MAX_VARIABLE 5030
 
-//Need to install process with setuid.  Then, so you aren't running privileged all the time do this:
+// Need to install process with setuid.  Then, so you aren't running privileged
+// all the time do this:
 extern uid_t euid_real;
 extern uid_t euid_called;
 extern uid_t suid;
@@ -192,17 +187,17 @@ extern uid_t suid;
 | commands available through the CLI
 +-----------------------------------------------------------------------------*/
 
-#define STRINGMAXLEN_MODULE_NAME        100
-#define STRINGMAXLEN_MODULE_SHORTNAME   50
-#define STRINGMAXLEN_MODULE_LOADNAME    500
-#define STRINGMAXLEN_MODULE_SOFILENAME  1000
+#define STRINGMAXLEN_MODULE_NAME 100
+#define STRINGMAXLEN_MODULE_SHORTNAME 50
+#define STRINGMAXLEN_MODULE_LOADNAME 500
+#define STRINGMAXLEN_MODULE_SOFILENAME 1000
 #define STRINGMAXLEN_MODULE_PACKAGENAME 50
-#define STRINGMAXLEN_MODULE_INFOSTRING  1000
-#define STRINGMAXLEN_MODULE_DATESTRING  20
-#define STRINGMAXLEN_MODULE_TIMESTRING  20
+#define STRINGMAXLEN_MODULE_INFOSTRING 1000
+#define STRINGMAXLEN_MODULE_DATESTRING 20
+#define STRINGMAXLEN_MODULE_TIMESTRING 20
 
-#define MODULE_TYPE_UNUSED     0
-#define MODULE_TYPE_STARTUP    1
+#define MODULE_TYPE_UNUSED 0
+#define MODULE_TYPE_STARTUP 1
 #define MODULE_TYPE_CUSTOMLOAD 2
 
 typedef struct
@@ -218,10 +213,10 @@ typedef struct
     char sofilename[STRINGMAXLEN_MODULE_SOFILENAME];
 
     // package to which module belongs
-    char package [STRINGMAXLEN_MODULE_PACKAGENAME];
-    int versionmajor;                      // package version
-    int versionminor;
-    int versionpatch;
+    char package[STRINGMAXLEN_MODULE_PACKAGENAME];
+    int  versionmajor; // package version
+    int  versionminor;
+    int  versionpatch;
 
     char info[STRINGMAXLEN_MODULE_INFOSTRING]; // short description
 
@@ -232,11 +227,11 @@ typedef struct
 
 } MODULE;
 
-#define STRINGMAXLEN_CMD_KEY     100
-#define STRINGMAXLEN_CMD_INFO    1000
-#define STRINGMAXLEN_CMD_SYNTAX  1000
+#define STRINGMAXLEN_CMD_KEY 100
+#define STRINGMAXLEN_CMD_INFO 1000
+#define STRINGMAXLEN_CMD_SYNTAX 1000
 #define STRINGMAXLEN_CMD_EXAMPLE 1000
-#define STRINGMAXLEN_CMD_CCALL   1000
+#define STRINGMAXLEN_CMD_CCALL 1000
 #define STRINGMAXLEN_CMD_SRCFILE 1000
 typedef struct
 {
@@ -263,7 +258,7 @@ typedef struct
     CLICMDARGDATA *argdata; // arguments and parameters to function
 
     // defines static function capabilities and behavior
-    //uint64_t flags;
+    // uint64_t flags;
 
     // dynamic settings for function
     CMDSETTINGS cmdsettings;
@@ -279,13 +274,13 @@ typedef struct
 // 4 : existing image
 // 5 : command
 
-#define CMDARGTOKEN_TYPE_UNSOLVED      0
-#define CMDARGTOKEN_TYPE_FLOAT         1
-#define CMDARGTOKEN_TYPE_LONG          2
-#define CMDARGTOKEN_TYPE_STRING        3
+#define CMDARGTOKEN_TYPE_UNSOLVED 0
+#define CMDARGTOKEN_TYPE_FLOAT 1
+#define CMDARGTOKEN_TYPE_LONG 2
+#define CMDARGTOKEN_TYPE_STRING 3
 #define CMDARGTOKEN_TYPE_EXISTINGIMAGE 4
-#define CMDARGTOKEN_TYPE_COMMAND       5
-#define CMDARGTOKEN_TYPE_RAWSTRING     6
+#define CMDARGTOKEN_TYPE_COMMAND 5
+#define CMDARGTOKEN_TYPE_RAWSTRING 6
 
 #define STRINGMAXLEN_CMDARGTOKEN_VAL 200
 typedef struct
@@ -347,9 +342,7 @@ typedef struct
 // number of entries stored in testpoint trace array
 #define CODETESTPOINTARRAY_NBCNT 100000
 
-
 #define STRINGMAXLEN_PROCESSNAME 100
-
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
@@ -399,11 +392,11 @@ typedef struct
     uint64_t testpointcnt;
 
     /*int    testpoint_line;
-    char   testpoint_file[STRINGMAXLEN_FULLFILENAME];
-    char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
-    char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
-    struct timespec testpoint_time;
-    */
+  char   testpoint_file[STRINGMAXLEN_FULLFILENAME];
+  char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
+  char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
+  struct timespec testpoint_time;
+  */
 
     int progStatus; // main program status
     // 0: before automatic loading of shared objects
@@ -480,7 +473,7 @@ typedef struct
     // =================================================
 
     long NBmodule;
-    //long           NB_MAX_MODULE;
+    // long           NB_MAX_MODULE;
 
     // module info gets sorted into module structure
     MODULE module[DATA_NB_MAX_MODULE];
@@ -496,9 +489,6 @@ typedef struct
     char moduledatestring[STRINGMAXLEN_MODULE_DATESTRING];
     char moduletimestring[STRINGMAXLEN_MODULE_TIMESTRING];
 
-
-
-
     // FUNCTION PARAMETER STRUCTURES (FPSs)
     // =================================================
 
@@ -509,21 +499,17 @@ typedef struct
     // Function parameter structure (FPS) CLI integration
     // These entries are set when CLI process links to FPS
     FUNCTION_PARAMETER_STRUCT *fpsptr;
-    char FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
-
+    char                       FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
 
     // Which type of FPS process is the current process ?
     // conf, run, ctrl
     char FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE];
     // included in log file name
 
-    long     FPS_TIMESTAMP;            // included in log file name
-    uint32_t FPS_CMDCODE;              // current FPS mode
-    errno_t (*FPS_CONFfunc)();         // pointer to FPS conf function
-    errno_t (*FPS_RUNfunc)();          // pointer to FPS run function
-
-
-
+    long     FPS_TIMESTAMP;    // included in log file name
+    uint32_t FPS_CMDCODE;      // current FPS mode
+    errno_t (*FPS_CONFfunc)(); // pointer to FPS conf function
+    errno_t (*FPS_RUNfunc)();  // pointer to FPS run function
 
     // IMAGES
     // =================================================
@@ -532,7 +518,7 @@ typedef struct
     // image static allocation mode
     IMAGE image[STATIC_NB_MAX_IMAGE];
 #else
-    IMAGE    *image;
+    IMAGE *image;
 #endif
     int MEM_MONITOR; // memory monitor enabled ?
 

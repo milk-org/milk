@@ -12,8 +12,6 @@
 
 #include "function_parameters.h"
 
-errno_t
-functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry,
-                                     int                        pindex);
+errno_t functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 
 #endif

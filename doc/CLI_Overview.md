@@ -2,7 +2,7 @@
 
 The entire C code is compiled into a single executable :
 
-	./bin/<packagename>
+    ./bin/<packagename>
 
 Running the executable starts a command line interface (CLI) prompt from which all functions can be launched.
 

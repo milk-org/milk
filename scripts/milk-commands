@@ -58,7 +58,7 @@ done
 		filename="$(which ${cmd})"
 		datestring="$(date -r $filename '+%Y-%m-%dT%H:%M:%SZ')"
 		CMDLISTOUT+="$(printf "%s  %s;" "${datestring}" "$cmd")"
-	else 
+	else
 		if [ "${EXCLUDE}" = "0" ]; then
 		helpline=$( $cmd -hs | head -n 1 )
 		else
@@ -72,7 +72,7 @@ done
 
 if [ "${PRINTDATE}" = "1" ]; then
 	IFS=';' read -r -a array <<< "${CMDLISTOUT//[$'\t\r\n']}"; unset IFS
-	IFS=$'\n' sortedarray=($(sort <<<"${array[*]}")); unset IFS	
+	IFS=$'\n' sortedarray=($(sort <<<"${array[*]}")); unset IFS
 	for element in "${sortedarray[@]//[$'\t\r\n']}"
 	do
 		cmdstr=$(echo $element | awk '{ print $2}')

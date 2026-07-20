@@ -25,10 +25,9 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
 
 static errno_t image_basic_streamfeed_cli()
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 1) == 0)
+    if (CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 1) == 0)
     {
-        IMAGE_BASIC_streamfeed(data.cmdargtoken[1].val.string,
-                               data.cmdargtoken[2].val.string,
+        IMAGE_BASIC_streamfeed(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
                                data.cmdargtoken[3].val.numf);
         return CLICMD_SUCCESS;
     }
@@ -44,11 +43,8 @@ static errno_t image_basic_streamfeed_cli()
 
 errno_t __attribute__((cold)) streamfeed_addCLIcmd()
 {
-    RegisterCLIcommand("imgstreamfeed",
-                       __FILE__,
-                       image_basic_streamfeed_cli,
-                       "feed stream of images",
-                       "<input image/cube> <stream> <fequ [Hz]>",
+    RegisterCLIcommand("imgstreamfeed", __FILE__, image_basic_streamfeed_cli,
+                       "feed stream of images", "<input image/cube> <stream> <fequ [Hz]>",
                        "imgstreamfeed im imstream 100",
                        "long IMAGE_BASIC_streamfeed(const char *IDname, const "
                        "char *streamname, float frequ)");
@@ -62,17 +58,17 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
                             const char *__restrict streamname,
                             float frequ)
 {
-    imageID            ID;
-    imageID            IDs;
-    long               xsize, ysize, xysize, zsize;
-    long               k;
-    long               tdelay;
-    int                RT_priority = 95; //any number from 0-99
-    int                semval;
-    const char        *ptr0;
-    const char        *ptr1;
-    int                loopOK;
-    long               ii;
+    imageID     ID;
+    imageID     IDs;
+    long        xsize, ysize, xysize, zsize;
+    long        k;
+    long        tdelay;
+    int         RT_priority = 95; // any number from 0-99
+    int         semval;
+    const char *ptr0;
+    const char *ptr1;
+    int         loopOK;
+    long        ii;
 
     COREMOD_TOOLS_mvProcRTPrio(RT_priority);
 
@@ -81,14 +77,13 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     ysize  = data.image[ID].md[0].size[1];
     xysize = xsize * ysize;
 
-    tdelay = (long)(1000000.0 / frequ);
+    tdelay = (long) (1000000.0 / frequ);
 
     printf("frequ = %f Hz\n", frequ);
     printf("tdelay = %ld us\n", tdelay);
 
     IDs = image_ID(streamname);
-    if((xsize != data.image[IDs].md[0].size[0]) ||
-            (ysize != data.image[IDs].md[0].size[1]))
+    if ((xsize != data.image[IDs].md[0].size[0]) || (ysize != data.image[IDs].md[0].size[1]))
     {
         printf("ERROR: images have different x and y sizes");
         exit(0);
@@ -97,37 +92,37 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
 
     ptr1 = (char *) data.image[IDs].array.F; // destination
 
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
+    if (sigaction(SIGINT, &data.sigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+    if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
+    if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
+    if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
+    if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
@@ -135,7 +130,7 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
 
     k      = 0;
     loopOK = 1;
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
         ptr0 = (char *) data.image[ID].array.F;
         ptr0 += sizeof(float) * xysize * k;
@@ -148,29 +143,28 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
 
         usleep(tdelay);
         k++;
-        if(k == zsize)
+        if (k == zsize)
         {
             k = 0;
         }
 
-        if((data.signal_INT == 1) || (data.signal_TERM == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if ((data.signal_INT == 1) || (data.signal_TERM == 1) || (data.signal_ABRT == 1) ||
+            (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
+            (data.signal_PIPE == 1))
         {
             loopOK = 0;
         }
     }
 
     data.image[IDs].md[0].write = 1;
-    for(ii = 0; ii < xysize; ii++)
+    for (ii = 0; ii < xysize; ii++)
     {
         data.image[IDs].array.F[ii] = 0.0;
     }
-    if(data.image[IDs].md[0].sem > 0)
+    if (data.image[IDs].md[0].sem > 0)
     {
         semval = ImageStreamIO_semvalue(data.image + IDs, 0);
-        if(semval < SEMAPHORE_MAXVAL)
+        if (semval < SEMAPHORE_MAXVAL)
         {
             ImageStreamIO_sempost(data.image + IDs, 0);
         }

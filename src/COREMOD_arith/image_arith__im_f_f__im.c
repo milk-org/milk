@@ -17,10 +17,9 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
+#include "image_arith__im_f_f__im.h"
 #include "imfunctions.h"
 #include "mathfuncs.h"
-#include "image_arith__im_f_f__im.h"
-
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -31,52 +30,16 @@ static double *valmin;
 static double *valmax;
 static char   *outimname;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".min",
-        "min value",
-        "0.0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &valmin,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".max",
-        "max value",
-        "1.0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &valmax,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".out_name",
-        "output image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    }
+static CLICMDARGDEF farg[] = {
+    { CLIARG_IMG, ".in_name", "input image", "im1", CLIARG_VISIBLE_DEFAULT, (void **) &inimname,
+      NULL },
+    { CLIARG_FLOAT64, ".min", "min value", "0.0", CLIARG_VISIBLE_DEFAULT, (void **) &valmin, NULL },
+    { CLIARG_FLOAT64, ".max", "max value", "1.0", CLIARG_VISIBLE_DEFAULT, (void **) &valmax, NULL },
+    { CLIARG_STR, ".out_name", "output image", "out1", CLIARG_VISIBLE_DEFAULT, (void **) &outimname,
+      NULL }
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "imtrunc",
-    "truncate pixel values",
-    CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "imtrunc", "truncate pixel values", CLICMD_FIELDS_DEFAULTS };
 
 static errno_t help_function()
 {
@@ -96,29 +59,23 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+    // ==========================================
+    // Register CLI command(s)
+    // ==========================================
 
-errno_t image_arith__im_f_f__im_addCLIcmd()
+    errno_t image_arith__im_f_f__im_addCLIcmd()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
-int arith_image_trunc_IMGID(IMGID *imgin,
-                            double f1,
-                            double f2,
-                            IMGID *imgout)
+int arith_image_trunc_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout)
 {
     arith_image_function_1ff_1_IMGID(imgin, f1, f2, imgout, &Ptrunc);
     return (0);
 }
 
-int arith_image_trunc(const char *ID_name,
-                      double      f1,
-                      double      f2,
-                      const char *ID_out)
+int arith_image_trunc(const char *ID_name, double f1, double f2, const char *ID_out)
 {
     IMGID imgin  = mkIMGID_from_name(ID_name);
     IMGID imgout = mkIMGID_from_name(ID_out);

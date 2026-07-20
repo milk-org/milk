@@ -19,9 +19,7 @@
 // Forward declaration(s)
 // ==========================================
 
-imageID fft_correlation(const char *ID_name1,
-                        const char *ID_name2,
-                        const char *ID_nameout);
+imageID fft_correlation(const char *ID_name1, const char *ID_name2, const char *ID_nameout);
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -29,12 +27,11 @@ imageID fft_correlation(const char *ID_name1,
 
 errno_t fft_correlation_cli()
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
+    if (CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
             CLI_checkarg(3, CLIARG_STR_NOT_IMG) ==
-            0)
+        0)
     {
-        fft_correlation(data.cmdargtoken[1].val.string,
-                        data.cmdargtoken[2].val.string,
+        fft_correlation(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
                         data.cmdargtoken[3].val.string);
 
         return CLICMD_SUCCESS;
@@ -51,21 +48,15 @@ errno_t fft_correlation_cli()
 
 errno_t fftcorrelation_addCLIcmd()
 {
-    RegisterCLIcommand("fcorrel",
-                       __FILE__,
-                       fft_correlation_cli,
-                       "correlate two images",
-                       "<imagein1> <imagein2> <correlout>",
-                       "fcorrel im1 im2 outim",
+    RegisterCLIcommand("fcorrel", __FILE__, fft_correlation_cli, "correlate two images",
+                       "<imagein1> <imagein2> <correlout>", "fcorrel im1 im2 outim",
                        "long fft_correlation(const char *ID_name1, const char "
                        "*ID_name2, const char *ID_nameout)");
 
     return RETURN_SUCCESS;
 }
 
-imageID fft_correlation(const char *ID_name1,
-                        const char *ID_name2,
-                        const char *ID_nameout)
+imageID fft_correlation(const char *ID_name1, const char *ID_name2, const char *ID_nameout)
 {
     imageID ID1;
     imageID IDout;
@@ -112,8 +103,7 @@ imageID fft_correlation(const char *ID_name1,
     delete_image_ID(ftp1name, DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID(ftp2name, DELETE_IMAGE_ERRMODE_WARNING);
 
-    arith_image_cstmult_inplace(fta12name,
-                                1.0 / sqrt(nelement) / (1.0 * nelement));
+    arith_image_cstmult_inplace(fta12name, 1.0 / sqrt(nelement) / (1.0 * nelement));
 
     WRITE_IMAGENAME(fftname, "_fft_%d", (int) getpid());
 

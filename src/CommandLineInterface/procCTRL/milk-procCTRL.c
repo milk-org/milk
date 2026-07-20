@@ -14,9 +14,12 @@ int main(int argc, char *argv[])
     (void) argv;
 
     // Initialize data
-    if(getenv("MILK_QUIET")) {
+    if (getenv("MILK_QUIET"))
+    {
         data.quiet = 1;
-    } else {
+    }
+    else
+    {
         data.quiet = 0;
     }
 

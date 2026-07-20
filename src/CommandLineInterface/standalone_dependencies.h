@@ -23,16 +23,18 @@
 // #include <sys/types.h>
 // #include <unistd.h>
 
-#define SHAREDSHMDIR                                                           \
-    "/milk/shm" /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
+#define SHAREDSHMDIR \
+    "/milk/shm" /**< default location of file mapped semaphores, can be          \
+                 over-ridden by env variable MILK_SHM_DIR */
 #define SHAREDPROCDIR "/milk/proc"
-#define CLIPID        getpid()
+#define CLIPID getpid()
 
-// *************************** FUNCTION RETURN VALUE *********************************************
-// For function returning type errno_t (= int)
+// *************************** FUNCTION RETURN VALUE
+// ********************************************* For function returning type
+// errno_t (= int)
 //
-#define RETURN_SUCCESS     0
-#define RETURN_FAILURE     1 // generic error code
+#define RETURN_SUCCESS 0
+#define RETURN_FAILURE 1 // generic error code
 #define RETURN_MISSINGFILE 2
 
 #include "ImageStreamIO.h"
@@ -53,11 +55,11 @@ extern "C"
 {
 #endif
 
-struct timespec timespec_diff(struct timespec start, struct timespec end);
-int             print_header(const char *str, char c);
-void            quick_sort2l(double *array, long *array1, long count);
-void quick_sort2l_double(double *array, long *array1, long count);
-void quick_sort_long(long *array, long count);
+    struct timespec timespec_diff(struct timespec start, struct timespec end);
+    int             print_header(const char *str, char c);
+    void            quick_sort2l(double *array, long *array1, long count);
+    void            quick_sort2l_double(double *array, long *array1, long count);
+    void            quick_sort_long(long *array, long count);
 
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"

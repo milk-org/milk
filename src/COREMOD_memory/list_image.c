@@ -64,21 +64,12 @@ static errno_t memory_monitor__cli()
 
 errno_t list_image_addCLIcmd()
 {
-    RegisterCLIcommand("mmon",
-                       __FILE__,
-                       memory_monitor__cli,
-                       "Monitor memory content",
-                       "terminal tty name",
-                       "mmon /dev/pts/4",
+    RegisterCLIcommand("mmon", __FILE__, memory_monitor__cli, "Monitor memory content",
+                       "terminal tty name", "mmon /dev/pts/4",
                        "int memory_monitor(const char *ttyname)");
 
-    RegisterCLIcommand("listim",
-                       __FILE__,
-                       list_image_ID,
-                       "list images in memory",
-                       "no argument",
-                       "listim",
-                       "errno_t list_image_ID()");
+    RegisterCLIcommand("listim", __FILE__, list_image_ID, "list images in memory", "no argument",
+                       "listim", "errno_t list_image_ID()");
 
     return RETURN_SUCCESS;
 }
@@ -108,11 +99,11 @@ errno_t init_list_image_ID_ncurses(const char *termttyname)
 
 errno_t list_image_ID_ncurses()
 {
-    int strmaxlen = 300;
+    int       strmaxlen = 300;
     char      str[strmaxlen];
-    int str1maxlen = 500;
+    int       str1maxlen = 500;
     char      str1[500];
-    int str2maxlen = 512;
+    int       str2maxlen = 512;
     char      str2[512];
     long      i, j;
     long long tmp_long;
@@ -132,20 +123,19 @@ errno_t list_image_ID_ncurses()
 
     sizeb = compute_image_memory();
 
-    printw(
-        "INDEX    NAME         SIZE                    TYPE        SIZE  "
-        "[percent]    LAST ACCESS\n");
+    printw("INDEX    NAME         SIZE                    TYPE        SIZE  "
+           "[percent]    LAST ACCESS\n");
     printw("\n");
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+    for (i = 0; i < data.NB_MAX_IMAGE; i++)
     {
-        if(data.image[i].used == 1)
+        if (data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long)(data.image[i].md[0].nelement)) *
-                       ImageStreamIO_typesize(datatype);
+            tmp_long =
+                ((long long) (data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
-            if(data.image[i].md[0].shared == 1)
+            if (data.image[i].md[0].shared == 1)
             {
                 printw("%4ldS", i);
             }
@@ -154,7 +144,7 @@ errno_t list_image_ID_ncurses()
                 printw("%4ld ", i);
             }
 
-            if(data.image[i].md[0].shared == 1)
+            if (data.image[i].md[0].shared == 1)
             {
                 attron(A_BOLD | COLOR_PAIR(9));
             }
@@ -165,7 +155,7 @@ errno_t list_image_ID_ncurses()
             snprintf(str, strmaxlen, "%10s ", data.image[i].name);
             printw("%s", str);
 
-            if(data.image[i].md[0].shared == 1)
+            if (data.image[i].md[0].shared == 1)
             {
                 attroff(A_BOLD | COLOR_PAIR(9));
             }
@@ -176,13 +166,9 @@ errno_t list_image_ID_ncurses()
 
             snprintf(str, strmaxlen, "[ %6ld", (long) data.image[i].md[0].size[0]);
 
-            for(j = 1; j < data.image[i].md[0].naxis; j++)
+            for (j = 1; j < data.image[i].md[0].naxis; j++)
             {
-                snprintf(str1,
-                         str1maxlen,
-                         "%s x %6ld",
-                         str,
-                         (long) data.image[i].md[0].size[j]);
+                snprintf(str1, str1maxlen, "%s x %6ld", str, (long) data.image[i].md[0].size[j]);
             }
             snprintf(str2, str2maxlen, "%s]", str1);
 
@@ -196,23 +182,20 @@ errno_t list_image_ID_ncurses()
 
             attroff(COLOR_PAIR(3));
 
-            if(n >= STYPESIZE)
+            if (n >= STYPESIZE)
             {
-                PRINT_ERROR(
-                    "Attempted to write string buffer with too "
-                    "many characters");
+                PRINT_ERROR("Attempted to write string buffer with too "
+                            "many characters");
             }
 
-            printw("%10ld Kb %6.2f   ",
-                   (long)(tmp_long / 1024),
-                   (float)(100.0 * tmp_long / sizeb));
+            printw("%10ld Kb %6.2f   ", (long) (tmp_long / 1024),
+                   (float) (100.0 * tmp_long / sizeb));
 
-            timediff =
-                (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
-                (1.0 * data.image[i].md[0].lastaccesstime.tv_sec +
-                 0.000000001 * data.image[i].md[0].lastaccesstime.tv_nsec);
+            timediff = (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
+                       (1.0 * data.image[i].md[0].lastaccesstime.tv_sec +
+                        0.000000001 * data.image[i].md[0].lastaccesstime.tv_nsec);
 
-            if(timediff < 0.01)
+            if (timediff < 0.01)
             {
                 attron(COLOR_PAIR(4));
                 printw("%15.9f\n", timediff);
@@ -222,7 +205,6 @@ errno_t list_image_ID_ncurses()
             {
                 printw("%15.9f\n", timediff);
             }
-
         }
         else
         {
@@ -235,46 +217,46 @@ errno_t list_image_ID_ncurses()
     sizeKb = 0;
     sizeb  = compute_image_memory();
 
-    if(sizeb > 1024 - 1)
+    if (sizeb > 1024 - 1)
     {
         sizeKb = sizeb / 1024;
         sizeb  = sizeb - 1024 * sizeKb;
     }
-    if(sizeKb > 1024 - 1)
+    if (sizeKb > 1024 - 1)
     {
         sizeMb = sizeKb / 1024;
         sizeKb = sizeKb - 1024 * sizeMb;
     }
-    if(sizeMb > 1024 - 1)
+    if (sizeMb > 1024 - 1)
     {
         sizeGb = sizeMb / 1024;
         sizeMb = sizeMb - 1024 * sizeGb;
     }
 
-    //attron(A_BOLD);
+    // attron(A_BOLD);
 
     snprintf(str, strmaxlen, "%ld image(s)      ", compute_nb_image());
-    if(sizeGb > 0)
+    if (sizeGb > 0)
     {
-        snprintf(str1, str1maxlen, "%s %ld GB", str, (long)(sizeGb));
+        snprintf(str1, str1maxlen, "%s %ld GB", str, (long) (sizeGb));
         strcpy(str, str1);
     }
 
-    if(sizeMb > 0)
+    if (sizeMb > 0)
     {
-        snprintf(str1, str1maxlen, "%s %ld MB", str, (long)(sizeMb));
+        snprintf(str1, str1maxlen, "%s %ld MB", str, (long) (sizeMb));
         strcpy(str, str1);
     }
 
-    if(sizeKb > 0)
+    if (sizeKb > 0)
     {
-        snprintf(str1, str1maxlen, "%s %ld KB", str, (long)(sizeKb));
+        snprintf(str1, str1maxlen, "%s %ld KB", str, (long) (sizeKb));
         strcpy(str, str1);
     }
 
-    if(sizeb > 0)
+    if (sizeb > 0)
     {
-        snprintf(str1, str1maxlen, "%s %ld B", str, (long)(sizeb));
+        snprintf(str1, str1maxlen, "%s %ld B", str, (long) (sizeb));
         strcpy(str, str1);
     }
 
@@ -305,68 +287,50 @@ errno_t list_image_ID_ofp(FILE *fo)
     uint8_t            datatype;
     int                n;
     unsigned long long sizeb, sizeKb, sizeMb, sizeGb;
-    int strmaxlen = 500;
+    int                strmaxlen = 500;
     char               str[strmaxlen];
-    int str1maxlen = 512;
+    int                str1maxlen = 512;
     char               str1[str1maxlen];
     struct timespec    timenow;
     double             timediff;
-    //struct mallinfo minfo;
+    // struct mallinfo minfo;
 
     sizeb = compute_image_memory();
-    //minfo = mallinfo();
+    // minfo = mallinfo();
 
     clock_gettime(CLOCK_MILK, &timenow);
-    //fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
+    // fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
 
     fprintf(fo, "\n");
-    fprintf(fo,
-            "INDEX    NAME         SIZE                    TYPE        SIZE  "
-            "[percent]    LAST ACCESS\n");
+    fprintf(fo, "INDEX    NAME         SIZE                    TYPE        SIZE  "
+                "[percent]    LAST ACCESS\n");
     fprintf(fo, "\n");
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for (i = 0; i < data.NB_MAX_IMAGE; i++)
+    {
+        if (data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long)(data.image[i].md[0].nelement)) *
-                       ImageStreamIO_typesize(datatype);
+            tmp_long =
+                ((long long) (data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
-            if(data.image[i].md[0].shared == 1)
+            if (data.image[i].md[0].shared == 1)
             {
-                fprintf(fo,
-                        "%4ld %c[%d;%dm%14s%c[%d;m ",
-                        i,
-                        (char) 27,
-                        1,
-                        34,
-                        data.image[i].name,
-                        (char) 27,
-                        0);
+                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, 34, data.image[i].name,
+                        (char) 27, 0);
             }
             else
             {
-                fprintf(fo,
-                        "%4ld %c[%d;%dm%14s%c[%d;m ",
-                        i,
-                        (char) 27,
-                        1,
-                        33,
-                        data.image[i].name,
-                        (char) 27,
-                        0);
+                fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, 33, data.image[i].name,
+                        (char) 27, 0);
             }
-            //fprintf(fo, "%s", str);
+            // fprintf(fo, "%s", str);
 
             snprintf(str, strmaxlen, "[ %6ld", (long) data.image[i].md[0].size[0]);
 
-            for(j = 1; j < data.image[i].md[0].naxis; j++)
+            for (j = 1; j < data.image[i].md[0].naxis; j++)
             {
-                snprintf(str1,
-                         str1maxlen,
-                         "%s x %6ld",
-                         str,
-                         (long) data.image[i].md[0].size[j]);
+                snprintf(str1, str1maxlen, "%s x %6ld", str, (long) data.image[i].md[0].size[j]);
                 strcpy(str, str1);
             }
             snprintf(str1, str1maxlen, "%s]", str);
@@ -378,25 +342,22 @@ errno_t list_image_ID_ofp(FILE *fo)
 
             fprintf(fo, "%7s ", type);
 
-            if(n >= STYPESIZE)
+            if (n >= STYPESIZE)
             {
-                PRINT_ERROR(
-                    "Attempted to write string buffer with too many "
-                    "characters");
+                PRINT_ERROR("Attempted to write string buffer with too many "
+                            "characters");
             }
 
-            fprintf(fo,
-                    "%10ld Kb %6.2f   ",
-                    (long)(tmp_long / 1024),
-                    (float)(100.0 * tmp_long / sizeb));
+            fprintf(fo, "%10ld Kb %6.2f   ", (long) (tmp_long / 1024),
+                    (float) (100.0 * tmp_long / sizeb));
 
-            timediff =
-                (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
-                (1.0 * data.image[i].md[0].lastaccesstime.tv_sec +
-                 0.000000001 * data.image[i].md[0].lastaccesstime.tv_nsec);
+            timediff = (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
+                       (1.0 * data.image[i].md[0].lastaccesstime.tv_sec +
+                        0.000000001 * data.image[i].md[0].lastaccesstime.tv_nsec);
 
             fprintf(fo, "%15.9f\n", timediff);
         }
+    }
     fprintf(fo, "\n");
 
     sizeGb = 0;
@@ -404,38 +365,38 @@ errno_t list_image_ID_ofp(FILE *fo)
     sizeKb = 0;
     sizeb  = compute_image_memory();
 
-    if(sizeb > 1024 - 1)
+    if (sizeb > 1024 - 1)
     {
         sizeKb = sizeb / 1024;
         sizeb  = sizeb - 1024 * sizeKb;
     }
-    if(sizeKb > 1024 - 1)
+    if (sizeKb > 1024 - 1)
     {
         sizeMb = sizeKb / 1024;
         sizeKb = sizeKb - 1024 * sizeMb;
     }
-    if(sizeMb > 1024 - 1)
+    if (sizeMb > 1024 - 1)
     {
         sizeGb = sizeMb / 1024;
         sizeMb = sizeMb - 1024 * sizeGb;
     }
 
     fprintf(fo, "%ld image(s)   ", compute_nb_image());
-    if(sizeGb > 0)
+    if (sizeGb > 0)
     {
-        fprintf(fo, " %ld Gb", (long)(sizeGb));
+        fprintf(fo, " %ld Gb", (long) (sizeGb));
     }
-    if(sizeMb > 0)
+    if (sizeMb > 0)
     {
-        fprintf(fo, " %ld Mb", (long)(sizeMb));
+        fprintf(fo, " %ld Mb", (long) (sizeMb));
     }
-    if(sizeKb > 0)
+    if (sizeKb > 0)
     {
-        fprintf(fo, " %ld Kb", (long)(sizeKb));
+        fprintf(fo, " %ld Kb", (long) (sizeKb));
     }
-    if(sizeb > 0)
+    if (sizeb > 0)
     {
-        fprintf(fo, " %ld", (long)(sizeb));
+        fprintf(fo, " %ld", (long) (sizeb));
     }
     fprintf(fo, "\n");
 
@@ -447,30 +408,28 @@ errno_t list_image_ID_ofp(FILE *fo)
 errno_t list_image_ID_ofp_simple(FILE *fo)
 {
     long i, j;
-    //long long   tmp_long;
+    // long long   tmp_long;
     uint8_t datatype;
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for (i = 0; i < data.NB_MAX_IMAGE; i++)
+    {
+        if (data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            //tmp_long = ((long long) (data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+            // tmp_long = ((long long) (data.image[i].md[0].nelement)) *
+            // ImageStreamIO_typesize(datatype);
 
-            fprintf(fo,
-                    "%20s %d %ld %d %4ld",
-                    data.image[i].name,
-                    datatype,
-                    (long) data.image[i].md[0].naxis,
-                    data.image[i].md[0].shared,
+            fprintf(fo, "%20s %d %ld %d %4ld", data.image[i].name, datatype,
+                    (long) data.image[i].md[0].naxis, data.image[i].md[0].shared,
                     (long) data.image[i].md[0].size[0]);
 
-            for(j = 1; j < data.image[i].md[0].naxis; j++)
+            for (j = 1; j < data.image[i].md[0].naxis; j++)
             {
                 fprintf(fo, " %4ld", (long) data.image[i].md[0].size[j]);
             }
             fprintf(fo, "\n");
-
         }
+    }
     fprintf(fo, "\n");
 
     return RETURN_SUCCESS;
@@ -479,7 +438,7 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
 errno_t list_image_ID()
 {
     list_image_ID_ofp(stdout);
-    //malloc_stats();
+    // malloc_stats();
     return RETURN_SUCCESS;
 }
 
@@ -501,34 +460,35 @@ errno_t list_image_ID_file(const char *fname)
     int     n;
 
     fp = fopen(fname, "w");
-    if(fp == NULL)
+    if (fp == NULL)
     {
         PRINT_ERROR("Cannot create file %s", fname);
         abort();
     }
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for (i = 0; i < data.NB_MAX_IMAGE; i++)
+    {
+        if (data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
             fprintf(fp, "%ld %s", i, data.image[i].name);
             fprintf(fp, " %ld", (long) data.image[i].md[0].naxis);
-            for(j = 0; j < data.image[i].md[0].naxis; j++)
+            for (j = 0; j < data.image[i].md[0].naxis; j++)
             {
                 fprintf(fp, " %ld", (long) data.image[i].md[0].size[j]);
             }
 
             n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
 
-            if(n >= STYPESIZE)
+            if (n >= STYPESIZE)
             {
-                PRINT_ERROR(
-                    "Attempted to write string buffer with too many "
-                    "characters");
+                PRINT_ERROR("Attempted to write string buffer with too many "
+                            "characters");
             }
 
             fprintf(fp, " %s\n", type);
         }
+    }
     fclose(fp);
 
     return RETURN_SUCCESS;
@@ -536,7 +496,7 @@ errno_t list_image_ID_file(const char *fname)
 
 errno_t memory_monitor(const char *termttyname)
 {
-    if(data.Debug > 0)
+    if (data.Debug > 0)
     {
         printf("starting memory_monitor on \"%s\"\n", termttyname);
     }

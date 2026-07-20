@@ -25,10 +25,9 @@ imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
 
 static errno_t IMAGE_BASIC_streamrecord_cli()
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 3) == 0)
+    if (0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 3) == 0)
     {
-        IMAGE_BASIC_streamrecord(data.cmdargtoken[1].val.string,
-                                 data.cmdargtoken[2].val.numl,
+        IMAGE_BASIC_streamrecord(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl,
                                  data.cmdargtoken[3].val.string);
         return CLICMD_SUCCESS;
     }
@@ -44,12 +43,8 @@ static errno_t IMAGE_BASIC_streamrecord_cli()
 
 errno_t __attribute__((cold)) streamrecord_addCLIcmd()
 {
-
-    RegisterCLIcommand("imgstreamrec",
-                       __FILE__,
-                       IMAGE_BASIC_streamrecord_cli,
-                       "record stream of images",
-                       "<stream> <# frames> <output>",
+    RegisterCLIcommand("imgstreamrec", __FILE__, IMAGE_BASIC_streamrecord_cli,
+                       "record stream of images", "<stream> <# frames> <output>",
                        "imgstreamrec imstream 100 imrec",
                        "long IMAGE_BASIC_streamrecord(const char *streamname, "
                        "long NBframes, const char *IDname)");
@@ -83,20 +78,16 @@ imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
     kk = 0;
 
     ptr = (char *) data.image[ID].array.F;
-    while(kk != NBframes)
+    while (kk != NBframes)
     {
-        while(cnt > data.image[IDstream].md[0].cnt0)
+        while (cnt > data.image[IDstream].md[0].cnt0)
         {
             usleep(waitdelayus);
         }
 
         cnt++;
 
-        printf("\r%ld / %ld  [%ld %ld]      ",
-               kk,
-               NBframes,
-               cnt,
-               data.image[ID].md[0].cnt0);
+        printf("\r%ld / %ld  [%ld %ld]      ", kk, NBframes, cnt, data.image[ID].md[0].cnt0);
         fflush(stdout);
 
         memcpy(ptr, data.image[IDstream].array.F, sizeof(float) * xysize);

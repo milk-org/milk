@@ -19,55 +19,48 @@
  * called by conf and run functions
  *
  */
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
-    const char *fpsname,
-    uint32_t    CMDmode,
-    long        NBparamMAX
-)
+FUNCTION_PARAMETER_STRUCT
+function_parameter_FPCONFsetup_sized(const char *fpsname, uint32_t CMDmode, long NBparamMAX)
 {
     uint32_t FPSCONNECTFLAG;
 
-    FUNCTION_PARAMETER_STRUCT fps = {0};
+    FUNCTION_PARAMETER_STRUCT fps = { 0 };
 
     fps.CMDmode = CMDmode;
     fps.SMfd    = -1;
 
-
     data.FPS_TIMESTAMP = 0;
     strcpy(data.FPS_PROCESS_TYPE, "UNDEF");
 
-
-
-    if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
+    if (CMDmode & FPSCMDCODE_FPSINITCREATE) // (re-)create fps even if it exists
     {
-        //printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
+        // printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     }
     else // load existing fps if exists
     {
-        //printf("=== CHECK IF FPS EXISTS\n");
+        // printf("=== CHECK IF FPS EXISTS\n");
 
         FPSCONNECTFLAG = FPSCONNECT_SIMPLE;
-        if(CMDmode & FPSCMDCODE_CONFSTART)
+        if (CMDmode & FPSCMDCODE_CONFSTART)
         {
             FPSCONNECTFLAG = FPSCONNECT_CONF;
         }
 
-        if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) ==
-                -1)
+        if (function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) == -1)
         {
-            //printf("=== FPS DOES NOT EXISTS -> CREATE\n");
+            // printf("=== FPS DOES NOT EXISTS -> CREATE\n");
             function_parameter_struct_create(NBparamMAX, fpsname);
             function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
         /*        else
-        {
-            printf("=== FPS EXISTS\n");
-        }*/
+    {
+        printf("=== FPS EXISTS\n");
+    }*/
     }
 
-    if(CMDmode & FPSCMDCODE_CONFSTOP)  // stop conf
+    if (CMDmode & FPSCMDCODE_CONFSTOP) // stop conf
     {
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
         function_parameter_struct_disconnect(&fps);
@@ -78,13 +71,13 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
         fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }
 
-    if((CMDmode & FPSCMDCODE_FPSINITCREATE) ||
-            (CMDmode & FPSCMDCODE_FPSINIT) || (CMDmode & FPSCMDCODE_CONFSTOP))
+    if ((CMDmode & FPSCMDCODE_FPSINITCREATE) || (CMDmode & FPSCMDCODE_FPSINIT) ||
+        (CMDmode & FPSCMDCODE_CONFSTOP))
     {
         fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP; // do not start conf
     }
 
-    if(CMDmode & FPSCMDCODE_CONFSTART)
+    if (CMDmode & FPSCMDCODE_CONFSTART)
     {
         fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }
@@ -92,11 +85,8 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
     return fps;
 }
 
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
-    const char *fpsname,
-    uint32_t    CMDmode
-)
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode)
 {
     return function_parameter_FPCONFsetup_sized(fpsname, CMDmode,
-            FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+                                                FUNCTION_PARAMETER_NBPARAM_DEFAULT);
 }

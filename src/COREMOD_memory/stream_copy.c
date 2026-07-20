@@ -19,32 +19,13 @@
 static char *inimname;
 static char *outimname;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in_sname",
-        "input stream",
-        "ims1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".out_sname",
-        "output stream",
-        "ims2",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    }
-};
+static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".in_sname", "input stream", "ims1",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &inimname, NULL },
+                               { CLIARG_IMG, ".out_sname", "output stream", "ims2",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &outimname, NULL } };
 
-static CLICMDDATA CLIcmddata = {"shmimcopy",
-                                "copy in stream to existing out stream",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
+static CLICMDDATA CLIcmddata = { "shmimcopy", "copy in stream to existing out stream",
+                                 CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -63,17 +44,15 @@ static errno_t compute_function()
     IMGID imgout = mkIMGID_from_name(outimname);
     resolveIMGID(&imgout, ERRMODE_ABORT);
 
-    uint64_t im_in_datasize = ImageStreamIO_typesize(imgin.im->md->datatype) *
-                              imgin.im->md->nelement;
-    uint64_t im_out_datasize = ImageStreamIO_typesize(imgin.im->md->datatype) *
-                               imgout.im->md->nelement;
-    uint64_t byte_copy_size = im_in_datasize < im_out_datasize ? im_in_datasize :
-                              im_out_datasize;
+    uint64_t im_in_datasize =
+        ImageStreamIO_typesize(imgin.im->md->datatype) * imgin.im->md->nelement;
+    uint64_t im_out_datasize =
+        ImageStreamIO_typesize(imgin.im->md->datatype) * imgout.im->md->nelement;
+    uint64_t byte_copy_size = im_in_datasize < im_out_datasize ? im_in_datasize : im_out_datasize;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
-
-        //usleep(100);
+        // usleep(100);
 
         // We should probs flush the input semaphore.
         // I'm afraid that when doing speed tests we're "overclocking" our pipeline.
@@ -81,11 +60,7 @@ static errno_t compute_function()
         // This is even moreso necessary with the usleep.
         ImageStreamIO_semflush(imgin.im, processinfo->triggersem);
 
-        memcpy(
-            imgout.im->array.F,
-            imgin.im->array.F,
-            byte_copy_size
-        );
+        memcpy(imgout.im->array.F, imgin.im->array.F, byte_copy_size);
 
         processinfo_update_output_stream(processinfo, imgout.ID);
     }
@@ -97,9 +72,8 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMOD_memory__stream_copy()
+    // Register function in CLI
+    errno_t CLIADDCMD_COREMOD_memory__stream_copy()
 {
     INSERT_STD_CLIREGISTERFUNC
 

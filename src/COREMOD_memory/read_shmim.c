@@ -21,22 +21,11 @@
 static char *insname;
 
 // List of arguments to function
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR_NOT_IMG,
-        ".in_sname",
-        "input stream",
-        "ims1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &insname,
-        NULL
-    }
-};
+static CLICMDARGDEF farg[] = { { CLIARG_STR_NOT_IMG, ".in_sname", "input stream", "ims1",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &insname, NULL } };
 
 // flag CLICMDFLAG_FPS enabled FPS capability
-static CLICMDDATA CLIcmddata =
-{
-    "readshmim", "read shared memory image", CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "readshmim", "read shared memory image", CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -44,25 +33,22 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-IMGID read_sharedmem_img(
-    const char * restrict sname
-)
+IMGID read_sharedmem_img(const char *restrict sname)
 {
     IMGID img;
     img.ID = -1;
 
-    if(strlen(sname) != 0)
+    if (strlen(sname) != 0)
     {
         // check if already loaded
         imageID ID = image_ID(sname);
-        if(ID == -1)
+        if (ID == -1)
         {
-            IMAGE  *image;
+            IMAGE *image;
             img.ID = next_avail_image_ID(-1);
-            image = &data.image[img.ID];
+            image  = &data.image[img.ID];
 
-            if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
-                    IMAGESTREAMIO_SUCCESS)
+            if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) != IMAGESTREAMIO_SUCCESS)
             {
                 printf("read shared mem image failed -> ID = -1\n");
                 fflush(stdout);
@@ -87,15 +73,13 @@ IMGID read_sharedmem_img(
         }
     }
 
-    return(img);
+    return (img);
 }
 
-imageID read_sharedmem_image(
-    const char * restrict sname
-)
+imageID read_sharedmem_image(const char *restrict sname)
 {
     IMGID img = read_sharedmem_img(sname);
-    return(img.ID);
+    return (img.ID);
 }
 
 /*
@@ -161,8 +145,8 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-errno_t
-CLIADDCMD_COREMOD_memory__read_sharedmem_image()
+    errno_t
+    CLIADDCMD_COREMOD_memory__read_sharedmem_image()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;

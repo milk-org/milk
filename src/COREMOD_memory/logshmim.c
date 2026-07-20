@@ -7,7 +7,7 @@
  * @brief   Save telemetry stream data
  */
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#    define _GNU_SOURCE
 #endif
 
 #include <fcntl.h>
@@ -34,10 +34,10 @@
 #include "read_shmim.h"
 #include "stream_sem.h"
 
-#include "shmimlog_types.h"
 #include "COREMOD_tools/mvprocCPUset.h"
+#include "shmimlog_types.h"
 
-#define likely(x)   __builtin_expect(!!(x), 1)
+#define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
 static long tret = 0; // thread return value
@@ -64,188 +64,82 @@ static long  fpi_savedirname = -1;
 
 // current frame insdex within cube
 static uint64_t *frameindex;
-static long     fpi_frameindex = -1;
+static long      fpi_frameindex = -1;
 
 // current frame count since started logging
 static uint64_t *framecnt;
-static long     fpi_framecnt = -1;
+static long      fpi_framecnt = -1;
 
 static uint64_t *maxframecnt;
-static long     fpi_maxframecnt = -1;
+static long      fpi_maxframecnt = -1;
 
 static uint64_t *filecnt;
-static long     fpi_filecnt = -1;
+static long      fpi_filecnt = -1;
 
 static uint64_t *maxfilecnt;
-static long     fpi_maxfilecnt = -1;
+static long      fpi_maxfilecnt = -1;
 
 static int64_t *compressON;
 static long     fpi_compressON = -1;
 
 // time taken to save to filesystem
 static float *savetime;
-static long     fpi_savetime = -1;
+static long   fpi_savetime = -1;
 
 static char *outfname;
 
 static uint32_t *writerRTprio;
-static long fpi_writerRTprio;
+static long      fpi_writerRTprio;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".sname",
-        "stream image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &streamname,
-        NULL
-    },
-    {
-        CLIARG_ONOFF,
-        ".saveON",
-        "toggle save on/off",
-        "1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &saveON,
-        &fpi_saveON
-    },
-    {
-        CLIARG_ONOFF,
-        ".lastcubeON",
-        "toggle last cube on/off",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &lastcubeON,
-        &fpi_lastcubeON
-    },
-    {
-        CLIARG_ONOFF,
-        ".nextcube",
-        "force jump to next cube",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &nextcube,
-        &fpi_nextcube
-    },
-    {
-        CLIARG_UINT32,
-        ".cubesize",
-        "cube size, nb frame per cube",
-        "10000",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &cubesize,
-        &fpi_cubesize
-    },
-    {
-        CLIARG_STR,
-        ".dirname",
-        "log directory",
-        "/mnt/datalog/",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &savedirname,
-        &fpi_savedirname
-    },
-    {
-        CLIARG_UINT64,
-        ".frameindex",
-        "frame index within cube (output)",
-        "0",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &frameindex,
-        &fpi_frameindex
-    },
-    {
-        CLIARG_UINT64,
-        ".framecnt",
-        "frame counter since stated logging (output)",
-        "0",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &framecnt,
-        &fpi_framecnt
-    },
-    {
-        CLIARG_UINT64,
-        ".maxframecnt",
-        "max frame count",
-        "100000000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &maxframecnt,
-        &fpi_maxframecnt
-    },
-    {
-        CLIARG_UINT64,
-        ".filecnt",
-        "file counter (output)",
-        "0",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &filecnt,
-        &fpi_filecnt
-    },
-    {
-        CLIARG_UINT64,
-        ".maxfilecnt",
-        "max file counter (output)",
-        "100000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &maxfilecnt,
-        &fpi_maxfilecnt
-    },
-    {
-        CLIARG_STR,
-        ".outfname",
-        "output file name",
-        "0",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &outfname,
-        NULL
-    },
-    {
-        CLIARG_ONOFF,
-        ".compress",
-        "toggle compression on/off",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &compressON,
-        &fpi_compressON
-    },
-    {
-        CLIARG_FLOAT32,
-        ".savetime",
-        "time taken to save",
-        "0",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &savetime,
-        &fpi_savetime
-    },
-    {
-        CLIARG_UINT32,
-        ".writerRTprio",
-        "writer real-time priority",
-        "10",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &writerRTprio,
-        &fpi_writerRTprio
-    },
+static CLICMDARGDEF farg[] = {
+    { CLIARG_IMG, ".sname", "stream image", "im1", CLIARG_VISIBLE_DEFAULT, (void **) &streamname,
+      NULL },
+    { CLIARG_ONOFF, ".saveON", "toggle save on/off", "1", CLIARG_HIDDEN_DEFAULT, (void **) &saveON,
+      &fpi_saveON },
+    { CLIARG_ONOFF, ".lastcubeON", "toggle last cube on/off", "0", CLIARG_HIDDEN_DEFAULT,
+      (void **) &lastcubeON, &fpi_lastcubeON },
+    { CLIARG_ONOFF, ".nextcube", "force jump to next cube", "0", CLIARG_HIDDEN_DEFAULT,
+      (void **) &nextcube, &fpi_nextcube },
+    { CLIARG_UINT32, ".cubesize", "cube size, nb frame per cube", "10000", CLIARG_VISIBLE_DEFAULT,
+      (void **) &cubesize, &fpi_cubesize },
+    { CLIARG_STR, ".dirname", "log directory", "/mnt/datalog/", CLIARG_VISIBLE_DEFAULT,
+      (void **) &savedirname, &fpi_savedirname },
+    { CLIARG_UINT64, ".frameindex", "frame index within cube (output)", "0", CLIARG_OUTPUT_DEFAULT,
+      (void **) &frameindex, &fpi_frameindex },
+    { CLIARG_UINT64, ".framecnt", "frame counter since stated logging (output)", "0",
+      CLIARG_OUTPUT_DEFAULT, (void **) &framecnt, &fpi_framecnt },
+    { CLIARG_UINT64, ".maxframecnt", "max frame count", "100000000", CLIARG_HIDDEN_DEFAULT,
+      (void **) &maxframecnt, &fpi_maxframecnt },
+    { CLIARG_UINT64, ".filecnt", "file counter (output)", "0", CLIARG_OUTPUT_DEFAULT,
+      (void **) &filecnt, &fpi_filecnt },
+    { CLIARG_UINT64, ".maxfilecnt", "max file counter (output)", "100000", CLIARG_HIDDEN_DEFAULT,
+      (void **) &maxfilecnt, &fpi_maxfilecnt },
+    { CLIARG_STR, ".outfname", "output file name", "0", CLIARG_OUTPUT_DEFAULT, (void **) &outfname,
+      NULL },
+    { CLIARG_ONOFF, ".compress", "toggle compression on/off", "0", CLIARG_HIDDEN_DEFAULT,
+      (void **) &compressON, &fpi_compressON },
+    { CLIARG_FLOAT32, ".savetime", "time taken to save", "0", CLIARG_OUTPUT_DEFAULT,
+      (void **) &savetime, &fpi_savetime },
+    { CLIARG_UINT32, ".writerRTprio", "writer real-time priority", "10", CLIARG_HIDDEN_DEFAULT,
+      (void **) &writerRTprio, &fpi_writerRTprio },
 };
 
 static errno_t customCONFsetup()
 {
-    if(data.fpsptr != NULL)
+    if (data.fpsptr != NULL)
     {
         // can toggle while running
         data.fpsptr->parray[fpi_saveON].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_lastcubeON].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_nextcube].fpflag |= FPFLAG_WRITERUN;
 
-        //data.fpsptr->parray[fpi_savedirname].fpflag |= FPFLAG_WRITERUN;
+        // data.fpsptr->parray[fpi_savedirname].fpflag |= FPFLAG_WRITERUN;
 
         // Disabled. Causes undefined behavior.
-        //data.fpsptr->parray[fpi_cubesize].fpflag |= FPFLAG_WRITERUN;
+        // data.fpsptr->parray[fpi_cubesize].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_maxfilecnt].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_maxframecnt].fpflag |= FPFLAG_WRITERUN;
-        //data.fpsptr->parray[fpi_compressON].fpflag |= FPFLAG_WRITERUN;
+        // data.fpsptr->parray[fpi_compressON].fpflag |= FPFLAG_WRITERUN;
 
         data.fpsptr->parray[fpi_writerRTprio].fpflag |= FPFLAG_WRITERUN;
     }
@@ -255,16 +149,11 @@ static errno_t customCONFsetup()
 
 static errno_t customCONFcheck()
 {
-
     return RETURN_SUCCESS;
 }
 
-static CLICMDDATA CLIcmddata =
-{
-    "streamFITSlog",
-    "log stream to FITS file(s)",
-    CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "streamFITSlog", "log stream to FITS file(s)",
+                                 CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -279,9 +168,7 @@ static errno_t help_function()
  * Writes FITS file and timing file
  *
  */
-static void *save_telemetry_fits_function(
-    void *ptr
-)
+static void *save_telemetry_fits_function(void *ptr)
 {
     STREAMSAVE_THREAD_MESSAGE *tmsg;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
@@ -296,8 +183,7 @@ static void *save_telemetry_fits_function(
 
     // Add custom keywords
     int            NBcustomKW = 9;
-    IMAGE_KEYWORD *imkwarray =
-        (IMAGE_KEYWORD *) malloc(sizeof(IMAGE_KEYWORD) * NBcustomKW);
+    IMAGE_KEYWORD *imkwarray  = (IMAGE_KEYWORD *) malloc(sizeof(IMAGE_KEYWORD) * NBcustomKW);
 
     // UT time
 
@@ -305,22 +191,19 @@ static void *save_telemetry_fits_function(
     imkwarray->type = 'S';
 
     strcpy(imkwarray->value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               0.5 * tmsg->arraytime[0] +
-               0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
+           timedouble_to_UTC_timeofdaystring(0.5 * tmsg->arraytime[0] +
+                                             0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
     strcpy(imkwarray->comment, "HH:MM:SS.SS typical UTC at exposure");
 
     strcpy(imkwarray[1].name, "UT-STR");
     imkwarray[1].type = 'S';
-    strcpy(imkwarray[1].value.valstr,
-           timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0]));
+    strcpy(imkwarray[1].value.valstr, timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0]));
     strcpy(imkwarray[1].comment, "HH:MM:SS.SS UTC at exposure start");
 
     strcpy(imkwarray[2].name, "UT-END");
     imkwarray[2].type = 'S';
-    strcpy(
-        imkwarray[2].value.valstr,
-        timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
+    strcpy(imkwarray[2].value.valstr,
+           timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
     strcpy(imkwarray[2].comment, "HH:MM:SS.SS UTC at exposure end");
 
     // Modified Julian Date (MJD)
@@ -328,9 +211,7 @@ static void *save_telemetry_fits_function(
     strcpy(imkwarray[3].name, "MJD");
     imkwarray[3].type = 'D';
     imkwarray[3].value.numf =
-        (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) /
-        86400.0 +
-        40587.0;
+        (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) / 86400.0 + 40587.0;
     strcpy(imkwarray[3].comment, "Modified Julian Day at exposure");
 
     strcpy(imkwarray[4].name, "MJD-STR");
@@ -339,25 +220,25 @@ static void *save_telemetry_fits_function(
     strcpy(imkwarray[4].comment, "Modified Julian Day at exposure start");
 
     strcpy(imkwarray[5].name, "MJD-END");
-    imkwarray[5].type = 'D';
-    imkwarray[5].value.numf =
-        (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) + 40587.0;
+    imkwarray[5].type       = 'D';
+    imkwarray[5].value.numf = (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) + 40587.0;
     strcpy(imkwarray[5].comment, "Modified Julian Day at exposure end");
 
     // Local time
 
     // get time zone
-    //char tm_zone[] = "HST";
-    //double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
+    // char tm_zone[] = "HST";
+    // double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
 
-    // Causes a race condition with gettime in other thread, which result in occasional HST filenames...
-    //time_t t = time(NULL);
+    // Causes a race condition with gettime in other thread, which result in
+    // occasional HST filenames...
+    // time_t t = time(NULL);
     // OVERRIDE localtime to HST
-    //putenv("TZ=Pacific/Honolulu");
-    //struct tm lt = *localtime(&t);
-    //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
-    //putenv("TZ=");
-    //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    // putenv("TZ=Pacific/Honolulu");
+    // struct tm lt = *localtime(&t);
+    // printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    // putenv("TZ=");
+    // printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
 
     // printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
     // printf("The time zone is '%s'.\n", lt.tm_zone);
@@ -366,60 +247,42 @@ static void *save_telemetry_fits_function(
     imkwarray[6].type = 'S';
     strcpy(imkwarray[6].value.valstr,
            timedouble_to_UTC_timeofdaystring(
-               (0.5 * tmsg->arraytime[0] +
-                0.5 * tmsg->arraytime[tmsg->cubesize - 1]) +
+               (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) +
                TZ_MILK_UTC_OFF));
-    sprintf(imkwarray[6].comment,
-            "HH:MM:SS.SS typical %s at exposure",
-            TZ_MILK_STR);
+    sprintf(imkwarray[6].comment, "HH:MM:SS.SS typical %s at exposure", TZ_MILK_STR);
 
     sprintf(imkwarray[7].name, "%s-STR", TZ_MILK_STR);
     imkwarray[7].type = 'S';
-    strcpy(
-        imkwarray[7].value.valstr,
-        timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF));
-    sprintf(imkwarray[7].comment,
-            "HH:MM:SS.SS typical %s at exposure start",
-            TZ_MILK_STR);
+    strcpy(imkwarray[7].value.valstr,
+           timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF));
+    sprintf(imkwarray[7].comment, "HH:MM:SS.SS typical %s at exposure start", TZ_MILK_STR);
 
     sprintf(imkwarray[8].name, "%s-END", TZ_MILK_STR);
     imkwarray[8].type = 'S';
-    strcpy(imkwarray[8].value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
-    sprintf(imkwarray[8].comment,
-            "HH:MM:SS.SS typical %s at exposure end",
-            TZ_MILK_STR);
+    strcpy(imkwarray[8].value.valstr, timedouble_to_UTC_timeofdaystring(
+                                          tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
+    sprintf(imkwarray[8].comment, "HH:MM:SS.SS typical %s at exposure end", TZ_MILK_STR);
 
-    //printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+    // printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
     printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
 
-    saveFITS_opt_trunc(tmsg->iname,
-                       tmsg->partial ? tmsg->cubesize : -1,
-                       tmsg->fname,
-                       0,
-                       tmsg->fname_auxFITSheader,
-                       imkwarray,
-                       NBcustomKW,
-                       tmsg->compress_string);
+    saveFITS_opt_trunc(tmsg->iname, tmsg->partial ? tmsg->cubesize : -1, tmsg->fname, 0,
+                       tmsg->fname_auxFITSheader, imkwarray, NBcustomKW, tmsg->compress_string);
 
     free(imkwarray);
 
-    if(tmsg->saveascii == 1)
+    if (tmsg->saveascii == 1)
     {
         FILE *fp;
 
-        if((fp = fopen(tmsg->fnameascii, "w")) == NULL)
+        if ((fp = fopen(tmsg->fnameascii, "w")) == NULL)
         {
             printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
             exit(0);
         }
 
         fprintf(fp, "# Telemetry stream timing data \n");
-        fprintf(fp,
-                "# File written by function %s in file %s\n",
-                __FUNCTION__,
-                __FILE__);
+        fprintf(fp, "# File written by function %s in file %s\n", __FUNCTION__, __FILE__);
         fprintf(fp, "# \n");
         fprintf(fp, "# col1 : datacube frame index\n");
         fprintf(fp, "# col2 : Main index\n");
@@ -432,9 +295,10 @@ static void *save_telemetry_fits_function(
 
         double t0; // time reference
         t0 = tmsg->arraytime[0];
-        for(long k = 0; k < tmsg->cubesize; k++)
+        for (long k = 0; k < tmsg->cubesize; k++)
         {
-            //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+            // fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k],
+            // tmsg->arraycnt1[k], tmsg->arraytime[k]);
 
             // entries are:
             // - index within cube
@@ -444,16 +308,9 @@ static void *save_telemetry_fits_function(
             // - cnt0
             // - cnt1
 
-            fprintf(
-                fp,
-                "%10ld  %10lu  %15.9lf   %20.9lf  %17.6lf   %10ld   %10ld\n",
-                k,
-                tmsg->arrayindex[k],
-                tmsg->arraytime[k] - t0,
-                tmsg->arraytime[k],
-                tmsg->arrayaqtime[k],
-                tmsg->arraycnt0[k],
-                tmsg->arraycnt1[k]);
+            fprintf(fp, "%10ld  %10lu  %15.9lf   %20.9lf  %17.6lf   %10ld   %10ld\n", k,
+                    tmsg->arrayindex[k], tmsg->arraytime[k] - t0, tmsg->arraytime[k],
+                    tmsg->arrayaqtime[k], tmsg->arraycnt0[k], tmsg->arraycnt1[k]);
         }
         fclose(fp);
     }
@@ -463,8 +320,8 @@ static void *save_telemetry_fits_function(
     struct timespec tend;
     clock_gettime(CLOCK_MILK, &tend);
 
-    double timediff = 1.0 * (tend.tv_sec - tstart.tv_sec) +
-                      1.0e-9 * (tend.tv_nsec - tstart.tv_nsec);
+    double timediff =
+        1.0 * (tend.tv_sec - tstart.tv_sec) + 1.0e-9 * (tend.tv_nsec - tstart.tv_nsec);
     tmsg->timespan = timediff;
 
     pthread_exit(&tret);
@@ -479,29 +336,30 @@ static errno_t compute_function()
     // 1: print statements outside fast loop
     // 2: print everything
 
-    STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(
-                                          STREAMSAVE_THREAD_MESSAGE));
+    STREAMSAVE_THREAD_MESSAGE *tmsg =
+        (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
 
     IMGID inimg = mkIMGID_from_name(streamname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
-    if(inimg.md->naxis == 3)
+    if (inimg.md->naxis == 3)
     {
         PRINT_ERROR("streamFITSlog with 3D data is NOT supported");
     }
 
     uint32_t xsize = inimg.md->size[0];
     uint32_t ysize = inimg.md->size[1];
-    if(inimg.md->naxis == 1)
+    if (inimg.md->naxis == 1)
     {
-        ysize = 1; // For 1D data, it's likely size[1] is initialized to 0, which will cause trouble.
+        ysize = 1; // For 1D data, it's likely size[1] is initialized to 0, which
+                   // will cause trouble.
     }
     uint32_t zsize = (*cubesize);
 
     uint8_t datatype = inimg.md->datatype;
 
     int typesize = ImageStreamIO_typesize(datatype);
-    if(typesize == -1)
+    if (typesize == -1)
     {
         printf("ERROR: WRONG DATA TYPE\n");
         exit(0);
@@ -515,15 +373,13 @@ static errno_t compute_function()
     {
         char name[STRINGMAXLEN_STREAMNAME];
         WRITE_IMAGENAME(name, "%s_logbuff0", streamname);
-        imgbuff0 =
-            stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
+        imgbuff0 = stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
     }
     IMGID imgbuff1;
     {
         char name[STRINGMAXLEN_STREAMNAME];
         WRITE_IMAGENAME(name, "%s_logbuff1", streamname);
-        imgbuff1 =
-            stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
+        imgbuff1 = stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
     }
 
     list_image_ID();
@@ -531,14 +387,10 @@ static errno_t compute_function()
     // copy keywords
     {
         printf("Cppying %d keywords\n", inimg.md->NBkw);
-        if(inimg.md->NBkw > 0)
+        if (inimg.md->NBkw > 0)
         {
-            memcpy(imgbuff0.im->kw,
-                   inimg.im->kw,
-                   sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
-            memcpy(imgbuff1.im->kw,
-                   inimg.im->kw,
-                   sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+            memcpy(imgbuff0.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+            memcpy(imgbuff1.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
         }
     }
 
@@ -546,14 +398,14 @@ static errno_t compute_function()
     // _MAQTIME
     int aqtimekwi = -1;
 
-    for(int kwi = 0; kwi < inimg.md->NBkw; kwi++)
+    for (int kwi = 0; kwi < inimg.md->NBkw; kwi++)
     {
-        if(strcmp(inimg.im->kw[kwi].name, "_MAQTIME") == 0)
+        if (strcmp(inimg.im->kw[kwi].name, "_MAQTIME") == 0)
         {
             aqtimekwi = kwi;
         }
     }
-    if(VERBOSE > 0)
+    if (VERBOSE > 0)
     {
         printf("[%5d] aqtimekwi = %d\n", __LINE__, aqtimekwi);
     }
@@ -561,7 +413,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization
-    if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
     }
@@ -576,46 +428,43 @@ static errno_t compute_function()
 
     // array are zsize * 2 long to hold double buffer
     //
-    double *array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    double *array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    uint64_t *array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) *
-                             (*cubesize) * 2);
-    uint64_t *array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) *
-                             (*cubesize) * 2);
+    double   *array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    double   *array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    uint64_t *array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
+    uint64_t *array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
 
     int thread_initialized = 0;
 
     // inittialization
-    *framecnt = 0;
+    *framecnt   = 0;
     *frameindex = 0;
-    *filecnt = 0;
+    *filecnt    = 0;
 
     // set to 1 if we're on the last cube
     int lastcube = 0;
 
-    uint64_t lastcnt0 = 0;
-    int IsNewFrame = 0;
+    uint64_t lastcnt0   = 0;
+    int      IsNewFrame = 0;
 
     printf("Start loop\n");
     fflush(stdout);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-
-        if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
+        if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
             printf("------------ TIMEOUT\n");
             fflush(stdout);
         }
         else
         {
-            if(lastcnt0 != inimg.md->cnt0)
+            if (lastcnt0 != inimg.md->cnt0)
             {
                 // new frame has arrived
                 IsNewFrame = 1;
 
-                //  printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
-                //  fflush(stdout);
+                //  printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld
+                //  >>>>>>>>>>>>>>>>\n", inimg.md->cnt0); fflush(stdout);
 
                 lastcnt0 = inimg.md->cnt0;
             }
@@ -625,85 +474,80 @@ static errno_t compute_function()
                 IsNewFrame = 0;
             }
 
-            //printf("IsNewFrame %d\n", IsNewFrame);
-            //fflush(stdout);
+            // printf("IsNewFrame %d\n", IsNewFrame);
+            // fflush(stdout);
 
-            if(IsNewFrame == 1)
+            if (IsNewFrame == 1)
             {
-
-                if((saveON_last == 0) && ((*saveON) == 1))
+                if ((saveON_last == 0) && ((*saveON) == 1))
                 {
                     // We just turned on saving
-                    lastcube = 0;
+                    lastcube    = 0;
                     (*framecnt) = 0;
-                    (*filecnt) = 0;
+                    (*filecnt)  = 0;
                 }
 
-                if((*framecnt) >= (*maxframecnt))
+                if ((*framecnt) >= (*maxframecnt))
                 {
                     // we've logged the requested number of frames
                     (*saveON) = 0;
                     data.fpsptr->parray[fpi_saveON].fpflag &= ~FPFLAG_ONOFF;
                 }
 
-                if((*filecnt) >= (*maxfilecnt) - 1)
+                if ((*filecnt) >= (*maxfilecnt) - 1)
                 {
                     // last cube
                     lastcube = 1;
                 }
 
-                //printf("saveON %d\n", (int) (*saveON));
-                //fflush(stdout);
+                // printf("saveON %d\n", (int) (*saveON));
+                // fflush(stdout);
 
-                if((*saveON) == 1)
+                if ((*saveON) == 1)
                 {
-                    if((*frameindex) == 0)
+                    if ((*frameindex) == 0)
                     {
                         // measure time at cube start
                         // construc filenames
 
-                        printf("================= CONSTRUCT FILE NAMES ===================================\n");
+                        printf("================= CONSTRUCT FILE NAMES "
+                               "===================================\n");
                         fflush(stdout);
 
-                        time_t          t;
-                        struct tm      *uttimeStart;
+                        time_t     t;
+                        struct tm *uttimeStart;
                         t           = time(NULL);
                         uttimeStart = gmtime(&t);
 
                         char hrminstring[6];
-                        sprintf(hrminstring, "%02d:%02d", uttimeStart->tm_hour, uttimeStart->tm_min);
+                        sprintf(hrminstring, "%02d:%02d", uttimeStart->tm_hour,
+                                uttimeStart->tm_min);
                         printf("hrmin: %s\n", hrminstring);
 
                         struct timespec timenowStart;
                         clock_gettime(CLOCK_MILK, &timenowStart);
 
-                        WRITE_FULLFILENAME(FITSffilename,
-                                           "%s/%s_%s:%02ld.%09ld.fits",
-                                           savedirname,
-                                           streamname,
-                                           hrminstring,
-                                           timenowStart.tv_sec % 60,
+                        WRITE_FULLFILENAME(FITSffilename, "%s/%s_%s:%02ld.%09ld.fits", savedirname,
+                                           streamname, hrminstring, timenowStart.tv_sec % 60,
                                            timenowStart.tv_nsec);
 
-                        if(VERBOSE > 0)
+                        if (VERBOSE > 0)
                         {
                             printf("    [%5d] FITSffilename      = %s\n", __LINE__, FITSffilename);
                         }
 
-                        WRITE_FULLFILENAME(ASCIITIMEffilename,
-                                           "%s/%s_%s:%02ld.%09ld.txt",
-                                           savedirname,
-                                           streamname,
-                                           hrminstring,
-                                           timenowStart.tv_sec % 60,
-                                           timenowStart.tv_nsec);
+                        WRITE_FULLFILENAME(ASCIITIMEffilename, "%s/%s_%s:%02ld.%09ld.txt",
+                                           savedirname, streamname, hrminstring,
+                                           timenowStart.tv_sec % 60, timenowStart.tv_nsec);
 
-                        if(VERBOSE > 0)
+                        if (VERBOSE > 0)
                         {
-                            printf("    [%5d] ASCIITIMEffilename = %s\n", __LINE__, ASCIITIMEffilename);
+                            printf("    [%5d] ASCIITIMEffilename = %s\n", __LINE__,
+                                   ASCIITIMEffilename);
                         }
 
-                        printf("================= CONSTRUCT FILE NAMES ===================================\n");
+                        printf("================= CONSTRUCT FILE NAMES "
+                               "===================================\n");
                         fflush(stdout);
                     }
 
@@ -719,10 +563,9 @@ static errno_t compute_function()
                             clock_gettime(CLOCK_MILK, &timenow);
                             array_time[tindex] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
-                            if(aqtimekwi != -1)
+                            if (aqtimekwi != -1)
                             {
-                                array_aqtime[tindex] =
-                                    1.0e-6 * inimg.im->kw[aqtimekwi].value.numl;
+                                array_aqtime[tindex] = 1.0e-6 * inimg.im->kw[aqtimekwi].value.numl;
                             }
                             else
                             {
@@ -734,9 +577,8 @@ static errno_t compute_function()
                     // copy frame to buffer
 
                     {
-
-                        //printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
-                        //fflush(stdout);
+                        // printf("[[copy frame %ld to frame %ld of buffer %d]]\n",
+                        // inimg.md->cnt0, (*frameindex), buffindex); fflush(stdout);
 
                         long framesize = typesize * xsize * ysize;
 
@@ -744,7 +586,7 @@ static errno_t compute_function()
                         char *ptr0;   // source image data, after offset
 
                         ptr0_0 = (char *) inimg.im->array.raw;
-                        if(inimg.md->naxis == 3)
+                        if (inimg.md->naxis == 3)
                         {
                             // this is a rolling buffer
                             ptr0 = ptr0_0 + framesize * inimg.md->cnt1;
@@ -756,7 +598,7 @@ static errno_t compute_function()
 
                         char *ptr1_0; // destination image data
                         char *ptr1;   // destination image data, after offset
-                        if(buffindex == 0)
+                        if (buffindex == 0)
                         {
                             ptr1_0 = (char *) imgbuff0.im->array.raw;
                         }
@@ -769,15 +611,11 @@ static errno_t compute_function()
                         memcpy((void *) ptr1, (void *) ptr0, framesize);
                     }
 
-                    processinfo_WriteMessage_fmt(
-                        processinfo,
-                        "buff %d file %lu frameindex %lu",
-                        buffindex,
-                        (*filecnt),
-                        (*frameindex));
+                    processinfo_WriteMessage_fmt(processinfo, "buff %d file %lu frameindex %lu",
+                                                 buffindex, (*filecnt), (*frameindex));
 
-                    (*frameindex) ++;
-                    (*framecnt) ++;
+                    (*frameindex)++;
+                    (*framecnt)++;
                 }
                 else
                 {
@@ -790,33 +628,33 @@ static errno_t compute_function()
 
         int SaveCube = 0;
 
-        if((*frameindex) >= (*cubesize))
+        if ((*frameindex) >= (*cubesize))
         {
             // cube is full
             SaveCube = 1;
         }
 
-        if((saveON_last == 1) && ((*saveON) == 0))
+        if ((saveON_last == 1) && ((*saveON) == 0))
         {
             // We just turned off saving
             SaveCube = 1;
         }
 
-        if((*nextcube) == 1)
+        if ((*nextcube) == 1)
         {
             (*nextcube) = 0;
             data.fpsptr->parray[fpi_nextcube].fpflag &= ~FPFLAG_ONOFF;
             SaveCube = 1;
         }
 
-        if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
+        if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
             SaveCube = 1;
         }
 
-        if(SaveCube == 1)
+        if (SaveCube == 1)
         {
-            if((*frameindex) > 0)
+            if ((*frameindex) > 0)
             {
                 // Saving buffer to filesystem
                 //
@@ -827,31 +665,27 @@ static errno_t compute_function()
 
                 // update buffer content
 
-                if(buffindex == 0)
+                if (buffindex == 0)
                 {
-                    memcpy(imgbuff0.im->kw,
-                           inimg.im->kw,
-                           sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+                    memcpy(imgbuff0.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
                 }
                 else
                 {
-                    memcpy(imgbuff1.im->kw,
-                           inimg.im->kw,
-                           sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+                    memcpy(imgbuff1.im->kw, inimg.im->kw, sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
                 }
 
                 {
-                    static pthread_t  thread_savefits;
-                    static int        iret_savefits;
+                    static pthread_t thread_savefits;
+                    static int       iret_savefits;
 
                     // Fill up thread message
                     //
                     strcpy(tmsg->fname, FITSffilename);
                     strcpy(tmsg->fnameascii, ASCIITIMEffilename);
                     tmsg->saveascii = 1;
-                    tmsg->cubesize = (*frameindex);
+                    tmsg->cubesize  = (*frameindex);
 
-                    if((*frameindex) != (*cubesize))
+                    if ((*frameindex) != (*cubesize))
                     {
                         tmsg->partial = 1;
                     }
@@ -860,7 +694,7 @@ static errno_t compute_function()
                         tmsg->partial = 0;
                     }
 
-                    if(buffindex == 0)
+                    if (buffindex == 0)
                     {
                         strcpy(tmsg->iname, imgbuff0.md->name);
                         tmsg->arrayindex  = array_cnt0;
@@ -879,12 +713,10 @@ static errno_t compute_function()
                         tmsg->arrayaqtime = &array_aqtime[(*cubesize)];
                     }
 
-                    WRITE_FILENAME(tmsg->fname_auxFITSheader,
-                                   "%s/%s.aux.fits",
-                                   data.shmdir,
+                    WRITE_FILENAME(tmsg->fname_auxFITSheader, "%s/%s.aux.fits", data.shmdir,
                                    streamname);
 
-                    if((*compressON) == 0)
+                    if ((*compressON) == 0)
                     {
                         strcpy(tmsg->compress_string, "");
                     }
@@ -894,73 +726,67 @@ static errno_t compute_function()
                     }
 
                     // Wait for save thread to complete to launch next one
-                    if(thread_initialized == 1)
+                    if (thread_initialized == 1)
                     {
                         long cnt0start = inimg.md->cnt0;
 
-                        if(pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
+                        if (pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
                         {
-                            if(VERBOSE > 0)
+                            if (VERBOSE > 0)
                             {
-                                printf(
-                                    "%5d  PREVIOUS SAVE THREAD "
-                                    "NOT TERMINATED -> "
-                                    "waiting\n",
-                                    __LINE__);
+                                printf("%5d  PREVIOUS SAVE THREAD "
+                                       "NOT TERMINATED -> "
+                                       "waiting\n",
+                                       __LINE__);
                             }
                             pthread_join(thread_savefits, NULL);
-                            if(VERBOSE > 0)
+                            if (VERBOSE > 0)
                             {
-                                printf(
-                                    "%5d  PREVIOUS SAVE THREAD "
-                                    "NOW COMPLETED -> "
-                                    "continuing\n",
-                                    __LINE__);
+                                printf("%5d  PREVIOUS SAVE THREAD "
+                                       "NOW COMPLETED -> "
+                                       "continuing\n",
+                                       __LINE__);
                             }
                         }
                         else
                         {
-                            if(VERBOSE > 0)
+                            if (VERBOSE > 0)
                             {
-                                printf(
-                                    "%5d  PREVIOUS SAVE THREAD "
-                                    "ALREADY COMPLETED -> OK\n",
-                                    __LINE__);
+                                printf("%5d  PREVIOUS SAVE THREAD "
+                                       "ALREADY COMPLETED -> OK\n",
+                                       __LINE__);
                             }
                         }
                         (*savetime) = tmsg->timespan;
-                        printf("\n ************** MISSED  %ld frames\n", inimg.md->cnt0 - cnt0start);
+                        printf("\n ************** MISSED  %ld frames\n",
+                               inimg.md->cnt0 - cnt0start);
                     }
 
                     // start thread
                     //
                     tmsg->writerRTprio = (*writerRTprio);
-                    iret_savefits = pthread_create(&thread_savefits,
-                                                   NULL,
-                                                   save_telemetry_fits_function,
-                                                   tmsg);
+                    iret_savefits =
+                        pthread_create(&thread_savefits, NULL, save_telemetry_fits_function, tmsg);
 
                     thread_initialized = 1;
-                    if(iret_savefits)
+                    if (iret_savefits)
                     {
-                        fprintf(stderr,
-                                "Error - pthread_create() return code: %d\n",
+                        fprintf(stderr, "Error - pthread_create() return code: %d\n",
                                 iret_savefits);
                         exit(EXIT_FAILURE);
                     }
-
                 }
                 SaveCube = 0;
 
                 // increment counters
                 //
                 (*frameindex) = 0;
-                (*filecnt) ++;
+                (*filecnt)++;
             }
 
             // report buffer is ready
             //
-            if(buffindex == 0)
+            if (buffindex == 0)
             {
                 processinfo_update_output_stream(processinfo, imgbuff0.ID);
             }
@@ -969,13 +795,13 @@ static errno_t compute_function()
                 processinfo_update_output_stream(processinfo, imgbuff1.ID);
             }
 
-            buffindex ++;
-            if(buffindex > 1)
+            buffindex++;
+            if (buffindex > 1)
             {
                 buffindex = 0;
             }
 
-            if((lastcube == 1) || ((*lastcubeON) == 1))
+            if ((lastcube == 1) || ((*lastcubeON) == 1))
             {
                 (*saveON) = 0;
                 data.fpsptr->parray[fpi_saveON].fpflag &= ~FPFLAG_ONOFF;
@@ -988,12 +814,12 @@ static errno_t compute_function()
         saveON_last = (*saveON);
     }
 
-    //printf("END loop\n");
-    //fflush(stdout);
+    // printf("END loop\n");
+    // fflush(stdout);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    //printf("END loop\n");
-    //fflush(stdout);
+    // printf("END loop\n");
+    // fflush(stdout);
 
     free(array_time);
     free(array_aqtime);
@@ -1008,11 +834,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMOD_MEMORY__logshmim()
+    // Register function in CLI
+    errno_t CLIADDCMD_COREMOD_MEMORY__logshmim()
 {
-
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC

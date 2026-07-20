@@ -7,11 +7,11 @@
  * @brief   Standalone runner for stream_monproc
  */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <getopt.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "CommandLineInterface/CLIcore.h"
 #include "stream_monproc.h"
@@ -24,33 +24,33 @@ extern errno_t memory_re_alloc();
 
 int main(int argc, char *argv[])
 {
-    char *stream_name = NULL;
-    uint64_t binflag = 63; // Default
-    uint32_t cbsize = 1024; // Default
-    int procinfo = 0;
-    int fps = 0;
+    char    *stream_name = NULL;
+    uint64_t binflag     = 63;   // Default
+    uint32_t cbsize      = 1024; // Default
+    int      procinfo    = 0;
+    int      fps         = 0;
 
     static struct option long_options[] = {
-        {"help",     no_argument,       0, 'h'},
-        {"binflag",  required_argument, 0, 'b'},
-        {"cbsize",   required_argument, 0, 'c'},
-        {"procinfo", no_argument,       0, 'p'},
-        {"fps",      no_argument,       0, 'f'},
-        {0, 0, 0, 0}
+        { "help", no_argument, 0, 'h' },         { "binflag", required_argument, 0, 'b' },
+        { "cbsize", required_argument, 0, 'c' }, { "procinfo", no_argument, 0, 'p' },
+        { "fps", no_argument, 0, 'f' },          { 0, 0, 0, 0 }
     };
 
     int opt;
     int option_index = 0;
 
-    while ((opt = getopt_long(argc, argv, "hb:c:pf", long_options, &option_index)) != -1) {
-        switch (opt) {
+    while ((opt = getopt_long(argc, argv, "hb:c:pf", long_options, &option_index)) != -1)
+    {
+        switch (opt)
+        {
         case 'h':
             printf("Usage: %s [options] <stream_name>\n", argv[0]);
             printf("Options:\n");
             printf("  -b, --binflag <int>   Time binning flag (default: %lu)\n", binflag);
             printf("  -c, --cbsize <int>    Circular buffer size (default: %u)\n", cbsize);
             printf("  -p, --procinfo        Enable process info\n");
-            printf("  -f, --fps             Enable FPS (Function Parameter Structure)\n");
+            printf("  -f, --fps             Enable FPS (Function Parameter "
+                   "Structure)\n");
             printf("  -h, --help            Show this help message\n");
             printf("\n");
             stream_monitor_help();
@@ -73,9 +73,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (optind < argc) {
+    if (optind < argc)
+    {
         stream_name = argv[optind];
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "Error: Stream name argument is required.\n");
         fprintf(stderr, "Usage: %s [options] <stream_name>\n", argv[0]);
         return EXIT_FAILURE;
@@ -84,19 +87,22 @@ int main(int argc, char *argv[])
     // Initialization
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
-    if (CLI_startup() != RETURN_SUCCESS) {
+    if (CLI_startup() != RETURN_SUCCESS)
+    {
         fprintf(stderr, "Error: CLI_startup failed\n");
         return EXIT_FAILURE;
     }
 
     setSHMdir();
 
-    if (CLI_data_init() != RETURN_SUCCESS) {
+    if (CLI_data_init() != RETURN_SUCCESS)
+    {
         fprintf(stderr, "Error: CLI_data_init failed\n");
         return EXIT_FAILURE;
     }
 
-    if (memory_re_alloc() != RETURN_SUCCESS) {
+    if (memory_re_alloc() != RETURN_SUCCESS)
+    {
         fprintf(stderr, "Error: memory_re_alloc failed\n");
         return EXIT_FAILURE;
     }
@@ -105,7 +111,8 @@ int main(int argc, char *argv[])
     printf("Binflag: %lu, CBsize: %u\n", binflag, cbsize);
 
     // Run
-    if (stream_monitor_run(stream_name, binflag, cbsize, procinfo, fps) != RETURN_SUCCESS) {
+    if (stream_monitor_run(stream_name, binflag, cbsize, procinfo, fps) != RETURN_SUCCESS)
+    {
         fprintf(stderr, "Stream monitor exited with error\n");
         return EXIT_FAILURE;
     }

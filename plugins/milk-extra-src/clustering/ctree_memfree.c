@@ -8,12 +8,12 @@
 errno_t ctree_memfree(CLUSTERTREE *ctree)
 {
     DEBUG_TRACE_FSTART();
-    for(long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
+    for (long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
     {
-        if ( (ctree->CFarray[CFindex].status && CLUSTER_CF_STATUS_MEMALLOC) )
+        if ((ctree->CFarray[CFindex].status && CLUSTER_CF_STATUS_MEMALLOC))
         {
             free(ctree->CFarray[CFindex].childindex);
-            //free(ctree->CFarray[CFindex].leafindex);
+            // free(ctree->CFarray[CFindex].leafindex);
             free(ctree->CFarray[CFindex].datasumvec);
             free(ctree->CFarray[CFindex].dataposvec);
         }

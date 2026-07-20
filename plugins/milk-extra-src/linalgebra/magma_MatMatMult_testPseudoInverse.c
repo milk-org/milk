@@ -7,27 +7,27 @@
 
 #ifdef HAVE_CUDA
 
-#include <cublas_v2.h>
+#    include <cublas_v2.h>
 
-#ifdef HAVE_MAGMA
-#include "magma_lapack.h"
-#include "magma_v2.h"
+#    ifdef HAVE_MAGMA
+#        include "magma_lapack.h"
+#        include "magma_v2.h"
 extern int           INIT_MAGMA;
 extern magma_queue_t magmaqueue;
 
-#include "CommandLineInterface/CLIcore.h"
+#        include "CommandLineInterface/CLIcore.h"
 
-#include "COREMOD_memory/COREMOD_memory.h"
+#        include "COREMOD_memory/COREMOD_memory.h"
 
-#include "linalgebra_types.h"
+#        include "linalgebra_types.h"
 
 // ==========================================
 // Forward declaration(s)
 // ==========================================
 
 long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
-        const char *IDmatAinv_name,
-        const char *IDmatOut_name);
+                                             const char *IDmatAinv_name,
+                                             const char *IDmatOut_name);
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -35,7 +35,7 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
 
 static errno_t LINALGEBRA_MatMatMult_testPseudoInverse_cli()
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
+    if (CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
     {
         LINALGEBRA_MatMatMult_testPseudoInverse(data.cmdargtoken[1].val.string,
                                                 data.cmdargtoken[2].val.string,
@@ -55,12 +55,8 @@ static errno_t LINALGEBRA_MatMatMult_testPseudoInverse_cli()
 
 errno_t MatMatMult_testPseudoInverse_addCLIcmd()
 {
-
-    RegisterCLIcommand("cudatestpsinv",
-                       __FILE__,
-                       LINALGEBRA_MatMatMult_testPseudoInverse_cli,
-                       "test pseudo inverse",
-                       "<matA> <matAinv> <matOut>",
+    RegisterCLIcommand("cudatestpsinv", __FILE__, LINALGEBRA_MatMatMult_testPseudoInverse_cli,
+                       "test pseudo inverse", "<matA> <matAinv> <matOut>",
                        "cudatestpsinv matA matAinv matOut",
                        "long LINALGEBRA_MatMatMult_testPseudoInverse(const char "
                        "*IDmatA_name, const char "
@@ -73,10 +69,9 @@ errno_t MatMatMult_testPseudoInverse_addCLIcmd()
  *
  */
 
-long LINALGEBRA_MatMatMult_testPseudoInverse(
-    const char *IDmatA_name,
-    const char *IDmatAinv_name,
-    const char *IDmatOut_name)
+long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
+                                             const char *IDmatAinv_name,
+                                             const char *IDmatOut_name)
 {
     imageID IDmatA;
     imageID IDmatAinv;
@@ -96,27 +91,27 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
     magma_int_t M, N;
 
     /**
-     *
-     * IDmatA is an image loaded as a M x N matrix
-     * IDmatAinv is an image loaded as a M x M matrix, representing the transpose of the pseudo inverse of IDmatA
-     *
-     * The input matrices can be 2D or a 3D images
-     *
-     * If 2D image :
-     *   IDmatA    M = xsize
-     *   IDmatA    N = ysize
-     *
-     * If 3D image :
-     *   IDmatA M = xsize*ysize
-     *   IDmatA N = ysize
-     *
-     *
-     */
+   *
+   * IDmatA is an image loaded as a M x N matrix
+   * IDmatAinv is an image loaded as a M x M matrix, representing the transpose
+   * of the pseudo inverse of IDmatA
+   *
+   * The input matrices can be 2D or a 3D images
+   *
+   * If 2D image :
+   *   IDmatA    M = xsize
+   *   IDmatA    N = ysize
+   *
+   * If 3D image :
+   *   IDmatA M = xsize*ysize
+   *   IDmatA N = ysize
+   *
+   *
+   */
 
     ///
-    /// MAGMA uses column-major matrices. For matrix A with dimension (M,N), element A(i,j) is A[ j*M + i]
-    /// i = 0 ... M
-    /// j = 0 ... N
+    /// MAGMA uses column-major matrices. For matrix A with dimension (M,N),
+    /// element A(i,j) is A[ j*M + i] i = 0 ... M j = 0 ... N
     ///
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
@@ -124,7 +119,7 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
     IDmatA    = image_ID(IDmatA_name);
     IDmatAinv = image_ID(IDmatAinv_name);
 
-    if(data.image[IDmatA].md[0].naxis == 3)
+    if (data.image[IDmatA].md[0].naxis == 3)
     {
         /// each column (N=cst) of A is a z=cst slice of image Rmatrix
         M = data.image[IDmatA].md[0].size[0] * data.image[IDmatA].md[0].size[1];
@@ -138,7 +133,7 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
     }
 
     /// Initialize MAGAM if needed
-    if(INIT_MAGMA == 0)
+    if (INIT_MAGMA == 0)
     {
         magma_init();
         magma_print_environment();
@@ -157,48 +152,29 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
     TESTING_SMALLOC_DEV(magmaf_d_AinvA, N * N);
 
     /// load matA in h_A -> d_A
-    for(ii = 0; ii < M * N; ii++)
+    for (ii = 0; ii < M * N; ii++)
     {
         magmaf_h_A[ii] = data.image[IDmatA].array.F[ii];
     }
     magma_ssetmatrix(M, N, magmaf_h_A, M, magmaf_d_A, M, magmaqueue);
 
     /// load matAinv in h_Ainv -> d_Ainv
-    for(ii = 0; ii < M * N; ii++)
+    for (ii = 0; ii < M * N; ii++)
     {
         magmaf_h_Ainv[ii] = data.image[IDmatAinv].array.F[ii];
     }
     magma_ssetmatrix(M, N, magmaf_h_Ainv, M, magmaf_d_Ainv, M, magmaqueue);
 
-    magma_sgemm(MagmaTrans,
-                MagmaNoTrans,
-                N,
-                N,
-                M,
-                1.0,
-                magmaf_d_Ainv,
-                M,
-                magmaf_d_A,
-                M,
-                0.0,
-                magmaf_d_AinvA,
-                N,
-                magmaqueue);
+    magma_sgemm(MagmaTrans, MagmaNoTrans, N, N, M, 1.0, magmaf_d_Ainv, M, magmaf_d_A, M, 0.0,
+                magmaf_d_AinvA, N, magmaqueue);
 
     magma_sgetmatrix(N, N, magmaf_d_AinvA, N, magmaf_h_AinvA, N, magmaqueue);
 
     arraysizetmp[0] = N;
     arraysizetmp[1] = N;
-    create_image_ID(IDmatOut_name,
-                    2,
-                    arraysizetmp,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &IDmatOut);
+    create_image_ID(IDmatOut_name, 2, arraysizetmp, _DATATYPE_FLOAT, 0, 0, 0, &IDmatOut);
 
-    for(ii = 0; ii < N * N; ii++)
+    for (ii = 0; ii < N * N; ii++)
     {
         data.image[IDmatOut].array.F[ii] = magmaf_h_AinvA[ii];
     }
@@ -220,6 +196,6 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
     return IDmatOut;
 }
 
-#endif
+#    endif
 
 #endif

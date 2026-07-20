@@ -8,7 +8,6 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
-
 int processinfo_shm_close(PROCESSINFO *pinfo, int fd)
 {
     struct stat file_stat;

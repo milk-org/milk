@@ -32,13 +32,18 @@
 
 /** @defgroup RTfunctions Functions with high priority scheduler */
 
-/// CODING STANDARD NOTE: code indented by : bash -c "astyle --indent-classes -Y"
+/// CODING STANDARD NOTE: code indented by : bash -c "astyle --indent-classes
+/// -Y"
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                        HEADER FILES                                             */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/*                                        HEADER FILES */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 
 // System includes
 #include <math.h>
@@ -60,37 +65,48 @@
 // CODING STANDARD NOTE: include function prototypes for this module
 #include "templatemodule/templatemodule.h"
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                      DEFINES, MACROS                                            */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/*                                      DEFINES, MACROS */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 
 // CODING STANDARD NOTE: start with defines
 // CODING STANDARD NOTE: #define constants should be in all CAPS
-// CODING STANDARD NOTE: do not use names starting or ending with "_" (reserved for system)
-#define TWOPLUSTWO             4
-#define NAME_STRING_MAXSIZE    100
-#define FNAME_STRING_MAXSIZE   200
+// CODING STANDARD NOTE: do not use names starting or ending with "_" (reserved
+// for system)
+#define TWOPLUSTWO 4
+#define NAME_STRING_MAXSIZE 100
+#define FNAME_STRING_MAXSIZE 200
 #define COMMAND_STRING_MAXSIZE 200
 
 // CODING STANDARD NOTE: list function macros after defines
-// CODING STANDARD NOTE: function macro start with module name when specific to current module
-#define ABS(x)                  (((x) < 0) ? -(x) : (x))
+// CODING STANDARD NOTE: function macro start with module name when specific to
+// current module
+#define ABS(x) (((x) < 0) ? -(x) : (x))
 #define EXAMPLEMODULE_MAX(a, b) ((a < b) ? (b) : (a))
 
 // CODING STANDARD NOTE: list typedefs after function macros
 
 // CODING STANDARD NOTE: list enums after typedefs
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                  GLOBAL DATA DECLARATION                                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/*                                  GLOBAL DATA DECLARATION */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 
-// CODING STANDARD NOTE: Function, typedef, and variable names, as well as struct, union, and enum tag names should be in lower case
-// CODING STANDARD NOTE:
+// CODING STANDARD NOTE: Function, typedef, and variable names, as well as
+// struct, union, and enum tag names should be in lower case CODING STANDARD
+// NOTE:
 
 // externs
 
@@ -98,11 +114,15 @@
 
 // static globals
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                           FUNCTIONS TIED TO COMMAND LINE INTERFACE (CLI)                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/*                           FUNCTIONS TIED TO COMMAND LINE INTERFACE (CLI) */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 /** @name CLI bindings */
 
 // CLI commands
@@ -118,10 +138,11 @@
 // 5: string
 //
 
-// CODING STANDARD NOTE: CLI function name should be function name + "_cli", with no argument
+// CODING STANDARD NOTE: CLI function name should be function name + "_cli",
+// with no argument
 int_fast8_t templatemodule_examplefunction00_cli()
 {
-    if(CLI_checkarg(1, 2) == 0)
+    if (CLI_checkarg(1, 2) == 0)
     {
         templatemodule_examplefunction00(data.cmdargtoken[1].val.numl);
         return 0;
@@ -134,10 +155,9 @@ int_fast8_t templatemodule_examplefunction00_cli()
 
 int_fast8_t templatemodule_examplefunction01_cli()
 {
-    if(CLI_checkarg(1, 1) + CLI_checkarg(2, 2) == 0)
+    if (CLI_checkarg(1, 1) + CLI_checkarg(2, 2) == 0)
     {
-        templatemodule_examplefunction01(data.cmdargtoken[1].val.numl,
-                                         data.cmdargtoken[2].val.numf,
+        templatemodule_examplefunction01(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.numf,
                                          NULL);
         return 0;
     }
@@ -147,11 +167,15 @@ int_fast8_t templatemodule_examplefunction01_cli()
     }
 }
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                    MODULE INITIALIZATION                                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/*                                    MODULE INITIALIZATION */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 /** @name Module initialization */
 
 int_fast8_t init_templatemodule()
@@ -162,21 +186,16 @@ int_fast8_t init_templatemodule()
     strcpy(data.module[data.NBmodule].info, "AO loop control");
     data.NBmodule++;
 
-    // CODING STANDARD NOTE: follow this template to link function calls to the command line interface
-    // CODING STANDARD NOTE: arg1 : function name in command line
-    // CODING STANDARD NOTE: arg2 : module name (= __FILE__)
-    // CODING STANDARD NOTE: arg3 : C call
-    // CODING STANDARD NOTE: arg4 : one-line description
-    // CODING STANDARD NOTE: arg5 : arguments. <arg1 [type]> <arg2 [type]> ...
-    // CODING STANDARD NOTE: arg6 : example call from CLI
-    // CODING STANDARD NOTE: arg7 : C call syntax
+    // CODING STANDARD NOTE: follow this template to link function calls to the
+    // command line interface CODING STANDARD NOTE: arg1 : function name in
+    // command line CODING STANDARD NOTE: arg2 : module name (= __FILE__) CODING
+    // STANDARD NOTE: arg3 : C call CODING STANDARD NOTE: arg4 : one-line
+    // description CODING STANDARD NOTE: arg5 : arguments. <arg1 [type]> <arg2
+    // [type]> ... CODING STANDARD NOTE: arg6 : example call from CLI CODING
+    // STANDARD NOTE: arg7 : C call syntax
 
-    RegisterCLIcommand("clicmdname",
-                       __FILE__,
-                       templatemodule_examplefunction_cli,
-                       "function purpose",
-                       "<mode [int]>",
-                       "clicmdname 3",
+    RegisterCLIcommand("clicmdname", __FILE__, templatemodule_examplefunction_cli,
+                       "function purpose", "<mode [int]>", "clicmdname 3",
                        "int templatemodule_examplefunc(int mode)");
 
     // CODING STANDARD NOTE: Link as many functions as desired
@@ -185,18 +204,26 @@ int_fast8_t init_templatemodule()
     // atexit((void*) templatemodule_clearmem());
 }
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                    FUNCTION(S) SOURCE CODE                                      */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/*                                    FUNCTION(S) SOURCE CODE */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 /** @name TEMPLATEMODULE functions */
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name TEMPLATEMODULE - 1. FIRST GROUP OF FUNCTIONS                                             */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/** @name TEMPLATEMODULE - 1. FIRST GROUP OF FUNCTIONS */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 
 // CODING STANDARD NOTE: minimal required documentation for doxygen
 /**
@@ -216,7 +243,8 @@ int_fast8_t init_templatemodule()
 // CODING STANDARD NOTE: function name start with module name
 int templatemodule_examplefunc00(int mode)
 {
-    // CODING STANDARD NOTE: pointer qualifier '*' with variable rather than with the type
+    // CODING STANDARD NOTE: pointer qualifier '*' with variable rather than with
+    // the type
     float *farray;
 
     int return_value;
@@ -231,85 +259,92 @@ int templatemodule_examplefunc00(int mode)
     FILE *fp_test;
 
     farray = (float *) malloc(sizeof(float) * 10);
-    if(farray == NULL)
+    if (farray == NULL)
     {
         printERROR(__FILE__, __func__, __LINE__, "malloc returns zero value");
     }
 
     // CODING STANDARD NOTE: how to write an infinite loop
     // CODING STANDARD NOTE: Do not write infinite loop with while statement
-    for(;;)
+    for (;;)
     {
         // infinite loop
     }
     free(farray);
 
     fp_test = fopen("testfile.log", "w");
-    if(fp_test == NULL)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "Cannot open file testfile.log");
+    if (fp_test == NULL)
+    {
+        printERROR(__FILE__, __func__, __LINE__, "Cannot open file testfile.log");
+    }
     fclose(fp_test);
 
-    if(mode == 2)
+    if (mode == 2)
     {
         // CODING STANDARD NOTE: reduce variable scope as much as possible
-        // CODING STANDARD NOTE: variables used inside code block declared at beginning of code block
+        // CODING STANDARD NOTE: variables used inside code block declared at
+        // beginning of code block
         char imagename[NAME_STRING_MAXSIZE];
         char command[COMMAND_STRING_MAXSIZE];
 
         // CODING STANDARD NOTE: Always test return value of std functions
         // CODING STANDARD NOTE: Use functions in 00CORE.h :
-        // CODING STANDARD NOTE: 		printERROR(const char *file, const char *func, int line, char *errmessage)
-        // CODING STANDARD NOTE: 		printWARNING(const char *file, const char *func, int line, char *warnmessage)
-        // CODING STANDARD NOTE:  printERROR will exit code, printWARNING will issue warning and continue
-        if(sprintf(name, "image1", loop) < 1)
+        // CODING STANDARD NOTE: 		printERROR(const char *file, const char
+        // *func, int line, char *errmessage) CODING STANDARD NOTE:
+        // printWARNING(const char *file, const char *func, int line, char
+        // *warnmessage) CODING STANDARD NOTE:  printERROR will exit code,
+        // printWARNING will issue warning and continue
+        if (sprintf(name, "image1", loop) < 1)
         {
             printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
         }
-        if(sprintf(command, "ls %s.fits", name) < 1)
+        if (sprintf(command, "ls %s.fits", name) < 1)
         {
             printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
         }
-        if(system(command) != 0)
-            printERROR(__FILE__,
-                       __func__,
-                       __LINE__,
-                       "system() returns non-zero value");
+        if (system(command) != 0)
+        {
+            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        }
     }
 
     fp_test = fopen("testfile.log", "r");
-    if(fp_test == NULL)
-        printERROR(__FILE__,
-                   __func__,
-                   __LINE__,
-                   "Cannot Read file testfile.log");
+    if (fp_test == NULL)
+    {
+        printERROR(__FILE__, __func__, __LINE__, "Cannot Read file testfile.log");
+    }
 
     // CODING STANDARD NOTE: include field width limits in fscanf and sscanf calls
-    if(fscanf(fp_test, "%8ld", &n2) != 1)
+    if (fscanf(fp_test, "%8ld", &n2) != 1)
     {
         printERROR(__FILE__, __func__, __LINE__, "fscanf returns value != 1");
     }
     fclose(fp_test);
 
     // CODING STANDARD NOTE: Other test prototypes:
-    // CODING STANDARD NOTE: if(fread(...) < 1) printERROR(__FILE__,__func__,__LINE__, "fread() returns <1 value");
+    // CODING STANDARD NOTE: if(fread(...) < 1)
+    // printERROR(__FILE__,__func__,__LINE__, "fread() returns <1 value");
 
     free(farray);
 
     return (0);
 }
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name TEMPLATEMODULE - 2. SECOND GROUP OF FUNCTIONS                                            */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
+/** @name TEMPLATEMODULE - 2. SECOND GROUP OF FUNCTIONS */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 
-/* =============================================================================================== */
-/** @name TEMPLATEMODULE - 2.1. SECOND GROUP OF FUNCTIONS - SUBGROUP1                              */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/** @name TEMPLATEMODULE - 2.1. SECOND GROUP OF FUNCTIONS - SUBGROUP1 */
+/* ===============================================================================================
+ */
 
 // DOCUMENTATION NOTE: put @brief statement in .h
 // DOCUMENTATION NOTE: put short argument description in .h
@@ -346,10 +381,7 @@ int templatemodule_examplefunc00(int mode)
  * ## Details
  *
  */
-int templatemodule_examplefunc01(const char *namein,
-                                 float       val1,
-                                 int         n1,
-                                 float *restrict farray)
+int templatemodule_examplefunc01(const char *namein, float val1, int n1, float *restrict farray)
 {
     /// ---
     /// # Code Description
@@ -364,7 +396,7 @@ int templatemodule_examplefunc01(const char *namein,
     /// ## Execute loop
 
     // code here
-    for(;;)  // preferred way to write infinite loop
+    for (;;) // preferred way to write infinite loop
     {
     }
 

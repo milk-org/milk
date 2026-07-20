@@ -8,13 +8,8 @@
 #include "addCF_to_CF.h"
 #include "update_level.h"
 
-
 // attach node CFindex to CFindexupnode
-errno_t node_attachnode(
-    CLUSTERTREE *ctree,
-    long CFindex,
-    long CFindexupnode
-)
+errno_t node_attachnode(CLUSTERTREE *ctree, long CFindex, long CFindexupnode)
 {
     DEBUG_TRACE_FSTART();
 
@@ -22,19 +17,16 @@ errno_t node_attachnode(
     ctree->CFarray[CFindexupnode].NBchild++;
 
     ctree->CFarray[CFindex].parentindex = CFindexupnode;
-    ctree->CFarray[CFindex].level = ctree->CFarray[CFindexupnode].level + 1;
+    ctree->CFarray[CFindex].level       = ctree->CFarray[CFindexupnode].level + 1;
 
     {
         long cfi = CFindexupnode;
-        while(cfi != -1)
+        while (cfi != -1)
         {
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
             int addOK = 1; // don't test radius
-            addCF_to_CF(ctree,
-                        ctree->CFarray[CFindex],
-                        cfi,
-                        &addOK);
+            addCF_to_CF(ctree, ctree->CFarray[CFindex], cfi, &addOK);
 
             // move upstream to propagate change
             cfi = ctree->CFarray[cfi].parentindex;

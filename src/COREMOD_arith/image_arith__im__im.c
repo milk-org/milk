@@ -17,9 +17,9 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
+#include "image_arith__im__im.h"
 #include "imfunctions.h"
 #include "mathfuncs.h"
-#include "image_arith__im__im.h"
 
 int arith_image_acos_byID(long ID, long IDout)
 {

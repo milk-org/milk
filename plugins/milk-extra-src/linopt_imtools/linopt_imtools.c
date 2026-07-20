@@ -55,8 +55,8 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-#include "linalgebra/linalgebra.h"
 #include "info/info.h"
+#include "linalgebra/linalgebra.h"
 #include "linopt_imtools/linopt_imtools.h"
 #include "statistic/statistic.h"
 
@@ -121,7 +121,6 @@ errno_t linopt_imtools_image_construct_stream_cli()
 
 static errno_t init_module_CLI()
 {
-
     // CONVERSION
 
     CLIADDCMD_linopt_imtools__mask_to_pixtable();
@@ -145,13 +144,14 @@ static errno_t init_module_CLI()
     CLIADDCMD_linopt_imtools__image_construct();
 
     /*   RegisterCLIcommand(
-           "imlinconstructs",
-           __FILE__,
-           linopt_imtools_image_construct_stream_cli,
-           "construct image as linear sum of modes (stream mode)",
-           "<modes> <coeffs> <outim>", "imlinconstructs modes coeffs outim",
-           "long linopt_imtools_image_construct_stream(const char *IDmodes_name, const char *IDcoeff_name, const char *IDout_name)");
-    */
+         "imlinconstructs",
+         __FILE__,
+         linopt_imtools_image_construct_stream_cli,
+         "construct image as linear sum of modes (stream mode)",
+         "<modes> <coeffs> <outim>", "imlinconstructs modes coeffs outim",
+         "long linopt_imtools_image_construct_stream(const char *IDmodes_name,
+     const char *IDcoeff_name, const char *IDout_name)");
+  */
 
     CLIADDCMD_linopt_imtools__compute_SVDdecomp();
 
@@ -166,20 +166,24 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 /*                                                                                                 */
-/* 3. CREATE MODES                                                                                 */
+/* 3. CREATE MODES */
 /*                                                                                                 */
-/* =============================================================================================== */
-/* =============================================================================================== */
+/* ===============================================================================================
+ */
+/* ===============================================================================================
+ */
 
 // r0pix is r=1 in pixel unit
 
 imageID linopt_imtools_make1Dpolynomials(const char *IDout_name,
-        long        NBpts,
-        long        MaxOrder,
-        float       r0pix)
+                                         long        NBpts,
+                                         long        MaxOrder,
+                                         float       r0pix)
 {
     DEBUG_TRACE_FSTART();
 
@@ -191,12 +195,11 @@ imageID linopt_imtools_make1Dpolynomials(const char *IDout_name,
     ysize = 1;
     zsize = MaxOrder;
 
-    FUNC_CHECK_RETURN(
-        create_3Dimage_ID(IDout_name, xsize, ysize, zsize, &IDout));
+    FUNC_CHECK_RETURN(create_3Dimage_ID(IDout_name, xsize, ysize, zsize, &IDout));
 
-    for(kk = 0; kk < zsize; kk++)
+    for (kk = 0; kk < zsize; kk++)
     {
-        for(ii = 0; ii < xsize; ii++)
+        for (ii = 0; ii < xsize; ii++)
         {
             float r                                    = 1.0 * ii / r0pix;
             data.image[IDout].array.F[kk * xsize + ii] = pow(r, 1.0 * kk);
@@ -232,7 +235,8 @@ double linopt_imtools_opt_f(
     for(k = 0; k < n; k++)
         for(l = 0; l < n; l++)
         {
-            value += polycoeff2[l * n + k] * gsl_vector_get(v, k) * gsl_vector_get(v, l);
+            value += polycoeff2[l * n + k] * gsl_vector_get(v, k) *
+gsl_vector_get(v, l);
         }
 
     return(value);
@@ -353,7 +357,8 @@ imageID linopt_imtools_image_construct_stream(
     {
         if((data.image[IDcoeff].md[0].sem == 0) || (NOSEM == 1))
         {
-            while(cnt == data.image[IDcoeff].md[0].cnt0) // test if new frame exists
+            while(cnt == data.image[IDcoeff].md[0].cnt0) // test if new frame
+exists
             {
                 usleep(5);
             }
@@ -373,8 +378,8 @@ imageID linopt_imtools_image_construct_stream(
         for(kk = 0; kk < zsize; kk++)
             for(ii = 0; ii < sizexy; ii++)
             {
-                data.image[IDout].array.F[ii] += data.image[IDcoeff].array.F[kk] *
-                                                 data.image[IDmodes].array.F[kk * sizexy + ii];
+                data.image[IDout].array.F[ii] += data.image[IDcoeff].array.F[kk]
+* data.image[IDmodes].array.F[kk * sizexy + ii];
             }
         semval = ImageStreamIO_semvalue(data.image+IDout, 0);
         if(semval < SEMAPHORE_MAXVAL)
@@ -417,7 +422,8 @@ double linopt_imtools_match_slow(
     long riterMax = 1000000;
 
     long double v0;
-    long double *tarray = NULL; // temporary array to store values for fixed pixel
+    long double *tarray = NULL; // temporary array to store values for fixed
+pixel
 
 
     // ref image coefficients (solutions)
@@ -426,8 +432,10 @@ double linopt_imtools_match_slow(
     long double ampl;
 
     //
-    //  the optimization problem is first rewritten as a 2nd degree polynomial of alpha values
-    //  val = V0 + SUM_{k=0...n-1}{polycoeff1[k]*alpha[k] + SUM_{k=0...n-1}{l=0...k}{polycoeff2[k,l]*alpha[k]*alpha[l]}
+    //  the optimization problem is first rewritten as a 2nd degree polynomial
+of alpha values
+    //  val = V0 + SUM_{k=0...n-1}{polycoeff1[k]*alpha[k] +
+SUM_{k=0...n-1}{l=0...k}{polycoeff2[k,l]*alpha[k]*alpha[l]}
     //
 
     long iter = 0;
@@ -513,11 +521,11 @@ double linopt_imtools_match_slow(
     // compute polynomial coefficients
     for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
     {
-        v0 = (long double)(data.image[ID].array.F[ii] * data.image[IDmask].array.F[ii]);
-        for(k = 0; k < n; k++)
+        v0 = (long double)(data.image[ID].array.F[ii] *
+data.image[IDmask].array.F[ii]); for(k = 0; k < n; k++)
         {
-            tarray[k] = (long double)(data.image[IDref].array.F[naxes[0] * naxes[1] * k +
-                                      ii] * data.image[IDmask].array.F[ii]);
+            tarray[k] = (long double)(data.image[IDref].array.F[naxes[0] *
+naxes[1] * k + ii] * data.image[IDmask].array.F[ii]);
         }
         C0 += v0 * v0;
         for(k = 0; k < n; k++)
@@ -532,7 +540,8 @@ double linopt_imtools_match_slow(
     }
 
     // find solution
-    //   val = C0 + SUM_{k=0...n-1}{polycoeff1[k]*alpha[k] + SUM_{k=0...n-1}{l=0...k}{polycoeff2[k,l]*alpha[k]*alpha[l]}
+    //   val = C0 + SUM_{k=0...n-1}{polycoeff1[k]*alpha[k] +
+SUM_{k=0...n-1}{l=0...k}{polycoeff2[k,l]*alpha[k]*alpha[l]}
     //
     val = C0;
     for(k = 0; k < n; k++)
@@ -679,7 +688,8 @@ double linopt_imtools_match_slow(
         for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
         {
             data.image[IDout].array.F[ii] += alphabest[k] *
-                                             data.image[IDref].array.F[naxes[0] * naxes[1] * k + ii];
+                                             data.image[IDref].array.F[naxes[0]
+* naxes[1] * k + ii];
         }
 
 
@@ -816,7 +826,8 @@ double linopt_imtools_match(
         for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
         {
             data.image[IDout].array.F[ii] += data.image[IDsol].array.F[k] *
-                                             data.image[IDref].array.F[naxes[0] * naxes[1] * k + ii];
+                                             data.image[IDref].array.F[naxes[0]
+* naxes[1] * k + ii];
         }
 
     return(chisq);

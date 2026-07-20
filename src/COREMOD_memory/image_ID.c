@@ -20,22 +20,21 @@ imageID image_ID(const char *name)
 
     i      = 0;
     loopOK = 1;
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
-        if(data.image[i].used == 1)
+        if (data.image[i].used == 1)
         {
-            if((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
-                    (data.image[i].name[strlen(name)] == '\0'))
+            if ((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
+                (data.image[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
-                clock_gettime(CLOCK_MILK,
-                              &data.image[i].md[0].lastaccesstime);
+                clock_gettime(CLOCK_MILK, &data.image[i].md[0].lastaccesstime);
             }
         }
         i++;
 
-        if(i == data.NB_MAX_IMAGE)
+        if (i == data.NB_MAX_IMAGE)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -58,12 +57,12 @@ imageID image_ID_noaccessupdate(const char *name)
 
     i      = 0;
     loopOK = 1;
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
-        if(data.image[i].used == 1)
+        if (data.image[i].used == 1)
         {
-            if((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
-                    (data.image[i].name[strlen(name)] == '\0'))
+            if ((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
+                (data.image[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -71,7 +70,7 @@ imageID image_ID_noaccessupdate(const char *name)
         }
         i++;
 
-        if(i == data.NB_MAX_IMAGE)
+        if (i == data.NB_MAX_IMAGE)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -83,33 +82,28 @@ imageID image_ID_noaccessupdate(const char *name)
 }
 
 /* next available ID number */
-imageID next_avail_image_ID(
-    imageID preferredID
-)
+imageID next_avail_image_ID(imageID preferredID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID i;
     imageID ID = -1;
 
-    if ( (preferredID > -1)
-            && (preferredID<data.NB_MAX_IMAGE)
-            && (data.image[preferredID].used == 0) )
+    if ((preferredID > -1) && (preferredID < data.NB_MAX_IMAGE) &&
+        (data.image[preferredID].used == 0))
     {
-        ID = preferredID;
+        ID                  = preferredID;
         data.image[ID].used = 1;
     }
     else
     {
-
-
 #ifdef _OPENMP
-        #pragma omp critical
+#    pragma omp critical
         {
 #endif
-            for(i = 0; i < data.NB_MAX_IMAGE; i++)
+            for (i = 0; i < data.NB_MAX_IMAGE; i++)
             {
-                if(data.image[i].used == 0)
+                if (data.image[i].used == 0)
                 {
                     ID                  = i;
                     data.image[ID].used = 1;
@@ -119,13 +113,11 @@ imageID next_avail_image_ID(
 #ifdef _OPENMP
         }
 #endif
-
     }
-    if(ID == -1)
+    if (ID == -1)
     {
         printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
-        printf("NB_MAX_IMAGE should be increased above current value (%ld)\n",
-               data.NB_MAX_IMAGE);
+        printf("NB_MAX_IMAGE should be increased above current value (%ld)\n", data.NB_MAX_IMAGE);
         exit(0);
     }
 

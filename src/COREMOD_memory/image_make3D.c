@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "CommandLineInterface/CLIcore.h"
 #include "image_make3D.h"
+#include "CommandLineInterface/CLIcore.h"
 
 // Local variables pointers
 static char     *outimname;
@@ -11,48 +11,15 @@ static uint32_t *imxsize;
 static uint32_t *imysize;
 static uint32_t *imzsize;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".out_name",
-        "output image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".xsize",
-        "x size",
-        "512",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imxsize,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".ysize",
-        "y size",
-        "512",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imysize,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".zsize",
-        "z size",
-        "512",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imzsize,
-        NULL
-    }
+static CLICMDARGDEF farg[] = {
+    { CLIARG_STR, ".out_name", "output image", "out1", CLIARG_VISIBLE_DEFAULT, (void **) &outimname,
+      NULL },
+    { CLIARG_INT64, ".xsize", "x size", "512", CLIARG_VISIBLE_DEFAULT, (void **) &imxsize, NULL },
+    { CLIARG_INT64, ".ysize", "y size", "512", CLIARG_VISIBLE_DEFAULT, (void **) &imysize, NULL },
+    { CLIARG_INT64, ".zsize", "z size", "512", CLIARG_VISIBLE_DEFAULT, (void **) &imzsize, NULL }
 };
 
-static CLICMDDATA CLIcmddata = {"mk3Dim",
-                                "make 3D image",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
+static CLICMDDATA CLIcmddata = { "mk3Dim", "make 3D image", CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -97,9 +64,8 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMOD_memory__mk3Dim()
+    // Register function in CLI
+    errno_t CLIADDCMD_COREMOD_memory__mk3Dim()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;

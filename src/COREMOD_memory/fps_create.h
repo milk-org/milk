@@ -7,7 +7,7 @@
  */
 
 #ifndef _FPS_CREATE_H
-#define FPS_CREATE_H
+#    define FPS_CREATE_H
 
 errno_t fps_create_addCLIcmd();
 

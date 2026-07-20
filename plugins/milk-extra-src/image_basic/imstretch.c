@@ -29,21 +29,21 @@ imageID basic_stretch(const char *__restrict name_in,
 
     create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout);
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[0]; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[0]; jj++)
         {
-            i = Xcenter + (long)(1.0 * (ii - Xcenter) * coeff);
-            j = Ycenter + (long)(1.0 * (jj - Ycenter) * coeff);
-            if((i < naxes[0]) && (j < naxes[1]) && (i > -1) && (j > -1))
+            i = Xcenter + (long) (1.0 * (ii - Xcenter) * coeff);
+            j = Ycenter + (long) (1.0 * (jj - Ycenter) * coeff);
+            if ((i < naxes[0]) && (j < naxes[1]) && (i > -1) && (j > -1))
             {
                 data.image[IDout].array.F[jj * naxes[0] + ii] +=
                     data.image[IDin].array.F[j * naxes[0] + i] / coeff / coeff;
             }
         }
+    }
 
-    arith_image_cstmult_inplace(name_out,
-                                arith_image_total(name_in) /
-                                arith_image_total(name_out));
+    arith_image_cstmult_inplace(name_out, arith_image_total(name_in) / arith_image_total(name_out));
 
     return IDout;
 }
@@ -76,36 +76,35 @@ imageID basic_stretch_range(const char *__restrict name_in,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout));
 
-    for(step = 0; step < NBstep; step++)
+    for (step = 0; step < NBstep; step++)
     {
         fprintf(stdout, ".");
         fflush(stdout);
         coeff = coeff1 + (coeff2 - coeff1) * (1.0 * step / (NBstep - 1));
         x     = (coeff - (coeff1 + coeff2) / 2.0) / ((coeff2 - coeff1) / 2.0);
         // x goes from -1 to 1
-        if(ApoCoeff > eps)
+        if (ApoCoeff > eps)
         {
-            mcoeff =
-                pow((1.0 - pow((fabs(x) - (1.0 - ApoCoeff)) / ApoCoeff, 2.0)),
-                    4.0);
+            mcoeff = pow((1.0 - pow((fabs(x) - (1.0 - ApoCoeff)) / ApoCoeff, 2.0)), 4.0);
         }
         else
         {
             mcoeff = 1.0;
         }
 
-        if((1.0 - x * x) < eps)
+        if ((1.0 - x * x) < eps)
         {
             mcoeff = 0.0;
         }
-        if(fabs(x) < ApoCoeff)
+        if (fabs(x) < ApoCoeff)
         {
             mcoeff = 1.0;
         }
         //      fprintf(stdout,"(%f %f %f %f %f)",coeff,coeff1,coeff2,x,mcoeff);
 
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
-            for(uint32_t jj = 0; jj < naxes[1]; jj++)
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
+        {
+            for (uint32_t jj = 0; jj < naxes[1]; jj++)
             {
                 x = (1.0 * (ii - Xcenter) * coeff) + Xcenter;
                 y = (1.0 * (jj - Ycenter) * coeff) + Ycenter;
@@ -113,35 +112,26 @@ imageID basic_stretch_range(const char *__restrict name_in,
                 j = (long) y;
                 u = x - i;
                 t = y - j;
-                if((i < naxes[0] - 1) && (j < naxes[1] - 1) && (i > -1) &&
-                        (j > -1))
+                if ((i < naxes[0] - 1) && (j < naxes[1] - 1) && (i > -1) && (j > -1))
                 {
-                    tmp = (1.0 - u) * (1.0 - t) *
-                          data.image[IDin].array.F[j * naxes[0] + i];
-                    tmp += (1.0 - u) * t *
-                           data.image[IDin].array.F[(j + 1) * naxes[0] + i];
-                    tmp += u * (1.0 - t) *
-                           data.image[IDin].array.F[j * naxes[0] + i + 1];
-                    tmp += u * t *
-                           data.image[IDin].array.F[(j + 1) * naxes[0] + i + 1];
-                    data.image[IDout].array.F[jj * naxes[0] + ii] +=
-                        mcoeff * tmp / coeff / coeff;
+                    tmp = (1.0 - u) * (1.0 - t) * data.image[IDin].array.F[j * naxes[0] + i];
+                    tmp += (1.0 - u) * t * data.image[IDin].array.F[(j + 1) * naxes[0] + i];
+                    tmp += u * (1.0 - t) * data.image[IDin].array.F[j * naxes[0] + i + 1];
+                    tmp += u * t * data.image[IDin].array.F[(j + 1) * naxes[0] + i + 1];
+                    data.image[IDout].array.F[jj * naxes[0] + ii] += mcoeff * tmp / coeff / coeff;
                 }
             }
+        }
     }
 
     fprintf(stdout, "\n");
-    arith_image_cstmult_inplace(name_out,
-                                arith_image_total(name_in) /
-                                arith_image_total(name_out));
+    arith_image_cstmult_inplace(name_out, arith_image_total(name_in) / arith_image_total(name_out));
 
     DEBUG_TRACE_FEXIT();
     return IDout;
 }
 
-imageID basic_stretchc(const char *__restrict name_in,
-                       const char *__restrict name_out,
-                       float coeff)
+imageID basic_stretchc(const char *__restrict name_in, const char *__restrict name_out, float coeff)
 {
     DEBUG_TRACE_FSTART();
 
@@ -159,17 +149,19 @@ imageID basic_stretchc(const char *__restrict name_in,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout));
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[0]; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[0]; jj++)
         {
-            i = Xcenter + (long)(1.0 * (ii - Xcenter) * coeff);
-            j = Ycenter + (long)(1.0 * (jj - Ycenter) * coeff);
-            if((i < naxes[0]) && (j < naxes[1]) && (i > -1) && (j > -1))
+            i = Xcenter + (long) (1.0 * (ii - Xcenter) * coeff);
+            j = Ycenter + (long) (1.0 * (jj - Ycenter) * coeff);
+            if ((i < naxes[0]) && (j < naxes[1]) && (i > -1) && (j > -1))
             {
                 data.image[IDout].array.F[jj * naxes[0] + ii] +=
                     data.image[IDin].array.F[j * naxes[0] + i] / coeff / coeff;
             }
         }
+    }
 
     /*  basic_mult(name_out,arith_image_total(name_in)/arith_image_total(name_out));*/
 

@@ -32,87 +32,25 @@ static uint64_t *statusframelag;
 static uint64_t *statuskkin;
 static uint64_t *statuskkout;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".out_name",
-        "output image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".delaysec",
-        "delay [s]",
-        "0.001",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &delaysec,
-        NULL
-    },
-    {
-        CLIARG_UINT64,
-        ".timebuffsize",
-        "time buffer size",
-        "10000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &timebuffsize,
-        NULL
-    },
-    {
-        CLIARG_INT32,
-        ".option.timeavemode",
-        "Enable time window averaging (>0)",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &avemode,
-        &fpi_avemode
-    },
-    {
-        CLIARG_UINT64,
-        ".option.timeavedtns",
-        "Averaging time window width [ns]",
-        "10000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &avedtns,
-        &fpi_timeavedtns
-    },
-    {
-        CLIARG_UINT64,
-        ".status.framelag",
-        "current time lag frame index",
-        "100",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &statusframelag,
-        NULL
-    },
-    {
-        CLIARG_UINT64,
-        ".status.kkin",
-        "input cube slice index",
-        "100",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &statuskkin,
-        NULL
-    },
-    {
-        CLIARG_UINT64,
-        ".status.kkout",
-        "output cube slice index",
-        "100",
-        CLIARG_OUTPUT_DEFAULT,
-        (void **) &statuskkout,
-        NULL
-    }
+static CLICMDARGDEF farg[] = {
+    { CLIARG_IMG, ".in_name", "input image", "im1", CLIARG_VISIBLE_DEFAULT, (void **) &inimname,
+      NULL },
+    { CLIARG_STR, ".out_name", "output image", "out1", CLIARG_VISIBLE_DEFAULT, (void **) &outimname,
+      NULL },
+    { CLIARG_FLOAT32, ".delaysec", "delay [s]", "0.001", CLIARG_VISIBLE_DEFAULT,
+      (void **) &delaysec, NULL },
+    { CLIARG_UINT64, ".timebuffsize", "time buffer size", "10000", CLIARG_HIDDEN_DEFAULT,
+      (void **) &timebuffsize, NULL },
+    { CLIARG_INT32, ".option.timeavemode", "Enable time window averaging (>0)", "0",
+      CLIARG_HIDDEN_DEFAULT, (void **) &avemode, &fpi_avemode },
+    { CLIARG_UINT64, ".option.timeavedtns", "Averaging time window width [ns]", "10000",
+      CLIARG_HIDDEN_DEFAULT, (void **) &avedtns, &fpi_timeavedtns },
+    { CLIARG_UINT64, ".status.framelag", "current time lag frame index", "100",
+      CLIARG_OUTPUT_DEFAULT, (void **) &statusframelag, NULL },
+    { CLIARG_UINT64, ".status.kkin", "input cube slice index", "100", CLIARG_OUTPUT_DEFAULT,
+      (void **) &statuskkin, NULL },
+    { CLIARG_UINT64, ".status.kkout", "output cube slice index", "100", CLIARG_OUTPUT_DEFAULT,
+      (void **) &statuskkout, NULL }
 };
 
 static errno_t customCONFsetup()
@@ -122,9 +60,9 @@ static errno_t customCONFsetup()
 
 static errno_t customCONFcheck()
 {
-    if(data.fpsptr != NULL)
+    if (data.fpsptr != NULL)
     {
-        if(data.fpsptr->parray[fpi_avemode].val.i32[0] == 0)  // no ave mode
+        if (data.fpsptr->parray[fpi_avemode].val.i32[0] == 0) // no ave mode
         {
             data.fpsptr->parray[fpi_timeavedtns].fpflag &= ~FPFLAG_USED;
             data.fpsptr->parray[fpi_timeavedtns].fpflag &= ~FPFLAG_VISIBLE;
@@ -139,10 +77,8 @@ static errno_t customCONFcheck()
     return RETURN_SUCCESS;
 }
 
-static CLICMDDATA CLIcmddata = {"streamdelay",
-                                "delay input stream to output stream",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
+static CLICMDDATA CLIcmddata = { "streamdelay", "delay input stream to output stream",
+                                 CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -166,11 +102,11 @@ static errno_t streamdelay(IMGID            inimg,
     clock_gettime(CLOCK_MILK, &tnow);
 
     // update circular buffer if new frame has arrived
-    if(cnt0prev != inimg.md->cnt0)
+    if (cnt0prev != inimg.md->cnt0)
     {
-        //printf("cnt %8ld %8ld   CIRC BUFFER UPDATE -> index %8ld / %8ld\n",
-        //       cnt0prev, inimg.md->cnt0, bufferindex_input, *timebuffsize);
-        // new input frame
+        // printf("cnt %8ld %8ld   CIRC BUFFER UPDATE -> index %8ld / %8ld\n",
+        //        cnt0prev, inimg.md->cnt0, bufferindex_input, *timebuffsize);
+        //  new input frame
 
         // update counter for next detection loop
         cnt0prev = inimg.md->cnt0;
@@ -188,7 +124,7 @@ static errno_t streamdelay(IMGID            inimg,
         warray[bufferindex_input] = 0;
 
         bufferindex_input++;
-        if(bufferindex_input == (*timebuffsize))
+        if (bufferindex_input == (*timebuffsize))
         {
             // end of circular buffer reached
             bufferindex_input = 0;
@@ -199,13 +135,14 @@ static errno_t streamdelay(IMGID            inimg,
     struct timespec tdiff  = timespec_diff(tarray[bufferindex_output], tnow);
     double          tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-    //printf("%8ld  %8ld [%d]  tdiffv = %lf sec    %lf\n",
-    //       bufferindex_input, bufferindex_output, warray[bufferindex_output], tdiffv, (*delaysec));
-    //fflush(stdout);
+    // printf("%8ld  %8ld [%d]  tdiffv = %lf sec    %lf\n",
+    //        bufferindex_input, bufferindex_output, warray[bufferindex_output],
+    //        tdiffv, (*delaysec));
+    // fflush(stdout);
 
     int  updateflag              = 0;
     long bufferindex_output_last = 0;
-    while((warray[bufferindex_output] == 0) && (tdiffv > (*delaysec)))
+    while ((warray[bufferindex_output] == 0) && (tdiffv > (*delaysec)))
     {
         // update output frame
         updateflag                 = 1;
@@ -213,22 +150,20 @@ static errno_t streamdelay(IMGID            inimg,
 
         bufferindex_output_last = bufferindex_output;
         bufferindex_output++;
-        if(bufferindex_output == (*timebuffsize))
+        if (bufferindex_output == (*timebuffsize))
         {
             // end of circular buffer reached
             bufferindex_output = 0;
         }
 
-        //printf("    advance %8ld %8ld\n", bufferindex_input, bufferindex_output);
+        // printf("    advance %8ld %8ld\n", bufferindex_input, bufferindex_output);
         tdiff  = timespec_diff(tarray[bufferindex_output], tnow);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }
 
-    if(updateflag == 1)
+    if (updateflag == 1)
     {
-        printf("     WRITE %8ld %8ld  :  %ld bytes\n",
-               bufferindex_input,
-               bufferindex_output_last,
+        printf("     WRITE %8ld %8ld  :  %ld bytes\n", bufferindex_input, bufferindex_output_last,
                (long) inimg.md->imdatamemsize);
         // copy circular buffer frame to output
         char *srcptr;
@@ -257,20 +192,16 @@ static errno_t compute_function()
     IMGID outimg = mkIMGID_from_name(outimname);
     imcreatelikewiseIMGID(&outimg, &inimg);
 
-    IMGID bufferimg    = makeIMGID_3D("streamdelaybuff",
-                                      inimg.size[0],
-                                      inimg.size[1],
-                                      *timebuffsize);
+    IMGID bufferimg = makeIMGID_3D("streamdelaybuff", inimg.size[0], inimg.size[1], *timebuffsize);
     bufferimg.datatype = inimg.datatype;
     imcreateIMGID(&bufferimg);
 
     struct timespec *timeinarray;
-    timeinarray =
-        (struct timespec *) malloc(sizeof(struct timespec) * (*timebuffsize));
+    timeinarray = (struct timespec *) malloc(sizeof(struct timespec) * (*timebuffsize));
     // get current time
     struct timespec tnow;
     clock_gettime(CLOCK_MILK, &tnow);
-    for(uint64_t i = 0; i < *timebuffsize; i++)
+    for (uint64_t i = 0; i < *timebuffsize; i++)
     {
         timeinarray[i].tv_sec  = tnow.tv_sec;
         timeinarray[i].tv_nsec = tnow.tv_nsec;
@@ -280,7 +211,7 @@ static errno_t compute_function()
     // 0 if new, 1 if already sent to output
     int *warray;
     warray = (int *) malloc(sizeof(int) * (*timebuffsize));
-    for(uint64_t i = 0; i < *timebuffsize; i++)
+    for (uint64_t i = 0; i < *timebuffsize; i++)
     {
         warray[i] = 1;
     }
@@ -293,7 +224,7 @@ static errno_t compute_function()
 
     streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
     // status is 0 if no update to output, 1 otherwise
-    if(status != 0)
+    if (status != 0)
     {
         processinfo_update_output_stream(processinfo, outimg.ID);
     }
@@ -309,9 +240,8 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMOD_memory__streamdelay()
+    // Register function in CLI
+    errno_t CLIADDCMD_COREMOD_memory__streamdelay()
 {
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
@@ -353,8 +283,8 @@ CLIADDCMD_COREMOD_memory__streamdelay()
         arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
-        create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &IDout);
-        free(arraytmp);
+        create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0,
+&IDout); free(arraytmp);
     }
 
     *kkin = 0;
@@ -414,12 +344,14 @@ CLIADDCMD_COREMOD_memory__streamdelay()
 //            cnt0 = data.image[IDin].md[0].cnt0;
 
 //            if(cnt0 != cnt0old) { // new frame
-            clock_gettime(CLOCK_MILK, &t0array[*kkin]);  // record time of input frame
+            clock_gettime(CLOCK_MILK, &t0array[*kkin]);  // record time of input
+frame
 
             DEBUG_TRACEPOINT(" ");
             for(ii = 0; ii < xysize; ii++)
             {
-                data.image[IDimc].array.F[(*kkin) * xysize + ii] = data.image[IDin].array.F[ii];
+                data.image[IDimc].array.F[(*kkin) * xysize + ii] =
+data.image[IDin].array.F[ii];
             }
             (*kkin) ++;
             DEBUG_TRACEPOINT(" ");
@@ -463,9 +395,8 @@ CLIADDCMD_COREMOD_memory__streamdelay()
             switch(timeavemode)
             {
 
-            case 0: // no time averaging - pick more recent frame that matches requirement
-                DEBUG_TRACEPOINT(" ");
-                if(cntskip > 0)
+            case 0: // no time averaging - pick more recent frame that matches
+requirement DEBUG_TRACEPOINT(" "); if(cntskip > 0)
                 {
                     char *ptr; // pointer address
 
@@ -475,7 +406,8 @@ CLIADDCMD_COREMOD_memory__streamdelay()
                     ptr += SIZEOF_DATATYPE_FLOAT * xysize * *kkout;
 
                     memcpy(data.image[IDout].array.F, ptr,
-                           SIZEOF_DATATYPE_FLOAT * xysize);  // copy time-delayed input to output
+                           SIZEOF_DATATYPE_FLOAT * xysize);  // copy
+time-delayed input to output
 
                     COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
                     data.image[IDout].md[0].cnt0++;
@@ -483,9 +415,8 @@ CLIADDCMD_COREMOD_memory__streamdelay()
                 }
                 break;
 
-            default : // strict time window (note: other modes will be coded in the future)
-                normframes = 0.0;
-                DEBUG_TRACEPOINT(" ");
+            default : // strict time window (note: other modes will be coded in
+the future) normframes = 0.0; DEBUG_TRACEPOINT(" ");
 
                 for(ii = 0; ii < xysize; ii++)
                 {
@@ -497,12 +428,14 @@ CLIADDCMD_COREMOD_memory__streamdelay()
                     tdiff = timespec_diff(t0array[kkinscan], tnow);
                     tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-                    if((tdiffv > 0) && (fabs(tdiffv - 1.0e-6 * delayus) < *avedt))
+                    if((tdiffv > 0) && (fabs(tdiffv - 1.0e-6 * delayus) <
+*avedt))
                     {
                         float coeff = 1.0;
                         for(ii = 0; ii < xysize; ii++)
                         {
-                            arraytmpf[ii] += coeff * data.image[IDimc].array.F[kkinscan * xysize + ii];
+                            arraytmpf[ii] += coeff *
+data.image[IDimc].array.F[kkinscan * xysize + ii];
                         }
                         normframes += coeff;
                     }

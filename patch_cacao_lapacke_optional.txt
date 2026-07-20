@@ -11,6 +11,3 @@ index 15b1646b..6a07c81f 100644
 +if(NOT MKL_FOUND)
 +  list(APPEND LINKLIBS lapacke)
 +endif()
- 
- 
- 

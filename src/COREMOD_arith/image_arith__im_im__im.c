@@ -17,18 +17,16 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
+#include "image_arith__im_im__im.h"
 #include "imfunctions.h"
 #include "mathfuncs.h"
-#include "image_arith__im_im__im.h"
 
 int arith_image_fmod_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
     return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pfmod);
 }
 
-int arith_image_fmod(const char *ID1_name,
-                     const char *ID2_name,
-                     const char *ID_out)
+int arith_image_fmod(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -41,9 +39,7 @@ int arith_image_pow_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ppow);
 }
 
-int arith_image_pow(const char *ID1_name,
-                    const char *ID2_name,
-                    const char *ID_out)
+int arith_image_pow(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -56,9 +52,7 @@ int arith_image_add_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_add_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
-int arith_image_add(const char *ID1_name,
-                    const char *ID2_name,
-                    const char *ID_out)
+int arith_image_add(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -71,9 +65,7 @@ int arith_image_sub_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_sub_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
-int arith_image_sub(const char *ID1_name,
-                    const char *ID2_name,
-                    const char *ID_out)
+int arith_image_sub(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -86,9 +78,7 @@ int arith_image_mult_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_mult_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
-int arith_image_mult(const char *ID1_name,
-                     const char *ID2_name,
-                     const char *ID_out)
+int arith_image_mult(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -101,9 +91,7 @@ int arith_image_div_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_div_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
-int arith_image_div(const char *ID1_name,
-                    const char *ID2_name,
-                    const char *ID_out)
+int arith_image_div(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -116,9 +104,7 @@ int arith_image_minv_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pminv);
 }
 
-int arith_image_minv(const char *ID1_name,
-                     const char *ID2_name,
-                     const char *ID_out)
+int arith_image_minv(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -131,9 +117,7 @@ int arith_image_maxv_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pmaxv);
 }
 
-int arith_image_maxv(const char *ID1_name,
-                     const char *ID2_name,
-                     const char *ID_out)
+int arith_image_maxv(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -146,9 +130,7 @@ int arith_image_testlt_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ptestlt);
 }
 
-int arith_image_testlt(const char *ID1_name,
-                       const char *ID2_name,
-                       const char *ID_out)
+int arith_image_testlt(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);
@@ -161,9 +143,7 @@ int arith_image_testmt_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
     return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ptestmt);
 }
 
-int arith_image_testmt(const char *ID1_name,
-                       const char *ID2_name,
-                       const char *ID_out)
+int arith_image_testmt(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     IMGID imgin1 = mkIMGID_from_name(ID1_name);
     IMGID imgin2 = mkIMGID_from_name(ID2_name);

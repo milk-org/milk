@@ -7,30 +7,30 @@
 
 #ifdef HAVE_CUDA
 
-#ifdef HAVE_MAGMA
-#include "magma_lapack.h"
-#include "magma_v2.h"
+#    ifdef HAVE_MAGMA
+#        include "magma_lapack.h"
+#        include "magma_v2.h"
 
-#include "CommandLineInterface/CLIcore.h"
+#        include "CommandLineInterface/CLIcore.h"
 
-#include "COREMOD_memory/COREMOD_memory.h"
+#        include "COREMOD_memory/COREMOD_memory.h"
 
-#ifndef max
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#endif
-#ifndef min
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#endif
+#        ifndef max
+#            define max(a, b) ((a) > (b) ? (a) : (b))
+#        endif
+#        ifndef min
+#            define min(a, b) ((a) < (b) ? (a) : (b))
+#        endif
 
 // ==========================================
 // Forward declaration(s)
 // ==========================================
 
 int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
-        const char *ID_Cmatrix_name,
-        double      SVDeps,
-        long        MaxNBmodes,
-        const char *ID_VTmatrix_name);
+                                                  const char *ID_Cmatrix_name,
+                                                  double      SVDeps,
+                                                  long        MaxNBmodes,
+                                                  const char *ID_VTmatrix_name);
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -38,15 +38,13 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
 
 errno_t LINALGEBRA_magma_compute_SVDpseudoInverse_SVD_cli()
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 3) ==
-            0)
+    if (CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 1) + CLI_checkarg(4, 2) +
+            CLI_checkarg(5, 3) ==
+        0)
     {
         LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
-            data.cmdargtoken[1].val.string,
-            data.cmdargtoken[2].val.string,
-            data.cmdargtoken[3].val.numf,
-            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numf, data.cmdargtoken[4].val.numl,
             data.cmdargtoken[5].val.string);
 
         return CLICMD_SUCCESS;
@@ -63,18 +61,15 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse_SVD_cli()
 
 errno_t magma_compute_SVDpseudoInverse_SVD_addCLIcmd()
 {
-
-    RegisterCLIcommand(
-        "linalgebrapsinvSVD",
-        __FILE__,
-        LINALGEBRA_magma_compute_SVDpseudoInverse_SVD_cli,
-        "compute pseudo inverse with direct SVD",
-        "<input matrix [string]> <output pseudoinv [string]> <eps [float]> "
-        "<NBmodes [long]> <VTmat [string]>",
-        "linalgebrapsinvSVD matA matAinv 0.01 100 VTmat",
-        "int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char "
-        "*ID_Rmatrix_name, const char *ID_Cmatrix_name, "
-        "double SVDeps, long MaxNBmodes, const char *ID_VTmatrix_name);");
+    RegisterCLIcommand("linalgebrapsinvSVD", __FILE__,
+                       LINALGEBRA_magma_compute_SVDpseudoInverse_SVD_cli,
+                       "compute pseudo inverse with direct SVD",
+                       "<input matrix [string]> <output pseudoinv [string]> <eps [float]> "
+                       "<NBmodes [long]> <VTmat [string]>",
+                       "linalgebrapsinvSVD matA matAinv 0.01 100 VTmat",
+                       "int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char "
+                       "*ID_Rmatrix_name, const char *ID_Cmatrix_name, "
+                       "double SVDeps, long MaxNBmodes, const char *ID_VTmatrix_name);");
 
     return RETURN_SUCCESS;
 }
@@ -84,12 +79,11 @@ errno_t magma_compute_SVDpseudoInverse_SVD_addCLIcmd()
 // Conventions:
 //   m: number of actuators
 //   n: number of sensors
-int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
-    const char *ID_Rmatrix_name,
-    const char *ID_Cmatrix_name,
-    double      SVDeps,
-    long        MaxNBmodes,
-    const char *ID_VTmatrix_name)
+int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
+                                                  const char *ID_Cmatrix_name,
+                                                  double      SVDeps,
+                                                  long        MaxNBmodes,
+                                                  const char *ID_VTmatrix_name)
 {
     uint32_t   *arraysizetmp;
     magma_int_t M, N, min_mn;
@@ -99,16 +93,17 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
     uint8_t     datatype;
 
     magma_int_t lda, ldu, ldv;
-    //float dummy[1];
+    // float dummy[1];
     float      *a, *h_R; // a, h_R - mxn  matrices
     float      *U, *VT;  // u - mxm matrix , vt - nxn  matrix  on the  host
     float      *S1;      //  vectors  of  singular  values
     magma_int_t info;
-    //float  work[1];				// used in  difference  computations
+    // float  work[1];				// used in  difference
+    // computations
     float        *h_work; //  h_work  - workspace
     magma_int_t   lwork;  //  workspace  size
     real_Double_t gpu_time;
-    //real_Double_t cpu_time;
+    // real_Double_t cpu_time;
 
     FILE *fp;
     char  fname[200];
@@ -121,10 +116,9 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
     ID_Rmatrix = image_ID(ID_Rmatrix_name);
     datatype   = data.image[ID_Rmatrix].md[0].datatype;
 
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    if (data.image[ID_Rmatrix].md[0].naxis == 3)
     {
-        n = data.image[ID_Rmatrix].md[0].size[0] *
-            data.image[ID_Rmatrix].md[0].size[1];
+        n = data.image[ID_Rmatrix].md[0].size[0] * data.image[ID_Rmatrix].md[0].size[1];
         m = data.image[ID_Rmatrix].md[0].size[2];
         printf("3D image -> %ld %ld\n", n, m);
         fflush(stdout);
@@ -146,12 +140,12 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
 
     min_mn = min(M, N);
 
-    //printf("INITIALIZE MAGMA\n");
-    //fflush(stdout);
+    // printf("INITIALIZE MAGMA\n");
+    // fflush(stdout);
 
     /* in this procedure, m=number of actuators/modes, n=number of WFS elements */
     //   printf("magma :    M = %ld , N = %ld\n", (long) M, (long) N);
-    //fflush(stdout);
+    // fflush(stdout);
 
     magma_init(); // initialize Magma
     //  Allocate  host  memory
@@ -165,58 +159,48 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
     magma_smalloc_pinned(&h_work, lwork); // host  mem. for  h_work
 
     // write input h_R matrix
-    if(datatype == _DATATYPE_FLOAT)
+    if (datatype == _DATATYPE_FLOAT)
     {
-        for(k = 0; k < m; k++)
-            for(ii = 0; ii < n; ii++)
+        for (k = 0; k < m; k++)
+        {
+            for (ii = 0; ii < n; ii++)
             {
                 h_R[k * n + ii] = data.image[ID_Rmatrix].array.F[k * n + ii];
             }
+        }
     }
     else
     {
-        for(k = 0; k < m; k++)
-            for(ii = 0; ii < n; ii++)
+        for (k = 0; k < m; k++)
+        {
+            for (ii = 0; ii < n; ii++)
             {
                 h_R[k * n + ii] = data.image[ID_Rmatrix].array.D[k * n + ii];
             }
+        }
     }
 
-    //printf("M = %ld   N = %ld\n", (long) M, (long) N);
-    //printf("=============== lwork = %ld\n", (long) lwork);
+    // printf("M = %ld   N = %ld\n", (long) M, (long) N);
+    // printf("=============== lwork = %ld\n", (long) lwork);
     gpu_time = magma_wtime();
-    magma_sgesvd(MagmaSomeVec,
-                 MagmaAllVec,
-                 M,
-                 N,
-                 h_R,
-                 lda,
-                 S1,
-                 U,
-                 ldu,
-                 VT,
-                 ldv,
-                 h_work,
-                 lwork,
+    magma_sgesvd(MagmaSomeVec, MagmaAllVec, M, N, h_R, lda, S1, U, ldu, VT, ldv, h_work, lwork,
                  &info);
     gpu_time = magma_wtime() - gpu_time;
-    if(info != 0)
+    if (info != 0)
     {
-        printf("magma_sgesvd returned error %d: %s.\n",
-               (int) info,
-               magma_strerror(info));
+        printf("magma_sgesvd returned error %d: %s.\n", (int) info, magma_strerror(info));
     }
 
-    //printf("sgesvd gpu time: %7.5f\n", gpu_time );
+    // printf("sgesvd gpu time: %7.5f\n", gpu_time );
 
     // Write eigenvalues
     sprintf(fname, "eigenv.dat.magma");
-    if((fp = fopen(fname, "w")) == NULL)
+    if ((fp = fopen(fname, "w")) == NULL)
     {
         printf("ERROR: cannot create file \"%s\"\n", fname);
         exit(0);
     }
-    for(k = 0; k < min_mn; k++)
+    for (k = 0; k < min_mn; k++)
     {
         fprintf(fp, "%5ld %20g %20g\n", k, S1[k], S1[k] / S1[0]);
     }
@@ -225,55 +209,50 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
     egvlim = SVDeps * S1[0];
 
     MaxNBmodes1 = MaxNBmodes;
-    if(MaxNBmodes1 > M)
+    if (MaxNBmodes1 > M)
     {
         MaxNBmodes1 = M;
     }
-    if(MaxNBmodes1 > N)
+    if (MaxNBmodes1 > N)
     {
         MaxNBmodes1 = N;
     }
     mode = 0;
-    while((mode < MaxNBmodes1) && (S1[mode] > egvlim))
+    while ((mode < MaxNBmodes1) && (S1[mode] > egvlim))
     {
         mode++;
     }
     MaxNBmodes1 = mode;
 
-    //printf("Keeping %ld modes  (SVDeps = %g)\n", MaxNBmodes1, SVDeps);
-    // Write rotation matrix
+    // printf("Keeping %ld modes  (SVDeps = %g)\n", MaxNBmodes1, SVDeps);
+    //  Write rotation matrix
     arraysizetmp[0] = m;
     arraysizetmp[1] = m;
 
-    create_image_ID(ID_VTmatrix_name,
-                    2,
-                    arraysizetmp,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &ID_VTmatrix);
+    create_image_ID(ID_VTmatrix_name, 2, arraysizetmp, _DATATYPE_FLOAT, 0, 0, 0, &ID_VTmatrix);
 
-    if(datatype == _DATATYPE_FLOAT)
+    if (datatype == _DATATYPE_FLOAT)
     {
-        for(ii = 0; ii < m; ii++)   // modes
-            for(k = 0; k < m; k++)  // modes
+        for (ii = 0; ii < m; ii++) // modes
+        {
+            for (k = 0; k < m; k++) // modes
             {
-                data.image[ID_VTmatrix].array.F[k * m + ii] =
-                    (float) VT[k * m + ii];
+                data.image[ID_VTmatrix].array.F[k * m + ii] = (float) VT[k * m + ii];
             }
+        }
     }
     else
     {
-        for(ii = 0; ii < m; ii++)   // modes
-            for(k = 0; k < m; k++)  // modes
+        for (ii = 0; ii < m; ii++) // modes
+        {
+            for (k = 0; k < m; k++) // modes
             {
-                data.image[ID_VTmatrix].array.D[k * m + ii] =
-                    (double) VT[k * m + ii];
+                data.image[ID_VTmatrix].array.D[k * m + ii] = (double) VT[k * m + ii];
             }
+        }
     }
 
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    if (data.image[ID_Rmatrix].md[0].naxis == 3)
     {
         arraysizetmp[0] = data.image[ID_Rmatrix].md[0].size[0];
         arraysizetmp[1] = data.image[ID_Rmatrix].md[0].size[1];
@@ -285,24 +264,22 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
         arraysizetmp[1] = m;
     }
 
-    create_image_ID(ID_Cmatrix_name,
-                    data.image[ID_Rmatrix].md[0].naxis,
-                    arraysizetmp,
-                    datatype,
-                    0,
-                    0,
-                    0,
-                    &ID_Cmatrix);
+    create_image_ID(ID_Cmatrix_name, data.image[ID_Rmatrix].md[0].naxis, arraysizetmp, datatype, 0,
+                    0, 0, &ID_Cmatrix);
 
     // compute pseudo-inverse
     // M+ = V Sig^-1 UT
-    for(ii = 0; ii < M; ii++)
-        for(jj = 0; jj < N; jj++)
-            for(mode = 0; mode < MaxNBmodes1 - 1; mode++)
+    for (ii = 0; ii < M; ii++)
+    {
+        for (jj = 0; jj < N; jj++)
+        {
+            for (mode = 0; mode < MaxNBmodes1 - 1; mode++)
             {
                 data.image[ID_Cmatrix].array.F[jj * M + ii] +=
                     VT[jj * N + mode] * U[mode * M + ii] / S1[mode];
             }
+        }
+    }
 
     magma_free_cpu(a);         // free  host  memory
     magma_free_cpu(VT);        // free  host  memory
@@ -321,6 +298,6 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
     return (ID_Cmatrix);
 }
 
-#endif
+#    endif
 
 #endif

@@ -13,9 +13,6 @@
 
 #include "fps_connect.h"
 
-
-
-
 long function_parameter_structure_load(char *fpsname)
 {
     long fpsID;
@@ -24,7 +21,7 @@ long function_parameter_structure_load(char *fpsname)
 
     fpsID = fps_ID(fpsname);
 
-    if(fpsID == -1)
+    if (fpsID == -1)
     {
         // not found, searching
 
@@ -33,9 +30,9 @@ long function_parameter_structure_load(char *fpsname)
 
         int foundflag = 0;
 
-        while((foundflag == 0) && (fpsID < data.NB_MAX_FPS))
+        while ((foundflag == 0) && (fpsID < data.NB_MAX_FPS))
         {
-            if(data.fpsarray[fpsID].SMfd < 0)
+            if (data.fpsarray[fpsID].SMfd < 0)
             {
                 foundflag = 1;
             }
@@ -45,13 +42,11 @@ long function_parameter_structure_load(char *fpsname)
             }
         }
 
-        if(foundflag == 1)
+        if (foundflag == 1)
         {
-            data.fpsarray[fpsID].NBparam =
-                function_parameter_struct_connect(fpsname,
-                                                  &data.fpsarray[fpsID],
-                                                  FPSCONNECT_SIMPLE);
-            if(data.fpsarray[fpsID].NBparam < 1)
+            data.fpsarray[fpsID].NBparam = function_parameter_struct_connect(
+                fpsname, &data.fpsarray[fpsID], FPSCONNECT_SIMPLE);
+            if (data.fpsarray[fpsID].NBparam < 1)
             {
                 printf("--- cannot load FPS %s\n", fpsname);
                 fpsID = -1;

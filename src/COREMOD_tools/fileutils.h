@@ -15,9 +15,7 @@ int create_counter_file(const char *fname, unsigned long NBpts);
 
 int read_config_parameter_exists(const char *config_file, const char *keyword);
 
-int read_config_parameter(const char *config_file,
-                          const char *keyword,
-                          char       *content);
+int read_config_parameter(const char *config_file, const char *keyword, char *content);
 
 float read_config_parameter_float(const char *config_file, const char *keyword);
 

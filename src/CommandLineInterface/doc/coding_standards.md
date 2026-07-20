@@ -2,7 +2,6 @@
 
 {#page_coding_standards}
 
-
 @note This file: ./src/CommandLineInterface/doc/coding_standards.md
 
 - @subpage page_ModuleFiles

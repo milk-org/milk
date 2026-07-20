@@ -29,7 +29,7 @@ errno_t kbdhit(void)
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-    if(ch != EOF)
+    if (ch != EOF)
     {
         //     ungetc(ch, stdin);
         return RETURN_FAILURE;

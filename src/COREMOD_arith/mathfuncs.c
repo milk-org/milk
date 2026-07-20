@@ -80,7 +80,7 @@ double Ptanh(double a)
 double Ppositive(double a)
 {
     double value = 0.0;
-    if(a > 0.0)
+    if (a > 0.0)
     {
         value = (double) 1.0;
     }
@@ -129,7 +129,7 @@ double Pdiv1(double a, double b)
 
 double Pminv(double a, double b)
 {
-    if(a < b)
+    if (a < b)
     {
         return (a);
     }
@@ -141,7 +141,7 @@ double Pminv(double a, double b)
 
 double Pmaxv(double a, double b)
 {
-    if(a > b)
+    if (a > b)
     {
         return (a);
     }
@@ -153,7 +153,7 @@ double Pmaxv(double a, double b)
 
 double Ptestlt(double a, double b)
 {
-    if(a < b)
+    if (a < b)
     {
         return ((double) 1.0);
     }
@@ -165,7 +165,7 @@ double Ptestlt(double a, double b)
 
 double Ptestmt(double a, double b)
 {
-    if(a < b)
+    if (a < b)
     {
         return ((double) 0.0);
     }
@@ -179,11 +179,11 @@ double Ptrunc(double a, double b, double c)
 {
     double value;
     value = a;
-    if(a < b)
+    if (a < b)
     {
         value = b;
     };
-    if(a > c)
+    if (a > c)
     {
         value = c;
     };
@@ -230,8 +230,8 @@ complex_double CPdiv_CD_CD(complex_double a, complex_double b)
     pha = atan2(aim, are);
     pha -= atan2(bim, bre);
 
-    v.re = (double)(amp * cos(pha));
-    v.im = (double)(amp * sin(pha));
+    v.re = (double) (amp * cos(pha));
+    v.im = (double) (amp * sin(pha));
 
     return (v);
 }
@@ -276,8 +276,8 @@ complex_float CPdiv_CF_CF(complex_float a, complex_float b)
     pha = atan2(aim, are);
     pha -= atan2(bim, bre);
 
-    v.re = (float)(amp * cos(pha));
-    v.im = (float)(amp * sin(pha));
+    v.re = (float) (amp * cos(pha));
+    v.im = (float) (amp * sin(pha));
 
     return (v);
 }

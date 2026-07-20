@@ -7,14 +7,14 @@
 
 #ifdef HAVE_CUDA
 
-#ifdef HAVE_MAGMA
+#    ifdef HAVE_MAGMA
 
 errno_t MatMatMult_testPseudoInverse_addCLIcmd();
 
 long CLINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
-        const char *IDmatAinv_name,
-        const char *IDmatOut_name);
+                                              const char *IDmatAinv_name,
+                                              const char *IDmatOut_name);
 
-#endif
+#    endif
 
 #endif

@@ -6,10 +6,10 @@
 #define _LINALGEBRA_TYPES_H
 
 #ifdef HAVE_CUDA
-#define HAVE_CUBLAS
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
+#    define HAVE_CUBLAS
+#    include <cublas_v2.h>
+#    include <cuda_runtime.h>
+#    include <cuda_runtime_api.h>
 #endif
 
 #include "CommandLineInterface/CLIcore.h"
@@ -17,115 +17,99 @@
 #ifdef HAVE_MAGMA
 
 /******************* CPU memory */
-#define TESTING_MALLOC_CPU(ptr, type, size)                                    \
-    if (MAGMA_SUCCESS !=                                                       \
-        magma_malloc_cpu((void **) &ptr, (size) * sizeof(type)))               \
-    {                                                                          \
-        fprintf(stderr, "!!!! magma_malloc_cpu failed for: %s\n", #ptr);       \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#    define TESTING_MALLOC_CPU(ptr, type, size)                                       \
+        if (MAGMA_SUCCESS != magma_malloc_cpu((void **) &ptr, (size) * sizeof(type))) \
+        {                                                                             \
+            fprintf(stderr, "!!!! magma_malloc_cpu failed for: %s\n", #ptr);          \
+            magma_finalize();                                                         \
+            exit(-1);                                                                 \
+        }
 
-#define TESTING_DMALLOC_CPU(ptr, size)                                         \
-    if (MAGMA_SUCCESS != magma_dmalloc_cpu(&ptr, (size_t) (size)))             \
-    {                                                                          \
-        fprintf(stderr, "!!!! magma_malloc_cpu failed for: %s\n", #ptr);       \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#    define TESTING_DMALLOC_CPU(ptr, size)                                   \
+        if (MAGMA_SUCCESS != magma_dmalloc_cpu(&ptr, (size_t) (size)))       \
+        {                                                                    \
+            fprintf(stderr, "!!!! magma_malloc_cpu failed for: %s\n", #ptr); \
+            magma_finalize();                                                \
+            exit(-1);                                                        \
+        }
 
-#define TESTING_SMALLOC_CPU(ptr, size)                                         \
-    if (MAGMA_SUCCESS != magma_smalloc_cpu(&ptr, (size_t) (size)))             \
-    {                                                                          \
-        fprintf(stderr, "!!!! magma_fmalloc_cpu failed for: %s\n", #ptr);      \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#    define TESTING_SMALLOC_CPU(ptr, size)                                    \
+        if (MAGMA_SUCCESS != magma_smalloc_cpu(&ptr, (size_t) (size)))        \
+        {                                                                     \
+            fprintf(stderr, "!!!! magma_fmalloc_cpu failed for: %s\n", #ptr); \
+            magma_finalize();                                                 \
+            exit(-1);                                                         \
+        }
 
-#define TESTING_FREE_CPU(ptr) magma_free_cpu(ptr)
+#    define TESTING_FREE_CPU(ptr) magma_free_cpu(ptr)
 
 /******************* Pinned CPU memory */
-#ifdef HAVE_CUBLAS
+#    ifdef HAVE_CUBLAS
 // In CUDA, this allocates pinned memory.
-#define TESTING_MALLOC_PIN(ptr, type, size)                                    \
-    if (MAGMA_SUCCESS !=                                                       \
-        magma_malloc_pinned((void **) &ptr, (size) * sizeof(type)))            \
-    {                                                                          \
-        fprintf(stderr, "!!!! magma_malloc_pinned failed for: %s\n", #ptr);    \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#        define TESTING_MALLOC_PIN(ptr, type, size)                                          \
+            if (MAGMA_SUCCESS != magma_malloc_pinned((void **) &ptr, (size) * sizeof(type))) \
+            {                                                                                \
+                fprintf(stderr, "!!!! magma_malloc_pinned failed for: %s\n", #ptr);          \
+                magma_finalize();                                                            \
+                exit(-1);                                                                    \
+            }
 
-#define TESTING_FREE_PIN(ptr) magma_free_pinned(ptr)
-#else
+#        define TESTING_FREE_PIN(ptr) magma_free_pinned(ptr)
+#    else
 // For OpenCL, we don't support pinned memory yet.
-#define TESTING_MALLOC_PIN(ptr, type, size)                                    \
-    if (MAGMA_SUCCESS !=                                                       \
-        magma_malloc_cpu((void **) &ptr, (size) * sizeof(type)))               \
-    {                                                                          \
-        fprintf(stderr, "!!!! magma_malloc_cpu failed for: %s\n", #ptr);       \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#        define TESTING_MALLOC_PIN(ptr, type, size)                                       \
+            if (MAGMA_SUCCESS != magma_malloc_cpu((void **) &ptr, (size) * sizeof(type))) \
+            {                                                                             \
+                fprintf(stderr, "!!!! magma_malloc_cpu failed for: %s\n", #ptr);          \
+                magma_finalize();                                                         \
+                exit(-1);                                                                 \
+            }
 
-#define TESTING_FREE_PIN(ptr) magma_free_cpu(ptr)
-#endif
+#        define TESTING_FREE_PIN(ptr) magma_free_cpu(ptr)
+#    endif
 
 /******************* GPU memory */
-#ifdef HAVE_CUBLAS
+#    ifdef HAVE_CUBLAS
 // In CUDA, this has (void**) cast.
-#define TESTING_MALLOC_DEV(ptr, type, size)                                    \
-    if (MAGMA_SUCCESS !=                                                       \
-        magma_malloc((void **) &ptr, (size_t) sizeof(type) * size))            \
-    {                                                                          \
-        fprintf(                                                               \
-            stderr,                                                            \
-            "!!!! magma_malloc failed for: %s  size = %ld  typesize = %d\n",   \
-            #ptr,                                                              \
-            (long) size,                                                       \
-            (int) sizeof(type));                                               \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#        define TESTING_MALLOC_DEV(ptr, type, size)                                              \
+            if (MAGMA_SUCCESS != magma_malloc((void **) &ptr, (size_t) sizeof(type) * size))     \
+            {                                                                                    \
+                fprintf(stderr, "!!!! magma_malloc failed for: %s  size = %ld  typesize = %d\n", \
+                        #ptr, (long) size, (int) sizeof(type));                                  \
+                magma_finalize();                                                                \
+                exit(-1);                                                                        \
+            }
 
-#define TESTING_DMALLOC_DEV(ptr, size)                                         \
-    if (MAGMA_SUCCESS != magma_dmalloc(&ptr, (size_t) (size)))                 \
-    {                                                                          \
-        fprintf(                                                               \
-            stderr,                                                            \
-            "!!!! magma_dmalloc failed for: %s  size = %ld  typesize = %d\n",  \
-            #ptr,                                                              \
-            (long) size,                                                       \
-            (int) sizeof(double));                                             \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#        define TESTING_DMALLOC_DEV(ptr, size)                                                    \
+            if (MAGMA_SUCCESS != magma_dmalloc(&ptr, (size_t) (size)))                            \
+            {                                                                                     \
+                fprintf(stderr, "!!!! magma_dmalloc failed for: %s  size = %ld  typesize = %d\n", \
+                        #ptr, (long) size, (int) sizeof(double));                                 \
+                magma_finalize();                                                                 \
+                exit(-1);                                                                         \
+            }
 
-#define TESTING_SMALLOC_DEV(ptr, size)                                         \
-    if (MAGMA_SUCCESS != magma_smalloc(&ptr, (size_t) (size)))                 \
-    {                                                                          \
-        fprintf(                                                               \
-            stderr,                                                            \
-            "!!!! magma_fmalloc failed for: %s  size = %ld  typesize = %d\n",  \
-            #ptr,                                                              \
-            (long) size,                                                       \
-            (int) sizeof(float));                                              \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
+#        define TESTING_SMALLOC_DEV(ptr, size)                                                    \
+            if (MAGMA_SUCCESS != magma_smalloc(&ptr, (size_t) (size)))                            \
+            {                                                                                     \
+                fprintf(stderr, "!!!! magma_fmalloc failed for: %s  size = %ld  typesize = %d\n", \
+                        #ptr, (long) size, (int) sizeof(float));                                  \
+                magma_finalize();                                                                 \
+                exit(-1);                                                                         \
+            }
 
-#else
+#    else
 // For OpenCL, ptr is cl_mem* and there is no cast.
-#define TESTING_MALLOC_DEV(ptr, type, size)                                    \
-    if (MAGMA_SUCCESS != magma_malloc(&ptr, (size) * sizeof(type)))            \
-    {                                                                          \
-        fprintf(stderr, "!!!! magma_malloc failed for: %s\n", #ptr);           \
-        magma_finalize();                                                      \
-        exit(-1);                                                              \
-    }
-#endif
+#        define TESTING_MALLOC_DEV(ptr, type, size)                          \
+            if (MAGMA_SUCCESS != magma_malloc(&ptr, (size) * sizeof(type)))  \
+            {                                                                \
+                fprintf(stderr, "!!!! magma_malloc failed for: %s\n", #ptr); \
+                magma_finalize();                                            \
+                exit(-1);                                                    \
+            }
+#    endif
 
-#define TESTING_FREE_DEV(ptr) magma_free(ptr)
+#    define TESTING_FREE_DEV(ptr) magma_free(ptr)
 
 #endif
 
@@ -148,7 +132,8 @@ typedef struct
 } LINALGEBRA_THDATA;
 
 #ifdef HAVE_CUDA
-/** \brief This structure holds the GPU computation setup for matrix multiplication
+/** \brief This structure holds the GPU computation setup for matrix
+ * multiplication
  *
  * By declaring an array of these structures,
  * several parallel computations can be executed
@@ -199,11 +184,11 @@ typedef struct
 
     // threads
     LINALGEBRA_THDATA *thdata;
-    int             *iret;
-    pthread_t       *threadarray;
-    int              NBstreams;
-    cudaStream_t    *stream;
-    cublasHandle_t  *handle;
+    int               *iret;
+    pthread_t         *threadarray;
+    int                NBstreams;
+    cudaStream_t      *stream;
+    cublasHandle_t    *handle;
 
     // splitting limits
     uint32_t *Nsize;

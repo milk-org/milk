@@ -9,39 +9,15 @@ static char *modesimname;
 static char *invecname;
 static char *outimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".modes",
-        "modes image cube",
-        "imcmode",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &modesimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".invec",
-        "input vector",
-        "imvec",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &invecname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output image",
-        "outim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    }
-};
+static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".modes", "modes image cube", "imcmode",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &modesimname, NULL },
+                               { CLIARG_IMG, ".invec", "input vector", "imvec",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &invecname, NULL },
+                               { CLIARG_STR, ".outim", "output image", "outim",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &outimname, NULL } };
 
-static CLICMDDATA CLIcmddata = {"imlinconstruct",
-                                "construct image as linear sum of modes",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
+static CLICMDDATA CLIcmddata = { "imlinconstruct", "construct image as linear sum of modes",
+                                 CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -71,7 +47,7 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
     uint64_t sizexy = xsize;
     sizexy *= ysize;
 
-    if(datatype == _DATATYPE_FLOAT)
+    if (datatype == _DATATYPE_FLOAT)
     {
         FUNC_CHECK_RETURN(create_2Dimage_ID(ID_name, xsize, ysize, &ID));
     }
@@ -82,34 +58,32 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
 
     IDcoeff = image_ID(IDcoeff_name);
 
-    if(datatype == _DATATYPE_FLOAT)
+    if (datatype == _DATATYPE_FLOAT)
     {
-        memset(data.image[ID].array.F,
-               0,
-               sizeof(float) * data.image[ID].md[0].nelement);
-        for(uint32_t kk = 0; kk < zsize; kk++)
-            for(uint64_t ii = 0; ii < sizexy; ii++)
+        memset(data.image[ID].array.F, 0, sizeof(float) * data.image[ID].md[0].nelement);
+        for (uint32_t kk = 0; kk < zsize; kk++)
+        {
+            for (uint64_t ii = 0; ii < sizexy; ii++)
             {
                 data.image[ID].array.F[ii] +=
-                    data.image[IDcoeff].array.F[kk] *
-                    data.image[IDmodes].array.F[kk * sizexy + ii];
+                    data.image[IDcoeff].array.F[kk] * data.image[IDmodes].array.F[kk * sizexy + ii];
             }
+        }
     }
     else
     {
-        memset(data.image[ID].array.D,
-               0,
-               sizeof(double) * data.image[ID].md[0].nelement);
-        for(uint32_t kk = 0; kk < zsize; kk++)
-            for(uint64_t ii = 0; ii < sizexy; ii++)
+        memset(data.image[ID].array.D, 0, sizeof(double) * data.image[ID].md[0].nelement);
+        for (uint32_t kk = 0; kk < zsize; kk++)
+        {
+            for (uint64_t ii = 0; ii < sizexy; ii++)
             {
                 data.image[ID].array.D[ii] +=
-                    data.image[IDcoeff].array.D[kk] *
-                    data.image[IDmodes].array.D[kk * sizexy + ii];
+                    data.image[IDcoeff].array.D[kk] * data.image[IDmodes].array.D[kk * sizexy + ii];
             }
+        }
     }
 
-    if(outID != NULL)
+    if (outID != NULL)
     {
         *outID = ID;
     }
@@ -134,9 +108,8 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
-errno_t
-CLIADDCMD_linopt_imtools__image_construct()
+    // Register function in CLI
+    errno_t CLIADDCMD_linopt_imtools__image_construct()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;

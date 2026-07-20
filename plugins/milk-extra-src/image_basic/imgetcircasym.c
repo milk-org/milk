@@ -16,10 +16,10 @@
 // ==========================================
 
 imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
-        const char *__restrict ID_out_name,
-        float       xcenter,
-        float       ycenter,
-        const char *options);
+                                           const char *__restrict ID_out_name,
+                                           float       xcenter,
+                                           float       ycenter,
+                                           const char *options);
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -27,15 +27,11 @@ imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
 
 static errno_t IMAGE_BASIC_get_circasym_component_cli()
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 1) ==
-            0)
+    if (0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 1) + CLI_checkarg(4, 1) == 0)
     {
-        IMAGE_BASIC_get_circasym_component(data.cmdargtoken[1].val.string,
-                                           data.cmdargtoken[2].val.string,
-                                           data.cmdargtoken[3].val.numf,
-                                           data.cmdargtoken[4].val.numf,
-                                           "");
+        IMAGE_BASIC_get_circasym_component(
+            data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numf, data.cmdargtoken[4].val.numf, "");
 
         return CLICMD_SUCCESS;
     }
@@ -51,10 +47,7 @@ static errno_t IMAGE_BASIC_get_circasym_component_cli()
 
 errno_t __attribute__((cold)) imgetcircasym_addCLIcmd()
 {
-
-    RegisterCLIcommand("imgetcircasym",
-                       __FILE__,
-                       IMAGE_BASIC_get_circasym_component_cli,
+    RegisterCLIcommand("imgetcircasym", __FILE__, IMAGE_BASIC_get_circasym_component_cli,
                        "extract non-circular symmetric part of image",
                        "<inim> <outim> <xcenter> <ycenter>",
                        "imcgetcircassym imin imout 256.0 230.5",
@@ -65,12 +58,11 @@ errno_t __attribute__((cold)) imgetcircasym_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-imageID
-IMAGE_BASIC_get_circasym_component_byID(imageID ID,
-                                        const char *__restrict ID_out_name,
-                                        float       xcenter,
-                                        float       ycenter,
-                                        const char *options)
+imageID IMAGE_BASIC_get_circasym_component_byID(imageID ID,
+                                                const char *__restrict ID_out_name,
+                                                float       xcenter,
+                                                float       ycenter,
+                                                const char *options)
 {
     float    step = 1.0;
     uint32_t naxes[2];
@@ -87,13 +79,13 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
     float    perc;
     float    ifloat, x;
 
-    if(strstr(options, "-perc ") != NULL)
+    if (strstr(options, "-perc ") != NULL)
     {
         str_pos = strstr(options, "-perc ") - options;
         str_pos = str_pos + strlen("-perc ");
         i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        while ((options[i + str_pos] != ' ') && (options[i + str_pos] != '\n') &&
+               (options[i + str_pos] != '\0'))
         {
             input[i] = options[i + str_pos];
             i++;
@@ -108,7 +100,7 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
     nb_step  = naxes[0] / 2;
 
     dist = (float *) malloc(sizeof(float) * nb_step);
-    if(dist == NULL)
+    if (dist == NULL)
     {
         C_ERRNO = errno;
         PRINT_ERROR("malloc() error");
@@ -116,7 +108,7 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
     }
 
     mean = (float *) malloc(sizeof(float) * nb_step);
-    if(mean == NULL)
+    if (mean == NULL)
     {
         C_ERRNO = errno;
         PRINT_ERROR("malloc() error");
@@ -124,7 +116,7 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
     }
 
     rms = (float *) malloc(sizeof(float) * nb_step);
-    if(rms == NULL)
+    if (rms == NULL)
     {
         C_ERRNO = errno;
         PRINT_ERROR("malloc() error");
@@ -132,14 +124,14 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
     }
 
     counts = (long *) malloc(sizeof(long) * nb_step);
-    if(counts == NULL)
+    if (counts == NULL)
     {
         C_ERRNO = errno;
         PRINT_ERROR("malloc() error");
         exit(0);
     }
 
-    for(i = 0; i < nb_step; i++)
+    for (i = 0; i < nb_step; i++)
     {
         dist[i]   = 0;
         mean[i]   = 0;
@@ -147,13 +139,14 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
         counts[i] = 0;
     }
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
                             (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long)(1.0 * distance / step + 0.5);
-            if(i < nb_step)
+            i        = (long) (1.0 * distance / step + 0.5);
+            if (i < nb_step)
             {
                 dist[i] += distance;
                 mean[i] += data.image[ID].array.F[jj * naxes[0] + ii];
@@ -162,34 +155,36 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
                 counts[i] += 1;
             }
         }
+    }
 
-    for(i = 0; i < nb_step; i++)
+    for (i = 0; i < nb_step; i++)
     {
         dist[i] /= counts[i];
         mean[i] /= counts[i];
-        rms[i] = sqrt(rms[i] - 1.0 * counts[i] * mean[i] * mean[i]) /
-                 sqrt(counts[i]);
+        rms[i] = sqrt(rms[i] - 1.0 * counts[i] * mean[i] * mean[i]) / sqrt(counts[i]);
     }
 
     printf("%u %u\n", naxes[0], naxes[1]);
     create_2Dimage_ID(ID_out_name, naxes[0], naxes[1], NULL);
     IDout = image_ID(ID_out_name);
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    {
+        for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
                             (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long)(1.0 * distance / step);
+            i        = (long) (1.0 * distance / step);
             ifloat   = 1.0 * distance / step;
             x        = ifloat - i;
 
-            if((i + 1) < nb_step)
+            if ((i + 1) < nb_step)
             {
                 data.image[IDout].array.F[jj * naxes[0] + ii] =
                     data.image[ID].array.F[jj * naxes[0] + ii] -
                     ((1.0 - x) * mean[i] + x * mean[i + 1]);
             }
         }
+    }
 
     free(counts);
     free(dist);
@@ -200,10 +195,10 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
 }
 
 imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
-        const char *__restrict ID_out_name,
-        float       xcenter,
-        float       ycenter,
-        const char *options)
+                                           const char *__restrict ID_out_name,
+                                           float       xcenter,
+                                           float       ycenter,
+                                           const char *options)
 {
     imageID IDout;
     imageID ID;
@@ -213,11 +208,7 @@ imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
 
     ID = image_ID(ID_name);
 
-    IDout = IMAGE_BASIC_get_circasym_component_byID(ID,
-            ID_out_name,
-            xcenter,
-            ycenter,
-            options);
+    IDout = IMAGE_BASIC_get_circasym_component_byID(ID, ID_out_name, xcenter, ycenter, options);
 
     return IDout;
 }

@@ -23,11 +23,13 @@
  * - CMakeLists.txt         : cmake input file for module
  *
  * - milk_module_example.c  : module main C file, includes binding code to milk
- * - milk_module_example.h  : function prototypes to be included by other modules
+ * - milk_module_example.h  : function prototypes to be included by other
+ * modules
  *
  *
  * Several examples are provided to demonstrate code features.
- * Each example builds on the previous one(s), demonstrating additional capabilities.
+ * Each example builds on the previous one(s), demonstrating additional
+ * capabilities.
  *
  * ## Simple function example
  *
@@ -48,7 +50,6 @@
  *
  */
 
-
 /* ================================================================== */
 /* ================================================================== */
 /*  MODULE INFO                                                       */
@@ -63,19 +64,17 @@
 // Module short description
 #define MODULE_DESCRIPTION "Example module: template for creating new modules"
 
-
-
 #include "CommandLineInterface/CLIcore.h"
 
 //
 // Forward declarations are required to connect CLI calls to functions
-// If functions are in separate .c files, include here the corresponding .h files
+// If functions are in separate .c files, include here the corresponding .h
+// files
 //
 #include "examplefunc1.h"
 #include "examplefunc2_FPS.h"
 #include "examplefunc3_updatestreamloop.h"
 #include "examplefunc4_streamprocess.h"
-
 
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
@@ -91,7 +90,6 @@ INIT_MODULE_LIB(milk_module_example)
  */
 static errno_t init_module_CLI()
 {
-
     CLIADDCMD_milk_module_example__simplefunc();
     CLIADDCMD_milk_module_example__simplefunc_FPS();
     CLIADDCMD_milk_module_example__updatestreamloop();

@@ -25,10 +25,10 @@ typedef struct
     int64_t createcnt;
 
     // used to resolve if needed
-    char            name[STRINGMAXLEN_IMAGE_NAME];
+    char name[STRINGMAXLEN_IMAGE_NAME];
 
     // image content, data and metadata
-    IMAGE          *im;
+    IMAGE *im;
     // md points at im.md
     IMAGE_METADATA *md;
 
@@ -41,7 +41,7 @@ typedef struct
     uint32_t size[3];
     int      shared;
     // number of keywords
-    int      NBkw;
+    int NBkw;
 
     // fast circular buffer size
     int CBsize;

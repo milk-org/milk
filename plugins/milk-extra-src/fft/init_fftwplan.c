@@ -28,13 +28,7 @@ errno_t init_fftw_plans0();
 
 errno_t init_fftwplan_addCLIcmd()
 {
-
-    RegisterCLIcommand("initfft",
-                       __FILE__,
-                       init_fftw_plans0,
-                       "init FFTW",
-                       "no argument",
-                       "initfft",
+    RegisterCLIcommand("initfft", __FILE__, init_fftw_plans0, "init FFTW", "no argument", "initfft",
                        "int init_fftw_plans0()");
 
     return RETURN_SUCCESS;
@@ -56,16 +50,13 @@ errno_t init_fftw_plans(int mode)
     unsigned int plan_mode;
 
     printf("Optimization of FFTW\n");
-    printf(
-        "The optimization is done for 2D complex to complex FFTs, with size "
-        "equal to 2^n x 2^n\n");
-    printf(
-        "You can kill the optimization anytime, and resume later where it "
-        "previously stopped.\nAfter each size is "
-        "optimized, the result is saved\n");
-    printf(
-        "It might be a good idea to run this overnight or when your computer "
-        "is not busy\n");
+    printf("The optimization is done for 2D complex to complex FFTs, with size "
+           "equal to 2^n x 2^n\n");
+    printf("You can kill the optimization anytime, and resume later where it "
+           "previously stopped.\nAfter each size is "
+           "optimized, the result is saved\n");
+    printf("It might be a good idea to run this overnight or when your computer "
+           "is not busy\n");
 
     fflush(stdout);
 
@@ -74,18 +65,16 @@ errno_t init_fftw_plans(int mode)
     //  plan_mode = FFTWOPTMODE;
     plan_mode = FFTW_EXHAUSTIVE;
 
-    for(n = 0; n < 14; n++)
+    for (n = 0; n < 14; n++)
     {
-        if(mode == 0)
+        if (mode == 0)
         {
             printf("Optimizing 2D FFTs - size = %d\n", size);
             fflush(stdout);
         }
         rinf = (float *) fftwf_malloc(size * size * sizeof(float));
-        inf =
-            (fftwf_complex *) fftwf_malloc(size * size * sizeof(fftwf_complex));
-        outf =
-            (fftwf_complex *) fftwf_malloc(size * size * sizeof(fftwf_complex));
+        inf  = (fftwf_complex *) fftwf_malloc(size * size * sizeof(fftwf_complex));
+        outf = (fftwf_complex *) fftwf_malloc(size * size * sizeof(fftwf_complex));
 
         fftwf_plan_dft_2d(size, size, inf, outf, FFTW_FORWARD, plan_mode);
         fftwf_plan_dft_2d(size, size, inf, outf, FFTW_BACKWARD, plan_mode);
@@ -108,15 +97,15 @@ errno_t init_fftw_plans(int mode)
         fftw_free(outd);
 
         size *= 2;
-        if(mode == 0)
+        if (mode == 0)
         {
             export_wisdom();
         }
     }
     size = 1;
-    for(n = 0; n < 15; n++)
+    for (n = 0; n < 15; n++)
     {
-        if(mode == 0)
+        if (mode == 0)
         {
             printf("Optimizing 1D FFTs - size = %d\n", size);
             fflush(stdout);
@@ -146,7 +135,7 @@ errno_t init_fftw_plans(int mode)
         fftw_free(outd);
 
         size *= 2;
-        if(mode == 0)
+        if (mode == 0)
         {
             export_wisdom();
         }

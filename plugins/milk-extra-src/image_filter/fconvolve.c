@@ -29,10 +29,9 @@ imageID fconvolve(const char *__restrict name_in,
 
 static errno_t fconvolve_cli()
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
+    if (0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
     {
-        fconvolve(data.cmdargtoken[1].val.string,
-                  data.cmdargtoken[2].val.string,
+        fconvolve(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
                   data.cmdargtoken[3].val.string);
 
         return CLICMD_SUCCESS;
@@ -49,13 +48,8 @@ static errno_t fconvolve_cli()
 
 errno_t fconvolve_addCLIcmd()
 {
-
-    RegisterCLIcommand("fconv",
-                       __FILE__,
-                       fconvolve_cli,
-                       "Fourier-based convolution",
-                       "<input image> <kernel> <output image>",
-                       "fconv imin kernim imout",
+    RegisterCLIcommand("fconv", __FILE__, fconvolve_cli, "Fourier-based convolution",
+                       "<input image> <kernel> <output image>", "fconv imin kernim imout",
                        "long fconvolve(const char *ID_in, const char *ID_ke, "
                        "const char *ID_out)");
 
@@ -75,12 +69,11 @@ imageID fconvolve(const char *__restrict name_in,
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
     IDke     = image_ID(name_ke);
-    if((naxes[0] != data.image[IDke].md[0].size[0]) ||
-            (naxes[1] != data.image[IDke].md[0].size[1]))
+    if ((naxes[0] != data.image[IDke].md[0].size[0]) ||
+        (naxes[1] != data.image[IDke].md[0].size[1]))
     {
-        fprintf(stderr,
-                "ERROR in function fconvolve: image and kernel have different "
-                "sizes\n");
+        fprintf(stderr, "ERROR in function fconvolve: image and kernel have different "
+                        "sizes\n");
         exit(0);
     }
     //  save_fl_fits(name_in,"test1.fits");
@@ -130,12 +123,11 @@ imageID fconvolve_padd(const char *__restrict name_in,
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
     IDke     = image_ID(name_ke);
-    if((naxes[0] != data.image[IDke].md[0].size[0]) ||
-            (naxes[1] != data.image[IDke].md[0].size[1]))
+    if ((naxes[0] != data.image[IDke].md[0].size[0]) ||
+        (naxes[1] != data.image[IDke].md[0].size[1]))
     {
-        fprintf(stderr,
-                "ERROR in function fconvolve: image and kernel have different "
-                "sizes\n");
+        fprintf(stderr, "ERROR in function fconvolve: image and kernel have different "
+                        "sizes\n");
         exit(0);
     }
 
@@ -148,19 +140,17 @@ imageID fconvolve_padd(const char *__restrict name_in,
     create_2Dimage_ID("tmpkepadd", naxespadd[0], naxespadd[1], &ID2);
     create_2Dimage_ID("tmpim1padd", naxespadd[0], naxespadd[1], &ID3);
 
-    for(ii = 0; ii < naxes[0]; ii++)
-        for(jj = 0; jj < naxes[1]; jj++)
+    for (ii = 0; ii < naxes[0]; ii++)
+    {
+        for (jj = 0; jj < naxes[1]; jj++)
         {
-            data.image[ID1]
-            .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
+            data.image[ID1].array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
                 data.image[IDin].array.F[jj * naxes[0] + ii];
-            data.image[ID2]
-            .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
+            data.image[ID2].array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
                 data.image[IDke].array.F[jj * naxes[0] + ii];
-            data.image[ID3]
-            .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
-                1.0;
+            data.image[ID3].array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] = 1.0;
         }
+    }
 
     //  list_image_ID();
     //  printf("Doing convolutions...");
@@ -180,15 +170,15 @@ imageID fconvolve_padd(const char *__restrict name_in,
     ID2 = image_ID("tmpconv2");
     create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout);
 
-    for(ii = 0; ii < naxes[0]; ii++)
-        for(jj = 0; jj < naxes[1]; jj++)
+    for (ii = 0; ii < naxes[0]; ii++)
+    {
+        for (jj = 0; jj < naxes[1]; jj++)
         {
             data.image[IDout].array.F[jj * naxes[0] + ii] =
-                data.image[ID1]
-                .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] /
-                data.image[ID2]
-                .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)];
+                data.image[ID1].array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] /
+                data.image[ID2].array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)];
         }
+    }
     delete_image_ID("tmpconv1", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("tmpconv2", DELETE_IMAGE_ERRMODE_WARNING);
 
@@ -224,8 +214,8 @@ imageID fconvolve_1(const char *__restrict name_in,
     return IDout;
 }
 
-// if blocksize = 512, for images > 512x512, break image in 512x512 overlapping blocks
-// kernel image must be blocksize
+// if blocksize = 512, for images > 512x512, break image in 512x512 overlapping
+// blocks kernel image must be blocksize
 imageID fconvolveblock(const char *__restrict name_in,
                        const char *__restrict name_ke,
                        const char *__restrict name_out,
@@ -242,7 +232,7 @@ imageID fconvolveblock(const char *__restrict name_in,
     float   gain;
     float   alpha = 4.0;
 
-    overlap = (long)(blocksize / 10);
+    overlap = (long) (blocksize / 10);
     IDin    = image_ID(name_in);
     xsize   = data.image[IDin].md[0].size[0];
     ysize   = data.image[IDin].md[0].size[1];
@@ -253,70 +243,67 @@ imageID fconvolveblock(const char *__restrict name_in,
 
     create_2Dimage_ID("tmpcnt", xsize, ysize, &IDcnt);
 
-    for(ii = 0; ii < xsize * ysize; ii++)
+    for (ii = 0; ii < xsize * ysize; ii++)
     {
         data.image[IDcnt].array.F[ii] = 0.0;
     }
 
-    for(ii0 = 0; ii0 < xsize - overlap; ii0 += blocksize - overlap)
-        for(jj0 = 0; jj0 < ysize - overlap; jj0 += blocksize - overlap)
+    for (ii0 = 0; ii0 < xsize - overlap; ii0 += blocksize - overlap)
+    {
+        for (jj0 = 0; jj0 < ysize - overlap; jj0 += blocksize - overlap)
         {
-            for(ii = 0; ii < blocksize; ii++)
-                for(jj = 0; jj < blocksize; jj++)
+            for (ii = 0; ii < blocksize; ii++)
+            {
+                for (jj = 0; jj < blocksize; jj++)
                 {
-                    if((ii0 + ii < xsize) && (jj0 + jj < ysize))
+                    if ((ii0 + ii < xsize) && (jj0 + jj < ysize))
                     {
                         data.image[IDtmp].array.F[jj * blocksize + ii] =
-                            data.image[IDin]
-                            .array.F[(jj0 + jj) * xsize + (ii0 + ii)];
+                            data.image[IDin].array.F[(jj0 + jj) * xsize + (ii0 + ii)];
                     }
                     else
                     {
                         data.image[IDtmp].array.F[jj * blocksize + ii] = 0.0;
                     }
                 }
+            }
             fconvolve("tmpblock", name_ke, "tmpblockc");
             IDtmpout = image_ID("tmpblockc");
-            for(ii = 0; ii < blocksize; ii++)
-                for(jj = 0; jj < blocksize; jj++)
+            for (ii = 0; ii < blocksize; ii++)
+            {
+                for (jj = 0; jj < blocksize; jj++)
                 {
-                    if((ii0 + ii < xsize) && (jj0 + jj < ysize))
+                    if ((ii0 + ii < xsize) && (jj0 + jj < ysize))
                     {
                         gain = 1.0;
-                        if(ii < overlap)
+                        if (ii < overlap)
                         {
                             gain *= pow(1.0 * (1.0 * ii / overlap), alpha);
                         }
-                        if(jj < overlap)
+                        if (jj < overlap)
                         {
                             gain *= pow(1.0 * (1.0 * jj / overlap), alpha);
                         }
-                        if(ii > blocksize - overlap)
+                        if (ii > blocksize - overlap)
                         {
-                            gain *=
-                                pow(1.0 * (1.0 * (blocksize - ii) / overlap),
-                                    alpha);
+                            gain *= pow(1.0 * (1.0 * (blocksize - ii) / overlap), alpha);
                         }
-                        if(jj > blocksize - overlap)
+                        if (jj > blocksize - overlap)
                         {
-                            gain *=
-                                pow(1.0 * (1.0 * (blocksize - jj) / overlap),
-                                    alpha);
+                            gain *= pow(1.0 * (1.0 * (blocksize - jj) / overlap), alpha);
                         }
 
-                        data.image[IDout]
-                        .array.F[(jj0 + jj) * xsize + (ii0 + ii)] +=
-                            gain *
-                            data.image[IDtmpout].array.F[jj * blocksize + ii];
-                        data.image[IDcnt]
-                        .array.F[(jj0 + jj) * xsize + (ii0 + ii)] +=
-                            gain * 1.0;
+                        data.image[IDout].array.F[(jj0 + jj) * xsize + (ii0 + ii)] +=
+                            gain * data.image[IDtmpout].array.F[jj * blocksize + ii];
+                        data.image[IDcnt].array.F[(jj0 + jj) * xsize + (ii0 + ii)] += gain * 1.0;
                     }
                 }
+            }
         }
+    }
     //  save_fl_fits("tmpcnt","tmpcnt.fits");
     // exit(0);
-    for(ii = 0; ii < xsize * ysize; ii++)
+    for (ii = 0; ii < xsize * ysize; ii++)
     {
         data.image[IDout].array.F[ii] /= data.image[IDcnt].array.F[ii] + 1.0e-8;
     }

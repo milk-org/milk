@@ -4,11 +4,7 @@
 
 [TOC]
 
-
-
-
 ---
-
 
 **The PROCESSINFO structures allow fine-grained management of real-time loop processes**
 
@@ -16,21 +12,17 @@
 
 ---
 
-
 # 1. Overview {#page_ProcessInfoStructure_Overview}
 
 The PiS is stored in shared memory as
 
-	proc.<shortname>.<PID>.shm
-
-
+    proc.<shortname>.<PID>.shm
 
 ---
 
 # 2. Code Template {#page_ProcessInfoStructure_SampleCode}
 
-
-~~~~{.c}
+```{.c}
 
 int functiontemplate_usingprocessinfo() {
 
@@ -125,8 +117,6 @@ int functiontemplate_usingprocessinfo() {
 
     return RETURN_SUCCESS;
 }
-~~~~
+```
 
-
-
-----
+---

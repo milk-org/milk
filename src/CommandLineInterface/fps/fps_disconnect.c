@@ -12,13 +12,12 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-int function_parameter_struct_disconnect(
-    FUNCTION_PARAMETER_STRUCT *funcparamstruct)
+int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct)
 {
-    //int NBparamMAX;
+    // int NBparamMAX;
 
-    //NBparamMAX = funcparamstruct->md->NBparamMAX;
-    //funcparamstruct->md->NBparam = 0;
+    // NBparamMAX = funcparamstruct->md->NBparamMAX;
+    // funcparamstruct->md->NBparam = 0;
     funcparamstruct->parray = NULL;
 
     // get file size

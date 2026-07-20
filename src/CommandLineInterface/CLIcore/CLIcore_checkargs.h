@@ -19,36 +19,32 @@
 // lower 16-bit is format input type in CLI
 // higher 16-bit can be more specific and used for conversion
 
-#define CLIARG_MISSING      0x00000000
-#define CLIARG_FLOAT        0x00000001 // floating point number, defaults to float64
-#define CLIARG_LONG         0x00000002 // integer, default to int64
-#define CLIARG_STR_NOT_IMG  0x00000003 // string, not existing image
-#define CLIARG_IMG          0x00000004 // existing image or stream
-#define CLIARG_STR          0x00000005 // string
-#define CLIARG_FILENAME     0x00000006
+#define CLIARG_MISSING 0x00000000
+#define CLIARG_FLOAT 0x00000001       // floating point number, defaults to float64
+#define CLIARG_LONG 0x00000002        // integer, default to int64
+#define CLIARG_STR_NOT_IMG 0x00000003 // string, not existing image
+#define CLIARG_IMG 0x00000004         // existing image or stream
+#define CLIARG_STR 0x00000005         // string
+#define CLIARG_FILENAME 0x00000006
 #define CLIARG_FITSFILENAME 0x00000007
-#define CLIARG_FPSNAME      0x00000008
-
+#define CLIARG_FPSNAME 0x00000008
 
 #define CLIARG_FLOAT32 0x00010001 // same as float
 #define CLIARG_FLOAT64 0x00020001 // same as double
 
 // integer types
-#define CLIARG_ONOFF  0x00030002
-#define CLIARG_INT32  0x00010002
+#define CLIARG_ONOFF 0x00030002
+#define CLIARG_INT32 0x00010002
 #define CLIARG_UINT32 0x00110002
-#define CLIARG_INT64  0x00020002 // same as LONG
+#define CLIARG_INT64 0x00020002 // same as LONG
 #define CLIARG_UINT64 0x00120002
 
 // image/stream types
 #define CLIARG_STREAM 0x00010004 // stream
 
-
-
-
-#define STRINGMAXLEN_FPSCLIARG_TAG       100
-#define STRINGMAXLEN_FPSCLIARG_DESCR     100
-#define STRINGMAXLEN_FPSCLIARG_EXAMPLE   100
+#define STRINGMAXLEN_FPSCLIARG_TAG 100
+#define STRINGMAXLEN_FPSCLIARG_DESCR 100
+#define STRINGMAXLEN_FPSCLIARG_EXAMPLE 100
 #define STRINGMAXLEN_FPSCLIARG_LASTENTRY 100
 
 #define CLICMDARG_FLAG_DEFAULT 0x00000000
@@ -123,9 +119,8 @@ typedef struct
     } val;
 } CLICMDARGDATA;
 
-
-#define CLICMDDATA_KEY_STRLENMAX            100
-#define CLICMDDATA_DESCRIPTION_STRLENMAX    100
+#define CLICMDDATA_KEY_STRLENMAX 100
+#define CLICMDDATA_DESCRIPTION_STRLENMAX 100
 #define CLICMDDATA_SOURCEFILENAME_STRLENMAX 100
 
 typedef struct
@@ -151,11 +146,11 @@ typedef struct
 
 } CLICMDDATA;
 
-#define CLICMD_SUCCESS     0
+#define CLICMD_SUCCESS 0
 #define CLICMD_INVALID_ARG 1
-#define CLICMD_ERROR       2
+#define CLICMD_ERROR 2
 
-//int CLI_checkarg0(int argnum, int argtype, int errmsg);
+// int CLI_checkarg0(int argnum, int argtype, int errmsg);
 
 int CLI_checkarg(int argnum, uint32_t argtype);
 

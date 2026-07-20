@@ -19,12 +19,12 @@ errno_t print_header(const char *str, char c)
 
     attron(A_BOLD);
     n = strlen(str);
-    for(i = 0; i < (infoscreen_wcol - n) / 2; i++)
+    for (i = 0; i < (infoscreen_wcol - n) / 2; i++)
     {
         printw("%c", c);
     }
     printw("%s", str);
-    for(i = 0; i < (infoscreen_wcol - n) / 2 - 1; i++)
+    for (i = 0; i < (infoscreen_wcol - n) / 2 - 1; i++)
     {
         printw("%c", c);
     }

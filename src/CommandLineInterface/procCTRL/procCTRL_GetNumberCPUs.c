@@ -5,11 +5,9 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
-
 #ifdef USE_HWLOC
-#include <hwloc.h>
+#    include <hwloc.h>
 #endif
-
 
 /**
  * ## Purpose
@@ -18,8 +16,8 @@
  *
  * ## Description
  *
- * populates cpuids array with the global system PU numbers in the physical order:
- * [PU0 of CPU0, PU1 of CPU0, ... PU0 of CPU1, PU1 of CPU1, ...]
+ * populates cpuids array with the global system PU numbers in the physical
+ * order: [PU0 of CPU0, PU1 of CPU0, ... PU0 of CPU1, PU1 of CPU1, ...]
  *
  */
 
@@ -31,7 +29,7 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
 
     static int initStatus = 0;
 
-    if(initStatus == 0)
+    if (initStatus == 0)
     {
         initStatus             = 1;
         unsigned int     depth = 0;
@@ -41,10 +39,10 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
         hwloc_topology_init(&topology);
 
         /* ... Optionally, put detection configuration here to ignore
-           some objects types, define a synthetic topology, etc....
-           The default is to detect all the objects of the machine that
-           the caller is allowed to access.  See Configure Topology
-           Detection. */
+       some objects types, define a synthetic topology, etc....
+       The default is to detect all the objects of the machine that
+       the caller is allowed to access.  See Configure Topology
+       Detection. */
 
         /* Perform the topology detection. */
         hwloc_topology_load(topology);
@@ -61,8 +59,7 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
             pinfop->CPUids[pu_index] = obj->os_index;
             ++pu_index;
             obj = obj->next_cousin;
-        }
-        while(obj != NULL);
+        } while (obj != NULL);
 
         hwloc_topology_destroy(topology);
     }
@@ -73,16 +70,16 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
     char  outstring[16];
     char  buf[100];
 
-    //unsigned int tmp_index = 0;
+    // unsigned int tmp_index = 0;
 
     fpout = popen("getconf _NPROCESSORS_ONLN", "r");
-    if(fpout == NULL)
+    if (fpout == NULL)
     {
         printf("WARNING: cannot run command \"tmuxsessionname\"\n");
     }
     else
     {
-        if(fgets(outstring, 16, fpout) == NULL)
+        if (fgets(outstring, 16, fpout) == NULL)
         {
             printf("WARNING: fgets error\n");
         }
@@ -90,19 +87,17 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
     }
     pinfop->NBcpus = atoi(outstring);
 
-    fpout =
-        popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print $NF }'",
-              "r");
-    pu_index            = 0;
+    fpout    = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print $NF }'", "r");
+    pu_index = 0;
     pinfop->NBcpusocket = 1;
-    while((fgets(buf, sizeof(buf), fpout) != NULL) &&
-            (pu_index < pinfop->NBcpus))
+    while ((fgets(buf, sizeof(buf), fpout) != NULL) && (pu_index < pinfop->NBcpus))
     {
         pinfop->CPUids[pu_index]  = pu_index;
         pinfop->CPUphys[pu_index] = atoi(buf);
 
-        //printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
-        if(pinfop->CPUphys[pu_index] + 1 > pinfop->NBcpusocket)
+        // printf("cpu %2d belongs to Physical CPU %d\n", pu_index,
+        // pinfop->CPUphys[pu_index] );
+        if (pinfop->CPUphys[pu_index] + 1 > pinfop->NBcpusocket)
         {
             pinfop->NBcpusocket = pinfop->CPUphys[pu_index] + 1;
         }

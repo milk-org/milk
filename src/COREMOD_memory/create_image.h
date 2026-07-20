@@ -22,10 +22,7 @@ errno_t create_1Dimage_ID_IMGID(IMGID *img);
 errno_t create_1DCimage_ID(const char *ID_name, uint32_t xsize, imageID *outID);
 errno_t create_1DCimage_ID_IMGID(IMGID *img);
 
-errno_t create_2Dimage_ID(const char *ID_name,
-                          uint32_t    xsize,
-                          uint32_t    ysize,
-                          imageID    *outID);
+errno_t create_2Dimage_ID(const char *ID_name, uint32_t xsize, uint32_t ysize, imageID *outID);
 errno_t create_2Dimage_ID_IMGID(IMGID *img);
 
 errno_t create_2Dimage_ID_double(const char *ID_name,
@@ -34,10 +31,7 @@ errno_t create_2Dimage_ID_double(const char *ID_name,
                                  imageID    *outID);
 errno_t create_2Dimage_ID_double_IMGID(IMGID *img);
 
-errno_t create_2DCimage_ID(const char *ID_name,
-                           uint32_t    xsize,
-                           uint32_t    ysize,
-                           imageID    *outID);
+errno_t create_2DCimage_ID(const char *ID_name, uint32_t xsize, uint32_t ysize, imageID *outID);
 errno_t create_2DCimage_ID_IMGID(IMGID *img);
 
 errno_t create_2DCimage_ID_double(const char *ID_name,

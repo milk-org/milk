@@ -26,7 +26,7 @@ errno_t COREMOD_MEMORY_image_set_cnt1(const char *IDname, int cnt1);
 
 static errno_t COREMOD_MEMORY_image_set_status__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
+    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_status(data.cmdargtoken[1].val.string,
                                         (int) data.cmdargtoken[2].val.numl);
@@ -40,7 +40,7 @@ static errno_t COREMOD_MEMORY_image_set_status__cli()
 
 static errno_t COREMOD_MEMORY_image_set_cnt0__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
+    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_cnt0(data.cmdargtoken[1].val.string,
                                       (int) data.cmdargtoken[2].val.numl);
@@ -54,7 +54,7 @@ static errno_t COREMOD_MEMORY_image_set_cnt0__cli()
 
 static errno_t COREMOD_MEMORY_image_set_cnt1__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
+    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_cnt1(data.cmdargtoken[1].val.string,
                                       (int) data.cmdargtoken[2].val.numl);
@@ -72,32 +72,17 @@ static errno_t COREMOD_MEMORY_image_set_cnt1__cli()
 
 errno_t image_set_counters_addCLIcmd()
 {
-    RegisterCLIcommand(
-        "imsetstatus",
-        __FILE__,
-        COREMOD_MEMORY_image_set_status__cli,
-        "set image status variable",
-        "<image> <value [long]>",
-        "imsetstatus im1 2",
-        "long COREMOD_MEMORY_image_set_status(const char *IDname, int status)");
+    RegisterCLIcommand("imsetstatus", __FILE__, COREMOD_MEMORY_image_set_status__cli,
+                       "set image status variable", "<image> <value [long]>", "imsetstatus im1 2",
+                       "long COREMOD_MEMORY_image_set_status(const char *IDname, int status)");
 
-    RegisterCLIcommand(
-        "imsetcnt0",
-        __FILE__,
-        COREMOD_MEMORY_image_set_cnt0__cli,
-        "set image cnt0 variable",
-        "<image> <value [long]>",
-        "imsetcnt0 im1 2",
-        "long COREMOD_MEMORY_image_set_cnt0(const char *IDname, int status)");
+    RegisterCLIcommand("imsetcnt0", __FILE__, COREMOD_MEMORY_image_set_cnt0__cli,
+                       "set image cnt0 variable", "<image> <value [long]>", "imsetcnt0 im1 2",
+                       "long COREMOD_MEMORY_image_set_cnt0(const char *IDname, int status)");
 
-    RegisterCLIcommand(
-        "imsetcnt1",
-        __FILE__,
-        COREMOD_MEMORY_image_set_cnt1__cli,
-        "set image cnt1 variable",
-        "<image> <value [long]>",
-        "imsetcnt1 im1 2",
-        "long COREMOD_MEMORY_image_set_cnt1(const char *IDname, int status)");
+    RegisterCLIcommand("imsetcnt1", __FILE__, COREMOD_MEMORY_image_set_cnt1__cli,
+                       "set image cnt1 variable", "<image> <value [long]>", "imsetcnt1 im1 2",
+                       "long COREMOD_MEMORY_image_set_cnt1(const char *IDname, int status)");
 
     return RETURN_SUCCESS;
 }

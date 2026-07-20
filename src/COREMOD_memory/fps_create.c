@@ -26,9 +26,7 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 
 static errno_t fps_create__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_INT64) +
-            CLI_checkarg_noerrmsg(2, CLIARG_STR) ==
-            0)
+    if (0 + CLI_checkarg(1, CLIARG_INT64) + CLI_checkarg_noerrmsg(2, CLIARG_STR) == 0)
     {
         function_parameter_struct_create(data.cmdargtoken[1].val.numl,
                                          data.cmdargtoken[2].val.string);
@@ -46,12 +44,8 @@ static errno_t fps_create__cli()
 
 errno_t fps_create_addCLIcmd()
 {
-
-    RegisterCLIcommand("fpscreate",
-                       __FILE__,
-                       fps_create__cli,
-                       "create function parameter structure (FPS)",
-                       "<NBparam> <name>",
+    RegisterCLIcommand("fpscreate", __FILE__, fps_create__cli,
+                       "create function parameter structure (FPS)", "<NBparam> <name>",
                        "fpscreate 100 newfps",
                        "errno_t function_parameter_struct_create(int "
                        "NBparamMAX, const char *name");
@@ -59,14 +53,11 @@ errno_t fps_create_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-errno_t function_parameter_struct_create(
-    int NBparamMAX,
-    const char *name
-)
+errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
 {
-    //int                       index;
+    // int                       index;
     char                     *mapv = NULL;
-    FUNCTION_PARAMETER_STRUCT fps = {0};
+    FUNCTION_PARAMETER_STRUCT fps  = { 0 };
 
     //  FUNCTION_PARAMETER_STRUCT_MD *funcparammd;
     //  FUNCTION_PARAMETER *funcparamarray;
@@ -78,8 +69,7 @@ errno_t function_parameter_struct_create(
     char shmdname[200];
     function_parameter_struct_shmdirname(shmdname);
 
-    if(snprintf(SM_fname, 200, "%s/%s.fps.shm", shmdname, name) <
-            0)
+    if (snprintf(SM_fname, 200, "%s/%s.fps.shm", shmdname, name) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
@@ -92,7 +82,7 @@ errno_t function_parameter_struct_create(
     sharedsize += sizeof(FUNCTION_PARAMETER) * NBparamMAX;
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
-    if(SM_fd == -1)
+    if (SM_fd == -1)
     {
         perror("Error opening file for writing");
         printf("STEP %s %d\n", __FILE__, __LINE__);
@@ -104,22 +94,19 @@ errno_t function_parameter_struct_create(
 
     int result;
     result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
-    if(result == -1)
+    if (result == -1)
     {
         close(SM_fd);
-        printf(
-            "ERROR [%s %s %d]: Error calling lseek() to 'stretch' the "
-            "file\n",
-            __FILE__,
-            __func__,
-            __LINE__);
+        printf("ERROR [%s %s %d]: Error calling lseek() to 'stretch' the "
+               "file\n",
+               __FILE__, __func__, __LINE__);
         printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
     }
 
     result = write(SM_fd, "", 1);
-    if(result != 1)
+    if (result != 1)
     {
         close(SM_fd);
         perror("Error writing last byte of the file");
@@ -128,9 +115,9 @@ errno_t function_parameter_struct_create(
         exit(0);
     }
 
-    fps.md = (FUNCTION_PARAMETER_STRUCT_MD *)
-             mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if(fps.md == MAP_FAILED)
+    fps.md = (FUNCTION_PARAMETER_STRUCT_MD *) mmap(0, sharedsize, PROT_READ | PROT_WRITE,
+                                                   MAP_SHARED, SM_fd, 0);
+    if (fps.md == MAP_FAILED)
     {
         close(SM_fd);
         perror("Error mmapping the file");
@@ -138,35 +125,31 @@ errno_t function_parameter_struct_create(
         fflush(stdout);
         exit(0);
     }
-    //funcparamstruct->md = funcparammd;
+    // funcparamstruct->md = funcparammd;
 
     mapv = (char *) fps.md;
     mapv += sizeof(FUNCTION_PARAMETER_STRUCT_MD);
     fps.parray = (FUNCTION_PARAMETER *) mapv;
 
-    //printf("shared memory space = %ld bytes\n", sharedsize); //TEST
+    // printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
     fps.md->NBparamMAX = NBparamMAX;
 
     memset(fps.parray, 0, NBparamMAX * sizeof(*fps.parray));
     /*
-    for(index = 0; index < NBparamMAX; index++)
-    {
-        fps.parray[index].fpflag = 0; // not active
-        fps.parray[index].cnt0   = 0; // update counter
-    }
-    */
+  for(index = 0; index < NBparamMAX; index++)
+  {
+      fps.parray[index].fpflag = 0; // not active
+      fps.parray[index].cnt0   = 0; // update counter
+  }
+  */
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
-    strncpy(fps.md->callprogname,
-            data.package_name,
-            FPS_CALLPROGNAME_STRMAXLEN - 1);
-    strncpy(fps.md->callfuncname,
-            data.cmdargtoken[0].val.string,
-            FPS_CALLFUNCNAME_STRMAXLEN - 1);
+    strncpy(fps.md->callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1);
+    strncpy(fps.md->callfuncname, data.cmdargtoken[0].val.string, FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
     char cwd[FPS_CWD_STRLENMAX];
-    if(getcwd(cwd, sizeof(cwd)) != NULL)
+    if (getcwd(cwd, sizeof(cwd)) != NULL)
     {
         strncpy(fps.md->workdir, cwd, FPS_CWD_STRLENMAX - 1);
     }
@@ -191,28 +174,23 @@ errno_t function_parameter_struct_create(
 
     // Get keywordarray from environment variable
     char *kwarray = getenv("FPS_KEYWORDARRAY");
-    if(kwarray)
+    if (kwarray)
     {
-        strncpy(fps.md->keywordarray,
-                kwarray,
-                FPS_KEYWORDARRAY_STRMAXLEN - 1);
+        strncpy(fps.md->keywordarray, kwarray, FPS_KEYWORDARRAY_STRMAXLEN - 1);
     }
     else
     {
-        strncpy(fps.md->keywordarray,
-                ":",
-                FPS_KEYWORDARRAY_STRMAXLEN - 1);
+        strncpy(fps.md->keywordarray, ":", FPS_KEYWORDARRAY_STRMAXLEN - 1);
     }
 
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;
-    for(int m = 0; m < data.NBmodule; m++)
+    for (int m = 0; m < data.NBmodule; m++)
     {
         // custom loaded module
-        if(data.module[m].type == MODULE_TYPE_CUSTOMLOAD)
+        if (data.module[m].type == MODULE_TYPE_CUSTOMLOAD)
         {
-            strncpy(fps.md->modulename[fps.md->NBmodule],
-                    data.module[m].loadname,
+            strncpy(fps.md->modulename[fps.md->NBmodule], data.module[m].loadname,
                     FPS_MODULE_STRMAXLEN - 1);
             fps.md->NBmodule++;
         }
@@ -223,10 +201,10 @@ errno_t function_parameter_struct_create(
     fps.md->msgcnt     = 0;
 
     // initialize pointers
-    fps.cmdset.triggermodeptr = NULL;
+    fps.cmdset.triggermodeptr          = NULL;
     fps.cmdset.procinfo_loopcntMax_ptr = NULL;
-    fps.cmdset.triggerdelayptr = NULL;
-    fps.cmdset.triggertimeoutptr = NULL;
+    fps.cmdset.triggerdelayptr         = NULL;
+    fps.cmdset.triggertimeoutptr       = NULL;
 
     munmap(fps.md, sharedsize);
 

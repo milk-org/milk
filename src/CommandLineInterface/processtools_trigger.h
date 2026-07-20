@@ -30,7 +30,8 @@
 // trigger after a time delay
 #define PROCESSINFO_TRIGGERMODE_DELAY 4
 
-// trigger when semaphore is posted AND propagate the timeout (i.e. enter the execution anyway)
+// trigger when semaphore is posted AND propagate the timeout (i.e. enter the
+// execution anyway)
 #define PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS 5
 
 // trigger when cnt0 < cnt2 (demand-driven / flow control)
@@ -40,7 +41,8 @@
 #define PROCESSINFO_TRIGGERSTATUS_WAITING 1
 // trigger has been received and we're executing the loop
 #define PROCESSINFO_TRIGGERSTATUS_RECEIVED 2
-// trigger has not been received but we've skipped out of the wait into the execution of the loop
+// trigger has not been received but we've skipped out of the wait into the
+// execution of the loop
 #define PROCESSINFO_TRIGGERSTATUS_TIMEDOUT 3
 
 #include "CLIcore.h"
@@ -49,26 +51,23 @@
 #include "processinfo.h"
 
 errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
-        imageID      trigID,
-        int          triggermode,
-        int          semindexrequested);
+                                           imageID      trigID,
+                                           int          triggermode,
+                                           int          semindexrequested);
 
 errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo);
 
-#define PROCINFO_TRIGGER_DELAYUS(delayus)                                      \
-    do                                                                         \
-    {                                                                          \
-        processinfo_waitoninputstream_init(processinfo,                        \
-                                           -1,                                 \
-                                           PROCESSINFO_TRIGGERMODE_DELAY,      \
-                                           -1);                                \
-        processinfo->triggerdelay.tv_sec  = 0;                                 \
-        processinfo->triggerdelay.tv_nsec = (long) ((delayus) *1000);          \
-        while (processinfo->triggerdelay.tv_nsec > 1000000000)                 \
-        {                                                                      \
-            processinfo->triggerdelay.tv_nsec -= 1000000000;                   \
-            processinfo->triggerdelay.tv_sec += 1;                             \
-        }                                                                      \
+#define PROCINFO_TRIGGER_DELAYUS(delayus)                                                       \
+    do                                                                                          \
+    {                                                                                           \
+        processinfo_waitoninputstream_init(processinfo, -1, PROCESSINFO_TRIGGERMODE_DELAY, -1); \
+        processinfo->triggerdelay.tv_sec  = 0;                                                  \
+        processinfo->triggerdelay.tv_nsec = (long) ((delayus) * 1000);                          \
+        while (processinfo->triggerdelay.tv_nsec > 1000000000)                                  \
+        {                                                                                       \
+            processinfo->triggerdelay.tv_nsec -= 1000000000;                                    \
+            processinfo->triggerdelay.tv_sec += 1;                                              \
+        }                                                                                       \
     } while (0)
 
 #endif

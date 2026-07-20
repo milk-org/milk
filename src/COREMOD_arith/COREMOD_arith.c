@@ -42,8 +42,8 @@
 #include <fitsio.h>
 
 #ifdef _OPENMP
-#include <omp.h>
-#define OMP_NELEMENT_LIMIT 1000000
+#    include <omp.h>
+#    define OMP_NELEMENT_LIMIT 1000000
 #endif
 
 #include "CommandLineInterface/CLIcore.h"
@@ -51,17 +51,17 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-//#include "COREMOD_arith/COREMOD_arith.h"
+// #include "COREMOD_arith/COREMOD_arith.h"
 
 #include "image_crop.h"
 #include "image_crop2D.h"
-#include "image_multicrop2D.h"
 #include "image_cropmask.h"
+#include "image_multicrop2D.h"
 
 #include "image_dxdy.h"
+#include "image_merge3D.h"
 #include "image_norm.h"
 #include "image_slicenormalize.h"
-#include "image_merge3D.h"
 #include "image_stats.h"
 
 #include "image_set_1Dpixrange.h"
@@ -90,14 +90,13 @@
 #include "execute_arith.h"
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#    define M_PI 3.14159265358979323846
 #endif
 
 INIT_MODULE_LIB(COREMOD_arith)
 
 static errno_t init_module_CLI()
 {
-
     image_crop_addCLIcmd();
 
     image_arith__im_f_f__im_addCLIcmd();

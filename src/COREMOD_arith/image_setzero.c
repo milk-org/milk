@@ -2,30 +2,16 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "CommandLineInterface/CLIcore.h"
 #include "image_setzero.h"
+#include "CommandLineInterface/CLIcore.h"
 
 static char *inimname;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".imname",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    }
-};
+static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".imname", "input image", "im1",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &inimname, NULL } };
 
-static CLICMDDATA CLIcmddata =
-{
-    "imzero",
-    "set all image pixels to zero value",
-    CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "imzero", "set all image pixels to zero value",
+                                 CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -33,19 +19,17 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-errno_t image_setzero_IMGID(
-    IMGID *inimg
-)
+errno_t image_setzero_IMGID(IMGID *inimg)
 {
     DEBUG_TRACE_FSTART();
 
     resolveIMGID(inimg, ERRMODE_ABORT);
 
-    long nelem = inimg->md->nelement;
-    int typesize = ImageStreamIO_typesize(inimg->md->datatype);
-    if(typesize == -1)
+    long nelem    = inimg->md->nelement;
+    int  typesize = ImageStreamIO_typesize(inimg->md->datatype);
+    if (typesize == -1)
     {
-        PRINT_ERROR("cannot detect image type for image %s",  inimg->name);
+        PRINT_ERROR("cannot detect image type for image %s", inimg->name);
         exit(0);
     }
     memset(inimg->im->array.raw, 0, typesize * nelem);
@@ -70,7 +54,6 @@ static errno_t compute_function()
     {
         image_setzero_IMGID(&inimg);
         processinfo_update_output_stream(processinfo, inimg.ID);
-
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -80,12 +63,10 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMOD_arith__imsetzero()
+    // Register function in CLI
+    errno_t CLIADDCMD_COREMOD_arith__imsetzero()
 {
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
-

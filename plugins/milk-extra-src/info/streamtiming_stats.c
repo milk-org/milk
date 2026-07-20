@@ -19,16 +19,18 @@
 // Forward declaration(s)
 // ==========================================
 
-errno_t info_image_streamtiming_stats_disp(
-    double *tdiffvarray,
-    long    NBsamples,
-    double  tdiffvmax,
-    long    tdiffcntmax);
+errno_t info_image_streamtiming_stats_disp(double *tdiffvarray,
+                                           long    NBsamples,
+                                           double  tdiffvmax,
+                                           long    tdiffcntmax);
 
 //
 //
-errno_t info_image_streamtiming_stats(
-    imageID ID, int sem, long NBsamplesmax, float samplestimeout, int buffinit)
+errno_t info_image_streamtiming_stats(imageID ID,
+                                      int     sem,
+                                      long    NBsamplesmax,
+                                      float   samplestimeout,
+                                      int     buffinit)
 {
     IMAGE *image = &data.image[ID];
 
@@ -36,16 +38,15 @@ errno_t info_image_streamtiming_stats(
     static double *tdiffvarray;
     static double *tdiffvarray_sorted;
 
-
-    if(initflag == 0)
+    if (initflag == 0)
     {
-        initflag    = 1;
-        tdiffvarray = (double *) malloc(sizeof(double) * NBsamplesmax);
+        initflag           = 1;
+        tdiffvarray        = (double *) malloc(sizeof(double) * NBsamplesmax);
         tdiffvarray_sorted = (double *) malloc(sizeof(double) * NBsamplesmax);
     }
 
     // collect timing data
-    //long cnt0 = image->md[0].cnt0;
+    // long cnt0 = image->md[0].cnt0;
 
     struct timespec tstart;
     struct timespec t0;
@@ -62,32 +63,32 @@ errno_t info_image_streamtiming_stats(
 
     static long framecnt     = 0; // Buffer index for next frame
     static long framecntbuff = 0; // Number of bufferized frames so far
-    //static long NBsamples    = 0;
+    // static long NBsamples    = 0;
 
-    if(buffinit == 1)
+    if (buffinit == 1)
     {
         framecnt     = 0;
         framecntbuff = 0;
-        tdiffvmax = 0.0;
-        tdiffcntmax = 0;
+        tdiffvmax    = 0.0;
+        tdiffcntmax  = 0;
     }
 
     // warmup
-    for(long cnt = 0; cnt < SEMAPHORE_MAXVAL; cnt++)
+    for (long cnt = 0; cnt < SEMAPHORE_MAXVAL; cnt++)
     {
         ImageStreamIO_semtrywait(image, sem);
     }
 
     clock_gettime(CLOCK_MILK, &tstart);
-    t0 = tstart;
+    t0        = tstart;
     t_timeout = t0;
     t_timeout.tv_sec += 2;
     ImageStreamIO_semtimedwait(image, sem, &t_timeout);
 
-    while(loopOK == 1)
+    while (loopOK == 1)
     {
-        //for (long framecnt = 0; framecnt < NBsamplesmax; framecnt++)
-        if(ImageStreamIO_semtimedwait(image, sem, &t_timeout))
+        // for (long framecnt = 0; framecnt < NBsamplesmax; framecnt++)
+        if (ImageStreamIO_semtimedwait(image, sem, &t_timeout))
         {
             return RETURN_FAILURE;
         }
@@ -97,12 +98,12 @@ errno_t info_image_streamtiming_stats(
         tdiffv                = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
         tdiffvarray[framecnt] = tdiffv;
 
-        t0 = t1;
+        t0        = t1;
         t_timeout = t0;
         t_timeout = t0;
         t_timeout.tv_sec += 2;
 
-        if(tdiffv > tdiffvmax || framecnt == tdiffcntmax)
+        if (tdiffv > tdiffvmax || framecnt == tdiffcntmax)
         {
             tdiffvmax   = tdiffv;
             tdiffcntmax = framecnt;
@@ -111,39 +112,33 @@ errno_t info_image_streamtiming_stats(
         ++framecnt;
         ++framecntbuff;
 
-        if(framecntbuff > NBsamplesmax)
+        if (framecntbuff > NBsamplesmax)
         {
             framecntbuff = NBsamplesmax;
         }
-        if(framecnt >= NBsamplesmax)
+        if (framecnt >= NBsamplesmax)
         {
             framecnt = 0;
         }
 
-        tdiff              = info_time_diff(tstart, t1);
+        tdiff       = info_time_diff(tstart, t1);
         tdiffstartv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-        if(tdiffstartv > samplestimeout)
+        if (tdiffstartv > samplestimeout)
         {
             loopOK = 0;
         }
     }
 
-    memcpy(tdiffvarray_sorted, tdiffvarray,
-           NBsamplesmax * sizeof(*tdiffvarray_sorted));
-    info_image_streamtiming_stats_disp(tdiffvarray_sorted,
-                                       framecntbuff,
-                                       tdiffvmax,
-                                       tdiffcntmax);
+    memcpy(tdiffvarray_sorted, tdiffvarray, NBsamplesmax * sizeof(*tdiffvarray_sorted));
+    info_image_streamtiming_stats_disp(tdiffvarray_sorted, framecntbuff, tdiffvmax, tdiffcntmax);
 
     return RETURN_SUCCESS;
 }
 
-
-errno_t info_image_streamtiming_stats_disp(
-    double *tdiffvarray,
-    long    NBsamples,
-    double  tdiffvmax,
-    long    tdiffcntmax)
+errno_t info_image_streamtiming_stats_disp(double *tdiffvarray,
+                                           long    NBsamples,
+                                           double  tdiffvmax,
+                                           long    tdiffcntmax)
 {
     float RMSval = 0.0;
     float AVEval = 0.0;
@@ -155,12 +150,12 @@ errno_t info_image_streamtiming_stats_disp(
     static long  *percNarray;
     static int    NBpercbin;
 
-    if(initflag == 0)
+    if (initflag == 0)
     {
         initflag = 1;
 
         // printw("ALLOCATE arrays\n");
-        NBpercbin  = 17;
+        NBpercbin       = 17;
         percMedianIndex = 8;
 
         percarray  = (float *) malloc(sizeof(float) * NBpercbin);
@@ -183,23 +178,18 @@ errno_t info_image_streamtiming_stats_disp(
         percarray[14] = 0.98;
         percarray[15] = 0.99;
         percarray[16] = 0.999;
-
     }
 
-
-
-    for(int pc = 0; pc < NBpercbin; pc++)
+    for (int pc = 0; pc < NBpercbin; pc++)
     {
-        percNarray[pc] = (long)(percarray[pc] * NBsamples);
+        percNarray[pc] = (long) (percarray[pc] * NBsamples);
     }
-
-
 
     // process timing data
     quick_sort_double(tdiffvarray, NBsamples);
 
     long i;
-    for(i = 0; i < NBsamples; i++)
+    for (i = 0; i < NBsamples; i++)
     {
         AVEval += tdiffvarray[i];
         RMSval += tdiffvarray[i] * tdiffvarray[i];
@@ -210,72 +200,51 @@ errno_t info_image_streamtiming_stats_disp(
 
     printw("\n NBsamples = %ld \n\n", NBsamples);
 
-
-
-
-    for(int percbin = 0; percbin < NBpercbin; percbin++)
+    for (int percbin = 0; percbin < NBpercbin; percbin++)
     {
-        if(percbin == percMedianIndex)
+        if (percbin == percMedianIndex)
         {
             attron(A_BOLD);
-            printw(
-                "%2d/%2d  %6.3f %%  %6.3f %%  [%6ld] [%6ld]    %10.3f us\n",
-                percbin,
-                NBpercbin,
-                100.0 * percarray[percbin],
-                100.0 * (1.0 - percarray[percbin]),
-                percNarray[percbin],
-                NBsamples - percNarray[percbin],
-                1.0e6 * tdiffvarray[percNarray[percbin]]);
+            printw("%2d/%2d  %6.3f %%  %6.3f %%  [%6ld] [%6ld]    %10.3f us\n", percbin, NBpercbin,
+                   100.0 * percarray[percbin], 100.0 * (1.0 - percarray[percbin]),
+                   percNarray[percbin], NBsamples - percNarray[percbin],
+                   1.0e6 * tdiffvarray[percNarray[percbin]]);
             attroff(A_BOLD);
         }
         else
         {
-            if(tdiffvarray[percNarray[percbin]] >
-                    1.2 * tdiffvarray[percNarray[percMedianIndex]])
+            if (tdiffvarray[percNarray[percbin]] > 1.2 * tdiffvarray[percNarray[percMedianIndex]])
             {
                 attron(A_BOLD | COLOR_PAIR(6));
             }
-            if(tdiffvarray[percNarray[percbin]] >
-                    1.5 * tdiffvarray[percNarray[percMedianIndex]])
+            if (tdiffvarray[percNarray[percbin]] > 1.5 * tdiffvarray[percNarray[percMedianIndex]])
             {
                 attron(A_BOLD | COLOR_PAIR(5));
             }
-            if(tdiffvarray[percNarray[percbin]] >
-                    1.99 * tdiffvarray[percNarray[percMedianIndex]])
+            if (tdiffvarray[percNarray[percbin]] > 1.99 * tdiffvarray[percNarray[percMedianIndex]])
             {
                 attron(A_BOLD | COLOR_PAIR(4));
             }
 
-            printw(
-                "%2d/%2d  %6.3f %%  %6.3f %%  [%6ld] [%6ld]    %10.3f us   "
-                " %+10.3f us\n",
-                percbin,
-                NBpercbin,
-                100.0 * percarray[percbin],
-                100.0 * (1.0 - percarray[percbin]),
-                percNarray[percbin],
-                NBsamples - percNarray[percbin],
-                1.0e6 * tdiffvarray[percNarray[percbin]],
-                1.0e6 * (tdiffvarray[percNarray[percbin]] -
-                         tdiffvarray[percNarray[percMedianIndex]]));
+            printw("%2d/%2d  %6.3f %%  %6.3f %%  [%6ld] [%6ld]    %10.3f us   "
+                   " %+10.3f us\n",
+                   percbin, NBpercbin, 100.0 * percarray[percbin],
+                   100.0 * (1.0 - percarray[percbin]), percNarray[percbin],
+                   NBsamples - percNarray[percbin], 1.0e6 * tdiffvarray[percNarray[percbin]],
+                   1.0e6 * (tdiffvarray[percNarray[percbin]] -
+                            tdiffvarray[percNarray[percMedianIndex]]));
         }
     }
     attroff(A_BOLD | COLOR_PAIR(4));
 
-    printw("\n  Average Time Interval = %10.3f us    -> frequ = %10.3f Hz\n",
-           1.0e6 * AVEval,
+    printw("\n  Average Time Interval = %10.3f us    -> frequ = %10.3f Hz\n", 1.0e6 * AVEval,
            1.0 / AVEval);
-    printw("                    RMS = %10.3f us  ( %5.3f %%)\n",
-           1.0e6 * RMSval,
+    printw("                    RMS = %10.3f us  ( %5.3f %%)\n", 1.0e6 * RMSval,
            100.0 * RMSval / AVEval);
-    printw("  Max delay : %10.3f us   frame # %ld\n",
-           1.0e6 * tdiffvmax,
-           tdiffcntmax);
+    printw("  Max delay : %10.3f us   frame # %ld\n", 1.0e6 * tdiffvmax, tdiffcntmax);
 
-
-    //free(percarray);
-    //free(percNarray);
+    // free(percarray);
+    // free(percNarray);
 
     return RETURN_SUCCESS;
 }

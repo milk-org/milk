@@ -13,48 +13,20 @@ static char *imcinname;
 static char *outimname;
 static char *outcoeffname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".inc",
-        "input 3D cube",
-        "imc",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imcinname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outm",
-        "output modes",
-        "outm",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outcoeff",
-        "output coeffs",
-        "outcoeff",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outcoeffname,
-        NULL
-    }
-};
+static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inc", "input 3D cube", "imc", CLIARG_VISIBLE_DEFAULT,
+                                 (void **) &imcinname, NULL },
+                               { CLIARG_STR, ".outm", "output modes", "outm",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &outimname, NULL },
+                               { CLIARG_STR, ".outcoeff", "output coeffs", "outcoeff",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &outcoeffname, NULL } };
 
-static CLICMDDATA CLIcmddata =
-{
-    "imsvd", "Singular values decomposition", CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "imsvd", "Singular values decomposition", CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
-
 
 // rotation matrix written as SVD_VTm
 
@@ -83,7 +55,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     imageID ID_VTmatrix;
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if(arraysizetmp == NULL)
+    if (arraysizetmp == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
@@ -103,24 +75,15 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     matrix_DtraD_evec = gsl_matrix_alloc(m, m);
 
     /* write matrix_D */
-    for(long k = 0; k < m; k++)
+    for (long k = 0; k < m; k++)
     {
-        for(long ii = 0; ii < n; ii++)
+        for (long ii = 0; ii < n; ii++)
         {
-            gsl_matrix_set(matrix_D,
-                           ii,
-                           k,
-                           data.image[IDin].array.F[k * n + ii]);
+            gsl_matrix_set(matrix_D, ii, k, data.image[IDin].array.F[k * n + ii]);
         }
     }
     /* compute DtraD */
-    gsl_blas_dgemm(CblasTrans,
-                   CblasNoTrans,
-                   1.0,
-                   matrix_D,
-                   matrix_D,
-                   0.0,
-                   matrix_DtraD);
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, matrix_D, matrix_D, 0.0, matrix_DtraD);
 
     /* compute the inverse of DtraD */
 
@@ -132,13 +95,11 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
 
     gsl_matrix_free(matrix_save);
     gsl_eigen_symmv_free(w);
-    gsl_eigen_symmv_sort(matrix_DtraD_eval,
-                         matrix_DtraD_evec,
-                         GSL_EIGEN_SORT_ABS_DESC);
+    gsl_eigen_symmv_sort(matrix_DtraD_eval, matrix_DtraD_evec, GSL_EIGEN_SORT_ABS_DESC);
 
     create_2Dimage_ID(IDcoeff_name, m, 1, &IDcoeff);
 
-    for(long k = 0; k < m; k++)
+    for (long k = 0; k < m; k++)
     {
         data.image[IDcoeff].array.F[k] = gsl_vector_get(matrix_DtraD_eval, k);
     }
@@ -147,40 +108,34 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     arraysizetmp[0] = m;
     arraysizetmp[1] = m;
     ID_VTmatrix     = image_ID("SVD_VTm");
-    if(ID_VTmatrix != -1)
+    if (ID_VTmatrix != -1)
     {
         delete_image_ID("SVD_VTm", DELETE_IMAGE_ERRMODE_WARNING);
     }
-    create_image_ID("SVD_VTm",
-                    2,
-                    arraysizetmp,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &ID_VTmatrix);
-    for(long ii = 0; ii < m; ii++)   // modes
-        for(long k = 0; k < m; k++)  // modes
+    create_image_ID("SVD_VTm", 2, arraysizetmp, _DATATYPE_FLOAT, 0, 0, 0, &ID_VTmatrix);
+    for (long ii = 0; ii < m; ii++) // modes
+    {
+        for (long k = 0; k < m; k++) // modes
         {
             data.image[ID_VTmatrix].array.F[k * m + ii] =
                 (float) gsl_matrix_get(matrix_DtraD_evec, k, ii);
         }
+    }
 
     /// Compute SVD decomp
 
-    FUNC_CHECK_RETURN(create_3Dimage_ID(IDout_name,
-                                        data.image[IDin].md[0].size[0],
+    FUNC_CHECK_RETURN(create_3Dimage_ID(IDout_name, data.image[IDin].md[0].size[0],
                                         data.image[IDin].md[0].size[1],
-                                        data.image[IDin].md[0].size[2],
-                                        &IDout));
+                                        data.image[IDin].md[0].size[2], &IDout));
 
-    for(long kk = 0; kk < m; kk++)  /// eigen mode index
+    for (long kk = 0; kk < m; kk++) /// eigen mode index
     {
-        //        printf("eigenmode %4ld / %4ld  %g\n", kk, m, data.image[IDcoeff].array.F[kk]);
+        //        printf("eigenmode %4ld / %4ld  %g\n", kk, m,
+        //        data.image[IDcoeff].array.F[kk]);
         //       fflush(stdout);
-        for(long kk1 = 0; kk1 < m; kk1++)
+        for (long kk1 = 0; kk1 < m; kk1++)
         {
-            for(long ii = 0; ii < n; ii++)
+            for (long ii = 0; ii < n; ii++)
             {
                 data.image[IDout].array.F[kk * n + ii] +=
                     data.image[ID_VTmatrix].array.F[kk1 * m + kk] *
@@ -202,7 +157,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     printf("[SVD done]\n");
     fflush(stdout);
 
-    if(outID != NULL)
+    if (outID != NULL)
     {
         *outID = IDout;
     }
@@ -227,8 +182,8 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-errno_t
-CLIADDCMD_linopt_imtools__compute_SVDdecomp()
+    errno_t
+    CLIADDCMD_linopt_imtools__compute_SVDdecomp()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;

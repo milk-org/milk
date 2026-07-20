@@ -5,15 +5,14 @@
 #include <sys/stat.h>
 
 #include "CLIcore.h"
-#include <processtools.h>
 #include "COREMOD_tools/mvprocCPUset.h"
-
+#include <processtools.h>
 
 // High level processinfo function
 
 PROCESSINFO *processinfo_setup(
-    char         *
-    pinfoname, // short name for the processinfo instance, avoid spaces, name should be human-readable
+    char *pinfoname, // short name for the processinfo instance, avoid spaces,
+                     // name should be human-readable
     const char *descriptionstring,
     const char *msgstring,
     const char *functionname,
@@ -24,28 +23,26 @@ PROCESSINFO *processinfo_setup(
 
     static PROCESSINFO *processinfo = NULL;
     // Only one instance of processinfo created by process
-    // subsequent calls to this function will re-use the same processinfo structure
+    // subsequent calls to this function will re-use the same processinfo
+    // structure
 
     DEBUG_TRACEPOINT(" ");
 
     DEBUG_TRACEPOINT(" ");
-    if(data.processinfoActive == 0)
+    if (data.processinfoActive == 0)
     {
         //        PROCESSINFO *processinfo;
         DEBUG_TRACEPOINT(" ");
 
         char pinfoname0[STRINGMAXLEN_PROCESSINFO_NAME];
         {
-            int slen = snprintf(pinfoname0,
-                                STRINGMAXLEN_PROCESSINFO_NAME,
-                                "%s",
-                                pinfoname);
-            if(slen < 1)
+            int slen = snprintf(pinfoname0, STRINGMAXLEN_PROCESSINFO_NAME, "%s", pinfoname);
+            if (slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
-            if(slen >= STRINGMAXLEN_PROCESSINFO_NAME)
+            if (slen >= STRINGMAXLEN_PROCESSINFO_NAME)
             {
                 PRINT_ERROR("snprintf string truncation");
                 abort(); // can't handle this error any other way
@@ -99,7 +96,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
     processinfo->loopcnt  = 0;
     processinfo->loopstat = 1;
 
-    if(processinfo->RT_priority > -1)
+    if (processinfo->RT_priority > -1)
     {
         COREMOD_TOOLS_mvProcRTPrio(processinfo->RT_priority);
     }

@@ -11,7 +11,7 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT "fft"
-#define MODULE_DESCRIPTION       "FFTW wrapper and FFT-related functions"
+#define MODULE_DESCRIPTION "FFTW wrapper and FFT-related functions"
 
 #include <fftw3.h>
 
@@ -27,18 +27,14 @@
 
 #include "pup2foc.h"
 
-
 // auto-generate libinit_<modulename>
 // initialize INITSTATUS_<modulename>
 INIT_MODULE_LIB(fft)
 
-
 static errno_t init_module_CLI()
 {
-
 #ifdef FFTWMT
-    printf("Multi-threaded fft enabled, max threads = %d\n",
-           omp_get_max_threads());
+    printf("Multi-threaded fft enabled, max threads = %d\n", omp_get_max_threads());
     fftwf_init_threads();
     fftwf_plan_with_nthreads(omp_get_max_threads());
 #endif
@@ -46,8 +42,8 @@ static errno_t init_module_CLI()
     // load fftw wisdom
     import_wisdom();
 
-    //fftwf_set_timelimit(1000.0);
-    //fftw_set_timelimit(1000.0);
+    // fftwf_set_timelimit(1000.0);
+    // fftw_set_timelimit(1000.0);
 
     init_fftwplan_addCLIcmd();
     permut_addCLIcmd();
@@ -63,7 +59,7 @@ static errno_t init_module_CLI()
 
 static void __attribute__((destructor)) close_fftwlib()
 {
-    if(INITSTATUS_fft == 1)
+    if (INITSTATUS_fft == 1)
     {
         fftw_forget_wisdom();
         fftwf_forget_wisdom();

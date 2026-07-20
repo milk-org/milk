@@ -41,22 +41,22 @@ int fftczoom(const char *ID_name, const char *IDout_name, long factor)
 
     create_2DCimage_ID(tmpz1name, factor * naxes[0], factor * naxes[1], &ID1);
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[1]; jj++)
         {
             data.image[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .re = data.image[ID].array.CF[jj * naxes[0] + ii].re * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .re = data.image[ID].array.CF[jj * naxes[0] + ii].re * coeff;
             data.image[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .im = data.image[ID].array.CF[jj * naxes[0] + ii].im * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .im = data.image[ID].array.CF[jj * naxes[0] + ii].im * coeff;
         }
+    }
     delete_image_ID(tmpzname, DELETE_IMAGE_ERRMODE_WARNING);
 
     permut(tmpz1name);
@@ -94,22 +94,22 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
 
     create_2DCimage_ID(tmpz1name, factor * naxes[0], factor * naxes[1], &ID1);
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    {
+        for (uint32_t jj = 0; jj < naxes[1]; jj++)
         {
             data.image[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .re = data.image[ID].array.CF[jj * naxes[0] + ii].re * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .re = data.image[ID].array.CF[jj * naxes[0] + ii].re * coeff;
             data.image[ID1]
-            .array
-            .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
-                                                            factor +
-                                                            (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .im = data.image[ID].array.CF[jj * naxes[0] + ii].im * coeff;
+                .array
+                .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] * factor +
+                    (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
+                .im = data.image[ID].array.CF[jj * naxes[0] + ii].im * coeff;
         }
+    }
     delete_image_ID(tmpzname, DELETE_IMAGE_ERRMODE_WARNING);
 
     permut(tmpz1name);

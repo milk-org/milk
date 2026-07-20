@@ -9,15 +9,12 @@
 
 #include "processinfo/processinfo_procdirname.h"
 
-
-
 static struct timespec t1;
 static struct timespec t2;
 static struct timespec tdiff;
 
 static double scantime_CPUload;
 static double scantime_CPUpcnt;
-
 
 int GetCPUloads(PROCINFOPROC *pinfop)
 {
@@ -35,14 +32,14 @@ int GetCPUloads(PROCINFOPROC *pinfop)
     clock_gettime(CLOCK_MILK, &t1);
 
     line = (char *) malloc(sizeof(char) * maxstrlen);
-    if(line == NULL)
+    if (line == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     fp = fopen("/proc/stat", "r");
-    if(fp == NULL)
+    if (fp == NULL)
     {
         exit(EXIT_FAILURE);
     }
@@ -50,28 +47,16 @@ int GetCPUloads(PROCINFOPROC *pinfop)
     cpu = 0;
 
     read = getline(&line, &maxstrlen, fp);
-    if(read == -1)
+    if (read == -1)
     {
         printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
         exit(EXIT_SUCCESS);
     }
 
-    while(((read = getline(&line, &maxstrlen, fp)) != -1) &&
-            (cpu < pinfop->NBcpus))
+    while (((read = getline(&line, &maxstrlen, fp)) != -1) && (cpu < pinfop->NBcpus))
     {
-
-        sscanf(line,
-               "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld",
-               string0,
-               &vall0,
-               &vall1,
-               &vall2,
-               &vall3,
-               &vall4,
-               &vall5,
-               &vall6,
-               &vall7,
-               &vall8);
+        sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld", string0, &vall0, &vall1,
+               &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 
         v0 = vall0 - pinfop->CPUcnt0[cpu];
         v1 = vall1 - pinfop->CPUcnt1[cpu];
@@ -93,8 +78,8 @@ int GetCPUloads(PROCINFOPROC *pinfop)
         pinfop->CPUcnt7[cpu] = vall7;
         pinfop->CPUcnt8[cpu] = vall8;
 
-        pinfop->CPUload[cpu] = (1.0 * v0 + v1 + v2 + v4 + v5 + v6) /
-                               (v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8);
+        pinfop->CPUload[cpu] =
+            (1.0 * v0 + v1 + v2 + v4 + v5 + v6) / (v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8);
         cpu++;
     }
     free(line);
@@ -115,52 +100,44 @@ int GetCPUloads(PROCINFOPROC *pinfop)
 
     // use ps command to scan processes, store result in file psoutfname
 
-    EXECUTE_SYSTEM_COMMAND(
-        "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o "
-        "pid,psr,cpu,cmd > %s; fi; rm "
-        "%s/_psOKlock &> /dev/null; }",
-        procdname,
-        procdname,
-        psoutfname,
-        procdname);
-
+    EXECUTE_SYSTEM_COMMAND("{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o "
+                           "pid,psr,cpu,cmd > %s; fi; rm "
+                           "%s/_psOKlock &> /dev/null; }",
+                           procdname, procdname, psoutfname, procdname);
 
     // read and process psoutfname file
 
-    if(access(psoutfname, F_OK) != -1)
+    if (access(psoutfname, F_OK) != -1)
     {
-
-        for(cpu = 0; cpu < pinfop->NBcpus; cpu++)
+        for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
         {
             char  outstring[STRINGMAXLEN_DEFAULT];
             FILE *fpout;
             {
-                int slen = snprintf(command,
-                                    STRINGMAXLEN_COMMAND,
+                int slen = snprintf(command, STRINGMAXLEN_COMMAND,
                                     "CORENUM=%d; cat %s | grep -E  "
                                     "\"^[[:space:]][[:digit:]]+[[:"
                                     "space:]]+${CORENUM}\"|wc -l",
-                                    cpu,
-                                    psoutfname);
-                if(slen < 1)
+                                    cpu, psoutfname);
+                if (slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
                     abort(); // can't handle this error any other way
                 }
-                if(slen >= STRINGMAXLEN_COMMAND)
+                if (slen >= STRINGMAXLEN_COMMAND)
                 {
                     PRINT_ERROR("snprintf string truncation");
                     abort(); // can't handle this error any other way
                 }
             }
             fpout = popen(command, "r");
-            if(fpout == NULL)
+            if (fpout == NULL)
             {
                 printf("WARNING: cannot run command \"%s\"\n", command);
             }
             else
             {
-                if(fgets(outstring, STRINGMAXLEN_DEFAULT, fpout) == NULL)
+                if (fgets(outstring, STRINGMAXLEN_DEFAULT, fpout) == NULL)
                 {
                     printf("WARNING: fgets error\n");
                 }

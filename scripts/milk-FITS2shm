@@ -149,7 +149,7 @@ if [ "$UPDATEMODE" = "0" ]; then
 	if [ "$VERBOSE" = "1" ]; then
 		echo "UPDATEMODE is 0 -> LOADfile = ${LOADfile}"
 	fi
-	
+
 
 else
 	mkdir -p ${logSMstatdir}
@@ -283,7 +283,7 @@ EOF
     fi
 
 else
-	
+
 	if [ "$UPDATEMODE" = "1" ]; then
 		touch ${logSMstatdir}/${STREAMname0}.kept
 		rm -f ${logSMstatdir}/${STREAMname0}.changed &> /dev/null

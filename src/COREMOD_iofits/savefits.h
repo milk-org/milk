@@ -9,7 +9,7 @@
 #ifndef MILK_COREMOD_IOFITS_SAVEFITS_H
 #define MILK_COREMOD_IOFITS_SAVEFITS_H
 
-//errno_t savefits_addCLIcmd();
+// errno_t savefits_addCLIcmd();
 
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS();
 
@@ -30,7 +30,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                            const char *__restrict FITSIOext);
 
 errno_t saveFITS_opt_trunc_IMGID(IMGID *imgin,
-                                 int truncate,
+                                 int    truncate,
                                  const char *__restrict outputFITSname,
                                  int outputbitpix,
                                  const char *__restrict importheaderfile,
@@ -38,13 +38,10 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID *imgin,
                                  int            kwarraysize,
                                  const char *__restrict FITSIOext);
 
-errno_t save_fits(const char *__restrict inputimname,
-                  const char *__restrict outputFITSname);
+errno_t save_fits(const char *__restrict inputimname, const char *__restrict outputFITSname);
 
-errno_t save_fl_fits(const char *__restrict inputimname,
-                     const char *__restrict outputFITSname);
+errno_t save_fl_fits(const char *__restrict inputimname, const char *__restrict outputFITSname);
 
-errno_t save_db_fits(const char *__restrict inputimname,
-                     const char *__restrict outputFITSname);
+errno_t save_db_fits(const char *__restrict inputimname, const char *__restrict outputFITSname);
 
 #endif

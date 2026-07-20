@@ -15,10 +15,6 @@
 
 #include "SGEMM.h"
 
-
-
-
-
 static char *inmatU;
 static long  fpi_inmatU;
 
@@ -29,78 +25,26 @@ static long  fpi_invecS;
 static char *inmatV;
 static long  fpi_inmatV;
 
-
-
 static char *outmatM;
 static long  fpi_outmatM;
-
 
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
 
+static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inU", "input matrix U", "inM",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &inmatU, &fpi_inmatU },
+                               { CLIARG_IMG, ".inS", "input singular values vec", "inS",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &invecS, &fpi_invecS },
+                               { CLIARG_IMG, ".inV", "input matrix V", "inV",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &inmatV, &fpi_inmatV },
+                               { // output M
+                                 CLIARG_STR, ".outM", "output M", "outM", CLIARG_VISIBLE_DEFAULT,
+                                 (void **) &outmatM, &fpi_outmatM },
+                               { // using GPU (99 : no GPU, otherwise GPU device)
+                                 CLIARG_INT32, ".GPUdevice", "GPU device, 99 for CPU", "-1",
+                                 CLIARG_HIDDEN_DEFAULT, (void **) &GPUdevice, &fpi_GPUdevice } };
 
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".inU",
-        "input matrix U",
-        "inM",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmatU,
-        &fpi_inmatU
-    },
-    {
-        CLIARG_IMG,
-        ".inS",
-        "input singular values vec",
-        "inS",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &invecS,
-        &fpi_invecS
-    },
-    {
-        CLIARG_IMG,
-        ".inV",
-        "input matrix V",
-        "inV",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmatV,
-        &fpi_inmatV
-    },
-    {
-        // output M
-        CLIARG_STR,
-        ".outM",
-        "output M",
-        "outM",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outmatM,
-        &fpi_outmatM
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    }
-};
-
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "SVDmkM", "reconstruct SVD M", CLICMD_FIELDS_DEFAULTS
-};
-
-
+static CLICMDDATA CLIcmddata = { "SVDmkM", "reconstruct SVD M", CLICMD_FIELDS_DEFAULTS };
 
 static errno_t help_function()
 {
@@ -109,16 +53,7 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-errno_t SVDmkM(
-    IMGID    imgU,
-    IMGID    imgS,
-    IMGID    imgV,
-    IMGID    *imgM,
-    int      GPUdev
-)
+errno_t SVDmkM(IMGID imgU, IMGID imgS, IMGID imgV, IMGID *imgM, int GPUdev)
 {
     DEBUG_TRACE_FSTART();
 
@@ -129,33 +64,35 @@ errno_t SVDmkM(
     resolveIMGID(&imgV, ERRMODE_ABORT);
 
     // un-normalized modes
-    //printf("Creating image from %s\n", imgU.md->name);
+    // printf("Creating image from %s\n", imgU.md->name);
 
-    IMGID imgunmodes = mkIMGID_from_name("XXSVDunmodes");
-    imgunmodes.naxis = imgU.md->naxis;
+    IMGID imgunmodes    = mkIMGID_from_name("XXSVDunmodes");
+    imgunmodes.naxis    = imgU.md->naxis;
     imgunmodes.datatype = imgU.md->datatype;
-    imgunmodes.size[0] = imgU.md->size[0];
-    imgunmodes.size[1] = imgU.md->size[1];
-    imgunmodes.size[2] = imgU.md->size[2];
+    imgunmodes.size[0]  = imgU.md->size[0];
+    imgunmodes.size[1]  = imgU.md->size[1];
+    imgunmodes.size[2]  = imgU.md->size[2];
 
-    printf("Creating temp img XXSVDunmodes  %d x %d x %d\n", imgunmodes.size[0], imgunmodes.size[1], imgunmodes.size[2]);
+    printf("Creating temp img XXSVDunmodes  %d x %d x %d\n", imgunmodes.size[0], imgunmodes.size[1],
+           imgunmodes.size[2]);
     createimagefromIMGID(&imgunmodes);
 
     list_image_ID();
 
-    int lastaxis = imgunmodes.naxis-1;
+    int  lastaxis  = imgunmodes.naxis - 1;
     long framesize = imgunmodes.size[0];
-    if(lastaxis==2)
+    if (lastaxis == 2)
     {
         framesize *= imgunmodes.size[1];
     }
 
-    for(int kk=0; kk<imgunmodes.size[lastaxis]; kk++)
+    for (int kk = 0; kk < imgunmodes.size[lastaxis]; kk++)
     {
         float mfact = imgS.im->array.F[kk];
-        for(long ii=0; ii<framesize; ii++)
+        for (long ii = 0; ii < framesize; ii++)
         {
-            imgunmodes.im->array.F[kk*framesize+ii] = imgU.im->array.F[kk*framesize+ii] * mfact;
+            imgunmodes.im->array.F[kk * framesize + ii] =
+                imgU.im->array.F[kk * framesize + ii] * mfact;
         }
     }
 
@@ -164,13 +101,9 @@ errno_t SVDmkM(
     computeSGEMM(imgunmodes, imgV, imgM, 0, 1, GPUdev);
     delete_image_ID(imgunmodes.name, DELETE_IMAGE_ERRMODE_WARNING);
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
 
 static errno_t compute_function()
 {
@@ -185,45 +118,28 @@ static errno_t compute_function()
     IMGID imginV = mkIMGID_from_name(inmatV);
     resolveIMGID(&imginV, ERRMODE_ABORT);
 
-
-
-
-    IMGID imgoutM  = mkIMGID_from_name(outmatM);
-
+    IMGID imgoutM = mkIMGID_from_name(outmatM);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-
         SVDmkM(imginU, imginS, imginV, &imgoutM, *GPUdevice);
         processinfo_update_output_stream(processinfo, imgoutM.ID);
-
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-
-
 INSERT_STD_FPSCLIfunctions
 
-
-
-
-// Register function in CLI
-errno_t
-CLIADDCMD_linalgebra__SVDmkM()
+    // Register function in CLI
+    errno_t CLIADDCMD_linalgebra__SVDmkM()
 {
-
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;

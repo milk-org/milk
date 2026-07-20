@@ -21,7 +21,7 @@ imageID image_basic_3Dto2D(const char *__restrict IDname);
 
 static errno_t image_basic_3Dto2D_cli() // collapse first 2 axis into one
 {
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
+    if (CLI_checkarg(1, CLIARG_IMG) == 0)
     {
         image_basic_3Dto2D(data.cmdargtoken[1].val.string);
         return CLICMD_SUCCESS;
@@ -38,14 +38,9 @@ static errno_t image_basic_3Dto2D_cli() // collapse first 2 axis into one
 
 errno_t __attribute__((cold)) im3Dto2D_addCLIcmd()
 {
-
-    RegisterCLIcommand("im3Dto2D",
-                       __FILE__,
-                       image_basic_3Dto2D_cli,
-                       "collapse first 2 axis of 3D image (in place)",
-                       "<image name>",
-                       "im3Dto2D im1",
-                       "long image_basic_3Dto2D(const char *IDname)");
+    RegisterCLIcommand("im3Dto2D", __FILE__, image_basic_3Dto2D_cli,
+                       "collapse first 2 axis of 3D image (in place)", "<image name>",
+                       "im3Dto2D im1", "long image_basic_3Dto2D(const char *IDname)");
 
     return RETURN_SUCCESS;
 }
@@ -59,7 +54,7 @@ errno_t __attribute__((cold)) im3Dto2D_addCLIcmd()
 
 imageID image_basic_3Dto2D_byID(imageID ID)
 {
-    if(data.image[ID].md[0].naxis != 3)
+    if (data.image[ID].md[0].naxis != 3)
     {
         printf("ERROR: image needs to have 3 axis\n");
     }

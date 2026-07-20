@@ -6,8 +6,8 @@
  */
 
 #ifdef HAVE_MAGMA
-#include "magma_lapack.h"
-#include "magma_v2.h"
+#    include "magma_lapack.h"
+#    include "magma_v2.h"
 #endif
 
 #include "CommandLineInterface/CLIcore.h"
@@ -27,7 +27,6 @@ int LINALGEBRA_init();
 // ==========================================
 // Command line interface wrapper function(s)
 // ==========================================
-
 
 /*
 static errno_t delete_image_ID__cli()
@@ -52,21 +51,14 @@ static errno_t delete_image_ID__cli()
 }
 */
 
-
 // ==========================================
 // Register CLI command(s)
 // ==========================================
 
 errno_t linalgebrainit_addCLIcmd()
 {
-
-    RegisterCLIcommand("linalgebrainit",
-                       __FILE__,
-                       LINALGEBRA_init,
-                       "init linalgebra",
-                       "no argument",
-                       "linalgebrainit",
-                       "int LINALGEBRA_init()");
+    RegisterCLIcommand("linalgebrainit", __FILE__, LINALGEBRA_init, "init linalgebra",
+                       "no argument", "linalgebrainit", "int LINALGEBRA_init()");
 
     return RETURN_SUCCESS;
 }
@@ -84,48 +76,42 @@ int LINALGEBRA_init()
 {
     int                   device;
     struct cudaDeviceProp deviceProp;
-    int devicecntMax = 100;
+    int                   devicecntMax = 100;
 
     cudaGetDeviceCount(&cuda_deviceCount);
-    if(cuda_deviceCount > devicecntMax)
+    if (cuda_deviceCount > devicecntMax)
     {
         cuda_deviceCount = 0;
     }
-    if(cuda_deviceCount < 0)
+    if (cuda_deviceCount < 0)
     {
         cuda_deviceCount = 0;
     }
 
     printf("%s: %d devices found\n", __func__, cuda_deviceCount);
     printf("\n");
-    for(device = 0; device < cuda_deviceCount; ++device)
+    for (device = 0; device < cuda_deviceCount; ++device)
     {
         cudaGetDeviceProperties(&deviceProp, device);
-        
-	    int clockRate;
-	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, device);
 
-	printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
-               device,
-               deviceProp.name,
-               deviceProp.major,
-               deviceProp.minor);
-        printf(
-            "  Total amount of global memory:                 %.0f MBytes "
-            "(%llu bytes)\n",
-            (float) deviceProp.totalGlobalMem / 1048576.0f,
-            (unsigned long long) deviceProp.totalGlobalMem);
+        int clockRate;
+        cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, device);
+
+        printf("Device %d [ %20s ]  has compute capability %d.%d.\n", device, deviceProp.name,
+               deviceProp.major, deviceProp.minor);
+        printf("  Total amount of global memory:                 %.0f MBytes "
+               "(%llu bytes)\n",
+               (float) deviceProp.totalGlobalMem / 1048576.0f,
+               (unsigned long long) deviceProp.totalGlobalMem);
         printf("  (%2d) Multiprocessors\n", deviceProp.multiProcessorCount);
-        printf(
-            "  GPU Clock rate:                                %.0f MHz (%0.2f "
-            "GHz)\n",
-            clockRate * 1e-3f,
-            clockRate * 1e-6f);
+        printf("  GPU Clock rate:                                %.0f MHz (%0.2f "
+               "GHz)\n",
+               clockRate * 1e-3f, clockRate * 1e-6f);
         printf("\n");
-#ifdef HAVE_MAGMA
+#    ifdef HAVE_MAGMA
         printf("Using MAGMA library\n");
         magma_print_environment();
-#endif
+#    endif
 
         printf("\n");
     }
@@ -133,29 +119,22 @@ int LINALGEBRA_init()
     return ((int) cuda_deviceCount);
 }
 
-
-
-
-
-void *GPU_scanDevices(
-    void *deviceCount_void_ptr
-)
+void *GPU_scanDevices(void *deviceCount_void_ptr)
 {
     int                  *devcnt_ptr = (int *) deviceCount_void_ptr;
     int                   device;
     struct cudaDeviceProp deviceProp;
-    int devicecntMax = 100;
-
+    int                   devicecntMax = 100;
 
     printf("Scanning for GPU devices ...\n");
     fflush(stdout);
 
     cudaGetDeviceCount(&cuda_deviceCount);
-    if(cuda_deviceCount > devicecntMax)
+    if (cuda_deviceCount > devicecntMax)
     {
         cuda_deviceCount = 0;
     }
-    if(cuda_deviceCount < 0)
+    if (cuda_deviceCount < 0)
     {
         cuda_deviceCount = 0;
     }
@@ -164,33 +143,26 @@ void *GPU_scanDevices(
     fflush(stdout);
 
     printf("\n");
-    for(device = 0; device < cuda_deviceCount; ++device)
+    for (device = 0; device < cuda_deviceCount; ++device)
     {
         cudaGetDeviceProperties(&deviceProp, device);
-        
-	    int clockRate;
+
+        int clockRate;
         cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, device);
 
-	
-	printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
-               device,
-               deviceProp.name,
-               deviceProp.major,
-               deviceProp.minor);
+        printf("Device %d [ %20s ]  has compute capability %d.%d.\n", device, deviceProp.name,
+               deviceProp.major, deviceProp.minor);
 
-        printf(
-            "  Total amount of global memory:                 %.0f MBytes "
-            "(%llu bytes)\n",
-            (float) deviceProp.totalGlobalMem / 1048576.0f,
-            (unsigned long long) deviceProp.totalGlobalMem);
+        printf("  Total amount of global memory:                 %.0f MBytes "
+               "(%llu bytes)\n",
+               (float) deviceProp.totalGlobalMem / 1048576.0f,
+               (unsigned long long) deviceProp.totalGlobalMem);
 
         printf("  (%2d) Multiprocessors\n", deviceProp.multiProcessorCount);
 
-        printf(
-            "  GPU Clock rate:                                %.0f MHz (%0.2f "
-            "GHz)\n",
-            clockRate * 1e-3f,
-            clockRate * 1e-6f);
+        printf("  GPU Clock rate:                                %.0f MHz (%0.2f "
+               "GHz)\n",
+               clockRate * 1e-3f, clockRate * 1e-6f);
 
         printf("\n");
     }

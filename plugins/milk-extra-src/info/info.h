@@ -3,20 +3,20 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #if !defined(INFO_H)
-#define INFO_H
+#    define INFO_H
 
-#include "info/imagemon.h"
+#    include "info/imagemon.h"
 
 void __attribute__((constructor)) libinit_info();
 
-#include "info/cubeMatchMatrix.h"
-#include "info/cubestats.h"
-#include "info/image_stats.h"
-#include "info/imagemon.h"
-#include "info/improfile.h"
-#include "info/kbdhit.h"
-#include "info/percentile.h"
-#include "info/print_header.h"
+#    include "info/cubeMatchMatrix.h"
+#    include "info/cubestats.h"
+#    include "info/image_stats.h"
+#    include "info/imagemon.h"
+#    include "info/improfile.h"
+#    include "info/kbdhit.h"
+#    include "info/percentile.h"
+#    include "info/print_header.h"
 
 /*
 long brighter(

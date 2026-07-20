@@ -13,7 +13,7 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT "info"
-#define MODULE_DESCRIPTION       "Image information and statistics"
+#define MODULE_DESCRIPTION "Image information and statistics"
 
 #include "CommandLineInterface/CLIcore.h"
 #include "cubeMatchMatrix.h"
@@ -41,11 +41,6 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
-
-
-
-
-
 
 /* uses the repartition function F of the normal distribution law */
 /* F(0) = 0.5 */

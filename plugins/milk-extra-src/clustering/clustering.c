@@ -28,8 +28,6 @@
 #include "cubecluster.h"
 #include "mindiffscan.h"
 
-
-
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
@@ -37,7 +35,6 @@ INIT_MODULE_LIB(clustering)
 
 static errno_t init_module_CLI()
 {
-
     CLIADDCMD_clustering__imcube_mkcluster();
 
     CLIADDCMD_clustering__imcube_mindiffscan();

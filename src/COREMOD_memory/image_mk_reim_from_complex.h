@@ -10,9 +10,7 @@ errno_t mk_reim_from_complex(const char *in_name,
                              const char *im_name,
                              int         sharedmem);
 
-errno_t mk_reim_from_complex_IMGID(IMGID *imgin,
-                                   IMGID *imgre,
-                                   IMGID *imgim);
+errno_t mk_reim_from_complex_IMGID(IMGID *imgin, IMGID *imgre, IMGID *imgim);
 
 errno_t CLIADDCMD_COREMOD__mk_reim_from_complex();
 

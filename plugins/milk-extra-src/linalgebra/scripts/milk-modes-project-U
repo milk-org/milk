@@ -57,5 +57,3 @@ imres=modesA-imrec
 saveFITS imres "$outimres"
 exitCLI
 EOF
-
-

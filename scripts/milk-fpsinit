@@ -184,7 +184,7 @@ do
 	# check if tmux session exists
 	#
 	set +o errexit
-	set +eE 
+	set +eE
     tmuxstatuserr=$( tmux has-session -t ${FPSname} 2>/dev/null; echo $? )
     if [ $tmuxstatuserr = 0 ]; then
       TMUXSTATUS="FOUND"

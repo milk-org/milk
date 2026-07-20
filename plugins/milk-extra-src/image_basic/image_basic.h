@@ -71,7 +71,8 @@ int basic_translate(const char *ID_name, const char *ID_out, float xtransl,
 float basic_correlation(const char *ID_name1, const char *ID_name2);
 
 long IMAGE_BASIC_get_assym_component(const char *ID_name,
-                                     const char *ID_out_name, float xcenter, float ycenter, const char *options);
+                                     const char *ID_out_name, float xcenter,
+float ycenter, const char *options);
 
 
 

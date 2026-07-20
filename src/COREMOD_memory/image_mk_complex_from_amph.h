@@ -5,9 +5,7 @@
 #ifndef COREMOD_MEMORY_IMAGE_MK_COMPLEX_FROM_AMPH_H
 #define COREMOD_MEMORY_IMAGE_MK_COMPLEX_FROM_AMPH_H
 
-errno_t mk_complex_from_amph_IMGID(IMGID *imginamp,
-                                   IMGID *imginpha,
-                                   IMGID *imgoutC);
+errno_t mk_complex_from_amph_IMGID(IMGID *imginamp, IMGID *imginpha, IMGID *imgoutC);
 
 errno_t mk_complex_from_amph(const char *am_name,
                              const char *ph_name,

@@ -7,10 +7,8 @@
  *
  */
 
-
 #ifndef COREMOD_MODULE_ARITH_MATHFUNCS_H
 #define COREMOD_MODULE_ARITH_MATHFUNCS_H
-
 
 double Pacos(double a);
 

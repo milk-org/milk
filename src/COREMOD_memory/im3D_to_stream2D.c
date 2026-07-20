@@ -7,62 +7,26 @@
  * @brief   convert 3D image to 2D stream
  */
 
-#include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "CommandLineInterface/CLIcore.h"
 
 // Local variables pointers
 static char *inimname;
 static char *outname;
 static long *slice_index;
-static int *loop_mode;
+static int  *loop_mode;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input 3D image",
-        "im3D",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outname",
-        "output stream name",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".slice_index",
-        "initial slice index",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &slice_index,
-        NULL
-    }
-    ,
-    {
-        CLIARG_ONOFF,
-        ".loop_mode",
-        "loop through slices",
-        "1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &loop_mode,
-        NULL
-    }
-};
+static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".in_name", "input 3D image", "im3D",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &inimname, NULL },
+                               { CLIARG_STR, ".outname", "output stream name", "out1",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &outname, NULL },
+                               { CLIARG_INT64, ".slice_index", "initial slice index", "0",
+                                 CLIARG_HIDDEN_DEFAULT, (void **) &slice_index, NULL },
+                               { CLIARG_ONOFF, ".loop_mode", "loop through slices", "1",
+                                 CLIARG_HIDDEN_DEFAULT, (void **) &loop_mode, NULL } };
 
-static CLICMDDATA CLIcmddata =
-{
-    "im3D_to_stream2D",
-    "convert 3D image to 2D stream",
-    CLICMD_FIELDS_DEFAULTS
-};
+static CLICMDDATA CLIcmddata = { "im3D_to_stream2D", "convert 3D image to 2D stream",
+                                 CLICMD_FIELDS_DEFAULTS };
 
 // detailed help
 static errno_t help_function()
@@ -89,7 +53,6 @@ static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
         FUNC_RETURN_FAILURE("Input image is not 3D");
     }
 
-
     uint32_t xsize = inimg->size[0];
     uint32_t ysize = inimg->size[1];
     uint32_t zsize = inimg->size[2];
@@ -107,14 +70,11 @@ static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
     long framesize = xsize * ysize * ImageStreamIO_typesize(inimg->md->datatype);
 
     // Copy the slice data
-    memcpy(outimg->im->array.raw,
-           inimg->im->array.raw + slice_idx * framesize,
-           framesize);
+    memcpy(outimg->im->array.raw, inimg->im->array.raw + slice_idx * framesize, framesize);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
 
 static errno_t compute_function()
 {
@@ -125,15 +85,15 @@ static errno_t compute_function()
 
     // create stream with name outname
     IMGID outimg;
-    outimg = makeIMGID_2D(outname, inimg.size[0], inimg.size[1]);
-    outimg.shared = 1;
+    outimg          = makeIMGID_2D(outname, inimg.size[0], inimg.size[1]);
+    outimg.shared   = 1;
     outimg.datatype = inimg.md->datatype;
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-    {   if (*loop_mode == 0)
+    {
+        if (*loop_mode == 0)
         {
             extract_slice_to_2D(&inimg, &outimg, *slice_index);
         }
@@ -153,13 +113,10 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
 INSERT_STD_FPSCLIfunctions
 
-
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMOD_memory__im3D_to_stream2D()
+    // Register function in CLI
+    errno_t CLIADDCMD_COREMOD_memory__im3D_to_stream2D()
 {
     INSERT_STD_CLIREGISTERFUNC
 

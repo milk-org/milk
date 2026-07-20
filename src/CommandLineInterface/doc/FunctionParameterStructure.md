@@ -4,79 +4,61 @@
 
 [TOC]
 
-
-
-
 ---
 
-
-**The function  parameter structure (FPS) exposes a function's internal variables for read and/or write. It is stored in shared memory, in /tmp/<fpsname>.fps.shm.**
-
+**The function parameter structure (FPS) exposes a function's internal variables for read and/or write. It is stored in shared memory, in /tmp/<fpsname>.fps.shm.**
 
 Steps to run FPS-enabled processes:
 
-	$ vim fpslist.txt               # Edit file, listing functions and corresponding FPS names that will be used
-	$ fpsmkcmd                      # create FPS scripts in `./fpscmd/`
-	$ ./fpscmd/fpsinitscript        # create FPS shared memory structure(s)
-	$ ./fpscmd/fpsconfstartscript   # start FPS configuration process(es)
-	$ fpsCTRL -m _ALL               # FPS control tool, scan ALL FPSs (-m: force match with fpscmd/fpslist.txt)
-	Type 'P' to im(P)ort configuration
-
+    $ vim fpslist.txt               # Edit file, listing functions and corresponding FPS names that will be used
+    $ fpsmkcmd                      # create FPS scripts in `./fpscmd/`
+    $ ./fpscmd/fpsinitscript        # create FPS shared memory structure(s)
+    $ ./fpscmd/fpsconfstartscript   # start FPS configuration process(es)
+    $ fpsCTRL -m _ALL               # FPS control tool, scan ALL FPSs (-m: force match with fpscmd/fpslist.txt)
+    Type 'P' to im(P)ort configuration
 
 ---
-
 
 # 1. Overview and background {#page_FunctionParameterStructure_Overview}
 
 ## 1.1. Main elements
 
 FPS-enabled functions have the following elements:
+
 - The shared memory FPS: /tmp/<fpsname>.fps.shm
 - A configuration process that manages the FPS entries
 - A run process (the function itself)
-
-
 
 ## 1.2. FPS name
 
 <fpsname> consists of a root name (string), and a series of optional integers. Note that the number of digits matters and is part of the name:
 
-	<fpsname> = <fpsnameroot>.<opt0>.<opt1>...
+    <fpsname> = <fpsnameroot>.<opt0>.<opt1>...
 
 Examples:
 
-	myfps                        # simple name, no optional integers
-	myfps-000000                 # optional integer 000000
-	myfps-000043-000020-000002   # 3 optional integers
+    myfps                        # simple name, no optional integers
+    myfps-000000                 # optional integer 000000
+    myfps-000043-000020-000002   # 3 optional integers
 
 @warning The FPS name does not need to match the process or function name. FPS name is specified in the CLI function as described in @ref page_FunctionParameterStructure_WritingCLIfunc.
 
-
-
 ## 1.3. FPS-related entities
 
-name                                  | Type           | Description        | Origin
---------------------------------------|----------------|--------------------|---------------------------------
-/tmp/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function
-./fpscmd/<fpsnameroot>-confinit       | script         | Initialize FPS     | Built by fpsmkcmd, can be user-edited
-./fpscmd/<fpsnameroot>-confstart      | script         | Start CONF process | Built by fpsmkcmd, can be user-edited
-./fpscmd/<fpsnameroot>-runstart       | script         | Start RUN process  | Built by fpsmkcmd, can be user-edited
-./fpscmd/<fpsnameroot>-runstop        | script         | Stop RUN process   | Built by fpsmkcmd, can be user-edited
-<fpsname>-conf                        | tmux session   | where CONF runs    | Set up by fpsCTRL
-<fpsname>-run                         | tmux session   | where RUN runs     | Set up by fpsCTRL
-./fpsconf/<fpsname>/...               | ASCII file     | parameter value    | <TBD>
-
+| name                             | Type          | Description        | Origin                                |
+| -------------------------------- | ------------- | ------------------ | ------------------------------------- |
+| /tmp/<fpsname>.fps.shm           | shared memory | FP structure       | Created by FPS init function          |
+| ./fpscmd/<fpsnameroot>-confinit  | script        | Initialize FPS     | Built by fpsmkcmd, can be user-edited |
+| ./fpscmd/<fpsnameroot>-confstart | script        | Start CONF process | Built by fpsmkcmd, can be user-edited |
+| ./fpscmd/<fpsnameroot>-runstart  | script        | Start RUN process  | Built by fpsmkcmd, can be user-edited |
+| ./fpscmd/<fpsnameroot>-runstop   | script        | Stop RUN process   | Built by fpsmkcmd, can be user-edited |
+| <fpsname>-conf                   | tmux session  | where CONF runs    | Set up by fpsCTRL                     |
+| <fpsname>-run                    | tmux session  | where RUN runs     | Set up by fpsCTRL                     |
+| ./fpsconf/<fpsname>/...          | ASCII file    | parameter value    | <TBD>                                 |
 
 ---
 
-
-
-
-
-
-
 # 2. FPS user interface {#page_FunctionParameterStructure_UserInterface}
-
 
 Main steps to enable FPS-enabled function for fpsCTRL:
 
@@ -88,10 +70,9 @@ These steps should ideally performed by a setup script.
 
 ## 2.1. Building command scripts from a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}
 
-
 The user-provided `fpslist.txt` file lists the functions and corresponding FPS names that will be in use:
 
-~~~
+```
 # List of FPS-enabled function
 # Column 1: root name used to name FPS
 # Column 2: CLI command
@@ -99,50 +80,43 @@ The user-provided `fpslist.txt` file lists the functions and corresponding FPS n
 
 fpsrootname0	CLIcommand0
 fpsrootname1	CLIcommand1		optarg00	optarg01
-~~~
+```
 
 FPS command scripts are built by
 
-	$ fpsmkcmd
+    $ fpsmkcmd
 
 The command will create the FPS command scripts in directory `./fpscmd/`, which are then called by the @ref page_FunctionParameterStructure_fpsCTRL to control the CONF and RUN processes.
-
-
 
 ## 2.2. fpsCTRL tool {#page_FunctionParameterStructure_fpsCTRL}
 
 The FPS control tool is started from the command line :
 
-	$ fpsCTRL
-
-
+    $ fpsCTRL
 
 ---
 
-
-# 3. Writing the CLI function (in <module>.c file)  {#page_FunctionParameterStructure_WritingCLIfunc}
-
+# 3. Writing the CLI function (in <module>.c file) {#page_FunctionParameterStructure_WritingCLIfunc}
 
 A single CLI function, named <functionname>_cli, will take the following arguments:
+
 - arg1: A command code
 - arg2+: Optional arguments
 
 The command code is a string, and will determine the action to be executed:
-- `_FPSINIT_`  : Initialize FPS for the function
+
+- `_FPSINIT_` : Initialize FPS for the function
 - `_CONFSTART_` : Start the FPS configuration process
-- `_CONFSTOP_`  : Stop the FPS configuration process
-- `_RUNSTART_`  : Start the run process
-- `_RUNSTOP_`   : Stop the run process
-
-
+- `_CONFSTOP_` : Stop the FPS configuration process
+- `_RUNSTART_` : Start the run process
+- `_RUNSTOP_` : Stop the run process
 
 @note Why Optional arguments to CLI function ?
 @note Multiple instances of a C function may need to be running, each with its own FPS. Optional arguments provides a mechanism to differentiate the FPSs. They are appended to the FPS name following a dash. Optional arguments can be a number (usually integer) or a string.
 
-
 Example source code below.
 
-~~~~{.c}
+```{.c}
 
 errno_t ExampleFunction_cli()
 {
@@ -176,24 +150,17 @@ errno_t ExampleFunction_cli()
         return CLICMD_INVALID_ARG;
     }
 }
-~~~~
-
-
+```
 
 ---
 
-
 # 4. Writing function prototypes (in <module>.h) {#page_FunctionParameterStructure_WritingPrototypes}
 
-
-
-~~~~{.c}
+```{.c}
 errno_t ExampleFunction_FPCONF();
 errno_t ExampleFunction_RUN();
 errno_t ExampleFunction(long arg0num, long arg1num, long arg2num, long arg3num);
-~~~~
-
-
+```
 
 ---
 
@@ -201,7 +168,7 @@ errno_t ExampleFunction(long arg0num, long arg1num, long arg2num, long arg3num);
 
 Check function_parameters.h for full list of flags.
 
-~~~~{.c}
+```{.c}
 
 
 //
@@ -336,25 +303,17 @@ errno_t ExampleFunction_FPCONF(
 
 
 
-~~~~
-
-
-
-
+```
 
 ---
 
-
-
 # 6. Writing RUN function (in source .c file) {#page_FunctionParameterStructure_WritingRUNfunc}
-
 
 The RUN function will connect to the FPS and execute the run loop.
 
 ## 6.1. A simple _RUN example {#page_FunctionParameterStructure_WritingRUNfunc_simple}
 
-
-~~~~{.c}
+```{.c}
 //
 // run loop process
 //
@@ -414,12 +373,11 @@ errno_t ExampleFunction_RUN(
 	function_parameter_RUNexit( &fps );
 	return RETURN_SUCCESS;
 }
-~~~~
-
+```
 
 ## 6.2. Non-FPS fallback function
 
-~~~{.c}
+```{.c}
 errno_t ExampleFunction(
     long arg0num,
     long arg1num,
@@ -454,22 +412,16 @@ errno_t ExampleFunction(
 
 
 
-~~~
-
-
-
+```
 
 ## 6.3. RUN function with FPS and processinfo {#page_FunctionParameterStructure_WritingRUNfunc_processinfo}
-
 
 In this example, the loop process supports both FPS and processinfo.
 This is the preferred way to code a loop process.
 
 The example also shows using FPS to set the process realtime priority.
 
-
-
-~~~~{.c}
+```{.c}
 
 /* \@brief Loop process code example
  *
@@ -601,8 +553,6 @@ errno_t MyFunction_RUN(
 
 	return RETURN_SUCCESS;
 }
-~~~~
+```
 
-
-
-----
+---

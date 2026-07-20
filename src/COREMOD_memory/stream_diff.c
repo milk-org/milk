@@ -27,15 +27,12 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
 
 static errno_t COREMOD_MEMORY_streamDiff__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
-            CLI_checkarg(3, 5) + CLI_checkarg(4, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(5, CLIARG_INT64) ==
-            0)
+    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) + CLI_checkarg(3, 5) +
+            CLI_checkarg(4, CLIARG_STR_NOT_IMG) + CLI_checkarg(5, CLIARG_INT64) ==
+        0)
     {
-        COREMOD_MEMORY_streamDiff(data.cmdargtoken[1].val.string,
-                                  data.cmdargtoken[2].val.string,
-                                  data.cmdargtoken[3].val.string,
-                                  data.cmdargtoken[4].val.string,
+        COREMOD_MEMORY_streamDiff(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
+                                  data.cmdargtoken[3].val.string, data.cmdargtoken[4].val.string,
                                   data.cmdargtoken[5].val.numl);
         return CLICMD_SUCCESS;
     }
@@ -51,9 +48,7 @@ static errno_t COREMOD_MEMORY_streamDiff__cli()
 
 errno_t stream_diff_addCLIcmd()
 {
-    RegisterCLIcommand("streamdiff",
-                       __FILE__,
-                       COREMOD_MEMORY_streamDiff__cli,
+    RegisterCLIcommand("streamdiff", __FILE__, COREMOD_MEMORY_streamDiff__cli,
                        "compute difference between two image streams",
                        "<in stream 0> <in stream 1> <out stream> <optional "
                        "mask> <sem trigger index>",
@@ -97,7 +92,7 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
     xysize = xsize * ysize;
 
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-    if(arraysize == NULL)
+    if (arraysize == NULL)
     {
         PRINT_ERROR("malloc error");
         abort();
@@ -106,27 +101,19 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
     arraysize[1] = ysize;
 
     IDout = image_ID(IDstreamout_name);
-    if(IDout == -1)
+    if (IDout == -1)
     {
-        create_image_ID(IDstreamout_name,
-                        2,
-                        arraysize,
-                        _DATATYPE_FLOAT,
-                        1,
-                        0,
-                        0,
-                        &IDout);
+        create_image_ID(IDstreamout_name, 2, arraysize, _DATATYPE_FLOAT, 1, 0, 0, &IDout);
     }
 
     free(arraysize);
 
-    while(1)
+    while (1)
     {
         // has new frame arrived ?
-        if(data.image[ID0].md[0].sem == 0)
+        if (data.image[ID0].md[0].sem == 0)
         {
-            while(cnt ==
-                    data.image[ID0].md[0].cnt0) // test if new frame exists
+            while (cnt == data.image[ID0].md[0].cnt0) // test if new frame exists
             {
                 usleep(5);
             }
@@ -134,13 +121,13 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
         }
         else
         {
-            ImageStreamIO_semwait(data.image+ID0, semtrig);
+            ImageStreamIO_semwait(data.image + ID0, semtrig);
         }
 
         data.image[IDout].md[0].write = 1;
-        if(IDmask == -1)
+        if (IDmask == -1)
         {
-            for(uint64_t ii = 0; ii < xysize; ii++)
+            for (uint64_t ii = 0; ii < xysize; ii++)
             {
                 data.image[IDout].array.F[ii] =
                     data.image[ID0].array.F[ii] - data.image[ID1].array.F[ii];
@@ -148,11 +135,11 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
         }
         else
         {
-            for(uint64_t ii = 0; ii < xysize; ii++)
+            for (uint64_t ii = 0; ii < xysize; ii++)
             {
-                data.image[IDout].array.F[ii] = (data.image[ID0].array.F[ii] -
-                                                 data.image[ID1].array.F[ii]) *
-                                                data.image[IDmask].array.F[ii];
+                data.image[IDout].array.F[ii] =
+                    (data.image[ID0].array.F[ii] - data.image[ID1].array.F[ii]) *
+                    data.image[IDmask].array.F[ii];
             }
         }
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
