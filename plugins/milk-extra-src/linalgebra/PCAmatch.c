@@ -17,6 +17,7 @@
 
 #include "SGEMM.h"
 
+
 static char *modesA;
 static long  fpi_modesA;
 
@@ -35,8 +36,10 @@ static long  fpi_outimA;
 static char *outimB;
 static long  fpi_outimB;
 
+
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
+
 
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".modesA", "input modes A", "inmA",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &modesA, &fpi_modesA },
@@ -54,14 +57,17 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".modesA", "input modes A", "inmA",
                                  CLIARG_INT32, ".GPUdevice", "GPU device, 99 for CPU", "-1",
                                  CLIARG_HIDDEN_DEFAULT, (void **) &GPUdevice, &fpi_GPUdevice } };
 
+
 static CLICMDDATA CLIcmddata = { "PCAmatch",
                                  "find matching linear combination across two modal bases",
                                  CLICMD_FIELDS_DEFAULTS };
+
 
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Find matching linear combinations across two bases
@@ -102,6 +108,7 @@ errno_t PCAmatch(IMGID  imgmodesA,
     fflush(stdout);
     createimagefromIMGID(imgoutcA);
 
+
     imgoutcB->datatype = _DATATYPE_FLOAT;
     imgoutcB->naxis    = 2;
     imgoutcB->size[0]  = NBmodesA;
@@ -109,6 +116,7 @@ errno_t PCAmatch(IMGID  imgmodesA,
     printf("CREATING %s\n", imgoutcB->name);
     fflush(stdout);
     createimagefromIMGID(imgoutcB);
+
 
     // A->B coeff remapping matrix
     IMGID imgAtoB;
@@ -119,6 +127,7 @@ errno_t PCAmatch(IMGID  imgmodesA,
     IMGID imgBtoA;
     strcpy(imgBtoA.name, "matBtoA");
     computeSGEMM(imgmodesA, imgmodesB, &imgBtoA, 1, 0, GPUdev);
+
 
     // Initialization
     imgoutcA->im->array.F[0] = 1.0;
@@ -132,6 +141,7 @@ errno_t PCAmatch(IMGID  imgmodesA,
     {
         imgoutcB->im->array.F[mode] = 0.0;
     }
+
 
     // residual0
     IMGID imgimres0   = mkIMGID_from_name("imres0");
@@ -150,8 +160,10 @@ errno_t PCAmatch(IMGID  imgmodesA,
         imgimres0.im->array.F[ii] = vdiff;
     }
 
+
     // project to B
     computeSGEMM(imgAtoB, *imgoutcA, imgoutcB, 0, 0, GPUdev);
+
 
     int NBiter = 1000;
     for (int iter = 0; iter < NBiter; iter++)
@@ -160,7 +172,7 @@ errno_t PCAmatch(IMGID  imgmodesA,
         computeSGEMM(imgBtoA, *imgoutcB, imgoutcA, 0, 0, GPUdev);
 
         // attenuate non-average terms
-        // imgoutcA->im->array.F[0] = 1.0;
+        //imgoutcA->im->array.F[0] = 1.0;
         for (uint32_t mode = 1; mode < NBmodesA; mode++)
         {
             imgoutcA->im->array.F[mode] *= 0.999;
@@ -183,8 +195,10 @@ errno_t PCAmatch(IMGID  imgmodesA,
             }
         }
 
+
         // project to B
         computeSGEMM(imgAtoB, *imgoutcA, imgoutcB, 0, 0, GPUdev);
+
 
         printf("[%5d] coeffs A :  ", iter);
         for (uint32_t mode = 0; mode < NBmodesA; mode++)
@@ -209,10 +223,12 @@ errno_t PCAmatch(IMGID  imgmodesA,
         printf("\n");
     }
 
+
     // compute output images
     computeSGEMM(imgmodesA, *imgoutcA, imgoutimA, 0, 0, GPUdev);
 
     computeSGEMM(imgmodesB, *imgoutcB, imgoutimB, 0, 0, GPUdev);
+
 
     IMGID imgimres   = mkIMGID_from_name("imres");
     imgimres.naxis   = 2;
@@ -234,9 +250,11 @@ errno_t PCAmatch(IMGID  imgmodesA,
     printf("GAIN = %f\n", resim0 / resim);
     printf("\n");
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -251,6 +269,7 @@ static errno_t compute_function()
     printf("Modes images IDs : %ld %ld\n", imgmodesA.ID, imgmodesB.ID);
     fflush(stdout);
 
+
     printf("outcoeffA = %s\n", outcoeffA);
     fflush(stdout);
     IMGID imgoutcA = mkIMGID_from_name(outcoeffA);
@@ -258,6 +277,7 @@ static errno_t compute_function()
     printf("outcoeffB = %s\n", outcoeffB);
     fflush(stdout);
     IMGID imgoutcB = mkIMGID_from_name(outcoeffB);
+
 
     printf("imgoutimA = %s\n", outimA);
     fflush(stdout);
@@ -267,7 +287,9 @@ static errno_t compute_function()
     fflush(stdout);
     IMGID imgoutimB = mkIMGID_from_name(outimB);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -275,16 +297,19 @@ static errno_t compute_function()
 
         processinfo_update_output_stream(processinfo, imgoutcA.ID);
         processinfo_update_output_stream(processinfo, imgoutcB.ID);
-        // processinfo_update_output_stream(processinfo, imgoutimA.ID);
-        // processinfo_update_output_stream(processinfo, imgoutimB.ID);
+        //processinfo_update_output_stream(processinfo, imgoutimA.ID);
+        //processinfo_update_output_stream(processinfo, imgoutimB.ID);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     errno_t
     CLIADDCMD_linalgebra__PCAmatch()

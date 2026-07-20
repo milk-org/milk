@@ -9,8 +9,8 @@
  *
  */
 
-#include "image_stats.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "image_stats.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -467,6 +467,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
 
     nelement = imgin->md[0].nelement;
 
+
     void *array_raw = malloc(ImageStreamIO_typesize(datatype) * nelement);
     if (array_raw == NULL)
     {
@@ -474,6 +475,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
         exit(EXIT_FAILURE);
     }
     memcpy(array_raw, imgin->im->array.raw, ImageStreamIO_typesize(datatype) * nelement);
+
 
     switch (datatype)
     {

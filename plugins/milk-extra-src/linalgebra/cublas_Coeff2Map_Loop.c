@@ -168,6 +168,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(const char *IDmodes_name,
         cuda_deviceCount = 0;
     }
 
+
     printf("\n");
     for (int k = 0; k < cuda_deviceCount; ++k)
     {

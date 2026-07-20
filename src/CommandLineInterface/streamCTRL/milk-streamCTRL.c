@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+#include "milk_config.h"
+#include <CommandLineInterface/CLIcore.h>
 #include "CommandLineInterface/CLIcore/CLIcore_datainit.h"
 #include "CommandLineInterface/CLIcore/CLIcore_setSHMdir.h"
-#include "milk_config.h"
 #include "streamCTRL_TUI.h"
-#include <CommandLineInterface/CLIcore.h>
 
 int main(int argc, char *argv[])
 {

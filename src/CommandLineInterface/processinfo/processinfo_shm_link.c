@@ -10,6 +10,7 @@
 
 #include <sys/stat.h>
 
+
 PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
 {
     struct stat file_stat;
@@ -21,7 +22,7 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
         exit(0);
     }
     fstat(*fd, &file_stat);
-    // printf("[%d] File %s size: %zd\n", __LINE__, pname, file_stat.st_size);
+    //printf("[%d] File %s size: %zd\n", __LINE__, pname, file_stat.st_size);
 
     PROCESSINFO *pinfolist =
         (PROCESSINFO *) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);

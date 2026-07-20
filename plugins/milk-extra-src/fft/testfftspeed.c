@@ -63,9 +63,9 @@ int test_fftspeed(int nmax)
     struct timespec tS2;
     double          ti0, ti1, ti2;
     double          dt1;
-    // struct timeval tv;
-    // int nb_threads=1;
-    // int nb_threads_max = 8;
+    //struct timeval tv;
+    //int nb_threads=1;
+    //int nb_threads_max = 8;
 
     /*  printf("%ld ticks per second\n",CLOCKS_PER_SEC);*/
     nbiter = 10000;
@@ -131,7 +131,7 @@ int test_fftspeed(int nmax)
         tS2.tv_sec  = tv.tv_sec;
         tS2.tv_nsec = tv.tv_usec * 1000;
 #endif
-            // clock_gettime(CLOCK_MILK, &tS2);
+            //clock_gettime(CLOCK_MILK, &tS2);
 
             ti0 = 1.0 * tS0.tv_sec + 0.000000001 * tS0.tv_nsec;
             ti1 = 1.0 * tS1.tv_sec + 0.000000001 * tS1.tv_nsec;
@@ -141,8 +141,7 @@ int test_fftspeed(int nmax)
             dt1 /= nbiter;
 
             printf("%10.3f ms", dt1 * 1000.0);
-            // printf("Complex FFT %ldx%ld [%d threads] : %f ms
-            // [%ld]\n",size,size,nb_threads,dt1*1000.0,nbiter);
+            //printf("Complex FFT %ldx%ld [%d threads] : %f ms  [%ld]\n",size,size,nb_threads,dt1*1000.0,nbiter);
             fflush(stdout);
 #ifdef FFTWMT
         }

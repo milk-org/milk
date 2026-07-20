@@ -160,14 +160,14 @@ imageID basic_rotate2(const char *__restrict ID_name_in,
     uint32_t i, j;
     float    f1, f2, f3, f4, f5, f6, f7, f8, f9;
     /*  float *f1a;
-      float *f2a;
-      float *f3a;
-      float *f4a;
-      float *f5a;
-      float *f6a;
-      float *f7a;
-      float *f8a;
-      float *f9a;*/
+        float *f2a;
+        float *f3a;
+        float *f4a;
+        float *f5a;
+        float *f6a;
+        float *f7a;
+        float *f8a;
+        float *f9a;*/
     int  *f1a;
     int  *f2a;
     int  *f3a;
@@ -395,8 +395,7 @@ imageID basic_rotate2(const char *__restrict ID_name_in,
         {
             x = pixcorner_x[jj * naxes[0] + ii];
             y = pixcorner_y[jj * naxes[0] + ii];
-            /*printf("%ld %ld %d %d %f %f %f
-       * %f\n",ii,jj,i,j,pixcorner_x[jj*naxes[0]+ii],pixcorner_y[jj*naxes[0]+ii],x,y);*/
+            /*printf("%ld %ld %d %d %f %f %f %f\n",ii,jj,i,j,pixcorner_x[jj*naxes[0]+ii],pixcorner_y[jj*naxes[0]+ii],x,y);*/
             xint = (int) (((x + 3 * naxes[0]) - (int) (x + 3 * naxes[0])) * NB_step);
             yint = (int) ((y - (int) y) * NB_step);
             /*	printf("%d %d\n",xint,yint);*/

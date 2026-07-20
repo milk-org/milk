@@ -43,9 +43,9 @@ errno_t CR2tomov()
     imageID IDgtot;
     imageID IDbtot;
 
-    // double tot;
+    //double tot;
 
-    // double alpha = 0.7;
+    //double alpha = 0.7;
 
     // conversion from CR2 to FITS RGB
     int  CR2toFITSrgb;
@@ -101,16 +101,16 @@ errno_t CR2tomov()
     double  sigma;
     long    j;
     long    jstart;
-    // long jend;
+    //long jend;
     long j1;
 
-    // int NLCONV;
-    // double  NLCONV_OFFSET;
-    // double  NLCONV_LIMIT;
-    // double  NLCONV_FACT;
-    // double  NLCONV_POW;
-    // double  NLCONV_SIGMA;
-    // imageID IDr1, IDg1, IDb1, IDrp, IDgp, IDbp;
+    //int NLCONV;
+    //double  NLCONV_OFFSET;
+    //double  NLCONV_LIMIT;
+    //double  NLCONV_FACT;
+    //double  NLCONV_POW;
+    //double  NLCONV_SIGMA;
+    //imageID IDr1, IDg1, IDb1, IDrp, IDgp, IDbp;
 
     long SKIP, SKIPcnt;
     long SKIP_FITStoJPEG, SKIPcnt_FITStoJPEG;
@@ -182,16 +182,16 @@ errno_t CR2tomov()
     LUMB     = read_config_parameter_float(configfile, "LUMB");
     COLORSAT = read_config_parameter_float(configfile, "COLORSAT");
 
-    // NLCONV = 0;
+    //NLCONV = 0;
     /*if(read_config_parameter_exists(configfile,"NLCONV")==1)
-  {
-      NLCONV = read_config_parameter_int(configfile,"NLCONV");
-      NLCONV_OFFSET = read_config_parameter_float(configfile,"NLCONV_OFFSET");
-      NLCONV_LIMIT = read_config_parameter_float(configfile,"NLCONV_LIMIT");
-      NLCONV_FACT = read_config_parameter_float(configfile,"NLCONV_FACT");
-      NLCONV_POW = read_config_parameter_float(configfile,"NLCONV_POW");
-      NLCONV_SIGMA = read_config_parameter_float(configfile,"NLCONV_SIGMA");
-  }*/
+    {
+        NLCONV = read_config_parameter_int(configfile,"NLCONV");
+        NLCONV_OFFSET = read_config_parameter_float(configfile,"NLCONV_OFFSET");
+        NLCONV_LIMIT = read_config_parameter_float(configfile,"NLCONV_LIMIT");
+        NLCONV_FACT = read_config_parameter_float(configfile,"NLCONV_FACT");
+        NLCONV_POW = read_config_parameter_float(configfile,"NLCONV_POW");
+        NLCONV_SIGMA = read_config_parameter_float(configfile,"NLCONV_SIGMA");
+    }*/
 
     ALPHA = read_config_parameter_float(configfile, "ALPHA");
 
@@ -241,17 +241,17 @@ errno_t CR2tomov()
                     fname[strlen(fname) - 1] = '\0';
                     loadCR2toFITSRGB(fname, "imr", "img", "imb");
                     /*		  if(binfact!=1)
-            {
-              basic_contract("imr","imrc",binfact,binfact);
-              delete_image_ID("imr", DELETE_IMAGE_ERRMODE_WARNING);
-              chname_image_ID("imrc","imr");
-              basic_contract("img","imgc",binfact,binfact);
-              delete_image_ID("img", DELETE_IMAGE_ERRMODE_WARNING);
-              chname_image_ID("imgc","img");
-              basic_contract("imb","imbc",binfact,binfact);
-              delete_image_ID("imb", DELETE_IMAGE_ERRMODE_WARNING);
-              chname_image_ID("imbc","imb");
-              }*/
+                      {
+                        basic_contract("imr","imrc",binfact,binfact);
+                        delete_image_ID("imr", DELETE_IMAGE_ERRMODE_WARNING);
+                        chname_image_ID("imrc","imr");
+                        basic_contract("img","imgc",binfact,binfact);
+                        delete_image_ID("img", DELETE_IMAGE_ERRMODE_WARNING);
+                        chname_image_ID("imgc","img");
+                        basic_contract("imb","imbc",binfact,binfact);
+                        delete_image_ID("imb", DELETE_IMAGE_ERRMODE_WARNING);
+                        chname_image_ID("imbc","imb");
+                        }*/
                     ID    = image_ID("imr");
                     xsize = data.image[ID].md[0].size[0];
                     ysize = data.image[ID].md[0].size[1];
@@ -515,22 +515,22 @@ errno_t CR2tomov()
             for (i = 0; i < cntmax; i++)
             {
                 jstart = i - boxsize;
-                // jend = i+boxsize+1;
+                //jend = i+boxsize+1;
                 /*	  jcent = 0;
 
-        while(jstart<0)
-        {
-        jstart++;
-        jend++;
-        jcent++;
-        }
-        while(jend>cntmax-1)
-        {
-        jstart--;
-        jend--;
-        jcent--;
-        }
-        */
+                while(jstart<0)
+                {
+                jstart++;
+                jend++;
+                jcent++;
+                }
+                while(jend>cntmax-1)
+                {
+                jstart--;
+                jend--;
+                jcent--;
+                }
+                */
 
                 for (j = 0; j < 2 * boxsize + 1; j++)
                 {
@@ -705,63 +705,58 @@ errno_t CR2tomov()
                         // non-linear convolution
 
                         /*	      if(NLCONV==1)
-            {
-              printf("NLCONV_OFFSET = %f\n",NLCONV_OFFSET);
-              printf("NLCONV_LIMIT = %f\n",NLCONV_LIMIT);
-              printf("NLCONV_FACT = %f\n",NLCONV_FACT);
-              printf("NLCONV_POW = %f\n",NLCONV_POW);
-              printf("NLCONV_SIGMA = %f\n",NLCONV_SIGMA);
+                        {
+                          printf("NLCONV_OFFSET = %f\n",NLCONV_OFFSET);
+                          printf("NLCONV_LIMIT = %f\n",NLCONV_LIMIT);
+                          printf("NLCONV_FACT = %f\n",NLCONV_FACT);
+                          printf("NLCONV_POW = %f\n",NLCONV_POW);
+                          printf("NLCONV_SIGMA = %f\n",NLCONV_SIGMA);
 
-              IDrp = create_2Dimage_ID("imrp",xsize,ysize);
-              IDgp = create_2Dimage_ID("imgp",xsize,ysize);
-              IDbp = create_2Dimage_ID("imbp",xsize,ysize);
+                          IDrp = create_2Dimage_ID("imrp",xsize,ysize);
+                          IDgp = create_2Dimage_ID("imgp",xsize,ysize);
+                          IDbp = create_2Dimage_ID("imbp",xsize,ysize);
 
-              for(ii=0;ii<xsize*ysize;ii++)
-                {
-                  if(data.image[IDr].array.F[ii]>NLCONV_LIMIT)
-                    data.image[IDr].array.F[ii] = NLCONV_LIMIT;
-                  if(data.image[IDg].array.F[ii]>NLCONV_LIMIT)
-                    data.image[IDg].array.F[ii] = NLCONV_LIMIT;
-                  if(data.image[IDb].array.F[ii]>NLCONV_LIMIT)
-                    data.image[IDb].array.F[ii] = NLCONV_LIMIT;
+                          for(ii=0;ii<xsize*ysize;ii++)
+                            {
+                              if(data.image[IDr].array.F[ii]>NLCONV_LIMIT)
+                        	data.image[IDr].array.F[ii] = NLCONV_LIMIT;
+                              if(data.image[IDg].array.F[ii]>NLCONV_LIMIT)
+                        	data.image[IDg].array.F[ii] = NLCONV_LIMIT;
+                              if(data.image[IDb].array.F[ii]>NLCONV_LIMIT)
+                        	data.image[IDb].array.F[ii] = NLCONV_LIMIT;
 
 
-                  if(data.image[IDr].array.F[ii]>NLCONV_OFFSET)
-                    data.image[IDrp].array.F[ii] =
-            pow((data.image[IDr].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
-                  if(data.image[IDg].array.F[ii]>NLCONV_OFFSET)
-                    data.image[IDgp].array.F[ii] =
-            pow((data.image[IDg].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
-                  if(data.image[IDb].array.F[ii]>NLCONV_OFFSET)
-                    data.image[IDbp].array.F[ii] =
-            pow((data.image[IDb].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
-                }
-              make_gauss("kerg",xsize,ysize,NLCONV_SIGMA,1.0);
-              tot = arith_image_total("kerg");
-              arith_image_cstmult_inplace("kerg",1.0/tot);
+                              if(data.image[IDr].array.F[ii]>NLCONV_OFFSET)
+                        	data.image[IDrp].array.F[ii] = pow((data.image[IDr].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                              if(data.image[IDg].array.F[ii]>NLCONV_OFFSET)
+                        	data.image[IDgp].array.F[ii] = pow((data.image[IDg].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                              if(data.image[IDb].array.F[ii]>NLCONV_OFFSET)
+                        	data.image[IDbp].array.F[ii] = pow((data.image[IDb].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                            }
+                          make_gauss("kerg",xsize,ysize,NLCONV_SIGMA,1.0);
+                          tot = arith_image_total("kerg");
+                          arith_image_cstmult_inplace("kerg",1.0/tot);
 
-              fconvolve_padd("imrp","kerg",(long)
-            (10.0*NLCONV_SIGMA+2.0),"imr_c");
-              fconvolve_padd("imgp","kerg",(long)
-            (10.0*NLCONV_SIGMA+2.0),"img_c");
-              fconvolve_padd("imbp","kerg",(long)
-            (10.0*NLCONV_SIGMA+2.0),"imb_c"); delete_image_ID("kerg");
-              delete_image_ID("imrp");
-              delete_image_ID("imgp");
-              delete_image_ID("imbp");
-              IDr1 = image_ID("imr_c");
-              IDg1 = image_ID("img_c");
-              IDb1 = image_ID("imb_c");
-              for(ii=0;ii<xsize*ysize;ii++)
-                {
-                  data.image[IDr].array.F[ii] += data.image[IDr1].array.F[ii];
-                  data.image[IDg].array.F[ii] += data.image[IDg1].array.F[ii];
-                  data.image[IDb].array.F[ii] += data.image[IDb1].array.F[ii];
-                }
-              delete_image_ID("imr_c");
-              delete_image_ID("img_c");
-              delete_image_ID("imb_c");
-              }*/
+                          fconvolve_padd("imrp","kerg",(long) (10.0*NLCONV_SIGMA+2.0),"imr_c");
+                          fconvolve_padd("imgp","kerg",(long) (10.0*NLCONV_SIGMA+2.0),"img_c");
+                          fconvolve_padd("imbp","kerg",(long) (10.0*NLCONV_SIGMA+2.0),"imb_c");
+                          delete_image_ID("kerg");
+                          delete_image_ID("imrp");
+                          delete_image_ID("imgp");
+                          delete_image_ID("imbp");
+                          IDr1 = image_ID("imr_c");
+                          IDg1 = image_ID("img_c");
+                          IDb1 = image_ID("imb_c");
+                          for(ii=0;ii<xsize*ysize;ii++)
+                            {
+                              data.image[IDr].array.F[ii] += data.image[IDr1].array.F[ii];
+                              data.image[IDg].array.F[ii] += data.image[IDg1].array.F[ii];
+                              data.image[IDb].array.F[ii] += data.image[IDb1].array.F[ii];
+                            }
+                          delete_image_ID("imr_c");
+                          delete_image_ID("img_c");
+                          delete_image_ID("imb_c");
+                          }*/
 
                         for (ii = 0; ii < xsize * ysize; ii++)
                         {

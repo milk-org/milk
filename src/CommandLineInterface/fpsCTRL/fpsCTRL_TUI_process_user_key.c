@@ -19,17 +19,19 @@
 #include "fps/fps_RUNstop.h"
 #include "fps/fps_WriteParameterToDisk.h"
 #include "fps/fps_outlog.h"
-#include "fps/fps_printparameter_valuestring.h"
 #include "fps/fps_processcmdline.h"
 #include "fps/fps_read_fpsCMD_fifo.h"
 #include "fps/fps_save2disk.h"
 #include "fps/fps_scan.h"
 #include "fps/fps_tmux.h"
 #include "fps/fps_userinputsetparamvalue.h"
+#include "fps/fps_printparameter_valuestring.h"
+
 
 #define ctrl(x) ((x) & 0x1f)
 
 static short unsigned int wrow, wcol;
+
 
 int fpsCTRL_TUI_process_user_key(int                        ch,
                                  FUNCTION_PARAMETER_STRUCT *fps,
@@ -44,7 +46,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
     int fpsindex;
     int pindex;
 
-    // char msg[stringmaxlen];
+    //char msg[stringmaxlen];
 
     char fname[STRINGMAXLEN_FULLFILENAME];
 
@@ -74,9 +76,11 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         fpsCTRLvar->fpsCTRL_DisplayMode = 3;
         break;
 
+
     case '?': // fps entry help
         fpsCTRLvar->fpsCTRL_DisplayMode = 4;
         break;
+
 
     case 'g':
         set_FLAG_FPSOUTLOG(0);
@@ -85,12 +89,14 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         set_FLAG_FPSOUTLOG(1);
         break;
 
+
     case 'v':
         fpsCTRLvar->fpsCTRL_DisplayVerbose = 0;
         break;
     case 'V':
         fpsCTRLvar->fpsCTRL_DisplayVerbose = 1;
         break;
+
 
     case 's': // (re)scan
         functionparameter_scan_fps(fpsCTRLvar->mode, fpsCTRLvar->fpsnamemask, fps, keywnode,
@@ -255,8 +261,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         pindex   = keywnode[fpsCTRLvar->nodeSelected].pindex;
 
-        // toggles ON / OFF - this is a special case not using function
-        // functionparameter_UserInputSetParamValue
+        // toggles ON / OFF - this is a special case not using function functionparameter_UserInputSetParamValue
         if (fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS)
         {
             if (fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF)
@@ -284,8 +289,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
                 }
                 fps[fpsindex].parray[pindex].cnt0++;
                 fps[fpsindex].md->signal |=
-                    FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to
-                                                             // update
+                    FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             }
         }
 
@@ -390,32 +394,33 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
             }
         }
         /*
-    // list all parameters
-    TUI_exit();
-    if(system("clear") != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
-    printf("FPS entries - Full list \n");
-    printf("\n");
-    for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
-    {
-        if(keywnode[kwnindex].leaf == 1)
+        // list all parameters
+        TUI_exit();
+        if(system("clear") != 0)
         {
-            printf("%4d  %4d  %s\n",
-                   keywnode[kwnindex].fpsindex,
-                   keywnode[kwnindex].pindex,
-                   keywnode[kwnindex].keywordfull);
+            PRINT_ERROR("system() returns non-zero value");
         }
-    }
-    printf("  TOTAL :  %d nodes\n", fpsCTRLvar->NBkwn);
-    printf("\n");
-    printf("Press Enter to Continue\n");
-    getchar();
+        printf("FPS entries - Full list \n");
+        printf("\n");
+        for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
+        {
+            if(keywnode[kwnindex].leaf == 1)
+            {
+                printf("%4d  %4d  %s\n",
+                       keywnode[kwnindex].fpsindex,
+                       keywnode[kwnindex].pindex,
+                       keywnode[kwnindex].keywordfull);
+            }
+        }
+        printf("  TOTAL :  %d nodes\n", fpsCTRLvar->NBkwn);
+        printf("\n");
+        printf("Press Enter to Continue\n");
+        getchar();
 
-    TUI_init_terminal(&wrow, &wcol);*/
+        TUI_init_terminal(&wrow, &wcol);*/
 
         break;
+
 
     case 'L': // log all parameters
         // status of parameters
@@ -454,7 +459,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         snprintf(fname, STRINGMAXLEN_FULLFILENAME, "%s/%s.fps", fps[fpsindex].md->confdir,
                  fps[fpsindex].md->name);
-        // printf("LOADING FPS FILE %s\n", fname);
+        //printf("LOADING FPS FILE %s\n", fname);
 
         fpin = fopen(fname, "r");
         if (fpin != NULL)
@@ -467,7 +472,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
             {
                 uint64_t taskstatus = 0;
 
-                // printf("READING LINE: %s\n", FPSline);
+                //printf("READING LINE: %s\n", FPSline);
 
                 char  delimiter[] = " ";
                 char *varname, *vartype, *varvalue;
@@ -489,7 +494,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
                 (void) vartype;
                 varvalue = strtok_r(NULL, delimiter, &context);
 
-                // printf("%s [%s] -< %s\n", varname, vartype, varvalue);
+                //printf("%s [%s] -< %s\n", varname, vartype, varvalue);
 
                 char FPScmdline[200];
                 snprintf(FPScmdline, 200, "setval %s %s", varname, varvalue);

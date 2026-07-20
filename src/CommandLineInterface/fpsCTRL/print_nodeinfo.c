@@ -6,8 +6,8 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-#include "TUItools.h"
 #include "fps/fps_GetTypeString.h"
+#include "TUItools.h"
 
 /**
  * @brief Print node information
@@ -65,6 +65,7 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
 
     TUI_printfw("    KEYWORDARRAY: %s", fps[keywnode[nodeSelected].fpsindex].md->keywordarray);
     TUI_newline();
+
 
     TUI_printfw("    FPS work directory    : %s", fps[keywnode[nodeSelected].fpsindex].md->workdir);
     TUI_newline();
@@ -158,6 +159,7 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
     TUI_newline();
 
     DEBUG_TRACEPOINT(" ");
+
 
     TUI_printfw("======== NODE info ( # %5ld)", nodeSelected);
     TUI_newline();

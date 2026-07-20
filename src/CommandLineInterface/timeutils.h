@@ -9,7 +9,7 @@
 #ifndef _CLICORE_TIMEUTILS_H
 #define _CLICORE_TIMEUTILS_H
 
-// #include <errno.h> // errno_t
+//#include <errno.h> // errno_t
 
 // holds "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ" + \0 + 1 char extra
 #define TIMESTRINGLEN 32

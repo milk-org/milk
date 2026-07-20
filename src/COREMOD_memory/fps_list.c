@@ -64,8 +64,8 @@ errno_t fps_list()
         printf("No FPS currently connected\n");
     }
 
-    // printf("\n %ld FPS(s) currently loaded\n\n", fpscnt);
-    // printf("\n");
+    //printf("\n %ld FPS(s) currently loaded\n\n", fpscnt);
+    //printf("\n");
 
     printf("FPSs in system shared memory (%s):\n", data.shmdir);
 

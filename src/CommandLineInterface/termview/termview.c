@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "termview.h"
-#include "CommandLineInterface/TUItools.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#include <math.h>
 #include <ncurses.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "CommandLineInterface/TUItools.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 static int                loop = 1;
 static short unsigned int wrow, wcol;

@@ -4,10 +4,11 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-#include "COREMOD_tools/COREMOD_tools.h"
 #include "CommandLineInterface/timeutils.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
 #include "TUItools.h"
+
 
 errno_t fpsCTRL_scheduler_display(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
                                   FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
@@ -18,6 +19,7 @@ errno_t fpsCTRL_scheduler_display(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
     struct timespec tdiff;
 
     clock_gettime(CLOCK_MILK, &tnow);
+
 
     // Sort entries from most recent to most ancient, using inputindex
     DEBUG_TRACEPOINT(" ");

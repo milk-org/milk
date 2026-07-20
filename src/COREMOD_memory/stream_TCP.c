@@ -12,7 +12,6 @@
 #include <netinet/tcp.h>
 #include <sched.h>
 
-#include "COREMOD_tools/mvprocCPUset.h"
 #include "CommandLineInterface/CLIcore.h"
 #include "create_image.h"
 #include "delete_image.h"
@@ -20,6 +19,7 @@
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 // set to 1 if transfering keywords
 static int SEND_KEYWORDS = 1;
@@ -27,10 +27,10 @@ static int SEND_KEYWORDS = 1;
 typedef struct
 {
     /*
-  This struct contains everything from IMAGE_METADATA
-  that is not memory-internal to the sender and receiver
-  but inherently related to the data and needs to be carried along.
-  */
+    This struct contains everything from IMAGE_METADATA
+    that is not memory-internal to the sender and receiver
+    but inherently related to the data and needs to be carried along.
+    */
     long magic;
     long cnt0;
     long slice;
@@ -337,8 +337,7 @@ long send_UDP(int                fds_client,
                                    ? chunk_remaining_bytes
                                    : dgram_remaining_bytes;
 
-            // Flush this datagram if it is now full, or if this is the last byte of
-            // all data.
+            // Flush this datagram if it is now full, or if this is the last byte of all data.
             int closes_dgram = (to_send == dgram_remaining_bytes) ||
                                ((uint64_t) _sent_bytes + to_send == total_size);
 
@@ -854,8 +853,7 @@ static imageID initial_receive_and_initialize_image_TCP(int fds_endpoint, int *n
 
 static imageID initial_receive_and_initialize_image_UDP(int fds_endpoint, int *nbkw_wire)
 {
-    // Buffer large enough for the 2-byte datagram header + NETWORK_HEADER +
-    // IMAGE_METADATA.
+    // Buffer large enough for the 2-byte datagram header + NETWORK_HEADER + IMAGE_METADATA.
     static const size_t expected_size = 2 + sizeof(NETWORK_HEADER) + sizeof(IMAGE_METADATA);
     char                buff[2 + sizeof(NETWORK_HEADER) + sizeof(IMAGE_METADATA)];
     struct sockaddr_in  src_addr;
@@ -864,8 +862,7 @@ static imageID initial_receive_and_initialize_image_UDP(int fds_endpoint, int *n
     NETWORK_HEADER *hdr_tmp = (NETWORK_HEADER *) (buff + 2);
     IMAGE_METADATA *md_tmp  = (IMAGE_METADATA *) (buff + 2 + sizeof(NETWORK_HEADER));
 
-    // Block until we receive a valid seq-0 datagram carrying
-    // NETWORK_HEADER+IMAGE_METADATA.
+    // Block until we receive a valid seq-0 datagram carrying NETWORK_HEADER+IMAGE_METADATA.
     while (1)
     {
         long r = recvfrom(fds_endpoint, buff, sizeof(buff), MSG_WAITALL,
@@ -931,11 +928,10 @@ static long recv_buffer_tcp(int fds, char *buff, long framesizefull)
 /**
  * @brief Receive one full UDP frame into @p buff from datagrams.
  *
- * Reassembles n_dgrams datagrams of the form
- * [magic(1)|seq(1)|payload(<=CHUNK)]. Uses recvmsg scatter-gather to write
- * payload bytes directly into @p buff at the correct offset without any
- * intermediate allocation. Retries on bad seq-0 datagram; returns -1 on socket
- * error or mid-frame seq error.
+ * Reassembles n_dgrams datagrams of the form [magic(1)|seq(1)|payload(<=CHUNK)].
+ * Uses recvmsg scatter-gather to write payload bytes directly into @p buff
+ * at the correct offset without any intermediate allocation.
+ * Retries on bad seq-0 datagram; returns -1 on socket error or mid-frame seq error.
  *
  * @return framesizefull on success, -1 on error.
  */

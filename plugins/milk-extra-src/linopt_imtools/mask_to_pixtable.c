@@ -93,9 +93,11 @@ errno_t linopt_imtools_mask_to_pixtable(const char *IDmask_name,
         *outNBpix = NBpix;
     }
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {

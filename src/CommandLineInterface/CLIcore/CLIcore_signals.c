@@ -237,8 +237,8 @@ void sig_handler(int signo)
     case SIGINT:
         printf("PID %d sig_handler received SIGINT\n", CLIPID);
         data.signal_INT = 1;
-        // set_terminal_echo_on();
-        // exit(EXIT_FAILURE);
+        //set_terminal_echo_on();
+        //exit(EXIT_FAILURE);
         break;
 
     case SIGTERM:

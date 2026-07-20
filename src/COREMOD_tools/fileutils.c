@@ -158,9 +158,9 @@ float read_config_parameter_float(const char *config_file, const char *keyword)
     char  content[SBUFFERSIZE];
 
     read_config_parameter(config_file, keyword, content);
-    // printf("content = \"%s\"\n",content);
+    //printf("content = \"%s\"\n",content);
     value = atof(content);
-    // printf("Value = %g\n",value);
+    //printf("Value = %g\n",value);
 
     return (value);
 }

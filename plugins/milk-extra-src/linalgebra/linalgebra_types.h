@@ -132,8 +132,7 @@ typedef struct
 } LINALGEBRA_THDATA;
 
 #ifdef HAVE_CUDA
-/** \brief This structure holds the GPU computation setup for matrix
- * multiplication
+/** \brief This structure holds the GPU computation setup for matrix multiplication
  *
  * By declaring an array of these structures,
  * several parallel computations can be executed

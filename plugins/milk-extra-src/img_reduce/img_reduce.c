@@ -517,8 +517,7 @@ long IMG_REDUCE_cleanbadpix_fast_precompute(const char *IDmask_name)
                     distmax++;
                 }
                 NBnearbypix = k;
-                //      printf("%ld  distmax = %ld  -> k = %ld / %ld\n", bpcnt, distmax,
-                //      NBnearbypix, xysize);
+                //      printf("%ld  distmax = %ld  -> k = %ld / %ld\n", bpcnt, distmax, NBnearbypix, xysize);
                 //    fflush(stdout);
 
                 if (NBnearbypix > xysize)
@@ -675,9 +674,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
 
             for (k = 0; k < badpixclean_NBop; k++)
             {
-                //    printf("Operation %ld / %ld    %ld x %f -> %ld", k,
-                //    badpixclean_NBop, badpixclean_array_indexin[k],
-                //    badpixclean_array_coeff[k], badpixclean_array_indexout[k]);
+                //    printf("Operation %ld / %ld    %ld x %f -> %ld", k, badpixclean_NBop, badpixclean_array_indexin[k], badpixclean_array_coeff[k], badpixclean_array_indexout[k]);
                 //   fflush(stdout);
                 data.image[IDout].array.F[kk * xysize + badpixclean_array_indexout[k]] +=
                     badpixclean_array_coeff[k] *
@@ -845,9 +842,8 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
         }
 
         /*	for(ii=0; ii<xcentsize; ii++)
-                    for(jj=0; jj<ycentsize; jj++)
-                            data.image[IDcentref].array.F[jj*xcentsize+ii] -=
-       totim*xcentsize*ycentsize;*/
+        		for(jj=0; jj<ycentsize; jj++)
+        			data.image[IDcentref].array.F[jj*xcentsize+ii] -= totim*xcentsize*ycentsize;*/
     }
 
     while (loopOK == 1)
@@ -872,7 +868,7 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
 
         /** compute offset */
         fft_correlation("_tmp_centerim", "_tmp_centerimref", "outcorr");
-        // IDcorr = image_ID("outcorr");
+        //IDcorr = image_ID("outcorr");
         fftzoom("outcorr", "outcorrz", zfactor);
         //            save_fits("outcorr", "outcorr0.fits");
 
@@ -887,8 +883,8 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
             {
                 if (data.image[IDcorrz].array.F[jj * xsizez + ii] > peak)
                 {
-                    // peakx = ii;
-                    // peaky = jj;
+                    //peakx = ii;
+                    //peaky = jj;
                     peak = data.image[IDcorrz].array.F[jj * xsizez + ii];
                 }
             }
@@ -960,7 +956,7 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
         fft_image_translate("tinim", "_translout", -centx, -centy);
         delete_image_ID("tinim", DELETE_IMAGE_ERRMODE_WARNING);
         IDtout = image_ID("_translout");
-        // save_fits("_translout","_translout.fits");
+        //save_fits("_translout","_translout.fits");
 
         printf("zsize = %ld   vmin = %10f   offset = %+8.3f %+8.3f\n", brad * zfactor, vmin, centx,
                centy);
@@ -991,8 +987,7 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
     return IDout;
 }
 
-/** this is the main routine to pre-process a cube stream of images (PSFs) for
- * high contrast imaging stability analysis
+/** this is the main routine to pre-process a cube stream of images (PSFs) for high contrast imaging stability analysis
  *
  *
  * Optional inputs:
@@ -1128,8 +1123,8 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
             ymax = ysize - 1;
         }
 
-        // printf(" %4ld %4ld    %4ld %4ld\n", xmin, xmax, ymin, ymax);
-        // fflush(stdout);
+        //printf(" %4ld %4ld    %4ld %4ld\n", xmin, xmax, ymin, ymax);
+        //fflush(stdout);
 
         for (ii = xmin; ii < xmax; ii++)
         {

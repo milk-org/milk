@@ -17,9 +17,10 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "image_arith__im_f_f__im.h"
 #include "imfunctions.h"
 #include "mathfuncs.h"
+#include "image_arith__im_f_f__im.h"
+
 
 // ==========================================
 // Command line interface wrapper function(s)

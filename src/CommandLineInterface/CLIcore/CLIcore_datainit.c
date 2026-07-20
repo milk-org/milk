@@ -32,7 +32,7 @@ errno_t CLI_data_init()
     struct timeval t1;
 
     /* initialization of the data structure
-   */
+     */
     data.NB_MAX_IMAGE    = STATIC_NB_MAX_IMAGE;
     data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
     data.NB_MAX_FPS      = 100;

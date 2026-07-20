@@ -15,6 +15,7 @@
 
 extern PROCESSINFOLIST *pinfolist;
 
+
 long processinfo_shm_list_create()
 {
     char SM_fname[STRINGMAXLEN_FULLFILENAME];
@@ -26,9 +27,9 @@ long processinfo_shm_list_create()
     WRITE_FULLFILENAME(SM_fname, "%s/processinfo.list.shm", procdname);
 
     /*
-   * Check if a file exist using stat() function.
-   * return 1 if the file exist otherwise return 0.
-   */
+    * Check if a file exist using stat() function.
+    * return 1 if the file exist otherwise return 0.
+    */
     struct stat buffer;
     int         exists = stat(SM_fname, &buffer);
 
@@ -84,7 +85,7 @@ long processinfo_shm_list_create()
     else
     {
         int SM_fd;
-        // struct stat file_stat;
+        //struct stat file_stat;
 
         pinfolist = (PROCESSINFOLIST *) processinfo_shm_link(SM_fname, &SM_fd);
         while ((pinfolist->active[pindex] != 0) && (pindex < PROCESSINFOLISTSIZE))

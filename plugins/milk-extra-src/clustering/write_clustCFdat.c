@@ -4,14 +4,16 @@
 
 #include <math.h>
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "clustering_defs.h"
+
 
 errno_t write_clustCFdat(CLUSTERTREE *ctree, const char *__restrict fname)
 {
     DEBUG_TRACE_FSTART();
+
 
     FILE *fp = fopen(fname, "w");
 
@@ -35,8 +37,8 @@ errno_t write_clustCFdat(CLUSTERTREE *ctree, const char *__restrict fname)
         if (ctree->CFarray[CFindex].type != CLUSTER_CF_TYPE_UNUSED)
         {
             fprintf(fp,
-                    "%5ld  %1d %3d  %6ld %5d %5ld %5ld    %16.3g    %16.3g %6.4f   "
-                    "%16.3g %6.4f   %12.6g",
+                    "%5ld  %1d %3d  %6ld %5d %5ld %5ld    %16.3g    %16.3g %6.4f   %16.3g %6.4f   "
+                    "%12.6g",
                     CFindex, ctree->CFarray[CFindex].type, ctree->CFarray[CFindex].level,
                     ctree->CFarray[CFindex].N, ctree->CFarray[CFindex].NBchild,
                     ctree->CFarray[CFindex].parentindex, ctree->CFarray[CFindex].posvecsourceID,

@@ -97,5 +97,6 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
         fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
     }
 
+
     return RETURN_SUCCESS;
 }

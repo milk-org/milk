@@ -7,17 +7,20 @@
  *
  */
 
+
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "CommandLineInterface/CLIcore.h"
 #include "zernike.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
+
 static ZERNIKE Zernike;
 static int     zermax = 5000;
+
 
 double fact(int n)
 {
@@ -32,6 +35,7 @@ double fact(int n)
 
     return (value);
 }
+
 
 int zernike_init()
 {
@@ -68,6 +72,7 @@ int zernike_init()
             abort();
         }
 
+
         Zernike.Zer_Nollindex = (long *) malloc(Zernike.ZERMAX * sizeof(long));
         if (Zernike.Zer_Nollindex == NULL)
         {
@@ -81,6 +86,7 @@ int zernike_init()
             printf("malloc returns NULL pointer");
             abort();
         }
+
 
         /* Zer_n and Zer_m are initialised to 0 */
         for (ii = 0; ii < Zernike.ZERMAX; ii++)
@@ -170,18 +176,18 @@ int zernike_init()
 
         // test
         /*{
-        FILE *fp = fopen("zern.txt", "w");
-        for(int zi=0; zi<Zernike.ZERMAX; zi++)
-        {
-            fprintf(fp, "%5d  %5ld  %5ld   %5ld  %5ld\n", zi, Zernike.Zer_n[zi],
-    Zernike.Zer_m[zi], Zernike.Zer_Nollindex[zi],
-    Zernike.Zer_reverseNollindex[zi] );
-        }
-        fclose(fp);
-    }*/
+            FILE *fp = fopen("zern.txt", "w");
+            for(int zi=0; zi<Zernike.ZERMAX; zi++)
+            {
+                fprintf(fp, "%5d  %5ld  %5ld   %5ld  %5ld\n", zi, Zernike.Zer_n[zi], Zernike.Zer_m[zi], Zernike.Zer_Nollindex[zi], Zernike.Zer_reverseNollindex[zi] );
+            }
+            fclose(fp);
+        }*/
+
 
         free(Nolldouble);
         free(index_Nollsort);
+
 
         zernikeinit = 1;
     }
@@ -189,15 +195,18 @@ int zernike_init()
     return (0);
 }
 
+
 long Zernike_n(long i)
 {
     return (Zernike.Zer_n[i]);
 }
 
+
 long Zernike_m(long i)
 {
     return (Zernike.Zer_m[i]);
 }
+
 
 // Noll numbering
 // 0: Piston

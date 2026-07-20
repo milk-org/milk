@@ -30,18 +30,18 @@ errno_t import_wisdom()
     {
         nowisdomWarning = 1;
         /*
-    n = snprintf(
-            warnmessg,
-            SBUFFERSIZE,
-            "No single precision wisdom file in %s\n FFTs will not be
-    optimized," " and may run slower than if a wisdom file is used\n type
-    \"initfft\"" " to create the wisdom file (this will take time)",
-            wisdom_file_single);
+        n = snprintf(
+                warnmessg,
+                SBUFFERSIZE,
+                "No single precision wisdom file in %s\n FFTs will not be optimized,"
+                " and may run slower than if a wisdom file is used\n type \"initfft\""
+                " to create the wisdom file (this will take time)",
+                wisdom_file_single);
 
-    if(n >= SBUFFERSIZE)
-        PRINT_ERROR("Attempted to write string buffer with too many
-    characters"); PRINT_WARNING(warnmessg);
-    */
+        if(n >= SBUFFERSIZE)
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
+        PRINT_WARNING(warnmessg);
+        */
     }
     else
     {
@@ -56,15 +56,15 @@ errno_t import_wisdom()
     {
         nowisdomWarning = 1;
         /*  n = snprintf(
-              warnmessg,
-              SBUFFERSIZE,
-              "No double precision wisdom file in %s\n FFTs will not be
-      optimized," " and may run slower than if a wisdom file is used\n type
-      \"initfft\"" " to create the wisdom file (this will take time)",
-              wisdom_file_double);
-      if(n >= SBUFFERSIZE)
-          PRINT_ERROR("Attempted to write string buffer with too many
-      characters"); PRINT_WARNING(warnmessg);*/
+                  warnmessg,
+                  SBUFFERSIZE,
+                  "No double precision wisdom file in %s\n FFTs will not be optimized,"
+                  " and may run slower than if a wisdom file is used\n type \"initfft\""
+                  " to create the wisdom file (this will take time)",
+                  wisdom_file_double);
+          if(n >= SBUFFERSIZE)
+              PRINT_ERROR("Attempted to write string buffer with too many characters");
+          PRINT_WARNING(warnmessg);*/
     }
     else
     {

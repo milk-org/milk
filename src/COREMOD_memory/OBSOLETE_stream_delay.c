@@ -37,9 +37,9 @@ static errno_t COREMOD_MEMORY_streamDelay__cli()
 {
     // Try FPS implementation
 
-    // Set data.fpsname, providing default value as first arg, and set
-    // data.FPS_CMDCODE value. Default FPS name will be used if CLI process has
-    // NOT been named. See code in function_parameter.c for detailed rules.
+    // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
+    // Default FPS name will be used if CLI process has NOT been named.
+    // See code in function_parameter.c for detailed rules.
 
     function_parameter_getFPSargs_from_CLIfunc("streamDelay");
 
@@ -242,8 +242,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // =============================================
     /// ### OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
     // =============================================
-    // Pre-loop testing, anything that would prevent loop from starting should
-    // issue message
+    // Pre-loop testing, anything that would prevent loop from starting should issue message
     int loopOK = 1;
 
     IDin = image_ID(IDin_name);
@@ -335,7 +334,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
         loopOK = processinfo_loopstep(processinfo);
 
         processinfo_waitoninputstream(processinfo);
-        // usleep(dtus); // main loop wait
+        //usleep(dtus); // main loop wait
 
         processinfo_exec_start(processinfo);
 
@@ -396,8 +395,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
             switch (timeavemode)
             {
-            case 0: // no time averaging - pick more recent frame that matches
-                // requirement
+            case 0: // no time averaging - pick more recent frame that matches requirement
                 DEBUG_TRACEPOINT(" ");
                 if (cntskip > 0)
                 {
@@ -417,8 +415,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                 }
                 break;
 
-            default: // strict time window (note: other modes will be coded in the
-                     // future)
+            default: // strict time window (note: other modes will be coded in the future)
                 normframes = 0.0;
                 DEBUG_TRACEPOINT(" ");
 
@@ -456,10 +453,10 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
                 processinfo_update_output_stream(processinfo, IDout);
                 /*
-            COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-            data.image[IDout].md[0].cnt0++;
-            data.image[IDout].md[0].write = 0;
-            */
+                        COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+                        data.image[IDout].md[0].cnt0++;
+                        data.image[IDout].md[0].write = 0;
+                        */
                 break;
             }
             DEBUG_TRACEPOINT(" ");

@@ -9,10 +9,11 @@
 
 #include <math.h>
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
+
 
 static char *inmatAB;
 static long  fpi_inmatAB;
@@ -23,12 +24,14 @@ static long  fpi_outmatArot;
 static uint32_t *optmode;
 static long      fpi_optmode;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".matAB", "input decomposition of modes B in basis A",
                                  "matA", CLIARG_VISIBLE_DEFAULT, (void **) &inmatAB, &fpi_inmatAB },
                                { CLIARG_STR, ".matArot", "output rotation matrix", "matA",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &outmatArot, &fpi_outmatArot },
                                { CLIARG_UINT32, ".optmode", "optimization mode", "0",
                                  CLIARG_HIDDEN_DEFAULT, (void **) &optmode, &fpi_optmode } };
+
 
 static CLICMDDATA CLIcmddata = { "basisrotmatch", "rotate modal basis to fit modes",
                                  CLICMD_FIELDS_DEFAULTS };
@@ -39,8 +42,8 @@ static errno_t help_function()
     printf("Force modal basis A to match set of modes B a much as possible\n");
     printf("basis A is assumed to be orthonormal\n");
     printf("set of modes B has no constraint\n");
-    printf("The imput to this function is the modal decomposition of vectors B "
-           "on the modal basis A\n");
+    printf("The imput to this function is the modal decomposition of vectors B on the modal basis "
+           "A\n");
     printf("Match is enforced by rotations that preserve basis A orthonormality\n");
     printf("\n");
     printf("NOTATIONS :\n");
@@ -59,6 +62,7 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
+
 errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
 {
     DEBUG_TRACE_FSTART();
@@ -66,13 +70,16 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
     int Adim = imginAB.md->size[1];
     int Bdim = imginAB.md->size[0];
 
+
     // internal Arot array, double for improved precision
     //
     double *Arot = (double *) malloc(sizeof(double) * Adim * Adim);
 
+
     // internal copy of imginAB, double for improved precision
     //
     double *matAB = (double *) malloc(sizeof(double) * Adim * Bdim);
+
 
     // loop stop condition: toggles to 0 when done
     int loopOK = 1;
@@ -94,6 +101,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
     }
 
     double diagVal_lim_step;
+
 
     // lower triangular
     //
@@ -117,17 +125,19 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
             matAB[ii] = imginAB.im->array.F[ii];
         }
 
+
         // counters
         int skipcnt = 0; // skipped
         int incrcnt = 0; // incremented
         int proccnt = 0; // processed
 
+
         // loop over target vectors
         int m1 = 0;
         for (int iB = 0; iB < Bdim; iB++)
         {
-            // printf("   %5d  %5d    %5d  ", iB, m1, Adim-1-m1);
-            //  start from last mode
+            //printf("   %5d  %5d    %5d  ", iB, m1, Adim-1-m1);
+            // start from last mode
             int modei = Adim - 1;
 
             // i0 is target vector index
@@ -139,25 +149,29 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
             int aindex;
             aindex = m1 * Bdim + iB;
 
+
             int procflag = 0; // toggles to 1 if processed
             while (modei > m1)
             {
                 procflag = 1;
-                // printf(".");
+                //printf(".");
                 double vala = matAB[aindex];
 
                 // to be minimized
                 int bindex = modei * Bdim + iB;
 
+
                 double valb = matAB[bindex];
+
 
                 // rotation angle
                 //
                 double theta = atan2(-valb, vala);
 
+
                 // apply rotation between modes numbers modei and i0
                 //
-                // printf("rotation %d %d  angle %f\n", iB, modei, theta);
+                //printf("rotation %d %d  angle %f\n", iB, modei, theta);
                 for (uint32_t ii = 0; ii < Bdim; ii++)
                 {
                     // modei
@@ -171,6 +185,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                     matAB[modei * Bdim + ii] = vbr;
                 }
 
+
                 for (uint32_t ii = 0; ii < Adim; ii++)
                 {
                     // apply rotation to rotation matrix
@@ -182,8 +197,10 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                     Arot[modei * Adim + ii] = vbr;
                 }
 
+
                 modei--;
             }
+
 
             if ((procflag == 1) && (m1 < Adim - 1))
             {
@@ -198,14 +215,14 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
             }
             else
             {
-                // printf("   skip %3d   (%3d x %3d)   %f\n", skipcnt, m1, iB,
-                // matAB[aindex]);
+                //printf("   skip %3d   (%3d x %3d)   %f\n", skipcnt, m1, iB, matAB[aindex]);
                 if (m1 < Adim - 1)
                 {
                     skipcnt++;
                 }
             }
         }
+
 
         printf("%9.6f  incremented %d, skipped %d  processed %d  (Bsize = %d) \n", diagVal_lim,
                incrcnt, skipcnt, proccnt, Bdim);
@@ -226,7 +243,9 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
             diagVal_lim -= diagVal_lim_step;
         }
 
+
         diagVal_lim_step *= 0.6;
+
 
         loopiter++;
 
@@ -237,6 +256,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
     }
 
     free(diagVal);
+
 
     if (optmode == 2)
     {
@@ -262,6 +282,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
         double *n0arrayneg = (double *) malloc(sizeof(double) * Bdim);
         double *n1arrayneg = (double *) malloc(sizeof(double) * Bdim);
 
+
         // effective B index of each A mode
         // tracks location of diagonal
         double *AmodeBeff = (double *) malloc(sizeof(double) * Adim);
@@ -271,11 +292,13 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
             AmodeBeff[ii] = 1.0 * ii;
         }
 
+
         while ((loopiter < loopiterMax) && (dangle > danglemin))
         {
             long cntpos = 0;
             long cntneg = 0;
             long cntmid = 0;
+
 
             // measure quality metric (optall)
             //
@@ -292,6 +315,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                     double x   = 1.0 * iib / Adim;
                     double dx0 = x - x0;
 
+
                     double dcoeff = pow(dx0 * dx0, alphap);
                     if (dx0 > 0.0)
                     {
@@ -306,6 +330,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
             }
             printf("iter %4d / %4d   dangle = %f / %f  val = %g\n", loopiter, loopiterMax, dangle,
                    danglemin, optall);
+
 
             for (int n0 = 0; n0 < Adim; n0++)
             {
@@ -324,14 +349,17 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                     double optvalneg0 = 0.0;
                     double optvalneg1 = 0.0;
 
+
                     for (uint32_t ii = 0; ii < Bdim; ii++)
                     {
                         double x  = 1.0 * ii / Adim;
                         double x0 = AmodeBeff[n0] / Adim;
                         double x1 = AmodeBeff[n1] / Adim;
 
+
                         double dx0 = x - x0;
                         double dx1 = x - x1;
+
 
                         double dcoeff0 = pow(dx0 * dx0, alphap);
                         double dcoeff1 = pow(dx1 * dx1, alphap);
@@ -364,9 +392,10 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                             wcoeff1 += negSideAmp * fabs(v1);
                         }
 
-                        // wcoeff = pow(wcoeff, 4.0);
+                        //wcoeff = pow(wcoeff, 4.0);
                         wcoeff0 = 1.0;
                         wcoeff1 = 1.0;
+
 
                         // optimization metric without rotation
                         optval0 += wcoeff0 * dcoeff0 * v0 * v0;
@@ -391,8 +420,8 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                     double optvalneg = optvalneg0 + optvalneg1;
                     double optvalpos = optvalpos0 + optvalpos1;
 
-                    // printf("     [%3d - %3d]  %g  %g  %g\n", n0, n1, optvalneg, optval,
-                    // optvalpos);
+
+                    //printf("     [%3d - %3d]  %g  %g  %g\n", n0, n1, optvalneg, optval, optvalpos);
 
                     double optrotangle = 0.0;
                     if (optvalneg < optval)
@@ -422,6 +451,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                         double a    = (vpos + vneg) / 2.0;
                         optrotangle = (vneg - vpos) / (4.0 * a) * dangle;
 
+
                         if (optrotangle > dangle)
                         {
                             optrotangle = dangle * danglegain;
@@ -431,9 +461,10 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                             optrotangle = -dangle * danglegain;
                         }
 
-                        // optrotangle = 0.0;
+                        //optrotangle = 0.0;
                         cntmid++;
                     }
+
 
                     // apply rotation between n0 and n1
 
@@ -469,6 +500,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                 dangle *= danglemfact;
             }
 
+
             // Measure, for each A mode, the effective index of B modes
             // AmodeBeff[iia] has to be > iia
             //
@@ -490,6 +522,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
             // sort by effective index
             quick_sort2l(AmodeBeff, iarray, Adim);
 
+
             {
                 char fname[STRINGMAXLEN_FILENAME];
                 WRITE_FILENAME(fname, "./compfCM/Beff.%04d.dat", loopiter);
@@ -504,6 +537,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
                 }
                 fclose(fpBeff);
             }
+
 
             if (loopiter == loopiterMax - 1)
             {
@@ -523,6 +557,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
 
             free(iarray);
 
+
             loopiter++;
         }
 
@@ -534,6 +569,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
         free(n0arrayneg);
         free(n1arrayneg);
     }
+
 
     // Create output
     //
@@ -549,7 +585,7 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
 
     free(Arot);
 
-    // copy matAB to ouput
+    //copy matAB to ouput
     for (uint64_t ii = 0; ii < Adim * Bdim; ii++)
     {
         imginAB.im->array.F[ii] = matAB[ii];
@@ -557,9 +593,11 @@ errno_t compute_basis_rotate_match(IMGID imginAB, IMGID *imgArot, int optmode)
 
     free(matAB);
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -568,9 +606,12 @@ static errno_t compute_function()
     IMGID imginAB = mkIMGID_from_name(inmatAB);
     resolveIMGID(&imginAB, ERRMODE_ABORT);
 
+
     IMGID imgoutArot = mkIMGID_from_name(outmatArot);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -578,17 +619,20 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_linalgebra__basis_rotate_match()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;

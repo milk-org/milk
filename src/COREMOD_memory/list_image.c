@@ -233,7 +233,7 @@ errno_t list_image_ID_ncurses()
         sizeMb = sizeMb - 1024 * sizeGb;
     }
 
-    // attron(A_BOLD);
+    //attron(A_BOLD);
 
     snprintf(str, strmaxlen, "%ld image(s)      ", compute_nb_image());
     if (sizeGb > 0)
@@ -293,13 +293,13 @@ errno_t list_image_ID_ofp(FILE *fo)
     char               str1[str1maxlen];
     struct timespec    timenow;
     double             timediff;
-    // struct mallinfo minfo;
+    //struct mallinfo minfo;
 
     sizeb = compute_image_memory();
-    // minfo = mallinfo();
+    //minfo = mallinfo();
 
     clock_gettime(CLOCK_MILK, &timenow);
-    // fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
+    //fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
 
     fprintf(fo, "\n");
     fprintf(fo, "INDEX    NAME         SIZE                    TYPE        SIZE  "
@@ -324,7 +324,7 @@ errno_t list_image_ID_ofp(FILE *fo)
                 fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ", i, (char) 27, 1, 33, data.image[i].name,
                         (char) 27, 0);
             }
-            // fprintf(fo, "%s", str);
+            //fprintf(fo, "%s", str);
 
             snprintf(str, strmaxlen, "[ %6ld", (long) data.image[i].md[0].size[0]);
 
@@ -408,7 +408,7 @@ errno_t list_image_ID_ofp(FILE *fo)
 errno_t list_image_ID_ofp_simple(FILE *fo)
 {
     long i, j;
-    // long long   tmp_long;
+    //long long   tmp_long;
     uint8_t datatype;
 
     for (i = 0; i < data.NB_MAX_IMAGE; i++)
@@ -416,8 +416,7 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
         if (data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            // tmp_long = ((long long) (data.image[i].md[0].nelement)) *
-            // ImageStreamIO_typesize(datatype);
+            //tmp_long = ((long long) (data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo, "%20s %d %ld %d %4ld", data.image[i].name, datatype,
                     (long) data.image[i].md[0].naxis, data.image[i].md[0].shared,
@@ -438,7 +437,7 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
 errno_t list_image_ID()
 {
     list_image_ID_ofp(stdout);
-    // malloc_stats();
+    //malloc_stats();
     return RETURN_SUCCESS;
 }
 

@@ -38,6 +38,7 @@ errno_t info_image_streamtiming_stats(imageID ID,
     static double *tdiffvarray;
     static double *tdiffvarray_sorted;
 
+
     if (initflag == 0)
     {
         initflag           = 1;
@@ -46,7 +47,7 @@ errno_t info_image_streamtiming_stats(imageID ID,
     }
 
     // collect timing data
-    // long cnt0 = image->md[0].cnt0;
+    //long cnt0 = image->md[0].cnt0;
 
     struct timespec tstart;
     struct timespec t0;
@@ -63,7 +64,7 @@ errno_t info_image_streamtiming_stats(imageID ID,
 
     static long framecnt     = 0; // Buffer index for next frame
     static long framecntbuff = 0; // Number of bufferized frames so far
-    // static long NBsamples    = 0;
+    //static long NBsamples    = 0;
 
     if (buffinit == 1)
     {
@@ -87,7 +88,7 @@ errno_t info_image_streamtiming_stats(imageID ID,
 
     while (loopOK == 1)
     {
-        // for (long framecnt = 0; framecnt < NBsamplesmax; framecnt++)
+        //for (long framecnt = 0; framecnt < NBsamplesmax; framecnt++)
         if (ImageStreamIO_semtimedwait(image, sem, &t_timeout))
         {
             return RETURN_FAILURE;
@@ -135,6 +136,7 @@ errno_t info_image_streamtiming_stats(imageID ID,
     return RETURN_SUCCESS;
 }
 
+
 errno_t info_image_streamtiming_stats_disp(double *tdiffvarray,
                                            long    NBsamples,
                                            double  tdiffvmax,
@@ -180,10 +182,12 @@ errno_t info_image_streamtiming_stats_disp(double *tdiffvarray,
         percarray[16] = 0.999;
     }
 
+
     for (int pc = 0; pc < NBpercbin; pc++)
     {
         percNarray[pc] = (long) (percarray[pc] * NBsamples);
     }
+
 
     // process timing data
     quick_sort_double(tdiffvarray, NBsamples);
@@ -199,6 +203,7 @@ errno_t info_image_streamtiming_stats_disp(double *tdiffvarray,
     RMSval = sqrt(RMSval - AVEval * AVEval);
 
     printw("\n NBsamples = %ld \n\n", NBsamples);
+
 
     for (int percbin = 0; percbin < NBpercbin; percbin++)
     {
@@ -243,8 +248,9 @@ errno_t info_image_streamtiming_stats_disp(double *tdiffvarray,
            100.0 * RMSval / AVEval);
     printw("  Max delay : %10.3f us   frame # %ld\n", 1.0e6 * tdiffvmax, tdiffcntmax);
 
-    // free(percarray);
-    // free(percNarray);
+
+    //free(percarray);
+    //free(percNarray);
 
     return RETURN_SUCCESS;
 }

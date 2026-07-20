@@ -85,8 +85,7 @@ imageID basic_contract(const char *ID_name, const char *ID_name_out, int n1, int
     naxes_out[0] = naxes[0] / n1;
     naxes_out[1] = naxes[1] / n2;
 
-    //  printf("%ld %ld  ->  %ld
-    //  %ld\n",naxes[0],naxes[1],naxes_out[0],naxes_out[1]);
+    //  printf("%ld %ld  ->  %ld %ld\n",naxes[0],naxes[1],naxes_out[0],naxes_out[1]);
     create_2Dimage_ID(ID_name_out, naxes_out[0], naxes_out[1], &ID_out);
 
     for (uint32_t jj = 0; jj < naxes_out[1]; jj++)

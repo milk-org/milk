@@ -52,7 +52,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
-        // usleep(100);
+        //usleep(100);
 
         // We should probs flush the input semaphore.
         // I'm afraid that when doing speed tests we're "overclocking" our pipeline.

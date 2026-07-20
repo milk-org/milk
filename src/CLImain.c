@@ -101,14 +101,13 @@ int main(int argc, char *argv[])
 
     if (data.quiet == 0)
     {
-        // printf("        %s version %s\n", data.package_name,
-        // data.package_version);
+        //printf("        %s version %s\n", data.package_name, data.package_version);
 #ifdef IMAGESTRUCT_VERSION
         printf("        ImageStreamIO v %s\n", IMAGESTRUCT_VERSION);
 #endif
-        // printf("        GNU General Public License v3.0\n");
-        // printf("        Report bugs to : %s\n", PACKAGE_BUGREPORT);
-        // printf("        Type \"help\" for instructions\n");
+        //printf("        GNU General Public License v3.0\n");
+        //printf("        Report bugs to : %s\n", PACKAGE_BUGREPORT);
+        //printf("        Type \"help\" for instructions\n");
         printf("        \n");
     }
 
@@ -117,7 +116,7 @@ int main(int argc, char *argv[])
 
     runCLI(argc, argv, AppName);
 
-    // errno_t CLIretval = RETURN_SUCCESS;
+    //errno_t CLIretval = RETURN_SUCCESS;
 
     if (data.quiet == 0)
     {
@@ -129,7 +128,7 @@ int main(int argc, char *argv[])
     }
 
     // clean-up calling thread
-    // pthread_exit(NULL);
+    //pthread_exit(NULL);
 
 #ifndef NDEBUG
 

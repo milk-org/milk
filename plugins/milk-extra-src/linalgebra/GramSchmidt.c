@@ -4,12 +4,13 @@
 
 #include <math.h>
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
 #include "SGEMM.h"
+
 
 static char *inmodes;
 static long  fpi_inmodes;
@@ -24,6 +25,7 @@ static long  fpi_auxmat;
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inmodes", "input modes", "inm",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inmodes, &fpi_inmodes },
                                { CLIARG_STR, ".outmodes", "output modes", "outm",
@@ -33,6 +35,7 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inmodes", "input modes", "inm",
                                { // using GPU (99 : no GPU, otherwise GPU device)
                                  CLIARG_INT32, ".GPUdevice", "GPU device, 99 for CPU", "-1",
                                  CLIARG_HIDDEN_DEFAULT, (void **) &GPUdevice, &fpi_GPUdevice } };
+
 
 static CLICMDDATA CLIcmddata = { "GramSchmidt", "Gram-Schmidt process", CLICMD_FIELDS_DEFAULTS };
 
@@ -44,6 +47,7 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
+
 errno_t GramSchmidt(IMGID imginm, IMGID *imgoutm, IMGID imgaux, int GPUdev)
 {
     DEBUG_TRACE_FSTART();
@@ -52,10 +56,12 @@ errno_t GramSchmidt(IMGID imginm, IMGID *imgoutm, IMGID imgaux, int GPUdev)
 
     resolveIMGID(&imgaux, ERRMODE_WARN);
 
+
     // Compute cross product on input
     //
-    // IMGID imginxp  = mkIMGID_from_name("_outxp");
-    // computeSGEMM(imginm, imginm, &imginxp, 1, 0, GPUdev);
+    //IMGID imginxp  = mkIMGID_from_name("_outxp");
+    //computeSGEMM(imginm, imginm, &imginxp, 1, 0, GPUdev);
+
 
     // Create output
     //
@@ -82,6 +88,7 @@ errno_t GramSchmidt(IMGID imginm, IMGID *imgoutm, IMGID imgaux, int GPUdev)
             xysizeaux *= imgaux.md->size[1];
         }
     }
+
 
     printf("xysize = %u, zsize = %u\n", xysize, zsize);
 
@@ -117,7 +124,7 @@ errno_t GramSchmidt(IMGID imginm, IMGID *imgoutm, IMGID imgaux, int GPUdev)
 
             float vcoeff = xpval / sqrsum0;
 
-            // printf("  %5u  %5u   %f\n", kk, kk0, vcoeff);
+            //printf("  %5u  %5u   %f\n", kk, kk0, vcoeff);
 
             for (uint32_t ii = 0; ii < xysize; ii++)
             {
@@ -137,11 +144,13 @@ errno_t GramSchmidt(IMGID imginm, IMGID *imgoutm, IMGID imgaux, int GPUdev)
     }
     printf("\n");
 
+
     list_image_ID();
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -150,12 +159,15 @@ static errno_t compute_function()
     IMGID imginm = mkIMGID_from_name(inmodes);
     resolveIMGID(&imginm, ERRMODE_ABORT);
 
+
     IMGID imgoutm = mkIMGID_from_name(outmodes);
 
     IMGID imgaux = mkIMGID_from_name(auxmat);
     resolveIMGID(&imgaux, ERRMODE_WARN);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -163,17 +175,20 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_linalgebra__GramSchmidt()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;

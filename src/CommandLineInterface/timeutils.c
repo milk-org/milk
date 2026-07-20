@@ -11,10 +11,12 @@
 
 #include "timeutils.h"
 
+
 errno_t milk_clock_gettime(struct timespec *tnow_p)
 {
     return clock_gettime(CLOCK_MILK, tnow_p);
 }
+
 
 errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
 {
@@ -23,6 +25,7 @@ errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
 
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
+
 
     {
         int slen = snprintf(timestring, TIMESTRINGLEN, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
@@ -43,6 +46,7 @@ errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
     return RETURN_SUCCESS;
 }
 
+
 errno_t mkUTtimestring_nanosec_now(char *timestring)
 {
     struct timespec tnow;
@@ -52,6 +56,7 @@ errno_t mkUTtimestring_nanosec_now(char *timestring)
 
     return RETURN_SUCCESS;
 }
+
 
 errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
 {
@@ -78,8 +83,10 @@ errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
         }
     }
 
+
     return RETURN_SUCCESS;
 }
+
 
 errno_t mkUTtimestring_microsec_now(char *timestring)
 {
@@ -91,6 +98,7 @@ errno_t mkUTtimestring_microsec_now(char *timestring)
     return RETURN_SUCCESS;
 }
 
+
 errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
 {
     struct tm *uttime;
@@ -98,6 +106,7 @@ errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
 
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
+
 
     {
         int slen =
@@ -129,6 +138,7 @@ errno_t mkUTtimestring_millisec_now(char *timestring)
     return RETURN_SUCCESS;
 }
 
+
 // timestring should be of length TIMESTRINGLEN
 errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
 {
@@ -137,6 +147,7 @@ errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
 
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
+
 
     {
         int slen = snprintf(timestring, TIMESTRINGLEN, "%04d-%02d-%02dT%02d:%02d:%02dZ",
@@ -157,6 +168,7 @@ errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
     return RETURN_SUCCESS;
 }
 
+
 errno_t mkUTtimestring_sec_now(char *timestring)
 {
     struct timespec tnow;
@@ -166,6 +178,7 @@ errno_t mkUTtimestring_sec_now(char *timestring)
 
     return RETURN_SUCCESS;
 }
+
 
 struct timespec timespec_diff(struct timespec start, struct timespec end)
 {
@@ -183,6 +196,7 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
     }
     return temp;
 }
+
 
 double timespec_diff_double(struct timespec start, struct timespec end)
 {
@@ -206,6 +220,7 @@ double timespec_diff_double(struct timespec start, struct timespec end)
     return val;
 }
 
+
 /**
  * @brief Returns time string in form of HH:MM:SS.SS
  *
@@ -228,8 +243,7 @@ char *timedouble_to_UTC_timeofdaystring(double timedouble)
     double tdoublenow = 1.0 * tsnow.tv_sec + 1.0e-9 * tsnow.tv_nsec;
     printf("TIME double NOW : %lf\n", tdoublenow);
 
-    printf("DATE from timedouble_to_UTC_timeofdaystring: %04d-%02d-%02d  "
-           "%02d:%02d:%02d  %05.2f\n",
+    printf("DATE from timedouble_to_UTC_timeofdaystring: %04d-%02d-%02d  %02d:%02d:%02d  %05.2f\n",
            1900 + timetm->tm_year, 1 + timetm->tm_mon, 1 + timetm->tm_mday, timetm->tm_hour,
            timetm->tm_min, timetm->tm_sec, sec);
 

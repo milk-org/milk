@@ -21,7 +21,8 @@
 typedef int errno_t;
 #endif
 
-// static int CTRLscreenExitLine = 0; // for debugging
+//static int CTRLscreenExitLine = 0; // for debugging
+
 
 #include <malloc.h>
 #include <stdio.h>
@@ -36,6 +37,7 @@ typedef int errno_t;
 
 #include <sys/types.h>
 #include <unistd.h> // getpid()
+
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -58,17 +60,18 @@ typedef int errno_t;
 
 #include <processtools.h>
 
-#include "processinfo/processinfo_SIGexit.h"
-#include "processinfo/processinfo_exec_end.h"
-#include "processinfo/processinfo_exec_start.h"
-#include "processinfo/processinfo_procdirname.h"
 #include "processinfo/processinfo_setup.h"
+#include "processinfo/processinfo_procdirname.h"
+#include "processinfo/processinfo_SIGexit.h"
 #include "processinfo/processinfo_shm_create.h"
 #include "processinfo/processinfo_shm_list_create.h"
+#include "processinfo/processinfo_exec_start.h"
+#include "processinfo/processinfo_exec_end.h"
 
+
+#include "procCTRL/procCTRL_PIDcollectSystemInfo.h"
 #include "procCTRL/procCTRL_GetCPUloads.h"
 #include "procCTRL/procCTRL_GetNumberCPUs.h"
-#include "procCTRL/procCTRL_PIDcollectSystemInfo.h"
 #include "procCTRL/procCTRL_processinfo_scan.h"
 
 #include "procCTRL/procCTRL_TUI.h"
@@ -76,6 +79,7 @@ typedef int errno_t;
 #ifdef USE_HWLOC
 #    include <hwloc.h>
 #endif
+
 
 // shared memory access permission
 #define FILEMODE 0666
@@ -87,15 +91,17 @@ typedef int errno_t;
 
 #define CMDPROC_PROCSTAT 1
 
+
 static short unsigned int wrow, wcol;
 
 PROCESSINFOLIST *pinfolist;
 
 #define NBtopMax 5000
 
+
 // timing info collected to optimize this program
-// static struct timespec t1;
-// static struct timespec t2;
+//static struct timespec t1;
+//static struct timespec t2;
 static struct timespec tdiff;
 
 // timing categories
@@ -106,6 +112,7 @@ static double scantime_pstree;
 static double scantime_top;
 static double scantime_CPUload;
 static double scantime_CPUpcnt;
+
 
 int processinfo_compute_status(PROCESSINFO *processinfo)
 {
@@ -119,6 +126,7 @@ int processinfo_compute_status(PROCESSINFO *processinfo)
 
     return compstatus;
 }
+
 
 /**
  * ## Purpose
@@ -244,6 +252,7 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
     return NBset;
 }
 
+
 static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 {
     int   selected = 0;
@@ -310,6 +319,7 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
     return selected;
 }
 
+
 /*static void processinfo_CTRLscreen_atexit()
 {
     //echo();
@@ -318,6 +328,7 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
     printf("EXIT from processinfo_CTRLscreen at line %d\n", CTRLscreenExitLine);
 }
 */
+
 
 /**
  * ## Purpose
@@ -334,8 +345,7 @@ errno_t processinfo_CTRLscreen()
 {
     long pindex, index;
 
-    // Main structure - holds everything that needs to be shared with other
-    // functions and scan thread
+    // Main structure - holds everything that needs to be shared with other functions and scan thread
     PROCINFOPROC procinfoproc;
     pthread_t    threadscan;
 
@@ -349,7 +359,7 @@ errno_t processinfo_CTRLscreen()
     // timers
     struct timespec t1loop;
     struct timespec t2loop;
-    // struct timespec tdiffloop;
+    //struct timespec tdiffloop;
 
     struct timespec t01loop;
     struct timespec t02loop;
@@ -379,19 +389,19 @@ errno_t processinfo_CTRLscreen()
     processinfo_CatchSignals();
 
     /*
-      struct sigaction sa;
-      sigemptyset(&sa.sa_mask);
-      sa.sa_flags = 0;
-      sa.sa_handler = processinfo_CTRLscreen_handle_winch;
-      if(sigaction(SIGWINCH, &sa, NULL) == -1)
-      {
-          printf("can't handle SIGWINCH");
-          exit(EXIT_FAILURE);
-      }
+        struct sigaction sa;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        sa.sa_handler = processinfo_CTRLscreen_handle_winch;
+        if(sigaction(SIGWINCH, &sa, NULL) == -1)
+        {
+            printf("can't handle SIGWINCH");
+            exit(EXIT_FAILURE);
+        }
 
 
-      setlocale(LC_ALL, "");
-  */
+        setlocale(LC_ALL, "");
+    */
 
     // initialize procinfoproc entries
     procinfoproc.loopcnt = 0;
@@ -431,6 +441,7 @@ errno_t processinfo_CTRLscreen()
         procinfoproc.CPUpcnt[cpu] = 0;
     }
 
+
     STRINGLISTENTRY *CPUsetList;
     int              NBCPUset;
     CPUsetList = (STRINGLISTENTRY *) malloc(sizeof(STRINGLISTENTRY) * 1000);
@@ -447,11 +458,12 @@ errno_t processinfo_CTRLscreen()
     if (processinfo_shm_list_create() == 0)
     {
         printf("==== NO PROCESS TO DISPLAY ====\n");
-        // return(0);
+        //return(0);
     }
 
     // copy pointer
     procinfoproc.pinfolist = pinfolist;
+
 
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
@@ -472,9 +484,9 @@ errno_t processinfo_CTRLscreen()
 
     TUI_init_terminal(&wrow, &wcol);
     // INITIALIZE ncurses
-    // initncurses();
+    //initncurses();
 
-    // atexit( processinfo_CTRLscreen_atexit );
+    //atexit( processinfo_CTRLscreen_atexit );
 
     // set print string lengths
     // string to be printed. Used to keep track of total length
@@ -571,6 +583,7 @@ errno_t processinfo_CTRLscreen()
         }
     }
 
+
     pindexActiveSelected     = 0;
     procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_CTRL; // default upon startup
     // display modes:
@@ -590,9 +603,10 @@ errno_t processinfo_CTRLscreen()
     procinfoproc.SCANBLOCK_OK = 1;
     while (procinfoproc.loopcnt < 1)
     {
-        // printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
+        //printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
         usleep(10000);
     }
+
 
     int  loopOK       = 1;
     int  freeze       = 0;
@@ -610,7 +624,7 @@ errno_t processinfo_CTRLscreen()
     while (loopOK == 1)
     {
         int pid;
-        // char command[200];
+        //char command[200];
 
         DEBUG_TRACEPOINT(" ");
 
@@ -643,11 +657,11 @@ errno_t processinfo_CTRLscreen()
 
         if (freeze == 0)
         {
-            // attron(A_BOLD);
+            //attron(A_BOLD);
             snprintf(monstring, monstringlen, "Mode %d   PRESS x TO STOP MONITOR", MonMode);
-            // processtools__print_header(monstring, '-');
+            //processtools__print_header(monstring, '-');
             TUI_print_header(monstring, '-');
-            // attroff(A_BOLD);
+            //attroff(A_BOLD);
         }
 
         // goes to 1 if at least one process is selected
@@ -670,8 +684,7 @@ errno_t processinfo_CTRLscreen()
             Xexit  = 1;
             break;
 
-        case ' ': // Mark current PID as selected (if none selected, other commands
-                  // only apply to highlighted process)
+        case ' ': // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
             pindex = pindexSelected;
             if (procinfoproc.selectedarray[pindex] == 1)
             {
@@ -912,8 +925,7 @@ errno_t processinfo_CTRLscreen()
             }
             break;
 
-        case 'c': // compute toggle (toggles between 0-run and
-                  // 5-run-without-compute)
+        case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
             DEBUG_TRACEPOINT(" ");
             for (index = 0; index < procinfoproc.NBpindexActive; index++)
             {
@@ -1547,10 +1559,10 @@ errno_t processinfo_CTRLscreen()
                 clock_gettime(CLOCK_MILK, &t04loop);
 
                 /** ### Display
-         *
-         *
-         *
-         */
+                 *
+                 *
+                 *
+                 */
 
                 int dispindex;
                 if (TimeSorted == 0)
@@ -1791,8 +1803,7 @@ errno_t processinfo_CTRLscreen()
                 clock_gettime(CLOCK_MILK, &t05loop);
 
                 // ===========================================================================
-                // ============== PRINT INFORMATION FOR EACH PROCESS
-                // =========================
+                // ============== PRINT INFORMATION FOR EACH PROCESS =========================
                 // ===========================================================================
                 pindexSelectedOK = 0;
 
@@ -1897,11 +1908,11 @@ errno_t processinfo_CTRLscreen()
                             snprintf(string, stringlen, " %-*.*s", pstrlen_pname, pstrlen_pname,
                                      pinfolist->pnamearray[pindex]);
 
+
                             TUI_printfw("%s", string);
                             attroff(A_BOLD);
 
-                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_CTRL
-                            // ==================
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_CTRL ==================
                             if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                             {
                                 switch (procinfoproc.pinfoarray[pindex]->loopstat)
@@ -1999,8 +2010,7 @@ errno_t processinfo_CTRLscreen()
                                          pstrlen_loopcnt,
                                          procinfoproc.pinfoarray[pindex]->loopcnt -
                                              procinfoproc.loopcntoffsetarray[pindex]);
-                                // if(procinfoproc.pinfoarray[pindex]->loopcnt ==
-                                // procinfoproc.loopcntarray[pindex])
+                                //if(procinfoproc.pinfoarray[pindex]->loopcnt == procinfoproc.loopcntarray[pindex])
                                 if (procinfoproc.pinfoarray[pindex]->loopcnt ==
                                     procinfoproc.loopcntarray[pindex])
                                 {
@@ -2044,8 +2054,7 @@ errno_t processinfo_CTRLscreen()
                                 }
                             }
 
-                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_RESOURCES
-                            // ==================
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_RESOURCES ==================
                             if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
                             {
                                 int cpu;
@@ -2069,12 +2078,11 @@ errno_t processinfo_CTRLscreen()
                                          spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses;
                                          spindex++)
                                     {
-                                        // int TID; // thread ID
+                                        //int TID; // thread ID
 
                                         if (spindex > 0)
                                         {
-                                            // TID =
-                                            // procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
+                                            //TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
                                             snprintf(string, stringlen, " %*.*s %-*.*d %-*.*s",
                                                      pstrlen_status, pstrlen_status, "|---",
                                                      pstrlen_pid, pstrlen_pid,
@@ -2086,7 +2094,7 @@ errno_t processinfo_CTRLscreen()
                                         }
                                         else
                                         {
-                                            // TID = procinfoproc.pinfodisp[pindex].PID;
+                                            //TID = procinfoproc.pinfodisp[pindex].PID;
                                             procinfoproc.pinfodisp[pindex].subprocPIDarray[0] =
                                                 procinfoproc.pinfodisp[pindex].PID;
                                         }
@@ -2266,7 +2274,7 @@ errno_t processinfo_CTRLscreen()
                                         GBcnt = MBcnt / 1024;
                                         MBcnt = MBcnt - GBcnt * 1024;
 
-                                        // if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
+                                        //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
                                         memColor = 1;
                                         if (procinfoproc.pinfodisp[pindex].VmRSSarray[spindex] >
                                             10 * 1024) // 10 MB
@@ -2351,8 +2359,7 @@ errno_t processinfo_CTRLscreen()
                                 }
                             }
 
-                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TRIGGER
-                            // ==================
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TRIGGER ==================
                             if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                             {
                                 TUI_printfw("%*d ", pstrlen_inode,
@@ -2416,8 +2423,7 @@ errno_t processinfo_CTRLscreen()
                                             procinfoproc.pinfoarray[pindex]->trigggertimeoutcnt);
                             }
 
-                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TIMING
-                            // ==================
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TIMING ==================
                             if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
                             {
                                 if (procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
@@ -2433,7 +2439,7 @@ errno_t processinfo_CTRLscreen()
                                 {
                                     long *dtiter_array;
                                     long *dtexec_array;
-                                    // int dtindex;
+                                    //int dtindex;
 
                                     TUI_printfw(" %3d "
                                                 "..%"
@@ -2460,10 +2466,9 @@ errno_t processinfo_CTRLscreen()
                                     }
 
                                     int tindex;
-                                    // dtindex = 0;
+                                    //dtindex = 0;
 
-                                    // we exclude the current timerindex, as timers may not all be
-                                    // written
+                                    // we exclude the current timerindex, as timers may not all be written
                                     for (tindex = 0; tindex < PROCESSINFO_NBtimer - 1; tindex++)
                                     {
                                         int ti0, ti1;
@@ -2638,15 +2643,9 @@ errno_t processinfo_CTRLscreen()
                                         TUI_printfw(" %6.1fus ]", tval);
                                     }
 
-                                    //	TUI_printfw(" ITER %9.3fus [%9.3f - %9.3f] ",
-                                    // 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)],
-                                    // 0.001*dtiter_array[0],
-                                    // 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
+                                    //	TUI_printfw(" ITER %9.3fus [%9.3f - %9.3f] ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtiter_array[0], 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
 
-                                    //	TUI_printfw(" EXEC %9.3fus [%9.3f - %9.3f] ",
-                                    // 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)],
-                                    // 0.001*dtexec_array[0],
-                                    // 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
+                                    //	TUI_printfw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
 
                                     TUI_printfw(
                                         "  "
@@ -2682,12 +2681,14 @@ errno_t processinfo_CTRLscreen()
 
             DEBUG_TRACEPOINT(" ");
 
-            // clock_gettime(CLOCK_MILK, &t07loop);
+            //clock_gettime(CLOCK_MILK, &t07loop);
 
             cnt++;
 
+
             tdiff             = timespec_diff(t2loop, t06loop);
             double tdiffvloop = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+
 
             clock_gettime(CLOCK_MILK, &t2loop);
 
@@ -2757,11 +2758,10 @@ errno_t processinfo_CTRLscreen()
     {
         ret = pthread_tryjoin_np(threadscan, (void **) &line);
         /*
-            if(ret==EBUSY){
-                printf("Waiting for thread to complete - currently at line
-       %d\n", procinfoproc.scandebugline);
-            }
-            */
+                if(ret==EBUSY){
+                    printf("Waiting for thread to complete - currently at line %d\n", procinfoproc.scandebugline);
+                }
+                */
         usleep(10000);
     }
 

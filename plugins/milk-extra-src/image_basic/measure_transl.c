@@ -115,13 +115,13 @@ double basic_measure_transl(const char *__restrict ID_name1,
     }
 
     save_fl_fits("_im1mask", "_im1mask.fits");
-    // exit(0);
+    //exit(0);
 
     dsize = tmax * 2;
     while (SCALE != 0)
     {
         step1 = SCALE;
-        step2 = 1; // SCALE;
+        step2 = 1; //SCALE;
 
         dsize /= 2; //(long) (1.0*tmax/pow(SCALEindex,2.0));
         if (dsize < 1.2 * SCALE)
@@ -130,7 +130,7 @@ double basic_measure_transl(const char *__restrict ID_name1,
         }
 
         //      if(SCALE>1)
-        // Mlim = -1;
+        //Mlim = -1;
         // else
         Mlim = 0.5;
 
@@ -217,9 +217,7 @@ double basic_measure_transl(const char *__restrict ID_name1,
                                     data.image[IDout].array.F[jjo * sx_out + iio] += tmp * tmp;
                                     data.image[IDcnt].array.F[jjo * sx_out + iio] += 1.0;
                                     //   if((iio == 87)&&(jjo == 100))
-                                    // printf("%g (%ld %ld %g) (%ld %ld
-                                    // %g)\n",data.image[IDcnt].array.F[jjo*sx_out+iio], ii1, jj1,
-                                    // v1, ii2, jj2, v2);
+                                    //printf("%g (%ld %ld %g) (%ld %ld %g)\n",data.image[IDcnt].array.F[jjo*sx_out+iio], ii1, jj1, v1, ii2, jj2, v2);
                                 }
                             }
                         }

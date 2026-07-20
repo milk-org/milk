@@ -28,6 +28,7 @@
 #include "image_total.h"
 #include "imfunctions.h"
 
+
 #define ARITHTOKENTYPE_UNKNOWN 0
 #define ARITHTOKENTYPE_NOTEXIST 1 // non-existing variable or image
 #define ARITHTOKENTYPE_VARIABLE 2
@@ -172,14 +173,14 @@ int isfunction(const char *word)
     }
 
     /*  if (!strcmp(word,"pow"))
-      value = 1;
-    if (!strcmp(word,"max"))
-      value = 1;
-    if (!strcmp(word,"min"))
-      value = 1;
-    if (!strcmp(word,"median"))
-      value = 1;
-  */
+        value = 1;
+      if (!strcmp(word,"max"))
+        value = 1;
+      if (!strcmp(word,"min"))
+        value = 1;
+      if (!strcmp(word,"median"))
+        value = 1;
+    */
     return (value);
 }
 
@@ -327,10 +328,10 @@ int execute_arith(const char *cmd1)
     }
 
     /*
-     Pre-process string:
-     - remove any spaces in cmd1
-     - replace "=-" by "=0-" and "=+" by "="
-     copy result into cmd */
+       Pre-process string:
+       - remove any spaces in cmd1
+       - replace "=-" by "=0-" and "=+" by "="
+       copy result into cmd */
     j = 0;
 
     for (int i = 0; i < (int) (strlen(cmd1)); i++)
@@ -355,14 +356,13 @@ int execute_arith(const char *cmd1)
         }
     }
     cmd[j] = '\0';
-    //  if( Debug > 0 )   fprintf(stdout, "[execute_arith] preprocessed str %s ->
-    //  %s\n", cmd1, cmd);
+    //  if( Debug > 0 )   fprintf(stdout, "[execute_arith] preprocessed str %s -> %s\n", cmd1, cmd);
 
     /*
-   * cmd is first broken into words.
-   * The spacing between words is operands (+,-,/,*), equal (=),
-   * space ,comma and braces
-   */
+    * cmd is first broken into words.
+    * The spacing between words is operands (+,-,/,*), equal (=),
+    * space ,comma and braces
+    */
     w = 0;
     l = 0;
     for (int i = 0; i < (signed) strlen(cmd); i++)
@@ -424,8 +424,8 @@ int execute_arith(const char *cmd1)
             l = 0;
 
             /*word[w][l] = '\0';
-                                        w++;
-                                        l = 0;*/
+                                              w++;
+                                              l = 0;*/
             break;
 
         default:
@@ -638,7 +638,7 @@ int execute_arith(const char *cmd1)
         while (nb_tbp_word > 1)
         {
             /* non necessary braces are removed
-       */
+             */
             for (int i = 0; i < nbword - 2; i++)
             {
                 if ((word_type[i] == ARITHTOKENTYPE_OPENPAR) &&
@@ -724,8 +724,7 @@ int execute_arith(const char *cmd1)
                     (word_type[i] == ARITHTOKENTYPE_FUNCTION) ||
                     (word_type[i] == ARITHTOKENTYPE_MULTFUNC))
                 {
-                    /*printf("operation \"%s\"
-           * (%d,%d)\n",word[i],par_level[i],intr_priority[i]);*/
+                    /*printf("operation \"%s\" (%d,%d)\n",word[i],par_level[i],intr_priority[i]);*/
                     if (par_level[i] > highest_parlevel)
                     {
                         highest_priority_index = i;
@@ -744,20 +743,20 @@ int execute_arith(const char *cmd1)
                 }
             }
 
-            /*      printf("executing operation %s\n",word[highest_priority_index]);*/
+            /*      printf("executing operation  %s\n",word[highest_priority_index]);*/
 
             /*      printf("before : ");
-        for (j=0;j<nbword;j++)
-        {
-        if(j==i)
-        printf(">>");
-        if(variable_ID(word[j])!=-1)
-        printf(" %s(%f) ",word[j],data.variable[variable_ID(word[j])].value.f);
-        else
-        printf(" %s ",word[j]);
-        }
-        printf("\n");
-      */
+              for (j=0;j<nbword;j++)
+              {
+              if(j==i)
+              printf(">>");
+              if(variable_ID(word[j])!=-1)
+              printf(" %s(%f) ",word[j],data.variable[variable_ID(word[j])].value.f);
+              else
+              printf(" %s ",word[j]);
+              }
+              printf("\n");
+            */
             if (word_type[highest_priority_index] == ARITHTOKENTYPE_OPERAND)
             {
                 // name of image/variable where output is written
@@ -1703,6 +1702,7 @@ int execute_arith(const char *cmd1)
                                (double) data.variable[variable_ID(word[highest_priority_index + 4])]
                                    .value.f);
 
+
                         tmp_prec = arith_image_percentile(
                             word[highest_priority_index + 2],
                             (double) data.variable[variable_ID(word[highest_priority_index + 4])]
@@ -1748,15 +1748,15 @@ int execute_arith(const char *cmd1)
             }
 
             /*      printf("after : ");
-        for (i=0;i<nbword;i++)
-        {
-        if(variable_ID(word[i])!=-1)
-        printf(" %s(%f) ",word[i],data.variable[variable_ID(word[i])].value.f);
-        else
-        printf(" %s ",word[i]);
-        }
-        printf("\n");
-      */
+              for (i=0;i<nbword;i++)
+              {
+              if(variable_ID(word[i])!=-1)
+              printf(" %s(%f) ",word[i],data.variable[variable_ID(word[i])].value.f);
+              else
+              printf(" %s ",word[i]);
+              }
+              printf("\n");
+            */
             /* computing the number of to-be-processed words */
             passedequ   = 0;
             nb_tbp_word = 0;

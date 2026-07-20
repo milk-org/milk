@@ -31,6 +31,7 @@
 
 #include "image_gen/image_gen.h"
 
+
 #include "zernike.h"
 #include "zernike_value.h"
 
@@ -45,9 +46,9 @@
 
 #define PI 3.14159265358979323846264338328
 
-// extern DATA data;
+//extern DATA data;
 
-// ZERNIKE Zernike;
+//ZERNIKE Zernike;
 
 /* ================================================================== */
 /* ================================================================== */
@@ -118,12 +119,14 @@ static errno_t init_module_CLI()
                        "long ZERNIKEPOLYN_rmPiston(const char *ID_name, const "
                        "char *IDmask_name);");
 
+
     CLIADDCMD_ZernikePolyn__mkzercube();
 
     // add atexit functions here
 
     return RETURN_SUCCESS;
 }
+
 
 imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
 {
@@ -172,6 +175,7 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
 
     zernike_init();
 
+
     n = Zernike_n(zer_nb);
     m = Zernike_m(zer_nb);
     printf("Z = %ld    :  n = %ld, m = %ld\n", zer_nb, n, m);
@@ -191,7 +195,7 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
             if (r < 1.0)
             {
                 data.image[ID].array.F[jj * naxes[0] + ii] = Zernike_value(zer_nb, r, theta);
-                // printf("%f\n", Zernike_value(zer_nb,r,theta));
+                //printf("%f\n", Zernike_value(zer_nb,r,theta));
                 ss += data.image[ID].array.F[jj * naxes[0] + ii] *
                       data.image[ID].array.F[jj * naxes[0] + ii];
             }
@@ -202,8 +206,7 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 data.image[ID].array.F[jj * naxes[0] + ii] *=
                     exp(-pow((r - 1.0) / (rpix * coeffextend2), coeffextend3));
                 //	data.image[ID].array.F[jj*naxes[0]+ii] = r;
-                // printf("%f %f\n", Zernike_value(zer_nb, 1.0, theta),
-                // exp(-pow((r-1.0)/(rpix*coeffextend2), coeffextend3)));
+                //printf("%f %f\n", Zernike_value(zer_nb, 1.0, theta), exp(-pow((r-1.0)/(rpix*coeffextend2), coeffextend3)));
             }
         }
     }
@@ -245,8 +248,7 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
     return ID;
 }
 
-// continue Zernike exp. beyond nominal radius, using the same polynomial
-// expression
+// continue Zernike exp. beyond nominal radius, using the same polynomial expression
 imageID mk_zer_unbounded(const char *ID_name, long SIZE, long zer_nb, float rpix)
 {
     long    ii, jj;
@@ -257,6 +259,7 @@ imageID mk_zer_unbounded(const char *ID_name, long SIZE, long zer_nb, float rpix
 
     naxes[0] = SIZE;
     naxes[1] = SIZE;
+
 
     zernike_init();
 
@@ -293,8 +296,8 @@ imageID mk_zer_unbounded(const char *ID_name, long SIZE, long zer_nb, float rpix
         {
             for (jj = 0; jj < SIZE; jj++)
             {
-                // r = sqrt((ii-SIZE/2)*(ii-SIZE/2)+(jj-SIZE/2)*(jj-SIZE/2))/rpix;
-                //     if(r<1.0)
+                //r = sqrt((ii-SIZE/2)*(ii-SIZE/2)+(jj-SIZE/2)*(jj-SIZE/2))/rpix;
+                //    if(r<1.0)
                 data.image[ID].array.F[jj * naxes[0] + ii] = 1.0;
             }
         }
@@ -733,7 +736,7 @@ int remove_TTF(const char *ID_name, const char *ID_name_out, double radius)
         {
             mk_zer("zer_tmp", SIZE, i, radius);
             arith_image_mult("zer_tmp", ID_name, "mult_tmp");
-            // coeff = arith_image_total("mult_tmp")/arith_image_total("disktmpttf");
+            //coeff = arith_image_total("mult_tmp")/arith_image_total("disktmpttf");
             delete_image_ID("mult_tmp", DELETE_IMAGE_ERRMODE_WARNING);
             coeff               = -1.0 * get_zer(ID_name, i, radius);
             data.DOUBLEARRAY[i] = coeff;

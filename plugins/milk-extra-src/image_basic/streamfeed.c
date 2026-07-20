@@ -63,7 +63,7 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     long        xsize, ysize, xysize, zsize;
     long        k;
     long        tdelay;
-    int         RT_priority = 95; // any number from 0-99
+    int         RT_priority = 95; //any number from 0-99
     int         semval;
     const char *ptr0;
     const char *ptr1;

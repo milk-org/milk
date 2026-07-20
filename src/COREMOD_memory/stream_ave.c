@@ -124,7 +124,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
-    // DEBUG_TRACEPOINT("cntindex = %lu / %lu", *cntindex, *NBcoadd);
+    //DEBUG_TRACEPOINT("cntindex = %lu / %lu", *cntindex, *NBcoadd);
 
     printf("Adding image %lu / %lu\n", *cntindex, *NBcoadd);
 

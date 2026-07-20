@@ -28,6 +28,7 @@
 #include "cubecluster.h"
 #include "mindiffscan.h"
 
+
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //

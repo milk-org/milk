@@ -32,6 +32,7 @@ typedef struct
     struct timespec  triggertimeout;
     struct timespec *triggertimeoutptr;
 
+
     int semindexrequested;
 
     int       RT_priority; // -1 if unused. 0-99 for higher priority

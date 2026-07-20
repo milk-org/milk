@@ -11,7 +11,7 @@
 #include <termios.h>
 
 #include <ncurses.h>
-// #include <curses.h>
+//#include <curses.h>
 #include <ncursesw/ncurses.h>
 
 #include <locale.h>
@@ -98,6 +98,7 @@ void TUI_printfw(const char *fmt, ...)
     va_end(args);
 }
 
+
 void TUI_newline()
 {
     if (screenprintmode == SCREENPRINT_STDIO)
@@ -109,6 +110,7 @@ void TUI_newline()
         printw("\n");
     }
 }
+
 
 void screenprint_setcolor(int colorcode)
 {
@@ -211,7 +213,7 @@ void screenprint_unsetbold()
     }
     else
     {
-        printAEC = AEC_NORMAL; // AEC_BOLDOFF;
+        printAEC = AEC_NORMAL; //AEC_BOLDOFF;
         printf("\033[%dm", printAEC);
     }
 }
@@ -237,7 +239,7 @@ void screenprint_unsetblink()
     }
     else
     {
-        printAEC = AEC_NORMAL; // AEC_BLINKOFF;
+        printAEC = AEC_NORMAL; //AEC_BLINKOFF;
         printf("\033[%dm", AEC_NORMAL);
     }
 }
@@ -263,7 +265,7 @@ void screenprint_unsetdim()
     }
     else
     {
-        printAEC = AEC_NORMAL; // AEC_FAINTOFF;
+        printAEC = AEC_NORMAL; //AEC_FAINTOFF;
         printf("\033[%dm", printAEC);
     }
 }
@@ -289,7 +291,7 @@ void screenprint_unsetreverse()
     }
     else
     {
-        printAEC = AEC_NORMAL; // AEC_REVERSEOFF;
+        printAEC = AEC_NORMAL; //AEC_REVERSEOFF;
         printf("\033[%dm", printAEC);
     }
 }
@@ -298,7 +300,7 @@ void screenprint_setnormal()
 {
     if (screenprintmode == SCREENPRINT_NCURSES)
     {
-        // attron(A_REVERSE);
+        //attron(A_REVERSE);
     }
     else
     {
@@ -308,6 +310,7 @@ void screenprint_setnormal()
         printf("\033[%d;%d;%dm", printAEC, printAECfgcolor, printAECbgcolor);
     }
 }
+
 
 /**
  * @brief Print header line
@@ -371,7 +374,7 @@ errno_t TUI_inittermios(short unsigned int *wrowptr, short unsigned int *wcolptr
 
     memcpy(&new_termios, &orig_termios, sizeof(new_termios));
 
-    // cfmakeraw(&new_termios);
+    //cfmakeraw(&new_termios);
     new_termios.c_lflag &= ~ICANON;
     new_termios.c_lflag &= ~ECHO;
     new_termios.c_lflag &= ~ISIG;
@@ -397,7 +400,7 @@ void TUI_clearscreen(short unsigned int *wrowptr, short unsigned int *wcolptr)
     if (screenprintmode == SCREENPRINT_STDIO) // stdio mode
     {
         printf("\e[1;1H\e[2J");
-        // printf("[%12lld  %d %d %d ]  ", loopcnt, buffd[0], buffd[1], buffd[2]);
+        //printf("[%12lld  %d %d %d ]  ", loopcnt, buffd[0], buffd[1], buffd[2]);
 
         // update terminal size
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
@@ -433,6 +436,7 @@ void TUI_handle_winch(int sig)
     refresh();
 }
 
+
 /** @brief INITIALIZE ncurses
  *
  */
@@ -461,9 +465,8 @@ errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr
         DEBUG_TRACEPOINT("wrow wcol = %d %d", wrow, wcol);
 
         cbreak();
-        // disables line buffering and erase/kill character-processing (interrupt
-        // and flow control characters are unaffected), making characters typed by
-        // the user immediately available to the program
+        // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
+        // making characters typed by the user immediately available to the program
 
         DEBUG_TRACEPOINT(" ");
 
@@ -478,13 +481,13 @@ errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr
         noecho();
         // Don't echo() while we do getch
 
-        // nonl();
-        //  Do not translates newline into return and line-feed on output
+        //nonl();
+        // Do not translates newline into return and line-feed on output
 
         DEBUG_TRACEPOINT(" ");
-        // init_color(COLOR_GREEN, 400, 1000, 400);
-        // init_color(COLOR_GREEN, 700, 1000, 700);
-        // init_color(COLOR_YELLOW, 1000, 1000, 700);
+        //init_color(COLOR_GREEN, 400, 1000, 400);
+        //init_color(COLOR_GREEN, 700, 1000, 700);
+        //init_color(COLOR_YELLOW, 1000, 1000, 700);
         start_color();
         DEBUG_TRACEPOINT(" ");
 
@@ -504,17 +507,18 @@ errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr
 
         // handle window resize
         /*
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(struct sigaction));
-    sa.sa_handler = TUI_handle_winch;
-    sigaction(SIGWINCH, &sa, NULL);
-    */
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(struct sigaction));
+        sa.sa_handler = TUI_handle_winch;
+        sigaction(SIGWINCH, &sa, NULL);
+        */
     }
 
     DEBUG_TRACE_FEXIT();
 
     return RETURN_SUCCESS;
 }
+
 
 errno_t TUI_init_terminal(short unsigned int *wrowptr, short unsigned int *wcolptr)
 {
@@ -534,6 +538,7 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr, short unsigned int *wcolp
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 errno_t TUI_get_terminal_size(short unsigned int *wrowptr, short unsigned int *wcolptr)
 {
@@ -555,7 +560,7 @@ errno_t TUI_exit()
 
 void TUI_atexit()
 {
-    // printf("exiting CTRLscreen\n");
+    //printf("exiting CTRLscreen\n");
 
     if (screenprintmode == SCREENPRINT_NCURSES)
     {
@@ -659,6 +664,7 @@ int get_singlechar_nonblock()
 
     return ch;
 }
+
 
 int get_singlechar_block()
 {

@@ -9,12 +9,14 @@
 
 #include "processinfo/processinfo_procdirname.h"
 
+
 static struct timespec t1;
 static struct timespec t2;
 static struct timespec tdiff;
 
 static double scantime_CPUload;
 static double scantime_CPUpcnt;
+
 
 int GetCPUloads(PROCINFOPROC *pinfop)
 {
@@ -104,6 +106,7 @@ int GetCPUloads(PROCINFOPROC *pinfop)
                            "pid,psr,cpu,cmd > %s; fi; rm "
                            "%s/_psOKlock &> /dev/null; }",
                            procdname, procdname, psoutfname, procdname);
+
 
     // read and process psoutfname file
 

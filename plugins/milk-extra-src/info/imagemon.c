@@ -9,14 +9,14 @@
 
 #define NCURSES_WIDECHAR 1
 
-#include <curses.h>
 #include <math.h>
 #include <ncurses.h>
+#include <curses.h>
 
-#include <locale.h>
 #include <stdio.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <locale.h>
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -26,13 +26,17 @@
 #include "streamtiming_stats.h"
 #include "timediff.h"
 
+
 #include "TUItools.h"
+
 
 // screen size
 static uint16_t wrow, wcol;
 
+
 static uint64_t        cntlast;
 static struct timespec tlast;
+
 
 // Local variables pointers
 static char  *instreamname;
@@ -45,18 +49,22 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".insname", "input stream", "im1",
 
 static CLICMDDATA CLIcmddata = { "imgmon", "image monitor", CLICMD_FIELDS_DEFAULTS };
 
+
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
 
+
 errno_t info_image_monitor(const char *ID_name, float frequ);
 errno_t printstatus(imageID ID);
+
 
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
+
 
     INSERT_TUI_SETUP
 
@@ -75,6 +83,7 @@ static errno_t compute_function()
     TUIscreenarray[2].keych = KEY_F(3);
     strcpy(TUIscreenarray[2].name, "[F3] timing");
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     double pinfotdelay =
@@ -92,6 +101,7 @@ static errno_t compute_function()
 
     {
         INSTERT_TUI_KEYCONTROLS
+
 
         if (TUIinputkch == ' ')
         {
@@ -142,8 +152,7 @@ static errno_t compute_function()
                             sem, NBtsamples, samplestimeout);
                 TUI_printfw("Press SPACE to reset buffer\n");
 
-                // Hack to avoid missing a large amount of frames while waiting for the
-                // processinfo trigger delay
+                // Hack to avoid missing a large amount of frames while waiting for the processinfo trigger delay
                 info_image_streamtiming_stats(ID, sem, NBtsamples,
                                               processinfo->triggerdelay.tv_sec +
                                                   1.0e-9 * processinfo->triggerdelay.tv_nsec,
@@ -172,7 +181,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_info__imagemon()
@@ -181,6 +192,7 @@ INSERT_STD_FPSCLIfunctions
 
     return RETURN_SUCCESS;
 }
+
 
 errno_t printstatus(imageID ID)
 {
@@ -197,9 +209,10 @@ errno_t printstatus(imageID ID)
 
     float minPV = 60000;
     float maxPV = 0;
-    // float charval;
+    //float charval;
     double average;
     double imtotal;
+
 
     char line1[200];
 
@@ -258,6 +271,7 @@ errno_t printstatus(imageID ID)
         TUI_printfw("[cnt1 %8d]\n", image->md->cnt1);
     }
 
+
     if (1)
     {
         // semaphores, read / write
@@ -292,6 +306,7 @@ errno_t printstatus(imageID ID)
         TUI_printfw("\n");
     }
 
+
     if (1)
     {
         // image stats
@@ -307,6 +322,7 @@ errno_t printstatus(imageID ID)
 
         TUI_printfw("average %12g    total = %12g\n", imtotal / image->md->nelement, imtotal);
 
+
         vcnt = (long *) malloc(sizeof(long) * NBhistopt);
         if (vcnt == NULL)
         {
@@ -317,6 +333,7 @@ errno_t printstatus(imageID ID)
         {
             vcnt[h] = 0;
         }
+
 
         if (datatype == _DATATYPE_FLOAT)
         {
@@ -343,6 +360,7 @@ errno_t printstatus(imageID ID)
                 }
             }
         }
+
 
         if (datatype == _DATATYPE_DOUBLE)
         {
@@ -578,10 +596,12 @@ errno_t printstatus(imageID ID)
             }
         }
 
+
         RMS   = sqrt(RMS / image->md->nelement);
         RMS01 = 0.9 * RMS01 + 0.1 * RMS; // wut
 
         TUI_printfw("RMS = %12.6g     ->  %12.6g\n", RMS, RMS01);
+
 
         // pix vales and histogram
 
@@ -707,8 +727,10 @@ errno_t printstatus(imageID ID)
             }
         }
 
+
         free(vcnt);
     }
+
 
     return RETURN_SUCCESS;
 }

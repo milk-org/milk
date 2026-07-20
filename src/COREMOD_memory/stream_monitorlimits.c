@@ -37,9 +37,9 @@ static errno_t COREMOD_MEMORY_stream_monitorlimits__cli()
 {
     // Try FPS implementation
 
-    // Set data.fpsname, providing default value as first arg, and set
-    // data.FPS_CMDCODE value. Default FPS name will be used if CLI process has
-    // NOT been named. See code in function_parameter.c for detailed rules.
+    // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
+    // Default FPS name will be used if CLI process has NOT been named.
+    // See code in function_parameter.c for detailed rules.
     function_parameter_getFPSargs_from_CLIfunc("streammlim");
 
     if (data.FPS_CMDCODE != 0)
@@ -188,8 +188,7 @@ errno_t stream_monitorlimits_RUN()
     // =============================================
     /// ### OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
     // =============================================
-    // Pre-loop testing, anything that would prevent loop from starting should
-    // issue message
+    // Pre-loop testing, anything that would prevent loop from starting should issue message
     int loopOK = 1;
 
     // Specify input stream trigger

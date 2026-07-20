@@ -58,7 +58,7 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
     processinfo->triggerstatus            = 0;
 
     // default
-    // processinfo->triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+    //processinfo->triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
 
     // valid modes
 
@@ -107,7 +107,7 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
         // immmediate trigger
         processinfo->triggermode      = PROCESSINFO_TRIGGERMODE_IMMEDIATE;
         processinfo->triggerstreamcnt = 0;
-        // data.image[processinfo->triggerstreamID].md[0].cnt0;
+        //data.image[processinfo->triggerstreamID].md[0].cnt0;
     }
 
     if (triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
@@ -117,7 +117,7 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
 
         processinfo->triggermode      = PROCESSINFO_TRIGGERMODE_DELAY;
         processinfo->triggerstreamcnt = 0;
-        // data.image[processinfo->triggerstreamID].md[0].cnt0;
+        //data.image[processinfo->triggerstreamID].md[0].cnt0;
     }
 
     // checking if semaphore trigger mode OK
@@ -153,6 +153,7 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 /** @brief Wait on a stream
  *

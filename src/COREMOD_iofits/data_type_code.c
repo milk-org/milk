@@ -10,19 +10,19 @@ int data_type_code(int bitpix)
 {
     int code;
     /*
-    bitpix      Datatype             typecode    Mnemonic
-    1           bit, X                   1        TBIT
-    8           byte, B                 11        TBYTE
-                logical, L              14        TLOGICAL
-                ASCII character, A      16        TSTRING
-    16          short integer, I        21        TSHORT
-    32          integer, J                      41        TLONG
-    64          64-bit long signed integer 'K'  81        TLONGLONG
-   -32          real, E                 42        TFLOAT
-   -64          double precision, D     82        TDOUBLE
-                complex, C              83        TCOMPLEX
-                double complex, M      163        TDBLCOMPLEX
-                */
+      bitpix      Datatype             typecode    Mnemonic
+      1           bit, X                   1        TBIT
+      8           byte, B                 11        TBYTE
+                  logical, L              14        TLOGICAL
+                  ASCII character, A      16        TSTRING
+      16          short integer, I        21        TSHORT
+      32          integer, J                      41        TLONG
+      64          64-bit long signed integer 'K'  81        TLONGLONG
+     -32          real, E                 42        TFLOAT
+     -64          double precision, D     82        TDOUBLE
+                  complex, C              83        TCOMPLEX
+                  double complex, M      163        TDBLCOMPLEX
+                  */
     code = 0;
     if (bitpix == 1)
     {

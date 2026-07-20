@@ -15,20 +15,18 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "CommandLineInterface/timeutils.h"
 
-// #include "image_ID.h"
-// #include "stream_sem.h"
+//#include "image_ID.h"
+//#include "stream_sem.h"
 
-// #include "COREMOD_tools/COREMOD_tools.h"
+//#include "COREMOD_tools/COREMOD_tools.h"
 
 // variables local to this translation unit
 static char    *stream_basename; // stream basename, which also is the output name.
 static int32_t *ptr_n_input;     // How many streams to merge?
-// static int32_t *ptr_concat_axis; // FUTURE - actually perform smarter
-// concatenation along any axis.
+// static int32_t *ptr_concat_axis; // FUTURE - actually perform smarter concatenation along any axis.
 
 static CLICMDARGDEF farg[] = {
-    { CLIARG_IMG, // This being CLIARG_IMG assumes the output stream has been
-                  // created already...
+    { CLIARG_IMG, // This being CLIARG_IMG assumes the output stream has been created already...
       ".stream_basename", "output stream & input stream basename", "stream_basename",
       CLIARG_VISIBLE_DEFAULT, (void **) &stream_basename, NULL },
     { CLIARG_INT32, ".n_input", "number of inputs to concatenate", "n_input",

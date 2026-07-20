@@ -130,18 +130,16 @@ long load_fitsimages_cube(const char *__restrict strfilter, const char *__restri
 
     fclose(fp);
     /*  n = snprintf(command,SBUFFERSIZE,"rm flist.tmp");
-    if(n >= SBUFFERSIZE)
-        PRINT_ERROR("Attempted to write string buffer with too many
-    characters");
+      if(n >= SBUFFERSIZE)
+          PRINT_ERROR("Attempted to write string buffer with too many characters");
 
-    if(system(command)==-1)
-    {
-        printf("WARNING: system(\"%s\") failed [function: %s  file: %s  line: %d
-    ]\n",command,__func__,__FILE__,__LINE__);
-        //exit(0);
-    }
+      if(system(command)==-1)
+      {
+          printf("WARNING: system(\"%s\") failed [function: %s  file: %s  line: %d ]\n",command,__func__,__FILE__,__LINE__);
+          //exit(0);
+      }
 
-  */
+    */
     printf("%ld images loaded into cube %s\n", cnt, ID_out_name);
 
     return (cnt);

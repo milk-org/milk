@@ -77,8 +77,8 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         float iso;
         float shutter;
         float aperture;
-        // imageID ID;
-        // long xsize,ysize;
+        //imageID ID;
+        //long xsize,ysize;
 
         EXECUTE_SYSTEM_COMMAND("dcraw -i -v %s | grep \"ISO speed\"| awk '{print $3}' > "
                                "iso_tmp.txt",
@@ -141,9 +141,9 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         }
         printf("aperture = %f\n", aperture);
 
-        // ID = image_ID("tmpfits1");
-        //         xsize = data.image[ID].md[0].size[0];
-        //         ysize = data.image[ID].md[0].size[1];
+        //ID = image_ID("tmpfits1");
+        //        xsize = data.image[ID].md[0].size[0];
+        //        ysize = data.image[ID].md[0].size[1];
 
         FLUXFACTOR = aperture * aperture / (shutter * iso);
     }

@@ -29,6 +29,7 @@
 #define CLIARG_FITSFILENAME 0x00000007
 #define CLIARG_FPSNAME 0x00000008
 
+
 #define CLIARG_FLOAT32 0x00010001 // same as float
 #define CLIARG_FLOAT64 0x00020001 // same as double
 
@@ -41,6 +42,7 @@
 
 // image/stream types
 #define CLIARG_STREAM 0x00010004 // stream
+
 
 #define STRINGMAXLEN_FPSCLIARG_TAG 100
 #define STRINGMAXLEN_FPSCLIARG_DESCR 100
@@ -119,6 +121,7 @@ typedef struct
     } val;
 } CLICMDARGDATA;
 
+
 #define CLICMDDATA_KEY_STRLENMAX 100
 #define CLICMDDATA_DESCRIPTION_STRLENMAX 100
 #define CLICMDDATA_SOURCEFILENAME_STRLENMAX 100
@@ -150,7 +153,7 @@ typedef struct
 #define CLICMD_INVALID_ARG 1
 #define CLICMD_ERROR 2
 
-// int CLI_checkarg0(int argnum, int argtype, int errmsg);
+//int CLI_checkarg0(int argnum, int argtype, int errmsg);
 
 int CLI_checkarg(int argnum, uint32_t argtype);
 

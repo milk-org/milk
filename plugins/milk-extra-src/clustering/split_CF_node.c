@@ -14,8 +14,10 @@
 
 #include "printCFtree.h"
 
-// #define DEBUG_TRACEPOINT DEBUG_TRACEPOINT_PRINT
-// #define DEBUGPRINT
+
+//#define DEBUG_TRACEPOINT DEBUG_TRACEPOINT_PRINT
+//#define DEBUGPRINT
+
 
 /**
  * @brief Split CF node
@@ -33,6 +35,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %ld", CFindex);
 
+
     if (ctree->rootindex == CFindex)
     {
         DEBUG_TRACEPOINT("Dropping tree: previous root is %ld", ctree->rootindex);
@@ -44,6 +47,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g", parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
                      ctree->CFarray[parentCFindex].pathcnt);
+
 
 #ifdef DEBUGPRINT
     printCFtree(ctree);
@@ -69,6 +73,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
+
 
     for (long ccf = 0; ccf < nCF; ccf++)
     {
@@ -116,6 +121,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
 
     DEBUG_TRACEPOINT("CREATE NODES POINTING TO PARENT %ld", ctree->CFarray[CFindex].parentindex);
 
+
     // create two new nodes
     // find next available CFarray index
     long CFindex0 = 0;
@@ -140,6 +146,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
+
 
     // Allocate each entry to one of the two new nodes
     //
@@ -182,12 +189,13 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
         }
     }
 
+
     long refCF0 = maxdistindex0;
     long refCF1 = maxdistindex1;
 
     // Using maxN yields poor clustering performance compared to maxdist
-    // long refCF0 = maxNccf0;
-    // long refCF1 = maxNccf1;
+    //long refCF0 = maxNccf0;
+    //long refCF1 = maxNccf1;
 
     // Add ref nodes first to ensure position corresponds to most
     // distant nodes.
@@ -195,6 +203,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     FUNC_CHECK_RETURN(node_attachnode(ctree, ctree->CFarray[CFindex].childindex[refCF0], CFindex0));
 
     FUNC_CHECK_RETURN(node_attachnode(ctree, ctree->CFarray[CFindex].childindex[refCF1], CFindex1));
+
 
     for (int subindex = 0; subindex < nCF; subindex++)
     {
@@ -209,6 +218,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
 
     free(distarray);
     free(subCFarray);
+
 
     DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g", parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
@@ -247,6 +257,7 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g", parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
                      ctree->CFarray[parentCFindex].pathcnt);
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

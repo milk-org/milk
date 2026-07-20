@@ -30,6 +30,7 @@
 #include "fps_WriteParameterToDisk.h"
 #include "fps_printparameter_valuestring.h"
 
+
 /** @brief process command line
  *
  * ## Purpose
@@ -460,8 +461,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
             {
                 DEBUG_TRACEPOINT(" ");
                 fps[fpsindex].md->signal |=
-                    FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check
-                                                              // waiting to be done
+                    FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                 fps[fpsindex].md->signal |=
                     FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
@@ -496,8 +496,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
                 {
                     DEBUG_TRACEPOINT(" ");
                     fps[fpsindex].md->signal |=
-                        FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check
-                                                                  // waiting to be done
+                        FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                     fps[fpsindex].md->signal |=
                         FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
@@ -555,6 +554,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
             }
         }
 
+
         // runwait
         // wait until run process is completed
         //
@@ -587,6 +587,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
             }
         }
 
+
         // runstop
         //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "runstop") == 0))
@@ -607,6 +608,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
             }
         }
 
+
         // fpswfile : write FPS to file
         //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "runstop") == 0))
@@ -626,6 +628,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
                 cmdOK = 1;
             }
         }
+
 
         // fpsrm
         //
@@ -685,6 +688,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
                 }
             }
         }
+
 
         // setval
         //
@@ -1053,6 +1057,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
             }
         }
 
+
         // getval or fwrval
         //
         if ((cmdFOUND == 0) &&
@@ -1083,6 +1088,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
                 {
                     cmdOK = 0;
                 }
+
 
                 if (cmdOK == 1)
                 {
@@ -1132,6 +1138,7 @@ int functionparameter_FPSprocess_cmdline(char                      *FPScmdline,
 
     return fpsindex;
 }
+
 
 int functionparameter_FPSprocess_cmdfile(char                      *infname,
                                          FUNCTION_PARAMETER_STRUCT *fps,

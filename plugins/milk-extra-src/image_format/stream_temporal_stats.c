@@ -4,8 +4,7 @@
 
 /**
  * @file    stream_temporal_stats.c
- * @brief   Publishes average and standard dev of image stream at regular
- * intervals
+ * @brief   Publishes average and standard dev of image stream at regular intervals
  *
  * Type specs: all input integer types + float32 allowed
  *             output posted as float32
@@ -23,6 +22,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "CommandLineInterface/timeutils.c"
 #include "CommandLineInterface/timeutils.h"
+
 
 // Local variables pointers
 static char    *in_name;
@@ -166,6 +166,7 @@ static errno_t ave_std_accumulate(IMGID in_img, void *sum_x, void *sum_xx, int r
         }
     }
 
+
     return RETURN_SUCCESS;
 }
 
@@ -292,8 +293,8 @@ static errno_t compute_function()
     }
 
     /*
-   Keyword setup - initialization
-  */
+     Keyword setup - initialization
+    */
 
     for (int kw = 0; kw < in_img.md->NBkw; ++kw)
     {
@@ -310,8 +311,8 @@ static errno_t compute_function()
     }
 
     /*
-  SETUP
-  */
+    SETUP
+    */
 
     int n_pixels = in_img.md->size[0] * in_img.md->size[1];
 
@@ -331,31 +332,31 @@ static errno_t compute_function()
     PRINT_WARNING("Frames: %d", *ptr_n_frames);
 
     /*
-  PROCESSINFO INIT
-  */
+    PROCESSINFO INIT
+    */
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
     // PROCESSINFO* processinfo now available
 
     /*
-  LOOP
-  */
+    LOOP
+    */
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
     {
         /*
-    ACCUMULATE
-    */
+        ACCUMULATE
+        */
         ave_std_accumulate(in_img, sum_x, sum_xx, just_published);
         just_published = FALSE;
         ++n_frames_acc;
         /*
-    PRE - FINALIZE
-    */
+        PRE - FINALIZE
+        */
 
         /*
-    FINALIZATION AND PUBLISH
-    */
+        FINALIZATION AND PUBLISH
+        */
         clock_gettime(CLOCK_MILK, &time2);
 
         if ((n_frames_acc >= *ptr_n_frames || timespec_diff_double(time1, time2) > *ptr_timeout))
@@ -390,8 +391,8 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     /*
-  TEARDOWN
-  */
+    TEARDOWN
+    */
 
     free(sum_x);
     free(sum_xx);

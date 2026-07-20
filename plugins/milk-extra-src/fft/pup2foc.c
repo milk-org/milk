@@ -12,11 +12,13 @@
 #include "dofft.h"
 #include "permut.h"
 
+
 static char *inamp;
 static char *inpha;
 
 static char *outamp;
 static char *outpha;
+
 
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inamp", "input WF ampl", "ima",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inamp, NULL },
@@ -27,17 +29,21 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inamp", "input WF ampl", "ima",
                                { CLIARG_STR, ".outp", "output WF phase", "outp",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &outpha, NULL } };
 
+
 static errno_t customCONFsetup()
 {
     return RETURN_SUCCESS;
 }
+
 
 static errno_t customCONFcheck()
 {
     return RETURN_SUCCESS;
 }
 
+
 static CLICMDDATA CLIcmddata = { "pup2foc", "pupil to focus by FFT", CLICMD_FIELDS_DEFAULTS };
+
 
 // detailed help
 static errno_t help_function()
@@ -45,11 +51,12 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
+
 /* inv = 0 for direct fft and 1 for inverse fft */
 /* direct = focal plane -> pupil plane  equ. fft2d(..,..,..,1) */
 /* inverse = pupil plane -> focal plane equ. fft2d(..,..,..,0) */
-/* options :  -reim  takes real/imaginary input and creates real/imaginary
-   output -inv  for inverse fft (inv=1) */
+/* options :  -reim  takes real/imaginary input and creates real/imaginary output
+               -inv  for inverse fft (inv=1) */
 errno_t pup2foc_fft(const char *__restrict ID_name_ampl,
                     const char *__restrict ID_name_pha,
                     const char *__restrict ID_name_ampl_out,
@@ -90,6 +97,7 @@ errno_t pup2foc_fft(const char *__restrict ID_name_ampl,
 
     permut(Ctmpname);
 
+
     WRITE_IMAGENAME(C1tmpname, "_C1tmp_%d", (int) getpid());
 
     if (inv == 0)
@@ -122,6 +130,7 @@ errno_t pup2foc_fft(const char *__restrict ID_name_ampl,
     return RETURN_SUCCESS;
 }
 
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -152,7 +161,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_milk_fft__pup2foc()

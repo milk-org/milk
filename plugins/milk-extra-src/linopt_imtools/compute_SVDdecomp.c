@@ -28,6 +28,7 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
+
 // rotation matrix written as SVD_VTm
 
 errno_t linopt_compute_SVDdecomp(const char *IDin_name,
@@ -130,8 +131,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
 
     for (long kk = 0; kk < m; kk++) /// eigen mode index
     {
-        //        printf("eigenmode %4ld / %4ld  %g\n", kk, m,
-        //        data.image[IDcoeff].array.F[kk]);
+        //        printf("eigenmode %4ld / %4ld  %g\n", kk, m, data.image[IDcoeff].array.F[kk]);
         //       fflush(stdout);
         for (long kk1 = 0; kk1 < m; kk1++)
         {

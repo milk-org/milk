@@ -154,8 +154,7 @@ imageID basic_tableto2Dim(const char *__restrict fname,
     create_2Dimage_ID("tmp2dinterpxerr", xsize, ysize, &IDxerr);
     create_2Dimage_ID("tmp2dinterpyerr", xsize, ysize, &IDyerr);
 
-    // automatically set radius0 such that if points are randomly distributed, a
-    // circle of radius radius0 includes sqrt(NBpts) points
+    // automatically set radius0 such that if points are randomly distributed, a circle of radius radius0 includes sqrt(NBpts) points
     //  tmp1 = sqrt(NBpts);
     //  if(tmp1<100.0)
     //   tmp1 = 100.0;
@@ -248,11 +247,10 @@ imageID basic_tableto2Dim(const char *__restrict fname,
             {
                 presults = kd_nearest_range(ptree, pt, radius);
 
-                // presults = kd_nearest( ptree, pt );
+                //presults = kd_nearest( ptree, pt );
 
                 /* print out all the points found in results */
-                //  printf( "[%g %g] found %d results (radius = %f):\n", x,y,
-                //  kd_res_size(presults), radius );
+                //  printf( "[%g %g] found %d results (radius = %f):\n", x,y, kd_res_size(presults), radius );
                 if ((kd_res_size(presults) < 30) && (radius < radiusmax))
                 {
                     radius *= 1.5;
@@ -268,8 +266,8 @@ imageID basic_tableto2Dim(const char *__restrict fname,
             if (radius < 0.99 * radiusmax)
             {
                 NBnpt = kd_res_size(presults);
-                // printf("NBnpt = %ld\n",NBnpt);
-                // fflush(stdout);
+                //printf("NBnpt = %ld\n",NBnpt);
+                //fflush(stdout);
                 if (NBnpt > NBnptmax)
                 {
                     pt_x      = realloc(pt_x, sizeof(double) * NBnpt);
@@ -369,7 +367,7 @@ imageID basic_tableto2Dim(const char *__restrict fname,
                 sly = totsy / cnty;
 
                 data.image[ID].array.F[jj * xsize + ii] =
-                    (float) vave; // vave + (x-xave)*slx + (y-yave)*sly;
+                    (float) vave; //vave + (x-xave)*slx + (y-yave)*sly;
 
                 data.image[IDxerr].array.F[jj * xsize + ii] = (float) (x - xave);
                 data.image[IDyerr].array.F[jj * xsize + ii] = (float) (y - yave);
@@ -436,8 +434,8 @@ imageID basic_tableto2Dim(const char *__restrict fname,
     {
         for (jj = 0; jj < ysize; jj++)
         {
-            // xerr = data.image[IDxerr].array.F[jj*xsize+ii];
-            // yerr = data.image[IDyerr].array.F[jj*xsize+ii];
+            //xerr = data.image[IDxerr].array.F[jj*xsize+ii];
+            //yerr = data.image[IDyerr].array.F[jj*xsize+ii];
             slx = data.image[IDslx].array.F[jj * xsize + ii];
             sly = data.image[IDsly].array.F[jj * xsize + ii];
             //	data.image[ID].array.F[jj*xsize+ii] += xerr*slx+yerr*sly;

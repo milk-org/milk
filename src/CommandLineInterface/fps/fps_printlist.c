@@ -21,8 +21,8 @@ int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBpara
         {
             printf("Parameter %4ld : %s\n", pindex, funcparamarray[pindex].keywordfull);
             /*for(int kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
-          printf("  %s", funcparamarray[pindex].keyword[kl]);
-      printf("\n");*/
+            	printf("  %s", funcparamarray[pindex].keyword[kl]);
+            printf("\n");*/
             printf("    %s\n", funcparamarray[pindex].description);
 
             // STATUS FLAGS
@@ -94,8 +94,7 @@ int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBpara
             printf("\n");
 
             // DATA TYPE
-            //			printf("    TYPE : 0x%02hhx\n", (int)
-            // funcparamarray[pindex].type);
+            //			printf("    TYPE : 0x%02hhx\n", (int) funcparamarray[pindex].type);
             if (funcparamarray[pindex].type & FPTYPE_UNDEF)
             {
                 printf("    TYPE = UNDEF\n");

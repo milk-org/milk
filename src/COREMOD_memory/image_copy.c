@@ -11,10 +11,10 @@
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
-#include "image_copy.h"
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "image_copy.h"
 
 // ==========================================
 // Forward declaration(s)

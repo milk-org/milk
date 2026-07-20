@@ -13,7 +13,7 @@
 
 uint16_t function_parameter_FPCONFexit(FUNCTION_PARAMETER_STRUCT *fps)
 {
-    // fps->md->confpid = 0;
+    //fps->md->confpid = 0;
 
     fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
     function_parameter_struct_disconnect(fps);

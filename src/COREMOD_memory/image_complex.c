@@ -16,9 +16,9 @@
 #include "stream_sem.h"
 
 #include "image_complex.h"
-#include "image_mk_amph_from_complex.h"
 #include "image_mk_complex_from_amph.h"
 #include "image_mk_complex_from_reim.h"
+#include "image_mk_amph_from_complex.h"
 #include "image_mk_reim_from_complex.h"
 
 errno_t mk_reim_from_amph_IMGID(IMGID *imgam, IMGID *imgph, IMGID *imgre, IMGID *imgim)

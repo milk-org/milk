@@ -28,6 +28,7 @@ int LINALGEBRA_init();
 // Command line interface wrapper function(s)
 // ==========================================
 
+
 /*
 static errno_t delete_image_ID__cli()
 {
@@ -50,6 +51,7 @@ static errno_t delete_image_ID__cli()
     return CLICMD_SUCCESS;
 }
 */
+
 
 // ==========================================
 // Register CLI command(s)
@@ -119,12 +121,14 @@ int LINALGEBRA_init()
     return ((int) cuda_deviceCount);
 }
 
+
 void *GPU_scanDevices(void *deviceCount_void_ptr)
 {
     int                  *devcnt_ptr = (int *) deviceCount_void_ptr;
     int                   device;
     struct cudaDeviceProp deviceProp;
     int                   devicecntMax = 100;
+
 
     printf("Scanning for GPU devices ...\n");
     fflush(stdout);
@@ -149,6 +153,7 @@ void *GPU_scanDevices(void *deviceCount_void_ptr)
 
         int clockRate;
         cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, device);
+
 
         printf("Device %d [ %20s ]  has compute capability %d.%d.\n", device, deviceProp.name,
                deviceProp.major, deviceProp.minor);

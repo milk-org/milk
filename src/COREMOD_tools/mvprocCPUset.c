@@ -150,11 +150,13 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
     return 0;
 }
 
+
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 {
     // Pass down to extended version and return retcode back up
     return COREMOD_TOOLS_mvProcCPUsetExt(getpid(), csetname, -1);
 }
+
 
 int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio)
 {

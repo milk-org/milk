@@ -4,9 +4,9 @@
 
 #include <math.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
 #include "image_norm.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 // input image names
 static char *inimname;
@@ -134,7 +134,7 @@ errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis)
 
     for (uint32_t ii = 0; ii < sizescan[sliceaxis]; ii++)
     {
-        // printf("morm %3u : %lf\n", ii, normarray[ii]);
+        //printf("morm %3u : %lf\n", ii, normarray[ii]);
         outimg->im->array.F[ii] = sqrt(normarray[ii]);
     }
 
@@ -180,8 +180,8 @@ INSERT_STD_FPSCLIfunctions
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_arith__image_normslice()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
 
     INSERT_STD_CLIREGISTERFUNC
 

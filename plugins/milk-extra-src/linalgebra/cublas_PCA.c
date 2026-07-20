@@ -56,7 +56,7 @@ static imageID image_PCAdecomp(IMGID *img)
     DEBUG_TRACE_FSTART();
 
     // Create image if needed
-    // imageID ID = img->ID;
+    //imageID ID = img->ID;
 
     printf("Image size : %u %u %u\n", img->md->size[0], img->md->size[1], img->md->size[2]);
 
@@ -239,11 +239,11 @@ static imageID image_PCAdecomp(IMGID *img)
     printf("=====\n");
 
     printf("U = \n");
-    // printMatrix(m, m, U, lda, "U");
+    //printMatrix(m, m, U, lda, "U");
     printf("=====\n");
 
     printf("VT = \n");
-    // printMatrix(n, n, VT, lda, "VT");
+    //printMatrix(n, n, VT, lda, "VT");
     printf("=====\n");
 
     // process S
@@ -384,8 +384,8 @@ static errno_t compute_function()
 
     image_PCAdecomp(&img);
 
-    // DEBUG_TRACEPOINT("update output ID %ld", img.ID);
-    // processinfo_update_output_stream(processinfo, img.ID);
+    //DEBUG_TRACEPOINT("update output ID %ld", img.ID);
+    //processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();

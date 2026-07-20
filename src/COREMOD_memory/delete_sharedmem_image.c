@@ -71,7 +71,7 @@ INSERT_STD_FPSCLIfunctions
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_memory__delete_sharedmem_image()
 {
-    // INSERT_STD_FPSCLIREGISTERFUNC
+    //INSERT_STD_FPSCLIREGISTERFUNC
 
     int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;

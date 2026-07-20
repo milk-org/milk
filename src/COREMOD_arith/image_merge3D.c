@@ -383,8 +383,8 @@ INSERT_STD_FPSCLIfunctions
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_arith__image_merge()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
 
     INSERT_STD_CLIREGISTERFUNC
 

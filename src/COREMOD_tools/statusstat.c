@@ -60,7 +60,7 @@ errno_t statusstat_addCLIcmd()
 imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
 {
     imageID            IDout;
-    int                RT_priority = 91; // any number from 0-99
+    int                RT_priority = 91; //any number from 0-99
     struct sched_param schedpar;
     float              usec0 = 50.0;
     float              usec1 = 150.0;

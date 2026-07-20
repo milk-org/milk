@@ -25,15 +25,11 @@
 // Module short description
 #define MODULE_DESCRIPTION "Statistics functions and tools"
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                        HEADER FILES */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                        HEADER FILES                                             */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 #include "CommandLineInterface/CLIcore.h"
 #include <gsl/gsl_randist.h>
@@ -47,15 +43,11 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "statistic/statistic.h"
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                  GLOBAL DATA DECLARATION */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                  GLOBAL DATA DECLARATION                                        */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 typedef struct
 {
@@ -121,15 +113,11 @@ errno_t statistic_putgaussnoise_cli()
     }
 }
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                    MODULE INITIALIZATION */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                    MODULE INITIALIZATION                                        */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /** @name Module initialization */
 
 static errno_t init_module_CLI()
@@ -150,15 +138,11 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                    FUNCTIONS SOURCE CODE */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                    FUNCTIONS SOURCE CODE                                        */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /** @name STATISTIC functions */
 
 double ran1()
@@ -176,8 +160,8 @@ double gauss()
     // use first option if using ranlxs generator
     // return(gsl_ran_ugaussian (data.rndgen));
 
-    // for speed (4.1x faster than default), but not that random (some fringes
-    // appear in image) return(gsl_ran_gaussian_ziggurat (data.rndgen,1.0));
+    // for speed (4.1x faster than default), but not that random (some fringes appear in image)
+    // return(gsl_ran_gaussian_ziggurat (data.rndgen,1.0));
 
     // default
     return (gsl_ran_gaussian(data.rndgen, 1.0));
@@ -382,9 +366,9 @@ long statistic_BIRCH_clustering(__attribute__((unused)) const char *IDin_name,
                                 __attribute__((unused)) double      epsilon,
                                 __attribute__((unused)) const char *IDout_name)
 {
-    // long IDin;
-    // long xsize, ysize;
-    // long zsize;
+    //long IDin;
+    //long xsize, ysize;
+    //long zsize;
 
     // node definition:
 
@@ -400,237 +384,232 @@ long statistic_BIRCH_clustering(__attribute__((unused)) const char *IDin_name,
     //
 
     /*
-  typedef struct
-  {
-  int active;  // 1 if active, 0 otherwise
+    typedef struct
+    {
+    int active;  // 1 if active, 0 otherwise
 
-  int NBpt;    // number of points
-  float *sum;  // sum
-  float *ssum; // sum of squares
+    int NBpt;    // number of points
+    float *sum;  // sum
+    float *ssum; // sum of squares
 
-  long level;   // 0 is root, and so on
-  int leaf;    // 1 if leaf, 0 if non-leaf
-  long parent_index;
-  long NBchildren;
-  long *children_index;
-  } BIRCHCF;
-  */
+    long level;   // 0 is root, and so on
+    int leaf;    // 1 if leaf, 0 if non-leaf
+    long parent_index;
+    long NBchildren;
+    long *children_index;
+    } BIRCHCF;
+    */
 
     /*
-  IDin = image_ID(IDin_name);
-  xsize = data.image[IDin].md[0].size[0];
-  ysize = data.image[IDin].md[0].size[1];
-  zsize = data.image[IDin].md[0].size[2];
+    IDin = image_ID(IDin_name);
+    xsize = data.image[IDin].md[0].size[0];
+    ysize = data.image[IDin].md[0].size[1];
+    zsize = data.image[IDin].md[0].size[2];
 
-  long xysize = xsize*ysize;
+    long xysize = xsize*ysize;
 
-  BIRCHCF *BirchCFarray;
+    BIRCHCF *BirchCFarray;
 
-  long NBnodeMax = zsize;
-  BirchCFarray = (BIRCHCF*) malloc(sizeof(BIRCHCF)*NBnodeMax);
+    long NBnodeMax = zsize;
+    BirchCFarray = (BIRCHCF*) malloc(sizeof(BIRCHCF)*NBnodeMax);
 
-  // initialize
-  long node;
-  for(node=0; node<NBnodeMax; node++)
-  {
-      BirchCFarray[node].active = 0;
-      BirchCFarray[node].level = 0;
+    // initialize
+    long node;
+    for(node=0; node<NBnodeMax; node++)
+    {
+    	BirchCFarray[node].active = 0;
+    	BirchCFarray[node].level = 0;
 
-      BirchCFarray[node].NBpt = 0;
-      BirchCFarray[node].sum = NULL;
-      BirchCFarray[node].ssum = NULL;
-
-
-      BirchCFarray[node].leaf = 0;
-      BirchCFarray[node].parent_index = 0;
-      BirchCFarray[node].NBchildren = 0;
-      BirchCFarray[node].children_index = NULL;
-  }
-
-  node = 0;
+    	BirchCFarray[node].NBpt = 0;
+    	BirchCFarray[node].sum = NULL;
+    	BirchCFarray[node].ssum = NULL;
 
 
+    	BirchCFarray[node].leaf = 0;
+    	BirchCFarray[node].parent_index = 0;
+    	BirchCFarray[node].NBchildren = 0;
+    	BirchCFarray[node].children_index = NULL;
+    }
 
-  long NBnode = 1; // number of nodes
+    node = 0;
 
 
 
-  // initialize to single node
-  node = 0;
-  BirchCFarray[node].N = 1;
-
-  NBnode = 1;
+    long NBnode = 1; // number of nodes
 
 
 
-  long k;
-  for(k=0; k<NBCFmax; k++) // Insert sample into tree
-  {
-      BirchCFarray[k].active = 0;
-      BirchCFarray[k].NBpt = 0;
+    // initialize to single node
+    node = 0;
+    BirchCFarray[node].N = 1;
 
-      BirchCFarray[k].sum = (float*) malloc(sizeof(float)*xysize);
-      BirchCFarray[k].ssum = (float*) malloc(sizeof(float)*xysize);
-
-      BirchCFarray[k].leaf = 1;
-      BirchCFarray[k].parent_index = -1;
-
-      BirchCFarray[k].NBchildren = 0;
-      BirchCFarray[k].children_index = (long*) malloc(sizeof(long)*B);
-
-      long kk;
-      for(kk=0;kk<B;kk++)
-              BirchCFarray[k].children_index[kk] = 0;
-  }
-
-
-  // first slice
-  k = 0;
-  BirchCFarray[k].active = 1;
-  BirchCFarray[k].NBpt = 1;
-  memcpy(BirchCFarray[k].sum, data.image[IDin].array.F, sizeof(float)*xysize);
-
-  long ii;
-  for(ii=0;ii<xysize;ii++)
-      BirchCFarray[k].ssum[ii] =
-  data.image[IDin].array.F[ii]*data.image[IDin].array.F[ii];
-
-
-  //
-  // Scan through array
-  // kin is input array index
-  //
-  long kin;
-  for(kin=1;kin<zsize;kin++)
-  {
-      k = 0; // root
-
-      while(BirchCFarray[k].leaf == 0) // if non-leaf, find path
-      {
-              double distmin = 0.0;
-              double dist;
-              long kkmin; // path
-
-
-              long kk = 0;
-              for(ii=0;ii<xysize;ii++)
-              {
-                      double tmpv;
-                      tmpv =
-  BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt
-  - data.image[IDin].array.F[kin*xysize+ii]; distmin += tmpv*tmpv;
-              }
-
-              for(kk=1;kk<BirchCFarray[k].NBchildren;kk++)
-              {
-                      double dist = 0.0;
-                      for(ii=0;ii<xysize;ii++)
-                      {
-                              double tmpv;
-                              tmpv =
-  BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt
-  - data.image[IDin].array.F[kin*xysize+ii]; dist += tmpv*tmpv;
-                      }
-                      if(dist<distmin)
-                      {
-                              distmin = dist;
-                              kkmin = kk;
-                      }
-              }
-              k = kkmin;
-      }
+    NBnode = 1;
 
 
 
-      // leaf node children point to input entries
-      if(BirchCFarray[k].leaf == 1) // If leaf node, add to leaf node
-      {
-              // Measure distance to existing
+    long k;
+    for(k=0; k<NBCFmax; k++) // Insert sample into tree
+    {
+    	BirchCFarray[k].active = 0;
+    	BirchCFarray[k].NBpt = 0;
 
-              if(BirchCFarray[k].NBpt == B-1) // split leaf node
-              {
+    	BirchCFarray[k].sum = (float*) malloc(sizeof(float)*xysize);
+    	BirchCFarray[k].ssum = (float*) malloc(sizeof(float)*xysize);
 
-                      // identify maximum distance pair
-                      double maxdist = 0.0;
-                      long kk1max, kk2max;
-                      long kk1, kk2;
+    	BirchCFarray[k].leaf = 1;
+    	BirchCFarray[k].parent_index = -1;
 
-                      for(kk1=0;kk1<BirchCFarray[k].NBpt;kk1++)
-                              for(kk2=kk1+1; kk2<BirchCFarray[k].NBpt;kk2++)
-                              {
-                                      double dist = 0.0;
-                                      for(ii=0;ii<xysize;ii++)
-                                      {
-                                              double tmpv;
-                                              tmpv =
-  BirchCFarray[BirchCFarray[k].children_index[kk1]].sum[ii] -
-  BirchCFarray[BirchCFarray[k].children_index[kk2]].sum[ii]; dist += tmpv*tmpv;
-                                      }
-                                      if(dist>maxdist)
-                                      {
-                                              kk1max = kk1;
-                                              kk2max = kk2;
-                                              maxdist = dist;
-                                      }
-                              }
+    	BirchCFarray[k].NBchildren = 0;
+    	BirchCFarray[k].children_index = (long*) malloc(sizeof(long)*B);
 
-                      // create two new leaf nodes
-                      long k1next, k2next;
-                      long ksearch = 0;
-                      while(BirchCFarray[ksearch].active==1)
-                              ksearch ++;
-                      k1next = ksearch;
-                      BirchCFarray[k1next].active = 1;
-                      BirchCFarray[k1next].NBpt = 0;
-
-                      while(BirchCFarray[ksearch].active==1)
-                              ksearch ++;
-                      k2next = ksearch;
-                      BirchCFarray[k2next].active = 1;
-                      BirchCFarray[k2next].NBpt = 0;
-
-                      // populate new leaf nodes
+    	long kk;
+    	for(kk=0;kk<B;kk++)
+    		BirchCFarray[k].children_index[kk] = 0;
+    }
 
 
-                      // edit source node
+    // first slice
+    k = 0;
+    BirchCFarray[k].active = 1;
+    BirchCFarray[k].NBpt = 1;
+    memcpy(BirchCFarray[k].sum, data.image[IDin].array.F, sizeof(float)*xysize);
 
-              }
-              else
-              {
-                      long kk = BirchCFarray[k].NBpt;
-                      BirchCFarray[k].children_index[kk] = kin;
-                      BirchCFarray[k].NBpt ++;
+    long ii;
+    for(ii=0;ii<xysize;ii++)
+    	BirchCFarray[k].ssum[ii] = data.image[IDin].array.F[ii]*data.image[IDin].array.F[ii];
 
-                      for(ii=0;ii<xysize;ii++)
-                      {
-                              BirchCFarray[k].sum[ii] +=
-  data.image[IDin].array.F[kin*xysize+ii]; BirchCFarray[k].ssum[ii] +=
-  data.image[IDin].array.F[kin*xysize+ii]*data.image[IDin].array.F[kin*xysize+ii];
-                      }
-              }
-      }
-      else
-      {
-              printf("ERROR: BIRCH scan ends up in npn-leaf\n");
-              exit(0);
-      }
+
+    //
+    // Scan through array
+    // kin is input array index
+    //
+    long kin;
+    for(kin=1;kin<zsize;kin++)
+    {
+    	k = 0; // root
+
+    	while(BirchCFarray[k].leaf == 0) // if non-leaf, find path
+    	{
+    		double distmin = 0.0;
+    		double dist;
+    		long kkmin; // path
+
+
+    		long kk = 0;
+    		for(ii=0;ii<xysize;ii++)
+    		{
+    			double tmpv;
+    			tmpv = BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt - data.image[IDin].array.F[kin*xysize+ii];
+    			distmin += tmpv*tmpv;
+    		}
+
+    		for(kk=1;kk<BirchCFarray[k].NBchildren;kk++)
+    		{
+    			double dist = 0.0;
+    			for(ii=0;ii<xysize;ii++)
+    			{
+    				double tmpv;
+    				tmpv = BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt - data.image[IDin].array.F[kin*xysize+ii];
+    				dist += tmpv*tmpv;
+    			}
+    			if(dist<distmin)
+    			{
+    				distmin = dist;
+    				kkmin = kk;
+    			}
+    		}
+    		k = kkmin;
+    	}
+
+
+
+    	// leaf node children point to input entries
+    	if(BirchCFarray[k].leaf == 1) // If leaf node, add to leaf node
+    	{
+    		// Measure distance to existing
+
+    		if(BirchCFarray[k].NBpt == B-1) // split leaf node
+    		{
+
+    			// identify maximum distance pair
+    			double maxdist = 0.0;
+    			long kk1max, kk2max;
+    			long kk1, kk2;
+
+    			for(kk1=0;kk1<BirchCFarray[k].NBpt;kk1++)
+    				for(kk2=kk1+1; kk2<BirchCFarray[k].NBpt;kk2++)
+    				{
+    					double dist = 0.0;
+    					for(ii=0;ii<xysize;ii++)
+    					{
+    						double tmpv;
+    						tmpv = BirchCFarray[BirchCFarray[k].children_index[kk1]].sum[ii] - BirchCFarray[BirchCFarray[k].children_index[kk2]].sum[ii];
+    						dist += tmpv*tmpv;
+    					}
+    					if(dist>maxdist)
+    					{
+    						kk1max = kk1;
+    						kk2max = kk2;
+    						maxdist = dist;
+    					}
+    				}
+
+    			// create two new leaf nodes
+    			long k1next, k2next;
+    			long ksearch = 0;
+    			while(BirchCFarray[ksearch].active==1)
+    				ksearch ++;
+    			k1next = ksearch;
+    			BirchCFarray[k1next].active = 1;
+    			BirchCFarray[k1next].NBpt = 0;
+
+    			while(BirchCFarray[ksearch].active==1)
+    				ksearch ++;
+    			k2next = ksearch;
+    			BirchCFarray[k2next].active = 1;
+    			BirchCFarray[k2next].NBpt = 0;
+
+    			// populate new leaf nodes
+
+
+    			// edit source node
+
+    		}
+    		else
+    		{
+    			long kk = BirchCFarray[k].NBpt;
+    			BirchCFarray[k].children_index[kk] = kin;
+    			BirchCFarray[k].NBpt ++;
+
+    			for(ii=0;ii<xysize;ii++)
+    			{
+    				BirchCFarray[k].sum[ii] += data.image[IDin].array.F[kin*xysize+ii];
+    				BirchCFarray[k].ssum[ii] += data.image[IDin].array.F[kin*xysize+ii]*data.image[IDin].array.F[kin*xysize+ii];
+    			}
+    		}
+    	}
+    	else
+    	{
+    		printf("ERROR: BIRCH scan ends up in npn-leaf\n");
+    		exit(0);
+    	}
 
 
 
 
-  }
+    }
 
 
 
-  for(k=0; k<NBCFmax; k++)
-  {
-      free(BirchCFarray[k].sum);
-      free(BirchCFarray[k].ssum);
-      free(BirchCFarray[k].children_index);
-  }
+    for(k=0; k<NBCFmax; k++)
+    {
+    	free(BirchCFarray[k].sum);
+    	free(BirchCFarray[k].ssum);
+    	free(BirchCFarray[k].children_index);
+    }
 
-  free(BirchCFarray);
-  */
+    free(BirchCFarray);
+    */
 
     return 0;
 }

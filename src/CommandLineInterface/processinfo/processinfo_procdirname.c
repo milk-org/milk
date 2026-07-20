@@ -7,7 +7,9 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
+
 #define SHAREDPROCDIR data.shmdir
+
 
 errno_t processinfo_procdirname(char *procdname)
 {

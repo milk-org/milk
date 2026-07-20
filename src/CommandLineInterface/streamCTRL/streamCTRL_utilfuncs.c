@@ -4,7 +4,9 @@
 
 #include <string.h>
 
+
 #include "CLIcore.h"
+
 
 /**
  * @brief Returns ID number corresponding to a name
@@ -38,6 +40,7 @@ imageID image_ID_from_images(IMAGE *images, const char *__restrict name)
     return -1;
 }
 
+
 /**
  * @brief Returns first available ID in image array
  *
@@ -63,6 +66,7 @@ imageID image_get_first_ID_available_from_images(IMAGE *images)
 
     return -1;
 }
+
 
 /**
  * @brief Get the process name by pid
@@ -95,6 +99,7 @@ errno_t get_process_name_by_pid(const int pid, char *pname)
 
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Get the maximum PID value from system

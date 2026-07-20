@@ -91,27 +91,27 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
     magma_int_t M, N;
 
     /**
-   *
-   * IDmatA is an image loaded as a M x N matrix
-   * IDmatAinv is an image loaded as a M x M matrix, representing the transpose
-   * of the pseudo inverse of IDmatA
-   *
-   * The input matrices can be 2D or a 3D images
-   *
-   * If 2D image :
-   *   IDmatA    M = xsize
-   *   IDmatA    N = ysize
-   *
-   * If 3D image :
-   *   IDmatA M = xsize*ysize
-   *   IDmatA N = ysize
-   *
-   *
-   */
+     *
+     * IDmatA is an image loaded as a M x N matrix
+     * IDmatAinv is an image loaded as a M x M matrix, representing the transpose of the pseudo inverse of IDmatA
+     *
+     * The input matrices can be 2D or a 3D images
+     *
+     * If 2D image :
+     *   IDmatA    M = xsize
+     *   IDmatA    N = ysize
+     *
+     * If 3D image :
+     *   IDmatA M = xsize*ysize
+     *   IDmatA N = ysize
+     *
+     *
+     */
 
     ///
-    /// MAGMA uses column-major matrices. For matrix A with dimension (M,N),
-    /// element A(i,j) is A[ j*M + i] i = 0 ... M j = 0 ... N
+    /// MAGMA uses column-major matrices. For matrix A with dimension (M,N), element A(i,j) is A[ j*M + i]
+    /// i = 0 ... M
+    /// j = 0 ... N
     ///
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);

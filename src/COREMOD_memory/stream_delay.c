@@ -104,9 +104,9 @@ static errno_t streamdelay(IMGID            inimg,
     // update circular buffer if new frame has arrived
     if (cnt0prev != inimg.md->cnt0)
     {
-        // printf("cnt %8ld %8ld   CIRC BUFFER UPDATE -> index %8ld / %8ld\n",
-        //        cnt0prev, inimg.md->cnt0, bufferindex_input, *timebuffsize);
-        //  new input frame
+        //printf("cnt %8ld %8ld   CIRC BUFFER UPDATE -> index %8ld / %8ld\n",
+        //       cnt0prev, inimg.md->cnt0, bufferindex_input, *timebuffsize);
+        // new input frame
 
         // update counter for next detection loop
         cnt0prev = inimg.md->cnt0;
@@ -135,10 +135,9 @@ static errno_t streamdelay(IMGID            inimg,
     struct timespec tdiff  = timespec_diff(tarray[bufferindex_output], tnow);
     double          tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-    // printf("%8ld  %8ld [%d]  tdiffv = %lf sec    %lf\n",
-    //        bufferindex_input, bufferindex_output, warray[bufferindex_output],
-    //        tdiffv, (*delaysec));
-    // fflush(stdout);
+    //printf("%8ld  %8ld [%d]  tdiffv = %lf sec    %lf\n",
+    //       bufferindex_input, bufferindex_output, warray[bufferindex_output], tdiffv, (*delaysec));
+    //fflush(stdout);
 
     int  updateflag              = 0;
     long bufferindex_output_last = 0;
@@ -156,7 +155,7 @@ static errno_t streamdelay(IMGID            inimg,
             bufferindex_output = 0;
         }
 
-        // printf("    advance %8ld %8ld\n", bufferindex_input, bufferindex_output);
+        //printf("    advance %8ld %8ld\n", bufferindex_input, bufferindex_output);
         tdiff  = timespec_diff(tarray[bufferindex_output], tnow);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }
@@ -283,8 +282,8 @@ INSERT_STD_FPSCLIfunctions
         arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
-        create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0,
-&IDout); free(arraytmp);
+        create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &IDout);
+        free(arraytmp);
     }
 
     *kkin = 0;
@@ -344,14 +343,12 @@ INSERT_STD_FPSCLIfunctions
 //            cnt0 = data.image[IDin].md[0].cnt0;
 
 //            if(cnt0 != cnt0old) { // new frame
-            clock_gettime(CLOCK_MILK, &t0array[*kkin]);  // record time of input
-frame
+            clock_gettime(CLOCK_MILK, &t0array[*kkin]);  // record time of input frame
 
             DEBUG_TRACEPOINT(" ");
             for(ii = 0; ii < xysize; ii++)
             {
-                data.image[IDimc].array.F[(*kkin) * xysize + ii] =
-data.image[IDin].array.F[ii];
+                data.image[IDimc].array.F[(*kkin) * xysize + ii] = data.image[IDin].array.F[ii];
             }
             (*kkin) ++;
             DEBUG_TRACEPOINT(" ");
@@ -395,8 +392,9 @@ data.image[IDin].array.F[ii];
             switch(timeavemode)
             {
 
-            case 0: // no time averaging - pick more recent frame that matches
-requirement DEBUG_TRACEPOINT(" "); if(cntskip > 0)
+            case 0: // no time averaging - pick more recent frame that matches requirement
+                DEBUG_TRACEPOINT(" ");
+                if(cntskip > 0)
                 {
                     char *ptr; // pointer address
 
@@ -406,8 +404,7 @@ requirement DEBUG_TRACEPOINT(" "); if(cntskip > 0)
                     ptr += SIZEOF_DATATYPE_FLOAT * xysize * *kkout;
 
                     memcpy(data.image[IDout].array.F, ptr,
-                           SIZEOF_DATATYPE_FLOAT * xysize);  // copy
-time-delayed input to output
+                           SIZEOF_DATATYPE_FLOAT * xysize);  // copy time-delayed input to output
 
                     COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
                     data.image[IDout].md[0].cnt0++;
@@ -415,8 +412,9 @@ time-delayed input to output
                 }
                 break;
 
-            default : // strict time window (note: other modes will be coded in
-the future) normframes = 0.0; DEBUG_TRACEPOINT(" ");
+            default : // strict time window (note: other modes will be coded in the future)
+                normframes = 0.0;
+                DEBUG_TRACEPOINT(" ");
 
                 for(ii = 0; ii < xysize; ii++)
                 {
@@ -428,14 +426,12 @@ the future) normframes = 0.0; DEBUG_TRACEPOINT(" ");
                     tdiff = timespec_diff(t0array[kkinscan], tnow);
                     tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-                    if((tdiffv > 0) && (fabs(tdiffv - 1.0e-6 * delayus) <
-*avedt))
+                    if((tdiffv > 0) && (fabs(tdiffv - 1.0e-6 * delayus) < *avedt))
                     {
                         float coeff = 1.0;
                         for(ii = 0; ii < xysize; ii++)
                         {
-                            arraytmpf[ii] += coeff *
-data.image[IDimc].array.F[kkinscan * xysize + ii];
+                            arraytmpf[ii] += coeff * data.image[IDimc].array.F[kkinscan * xysize + ii];
                         }
                         normframes += coeff;
                     }

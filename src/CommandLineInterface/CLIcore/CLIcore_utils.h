@@ -45,6 +45,7 @@ typedef const char *__restrict CONST_WORD;
 
 #define HELPDETAILSSTRINGEND "-------- END ---------"
 
+
 typedef struct
 {
     char *name;
@@ -53,6 +54,7 @@ typedef struct
 #define FARG_INPUTIM(imkey)                              \
     { CLIARG_STR, "." #imkey ".name",     "input image", \
       #imkey,     CLIARG_VISIBLE_DEFAULT, (void **) &imkey.name }
+
 
 typedef struct
 {
@@ -64,6 +66,7 @@ typedef struct
     uint32_t *NBkw;
     uint32_t *CBsize;
 } LOCVAR_OUTIMG2D;
+
 
 #define FARG_OUTIM_NAME(imkey)                                   \
     { CLIARG_STR, "." #imkey ".name",     "output image",        \
@@ -78,19 +81,23 @@ typedef struct
     { CLIARG_UINT32,          "." #imkey ".ysize",    "y size", "256", \
       CLIARG_VISIBLE_DEFAULT, (void **) &imkey.ysize, NULL }
 
+
 #define FARG_OUTIM_SHARED(imkey)                                          \
     { CLIARG_UINT32,         "." #imkey ".shared",    "shared flag", "0", \
       CLIARG_HIDDEN_DEFAULT, (void **) &imkey.shared, NULL }
+
 
 #define FARG_OUTIM_NBKW(imkey)                                     \
     { CLIARG_UINT32, "." #imkey ".NBkw",    "number keywords",     \
       "10",          CLIARG_HIDDEN_DEFAULT, (void **) &imkey.NBkw, \
       NULL }
 
+
 #define FARG_OUTIM_CBSIZE(imkey)                                     \
     { CLIARG_UINT32, "." #imkey ".CBsize",  "circ buffer size",      \
       "0",           CLIARG_HIDDEN_DEFAULT, (void **) &imkey.CBsize, \
       NULL }
+
 
 /** @brief Template for ouput image argument to CLI function
  *
@@ -98,6 +105,7 @@ typedef struct
 #define FARG_OUTIM2D(imkey)                                                   \
     FARG_OUTIM_NAME(imkey), FARG_OUTIM_XSIZE(imkey), FARG_OUTIM_YSIZE(imkey), \
         FARG_OUTIM_SHARED(imkey), FARG_OUTIM_NBKW(imkey), FARG_OUTIM_CBSIZE(imkey)
+
 
 // connect to and/or create output 2D image/stream
 //
@@ -120,6 +128,7 @@ typedef struct
     }                                                                                      \
     imcreateIMGID(&img);
 
+
 // binding between variables and function args/params
 #define STD_FARG_LINKfunction                                                      \
     for (int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF)); argi++) \
@@ -132,6 +141,7 @@ typedef struct
             *(farg[argi].indexptr) = fpsi;                                         \
         }                                                                          \
     }
+
 
 /** @brief Standard Function call wrapper
  *
@@ -163,6 +173,7 @@ typedef struct
         return retval;                                               \
     }
 
+
 /** @brief FPS conf function
  * Sets up the FPS and its parameters.\n
  * Optional parameter checking can be included.\n
@@ -183,8 +194,7 @@ typedef struct
  * - default initial value
  *
  * Equivalent code without using macro :
- *      function_parameter_add_entry(&fps, ".delayus", "Delay [us]",
- * FPTYPE_INT64, FPFLAG_DEFAULT_INPUT|FPFLAG_WRITERUN, NULL);
+ *      function_parameter_add_entry(&fps, ".delayus", "Delay [us]", FPTYPE_INT64, FPFLAG_DEFAULT_INPUT|FPFLAG_WRITERUN, NULL);
  * ### START CONFLOOP
  *
  * start function parameter conf loop\n
@@ -232,6 +242,7 @@ typedef struct
         data.fpsptr = NULL;                                                                     \
         return RETURN_SUCCESS;                                                                  \
     }
+
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                                       \
     int          processloopOK = 1;                                                                \
@@ -301,6 +312,7 @@ typedef struct
         processinfo_loopstart(processinfo);                                                        \
     }
 
+
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                                   \
     while (processloopOK == 1)                                                      \
     {                                                                               \
@@ -335,6 +347,7 @@ typedef struct
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT      \
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                                 \
     }                                                                                       \
@@ -373,6 +386,7 @@ typedef struct
         processinfo_cleanExit(processinfo);                                                 \
     }
 
+
 /**
  *
         if(data.fpsptr->cmdset.triggerdelayptr != NULL) {                      \
@@ -405,9 +419,8 @@ typedef struct
  * Equivalent code without using macros:
  *
  * char _IDin_name[200];
- * strncpy(_IDin_name,  functionparameter_GetParamPtr_STRING(&fps, ".in_name"),
- * FUNCTION_PARAMETER_STRMAXLEN); long _delayus =
- * functionparameter_GetParamValue_INT64(&fps, ".delayus");
+ * strncpy(_IDin_name,  functionparameter_GetParamPtr_STRING(&fps, ".in_name"), FUNCTION_PARAMETER_STRMAXLEN);
+ * long _delayus = functionparameter_GetParamValue_INT64(&fps, ".delayus");
  */
 #define INSERT_STD_FPSRUNfunction                                \
     static errno_t FPSRUNfunction()                              \
@@ -425,9 +438,9 @@ typedef struct
  * GET ARGUMENTS AND PARAMETERS
  * Try FPS implementation
  *
- * Set data.fpsname, providing default value as first arg, and set
- * data.FPS_CMDCODE value. Default FPS name will be used if CLI process has NOT
- * been named. See code in function_parameter.h for detailed rules.
+ * Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
+ * Default FPS name will be used if CLI process has NOT been named.
+ * See code in function_parameter.h for detailed rules.
  */
 #define INSERT_STD_FPSCLIfunction                                       \
     static errno_t CLIfunction(void)                                    \
@@ -526,7 +539,7 @@ typedef struct
  * "k10>im1" : number of keyword = 10
  * "c20>im1" : 20-sized circular buffer
  * "tf64>im1" : datatype is double (64 bit floating point)
- */
+*/
 static inline IMGID mkIMGID_from_name(CONST_WORD name)
 {
     IMGID img = { 0 };
@@ -554,7 +567,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
         while (pch != NULL)
         {
             pch1 = pch;
-            // printf("[%2d] %s\n", nbword, pch);
+            //printf("[%2d] %s\n", nbword, pch);
 
             if (strcmp(pch, "s") == 0)
             {
@@ -615,21 +628,21 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
             }
 
             /*            if(pch[0] == 'k')
-                  {
-                      int nbkw;
-                      sscanf(pch, "k%d", &nbkw);
-                      printf("    %d keywords\n", nbkw);
-                      img.NBkw = nbkw;
-                  }
+                        {
+                            int nbkw;
+                            sscanf(pch, "k%d", &nbkw);
+                            printf("    %d keywords\n", nbkw);
+                            img.NBkw = nbkw;
+                        }
 
-                  if(pch[0] == 'c')
-                  {
-                      int cbsize;
-                      sscanf(pch, "c%d", &cbsize);
-                      printf("    %d circular buffer size\n", cbsize);
-                      img.CBsize = cbsize;
-                  }
-      */
+                        if(pch[0] == 'c')
+                        {
+                            int cbsize;
+                            sscanf(pch, "c%d", &cbsize);
+                            printf("    %d circular buffer size\n", cbsize);
+                            img.CBsize = cbsize;
+                        }
+            */
             pch = strtok(NULL, ">");
             nbword++;
         }
@@ -644,11 +657,12 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
     return img;
 }
 
+
 /** make blank IMGID
  *
  * All fields are uninitialized
  * Can be used for comparison
- */
+*/
 static inline IMGID makeIMGID_blank()
 {
     IMGID img;
@@ -672,6 +686,7 @@ static inline IMGID makeIMGID_blank()
     return img;
 }
 
+
 static inline IMGID makeIMGID_2D(CONST_WORD name, uint32_t xsize, uint32_t ysize)
 {
     IMGID img   = mkIMGID_from_name(name);
@@ -693,6 +708,7 @@ static inline IMGID makeIMGID_3D(CONST_WORD name, uint32_t xsize, uint32_t ysize
     return img;
 }
 
+
 static inline int copyIMGID(IMGID *imgin, IMGID *imgout)
 {
     imgout->datatype = imgin->datatype;
@@ -710,6 +726,7 @@ static inline int copyIMGID(IMGID *imgin, IMGID *imgout)
     return RETURN_SUCCESS;
 }
 
+
 static inline imageID createimagefromIMGID(IMGID *img)
 {
     create_image_ID(img->name, img->naxis, img->size, img->datatype, img->shared, img->NBkw,
@@ -721,6 +738,7 @@ static inline imageID createimagefromIMGID(IMGID *img)
 
     return img->ID;
 }
+
 
 /** Create image according to IMGID entries of existing image
  */
@@ -747,6 +765,7 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img, IMGID *source_img
         target_img->md        = &data.image[target_img->ID].md[0];
         target_img->createcnt = data.image[target_img->ID].createcnt;
 
+
         target_img->size[0] = source_img->size[0];
         if (source_img->naxis > 1)
         {
@@ -760,6 +779,7 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img, IMGID *source_img
     return target_img->ID;
 }
 
+
 /** Create image according to IMGID entries
  *  See cloning creation function imcreatelikewiseIMGID()
  */
@@ -767,6 +787,7 @@ static inline imageID imcreateIMGID(IMGID *img)
 {
     return imcreatelikewiseIMGID(img, img);
 }
+
 
 static inline errno_t updateIMGIDcreationparams(IMGID *img)
 {
@@ -797,6 +818,7 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
     return img;
 }
 
+
 /** @brief Resolve image already in memory
  *
  *
@@ -810,9 +832,8 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
 {
     // IF:
     // Not resolved before OR create counter mismatch OR not used.
-    // Note: we are comparing img->createcnt to data.image[img->ID].createcnt to
-    // check if the image has been re-created, indicating that our pointers are
-    // stale.
+    // Note: we are comparing img->createcnt to data.image[img->ID].createcnt to check if the
+    // image has been re-created, indicating that our pointers are stale.
     if ((img->ID == -1) || (img->createcnt != data.image[img->ID].createcnt) ||
         (data.image[img->ID].used != 1))
     {
@@ -845,6 +866,7 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
 
     return img->ID;
 }
+
 
 /**
  * @brief Check if img complies to imgtemplate
@@ -937,8 +959,10 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
         printf("PASS\n");
     }
 
+
     return compErr;
 }
+
 
 /**
  * @brief Check if img complies to imgtemplate
@@ -1038,6 +1062,7 @@ static inline uint64_t IMGIDmdcompare(IMGID img, IMGID imgtemplate)
     return compErr;
 }
 
+
 /**
  * @brief Connnect to stream
  *
@@ -1059,6 +1084,7 @@ static inline IMGID stream_connect(char *__restrict imname)
     return img;
 }
 
+
 static inline IMGID stream_connect_create_2D(char *__restrict imname,
                                              uint32_t xsize,
                                              uint32_t ysize,
@@ -1066,6 +1092,7 @@ static inline IMGID stream_connect_create_2D(char *__restrict imname,
 {
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
+
 
     if (img.ID == -1)
     {
@@ -1106,6 +1133,7 @@ static inline IMGID stream_connect_create_2D(char *__restrict imname,
         create_image_ID(imname, 2, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
     }
 
+
     if (img.ID != -1)
     {
         imageID ID    = img.ID;
@@ -1143,6 +1171,7 @@ static inline IMGID stream_connect_create_3D(char *__restrict imname,
 {
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
+
 
     if (img.ID == -1)
     {
@@ -1187,6 +1216,7 @@ static inline IMGID stream_connect_create_3D(char *__restrict imname,
         create_image_ID(imname, 3, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
     }
 
+
     if (img.ID != -1)
     {
         imageID ID    = img.ID;
@@ -1217,5 +1247,6 @@ static inline IMGID stream_connect_create_3Df32(char *__restrict imname,
 {
     return stream_connect_create_3D(imname, xsize, ysize, zsize, _DATATYPE_FLOAT);
 }
+
 
 #endif

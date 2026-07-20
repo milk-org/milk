@@ -2,26 +2,29 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+#include <sys/stat.h>
 #include <pthread.h>
 #include <sys/mman.h> // mmap()
-#include <sys/stat.h>
 
 #include <ncurses.h>
 
 #include "CLIcore.h"
 #include <processtools.h>
 
-#include "COREMOD_tools/COREMOD_tools.h"
 #include "CommandLineInterface/timeutils.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
-#include "procCTRL_GetCPUloads.h"
 #include "procCTRL_PIDcollectSystemInfo.h"
+#include "procCTRL_GetCPUloads.h"
 
 #include "processinfo/processinfo_procdirname.h"
 
+
 #include "procCTRL_TUI.h"
 
+
 extern PROCESSINFOLIST *pinfolist;
+
 
 static FILE *fpdebuglog                = NULL;
 static int   processinfo_scan_debuglog = 0;
@@ -35,6 +38,7 @@ static int   processinfo_scan_debuglog = 0;
             fprintf(fpdebuglog, __VA_ARGS__);         \
         }                                             \
     } while (0)
+
 
 /**
  * ## Purpose
@@ -73,6 +77,7 @@ void *processinfo_scan(void *thptr)
 
     pinfop->scandebugline = __LINE__;
 
+
     // DEBUG LOG
     //
     if (getenv("MILK_DEBUGLOG_PROCESSINFO_SCAN"))
@@ -87,7 +92,8 @@ void *processinfo_scan(void *thptr)
 
     PROCESSINFO_SCAN_DEBUGLOG("START\n");
 
-    // long loopcnt = 0;
+
+    //long loopcnt = 0;
     while (pinfop->loop == 1)
     {
         DEBUG_TRACEPOINT(" ");
@@ -129,19 +135,20 @@ void *processinfo_scan(void *thptr)
             }
         }
 
+
         pinfop->SCANBLOCK_requested = 0;
         // acknowledge that request has been granted
-        // system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
+        //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
 
         DEBUG_TRACEPOINT(" ");
 
         // LOAD / UPDATE process information
-        // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is
-        // run exclusively of the dislpay
+        // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is run exclusively of the dislpay
         //
         pinfop->scandebugline = __LINE__;
 
         DEBUG_TRACEPOINT(" ");
+
 
         // SCAN PINFO LIST
         //
@@ -149,7 +156,7 @@ void *processinfo_scan(void *thptr)
         // pinfolistindex is index in PROCESSINFOLIST
         {
             long pinfolistindex = 0;
-            // long pinfodispindex = 0;
+            //long pinfodispindex = 0;
             while (pinfolistindex < PROCESSINFOLISTSIZE)
             {
                 if (pinfop->loop == 1)
@@ -157,12 +164,14 @@ void *processinfo_scan(void *thptr)
                     DEBUG_TRACEPOINT("pinfolistindex %ld / %d", pinfolistindex,
                                      PROCESSINFOLISTSIZE);
 
+
                     // shared memory file name
                     char        SM_fname[STRINGMAXLEN_FULLFILENAME];
                     struct stat file_stat;
 
                     pinfop->scandebugline            = __LINE__;
                     pinfop->PIDarray[pinfolistindex] = pinfolist->PIDarray[pinfolistindex];
+
 
                     // SHOULD WE (RE)LOAD ?
                     if (pinfolist->active[pinfolistindex] == 0) // inactive
@@ -177,6 +186,7 @@ void *processinfo_scan(void *thptr)
                         pinfop->updatearray[pinfolistindex] = 1;
                     }
 
+
                     // file has gone away
                     if (pinfolist->active[pinfolistindex] == 3)
                     {
@@ -186,6 +196,7 @@ void *processinfo_scan(void *thptr)
                     DEBUG_TRACEPOINT(" ");
 
                     pinfop->scandebugline = __LINE__;
+
 
                     // check if process info file exists
                     //
@@ -201,6 +212,7 @@ void *processinfo_scan(void *thptr)
                         pinfolist->active[pinfolistindex]   = 0;
                         pinfop->updatearray[pinfolistindex] = 0;
                     }
+
 
                     DEBUG_TRACEPOINT(" ");
 
@@ -218,6 +230,7 @@ void *processinfo_scan(void *thptr)
                             pinfolist->active[pinfolistindex] = 2;
                         }
                     }
+
 
                     DEBUG_TRACEPOINT(" ");
 
@@ -245,12 +258,14 @@ void *processinfo_scan(void *thptr)
             }
         }
 
+
         /** ### Build a time-sorted list of processes
-     *
-     *
-     *
-     */
+          *
+          *
+          *
+          */
         DEBUG_TRACEPOINT(" ");
+
 
         PROCESSINFO_SCAN_DEBUGLOG(" ==== pinfop->NBpindexActive = %d\n\n", pinfop->NBpindexActive);
 
@@ -271,7 +286,8 @@ void *processinfo_scan(void *thptr)
                 abort();
             }
 
-            // int listcnt = 0;
+
+            //int listcnt = 0;
             for (int pinfoactindex = 0; pinfoactindex < pinfop->NBpindexActive; pinfoactindex++)
             {
                 long pindex               = pinfop->pindexActive[pinfoactindex];
@@ -282,10 +298,12 @@ void *processinfo_scan(void *thptr)
             }
             DEBUG_TRACEPOINT(" ");
 
+
             if (pinfop->NBpindexActive > 0)
             {
                 quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
             }
+
 
             for (int index = 0; index < pinfop->NBpindexActive; index++)
             {
@@ -299,14 +317,16 @@ void *processinfo_scan(void *thptr)
             free(indexarray);
         }
 
+
         pinfop->scandebugline = __LINE__;
 
         pinfop->SCANBLOCK_OK = 0; // let display thread we're done
-        // system("echo \"scanblock OK write 0\" > steplog.sOKw0.txt");//TEST
+        //system("echo \"scanblock OK write 0\" > steplog.sOKw0.txt");//TEST
 
         pinfop->scandebugline = __LINE__;
 
         DEBUG_TRACEPOINT(" ");
+
 
         // CONNECT TO ALL ACTIVE SHMs
         //
@@ -317,6 +337,7 @@ void *processinfo_scan(void *thptr)
         for (int pinfodispindex = 0; pinfodispindex < max_pinfodispindex; pinfodispindex++)
         {
             int pinfolistindex = pinfop->pindexActive[pinfodispindex];
+
 
             // (RE)LOAD
 
@@ -332,6 +353,7 @@ void *processinfo_scan(void *thptr)
             }
 
             DEBUG_TRACEPOINT(" ");
+
 
             // COLLECT INFORMATION FROM PROCESSINFO FILE
             char SM_fname[STRINGMAXLEN_FULLFILENAME];
@@ -365,6 +387,7 @@ void *processinfo_scan(void *thptr)
 
                 pinfop->pinfodisp[write_pinfodispindex].pindex = pinfolistindex;
 
+
                 PROCESSINFO_SCAN_DEBUGLOG("     shm name : %s\n",
                                           pinfop->pinfoarray[pinfolistindex]->name);
                 strncpy(pinfop->pinfodisp[write_pinfodispindex].name,
@@ -372,11 +395,13 @@ void *processinfo_scan(void *thptr)
                 PROCESSINFO_SCAN_DEBUGLOG("     shm name : %s\n",
                                           pinfop->pinfodisp[write_pinfodispindex].name);
 
+
                 PROCESSINFO_SCAN_DEBUGLOG("     shm loopcnt : %ld\n",
                                           pinfop->pinfoarray[pinfolistindex]->loopcnt);
 
                 pinfop->pinfodisp[write_pinfodispindex].loopcnt =
                     pinfop->pinfoarray[pinfolistindex]->loopcnt;
+
 
                 DEBUG_TRACEPOINT(" ");
 
@@ -393,6 +418,7 @@ void *processinfo_scan(void *thptr)
             }
         }
         pinfop->NBpindexActive = write_pinfodispindex;
+
 
         // SCAN RESOURCES IF IN RESOURCES MODE
         //
@@ -416,8 +442,7 @@ void *processinfo_scan(void *thptr)
                         {
                             pinfop->scandebugline = __LINE__;
 
-                            // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero -
-                            // should be at least 1 (for main process)
+                            // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
                             PROCESSINFO_SCAN_DEBUGLOG(" pdispindex %3ld NBsubprocesses %d\n",
                                                       pdispindex,
                                                       pinfop->pinfodisp[pdispindex].NBsubprocesses);
@@ -532,7 +557,7 @@ void *processinfo_scan(void *thptr)
                                     }
                                 }
                             }
-                            // pdispindex++;
+                            //pdispindex++;
                         }
                         pdispindex++;
                     }
@@ -574,10 +599,12 @@ void *processinfo_scan(void *thptr)
         pthread_exit(&line);
     }
 
+
     if (processinfo_scan_debuglog == 1)
     {
         fclose(fpdebuglog);
     }
+
 
     return NULL;
 }

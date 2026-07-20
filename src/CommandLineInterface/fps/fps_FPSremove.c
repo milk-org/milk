@@ -40,42 +40,41 @@ errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
 
     // TEST
     /*
-  FILE *fp;
-  fp = fopen("rmlist.txt", "a");
-  fprintf(fp, "remove %s  %d\n", fpsfname, ret);
-  if(ret == -1)
-  {
-      switch(errcode)
-      {
+    FILE *fp;
+    fp = fopen("rmlist.txt", "a");
+    fprintf(fp, "remove %s  %d\n", fpsfname, ret);
+    if(ret == -1)
+    {
+        switch(errcode)
+        {
 
-          case EACCES:
-              fprintf(fp, "EACCES\n");
-              break;
+            case EACCES:
+                fprintf(fp, "EACCES\n");
+                break;
 
-          case EBUSY:
-              fprintf(fp, "EBUSY\n");
-              break;
+            case EBUSY:
+                fprintf(fp, "EBUSY\n");
+                break;
 
-          case ENOENT:
-              fprintf(fp, "ENOENT\n");
-              break;
+            case ENOENT:
+                fprintf(fp, "ENOENT\n");
+                break;
 
-          case EPERM:
-              fprintf(fp, "EPERM\n");
-              break;
+            case EPERM:
+                fprintf(fp, "EPERM\n");
+                break;
 
-          case EROFS:
-              fprintf(fp, "EROFS\n");
-              break;
+            case EROFS:
+                fprintf(fp, "EROFS\n");
+                break;
 
-      }
-  }
-  fclose(fp);
-  */
+        }
+    }
+    fclose(fp);
+    */
 
     // terminate tmux sessions
-    // 2x exit required: first one to exit bash, second one to exit tmux (there's
-    // a bash-in-bash running.)
+    // 2x exit required: first one to exit bash, second one to exit tmux (there's a bash-in-bash running.)
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" exit\" C-m", fps->md->name);
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" exit\" C-m", fps->md->name);
 

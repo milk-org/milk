@@ -38,7 +38,7 @@
 // Module short description
 #define MODULE_DESCRIPTION "Point Spread Function analysis"
 
-// extern struct DATA data;
+//extern struct DATA data;
 
 double FWHM_MEASURED;
 
@@ -479,7 +479,7 @@ float measure_FWHM(const char *ID_name, float xcenter, float ycenter, float step
     ID       = image_ID(ID_name);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
-    // nelements = naxes[0] * naxes[1];
+    //nelements = naxes[0] * naxes[1];
 
     dist = (float *) malloc(nb_step * sizeof(float));
     if (dist == NULL)
@@ -563,21 +563,19 @@ float measure_FWHM(const char *ID_name, float xcenter, float ycenter, float step
 /* finds a PSF center with no a priori position information */
 errno_t center_PSF(const char *ID_name, double *xcenter, double *ycenter, long box_size)
 {
-    imageID  ID;
-    long     n3; /* effective box size. =box_size if the star is not at the edge of
-              the image field */
-    double   back_cont;
-    double   centerx, centery;
-    double   ocenterx, ocentery;
-    double   total_fl;
+    imageID ID;
+    long   n3; /* effective box size. =box_size if the star is not at the edge of the image field */
+    double back_cont;
+    double centerx, centery;
+    double ocenterx, ocentery;
+    double total_fl;
     uint32_t naxes[2];
     int      nbiter = 10;
     long     iistart, iiend, jjstart, jjend;
 
     n3 = box_size;
 
-    /* for better performance, the background continuum needs to be computed for
-   * each image */
+    /* for better performance, the background continuum needs to be computed for each image */
     back_cont = arith_image_median(ID_name);
     /* first approximation given by barycenter after median of image */
     median_filter(ID_name, "PSFctmp", 1);
@@ -617,8 +615,7 @@ errno_t center_PSF(const char *ID_name, double *xcenter, double *ycenter, long b
             jjend = naxes[1] - 1;
         }
 
-        //      printf("effective box size is %ld - center is %f
-        //      %f\n",n3,ocenterx,ocentery);
+        //      printf("effective box size is %ld - center is %f %f\n",n3,ocenterx,ocentery);
         // fflush(stdout);
         centerx  = 0.0;
         centery  = 0.0;
@@ -641,9 +638,8 @@ errno_t center_PSF(const char *ID_name, double *xcenter, double *ycenter, long b
         centery /= total_fl;
 
         /*      printf("step %d\n",k);
-        printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is
-       %f\n",data.image[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
-    */
+            printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is %f\n",data.image[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
+        */
         ocenterx = centerx;
         ocentery = centery;
     }
@@ -659,12 +655,11 @@ errno_t center_PSF(const char *ID_name, double *xcenter, double *ycenter, long b
 /* finds a PSF center with no a priori position information */
 errno_t fast_center_PSF(const char *ID_name, double *xcenter, double *ycenter, long box_size)
 {
-    imageID  ID;
-    long     n3; /* effective box size. =box_size if the star is not at the edge of
-              the image field */
-    double   centerx, centery;
-    double   ocenterx, ocentery;
-    double   total_fl;
+    imageID ID;
+    long   n3; /* effective box size. =box_size if the star is not at the edge of the image field */
+    double centerx, centery;
+    double ocenterx, ocentery;
+    double total_fl;
     uint32_t naxes[2];
     int      nbiter = 6;
 
@@ -741,18 +736,15 @@ errno_t fast_center_PSF(const char *ID_name, double *xcenter, double *ycenter, l
             }
         }
 
-        //        printf("effective box size is %ld (%ld) - center is %f %f   [ %3ld
-        //        %3ld   %3ld %3ld]   ", n3, box_size, ocenterx, ocentery, iimin,
-        //        iimax, jjmin, jjmax);
+        //        printf("effective box size is %ld (%ld) - center is %f %f   [ %3ld %3ld   %3ld %3ld]   ", n3, box_size, ocenterx, ocentery, iimin, iimax, jjmin, jjmax);
         //       fflush(stdout);
 
         //    printf("total_fl is %f\n",total_fl);
         centerx /= total_fl;
         centery /= total_fl;
 
-        // printf("step %d\n",k);
-        // printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is
-        // %f\n",data.image[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
+        //printf("step %d\n",k);
+        //printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is %f\n",data.image[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
 
         ocenterx = centerx;
         ocentery = centery;
@@ -821,8 +813,7 @@ errno_t center_star(const char *ID_in_name, double *x_star, double *y_star)
     imageID  ID_in;
     uint32_t naxes[2];
     long     n1, n2, n3;
-    /* n2,n3 are the pixel coordinate, n3 is the pixel radius of the sampling box
-   * used.*/
+    /* n2,n3 are the pixel coordinate, n3 is the pixel radius of the sampling box used.*/
     double sum, coeff;
     double xsum, ysum;
     int    max_nb_iter = 500;
@@ -1222,16 +1213,14 @@ errno_t extract_psf(const char *ID_name, const char *out_name, long size)
 
     printf("PSF center = %f %f   extracting window size %ld\n", xcenter[0], ycenter[0], size);
     delete_image_ID("tmpcen1", DELETE_IMAGE_ERRMODE_WARNING);
-    /*  arith_image_extract2D(ID_name,out_name,size,size,((long)
-   * (xcenter[0]+0.5))-(size/2),((long) (ycenter[0]+0.5))-(size/2));*/
+    /*  arith_image_extract2D(ID_name,out_name,size,size,((long) (xcenter[0]+0.5))-(size/2),((long) (ycenter[0]+0.5))-(size/2));*/
 
     arith_image_extract2D(ID_name, "tmpf", size, size, ((long) (xcenter[0] + 0.5)) - (size / 2),
                           ((long) (ycenter[0] + 0.5)) - (size / 2));
 
     fft_image_translate("tmpf", out_name, xcenter[0] - ((long) (xcenter[0] + 0.5)),
                         ycenter[0] - ((long) (ycenter[0] + 0.5)));
-    // arith_image_translate("tmpf", out_name,xcenter[0]-((long)
-    // (xcenter[0]+0.5)), ycenter[0]-((long) (ycenter[0]+0.5)));
+    //arith_image_translate("tmpf", out_name,xcenter[0]-((long) (xcenter[0]+0.5)), ycenter[0]-((long) (ycenter[0]+0.5)));
 
     delete_image_ID("tmpf", DELETE_IMAGE_ERRMODE_WARNING);
     free(xcenter);

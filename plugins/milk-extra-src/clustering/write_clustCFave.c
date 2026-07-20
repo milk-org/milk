@@ -4,10 +4,11 @@
 
 #include <math.h>
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "clustering_defs.h"
+
 
 errno_t write_clustCFave(CLUSTERTREE *ctree, const char *__restrict outdname)
 {

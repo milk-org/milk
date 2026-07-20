@@ -117,7 +117,7 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
 
             data.image[ID1].array.F[jj1 * xsize1 + ii1] = array[(long) (perc * cnt)];
             //	data.image[IDx].array.F[jj1*xsize1+ii1] = 0.5*(iis+iie);
-            // data.image[IDy].array.F[jj1*xsize1+ii1] = 0.5*(jjs+jje);
+            //data.image[IDy].array.F[jj1*xsize1+ii1] = 0.5*(jjs+jje);
         }
     }
     free(array);

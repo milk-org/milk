@@ -10,7 +10,7 @@
 double Ptrunc(double a, double b, double c);
 
 /* ------------------------------------------------------------------------- */
-/* predefined functions    image, image  -> image */
+/* predefined functions    image, image  -> image                                                    */
 /* ------------------------------------------------------------------------- */
 
 int arith_image_fmod_byID(long ID1, long ID2, long IDout);

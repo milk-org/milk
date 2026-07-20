@@ -29,6 +29,7 @@ static int   DLib_index;
 static void *DLib_handle[1000];
 static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
+
 errno_t load_sharedobj(const char *__restrict libname)
 {
     DEBUG_TRACE_FSTART();
@@ -41,7 +42,7 @@ errno_t load_sharedobj(const char *__restrict libname)
     int mmatch = -1;
     for (int m = 0; m < data.NBmodule; m++)
     {
-        // printf("  [%03d] %s\n", m, data.module[m].sofilename);
+        //printf("  [%03d] %s\n", m, data.module[m].sofilename);
         if (strcmp(libnameloaded, data.module[m].sofilename) == 0)
         {
             mmatch = m;
@@ -58,7 +59,7 @@ errno_t load_sharedobj(const char *__restrict libname)
     if (!DLib_handle[DLib_index])
     {
         fprintf(stderr, KRED "%s\n" KRES, dlerror());
-        // exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
     }
     else
     {
@@ -71,6 +72,7 @@ errno_t load_sharedobj(const char *__restrict libname)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 errno_t load_module_shared(const char *__restrict modulename)
 {
@@ -95,8 +97,7 @@ errno_t load_module_shared(const char *__restrict modulename)
     }
 
     // Assemble absolute path module filename
-    // printf("Searching for shared object in directory MILK_INSTALLDIR/lib :
-    // %s/lib\n", getenv("MILK_INSTALLDIR"));
+    //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
     DEBUG_TRACEPOINT("Searching for shared object in directory [data.installdir]/lib : "
                      "%s/lib",
                      data.installdir);
@@ -120,16 +121,18 @@ errno_t load_module_shared(const char *__restrict modulename)
 
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
 
+
     // a custom module is about to be loaded, so we set the type accordingly
-    // this variable will be written by module register function into module
-    // struct
+    // this variable will be written by module register function into module struct
     strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
     strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
 
     if (load_sharedobj(libname) == RETURN_SUCCESS)
     {
         // RegisterModule called here
     }
+
 
     data.module[data.moduleindex].type = MODULE_TYPE_CUSTOMLOAD;
 
@@ -139,9 +142,11 @@ errno_t load_module_shared(const char *__restrict modulename)
     strncpy(data.module[data.moduleindex].loadname, data.moduleloadname,
             STRINGMAXLEN_MODULE_LOADNAME - 1);
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 errno_t load_module_shared_local()
 {
@@ -177,8 +182,8 @@ errno_t load_module_shared_local()
                 if (dot && !strcmp(dot, ".so"))
                 {
                     WRITE_FULLFILENAME(libname, "%s/lib/%s", data.installdir, dir->d_name);
-                    // printf("%02d   (re-?) LOADING shared object  %40s -> %s\n",
-                    // DLib_index, dir->d_name, libname); fflush(stdout);
+                    //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
+                    //fflush(stdout);
 
                     printf("    [%5d] Loading shared object "
                            "\"%s\"\n",
@@ -192,7 +197,7 @@ errno_t load_module_shared_local()
                                      "        %s\n" KRES,
                                 iter, DLib_index, dlerror());
                         fflush(stderr);
-                        // exit(EXIT_FAILURE);
+                        //exit(EXIT_FAILURE);
                         loopOK = 0;
                     }
                     else
@@ -222,11 +227,12 @@ errno_t load_module_shared_local()
         exit(2);
     }
 
-    // printf("All libraries successfully loaded\n");
+    //printf("All libraries successfully loaded\n");
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 errno_t RegisterModule(const char *__restrict FileName,
                        const char *__restrict PackageName,
@@ -243,6 +249,7 @@ errno_t RegisterModule(const char *__restrict FileName,
     data.moduleindex = moduleindex; // current module index
 
     data.NBmodule++;
+
 
     if (strlen(data.modulename) == 0)
     {
@@ -282,7 +289,9 @@ errno_t RegisterModule(const char *__restrict FileName,
 
     data.module[moduleindex].type = data.moduletype;
 
-    // printf("--- libnameloaded : %s\n", libnameloaded);
+
+    //printf("--- libnameloaded : %s\n", libnameloaded);
+
 
     if (data.progStatus == 0)
     {
@@ -291,8 +300,8 @@ errno_t RegisterModule(const char *__restrict FileName,
         {
             printf(".");
         }
-        //	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule,
-        // PackageName, FileName); 	fflush(stdout);
+        //	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+        //	fflush(stdout);
     }
 
     if (data.progStatus == 1)
@@ -312,22 +321,24 @@ errno_t RegisterModule(const char *__restrict FileName,
         fflush(stdout);
     }
 
+
     // default
     // may be overridden by load_module_shared
     //
-    // data.moduletype = MODULE_TYPE_STARTUP;
+    //data.moduletype = MODULE_TYPE_STARTUP;
 
     data.module[data.moduleindex].type = MODULE_TYPE_STARTUP;
 
-    // strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
+    //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
     strncpy(data.module[data.moduleindex].sofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
-    // strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
+    //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
     strncpy(data.module[data.moduleindex].loadname, "", STRINGMAXLEN_MODULE_LOADNAME - 1);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 // Legacy function
 //
@@ -401,6 +412,7 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
     return (data.NBcmd);
 }
 
+
 /**
  Register command
 Replaces legacy function RegisterCLIcommand
@@ -448,15 +460,18 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
         strncpy(data.cmd[data.NBcmd].module, data.modulename, STRINGMAXLEN_MODULE_NAME - 1);
     }
 
+
     DEBUG_TRACEPOINT("settingsrcfile to %s", CLIcmddata.sourcefilename);
     strncpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename, STRINGMAXLEN_CMD_SRCFILE - 1);
     data.cmd[data.NBcmd].fp = CLIfptr;
     strncpy(data.cmd[data.NBcmd].info, CLIcmddata.description, STRINGMAXLEN_CMD_INFO - 1);
 
+
     // assemble argument syntax string for help
     char argstring[STRINGMAXLEN_CMD_SYNTAX];
     CLIhelp_make_argstring(CLIcmddata.funcfpscliarg, CLIcmddata.nbarg, argstring);
     strncpy(data.cmd[data.NBcmd].syntax, argstring, STRINGMAXLEN_CMD_SYNTAX - 1);
+
 
     // assemble example string for help
     char cmdexamplestring[STRINGMAXLEN_CMD_EXAMPLE];
@@ -464,7 +479,9 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
                                   cmdexamplestring);
     strncpy(data.cmd[data.NBcmd].example, cmdexamplestring, STRINGMAXLEN_CMD_EXAMPLE - 1);
 
+
     strncpy(data.cmd[data.NBcmd].Ccall, "--callstring--", STRINGMAXLEN_CMD_CCALL - 1);
+
 
     DEBUG_TRACEPOINT("define arguments to CLI function from content of "
                      "CLIcmddata.funcfpscliarg");
@@ -492,9 +509,9 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
             switch (data.cmd[data.NBcmd].argdata[argi].type)
             {
                 /*case CLIARG_FLOAT:
-            data.cmd[data.NBcmd].argdata[argi].val.f = atof(
-                        CLIcmddata.funcfpscliarg[argi].example);
-            break;*/
+                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;*/
 
             case CLIARG_FLOAT32:
                 data.cmd[data.NBcmd].argdata[argi].val.f32 =
@@ -507,9 +524,9 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
                 break;
 
                 /*case CLIARG_LONG:
-            data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                        CLIcmddata.funcfpscliarg[argi].example);
-            break;*/
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;*/
 
             case CLIARG_INT32:
                 data.cmd[data.NBcmd].argdata[argi].val.i32 =
@@ -556,7 +573,9 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
 
     DEBUG_TRACEPOINT("define CLI function flags from content of CLIcmddata.flags");
 
+
     data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
+
 
     // set default values
     //

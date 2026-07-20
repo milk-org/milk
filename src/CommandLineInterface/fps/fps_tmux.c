@@ -12,6 +12,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
 /** @brief Kill FPS tmux sesssion
  *
  */
@@ -40,6 +41,7 @@ errno_t functionparameter_FPS_tmux_attach(FUNCTION_PARAMETER_STRUCT *fps)
     return RETURN_SUCCESS;
 }
 
+
 /** @brief Initialize FPS tmux sesssion
  *
  */
@@ -60,6 +62,7 @@ errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps)
     sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d", fps->md->name);
 
+
     sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux rename-window -t %s:0 ctrl", fps->md->name);
     sleep(tmuxwait);
@@ -67,6 +70,7 @@ errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps)
     sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n run", fps->md->name);
     sleep(tmuxwait);
+
 
     // Write functions to tmux windows
     //
@@ -111,6 +115,7 @@ errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps)
     // then local fpstmuxenv
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" source fpstmuxenv\" C-m", fps->md->name);
 
+
     // confstart
     //
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" bash\" C-m",
@@ -121,6 +126,7 @@ errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps)
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" source ../fpstmuxenv\" C-m",
                            fps->md->name);
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" source  fpstmuxenv\" C-m", fps->md->name);
+
 
     snprintf(functionstring, funcstring_maxlen,
              " function fpsconfstart {\n"

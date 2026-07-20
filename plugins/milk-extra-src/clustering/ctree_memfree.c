@@ -13,7 +13,7 @@ errno_t ctree_memfree(CLUSTERTREE *ctree)
         if ((ctree->CFarray[CFindex].status && CLUSTER_CF_STATUS_MEMALLOC))
         {
             free(ctree->CFarray[CFindex].childindex);
-            // free(ctree->CFarray[CFindex].leafindex);
+            //free(ctree->CFarray[CFindex].leafindex);
             free(ctree->CFarray[CFindex].datasumvec);
             free(ctree->CFarray[CFindex].dataposvec);
         }

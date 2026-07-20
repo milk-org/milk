@@ -6,8 +6,8 @@
  * @file    create_image.c
  * @brief   create images and streams
  */
-#include "create_image.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "create_image.h"
 #include "image_ID.h"
 #include "list_image.h"
 #include "stream_sem.h"

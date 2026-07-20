@@ -11,14 +11,16 @@
  *
  */
 
+
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
 #endif
 
-#include <ncurses.h>
-#include <pthread.h>
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <ncurses.h>
+#include <pthread.h>
+
 
 #include "CommandLineInterface/timeutils.h"
 
@@ -26,8 +28,8 @@ typedef int errno_t;
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-// default location of file mapped semaphores, can be over-ridden by env
-// variable MILK_SHM_DIR
+
+// default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
 #define SHAREDSHMDIR data.shmdir
 
 #include "streamCTRL_TUI.h"
@@ -41,9 +43,12 @@ typedef int errno_t;
 #include "streamCTRL_scan.h"
 #include "streamCTRL_utilfuncs.h"
 
+
 #define ctrl(x) ((x) & 0x1f)
 
+
 static short unsigned int wrow, wcol;
+
 
 // current streamCTRL TUI status
 
@@ -62,6 +67,7 @@ struct streamCTRL_TUI_parameters
     float      frequ;                   // Hz
     long       ssindex[streamNBID_MAX]; // sorted index array
 } sTUIparam;
+
 
 static void streamCTRL_TUI_exit()
 {
@@ -274,7 +280,7 @@ static errno_t streamCTRL_keyinput_process(int ch, streamCTRLarg_struct *streamC
             }
             else
             {
-                // printf("[%d]", (int) c);
+                //printf("[%d]", (int) c);
                 putchar(c); // echo on screen
                 stringindex++;
             }
@@ -290,6 +296,7 @@ static errno_t streamCTRL_keyinput_process(int ch, streamCTRLarg_struct *streamC
     }
     return EXIT_SUCCESS;
 }
+
 
 /**
  * @brief Control screen for stream structures
@@ -310,17 +317,21 @@ errno_t streamCTRL_CTRLscreen()
     sTUIparam.SORT_TOGGLE        = 0;
     sTUIparam.frequ              = 32.0; // Hz
 
+
     int stringmaxlen = 300;
 
     // Display fields
     STREAMINFO    *streaminfo;
     STREAMINFOPROC streaminfoproc;
 
+
     //    long dindex;           // display index
     long doffsetindex = 0; // offset index if more entries than can be displayed
 
+
     int  monstrlen = 200;
     char monstring[monstrlen];
+
 
     DEBUG_TRACEPOINT("function start ");
 
@@ -377,6 +388,7 @@ errno_t streamCTRL_CTRLscreen()
     streamCTRLdata.streaminfoproc = &streaminfoproc;
     streamCTRLdata.images         = streamCTRLimages;
 
+
     // catch signals (CTRL-C etc)
     //
     set_signal_catch();
@@ -399,12 +411,14 @@ errno_t streamCTRL_CTRLscreen()
     TUI_init_terminal(&wrow, &wcol);
     atexit(streamCTRL_TUI_exit);
 
+
     long long loopcnt = 0;
+
 
     streaminfoproc.filter       = 0;
     streaminfoproc.NBstream     = 0;
     streaminfoproc.twaitus      = 50000; // 20 Hz
-    streaminfoproc.fuserUpdate0 = 1;     // update on first instance
+    streaminfoproc.fuserUpdate0 = 1;     //update on first instance
 
     // inodes that are upstream of current selection
     int    NBupstreaminodeMAX = 100;
@@ -442,6 +456,7 @@ errno_t streamCTRL_CTRLscreen()
 
     DEBUG_TRACEPOINT("Scan thread started");
 
+
     loopcnt = 0;
 
     DEBUG_TRACEPOINT("get terminal size");
@@ -463,7 +478,7 @@ errno_t streamCTRL_CTRLscreen()
         }
         DEBUG_TRACEPOINT(" ");
 
-        // if(fuserUpdate != 1) // don't wait if ongoing fuser scan
+        //if(fuserUpdate != 1) // don't wait if ongoing fuser scan
 
         usleep((long) (1000000.0 / sTUIparam.frequ));
         DEBUG_TRACEPOINT(" ");
@@ -480,6 +495,7 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT("Process input character");
         streamCTRL_keyinput_process(ch, &streamCTRLdata);
 
+
         DEBUG_TRACEPOINT("Input character processed");
 
         if (sTUIparam.dindexSelected < 0)
@@ -494,25 +510,26 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT("Erase screen");
         erase();
 
-        // attron(A_BOLD);
+        //attron(A_BOLD);
         screenprint_setbold();
         snprintf(monstring, monstrlen,
                  "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) "
                  "FOR HELP",
                  wrow, wcol, getpid());
-        // streamCTRL__print_header(monstring, '-');
+        //streamCTRL__print_header(monstring, '-');
         DEBUG_TRACEPOINT("Print header");
         TUI_print_header(monstring, '-');
-        // attroff(A_BOLD);
+        //attroff(A_BOLD);
         screenprint_unsetbold();
 
         DEBUG_TRACEPOINT("Start display");
 
         if (sTUIparam.DisplayMode == DISPLAY_MODE_HELP) // help
         {
-            // int attrval = A_BOLD;
+            //int attrval = A_BOLD;
 
             DEBUG_TRACEPOINT(" ");
+
 
             print_help_entry("x", "Exit");
 
@@ -738,7 +755,7 @@ errno_t streamCTRL_CTRLscreen()
             }
 
             screenprint_unsetbold();
-            // attroff(A_BOLD);
+            //attroff(A_BOLD);
 
             DEBUG_TRACEPOINT(" ");
 
@@ -850,6 +867,7 @@ errno_t streamCTRL_CTRLscreen()
                 doffsetindex = 0;
             }
 
+
             // DISPLAY
             //
             //
@@ -868,6 +886,7 @@ errno_t streamCTRL_CTRLscreen()
                     continue;
                 }
 
+
                 while ((streamCTRLimages[streaminfo[sindex].ID].used == 0) &&
                        (dindex < sTUIparam.NBsindex))
                 {
@@ -877,13 +896,13 @@ errno_t streamCTRL_CTRLscreen()
                     ID     = streaminfo[sindex].ID;
                 }
 
+
                 int downstreammin = NO_DOWNSTREAM_INDEX;
                 // minumum downstream index
                 // looks for inodeselected in the list of upstream inodes
                 // picks the smallest corresponding index
-                // for example, if equal to 3, the current inode is a 3-rd gen children
-                // of selected inode default initial value 100 is a placeholder
-                // indicating it is not a child
+                // for example, if equal to 3, the current inode is a 3-rd gen children of selected inode
+                // default initial value 100 is a placeholder indicating it is not a child
 
                 DEBUG_TRACEPOINT(" ");
 
@@ -910,11 +929,13 @@ errno_t streamCTRL_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
 
+
                 if (streaminfo[sindex].ISIOretval != IMAGESTREAMIO_SUCCESS)
                 {
                     if (DisplayFlag == 1)
                     {
                         TUI_printfw("          ");
+
 
                         if ((dindex == sTUIparam.dindexSelected) &&
                             (sTUIparam.DisplayDetailLevel == 0))
@@ -924,6 +945,7 @@ errno_t streamCTRL_CTRLscreen()
 
                         TUI_printfw("%-*.*s", DispName_NBchar, DispName_NBchar,
                                     streaminfo[sindex].sname);
+
 
                         screenprint_setcolor(4);
                         TUI_printfw("ERROR:");
@@ -944,6 +966,7 @@ errno_t streamCTRL_CTRLscreen()
                             TUI_printfw("failed verification");
                             break;
                         }
+
 
                         if (dindex == sTUIparam.dindexSelected)
                         {
@@ -1011,6 +1034,7 @@ errno_t streamCTRL_CTRLscreen()
                             streamCTRLimages[ID].used, streamCTRLimages[ID].name,
                             streaminfo[sindex].ISIOretval, IMAGESTREAMIO_SUCCESS);
 
+
                         print_pid_mode = PRINT_PID_DEFAULT;
                         if (streamCTRLimages[ID].used == 1)
                         {
@@ -1073,15 +1097,15 @@ errno_t streamCTRL_CTRLscreen()
                         }
 
                         /*if((int) strlen(streaminfo[sindex].sname) > DispName_NBchar)
-            {
-                attron(COLOR_PAIR(9));
-                TUI_printfw("+");
-                attroff(COLOR_PAIR(9));
-            }
-            else
-            {
-                TUI_printfw(" ");
-            }*/
+                        {
+                            attron(COLOR_PAIR(9));
+                            TUI_printfw("+");
+                            attroff(COLOR_PAIR(9));
+                        }
+                        else
+                        {
+                            TUI_printfw(" ");
+                        }*/
                     }
 
                     DEBUG_TRACEPOINT(" ");
@@ -1364,6 +1388,7 @@ errno_t streamCTRL_CTRLscreen()
                                 TUI_printfw("  max          : %9.3f us    %9.3f us\n", p100us,
                                             p100us - tave);
 
+
                                 free(dtarray);
 #endif
                             }
@@ -1417,6 +1442,7 @@ errno_t streamCTRL_CTRLscreen()
                                 pid_t pid =
                                     streamCTRLimages[ID].streamproctrace[spti].procwrite_PID;
 
+
                                 DEBUG_TRACEPOINT("stream process trace step %d: triggermode", spti);
 
                                 switch (streamCTRLimages[ID].streamproctrace[spti].triggermode)
@@ -1468,6 +1494,7 @@ errno_t streamCTRL_CTRLscreen()
                                 DEBUG_TRACEPOINT(" ");
                             }
                         }
+
 
                         DEBUG_TRACEPOINT(" ");
                         if ((sTUIparam.DisplayMode == DISPLAY_MODE_SUMMARY) && (DisplayFlag == 1))

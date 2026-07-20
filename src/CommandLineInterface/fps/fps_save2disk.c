@@ -20,16 +20,19 @@
 #include "fps_WriteParameterToDisk.h"
 #include "fps_printparameter_valuestring.h"
 
+
 int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry, const char *paramname)
 {
     int pindex;
 
     pindex = functionparameter_GetParamIndex(fpsentry, paramname);
 
+
     functionparameter_WriteParameterToDisk(fpsentry, pindex, "setval", "SaveParam2disk");
 
     return RETURN_SUCCESS;
 }
+
 
 int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry, char *dirname)
 {
@@ -84,6 +87,7 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry, char
     return RETURN_SUCCESS;
 }
 
+
 /** @brief save entire FPS to disk
  *
  * Writes in subdirectory fps datatir
@@ -112,6 +116,7 @@ int functionparameter_SaveFPS2disk(FUNCTION_PARAMETER_STRUCT *fps)
 
     return RETURN_SUCCESS;
 }
+
 
 /** @brief Write archive script to .log2fps entry
  *
@@ -184,11 +189,11 @@ errno_t functionparameter_write_archivescript(FUNCTION_PARAMETER_STRUCT *fps)
     fclose(fplogscript);
     chmod(ffname, S_IRWXU | S_IRWXG | S_IROTH);
 
-    //    functionparameter_SetParamValue_STRING(fps, ".conf.archivescript",
-    //    ffname);
+    //    functionparameter_SetParamValue_STRING(fps, ".conf.archivescript", ffname);
 
     return RETURN_SUCCESS;
 }
+
 
 /** @brief Save image as FITS
  *
@@ -223,6 +228,7 @@ errno_t fps_write_RUNoutput_image(FUNCTION_PARAMETER_STRUCT *fps,
     return RETURN_SUCCESS;
 }
 
+
 /** @brief Save text file
  *
  * Standard function to save output of FPS RUN function.
@@ -256,6 +262,7 @@ FILE *fps_write_RUNoutput_file(FUNCTION_PARAMETER_STRUCT *fps,
     return fp;
 }
 
+
 /** @brief Get file extension
  */
 static char *get_filename_ext(const char *filename)
@@ -267,6 +274,7 @@ static char *get_filename_ext(const char *filename)
     }
     return dot + 1;
 }
+
 
 static char *remove_filename_ext(const char *filename)
 {
@@ -284,6 +292,7 @@ static char *remove_filename_ext(const char *filename)
     }
     return tmpstring;
 }
+
 
 /** @brief Copy file
  */
@@ -315,6 +324,7 @@ static errno_t filecopy(char *sourcefilename, char *destfilename)
     return RETURN_SUCCESS;
 }
 
+
 /** @brief Save FPS from datadir to confdir
  *
  *	Scan datadir, looking for .outlog file(s).
@@ -344,7 +354,7 @@ errno_t fps_datadir_to_confdir(FUNCTION_PARAMETER_STRUCT *fps)
 
     while ((indirentry = readdir(indir)) != NULL)
     {
-        // printf("%s\n", indirentry->d_name);
+        //printf("%s\n", indirentry->d_name);
         file_ext = get_filename_ext(indirentry->d_name);
 
         if (strcmp(file_ext, "outlog") == 0)
@@ -368,7 +378,7 @@ errno_t fps_datadir_to_confdir(FUNCTION_PARAMETER_STRUCT *fps)
     closedir(indir);
     closedir(outdir);
 
-    // sleep(10);
+    //sleep(10);
 
     return RETURN_SUCCESS;
 }

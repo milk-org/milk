@@ -39,6 +39,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
     int NBkwn;
     int l;
 
+
     // FPS list file
     FILE *fpfpslist                = NULL;
     int   fpslistcnt               = 0;
@@ -48,10 +49,12 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
     static int  shmdirname_init                   = 0;
     static char shmdname[STRINGMAXLEN_SHMDIRNAME] = { 0 };
 
+
     for (int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
     {
         keywnode[kindex].NBchild = 0;
     }
+
 
     // scan filesystem for fps entries
 
@@ -68,6 +71,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
         shmdirname_init = 1;
     }
 
+
     // disconnect previous fps
     for (fpsindex = 0; fpsindex < NB_FPS_MAX; fpsindex++)
     {
@@ -76,6 +80,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
             function_parameter_struct_disconnect(&fps[fpsindex]);
         }
     }
+
 
     // request match to file ./fpscomd/fpslist.txt
     if (mode & 0x0001)
@@ -129,6 +134,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
     keywnode[0].NBchild = 0;
     NBkwn               = 1;
 
+
     // scan directory for FPS files
     //
     DIR           *d;
@@ -161,6 +167,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                 }
             }
 
+
             if (mode & 0x0001) // enforce match to list
             {
                 int matchOKlist = 0;
@@ -181,6 +188,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
 
                 matchOK *= matchOKlist;
             }
+
 
             if ((pch) && (matchOK == 1))
             {
@@ -213,7 +221,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                     char shmdname[STRINGMAXLEN_DIRNAME];
                     function_parameter_struct_shmdirname(shmdname);
 
-                    // fps_symlink[fpsindex] = 1;
+                    //fps_symlink[fpsindex] = 1;
                     if (snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", shmdname,
                                  dir->d_name) < 0)
                     {
@@ -239,14 +247,13 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                         ii++;
                     }
 
-                    //                        strncpy(streaminfo[sindex].linkname,
-                    //                        linkname, nameNBchar);
+                    //                        strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
                 }
-                // else {
-                //   fps_symlink[fpsindex] = 0;
-                // }
+                //else {
+                //  fps_symlink[fpsindex] = 0;
+                //}
 
-                // fps_symlink[fpsindex] = 0;
+                //fps_symlink[fpsindex] = 0;
 
                 char fpsname[STRINGMAXLEN_FPS_NAME];
                 long strcplen  = strlen(dir->d_name) - strlen(".fps.shm");
@@ -267,8 +274,10 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                     fflush(stdout);
                 }
 
+
                 long NBparamMAX =
                     function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
+
 
                 // FILTERING
                 int fpskeep = 1; // 0 if not kept
@@ -284,6 +293,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                     }
                 }
 
+
                 // keyword
                 char *fps_filtstring_keyword = getenv("FPS_FILTSTRING_KEYWORD");
                 if (fps_filtstring_keyword)
@@ -295,6 +305,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                     }
                 }
 
+
                 // call function
                 char *fps_filtstring_callfunc = getenv("FPS_FILTSTRING_CALLFUNC");
                 if (fps_filtstring_callfunc)
@@ -305,6 +316,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                         fpskeep = 0;
                     }
                 }
+
 
                 // module name
                 char *fps_filtstring_module = getenv("FPS_FILTSTRING_MODULE");
@@ -328,6 +340,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                         fpskeep = 0;
                     }
                 }
+
 
                 DEBUG_TRACEPOINT("A tracepoint here (%s); fpskeep = %d\n", dir->d_name, fpskeep);
                 if (fpskeep == 1)
@@ -361,9 +374,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                                             {
                                                 match = 0;
                                             }
-                                            //  printf("TEST MATCH : %16s %16s  %d\n",
-                                            //  fps[fpsindex].parray[i].keyword[l],
-                                            //  keywnode[kwnindex].keyword[l], match);
+                                            //  printf("TEST MATCH : %16s %16s  %d\n", fps[fpsindex].parray[i].keyword[l], keywnode[kwnindex].keyword[l], match);
                                         }
                                         if (match == 1) // we have a match
                                         {
@@ -426,7 +437,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                                         char tmpstring[200];
                                         strcpy(keywnode[kwnindex].keyword[l],
                                                fps[fpsindex].parray[pindex0].keyword[l]);
-                                        // printf(" %s", keywnode[kwnindex].keyword[l]);
+                                        //printf(" %s", keywnode[kwnindex].keyword[l]);
                                         if (l == 0)
                                         {
                                             strcpy(keywnode[kwnindex].keywordfull,

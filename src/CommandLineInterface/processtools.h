@@ -12,15 +12,11 @@
  *
  */
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                      DEFINES, MACROS */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                      DEFINES, MACROS                                            */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 #ifndef _PROCESSTOOLS_H
 #define _PROCESSTOOLS_H
@@ -60,6 +56,7 @@ typedef struct
 
 } PROCESSINFOLIST;
 
+
 typedef struct
 {
     int pindex; // index in PROCESSINFOLIST array
@@ -71,6 +68,7 @@ typedef struct
 
     long loopcnt;
     int  loopstat;
+
 
     char cpuset[16]; /**< cpuset name  */
     char cpusallowed[20];
@@ -86,8 +84,7 @@ typedef struct
     int NBsubprocesses;
     int subprocPIDarray[MAXNBSUBPROCESS];
 
-    double sampletimearray[MAXNBSUBPROCESS]; // time at which sampling was
-                                             // performed [sec]
+    double sampletimearray[MAXNBSUBPROCESS]; // time at which sampling was performed [sec]
     double sampletimearray_prev[MAXNBSUBPROCESS];
 
     long ctxtsw_voluntary[MAXNBSUBPROCESS];
@@ -106,6 +103,7 @@ typedef struct
 
 } PROCESSINFODISP;
 
+
 typedef struct
 {
     int  loop; // 1 : loop     0 : exit
@@ -118,8 +116,7 @@ typedef struct
 
     // ensure list of process and mmap operation blocks display
     int SCANBLOCK_requested; // scan thread toggles to 1 to requests blocking
-    int SCANBLOCK_OK;        // display thread toggles to 1 to let scan know it can
-                             // proceed
+    int SCANBLOCK_OK;        // display thread toggles to 1 to let scan know it can proceed
 
     // copy of pointer  static PROCESSINFOLIST *pinfolist
     PROCESSINFOLIST *pinfolist;

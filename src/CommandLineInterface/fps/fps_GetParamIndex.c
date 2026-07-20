@@ -33,14 +33,14 @@ int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *
     }
 
     /*
-  if(index == -1)
-  {
-      printf("ERROR: cannot find parameter \"%s\" in structure\n", paramname);
-      printf("STEP %s %d\n", __FILE__, __LINE__);
-      fflush(stdout);
-      exit(0);
-  }
-  */
+    if(index == -1)
+    {
+        printf("ERROR: cannot find parameter \"%s\" in structure\n", paramname);
+        printf("STEP %s %d\n", __FILE__, __LINE__);
+        fflush(stdout);
+        exit(0);
+    }
+    */
 
     return index;
 }

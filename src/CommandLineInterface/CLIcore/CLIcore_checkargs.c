@@ -18,8 +18,10 @@
 // keep processing if 1
 static int argcheck_process_flag = 1;
 
+
 // toggles to 1 if function help called
 static int functionhelp_called = 0;
+
 
 /**
  * @brief check that input CLI argument matches required function argument type
@@ -68,6 +70,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 0;
             break;
 
+
         // Token is xintxx
         // -> convert long to float
         //
@@ -78,6 +81,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             data.cmdargtoken[CLIargnum].type     = CLIARG_FLOAT64;
             rval                                 = 0;
             break;
+
 
         // Token is string not image
         //
@@ -120,6 +124,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             }
             break;
 
+
         // Token is image
         // -> not OK
         //
@@ -132,6 +137,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             }
             rval = 1;
             break;
+
 
         // Token is string
         // -> not OK
@@ -146,6 +152,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is ??
         //
         case 6:
@@ -156,6 +163,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             break;
         }
         break;
+
 
     // Argument should be integer
     //
@@ -172,7 +180,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
         // -> convert to int
         //
         case CLIARG_FLOAT32 & 0x0000FFFF:
-            // printf("token is CLIARG_FLOATXX\n");
+            //printf("token is CLIARG_FLOATXX\n");
             snprintf(data.cmdargtoken[CLIargnum].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%f",
                      data.cmdargtoken[CLIargnum].val.numf);
             if (errmsg == 1)
@@ -185,20 +193,22 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval                             = 0;
             break;
 
+
         // Token is int
         // -> OK
         //
         case CLIARG_INT64 & 0x0000FFFF:
-            // printf("token is CLIARG_XINTXX\n");
+            //printf("token is CLIARG_XINTXX\n");
             snprintf(data.cmdargtoken[CLIargnum].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%ld",
                      data.cmdargtoken[CLIargnum].val.numl);
             rval = 0;
             break;
 
+
         // Token is string, not image
         //
         case CLIARG_STR_NOT_IMG:
-            // printf("token is CLIARG_STR_NOT_IMG\n");
+            //printf("token is CLIARG_STR_NOT_IMG\n");
 
             if (funcargtype == CLIARG_ONOFF)
             {
@@ -273,8 +283,9 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             }
             break;
 
+
         case CLIARG_IMG:
-            // printf("token is CLIARG_IMG\n");
+            //printf("token is CLIARG_IMG\n");
             if (errmsg == 1)
             {
                 printf("  arg %d (image \"%s\") not an integer\n", CLIargnum - 1,
@@ -284,7 +295,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             break;
 
         case CLIARG_STR:
-            // printf("token is CLIARG_STR\n");
+            //printf("token is CLIARG_STR\n");
             if (funcargtype == CLIARG_ONOFF)
             {
                 if ((strcmp(data.cmdargtoken[CLIargnum].val.string, "on") == 0) ||
@@ -314,6 +325,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             break;
         }
         break;
+
 
     // Argument should be string, but not image
     //
@@ -348,12 +360,14 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is string, but not image
         // -> OK
         //
         case CLIARG_STR_NOT_IMG: // OK
             rval = 0;
             break;
+
 
         // Token is image
         // -> not OK
@@ -367,6 +381,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is string
         // -> not OK
         //
@@ -376,11 +391,13 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         case 6:
             rval = 0;
             break;
         }
         break;
+
 
     // Argument should be existing image
     //
@@ -401,6 +418,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is xintxx
         // -> not OK
         //
@@ -415,6 +433,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is string not image
         // -> not OK
         //
@@ -427,12 +446,14 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is image
         // -> OK
         //
         case CLIARG_IMG:
             rval = 0;
             break;
+
 
         // Token is string
         // -> not OK
@@ -446,11 +467,13 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         case 6:
             rval = 0;
             break;
         }
         break;
+
 
     // Argument should be string (image or not)
     //
@@ -471,6 +494,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is xintxx
         // -> not OK
         //
@@ -485,6 +509,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 1;
             break;
 
+
         // Token is string not image
         // -> OK
         //
@@ -492,12 +517,14 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
             rval = 0;
             break;
 
+
         // Token is image
         // -> OK
         //
         case CLIARG_IMG:
             rval = 0;
             break;
+
 
         // Token is string
         // -> OK
@@ -531,6 +558,7 @@ static int CLI_checkarg0(int CLIargnum, uint32_t funcargtype, int errmsg)
     return rval;
 }
 
+
 /**
  * @brief Check that input CLI argument matches required argument type
  *
@@ -563,8 +591,7 @@ int CLI_checkarg(int CLIargnum, uint32_t funcargtype)
 }
 
 /**
- * @brief Check that input CLI argument matches required argument type - do not
- * print error message
+ * @brief Check that input CLI argument matches required argument type - do not print error message
  *
  * @param CLIargnum
  * @param funcargtype
@@ -594,6 +621,7 @@ int CLI_checkarg_noerrmsg(int CLIargnum, uint32_t funcargtype)
     return rval;
 }
 
+
 /** @brief Check array of command line (CLI) arguments
  *
  * Use list of arguments in fpscliarg[].
@@ -620,11 +648,10 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
         }
     }
 
-    // if CLI arg 1 is a function parameter, set function parameter to value
-    // entered in CLI arg 2
+    // if CLI arg 1 is a function parameter, set function parameter to value entered in CLI arg 2
     if (argindexmatch != -1)
     {
-        // printf("match to arg %s\n", fpscliarg[argindexmatch].fpstag); //TEST
+        //printf("match to arg %s\n", fpscliarg[argindexmatch].fpstag); //TEST
 
         if (data.cmdargtoken[2].type == CLIARG_MISSING)
         {
@@ -683,14 +710,12 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
 
         printf("Argument %s value updated\n", fpscliarg[argindexmatch].fpstag);
 
-        // printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type,
-        // data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf,
-        // data.cmdargtoken[2].val.numl);
+        //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
         DEBUG_TRACE_FEXIT();
         return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
     }
 
-    // printf("arg 1: %s %f %ld\n", data.cmdargtoken[2].val.string);
+    //printf("arg 1: %s %f %ld\n", data.cmdargtoken[2].val.string);
 
     int nberr  = 0;
     int CLIarg = 0; // index of argument in CLI call
@@ -795,8 +820,7 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
                     {
                         data.cmdargtoken[CLIarg + 1].type = CLIARG_STR_NOT_IMG;
                     }
-                    // printf("arg %d IMG        : %s\n", CLIarg+1,
-                    // data.cmdargtoken[CLIarg+1].val.string);
+                    //printf("arg %d IMG        : %s\n", CLIarg+1, data.cmdargtoken[CLIarg+1].val.string);
                     break;
 
                 case CLIARG_STR:
@@ -877,6 +901,7 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
         return RETURN_CLICHECKARGARRAY_FAILURE;
     }
 }
+
 
 /** @brief Build FPS content from FPSCLIARG list
  *
@@ -969,6 +994,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF fpscliarg[], int nbarg, FUNCTION_PA
     return NBarg_processed;
 }
 
+
 /** @brief Build FPS from command args
  */
 int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
@@ -977,6 +1003,7 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
 
     int  NBarg_processed = 0;
     long fpi             = 0;
+
 
     for (int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
     {
@@ -1022,15 +1049,15 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
             break;
 
                 /* case CLIARG_LONG: // default to INT64
-         {
-             tmpvall = data.cmd[data.cmdindex].argdata[argi].val.l;
-             function_parameter_add_entry(fps,
-         data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                          data.cmd[data.cmdindex].argdata[argi].descr,
-                                          FPTYPE_INT64, FPFLAG_DEFAULT_INPUT,
-         &tmpvall, NULL); NBarg_processed++;
-         }
-         break;*/
+                 {
+                     tmpvall = data.cmd[data.cmdindex].argdata[argi].val.l;
+                     function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
+                                                  data.cmd[data.cmdindex].argdata[argi].descr,
+                                                  FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &tmpvall,
+                                                  NULL);
+                     NBarg_processed++;
+                 }
+                 break;*/
 
             case CLIARG_INT32:
             {
@@ -1121,14 +1148,13 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
                 break;
 
             case CLIARG_FPSNAME:
-                // printf("ADDING FPS ENTRY %s at index %d\n",
-                // data.cmd[data.cmdindex].argdata[argi].fpstag, argi);
+                //printf("ADDING FPS ENTRY %s at index %d\n", data.cmd[data.cmdindex].argdata[argi].fpstag, argi);
                 function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
                                              data.cmd[data.cmdindex].argdata[argi].descr,
                                              FPTYPE_FPSNAME,
                                              FPFLAG_DEFAULT_INPUT | FPFLAG_FPS_RUN_REQUIRED,
                                              data.cmd[data.cmdindex].argdata[argi].val.s, &fpi);
-                // printf("fpi = %ld\n", fpi);
+                //printf("fpi = %ld\n", fpi);
                 fps->parray[fpi].info.fps.FPSNBparamMAX = 0;
                 NBarg_processed++;
                 break;
@@ -1139,6 +1165,7 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
     DEBUG_TRACE_FEXIT();
     return NBarg_processed;
 }
+
 
 /** @brief get FPS pointer to function argument/parameter
  */

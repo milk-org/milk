@@ -9,6 +9,7 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
+
 static char *inim;
 static long  fpi_inim;
 
@@ -24,6 +25,7 @@ static long  fpi_outimG2;
 static char *outimB;
 static long  fpi_outimB;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_STR, ".inim", "input RGGB image", "inim",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inim, &fpi_inim },
                                { CLIARG_STR, ".outimR", "output R image", "inim",
@@ -35,14 +37,17 @@ static CLICMDARGDEF farg[] = { { CLIARG_STR, ".inim", "input RGGB image", "inim"
                                { CLIARG_STR, ".outimB", "output B image", "outimB",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &outimB, &fpi_outimB } };
 
+
 static CLICMDDATA CLIcmddata = { "extractRGGBchan", "extract RGGB channels from color image",
                                  CLICMD_FIELDS_DEFAULTS };
+
 
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 /*
     IMGID imgoutR,
@@ -66,6 +71,7 @@ errno_t image_format_extract_RGGBchan(IMGID imgin,
     // input image is required
     resolveIMGID(&imgin, ERRMODE_ABORT);
 
+
     copyIMGID(&imgin, &imgoutR);
     imgoutR.size[0] = imgin.size[0] / 2;
     imgoutR.size[1] = imgin.size[1] / 2;
@@ -82,6 +88,7 @@ errno_t image_format_extract_RGGBchan(IMGID imgin,
     uint32_t xsize = imgin.size[0];
 
     list_image_ID();
+
 
     switch (imgin.datatype)
     {
@@ -119,6 +126,7 @@ errno_t image_format_extract_RGGBchan(IMGID imgin,
         }
         break;
 
+
     case _DATATYPE_UINT16:
         for (uint32_t ii = 0; ii < imgoutR.size[0]; ii++)
         {
@@ -137,9 +145,11 @@ errno_t image_format_extract_RGGBchan(IMGID imgin,
         break;
     }
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Wrapper function, used by all CLI calls
@@ -150,11 +160,13 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     image_format_extract_RGGBchan(mkIMGID_from_name(inim), mkIMGID_from_name(outimR),
                                   mkIMGID_from_name(outimG1), mkIMGID_from_name(outimG2),
                                   mkIMGID_from_name(outimB));
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -162,7 +174,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_image_format__extractRGGBchan()

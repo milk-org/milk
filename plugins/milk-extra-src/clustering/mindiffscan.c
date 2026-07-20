@@ -25,8 +25,7 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".in_name", "input image cube", "im
 // CLI function initialization data
 static CLICMDDATA CLIcmddata = {
     "mindiffscan",                       // keyword to call function in CLI
-    "scan image cube for similar pairs", // description of what the function
-                                         // does
+    "scan image cube for similar pairs", // description of what the function does
     CLICMD_FIELDS_DEFAULTS
 };
 
@@ -191,7 +190,7 @@ static errno_t imcube_mindiffscan(IMGID img, const char *__restrict outdname, ui
                     zi1p = zsize - zi1p - 1;
                 }
 
-                // data.image[IDdmat].array.F[zi0p*zsize + zi1p] = (float) dist2;
+                //data.image[IDdmat].array.F[zi0p*zsize + zi1p] = (float) dist2;
                 data.image[IDdmat].array.F[zi0p * zsize + zi1p] = (float) dist2;
 
                 diffcnt++;
@@ -384,10 +383,10 @@ static errno_t compute_function()
 INSERT_STD_FPSCLIfunctions
 
     /** @brief Register CLI command
-     *
-     * Adds function to list of CLI commands.
-     * Called by main module initialization function init_module_CLI().
-     */
+*
+* Adds function to list of CLI commands.
+* Called by main module initialization function init_module_CLI().
+*/
     errno_t
     CLIADDCMD_clustering__imcube_mindiffscan()
 {

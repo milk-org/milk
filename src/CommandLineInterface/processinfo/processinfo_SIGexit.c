@@ -5,6 +5,7 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
+
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 {
     char            timestring[200];
@@ -23,8 +24,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
     int  SIGflag = 0;
     switch (SignalNumber)
     {
-    case SIGHUP: // Hangup detected on controlling terminal or death of
-                 // controlling process
+    case SIGHUP: // Hangup detected on controlling terminal or death of controlling process
         strcpy(SIGstr, "SIGHUP");
         SIGflag = 1;
         break;

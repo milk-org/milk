@@ -4,18 +4,20 @@
 
 #define _GNU_SOURCE // Needed for get/set resuid
 
-#include <dirent.h>
-#include <errno.h>
-#include <sched.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sched.h>
+#include <errno.h>
+#include <dirent.h>
 
 #include "CommandLineInterface/CLIcore.h"
 #include "CommandLineInterface/milkDebugTools.h"
 
+
 DATA data = { 0 }; // Lot of macros rely on it
+
 
 // Real UID of the invoking user (saved at startup, never changes)
 static uid_t STARTUP_RUID = (uid_t) -1;

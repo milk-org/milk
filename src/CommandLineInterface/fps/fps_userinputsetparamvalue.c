@@ -17,6 +17,7 @@
 
 #include "TUItools.h"
 
+
 /** @brief Enter new value for parameter
  *
  *
@@ -34,6 +35,7 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
     {
         inputOK = 0;
         fflush(stdout);
+
 
         int esc_toggle = 0;
 
@@ -81,6 +83,7 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
             buff[stringindex] = '\0';
             inputOK           = 1;
         }
+
 
         if (esc_toggle == 0) // update value if escape key has not been pressed
         {

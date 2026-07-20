@@ -214,8 +214,8 @@ imageID fconvolve_1(const char *__restrict name_in,
     return IDout;
 }
 
-// if blocksize = 512, for images > 512x512, break image in 512x512 overlapping
-// blocks kernel image must be blocksize
+// if blocksize = 512, for images > 512x512, break image in 512x512 overlapping blocks
+// kernel image must be blocksize
 imageID fconvolveblock(const char *__restrict name_in,
                        const char *__restrict name_ke,
                        const char *__restrict name_out,

@@ -7,7 +7,8 @@
 
 #include <math.h>
 
-// #define DEBUGPRINT
+//#define DEBUGPRINT
+
 
 /**
  * @brief Combine Cluster Feature with existing CF and compute stats
@@ -17,7 +18,7 @@
  * @param CFindex
  * @param combCF
  * @return errno_t
- */
+*/
 static errno_t combCFcomp(CLUSTERTREE *ctree, CLUSTERING_CF CF, long CFindex, CLUSTERING_CF *combCF)
 {
     DEBUG_TRACE_FSTART();
@@ -48,12 +49,12 @@ static errno_t combCFcomp(CLUSTERTREE *ctree, CLUSTERING_CF CF, long CFindex, CL
     combCF->pathcnt         = ctree->CFarray[CFindex].pathcnt + CF.pathcnt;
     combCF->pathdistcompcnt = ctree->CFarray[CFindex].pathdistcompcnt + CF.pathdistcompcnt;
 
-    // printf("pathcnt:  %16f  <-  [%5ld] %16f  %16f\n",  combCF->pathcnt,
-    // CFindex, ctree->CFarray[CFindex].pathcnt, CF.pathcnt);
+    //printf("pathcnt:  %16f  <-  [%5ld] %16f  %16f\n",  combCF->pathcnt, CFindex, ctree->CFarray[CFindex].pathcnt, CF.pathcnt);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Add Cluster Feature to CF
@@ -70,6 +71,7 @@ errno_t addCF_to_CF(CLUSTERTREE *ctree, CLUSTERING_CF CF, long CFindex, int *add
 {
     DEBUG_TRACE_FSTART();
 
+
     // allocate position ONLY if first entry
     if (ctree->CFarray[CFindex].N == 0)
     {
@@ -77,16 +79,19 @@ errno_t addCF_to_CF(CLUSTERTREE *ctree, CLUSTERING_CF CF, long CFindex, int *add
         ctree->CFarray[CFindex].posvecsourceID = CF.posvecsourceID;
     }
 
+
     CLUSTERING_CF combCF;
 
     // new cluster nb or point
     combCF.N = ctree->CFarray[CFindex].N + CF.N;
+
 
     if (ctree->leafposmode == CLUSTER_CFPOS_FIXED)
     {
         combCF.datasumvec = (double *) malloc(sizeof(double) * ctree->npix);
 
         combCFcomp(ctree, CF, CFindex, &combCF);
+
 
         double dist2pos2 = 0.0;
         for (long ii = 0; ii < ctree->npix; ii++)
@@ -154,9 +159,11 @@ errno_t addCF_to_CF(CLUSTERTREE *ctree, CLUSTERING_CF CF, long CFindex, int *add
         free(combCF.datasumvec);
     }
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Subtract vector from CF
@@ -171,6 +178,7 @@ errno_t subvector_to_CF(CLUSTERTREE *ctree, CLUSTERING_CF CF, long CFindex)
     DEBUG_TRACE_FSTART();
 
     ctree->CFarray[CFindex].N -= CF.N;
+
 
     // subtract to vec sum
     ctree->CFarray[CFindex].sum2 = 0.0;
@@ -190,6 +198,7 @@ errno_t subvector_to_CF(CLUSTERTREE *ctree, CLUSTERING_CF CF, long CFindex)
     long double tmpv2 =
         ctree->CFarray[CFindex].sum2 / ctree->CFarray[CFindex].N / ctree->CFarray[CFindex].N;
     ctree->CFarray[CFindex].radius2 = tmpv1 - tmpv2;
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

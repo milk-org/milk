@@ -9,22 +9,22 @@
 
 #define NCURSES_WIDECHAR 1
 
-#include <curses.h>
-#include <dirent.h>
-#include <errno.h>
 #include <math.h>
 #include <ncurses.h>
+#include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
 
 #include "CommandLineInterface/CLIcore.h"
-#include "TUItools.h"
 #include "stream_monproc.h"
+#include "TUItools.h"
 
 // External initialization functions from CLIcore
 extern errno_t CLI_startup();

@@ -7,6 +7,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "image_fitModes.h"
 
+
 /*
 static void **vclean;
 static size_t nclean;
@@ -27,6 +28,7 @@ void milk_memclean(void)
     free(vclean);
 }
 */
+
 
 // Local variables pointers
 static char *infname;
@@ -77,7 +79,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     float gain   = 1.0;
     long  iter;
 
-    // atexit(milk_memclean);
+    //atexit(milk_memclean);
 
     float *__restrict xarray;
     xarray = (float *) malloc(sizeof(float) * NBpt);
@@ -85,7 +87,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
-    // milk_atexit_free_add(xarray);
+    //milk_atexit_free_add(xarray);
 
     float *__restrict valarray;
     valarray = (float *) malloc(sizeof(float) * NBpt);
@@ -93,7 +95,8 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
-    // milk_atexit_free_add(valarray);
+    //milk_atexit_free_add(valarray);
+
 
     {
         FILE *fp;
@@ -173,6 +176,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
         break;
     }
 
+
     for (iter = 0; iter < NBiter; iter++)
     {
         FUNC_CHECK_RETURN(linopt_imtools_image_fitModes("invect0", "fitmodes", "inmask", SVDeps,
@@ -242,6 +246,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {

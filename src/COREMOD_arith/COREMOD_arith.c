@@ -51,17 +51,17 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-// #include "COREMOD_arith/COREMOD_arith.h"
+//#include "COREMOD_arith/COREMOD_arith.h"
 
 #include "image_crop.h"
 #include "image_crop2D.h"
-#include "image_cropmask.h"
 #include "image_multicrop2D.h"
+#include "image_cropmask.h"
 
 #include "image_dxdy.h"
-#include "image_merge3D.h"
 #include "image_norm.h"
 #include "image_slicenormalize.h"
+#include "image_merge3D.h"
 #include "image_stats.h"
 
 #include "image_set_1Dpixrange.h"

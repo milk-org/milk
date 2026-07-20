@@ -7,9 +7,8 @@
  * @brief   simple function example with FPS and processinfo support
  *
  * Example 2
- * Demonstrates using FPS to hold function arguments and parameters with the
- * Function Parameter Structure (FPS). See script milk-test-simplefuncFPS for
- * example usage.
+ * Demonstrates using FPS to hold function arguments and parameters with the Function Parameter Structure (FPS).
+ * See script milk-test-simplefuncFPS for example usage.
  */
 
 #include "CommandLineInterface/CLIcore.h"
@@ -20,19 +19,20 @@ static char *inimname;
 
 static double *scoeff;
 
+
 // List of arguments to function
 static CLICMDARGDEF farg[] = {
     //    FARG_INPUTIM(inim),
     { CLIARG_IMG, ".in_name", "input image", "im1", CLIARG_VISIBLE_DEFAULT, (void **) &inimname,
       NULL },
     { CLIARG_FLOAT64, ".scaling", "scaling coefficient", "1.0",
-      CLIARG_HIDDEN_DEFAULT, // hidden argument is not part of CLI call, FPFLAG
-                             // ignored
+      CLIARG_HIDDEN_DEFAULT, // hidden argument is not part of CLI call, FPFLAG ignored
       (void **) &scoeff, NULL }
 };
 
 static CLICMDDATA CLIcmddata = { "imsum2", "compute total of image example2, FPS-compatible",
                                  CLICMD_FIELDS_DEFAULTS };
+
 
 static errno_t help_function()
 {
@@ -40,6 +40,7 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Sum pixel values
@@ -58,6 +59,7 @@ static errno_t example_compute_2Dimage_total(IMGID *imgptr, double scalingcoeff)
     uint32_t ysize  = imgptr->md->size[1];
     uint64_t xysize = xsize * ysize;
 
+
     double total = 0.0;
     for (uint64_t ii = 0; ii < xysize; ii++)
     {
@@ -70,6 +72,7 @@ static errno_t example_compute_2Dimage_total(IMGID *imgptr, double scalingcoeff)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Wrapper function, used by all CLI calls
@@ -95,8 +98,10 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 // Enables FPS support
 INSERT_STD_FPSCLIfunctions
+
 
     errno_t
     CLIADDCMD_milk_module_example__simplefunc_FPS()

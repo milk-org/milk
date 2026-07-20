@@ -57,7 +57,7 @@ INSERT_STD_FPSCLIfunctions
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_memory__delete_image()
 {
-    // INSERT_STD_FPSCLIREGISTERFUNC
+    //INSERT_STD_FPSCLIREGISTERFUNC
 
     int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
@@ -234,7 +234,7 @@ errno_t delete_image(IMGID *img, int errmode)
                 data.image[ID].kw = NULL;
             }
         }
-        // free(data.image[ID].logstatus);
+        //free(data.image[ID].logstatus);
         /*      free(data.image[ID].size);*/
         //      data.image[ID].md[0].last_access = 0;
     }

@@ -27,9 +27,11 @@
 
 #include "pup2foc.h"
 
+
 // auto-generate libinit_<modulename>
 // initialize INITSTATUS_<modulename>
 INIT_MODULE_LIB(fft)
+
 
 static errno_t init_module_CLI()
 {
@@ -42,8 +44,8 @@ static errno_t init_module_CLI()
     // load fftw wisdom
     import_wisdom();
 
-    // fftwf_set_timelimit(1000.0);
-    // fftw_set_timelimit(1000.0);
+    //fftwf_set_timelimit(1000.0);
+    //fftw_set_timelimit(1000.0);
 
     init_fftwplan_addCLIcmd();
     permut_addCLIcmd();

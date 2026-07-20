@@ -47,8 +47,7 @@ errno_t functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry
         }
     }
 
-    // snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
-    // FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream");
+    //snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream");
     //			fpsentry->md->msgcnt++;
 
     printf("\n");

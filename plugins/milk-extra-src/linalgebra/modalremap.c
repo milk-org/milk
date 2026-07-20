@@ -11,10 +11,11 @@
 
 #include <math.h>
 
-#include "COREMOD_tools/COREMOD_tools.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
 #include "SGEMM.h"
+
 
 static char *inM;
 static long  fpi_inM;
@@ -28,8 +29,10 @@ static long  fpi_inU1;
 static char *outM;
 static long  fpi_outM;
 
+
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
+
 
 static CLICMDARGDEF farg[] = {
     { CLIARG_IMG, ".inM", "input image", "inM", CLIARG_VISIBLE_DEFAULT, (void **) &inM, &fpi_inM },
@@ -43,8 +46,10 @@ static CLICMDARGDEF farg[] = {
       (void **) &GPUdevice, &fpi_GPUdevice }
 };
 
+
 static CLICMDDATA CLIcmddata = { "Mremap", "use modal mapping for linear transformation",
                                  CLICMD_FIELDS_DEFAULTS };
+
 
 static errno_t help_function()
 {
@@ -56,15 +61,15 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
+
 /**
  * @brief Remap input M0 in space U0 to output M1 in space U1
  *
- * U0 and U1 are each an orthonormal modal basis defining respectively input and
- * output spaces M0 is projected onto space U0 The coefficients of this
- * decomposition are used to reconstruct M1 by expansion according to U1
+ * U0 and U1 are each an orthonormal modal basis defining respectively input and output spaces
+ * M0 is projected onto space U0
+ * The coefficients of this decomposition are used to reconstruct M1 by expansion according to U1
  *
- * If image imsig exists, it is used to evaluate output reconstruction quality,
- * by comparing M1 to imsig
+ * If image imsig exists, it is used to evaluate output reconstruction quality, by comparing M1 to imsig
  *
  * @param imgM0 input data
  * @param imgU0 input modal basis
@@ -85,10 +90,12 @@ errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUd
     // Decompose inM according to U0
     computeSGEMM(imgU0, imgM0, &imgC0, 1, 0, GPUdev);
 
+
     printf("Reconstruct %s %s -> %s\n", imgU1.name, imgC0.name, imgM1->name);
     fflush(stdout);
     // Project to output space
     computeSGEMM(imgU1, imgC0, imgM1, 0, 0, GPUdev);
+
 
     // evaluate fit quality
     {
@@ -97,12 +104,13 @@ errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUd
 
         FILE *fp = fopen("modalremap.log", "w");
         fprintf(fp, "# col1   frame index\n");
-        fprintf(fp, "# col2   input space residual (part of input M0 that cannot "
-                    "be represented by U0)\n");
-        fprintf(fp, "# col3   output space residual (part of ouput M1 that differs "
-                    "from imsig)\n");
+        fprintf(
+            fp,
+            "# col2   input space residual (part of input M0 that cannot be represented by U0)\n");
+        fprintf(fp, "# col3   output space residual (part of ouput M1 that differs from imsig)\n");
         fprintf(fp, "# col4   decomposition vector norm 2\n");
         fprintf(fp, "# col5   decomposition vector norm 4\n");
+
 
         // Expand back to original space
         IMGID imgM0m = mkIMGID_from_name("imM0m");
@@ -167,6 +175,7 @@ errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUd
             res0_frame /= (flux0 * flux0);
             res1_frame /= (flux1 * flux1);
 
+
             fprintf(fp, "%5ld %20g %20g  %20g %20g\n", frame, res0_frame, res1_frame, vecC0n2,
                     vecC0n4);
 
@@ -191,9 +200,11 @@ errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUd
         fclose(fp);
     }
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -208,9 +219,12 @@ static errno_t compute_function()
     IMGID imginU1 = mkIMGID_from_name(inU1);
     resolveIMGID(&imginU1, ERRMODE_ABORT);
 
+
     IMGID imgoutM1 = mkIMGID_from_name(outM);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -219,11 +233,14 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     errno_t
     CLIADDCMD_linalgebra__ModalRemap()

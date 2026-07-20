@@ -69,8 +69,7 @@ imageID make_line(const char *IDname,
                   double      y2,
                   double      t);
 
-/** @brief draw line crossing point xc, yc with angle, pixel value is coordinate
- * axis perp to line */
+/** @brief draw line crossing point xc, yc with angle, pixel value is coordinate axis perp to line */
 imageID make_lincoordinate(const char *IDname,
                            uint32_t    l1,
                            uint32_t    l2,

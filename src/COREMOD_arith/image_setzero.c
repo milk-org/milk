@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "image_setzero.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "image_setzero.h"
 
 static char *inimname;
 

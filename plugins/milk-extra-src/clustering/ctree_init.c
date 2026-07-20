@@ -18,6 +18,7 @@ errno_t ctree_init(CLUSTERTREE *ctree, double *datavector, long double ssqr)
 {
     DEBUG_TRACE_FSTART();
 
+
     ctree->rootindex = 0;
 
     // root is initially a node with single child
@@ -37,6 +38,7 @@ errno_t ctree_init(CLUSTERTREE *ctree, double *datavector, long double ssqr)
     ctree->CFarray[0].pathcnt         = 1.0;
     ctree->CFarray[0].pathdistcompcnt = 0.0;
 
+
     // childless leaf node, with single leaf
     CFmemallocate(ctree, 1);
     ctree->CFarray[1].type        = CLUSTER_CF_TYPE_LEAF;
@@ -45,15 +47,18 @@ errno_t ctree_init(CLUSTERTREE *ctree, double *datavector, long double ssqr)
     ctree->CFarray[1].NBchild     = 0;
     ctree->CFarray[1].N           = 1;
 
+
     memcpy(ctree->CFarray[1].datasumvec, datavector, sizeof(double) * ctree->npix);
 
     memcpy(ctree->CFarray[1].dataposvec, datavector, sizeof(double) * ctree->npix);
     ctree->CFarray[1].posvecsourceID = 1;
 
+
     ctree->CFarray[1].datassq         = ssqr;
     ctree->CFarray[1].sum2            = ssqr;
     ctree->CFarray[1].pathcnt         = 1.0;
     ctree->CFarray[1].pathdistcompcnt = 0.0;
+
 
     ctree->cdist = 0.0;
 

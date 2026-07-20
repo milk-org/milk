@@ -46,7 +46,7 @@ errno_t read_shmimall_addCLIcmd()
 
 errno_t read_sharedmem_image_all(const char *strfilter)
 {
-    // printf("LOADING ALL STREAMS matching %s\n", strfilter);
+    //printf("LOADING ALL STREAMS matching %s\n", strfilter);
 
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
@@ -55,10 +55,10 @@ errno_t read_sharedmem_image_all(const char *strfilter)
 
     int NBstream = find_streams(streaminfo, 1, strfilter);
 
-    // printf("%d streams found :\n", NBstream);
+    //printf("%d streams found :\n", NBstream);
     for (int sindex = 0; sindex < NBstream; sindex++)
     {
-        // printf(" %3d   %s\n", sindex, streaminfo[sindex].sname);
+        //printf(" %3d   %s\n", sindex, streaminfo[sindex].sname);
         imageID ID = image_ID(streaminfo[sindex].sname);
         if (ID == -1)
         {

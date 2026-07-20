@@ -9,8 +9,8 @@
  *
  */
 
-#include "image_total.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "image_total.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 

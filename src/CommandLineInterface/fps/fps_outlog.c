@@ -13,11 +13,13 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "timeutils.h"
 
+
 // set to 1 if logging
 // toggles to 0 (don't log), 1 (log to shmdir) or 2 (custom log file)
 //
 static int   FLAG_FPSOUTLOG = -1;
 static char *fps_customfilename;
+
 
 int get_FLAG_FPSOUTLOG()
 {
@@ -32,6 +34,7 @@ int get_FLAG_FPSOUTLOG()
             FLAG_FPSOUTLOG = 0;
         }
 
+
         if (getenv("MILK_FPS_LOGFILE"))
         {
             FLAG_FPSOUTLOG     = 2;
@@ -42,12 +45,14 @@ int get_FLAG_FPSOUTLOG()
     return FLAG_FPSOUTLOG;
 }
 
+
 errno_t set_FLAG_FPSOUTLOG(int val)
 {
     FLAG_FPSOUTLOG = val;
 
     return RETURN_SUCCESS;
 }
+
 
 /** @brief Get FPS log filename
  *
@@ -74,9 +79,11 @@ errno_t getFPSlogfname(char *logfname)
     return RETURN_SUCCESS;
 }
 
+
 errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout)
 {
-    // get_FLAG_FPSOUTLOG();
+    //get_FLAG_FPSOUTLOG();
+
 
     // Get GMT time
     struct timespec tnow;
@@ -98,6 +105,7 @@ errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout)
 
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Add log entry to fps log
@@ -180,6 +188,7 @@ errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
     return RETURN_SUCCESS;
 }
 
+
 /** @brief Establish sym link for convenience
  *
  * This is a one-time function when running FPS init.\n
@@ -187,7 +196,7 @@ errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
  */
 errno_t functionparameter_outlog_namelink()
 {
-    // get_FLAG_FPSOUTLOG();
+    //get_FLAG_FPSOUTLOG();
 
     if (FLAG_FPSOUTLOG == 1)
     {

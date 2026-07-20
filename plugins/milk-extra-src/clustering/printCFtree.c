@@ -8,6 +8,7 @@
 
 #include "clustering_defs.h"
 
+
 errno_t printCFtree(CLUSTERTREE *ctree)
 {
     DEBUG_TRACE_FSTART();
@@ -50,8 +51,8 @@ errno_t printCFtree(CLUSTERTREE *ctree)
                     break;
 
                     /*case CLUSTER_CF_TYPE_LEAFNODE:
-              printf("LFND");
-              break;*/
+                    printf("LFND");
+                    break;*/
 
                 default:
                     printf("????");
@@ -75,15 +76,15 @@ errno_t printCFtree(CLUSTERTREE *ctree)
                 }
 
                 /*if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
-        {
-            printf("  %3d leaves (", ctree->CFarray[CFindex].NBleaf);
-            for(int lfi = 0; lfi < ctree->CFarray[CFindex].NBleaf;
-                    lfi++)
-            {
-                printf(" %ld", ctree->CFarray[CFindex].leafindex[lfi]);
-            }
-            printf(")");
-        }*/
+                {
+                    printf("  %3d leaves (", ctree->CFarray[CFindex].NBleaf);
+                    for(int lfi = 0; lfi < ctree->CFarray[CFindex].NBleaf;
+                            lfi++)
+                    {
+                        printf(" %ld", ctree->CFarray[CFindex].leafindex[lfi]);
+                    }
+                    printf(")");
+                }*/
 
                 printf("\n");
             }

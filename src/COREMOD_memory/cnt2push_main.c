@@ -2,35 +2,32 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "ImageStreamIO/ImageStreamIO.h"
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include "ImageStreamIO/ImageStreamIO.h"
 
 void print_help()
 {
     printf("Usage: milk-stream-cnt2push <stream_name> [options]\n");
     printf("\n");
     printf("Purpose:\n");
-    printf("  Updates the 'cnt2' counter of a shared memory image stream. This "
-           "counter is typically\n");
-    printf("  used for demand-driven synchronization (flow control), where a "
-           "writer waits until\n");
-    printf("  cnt0 < cnt2 before proceeding. By incrementing cnt2, a reader "
-           "requests more frames.\n");
+    printf("  Updates the 'cnt2' counter of a shared memory image stream. This counter is "
+           "typically\n");
+    printf("  used for demand-driven synchronization (flow control), where a writer waits until\n");
+    printf(
+        "  cnt0 < cnt2 before proceeding. By incrementing cnt2, a reader requests more frames.\n");
     printf("\n");
     printf("counters:\n");
     printf("  cnt0: Current write counter (increments when stream is written)\n");
-    printf("  cnt2: Control counter (used to gate execution in CNT2 trigger "
-           "mode)\n");
+    printf("  cnt2: Control counter (used to gate execution in CNT2 trigger mode)\n");
     printf("\n");
     printf("Options:\n");
     printf("  -v, --value <val>   Value to add or set (default: 1)\n");
     printf("  -a, --abs           Set cnt2 to an absolute value <val>.\n");
-    printf("                      (default is relative to cnt0: cnt2 = cnt0 + "
-           "<val>)\n");
+    printf("                      (default is relative to cnt0: cnt2 = cnt0 + <val>)\n");
     printf("  -i, --inc           Increment from current cnt2 value.\n");
     printf("                      (cnt2 = cnt2 + <val>)\n");
     printf("  -h, --help          Show this help message\n");
@@ -63,9 +60,8 @@ int main(int argc, char *argv[])
     int     mode_inc   = 0;
 
     int opt;
-    // Simple argument parsing loop (since getopt might not handle non-option arg
-    // first easily if strict posix) We assume first arg is streamname if it
-    // doesn't start with -
+    // Simple argument parsing loop (since getopt might not handle non-option arg first easily if strict posix)
+    // We assume first arg is streamname if it doesn't start with -
     int arg_idx = 1;
     if (argv[1][0] != '-')
     {
@@ -153,10 +149,10 @@ int main(int argc, char *argv[])
 
     image.md->cnt2 = target;
 
-    // Optional: Post semaphore if needed? Usually writing cnt2 is enough for
-    // polling readers. If waiting on semaphore, one might need to post. But cnt2
-    // logic usually implies polling or waiting on condition. The previous
-    // implementation of PROCESSINFO_TRIGGERMODE_CNT2 waits on condition.
+    // Optional: Post semaphore if needed? Usually writing cnt2 is enough for polling readers.
+    // If waiting on semaphore, one might need to post.
+    // But cnt2 logic usually implies polling or waiting on condition.
+    // The previous implementation of PROCESSINFO_TRIGGERMODE_CNT2 waits on condition.
 
     return 0;
 }

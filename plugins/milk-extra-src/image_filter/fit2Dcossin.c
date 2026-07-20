@@ -66,8 +66,7 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
         {
             coscoeff[j * NBfrequ1D + i] = 0.0;
             sincoeff[j * NBfrequ1D + i] = 0.0;
-            //	printf("%ld %ld -> %g
-            //%g\n",i,(j-NBfrequ1D+1),coscoeff[j*NBfrequ1D+i],sincoeff[j*NBfrequ1D+i]);
+            //	printf("%ld %ld -> %g %g\n",i,(j-NBfrequ1D+1),coscoeff[j*NBfrequ1D+i],sincoeff[j*NBfrequ1D+i]);
         }
     }
 
@@ -88,12 +87,11 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
         }
         fclose(fp);
         /*
-    fp = fopen("fitcoeff1.dat","w");
-    for(i=0;i<NBfrequ1D;i++)
-    for(j=0;j<2*NBfrequ1D-1;j++)
-      fprintf(fp,"%ld %ld %ld %.20g
-    %.20g\n",i,j,j-NBfrequ1D+1,coscoeff[j*NBfrequ1D+i],sincoeff[j*NBfrequ1D+i]);
-      fclose(fp);*/
+        fp = fopen("fitcoeff1.dat","w");
+        for(i=0;i<NBfrequ1D;i++)
+        for(j=0;j<2*NBfrequ1D-1;j++)
+          fprintf(fp,"%ld %ld %ld %.20g %.20g\n",i,j,j-NBfrequ1D+1,coscoeff[j*NBfrequ1D+i],sincoeff[j*NBfrequ1D+i]);
+          fclose(fp);*/
     }
     //  exit(0);
 

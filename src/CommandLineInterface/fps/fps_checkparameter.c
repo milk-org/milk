@@ -18,9 +18,11 @@
 #include "fps_disconnect.h"
 #include "fps_outlog.h"
 
+
 int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex)
 {
     int err = 0;
+
 
     // if entry is not active or not used, no error reported
     //
@@ -63,6 +65,7 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
             err = 1;
         }
     }
+
 
     if (err == 0)
     {
@@ -337,6 +340,7 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
         long NBparamMAX = fpsentry->parray[pindex].info.fps.FPSNBparamMAX;
         printf("%s NBparamMAX = %ld\n", fpsentry->parray[pindex].val.string[0], NBparamMAX);
 
+
         if (fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED)
         {
             if (NBparamMAX < 1)
@@ -439,11 +443,13 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
     return err;
 }
 
+
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
 {
     long NBparamMAX;
     long pindex;
     int  errcnt = 0;
+
 
     char msg[FUNCTION_PARAMETER_STRUCT_MSG_LEN];
     snprintf(msg, FUNCTION_PARAMETER_STRUCT_MSG_LEN, "%s", fpsentry->md->name);

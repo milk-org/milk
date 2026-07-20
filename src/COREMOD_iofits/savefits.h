@@ -9,7 +9,7 @@
 #ifndef MILK_COREMOD_IOFITS_SAVEFITS_H
 #define MILK_COREMOD_IOFITS_SAVEFITS_H
 
-// errno_t savefits_addCLIcmd();
+//errno_t savefits_addCLIcmd();
 
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS();
 

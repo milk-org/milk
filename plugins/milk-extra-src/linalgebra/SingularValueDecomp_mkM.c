@@ -15,6 +15,7 @@
 
 #include "SGEMM.h"
 
+
 static char *inmatU;
 static long  fpi_inmatU;
 
@@ -25,11 +26,14 @@ static long  fpi_invecS;
 static char *inmatV;
 static long  fpi_inmatV;
 
+
 static char *outmatM;
 static long  fpi_outmatM;
 
+
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
+
 
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inU", "input matrix U", "inM",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inmatU, &fpi_inmatU },
@@ -44,7 +48,9 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inU", "input matrix U", "inM",
                                  CLIARG_INT32, ".GPUdevice", "GPU device, 99 for CPU", "-1",
                                  CLIARG_HIDDEN_DEFAULT, (void **) &GPUdevice, &fpi_GPUdevice } };
 
+
 static CLICMDDATA CLIcmddata = { "SVDmkM", "reconstruct SVD M", CLICMD_FIELDS_DEFAULTS };
+
 
 static errno_t help_function()
 {
@@ -52,6 +58,7 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
+
 
 errno_t SVDmkM(IMGID imgU, IMGID imgS, IMGID imgV, IMGID *imgM, int GPUdev)
 {
@@ -64,7 +71,7 @@ errno_t SVDmkM(IMGID imgU, IMGID imgS, IMGID imgV, IMGID *imgM, int GPUdev)
     resolveIMGID(&imgV, ERRMODE_ABORT);
 
     // un-normalized modes
-    // printf("Creating image from %s\n", imgU.md->name);
+    //printf("Creating image from %s\n", imgU.md->name);
 
     IMGID imgunmodes    = mkIMGID_from_name("XXSVDunmodes");
     imgunmodes.naxis    = imgU.md->naxis;
@@ -101,9 +108,11 @@ errno_t SVDmkM(IMGID imgU, IMGID imgS, IMGID imgV, IMGID *imgM, int GPUdev)
     computeSGEMM(imgunmodes, imgV, imgM, 0, 1, GPUdev);
     delete_image_ID(imgunmodes.name, DELETE_IMAGE_ERRMODE_WARNING);
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -118,9 +127,12 @@ static errno_t compute_function()
     IMGID imginV = mkIMGID_from_name(inmatV);
     resolveIMGID(&imginV, ERRMODE_ABORT);
 
+
     IMGID imgoutM = mkIMGID_from_name(outmatM);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -129,17 +141,20 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_linalgebra__SVDmkM()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;

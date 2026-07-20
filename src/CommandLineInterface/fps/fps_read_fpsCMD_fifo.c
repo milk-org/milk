@@ -11,6 +11,7 @@
 // fill up task list from fifo submissions
 //
 
+
 int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
                                        FPSCTRL_TASK_ENTRY *fpsctrltasklist,
                                        FPSCTRL_TASK_QUEUE *fpsctrlqueuelist)
@@ -54,7 +55,7 @@ int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
                 }
                 else // read 0 byte
                 {
-                    // perror("read 0 byte");
+                    //perror("read 0 byte");
                     return cmdcnt;
                 }
             }
@@ -95,8 +96,7 @@ int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
 
                 DEBUG_TRACEPOINT(" ");
 
-                // Some commands affect how the task list is configured instead of being
-                // inserted as entries
+                // Some commands affect how the task list is configured instead of being inserted as entries
                 int cmdFOUND = 0;
 
                 if ((FPScmdline[0] == '#') || (FPScmdline[0] == ' ') ||

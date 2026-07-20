@@ -14,8 +14,10 @@
 #ifndef _STREAMCTRL_H
 #define _STREAMCTRL_H
 
+
 #include <stdint.h>
 #include <unistd.h> // getpid()
+
 
 #define STRINGLENMAX 32
 
@@ -25,6 +27,7 @@
 #define STRINGMAXLEN_STREAMINFO_NAME 100
 
 #define PIDnameStringLen 12
+
 
 // shared memory access permission
 #define FILEMODE 0666
@@ -46,6 +49,7 @@
 #define PRINT_PID_FORCE_NOUPSTREAM 1
 
 #define NO_DOWNSTREAM_INDEX 100
+
 
 typedef struct
 {
@@ -77,6 +81,7 @@ typedef struct
 
 } STREAMINFO;
 
+
 typedef struct
 {
     int    twaitus; // sleep time between scans
@@ -90,7 +95,7 @@ typedef struct
 
     int WriteFlistToFile; // 1 if output to file
 
-    // STREAMINFO *sinfo;
+    //STREAMINFO *sinfo;
     long   NBstream;
     int    fuserUpdate;
     int    fuserUpdate0;
@@ -98,6 +103,7 @@ typedef struct
     char **PIDtable; // stores names of PIDs
 
 } STREAMINFOPROC;
+
 
 // strructure holding data required for streamCTRL
 typedef struct
@@ -111,12 +117,15 @@ typedef struct
 
 } streamCTRLarg_struct;
 
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+
     errno_t streamCTRL_CTRLscreen();
+
 
 #ifdef __cplusplus
 }

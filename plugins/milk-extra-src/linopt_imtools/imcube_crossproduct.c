@@ -28,6 +28,7 @@ static long  fpi_inimmask;
 static char *imout;
 static long  fpi_imout;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".imcube0", "input image cube 0", "imc0",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inimc0, &fpi_inimc0 },
                                { CLIARG_IMG, ".imcube1", "input image cube 1", "imc1",
@@ -40,11 +41,13 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".imcube0", "input image cube 0", "
 static CLICMDDATA CLIcmddata = { "imcubeXprod", "cross product of two image cubes",
                                  CLICMD_FIELDS_DEFAULTS };
 
+
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 static errno_t imcube_crossproduct(IMGID imgcube0, IMGID imgcube1, IMGID imgmask, char *imoutname)
 {
@@ -91,6 +94,7 @@ static errno_t imcube_crossproduct(IMGID imgcube0, IMGID imgcube1, IMGID imgmask
     return RETURN_SUCCESS;
 }
 
+
 /**
  * @brief Cross product of 2 image cubes
  *
@@ -118,7 +122,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_linopt_imtools__imcube_crossproduct()

@@ -4,23 +4,22 @@
 
 /**
  * @file    stream_monproc.c
- * @brief   monitor stream with multi-level time binning, circular buffer, and
- * dynamic histogram
+ * @brief   monitor stream with multi-level time binning, circular buffer, and dynamic histogram
  */
 
-#include <errno.h>
-#include <fcntl.h>
-#include <float.h>
-#include <glob.h>
 #include <math.h>
 #include <stdlib.h>
+#include <glob.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
+#include <float.h>
 
 #include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/processtools_trigger.h"
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "CommandLineInterface/processtools_trigger.h"
 #include "stream_monproc.h"
 
 static char *inimname;
@@ -29,8 +28,7 @@ static char *inimname;
  * @brief Time binning flag
  *
  * Each bit 'i' set in tbinflag enables a time bin of 2^i frames.
- * Example: tbinflag = 48 (binary 110000) enables bins of 16 (2^4) and 32 (2^5)
- * frames.
+ * Example: tbinflag = 48 (binary 110000) enables bins of 16 (2^4) and 32 (2^5) frames.
  */
 static uint64_t *tbinflag;
 static long      fpi_tbinflag = -1;
@@ -54,14 +52,13 @@ static CLICMDDATA CLIcmddata = { "streammon",
 // Exposed help function
 errno_t stream_monitor_help()
 {
-    printf("Monitor a stream and compute averages and RMS at different time "
-           "scales.\n");
+    printf("Monitor a stream and compute averages and RMS at different time scales.\n");
     printf("The scales are defined by the tbinflag bitmask.\n");
     printf("Also maintains a circular buffer of the last .cbsize frames.\n");
-    printf("Supports input datatypes: uint8, int8, uint16, int16, uint32, int32, "
-           "uint64, int64, float, double.\n");
-    printf("Creates a custom shared memory file <stream>.mon.shm for basic stats "
-           "(Flux, Time) and Histogram.\n");
+    printf("Supports input datatypes: uint8, int8, uint16, int16, uint32, int32, uint64, int64, "
+           "float, double.\n");
+    printf("Creates a custom shared memory file <stream>.mon.shm for basic stats (Flux, Time) and "
+           "Histogram.\n");
     return RETURN_SUCCESS;
 }
 
@@ -141,6 +138,7 @@ void stream_monitor_detach(STREAM_MON_STRUCT *smon)
         munmap(smon, sizeof(STREAM_MON_STRUCT));
     }
 }
+
 
 // ----------------------------------------------------------------------------
 // Histogram Logic
@@ -339,6 +337,7 @@ errno_t stream_monitor_run(const char *inimname_arg,
     cbtimg.md->ownerPID = getpid();
     ImageStreamIO_semflush(cbtimg.im, -1);
 
+
     // ------------------------------------------------------------------------
     // Monitor Shared Memory
     // ------------------------------------------------------------------------
@@ -347,6 +346,7 @@ errno_t stream_monitor_run(const char *inimname_arg,
     {
         return RETURN_FAILURE;
     }
+
 
     // ------------------------------------------------------------------------
     // Binning Setup
@@ -461,6 +461,7 @@ errno_t stream_monitor_run(const char *inimname_arg,
         cbtimg.md->cnt1        = cb_idx;
         cbtimg.md->write       = 1;
         processinfo_update_output_stream(processinfo, cbtimg.ID);
+
 
         // --------------------------------------------------------------------
         // Histogram / Flux / Binning

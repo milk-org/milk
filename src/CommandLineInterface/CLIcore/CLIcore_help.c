@@ -22,6 +22,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "ImageStreamIO/ImageStreamIO_config.h" // For IMAGESTRUCT_VERSION
 
+
 #define COLORRESET "\033[0m"
 #define COLORCMD "\033[94m"
 #define COLORINFO "\033[32m"      // green
@@ -291,6 +292,7 @@ errno_t printInfo()
     return RETURN_SUCCESS;
 }
 
+
 errno_t list_commands()
 {
     int  cmdinfoslen = 38;
@@ -306,6 +308,7 @@ errno_t list_commands()
 
     return RETURN_SUCCESS;
 }
+
 
 errno_t list_commands_module(const char *__restrict modulename)
 {
@@ -355,9 +358,7 @@ errno_t list_commands_module(const char *__restrict modulename)
                 strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
                 printf(COLORCMD "   %-24s" COLORRESET COLORINFO "  %-40s\n" COLORRESET,
                        data.cmd[i].key, cmdinfoshort);
-                //                printf("   %-16s %-20s %-40s %-30s\n",
-                //                data.cmd[i].key, cmpstring, cmdinfoshort,
-                //                data.cmd[i].example);
+                //                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
                 mOK = 1;
             }
         }
@@ -375,6 +376,7 @@ errno_t list_commands_module(const char *__restrict modulename)
 
     return RETURN_SUCCESS;
 }
+
 
 /** @brief Construct command line (CLI) arguments help string
  *
@@ -439,6 +441,7 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstri
                 snprintf(tmpstr1, STRINGMAXLEN_CMD_SYNTAX - 1, " <%s [%s] ->(%s)>",
                          fpscliarg[arg].descr, typestring, fpscliarg[arg].fpstag);
 
+
                 // max number of chars we can write
                 int n = STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr);
                 if (n > 2)
@@ -452,6 +455,7 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstri
 
     return strlen(outargstring);
 }
+
 
 /** @brief Assemble command line (CLI) example command string
  *
@@ -523,7 +527,7 @@ errno_t help_command(const char *__restrict cmdkey)
                    data.cmd[cmdi].key, data.cmd[cmdi].module,
                    data.module[data.cmd[cmdi].moduleindex].shortname, data.cmd[cmdi].info);
 
-            // printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
+            //printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
             printf("\texample> %s\n", data.cmd[cmdi].example);
             printf("\tsrc: %s\n", data.cmd[cmdi].srcfile);
 
@@ -602,12 +606,12 @@ errno_t help_command(const char *__restrict cmdkey)
 
             printf("\n");
             printf("  CLI call arguments:\n");
-            // printf("  CLI#       tagname             Value         description\n");
+            //printf("  CLI#       tagname             Value         description\n");
 
             int CLIargcnt = 0;
             for (int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
-                // int colorcode = colorcodeargCLI;
+                //int colorcode = colorcodeargCLI;
 
                 if (!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
                 {
@@ -624,8 +628,9 @@ errno_t help_command(const char *__restrict cmdkey)
                 switch (data.cmd[cmdi].argdata[argi].type)
                 {
                     /*case CLIARG_FLOAT:
-              SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ float ]
-             %f", data.cmd[cmdi].argdata[argi].val.f); break;*/
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ float ]  %f",
+                                   data.cmd[cmdi].argdata[argi].val.f);
+                    break;*/
 
                 case CLIARG_FLOAT32:
                     SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[float32]  %f",
@@ -643,8 +648,9 @@ errno_t help_command(const char *__restrict cmdkey)
                     break;
 
                     /*case CLIARG_LONG:
-              SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]
-             %ld", data.cmd[cmdi].argdata[argi].val.l); break;*/
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.l);
+                    break;*/
 
                 case CLIARG_INT32:
                     SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ int32 ]  %d",
@@ -769,14 +775,14 @@ errno_t help_command(const char *__restrict cmdkey)
                         strcpy(cursorCopy, cursor);
                         cursorCopy[groupArray[g].rm_eo] = 0;
                         /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
-                   g, groupArray[g].rm_so, groupArray[g].rm_eo,
-                   cursorCopy + groupArray[g].rm_so);*/
+                               g, groupArray[g].rm_so, groupArray[g].rm_eo,
+                               cursorCopy + groupArray[g].rm_so);*/
                     }
                     cursor += offset;
                 }
                 else if (reti == REG_NOMATCH)
                 {
-                    // puts("No match");
+                    //puts("No match");
                 }
                 else
                 {
@@ -801,6 +807,7 @@ errno_t help_command(const char *__restrict cmdkey)
 
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief search for string in command info
@@ -873,14 +880,14 @@ errno_t command_info_search(const char *restrict searchstring)
                     strcpy(cursorCopy, cursor);
                     cursorCopy[groupArray[g].rm_eo] = 0;
                     /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
-                 g, groupArray[g].rm_so, groupArray[g].rm_eo,
-                 cursorCopy + groupArray[g].rm_so);*/
+                           g, groupArray[g].rm_so, groupArray[g].rm_eo,
+                           cursorCopy + groupArray[g].rm_so);*/
                 }
                 cursor += offset;
             }
             else if (reti == REG_NOMATCH)
             {
-                // puts("No match");
+                //puts("No match");
             }
             else
             {

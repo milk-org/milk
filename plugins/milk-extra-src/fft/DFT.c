@@ -39,8 +39,8 @@ errno_t fft_DFT(const char *IDin_name,
     imageID IDinmask;
     imageID IDoutmask;
 
-    // uint32_t NBptsin;
-    // uint32_t NBptsout;
+    //uint32_t NBptsin;
+    //uint32_t NBptsout;
 
     imageID IDcosXX, IDcosYY, IDsinXX, IDsinYY;
 
@@ -440,7 +440,7 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
     double   total = 0;
     imageID  IDout2D;
     int      FORCE_IMZERO = 0;
-    // double imresidual = 0.0;
+    //double imresidual = 0.0;
 
     imageID ID_DFTmask00;
 
@@ -607,29 +607,26 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
 
         data.FLOATARRAY[0] = (float) total;
 
-        /*  if(FORCE_IMZERO==1) // Remove tip-tilt in focal plane mask imaginary
-    part
-    {
-    imresidual = 0.0;
-    ID = image_ID("_foc0");
-    ID1 = create_2Dimage_ID("imresidual", xsize, ysize);
-    for(ii=0; ii<xsize*ysize; ii++)
-    {
-    data.image[ID1].array.F[ii] = data.image[ID].array.CF[ii].im;
-    imresidual += data.image[ID].array.CF[ii].im*data.image[ID].array.CF[ii].im;
-    data.image[ID].array.CF[ii].im = 0.0;
-    }
-    printf("IM RESIDUAL = %lf\n", imresidual);
-    save_fl_fits("imresidual", "imresidual.fits");
-    delete_image_ID("imresidual");
-    }
-    */
+        /*  if(FORCE_IMZERO==1) // Remove tip-tilt in focal plane mask imaginary part
+        {
+        imresidual = 0.0;
+        ID = image_ID("_foc0");
+        ID1 = create_2Dimage_ID("imresidual", xsize, ysize);
+        for(ii=0; ii<xsize*ysize; ii++)
+        {
+        data.image[ID1].array.F[ii] = data.image[ID].array.CF[ii].im;
+        imresidual += data.image[ID].array.CF[ii].im*data.image[ID].array.CF[ii].im;
+        data.image[ID].array.CF[ii].im = 0.0;
+        }
+        printf("IM RESIDUAL = %lf\n", imresidual);
+        save_fl_fits("imresidual", "imresidual.fits");
+        delete_image_ID("imresidual");
+        }
+        */
 
         if (0) // TEST
         {
-            /// @warning This internal test could crash the process as multiple write
-            /// operations to the same filename may occurr: leave option OFF for
-            /// production
+            /// @warning This internal test could crash the process as multiple write operations to the same filename may occurr: leave option OFF for production
 
             FUNC_CHECK_RETURN(mk_amph_from_complex("_foc0", "tmp_foc0_a", "tmp_foc0_p", 0));
 
@@ -643,14 +640,14 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         }
 
         /* for(ii=0; ii<xsize; ii++)
-    for(jj=0; jj<ysize; jj++)
-     {
-     x = 1.0*ii-xsize/2;
-     y = 1.0*jj-ysize/2;
-     r = sqrt(x*x+y*y);
-     if(r<150.0)
-     data.image[IDpupin_mask].array.F[jj*xsize+ii] = 1.0;
-     }*/
+        for(jj=0; jj<ysize; jj++)
+         {
+         x = 1.0*ii-xsize/2;
+         y = 1.0*jj-ysize/2;
+         r = sqrt(x*x+y*y);
+         if(r<150.0)
+         data.image[IDpupin_mask].array.F[jj*xsize+ii] = 1.0;
+         }*/
 
         FUNC_CHECK_RETURN(
             fft_DFT("_foc0", "_fpmzmask", "_pupout2D", "_DFTpupmask", zfactor, 1, 0, &IDout2D));

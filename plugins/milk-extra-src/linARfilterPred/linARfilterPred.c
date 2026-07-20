@@ -63,8 +63,9 @@
 
 #include "linARfilterPred/linARfilterPred.h"
 
-#include "applyPF.h"
 #include "build_linPF.h"
+#include "applyPF.h"
+
 
 #ifdef HAVE_CUDA
 #    include "linalgebra/linalgebra.h"
@@ -261,15 +262,14 @@ static errno_t init_module_CLI()
                        "float LOOPgain, int testmode)");
 
     /*  strcpy(data.cmd[data.NBcmd].key,"applyPfiltRT");
-    strcpy(data.cmd[data.NBcmd].module,__FILE__);
-    data.cmd[data.NBcmd].fp = LINARFILTERPRED_Apply_LinPredictor_RT_cli;
-    strcpy(data.cmd[data.NBcmd].info,"Apply real-time linear predictive
-    filter"); strcpy(data.cmd[data.NBcmd].syntax,"<input data> <predictor
-    filter> <output>"); strcpy(data.cmd[data.NBcmd].example,"applyPfiltRT indata
-    Pfilt outPF"); strcpy(data.cmd[data.NBcmd].Ccall,"long
-    LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name, const char
-    *IDin_name, const char *IDout_name)"); data.NBcmd++;
-  */
+      strcpy(data.cmd[data.NBcmd].module,__FILE__);
+      data.cmd[data.NBcmd].fp = LINARFILTERPRED_Apply_LinPredictor_RT_cli;
+      strcpy(data.cmd[data.NBcmd].info,"Apply real-time linear predictive filter");
+      strcpy(data.cmd[data.NBcmd].syntax,"<input data> <predictor filter> <output>");
+      strcpy(data.cmd[data.NBcmd].example,"applyPfiltRT indata Pfilt outPF");
+      strcpy(data.cmd[data.NBcmd].Ccall,"long LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name, const char *IDin_name, const char *IDout_name)");
+      data.NBcmd++;
+    */
 
     RegisterCLIcommand("applyARpfilt", __FILE__, LINARFILTERPRED_Apply_LinPredictor_cli,
                        "Apply linear auto-regressive filter",
@@ -305,6 +305,7 @@ static errno_t init_module_CLI()
                        "*IDPFout_name, int nbGPU, long "
                        "loop, long NBiter, int SAVEMODE, float tlag, long PFindex)");
 
+
     CLIADDCMD_LinARfilterPred__build_linPF();
     CLIADDCMD_LinARfilterPred__applyPF();
 
@@ -313,29 +314,21 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /*                                                                                                 */
-/* 1. INITIALIZATION */
+/* 1. INITIALIZATION                                                                               */
 /*                                                                                                 */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /*                                                                                                 */
-/* 2. I/O TOOLS */
+/* 2. I/O TOOLS                                                                                    */
 /*                                                                                                 */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 int NBwords(const char sentence[])
 {
@@ -377,7 +370,7 @@ int NBwords(const char sentence[])
  * file starts at tstart, sampling = dt
  * NBpt per file
  * NBfr files
- */
+*/
 
 long LINARFILTERPRED_LoadASCIIfiles(double      tstart,
                                     double      dt,
@@ -397,8 +390,8 @@ long LINARFILTERPRED_LoadASCIIfiles(double      tstart,
     long        kk;
     size_t      linesiz = 0;
     char       *linebuf = 0;
-    // ssize_t linelen=0;
-    // int     ret;
+    //ssize_t linelen=0;
+    //int     ret;
     long    vcnt;
     double  ftime0[200];
     double  var0[200][200];
@@ -411,7 +404,7 @@ long LINARFILTERPRED_LoadASCIIfiles(double      tstart,
     char    imoutname[200];
     FILE   *fpout;
     imageID IDout[200];
-    // int     HPfilt = 1; // high pass filter
+    //int     HPfilt = 1; // high pass filter
     float HPgain = 0.005;
 
     long ii;
@@ -430,7 +423,7 @@ long LINARFILTERPRED_LoadASCIIfiles(double      tstart,
             printf("Found file %s\n", fname);
             fflush(stdout);
             fp = fopen(fname, "r");
-            // linelen =
+            //linelen =
             if (getline(&linebuf, &linesiz, fp) == -1)
             {
                 PRINT_ERROR("getline error");
@@ -616,7 +609,7 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
     uint32_t      xsize, ysize, zsize;
     unsigned long cnt;
     imageID       IDout;
-    // char imname[200];
+    //char imname[200];
     long mmax;
 
     printf("Selecting block %ld ...\n", blkNB);
@@ -690,8 +683,8 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
             {
                 if (data.image[IDblknb].array.UI16[ii] == blkNB)
                 {
-                    // printf("%ld / %ld   cnt = %8ld / %ld\n", ii, xsize, cnt,
-                    // NBmodes1*ysize*zsize); fflush(stdout);
+                    //printf("%ld / %ld   cnt = %8ld / %ld\n", ii, xsize, cnt, NBmodes1*ysize*zsize);
+                    //fflush(stdout);
                     data.image[IDout].array.F[cnt] =
                         data.image[IDin].array.F[kk * xsize * ysize + jj * ysize + ii];
                     cnt++;
@@ -705,17 +698,13 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
     return (IDout);
 }
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /*                                                                                                 */
-/* 3. BUILD PREDICTIVE FILTER */
+/* 3. BUILD PREDICTIVE FILTER                                                                      */
 /*                                                                                                 */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 /** @brief Expand 2D image/matrix in X direction by repeat and shift
  *
@@ -776,20 +765,19 @@ imageID linARfilterPred_repeat_shift_X(const char *IDin_name, long NBstep, const
  *
  * ## Loop mode
  *
- * If LOOPmode = 1, operate in a loop, and re-run filter computation everytime
- * IDin_name changes
+ * If LOOPmode = 1, operate in a loop, and re-run filter computation everytime IDin_name changes
  *
  *
  * ## Input parameters: dynamic mode
  *
- * if <IFoutPF_name>_PFparam image exist, read parameters from it: PFlag,
- * SVDeps, RegLambda, LOOPgain create it in shared memory by default
+ * if <IFoutPF_name>_PFparam image exist, read parameters from it: PFlag, SVDeps, RegLambda, LOOPgain
+ * create it in shared memory by default
  *
  *
  * @return If testmode=2, write 3D output filter
  * @return output filter image indentifier
  *
- */
+   */
 
 imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name,
                                            long                        PForder,
@@ -807,7 +795,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
 
     imageID IDin;
     imageID IDmatA;
-    // imageID IDout;
+    //imageID IDout;
     imageID IDinmask;
     imageID IDoutmask;
     long    nbspl; // Number of samples
@@ -829,16 +817,16 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     int     Save = 0;
     long    xysize;
     long    IDmatC;
-    // int use_magma = 1;                         // use MAGMA library if
-    // available int magmacomp = 0;
+    //int use_magma = 1;                         // use MAGMA library if available
+    //int magmacomp = 0;
 
-    // imageID IDfiltC;
-    //  float *valfarray;
+    //imageID IDfiltC;
+    // float *valfarray;
     float alpha;
     long  PFpix;
-    // char filtname[200];
-    // char filtfname[200];
-    // imageID ID_Pfilt;
+    //char filtname[200];
+    //char filtfname[200];
+    //imageID ID_Pfilt;
     float   val, val0;
     long    ind1;
     imageID IDoutPF2D;    // averaged with previous filters
@@ -855,11 +843,11 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     long      semtrig = 2;
     uint32_t *imsizearray;
 
-    // char fname[200];
+    //char fname[200];
 
-    // time_t t;
-    // struct tm *uttime;
-    // struct timespec timenow;
+    //time_t t;
+    //struct tm *uttime;
+    //struct timespec timenow;
 
     struct timespec t0;
     struct timespec t1;
@@ -949,7 +937,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
         NBiter = 100000000;
     }
 
-    // sprintf(IDoutPF_name3D, "%s_3D", IDoutPF_name);
+    //sprintf(IDoutPF_name3D, "%s_3D", IDoutPF_name);
 
     /// ## Selecting input values
 
@@ -960,8 +948,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     /// Note that an optional variable selection step allows only a
     /// subset of the telemetry variables to be considered.
 
-    /// ### Read input telemetry image IDin_name to measure xsize, ysize and
-    /// number of samples
+    /// ### Read input telemetry image IDin_name to measure xsize, ysize and number of samples
     IDin = image_ID(IDin_name);
 
     switch (data.image[IDin].md[0].naxis)
@@ -1001,13 +988,10 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     printf("xysize = %ld\n", xysize);
 
     /// Once input telemetry size measured, arrays are created:
-    /// - pixarray_x  : x coordinate of each variable (useful to keep track of
-    /// spatial coordinates)
-    /// - pixarray_y  : y coordinate of each variable (useful to keep track of
-    /// spatial coordinates)
+    /// - pixarray_x  : x coordinate of each variable (useful to keep track of spatial coordinates)
+    /// - pixarray_y  : y coordinate of each variable (useful to keep track of spatial coordinates)
     /// - pixarray_xy : combined index (avoids re-computing index frequently)
-    /// - ave_inarray : time averaged value, useful because the predictive filter
-    /// often needs average to be zero, so we will remove it
+    /// - ave_inarray : time averaged value, useful because the predictive filter often needs average to be zero, so we will remove it
 
     pixarray_x = (long *) malloc(sizeof(long) * xsize * ysize);
     if (pixarray_x == NULL)
@@ -1045,7 +1029,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     IDinmask = image_ID("inmask");
     if (IDinmask == -1)
     {
-        NBpixin = 0; // xsize*ysize;
+        NBpixin = 0; //xsize*ysize;
 
         for (uint32_t ii = 0; ii < xsize; ii++)
         {
@@ -1085,12 +1069,9 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     /// selected amond the telemetry.
 
     /// Arrays are created:
-    /// - outpixarray_x  : x coordinate of each output variable (useful to keep
-    /// track of spatial coordinates)
-    /// - outpixarray_y  : y coordinate of each output variable (useful to keep
-    /// track of spatial coordinates)
-    /// - outpixarray_xy : combined output index (avoids re-computing index
-    /// frequently)
+    /// - outpixarray_x  : x coordinate of each output variable (useful to keep track of spatial coordinates)
+    /// - outpixarray_y  : y coordinate of each output variable (useful to keep track of spatial coordinates)
+    /// - outpixarray_xy : combined output index (avoids re-computing index frequently)
 
     outpixarray_x = (long *) malloc(sizeof(long) * xsize * ysize);
     if (outpixarray_x == NULL)
@@ -1116,7 +1097,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     IDoutmask = image_ID("outmask");
     if (IDoutmask == -1)
     {
-        NBpixout = 0; // xsize*ysize;
+        NBpixout = 0; //xsize*ysize;
 
         for (uint32_t ii = 0; ii < xsize; ii++)
         {
@@ -1162,29 +1143,24 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     /// ## Build Empty Data Matrix
     ///
     /// Note: column / row description follows FITS file viewing conventions.\n
-    /// The data matrix is build from the telemetry. Each column (= time sample)
-    /// of the data matrix consists of consecutives columns (= time sample) of the
-    /// input telemetry.\n
+    /// The data matrix is build from the telemetry. Each column (= time sample) of the
+    /// data matrix consists of consecutives columns (= time sample) of the input telemetry.\n
     ///
     /// Variable naming:
-    /// - NBmvec is the number of telemetry vectors (each corresponding to a
-    /// different time) in the data matrix.
+    /// - NBmvec is the number of telemetry vectors (each corresponding to a different time) in the data matrix.
     /// - mvecsize is the size of each vector, equal to NBpixin times PForder
     ///
-    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to
-    /// routine compute_SVDpseudoInverse
+    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse
     // in linopt_imtools (CPU mode) or in linalgebra (GPU mode)\n
     ///
     NBmvec =
-        nbspl - PForder - (int) (PFlag_run) -2; // could put "-1", but "-2" allows user to change
-                                                // PFlag_run by up to 1 frame without reading out
-                                                // of array
-    mvecsize = NBpixin * PForder;               // size of each sample vector for AR filter,
-                                                // excluding regularization
+        nbspl - PForder -
+        (int) (PFlag_run) -2; // could put "-1", but "-2" allows user to change PFlag_run by up to 1 frame without reading out of array
+    mvecsize =
+        NBpixin * PForder; // size of each sample vector for AR filter, excluding regularization
 
-    /// Regularization can be added to penalize strong coefficients in the
-    /// predictive filter. It is optionally implemented by adding extra columns at
-    /// the end of the data matrix.\n
+    /// Regularization can be added to penalize strong coefficients in the predictive filter.
+    /// It is optionally implemented by adding extra columns at the end of the data matrix.\n
     if (REG == 0) // no regularization
     {
         printf("NBmvec   = %ld  -> %ld \n", NBmvec, NBmvec);
@@ -1271,14 +1247,13 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
 
         /// *STEP: Copy IDin to IDincp*
         ///
-        /// Necessary as input may be continuously changing between consecutive loop
-        /// iterations.
+        /// Necessary as input may be continuously changing between consecutive loop iterations.
         ///
         IDincp = image_ID("PFin_copy");
         memcpy(data.image[IDincp].array.F, data.image[IDin].array.F, sizeof(float) * inNBelem);
 
-        // save_fits("PFin_copy", "test_PFin_copy.fits");
-        // save_fits(IDin_name, "test_PFin.fits");
+        //save_fits("PFin_copy", "test_PFin_copy.fits");
+        //save_fits(IDin_name, "test_PFin.fits");
 
         clock_gettime(CLOCK_MILK, &t1);
 
@@ -1332,7 +1307,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
         {
             for (m = 0; m < mvecsize; m++)
             {
-                // m1 = NBmvec + m;
+                //m1 = NBmvec + m;
                 data.image[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] = RegLambda_run;
             }
         }
@@ -1341,7 +1316,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
         {
             save_fits("PFmatD", "PFmatD.fits");
         }
-        // list_image_ID();
+        //list_image_ID();
 
         /// ### Compute pseudo-inverse of PFmatD
         ///
@@ -1370,9 +1345,8 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
         }
         save_fits("PFfmdat", "PFfmdat.fits");
 
-        /// If using MAGMA, call function
-        /// LINALGEBRA_magma_compute_SVDpseudoInverse()\n Otherwise, call function
-        /// linopt_compute_SVDpseudoInverse()\n
+        /// If using MAGMA, call function LINALGEBRA_magma_compute_SVDpseudoInverse()\n
+        /// Otherwise, call function linopt_compute_SVDpseudoInverse()\n
 
         NB_SVD_Modes = 10000;
 
@@ -1470,8 +1444,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
 
             create_2Dimage_ID("psinvPFmat", NBpixin * PForder, NBpixout, &IDoutPF2Dn);
             for (PFpix = 0; PFpix < NBpixout;
-                 PFpix++) // PFpix is the pixel for which the filter is created (axis
-                          // 1 in cube, jj)
+                 PFpix++) // PFpix is the pixel for which the filter is created (axis 1 in cube, jj)
             {
                 // loop on input values
                 for (pix = 0; pix < NBpixin; pix++)
@@ -1600,23 +1573,18 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     return IDoutPF2D;
 }
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /*                                                                                                 */
-/* 4. APPLY PREDICTIVE FILTER */
+/* 4. APPLY PREDICTIVE FILTER                                                                      */
 /*                                                                                                 */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 //
 // real-time apply predictive filter
 //
-// filter can be smaller than input telemetry but needs to include contiguous
-// pixels at the beginning of the input telemetry
+// filter can be smaller than input telemetry but needs to include contiguous pixels at the beginning of the input telemetry
 //
 imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
                                               const char *IDin_name,
@@ -1925,8 +1893,7 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
 //  NBiter: run for fixed number of iteration
 //  SAVEMODE:   0 no file output
 //  			1	write txt and FITS output
-//				2	write FITS telemetry with prediction:
-// replace output measurements with predictions
+//				2	write FITS telemetry with prediction: replace output measurements with predictions
 //
 //	tlag is only used if SAVEMODE = 2
 //  used outmask to identify outputs
@@ -1967,8 +1934,8 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
     FILE *fp;
 
-    // time_t t;
-    // struct tm *uttime;
+    //time_t t;
+    //struct tm *uttime;
     struct timespec timenow;
     double          timesec, timesec0;
     long            IDsave;
@@ -2031,7 +1998,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
                 NBinmaskpix++;
             }
         }
-        // printf("Number of active input modes  = %ld\n", NBinmaskpix);
+        //printf("Number of active input modes  = %ld\n", NBinmaskpix);
     }
     else
     {
@@ -2186,8 +2153,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     //	t = time(NULL);
     //    uttime = gmtime(&t);
     //	clock_gettime(CLOCK_MILK, &timenow);
-    //	timesec0 = 3600.0*uttime->tm_hour  + 60.0*uttime->tm_min
-    //+ 1.0*(timenow.tv_sec % 60) + 1.0e-9*timenow.tv_nsec;
+    //	timesec0 = 3600.0*uttime->tm_hour  + 60.0*uttime->tm_min + 1.0*(timenow.tv_sec % 60) + 1.0e-9*timenow.tv_nsec;
 
     printf("Running on semaphore trigger %d of image %s\n", semtrig,
            data.image[IDmodevalIN].md[0].name);
@@ -2252,13 +2218,12 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         if (iter == 0)
         {
             /// measure time
-            // t = time(NULL);
-            // uttime = gmtime(&t);
+            //t = time(NULL);
+            //uttime = gmtime(&t);
             clock_gettime(CLOCK_MILK, &timenow);
             timesec0 = 1.0 * timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
-            // fprintf(fp, "%02d:%02d:%02ld.%09ld ", uttime->tm_hour, uttime->tm_min,
-            // timenow.tv_sec % 60, timenow.tv_nsec);
+            // fprintf(fp, "%02d:%02d:%02ld.%09ld ", uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
         }
 
         if (SAVEMODE == 1)
@@ -2266,16 +2231,15 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             //		printf("	Saving step (mode = 1) ...");
             //		fflush(stdout);
 
-            // t = time(NULL);
-            // uttime = gmtime(&t);
+            //t = time(NULL);
+            //uttime = gmtime(&t);
             clock_gettime(CLOCK_MILK, &timenow);
             timesec = 1.0 * timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
             kk = 0;
             data.image[IDsave].array.F[iter * (1 + NBmodeIN0 + NBmodeOUT)] =
                 (float) (timesec - timesec0);
-            // printf(" [%f] ",
-            // data.image[IDsave].array.F[iter*(1+NBmodeIN0+NBmodeOUT)]);
+            //printf(" [%f] ", data.image[IDsave].array.F[iter*(1+NBmodeIN0+NBmodeOUT)]);
             kk++;
             for (mode = 0; mode < NBmodeIN0; mode++)
             {
@@ -2423,17 +2387,13 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     return IDPFout;
 }
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /*                                                                                                 */
-/* 5. MISC TOOLS, DIAGNOSTICS */
+/* 5. MISC TOOLS, DIAGNOSTICS                                                                      */
 /*                                                                                                 */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 //
 // IDin_name is a 2 or 3D image, open-loop disturbance

@@ -9,6 +9,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
 /** @brief get parameter file name
  *
  * Most recent parameter value stored in this file
@@ -22,7 +23,7 @@ int functionparameter_GetFileName(FUNCTION_PARAMETER_STRUCT *fps,
     char ffname[STRINGMAXLEN_FULLFILENAME];
     char fname1[STRINGMAXLEN_FILENAME];
     int  l;
-    // char fpsdatadirname[STRINGMAXLEN_DIRNAME];
+    //char fpsdatadirname[STRINGMAXLEN_DIRNAME];
 
     WRITE_DIRNAME(ffname, "%s/%s/fps/", fps->md->workdir, fps->md->datadir);
     EXECUTE_SYSTEM_COMMAND("mkdir -p %s", ffname);

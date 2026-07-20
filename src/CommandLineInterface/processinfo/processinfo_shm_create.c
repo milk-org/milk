@@ -4,14 +4,15 @@
 
 #include <sys/file.h>
 #include <sys/mman.h> // mmap()
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include "CLIcore.h"
 #include <processtools.h>
 
-#include "processinfo_procdirname.h"
 #include "processinfo_shm_list_create.h"
+#include "processinfo_procdirname.h"
+
 
 #define FILEMODE 0666
 
@@ -20,11 +21,10 @@ extern PROCESSINFOLIST *pinfolist;
 /**
  * Create PROCESSINFO structure in shared memory
  *
- * The structure holds real-time information about a process, so its status can
- * be monitored and controlled See structure PROCESSINFO in CLLIcore.h for
- * details
+ * The structure holds real-time information about a process, so its status can be monitored and controlled
+ * See structure PROCESSINFO in CLLIcore.h for details
  *
- */
+*/
 
 PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 {
@@ -59,6 +59,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     DEBUG_TRACEPOINT("getting procdname");
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
+
 
     WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
 
@@ -122,7 +123,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     {
         if (fgets(tmuxname, tmuxnamestrlen, fpout) == NULL)
         {
-            // printf("WARNING: fgets error\n");
+            //printf("WARNING: fgets error\n");
             notmux = 1;
         }
         pclose(fpout);
@@ -180,7 +181,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     pinfo->PID = PID;
 
     // create logfile
-    // char logfilename[300];
+    //char logfilename[300];
     struct timespec tnow;
 
     clock_gettime(CLOCK_MILK, &tnow);

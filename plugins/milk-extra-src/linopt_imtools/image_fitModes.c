@@ -66,7 +66,7 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
     imageID IDmvec;
     imageID IDcoeff;
 
-    // int use_magma = 0;
+    //int use_magma = 0;
 
     if ((reuse == 0) && (fmInit == 1))
     {
@@ -110,12 +110,12 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(IDcoeff_name, m, 1, &IDcoeff));
 
-    // printf(" -> Entering cblas_sgemv \n");
-    // fflush(stdout);
+    //printf(" -> Entering cblas_sgemv \n");
+    //fflush(stdout);
     cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, 1.0, data.image[IDrecm].array.F, n,
                 data.image[IDmvec].array.F, 1, 0.0, data.image[IDcoeff].array.F, 1);
-    // printf(" -> Exiting cblas_sgemv \n");
-    // fflush(stdout);
+    //printf(" -> Exiting cblas_sgemv \n");
+    //fflush(stdout);
 
     // for(ii=0;ii<m;ii++)
     //   printf("  coeff %03ld  =  %g\n", ii, data.image[IDcoeff].array.F[ii]);

@@ -5,8 +5,8 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
-/** @brief Update ouput stream at completion of processinfo-enabled loop
- * iteration
+
+/** @brief Update ouput stream at completion of processinfo-enabled loop iteration
  *
  */
 

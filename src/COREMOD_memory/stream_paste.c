@@ -5,7 +5,7 @@
 /**
  * @file stream_paste.c
  * @brief Paste two equal size 2D streams into an output 2D stream
- */
+*/
 
 #include "CommandLineInterface/CLIcore.h"
 #include "create_image.h"

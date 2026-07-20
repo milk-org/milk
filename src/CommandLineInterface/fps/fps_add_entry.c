@@ -41,15 +41,14 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
     char keywordstringC[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     if (keywordstring[0] == '.')
     {
-        // printf("--------------- keywstring \"%s\" starts with dot -> adding
-        // \"%s\"\n", keywordstring, fps->md->name);
+        //printf("--------------- keywstring \"%s\" starts with dot -> adding \"%s\"\n", keywordstring, fps->md->name);
         snprintf(keywordstringC,
                  FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL, "%s%s",
                  fps->md->name, keywordstring);
     }
     else
     {
-        // printf("--------------- keywstring \"%s\" unchanged\n", keywordstring);
+        //printf("--------------- keywstring \"%s\" unchanged\n", keywordstring);
         strncpy(keywordstringC, keywordstring,
                 FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL - 1);
     }

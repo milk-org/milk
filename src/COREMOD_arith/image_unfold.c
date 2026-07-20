@@ -4,8 +4,8 @@
 
 #include <math.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 // input image names
 static char *inimname;
@@ -211,8 +211,8 @@ INSERT_STD_FPSCLIfunctions
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_arith__image_unfold()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
 
     INSERT_STD_CLIREGISTERFUNC
 

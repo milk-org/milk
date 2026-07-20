@@ -47,14 +47,17 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
     long    sizexy;
     uint8_t datatype;
 
+
     ID = image_ID(ID_name);
 
     naxisin  = data.image[ID].md[0].naxis;
     datatype = data.image[ID].md[0].datatype;
 
+
     IDpixindex = image_ID(IDpixindex_name);
     IDpixmult  = image_ID(IDpixmult_name);
     NBpix      = data.image[IDpixindex].md[0].nelement;
+
 
     if (naxisin < 3)
     {
@@ -116,6 +119,7 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {

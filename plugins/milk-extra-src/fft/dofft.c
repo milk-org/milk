@@ -395,6 +395,7 @@ imageID do1drfft(const char *__restrict in_name, const char *__restrict out_name
         fftaxis = 2;
     }
 
+
     for (i = 0; i < naxis; i++)
     {
         naxesl[i]   = data.image[IDin].md[0].size[i];
@@ -618,6 +619,7 @@ imageID do1drfft(const char *__restrict in_name, const char *__restrict out_name
         }
     }
 
+
     if (OK == 0)
     {
         printf("Error : image dimension not appropriate for FFT\n");
@@ -768,7 +770,7 @@ imageID FFT_do2dfft(const char *in_name, const char *out_name, int dir)
                 naxes[0] * naxes[1], dir, FFTWOPTMODE);
             if (plan == NULL)
             {
-                // if ( Debug > 2)
+                //if ( Debug > 2)
                 fprintf(stdout, "New FFT size [do2dfft %d x %d x %d]: optimizing ...", naxes[1],
                         naxes[0], naxes[2]);
                 fflush(stdout);
@@ -796,7 +798,7 @@ imageID FFT_do2dfft(const char *in_name, const char *out_name, int dir)
                 naxes[0] * naxes[1], dir, FFTWOPTMODE);
             if (plan_double == NULL)
             {
-                // if ( Debug > 2)
+                //if ( Debug > 2)
                 fprintf(stdout, "New FFT size [do2dfft %d x %d x %d]: optimizing ...", naxes[1],
                         naxes[0], naxes[2]);
                 fflush(stdout);
@@ -1041,7 +1043,7 @@ imageID FFT_do2drfft(const char *__restrict in_name, const char *__restrict out_
     if (naxis == 3)
     {
         OK = 1;
-        // idist = naxes[0]*naxes[1];
+        //idist = naxes[0]*naxes[1];
 
         // swapping first 2 axis
         tmp1     = naxes[0];
@@ -1056,8 +1058,7 @@ imageID FFT_do2drfft(const char *__restrict in_name, const char *__restrict out_
                                            naxes[0] * naxes[1], FFTWOPTMODE);
             if (plan == NULL)
             {
-                //	  if ( Debug > 2) fprintf(stdout,"New FFT size [do2drfft %d x %d
-                // x %d]: optimizing ...",naxes[1],naxes[0],naxes[2]);
+                //	  if ( Debug > 2) fprintf(stdout,"New FFT size [do2drfft %d x %d x %d]: optimizing ...",naxes[1],naxes[0],naxes[2]);
                 fflush(stdout);
 
                 char ffttmpcpyname[STRINGMAXLEN_IMGNAME];
@@ -1115,9 +1116,8 @@ imageID FFT_do2drfft(const char *__restrict in_name, const char *__restrict out_
                                                  1, naxes[0] * naxes[1], FFTWOPTMODE);
             if (plan == NULL)
             {
-                //	  if ( Debug > 2) fprintf(stdout,"New FFT size [do2drfft %d x %d
-                // x %d]: optimizing ...",naxes[1],naxes[0],naxes[2]);
-                // fflush(stdout);
+                //	  if ( Debug > 2) fprintf(stdout,"New FFT size [do2drfft %d x %d x %d]: optimizing ...",naxes[1],naxes[0],naxes[2]);
+                //				fflush(stdout);
 
                 char ffttmpcpyname[STRINGMAXLEN_IMGNAME];
                 WRITE_IMAGENAME(ffttmpcpyname, "_ffttmpcpy_%d", (int) getpid());

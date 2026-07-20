@@ -7,8 +7,8 @@
  * @brief   save FITS format files
  */
 
-#include "savefits.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "savefits.h"
 
 #include <pthread.h>
 
@@ -32,19 +32,17 @@ static int  *outbitpix;
 static char *inheader; // import header from this file
 
 // CLI function arguments and parameters
-static CLICMDARGDEF farg[] = {
-    { CLIARG_IMG, ".in_name", "input image", "im1", CLIARG_VISIBLE_DEFAULT, (void **) &inimname,
-      NULL },
-    { CLIARG_STR, ".out_fname", "output FITS file name", "out.fits", CLIARG_VISIBLE_DEFAULT,
-      (void **) &outfname, NULL },
-    { // non-CLI parameter
-      CLIARG_INT64, ".bitpix",
-      "0: auto\n8 /(10) : (un)sig   8-b int\n16/(20) 32/(40) 64/(80) : (un)sig "
-      "int\n-32/-64 : 32/64-b flt\n",
-      "0", CLIARG_HIDDEN_DEFAULT, (void **) &outbitpix, NULL },
-    { CLIARG_STR, ".in_header", "header import from this FITS file", "", CLIARG_HIDDEN_DEFAULT,
-      (void **) &inheader, NULL }
-};
+static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".in_name", "input image", "im1",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &inimname, NULL },
+                               { CLIARG_STR, ".out_fname", "output FITS file name", "out.fits",
+                                 CLIARG_VISIBLE_DEFAULT, (void **) &outfname, NULL },
+                               { // non-CLI parameter
+                                 CLIARG_INT64, ".bitpix",
+                                 "0: auto\n8 /(10) : (un)sig   8-b int\n16/(20) 32/(40) 64/(80) : "
+                                 "(un)sig int\n-32/-64 : 32/64-b flt\n",
+                                 "0", CLIARG_HIDDEN_DEFAULT, (void **) &outbitpix, NULL },
+                               { CLIARG_STR, ".in_header", "header import from this FITS file", "",
+                                 CLIARG_HIDDEN_DEFAULT, (void **) &inheader, NULL } };
 
 // CLI function initialization data
 static CLICMDDATA CLIcmddata = { "saveFITS", "save image as FITS", CLICMD_FIELDS_DEFAULTS };
@@ -59,14 +57,12 @@ static errno_t help_function()
  * @brief Write FITS file - implementation using IMGID
  *
  * @param imgin             input image
- * @param truncate          truncate input image to truncate first slices - -1
- * to ignore
+ * @param truncate          truncate input image to truncate first slices - -1 to ignore
  * @param outputFITSname    output FITS file name
  * @param outputbitpix      bitpix of output image. 0 if match input
  * @param importheaderfile  optional FITS file from which to read keywords
  * @param kwarray           optional keyword array. Set to NULL if unused
- * @param kwarraysize       number of keywords in optional keyword array. Set to
- * 0 if unused.
+ * @param kwarraysize       number of keywords in optional keyword array. Set to 0 if unused.
  * @param FITSIOext         extension to pass instructions to FITSIO
  * @return errno_t
  */
@@ -169,7 +165,7 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID *imgin,
         DEBUG_TRACEPOINT("-------------- SIZE %d = %ld\n", i, naxesl[i]);
     }
 
-    // printf(">>>>>>>> bitpix = %d\n", bitpix);
+    //printf(">>>>>>>> bitpix = %d\n", bitpix);
     COREMOD_iofits_data.FITSIO_status = 0;
     fits_create_img(fptr, bitpix, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
     if (check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -482,16 +478,15 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
 }
 
 /**
- * @brief Write FITS file - wrapper kept for backwards compatibility before
- * introducing optional input image truncation
+ * @brief Write FITS file - wrapper kept for backwards compatibility before introducing
+ * optional input image truncation
  *
  * @param inputimname       input image name
  * @param outputFITSname    output FITS file name
  * @param outputbitpix      bitpix of output image. 0 if match input
  * @param importheaderfile  optional FITS file from which to read keywords
  * @param kwarray           optional keyword array. Set to NULL if unused
- * @param kwarraysize       number of keywords in optional keyword array. Set to
- * 0 if unused.
+ * @param kwarraysize       number of keywords in optional keyword array. Set to 0 if unused.
  * @return errno_t
  */
 errno_t saveFITS(const char *__restrict inputimname,

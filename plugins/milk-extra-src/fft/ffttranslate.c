@@ -72,8 +72,7 @@ int fft_image_translate(const char *ID_name, const char *ID_out, double xtransl,
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
-    //  fprintf( stdout, "[arith_image_translate %ld %ld %ld     %f %f]\n", ID,
-    //  naxes[0], naxes[1], xtransl, ytransl);
+    //  fprintf( stdout, "[arith_image_translate %ld %ld %ld     %f %f]\n", ID, naxes[0], naxes[1], xtransl, ytransl);
 
     // n0 = (int) ((log10(naxes[0])/log10(2))+0.01);
     // n1 = (int) ((log10(naxes[0])/log10(2))+0.01);

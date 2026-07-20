@@ -35,6 +35,7 @@ extern magma_queue_t magmaqueue;
 
 static long MAGMAloop_iter = 0;
 
+
 static magma_int_t  magma_aux_iwork[1];
 static magma_int_t  magma_lwork, magma_liwork;
 static magma_int_t *magma_iwork;
@@ -98,65 +99,55 @@ errno_t magma_compute_SVDpseudoInverse_addCLIcmd()
 }
 
 /**
- *  @brief Computes matrix pseudo-inverse (AT A)^-1 AT, using
- * eigenvector/eigenvalue decomposition of AT A
+ *  @brief Computes matrix pseudo-inverse (AT A)^-1 AT, using eigenvector/eigenvalue decomposition of AT A
  *
  *
  * Computes pseuso inverse of a matrix.\n
  * Column-major representation used to match magma and lapack.\n
- * When viewed as an image, matrix leading dimension is size[0] = horizontal
- * axis. When viewed in an image viewer, the first column is on the bottom side
- * with the first element in bottom left corner, so the matrix appears rotated
- * counter-clockwise by 90deg from its conventional representation where first
- * column is on the left side.\n Returns transpose of pseudoinverse.\n
+ * When viewed as an image, matrix leading dimension is size[0] = horizontal axis. When viewed in an image viewer, the first column is on the bottom side with the first element in bottom left corner, so the matrix appears rotated counter-clockwise by 90deg from its conventional representation where first column is on the left side.\n
+ * Returns transpose of pseudoinverse.\n
  *
  *
  *
  * ## Matrix representation details
  *
  * Using column-major indexing\n
- * When viewed as a FITS file, the first matrix column (= vector) appears as the
- * bottom line of the FITS image.\n First matrix element is bottom left corner,
- * second element is immediately to the right of it.
+ * When viewed as a FITS file, the first matrix column (= vector) appears as the bottom line of the FITS image.\n
+ * First matrix element is bottom left corner, second element is immediately to the right of it.
  *
- * Noting elements as a[row,column] = a[i,j], elements are accessed as in memory
- * as: a[ j * M + i ]
+ * Noting elements as a[row,column] = a[i,j], elements are accessed as in memory as:
+ * 		a[ j * M + i ]
  *
  * FITS file representation (ds9 view) starts from bottom left corner.
  *
  * 		a[000,N-1] -> a[001,N-1] -> ... -> a[M-1,N-1]
  * 		............................................. ^
  * 		a[000,001] -> a[001,001] -> ... -> a[M-1,001] ^
- * 		a[000,000] -> a[001,000] -> ... -> a[M-1,000] ^     : this is
- * the first matrix row
+ * 		a[000,000] -> a[001,000] -> ... -> a[M-1,000] ^     : this is the first matrix row
  *
  * Note that a tall input matrix (M>N) will appear short if viewed as an image.
- * To view the FITS file in the conventional matrix view, rotate by 90 deg
- * clockwise.
+ * To view the FITS file in the conventional matrix view, rotate by 90 deg clockwise.
  *
  *
  *
  * ## Application Notes
  *
- *  Use LOOPmode = 1 for computing the same size SVD, same input and output
- * location
+ *  Use LOOPmode = 1 for computing the same size SVD, same input and output location
  *
  * ### Use case: Response matrix to compute control matrix
  *
- * When using function to invert AO response matrix with AOloopControl module,
- * input is 2D or 3D image: M: number of sensors    (AO control) =  size[0] (2D)
- * = size[0]*size[1] (3D) N: number of actuators  (AO control) =  size[1] (2D) =
- *         size[2] (3D)
+ * When using function to invert AO response matrix with AOloopControl module, input is 2D or 3D image:
+ * 		M: number of sensors    (AO control) =  size[0] (2D) = size[0]*size[1] (3D)
+ * 		N: number of actuators  (AO control) =  size[1] (2D) =         size[2] (3D)
  *
  * 	We assume M>N
  *
  *
  * ### Use case: Predictive control
  *
- * When using function to compute pseudo-inverse of data matrix (predictive
- * control), input matrix is a 2D image which is the Transpose of the data
- * matrix. M: number of measurements samples  = size[0] (2D) N: dimension of
- * each measurement   = size[1] (2D)
+ * When using function to compute pseudo-inverse of data matrix (predictive control), input matrix is a 2D image which is the Transpose of the data matrix.
+ *		M: number of measurements samples  = size[0] (2D)
+ *		N: dimension of each measurement   = size[1] (2D)
  *
  * We assume M>N
  *
@@ -191,73 +182,59 @@ errno_t magma_compute_SVDpseudoInverse_addCLIcmd()
  *
  *  STEP 1 :   Fill input data into magmaf_h_A on host
  *
- *  STEP 2 :   Copy input data to GPU                                 ->
- * magmaf_d_A        (MxN matrix on device)
+ *  STEP 2 :   Copy input data to GPU                                 -> magmaf_d_A        (MxN matrix on device)
  *
- *  STEP 3 :   Compute  trans(A) x A   : magmaf_d_A x magmaf_d_A      ->
- * magmaf_d_AtA      (NxN matrix on device)
+ *  STEP 3 :   Compute  trans(A) x A   : magmaf_d_A x magmaf_d_A      -> magmaf_d_AtA      (NxN matrix on device)
  *
- *  STEP 4 :   Compute eigenvalues and eigenvectors of A^T A          ->
- * magmaf_d_AtA      (NxN matrix on device) Calls magma_ssyevd_gpu : Compute the
- * eigenvalues and optionally eigenvectors of a symmetric real matrix in single
- * precision, GPU interface, big matrix. This function computes in single
- * precision all eigenvalues and, optionally, eigenvectors of a real symmetric
- * matrix A defined on the device. The  first parameter can take the values
- * MagmaVec,'V' or MagmaNoVec,'N' and answers the question whether the
- * eigenvectors are desired. If the eigenvectors are desired, it uses a divide
- * and conquer algorithm.  The symmetric matrix A can be stored in lower
- * (MagmaLower,'L') or upper  (MagmaUpper,'U') mode. If the eigenvectors are
- * desired, then on exit A contains orthonormal eigenvectors. The eigenvalues
- * are stored in an array w
+ *  STEP 4 :   Compute eigenvalues and eigenvectors of A^T A          -> magmaf_d_AtA      (NxN matrix on device)
+ *     Calls magma_ssyevd_gpu :
+ *     Compute the eigenvalues and optionally eigenvectors of a symmetric real matrix in single precision, GPU interface, big matrix.
+ *     This function computes in single precision all eigenvalues and, optionally, eigenvectors of a real symmetric matrix A defined on the device.
+ *     The  first parameter can take the values MagmaVec,'V' or MagmaNoVec,'N' and answers the question whether the eigenvectors are desired.
+ *     If the eigenvectors are desired, it uses a divide and conquer algorithm.  The symmetric matrix A can be stored in lower (MagmaLower,'L')
+ *     or upper  (MagmaUpper,'U') mode. If the eigenvectors are desired, then on exit A contains orthonormal eigenvectors.
+ *     The eigenvalues are stored in an array w
  *
  *  STEP 5 :   Set eigenvalue limit
  *
  *  STEP 6 :   Write eigenvectors to V^T matrix
  *
- *  STEP 7 :   Write eigenvectors/eigenvalue to magma_h_VT1 if eigenvalue >
- * limit Copy to magma_d_VT1
+ *  STEP 7 :   Write eigenvectors/eigenvalue to magma_h_VT1 if eigenvalue > limit
+ *           Copy to magma_d_VT1
  *
  *  STEP 8 :   Compute M2 = VT1 VT. M2 is (AT A)^-1
  *
  *  STEP 9 :   Compute Ainv = M2 A. This is the pseudo inverse
  *
- * @note SVDeps^2 is applied as a limit to the eigenvectors of AT A, which are
- * equal to the squares of the singular values of A, so this is equivalent to
- * applying SVDeps as a limit on the singular values of A
- * @note When used to compute AO control matrix, N=number of actuators/modes,
- * M=number of WFS elements
- * @note EIGENVALUES are good to about 1e-6 of peak eigenvalue in single
- * precision, much better with double precision
+ * @note SVDeps^2 is applied as a limit to the eigenvectors of AT A, which are equal to the squares of the singular values of A, so this is equivalent to applying SVDeps as a limit on the singular values of A
+ * @note When used to compute AO control matrix, N=number of actuators/modes, M=number of WFS elements
+ * @note EIGENVALUES are good to about 1e-6 of peak eigenvalue in single precision, much better with double precision
  * @note 2.5x faster in single precision
  *
- * @note If provided with an additional data matrix named "", an additional
- * Matrix Matrix product between Ainv and the provided matrix will be performed.
- * This feature is used for predictive control and sensor fusion to create a
- * control matrix.
+ * @note If provided with an additional data matrix named "", an additional Matrix Matrix product between Ainv and the provided matrix will be performed. This feature is used for predictive control and sensor fusion to create a control matrix.
  *
  * TEST MODE OUTPOUT
  *
  * non-QDWH mode:
  *
  * test_mA.fits               content of magmaf_h_A
- * test_mAtA.fits             content of transpose(A) x A = magmaf_d_AtA (output
- * of STEP 3) test_eigenv.dat            list of eigenvalues test_SVDmodes.log
- *        number of singular values kept test_mM2.fits              matrix M2
- * (output of STEP 8) test_mVT.fits              matrix transpose(V) =
- * eigenvectors (output of step 6) test_mAinv.fits            transpose of
- * pseudoinverse test_AinvA.fits            product of Ainv with A, should be
- * close to identity matrix size NxN
+ * test_mAtA.fits             content of transpose(A) x A = magmaf_d_AtA (output of STEP 3)
+ * test_eigenv.dat            list of eigenvalues
+ * test_SVDmodes.log          number of singular values kept
+ * test_mM2.fits              matrix M2 (output of STEP 8)
+ * test_mVT.fits              matrix transpose(V) = eigenvectors (output of step 6)
+ * test_mAinv.fits            transpose of pseudoinverse
+ * test_AinvA.fits            product of Ainv with A, should be close to identity matrix size NxN
  *
  *
  * QDWH mode:
  *
  * test_mA.QDWH.fits          content of magmaf_h_A
- * test_Aorig.QDWH.txt        content of magmaf_h_A prior to calling psinv
- * function test_sv.QDWH.dat           singular values after call to psinv
- * function test_SVDmodes.QDWH.log     number of singular values kept (note :
- * independent form pseudo-inverse computation) test_mAinv.QDWH.fits  transpose
- * of pseudoinverse test_AinvA.QDWH.fits       product of Ainv with A, should be
- * close to identity matrix size NxN
+ * test_Aorig.QDWH.txt        content of magmaf_h_A prior to calling psinv function
+ * test_sv.QDWH.dat           singular values after call to psinv function
+ * test_SVDmodes.QDWH.log     number of singular values kept (note : independent form pseudo-inverse computation)
+ * test_mAinv.QDWH.fits       transpose of pseudoinverse
+ * test_AinvA.QDWH.fits       product of Ainv with A, should be close to identity matrix size NxN
  */
 
 errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
@@ -287,8 +264,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     imageID ID_PFfmdat = -1; // optional final M-M product
 
     /// Timing tests
-    // int timing = 1;                                                        /**<
-    // 1 if timing test ON, 0 otherwise */
+    // int timing = 1;                                                        /**< 1 if timing test ON, 0 otherwise */
 
     // timers
     struct timespec t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13;
@@ -319,20 +295,22 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     clock_gettime(CLOCK_MILK, &t0);
 
     /**
-   *
-   *
-   * MATRIX REPRESENTATION CONVENTION
-   *
+     *
+     *
+     * MATRIX REPRESENTATION CONVENTION
+     *
 
-   *
-   */
+     *
+     */
 
     ///
-    /// MAGMA uses column-major matrices. For matrix A with dimension (M,N),
-    /// element A(i,j) is A[ j*M + i] i = 0 ... M : row index, coefficient of a
-    /// vector j = 0 ... N : column index, vector index M is the matrix leading
-    /// dimension = lda M = number of rows N = number of columns (assuming here
-    /// that vector = column of the matrix)
+    /// MAGMA uses column-major matrices. For matrix A with dimension (M,N), element A(i,j) is A[ j*M + i]
+    /// i = 0 ... M : row index, coefficient of a vector
+    /// j = 0 ... N : column index, vector index
+    /// M is the matrix leading dimension = lda
+    /// M = number of rows
+    /// N = number of columns
+    /// (assuming here that vector = column of the matrix)
     ///
 
     ID_Rmatrix = image_ID(ID_Rmatrix_name);
@@ -365,9 +343,9 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         }
     }
 
-    // TEST
-    // for(ii=0;ii<N;ii++)
-    // data.image[ID_Rmatrix].array.F[ii*M+ii] += 1.0;
+    //TEST
+    //for(ii=0;ii<N;ii++)
+    //data.image[ID_Rmatrix].array.F[ii*M+ii] += 1.0;
 
     if (VERBOSE_LINALGEBRA_magma_compute_SVDpseudoInverse == 1)
     {
@@ -429,6 +407,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     float *magmaf_h_Ainv;
     float *magmaf_h_M2;
 
+
     // =================================================================
     //             MEMORY ALLOCATION
     //
@@ -460,7 +439,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             printf("MAGMA allocating double %d x %d = %ld byte\n", (int) M, (int) N,
                    sizeof(double) * M * N);
 
-            // TESTING_MALLOC_DEV(magma_d_A, M * N);
+            //TESTING_MALLOC_DEV(magma_d_A, M * N);
             if (MAGMA_SUCCESS != magma_dmalloc(&magma_d_A, M * N))
             {
                 fprintf(stderr, "!!!! magma_malloc failed\n");
@@ -502,6 +481,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     // if(timing==1)
     magma_queue_sync(magmaqueue);
     clock_gettime(CLOCK_MILK, &t1);
+
 
     // ****************************************************
     // STEP 1 :   Fill input data into magmaf_h_A on host
@@ -554,8 +534,8 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         {
             if (testmode == 1) // need magma_h_A for testing
             {
-                // for(ii=0; ii<M*N; ii++)
-                //     magma_h_A[ii] = data.image[ID_Rmatrix].array.D[ii];
+                //for(ii=0; ii<M*N; ii++)
+                //    magma_h_A[ii] = data.image[ID_Rmatrix].array.D[ii];
                 memcpy(magma_h_A, data.image[ID_Rmatrix].array.D, sizeof(double) * M * N);
                 // copy from host to device
                 magma_dsetmatrix(M, N, magma_h_A, M, magma_d_A, M, magmaqueue);
@@ -566,6 +546,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             }
         }
     }
+
 
     if (testmode == 1)
     {
@@ -597,6 +578,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     // STEP 2 :   Copy input data from CPU to GPU
     // ****************************************************
 
+
     // copy from host to device
     //
 
@@ -619,8 +601,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         clock_gettime(CLOCK_MILK, &t2);
 
         // ****************************************************
-        // STEP 3 :   Compute trans(A) x A    : magmaf_d_A x magmaf_d_A      ->
-        // magmaf_d_AtA      (NxN matrix on device)
+        // STEP 3 :   Compute trans(A) x A    : magmaf_d_A x magmaf_d_A      -> magmaf_d_AtA      (NxN matrix on device)
         // ****************************************************
 
         if (MAGMAfloat == 1)
@@ -630,8 +611,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             magmablas_ssymmetrize(MagmaLower, N, magmaf_d_AtA, N, magmaqueue);
 
             // Slower alternative
-            // magma_sgemm(  MagmaTrans, MagmaNoTrans, N, N, M, 1.0, magmaf_d_A, M,
-            // magmaf_d_A, M, 0.0,  magmaf_d_AtA, N, magmaqueue);
+            //magma_sgemm(  MagmaTrans, MagmaNoTrans, N, N, M, 1.0, magmaf_d_A, M, magmaf_d_A, M, 0.0,  magmaf_d_AtA, N, magmaqueue);
         }
         else
         {
@@ -671,19 +651,19 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             FUNC_CHECK_RETURN(delete_image_ID("mAtA", DELETE_IMAGE_ERRMODE_IGNORE));
         }
 
-        // if(timing==1)
+        //if(timing==1)
         magma_queue_sync(magmaqueue);
         clock_gettime(CLOCK_MILK, &t3);
 
         // ****************************************************
-        // STEP 4 :   Compute eigenvalues and eigenvectors of AT A   -> magmaf_d_AtA
-        // (NxN matrix on device)
+        // STEP 4 :   Compute eigenvalues and eigenvectors of AT A   -> magmaf_d_AtA      (NxN matrix on device)
         //
         // SVD of AT A = V S^2 VT
         // calls function magma_ssyevd_gpu
         //
         //
         // ****************************************************
+
 
         if (MAGMAloop_iter == 0)
         {
@@ -723,6 +703,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             magma_liwork = magma_aux_iwork[0];
         }
 
+
         if (MAGMAloop_iter == 0)
         {
             if (MAGMAfloat == 1)
@@ -741,14 +722,13 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             }
         }
 
-        // if(timing==1)
+        //if(timing==1)
         magma_queue_sync(magmaqueue);
         clock_gettime(CLOCK_MILK, &t4);
 
         if (MAGMAfloat == 1)
         {
-            // SSYEVD computes all eigenvalues and, optionally, eigenvectors of a real
-            // symmetric matrix A
+            // SSYEVD computes all eigenvalues and, optionally, eigenvectors of a real symmetric matrix A
             if (magmaXmode == 1)
             {
                 magma_ssyevdx_gpu(MagmaVec, MagmaRangeI, MagmaLower, N, magmaf_d_AtA, N, 0.0, 1.0,
@@ -763,11 +743,9 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         }
         else
         {
-            // CODE CAN HANG HERE - THIS HAPPENS ONCE OUT OF multiple 1000s EXECUTIONS
-            // WHEN RUNNING IN A LOOP.. SEEMS TO BE A MAGMA ISSUE
+            // CODE CAN HANG HERE - THIS HAPPENS ONCE OUT OF multiple 1000s EXECUTIONS WHEN RUNNING IN A LOOP.. SEEMS TO BE A MAGMA ISSUE
 
-            // SSYEVD computes all eigenvalues and, optionally, eigenvectors of a real
-            // symmetric matrix A
+            // SSYEVD computes all eigenvalues and, optionally, eigenvectors of a real symmetric matrix A
             magma_dsyevd_gpu(MagmaVec, MagmaLower, N, magma_d_AtA, N, magma_w1, magma_h_R, N,
                              magma_h_work, magma_lwork, magma_iwork, magma_liwork, &info);
 
@@ -801,9 +779,10 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             }
         }
 
-        // if(timing==1)
+        //if(timing==1)
         magma_queue_sync(magmaqueue);
         clock_gettime(CLOCK_MILK, &t5);
+
 
         if (testmode == 1)
         {
@@ -944,8 +923,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         }
 
         // ****************************************************
-        // STEP 7 :   Write eigenvectors/eigenvalue to magma_h_VT1 if eigenvalue >
-        // limit
+        // STEP 7 :   Write eigenvectors/eigenvalue to magma_h_VT1 if eigenvalue > limit
         //          Copy to magma_d_VT1
         // ****************************************************
         DEBUG_TRACEPOINT("Write eigenvectors/eigenvalue to magma_h_VT1 if eigenvalue > "
@@ -1002,7 +980,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             }
         }
 
-        // if(timing==1)
+        //if(timing==1)
         magma_queue_sync(magmaqueue);
         clock_gettime(CLOCK_MILK, &t6);
 
@@ -1089,7 +1067,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             }
         }
 
-        // if(timing==1)
+        //if(timing==1)
         magma_queue_sync(magmaqueue);
         clock_gettime(CLOCK_MILK, &t7);
 
@@ -1138,7 +1116,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             }
         }
 
-        // if(timing==1)
+        //if(timing==1)
         magma_queue_sync(magmaqueue);
         clock_gettime(CLOCK_MILK, &t8);
 
@@ -1160,6 +1138,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     //
     // At this point, pseudo-inverse is in magma_h_Ainv or magmaf_h_Ainv
     //
+
 
     if (testmode == 1)
     {
@@ -1192,7 +1171,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         FUNC_CHECK_RETURN(delete_image_ID("mAinv", DELETE_IMAGE_ERRMODE_IGNORE));
     }
 
-    // if(timing==1)
+    //if(timing==1)
     magma_queue_sync(magmaqueue);
     clock_gettime(CLOCK_MILK, &t9);
 
@@ -1263,7 +1242,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         }
     }
 
-    // if(timing==1)
+    //if(timing==1)
     magma_queue_sync(magmaqueue);
     clock_gettime(CLOCK_MILK, &t11);
 
@@ -1351,10 +1330,12 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         magma_ssetmatrix(M, K, data.image[ID_PFfmdat].array.F, M, magmaf_d_PFfmdat, M, magmaqueue);
 
+
         magma_sgetmatrix(N, K, magmaf_d_PF, N, magmaf_h_PF, N, magmaqueue);
 
         magma_sgemm(MagmaTrans, MagmaNoTrans, N, K, M, 1.0, magmaf_d_Ainv, M, magmaf_d_PFfmdat, M,
                     0.0, magmaf_d_PF, N, magmaqueue);
+
 
         magma_sgetmatrix(N, K, magmaf_d_PF, N, magmaf_h_PF, N, magmaqueue);
 
@@ -1421,7 +1402,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         magma_finalize(); //  finalize  Magma
     }
 
-    // if(timing==1)
+    //if(timing==1)
     //{
     t01d = timespec_diff_double(t0, t1);
 

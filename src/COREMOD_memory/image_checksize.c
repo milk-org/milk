@@ -46,28 +46,24 @@ int check_3Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize, uint32_t z
     ID     = image_ID(ID_name);
     if (data.image[ID].md[0].naxis != 3)
     {
-        /*      printf("Wrong naxis : %ld - should be
-     * 3\n",data.image[ID].md[0].naxis);*/
+        /*      printf("Wrong naxis : %ld - should be 3\n",data.image[ID].md[0].naxis);*/
         retval = 0;
     }
     if (retval == 1)
     {
         if ((xsize > 0) && (data.image[ID].md[0].size[0] != xsize))
         {
-            /*	  printf("Wrong xsize : %ld - should be
-       * %ld\n",data.image[ID].md[0].size[0],xsize);*/
+            /*	  printf("Wrong xsize : %ld - should be %ld\n",data.image[ID].md[0].size[0],xsize);*/
             retval = 0;
         }
         if ((ysize > 0) && (data.image[ID].md[0].size[1] != ysize))
         {
-            /*	  printf("Wrong ysize : %ld - should be
-       * %ld\n",data.image[ID].md[0].size[1],ysize);*/
+            /*	  printf("Wrong ysize : %ld - should be %ld\n",data.image[ID].md[0].size[1],ysize);*/
             retval = 0;
         }
         if ((zsize > 0) && (data.image[ID].md[0].size[2] != zsize))
         {
-            /*	  printf("Wrong zsize : %ld - should be
-       * %ld\n",data.image[ID].md[0].size[2],zsize);*/
+            /*	  printf("Wrong zsize : %ld - should be %ld\n",data.image[ID].md[0].size[2],zsize);*/
             retval = 0;
         }
     }

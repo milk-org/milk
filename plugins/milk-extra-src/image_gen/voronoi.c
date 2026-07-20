@@ -6,6 +6,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
 // input points positions, ASCII file
 static char *inpos;
 
@@ -23,6 +24,7 @@ static long   fpi_radius = -1;
 static float *gapsize;
 static long   fpi_gapsize = -1;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inpos", "points positions, filename", "pts.dat",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inpos, NULL },
                                FARG_OUTIM2D(outim),
@@ -31,14 +33,17 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inpos", "points positions, filena
                                { CLIARG_FLOAT32, ".gapsize", "gap size", "0.1",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &gapsize, &fpi_gapsize } };
 
+
 static CLICMDDATA CLIcmddata = { "voronoi", "make Voronoi map from points file",
                                  CLICMD_FIELDS_DEFAULTS };
+
 
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 /**
  * Create Voronoi map
@@ -66,12 +71,14 @@ imageID image_gen_make_voronoi_map(IMGID *imgpos,
     // Create output image if needed
     imcreateIMGID(imgout);
 
+
     uint32_t xsize  = imgout->md->size[0];
     uint32_t ysize  = imgout->md->size[1];
     uint64_t xysize = xsize * ysize;
     uint32_t NBpt   = imgpos->md->size[1];
 
-    // printf("%u points\n", NBpt);
+
+    //printf("%u points\n", NBpt);
 
     int64_t *__restrict nearest_index;
     float *__restrict nearest_distance2;
@@ -161,6 +168,7 @@ imageID image_gen_make_voronoi_map(IMGID *imgpos,
         }
     }
 
+
     // add gap
     int gapsizepix = (int) (maxsep * xsize);
     // int gapsizepix2 = (int) (maxsep*xsize/sqrt(2.0));
@@ -217,6 +225,7 @@ imageID image_gen_make_voronoi_map(IMGID *imgpos,
         }
     }
 
+
     free(nearest_index);
     free(nearest_distance2);
     free(nextnearest_index);
@@ -224,8 +233,10 @@ imageID image_gen_make_voronoi_map(IMGID *imgpos,
 
     free(gapim);
 
+
     return (imgout->ID);
 }
+
 
 static errno_t compute_function()
 {
@@ -237,6 +248,7 @@ static errno_t compute_function()
     // link/create output image/stream
     FARG_OUTIM2DCREATE(outim, imgout, _DATATYPE_INT32);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     {
@@ -244,6 +256,7 @@ static errno_t compute_function()
                                    *radius, // maximum radius of each Voronoi zone
                                    *gapsize // gap between Voronoi zones
         );
+
 
         processinfo_update_output_stream(processinfo, imgout.ID);
     }
@@ -253,7 +266,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_image_gen__voronoi()

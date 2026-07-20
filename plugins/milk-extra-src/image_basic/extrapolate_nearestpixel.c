@@ -97,14 +97,14 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
         for (jj = 0; jj < naxes[1]; jj++)
         {
             /*if(IDmask1==-1)
-          OKpix = 1;
-      else
-      {
-          if(data.image[IDmask1].array.F[jj*naxes[1]+ii]>0.5)
-              OKpix = 1;
-          else
-              OKpix = 0;
-      }*/
+                OKpix = 1;
+            else
+            {
+                if(data.image[IDmask1].array.F[jj*naxes[1]+ii]>0.5)
+                    OKpix = 1;
+                else
+                    OKpix = 0;
+            }*/
             bdist = (double) (naxes[0] + naxes[1]);
             bdist = bdist * bdist;
             for (k = 0; k < NBmaskpts; k++)

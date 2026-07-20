@@ -10,9 +10,9 @@
 #ifndef _INFO_STREAMMONPROC_H
 #define _INFO_STREAMMONPROC_H
 
-#include "CommandLineInterface/CLIcore.h"
 #include <stdint.h>
 #include <time.h>
+#include "CommandLineInterface/CLIcore.h"
 
 // Maximum number of frames in the history circular buffer
 #define STREAM_MON_MAX_SAMPLES 1024
@@ -41,13 +41,14 @@ typedef struct
     float hist_min_buf[STREAM_MON_MAX_SAMPLES];
     float hist_max_buf[STREAM_MON_MAX_SAMPLES];
 
-    uint32_t hist_target_dist[STREAM_MON_MAX_HIST_BINS]; // Target pixel count per bin
-                                                         // (unused in linear mode?)
-    // Note: hist_thresholds removed/deprecated in favor of per-frame min/max
-    // reconstruction float    hist_thresholds[STREAM_MON_MAX_HIST_BINS + 1];
+    uint32_t hist_target_dist
+        [STREAM_MON_MAX_HIST_BINS]; // Target pixel count per bin (unused in linear mode?)
+    // Note: hist_thresholds removed/deprecated in favor of per-frame min/max reconstruction
+    // float    hist_thresholds[STREAM_MON_MAX_HIST_BINS + 1];
     uint32_t hist_counts[STREAM_MON_MAX_SAMPLES][STREAM_MON_MAX_HIST_BINS]; // Histogram history
 
 } STREAM_MON_STRUCT;
+
 
 // CLI Registration
 errno_t CLIADDCMD_info__stream_monproc();

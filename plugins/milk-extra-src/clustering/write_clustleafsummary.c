@@ -4,10 +4,11 @@
 
 #include <math.h>
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "clustering_defs.h"
+
 
 errno_t write_clustleafsummary(CLUSTERTREE *ctree,
                                IMGID        img,
@@ -18,6 +19,7 @@ errno_t write_clustleafsummary(CLUSTERTREE *ctree,
                                const char *__restrict outdname)
 {
     DEBUG_TRACE_FSTART();
+
 
     uint32_t xsize = img.md->size[0];
     uint32_t ysize = img.md->size[1];
@@ -33,6 +35,7 @@ errno_t write_clustleafsummary(CLUSTERTREE *ctree,
         zsize  = ysize;
     }
 
+
     char fname[STRINGMAXLEN_FILENAME];
     WRITE_FILENAME(fname, "%s/clust.leafsummary.dat", outdname);
     DEBUG_TRACEPOINT("writing %s", fname);
@@ -44,6 +47,7 @@ errno_t write_clustleafsummary(CLUSTERTREE *ctree,
     fprintf(fp, "# col3   datasq\n");
     fprintf(fp, "# col4   radius2\n");
     fprintf(fp, "# col5   radius3/threshold\n");
+
 
     long NBLFcluster = 0;
     for (long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
@@ -68,6 +72,7 @@ errno_t write_clustleafsummary(CLUSTERTREE *ctree,
                 fprintf(fpleaf, "# N        %5ld\n", ctree->CFarray[CFindex].N);
                 fprintf(fpleaf, "# datassq %16g\n", (double) ctree->CFarray[CFindex].datassq);
                 fprintf(fpleaf, "# radius2 %16g\n", (double) ctree->CFarray[CFindex].radius2);
+
 
                 for (long frame = 0; frame < NBframe; frame++)
                 {

@@ -7,11 +7,11 @@
  * @brief   Standalone runner for stream_monproc
  */
 
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+#include <getopt.h>
+#include <string.h>
 
 #include "CommandLineInterface/CLIcore.h"
 #include "stream_monproc.h"
@@ -49,8 +49,7 @@ int main(int argc, char *argv[])
             printf("  -b, --binflag <int>   Time binning flag (default: %lu)\n", binflag);
             printf("  -c, --cbsize <int>    Circular buffer size (default: %u)\n", cbsize);
             printf("  -p, --procinfo        Enable process info\n");
-            printf("  -f, --fps             Enable FPS (Function Parameter "
-                   "Structure)\n");
+            printf("  -f, --fps             Enable FPS (Function Parameter Structure)\n");
             printf("  -h, --help            Show this help message\n");
             printf("\n");
             stream_monitor_help();

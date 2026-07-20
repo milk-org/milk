@@ -8,7 +8,8 @@
 #include "CFmeminit.h"
 #include "update_level.h"
 
-// #define DEBUGPRINT
+//#define DEBUGPRINT
+
 
 /**
  * @brief Condense single node if possible
@@ -43,8 +44,7 @@ errno_t ctree_condense_node(CLUSTERTREE *ctree, long CFindex, int *op)
         }
     }
 
-    // If the total number of descendents is between 1 and B, we can condense
-    // (compress levels)
+    // If the total number of descendents is between 1 and B, we can condense (compress levels)
     //
     if ((nbnewchild > 0) && (nbnewchild < ctree->B) &&
         (nbnewchild > ctree->CFarray[CFindex].NBchild))
@@ -55,6 +55,7 @@ errno_t ctree_condense_node(CLUSTERTREE *ctree, long CFindex, int *op)
         {
             FUNC_RETURN_FAILURE("malloc error");
         }
+
 
         for (int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
         {
@@ -80,6 +81,7 @@ errno_t ctree_condense_node(CLUSTERTREE *ctree, long CFindex, int *op)
             }
         }
 
+
         // update children
         for (int nchi = 0; nchi < nbnewchild; nchi++)
         {
@@ -97,9 +99,11 @@ errno_t ctree_condense_node(CLUSTERTREE *ctree, long CFindex, int *op)
         *op = 1;
     }
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Condense tree

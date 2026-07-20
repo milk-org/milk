@@ -54,8 +54,8 @@ static errno_t help_function()
 }
 
 /// errmode values :
-/// LOADFITS_ERRMODE_IGNORE  (0) print warning, do not show error messages,
-/// continue LOADFITS_ERRMODE_WARNING (1) print error, continue
+/// LOADFITS_ERRMODE_IGNORE  (0) print warning, do not show error messages, continue
+/// LOADFITS_ERRMODE_WARNING (1) print error, continue
 /// LOADFITS_ERRMODE_ERROR   (2) return error
 /// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
@@ -106,7 +106,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
                         printf("attempt # %d failed\n", tr);
                     }
 
-                    // void fits_get_errstatus(int status, char *err_text)
+                    //void fits_get_errstatus(int status, char *err_text)
                     if (status != 0)
                     {
                         if (errmode > 1)
@@ -134,7 +134,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
             }
         }
 
-        // printf("fileOK = %d\n", fileOK);
+        //printf("fileOK = %d\n", fileOK);
 
         if (fileOK == 0)
         {
@@ -185,7 +185,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         int status = 0;
         fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
         FITSIO_CHECK_ERROR(status, errmode, "fits_get_hdrspace error on %s", file_name);
-        // printf("    nbFITSkeys = %d\n", nbFITSkeys);
+        //printf("    nbFITSkeys = %d\n", nbFITSkeys);
     }
 
     {
@@ -204,7 +204,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
             int status = 0;
             fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &status);
             FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS%ld", file_name, i);
-            // printf("    naxis%ld = %u\n", i, naxes[i]);
+            //printf("    naxis%ld = %u\n", i, naxes[i]);
         }
     }
 
@@ -276,13 +276,11 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
     /* bitpix = 16   TSHORT */
     if (bitpix == 16)
     {
-        // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT,
-        // data.NBKEWORD_DFT);
+        // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
         create_image_ID(imgout->name, naxis, naxes, _DATATYPE_UINT16, data.SHARED_DFT,
                         NB_KEYWNODE_MAX, 0, &imgout->ID);
 
-        //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray,
-        //           &anynul, &FITSIO_status);
+        //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
         {
             int status = 0;
             fits_read_img(fptr, 20, fpixel, nelements, &nulval, data.image[imgout->ID].array.UI16,
@@ -378,7 +376,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
     // keywords to ignore
     char *keywordignore[] = { "BITPIX", "NAXIS",  "SIMPLE", "EXTEND", "COMMENT", "DATE", "NAXIS1",
                               "NAXIS2", "NAXIS3", "NAXIS4", "BSCALE", "BZERO",   0 };
-    // printf("%d FITS keywords detected\n", nbFITSkeys);
+    //printf("%d FITS keywords detected\n", nbFITSkeys);
     for (int kwnum = 0; kwnum < nbFITSkeys; kwnum++)
     {
         char keyname[9];
@@ -389,8 +387,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
             fits_read_keyn(fptr, kwnum + 1, keyname, kwvaluestr, kwcomment, &status);
         }
 
-        // printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr,
-        // kwcomment);
+        //printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
 
         int kwignore = 0;
         int ki       = 0;
@@ -398,7 +395,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         {
             if (strcmp(keywordignore[ki], keyname) == 0)
             {
-                // printf("%3d IGNORING %s\n", kwnum, keyname);
+                //printf("%3d IGNORING %s\n", kwnum, keyname);
                 kwignore = 1;
                 break;
             }
@@ -416,10 +413,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
             {
                 kwtypeOK = 1;
                 /*printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n",
-               kwnum,
-               keyname,
-               kwlongval,
-               kwcomment);*/
+                       kwnum,
+                       keyname,
+                       kwlongval,
+                       kwcomment);*/
                 image_keyword_addL(*imgout, keyname, kwlongval, kwcomment);
             }
 
@@ -431,10 +428,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
                 {
                     kwtypeOK = 1;
                     /*printf("%3d FITS KEYW [D] %-8s= %20g / %s\n",
-                 kwnum,
-                 keyname,
-                 kwdoubleval,
-                 kwcomment);*/
+                           kwnum,
+                           keyname,
+                           kwdoubleval,
+                           kwcomment);*/
                     image_keyword_addD(*imgout, keyname, kwdoubleval, kwcomment);
                 }
 
@@ -442,10 +439,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
                 {
                     // default to string
                     /*printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n",
-                 kwnum,
-                 keyname,
-                 kwvaluestr,
-                 kwcomment);*/
+                           kwnum,
+                           keyname,
+                           kwvaluestr,
+                           kwcomment);*/
                     // remove leading and trailing '
                     kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
                     char *kwvaluestr1;
@@ -505,7 +502,7 @@ INSERT_STD_FPSCLIfunctions
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_iofits__loadfits()
 {
-    // INSERT_STD_FPSCLIREGISTERFUNC
+    //INSERT_STD_FPSCLIREGISTERFUNC
 
     int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;

@@ -40,9 +40,8 @@
 
 #define FPSCMDCODE_IGNORE 0x00001000 // do not run anything
 
-// function can use this structure to expose parameters for external control or
-// monitoring the structure describes how user can interact with parameter, so
-// it allows for control GUIs to connect to parameters
+// function can use this structure to expose parameters for external control or monitoring
+// the structure describes how user can interact with parameter, so it allows for control GUIs to connect to parameters
 
 #define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN 64
 #define FUNCTION_PARAMETER_KEYWORD_MAXLEVEL 20
@@ -69,15 +68,14 @@
 
 #define FPTYPE_DIRNAME 0x00001000 // directory name
 
-// stream name -> process may load from shm if required. See loading stream
-// section below and associated flags
+// stream name -> process may load from shm if required. See loading stream section below and associated flags
 #define FPTYPE_STREAMNAME 0x00002000
 
 #define FPTYPE_STRING 0x00004000 // generic string
 
-// uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions
-// respectively. setval saves ONOFF as integer
+// uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
 #define FPTYPE_ONOFF 0x00008000
+
 
 #define FPTYPE_PROCESS 0x00010000
 
@@ -85,10 +83,12 @@
 
 #define STRINGMAXLEN_FPSTYPE 20
 
+
 #define FUNCTION_PARAMETER_DESCR_STRMAXLEN 64
 #define FUNCTION_PARAMETER_STRMAXLEN 64
 
 // Function Parameter (FP) flags
+
 
 // parameter use and visibility
 
@@ -151,12 +151,9 @@
 // The stream location may be in :
 // --- convention : this is downstream ---
 // [a]-LOCALMEM local process memory
-// [b]-SHAREMEM system shared memory .. which may itself be a link to another
-// shared memory [c]-CONFFITS fits file in conf: a file
-// ./conf/shmim.<stream>.fits, which may itself be a link to another FITS file
-// [d]-CONFNAME name of fits file configuration: a file
-// ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be
-// loaded as the stream, relative to current running directory
+// [b]-SHAREMEM system shared memory .. which may itself be a link to another shared memory
+// [c]-CONFFITS fits file in conf: a file ./conf/shmim.<stream>.fits, which may itself be a link to another FITS file
+// [d]-CONFNAME name of fits file configuration: a file ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be loaded as the stream, relative to current running directory
 // --- convention : this is upstream ---
 
 // what is the source from which a stream was successfully loaded
@@ -182,9 +179,8 @@
 #define STREAM_LOAD_SOURCE_EXITFAILURE_STRING "STREAM_LOAD_SOURCE_EXITFAILURE"
 
 //
-// The default policy is to look for the source location first in [a], then [b],
-// etc..., until [d] Once source location is found, the downstream locations are
-// updated. For example: search[a]; search[b], find[c]->update[b]->update[a]
+// The default policy is to look for the source location first in [a], then [b], etc..., until [d]
+// Once source location is found, the downstream locations are updated. For example: search[a]; search[b], find[c]->update[b]->update[a]
 //
 //
 //
@@ -200,10 +196,9 @@
 // These flags modify the default stream load policy
 // Default load policy: FORCE flags = 0, SKIPSEARCH flags = 0, UPDATE flags = 0
 //
-// FORCE flags will force a location to be used and all downstream locations to
-// be updated if the FORCE location does not exist, it will fail only one such
-// flag should be specified. If several force flags are specified, the first one
-// ((a) over (b)) will be considered
+// FORCE flags will force a location to be used and all downstream locations to be updated
+// if the FORCE location does not exist, it will fail
+// only one such flag should be specified. If several force flags are specified, the first one ((a) over (b)) will be considered
 #define FPFLAG_STREAM_LOAD_FORCE_LOCALMEM 0x0000000000100000
 #define FPFLAG_STREAM_LOAD_FORCE_SHAREMEM 0x0000000000200000
 #define FPFLAG_STREAM_LOAD_FORCE_CONFFITS 0x0000000000400000
@@ -224,8 +219,7 @@
 #define FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM 0x0000000010000000
 #define FPFLAG_STREAM_LOAD_UPDATE_CONFFITS 0x0000000020000000
 
-// Additionally, the following flags specify what to do if stream properties do
-// not match the required properties
+// Additionally, the following flags specify what to do if stream properties do not match the required properties
 //
 
 #define FPFLAG_FILE_CONF_REQUIRED 0x0000000040000000 // file must exist for CONF process to proceed
@@ -251,9 +245,8 @@
 //
 
 #define FPFLAG_STREAM_ENFORCE_DATATYPE 0x0000000100000000 // enforce stream datatype
-// stream type requirement: one of the following tests must succeed (OR) if
-// FPFLAG_STREAM_ENFORCE_DATATYPE If creating image, the first active entry is
-// used
+// stream type requirement: one of the following tests must succeed (OR) if FPFLAG_STREAM_ENFORCE_DATATYPE
+// If creating image, the first active entry is used
 #define FPFLAG_STREAM_TEST_DATATYPE_UINT8 \
     0x0000000200000000 // test if stream of type UINT8   (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_INT8 \
@@ -308,9 +301,8 @@ typedef struct
     long    streamID; // if type is stream and MASK_CHECKSTREAM. For CONF only
     uint8_t stream_atype;
 
-    // these have two entries. First is actual/measured, second is required (0 if
-    // dimension not active) tests are specified by flags
-    // FPFLAG_STREAM_ENFORCE_1D/2D/3D/XSIZE/YSIZE/ZSIZE
+    // these have two entries. First is actual/measured, second is required (0 if dimension not active)
+    // tests are specified by flags FPFLAG_STREAM_ENFORCE_1D/2D/3D/XSIZE/YSIZE/ZSIZE
     uint32_t stream_naxis[2];
     uint32_t stream_xsize[2];       // xsize
     uint32_t stream_ysize[2];       // ysize
@@ -324,6 +316,7 @@ typedef struct
     long FPSNBparamActive;
     long FPSNBparamUsed;
 } FUNCTION_PARAMETER_SUBINFO_FPS;
+
 
 typedef struct
 {
@@ -345,8 +338,7 @@ typedef struct
 
     union
     {
-        // value, min (inclusive), max (inclusive), current state (if different from
-        // request)
+        // value, min (inclusive), max (inclusive), current state (if different from request)
         int32_t  i32[4];
         uint32_t ui32[4];
         int64_t  i64[4];
@@ -378,6 +370,7 @@ typedef struct
 
 } FUNCTION_PARAMETER;
 
+
 #define STRINGMAXLEN_FPS_NAME 100
 
 #define FUNCTION_PARAMETER_STRUCT_MSG_SIZE 500
@@ -398,8 +391,7 @@ typedef struct
 #define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL 0x4000
 
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN 0x0001 // configuration process
-// #define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFSTOP   0x0002   // stop
-// configuration process
+//#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFSTOP   0x0002   // stop configuration process
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE 0x0004 // re-run check of parameter
 
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED 0x0008 // CheckParametersAll been completed.
@@ -437,15 +429,14 @@ typedef struct
 {
     // process name
     // Name can include numbers in the format -XX-YY to allow for multiple
-    // structures be created by the same process function and to pass arguments
-    // (XX, YY) to process function
+    // structures be created by the same process function and to pass arguments (XX, YY) to process function
     char name[STRINGMAXLEN_FPS_NAME]; // example: pname-01-32
 
     char description[FPS_DESCR_STRMAXLEN];
 
     // keyword array, convenient to classify/sort FPSs
-    // Upon FPS creation by function_parameter_struct_create, keywordarray is
-    // imported from env variable FPS_KEYWORDARRAY syntax is ":keyw0:keyw1:keyw2:"
+    // Upon FPS creation by function_parameter_struct_create, keywordarray is imported from env variable FPS_KEYWORDARRAY
+    // syntax is ":keyw0:keyw1:keyw2:"
     char keywordarray[FPS_KEYWORDARRAY_STRMAXLEN];
 
     // where should processes run from ?
@@ -530,11 +521,13 @@ typedef struct
     CMDSETTINGS cmdset; // local copy of cmd settings
 } FUNCTION_PARAMETER_STRUCT;
 
+
 // mapping from FPS to procinfo
 typedef struct
 {
     struct timespec triggerdelay[2];
 } FPS2PROCINFOMAP;
+
 
 //
 // Tasks can be sequenced
@@ -563,13 +556,11 @@ typedef struct
 #define FPSTASK_STATUS_ERR_NOFPS 0x0000000000000800
 #define FPSTASK_STATUS_CMDOK 0x0000000000001000
 
-// use WAITONRUN to ensure the queue is blocked until the current run process is
-// done
+// use WAITONRUN to ensure the queue is blocked until the current run process is done
 #define FPSTASK_FLAG_WAITONRUN 0x0000000000000001
 #define FPSTASK_FLAG_WAITONCONF 0x0000000000000002
 
-// If ON, the task is a wait point, and will only proceed if the FPS pointed to
-// by fpsindex is NOT running
+// If ON, the task is a wait point, and will only proceed if the FPS pointed to by fpsindex is NOT running
 #define FPSTASK_FLAG_WAIT_FOR_FPS_NORUN 0x0000000000000004
 
 #define NB_FPSCTRL_TASKQUEUE_MAX 100 // max number of queues
@@ -588,8 +579,8 @@ typedef struct
 
     uint64_t inputindex; // order in which tasks are submitted
 
-    // Tasks in separate queues can run in parallel (not waiting for last task to
-    // run new one) Tasks within a queue run sequentially
+    // Tasks in separate queues can run in parallel (not waiting for last task to run new one)
+    // Tasks within a queue run sequentially
     uint32_t queue;
     // Default queue is 0
 
@@ -649,6 +640,7 @@ typedef struct
 
 } KEYWORD_TREE_NODE;
 
+#include "fpsCTRL/fpsCTRL_TUI.h"
 #include "fps/fps_FPCONFexit.h"
 #include "fps/fps_FPCONFloopstep.h"
 #include "fps/fps_FPCONFsetup.h"
@@ -666,7 +658,6 @@ typedef struct
 #include "fps/fps_processinfo_entries.h"
 #include "fps/fps_save2disk.h"
 #include "fps/fps_shmdirname.h"
-#include "fpsCTRL/fpsCTRL_TUI.h"
 
 // ===========================
 // CONVENIENT MACROS FOR FPS
@@ -704,6 +695,7 @@ typedef struct
         }                                                                                        \
     } while (0)
 
+
 /**
  * @brief Initialize function parameter structure (FPS)
  *
@@ -726,6 +718,7 @@ typedef struct
         }                                                                                        \
     } while (0)
 
+
 /** @brief Connect to FPS
  *
  *
@@ -743,6 +736,7 @@ typedef struct
             return RETURN_FAILURE;                                                     \
         }                                                                              \
     } while (0)
+
 
 /** @brief Start FPS configuration loop
  */
@@ -798,6 +792,7 @@ typedef struct
         fps_to_processinfo(&fps, processinfo);                                              \
     } while (0)
 
+
 #define FPS_AUTORUN_SETUP(funcstring, shortname)                                                  \
     FUNCTION_PARAMETER_STRUCT fps;                                                                \
     do                                                                                            \
@@ -807,6 +802,7 @@ typedef struct
         FPSCONF_##funcstring();                                                                   \
         function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);                \
     } while (0)
+
 
 #define FPS_EXECFUNCTION_STD                                                       \
     static errno_t FPSEXECfunction()                                               \
@@ -822,6 +818,7 @@ typedef struct
         FPSRUNfunction();                                                          \
         return RETURN_SUCCESS;                                                     \
     }
+
 
 #define FPS_CLIFUNCTION_STD                                               \
     static errno_t FPSCLIfunction(void)                                   \

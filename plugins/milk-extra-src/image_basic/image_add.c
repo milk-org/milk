@@ -130,9 +130,7 @@ imageID basic_add(const char *__restrict ID_name1,
     }
 
     /*  if(data.quiet==0)*/
-    /* printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld
-   * x %ld
-   * )\n",ID_name1,naxes1[0],naxes1[1],ID_name2,naxes2[0],naxes2[1],off1,off2);*/
+    /* printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld x %ld )\n",ID_name1,naxes1[0],naxes1[1],ID_name2,naxes2[0],naxes2[1],off1,off2);*/
     xmin = 0;
     if (off1 < 0)
     {
@@ -276,9 +274,7 @@ imageID basic_add3D(const char *__restrict ID_name1,
     }
 
     /*  if(data.quiet==0)*/
-    /* printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld
-   * x %ld
-   * )\n",ID_name1,naxes1[0],naxes1[1],ID_name2,naxes2[0],naxes2[1],off1,off2);*/
+    /* printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld x %ld )\n",ID_name1,naxes1[0],naxes1[1],ID_name2,naxes2[0],naxes2[1],off1,off2);*/
     xmin = 0;
     if (off1 < 0)
     {

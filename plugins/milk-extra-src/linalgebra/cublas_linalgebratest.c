@@ -72,8 +72,8 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSs
     int            *GPUdevices;
     double          SVDeps = 0.1;
 
-    // printf("Testing SVD on CPU\n");
-    //  linopt_compute_reconstructionMatrix("Rmat", "Cmat", SVDeps, "VTmat");
+    //printf("Testing SVD on CPU\n");
+    // linopt_compute_reconstructionMatrix("Rmat", "Cmat", SVDeps, "VTmat");
 
     create_2Dimage_ID("Rmat", WFSsize, WFSsize, NULL);
 
@@ -85,42 +85,42 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSs
 
     // CHECK RESULT
     /*   arraysizetmp = (long*) malloc(sizeof(long)*3);
-     ID_R = image_ID("Rmat");
-     ID_C = image_ID("Cmat");
+       ID_R = image_ID("Rmat");
+       ID_C = image_ID("Cmat");
 
-     if(data.image[ID_R].md[0].naxis==3)
-     {
-         m = data.image[ID_R].md[0].size[0]*data.image[ID_R].md[0].size[1];
-         n = data.image[ID_R].md[0].size[2];
-         printf("3D image -> %ld %ld\n", m, n);
-         fflush(stdout);
-     }
-     else
-     {
-         m = data.image[ID_R].md[0].size[0];
-         n = data.image[ID_R].md[0].size[1];
-         printf("2D image -> %ld %ld\n", m, n);
-         fflush(stdout);
-     }
+       if(data.image[ID_R].md[0].naxis==3)
+       {
+           m = data.image[ID_R].md[0].size[0]*data.image[ID_R].md[0].size[1];
+           n = data.image[ID_R].md[0].size[2];
+           printf("3D image -> %ld %ld\n", m, n);
+           fflush(stdout);
+       }
+       else
+       {
+           m = data.image[ID_R].md[0].size[0];
+           n = data.image[ID_R].md[0].size[1];
+           printf("2D image -> %ld %ld\n", m, n);
+           fflush(stdout);
+       }
 
 
-     printf("CHECKING RESULT ... ");
-     fflush(stdout);
+       printf("CHECKING RESULT ... ");
+       fflush(stdout);
 
-     ID = create_2Dimage_ID("SVDcheck", n, n);
-     for(ii=0;ii<n;ii++)
-         for(jj=0;jj<n;jj++)
-             {
-                 val = 0.0;
-                 for(k=0;k<m;k++)
-                     val += data.image[ID_C].array.F[ii*m+k] *
-  data.image[ID_R].array.F[jj*m+k]; data.image[ID].array.F[jj*n+ii] = val;
-             }
-     save_fits("SVDcheck", "SVDcheck.fits");
+       ID = create_2Dimage_ID("SVDcheck", n, n);
+       for(ii=0;ii<n;ii++)
+           for(jj=0;jj<n;jj++)
+               {
+                   val = 0.0;
+                   for(k=0;k<m;k++)
+                       val += data.image[ID_C].array.F[ii*m+k] * data.image[ID_R].array.F[jj*m+k];
+                   data.image[ID].array.F[jj*n+ii] = val;
+               }
+       save_fits("SVDcheck", "SVDcheck.fits");
 
-  free(arraysizetmp);
-     printf("DONE\n");
-     fflush(stdout);*/
+    free(arraysizetmp);
+       printf("DONE\n");
+       fflush(stdout);*/
 
     printf("Testing GPU matrix multiplication speed, %ld GPUs\n", GPUcnt);
 

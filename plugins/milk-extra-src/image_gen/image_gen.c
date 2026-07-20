@@ -338,6 +338,7 @@ errno_t image_gen_im2coord_cli()
     }
 }
 
+
 static errno_t init_module_CLI()
 {
     RegisterCLIcommand("mkdisk", __FILE__, make_disk_cli, "make disk image",
@@ -436,11 +437,12 @@ static errno_t init_module_CLI()
                        "long image_gen_im2coord(const char *IDin_name, int "
                        "axis, const char *IDout_name)");
 
+
     CLIADDCMD_image_gen__voronoi();
 
     CLIADDCMD_image_gen__mkrandomim();
 
-    // long make_rnd(const char *ID_name, long l1, long l2, const char *options)
+    //long make_rnd(const char *ID_name, long l1, long l2, const char *options)
 
     // add atexit functions here
 
@@ -486,12 +488,12 @@ imageID make_disk(const char *ID_name,
     long     x1i, x2i, y1i, y2i;
     double   r2;
     /*
-    int i,j;
-    double r;
-    double tot;
-    int subgrid=100;
-    double x,y;
-  */
+      int i,j;
+      double r;
+      double tot;
+      int subgrid=100;
+      double x,y;
+    */
 
     create_2Dimage_ID(ID_name, l1, l2, &ID);
     naxes[0] = data.image[ID].md[0].size[0];
@@ -629,44 +631,43 @@ imageID make_disk(const char *ID_name,
     }
 
     /*
-  for (jj = x1; jj < x2; jj++)
-    for (ii = y1; ii < y2; ii++)
-      {
-  if (((ii-x_center)*(ii-x_center)+(jj-y_center)*(jj-y_center))<r2)
-    data.image[ID].array.F[jj*naxes[0]+ii] = 1;
-      }
-  */
+    for (jj = x1; jj < x2; jj++)
+      for (ii = y1; ii < y2; ii++)
+        {
+    if (((ii-x_center)*(ii-x_center)+(jj-y_center)*(jj-y_center))<r2)
+      data.image[ID].array.F[jj*naxes[0]+ii] = 1;
+        }
+    */
     /*
-    for (jj = 0; jj < naxes[1]; jj++)
-    for (ii = 0; ii < naxes[0]; ii++)
-    {
-    r = sqrt(((ii-x_center)*(ii-x_center)+(jj-y_center)*(jj-y_center)));
+      for (jj = 0; jj < naxes[1]; jj++)
+      for (ii = 0; ii < naxes[0]; ii++)
+      {
+      r = sqrt(((ii-x_center)*(ii-x_center)+(jj-y_center)*(jj-y_center)));
 
-    if (r<radius)
-    data.image[ID].array.F[jj*naxes[0]+ii] = 1.0;
-    else
-    data.image[ID].array.F[jj*naxes[0]+ii] = 0.0;
+      if (r<radius)
+      data.image[ID].array.F[jj*naxes[0]+ii] = 1.0;
+      else
+      data.image[ID].array.F[jj*naxes[0]+ii] = 0.0;
 
-    if(((radius-r)*(radius-r))<1.5)
-    {
-    tot = 0;
-    for (j = 0; j < subgrid; j++)
-    for (i = 0; i < subgrid; i++)
-    {
-    x = 1.0*ii-0.5+0.5/subgrid+1.0*i/subgrid;
-    y = 1.0*jj-0.5+0.5/subgrid+1.0*j/subgrid;
-    r =
-    sqrt((x-1.0*x_center)*(x-1.0*x_center)+(y-1.0*y_center)*(y-1.0*y_center));
-    if (r < radius)
-    tot = tot + 1.0;
-    else
-    tot = tot + 0.0;
-    }
-    tot = tot/subgrid/subgrid;
-    data.image[ID].array.F[jj*naxes[0]+ii] = tot;
-    }
-    }
-  */
+      if(((radius-r)*(radius-r))<1.5)
+      {
+      tot = 0;
+      for (j = 0; j < subgrid; j++)
+      for (i = 0; i < subgrid; i++)
+      {
+      x = 1.0*ii-0.5+0.5/subgrid+1.0*i/subgrid;
+      y = 1.0*jj-0.5+0.5/subgrid+1.0*j/subgrid;
+      r = sqrt((x-1.0*x_center)*(x-1.0*x_center)+(y-1.0*y_center)*(y-1.0*y_center));
+      if (r < radius)
+      tot = tot + 1.0;
+      else
+      tot = tot + 0.0;
+      }
+      tot = tot/subgrid/subgrid;
+      data.image[ID].array.F[jj*naxes[0]+ii] = tot;
+      }
+      }
+    */
     return (ID);
 }
 
@@ -1362,7 +1363,7 @@ imageID make_line(const char *IDname,
             y -= y1;
             xr = x * cos(PA0) + y * sin(PA0);
             yr = -x * sin(PA0) + y * cos(PA0);
-            // r=sqrt(xr*xr+yr*yr);
+            //r=sqrt(xr*xr+yr*yr);
             xr /= r0;
             yr /= r0;
             if ((xr > 0) && (xr < 1.0) && (yr < 0.5 * t / r0) && (yr > -0.5 * t / r0))
@@ -1379,8 +1380,7 @@ imageID make_line(const char *IDname,
     return (ID);
 }
 
-// draw line crossing point xc, yc with angle, pixel value is coordinate axis
-// perp to line
+// draw line crossing point xc, yc with angle, pixel value is coordinate axis perp to line
 imageID make_lincoordinate(const char *IDname,
                            uint32_t    l1,
                            uint32_t    l2,
@@ -1403,7 +1403,7 @@ imageID make_lincoordinate(const char *IDname,
             x  = 1.0 * ii - x_center;
             y  = 1.0 * jj - y_center;
             x1 = x * cos(angle) + y * sin(angle);
-            // y1 = -x*sin(angle) + y*cos(angle);
+            //y1 = -x*sin(angle) + y*cos(angle);
             data.image[ID].array.F[jj * naxes[0] + ii] = x1;
         }
     }
@@ -1635,7 +1635,7 @@ imageID IMAGE_gen_segments2WFmodes(const char *prefix, long ndigit, const char *
 
         save_fits("_pupmask", "_pupmask.fits");
 
-        // IDtmp = create_2Dimage_ID("_seg2wfm_tmp", xsize, ysize);
+        //IDtmp = create_2Dimage_ID("_seg2wfm_tmp", xsize, ysize);
         create_3Dimage_ID(IDout_name, xsize, ysize, 3 * NBseg, &IDout);
         kk = 0;
         for (seg = 0; seg < NBseg; seg++) // create modes one at a time
@@ -1674,7 +1674,7 @@ imageID IMAGE_gen_segments2WFmodes(const char *prefix, long ndigit, const char *
             kk++;
         }
 
-        // delete_image_ID("_seg2wfm_tmp", DELETE_IMAGE_ERRMODE_WARNING);
+        //delete_image_ID("_seg2wfm_tmp", DELETE_IMAGE_ERRMODE_WARNING);
 
         free(segxc);
         free(segyc);
@@ -1909,9 +1909,7 @@ imageID make_hexsegpupil(const char *IDname, uint32_t size, double radius, doubl
                             index = data.image[IDmap1].array.UI16[jj * size1 + ii];
                         }
 
-                        //  fprintf(fp, "# hex%03ld     index%03ld   [ %f %f ] -> [ %f %f ]
-                        //  [%4ld %4ld] %f\n", SEGcnt, index, x2, y2, 0.5*size+x2,
-                        //  0.5*size+y2, ii, jj, radius);
+                        //  fprintf(fp, "# hex%03ld     index%03ld   [ %f %f ] -> [ %f %f ]     [%4ld %4ld] %f\n", SEGcnt, index, x2, y2, 0.5*size+x2, 0.5*size+y2, ii, jj, radius);
                         if (bitval[index - 1] == 1)
                         {
                             fprintf(fp, "L %ld;\n", seglevel[index - 1]);
@@ -1996,9 +1994,7 @@ imageID make_hexsegpupil(const char *IDname, uint32_t size, double radius, doubl
                             index = data.image[IDmap1].array.UI16[jj * size1 + ii];
                         }
 
-                        // fprintf(fp, "# hex%03ld     index%03ld   [ %f %f ] -> [ %f %f ]
-                        // [%4ld %4ld] %f\n", SEGcnt, index, x2, y2, 0.5*size+x2,
-                        // 0.5*size+y2, ii, jj, radius);
+                        // fprintf(fp, "# hex%03ld     index%03ld   [ %f %f ] -> [ %f %f ]   [%4ld %4ld] %f\n", SEGcnt, index, x2, y2, 0.5*size+x2, 0.5*size+y2, ii, jj, radius);
 
                         if (bitval[index - 1] == 1)
                         {
@@ -2207,8 +2203,7 @@ imageID make_rnd(const char *ID_name, uint32_t l1, uint32_t l2, const char *opti
     naxes[1] = data.image[ID].md[0].size[1];
     nelement = naxes[0] * naxes[1];
 
-    // openMP is slow when calling gsl random number generator : do not use openMP
-    // here
+    // openMP is slow when calling gsl random number generator : do not use openMP here
     if (distrib == 0)
     {
         for (uint64_t ii = 0; ii < nelement; ii++)
@@ -2264,8 +2259,7 @@ imageID make_rnd_double(const char *ID_name, uint32_t l1, uint32_t l2, const cha
     naxes[1] = data.image[ID].md[0].size[1];
     nelement = naxes[0] * naxes[1];
 
-    // openMP is slow when calling gsl random number generator : do not use openMP
-    // here
+    // openMP is slow when calling gsl random number generator : do not use openMP here
     if (distrib == 0)
     {
         for (uint64_t ii = 0; ii < nelement; ii++)
@@ -2435,13 +2429,12 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
 
                     float TEM00 = data.image[IDtem00].array.F[jj0 * naxes[0] + ii0];
 
-                    // data.image[ID].array.F[jj * naxes[0] + ii] = -r;
+                    //data.image[ID].array.F[jj * naxes[0] + ii] = -r;
 
                     if ((r < 1.0) && (r > 0.3))
                     {
-                        pup_ampl = 1.0; // data.image[IDtem00].array.F[jj0 * naxes[0] +
-                                        // ii0];
-                        pup_pha = x * TTx + y * TTy;
+                        pup_ampl = 1.0; //data.image[IDtem00].array.F[jj0 * naxes[0] + ii0];
+                        pup_pha  = x * TTx + y * TTy;
 
                         fluxtot += pup_ampl * pup_ampl;
 

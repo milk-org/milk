@@ -19,13 +19,14 @@
 #include "FITS_to_floatbin_lock.h"
 #include "FITS_to_ushortintbin_lock.h"
 #include "combineHDR.h"
+#include "stream_temporal_stats.h"
 #include "extract_RGGBchan.h"
 #include "extract_utr.h"
 #include "imtoASCII.h"
 #include "loadCR2toFITSRGB.h"
 #include "read_binary32f.h"
-#include "stream_temporal_stats.h"
 #include "writeBMP.h"
+
 
 /*typedef struct
 {
@@ -34,12 +35,11 @@
     unsigned char *data;
 } sImage;
 */
-/* This pragma is necessary so that the data in the structures is aligned to
-   2-byte boundaries.  Some different compilers have a different syntax for this
-   line.  For example, if you're using cc on Solaris, the line should be #pragma
-   pack(2).
+/* This pragma is necessary so that the data in the structures is aligned to 2-byte
+   boundaries.  Some different compilers have a different syntax for this line.  For
+   example, if you're using cc on Solaris, the line should be #pragma pack(2).
 */
-// #pragma pack(2)
+//#pragma pack(2)
 
 INIT_MODULE_LIB(image_format)
 
@@ -131,8 +131,7 @@ imageID read_ASCIIimage(
 
 
         while((fscanf(fp, "%ld %ld %f\n", &iipix, &jjpix, &value)) == 3)
-            if((iipix > -1) && (iipix < xsize) && (jjpix > -1) && (jjpix <
-ysize))
+            if((iipix > -1) && (iipix < xsize) && (jjpix > -1) && (jjpix < ysize))
             {
                 data.image[ID].array.F[jjpix * xsize + iipix] = value;
             }
@@ -274,10 +273,9 @@ errno_t read_BMPimage(
             RedValue = *pChar;
 
             // ---------WRITE TO FILES ---------
-            data.image[IDR].array.F[r * originalImage.cols + c] = 1.0 *
-RedValue; data.image[IDG].array.F[r * originalImage.cols + c] = 1.0 *
-GreenValue; data.image[IDB].array.F[r * originalImage.cols + c] = 1.0 *
-BlueValue;
+            data.image[IDR].array.F[r * originalImage.cols + c] = 1.0 * RedValue;
+            data.image[IDG].array.F[r * originalImage.cols + c] = 1.0 * GreenValue;
+            data.image[IDB].array.F[r * originalImage.cols + c] = 1.0 * BlueValue;
         }
     }
 
@@ -330,10 +328,10 @@ long CR2toFITS_strfilter(
     fp = fopen("flist.tmp", "r");
     while(fgets(fname, STRINGMAXLEN_FULLFILENAME, fp) != NULL)
     {
-                int slen = strlen(fname);
-                if(slen > STRINGMAXLEN_FULLFILENAME-1) {
-                        slen = STRINGMAXLEN_FULLFILENAME-1;
-                }
+		int slen = strlen(fname);
+		if(slen > STRINGMAXLEN_FULLFILENAME-1) {
+			slen = STRINGMAXLEN_FULLFILENAME-1;
+		}
 
         fname[slen - 1] = '\0';
 
@@ -490,8 +488,8 @@ imageID IMAGE_FORMAT_requantize(
         }
         else
         {
-            value = 2.0 / alpha * sqrt(gain) * (sqrt(gain * RON * RON + value) -
-sqrt( gain) * RON);
+            value = 2.0 / alpha * sqrt(gain) * (sqrt(gain * RON * RON + value) - sqrt(
+                                                    gain) * RON);
         }
         data.image[IDout].array.F[ii] = value + 0.5;
     }
@@ -599,8 +597,8 @@ imageID IMAGE_FORMAT_read_binary16(
 
             if(i < fileLen + 1)
             {
-                v1 = (long)(((unsigned const char *)buffer)[i]) + (long)(256 *
-(( unsigned const char *)buffer)[i + 1]);
+                v1 = (long)(((unsigned const char *)buffer)[i]) + (long)(256 * ((
+                            unsigned const char *)buffer)[i + 1]);
             }
             data.image[ID].array.F[jj * xsize + ii] = (float) v1;
             i += 2;

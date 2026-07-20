@@ -173,8 +173,7 @@ typedef int errno_t;
     } while (0)
 
 /**
- * @brief Portable strerror implementation that avoid using the gnu-only
- * strerror_r
+ * @brief Portable strerror implementation that avoid using the gnu-only strerror_r
  * @ingroup errcheckmacro
  */
 static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
@@ -283,6 +282,7 @@ static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
         } while (0)
 #endif
 
+
 /**
  * @ingroup debugmacro
  * @brief register trace point
@@ -339,6 +339,7 @@ static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
         }                                                                                    \
     } while (0)
 
+
 #if defined NDEBUG
 #    define DEBUG_TRACEPOINT_PRINT(...)
 #else
@@ -351,6 +352,7 @@ static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
         } while (0)
 #endif
 
+
 #if defined NDEBUG
 #    define DEBUG_TRACEPOINT_LOG(...)
 #else
@@ -361,6 +363,7 @@ static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
             write_process_log();              \
         } while (0)
 #endif
+
 
 #if defined NDEBUG
 #    define DEBUG_TRACEPOINT(...)
@@ -380,13 +383,13 @@ static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
 #    endif
 #endif
 
+
 /*
 #if defined DEBUGLOG \
 write_process_log(); \
 #endif \
 #if defined DEBUGPRINT \
-printf("DEBUG MSG [%s %s  %d]: %s\n", data.testpoint.file, data.testpoint.func,
-data.testpoint.line, data.testpoint.msg);   \
+printf("DEBUG MSG [%s %s  %d]: %s\n", data.testpoint.file, data.testpoint.func, data.testpoint.line, data.testpoint.msg);   \
 #endif \
 */
 
@@ -461,6 +464,7 @@ data.testpoint.line, data.testpoint.msg);   \
         }                                                 \
     } while (0)
 
+
 #define WRITE_STRING(string, ...)                                       \
     do                                                                  \
     {                                                                   \
@@ -476,6 +480,7 @@ data.testpoint.line, data.testpoint.msg);   \
             abort();                                                    \
         }                                                               \
     } while (0)
+
 
 /**
  * @ingroup errcheckmacro
@@ -649,9 +654,8 @@ data.testpoint.line, data.testpoint.msg);   \
         }                                                                            \
     } while (0)
 
-// *************************** FUNCTION RETURN VALUE
-// ********************************************* For function returning type
-// errno_t (= int)
+// *************************** FUNCTION RETURN VALUE *********************************************
+// For function returning type errno_t (= int)
 //
 #define RETURN_SUCCESS 0
 #define RETURN_FAILURE 1 // generic error code

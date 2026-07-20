@@ -49,8 +49,7 @@ static errno_t help_function()
 //   m: number of actuators (= NB_MODES)
 //   n: number of sensors  (= # of pixels)
 //
-// This implementation computes the eigenvalue decomposition of transpose(M) x
-// M, so it is efficient if n>>m, as transpose(M) x M is size m x m
+// This implementation computes the eigenvalue decomposition of transpose(M) x M, so it is efficient if n>>m, as transpose(M) x M is size m x m
 //
 errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                                         const char *ID_Cmatrix_name,
@@ -239,8 +238,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     fclose(fp);
 
     //  for(k=0; k<m; k++)
-    //    printf("Mode %ld eigenvalue = %g\n", k,
-    //    gsl_vector_get(matrix_DtraD_eval,k));
+    //    printf("Mode %ld eigenvalue = %g\n", k, gsl_vector_get(matrix_DtraD_eval,k));
     egvlim      = SVDeps * SVDeps * gsl_vector_get(matrix_DtraD_eval, 0);
     MaxNBmodes1 = MaxNBmodes;
     if (MaxNBmodes1 > m)
@@ -295,8 +293,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         save_fits(ID_VTmatrix_name, "test_VT.fits");
     }
 
-    /* second, build the "inverse" of the diagonal matrix of eigenvalues (matrix1)
-   */
+    /* second, build the "inverse" of the diagonal matrix of eigenvalues (matrix1) */
     nbmodesremoved = 0;
     matrix1        = gsl_matrix_alloc(m, m);
     for (int ii1 = 0; ii1 < m; ii1++) // mode
@@ -324,6 +321,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     // printf("%ld modes removed\n", nbmodesremoved);
     // printf("Compute inverse\n");
     // fflush(stdout);
+
 
     if (timing == 1)
     {
@@ -461,6 +459,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     return RETURN_SUCCESS;
 }
 
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -489,6 +488,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 INSERT_STD_FPSCLIfunctions
 

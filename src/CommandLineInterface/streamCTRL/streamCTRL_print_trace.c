@@ -14,6 +14,7 @@ typedef int errno_t;
 #include "streamCTRL_TUI.h"
 #include "streamCTRL_print_procpid.h"
 
+
 errno_t streamCTRL_print_SPTRACE_details(IMAGE   *streamCTRLimages,
                                          imageID  ID,
                                          pid_t   *upstreamproc,
@@ -72,6 +73,7 @@ errno_t streamCTRL_print_SPTRACE_details(IMAGE   *streamCTRLimages,
         }
 
         DEBUG_TRACEPOINT("spti %d", spti);
+
 
         if (IDfound == -1)
         {
@@ -139,18 +141,18 @@ errno_t streamCTRL_print_SPTRACE_details(IMAGE   *streamCTRLimages,
 
         case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
             screenprint_setcolor(2);
-            // attron(COLOR_PAIR(2));
+            //attron(COLOR_PAIR(2));
             TUI_printfw("%*s", Disp_trigstat_NBchar, "RECEIVED");
             screenprint_unsetcolor(2);
-            // attroff(COLOR_PAIR(2));
+            //attroff(COLOR_PAIR(2));
             print_timing = 1;
             break;
 
         case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
-            // attron(COLOR_PAIR(3));
+            //attron(COLOR_PAIR(3));
             screenprint_setcolor(3);
             TUI_printfw("%*s", Disp_trigstat_NBchar, "TIMEOUT");
-            // attroff(COLOR_PAIR(3));
+            //attroff(COLOR_PAIR(3));
             screenprint_unsetcolor(3);
             print_timing = 1;
             break;

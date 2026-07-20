@@ -119,7 +119,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     {
         ID = IDarray[i];
         WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
-        // printf("image %s\n", data.image[ID].name);
+        //printf("image %s\n", data.image[ID].name);
         IDarraycp[i] = copy_image_ID(data.image[ID].name, imnamecp, 0);
     }
 

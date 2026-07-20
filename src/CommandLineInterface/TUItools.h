@@ -23,7 +23,7 @@
 
 // ANSI ESCAPE CODES
 
-// static int printAEC = 0;
+//static int printAEC = 0;
 
 #define AEC_NORMAL 0
 #define AEC_BOLD 1
@@ -41,9 +41,10 @@
 #define AEC_BLINKOFF 25
 #define AEC_REVERSEOFF 27
 
+
 // Foreground color
 
-// static int printAECfgcolor = AEC_FGCOLOR_WHITE;
+//static int printAECfgcolor = AEC_FGCOLOR_WHITE;
 
 #define AEC_FGCOLOR_BLACK 30
 #define AEC_FGCOLOR_RED 31
@@ -57,7 +58,7 @@
 
 // Background color
 
-// static int printAECbgcolor = AEC_BGCOLOR_BLACK;
+//static int printAECbgcolor = AEC_BGCOLOR_BLACK;
 
 #define AEC_BGCOLOR_BLACK 40
 #define AEC_BGCOLOR_RED 41
@@ -85,12 +86,14 @@
 // 8 : red fg
 // 9 : ref bg
 
+
 typedef struct
 {
     int  index;
     int  keych;
     char name[16];
 } TUISCREEN;
+
 
 void TUI_set_screenprintmode(int mode);
 int  TUI_get_screenprintmode();
@@ -149,7 +152,9 @@ int get_singlechar_nonblock();
 
 int get_singlechar_block();
 
+
 // useful macros
+
 
 #define INSERT_TUI_SETUP                            \
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);   \
@@ -165,6 +170,7 @@ int get_singlechar_block();
     TUI_init_terminal(&wrow, &wcol);                \
     int       TUIpause = 0;                         \
     TUISCREEN TUIscreenarray[10];
+
 
 #define INSTERT_TUI_KEYCONTROLS                                \
     int TUIinputkch  = -1;                                     \
@@ -200,6 +206,7 @@ int get_singlechar_block();
         }                                                      \
     }
 
+
 #define INSERT_TUI_SCREEN_MENU                         \
     for (int scr = 0; scr < NBTUIscreen; scr++)        \
     {                                                  \
@@ -215,6 +222,7 @@ int get_singlechar_block();
     }                                                  \
     TUI_newline();
 
+
 inline static void print_help_entry(char *key, char *descr)
 {
     screenprint_setbold();
@@ -223,5 +231,6 @@ inline static void print_help_entry(char *key, char *descr)
     TUI_printfw("   %s", descr);
     TUI_newline();
 }
+
 
 #endif

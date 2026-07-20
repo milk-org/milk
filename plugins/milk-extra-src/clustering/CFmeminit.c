@@ -9,6 +9,7 @@
 
 #include "CFmeminit.h"
 
+
 errno_t CFmeminit(CLUSTERTREE *ctree, long CFindex, uint32_t mode)
 {
     DEBUG_TRACE_FSTART();
@@ -42,8 +43,8 @@ errno_t CFmeminit(CLUSTERTREE *ctree, long CFindex, uint32_t mode)
 
         while (cfi != -1)
         {
-            // printf("========= SUBTRACTING NODE %ld FROM NODE %ld (%s)\n", CFindex,
-            // cfi, __FILE__); fflush(stdout);
+            //printf("========= SUBTRACTING NODE %ld FROM NODE %ld (%s)\n", CFindex, cfi, __FILE__);
+            //fflush(stdout);
 
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
@@ -65,6 +66,7 @@ errno_t CFmeminit(CLUSTERTREE *ctree, long CFindex, uint32_t mode)
 
     ctree->CFarray[CFindex].parentindex = -1;
 
+
     for (int ii = 0; ii < ctree->npix; ii++)
     {
         ctree->CFarray[CFindex].datasumvec[ii] = 0.0;
@@ -82,6 +84,7 @@ errno_t CFmeminit(CLUSTERTREE *ctree, long CFindex, uint32_t mode)
         ctree->CFCFdist[CFindex * ctree->NBCF + cfi] = -1.0;
         ctree->CFCFdist[cfi * ctree->NBCF + CFindex] = -1.0;
     }
+
 
     ctree->CFarray[CFindex].radius = 0.0;
 

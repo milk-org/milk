@@ -6,10 +6,12 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
 #include "TUItools.h"
 
-#include "level0node_summary.h"
 #include "print_nodeinfo.h"
+#include "level0node_summary.h"
+
 
 static errno_t fpselem_statusprint_ONOFF(int fpsindex, int pindex)
 {
@@ -28,6 +30,7 @@ static errno_t fpselem_statusprint_ONOFF(int fpsindex, int pindex)
 
     return RETURN_SUCCESS;
 }
+
 
 static errno_t fpselem_statusprint_FPSNAME(int fpsindex, int pindex, int isVISIBLE)
 {
@@ -105,6 +108,7 @@ static errno_t fpselem_statusprint_FPSNAME(int fpsindex, int pindex, int isVISIB
     return RETURN_SUCCESS;
 }
 
+
 static errno_t fpselem_statusprint_STREAMNAME(int fpsindex, int pindex, int isVISIBLE)
 {
     if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)
@@ -149,6 +153,7 @@ static errno_t fpselem_statusprint_STREAMNAME(int fpsindex, int pindex, int isVI
     return RETURN_SUCCESS;
 }
 
+
 static errno_t fpsCTRLdisplay_FPSerrormsgs(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     if (data.fpsarray[fpsCTRLvar->fpsindexSelected].md->status &
@@ -188,12 +193,14 @@ static errno_t fpsCTRLdisplay_FPSerrormsgs(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     return RETURN_SUCCESS;
 }
 
+
 errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     DEBUG_TRACEPOINT("Check that selected node is OK : %d", fpsCTRLvar->nodeSelected);
 
     long       icnt = 0;
     static int nodechain[MAXNBLEVELS];
+
 
     if (fpsCTRLvar->NBfps > 0)
     {
@@ -233,6 +240,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
         TUI_newline();
         nodechain[0] = 0; // root
 
+
         DEBUG_TRACEPOINT("Get number of lines to be displayed");
         fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
         int GUIlineMax           = keywnode[fpsCTRLvar->directorynodeSelected].NBchild;
@@ -244,6 +252,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                 GUIlineMax = keywnode[nodechain[level]].NBchild;
             }
         }
+
 
         if (fpsCTRLvar->fpsCTRL_DisplayVerbose == 1)
         {
@@ -258,32 +267,27 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
             TUI_newline();
         }
 
-        /*      TUI_printfw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax=
-       %3d", fpsCTRLvar.directorynodeSelected, fpsCTRLvar.nodeSelected,
-                 GUIlineMax);
-        TUI_newline();
-        TUI_newline();
-          TUI_printfw("LINE: %d / %d",
-                 fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel],
-                 keywnode[fpsCTRLvar.directorynodeSelected].NBchild);
-                 TUI_newline();
-                 TUI_newline();
-            */
+        /*      TUI_printfw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d",
+                     fpsCTRLvar.directorynodeSelected,
+                     fpsCTRLvar.nodeSelected,
+                     GUIlineMax);
+            TUI_newline();
+            TUI_newline();
+              TUI_printfw("LINE: %d / %d",
+                     fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel],
+                     keywnode[fpsCTRLvar.directorynodeSelected].NBchild);
+                     TUI_newline();
+                     TUI_newline();
+        	*/
 
-        // while(!(fps[fpsindexSelected].parray[pindexSelected].fpflag &
-        // FPFLAG_VISIBLE)) { // if invisible
+        //while(!(fps[fpsindexSelected].parray[pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
         //		fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel]++;
-        // }
+        //}
 
-        // if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if
-        // invisible
+        //if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
 
-        //              if( !(
-        //              fps[keywnode[fpsCTRLvar.nodeSelected].fpsindex].parray[keywnode[fpsCTRLvar.nodeSelected].pindex].fpflag
-        //              & FPFLAG_VISIBLE)) { // if invisible
-        //				if( !(
-        // fps[fpsCTRLvar.fpsindexSelected].parray[fpsCTRLvar.pindexSelected].fpflag
-        //& FPFLAG_VISIBLE)) { // if invisible
+        //              if( !(  fps[keywnode[fpsCTRLvar.nodeSelected].fpsindex].parray[keywnode[fpsCTRLvar.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+        //				if( !(  fps[fpsCTRLvar.fpsindexSelected].parray[fpsCTRLvar.pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
         if (!(data.fpsarray[fpsCTRLvar->fpsindexSelected].parray[0].fpflag & FPFLAG_VISIBLE))
         {
             // if invisible
@@ -311,6 +315,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
             child_index[level] = 0;
         }
 
+
         for (int GUIline = 0; GUIline < GUIlineMax; GUIline++)
         {
             // GUIline is the line number on GUI display
@@ -319,6 +324,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
             {
                 // we go from left to right as level increases
 
+
                 if (GUIline < keywnode[nodechain[level]].NBchild)
                 {
                     int snode = 0; // selected node
@@ -326,7 +332,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
 
                     knodeindex = keywnode[nodechain[level]].child[GUIline];
 
-                    // TODO: adjust len to string
+                    //TODO: adjust len to string
                     char pword[100];
 
                     if (level == 0)
@@ -394,6 +400,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                 }
             }
 
+
             int knodeindex;
             knodeindex = keywnode[fpsCTRLvar->directorynodeSelected]
                              .child[child_index[fpsCTRLvar->currentlevel]];
@@ -409,6 +416,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                     child_index[fpsCTRLvar->currentlevel] =
                         keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
                 }
+
 
                 DEBUG_TRACEPOINT(" ");
 
@@ -509,12 +517,14 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                             }
                         }
 
+
                         if (GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             screenprint_setreverse();
                             fpsCTRLvar->nodeSelected     = knodeindex;
                             fpsCTRLvar->fpsindexSelected = keywnode[knodeindex].fpsindex;
                         }
+
 
                         if (child_index[fpsCTRLvar->currentlevel + 1] <
                             keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
@@ -556,6 +566,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                             screenprint_setblink();
                         }
 
+
                         if (GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             fpsCTRLvar->pindexSelected   = keywnode[knodeindex].pindex;
@@ -594,8 +605,9 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                             TUI_printfw("  ");
                         }
 
+
                         DEBUG_TRACEPOINT(" ");
-                        // level = keywnode[knodeindex].keywordlevel;
+                        //level = keywnode[knodeindex].keywordlevel;
 
                         if (GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
@@ -616,6 +628,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
 
                         // VALUE
 
+
                         if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR)
                         {
                             // parameter setting error
@@ -631,6 +644,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                         {
                             TUI_printfw("  %s", "-undef-");
                         }
+
 
                         DEBUG_TRACEPOINT("Integer types");
 
@@ -698,6 +712,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                                 }
                             }
                         }
+
 
                         DEBUG_TRACEPOINT("float types");
                         {
@@ -767,6 +782,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                             }
                         }
 
+
                         DEBUG_TRACEPOINT("PID type");
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_PID)
                         {
@@ -808,6 +824,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                             }
                         }
 
+
                         DEBUG_TRACEPOINT("TIMESPEC type");
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC)
                         {
@@ -817,6 +834,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                                     1e-9 *
                                         data.fpsarray[fpsindex].parray[pindex].val.ts[0].tv_nsec);
                         }
+
 
                         DEBUG_TRACEPOINT("generic string types");
                         if ((data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FILENAME) ||
@@ -867,20 +885,24 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                             }
                         }
 
+
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME)
                         {
                             fpselem_statusprint_STREAMNAME(fpsindex, pindex, isVISIBLE);
                         }
+
 
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_ONOFF)
                         {
                             fpselem_statusprint_ONOFF(fpsindex, pindex);
                         }
 
+
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FPSNAME)
                         {
                             fpselem_statusprint_FPSNAME(fpsindex, pindex, isVISIBLE);
                         }
+
 
                         DEBUG_TRACEPOINT(" ");
 
@@ -921,6 +943,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                         child_index[level]++;
                     }
 
+
                     if (fpsCTRLvar->currentlevel == 0)
                     {
                         TUI_printfw(" %s", data.fpsarray[fpsindex].md->description);
@@ -943,6 +966,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
         DEBUG_TRACEPOINT(" ");
 
         TUI_newline();
+
 
         fpsCTRLdisplay_FPSerrormsgs(fpsCTRLvar);
 

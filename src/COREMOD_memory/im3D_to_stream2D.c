@@ -7,8 +7,8 @@
  * @brief   convert 3D image to 2D stream
  */
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 // Local variables pointers
 static char *inimname;
@@ -53,6 +53,7 @@ static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
         FUNC_RETURN_FAILURE("Input image is not 3D");
     }
 
+
     uint32_t xsize = inimg->size[0];
     uint32_t ysize = inimg->size[1];
     uint32_t zsize = inimg->size[2];
@@ -76,6 +77,7 @@ static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
     return RETURN_SUCCESS;
 }
 
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -88,6 +90,7 @@ static errno_t compute_function()
     outimg          = makeIMGID_2D(outname, inimg.size[0], inimg.size[1]);
     outimg.shared   = 1;
     outimg.datatype = inimg.md->datatype;
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
@@ -113,7 +116,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_memory__im3D_to_stream2D()

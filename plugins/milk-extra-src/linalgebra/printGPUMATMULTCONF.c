@@ -38,12 +38,12 @@ errno_t LINALGEBRA_printGPUMATMULTCONF(int index)
 
     /// one semaphore per thread
     /*
-      sem_t **semptr1;
-      sem_t **semptr2;
-      sem_t **semptr3;
-      sem_t **semptr4;
-      sem_t **semptr5;
-  */
+        sem_t **semptr1;
+        sem_t **semptr2;
+        sem_t **semptr3;
+        sem_t **semptr4;
+        sem_t **semptr5;
+    */
 
     printf(" cMat              = %20p\n", (void *) gpumatmultconf[index].cMat);
     printf(" cMat_part         = %20p\n", (void *) gpumatmultconf[index].cMat_part);

@@ -64,7 +64,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     float      *rwork;
 
     float *Sarray;
-    // float *Aarray;
+    //float *Aarray;
     long  i;
     FILE *fp;
     char  fname[200];
@@ -380,8 +380,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     FUNC_CHECK_RETURN(create_image_ID(ID_Cmatrix_name, data.image[ID_Rmatrix].md[0].naxis,
                                       arraysizetmp, _DATATYPE_FLOAT, 0, 0, 0, &ID_Cmatrix));
 
-    //   cudaStat = cudaMemcpy(data.image[ID_Cmatrix].array.F, d_M,
-    //   sizeof(float)*m*n, cudaMemcpyDeviceToHost);
+    //   cudaStat = cudaMemcpy(data.image[ID_Cmatrix].array.F, d_M, sizeof(float)*m*n, cudaMemcpyDeviceToHost);
 
     h_M      = (float *) malloc(sizeof(float) * m * n);
     cudaStat = cudaMemcpy(h_M, d_M, sizeof(float) * m * n, cudaMemcpyDeviceToHost);
@@ -393,8 +392,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         }
     }
 
-    // cudaStat = cudaMemcpy(data.image[ID_Cmatrix].array.F, d_VT,
-    // sizeof(float)*n*n, cudaMemcpyDeviceToHost);
+    //cudaStat = cudaMemcpy(data.image[ID_Cmatrix].array.F, d_VT, sizeof(float)*n*n, cudaMemcpyDeviceToHost);
     if (cudaStat != cudaSuccess)
     {
         printf("cudaMemcpy returned error code %d, line(%d)\n", cudaStat, __LINE__);

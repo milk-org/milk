@@ -31,14 +31,14 @@
  * At the beginning of each function, insert this code:
  * @code
  * #ifdef TEST
- * CORE_logFunctionCall( logfunc_level, logfunc_level_max, 1, __FILE__,
- * __func__, __LINE__, ""); #endif
+ * CORE_logFunctionCall( logfunc_level, logfunc_level_max, 1, __FILE__, __func__, __LINE__, "");
+ * #endif
  * @endcode
  * and at the end of each function:
  * @code
  * #ifdef TEST
- * CORE_logFunctionCall( logfunc_level, logfunc_level_max, 1, __FILE__,
- * __func__, __LINE__, ""); #endif
+ * CORE_logFunctionCall( logfunc_level, logfunc_level_max, 1, __FILE__, __func__, __LINE__, "");
+ * #endif
  * @endcode
  *
  *
@@ -46,32 +46,26 @@
  *
  * @param[in]
  * funclevel		INT
- * 					Function level (0: top level, always
- * log)
+ * 					Function level (0: top level, always log)
  *
  * @param[in]
  * loglevel			INT
- * 					Log level: log all function with level
- * =< loglevel
+ * 					Log level: log all function with level =< loglevel
  *
  * logfuncMODE		INT
- * 					Log mode, 0:entering function, 1:exiting
- * function
+ * 					Log mode, 0:entering function, 1:exiting function
  *
  * @param[in]
  * FileName			char*
- * 					Name of source file, usually __FILE__ so
- * that preprocessor fills this parameter.
+ * 					Name of source file, usually __FILE__ so that preprocessor fills this parameter.
  *
  * @param[in]
  * FunctionName		char*
- * 					Name of function, usually __FUNCTION__
- * so that preprocessor fills this parameter.
+ * 					Name of function, usually __FUNCTION__ so that preprocessor fills this parameter.
  *
  * @param[in]
  * line				char*
- * 					Line in cource code, usually __LINE__ so
- * that preprocessor fills this parameter.
+ * 					Line in cource code, usually __LINE__ so that preprocessor fills this parameter.
  *
  * @param[in]
  * comments			char*
@@ -80,8 +74,7 @@
  * @return void
  *
  * @note Carefully set depth value to avoid large output file.
- * @warning May slow down code. Only use for debugging. Output file may grow
- * very quickly.
+ * @warning May slow down code. Only use for debugging. Output file may grow very quickly.
  */
 
 void CORE_logFunctionCall(const int                           funclevel,

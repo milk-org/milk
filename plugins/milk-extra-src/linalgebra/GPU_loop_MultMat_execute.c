@@ -50,25 +50,25 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
     int                device;
     int                index;
     const char        *ptr0; // source
-    // const char *ptr1; // dest
-    // float      *ptr0f; // test
+    //const char *ptr1; // dest
+    //float      *ptr0f; // test
     int *ptrstat;
-    // imageID     IDtest;
-    // char        fname[200];
+    //imageID     IDtest;
+    //char        fname[200];
     long long iter;
     long long itermax = 1;
-    // float       imtot;
-    // float       alphatmp;
-    // float       betatmp;
+    //float       imtot;
+    //float       alphatmp;
+    //float       betatmp;
     int  semval;
     long cnt;
-    // FILE        *fptest;
+    //FILE        *fptest;
 
     float alpharef, betaref;
 
     struct timespec t00;
 
-    int ComputeGPU_FLAG = 1; // TEST
+    int ComputeGPU_FLAG = 1; //TEST
 
     thdata = (LINALGEBRA_THDATA *) ptr;
     device = thdata->thread_no;
@@ -89,7 +89,7 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
 
     ptr0 = (char *) gpumatmultconf[index].wfsVec;
     ptr0 += sizeof(float) * gpumatmultconf[index].Noffset[device];
-    // ptr0f = (float*) ptr0;
+    //ptr0f = (float*) ptr0;
 
     cudaSetDevice(gpumatmultconf[index].GPUdevice[device]);
 
@@ -107,8 +107,8 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
     iter = 0;
     while (iter != itermax)
     {
-        // printf("====================================== gpumatmultconf[index].M =
-        // %d\n", gpumatmultconf[index].M); fflush(stdout);
+        //printf("====================================== gpumatmultconf[index].M = %d\n", gpumatmultconf[index].M);
+        //fflush(stdout);
 
         clock_gettime(CLOCK_MILK, &t00);
 
@@ -134,8 +134,7 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
         //
         // Wait for semaphore #1 to be posted to transfer from CPU to GPU
         //
-        // printf("%s %d      index = %d  sem = %d\n", __FILE__, __LINE__, index,
-        // gpumatmultconf[index].sem);//TEST
+        //printf("%s %d      index = %d  sem = %d\n", __FILE__, __LINE__, index, gpumatmultconf[index].sem);//TEST
         if (gpumatmultconf[index].sem == 1)
         {
             sem_wait(gpumatmultconf[index].semptr1[device]);
@@ -193,13 +192,12 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
 
             *ptrstat = 4; // compute
 
-            // enable this post if outside process needs to be notified of computation
-            // start
+            // enable this post if outside process needs to be notified of computation start
             /*            if(gpumatmultconf[index].sem==1)
-                      sem_post(gpumatmultconf[index].semptr2[device]);*/
+                            sem_post(gpumatmultconf[index].semptr2[device]);*/
 
-            //  printf("%d  device %d (GPU %d): compute reference product\n", index,
-            //  device, gpumatmultconf[index].GPUdevice[device]); fflush(stdout);
+            //  printf("%d  device %d (GPU %d): compute reference product\n", index, device, gpumatmultconf[index].GPUdevice[device]);
+            //  fflush(stdout);
 
             //            alphatmp = cublasSgemv_alpha;
             //            betatmp = cublasSgemv_beta;
@@ -257,12 +255,11 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
 
             gpumatmultconf[index].refWFSinit[device] = 1;
 
-            // enable this post if outside process needs to be notified of computation
-            // start
+            // enable this post if outside process needs to be notified of computation start
             /*
-      if(gpumatmultconf[index].sem==1)
-          sem_post(gpumatmultconf[index].semptr3[device]);
-      */
+            if(gpumatmultconf[index].sem==1)
+                sem_post(gpumatmultconf[index].semptr3[device]);
+            */
 
             *ptrstat = 5; // transfer result
 
@@ -309,17 +306,17 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
             // TEST
 
             /*    sprintf(fname, "gputest%d.txt", device);
-          if((fptest = fopen(fname, "w"))==NULL)
-          {
-              printf("ERROR: cannot create file \"%s\"\n", fname);
-              exit(0);
-          }
-          printf("Writing test file \"%s\"\n", fname);
-          fflush(stdout);
-          for(ii=0; ii<gpumatmultconf[index].M; ii++)
-              fprintf(fptest, "%ld %f\n", ii,
-         gpumatmultconf[index].dmRef_part[device][ii]); fclose(fptest);
-      */
+                if((fptest = fopen(fname, "w"))==NULL)
+                {
+                    printf("ERROR: cannot create file \"%s\"\n", fname);
+                    exit(0);
+                }
+                printf("Writing test file \"%s\"\n", fname);
+                fflush(stdout);
+                for(ii=0; ii<gpumatmultconf[index].M; ii++)
+                    fprintf(fptest, "%ld %f\n", ii, gpumatmultconf[index].dmRef_part[device][ii]);
+                fclose(fptest);
+            */
             if (gpumatmultconf[index].sem == 1)
             {
                 sem_post(gpumatmultconf[index].semptr5[device]);
@@ -335,9 +332,9 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
             // Post semaphore #2 when starting computation
             // Enable if listening to semptr2
             /*
-      if(gpumatmultconf[index].sem==1)
-          sem_post(gpumatmultconf[index].semptr2[device]);
-          */
+            if(gpumatmultconf[index].sem==1)
+                sem_post(gpumatmultconf[index].semptr2[device]);
+                */
 
             if (ComputeGPU_FLAG == 1)
             {
@@ -391,9 +388,9 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
             // When computation is done on GPU, post semaphore #3
             //
             /*
-      if(gpumatmultconf[index].sem==1)
-          sem_post(gpumatmultconf[index].semptr3[device]);
-      */
+            if(gpumatmultconf[index].sem==1)
+                sem_post(gpumatmultconf[index].semptr3[device]);
+            */
             *ptrstat = 5; // transfer result
 
             //
@@ -418,10 +415,8 @@ void __attribute__((hot)) * GPUcomputeMVM_function(void *ptr)
 
             clock_gettime(CLOCK_MILK, thdata->t4);
 
-            // cudaMemcpy ( gpumatmultconf[index].dmVec_part[device],
-            // gpumatmultconf[index].d_dmVec[device],
-            // sizeof(float)*gpumatmultconf[index].M, cudaMemcpyDeviceToHost);
-            //  result is on gpumatmultconf[index].d_dmVec[device]
+            //cudaMemcpy ( gpumatmultconf[index].dmVec_part[device], gpumatmultconf[index].d_dmVec[device], sizeof(float)*gpumatmultconf[index].M, cudaMemcpyDeviceToHost);
+            // result is on gpumatmultconf[index].d_dmVec[device]
 
             if (ComputeGPU_FLAG == 1)
             {
@@ -484,7 +479,7 @@ int GPU_loop_MultMat_execute(int   index,
                              int   TimerOffsetIndex)
 {
     int ptn;
-    // int statustot;
+    //int statustot;
     int  semval;
     long cnt;
     int  TimerIndex;
@@ -572,7 +567,7 @@ int GPU_loop_MultMat_execute(int   index,
         *status = *status + 1; // ->7
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv = timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 25
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //25
         TimerIndex++;
     }
 
@@ -591,16 +586,15 @@ int GPU_loop_MultMat_execute(int   index,
     }
     //   }
 
-    // index is the matrix multiplication index (unique to each matrix
-    // multiplication stream operation) ptn is the thread number = GPU device
-    // number
+    // index is the matrix multiplication index (unique to each matrix multiplication stream operation)
+    // ptn is the thread number = GPU device number
 
     //    if((gpumatmultconf[index].sem==0)||
 
     if (gpumatmultconf[index].gpuinit == 0)
     {
         printf("GPU pthread create, index = %d    %d %d\n", index, gpumatmultconf[index].sem,
-               gpumatmultconf[index].gpuinit); // TEST
+               gpumatmultconf[index].gpuinit); //TEST
         fflush(stdout);
 
         for (ptn = 0; ptn < gpumatmultconf[index].NBstreams; ptn++)
@@ -635,7 +629,7 @@ int GPU_loop_MultMat_execute(int   index,
         *status = *status + 1; // -> 8
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv = timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 26
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //26
         TimerIndex++;
     }
 
@@ -682,8 +676,7 @@ int GPU_loop_MultMat_execute(int   index,
         fflush(stdout);
 #    endif
 
-        // for safety, set semaphores to
-        // zerosem_getvalue(data.image[IDarray[i]].semptr[s], &semval);
+        // for safety, set semaphores to zerosem_getvalue(data.image[IDarray[i]].semptr[s], &semval);
         if (FORCESEMINIT == 1)
         {
             for (ptn = 0; ptn < gpumatmultconf[index].NBstreams; ptn++)
@@ -709,23 +702,23 @@ int GPU_loop_MultMat_execute(int   index,
     if (timing == 1)
     {
         double tdiffv                            = timespec_diff_double(tdt0[0], tdt1[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 27
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //27
         TimerIndex++;
 
         tdiffv                                   = timespec_diff_double(tdt1[0], tdt2[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 28
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //28
         TimerIndex++;
 
         tdiffv                                   = timespec_diff_double(tdt2[0], tdt3[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 29
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //29
         TimerIndex++;
 
         tdiffv                                   = timespec_diff_double(tdt3[0], tdt4[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 30
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //30
         TimerIndex++;
 
         tdiffv                                   = timespec_diff_double(tdt4[0], tdt5[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 31
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //31
         TimerIndex++;
     }
 
@@ -742,7 +735,7 @@ int GPU_loop_MultMat_execute(int   index,
         *status = *status + 1; // -> 9
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv = timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 32
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //32
         TimerIndex++;
     }
 
@@ -770,7 +763,7 @@ int GPU_loop_MultMat_execute(int   index,
         *status = *status + 1; // -> 10
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv = timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; // 33
+        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //33
         TimerIndex++;
     }
 

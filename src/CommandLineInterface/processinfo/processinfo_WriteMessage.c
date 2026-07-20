@@ -7,6 +7,7 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
+
 int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring)
 {
     struct timespec tnow;
@@ -14,6 +15,7 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring)
     DEBUG_TRACEPOINT(" ");
 
     clock_gettime(CLOCK_MILK, &tnow);
+
 
     strcpy(processinfo->statusmsg, msgstring);
 
@@ -30,8 +32,10 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring)
     fflush(processinfo->logFile);
 #endif
 
+
     return EXIT_SUCCESS;
 }
+
 
 int processinfo_WriteMessage_fmt(PROCESSINFO *processinfo, const char *format, ...)
 {

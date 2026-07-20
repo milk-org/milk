@@ -146,12 +146,11 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
     char msgstring[200];
     sprintf(msgstring, "%s->%s", inputstream_name, IDout_name);
 
-    processinfo =
-        processinfo_setup(pinfoname,  // short name for the processinfo instance, no spaces, no dot,
-                                      // name should be human-readable
-                          pinfodescr, // description
-                          msgstring,  // message on startup
-                          __FUNCTION__, __FILE__, __LINE__);
+    processinfo = processinfo_setup(
+        pinfoname, // short name for the processinfo instance, no spaces, no dot, name should be human-readable
+        pinfodescr, // description
+        msgstring,  // message on startup
+        __FUNCTION__, __FILE__, __LINE__);
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
     processinfo->RT_priority =
@@ -277,8 +276,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
             sliceii = slice * data.image[IDmap].md[0].size[0] * data.image[IDmap].md[0].size[1];
             for (ii = 0; ii < nbpixslice[slice]; ii++)
             {
-                // ocam2kpixi files MUST now be in int32 - otherwise we'll overflow in
-                // 240x240
+                // ocam2kpixi files MUST now be in int32 - otherwise we'll overflow in 240x240
                 data.image[IDout_pixslice].array.UI16[data.image[IDmap].array.UI32[sliceii + ii]] =
                     (unsigned short) (1 + slice);
             }
@@ -303,7 +301,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
     while (loopOK == 1)
     {
         loopOK = processinfo_loopstep(processinfo);
-        // printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+        //printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
         fflush(stdout);
 
         if (data.image[IDin].md[0].sem == 0)
@@ -353,8 +351,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
                 }
 
                 //   clock_gettime(CLOCK_MILK, &tarray[slice]);
-                //  dtarray[slice] = 1.0*tarray[slice].tv_sec
-                //  + 1.0e-9*tarray[slice].tv_nsec;
+                //  dtarray[slice] = 1.0*tarray[slice].tv_sec + 1.0e-9*tarray[slice].tv_nsec;
                 data.image[IDout].md[0].write = 1;
 
                 if (reverse == 0) // legacy forward lookup mode
@@ -371,8 +368,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
                         }
                     }
                 }
-                else // reverse == 1, full image assumed (at least given how ocam is
-                     // scrambled)
+                else // reverse == 1, full image assumed (at least given how ocam is scrambled)
                 {
                     for (ii = 0; ii < nbpixout; ++ii)
                     {
@@ -422,8 +418,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
     processinfo_cleanExit(processinfo);
 
     /*    if((data.processinfo == 1) && (processinfo->loopstat != 4)) {
-          processinfo_cleanExit(processinfo);
-      }*/
+            processinfo_cleanExit(processinfo);
+        }*/
 
     free(nbpixslice);
     free(sizearray);

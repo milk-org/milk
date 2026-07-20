@@ -10,7 +10,9 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
 // Local variables pointers
+
 
 static char *iminname;
 static long  fpi_iminname;
@@ -24,6 +26,7 @@ static long   fpi_blurramp;
 static uint32_t *NBloop;
 static long      fpi_NBloop;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".iminname", "input image name", "inim",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &iminname, &fpi_iminname },
                                { CLIARG_STR, ".imoutname", "output image name", "outim",
@@ -34,10 +37,12 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".iminname", "input image name", "i
                                { CLIARG_UINT32, ".axis", "number of times operation is performed",
                                  "1", CLIARG_VISIBLE_DEFAULT, (void **) &NBloop, &fpi_NBloop } };
 
+
 static errno_t customCONFsetup()
 {
     return RETURN_SUCCESS;
 }
+
 
 static errno_t customCONFcheck()
 {
@@ -48,14 +53,17 @@ static errno_t customCONFcheck()
     return RETURN_SUCCESS;
 }
 
+
 static CLICMDDATA CLIcmddata = { "im2Dfilt1pblurr", "1 pixel radual blurr, can be iterated",
                                  CLICMD_FIELDS_DEFAULTS };
+
 
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, long NBiter)
 {
@@ -64,6 +72,7 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
 
     // resolve imgpos
     resolveIMGID(&imgin, ERRMODE_ABORT);
+
 
     // create eigenvalues array if needed
     if (imgout->ID == -1)
@@ -76,16 +85,20 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
         createimagefromIMGID(imgout);
     }
 
+
     uint32_t xsize = imgin.size[0];
     uint32_t ysize = imgin.size[1];
+
 
     float coeff1 = amp;                           // side pixels (x4)
     float coeff2 = amp * amp;                     // corner pixels (x4)
     float coeff0 = 1.0 - 4.0 * (coeff1 + coeff2); // central pixel
 
+
     // temp arrays
     float *tmpfim0 = (float *) malloc(sizeof(float) * xsize * ysize);
     float *tmpfim1 = (float *) malloc(sizeof(float) * xsize * ysize);
+
 
     // copy input to tmpfim0
     //
@@ -162,6 +175,7 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
         break;
     }
 
+
     for (int iter = 0; iter < NBiter; iter++)
     {
         for (uint32_t ii = 0; ii < xsize * ysize; ii++)
@@ -182,6 +196,7 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
                 tmpfim1[(jj + 1) * xsize + ii] += coeff1 * pixval;
                 tmpfim1[(jj - 1) * xsize + ii] += coeff1 * pixval;
 
+
                 tmpfim1[(jj + 1) * xsize + ii + 1] += coeff2 * pixval;
                 tmpfim1[(jj + 1) * xsize + ii - 1] += coeff2 * pixval;
                 tmpfim1[(jj - 1) * xsize + ii + 1] += coeff2 * pixval;
@@ -196,9 +211,11 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
     free(tmpfim0);
     free(tmpfim1);
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -210,6 +227,7 @@ static errno_t compute_function()
 
     // output
     IMGID imgout = mkIMGID_from_name(imoutname);
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
@@ -225,7 +243,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_image_filter__im2Dfilter_1pixblurr()

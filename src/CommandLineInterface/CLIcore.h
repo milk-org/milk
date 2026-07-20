@@ -14,6 +14,7 @@
  *
  */
 
+
 #ifndef _CLICORE_H
 #define _CLICORE_H
 
@@ -51,8 +52,8 @@ typedef long variableID;
 
 #include "CommandLineInterface/function_parameters.h"
 #include "CommandLineInterface/processtools.h"
-#include "CommandLineInterface/streamCTRL/streamCTRL_TUI.h"
 #include "CommandLineInterface/timeutils.h"
+#include "CommandLineInterface/streamCTRL/streamCTRL_TUI.h"
 
 #include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"
 #include "CommandLineInterface/CLIcore/CLIcore_help.h"
@@ -78,9 +79,11 @@ extern char  BuildTime[200];
 
 extern int C_ERRNO; // C errno (from errno.h)
 
+
 #define STRINGMAXLEN_CLISTARTUPFILENAME 200
 
 #define STRINGMAXLEN_CLIPROMPT 200
+
 
 /* #define DEBUG */
 #define CFITSEXIT                                                                        \
@@ -173,12 +176,11 @@ typedef uint_fast8_t BOOL;
 
 // In STATIC allocation mode, IMAGE and VARIABLE arrays are allocated statically
 
-// #define DATA_STATIC_ALLOC // comment if DYNAMIC
+//#define DATA_STATIC_ALLOC // comment if DYNAMIC
 #define STATIC_NB_MAX_IMAGE 520
 #define STATIC_NB_MAX_VARIABLE 5030
 
-// Need to install process with setuid.  Then, so you aren't running privileged
-// all the time do this:
+//Need to install process with setuid.  Then, so you aren't running privileged all the time do this:
 extern uid_t euid_real;
 extern uid_t euid_called;
 extern uid_t suid;
@@ -258,7 +260,7 @@ typedef struct
     CLICMDARGDATA *argdata; // arguments and parameters to function
 
     // defines static function capabilities and behavior
-    // uint64_t flags;
+    //uint64_t flags;
 
     // dynamic settings for function
     CMDSETTINGS cmdsettings;
@@ -342,7 +344,9 @@ typedef struct
 // number of entries stored in testpoint trace array
 #define CODETESTPOINTARRAY_NBCNT 100000
 
+
 #define STRINGMAXLEN_PROCESSNAME 100
+
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
@@ -392,11 +396,11 @@ typedef struct
     uint64_t testpointcnt;
 
     /*int    testpoint_line;
-  char   testpoint_file[STRINGMAXLEN_FULLFILENAME];
-  char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
-  char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
-  struct timespec testpoint_time;
-  */
+    char   testpoint_file[STRINGMAXLEN_FULLFILENAME];
+    char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
+    char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
+    struct timespec testpoint_time;
+    */
 
     int progStatus; // main program status
     // 0: before automatic loading of shared objects
@@ -473,7 +477,7 @@ typedef struct
     // =================================================
 
     long NBmodule;
-    // long           NB_MAX_MODULE;
+    //long           NB_MAX_MODULE;
 
     // module info gets sorted into module structure
     MODULE module[DATA_NB_MAX_MODULE];
@@ -489,6 +493,7 @@ typedef struct
     char moduledatestring[STRINGMAXLEN_MODULE_DATESTRING];
     char moduletimestring[STRINGMAXLEN_MODULE_TIMESTRING];
 
+
     // FUNCTION PARAMETER STRUCTURES (FPSs)
     // =================================================
 
@@ -501,6 +506,7 @@ typedef struct
     FUNCTION_PARAMETER_STRUCT *fpsptr;
     char                       FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
 
+
     // Which type of FPS process is the current process ?
     // conf, run, ctrl
     char FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE];
@@ -510,6 +516,7 @@ typedef struct
     uint32_t FPS_CMDCODE;      // current FPS mode
     errno_t (*FPS_CONFfunc)(); // pointer to FPS conf function
     errno_t (*FPS_RUNfunc)();  // pointer to FPS run function
+
 
     // IMAGES
     // =================================================

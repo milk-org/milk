@@ -7,6 +7,7 @@
 
 #include "get_availableCFindex.h"
 
+
 errno_t droptree(CLUSTERTREE *ctree)
 {
     DEBUG_TRACE_FSTART();
@@ -23,13 +24,13 @@ errno_t droptree(CLUSTERTREE *ctree)
     ctree->CFarray[CFindex].type          = CLUSTER_CF_TYPE_NODE; // default
     ctree->CFarray[CFindex].NBchild       = 1;
     ctree->CFarray[CFindex].childindex[0] = ctree->rootindex;
-    // ctree->CFarray[CFindex].NBleaf        = 0;
+    //ctree->CFarray[CFindex].NBleaf        = 0;
 
     if (ctree->CFarray[ctree->rootindex].type == CLUSTER_CF_TYPE_LEAF)
     {
-        ctree->CFarray[CFindex].type    = CLUSTER_CF_TYPE_NODE; // CLUSTER_CF_TYPE_LEAFNODE;
+        ctree->CFarray[CFindex].type    = CLUSTER_CF_TYPE_NODE; //CLUSTER_CF_TYPE_LEAFNODE;
         ctree->CFarray[CFindex].NBchild = 1;
-        // ctree->CFarray[CFindex].NBleaf       = 1;
+        //ctree->CFarray[CFindex].NBleaf       = 1;
         ctree->CFarray[CFindex].childindex[0] = ctree->rootindex;
     }
 

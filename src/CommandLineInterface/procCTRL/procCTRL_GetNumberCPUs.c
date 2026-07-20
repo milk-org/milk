@@ -5,9 +5,11 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
+
 #ifdef USE_HWLOC
 #    include <hwloc.h>
 #endif
+
 
 /**
  * ## Purpose
@@ -16,8 +18,8 @@
  *
  * ## Description
  *
- * populates cpuids array with the global system PU numbers in the physical
- * order: [PU0 of CPU0, PU1 of CPU0, ... PU0 of CPU1, PU1 of CPU1, ...]
+ * populates cpuids array with the global system PU numbers in the physical order:
+ * [PU0 of CPU0, PU1 of CPU0, ... PU0 of CPU1, PU1 of CPU1, ...]
  *
  */
 
@@ -39,10 +41,10 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
         hwloc_topology_init(&topology);
 
         /* ... Optionally, put detection configuration here to ignore
-       some objects types, define a synthetic topology, etc....
-       The default is to detect all the objects of the machine that
-       the caller is allowed to access.  See Configure Topology
-       Detection. */
+           some objects types, define a synthetic topology, etc....
+           The default is to detect all the objects of the machine that
+           the caller is allowed to access.  See Configure Topology
+           Detection. */
 
         /* Perform the topology detection. */
         hwloc_topology_load(topology);
@@ -70,7 +72,7 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
     char  outstring[16];
     char  buf[100];
 
-    // unsigned int tmp_index = 0;
+    //unsigned int tmp_index = 0;
 
     fpout = popen("getconf _NPROCESSORS_ONLN", "r");
     if (fpout == NULL)
@@ -95,8 +97,7 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
         pinfop->CPUids[pu_index]  = pu_index;
         pinfop->CPUphys[pu_index] = atoi(buf);
 
-        // printf("cpu %2d belongs to Physical CPU %d\n", pu_index,
-        // pinfop->CPUphys[pu_index] );
+        //printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
         if (pinfop->CPUphys[pu_index] + 1 > pinfop->NBcpusocket)
         {
             pinfop->NBcpusocket = pinfop->CPUphys[pu_index] + 1;

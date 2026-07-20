@@ -328,7 +328,7 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
     // SEARCH LOCALMEM
     if (*imLOC == STREAM_LOAD_SOURCE_NOTFOUND) // still searching
     {
-        // printf("imLOC = %d\n", *imLOC);
+        //printf("imLOC = %d\n", *imLOC);
         if (!(FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM & *streamflag))
         {
             if (MEMLOADREPORT == 1)
@@ -357,7 +357,7 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
         }
-        // printf("imLOC = %d\n", *imLOC);
+        //printf("imLOC = %d\n", *imLOC);
     }
 
     // SEARCH SHAREMEM
@@ -393,7 +393,7 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
         }
-        // printf("imLOC = %d\n", *imLOC);
+        //printf("imLOC = %d\n", *imLOC);
     }
 
     // SEARCH CONFFITS
@@ -407,7 +407,7 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
                 SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s Search CONFFITS", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
-            // printf("imLOC = %d\n", *imLOC);
+            //printf("imLOC = %d\n", *imLOC);
             char fname[STRINGMAXLEN_FULLFILENAME];
             WRITE_FULLFILENAME(fname, "./conf/shmim.%s.fits", sname);
             load_fits(fname, sname, 0, &ID);
@@ -446,7 +446,7 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
 
-            // printf("imLOC = %d\n", *imLOC);
+            //printf("imLOC = %d\n", *imLOC);
             FILE *fp;
             char  fname[200]       = "";
             char  streamfname[200] = "";
@@ -546,7 +546,7 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
                     }
                 }
             }
-            // printf("imLOC = %d\n", *imLOC);
+            //printf("imLOC = %d\n", *imLOC);
         }
     }
 

@@ -42,6 +42,7 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
+
 /* uses the repartition function F of the normal distribution law */
 /* F(0) = 0.5 */
 /* F(-0.1 * sig) = 0.460172162723 */

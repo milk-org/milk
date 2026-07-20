@@ -22,10 +22,12 @@ typedef struct
     int      *CBsize;
 } LOCVAR_INIMG2D;
 
+
 imageID gauss_filter(const char *__restrict ID_name,
                      const char *__restrict out_name,
                      float sigma,
                      int   filter_size);
+
 
 static errno_t gauss_filter_cli()
 {
@@ -42,6 +44,7 @@ static errno_t gauss_filter_cli()
     }
 }
 
+
 errno_t gaussfilter_addCLIcmd()
 {
     RegisterCLIcommand("gaussfilt", __FILE__, gauss_filter_cli, "gaussian 2D filtering",
@@ -52,6 +55,7 @@ errno_t gaussfilter_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+
 
 imageID gauss_filter(const char *__restrict ID_name,
                      const char *__restrict out_name,
@@ -64,6 +68,7 @@ imageID gauss_filter(const char *__restrict ID_name,
     long     naxes[3];
     long     naxis;
     uint32_t filtersizec;
+
 
     imageID ID = image_ID(ID_name);
 
@@ -82,6 +87,7 @@ imageID gauss_filter(const char *__restrict ID_name,
     {
         filtersizec = data.image[ID].md[0].size[1] / 2 - 1;
     }
+
 
     float *__restrict array;
     array = (float *) malloc((2 * filtersizec + 1) * sizeof(float));
@@ -103,12 +109,14 @@ imageID gauss_filter(const char *__restrict ID_name,
         image_setzero(outimg);
     }
 
+
     create_2Dimage_ID("gtmp", naxes[0], naxes[1], &IDtmp);
     //  copy_image_ID(ID_name,"gtmp", 0);
     // arith_image_zero("gtmp");
     // save_fl_fits("gtmp","gtmp0");
     // IDtmp = image_ID("gtmp");
     IDout = image_ID(out_name);
+
 
     {
         float sum = 0.0;
@@ -220,6 +228,7 @@ imageID gauss_filter(const char *__restrict ID_name,
     return IDout;
 }
 
+
 imageID gauss_3Dfilter(const char *__restrict ID_name,
                        const char *__restrict out_name,
                        float sigma,
@@ -230,6 +239,7 @@ imageID gauss_3Dfilter(const char *__restrict ID_name,
     imageID IDtmp;
     imageID IDtmp1;
     long    naxes[3];
+
 
     float *__restrict array;
     array = (float *) malloc((2 * filter_size + 1) * sizeof(float));

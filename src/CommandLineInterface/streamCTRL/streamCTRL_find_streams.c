@@ -9,18 +9,21 @@
 #include <string.h>
 
 #include <dirent.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+
 
 #include <ncurses.h>
+
 
 #include "CLIcore.h"
 
 #include "streamCTRL_TUI.h"
 
-// default location of file mapped semaphores, can be over-ridden by env
-// variable MILK_SHM_DIR
+
+// default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
 #define SHAREDSHMDIR data.shmdir
+
 
 /** @brief find shared memory streams on system
  *
@@ -52,8 +55,7 @@ int find_streams(STREAMINFO *streaminfo, int filter, const char *__restrict name
                 matchOK = 0;
             }
 
-            // name filtering (first pass, not exclusive to stream name, includes path
-            // and extension
+            // name filtering (first pass, not exclusive to stream name, includes path and extension
             if (filter == 1)
             {
                 if (strstr(dir->d_name, namefilter) == NULL)
@@ -61,6 +63,7 @@ int find_streams(STREAMINFO *streaminfo, int filter, const char *__restrict name
                     matchOK = 0;
                 }
             }
+
 
             if ((pch) && (matchOK == 1))
             {

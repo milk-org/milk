@@ -6,6 +6,7 @@
  * @file zernike.h
  */
 
+
 #ifndef _ZERNIKE_H
 #define _ZERNIKE_H
 
@@ -28,5 +29,6 @@ typedef struct
 
     double *R_array;
 } ZERNIKE;
+
 
 #endif

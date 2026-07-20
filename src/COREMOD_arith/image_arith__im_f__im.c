@@ -17,9 +17,10 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "image_arith__im_f__im.h"
 #include "imfunctions.h"
 #include "mathfuncs.h"
+#include "image_arith__im_f__im.h"
+
 
 int arith_image_cstfmod_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 {

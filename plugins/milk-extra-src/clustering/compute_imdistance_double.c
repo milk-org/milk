@@ -7,6 +7,7 @@
 
 #include <math.h>
 
+
 errno_t compute_imdistance_double(CLUSTERTREE *ctree,
                                   double      *vec1,
                                   long         N1,
@@ -25,8 +26,7 @@ errno_t compute_imdistance_double(CLUSTERTREE *ctree,
     static long double minnoise2_val = -1.0;
 
 #ifdef DEBUGPRINT
-    printf("[compute_imdistance_double]   Computing distance over %ld elements  "
-           "%ld %ld\n",
+    printf("[compute_imdistance_double]   Computing distance over %ld elements  %ld %ld\n",
            ctree->npix, N1, N2);
 #endif
 
@@ -78,11 +78,13 @@ errno_t compute_imdistance_double(CLUSTERTREE *ctree,
     ctree->cdistcnt    = cdist2_cnt;
     ctree->cdistnegcnt = dist2_neg_cnt;
 
+
     ctree->stat_compdistcnt++;
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 // Compute position vector distance between two CFs.
 // Will pull from pre-computed value in CFCFdist if availabe.
@@ -107,6 +109,7 @@ errno_t compute_CF2CF_posdistance_double(CLUSTERTREE *ctree, long CFI0, long CFI
     }
 
     *distval = dval;
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

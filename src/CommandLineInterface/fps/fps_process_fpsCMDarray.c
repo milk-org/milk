@@ -17,23 +17,20 @@
  * Tasks are arranged in execution queues.
  * Each task belongs to a single queue.
  *
- * This function is run by functionparameter_CTRLscreen() at regular intervals
- * to probe queues and run pending tasks. If a task is found, it is executed by
- * calling functionparameter_FPSprocess_cmdline()
+ * This function is run by functionparameter_CTRLscreen() at regular intervals to probe queues
+ * and run pending tasks.
+ * If a task is found, it is executed by calling functionparameter_FPSprocess_cmdline()
  *
  * Each queue has a priority index.
  *
  * RULES :
- * - priorities are associated to queues, not individual tasks: changing a queue
- * priority affects all tasks in the queue
+ * - priorities are associated to queues, not individual tasks: changing a queue priority affects
+ * all tasks in the queue
  * - If queue priority = 0, no task is executed in the queue: it is paused
- * - Task order within a queue must be respected. Execution order is submission
- * order (FIFO)
- * - Tasks can overlap if they belong to separate queues and have the same
- * priority
+ * - Task order within a queue must be respected. Execution order is submission order (FIFO)
+ * - Tasks can overlap if they belong to separate queues and have the same priority
  * - A running task waiting to be completed cannot block tasks in other queues
- * - If two tasks are ready with the same priority, the one in the lower queue
- * index will be launched
+ * - If two tasks are ready with the same priority, the one in the lower queue index will be launched
  *
  * CONVENTIONS AND GUIDELINES :
  * - queue #0 is the main queue
@@ -111,8 +108,7 @@ int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY        *fpsctrltas
                     int task_completed = 1; // default
 
                     if (fpsctrltasklist[cmdindexExec].flag &
-                        FPSTASK_FLAG_WAITONRUN) // are we waiting for run to be completed
-                                                // ?
+                        FPSTASK_FLAG_WAITONRUN) // are we waiting for run to be completed ?
                     {
                         if ((fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
                              FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
@@ -123,8 +119,7 @@ int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY        *fpsctrltas
                     }
 
                     if (fpsctrltasklist[cmdindexExec].flag &
-                        FPSTASK_FLAG_WAITONCONF) // are we waiting for conf update to be
-                                                 // completed ?
+                        FPSTASK_FLAG_WAITONCONF) // are we waiting for conf update to be completed ?
                     {
                         if (fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
                             FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)
@@ -140,11 +135,10 @@ int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY        *fpsctrltas
                         fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_RUNNING;
                         fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_COMPLETED;
 
-                        // no longer active, remove it from list
+                        //no longer active, remove it from list
                         fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_ACTIVE;
 
-                        //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW;
-                        //   // and stop displaying
+                        //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW; // and stop displaying
 
                         clock_gettime(CLOCK_MILK, &fpsctrltasklist[cmdindexExec].completiontime);
                         queue_nexttask[qi] = QUEUE_SCANREADY;

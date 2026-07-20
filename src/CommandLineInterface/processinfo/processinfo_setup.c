@@ -5,14 +5,15 @@
 #include <sys/stat.h>
 
 #include "CLIcore.h"
-#include "COREMOD_tools/mvprocCPUset.h"
 #include <processtools.h>
+#include "COREMOD_tools/mvprocCPUset.h"
+
 
 // High level processinfo function
 
 PROCESSINFO *processinfo_setup(
-    char *pinfoname, // short name for the processinfo instance, avoid spaces,
-                     // name should be human-readable
+    char *
+        pinfoname, // short name for the processinfo instance, avoid spaces, name should be human-readable
     const char *descriptionstring,
     const char *msgstring,
     const char *functionname,
@@ -23,8 +24,7 @@ PROCESSINFO *processinfo_setup(
 
     static PROCESSINFO *processinfo = NULL;
     // Only one instance of processinfo created by process
-    // subsequent calls to this function will re-use the same processinfo
-    // structure
+    // subsequent calls to this function will re-use the same processinfo structure
 
     DEBUG_TRACEPOINT(" ");
 

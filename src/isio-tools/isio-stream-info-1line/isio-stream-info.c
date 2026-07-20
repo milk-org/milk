@@ -12,10 +12,12 @@
 
 #include <string.h>
 
-#include <dirent.h>
 #include <sys/stat.h>
+#include <dirent.h>
+
 
 #include "ImageStreamIO/ImageStreamIO.h"
+
 
 int main(int argc, char *argv[])
 {
@@ -36,11 +38,13 @@ int main(int argc, char *argv[])
         }
     }
 
+
     for (int i = 1; i < argc; i++)
     {
         if (strlen(argv[i]) != 0)
         {
             IMAGE image;
+
 
             {
                 struct stat buf;
@@ -103,6 +107,7 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+
 
             if (ImageStreamIO_read_sharedmem_image_toIMAGE(argv[i], &image) ==
                 IMAGESTREAMIO_SUCCESS)

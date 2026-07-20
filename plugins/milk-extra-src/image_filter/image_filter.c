@@ -8,6 +8,7 @@
  *
  */
 
+
 // module default short name
 // all CLI calls to this module functions will be <shortname>.<funcname>
 // if set to "", then calls use <funcname>
@@ -22,12 +23,14 @@
 #include "gaussfilter.h"
 #include "im2Dfilter_1pixbblurr.h"
 
+
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
 INIT_MODULE_LIB(image_filter)
 
-// long fconvolve(const char *ID_in, const char *ID_ke, const char *ID_out);
+
+//long fconvolve(const char *ID_in, const char *ID_ke, const char *ID_out);
 
 static errno_t init_module_CLI()
 {

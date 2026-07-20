@@ -17,6 +17,7 @@
 
 #include "SGEMM.h"
 
+
 static char *incoeffM;
 static long  fpi_incoeffM;
 
@@ -26,6 +27,7 @@ static long  fpi_outcoeffM;
 static int32_t *axis;
 static long     fpi_axis;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".incoeffM", "input coeffs matrix", "inM",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &incoeffM, &fpi_incoeffM },
                                { CLIARG_STR, ".outcoeffM", "output coeffs matrix", "outcA",
@@ -33,13 +35,16 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".incoeffM", "input coeffs matrix",
                                { CLIARG_INT32, ".axis", "axis", "0", CLIARG_VISIBLE_DEFAULT,
                                  (void **) &axis, &fpi_axis } };
 
+
 static CLICMDDATA CLIcmddata = { "Qexpand", "quadractic expansion of vector or matrix coeffs",
                                  CLICMD_FIELDS_DEFAULTS };
+
 
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Quadratic expansion of vector(s)
@@ -72,9 +77,11 @@ errno_t Qexpand(IMGID imgincoeffM, IMGID *imgoutcoeffM, int axis)
     printf("NBvec = %u\n", NBvec);
     fflush(stdout);
 
+
     // vecdimout is output vector dimension
     //
     uint32_t vecdimout = 1 + vecdim + vecdim * (vecdim + 1) / 2;
+
 
     // output vectors
     imgoutcoeffM->datatype = _DATATYPE_FLOAT;
@@ -105,6 +112,7 @@ errno_t Qexpand(IMGID imgincoeffM, IMGID *imgoutcoeffM, int axis)
         }
         fclose(fp);
     }
+
 
     for (uint32_t vec = 0; vec < NBvec; vec++)
     {
@@ -151,9 +159,11 @@ errno_t Qexpand(IMGID imgincoeffM, IMGID *imgoutcoeffM, int axis)
         }
     }
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -162,10 +172,13 @@ static errno_t compute_function()
     IMGID imgincoeffM = mkIMGID_from_name(incoeffM);
     resolveIMGID(&imgincoeffM, ERRMODE_ABORT);
 
+
     fflush(stdout);
     IMGID imgoutcoeffM = mkIMGID_from_name(outcoeffM);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -175,11 +188,14 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     errno_t
     CLIADDCMD_linalgebra__Qexpand()

@@ -10,15 +10,11 @@
  *
  */
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                        HEADER FILES */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                        HEADER FILES                                             */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 #include <malloc.h>
 #include <math.h>
@@ -57,6 +53,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
+
 #include "linopt_imtools/linopt_imtools.h" // for testing
 
 #ifdef HAVE_CUDA
@@ -93,9 +90,9 @@ int __attribute__((hot)) LINALGEBRA_MVMextractModesLoop(
 static errno_t LINALGEBRA_MVMextractModesLoop_cli()
 {
     // try FPS implementation
-    // set data.fpsname, providing default value as first arg, and set
-    // data.FPS_CMDCODE value default FPS name will be used if CLI process has NOT
-    // been named see code in function_parameter.c for detailed rules
+    // set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value
+    // default FPS name will be used if CLI process has NOT been named
+    // see code in function_parameter.c for detailed rules
     function_parameter_getFPSargs_from_CLIfunc("cudaMVM");
 
     if (data.FPS_CMDCODE != 0) // use FPS implementation
@@ -168,7 +165,7 @@ errno_t LINALGEBRA_MVMextractModesLoop_FPCONF()
 {
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE); // sets up fps
 
-    // FPS2PROCINFOMAP fps2procinfo;
+    //FPS2PROCINFOMAP fps2procinfo;
     fps_add_processinfo_entries(&fps);
 
     // ===========================
@@ -183,69 +180,69 @@ errno_t LINALGEBRA_MVMextractModesLoop_FPCONF()
     FPFLAG &= ~FPFLAG_WRITERUN;
 
     long GPUindex_default[4] = { 0, 0, 9, 0 };
-    // long fp_GPUindex = 0;
+    //long fp_GPUindex = 0;
     function_parameter_add_entry(&fps, ".GPUindex", "GPU index", FPTYPE_INT64, FPFLAG_DEFAULT_INPUT,
                                  &GPUindex_default, NULL);
 
-    // long fp_streamname_in = 0;
+    //long fp_streamname_in = 0;
     function_parameter_add_entry(&fps, ".sname_in", "input stream vector", FPTYPE_STREAMNAME,
                                  FPFLAG_DEFAULT_INPUT_STREAM, pNull, NULL);
 
-    // long fp_streamname_modes = 0;
+    //long fp_streamname_modes = 0;
     function_parameter_add_entry(&fps, ".sname_modes", "input modes matrix", FPTYPE_STREAMNAME,
                                  FPFLAG_DEFAULT_INPUT_STREAM, pNull, NULL);
 
     FPFLAG = FPFLAG_DEFAULT_INPUT_STREAM;
     FPFLAG &= ~FPFLAG_STREAM_RUN_REQUIRED;
-    // long fp_streamname_intot = 0;
+    //long fp_streamname_intot = 0;
     function_parameter_add_entry(&fps, ".option.sname_intot", "optional input normalization stream",
                                  FPTYPE_STREAMNAME, FPFLAG, pNull, NULL);
 
-    // long fp_streamname_refin = 0;
+    //long fp_streamname_refin = 0;
     function_parameter_add_entry(&fps, ".option.sname_refin",
                                  "optional input reference to be subtracted stream",
                                  FPTYPE_STREAMNAME, FPFLAG, pNull, NULL);
 
-    // long fp_streamname_refout = 0;
+    //long fp_streamname_refout = 0;
     function_parameter_add_entry(&fps, ".option.sname_refout",
                                  "optional output reference to be subtracted stream",
                                  FPTYPE_STREAMNAME, FPFLAG, pNull, NULL);
 
-    // long fp_stream_outmodesval = 0;
+    //long fp_stream_outmodesval = 0;
     function_parameter_add_entry(&fps, ".sname_outmodesval", "output mode coefficients stream",
                                  FPTYPE_STREAMNAME, FPFLAG, pNull, NULL);
 
-    // long fp_outinit = 0;
+    //long fp_outinit = 0;
     function_parameter_add_entry(&fps, ".outinit", "output stream init mode", FPTYPE_ONOFF, FPFLAG,
                                  pNull, NULL);
 
-    // long fp_PROCESS = 0;
+    //long fp_PROCESS = 0;
     function_parameter_add_entry(&fps, ".option.PROCESS", "1 if processing", FPTYPE_ONOFF,
                                  FPFLAG_DEFAULT_INPUT, pNull, NULL);
 
-    // long fp_TRACEMODE = 0;
+    //long fp_TRACEMODE = 0;
     function_parameter_add_entry(&fps, ".option.TRACEMODE", "1 if writing trace", FPTYPE_ONOFF,
                                  FPFLAG_DEFAULT_INPUT, pNull, NULL);
 
-    // long fp_MODENORM = 0;
+    //long fp_MODENORM = 0;
     function_parameter_add_entry(&fps, ".option.MODENORM", "1 if input modes should be normalized",
                                  FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull, NULL);
 
-    // long fp_insem = 0;
+    //long fp_insem = 0;
     function_parameter_add_entry(&fps, ".option.insem", "input semaphore index", FPTYPE_INT64,
                                  FPFLAG_DEFAULT_INPUT, pNull, NULL);
 
-    // long fp_axmode = 0;
+    //long fp_axmode = 0;
     function_parameter_add_entry(&fps, ".option.axmode",
                                  "0 for normal mode extraction, 1 for expansion", FPTYPE_INT64,
                                  FPFLAG_DEFAULT_INPUT, pNull, NULL);
 
-    // long fp_twait = 0;
+    //long fp_twait = 0;
     function_parameter_add_entry(&fps, ".option.twait",
                                  "if >0, insert time wait [us] at each iteration", FPTYPE_INT64,
                                  FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, pNull, NULL);
 
-    // long fp_semwarn = 0;
+    //long fp_semwarn = 0;
     function_parameter_add_entry(&fps, ".option.semwarn",
                                  "issue warning when input stream semaphore >1", FPTYPE_ONOFF,
                                  FPFLAG_DEFAULT_INPUT, pNull, NULL);
@@ -321,17 +318,17 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
     float alpha = 1.0;
     float beta  = 0.0;
 
-    // long scnt;
+    //long scnt;
     int  semval;
     long ii, jj, kk;
 
     long   NBmodes;
     float *normcoeff;
 
-    // imageID IDoutact;
+    //imageID IDoutact;
     uint32_t *sizearraytmp;
 
-    // imageID ID_modeval_mult;
+    //imageID ID_modeval_mult;
     int imOK;
 
     char    traceim_name[STRINGMAXLEN_IMGNAME];
@@ -373,9 +370,10 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     int MODEVALCOMPUTE = 1; // 1 if compute, 0 if import
 
-    int RT_priority = 91; // any number from 0-99
+    int RT_priority = 91; //any number from 0-99
 
     int devicecntMax = 100;
+
 
     FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);
 
@@ -499,17 +497,16 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
     }
 
     PROCESSINFO *processinfo;
-    processinfo =
-        processinfo_setup(pinfoname,  // short name for the processinfo instance, no spaces, no dot,
-                                      // name should be human-readable
-                          pinfodescr, // description
-                          pinfomsg,   // message on startup
-                          __FUNCTION__, __FILE__, __LINE__);
+    processinfo = processinfo_setup(
+        pinfoname, // short name for the processinfo instance, no spaces, no dot, name should be human-readable
+        pinfodescr, // description
+        pinfomsg,   // message on startup
+        __FUNCTION__, __FILE__, __LINE__);
 
     // OPTIONAL SETTINGS
-    processinfo->MeasureTiming = 1;           // Measure timing
-    processinfo->RT_priority   = RT_priority; // RT_priority, 0-99. Larger number =
-                                              // higher priority. If <0, ignore
+    processinfo->MeasureTiming = 1; // Measure timing
+    processinfo->RT_priority =
+        RT_priority; // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
 
     int loopOK = 1;
 
@@ -618,7 +615,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             }
         }
 
-        // save_fits("_tmpmodes", "_test_tmpmodes.fits");
+        //save_fits("_tmpmodes", "_test_tmpmodes.fits");
     }
 
     normcoeff = (float *) malloc(sizeof(float) * NBmodes);
@@ -787,7 +784,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         }
     }
 
-    // loopcnt = 0;
+    //loopcnt = 0;
 
     if (TRACEMODE == 1)
     {
@@ -930,7 +927,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         if (data.processinfo == 1)
         {
             strcpy(processinfo->statusmsg, "Passing stream, no computation");
-            // sprintf(processinfo->description, "passthrough, no comp");
+            //sprintf(processinfo->description, "passthrough, no comp");
         }
     }
     else
@@ -1004,13 +1001,13 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         struct timespec tdiff;
         double          tdiffv;
 
-        // int t00OK = 0;
-        // int t01OK = 0;
-        // int t02OK = 0;
-        // int t03OK = 0;
-        // int t04OK = 0;
-        // int t05OK = 0;
-        // int t06OK = 0;
+        //int t00OK = 0;
+        //int t01OK = 0;
+        //int t02OK = 0;
+        //int t03OK = 0;
+        //int t04OK = 0;
+        //int t05OK = 0;
+        //int t06OK = 0;
 
         loopOK = processinfo_loopstep(processinfo);
 
@@ -1055,7 +1052,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 doComputation = 1;
             }
 
-            // t00OK = 1;
+            //t00OK = 1;
             clock_gettime(CLOCK_MILK, &t00);
 
             processinfo_exec_start(processinfo);
@@ -1081,7 +1078,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                     exit(EXIT_FAILURE);
                 }
 
-                // t01OK = 1;
+                //t01OK = 1;
                 clock_gettime(CLOCK_MILK, &t01);
 
                 if (BETAMODE == 1)
@@ -1091,7 +1088,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                                           cudaMemcpyHostToDevice);
                 }
 
-                // t02OK = 1;
+                //t02OK = 1;
                 clock_gettime(CLOCK_MILK, &t02);
 
                 // compute
@@ -1133,7 +1130,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 // copy result
                 data.image[ID_modeval].md[0].write = 1;
 
-                // t03OK = 1;
+                //t03OK = 1;
                 clock_gettime(CLOCK_MILK, &t03);
 
                 if (initref == 0)
@@ -1201,7 +1198,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             processinfo_exec_start(processinfo);
         }
 
-        // t04OK = 1;
+        //t04OK = 1;
         clock_gettime(CLOCK_MILK, &t04);
 
         if (TRACEMODE == 1)
@@ -1236,7 +1233,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             }
         }
 
-        // t05OK = 1;
+        //t05OK = 1;
         clock_gettime(CLOCK_MILK, &t05);
 
         if (PROCESS == 1)
@@ -1274,7 +1271,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             processinfo_update_output_stream(processinfo, IDprocrms);
         }
 
-        // t06OK = 1;
+        //t06OK = 1;
         clock_gettime(CLOCK_MILK, &t06);
 
         processinfo_exec_end(processinfo);
@@ -1339,8 +1336,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
  * @param[in]   in_stream            input stream
  * @param[in]   intot_stream         [optional]   input normalization stream
  * @param[in]   IDmodes_name         Modes
- * @param[in]   IDrefin_name         [optional] input reference  - to be
- * subtracted
+ * @param[in]   IDrefin_name         [optional] input reference  - to be subtracted
  * @param[in]   IDrefout_name        [optional] output reference - to be added
  * @param[out]  IDmodes_val_name     ouput stream
  * @param[in]   GPUindex             GPU index
@@ -1348,10 +1344,8 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
  * @param[in]   TRACEMODE            1 if writing trace
  * @param[in]   MODENORM             1 if input modes should be normalized
  * @param[in]   insem                input semaphore index
- * @param[in]   axmode               0 for normal mode extraction, 1 for
- * expansion
- * @param[in]   twait		         if >0, insert time wait [us] at each
- * iteration
+ * @param[in]   axmode               0 for normal mode extraction, 1 for expansion
+ * @param[in]   twait		         if >0, insert time wait [us] at each iteration
  * @param[in]   semwarn              1 if warning when input stream semaphore >1
  *
  * @note IMPORTANT: if IDmodes_val_name exits, use it and do not compute it
@@ -1406,7 +1400,7 @@ int __attribute__((hot)) LINALGEBRA_MVMextractModesLoop(
     // ==================================
     // SET PARAMETER VALUES
     // ==================================
-    // int SMfd = -1;
+    //int SMfd = -1;
     function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
 
     functionparameter_SetParamValue_STRING(&fps, ".sname_in", in_stream);

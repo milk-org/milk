@@ -82,7 +82,7 @@ static errno_t compute_function()
     IMGID imgin = mkIMGID_from_name(cminsname);
     resolveIMGID(&imgin, ERRMODE_ABORT);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
-    // long m = imgin.md->size[0] * imgin.md->size[1];
+    //long m = imgin.md->size[0] * imgin.md->size[1];
 
     // CONNNECT TO OR CREATE MASK STREAM
     IMGID imgmask = stream_connect_create_2Df32(masksname, *cropxsize, *cropysize);

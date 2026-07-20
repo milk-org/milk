@@ -70,8 +70,7 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
             y0array[j * NBgridpts1D + i]   = -1.0 + 2.0 * j / (NBgridpts1D - 1);
             Varray[j * NBgridpts1D + i]    = 0.0;
             Varraycnt[j * NBgridpts1D + i] = 0.0;
-            //	printf("%ld %ld  %f
-            //%f\n",i,j,x0array[j*NBgridpts1D+i],y0array[j*NBgridpts1D+i]);
+            //	printf("%ld %ld  %f %f\n",i,j,x0array[j*NBgridpts1D+i],y0array[j*NBgridpts1D+i]);
         }
     }
     xstep = x0array[0 * NBgridpts1D + 1] - x0array[0 * NBgridpts1D + 0];
@@ -92,17 +91,15 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
             y    = (1.0 * jj - size / 2) / radius;
             r    = sqrt(x * x + y * y);
             cosa = x / (r + 0.000001);
-            // Cs = 3.34e-05;
+            //Cs = 3.34e-05;
             tmp1 = r * CX1_1 + r * r * CX2_1 + r * r * r * CX3_1 + r * r * r * r * CX4_1 +
                    r * r * r * r * r * CX5_1;
             tmp2 = r * CX1_2 + r * r * CX2_2 + r * r * r * CX3_2 + r * r * r * r * CX4_2 +
                    r * r * r * r * r * CX5_2;
 
             //	Cs = 3.3e-05;
-            //	tmp1 = -r*Cs + r*r*0.000104827 - r*r*r*0.000156806 +
-            // r*r*r*r*0.000106682 - r*r*r*r*r*2.61437e-05; 	tmp2 = r*Cs -
-            // r*r*0.000125175 + r*r*r*0.000203591 - r*r*r*r*0.000146805 +
-            // r*r*r*r*r*3.87538e-05;
+            //	tmp1 = -r*Cs + r*r*0.000104827 - r*r*r*0.000156806 + r*r*r*r*0.000106682 - r*r*r*r*r*2.61437e-05;
+            //	tmp2 = r*Cs - r*r*0.000125175 + r*r*r*0.000203591 - r*r*r*r*0.000146805 + r*r*r*r*r*3.87538e-05;
 
             //	tmp1 = -2.70e-5*exp(-7.0*pow((r-0.013),2.0))*r-1.05e-7;
             //	tmp2 = -2.70e-5*exp(-7.0*pow(((-r)-0.013),2.0))*(-r)-1.05e-7;
@@ -117,8 +114,7 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
             }
             tmp = 0.0;
             // for 15
-            // tmp
-            // += 4.8e-6*exp(-280.0*(x-0.007)*(x-0.007))*(x-0.007)*exp(-200.0*y*y);
+            //tmp += 4.8e-6*exp(-280.0*(x-0.007)*(x-0.007))*(x-0.007)*exp(-200.0*y*y);
             tmp += -1.2e-7 * exp(-80.0 * r * r) + 1.4e-7 * exp(-40.0 * r * r);
 
             data.image[ID1].array.F[jj * size + ii] = tmp;
@@ -160,8 +156,7 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
                             y1 = (y - y0array[j * NBgridpts1D + i]) / ystep;
                             if ((fabs(x1) < 1.0) && (fabs(y1) < 1.0))
                             {
-                                // value = (fabs(x1)-1.0)*(fabs(y1)-1.0);
-                                // //0.25*(cos(x1*PI)+1.0)*(cos(y1*PI)+1.0);
+                                //value = (fabs(x1)-1.0)*(fabs(y1)-1.0); //0.25*(cos(x1*PI)+1.0)*(cos(y1*PI)+1.0);
                                 value = 0.25 * (cos(x1 * PI) + 1.0) * (cos(y1 * PI) + 1.0);
                                 Varraytmp[j * NBgridpts1D + i] +=
                                     value * data.image[ID3].array.F[jj * size + ii];
@@ -220,7 +215,7 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
                             y1 = (y - y0array[j * NBgridpts1D + i]) / ystep;
                             if ((fabs(x1) < 1.0) && (fabs(y1) < 1.0))
                             {
-                                // value = (fabs(x1)-1.0)*(fabs(y1)-1.0);
+                                //value = (fabs(x1)-1.0)*(fabs(y1)-1.0);
                                 value = 0.25 * (cos(x1 * PI) + 1.0) * (cos(y1 * PI) + 1.0);
                                 data.image[ID2].array.F[jj * size + ii] +=
                                     value * Varray[j * NBgridpts1D + i];

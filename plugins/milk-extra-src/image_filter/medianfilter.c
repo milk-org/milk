@@ -23,7 +23,7 @@ imageID median_filter(const char *__restrict ID_name,
     int     i, j;
 
     /*  printf("Median filter...");
-      fflush(stdout);*/
+        fflush(stdout);*/
     save_fl_fits(ID_name, "mf_in.fits");
 
     array = (float *) malloc((2 * filter_size + 1) * (2 * filter_size + 1) * sizeof(float));
@@ -65,7 +65,7 @@ imageID median_filter(const char *__restrict ID_name,
     save_fl_fits(out_name, "mf_out.fits");
 
     /*  printf("Done\n");
-      fflush(stdout);*/
+        fflush(stdout);*/
 
     return IDout;
 }

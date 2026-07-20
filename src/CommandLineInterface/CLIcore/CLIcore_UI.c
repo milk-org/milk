@@ -14,6 +14,7 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
+
 #include "CommandLineInterface/CLIcore.h"
 #include "CommandLineInterface/calc.h"
 #include "CommandLineInterface/calc_bison.h"
@@ -52,9 +53,10 @@ void rl_cb_linehandler(char *linein)
     free(linein);
 }
 
+
 errno_t runCLI_prompt(char *promptstring, char *prompt)
 {
-    // int color_cyan = 36;
+    //int color_cyan = 36;
 
     if (strlen(promptstring) > 0)
     {
@@ -75,6 +77,7 @@ errno_t runCLI_prompt(char *promptstring, char *prompt)
 
     return RETURN_SUCCESS;
 }
+
 
 static void *xmalloc(int size)
 {
@@ -106,7 +109,7 @@ static char *CLI_generator(const char *text, int state)
     static unsigned int len;
     char               *name;
 
-    // printf("[generator %d %d %d]\n", state, data.CLImatchMode, list_index);
+    //printf("[generator %d %d %d]\n", state, data.CLImatchMode, list_index);
 
     if (!state)
     {
@@ -139,8 +142,7 @@ static char *CLI_generator(const char *text, int state)
             if (iok == 1)
             {
                 name = data.image[list_index1].name;
-                //	  printf("  name %d = %s %s\n", list_index1,
-                // data.image[list_index1].name, name);
+                //	  printf("  name %d = %s %s\n", list_index1, data.image[list_index1].name, name);
             }
             list_index1++;
             if (iok == 1)
@@ -179,10 +181,10 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
 {
     char **matches;
 
-    // printf("[%d | %s | %s]", start, rl_line_buffer, text);
-    // rl_message("\n[%d %s]\n", start, rl_line_buffer);
-    // rl_redisplay();
-    // rl_forced_update_display();
+    //printf("[%d | %s | %s]", start, rl_line_buffer, text);
+    //rl_message("\n[%d %s]\n", start, rl_line_buffer);
+    //rl_redisplay();
+    //rl_forced_update_display();
 
     matches = (char **) NULL;
 
@@ -205,7 +207,7 @@ char **CLI_completion(const char *text, int start, int __attribute__((unused)) e
             if (strcmp(firstword, data.cmd[cmdi].key) == 0)
             {
                 cmdimatch = cmdi;
-                // printf("COMMAND MATCH %s\n", data.cmd[cmdi].key);
+                //printf("COMMAND MATCH %s\n", data.cmd[cmdi].key);
                 data.cmdindex = cmdi;
             }
             cmdi++;
@@ -271,7 +273,7 @@ errno_t write_tracedebugfile()
                 }
                 fprintf(fp, "\n\n");
 
-                // printf("%s\n", p + 1);
+                //printf("%s\n", p + 1);
             }
         }
         fclose(fp);
@@ -279,6 +281,7 @@ errno_t write_tracedebugfile()
 
     return RETURN_SUCCESS;
 }
+
 
 errno_t CLI_execute_line()
 {
@@ -291,6 +294,7 @@ errno_t CLI_execute_line()
     time_t           t;
     struct tm       *uttime;
     struct timespec *thetime = (struct timespec *) malloc(sizeof(struct timespec));
+
 
     if (data.Debug > 0)
     {
@@ -362,6 +366,7 @@ errno_t CLI_execute_line()
         //
         data.cmdNBarg = 0;
 
+
         if (data.Debug > 0)
         {
             printf("DEBUG: %s %d: extract words\n", __func__, __LINE__);
@@ -370,8 +375,7 @@ errno_t CLI_execute_line()
         // extract first word
 
         // First, split double-quote strings out
-        // strings inside double quotes are not processed, and will be given type
-        // CMDARGTOKEN_TYPE_RAWSTRING
+        // strings inside double quotes are not processed, and will be given type CMDARGTOKEN_TYPE_RAWSTRING
         int  rawstringmode = 0;
         char str1[500];
         strcpy(str1, data.CLIcmdline);
@@ -385,11 +389,10 @@ errno_t CLI_execute_line()
 
         while ((tokengroup = strtok_r(rest, "\"", &rest)))
         {
-            // printf(" TOKEN [%d]:  %s\n", rawstringmode, tokengroup);
+            //printf(" TOKEN [%d]:  %s\n", rawstringmode, tokengroup);
 
-            // always copy word in string, so that arg can be processed as string if
-            // needed
-            // strcpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring);
+            // always copy word in string, so that arg can be processed as string if needed
+            //strcpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring);
 
             if (rawstringmode == 0) // not in a raw string, process tokengroup
             {
@@ -423,6 +426,7 @@ errno_t CLI_execute_line()
             }
         }
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
+
 
         if (data.Debug > 0)
         {

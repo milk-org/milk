@@ -95,19 +95,19 @@ class pyFps
 
   public:
     /**
-   * @brief Read / connect to existing shared memory FPS
+     * @brief Read / connect to existing shared memory FPS
 
-   * @param name : the name of the shared memory file to connect
-   */
+     * @param name : the name of the shared memory file to connect
+     */
     pyFps(std::string name) : pyFps(name, false, FUNCTION_PARAMETER_NBPARAM_DEFAULT) {};
 
     /**
-   * @brief Read or create an shared FPS
-   *
-   * @param fps_name : the name of the shared memory file to connect
-   * @param create : flag for creating of shared memory identifier
-   * @param NBparamMAX : Max number of parameters
-   */
+     * @brief Read or create an shared FPS
+     *
+     * @param fps_name : the name of the shared memory file to connect
+     * @param create : flag for creating of shared memory identifier
+     * @param NBparamMAX : Max number of parameters
+     */
     pyFps(std::string fps_name, bool create, int NBparamMAX) : name_(fps_name)
     {
         fps_.md     = nullptr;
@@ -133,13 +133,13 @@ class pyFps
             }
             read_keys();
         }
-        // std::cout << "FPS connected" << std::endl;
+        //std::cout << "FPS connected" << std::endl;
     }
 
     /**
-   * @brief Destroy the py Fps object
-   *
-   */
+     * @brief Destroy the py Fps object
+     *
+     */
     ~pyFps()
     {
         if (fps_.SMfd != -1)
@@ -170,11 +170,11 @@ class pyFps
     }
 
     /**
-   * @brief Create a and connect object
-   *
-   * @param NBparamMAX
-   * @return int
-   */
+     * @brief Create a and connect object
+     *
+     * @param NBparamMAX
+     * @return int
+     */
     int create_and_connect(int NBparamMAX)
     {
         if (connect() == -1)
@@ -193,33 +193,33 @@ class pyFps
     }
 
     /**
-   * @brief Connect to existing shared memory FPS
+     * @brief Connect to existing shared memory FPS
 
-   * @param name : the name of the shared memory file to connect
-   */
+     * @param name : the name of the shared memory file to connect
+     */
     int connect()
     {
         return function_parameter_struct_connect(name_.c_str(), &fps_, FPSCONNECT_SIMPLE);
     };
 
     /**
-   * @brief Release the mmaped file and fd.
-   */
+     * @brief Release the mmaped file and fd.
+     */
     int disconnect()
     {
         return function_parameter_struct_disconnect(&fps_);
     }
 
     /**
-   * @brief Add parameter to database with default settings
-   *
-   * If entry already exists, do not modify it
-   *
-   * @param entry_name : entry name
-   * @param entry_desc : entry description
-   * @param fptype : entry type ("int","double","float","string")
-   * @return int
-   */
+     * @brief Add parameter to database with default settings
+     *
+     * If entry already exists, do not modify it
+     *
+     * @param entry_name : entry name
+     * @param entry_desc : entry description
+     * @param fptype : entry type ("int","double","float","string")
+     * @return int
+     */
     int add_entry(std::string entry_name, std::string entry_desc, uint32_t fptype)
     {
         keys_[entry_name] = static_cast<FPS_type>(fptype);
@@ -231,16 +231,16 @@ class pyFps
     }
 
     /**
-   * @brief Add parameter to database with generic settings
-   *
-   * If entry already exists, do not modify it
-   *
-   * @param entry_name : entry name
-   * @param entry_desc : entry description
-   * @param fptype : entry type ("int","double","float","string")
-   * @param fpflag : entry flags
-   * @return int
-   */
+     * @brief Add parameter to database with generic settings
+     *
+     * If entry already exists, do not modify it
+     *
+     * @param entry_name : entry name
+     * @param entry_desc : entry description
+     * @param fptype : entry type ("int","double","float","string")
+     * @param fpflag : entry flags
+     * @return int
+     */
     int add_entry_w_flags(std::string entry_name,
                           std::string entry_desc,
                           uint32_t    fptype,
@@ -253,21 +253,21 @@ class pyFps
     }
 
     /**
-   * @brief Get the status object
-   *
-   * @return int
-   */
+     * @brief Get the status object
+     *
+     * @return int
+     */
     int get_status()
     {
         return fps_.md->status;
     }
 
     /**
-   * @brief Set the status object
-   *
-   * @param status
-   * @return int
-   */
+     * @brief Set the status object
+     *
+     * @param status
+     * @return int
+     */
     int set_status(int status)
     {
         fps_.md->status = status;
@@ -275,11 +275,11 @@ class pyFps
     }
 
     /**
-   * @brief Get the levelKeys object
-   *
-   * @param level
-   * @return std::vector<std::string>
-   */
+     * @brief Get the levelKeys object
+     *
+     * @param level
+     * @return std::vector<std::string>
+     */
     std::vector<std::string> get_levelKeys(int level)
     {
         std::vector<std::string> levelKeys = std::vector<std::string>();

@@ -11,7 +11,9 @@
 // Local variables pointers
 static LOCVAR_OUTIMG2D outim;
 
+
 static uint32_t *distrib;
+
 
 static CLICMDARGDEF farg[] = { FARG_OUTIM_NAME(outim),
                                FARG_OUTIM_SHARED(outim),
@@ -24,7 +26,9 @@ static CLICMDARGDEF farg[] = { FARG_OUTIM_NAME(outim),
                                  " (2: truncated gauss)\n",
                                  "0", CLIARG_HIDDEN_DEFAULT, (void **) &distrib, NULL } };
 
+
 static CLICMDDATA CLIcmddata = { "mkrnd", "make random image", CLICMD_FIELDS_DEFAULTS };
+
 
 /** @brief Detailed help
  */
@@ -32,6 +36,7 @@ static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 /**
  * @brief Make random image
@@ -56,8 +61,7 @@ static imageID make_image_random(IMGID *img, int pdf)
     // Create image if needed
     imcreateIMGID(img);
 
-    // openMP is slow when calling gsl random number generator : do not use openMP
-    // here
+    // openMP is slow when calling gsl random number generator : do not use openMP here
     if (pdf == 0)
     {
         for (uint64_t ii = 0; ii < img->md->nelement; ii++)
@@ -101,31 +105,35 @@ static errno_t compute_function()
     DEBUG_TRACEPOINT("make IMGID for %s", outim.name);
     IMGID img  = makeIMGID_2D(outim.name, *outim.xsize, *outim.ysize);
     img.shared = *outim.shared;
-    // img.NBkw   = *outim.NBkw;
-    // img.CBsize = *outim.CBsize;
+    //img.NBkw   = *outim.NBkw;
+    //img.CBsize = *outim.CBsize;
 
     printf("NBkw   = %d\n", img.NBkw);
     printf("CBsize = %d\n", img.CBsize);
 
+
     // Create image if needed
     imcreateIMGID(&img);
+
 
     list_image_ID();
 
     /*
-      image_keyword_addS(img, "MILKFUNC", "mkrandomim", "MILK function");
-      image_keyword_addL(img,
-                         "RNDPDF",
-                         (long)(*distrib),
-                         "random value distribution");
-  */
+    image_keyword_addS(img, "MILKFUNC", "mkrandomim", "MILK function");
+    image_keyword_addL(img,
+                       "RNDPDF",
+                       (long)(*distrib),
+                       "random value distribution");
+*/
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
 
     make_image_random(&img, *distrib);
 
     DEBUG_TRACEPOINT("update output ID %ld", img.ID);
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

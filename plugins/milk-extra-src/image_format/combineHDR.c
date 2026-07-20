@@ -188,7 +188,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
         fflush(stdout);
     }
 
-    // double alpha1 = 1.0;
+    //double alpha1 = 1.0;
 
     // contruct layer image
     imageID IDlayer;
@@ -199,7 +199,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
 
     for (uint32_t ij1 = 0; ij1 < xsize1 * ysize1; ij1++)
     {
-        // float layer = 0.0;
+        //float layer = 0.0;
         uint32_t layer0 = 0;
         uint32_t layer1 = 0;
         uint32_t kk     = 0;
@@ -224,11 +224,11 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             layer1++;
             valmax = data.image[IDimHDRc1].array.F[layer0 * xsize1 * ysize1 + ij1];
         }
-        // float valmin = data.image[IDimHDRc1].array.F[layer1*xsize1*ysize1+ij1];
+        //float valmin = data.image[IDimHDRc1].array.F[layer1*xsize1*ysize1+ij1];
 
-        // float x = valmax/satvalue;
-        // float c1 = pow( 0.5*(1.0+cos(x*M_PI)), alpha1);
-        // float c2 = 1.0-c1;
+        //float x = valmax/satvalue;
+        //float c1 = pow( 0.5*(1.0+cos(x*M_PI)), alpha1);
+        //float c2 = 1.0-c1;
 
         data.image[IDlayer].array.F[ij1]    = 1.0 * layer0;
         data.image[IDlayermin].array.F[ij1] = 1.0 * layer0; // don't go below this layer
@@ -343,19 +343,19 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                           etimearray[layer1];
 
             double alpha0 = 10.0;
-            // double alpha1 = 2.5;
+            //double alpha1 = 2.5;
             /*
-      double alpha1 = 6.0;
-      double alpha3 = 3.0;
-      double alpha4 = 3.0;
-      double layermax = 2.0;
-      if(layer>layermax)
-      {
-          layer = layermax;
-      }
-      double x1 = 1.0 / pow( 1.0 + 1.0/pow(layer/alpha0,alpha1), 1.0/alpha1);
-      double layercoeff1 = 1.0 / ( 1.0 + alpha3*pow(6.0, alpha4*x1) );
-      */
+            double alpha1 = 6.0;
+            double alpha3 = 3.0;
+            double alpha4 = 3.0;
+            double layermax = 2.0;
+            if(layer>layermax)
+            {
+                layer = layermax;
+            }
+            double x1 = 1.0 / pow( 1.0 + 1.0/pow(layer/alpha0,alpha1), 1.0/alpha1);
+            double layercoeff1 = 1.0 / ( 1.0 + alpha3*pow(6.0, alpha4*x1) );
+            */
             double layerg = data.image[IDlayerg].array.F[jj1 * xsize1 + ii1];
             if (layerg > 3.0)
             {
@@ -363,8 +363,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             }
             double layercoeff1 = 1.0 / pow(alpha0, layerg);
 
-            // data.image[IDout].array.F[jj*xsize+ii] = (pval0 * (1.0-layercoeff) +
-            // pval1 * layercoeff);
+            //data.image[IDout].array.F[jj*xsize+ii] = (pval0 * (1.0-layercoeff) + pval1 * layercoeff);
             data.image[IDout].array.F[jj * xsize + ii] =
                 layercoeff1 * (pval0 * (1.0 - layercoeff) + pval1 * layercoeff);
         }

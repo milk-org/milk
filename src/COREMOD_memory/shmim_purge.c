@@ -38,7 +38,7 @@ static errno_t help_function()
  */
 errno_t shmim_purge(const char *strfilter)
 {
-    // printf("PURGING ORPHAN STREAMS (matching %s)\n", strfilter);
+    //printf("PURGING ORPHAN STREAMS (matching %s)\n", strfilter);
 
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;

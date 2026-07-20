@@ -38,12 +38,12 @@
 #include <getopt.h>
 #include <math.h>
 #include <ncurses.h>
-#include <signal.h>
 #include <stdbool.h>
-#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/prctl.h>
+#include <signal.h>
 
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -62,7 +62,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-// #include "initmodules.h"
+//#include "initmodules.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -81,8 +81,8 @@
 #include "CommandLineInterface/CLIcore/CLIcore_signals.h"
 
 /*-----------------------------------------
- *       Globals exported to all modules
- */
+*       Globals exported to all modules
+*/
 
 DATA __attribute__((used)) data;
 
@@ -93,6 +93,7 @@ int C_ERRNO;
 int Verbose    = 0;
 int Listimfile = 0;
 
+
 char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = "CLIstartup.txt";
 
 // fifo input
@@ -100,8 +101,8 @@ static int    fifofd;
 static fd_set cli_fdin_set;
 
 /*-----------------------------------------
- *       Forward References
- */
+*       Forward References
+*/
 int         user_function();
 void        fnExit1(void);
 void        runCLI_cmd_init();
@@ -114,15 +115,11 @@ static int command_line_process_options(int argc, char **argv);
 /// CLI commands
 static int exitCLI();
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                    FUNCTIONS SOURCE CODE */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                    FUNCTIONS SOURCE CODE                                        */
+/* =============================================================================================== */
+/* =============================================================================================== */
 /** @name CLIcore functions */
 
 /// CLI functions
@@ -278,13 +275,10 @@ void fnExit_fifoclose()
     //		}
     //	}
 
-    //	FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set
-    // cli_fdin_set to have zero bits for all file descriptors.
+    //	FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
     //       if(data.fifoON==1)
-    //           FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file
-    //           descriptor fifofd in the file descriptor set cli_fdin_set.
-    //    FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file
-    //    descriptor fifofd in the file descriptor set cli_fdin_set.
+    //           FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+    //    FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
 
     // reset terminal properties
     //	system("tset");
@@ -339,14 +333,14 @@ errno_t CLI_startup()
     // Initialize random-number generator
     //
     const gsl_rng_type *rndgenType;
-    // rndgenType = gsl_rng_ranlxs2; // best algorithm but slow
-    // rndgenType = gsl_rng_ranlxs0; // not quite as good, slower
+    //rndgenType = gsl_rng_ranlxs2; // best algorithm but slow
+    //rndgenType = gsl_rng_ranlxs0; // not quite as good, slower
     rndgenType  = gsl_rng_rand; // not as good but ~10x faster fast
     data.rndgen = gsl_rng_alloc(rndgenType);
     gsl_rng_set(data.rndgen, time(NULL));
 
     // warm up
-    // for(i=0; i<10; i++)
+    //for(i=0; i<10; i++)
     //    v1 = gsl_rng_uniform (data.rndgen);
 
     data.progStatus = 0;
@@ -404,7 +398,7 @@ static void sighandler(int sig)
 {
     (void) sig;
     rl_resize_terminal();
-    // printf("RESIZE detected %d %d\n", COLS, LINES);
+    //printf("RESIZE detected %d %d\n", COLS, LINES);
     sigwinch_received = 1;
 }
 
@@ -433,6 +427,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     int            cliwaitus     = 100;
     struct timeval tv; // sleep 100 us after reading FIFO
 
+
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
     // Set CLI prompt
@@ -458,7 +453,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     printf("\n");
 
     // uncomment following two lines to auto-load all modules
-    // DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
+    //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
     load_module_shared_local();
 
     // load other libs specified by environment variable MILKCLI_ADD_LIBS
@@ -578,9 +573,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             if (data.fifoON == 1)
             {
                 EXECUTE_SYSTEM_COMMAND("file %s",
-                                       CLIstartupfilename); // TEST
+                                       CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND("cat %s",
-                                       CLIstartupfilename); // TEST
+                                       CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null", CLIstartupfilename,
                                        data.fifoname);
 
@@ -598,18 +593,18 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         tv.tv_sec  = 0;
         tv.tv_usec = cliwaitus;
 
-        FD_ZERO(&cli_fdin_set); // Initializes the file descriptor set cli_fdin_set
-                                // to have zero bits for all file descriptors.
+        FD_ZERO(
+            &cli_fdin_set); // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
         if (data.fifoON == 1)
         {
-            FD_SET(fifofd,
-                   &cli_fdin_set); // Sets the bit for the file descriptor fifofd in
-                                   // the file descriptor set cli_fdin_set.
+            FD_SET(
+                fifofd,
+                &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
         }
 
-        FD_SET(fileno(stdin),
-               &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the
-                               // file descriptor set cli_fdin_set.
+        FD_SET(
+            fileno(stdin),
+            &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
 
         if (data.fifoON == 0)
         {
@@ -623,7 +618,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 rl_initialize();
 
                 /* Handle window size changes when readline is not active and reading
-             characters. */
+                     characters. */
                 signal(SIGWINCH, sighandler);
                 rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
             }
@@ -632,8 +627,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         DEBUG_TRACEPOINT("loop entry");
         while ((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
-            // Special interrupt clause if CLI mode (not FIFO) AND stdin has been
-            // closed.
+            // Special interrupt clause if CLI mode (not FIFO) AND stdin has been closed.
             if (data.signal_INT == 1)
             {
                 // stop CLI input loop
@@ -655,17 +649,17 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 tv.tv_sec  = 0;
                 tv.tv_usec = cliwaitus;
 
-                FD_ZERO(&cli_fdin_set); // Initializes the file descriptor set cli_fdin_set
-                                        // to have zero bits for all file descriptors.
+                FD_ZERO(
+                    &cli_fdin_set); // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
                 if (data.fifoON == 1)
                 {
-                    FD_SET(fifofd,
-                           &cli_fdin_set); // Sets the bit for the file descriptor fifofd
-                                           // in the file descriptor set cli_fdin_set.
+                    FD_SET(
+                        fifofd,
+                        &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
                 }
-                FD_SET(fileno(stdin),
-                       &cli_fdin_set); // Sets the bit for the file descriptor fifofd in
-                                       // the file descriptor set cli_fdin_set.
+                FD_SET(
+                    fileno(stdin),
+                    &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
                 continue;
             }
             if (n == -1)
@@ -749,13 +743,13 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     rl_initialize();
 
                     /* Handle window size changes when readline is not active and reading
-               characters. */
+                         characters. */
                     signal(SIGWINCH, sighandler);
                     rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
                 }
             }
 
-            // printf("fifo cleared, accepting user input through CLI\n");
+            //printf("fifo cleared, accepting user input through CLI\n");
 
             if (blockCLIinput == 0)
             {
@@ -774,7 +768,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         }
         data.CLIexecuteCMDready = 0;
 
-        // TEST data.CLIloopON = 0;
+        //TEST data.CLIloopON = 0;
     }
     DEBUG_TRACEPOINT("exit from CLI loop");
 
@@ -794,6 +788,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 void runCLI_cmd_init()
 {
@@ -881,8 +876,7 @@ void runCLI_cmd_init()
                        "usleep(long tus)");
 
     //  init_modules();
-    // printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__,
-    // data.image[4934].used);
+    // printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
 
     if (data.quiet == 0)
     {
@@ -932,6 +926,7 @@ void fnExit1(void)
     //
 }
 
+
 static int command_line_process_options(int argc, char **argv)
 {
     int  option_index = 0;
@@ -941,7 +936,7 @@ static int command_line_process_options(int argc, char **argv)
                                             { "verbose", no_argument, &Verbose, 1 },
                                             { "listimf", no_argument, &Listimfile, 1 },
                                             /* These options don't set a flag.
-      We distinguish them by their indices. */
+        We distinguish them by their indices. */
                                             { "help", no_argument, 0, 'h' },
                                             { "version", no_argument, 0, 'v' },
                                             { "info", no_argument, 0, 'i' },
@@ -1019,6 +1014,7 @@ static int command_line_process_options(int argc, char **argv)
             }
             break;
 
+
         case 'd':
             printf("debug level : '%s'\n", optarg);
             data.Debug = atoi(optarg);
@@ -1027,7 +1023,7 @@ static int command_line_process_options(int argc, char **argv)
 
         case 'm':
             printf("Starting memory monitor on '%s'\n", optarg);
-            // memory_monitor(optarg);
+            //memory_monitor(optarg);
             break;
 
         case 'n':
@@ -1039,8 +1035,7 @@ static int command_line_process_options(int argc, char **argv)
             data.processnameflag = 1; // this process has been named
 
             // extract first word before '.'
-            // it can be used to name processinfo and function parameter structure for
-            // process
+            // it can be used to name processinfo and function parameter structure for process
             char tmpstring[200];
             strncpy(tmpstring, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
             char *firstword;

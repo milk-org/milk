@@ -8,12 +8,14 @@
  *
  */
 
+
 #include <math.h>
 #include <time.h>
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/CLIcore.h"
 #include "CommandLineInterface/timeutils.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
+
 
 // Use MKL if available
 // Otherwise use openBLAS
@@ -28,6 +30,7 @@
 #        define BLASLIB "OpenBLAS"
 #    endif
 #endif
+
 
 #include "linalgebra/SingularValueDecomp.h"
 
@@ -68,6 +71,7 @@ static long      fpi_out3Dwrite;
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
 
+
 static CLICMDARGDEF farg[] = { { // input telemetry
                                  CLIARG_STREAM, ".inname", "input telemetry", "indata",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inname, NULL },
@@ -92,6 +96,7 @@ static CLICMDARGDEF farg[] = { { // input telemetry
                                  CLIARG_HIDDEN_DEFAULT, (void **) &out3Dwrite, &fpi_out3Dwrite },
                                { CLIARG_INT32, ".GPUdevice", "GPU device", "0",
                                  CLIARG_HIDDEN_DEFAULT, (void **) &GPUdevice, &fpi_GPUdevice } };
+
 
 // Optional custom configuration setup. comptbuff
 // Runs once at conf startup
@@ -124,22 +129,27 @@ static errno_t customCONFcheck()
 
 static CLICMDDATA CLIcmddata = { "mkPF", "make linear predictive filter", CLICMD_FIELDS_DEFAULTS };
 
+
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
 
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
+
     int DC_MODE = 0; // 1 if average value of each mode is removed
+
 
     // connect to input telemetry
     //
     IMGID imgin = mkIMGID_from_name(inname);
     resolveIMGID(&imgin, ERRMODE_ABORT);
+
 
     /// ## Selecting input values
 
@@ -190,14 +200,12 @@ static errno_t compute_function()
     uint64_t xysize = (uint64_t) xsize * ysize;
     printf("xysize = %lu\n", xysize);
 
+
     /// Once input telemetry size measured, arrays are created:
-    /// - pixarray_x  : x coordinate of each variable (useful to keep track of
-    /// spatial coordinates)
-    /// - pixarray_y  : y coordinate of each variable (useful to keep track of
-    /// spatial coordinates)
+    /// - pixarray_x  : x coordinate of each variable (useful to keep track of spatial coordinates)
+    /// - pixarray_y  : y coordinate of each variable (useful to keep track of spatial coordinates)
     /// - pixarray_xy : combined index (avoids re-computing index frequently)
-    /// - ave_inarray : time averaged value, useful because the predictive filter
-    /// often needs average to be zero, so we will remove it
+    /// - ave_inarray : time averaged value, useful because the predictive filter often needs average to be zero, so we will remove it
 
     long *pixarray_x = (long *) malloc(sizeof(long) * xsize * ysize);
     if (pixarray_x == NULL)
@@ -226,6 +234,7 @@ static errno_t compute_function()
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
+
 
     /// ### Select input variables from mask (optional)
     /// If image "inmask" exists, use it to select which variables are active.
@@ -265,6 +274,7 @@ static errno_t compute_function()
     }
     printf("NBpixin = %ld\n", NBpixin);
 
+
     /// ## Selecting Output Variables
     /// By default, the output variables are the same as the input variables,
     /// so the prediction is performed on the same variables as the input.\n
@@ -273,12 +283,9 @@ static errno_t compute_function()
     /// selected amond the telemetry.
 
     /// Arrays are created:
-    /// - outpixarray_x  : x coordinate of each output variable (useful to keep
-    /// track of spatial coordinates)
-    /// - outpixarray_y  : y coordinate of each output variable (useful to keep
-    /// track of spatial coordinates)
-    /// - outpixarray_xy : combined output index (avoids re-computing index
-    /// frequently)
+    /// - outpixarray_x  : x coordinate of each output variable (useful to keep track of spatial coordinates)
+    /// - outpixarray_y  : y coordinate of each output variable (useful to keep track of spatial coordinates)
+    /// - outpixarray_xy : combined output index (avoids re-computing index frequently)
 
     long *outpixarray_x = (long *) malloc(sizeof(long) * xsize * ysize);
     if (outpixarray_x == NULL)
@@ -333,31 +340,28 @@ static errno_t compute_function()
         }
     }
 
+
     /// ## Build Empty Data Matrix
     ///
     /// Note: column / row description follows FITS file viewing conventions.\n
-    /// The data matrix is build from the telemetry. Each column (= time sample)
-    /// of the data matrix consists of consecutives columns (= time sample) of the
-    /// input telemetry.\n
+    /// The data matrix is build from the telemetry. Each column (= time sample) of the
+    /// data matrix consists of consecutives columns (= time sample) of the input telemetry.\n
     ///
     /// Variable naming:
-    /// - NBmvec is the number of telemetry vectors (each corresponding to a
-    /// different time) in the data matrix.
+    /// - NBmvec is the number of telemetry vectors (each corresponding to a different time) in the data matrix.
     /// - mvecsize is the size of each vector, equal to NBpixin times PForder
     ///
-    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to
-    /// routine compute_SVDpseudoInverse
+    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse
     // in linopt_imtools (CPU mode) or in linalgebra (GPU mode)\n
     ///
-    long NBmvec = nbspl - *PForder - (int) (*PFlatency) -
-                  2;                    // could put "-1", but "-2" allows user to change PFlag_run
-                                        // by up to 1 frame without reading out of array
-    long mvecsize = NBpixin * *PForder; // size of each sample vector for AR
-                                        // filter, excluding regularization
+    long NBmvec =
+        nbspl - *PForder - (int) (*PFlatency) -
+        2; // could put "-1", but "-2" allows user to change PFlag_run by up to 1 frame without reading out of array
+    long mvecsize =
+        NBpixin * *PForder; // size of each sample vector for AR filter, excluding regularization
 
-    /// Regularization can be added to penalize strong coefficients in the
-    /// predictive filter. It is optionally implemented by adding extra columns at
-    /// the end of the data matrix.\n
+    /// Regularization can be added to penalize strong coefficients in the predictive filter.
+    /// It is optionally implemented by adding extra columns at the end of the data matrix.\n
     long    NBmvec1 = 0;
     imageID IDmatA  = -1;
     int     REG     = 0;
@@ -374,6 +378,7 @@ static errno_t compute_function()
         create_2Dimage_ID("PFmatD", NBmvec + mvecsize, mvecsize, &IDmatA);
     }
 
+
     /// Data matrix conventions :
     /// - each column (ii = cst) is a measurement
     /// - m index is measurement
@@ -389,9 +394,11 @@ static errno_t compute_function()
     printf("IDin = %ld\n\n", imgin.ID);
     list_image_ID();
 
+
     // Allocate future measured data matrix
     imageID IDfm;
     create_2Dimage_ID("PFfmdat", NBmvec, NBpixout, &IDfm);
+
 
     // Prepare output filter images
     //
@@ -426,8 +433,10 @@ static errno_t compute_function()
         COREMOD_MEMORY_image_set_semflush(IDoutPF_name_raw, -1);
     }
 
+
     struct timespec t0;
     struct timespec t1;
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
@@ -442,11 +451,11 @@ static errno_t compute_function()
 
     /// *STEP: Copy IDin to IDincp*
     ///
-    /// Necessary as input may be continuously changing between consecutive loop
-    /// iterations.
+    /// Necessary as input may be continuously changing between consecutive loop iterations.
     ///
     IDincp = image_ID("PFin_copy");
     memcpy(data.image[IDincp].array.F, imgin.im->array.F, sizeof(float) * inNBelem);
+
 
     printf("===========================================================\n");
     printf("ASSEMBLING OUTPUT\n");
@@ -478,6 +487,7 @@ static errno_t compute_function()
         }
     }
 
+
     /// *STEP: Fill up data matrix PFmatD from input telemetry*
     ///
     for (long m = 0; m < NBmvec1; m++)
@@ -494,16 +504,18 @@ static errno_t compute_function()
         }
     }
 
+
     /// *STEP: Write regularization coefficients (optional)*
     ///
     if (REG == 1)
     {
         for (long m = 0; m < mvecsize; m++)
         {
-            // m1 = NBmvec + m;
+            //m1 = NBmvec + m;
             data.image[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] = *reglambda;
         }
     }
+
 
     /// ### Compute pseudo-inverse of PFmatD
     ///
@@ -524,7 +536,8 @@ static errno_t compute_function()
                 alpha * data.image[IDincp].array.F[(k0 + 1) * xysize + outpixarray_xy[PFpix]];
         }
     }
-    // save_fits("PFfmdat", "PFfmdat.fits");
+    //save_fits("PFfmdat", "PFfmdat.fits");
+
 
     {
 #ifdef HAVE_OPENBLAS
@@ -539,6 +552,7 @@ static errno_t compute_function()
         printf("MKL        NO\n");
 #endif
 
+
 #ifdef HAVE_CUDA
         printf("CUDA       YES\n");
 #else
@@ -546,17 +560,19 @@ static errno_t compute_function()
 #endif
     }
 
+
     {
         // input PFmatD is stored as 2D array
         //
         IMGID imgin = mkIMGID_from_name("PFmatD");
         resolveIMGID(&imgin, ERRMODE_ABORT);
 
+
         printf("Number of samples         : %d\n", imgin.md->size[0]);
         printf("Dimension of each sample  : %d\n", imgin.md->size[1]);
 
-        // int nbsample = imgin.md->size[0];
-        // int sampledim = imgin.md->size[1];
+        //int nbsample = imgin.md->size[0];
+        //int sampledim = imgin.md->size[1];
 
         // eigenvectors array
         delete_image_ID("eigenvec", DELETE_IMAGE_ERRMODE_IGNORE);
@@ -570,30 +586,32 @@ static errno_t compute_function()
         delete_image_ID("matU", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgU = mkIMGID_from_name("matU");
 
+
         int GPUdev = 0;
 
         // set flag to compute SVD-based pseudoinverse
         // stored as psinv
         //
-        uint64_t SVDflag = COMPSVD_COMP_PSINV; // | COMPSVD_COMP_CHECKPSINV; //
-                                               // COMPSVD_SKIP_BIGMAT;
+        uint64_t SVDflag = COMPSVD_COMP_PSINV; // | COMPSVD_COMP_CHECKPSINV; // COMPSVD_SKIP_BIGMAT;
 
         compute_SVD(imgin, &imgU, &imgeval, &imgevec, 0, (*SVDeps), 10000000, GPUdev, SVDflag,
                     "SVDunmodes", "SVDvnmodes");
 
+
         list_image_ID();
         /*
-            save_fits("PFmatD", "SVD_PFmatD.fits");
-            save_fits("matU", "SVD_matU.fits");
-            save_fits("eigenvec", "SVD_eigenvec.fits");
+                save_fits("PFmatD", "SVD_PFmatD.fits");
+                save_fits("matU", "SVD_matU.fits");
+                save_fits("eigenvec", "SVD_eigenvec.fits");
 
-            save_fits("PF_VTmat", "SVD_PF_VTmat.fits");
-            save_fits("PFmatC", "SVD_PFmatC.fits");
+                save_fits("PF_VTmat", "SVD_PF_VTmat.fits");
+                save_fits("PFmatC", "SVD_PFmatC.fits");
 
-            save_fits("psinv", "SVD_psinv.fits");
-            save_fits("psinvcheck", "SVD_psinvcheck.fits");
-    */
+                save_fits("psinv", "SVD_psinv.fits");
+                save_fits("psinvcheck", "SVD_psinvcheck.fits");
+        */
     }
+
 
     imageID IDmatC = image_ID("psinv");
 
@@ -605,6 +623,7 @@ static errno_t compute_function()
     {
         PRINT_ERROR("system() returns non-zero value");
     }
+
 
     imageID IDoutPF2Dn = image_ID("psinvPFmat");
     if (IDoutPF2Dn == -1)
@@ -662,7 +681,7 @@ static errno_t compute_function()
     // delete_image_ID("PFfmdat", DELETE_IMAGE_ERRMODE_WARNING);
     printf("DONE\n");
 
-    // printf("IDoutPF2Draw = %ld\n", IDoutPF2Draw);
+    //printf("IDoutPF2Draw = %ld\n", IDoutPF2Draw);
     data.image[IDoutPF2Draw].md[0].write = 1;
     memcpy(data.image[IDoutPF2Draw].array.F, data.image[IDoutPF2Dn].array.F,
            sizeof(float) * NBpixout * NBpixin * *PForder);
@@ -670,9 +689,11 @@ static errno_t compute_function()
     data.image[IDoutPF2Draw].md[0].cnt0++;
     data.image[IDoutPF2Draw].md[0].write = 0;
 
-    // printf("IDoutPF2D = %ld\n", IDoutPF2D);
-    //  Mix current PF with last one
+
+    //printf("IDoutPF2D = %ld\n", IDoutPF2D);
+    // Mix current PF with last one
     data.image[IDoutPF2D].md[0].write = 1;
+
 
     // on first iteration, set loopgain to 1 to initalize content
     float loopgainval = 0.0;
@@ -707,6 +728,7 @@ static errno_t compute_function()
 
     delete_image_ID("psinvPFmat", DELETE_IMAGE_ERRMODE_ERROR);
 
+
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2D, -1);
     data.image[IDoutPF2D].md[0].cnt0++;
     data.image[IDoutPF2D].md[0].write = 0;
@@ -735,6 +757,7 @@ static errno_t compute_function()
         delete_image_ID("outPF3D", DELETE_IMAGE_ERRMODE_WARNING);
     }
 
+
     struct timespec t2;
     clock_gettime(CLOCK_MILK, &t2);
 
@@ -748,6 +771,7 @@ static errno_t compute_function()
     t1.tv_nsec = t2.tv_nsec;
 
     printf("Computing time = %5.3f s / %5.3f s -> fraction = %8.6f\n", texec, tloop, texec / tloop);
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -763,7 +787,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_LinARfilterPred__build_linPF()

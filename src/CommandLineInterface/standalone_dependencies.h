@@ -24,14 +24,12 @@
 // #include <unistd.h>
 
 #define SHAREDSHMDIR \
-    "/milk/shm" /**< default location of file mapped semaphores, can be          \
-                 over-ridden by env variable MILK_SHM_DIR */
+    "/milk/shm" /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
 #define SHAREDPROCDIR "/milk/proc"
 #define CLIPID getpid()
 
-// *************************** FUNCTION RETURN VALUE
-// ********************************************* For function returning type
-// errno_t (= int)
+// *************************** FUNCTION RETURN VALUE *********************************************
+// For function returning type errno_t (= int)
 //
 #define RETURN_SUCCESS 0
 #define RETURN_FAILURE 1 // generic error code

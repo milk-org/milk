@@ -4,11 +4,14 @@
 
 #include <string.h>
 
-#include <stdint.h>
+
 #include <sys/types.h>
+#include <stdint.h>
+
 
 #include "CLIcore.h"
 #include "TUItools.h"
+
 
 /** @brief print PID with highlighting
  *
@@ -19,7 +22,7 @@ int streamCTRL_print_procpid(int      DispPID_NBchar,
                              int      NBupstreamproc,
                              uint32_t mode)
 {
-    // int DispPID_NBchar = 8;
+    //int DispPID_NBchar = 8;
     int activitycolorcode = 0;
     int is_upstream       = 0;
     int upstreamindex     = 0;

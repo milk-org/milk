@@ -39,8 +39,7 @@ static CLICMDDATA CLIcmddata = { "imgs2cube", "combine individual images into cu
 static errno_t help_function()
 {
     printf("Combine individual images into cube.\n");
-    printf("Image name is prefix followed by 5 digits (e.g. im_00000, im_00001 "
-           "...)\n");
+    printf("Image name is prefix followed by 5 digits (e.g. im_00000, im_00001 ...)\n");
     return RETURN_SUCCESS;
 }
 

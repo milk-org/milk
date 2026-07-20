@@ -4,8 +4,8 @@
 
 #include <math.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 // input image names
 static char *inimname;
@@ -212,8 +212,7 @@ errno_t image_slicenormalize(IMGID   inimg,
         {
             normarray[ii] = sqrt(normarray[ii]);
         }
-        // printf("slice %3u : cnt=%lf  av=%lf  std=%lf\n", ii, maskcntarray[ii],
-        // avarray[ii], normarray[ii]);
+        // printf("slice %3u : cnt=%lf  av=%lf  std=%lf\n", ii, maskcntarray[ii], avarray[ii], normarray[ii]);
 
         if (modeRMS == 0)
         {
@@ -241,8 +240,7 @@ errno_t image_slicenormalize(IMGID   inimg,
                 {
                 // REMOVED FROM DEF BEHAVIOR: no mean sub.
                 // case _DATATYPE_UINT8 :
-                //     outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI8[pixi] -
-                //     avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
+                //     outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI8[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
                 //     break;
                 case _DATATYPE_UINT8:
                     outimg->im->array.F[pixi] =
@@ -358,8 +356,8 @@ INSERT_STD_FPSCLIfunctions
     // Register function in CLI
     errno_t CLIADDCMD_COREMOD_arith__image_slicenormalize()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
 
     INSERT_STD_CLIREGISTERFUNC
 

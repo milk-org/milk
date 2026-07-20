@@ -49,6 +49,7 @@ errno_t arith_image_sinh_optimized_IMGID(IMGID *imgin, IMGID *imgout);
 errno_t arith_image_tan_optimized_IMGID(IMGID *imgin, IMGID *imgout);
 errno_t arith_image_tanh_optimized_IMGID(IMGID *imgin, IMGID *imgout);
 
+
 errno_t arith_image_function_im_im__d_d_IMGID(
 
     IMGID *imgin,

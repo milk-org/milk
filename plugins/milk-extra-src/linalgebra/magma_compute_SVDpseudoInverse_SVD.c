@@ -93,17 +93,16 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
     uint8_t     datatype;
 
     magma_int_t lda, ldu, ldv;
-    // float dummy[1];
+    //float dummy[1];
     float      *a, *h_R; // a, h_R - mxn  matrices
     float      *U, *VT;  // u - mxm matrix , vt - nxn  matrix  on the  host
     float      *S1;      //  vectors  of  singular  values
     magma_int_t info;
-    // float  work[1];				// used in  difference
-    // computations
+    //float  work[1];				// used in  difference  computations
     float        *h_work; //  h_work  - workspace
     magma_int_t   lwork;  //  workspace  size
     real_Double_t gpu_time;
-    // real_Double_t cpu_time;
+    //real_Double_t cpu_time;
 
     FILE *fp;
     char  fname[200];
@@ -140,12 +139,12 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
 
     min_mn = min(M, N);
 
-    // printf("INITIALIZE MAGMA\n");
-    // fflush(stdout);
+    //printf("INITIALIZE MAGMA\n");
+    //fflush(stdout);
 
     /* in this procedure, m=number of actuators/modes, n=number of WFS elements */
     //   printf("magma :    M = %ld , N = %ld\n", (long) M, (long) N);
-    // fflush(stdout);
+    //fflush(stdout);
 
     magma_init(); // initialize Magma
     //  Allocate  host  memory
@@ -180,8 +179,8 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
         }
     }
 
-    // printf("M = %ld   N = %ld\n", (long) M, (long) N);
-    // printf("=============== lwork = %ld\n", (long) lwork);
+    //printf("M = %ld   N = %ld\n", (long) M, (long) N);
+    //printf("=============== lwork = %ld\n", (long) lwork);
     gpu_time = magma_wtime();
     magma_sgesvd(MagmaSomeVec, MagmaAllVec, M, N, h_R, lda, S1, U, ldu, VT, ldv, h_work, lwork,
                  &info);
@@ -191,7 +190,7 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
         printf("magma_sgesvd returned error %d: %s.\n", (int) info, magma_strerror(info));
     }
 
-    // printf("sgesvd gpu time: %7.5f\n", gpu_time );
+    //printf("sgesvd gpu time: %7.5f\n", gpu_time );
 
     // Write eigenvalues
     sprintf(fname, "eigenv.dat.magma");
@@ -224,8 +223,8 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
     }
     MaxNBmodes1 = mode;
 
-    // printf("Keeping %ld modes  (SVDeps = %g)\n", MaxNBmodes1, SVDeps);
-    //  Write rotation matrix
+    //printf("Keeping %ld modes  (SVDeps = %g)\n", MaxNBmodes1, SVDeps);
+    // Write rotation matrix
     arraysizetmp[0] = m;
     arraysizetmp[1] = m;
 

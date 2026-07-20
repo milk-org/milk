@@ -12,8 +12,9 @@
 #include <math.h>
 #include <time.h>
 
-#include <stdio.h>
 #include <unistd.h>
+#include <stdio.h>
+
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -21,19 +22,19 @@
 
 #include "CommandLineInterface/timeutils.h"
 
+#include "fpsCTRL_TUI_process_user_key.h"
 #include "fps/fps_GetTypeString.h"
 #include "fps/fps_disconnect.h"
 #include "fps/fps_outlog.h"
 #include "fps/fps_process_fpsCMDarray.h"
 #include "fps/fps_read_fpsCMD_fifo.h"
 #include "fps/fps_scan.h"
-#include "fpsCTRL_TUI_process_user_key.h"
 
 #include "TUItools.h"
 
 #include "fpsCTRL_FPSdisplay.h"
-#include "level0node_summary.h"
 #include "print_nodeinfo.h"
+#include "level0node_summary.h"
 
 #include "scheduler_display.h"
 
@@ -44,14 +45,14 @@ static short unsigned int wrow, wcol;
 #define DISPLAYMODE_SEQUENCER 3
 #define DISPLAYMODE_FPSHELP 4
 
+
 inline static void fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMode, int NBfps)
 {
     DEBUG_TRACE_FSTART();
 
     int  stringmaxlen = 500;
     char monstring[stringmaxlen];
-    memset(monstring, 0,
-           stringmaxlen * sizeof(char)); // Must use memset for a C VLA
+    memset(monstring, 0, stringmaxlen * sizeof(char)); // Must use memset for a C VLA
 
     screenprint_setbold();
 
@@ -65,6 +66,7 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMod
     TUI_print_header(monstring, '-');
     screenprint_unsetbold();
     TUI_newline();
+
 
     if (fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
     {
@@ -89,6 +91,7 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMod
         TUI_printfw("[?] FPS help");
     }
     TUI_printfw("   ");
+
 
     if (fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
     {
@@ -115,6 +118,7 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMod
     TUI_newline();
     DEBUG_TRACE_FEXIT();
 }
+
 
 /**
  * @brief Print help
@@ -157,6 +161,7 @@ inline static void fpsCTRLscreen_print_help()
     DEBUG_TRACE_FEXIT();
 }
 
+
 /**
  * @brief Print help
  *
@@ -179,6 +184,7 @@ inline static void fpsCTRLscreen_print_FPShelp(KEYWORD_TREE_NODE    *keywnode,
                 data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourceline);
 
     TUI_newline();
+
 
     // module load string
     int  mloadstring_maxlen = 2000;
@@ -208,10 +214,11 @@ inline static void fpsCTRLscreen_print_FPShelp(KEYWORD_TREE_NODE    *keywnode,
 
     {
         FILE *fp = NULL;
-        // int status = 0;
+        //int status = 0;
         int  LINESLEN = 200;
         char line[LINESLEN];
         memset(line, 0, sizeof(line));
+
 
         fp = popen(helpfunctionstring, "r");
 
@@ -240,17 +247,18 @@ inline static void fpsCTRLscreen_print_FPShelp(KEYWORD_TREE_NODE    *keywnode,
         pclose(fp);
     }
 
+
     TUI_newline();
 
     DEBUG_TRACE_FEXIT();
 }
 
+
 /** @brief runs fpsCTRL GUI
  *
  * ## Purpose
  *
- * Automatically build simple ASCII GUI from function parameter structure (fps)
- * name mask
+ * Automatically build simple ASCII GUI from function parameter structure (fps) name mask
  *
  *
  *
@@ -264,10 +272,12 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
     // keyword tree
     KEYWORD_TREE_NODE *keywnode = NULL;
 
+
     int       loopOK  = 1;
     long long loopcnt = 0;
 
     long NBtaskLaunchedcnt = 0;
+
 
     // What to run ?
     // disable for testing
@@ -281,6 +291,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         strcpy(data.FPS_PROCESS_TYPE, "ctrl");
     }
 
+
     {
         char cwd[PATH_MAX];
         if (getcwd(cwd, sizeof(cwd)) == NULL)
@@ -289,6 +300,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         }
         functionparameter_outlog("FPSCTRLSTART", "%s", cwd);
     }
+
 
     DEBUG_TRACEPOINT("function start");
 
@@ -307,6 +319,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
+
     // All parameters held in this array
     //
     keywnode = calloc(NB_KEYWNODE_MAX, sizeof(*keywnode));
@@ -323,6 +336,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
             keywnode[kn].child[ch] = 0;
         }
     }
+
 
     // Set up instruction buffer to sequence commands
     //
@@ -365,10 +379,12 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         fpsCTRLvar.GUIlineSelected[level] = 0;
     }
 
+
     for (int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
     {
         keywnode[kindex].NBchild = 0;
     }
+
 
     {
         long NBpindex = 0;
@@ -377,11 +393,13 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                                    0 // quiet
         );
 
+
         /*printf("%d function parameter structure(s) imported, %ld parameters\n",
-           fpsCTRLvar.NBfps,
-           NBpindex);
-    fflush(stdout);*/
+               fpsCTRLvar.NBfps,
+               NBpindex);
+        fflush(stdout);*/
     }
+
 
     DEBUG_TRACEPOINT(" ");
 
@@ -434,11 +452,12 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
     int refresh_screen = 1; // 1 if screen should be refreshed
 
+
     while (loopOK == 1)
     {
         int NBtaskLaunched = 0;
 
-        // long icnt = 0;
+        //long icnt = 0;
         int ch = -1;
 
         int timeoutuscnt = 0;
@@ -558,6 +577,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
             }
             DEBUG_TRACEPOINT(" ");
 
+
             if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
             {
                 fpsCTRLscreen_print_help();
@@ -580,6 +600,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
             {
                 fpsCTRLscreen_print_FPShelp(keywnode, &fpsCTRLvar);
             }
+
 
             DEBUG_TRACEPOINT(" ");
 
@@ -604,10 +625,12 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         }
     }
 
+
     if (run_display == 1)
     {
         TUI_exit();
     }
+
 
     {
         char cwd[PATH_MAX];
@@ -623,6 +646,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
     {
         function_parameter_struct_disconnect(&data.fpsarray[fpsindex]);
     }
+
 
     free(keywnode);
 

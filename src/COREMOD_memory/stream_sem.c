@@ -271,8 +271,7 @@ void *waitforsemID(void *ID)
     tid = pthread_self();
 
     //    semval = ImageStreamIO_semvalue(data.image+(long) ID, ?sem_index);
-    //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned
-    //    int) tid, (long) ID, semval, data.image[(long) ID].name);
+    //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned int) tid, (long) ID, semval, data.image[(long) ID].name);
     //    fflush(stdout);
     ImageStreamIO_semwait(data.image + (imageID) ID, 0);
     //    printf("tid %u sem ID %ld done\n", (unsigned int) tid, (long) ID);
@@ -282,8 +281,7 @@ void *waitforsemID(void *ID)
     {
         if (tid != thrarray_semwait[t])
         {
-            //            printf("tid %u cancel thread %d tid %u\n", (unsigned int)
-            //            tid, t, (unsigned int) (thrarray_semwait[t]));
+            //            printf("tid %u cancel thread %d tid %u\n", (unsigned int) tid, t, (unsigned int) (thrarray_semwait[t]));
             //           fflush(stdout);
             pthread_cancel(thrarray_semwait[t]);
         }
@@ -298,8 +296,8 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray, long NB_ID
     int t;
     //    int semval;
 
-    //   printf("======== ENTER COREMOD_MEMORY_image_set_semwait_OR_IDarray [%ld]
-    //   =======\n", NB_ID); fflush(stdout);
+    //   printf("======== ENTER COREMOD_MEMORY_image_set_semwait_OR_IDarray [%ld] =======\n", NB_ID);
+    //   fflush(stdout);
 
     thrarray_semwait    = (pthread_t *) malloc(sizeof(pthread_t) * NB_ID);
     NB_thrarray_semwait = NB_ID;
@@ -313,18 +311,15 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray, long NB_ID
 
     for (t = 0; t < NB_ID; t++)
     {
-        //         printf("thread %d tid %u join waiting\n", t, (unsigned int)
-        //         thrarray_semwait[t]);
-        // fflush(stdout);
+        //         printf("thread %d tid %u join waiting\n", t, (unsigned int) thrarray_semwait[t]);
+        //fflush(stdout);
         pthread_join(thrarray_semwait[t], NULL);
-        //    printf("thread %d tid %u joined\n", t, (unsigned int)
-        //    thrarray_semwait[t]);
+        //    printf("thread %d tid %u joined\n", t, (unsigned int) thrarray_semwait[t]);
     }
 
     free(thrarray_semwait);
-    // printf("======== EXIT COREMOD_MEMORY_image_set_semwait_OR_IDarray
-    // =======\n");
-    // fflush(stdout);
+    // printf("======== EXIT COREMOD_MEMORY_image_set_semwait_OR_IDarray =======\n");
+    //fflush(stdout);
 
     return RETURN_SUCCESS;
 }

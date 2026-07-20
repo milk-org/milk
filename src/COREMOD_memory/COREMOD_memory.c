@@ -24,15 +24,11 @@
 // Module short description
 #define MODULE_DESCRIPTION "Memory management for images and variables"
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                        HEADER FILES */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                        HEADER FILES                                             */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -85,9 +81,9 @@
 #include "stream_ave.h"
 #include "stream_copy.h"
 #include "stream_delay.h"
+#include "stream_merge.h"
 #include "stream_diff.h"
 #include "stream_halfimdiff.h"
-#include "stream_merge.h"
 #include "stream_monitorlimits.h"
 #include "stream_paste.h"
 #include "stream_pixmapdecode.h"
@@ -115,7 +111,7 @@ static errno_t init_module_CLI()
     clearall_addCLIcmd();
     list_image_addCLIcmd();
 
-    // KEYWORDS
+    //KEYWORDS
     image_keyword_addCLIcmd();
     CLIADDCMD_COREMOD_memory__image_keyword_list();
     CLIADDCMD_COREMOD_memory__image_keyword_addD();
@@ -180,9 +176,9 @@ static errno_t init_module_CLI()
     stream_monitorlimits_addCLIcmd();
 
     // DATA LOGGING
-    // logshmim_addCLIcmd();
+    //logshmim_addCLIcmd();
 
-    // CLIADDCMD_COREMOD_memory__shmimlog(); -- find deletion commit.
+    //CLIADDCMD_COREMOD_memory__shmimlog(); -- find deletion commit.
     CLIADDCMD_COREMOD_MEMORY__logshmim();
 
     // add atexit functions here

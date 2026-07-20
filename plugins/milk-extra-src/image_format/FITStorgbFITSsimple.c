@@ -18,8 +18,8 @@ static float FLUXFACTOR = 1.0;
 // output is imr, img, imb
 // this is a simple interpolation routine
 // IMPORTANT: input will be modified
-// Sampling factor : 0=full resolution (slow), 1=half resolution (fast),
-// 2=quarter resolution (very fast) Fast mode does not reject bad pixels
+// Sampling factor : 0=full resolution (slow), 1=half resolution (fast), 2=quarter resolution (very fast)
+// Fast mode does not reject bad pixels
 errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                                              const char *__restrict ID_name_r,
                                              const char *__restrict ID_name_g,
@@ -76,13 +76,13 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
     {
         printf("image size : %ld %ld\n", Xsize, Ysize);
         RGBmode = 1;
-        // PRINT_ERROR("Unknown RGB image mode\n");
-        // exit(0);
+        //PRINT_ERROR("Unknown RGB image mode\n");
+        //exit(0);
     }
 
     printf("FAST MODE = %d\n", FastMode);
     printf("RGBmode   = %d\n", RGBmode);
-    // exit(0);
+    //exit(0);
 
     if (FastMode == 0)
     {

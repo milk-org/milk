@@ -89,8 +89,7 @@ errno_t image_set_3Daxes(IMGID inimg, uint32_t imsize0, uint32_t imsize1, uint32
     }
     else
     {
-        printf("total number of element (%ld) does not match input (%ld) - invalid "
-               "sizes\n",
+        printf("total number of element (%ld) does not match input (%ld) - invalid sizes\n",
                nelemout, nelem);
     }
 

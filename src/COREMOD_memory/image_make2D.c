@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include "image_make2D.h"
 #include "CommandLineInterface/CLIcore.h"
+#include "image_make2D.h"
 
 // Local variables pointers
 static char     *outimname;

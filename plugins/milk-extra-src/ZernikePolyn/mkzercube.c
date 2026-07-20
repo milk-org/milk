@@ -7,16 +7,19 @@
  *
  */
 
+
 #include "CommandLineInterface/CLIcore.h"
 
 #include <math.h>
 
 #include "zernike_value.h"
 
+
 // zonal WFS response
 //
 static char *outzcubename;
 static long  fpi_outzcubename;
+
 
 static uint32_t *xsize;
 static long      fpi_xsize;
@@ -36,11 +39,13 @@ static long   fpi_radius;
 static float *radiusmaskfactor;
 static long   fpi_radiusmaskfactor;
 
+
 static float *TTfactor;
 static long   fpi_TTfactor;
 
 static uint32_t *NBzermode;
 static long      fpi_NBzermode;
+
 
 static CLICMDARGDEF farg[] = {
     { // zonal RM WFS
@@ -64,6 +69,7 @@ static CLICMDARGDEF farg[] = {
       (void **) &NBzermode, &fpi_NBzermode }
 };
 
+
 // Optional custom configuration setup. comptbuff
 // Runs once at conf startup
 //
@@ -75,6 +81,7 @@ static errno_t customCONFsetup()
 
     return RETURN_SUCCESS;
 }
+
 
 // Optional custom configuration checks.
 // Runs at every configuration check loop iteration
@@ -90,11 +97,13 @@ static errno_t customCONFcheck()
 
 static CLICMDDATA CLIcmddata = { "mkzerc", "make Zernike modes cube", CLICMD_FIELDS_DEFAULTS };
 
+
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
@@ -110,6 +119,7 @@ static errno_t compute_function()
 
     double *polar_r;
     double *polar_theta;
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
@@ -146,6 +156,7 @@ static errno_t compute_function()
             }
         }
 
+
         // Make Zernikes
         //
         for (uint32_t zi = 0; zi < (*NBzermode); zi++)
@@ -179,11 +190,14 @@ static errno_t compute_function()
     free(polar_r);
     free(polar_theta);
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_ZernikePolyn__mkzercube()

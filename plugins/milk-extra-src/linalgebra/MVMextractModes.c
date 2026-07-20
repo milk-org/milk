@@ -10,7 +10,9 @@
 #    include <device_types.h>
 #endif
 
+
 #include <pthread.h>
+
 
 // Use MKL if available
 // Otherwise use openBLAS
@@ -26,20 +28,24 @@
 #    endif
 #endif
 
+
 #include "CommandLineInterface/CLIcore.h"
 #include "CommandLineInterface/timeutils.h"
 
 #include "MVM_CPU.h"
 
+
 // Local variables pointers
 static int32_t *GPUindex;
 long            fpi_GPUindex;
+
 
 static uint32_t *mmax;
 long             fpi_mmax;
 
 static uint32_t *nmax;
 long             fpi_nmax;
+
 
 static char *insname;
 long         fpi_insname;
@@ -79,6 +85,7 @@ long         fpi_outrefsname;
 
 static uint64_t *twait;
 long             fpi_twait;
+
 
 static CLICMDARGDEF farg[] = {
     { CLIARG_INT32, ".GPUindex", "GPU index, 99 for CPU", "0", CLIARG_VISIBLE_DEFAULT,
@@ -149,11 +156,13 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     int MODEVALCOMPUTE = 1; // 1 if compute, 0 if import
+
 
 #ifdef HAVE_CUDA
     cublasHandle_t        cublasH       = NULL;
@@ -165,6 +174,7 @@ static errno_t compute_function()
     float *d_modes   = NULL; // linear memory of GPU
     float *d_in      = NULL;
     float *d_modeval = NULL;
+
 
     // each step is 2x longer average than previous step
     uint32_t NBaveSTEP = 10;
@@ -178,10 +188,10 @@ static errno_t compute_function()
     long m = imgin.md->size[0] * imgin.md->size[1];
 
     // CONNECT TO MASK STREAM
-    int       use_mask   = 0;    // flag indicating that the mask is being used
-    uint32_t  mask_npix  = 0;    // The number of 1 pixels in the mask
-    uint32_t *mask_idx   = NULL; // Array holding the indices of the 1 pixels
-    float    *masked_pix = NULL; // Array to hold the pixel values
+    int       use_mask   = 0;    //flag indicating that the mask is being used
+    uint32_t  mask_npix  = 0;    //The number of 1 pixels in the mask
+    uint32_t *mask_idx   = NULL; //Array holding the indices of the 1 pixels
+    float    *masked_pix = NULL; //Array to hold the pixel values
 
     IMGID imgmask = mkIMGID_from_name(inmasksname);
     if (resolveIMGID(&imgmask, ERRMODE_WARN) != -1)
@@ -195,9 +205,9 @@ static errno_t compute_function()
 
     printf("USE MASK = %d\n", use_mask);
 
-    // use_mask = 0; //for testing
+    //use_mask = 0; //for testing
 
-    // setup the mask
+    //setup the mask
     //
     if (use_mask)
     {
@@ -226,30 +236,32 @@ static errno_t compute_function()
     }
     else
     {
-        // Just use full image
+        //Just use full image
         mask_npix = imgin.md->size[0] * imgin.md->size[1];
         printf("No mask using : %u pixels (%f%%)\n", mask_npix,
                (100.0 * mask_npix) / (imgin.md->size[0] * imgin.md->size[1]));
     }
 
-    /* // This was probaly never implemented at all.
-  // NORMALIZATION
-  // CONNECT TO TOTAL FLUX STREAM
-  imageID IDintot;
-  IDintot = image_ID(intot_stream);
-  int INNORMMODE = 0; // 1 if input normalized
 
-  if(IDintot == -1)
-  {
-      INNORMMODE = 0;
-      create_2Dimage_ID("intot_tmp", 1, 1, &IDintot);
-      data.image[IDintot].array.F[0] = 1.0;
-  }
-  else
-  {
-      INNORMMODE = 1;
-  }
-  */
+    /* // This was probaly never implemented at all.
+    // NORMALIZATION
+    // CONNECT TO TOTAL FLUX STREAM
+    imageID IDintot;
+    IDintot = image_ID(intot_stream);
+    int INNORMMODE = 0; // 1 if input normalized
+
+    if(IDintot == -1)
+    {
+        INNORMMODE = 0;
+        create_2Dimage_ID("intot_tmp", 1, 1, &IDintot);
+        data.image[IDintot].array.F[0] = 1.0;
+    }
+    else
+    {
+        INNORMMODE = 1;
+    }
+    */
+
 
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
     imageID IDinref  = -1;
@@ -268,9 +280,11 @@ static errno_t compute_function()
         IDinref = imginref.ID;
     }
 
+
     // CONNECT TO OPTIONAL OUTPUT REFERENCE STREAM
     IMGID imgoutref = mkIMGID_from_name(outrefsname);
     resolveIMGID(&imgoutref, ERRMODE_WARN);
+
 
     // CONNECT TO MODES STREAM
     IMGID imgmodes = mkIMGID_from_name(immodes);
@@ -285,9 +299,11 @@ static errno_t compute_function()
 
     printf("Modes stream size : %u %u\n", imgmodes.md->size[0], imgmodes.md->size[1]);
 
+
     long    n;
     long    NBmodes = 1;
     imageID IDmodes = -1;
+
 
     if ((*axmode) == 0)
     {
@@ -300,6 +316,7 @@ static errno_t compute_function()
         NBmodes = n;
         printf("NBmodes = %ld\n", NBmodes);
         fflush(stdout);
+
 
         // make col-major storage
     }
@@ -343,6 +360,7 @@ static errno_t compute_function()
     {
         // In this mode, the input modes are normalized to unity (vector 2-norm)
         // norm is computed here
+
 
         // compute normalization coeffs
         for (long k = 0; k < NBmodes; k++)
@@ -389,17 +407,21 @@ static errno_t compute_function()
         arraytmp[1] = data.image[IDrefout].md->size[1];
     }
 
+
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2Df32(outcoeff, arraytmp[0], arraytmp[1]);
 
     // Local working copy of output
     float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
+
     MODEVALCOMPUTE = 1;
 
     free(arraytmp);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
+
 
     if (MODEVALCOMPUTE == 1)
     {
@@ -473,7 +495,7 @@ static errno_t compute_function()
 
             if (use_mask)
             {
-                // reformat the matrix using the mask
+                //reformat the matrix using the mask
                 matsz = mask_npix * NBmodes;
                 modesmat =
                     (float *) malloc(sizeof(float) * mask_npix * data.image[IDmodes].md->size[2]);
@@ -505,8 +527,7 @@ static errno_t compute_function()
             }
 
             cudaStat = cudaMemcpy(d_modes, modesmat, sizeof(float) * matsz, cudaMemcpyHostToDevice);
-            // cudaStat = cudaMemcpy(d_modes, imgmodes.im->array.F, sizeof(float) * m
-            // * NBmodes, cudaMemcpyHostToDevice);
+            // cudaStat = cudaMemcpy(d_modes, imgmodes.im->array.F, sizeof(float) * m * NBmodes, cudaMemcpyHostToDevice);
 
             if (use_mask)
             {
@@ -518,6 +539,7 @@ static errno_t compute_function()
                 printf("cudaMemcpy returned error code %d, line %d\n", cudaStat, __LINE__);
                 exit(EXIT_FAILURE);
             }
+
 
             // create d_in
             cudaStat = cudaMalloc((void **) &d_in, sizeof(float) * m);
@@ -730,11 +752,13 @@ static errno_t compute_function()
     printf("MKL        NO\n");
 #endif
 
+
 #ifdef HAVE_CUDA
     printf("CUDA       YES\n");
 #else
     printf("CUDA       NO\n");
 #endif
+
 
     float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
     if (*axmode == 0)
@@ -752,7 +776,9 @@ static errno_t compute_function()
         memcpy(ColMajorMatrix, imgmodes.im->array.F, sizeof(float) * m * n);
     }
 
+
     float *imginfloatptr = NULL;
+
 
     if (imgin.md->datatype == _DATATYPE_FLOAT)
     {
@@ -764,6 +790,7 @@ static errno_t compute_function()
         imginfloatptr = (float *) malloc(sizeof(float) * imgin.md->size[0] * imgin.md->size[1]);
         printf("INPUT not float -> type conversion to float enabled\n");
     }
+
 
     printf(">>> START MVM loop\n");
 
@@ -777,6 +804,7 @@ static errno_t compute_function()
             initref  = 0;
             refindex = data.image[IDinref].md->cnt0;
         }
+
 
         if (((*GPUindex) < 0) || (*GPUindex == 99))
         {
@@ -796,9 +824,11 @@ static errno_t compute_function()
                     memcpy(outarray, imgoutref.im->array.F, sizeof(float) * n);
                 }
 
+
                 if (imgin.md->datatype != _DATATYPE_FLOAT)
                 {
                     imginfloatptr = imgin.im->array.F;
+
 
                     // type conversion (if needed)
                     switch (imgin.md->datatype)
@@ -868,6 +898,7 @@ static errno_t compute_function()
                     }
                 }
 
+
                 if (*axmode == 1)
                 {
                     cblas_sgemv(CblasColMajor, CblasNoTrans, (int) n, (int) m, 1.0, ColMajorMatrix,
@@ -904,6 +935,7 @@ static errno_t compute_function()
             {
                 outarray[jj] = 0.0;
             }
+
 
             for (int ii = 0; ii < m; ii++)
             {
@@ -1033,13 +1065,14 @@ static errno_t compute_function()
                 cudaStat = cudaMemcpy(modevalarray, d_modeval, sizeof(float) * NBmodes,
                                       cudaMemcpyDeviceToHost);
 
+
                 for (long k = 0; k < NBmodes; k++)
                 {
                     imgout.im->array.F[k] = (modevalarray[k] - modevalarrayref[k]) / normcoeff[k];
                     // Renorm was never implemented
-                    // (modevalarray[k] / data.image[IDintot].array.F[0] -
-                    // modevalarrayref[k]) / normcoeff[k];
+                    // (modevalarray[k] / data.image[IDintot].array.F[0] - modevalarrayref[k]) / normcoeff[k];
                 }
+
 
                 clock_gettime(CLOCK_MILK, &t1);
                 struct timespec tdiff;
@@ -1047,6 +1080,7 @@ static errno_t compute_function()
                 double t01d = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                 processinfo_WriteMessage_fmt(processinfo, "GPU%d %dx%d MVM %.3f us", *GPUindex, n,
                                              m, t01d * 1e6);
+
 
                 processinfo_update_output_stream(processinfo, imgout.ID);
             }
@@ -1066,10 +1100,12 @@ static errno_t compute_function()
     free(modevalarray);
     free(modevalarrayref);
 
+
     if (imgin.md->datatype != _DATATYPE_FLOAT)
     {
         free(imginfloatptr);
     }
+
 
     if (use_mask)
     {
@@ -1080,7 +1116,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_linalgebra__MVMextractModes()

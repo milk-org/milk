@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "CLIcore.h"
-#include "processinfo_procdirname.h"
 #include <processtools.h>
+#include "processinfo_procdirname.h"
+
 
 int processinfo_CatchSignals()
 {
@@ -45,6 +46,7 @@ int processinfo_CatchSignals()
 
     return 0;
 }
+
 
 int processinfo_ProcessSignals(PROCESSINFO *processinfo)
 {
@@ -95,6 +97,7 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
 
     return loopOK;
 }
+
 
 int processinfo_cleanExit(PROCESSINFO *processinfo)
 {

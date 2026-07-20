@@ -15,7 +15,7 @@ uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps)
     uint16_t   updateFLAG = 0;
 
     static uint32_t prev_status;
-    // static uint32_t statuschanged = 0;
+    //static uint32_t statuschanged = 0;
 
     if (loopINIT == 0)
     {
@@ -65,8 +65,7 @@ uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps)
         {
             updateFLAG = 1;
             fps->md->signal &=
-                ~FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // disable update (should be
-                                                          // moved to conf process)
+                ~FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // disable update (should be moved to conf process)
         }
         usleep(fps->md->confwaitus);
     }

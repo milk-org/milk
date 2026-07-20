@@ -34,8 +34,8 @@
 #include "read_shmim.h"
 #include "stream_sem.h"
 
-#include "COREMOD_tools/mvprocCPUset.h"
 #include "shmimlog_types.h"
+#include "COREMOD_tools/mvprocCPUset.h"
 
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -133,13 +133,13 @@ static errno_t customCONFsetup()
         data.fpsptr->parray[fpi_lastcubeON].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_nextcube].fpflag |= FPFLAG_WRITERUN;
 
-        // data.fpsptr->parray[fpi_savedirname].fpflag |= FPFLAG_WRITERUN;
+        //data.fpsptr->parray[fpi_savedirname].fpflag |= FPFLAG_WRITERUN;
 
         // Disabled. Causes undefined behavior.
-        // data.fpsptr->parray[fpi_cubesize].fpflag |= FPFLAG_WRITERUN;
+        //data.fpsptr->parray[fpi_cubesize].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_maxfilecnt].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_maxframecnt].fpflag |= FPFLAG_WRITERUN;
-        // data.fpsptr->parray[fpi_compressON].fpflag |= FPFLAG_WRITERUN;
+        //data.fpsptr->parray[fpi_compressON].fpflag |= FPFLAG_WRITERUN;
 
         data.fpsptr->parray[fpi_writerRTprio].fpflag |= FPFLAG_WRITERUN;
     }
@@ -227,18 +227,17 @@ static void *save_telemetry_fits_function(void *ptr)
     // Local time
 
     // get time zone
-    // char tm_zone[] = "HST";
-    // double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
+    //char tm_zone[] = "HST";
+    //double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
 
-    // Causes a race condition with gettime in other thread, which result in
-    // occasional HST filenames...
-    // time_t t = time(NULL);
+    // Causes a race condition with gettime in other thread, which result in occasional HST filenames...
+    //time_t t = time(NULL);
     // OVERRIDE localtime to HST
-    // putenv("TZ=Pacific/Honolulu");
-    // struct tm lt = *localtime(&t);
-    // printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
-    // putenv("TZ=");
-    // printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    //putenv("TZ=Pacific/Honolulu");
+    //struct tm lt = *localtime(&t);
+    //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    //putenv("TZ=");
+    //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
 
     // printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
     // printf("The time zone is '%s'.\n", lt.tm_zone);
@@ -263,7 +262,7 @@ static void *save_telemetry_fits_function(void *ptr)
                                           tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
     sprintf(imkwarray[8].comment, "HH:MM:SS.SS typical %s at exposure end", TZ_MILK_STR);
 
-    // printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+    //printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
     printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
 
     saveFITS_opt_trunc(tmsg->iname, tmsg->partial ? tmsg->cubesize : -1, tmsg->fname, 0,
@@ -297,8 +296,7 @@ static void *save_telemetry_fits_function(void *ptr)
         t0 = tmsg->arraytime[0];
         for (long k = 0; k < tmsg->cubesize; k++)
         {
-            // fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k],
-            // tmsg->arraycnt1[k], tmsg->arraytime[k]);
+            //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
 
             // entries are:
             // - index within cube
@@ -351,8 +349,8 @@ static errno_t compute_function()
     uint32_t ysize = inimg.md->size[1];
     if (inimg.md->naxis == 1)
     {
-        ysize = 1; // For 1D data, it's likely size[1] is initialized to 0, which
-                   // will cause trouble.
+        ysize =
+            1; // For 1D data, it's likely size[1] is initialized to 0, which will cause trouble.
     }
     uint32_t zsize = (*cubesize);
 
@@ -463,8 +461,8 @@ static errno_t compute_function()
                 // new frame has arrived
                 IsNewFrame = 1;
 
-                //  printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld
-                //  >>>>>>>>>>>>>>>>\n", inimg.md->cnt0); fflush(stdout);
+                //  printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
+                //  fflush(stdout);
 
                 lastcnt0 = inimg.md->cnt0;
             }
@@ -474,8 +472,8 @@ static errno_t compute_function()
                 IsNewFrame = 0;
             }
 
-            // printf("IsNewFrame %d\n", IsNewFrame);
-            // fflush(stdout);
+            //printf("IsNewFrame %d\n", IsNewFrame);
+            //fflush(stdout);
 
             if (IsNewFrame == 1)
             {
@@ -500,8 +498,8 @@ static errno_t compute_function()
                     lastcube = 1;
                 }
 
-                // printf("saveON %d\n", (int) (*saveON));
-                // fflush(stdout);
+                //printf("saveON %d\n", (int) (*saveON));
+                //fflush(stdout);
 
                 if ((*saveON) == 1)
                 {
@@ -577,8 +575,8 @@ static errno_t compute_function()
                     // copy frame to buffer
 
                     {
-                        // printf("[[copy frame %ld to frame %ld of buffer %d]]\n",
-                        // inimg.md->cnt0, (*frameindex), buffindex); fflush(stdout);
+                        //printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
+                        //fflush(stdout);
 
                         long framesize = typesize * xsize * ysize;
 
@@ -814,12 +812,12 @@ static errno_t compute_function()
         saveON_last = (*saveON);
     }
 
-    // printf("END loop\n");
-    // fflush(stdout);
+    //printf("END loop\n");
+    //fflush(stdout);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    // printf("END loop\n");
-    // fflush(stdout);
+    //printf("END loop\n");
+    //fflush(stdout);
 
     free(array_time);
     free(array_aqtime);

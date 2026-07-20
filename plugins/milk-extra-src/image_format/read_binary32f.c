@@ -63,21 +63,21 @@ imageID IMAGE_FORMAT_read_binary32f(const char *__restrict fname,
     unsigned long fileLen;
     long          i, ii, jj;
     imageID       ID;
-    // long v1;
+    //long v1;
 
-    // Open file
+    //Open file
     if ((fp = fopen(fname, "rb")) == NULL)
     {
         PRINT_ERROR("Cannot open file");
         return (0);
     }
 
-    // Get file length
+    //Get file length
     fseek(fp, 0, SEEK_END);
     fileLen = ftell(fp);
     fseek(fp, 0, SEEK_SET);
 
-    // Allocate memory
+    //Allocate memory
     buffer = (float *) malloc(fileLen + 1);
     if (!buffer)
     {
@@ -86,7 +86,7 @@ imageID IMAGE_FORMAT_read_binary32f(const char *__restrict fname,
         return (0);
     }
 
-    // Read file contents into buffer
+    //Read file contents into buffer
     if (fread(buffer, fileLen, 1, fp) < 1)
     {
         PRINT_ERROR("fread() returns <1 value");

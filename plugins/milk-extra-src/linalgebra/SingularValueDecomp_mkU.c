@@ -15,6 +15,7 @@
 
 #include "SGEMM.h"
 
+
 static char *inmatM;
 static long  fpi_inmatM;
 
@@ -34,6 +35,7 @@ static long  fpi_outmatUS;
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
 
+
 static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inM", "input matrix M", "inM",
                                  CLIARG_VISIBLE_DEFAULT, (void **) &inmatM, &fpi_inmatM },
                                { CLIARG_IMG, ".inV", "input matrix V", "inV",
@@ -50,7 +52,9 @@ static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".inM", "input matrix M", "inM",
                                  CLIARG_INT32, ".GPUdevice", "GPU device, 99 for CPU", "-1",
                                  CLIARG_HIDDEN_DEFAULT, (void **) &GPUdevice, &fpi_GPUdevice } };
 
+
 static CLICMDDATA CLIcmddata = { "SVDmkU", "compute SVD U", CLICMD_FIELDS_DEFAULTS };
+
 
 static errno_t help_function()
 {
@@ -58,6 +62,7 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
+
 
 errno_t compute_SVDU(IMGID imgM, IMGID imgV, IMGID imgS, IMGID *imgU, IMGID *imgUS, int GPUdev)
 {
@@ -73,7 +78,7 @@ errno_t compute_SVDU(IMGID imgM, IMGID imgV, IMGID imgS, IMGID *imgU, IMGID *img
     fflush(stdout);
     list_image_ID();
 
-    // uint32_t Ndim = imgV.md->size[imgV.md->naxis-1];
+    //uint32_t Ndim = imgV.md->size[imgV.md->naxis-1];
 
     uint64_t framesize;
     uint32_t nbframe;
@@ -119,6 +124,7 @@ errno_t compute_SVDU(IMGID imgM, IMGID imgV, IMGID imgS, IMGID *imgU, IMGID *img
     return RETURN_SUCCESS;
 }
 
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -132,10 +138,13 @@ static errno_t compute_function()
     IMGID imginS = mkIMGID_from_name(invecS);
     resolveIMGID(&imginS, ERRMODE_ABORT);
 
+
     IMGID imgoutU  = mkIMGID_from_name(outmatU);
     IMGID imgoutUS = mkIMGID_from_name(outmatUS);
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -145,17 +154,20 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_linalgebra__compSVDU()
 {
-    // CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    // CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;

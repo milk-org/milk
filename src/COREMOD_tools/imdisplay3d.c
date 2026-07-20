@@ -77,10 +77,10 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fprintf(fpgnuplot, "set pm3d\n");
     fprintf(fpgnuplot, "set hidden3d\n");
     fprintf(fpgnuplot, "set palette\n");
-    // fprintf(gnuplot, "set xrange [0:%li]\n", image.md[0].size[0]);
-    // fprintf(gnuplot, "set yrange [0:1e-5]\n");
-    // fprintf(gnuplot, "set xlabel \"Mode #\"\n");
-    // fprintf(gnuplot, "set ylabel \"Mode RMS\"\n");
+    //fprintf(gnuplot, "set xrange [0:%li]\n", image.md[0].size[0]);
+    //fprintf(gnuplot, "set yrange [0:1e-5]\n");
+    //fprintf(gnuplot, "set xlabel \"Mode #\"\n");
+    //fprintf(gnuplot, "set ylabel \"Mode RMS\"\n");
     fflush(fpgnuplot);
 
     fp = fopen("pts.dat", "w");
@@ -98,6 +98,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fprintf(fpgnuplot, "e\n");
     fflush(fpgnuplot);
     fclose(fp);
+
 
     return RETURN_SUCCESS;
 }

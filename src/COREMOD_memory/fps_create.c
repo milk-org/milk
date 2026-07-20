@@ -55,7 +55,7 @@ errno_t fps_create_addCLIcmd()
 
 errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
 {
-    // int                       index;
+    //int                       index;
     char                     *mapv = NULL;
     FUNCTION_PARAMETER_STRUCT fps  = { 0 };
 
@@ -125,24 +125,24 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
         fflush(stdout);
         exit(0);
     }
-    // funcparamstruct->md = funcparammd;
+    //funcparamstruct->md = funcparammd;
 
     mapv = (char *) fps.md;
     mapv += sizeof(FUNCTION_PARAMETER_STRUCT_MD);
     fps.parray = (FUNCTION_PARAMETER *) mapv;
 
-    // printf("shared memory space = %ld bytes\n", sharedsize); //TEST
+    //printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
     fps.md->NBparamMAX = NBparamMAX;
 
     memset(fps.parray, 0, NBparamMAX * sizeof(*fps.parray));
     /*
-  for(index = 0; index < NBparamMAX; index++)
-  {
-      fps.parray[index].fpflag = 0; // not active
-      fps.parray[index].cnt0   = 0; // update counter
-  }
-  */
+    for(index = 0; index < NBparamMAX; index++)
+    {
+        fps.parray[index].fpflag = 0; // not active
+        fps.parray[index].cnt0   = 0; // update counter
+    }
+    */
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
     strncpy(fps.md->callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1);

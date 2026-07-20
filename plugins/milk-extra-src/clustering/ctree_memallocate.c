@@ -7,6 +7,7 @@
 
 #include "CFmeminit.h"
 
+
 errno_t CFmemallocate(CLUSTERTREE *ctree, long CFindex)
 {
     DEBUG_TRACE_FSTART();
@@ -42,6 +43,7 @@ errno_t CFmemallocate(CLUSTERTREE *ctree, long CFindex)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 errno_t ctree_memallocate(CLUSTERTREE *ctree)
 {
@@ -79,36 +81,37 @@ errno_t ctree_memallocate(CLUSTERTREE *ctree)
         }
     }
 
+
     /*    for(long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
-      {
+        {
 
-          ctree->CFarray[CFindex].childindex =
-              (long *) malloc(sizeof(long) * (ctree->B + 1));
-          if(ctree->CFarray[CFindex].childindex == NULL)
-          {
-              FUNC_RETURN_FAILURE("malloc error");
-          }
+            ctree->CFarray[CFindex].childindex =
+                (long *) malloc(sizeof(long) * (ctree->B + 1));
+            if(ctree->CFarray[CFindex].childindex == NULL)
+            {
+                FUNC_RETURN_FAILURE("malloc error");
+            }
 
-          ctree->CFarray[CFindex].datasumvec =
-              (double *) malloc(sizeof(double) * ctree->npix);
-          if(ctree->CFarray[CFindex].datasumvec == NULL)
-          {
-              FUNC_RETURN_FAILURE("malloc error");
-          }
+            ctree->CFarray[CFindex].datasumvec =
+                (double *) malloc(sizeof(double) * ctree->npix);
+            if(ctree->CFarray[CFindex].datasumvec == NULL)
+            {
+                FUNC_RETURN_FAILURE("malloc error");
+            }
 
-          ctree->CFarray[CFindex].dataposvec =
-              (double *) malloc(sizeof(double) * ctree->npix);
-          if(ctree->CFarray[CFindex].dataposvec == NULL)
-          {
-              FUNC_RETURN_FAILURE("malloc error");
-          }
+            ctree->CFarray[CFindex].dataposvec =
+                (double *) malloc(sizeof(double) * ctree->npix);
+            if(ctree->CFarray[CFindex].dataposvec == NULL)
+            {
+                FUNC_RETURN_FAILURE("malloc error");
+            }
 
-          // Required to avoid infinite loop in CFmeminit upstream tracking
-          ctree->CFarray[CFindex].parentindex = -1;
+            // Required to avoid infinite loop in CFmeminit upstream tracking
+            ctree->CFarray[CFindex].parentindex = -1;
 
-          CFmeminit(ctree, CFindex, 0);
-      }
-  */
+            CFmeminit(ctree, CFindex, 0);
+        }
+    */
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

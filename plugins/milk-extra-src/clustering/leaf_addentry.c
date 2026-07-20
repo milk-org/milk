@@ -8,7 +8,7 @@
 #include "addCF_to_CF.h"
 
 // log all debug trace points to file
-// #define DEBUGLOG
+//#define DEBUGLOG
 
 /*
  * Add entry to leaf
@@ -28,6 +28,7 @@ errno_t leaf_addentry(CLUSTERTREE *ctree,
 #ifdef DEBUGPRINT
     printf("[%5d %s] trying to add vector to cfi %ld\n", __LINE__, __func__, cfi);
 #endif
+
 
     // scan back to root, add vector to CF along the path
     int isleaf = 1; // will toggle to 0 when moving upstream of leaf

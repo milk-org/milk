@@ -25,8 +25,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
 OF SUCH DAMAGE.
 */
-/* single nearest neighbor search written by Tamas Nepusz <tamas@cs.rhul.ac.uk>
- */
+/* single nearest neighbor search written by Tamas Nepusz <tamas@cs.rhul.ac.uk> */
 
 #include "kdtree/kdtree.h"
 #include <math.h>
@@ -441,7 +440,7 @@ static void kd_nearest_i(struct kdnode      *node,
     }
 
     /* Check the distance of the point at the current node, compare it
-   * with our best so far */
+     * with our best so far */
     dist_sq = 0;
     for (i = 0; i < rect->dim; i++)
     {
@@ -459,8 +458,8 @@ static void kd_nearest_i(struct kdnode      *node,
         dummy                    = *farther_hyperrect_coord;
         *farther_hyperrect_coord = node->pos[dir];
         /* Check if we have to recurse down by calculating the closest
-     * point of the hyperrect and see if it's closer than our
-     * minimum distance in result_dist_sq. */
+         * point of the hyperrect and see if it's closer than our
+         * minimum distance in result_dist_sq. */
         if (hyperrect_dist_sq(rect, pos) < *result_dist_sq)
         {
             /* Recurse down into farther subtree */

@@ -5,6 +5,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "clustering_defs.h"
 
+
 errno_t update_level(CLUSTERTREE *ctree, long CFindex)
 {
     DEBUG_TRACE_FSTART();

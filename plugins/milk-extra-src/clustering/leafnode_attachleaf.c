@@ -7,7 +7,8 @@
 
 #include "addCF_to_CF.h"
 
-// #define DEBUGPRINT
+//#define DEBUGPRINT
+
 
 /**
  * @brief Attach EXISITNG leaf to node
@@ -25,11 +26,14 @@ errno_t node_attachleaf(CLUSTERTREE *ctree, long CFindexleaf, long CFindexnode)
     printf("node_attachleaf  %ld %ld\n", CFindexleaf, CFindexnode);
 #endif
 
+
     ctree->CFarray[CFindexnode].childindex[ctree->CFarray[CFindexnode].NBchild] = CFindexleaf;
     ctree->CFarray[CFindexnode].NBchild++;
 
+
     ctree->CFarray[CFindexleaf].parentindex = CFindexnode;
     ctree->CFarray[CFindexleaf].level       = ctree->CFarray[CFindexnode].level + 1;
+
 
     long cfi = CFindexnode;
     while (cfi != -1)
@@ -38,10 +42,12 @@ errno_t node_attachleaf(CLUSTERTREE *ctree, long CFindexleaf, long CFindexnode)
         printf("========= ADDING VECTOR TO NODE %ld (%s)\n", cfi, __FILE__);
 #endif
 
+
         ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
         int addOK = 1; // don't test radius
         addCF_to_CF(ctree, ctree->CFarray[CFindexleaf], cfi, &addOK);
+
 
         // move upstream to propagate change
 

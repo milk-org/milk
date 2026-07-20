@@ -56,12 +56,10 @@ static double get_pixel_double(IMAGE *im, uint64_t index)
 /* im : image
   d : double
 
-  function_<inputformat>_<outputformat>__<math function input>_<math function
-  output>
+  function_<inputformat>_<outputformat>__<math function input>_<math function output>
 
   examples:
-  function_imim__dd_d  : input is (image, image), applies double,double ->
-  double function
+  function_imim__dd_d  : input is (image, image), applies double,double -> double function
 
   ------------------------------------------------------------------------- */
 
@@ -874,9 +872,9 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID, double (*pt2function)(
 
     datatype = data.image[ID].md[0].datatype;
 
-    // datatypeout = _DATATYPE_FLOAT;
-    // if(datatype == _DATATYPE_DOUBLE)
-    //    datatypeout = _DATATYPE_DOUBLE;
+    //datatypeout = _DATATYPE_FLOAT;
+    //if(datatype == _DATATYPE_DOUBLE)
+    //   datatypeout = _DATATYPE_DOUBLE;
 
     nelement = data.image[ID].md[0].nelement;
 
@@ -1546,7 +1544,7 @@ errno_t arith_image_function_CF_CF__CF(const char *ID_name1,
     ID1       = image_ID(ID_name1);
     ID2       = image_ID(ID_name2);
     datatype1 = data.image[ID1].md[0].datatype;
-    // datatype2 = data.image[ID2].md[0].datatype;
+    //datatype2 = data.image[ID2].md[0].datatype;
     naxis = data.image[ID1].md[0].naxis;
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if (naxes == NULL)
@@ -1599,7 +1597,7 @@ errno_t arith_image_function_CD_CD__CD(const char *ID_name1,
     ID1       = image_ID(ID_name1);
     ID2       = image_ID(ID_name2);
     datatype1 = data.image[ID1].md[0].datatype;
-    // datatype2 = data.image[ID2].md[0].datatype;
+    //datatype2 = data.image[ID2].md[0].datatype;
     naxis = data.image[ID1].md[0].naxis;
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if (naxes == NULL)

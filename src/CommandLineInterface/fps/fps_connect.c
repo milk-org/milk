@@ -17,7 +17,9 @@
 #include "fps_loadstream.h"
 #include "fps_shmdirname.h"
 
+
 #include "timeutils.h"
+
 
 /** @brief Connect to function parameter structure
  *
@@ -46,6 +48,7 @@ long function_parameter_struct_connect(const char                *name,
 
     char shmdname[stringmaxlen];
 
+
     if (data.FPS_TIMESTAMP == 0)
     {
         {
@@ -69,9 +72,11 @@ long function_parameter_struct_connect(const char                *name,
             break;
         }
 
+
         functionparameter_outlog("CONNECTION", ">>>>");
         functionparameter_outlog_namelink();
     }
+
 
     DEBUG_TRACEPOINT("Connect to fps %s\n", name);
 
@@ -136,8 +141,8 @@ long function_parameter_struct_connect(const char                *name,
 
     //	NBparam = (int) (file_stat.st_size / sizeof(FUNCTION_PARAMETER));
     NBparamMAX = fps->md->NBparamMAX;
-    // printf("    Connected to %s, %ld entries\n", SM_fname, NBparamMAX);
-    // fflush(stdout);
+    //printf("    Connected to %s, %ld entries\n", SM_fname, NBparamMAX);
+    //fflush(stdout);
 
     DEBUG_TRACEPOINT("File: %s - successful connect.\n", SM_fname);
 
@@ -169,7 +174,7 @@ long function_parameter_struct_connect(const char                *name,
             {
                 PRINT_ERROR("snprintf error");
             }
-            // strncpy(fps->md->nameindexW[NBi], tmpstring1, 16);
+            //strncpy(fps->md->nameindexW[NBi], tmpstring1, 16);
         }
 
         NBi++;
@@ -192,7 +197,7 @@ long function_parameter_struct_connect(const char                *name,
     fps->NBparamActive = pactivecnt;
 
     DEBUG_TRACEPOINT("File: %s - Successful parameter count.\n", SM_fname);
-    // function_parameter_printlist(fps->parray, NBparamMAX);
+    //function_parameter_printlist(fps->parray, NBparamMAX);
 
     if ((fpsconnectmode == FPSCONNECT_CONF) || (fpsconnectmode == FPSCONNECT_RUN))
     {
@@ -348,8 +353,7 @@ long function_parameter_struct_connect(const char                *name,
             }
         }
     }
-    DEBUG_TRACEPOINT("File: %s - Successful termination of "
-                     "function_parameter_struct_connect.\n",
+    DEBUG_TRACEPOINT("File: %s - Successful termination of function_parameter_struct_connect.\n",
                      SM_fname);
 
     return (NBparamMAX);

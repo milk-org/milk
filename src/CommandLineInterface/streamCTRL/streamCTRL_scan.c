@@ -4,8 +4,8 @@
 
 #include <string.h>
 
-#include <malloc.h>
 #include <stdlib.h>
+#include <malloc.h>
 #include <sys/types.h>
 
 #include <unistd.h>
@@ -16,14 +16,16 @@
 
 #include <ncurses.h>
 
+
 #include "CLIcore.h"
 #include "streamCTRL_TUI.h"
 #include "streamCTRL_find_streams.h"
 #include "streamCTRL_utilfuncs.h"
 
-// default location of file mapped semaphores, can be over-ridden by env
-// variable MILK_SHM_DIR
+
+// default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
 #define SHAREDSHMDIR data.shmdir
+
 
 void *streamCTRL_scan(void *argptr)
 {
@@ -41,13 +43,13 @@ void *streamCTRL_scan(void *argptr)
     streaminfoproc->loopcnt = 0;
 
     // if set, write file list to file on first scan
-    // int WriteFlistToFile = 1;
+    //int WriteFlistToFile = 1;
+
 
     while (streaminfoproc->loop == 1)
     {
-        // EXECUTE_SYSTEM_COMMAND("echo \" \" >> IDlog.txt");
-        // EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopSTART\" >> IDlog.txt",
-        // scaniter);
+        //EXECUTE_SYSTEM_COMMAND("echo \" \" >> IDlog.txt");
+        //EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopSTART\" >> IDlog.txt", scaniter);
 
         long NBsindex = 0;
 
@@ -73,12 +75,13 @@ void *streamCTRL_scan(void *argptr)
             streaminfoproc->dtscan = tdiffv;
         }
 
+
         // look for streams on filesystem
         // NBsindex is total nymber of streams found
         //
         NBsindex = find_streams(streaminfo, streaminfoproc->filter, streaminfoproc->namefilter);
 
-        // EXECUTE_SYSTEM_COMMAND("echo \"NBsindex = %ld\" >> IDlog.txt", NBsindex);
+        //EXECUTE_SYSTEM_COMMAND("echo \"NBsindex = %ld\" >> IDlog.txt", NBsindex);
 
         // write stream list to file if applicable
         // ususally used for debugging only
@@ -93,7 +96,7 @@ void *streamCTRL_scan(void *argptr)
 
             for (long sindex = 0; sindex < NBsindex; sindex++)
             {
-                // fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
+                //fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
 
                 if (streaminfo[sindex].SymLink == 1)
                 {
@@ -114,15 +117,15 @@ void *streamCTRL_scan(void *argptr)
         {
             imageID ID;
 
-            // streaminfo[sindex].ISIOretval = IMAGESTREAMIO_FILEOPEN;
+            //streaminfo[sindex].ISIOretval = IMAGESTREAMIO_FILEOPEN;
 
             // Check if already in memory
             //
             ID = image_ID_from_images(images, streaminfo[sindex].sname);
             /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld %s : ID = %ld\" >> IDlog.txt",
-                             sindex,
-                             streaminfo[sindex].sname,
-                             ID);*/
+                                   sindex,
+                                   streaminfo[sindex].sname,
+                                   ID);*/
 
             // Check if the inode exists but has been externally overwritten
             if (ID != -1 && ImageStreamIO_check_image_inode(&images[ID]) == IMAGESTREAMIO_INODE)
@@ -142,14 +145,14 @@ void *streamCTRL_scan(void *argptr)
                     return NULL;
                 }
                 /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld get ID = %ld\" >> IDlog.txt",
-                               sindex, ID);*/
+                                       sindex, ID);*/
+
 
                 streaminfo[sindex].ISIOretval = ImageStreamIO_read_sharedmem_image_toIMAGE(
                     streaminfo[sindex].sname, &images[ID]);
 
-                // images[ID] used to keep track of each stream, even if not
-                // successfully loaded force used to be 1 even if load fails, so we can
-                // keep track of attempted loads
+                // images[ID] used to keep track of each stream, even if not successfully loaded
+                // force used to be 1 even if load fails, so we can keep track of attempted loads
                 images[ID].used = 1;
                 // keep track of name
                 strncpy(images[ID].name, streaminfo[sindex].sname, STRINGMAXLEN_IMAGE_NAME - 1);
@@ -175,7 +178,7 @@ void *streamCTRL_scan(void *argptr)
                 if (streaminfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS)
                 {
                     /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO OK\" >> IDlog.txt",
-                                 sindex);*/
+                                           sindex);*/
 
                     float gainv = 1.0;
                     if (firstIter == 0)
@@ -192,10 +195,10 @@ void *streamCTRL_scan(void *argptr)
                     streaminfo[sindex].datatype = images[ID].md->datatype;
                 }
                 /*else
-        {
-            EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO NOTOK\" >> IDlog.txt",
-                                   sindex);
-        }*/
+                {
+                    EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO NOTOK\" >> IDlog.txt",
+                                           sindex);
+                }*/
             }
 
             streaminfo[sindex].ID = ID;
@@ -215,9 +218,11 @@ void *streamCTRL_scan(void *argptr)
             }
         }
 
+
         streaminfoproc->WriteFlistToFile = 0;
 
         firstIter = 0;
+
 
         if (streaminfoproc->fuserUpdate == 1)
         {
@@ -378,8 +383,9 @@ void *streamCTRL_scan(void *argptr)
         streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
 
-        // EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopEND\" >> IDlog.txt", scaniter);
+        //EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopEND\" >> IDlog.txt", scaniter);
         scaniter++;
+
 
         usleep(streaminfoproc->twaitus);
     }

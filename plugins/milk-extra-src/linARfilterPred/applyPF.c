@@ -13,9 +13,11 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
 #ifdef HAVE_CUDA
 #    include "linalgebra/linalgebra.h"
 #endif
+
 
 static uint64_t *AOloopindex;
 
@@ -30,6 +32,7 @@ static char *outmask;
 // shared by muplitple processes to keep track
 static char *outPFstat;
 
+
 static char *GPUsetstr;
 static long  fpi_GPUsetstr;
 
@@ -38,6 +41,7 @@ static long      fpi_compOLresidual;
 
 static uint32_t *compOLresidualNBpt;
 static long      fpi_compOLresidualNBpt;
+
 
 static CLICMDARGDEF farg[] = {
     { // AO loop index - used for automatic naming of streams aolX_
@@ -72,6 +76,7 @@ static CLICMDARGDEF farg[] = {
       CLIARG_HIDDEN_DEFAULT, (void **) &compOLresidualNBpt, &fpi_compOLresidualNBpt }
 };
 
+
 // Optional custom configuration setup. comptbuff
 // Runs once at conf startup
 //
@@ -98,21 +103,25 @@ static errno_t customCONFcheck()
 
 static CLICMDDATA CLIcmddata = { "applyPF", "apply predictive filter", CLICMD_FIELDS_DEFAULTS };
 
+
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
 
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
+
 
 #ifdef HAVE_CUDA
     int status;
     int GPUstatus[100];
     int GPUMATMULTCONFindex = 2;
 #endif
+
 
     // Connect to 2D input stream
     //
@@ -127,6 +136,7 @@ static errno_t compute_function()
     long NBmodeOUT = imgPFmat.md->size[1];
 
     list_image_ID();
+
 
     // Input mask
     // 0: inactive input
@@ -164,7 +174,7 @@ static errno_t compute_function()
                 NBinmaskpix++;
             }
         }
-        // printf("Number of active input modes  = %ld\n", NBinmaskpix);
+        //printf("Number of active input modes  = %ld\n", NBinmaskpix);
     }
     else
     {
@@ -180,11 +190,13 @@ static errno_t compute_function()
     }
     long NBmodeIN = NBinmaskpix;
 
+
     long NBPFstep = imgPFmat.md->size[0] / NBmodeIN;
 
     printf("Number of active input modes  = %ld  / %ld\n", NBmodeIN, NBmodeINmax);
     printf("Number of output modes        = %ld\n", NBmodeOUT);
     printf("Number of time steps          = %ld\n", NBPFstep);
+
 
     // create input buffer holding recent input values
     //
@@ -192,11 +204,13 @@ static errno_t compute_function()
     IMGID imginbuff = makeIMGID_2D("iminbuff", NBmodeIN, NBPFstep);
     createimagefromIMGID(&imginbuff);
 
+
     // create input buffer holding recent input values
     //
     printf("Creating output buffer\n");
     IMGID imgoutbuff = makeIMGID_2D("imoutbuff", NBmodeOUT, 1);
     createimagefromIMGID(&imgoutbuff);
+
 
     // Create output buffer holding recent output values
     // The buffer is used to measure residual OL error as a function of latency
@@ -204,6 +218,7 @@ static errno_t compute_function()
     printf("Creating output time buffer\n");
     IMGID imgoutTbuff = makeIMGID_2D("imoutTbuff", NBmodeOUT, NBPFstep);
     createimagefromIMGID(&imgoutTbuff);
+
 
     // OUTPUT
 
@@ -215,6 +230,7 @@ static errno_t compute_function()
     IMGID imgoutmask = mkIMGID_from_name(outmask);
     resolveIMGID(&imgoutmask, ERRMODE_WARN);
 
+
     // output update
     // set values to 1 when updated
     //
@@ -222,6 +238,7 @@ static errno_t compute_function()
     {
         imgoutPFstat = stream_connect_create_2Df32(outPFstat, NBmodeINmax, 1);
     }
+
 
     // If both outdata and outmask exist, check they are consistent
     if ((imgout.ID != -1) && (imgoutmask.ID != -1))
@@ -242,6 +259,7 @@ static errno_t compute_function()
                 compOK = 0;
             }
         }
+
 
         if (compOK == 0)
         {
@@ -325,7 +343,7 @@ static errno_t compute_function()
                 NBoutmaskpix++;
             }
         }
-        // printf("Number of active input modes  = %ld\n", NBinmaskpix);
+        //printf("Number of active input modes  = %ld\n", NBinmaskpix);
     }
     else
     {
@@ -346,6 +364,7 @@ static errno_t compute_function()
         DEBUG_TRACE_FEXIT();
         return (EXIT_FAILURE);
     }
+
 
     // Identify GPUs
     //
@@ -376,7 +395,8 @@ static errno_t compute_function()
 
     printf("MVM  %s %s -> %s\n", imginbuff.name, imgPFmat.name, imgoutbuff.name);
 
-    // sprocessinfo_WriteMessage("MVM %d -> %d", NBmodeIN*NBPFstep, NBmodeOUT);
+
+    //sprocessinfo_WriteMessage("MVM %d -> %d", NBmodeIN*NBPFstep, NBmodeOUT);
 
     // initialize OL residual measurement counter
     uint32_t OLrescnt  = 0;
@@ -384,6 +404,7 @@ static errno_t compute_function()
 
     // average and time delay array on input OL buffer
     double *OLRMS2avedt = (double *) malloc(sizeof(double) * NBPFstep * NBPFstep);
+
 
     struct timespec t0, t1;
 
@@ -398,6 +419,7 @@ static errno_t compute_function()
     {
         imginbuff.im->array.F[mi] = imgin.im->array.F[inmaskindex[mi]];
     }
+
 
     if (NBGPU > 0) // if using GPU
     {
@@ -434,6 +456,7 @@ static errno_t compute_function()
         imgout.md->cnt0++;
     }
 
+
     // Place output block in main output
     //
     for (long mi = 0; mi < NBmodeOUT; mi++)
@@ -443,6 +466,7 @@ static errno_t compute_function()
     }
     processinfo_update_output_stream(processinfo, imgoutPFstat.ID);
     processinfo_update_output_stream(processinfo, imgout.ID);
+
 
     clock_gettime(CLOCK_MILK, &t1);
     struct timespec tdiff;
@@ -471,6 +495,7 @@ static errno_t compute_function()
         {
             imgoutTbuff.im->array.F[mi] = imgoutbuff.im->array.F[mi];
         }
+
 
         for (long tstep = 0; tstep < NBPFstep; tstep++)
         {
@@ -508,6 +533,7 @@ static errno_t compute_function()
                 OLRMS2avedt[tave * NBPFstep + tstep] += val2;
             }
         }
+
 
         if (OLrescnt == *compOLresidualNBpt)
         {
@@ -559,6 +585,7 @@ static errno_t compute_function()
         }
     }
 
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     free(GPUset);
@@ -570,7 +597,9 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_FPSCLIfunctions
+
 
     // Register function in CLI
     errno_t CLIADDCMD_LinARfilterPred__applyPF()

@@ -24,22 +24,22 @@
 // Module short description
 #define MODULE_DESCRIPTION "standard image operations"
 
-// #include <stdint.h>
-// #include <string.h>
-// #include <math.h>
-// #include <stdlib.h>
-// #include <stdio.h>
-// #include <errno.h>
-// #include <unistd.h>
-// #include <sched.h>
+//#include <stdint.h>
+//#include <string.h>
+//#include <math.h>
+//#include <stdlib.h>
+//#include <stdio.h>
+//#include <errno.h>
+//#include <unistd.h>
+//#include <sched.h>
 
-// #include <fitsio.h>  /* required by every program that uses CFITSIO  */
+//#include <fitsio.h>  /* required by every program that uses CFITSIO  */
 
 #include "CommandLineInterface/CLIcore.h"
-// #include "COREMOD_tools/COREMOD_tools.h"
-// #include "COREMOD_memory/COREMOD_memory.h"
-// #include "COREMOD_iofits/COREMOD_iofits.h"
-// #include "COREMOD_arith/COREMOD_arith.h"
+//#include "COREMOD_tools/COREMOD_tools.h"
+//#include "COREMOD_memory/COREMOD_memory.h"
+//#include "COREMOD_iofits/COREMOD_iofits.h"
+//#include "COREMOD_arith/COREMOD_arith.h"
 
 /*
 #include "fft/fft.h"
@@ -51,7 +51,7 @@
 #include "statistic/statistic.h"
 */
 
-// #include "image_basic/image_basic.h"
+//#include "image_basic/image_basic.h"
 
 #include "cubecollapse.h"
 #include "im3Dto2D.h"
@@ -227,9 +227,10 @@ long basic_diff(const char *ID_name1, const char *ID_name2,
     naxes2[0] = data.image[ID2].md[0].size[0];
     naxes2[1] = data.image[ID2].md[0].size[1];
 
-    printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld x
-%ld )\n", ID_name1, naxes1[0], naxes1[1], ID_name2, naxes2[0], naxes2[1], off1,
-off2); xmin = 0; if(off1 < 0)
+    printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld x %ld )\n",
+           ID_name1, naxes1[0], naxes1[1], ID_name2, naxes2[0], naxes2[1], off1, off2);
+    xmin = 0;
+    if(off1 < 0)
     {
         xmin = off1;
     }
@@ -263,15 +264,15 @@ off2); xmin = 0; if(off1 < 0)
                 if(((ii + xmin) >= 0) && ((ii + xmin) < naxes1[0]))
                     if(((jj + ymin) >= 0) && ((jj + ymin) < naxes1[1]))
                     {
-                        data.image[ID_out].array.F[jj * naxes[0] + ii] +=
-data.image[ID1].array.F[(jj + ymin) * naxes1[0] + (ii + xmin)];
+                        data.image[ID_out].array.F[jj * naxes[0] + ii] += data.image[ID1].array.F[(jj +
+                                ymin) * naxes1[0] + (ii + xmin)];
                     }
                 // if pixel is in ID2
-                if(((ii + xmin - off1) >= 0) && ((ii + xmin - off1) <
-naxes2[0])) if(((jj + ymin - off2) >= 0) && ((jj + ymin - off2) < naxes2[1]))
+                if(((ii + xmin - off1) >= 0) && ((ii + xmin - off1) < naxes2[0]))
+                    if(((jj + ymin - off2) >= 0) && ((jj + ymin - off2) < naxes2[1]))
                     {
-                        data.image[ID_out].array.F[jj * naxes[0] + ii] -=
-data.image[ID2].array.F[(jj + ymin - off2) * naxes2[0] + (ii + xmin - off1)];
+                        data.image[ID_out].array.F[jj * naxes[0] + ii] -= data.image[ID2].array.F[(jj +
+                                ymin - off2) * naxes2[0] + (ii + xmin - off1)];
                     }
             }
         }
@@ -293,8 +294,8 @@ int basic_add_cst(const char *ID_name, float f1, int sign) // add a constant
     for(jj = 0; jj < naxes[1]; jj++)
         for(ii = 0; ii < naxes[0]; ii++)
         {
-            data.image[ID].array.F[jj * naxes[0] + ii] =
-data.image[ID].array.F[jj * naxes[0] + ii] + f1 * sign;
+            data.image[ID].array.F[jj * naxes[0] + ii] = data.image[ID].array.F[jj *
+                    naxes[0] + ii] + f1 * sign;
         }
 
     return(0);
@@ -322,8 +323,7 @@ imageID basic_extract(
     n = snprintf(name, SBUFFERSIZE, "%s", ID_out_name);
     if(n >= SBUFFERSIZE)
     {
-        PRINT_ERROR("Attempted to write string buffer with too many
-characters");
+        PRINT_ERROR("Attempted to write string buffer with too many characters");
     }
 
     create_2Dimage_ID(name, n1, n2);
@@ -332,9 +332,8 @@ characters");
     for(ii = 0; ii < n1; ii++)
         for(jj = 0; jj < n2; jj++)
         {
-            data.image[ID_out].array.F[jj * n1 + ii] =
-data.image[ID_in].array.F[(jj + n4) * data.image[ID_in].md[0].size[0] + ii +
-n3];
+            data.image[ID_out].array.F[jj * n1 + ii] = data.image[ID_in].array.F[(jj + n4) *
+                    data.image[ID_in].md[0].size[0] + ii + n3];
         }
 
     return(ID_out);
@@ -355,8 +354,8 @@ int basic_trunc_circ(const char *ID_name, float f1)
     for(jj = 0; jj < naxes[1]; jj++)
         for(ii = 0; ii < naxes[0]; ii++)
         {
-            data.image[ID].array.F[jj * naxes[0] + ii] =
-fmod(data.image[ID].array.F[jj * naxes[0] + ii], f1);
+            data.image[ID].array.F[jj * naxes[0] + ii] = fmod(data.image[ID].array.F[jj *
+                    naxes[0] + ii], f1);
         }
 
     return(0);
@@ -378,8 +377,7 @@ imageID basic_zoom2(
     n = snprintf(lstring, SBUFFERSIZE, "%s=%s*1", ID_name_out, ID_name);
     if(n >= SBUFFERSIZE)
     {
-        PRINT_ERROR("Attempted to write string buffer with too many
-characters");
+        PRINT_ERROR("Attempted to write string buffer with too many characters");
     }
 
 
@@ -395,20 +393,21 @@ characters");
         for(uint32_t ii = 0; ii < naxes[0] / 2; ii++)
         {
             data.image[ID_out].array.F[(2 * jj)*naxes_out[0] + (2 * ii)] =
-                data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii +
-naxes[1] / 4)]; data.image[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 * ii)]
-= 0.5 * (data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii + naxes[1]
-/ 4)] + data.image[ID].array.F[(jj + naxes[1] / 4 + 1) * naxes[0] + (ii +
-naxes[1] / 4)]); data.image[ID_out].array.F[(2 * jj)*naxes_out[0] + (2 * ii +
-1)] = 0.5 * (data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii +
-naxes[1] / 4)] + data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii +
-naxes[1] / 4 + 1)]); data.image[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 *
-ii + 1)] = 0.25 * (data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii +
-naxes[1] / 4)] + data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii +
-naxes[1] / 4 + 1)] + data.image[ID].array.F[(jj + naxes[1] / 4 + 1) * naxes[0] +
-(ii + naxes[1] / 4)] + data.image[ID].array.F[(jj + naxes[1] / 4 + 1)
-                                                                    * naxes[0] +
-(ii + naxes[1] / 4 + 1)]);
+                data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii + naxes[1] / 4)];
+            data.image[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 * ii)] = 0.5 *
+                    (data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
+                                            (ii + naxes[1] / 4)] + data.image[ID].array.F[(jj + naxes[1] / 4 + 1) *
+                                                    naxes[0] + (ii + naxes[1] / 4)]);
+            data.image[ID_out].array.F[(2 * jj)*naxes_out[0] + (2 * ii + 1)] = 0.5 *
+                    (data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
+                                            (ii + naxes[1] / 4)] + data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
+                                                    (ii + naxes[1] / 4 + 1)]);
+            data.image[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 * ii + 1)] = 0.25 *
+                    (data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
+                                            (ii + naxes[1] / 4)] + data.image[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
+                                                    (ii + naxes[1] / 4 + 1)] + data.image[ID].array.F[(jj + naxes[1] / 4 + 1) *
+                                                            naxes[0] + (ii + naxes[1] / 4)] + data.image[ID].array.F[(jj + naxes[1] / 4 + 1)
+                                                                    * naxes[0] + (ii + naxes[1] / 4 + 1)]);
         }
 
     return(ID_out);
@@ -483,8 +482,8 @@ imageID basic_fliph(
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             temp = data.image[ID].array.F[jj * naxes[0] + ii];
-            data.image[ID].array.F[jj * naxes[0] + ii] =
-data.image[ID].array.F[(naxes[1] - jj - 1) * naxes[0] + ii];
+            data.image[ID].array.F[jj * naxes[0] + ii] = data.image[ID].array.F[(naxes[1] -
+                    jj - 1) * naxes[0] + ii];
             data.image[ID].array.F[(naxes[1] - jj - 1)*naxes[0] + ii] = temp;
         }
     return(ID);
@@ -513,8 +512,8 @@ imageID basic_flipv(
         for(uint32_t ii = 0; ii < tmp_long; ii++)
         {
             temp = data.image[ID].array.F[jj * naxes[0] + ii];
-            data.image[ID].array.F[jj * naxes[0] + ii] =
-data.image[ID].array.F[jj * naxes[0] + (naxes[0] - ii - 1)];
+            data.image[ID].array.F[jj * naxes[0] + ii] = data.image[ID].array.F[jj *
+                    naxes[0] + (naxes[0] - ii - 1)];
             data.image[ID].array.F[jj * naxes[0] + (naxes[0] - ii - 1)] = temp;
         }
     return(ID);
@@ -542,10 +541,10 @@ imageID basic_fliphv(
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             temp = data.image[ID].array.F[jj * naxes[0] + ii];
-            data.image[ID].array.F[jj * naxes[0] + ii] =
-data.image[ID].array.F[(naxes[1] - jj - 1) * naxes[0] + (naxes[0] - ii - 1)];
-            data.image[ID].array.F[(naxes[1] - jj - 1)*naxes[0] + (naxes[0] - ii
-- 1)] = temp;
+            data.image[ID].array.F[jj * naxes[0] + ii] = data.image[ID].array.F[(naxes[1] -
+                    jj - 1) * naxes[0] + (naxes[0] - ii - 1)];
+            data.image[ID].array.F[(naxes[1] - jj - 1)*naxes[0] + (naxes[0] - ii - 1)] =
+                temp;
         }
     return(ID);
 }
@@ -641,16 +640,15 @@ int basic_median(
             }
             else
             {
-                data.image[ID].array.F[jj * naxes[0] + ii] = 0.5 *
-array[medianpt] + 0.5 * array[medianpt + 1];
+                data.image[ID].array.F[jj * naxes[0] + ii] = 0.5 * array[medianpt] + 0.5 *
+                        array[medianpt + 1];
             }
         }
 
     printf("%d %d \n", Nb_files, medianpt);
     if((0.5 * (Nb_files - 1) - medianpt) > 0.1)
     {
-        printf("median of an even number of number: average of the 2 closest
-\n");
+        printf("median of an even number of number: average of the 2 closest \n");
     }
 
     free(IDn);
@@ -722,9 +720,10 @@ int basic_translate(
             && (naxes[1] == (int) pow(2, n1)))
     {
         create_2Dimage_ID("zero_tmp", naxes[0], naxes[1]);
-        pupfft(ID_name, "zero_tmp", "out_transl_re_tmp", "out_transl_im_tmp",
-"-reim"); delete_image_ID("zero_tmp"); mk_amph_from_reim("out_transl_re_tmp",
-"out_transl_im_tmp", "out_transl_ampl_tmp", "out_transl_pha_tmp", 0);
+        pupfft(ID_name, "zero_tmp", "out_transl_re_tmp", "out_transl_im_tmp", "-reim");
+        delete_image_ID("zero_tmp");
+        mk_amph_from_reim("out_transl_re_tmp", "out_transl_im_tmp",
+                          "out_transl_ampl_tmp", "out_transl_pha_tmp", 0);
         delete_image_ID("out_transl_re_tmp");
         delete_image_ID("out_transl_im_tmp");
 
@@ -732,9 +731,9 @@ int basic_translate(
         for(jj = 1; jj < naxes[1]; jj++)
             for(ii = 1; ii < naxes[0]; ii++)
             {
-                data.image[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0 *
-M_PI / naxes[0] * (ii - naxes[0] / 2) + ytransl * 2.0 * M_PI / naxes[1] * (jj -
-naxes[1] / 2);
+                data.image[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0 * M_PI /
+                        naxes[0] * (ii - naxes[0] / 2) + ytransl * 2.0 * M_PI / naxes[1] *
+                        (jj - naxes[1] / 2);
             }
 
         coeff = 1.0 / (naxes[0] * naxes[1]);
@@ -746,8 +745,9 @@ naxes[1] / 2);
             }
 
 
-        mk_reim_from_amph("out_transl_ampl_tmp", "out_transl_pha_tmp",
-"out_re_tmp", "out_im_tmp", 0); delete_image_ID("out_transl_ampl_tmp");
+        mk_reim_from_amph("out_transl_ampl_tmp", "out_transl_pha_tmp", "out_re_tmp",
+                          "out_im_tmp", 0);
+        delete_image_ID("out_transl_ampl_tmp");
         delete_image_ID("out_transl_pha_tmp");
         pupfft("out_re_tmp", "out_im_tmp", ID_out, "tbe_tmp", "-reim -inv");
         delete_image_ID("out_re_tmp");
@@ -766,8 +766,9 @@ naxes[1] / 2);
         naxes[1] = data.image[ID].md[0].size[1];
         create_2Dimage_ID("zero_tmp", naxes[0], naxes[1]);
 
-        pupfft("tmp3t", "zero_tmp", "out_transl_re_tmp", "out_transl_im_tmp",
-"-reim"); delete_image_ID("zero_tmp"); delete_image_ID("tmp3t");
+        pupfft("tmp3t", "zero_tmp", "out_transl_re_tmp", "out_transl_im_tmp", "-reim");
+        delete_image_ID("zero_tmp");
+        delete_image_ID("tmp3t");
         mk_amph_from_reim("out_transl_re_tmp", "out_transl_im_tmp",
                           "out_transl_ampl_tmp", "out_transl_pha_tmp", 0);
         delete_image_ID("out_transl_re_tmp");
@@ -777,9 +778,9 @@ naxes[1] / 2);
         for(jj = 1; jj < naxes[1]; jj++)
             for(ii = 1; ii < naxes[0]; ii++)
             {
-                data.image[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0 *
-M_PI / naxes[0] * (ii - naxes[0] / 2) + ytransl * 2.0 * M_PI / naxes[1] * (jj -
-naxes[1] / 2);
+                data.image[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0 * M_PI /
+                        naxes[0] * (ii - naxes[0] / 2) + ytransl * 2.0 * M_PI / naxes[1] *
+                        (jj - naxes[1] / 2);
             }
         coeff = 1.0 / (naxes[0] * naxes[1]);
         ID = image_ID("out_transl_ampl_tmp");
@@ -789,8 +790,9 @@ naxes[1] / 2);
                 data.image[ID].array.F[jj * naxes[0] + ii] *= coeff;
             }
 
-        mk_reim_from_amph("out_transl_ampl_tmp", "out_transl_pha_tmp",
-"out_re_tmp", "out_im_tmp", 0); delete_image_ID("out_transl_ampl_tmp");
+        mk_reim_from_amph("out_transl_ampl_tmp", "out_transl_pha_tmp", "out_re_tmp",
+                          "out_im_tmp", 0);
+        delete_image_ID("out_transl_ampl_tmp");
         delete_image_ID("out_transl_pha_tmp");
         pupfft("out_re_tmp", "out_im_tmp", "outtmp", "tbe_tmp", "-reim -inv");
         delete_image_ID("out_re_tmp");
@@ -835,9 +837,8 @@ float basic_correlation(
         for(uint32_t ii = 0; ii < naxes1[0]; ii++)
         {
             correl += (data.image[ID1].array.F[jj * naxes1[0] + ii] -
-                       data.image[ID2].array.F[jj * naxes1[0] + ii]) *
-(data.image[ID1].array.F[jj * naxes1[0] + ii] - data.image[ID2].array.F[jj *
-naxes1[0] + ii]);
+                       data.image[ID2].array.F[jj * naxes1[0] + ii]) * (data.image[ID1].array.F[jj *
+                               naxes1[0] + ii] - data.image[ID2].array.F[jj * naxes1[0] + ii]);
         }
 
     return(correl);
@@ -1024,7 +1025,7 @@ long load_fitsimages(
     char fname1[STRINGMAXLEN_FILENAME];
     FILE *fp;
 
-        EXECUTE_SYSTEM_COMMAND("ls %s.fits > flist.tmp\n", strfilter);
+	EXECUTE_SYSTEM_COMMAND("ls %s.fits > flist.tmp\n", strfilter);
 
 
     if((fp = fopen("flist.tmp", "r")) == NULL)
@@ -1190,8 +1191,7 @@ imageID cube_average(
     {
         for(kk = 0; kk < ksize; kk++)
         {
-            array[kk] = (double) data.image[IDin].array.F[kk * xsize * ysize +
-ii];
+            array[kk] = (double) data.image[IDin].array.F[kk * xsize * ysize + ii];
         }
 
         ave = 0.0;
@@ -1262,7 +1262,7 @@ long basic_addimagesfiles(
     imageID ID;
     int init = 0; // becomes 1 when first image encountered
 
-        EXECUTE_SYSTEM_COMMAND("ls %s.fits > flist.tmp\n", strfilter);
+	EXECUTE_SYSTEM_COMMAND("ls %s.fits > flist.tmp\n", strfilter);
 
 
     if((fp = fopen("flist.tmp", "r")) == NULL)
@@ -1296,8 +1296,8 @@ long basic_addimagesfiles(
 
     EXECUTE_SYSTEM_COMMAND("rm flist.tmp");
 
-    printf("%ld images coadded (stored in variable imcnt) -> %s\n", cnt,
-outname); create_variable_ID("imcnt", 1.0 * cnt);
+    printf("%ld images coadded (stored in variable imcnt) -> %s\n", cnt, outname);
+    create_variable_ID("imcnt", 1.0 * cnt);
 
     return(cnt);
 }
@@ -1401,8 +1401,9 @@ long basic_pasteimages(
                     colmax = col;
                 }
 
-                printf("Image %s[%ld] will be pasted at [%ld %ld]\n",
-data.image[i].name, cnt, row, col); col ++;
+                printf("Image %s[%ld] will be pasted at [%ld %ld]\n", data.image[i].name, cnt,
+                       row, col);
+                col ++;
             }
         }
     xsizeout = (colmax + 1) * xsize1max;
@@ -1433,12 +1434,13 @@ data.image[i].name, cnt, row, col); col ++;
                     {
                         ii1 = ii + iioffset;
                         jj1 = jj + jjoffset;
-                        data.image[IDout].array.F[jj1 * xsizeout + ii1] =
-data.image[i].array.F[jj * xsize1 + ii];
+                        data.image[IDout].array.F[jj1 * xsizeout + ii1] = data.image[i].array.F[jj *
+                                xsize1 + ii];
                     }
 
-                printf("Image %s[%ld] pasted at [%ld %ld]\n",
-data.image[i].name, cnt, row, col); col ++;
+                printf("Image %s[%ld] pasted at [%ld %ld]\n", data.image[i].name, cnt, row,
+                       col);
+                col ++;
             }
         }
 

@@ -5,10 +5,11 @@
 #ifndef CLUSTERING_DEFS_H
 #define CLUSTERING_DEFS_H
 
+
 // are CF positions fixed or dynamic
 // if fixed, then adding points will not change the CF position
-// In Fixed mode, the CF position is ONLY allocated at creation when the first
-// point is added Fixed mode is faster
+// In Fixed mode, the CF position is ONLY allocated at creation when the first point is added
+// Fixed mode is faster
 #define CLUSTER_CFPOS_FIXED 0
 #define CLUSTER_CFPOS_DYNAMIC 1
 
@@ -18,9 +19,10 @@
 
 // a LEAF node has leaves
 #define CLUSTER_CF_TYPE_LEAF 3
-// #define CLUSTER_CF_TYPE_LEAFNODE 4
+//#define CLUSTER_CF_TYPE_LEAFNODE 4
 
 #define CLUSTER_CF_MAXLEVEL 4096
+
 
 // CF needs to be recomputed
 #define CLUSTER_CF_STATUS_UPDATE 0x0001
@@ -46,18 +48,17 @@ typedef struct
     // If the CF is not a leaf, then this is the same as datasumvec.
     // If the CF is a lead, then it may be different from datasumvec.
     //
-    // The criteria for belonging to a leaf is being within distance T of this
-    // point. This is the coordinate of the first point assigned to the leaf.
-    // Note: This is different from BIRCH which has this point be the average of
-    // the points in the leaf The problem with the average is that it can drift
-    // away as points are added, so clusters could become stretched as points are
-    // added. Here we ensure that all point in a leaf cluster are within T of this
-    // unmovable point.
+    // The criteria for belonging to a leaf is being within distance T of this point.
+    // This is the coordinate of the first point assigned to the leaf.
+    // Note: This is different from BIRCH which has this point be the average of the points in the leaf
+    // The problem with the average is that it can drift away as points are added, so clusters
+    // could become stretched as points are added. Here we ensure that all point in a leaf cluster
+    // are within T of this unmovable point.
     double *dataposvec;
 
-    // If the position vector is inherited from a node or cluster, this is the
-    // index of the node/cluster from which it is derived. If not, this is set to
-    // -1.
+    // If the position vector is inherited from a node or cluster, this is the index of the
+    // node/cluster from which it is derived.
+    // If not, this is set to -1.
     long posvecsourceID;
 
     long        N;          // number of points aggregated in node
@@ -72,8 +73,7 @@ typedef struct
     // Not normalized.
     // This is simlar to N, but with more weight on recent points.
     double pathcnt;
-    // Average number of distance computations needed to find solution from this
-    // point
+    // Average number of distance computations needed to find solution from this point
     double pathdistcompcnt;
 
     // max distance from pos to point(s) within and downstream of this node

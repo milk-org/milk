@@ -56,16 +56,16 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
     long    xsizein, ysizein, xsizeout, ysizeout;
     double  fitval;
     long    kk, ii_in, jj_in, ii_out, jj_out;
-    // double tot;
+    //double tot;
     imageID IDtmp;
     double  tmpv1;
-    // long iter;
+    //long iter;
     imageID IDout1;
-    // double alpha = 0.001;
+    //double alpha = 0.001;
 
     uint32_t *sizearray;
     imageID   IDpokeM; // poke matrix (input)
-    // imageID IDoutM; // outputX
+    //imageID IDoutM; // outputX
     double SVDeps = 1.0e-4;
 
     long    NBact, act;
@@ -75,11 +75,11 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
     imageID ID_rm;
     int     autoMask_MODE = 0; // if 1, automatically measure input mask based on IDinput_name image
     imageID IDpinv;
-    // int use_magma = 0;
+    //int use_magma = 0;
 
-    // int ngpu;
+    //int ngpu;
 
-    // ngpu = 0;
+    //ngpu = 0;
     setenv("CUDA_VISIBLE_DEVICES", "3,4", 1);
 
     IDin  = image_ID(IDinput_name);
@@ -196,7 +196,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
         }
     }
     save_fits("_respmat", "_test_RM.fits");
-    // exit(0);
+    //exit(0);
 
     // COMPUTE SOLUTION QUALITY
 
@@ -229,7 +229,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
         {
             for (jj_in = 0; jj_in < ysizein; jj_in++)
             {
-                // printf("%ld  pix %ld %ld active\n", kk, ii_in, jj_in);
+                //printf("%ld  pix %ld %ld active\n", kk, ii_in, jj_in);
                 for (ii_out = 0; ii_out < xsizeout; ii_out++)
                 {
                     for (jj_out = 0; jj_out < ysizeout; jj_out++)
@@ -253,7 +253,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
                             .array.F[kk * xsizeout * ysizeout + jj_out * xsizeout + ii_out];
                 fitval += tmpv1 * tmpv1;
                 data.image[IDout1].array.F[kk * xsizeout * ysizeout + jj_out * xsizeout + ii_out] =
-                    tmpv1; // data.image[IDtmp].array.F[jj_out*xsizeout+ii_out];
+                    tmpv1; //data.image[IDtmp].array.F[jj_out*xsizeout+ii_out];
             }
         }
     }

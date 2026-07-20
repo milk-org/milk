@@ -50,7 +50,7 @@ extern int            cuda_deviceCount;
  *
  * upon setup, IDwfsim_name is the WFS ref and initWFSref = 0
  *
- */
+*/
 
 errno_t GPU_loop_MultMat_setup(int         index,
                                const char *IDcontrM_name,
@@ -63,17 +63,16 @@ errno_t GPU_loop_MultMat_setup(int         index,
                                int         initWFSref,
                                long        loopnb)
 {
-    // LINALGEBRA_printGPUMATMULTCONF(index);
+    //LINALGEBRA_printGPUMATMULTCONF(index);
 
     DEBUG_TRACE_FSTART();
 
-    /// This function will not do anything if the initialization has already been
-    /// performed
+    /// This function will not do anything if the initialization has already been performed
 
     if (gpumatmultconf[index].init == 0)
     {
         int pid;
-        // struct cudaDeviceProp deviceProp;
+        //struct cudaDeviceProp deviceProp;
         char sname[200];
 
         imageID IDwfsim;
@@ -85,17 +84,17 @@ errno_t GPU_loop_MultMat_setup(int         index,
         pid = getpid();
 
         /*if (IDtimerinit == 0)
-    {
-        char name[200];
-
-        sprintf(name, "aol%ld_looptiming", loopnb);
-        IDtiming = image_ID(name);
-
-        if (IDtiming == -1)
         {
-            create_2Dimage_ID(name, 50, 1, &IDtiming);
-        }
-    }*/
+            char name[200];
+
+            sprintf(name, "aol%ld_looptiming", loopnb);
+            IDtiming = image_ID(name);
+
+            if (IDtiming == -1)
+            {
+                create_2Dimage_ID(name, 50, 1, &IDtiming);
+            }
+        }*/
 
         if (gpumatmultconf[index].alloc == 1)
         {
@@ -117,6 +116,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
 
         gpumatmultconf[index].orientation = orientation;
 
+
         // Load Control Matrix
         //
         printf("Using Matrix %s\n", IDcontrM_name);
@@ -129,7 +129,9 @@ errno_t GPU_loop_MultMat_setup(int         index,
         }
         printf(" ]\n");
 
+
         gpumatmultconf[index].CM_cnt = data.image[gpumatmultconf[index].CM_ID].md[0].cnt0;
+
 
         if (orientation == 0)
         {

@@ -13,6 +13,7 @@ typedef int errno_t;
 #include "TUItools.h"
 #include "streamCTRL_TUI.h"
 
+
 int streamCTRL_print_inode(ino_t  inode,
                            ino_t *upstreaminode,
                            int    NBupstreaminode,

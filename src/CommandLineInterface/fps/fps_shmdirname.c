@@ -22,8 +22,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
 
     if (functioncnt == 0)
     {
-        functioncnt++; // ensure we only run this once, and then retrieve stored
-                       // result from shmdname_static
+        functioncnt++; // ensure we only run this once, and then retrieve stored result from shmdname_static
 
         // first, we try the env variable if it exists
         char *MILK_SHM_DIR = getenv("MILK_SHM_DIR");

@@ -73,7 +73,7 @@ errno_t mk_complex_from_amph_IMGID(IMGID *imginamp, IMGID *imginpha, IMGID *imgo
     imgoutC->naxis   = naxis;
     imgoutC->size[2] = zsize;
 
-    // printf("xysize = %lu\n", xysize);
+    //printf("xysize = %lu\n", xysize);
 
     if ((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
     {

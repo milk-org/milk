@@ -36,12 +36,11 @@ errno_t image_keyword_addS(IMGID img, char *kwname, char *kwval, char *comment)
     if (kw0 == NBkw)
     {
         printf("WARNING: no available keyword entry -> ignored\n");
-        // abort();
+        //abort();
     }
     else
     {
-        // printf("writing kw %3d / %3d  \"%s\"  %d %d %d\n", kw, NBkw, kwname,
-        // strlen(kwname), strlen(kwval), strlen(comment));
+        //printf("writing kw %3d / %3d  \"%s\"  %d %d %d\n", kw, NBkw, kwname, strlen(kwname), strlen(kwval), strlen(comment));
 
         strncpy(img.im->kw[kw].name, kwname, KEYWORD_MAX_STRING);
         img.im->kw[kw].type = 'S';
