@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file    stream_temporal_stats.c
  * @brief   Publishes average and standard dev of image stream at regular intervals

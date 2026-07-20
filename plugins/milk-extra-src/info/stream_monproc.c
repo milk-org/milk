@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file    stream_monproc.c
  * @brief   monitor stream with multi-level time binning, circular buffer, and dynamic histogram

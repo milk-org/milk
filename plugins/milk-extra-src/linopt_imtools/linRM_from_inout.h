@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef LINOPT_IMTOOLS__LINRM_FROM_INOUT_H
 #define LINOPT_IMTOOLS__LINRM_FROM_INOUT_H
 

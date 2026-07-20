@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef CLUSTERING__COMPUTE_IMDISTANCE_DOUBLE_H
 #define CLUSTERING__COMPUTE_IMDISTANCE_DOUBLE_H
 

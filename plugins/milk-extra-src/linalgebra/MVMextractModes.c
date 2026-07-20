@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>
 #include <cuda_runtime.h>

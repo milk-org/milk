@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef LINALGEBRA_BASIS_ROTATE_MATCH_H
 #define LINALGEBRA_BASIS_ROTATE_MATCH_H
 
