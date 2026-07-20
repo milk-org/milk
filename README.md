@@ -1,4 +1,5 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![REUSE status](https://api.reuse.software/badge/github.com/milk-org/milk)](https://api.reuse.software/info/github.com/milk-org/milk)
 [![Documentation](https://img.shields.io/badge/docs-milk--org.github.io-blue?logo=readthedocs)](https://milk-org.github.io/milk/)
 
 Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.svg)](https://github.com/milk-org/milk/tree/master)
