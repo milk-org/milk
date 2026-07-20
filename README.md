@@ -1,7 +1,6 @@
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![REUSE status](https://api.reuse.software/badge/github.com/milk-org/milk)](https://api.reuse.software/info/github.com/milk-org/milk)
 
-
 Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.svg)](https://github.com/milk-org/milk/tree/master)
 
 | Branch   | Build                                                                                                                                                              | Docker Deployment                                                                                                                                                                | Activity                                                                        |
@@ -9,24 +8,20 @@ Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.sv
 | **main** | [![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/cmake.yml) | [![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml) | ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg) |
 | **dev**  | [![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)  | [![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)  | ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)  |
 
-
 Code metrics (dev branch) :
 [![CodeScene Code Health](https://codescene.io/projects/14777/status-badges/code-health)](https://codescene.io/projects/14777)
 [![CodeScene System Mastery](https://codescene.io/projects/14777/status-badges/system-mastery)](https://codescene.io/projects/14777)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/1c9a67a8529340359a2047eba5c971bf)](https://www.codacy.com/gh/milk-org/milk/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/milk&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/1c9a67a8529340359a2047eba5c971bf)](https://www.codacy.com/gh/milk-org/milk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=milk-org/milk&utm_campaign=Badge_Grade)
 [![CodeFactor](https://www.codefactor.io/repository/github/milk-org/milk/badge)](https://www.codefactor.io/repository/github/milk-org/milk)
 
-
-
-
-***
+---
 
 # Milk
 
 milk-core for **milk** package
 
-
 ### _Looking for something else?_
+
 [CACAO Github repository](https://www.github.com/cacao-org/cacao) | [CACAO Documentation](https://cacao-org.github.io/docs/)
 
 [ImageStreamIO core library](https://www.github.com/milk-org/imagestreamio)
@@ -69,22 +64,21 @@ Compile with Python module (check script help with -h option for details):
 ```
 
 Set environment variables (.bashrc or equivalent):
+
 - MILK_ROOT: Source code directory, for example "/home/coldpenguin/src/milk"
 - MILK_INSTALLDIR: Installation directory, for example "/usr/local/milk"
 - MILK_SHM_DIR: Shared memory directory, for exmaple "/milk/shm"
 
-
 Check installation (from any directory) :
+
 ```bash
 milk-check
 ```
 
-
-
-
 ## Interactive tutorial
 
 Pre-requisites: tmux, nnn
+
 ```bash
 milk-tutorial
 ```
@@ -97,6 +91,7 @@ Compile with cacao plugins:
 ./fetch_cacao_dev.sh
 ./compile.sh $PWD/local
 ```
+
 Compile with coffee plugins:
 
 ```bash
