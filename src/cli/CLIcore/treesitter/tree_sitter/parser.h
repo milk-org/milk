@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef TREE_SITTER_PARSER_H_
 #define TREE_SITTER_PARSER_H_
 
@@ -263,7 +267,7 @@ start:                           \
                         .symbol             = symbol_name,             \
                         .child_count        = children,                \
                         .dynamic_precedence = precedence,              \
-                        .production_id      = prod_id },                    \
+                        .production_id      = prod_id },               \
         }                                                              \
     }
 

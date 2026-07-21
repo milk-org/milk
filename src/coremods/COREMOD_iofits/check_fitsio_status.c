@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file check_fitsio_status.c
  * @brief set print to 0 if error message should not be printed to stderr

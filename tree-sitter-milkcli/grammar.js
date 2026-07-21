@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Max Brunsfeld
+//
+// SPDX-License-Identifier: MIT
+
 /**
  * @file grammar.js
  * @brief Tree-sitter grammar for milk-cli scripting

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file im2Dfilter_1pixbblurr.h
  * @brief Im2dfilter 1pixbblurr module

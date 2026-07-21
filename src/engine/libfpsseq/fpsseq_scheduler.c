@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file fpsseq_scheduler.c
  * @brief Task scheduling logic for the milk-seq FPS Sequencer

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file linregress.c
  * @brief Linregress module
@@ -45,7 +49,7 @@ errno_t lin_regress(double      *a,
     *a    = (Sxx * Sy - Sx * Sxy) / delta;
     *b    = (S * Sxy - Sx * Sy) / delta;
     *Xi2  = Syy - 2 * (*a) * Sy - 2 * (*a) * (*b) * Sx + (*a) * (*a) * S + 2 * (*a) * (*b) * Sx -
-           (*b) * (*b) * Sxx;
+            (*b) * (*b) * Sxx;
 
     return RETURN_SUCCESS;
 }

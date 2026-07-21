@@ -2,6 +2,7 @@
 """
 Generates docs/Markdown_Index.md containing links to all markdown files in the repository.
 """
+
 import sys
 
 if len(sys.argv) > 1:

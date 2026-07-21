@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #ifndef CLI_CALC_INTERNAL_H
 #define CLI_CALC_INTERNAL_H
 

@@ -1,3 +1,7 @@
+; SPDX-FileCopyrightText: 2026 Max Brunsfeld
+;
+; SPDX-License-Identifier: MIT
+
 ; highlights.scm — Neovim highlight queries
 ; for the milk-cli scripting language
 ;

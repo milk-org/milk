@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Max Brunsfeld
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #include "tree_sitter/parser.h"
 
 #if defined(__GNUC__) || defined(__clang__)

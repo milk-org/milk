@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file    overview_render_fps.c
  * @brief   FPS panel + detail panel rendering for milk-CTRL
@@ -194,7 +198,7 @@ void ov_render_fps_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELAT
             int           fi     = fidx[ffi];
             const OV_FPS *f      = &m->fps[fi];
             int           is_sel = (ffi == lay->sel_fps &&
-                          (lay->focus == OV_FOCUS_FPS || lay->focus == OV_FOCUS_GRAPH));
+                                    (lay->focus == OV_FOCUS_FPS || lay->focus == OV_FOCUS_GRAPH));
             int           is_frozen =
                 (lay->freeze && lay->freeze_focus == OV_FOCUS_FPS && ffi == lay->freeze_sel_fps);
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;

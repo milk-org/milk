@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Max Brunsfeld
+//
+// SPDX-License-Identifier: MIT
+
 #ifndef TREE_SITTER_PARSER_H_
 #define TREE_SITTER_PARSER_H_
 

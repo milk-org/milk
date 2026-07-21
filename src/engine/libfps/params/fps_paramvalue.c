@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file    fps_paramvalue.c
  * @brief   Typed accessors for FPS parameter values
@@ -844,8 +848,8 @@ int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char 
          * to avoid silently accepting "ONCE" as ON or "OFFLINE"
          * as OFF.
          */
-        int is_on = strcasecmp(strval, "ON") == 0 || strcasecmp(strval, "ON\n") == 0 ||
-                    strcmp(strval, "1") == 0;
+        int is_on  = strcasecmp(strval, "ON") == 0 || strcasecmp(strval, "ON\n") == 0 ||
+                     strcmp(strval, "1") == 0;
         int is_off = strcasecmp(strval, "OFF") == 0 || strcasecmp(strval, "OFF\n") == 0 ||
                      strcmp(strval, "0") == 0;
 

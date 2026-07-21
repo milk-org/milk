@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file overview_input.c
  * @brief Keyboard input handler for milk-CTRL
@@ -1533,8 +1537,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                             if (start_node >= 0)
                             {
                                 SG_TREE_NODE rnodes[OV_MAX_NODES];
-                                int          nb_rnodes = sg_compute_render_tree(m, start_node,
-                                                                                lay->lineage_mode, rnodes);
+                                int nb_rnodes = sg_compute_render_tree(m, start_node,
+                                                                       lay->lineage_mode, rnodes);
 
                                 int idx = lay->scroll_graph + body_row;
                                 if (idx < nb_rnodes)

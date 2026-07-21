@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #include "overview_render_internal.h"
 #include <sched.h>
 #include "fps_types.h"
@@ -583,8 +587,8 @@ static int ov_fps__render_detail_proc(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_CONN);
         const char *tstream = (p->trigstreamname[0] != '\0') ? p->trigstreamname : "-";
-        int         n       = snprintf(NULL, 0, " Trigger: %s  stream: %s  sem: %d",
-                                       render_trigmode_label(p->triggermode), tstream, p->triggersem);
+        int         n = snprintf(NULL, 0, " Trigger: %s  stream: %s  sem: %d",
+                                 render_trigmode_label(p->triggermode), tstream, p->triggersem);
         H_ov_buf_printf(" Trigger: %s  stream: %s  sem: %d", render_trigmode_label(p->triggermode),
                         tstream, p->triggersem);
         H_render_pad_spaces(n, r.width);
@@ -798,8 +802,8 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
                 (dp == lay->param_sel && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 1);
             int header_rows = 3 + (f->description[0] != '\0' ? 1 : 0);
             int is_hover    = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
-                            lay->graph_tab_mode == 1 &&
-                            lay->hover_idx == header_rows + (dp - lay->param_scroll));
+                               lay->graph_tab_mode == 1 &&
+                               lay->hover_idx == header_rows + (dp - lay->param_scroll));
 
             ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : (is_hover ? OV_BG_HOVER : OV_BG_PANEL);
 
@@ -893,7 +897,7 @@ static int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             else if (pt == FPTYPE_ONOFF)
             {
                 int      is_on  = (strcmp(f->disp_param_value[dp], "ON") == 0 ||
-                             strcmp(f->disp_param_value[dp], "1") == 0);
+                                   strcmp(f->disp_param_value[dp], "1") == 0);
                 ov_rgb_t vcolor = is_on ? (ov_rgb_t) { 100, 255, 100 } : OV_FG_DIM;
                 if (is_sel || is_hover)
                 {

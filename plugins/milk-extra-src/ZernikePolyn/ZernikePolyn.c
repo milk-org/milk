@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file ZernikePolyn.c
  * @brief ==================================================================
@@ -483,9 +487,9 @@ errno_t mk_zer_series(const char *ID_name, long SIZE, long zer_nb, float rpix)
     {
         for (jj = 0; jj < SIZE; jj++)
         {
-            r[jj * naxes[0] + ii] = sqrt((0.5 + ii - SIZE / 2) * (0.5 + ii - SIZE / 2) +
-                                         (0.5 + jj - SIZE / 2) * (0.5 + jj - SIZE / 2)) /
-                                    rpix;
+            r[jj * naxes[0] + ii]     = sqrt((0.5 + ii - SIZE / 2) * (0.5 + ii - SIZE / 2) +
+                                             (0.5 + jj - SIZE / 2) * (0.5 + jj - SIZE / 2)) /
+                                        rpix;
             theta[jj * naxes[0] + ii] = atan2((jj - SIZE / 2), (ii - SIZE / 2));
         }
     }
@@ -581,9 +585,9 @@ imageID mk_zer_seriescube(const char *ID_namec, long SIZE, long zer_nb, float rp
     {
         for (jj = 0; jj < SIZE; jj++)
         {
-            r[jj * naxes[0] + ii] = sqrt((0.5 + ii - SIZE / 2) * (0.5 + ii - SIZE / 2) +
-                                         (0.5 + jj - SIZE / 2) * (0.5 + jj - SIZE / 2)) /
-                                    rpix;
+            r[jj * naxes[0] + ii]     = sqrt((0.5 + ii - SIZE / 2) * (0.5 + ii - SIZE / 2) +
+                                             (0.5 + jj - SIZE / 2) * (0.5 + jj - SIZE / 2)) /
+                                        rpix;
             theta[jj * naxes[0] + ii] = atan2((jj - SIZE / 2), (ii - SIZE / 2));
         }
     }

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file    overview_render_streams.c
  * @brief   STREAMS panel rendering for milk-CTRL
@@ -288,13 +292,13 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
         int fi  = start + i;
         if (fi < filt_n)
         {
-            int              si        = filt_idx[fi];
-            const OV_STREAM *s         = &m->streams[si];
-            int              is_sel    = (fi == lay->sel_stream &&
-                          (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_GRAPH));
-            int              is_frozen = (lay->freeze && lay->freeze_focus == OV_FOCUS_STREAMS &&
-                             fi == lay->freeze_sel_stream);
-            ov_focus_t       eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
+            int              si = filt_idx[fi];
+            const OV_STREAM *s  = &m->streams[si];
+            int        is_sel = (fi == lay->sel_stream &&
+                                 (lay->focus == OV_FOCUS_STREAMS || lay->focus == OV_FOCUS_GRAPH));
+            int        is_frozen = (lay->freeze && lay->freeze_focus == OV_FOCUS_STREAMS &&
+                                    fi == lay->freeze_sel_stream);
+            ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int is_rel = (!is_sel && !is_frozen && eff_focus != OV_FOCUS_STREAMS && rel != NULL &&
                           bget(rel->streams, si));
             ov_rgb_t row_bg = OV_BG_PANEL;

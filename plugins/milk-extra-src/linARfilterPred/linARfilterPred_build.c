@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #include "linARfilterPred_internal.h"
 
 /** ## Purpose
@@ -777,7 +781,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
                     {
                         val0 = dcimg[IDoutPF2D].array.F[PFpix * (PForder * NBpixin) + dt * NBpixin +
                                                         pix]; // Previous
-                        val  = dcimg[IDoutPF2Dn]
+                        val = dcimg[IDoutPF2Dn]
                                   .array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix]; // New
                         dcimg[IDoutPF2D].array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix] =
                             (1.0 - gain) * val0 + gain * val;
@@ -1000,8 +1004,8 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
 
                 actval = (1.0 - alpha) * actval_array[step0] + alpha * actval_array[step1];
                 mval   = ((1.0 - alpha) * dcimg[IDin].array.F[step0 * nbvar + ii] +
-                        alpha * dcimg[IDin].array.F[step1 * nbvar + ii]) -
-                       actval;
+                          alpha * dcimg[IDin].array.F[step1 * nbvar + ii]) -
+                         actval;
                 actval_array[step] = multfact * (actval_array[step - 1] + gain * mval);
                 tmpv               = dcimg[IDin].array.F[step * nbvar + ii] - actval_array[step];
                 errval[ii] += tmpv * tmpv;

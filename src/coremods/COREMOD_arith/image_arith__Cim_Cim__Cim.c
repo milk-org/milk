@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file    image_arith__Cim_Cim__Cim.c
  * @brief   Complex-image arithmetic (add/sub/mult/div)

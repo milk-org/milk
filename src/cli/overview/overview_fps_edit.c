@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file overview_fps_edit.c
  * @brief Inline FPS parameter editing for milk-CTRL
@@ -153,8 +157,8 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
         char prompt[512];
         int  n = snprintf(prompt, sizeof(prompt),
                           "\033[1;31m"
-                           " [%s] %s = %s  (read-only)"
-                           "\033[0m",
+                          " [%s] %s = %s  (read-only)"
+                          "\033[0m",
                           tlabel, display_kw, curval);
         if (n > 0)
         {
@@ -195,8 +199,8 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
             char msg[256];
             int  n = snprintf(msg, sizeof(msg),
                               "\033[1;32m"
-                               " [ON/OFF] %s => %s"
-                               "\033[0m",
+                              " [ON/OFF] %s => %s"
+                              "\033[0m",
                               display_kw, newval ? "ON" : "OFF");
             if (n > 0)
             {
@@ -221,11 +225,11 @@ int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx)
         char prompt[512];
         int  n = snprintf(prompt, sizeof(prompt),
                           "\033[1;36m"
-                           " [%s] %s"
-                           "\033[0m"
-                           " (was: "
-                           "\033[33m%s\033[0m"
-                           ") new value: ",
+                          " [%s] %s"
+                          "\033[0m"
+                          " (was: "
+                          "\033[33m%s\033[0m"
+                          ") new value: ",
                           tlabel, display_kw, curval);
         if (n > 0)
         {
