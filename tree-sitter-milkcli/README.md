@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Max Brunsfeld
+
+SPDX-License-Identifier: MIT
+-->
+
 # tree-sitter-milkcli
 
 Tree-sitter grammar for the **milk-cli** scripting

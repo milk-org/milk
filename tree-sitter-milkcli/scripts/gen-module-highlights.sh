@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Max Brunsfeld
+#
+# SPDX-License-Identifier: MIT
+
 # gen-module-highlights.sh — Generate highlight queries
 #                             for dynamic milk-cli commands
 #

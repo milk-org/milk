@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Max Brunsfeld
+#
+# SPDX-License-Identifier: MIT
+
 # nvim-install.sh — Install milkcli parser + queries
 #                    into Neovim
 #
