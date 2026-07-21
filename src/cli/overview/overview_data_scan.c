@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #include "overview_data_internal.h"
 #include "processinfo_shm_list_create.h"
 #include "processinfo_shm_link.h"

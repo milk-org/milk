@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #include <stddef.h>
 extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
 extern int processinfo_procdirname(char *procdirname);

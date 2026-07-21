@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file COREMOD_arith.h
  * @brief void __attribute__ ((constructor)) libinit_COREMOD_arith();

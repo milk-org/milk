@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * Quick debug tool: dump lineage for a stream.
  * Usage: ./test_lineage <stream_name>

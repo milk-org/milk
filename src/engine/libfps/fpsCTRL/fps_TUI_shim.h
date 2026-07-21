@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file fps_TUI_shim.h
  * @brief Color pair definitions (adjust to match your theme or standard defaults)
