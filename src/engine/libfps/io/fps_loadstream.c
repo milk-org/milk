@@ -100,9 +100,9 @@ imageID functionparameter_LoadStream(FPS *fps, int pindex, int fpsconnectmode)
      */
     int name_empty = (sp.name[0] == '\0');
     int run_req    = (fpsconnectmode == FPSCONNECT_RUN) &&
-                  (fps->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED);
-    int conf_req = (fpsconnectmode == FPSCONNECT_CONF) &&
-                   (fps->parray[pindex].fpflag & FPFLAG_STREAM_CONF_REQUIRED);
+                     (fps->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED);
+    int conf_req   = (fpsconnectmode == FPSCONNECT_CONF) &&
+                     (fps->parray[pindex].fpflag & FPFLAG_STREAM_CONF_REQUIRED);
 
     printf("  stream [%s] \"%s\"", fps->parray[pindex].keywordfull, sp.name);
     if (name_empty)

@@ -267,7 +267,7 @@ start:                           \
                         .symbol             = symbol_name,             \
                         .child_count        = children,                \
                         .dynamic_precedence = precedence,              \
-                        .production_id      = prod_id },                    \
+                        .production_id      = prod_id },               \
         }                                                              \
     }
 

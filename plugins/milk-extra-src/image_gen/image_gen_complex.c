@@ -271,8 +271,8 @@ imageID make_gauss(const char *ID_name, uint32_t l1, uint32_t l2, double a, doub
     {
         for (uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            distsq = (ii - naxes[0] / 2) * (ii - naxes[0] / 2) +
-                     (jj - naxes[1] / 2) * (jj - naxes[1] / 2);
+            distsq                                = (ii - naxes[0] / 2) * (ii - naxes[0] / 2) +
+                                                    (jj - naxes[1] / 2) * (jj - naxes[1] / 2);
             dcimg[ID].array.F[jj * naxes[0] + ii] = (double) A * exp(-distsq / a / a);
         }
     }

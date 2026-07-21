@@ -848,8 +848,8 @@ int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char 
          * to avoid silently accepting "ONCE" as ON or "OFFLINE"
          * as OFF.
          */
-        int is_on = strcasecmp(strval, "ON") == 0 || strcasecmp(strval, "ON\n") == 0 ||
-                    strcmp(strval, "1") == 0;
+        int is_on  = strcasecmp(strval, "ON") == 0 || strcasecmp(strval, "ON\n") == 0 ||
+                     strcmp(strval, "1") == 0;
         int is_off = strcasecmp(strval, "OFF") == 0 || strcasecmp(strval, "OFF\n") == 0 ||
                      strcmp(strval, "0") == 0;
 

@@ -49,7 +49,7 @@ errno_t lin_regress(double      *a,
     *a    = (Sxx * Sy - Sx * Sxy) / delta;
     *b    = (S * Sxy - Sx * Sy) / delta;
     *Xi2  = Syy - 2 * (*a) * Sy - 2 * (*a) * (*b) * Sx + (*a) * (*a) * S + 2 * (*a) * (*b) * Sx -
-           (*b) * (*b) * Sxx;
+            (*b) * (*b) * Sxx;
 
     return RETURN_SUCCESS;
 }

@@ -117,12 +117,12 @@ void ov_render_preview_line(OV_LAYOUT *lay, const OV_MODEL *m)
             break;
         }
         const OV_FPS *f = &m->fps[fsel];
-        len             = snprintf(line, sizeof(line),
-                                   " FPS  %s  C:%s R:%s"
-                                               "  st:%08X  cpid:%d  rpid:%d"
-                                               "  %s",
-                                   f->name, f->conf_alive ? "Y" : "-", f->run_alive ? "Y" : "-", f->md_status,
-                                   (int) f->confpid, (int) f->runpid, f->description);
+        len = snprintf(line, sizeof(line),
+                       " FPS  %s  C:%s R:%s"
+                       "  st:%08X  cpid:%d  rpid:%d"
+                       "  %s",
+                       f->name, f->conf_alive ? "Y" : "-", f->run_alive ? "Y" : "-", f->md_status,
+                       (int) f->confpid, (int) f->runpid, f->description);
         break;
     }
     default:
@@ -446,7 +446,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 
         int      is_sel   = (ri == lay->sel_graph && lay->focus == OV_FOCUS_GRAPH);
         int      is_hover = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
-                        lay->graph_tab_mode == 0 && ri == lay->hover_idx);
+                             lay->graph_tab_mode == 0 && ri == lay->hover_idx);
         ov_rgb_t row_bg   = is_hover ? OV_BG_HOVER : OV_BG_PANEL;
         int      use_ul   = 0;
         ov_rgb_t ul_color = { 0, 0, 0 };
@@ -497,7 +497,7 @@ void ov_render_graph_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         /* Draw node name */
         ov_rgb_t name_color = rn->is_target ? OV_FG_WARN : OV_FG_STREAM;
         int      hl_stream  = (lay->mouse_hover && lay->hover_global_stream >= 0 &&
-                         rn->stream_idx == lay->hover_global_stream);
+                               rn->stream_idx == lay->hover_global_stream);
         if (hl_stream)
         {
             ov_theme_bg(OV_BG_HOVER);

@@ -219,11 +219,11 @@ static void ov_procs__render_rows(const OV_LAYOUT  *lay,
         int fi  = start + i;
         if (fi < filt_n)
         {
-            int            pi     = filt_idx[fi];
-            const OV_PROC *p      = &m->procs[pi];
-            int            is_sel = (fi == lay->sel_proc &&
-                          (lay->focus == OV_FOCUS_PROCS || lay->focus == OV_FOCUS_GRAPH));
-            int            is_frozen =
+            int            pi = filt_idx[fi];
+            const OV_PROC *p  = &m->procs[pi];
+            int is_sel        = (fi == lay->sel_proc &&
+                                 (lay->focus == OV_FOCUS_PROCS || lay->focus == OV_FOCUS_GRAPH));
+            int is_frozen =
                 (lay->freeze && lay->freeze_focus == OV_FOCUS_PROCS && fi == lay->freeze_sel_proc);
             ov_focus_t eff_focus = lay->freeze ? lay->freeze_focus : lay->focus;
             int        has_rel   = (rel != NULL && bget(rel->procs, pi));
