@@ -92,7 +92,6 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 static errno_t init_module_CLI()
 {
     linalgebrainit_addCLIcmd();
-    linalgebratest_addCLIcmd();
 
     CLIADDCMD_linalgebra__basis_rotate_match();
     CLIADDCMD_linalgebra__GramSchmidt();

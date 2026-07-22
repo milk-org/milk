@@ -5,6 +5,8 @@
 #ifndef FPS_H
 #define FPS_H
 
+#include <linux/limits.h> // For PATH_MAX (but maybe would belong in a global milk compilation header?) // For some reason this fails only for standalone execs, and even not all of them!!
+
 /* Type definitions, structs, constants, and flags */
 #include "fps_types.h"
 
