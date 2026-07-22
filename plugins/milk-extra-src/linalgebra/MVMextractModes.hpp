@@ -10,7 +10,7 @@
 extern "C"
 {
 #endif
-    errno_t CLIADDCMD_linalgebra__MVMextractModes();
+errno_t CLIADDCMD_linalgebra__MVMextractModes();
 
 #ifdef __cpluscplus
 }

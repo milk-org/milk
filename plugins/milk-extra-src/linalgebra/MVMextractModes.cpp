@@ -26,7 +26,6 @@
 
 extern "C"
 {
-
 #include "milk_blas_lapacke.h"
 
 #include "CLIcore.h"
