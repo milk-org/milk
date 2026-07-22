@@ -122,5 +122,7 @@ int GPU_loop_MultMat_setup(int         index,
 errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUdev);
 
 void matrixMulCPU(float *cMat, float *wfsVec, float *dmVec, int M, int N);
+void matrixMulCPU_BLAS(float *cMat, float *wfsVec, float *dmVec, int M, int N);
+void matrixMulCPU_plain_or_OPENMP(float *cMat, float *wfsVec, float *dmVec, int M, int N);
 
 #endif

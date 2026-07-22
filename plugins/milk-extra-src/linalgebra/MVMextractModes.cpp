@@ -274,6 +274,8 @@ void cast_to_float(float *target, IMAGE *source_image, uint64_t n)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
+    errno_t _return_value = RETURN_SUCCESS;
+
     DEBUG_TRACE_FSTART();
 
     // CONNECT TO INPUT STREAM
@@ -380,7 +382,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     if (compute_mode == ComputeMode::BLAS)
     {
-#if defined(HAVE_MKL) || defined(HAVE_OPENBLAS)
+#ifdef HAVE_BLAS
         backend = std::make_unique<MVMBackendBLAS>(imgin_float_casted_ptr, imgid_out.im->array.F,
                                                    n_pixels_spatial_side, nb_modes, axis_mode);
 #endif
@@ -406,10 +408,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 #endif
     }
 
-    if (backend == nullptr)
+    if (backend ==
+        nullptr) // This may happen if explicite BLAS / CUDA request but request not available.
     {
-        // TODO print a very explicit error message and fail
-        // enum error? exit(0)
+        processinfo_WriteMessage(processinfo,
+                                 "No suitable MVM backend available for current build/options");
+        _return_value = RETURN_FAILURE;
+        goto cleanup;
     }
 
     if (use_mask)
@@ -455,11 +460,10 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         /* Type conversion to float (all backends) */
         if (imgid_in.md->datatype != _DATATYPE_FLOAT)
         {
-            cast_to_float(imgin_float_casted_ptr, imgid_in.im, n_pixels_spatial_side);
+            cast_to_float(imgin_float_casted_ptr, imgid_in.im, imgid_in.md->nelement);
         }
-
-        imgid_out.md->write =
-            1; // We don't really know at which point the backend workflow will begin writes, so we flag early.
+        // We don't really know at which point the backend workflow will begin writes, so we flag early.
+        imgid_out.md->write = 1;
 
         backend->matrixMul(); // Here we MVM
         // We're done
@@ -467,6 +471,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+cleanup:
     free(normcoeff);
     free(masked_modes_copy);
 
@@ -475,14 +480,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
         free(imgin_float_casted_ptr);
     }
 
-
     if (use_mask)
     {
         free(mask_idx);
     }
 
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return _return_value;
 }
 
 
