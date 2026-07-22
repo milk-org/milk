@@ -6,8 +6,8 @@ message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 # This is only good so far as we're taking everything
 # And no mixing of CPP files
-file(GLOB SOURCEFILES "*.c")
-file(GLOB INCLUDEFILES "*.h")
+file(GLOB SOURCEFILES "*.c" "*.cpp")
+file(GLOB INCLUDEFILES "*.h" "*.hpp")
 
 file(GLOB SCRIPTS "scripts/*")
 
@@ -37,7 +37,7 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 # List standalones
 # FIXME can do better with a MILK_CMAKE tag in the file.
 add_milk_standalone(linalg-gramschmidt GramSchmidt.c)
-add_milk_standalone(linalg-MVMextract MVMextractModes.c)
+add_milk_standalone(linalg-MVMextract MVMextractModes.cpp)
 add_milk_standalone(linalg-PCAmatch PCAmatch.c)
 add_milk_standalone(linalg-Qexpand Qexpand.c)
 add_milk_standalone(linalg-SGEMM SGEMM.c)

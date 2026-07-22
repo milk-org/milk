@@ -273,10 +273,10 @@ endif()
 
 # Can add -fanalyzer if gcc10+ (warning: this will take a while to run)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -std=c++17 -Wno-sign-compare")
 
 set(CMAKE_C_FLAGS_RELEASE "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG -std=c++17 -funroll-loops")
 
 set(CMAKE_C_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")
 set(CMAKE_CXX_FLAGS_COVERAGE "-O0 -g --coverage -fprofile-arcs -ftest-coverage")

@@ -24,6 +24,7 @@ IndentCaseLabels: false
 IndentPPDirectives: AfterHash
 ContinuationIndentWidth: 4
 PPIndentWidth: 4
+IndentExternBlock: NoIndent
 
 # === Line Length ===
 ColumnLimit: 100

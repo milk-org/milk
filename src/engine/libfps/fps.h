@@ -5,6 +5,8 @@
 #ifndef FPS_H
 #define FPS_H
 
+#include <linux/limits.h> // For PATH_MAX (but maybe would belong in a global milk compilation header?) // For some reason this fails only for standalone execs, and even not all of them!!
+
 /* Type definitions, structs, constants, and flags */
 #include "fps_types.h"
 
@@ -754,7 +756,7 @@ uint16_t function_parameter_RUNexit(FPS *fps);
         }                                                                                          \
         if (use_tmux)                                                                              \
         {                                                                                          \
-            char path[4096];                                                                       \
+            char path[PATH_MAX];                                                                   \
             if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL)             \
             {                                                                                      \
                 if (realpath(argv[0], path) == NULL)                                               \
