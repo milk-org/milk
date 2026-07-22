@@ -16,8 +16,19 @@
 // #include "COREMOD_memory/COREMOD_memory.h"
 
 // clang-format off
+
+// These function NEED a week declaration: they MUST exist somewhere
+// if the corresponding C file missed the mandate.
+// so they exist here and do nothing.
 MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_CUDA() {return 0;};
 MILK_WEAK errno_t COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE() {return 0;};
+
+
+// This function doesn't _need_ a weak definition, just a forward declaration
+// so that it can be invoked in init_module_CLI.
+// Since this function doesn't MANDATE anything, its definition in the C file always
+// exists.
+          errno_t COMPILERTEST_CLIADDCMD_REQUEST_CUDA();
 // clang-format on
 
 static errno_t init_module_CLI()
@@ -29,6 +40,7 @@ static errno_t init_module_CLI()
     // Add non-mandating initializers here ?
     COMPILERTEST_CLIADDCMD_MANDATE_CUDA();
     COMPILERTEST_CLIADDCMD_REQUEST_CUDA();
+    COMPILERTEST_CLIADDCMD_MANDATE_LAPACKE();
 
     return RETURN_SUCCESS;
 }
