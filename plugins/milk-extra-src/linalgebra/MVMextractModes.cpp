@@ -23,11 +23,13 @@
 #include <memory> // unique_ptr
 #include "mvm_auxiliaries.hpp"
 
+// Lesson learned: in C++ contexts must include lapacke
+// outside of extern "C" context, because lapacke will import
+// its own C++ flavor (and actually may have to use it)
+#include "milk_blas_lapacke.h"
 
 extern "C"
 {
-#include "milk_blas_lapacke.h"
-
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/pixel_dispatch.h"
@@ -158,20 +160,21 @@ ComputeMode _compute_mode_determine(PROCESSINFO *processinfo)
     {
         int32_t true_gpu_index = GPUindex < 0 ? -GPUindex - 1 : GPUindex;
         processinfo_WriteMessage_fmt(processinfo, "Successful CUDA init - GPU %d", true_gpu_index);
-        printf("-------------\nBACKEND: CUDA\n-------------\n");
         if (GPUindex < 0)
         {
+            printf("--------\nBACKEND: CUDA STREAM\n-------\n");
             return ComputeMode::CUDASTREAM;
         }
         else
         {
+            printf("-----------\nBACKEND: CUDA\n-----------\n");
             return ComputeMode::CUBLAS;
         }
     }
-#ifdef BLASLIB
+#ifdef HAVE_BLAS
     if (GPUindex == 99)
     {
-        printf("-------------\nBACKEND: BLAS [%s]\n-------------\n", BLASLIB);
+        printf("-------------\nBACKEND: BLAS [%s]\n-------------\n", BLAS_LIB);
         return ComputeMode::BLAS;
     }
 #endif

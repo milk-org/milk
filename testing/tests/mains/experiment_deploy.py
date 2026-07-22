@@ -289,9 +289,9 @@ def mvm_correctness_all_params(
             output_stream = SHM(fps_m["outcoeff"])
             if output_stream.shape == OUT_SHAPE:
                 break
-            time.sleep(0.001)
         except:
             pass
+        time.sleep(0.001)
 
     assert output_stream is not None
     assert output_stream.shape == OUT_SHAPE
