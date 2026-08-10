@@ -12,3 +12,9 @@ def test_a_trivial_thing():
     subprocess.run(["milk-fps-list"])
 
     assert True
+
+
+def test_milk_python_package():
+    from milk.test import MilkImportedCorrectly
+
+    MilkImportedCorrectly()

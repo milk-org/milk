@@ -1,0 +1,45 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=58", "wheel", 'cmake']
+
+[project]
+authors = [
+  {name = "Vincent Deo", email = "vdeo@naoj.org"},
+]
+description = "Milk test package"
+name = "milk"
+version = "1.0"
+#dependencies = []
+
+#[project.urls]
+#"Homepage" = "http://www.github.com/milk-org/pyMilk"
+
+
+[tool.setuptools.packages.find]
+include=["milk*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--import-mode=importlib",
+    "--ignore=mains/*",
+]
+
+[tool.coverage.run]
+command_line = "-m pytest"
+branch = true
+source = ["./milk"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    'TYPE_CHECKING:',
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]
+ignore_errors = true
+omit = ["tests/*", "setup.py", "pyMilk/*"]

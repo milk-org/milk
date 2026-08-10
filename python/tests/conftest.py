@@ -7,6 +7,8 @@ pytest_plugins = [
     "tests.conftestaux.cacao_loop",
     "tests.conftestaux.milk",
     "tests.conftestaux.coverage",
+    "tests.conftestaux.gpu_transfer_monitor",
+    "tests.conftestaux.gpu_configure",
 ]
 
 
