@@ -136,6 +136,9 @@ int fps_generic_init(const char      *fps_name,
 
     /* Shared-memory mode */
     FPS fps;
+    // TODO What the fuck ???
+    // So the FPS v2 init macro inject code that calls this function that injects more macro code ?
+    // As I was saying, WTF?
     FPS_INIT_STD_PREAMBLE(fps, fps_name, "", app_info->description, app_info->description);
 
 #ifndef FPS_STANDALONE
@@ -197,8 +200,7 @@ void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
     /*
      * Find trigger stream from bindings.
      * First try the local C variable (ptr).
-     * If empty (CLI sync hasn't run yet),
-     * read from FPS shared memory instead.
+     * If empty (CLI sync hasn't run yet), read from FPS shared memory instead.
      */
     const char *trigger_name                             = NULL;
     char        trigger_kw[FUNCTION_PARAMETER_STRMAXLEN] = "";
@@ -217,21 +219,14 @@ void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
             }
             else
             {
-                /*
-                 * Local var empty -- CLI sync
-                 * hasn't populated it yet.
-                 * Read from FPS shared memory.
-                 */
+                // Local var empty -- CLI sync hasn't populated it yet. Read from FPS shared memory.
                 strncpy(trigger_kw, bindings[ii].fpskeyword, sizeof(trigger_kw) - 1);
             }
             break;
         }
     }
 
-    /*
-     * Read trigger name from FPS if local var
-     * was empty but we found the binding keyword.
-     */
+    // Read trigger name from FPS if local var was empty but we found the binding keyword.
     if (trigger_name == NULL && trigger_kw[0] != '\0')
     {
         long pidx = functionparameter_GetParamIndex(fps, trigger_kw);
@@ -246,10 +241,7 @@ void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
         }
     }
 
-    /*
-     * If still no trigger stream, try
-     * .procinfo.triggersname as last resort.
-     */
+    // If still no trigger stream, try .procinfo.triggersname as last resort.
     if (trigger_name == NULL || trigger_name[0] == '\0')
     {
         long pidx = functionparameter_GetParamIndex(fps, ".procinfo.triggersname");
@@ -264,13 +256,11 @@ void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
         }
     }
 
-    printf("\033[33m-loops\033[0m"
-           " Stream semaphore trigger\n");
+    printf("\033[33m-loops\033[0m Stream semaphore trigger\n");
 
     /* Force loop count and enable */
     functionparameter_SetParamValue_INT64(fps, ".procinfo.loopcntMax", -1);
-    printf("  .procinfo.loopcntMax  = -1"
-           " (infinite)\n");
+    printf("  .procinfo.loopcntMax  = -1 (infinite)\n");
 
     functionparameter_SetParamValue_ONOFF(fps, ".procinfo.enabled", 1);
     printf("  .procinfo.enabled     = ON\n");
@@ -278,15 +268,11 @@ void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
     if (trigger_name != NULL && trigger_name[0] != '\0')
     {
         functionparameter_SetParamValue_STRING(fps, ".procinfo.triggersname", trigger_name);
-        printf("  .procinfo.triggersname"
-               " = %s\n",
-               trigger_name);
+        printf("  .procinfo.triggersname = %s\n", trigger_name);
 
         functionparameter_SetParamValue_INT64(fps, ".procinfo.triggermode",
                                               PROCESSINFO_TRIGGERMODE_SEMAPHORE);
-        printf("  .procinfo.triggermode "
-               " = %d (SEMAPHORE)\n",
-               PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+        printf("  .procinfo.triggermode = %d (SEMAPHORE)\n", PROCESSINFO_TRIGGERMODE_SEMAPHORE);
     }
     else
     {
@@ -296,9 +282,7 @@ void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
 
         functionparameter_SetParamValue_INT64(fps, ".procinfo.triggermode",
                                               PROCESSINFO_TRIGGERMODE_DELAY);
-        printf("  .procinfo.triggermode "
-               " = %d (DELAY)\n",
-               PROCESSINFO_TRIGGERMODE_DELAY);
+        printf("  .procinfo.triggermode = %d (DELAY)\n", PROCESSINFO_TRIGGERMODE_DELAY);
     }
 }
 
@@ -314,27 +298,20 @@ void fps_loop_override_trigger(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
  */
 void fps_loop_override_delay(FPS *fps, double delay_sec)
 {
-    printf("\033[33m-loopd\033[0m"
-           " Delay loop (%.6f sec)\n",
-           delay_sec);
+    printf("\033[33m-loopd\033[0m Delay loop (%.6f sec)\n", delay_sec);
 
     functionparameter_SetParamValue_INT64(fps, ".procinfo.loopcntMax", -1);
-    printf("  .procinfo.loopcntMax  = -1"
-           " (infinite)\n");
+    printf("  .procinfo.loopcntMax  = -1 (infinite)\n");
 
     functionparameter_SetParamValue_ONOFF(fps, ".procinfo.enabled", 1);
     printf("  .procinfo.enabled     = ON\n");
 
     functionparameter_SetParamValue_INT64(fps, ".procinfo.triggermode",
                                           PROCESSINFO_TRIGGERMODE_DELAY);
-    printf("  .procinfo.triggermode "
-           " = %d (DELAY)\n",
-           PROCESSINFO_TRIGGERMODE_DELAY);
+    printf("  .procinfo.triggermode = %d (DELAY)\n", PROCESSINFO_TRIGGERMODE_DELAY);
 
     functionparameter_SetParamValue_TIMESPEC(fps, ".procinfo.triggerdelay", (float) delay_sec);
-    printf("  .procinfo.triggerdelay"
-           " = %.6f sec\n",
-           delay_sec);
+    printf("  .procinfo.triggerdelay = %.6f sec\n", delay_sec);
 }
 
 

@@ -131,6 +131,10 @@ static errno_t streamdelay(IMGID            inimg,
             milk_clock_gettime(&t_new);
             usleep(1);
         } while ((t_new.tv_sec - t_now.tv_sec) + (t_new.tv_nsec - t_now.tv_nsec) / 1e9 < delaysec);
+
+        outimg.md->write = 1;
+        memcpy(outimg.im->array.raw, inimg.im->array.raw, inimg.md->imdatamemsize);
+
         *status = 1;
         return RETURN_SUCCESS;
     }
@@ -185,7 +189,8 @@ static errno_t streamdelay(IMGID            inimg,
         char *srcptr;
         srcptr = (char *) bufferimg.im->array.raw;
         srcptr += inimg.md->imdatamemsize * bufferindex_output_last;
-        __builtin_memcpy(outimg.im->array.raw, srcptr, inimg.md->imdatamemsize);
+        outimg.md->write = 1;
+        memcpy(outimg.im->array.raw, srcptr, inimg.md->imdatamemsize);
 
         *status = 1;
     }

@@ -75,3 +75,6 @@ scratch/
 
 # Test executables compiled in the source tree
 src/milk-fpsclitest
+
+# Coverage
+gcov_html/
