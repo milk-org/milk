@@ -10,7 +10,7 @@
 #ifndef FPS_SCAN_H
 #define FPS_SCAN_H
 
-#include "fps.h"
+#include "fps_types.h"
 
 errno_t functionparameter_scan_fps(uint32_t           mode,
                                    char              *fpsnamemask,

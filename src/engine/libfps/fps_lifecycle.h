@@ -19,6 +19,7 @@
 
 /** Compute function signature */
 typedef errno_t (*fps_compute_fn)(void);
+typedef errno_t (*fps_confcheck_fn)(void);
 
 
 /**
