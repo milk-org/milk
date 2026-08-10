@@ -93,6 +93,26 @@
  */
 #define MH(c, t) (mh_color ? (c t MH_RST) : (t))
 
+/**
+ * @brief Format spec matching the MH_PAD() argument pack.
+ */
+#define MH_PAD_FMT "%s%-*s%s"
+
+/**
+ * @brief Colorized, width-padded text for use with MH_PAD_FMT.
+ *
+ * Unlike MH(), the field width is applied to the plain text
+ * only, so ANSI escape codes are never counted toward it and
+ * printf() alignment is preserved with color on or off.
+ *
+ * @param c  One of MH_TITLE, MH_HDR, etc.
+ * @param t  String literal to colorize.
+ * @param w  Field width (as passed to %-*s).
+ *
+ * Requires a local `int mh_color` in scope.
+ */
+#define MH_PAD(c, t, w) (mh_color ? (c) : ""), (w), (t), (mh_color ? MH_RST : "")
+
 /* -------------------------------------------
  * Return values from milk_help_init()
  * ------------------------------------------- */
