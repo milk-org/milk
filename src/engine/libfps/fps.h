@@ -14,7 +14,6 @@
 #endif
 
 #include "fps_types.h"
-#include "fps_scan.h" // FIXME circular include, causes warning.
 
 /* Additional dependencies not in fps_types.h */
 #include "timeutils.h"
@@ -265,6 +264,7 @@ static inline void X_HELP_V2_FILL_VALSTR_(const FPS_CLI_BINDING *b, char vs[64])
              b->type == FPTYPE_FPSNAME || b->type == FPTYPE_PROCESS)
     {
         strncpy(vs, (char *) b->ptr, 63);
+        vs[63] = '\0';
     }
 }
 
@@ -342,20 +342,10 @@ static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT 
     X_HELP_V2_FILL_TYPESTR_(binding, type_str);
     X_HELP_V2_FILL_VALSTR_(binding, val_str);
     const char *_trig_tag = "";
-    const char *_trig_rst = "";
     if ((binding->fpflag) & FPFLAG_TRIGGER_STREAM)
     {
-        if (pp->show_help_color)
-        {
-            _trig_tag = " \033[48;5;23m"
-                        "\033[38;2;80;220;220m"
-                        " [TRIGGER] "
-                        "\033[0m";
-        }
-        else
-        {
-            _trig_tag = " [TRIGGER]";
-        }
+        _trig_tag = pp->show_help_color ? " \033[48;5;23m\033[38;2;80;220;220m [TRIGGER] \033[0m"
+                                        : " [TRIGGER]";
     }
     if (pp->show_help_color)
     {
@@ -384,7 +374,7 @@ static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING     bindings[],
 {
     for (int k = 0; k < nb_bindings; ++k)
     {
-        X_HELP_MEASURE_V2(&bindings[k], pp);
+        X_HELP_PRINT_V2(&bindings[k], pp);
     }
 }
 
@@ -643,9 +633,7 @@ static inline int main_impl(int              argc,
             strcmp(command, "run") != 0)
         {
             fprintf(stderr,
-                    MH_ERR "Error:" MH_RST " '%s' is not a"
-                           " valid command. Run with"
-                           " -h for help.\n",
+                    MH_ERR "Error:" MH_RST " '%s' is not a valid command. Run with -h for help.\n",
                     command);
             return 1;
         }
