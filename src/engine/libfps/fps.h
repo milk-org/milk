@@ -580,7 +580,7 @@ static inline int main_impl(int              argc,
             if (ii + 1 < argc)
             {
                 char c0 = argv[ii + 1][0];
-                if ((c0 >= '0' && c0 <= '9') || c0 == '.' || c0 == '-')
+                if ((c0 >= '0' && c0 <= '9') || c0 == '.')
                 {
                     loop_delay = atof(argv[++ii]);
                 }
@@ -614,14 +614,16 @@ static inline int main_impl(int              argc,
             if ((colon_pos = strchr(command, ':')) != NULL)
             {
                 *colon_pos = '\0';
-                strncpy(arg_fps_name, command, STRINGMAXLEN_FPS_NAME - 1);
+                strncpy(arg_fps_name, command, STRINGMAXLEN_FPS_NAME - 1); // copies to colon_pos
+                *colon_pos =
+                    ':'; // must restore the colon otherwise argc/argv mismatch are reparse in fps_process_cli_and_sync
                 command = colon_pos + 1;
             }
         }
     }
     if (command == NULL)
     {
-        command = (char *) "run"; /* cast for C++ compilation compatibily */
+        command = (char *) "run"; /* cast for C++ compilation compatibility */
     }
     else
     {
@@ -930,7 +932,62 @@ static inline int main_impl(int              argc,
             functionparameter_FPS_tmux_send_dispatch(fps_name, "runstart", path, run_arg);
             return 0;
         }
-        if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
+        if (strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0)
+        {
+            /*
+             * Apply loop overrides to the FPS now (persists in shared
+             * memory, so it takes effect even if the tmux child doesn't
+             * re-parse these flags), and also forward the flags to the
+             * dispatched command so the child re-applies them itself.
+             */
+            {
+                FPS fps_lp_;
+                if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
+                {
+                    fps_process_cli_and_sync(&fps_lp_, farg, bindings, nb_bindings);
+                    if (use_loop == 1)
+                    {
+                        fps_loop_override_trigger(&fps_lp_, bindings, nb_bindings);
+                    }
+                    else if (use_loop == 2)
+                    {
+                        fps_loop_override_delay(&fps_lp_, loop_delay);
+                    }
+                    fps_disconnect(&fps_lp_);
+                }
+            }
+            name_arg[0] = '\0';
+            if (use_procinfo)
+            {
+                strncat(name_arg, " -procinfo", sizeof(name_arg) - strlen(name_arg) - 1);
+            }
+            if (use_loop == 1)
+            {
+                strncat(name_arg, " -loops", sizeof(name_arg) - strlen(name_arg) - 1);
+            }
+            else if (use_loop == 2)
+            {
+                char _ld[64];
+                snprintf(_ld, sizeof(_ld), " -loopd %.6f", loop_delay);
+                strncat(name_arg, _ld, sizeof(name_arg) - strlen(name_arg) - 1);
+            }
+            {
+                size_t _l = strlen(name_arg);
+                if (strcmp(fps_name, APP_INFO->fps_name) != 0)
+                {
+                    snprintf(name_arg + _l, sizeof(name_arg) - _l, " %s:%s", fps_name, command);
+                }
+                else
+                {
+                    snprintf(name_arg + _l, sizeof(name_arg) - _l, " %s", command);
+                }
+            }
+            if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
+            {
+                return 0;
+            }
+        }
+        else if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
         {
             return 0;
         }
