@@ -33,8 +33,6 @@
 #define C_DIM MH_DIM
 #define C_RST MH_RST
 
-#define STRINGMAXLEN_FULLFILENAME 512
-
 #define SL_DESC "list shared memory image streams"
 #define SL_DESC_LONG                                                       \
     "Scan /dev/shm for ImageStreamIO (.im.shm) files and print a\n"        \

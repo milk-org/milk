@@ -10,6 +10,7 @@
 #ifndef _PROCESSINFO_SETUP_H
 #define _PROCESSINFO_SETUP_H
 
+#include "processinfo.h"
 #include "processinfo_shm_create.h"
 #include <string.h>
 

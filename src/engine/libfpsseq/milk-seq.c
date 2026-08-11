@@ -18,7 +18,11 @@
 
 #include "fpsseq.h"
 #include "fps_scan.h"
-#include "fps.h" // Really for the MH_* color/formatting macros
+#include "milk_help.h"
+#include "milkDebugTools.h"
+
+#include "processinfo.h"
+#include "processinfo_setup.h"
 
 #define SEQ_ONELINE "FPS sequencer daemon"
 #define SEQ_DESC_LONG                                                \
