@@ -18,6 +18,11 @@
 
 #include "fpsseq.h"
 #include "fps_scan.h"
+#include "milk_help.h"
+#include "milkDebugTools.h"
+
+#include "processinfo.h"
+#include "processinfo_setup.h"
 
 #define SEQ_ONELINE "FPS sequencer daemon"
 #define SEQ_DESC_LONG                                                \

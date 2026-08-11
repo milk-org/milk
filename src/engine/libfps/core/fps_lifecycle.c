@@ -136,6 +136,9 @@ int fps_generic_init(const char      *fps_name,
 
     /* Shared-memory mode */
     FPS fps;
+    // TODO What the fuck ???
+    // So the FPS v2 init macro inject code that calls this function that injects more macro code ?
+    // As I was saying, WTF?
     FPS_INIT_STD_PREAMBLE(fps, fps_name, "", app_info->description, app_info->description);
 
 #ifndef FPS_STANDALONE

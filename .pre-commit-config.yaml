@@ -35,3 +35,6 @@ repos:
     -   id: check-added-large-files
     -   id: check-ast
     -   id: check-merge-conflict
+        # default hook only scans when MERGE_HEAD/MERGE_MSG exist,
+        # so it misses markers left by e.g. a stash-pop conflict
+        args: ['--assume-in-merge']

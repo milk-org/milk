@@ -10,6 +10,8 @@
 #ifndef _PROCESSINFO_SHM_CREATE_H
 #define _PROCESSINFO_SHM_CREATE_H
 
+#include "processinfo.h"
+
 PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
 
 #endif
