@@ -499,6 +499,114 @@ static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING     bindings[],
     }
 
 #ifdef MILK_NO_CLI // The guard is necessary due to USE_CLI=ON conflict on milkdata.h
+
+/* ----------------------------------------------------------------
+ * Helpers factoring out the "connect, sync CLI args, apply -loops/
+ * -loopd override, disconnect" pattern repeated across fpsinit,
+ * exec, runstart and their -tmux dispatch counterparts below.
+ * ---------------------------------------------------------------- */
+
+/** @brief Sync CLI args into an already-connected FPS, then apply -loops/-loopd. */
+static inline void fps_apply_cli_sync_and_loop_overrides(FPS             *fps,
+                                                         CLICMDARGDEF    *farg,
+                                                         FPS_CLI_BINDING *bindings,
+                                                         int              nb_b,
+                                                         int              use_loop,
+                                                         double           loop_delay)
+{
+    fps_process_cli_and_sync(fps, farg, bindings, nb_b);
+    if (use_loop == 1)
+    {
+        fps_loop_override_trigger(fps, bindings, nb_b);
+    }
+    else if (use_loop == 2)
+    {
+        fps_loop_override_delay(fps, loop_delay);
+    }
+}
+
+/** @brief Connect to fps_name, sync CLI args + apply loop overrides, disconnect. No-op if connect fails. */
+static inline void fps_sync_and_override_by_name(const char      *fps_name,
+                                                 CLICMDARGDEF    *farg,
+                                                 FPS_CLI_BINDING *bindings,
+                                                 int              nb_b,
+                                                 int              use_loop,
+                                                 double           loop_delay)
+{
+    FPS fps;
+    if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) != -1)
+    {
+        fps_apply_cli_sync_and_loop_overrides(&fps, farg, bindings, nb_b, use_loop, loop_delay);
+        fps_disconnect(&fps);
+    }
+}
+
+/** @brief Append " -procinfo"/" -loops"/" -loopd SEC" to buf, mirroring the parsed CLI flags. */
+static inline void fps_append_loop_flags(char  *buf,
+                                         size_t bufsize,
+                                         int    use_procinfo,
+                                         int    use_loop,
+                                         double loop_delay)
+{
+    if (use_procinfo)
+    {
+        strncat(buf, " -procinfo", bufsize - strlen(buf) - 1);
+    }
+    if (use_loop == 1)
+    {
+        strncat(buf, " -loops", bufsize - strlen(buf) - 1);
+    }
+    else if (use_loop == 2)
+    {
+        char ld[64];
+        snprintf(ld, sizeof(ld), " -loopd %.6f", loop_delay);
+        strncat(buf, ld, bufsize - strlen(buf) - 1);
+    }
+}
+
+/** @brief Append " fpsname:command" (custom name) or " command" (default name) to buf. */
+static inline void fps_append_dispatch_target(char       *buf,
+                                              size_t      bufsize,
+                                              const char *fps_name,
+                                              const char *default_name,
+                                              const char *command)
+{
+    size_t l = strlen(buf);
+    if (strcmp(fps_name, default_name) != 0)
+    {
+        snprintf(buf + l, bufsize - l, " %s:%s", fps_name, command);
+    }
+    else
+    {
+        snprintf(buf + l, bufsize - l, " %s", command);
+    }
+}
+
+/** @brief For 'exec': create the FPS if missing, reuse it otherwise (printing NEW/REUSE). */
+static inline void fps_exec_autoinit(const char      *fps_name,
+                                     FPS_APP_INFO    *app_info,
+                                     FPS_CLI_BINDING *bindings,
+                                     int              nb_b,
+                                     int              use_procinfo)
+{
+    if (fps_name[0] == '_')
+    {
+        return; // local (non-shared-memory) FPS names are never auto-initialized
+    }
+    FPS fc_;
+    if (fps_connect(fps_name, &fc_, FPSCONNECT_SIMPLE) == -1)
+    {
+        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> \033[33mNEW\033[0m\n", fps_name);
+        fps_generic_init(fps_name, app_info, bindings, nb_b, use_procinfo);
+    }
+    else
+    {
+        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND "REUSE" COLORRESET "\n",
+               fps_name);
+        fps_disconnect(&fc_);
+    }
+}
+
 static inline int main_impl(int              argc,
                             char            *argv[],
                             FPS_APP_INFO    *APP_INFO,
@@ -667,21 +775,14 @@ static inline int main_impl(int              argc,
         /* ---- FPS NOTE ---- */
         if (mh_color)
         {
-            printf("  " MH_NOTE "This is a fpsexec command."
-                   " Command parameters map"
+            printf("  " MH_NOTE "This is a fpsexec command. Command parameters map"
                    " to FPS parameters." MH_RST "\n  Run " MH_CMD "milk-fpsexec-help" MH_RST
-                   " for detailed FPS"
-                   " framework info.\n\n");
+                   " for detailed FPS framework info.\n\n");
         }
         else
         {
-            printf("  NOTE: This is a fpsexec"
-                   " command. Command"
-                   " parameters map to FPS"
-                   " parameters.\n"
-                   "  Run milk-fpsexec-help"
-                   " for detailed FPS"
-                   " framework info.\n\n");
+            printf("  NOTE: This is a fpsexec command. Command parameters map to FPS parameters.\n"
+                   "  Run milk-fpsexec-help for detailed FPS framework info.\n\n");
         }
         /* ---- OPTIONS ---- */
         milk_help_section("Options", mh_color);
@@ -810,10 +911,7 @@ static inline int main_impl(int              argc,
                     if (!found)
                     {
                         printf("%-30s %-10s %s\n", "FPS Name", "Status", "Description");
-                        printf("----------"
-                               "----------"
-                               "----------"
-                               "----------\n");
+                        printf("----------------------------------------\n");
                         found = 1;
                     }
                     char ss[32] = "UNKNOWN";
@@ -853,143 +951,44 @@ static inline int main_impl(int              argc,
                 strncpy(path, argv[0], 1023);
             }
         }
-        char name_arg[256] = "";
-        if (strcmp(fps_name, APP_INFO->fps_name) != 0)
-        {
-            snprintf(name_arg, sizeof(name_arg), " %s:%s", fps_name, command);
-        }
-        else
-        {
-            snprintf(name_arg, sizeof(name_arg), " %s", command);
-        }
         functionparameter_FPS_tmux_standalone_setup(fps_name);
-        if (strcmp(command, "exec") == 0)
+
+        int is_exec = (strcmp(command, "exec") == 0);
+        if (is_exec || strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0)
         {
+            /* exec always dispatches as "runstart" (auto-init, then run);
+             * "run" isn't a recognized tmux window, so it falls through below. */
+            const char *dispatch_cmd = is_exec ? "runstart" : command;
+            if (is_exec)
             {
-                FPS fc_;
-                if (fps_name[0] != '_')
-                {
-                    if (fps_connect(fps_name, &fc_, FPSCONNECT_SIMPLE) == -1)
-                    {
-                        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> "
-                               "\033[33m"
-                               "NEW" COLORRESET "\n",
-                               fps_name);
-                        fps_generic_init(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
-                    }
-                    else
-                    {
-                        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND
-                               "REUSE" COLORRESET "\n",
-                               fps_name);
-                        fps_disconnect(&fc_);
-                    }
-                }
+                fps_exec_autoinit(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
             }
-            /* Set CLI args into FPS before dispatching runstart to tmux */
-            {
-                FPS fs_;
-                if (fps_connect(fps_name, &fs_, FPSCONNECT_SIMPLE) != -1)
-                {
-                    fps_process_cli_and_sync(&fs_, farg, bindings, nb_bindings);
-                    if (use_loop == 1)
-                    {
-                        fps_loop_override_trigger(&fs_, bindings, nb_bindings);
-                    }
-                    else if (use_loop == 2)
-                    {
-                        fps_loop_override_delay(&fs_, loop_delay);
-                    }
-                    fps_disconnect(&fs_);
-                }
-            }
-            char run_arg[512] = "";
-            if (use_procinfo)
-            {
-                strncat(run_arg, " -procinfo", sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            if (use_loop == 1)
-            {
-                strncat(run_arg, " -loops", sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            else if (use_loop == 2)
-            {
-                char _ld[64];
-                snprintf(_ld, sizeof(_ld), " -loopd %.6f", loop_delay);
-                strncat(run_arg, _ld, sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            if (strcmp(fps_name, APP_INFO->fps_name) != 0)
-            {
-                {
-                    size_t _l = strlen(run_arg);
-                    snprintf(run_arg + _l, sizeof(run_arg) - _l, " %s:runstart", fps_name);
-                }
-            }
-            else
-            {
-                strncat(run_arg, " runstart", sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            functionparameter_FPS_tmux_send_dispatch(fps_name, "runstart", path, run_arg);
-            return 0;
-        }
-        if (strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0)
-        {
-            /*
-             * Apply loop overrides to the FPS now (persists in shared
-             * memory, so it takes effect even if the tmux child doesn't
-             * re-parse these flags), and also forward the flags to the
-             * dispatched command so the child re-applies them itself.
-             */
-            {
-                FPS fps_lp_;
-                if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-                {
-                    fps_process_cli_and_sync(&fps_lp_, farg, bindings, nb_bindings);
-                    if (use_loop == 1)
-                    {
-                        fps_loop_override_trigger(&fps_lp_, bindings, nb_bindings);
-                    }
-                    else if (use_loop == 2)
-                    {
-                        fps_loop_override_delay(&fps_lp_, loop_delay);
-                    }
-                    fps_disconnect(&fps_lp_);
-                }
-            }
-            name_arg[0] = '\0';
-            if (use_procinfo)
-            {
-                strncat(name_arg, " -procinfo", sizeof(name_arg) - strlen(name_arg) - 1);
-            }
-            if (use_loop == 1)
-            {
-                strncat(name_arg, " -loops", sizeof(name_arg) - strlen(name_arg) - 1);
-            }
-            else if (use_loop == 2)
-            {
-                char _ld[64];
-                snprintf(_ld, sizeof(_ld), " -loopd %.6f", loop_delay);
-                strncat(name_arg, _ld, sizeof(name_arg) - strlen(name_arg) - 1);
-            }
-            {
-                size_t _l = strlen(name_arg);
-                if (strcmp(fps_name, APP_INFO->fps_name) != 0)
-                {
-                    snprintf(name_arg + _l, sizeof(name_arg) - _l, " %s:%s", fps_name, command);
-                }
-                else
-                {
-                    snprintf(name_arg + _l, sizeof(name_arg) - _l, " %s", command);
-                }
-            }
-            if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
+            /* Persist the loop config in FPS shared memory now (works even if the
+             * tmux child doesn't re-parse -loops/-loopd), and also forward the
+             * flags so the child re-applies them for consistency. */
+            fps_sync_and_override_by_name(fps_name, farg, bindings, nb_bindings, use_loop,
+                                          loop_delay);
+
+            char dispatch_arg[512] = "";
+            fps_append_loop_flags(dispatch_arg, sizeof(dispatch_arg), use_procinfo, use_loop,
+                                  loop_delay);
+            fps_append_dispatch_target(dispatch_arg, sizeof(dispatch_arg), fps_name,
+                                       APP_INFO->fps_name, dispatch_cmd);
+            if (functionparameter_FPS_tmux_send_dispatch(fps_name, dispatch_cmd, path,
+                                                         dispatch_arg) == 0)
             {
                 return 0;
             }
         }
-        else if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
+        else
         {
-            return 0;
+            char name_arg[256] = "";
+            fps_append_dispatch_target(name_arg, sizeof(name_arg), fps_name, APP_INFO->fps_name,
+                                       command);
+            if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
+            {
+                return 0;
+            }
         }
     }
     if (strcmp(command, "fpsinit") == 0)
@@ -1012,20 +1011,8 @@ static inline int main_impl(int              argc,
         /* Sync CLI args into FPS before applying loop overrides. */
         if (use_loop && rc_ == 0)
         {
-            FPS fp_;
-            if (fps_connect(fps_name, &fp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_process_cli_and_sync(&fp_, farg, bindings, nb_bindings);
-                if (use_loop == 1)
-                {
-                    fps_loop_override_trigger(&fp_, bindings, nb_bindings);
-                }
-                else if (use_loop == 2)
-                {
-                    fps_loop_override_delay(&fp_, loop_delay);
-                }
-                fps_disconnect(&fp_);
-            }
+            fps_sync_and_override_by_name(fps_name, farg, bindings, nb_bindings, use_loop,
+                                          loop_delay);
         }
         return rc_;
     }
@@ -1057,92 +1044,14 @@ static inline int main_impl(int              argc,
         printf("FPS " COLORCOMMAND "%s" COLORRESET " set done\n", fps_name);
         return 0;
     }
-    else if (strcmp(command, "exec") == 0)
+    else if (strcmp(command, "exec") == 0 || strcmp(command, "runstart") == 0 ||
+             strcmp(command, "run") == 0)
     {
-        /* Auto-init if FPS doesn't exist yet, then run. */
-        /* fps_name goes to shared mem when name lacks _ prefix. */
+        if (strcmp(command, "exec") == 0)
         {
-            FPS fps_chk_;
-            if (fps_name[0] != '_')
-            {
-                if (fps_connect(fps_name, &fps_chk_, FPSCONNECT_SIMPLE) == -1)
-                {
-                    printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> "
-                           "\033[33m"
-                           "NEW" COLORRESET "\n",
-                           fps_name);
-                    fps_generic_init(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
-                }
-                else
-                {
-                    printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND
-                           "REUSE" COLORRESET "\n",
-                           fps_name);
-                    fps_disconnect(&fps_chk_);
-                }
-            }
+            fps_exec_autoinit(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
         }
-        /* Sync CLI args into FPS before applying loop overrides */
-        /* so that trigger stream names are available. */
-        {
-            FPS fps_sync_;
-            if (fps_connect(fps_name, &fps_sync_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_process_cli_and_sync(&fps_sync_, farg, bindings, nb_bindings);
-                fps_disconnect(&fps_sync_);
-            }
-        }
-        /* Apply -loops/-loopd overrides */
-        if (use_loop == 1)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_trigger(&fps_lp_, bindings, nb_bindings);
-                fps_disconnect(&fps_lp_);
-            }
-        }
-        else if (use_loop == 2)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_delay(&fps_lp_, loop_delay);
-                fps_disconnect(&fps_lp_);
-            }
-        }
-        return fps_generic_run(fps_name, APP_INFO, farg, bindings, nb_bindings, COMPUTE_FN);
-    }
-    else if (strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0)
-    {
-        /* Sync CLI args into FPS before applying loop overrides. */
-        {
-            FPS fps_sync_;
-            if (fps_connect(fps_name, &fps_sync_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_process_cli_and_sync(&fps_sync_, farg, bindings, nb_bindings);
-                fps_disconnect(&fps_sync_);
-            }
-        }
-        /* Apply -loops/-loopd overrides */
-        if (use_loop == 1)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_trigger(&fps_lp_, bindings, nb_bindings);
-                fps_disconnect(&fps_lp_);
-            }
-        }
-        else if (use_loop == 2)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_delay(&fps_lp_, loop_delay);
-                fps_disconnect(&fps_lp_);
-            }
-        }
+        fps_sync_and_override_by_name(fps_name, farg, bindings, nb_bindings, use_loop, loop_delay);
         return fps_generic_run(fps_name, APP_INFO, farg, bindings, nb_bindings, COMPUTE_FN);
     }
     else if (strcmp(command, "runstop") == 0)
