@@ -611,7 +611,7 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
                 {
                     int knodeindex = keywnode[nodechain[0]].child[c_idx];
                     int fpsindex   = keywnode[knodeindex].fpsindex;
-                    fpsCTRLscreen_level0node_summary(fpsarray, fpsindex);
+                    fpsCTRLscreen_level0node_summary(&fpsarray[fpsindex]);
                 }
                 else
                 {
@@ -672,7 +672,7 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
             {
                 int knodeindex = filtered_children[GUIline];
                 int fpsindex   = keywnode[knodeindex].fpsindex;
-                fpsCTRLscreen_level0node_summary(fpsarray, fpsindex);
+                fpsCTRLscreen_level0node_summary(&fpsarray[fpsindex]);
             }
         }
 
