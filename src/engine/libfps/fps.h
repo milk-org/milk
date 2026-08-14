@@ -142,75 +142,66 @@ uint16_t function_parameter_RUNexit(FPS *fps);
 /**
  * @brief Fill a human-readable type string for a binding's FPS type.
  */
-static inline void X_HELP_V2_FILL_TYPESTR_(const FPS_CLI_BINDING *b, char ts[20])
+
+
+static inline void fp_type_to_typestring(uint64_t fptype, char ts[20])
 {
-    if (b->type == FPTYPE_INT32)
+    switch (fptype)
     {
+    case FPTYPE_INT32:
         strncpy(ts, "INT32", 19);
-    }
-    else if (b->type == FPTYPE_UINT32)
-    {
+        break;
+    case FPTYPE_UINT32:
         strncpy(ts, "UINT32", 19);
-    }
-    else if (b->type == FPTYPE_INT64)
-    {
+        break;
+    case FPTYPE_INT64:
         strncpy(ts, "INT64", 19);
-    }
-    else if (b->type == FPTYPE_UINT64)
-    {
+        break;
+    case FPTYPE_UINT64:
         strncpy(ts, "UINT64", 19);
-    }
-    else if (b->type == FPTYPE_FLOAT32)
-    {
+        break;
+    case FPTYPE_FLOAT32:
         strncpy(ts, "FLOAT32", 19);
-    }
-    else if (b->type == FPTYPE_FLOAT64)
-    {
+        break;
+    case FPTYPE_FLOAT64:
         strncpy(ts, "FLOAT64", 19);
-    }
-    else if (b->type == FPTYPE_ONOFF)
-    {
+        break;
+    case FPTYPE_ONOFF:
         strncpy(ts, "ONOFF", 19);
-    }
-    else if (b->type == FPTYPE_STREAMNAME)
-    {
+        break;
+    case FPTYPE_STREAMNAME:
         strncpy(ts, "STREAMNAME", 19);
-    }
-    else if (b->type == FPTYPE_FILENAME)
-    {
+        break;
+    case FPTYPE_FILENAME:
         strncpy(ts, "FILENAME", 19);
-    }
-    else if (b->type == FPTYPE_FITSFILENAME)
-    {
+        break;
+    case FPTYPE_FITSFILENAME:
         strncpy(ts, "FITSFILE", 19);
-    }
-    else if (b->type == FPTYPE_EXECFILENAME)
-    {
+        break;
+    case FPTYPE_EXECFILENAME:
         strncpy(ts, "EXECFILE", 19);
-    }
-    else if (b->type == FPTYPE_DIRNAME)
-    {
+        break;
+    case FPTYPE_DIRNAME:
         strncpy(ts, "DIRNAME", 19);
-    }
-    else if (b->type == FPTYPE_FPSNAME)
-    {
+        break;
+    case FPTYPE_FPSNAME:
         strncpy(ts, "FPSNAME", 19);
-    }
-    else if (b->type == FPTYPE_PROCESS)
-    {
+        break;
+    case FPTYPE_PROCESS:
         strncpy(ts, "PROCESS", 19);
-    }
-    else if (FPTYPE_IS_STRING(b->type))
-    {
+        break;
+    case FPTYPE_STRING:
+    case FPTYPE_STRING_NOT_STREAM:
         strncpy(ts, "STRING", 19);
-    }
-    else if (b->type == FPTYPE_PID)
-    {
+        break;
+    case FPTYPE_PID:
         strncpy(ts, "PID", 19);
-    }
-    else if (b->type == FPTYPE_TIMESPEC)
-    {
+        break;
+    case FPTYPE_TIMESPEC:
         strncpy(ts, "TIMESPEC", 19);
+        break;
+    default:
+        break;
     }
     ts[19] = '\0';
 }
@@ -219,71 +210,72 @@ static inline void X_HELP_V2_FILL_TYPESTR_(const FPS_CLI_BINDING *b, char ts[20]
 /**
  * @brief Fill a human-readable default-value string for a binding.
  */
-static inline void X_HELP_V2_FILL_VALSTR_(const FPS_CLI_BINDING *b, char vs[64])
+static inline void fp_type_and_ptr_to_valuestring(uint64_t fptype, void *valueptr, char vs[64])
 {
-    if (b->type == FPTYPE_INT32)
+    switch (fptype)
     {
-        snprintf(vs, 64, "%d", *(int32_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_UINT32)
-    {
-        snprintf(vs, 64, "%u", *(uint32_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_INT64)
-    {
-        snprintf(vs, 64, "%ld", *(int64_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_UINT64)
-    {
-        snprintf(vs, 64, "%lu", *(uint64_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_FLOAT32)
-    {
-        snprintf(vs, 64, "%f", *(float *) b->ptr);
-    }
-    else if (b->type == FPTYPE_FLOAT64)
-    {
-        snprintf(vs, 64, "%f", *(double *) b->ptr);
-    }
-    else if (b->type == FPTYPE_ONOFF)
-    {
-        snprintf(vs, 64, "%s", (*(int32_t *) b->ptr) ? "ON" : "OFF");
-    }
-    else if (b->type == FPTYPE_PID)
-    {
-        snprintf(vs, 64, "%d", (int) *(pid_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_TIMESPEC)
-    {
-        snprintf(vs, 64, "%ld.%09ld", ((struct timespec *) b->ptr)->tv_sec,
-                 ((struct timespec *) b->ptr)->tv_nsec);
-    }
-    else if (FPTYPE_IS_STRING(b->type) || b->type == FPTYPE_STREAMNAME ||
-             b->type == FPTYPE_FILENAME || b->type == FPTYPE_FITSFILENAME ||
-             b->type == FPTYPE_EXECFILENAME || b->type == FPTYPE_DIRNAME ||
-             b->type == FPTYPE_FPSNAME || b->type == FPTYPE_PROCESS)
-    {
-        strncpy(vs, (char *) b->ptr, 63);
+    case FPTYPE_INT32:
+        snprintf(vs, 64, "%d", *(int32_t *) valueptr);
+        break;
+    case FPTYPE_UINT32:
+        snprintf(vs, 64, "%u", *(uint32_t *) valueptr);
+        break;
+    case FPTYPE_INT64:
+        snprintf(vs, 64, "%ld", *(int64_t *) valueptr);
+        break;
+    case FPTYPE_UINT64:
+        snprintf(vs, 64, "%lu", *(uint64_t *) valueptr);
+        break;
+    case FPTYPE_FLOAT32:
+        snprintf(vs, 64, "%f", *(float *) valueptr);
+        break;
+    case FPTYPE_FLOAT64:
+        snprintf(vs, 64, "%f", *(double *) valueptr);
+        break;
+    case FPTYPE_ONOFF:
+        snprintf(vs, 64, "%s", (*(int32_t *) valueptr) ? "ON" : "OFF");
+        break;
+    case FPTYPE_PID:
+        snprintf(vs, 64, "%d", (int) *(pid_t *) valueptr);
+        break;
+    case FPTYPE_TIMESPEC:
+        snprintf(vs, 64, "%ld.%09ld", ((struct timespec *) valueptr)->tv_sec,
+                 ((struct timespec *) valueptr)->tv_nsec);
+        break;
+    /* all string-like types (covers FPTYPE_IS_STRING members) */
+    case FPTYPE_STRING:
+    case FPTYPE_STRING_NOT_STREAM:
+    case FPTYPE_STREAMNAME:
+    case FPTYPE_FILENAME:
+    case FPTYPE_FITSFILENAME:
+    case FPTYPE_EXECFILENAME:
+    case FPTYPE_DIRNAME:
+    case FPTYPE_FPSNAME:
+    case FPTYPE_PROCESS:
+        strncpy(vs, (char *) valueptr, 63);
         vs[63] = '\0';
+        break;
+    default:
+        break;
     }
 }
 
 /**
  * @brief Column widths for the "-h" parameters table.
  */
-typedef struct HELPER_PRETTYPRINT_
+struct HELPER_PRETTYPRINT
 {
     int col_kw_w;
     int col_tp_w;
     int col_df_w;
     int show_help_color;
     int CLIargcnt;
-} HELPER_PRETTYPRINT;
+};
 
 /**
  * @brief Measure column widths for 6-arg binding.
  */
-static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, struct HELPER_PRETTYPRINT *pp)
 {
     const char *_kp =
         (binding->fpskeyword[0] == '.') ? &binding->fpskeyword[1] : binding->fpskeyword;
@@ -293,14 +285,14 @@ static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRIN
         pp->col_kw_w = _kl;
     }
     char _ts[20] = "???";
-    X_HELP_V2_FILL_TYPESTR_(binding, _ts);
+    fp_type_to_typestring(binding->type, _ts);
     int _tl = (int) strlen(_ts);
     if (_tl > pp->col_tp_w)
     {
         pp->col_tp_w = _tl;
     }
     char _vs[64] = "";
-    X_HELP_V2_FILL_VALSTR_(binding, _vs);
+    fp_type_and_ptr_to_valuestring(binding->type, binding->ptr, _vs);
     int _vl = (int) strlen(_vs);
     if (_vl > pp->col_df_w)
     {
@@ -308,9 +300,9 @@ static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRIN
     }
 }
 
-static inline void X_HELP_MEASURE_V2_LOOP(FPS_CLI_BINDING    *bindings,
-                                          int                 nb_bindings,
-                                          HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_MEASURE_V2_LOOP(FPS_CLI_BINDING           *bindings,
+                                          int                        nb_bindings,
+                                          struct HELPER_PRETTYPRINT *pp)
 {
     for (int k = 0; k < nb_bindings; ++k)
     {
@@ -324,7 +316,7 @@ static inline void X_HELP_MEASURE_V2_LOOP(FPS_CLI_BINDING    *bindings,
  * Uses col_kw_w, col_tp_w, col_df_w (set by
  * X_HELP_MEASURE_V2) for dynamic column widths.
  */
-static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, struct HELPER_PRETTYPRINT *pp)
 {
     char        cli_idx_str[8];
     char        val_str[64]  = "";
@@ -339,8 +331,8 @@ static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT 
     {
         strncpy(cli_idx_str, " - ", sizeof(cli_idx_str) - 1);
     }
-    X_HELP_V2_FILL_TYPESTR_(binding, type_str);
-    X_HELP_V2_FILL_VALSTR_(binding, val_str);
+    fp_type_to_typestring(binding->type, type_str);
+    fp_type_and_ptr_to_valuestring(binding->type, binding->ptr, val_str);
     const char *_trig_tag = "";
     if ((binding->fpflag) & FPFLAG_TRIGGER_STREAM)
     {
@@ -368,9 +360,9 @@ static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT 
     }
 }
 
-static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING     bindings[],
-                                        int                 nb_bindings,
-                                        HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING            bindings[],
+                                        int                        nb_bindings,
+                                        struct HELPER_PRETTYPRINT *pp)
 {
     for (int k = 0; k < nb_bindings; ++k)
     {
@@ -814,7 +806,7 @@ static inline int main_impl(int              argc,
                " args + run\n\n",
                MH(MH_CMD, "exec"), MH(MH_OPT, "[args]"));
         /* ---- PARAMETERS ---- */
-        HELPER_PRETTYPRINT pp = {
+        struct HELPER_PRETTYPRINT pp = {
             .col_kw_w = 7, .col_tp_w = 4, .col_df_w = 7, .show_help_color = mh_color, .CLIargcnt = 0
         };
         //PARAMS_MACRO(X_HELP_MEASURE_V2)
