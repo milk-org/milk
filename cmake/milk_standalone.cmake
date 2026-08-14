@@ -193,7 +193,9 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
   add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
                              $<TARGET_OBJECTS:fps_standalone_data_obj>)
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
-  target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  # CMAKE_SOURCE_DIR (not PROJECT_SOURCE_DIR): each plugin subdirectory calls
+  # its own project(), which would otherwise re-root this path locally.
+  target_include_directories(${EXE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
   if(USE_STATIC_LTO)
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
   else()
@@ -221,9 +223,11 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
   add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
                              $<TARGET_OBJECTS:fps_standalone_data_obj>)
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
+  # CMAKE_SOURCE_DIR (not PROJECT_SOURCE_DIR): each plugin subdirectory calls
+  # its own project(), which would otherwise re-root this path locally.
   target_include_directories(
-    ${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src
-                        ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
+    ${EXE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src
+                        ${CMAKE_SOURCE_DIR}/plugins/milk-extra-src)
   if(USE_STATIC_LTO)
     target_link_libraries(${EXE_NAME} PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
   else()
@@ -271,6 +275,8 @@ function(add_cacao_standalone_plugins FUNC_NAME SRC_FILE)
       target_link_libraries(${EXE_NAME} PUBLIC milkimagefilter)
     elseif(_p STREQUAL "imagebasic")
       target_link_libraries(${EXE_NAME} PUBLIC milkimagebasic)
+    elseif(_p STREQUAL "statistic")
+      target_link_libraries(${EXE_NAME} PUBLIC milkstatistic)
     else()
       message(WARNING "Unknown plugin '${_p}' in "
                       "add_cacao_standalone_plugins()")
