@@ -162,9 +162,8 @@ class StartConfProcesses(SimpleTask):
         # The below could also probably be handled by a FPSManager of pyMilk
         sessions: list[ComputeSession] = []  # cache to apply global timeout
         for session_name, exec in p.sessions.items():
-            session_fps_config = p.session_configs[session_name]
             session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
-
+            # TODO breaks if tmux is busy already (in particular poor cleaning of repeated tests.)
             session.confstart(tmux=True)  # TODO dispatch env to tmuxes !!
             sessions += [session]
 
@@ -185,4 +184,6 @@ class StartConfProcesses(SimpleTask):
 class CompoundTask(SimpleTask): ...
 
 
-# Todo a compound task ?
+# TODO what about a compound task ?
+# TODO which tasks are reversible ?
+# TODO what's next? Naming of DM based tasks, and then getting into the aorun suite.

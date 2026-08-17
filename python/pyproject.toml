@@ -9,7 +9,7 @@ authors = [
 description = "Milk test package"
 name = "milk"
 version = "1.0"
-#dependencies = []
+dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12"]
 
 #[project.urls]
 #"Homepage" = "http://www.github.com/milk-org/pyMilk"

@@ -23,7 +23,10 @@ def cloned_pipeline(pipeline: Pipeline):
     yield cloned
 
     assert cloned.parent_folder.is_relative_to(os.getcwd())
-    assert cloned.parent_folder.is_relative_to("/tmp")  # before deleting
+    if ".nox" in cloned.parent_folder.parts:
+        assert "tmp" in cloned.parent_folder.parts
+    else:
+        assert cloned.parent_folder.is_relative_to("/tmp")
 
     # Kill all the tmuxes that are associated with the pipeline
     tsrv = libtmux.Server()
@@ -46,7 +49,9 @@ def test_make_pipeline(pipeline):
     assert pp.long_name == "pipelinebasic"
 
     assert pp.parent_folder.is_absolute()
-    assert pp.parent_folder.is_relative_to(Path.home())
+    # Check the pipeline is the one directly from this repos' test sources
+    # In the python/tests/resources folder
+    assert pp.parent_folder.is_relative_to(Path(__file__).parent.parent)
 
 
 def test_make_cloned_pipeline(cloned_pipeline):
@@ -59,7 +64,10 @@ def test_make_cloned_pipeline(cloned_pipeline):
 
     assert pp.parent_folder.is_absolute()
     assert pp.parent_folder.is_relative_to(os.getcwd())
-    assert pp.parent_folder.is_relative_to("/tmp")
+    if ".nox" in pp.parent_folder.parts:
+        assert "tmp" in pp.parent_folder.parts
+    else:
+        assert pp.parent_folder.is_relative_to("/tmp")
 
 
 def test_deploy_fps_call_by_class(cloned_pipeline: Pipeline):
