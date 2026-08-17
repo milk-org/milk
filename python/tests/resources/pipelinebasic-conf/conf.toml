@@ -1,0 +1,28 @@
+long_name = "pipelinebasic"
+name = "basic"
+loop_number = 0
+tasks = [ "init_folders", "fetch_assets", "fps_init", "conf_start" ]
+
+[sessions]
+delay0 = 'milk-fpsexec-mem-streamdelay'
+delay1 = 'milk-fpsexec-mem-streamdelay'
+
+
+[delay0]
+naive_mode = true
+delaysec = 0.01
+in_name = 'input'
+out_name = 'middle'
+procinfo.enabled = true
+procinfo.triggersname = 'input'
+procinfo.triggermode = 3
+
+
+[delay1]
+naive_mode = true
+delaysec = 0.01
+in_name = 'middle'
+out_name = 'output'
+procinfo.enabled = true
+procinfo.triggersname = 'middle'
+procinfo.triggermode = 3

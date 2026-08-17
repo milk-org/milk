@@ -46,7 +46,8 @@ __pycache__
 
 # Testing suite
 .nox
-testing/gcov_html
+.coverage
+**/gcov_html
 pyrightconfig.local.json
 c_cpp_properties.json
 
@@ -75,6 +76,3 @@ scratch/
 
 # Test executables compiled in the source tree
 src/milk-fpsclitest
-
-# Coverage
-gcov_html/

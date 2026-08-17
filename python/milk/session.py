@@ -36,8 +36,10 @@ class ComputeSession:
         """Try to link to the named FPS, raising only if except_ is True."""
 
         if self.fps is not None:
-            # TODO add an isvalid() to the FPS object itself.
-            return
+            if self.fps.is_valid():
+                return
+            else:
+                self.fps = None
 
         try:
             self.fps = FPS(self.fpsname)
@@ -51,45 +53,67 @@ class ComputeSession:
         )
         # self.procinfo = # TODO add a procinfo mapping.
 
-    def _runstart(self, command: str, *args: str) -> subprocess.Popen:
+    def _subprocess_start(
+        self, command: str, *args: str, wrap_in_shell: bool = False
+    ) -> subprocess.Popen:
         target = f"{self.fpsname}:{command}"
         argv = [self.exec_name, *args, target]
-        return subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if wrap_in_shell:
+            # 2 things:
+            # - Wrap in a bash call so that bash performs a wait on the underlying process that we actually desire
+            #   so that this process doesn't become Zombie for long, and conf.isrunning / run.isrunning remain accurate.
+            # - Add a tail call "; true" to bash -c so that we force out of bash's last-command
+            #   optimization which very exactly defeats the above purpose.
+            return subprocess.Popen(
+                ["bash", "-c"] + [" ".join(argv) + "; true"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        else:
+            return subprocess.Popen(
+                argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
 
-    def _runcomplete(self, command: str, *args: str) -> subprocess.Popen:
-        proc = self._runstart(command, *args)
+    def _subprocess_complete(
+        self, command: str, *args: str, wrap_in_shell: bool = False
+    ) -> subprocess.Popen:
+        proc = self._subprocess_start(command, *args, wrap_in_shell=wrap_in_shell)
         proc.wait()
         return proc
 
     def fpsinit(self, procinfo: bool = True) -> None:
         """Create the FPS shared memory segment."""
-        self._runcomplete("fpsinit", "-procinfo")
+        self._subprocess_complete("fpsinit", "-procinfo")
         self._trylink_fps(raise_on_miss=True)
         # Guarantees FPS exists
 
     def __str__(self) -> str:
         self._trylink_fps(True)
-        return self._runcomplete("fps").stdout.read().decode()  # type: ignore
+        return self._subprocess_complete("fps").stdout.read().decode()  # type: ignore
+
+    def __repr__(self) -> str:
+        self._trylink_fps(True)
+        return self._subprocess_complete("fps").stdout.read().decode()  # type: ignore
 
     def confstart(self, tmux: bool = False) -> None:
         self._trylink_fps(True)
         # timeout ? guaranteed completion ? return pid ?
         if tmux:
-            self._runcomplete("confstart", "-tmux")
+            self._subprocess_complete("confstart", "-tmux")
         else:
-            self._runstart("confstart")
+            self._subprocess_start("confstart", wrap_in_shell=True)
 
     def confstep(self) -> None:
         # TODO I have no idea how to test this? What's the spec?
         self._trylink_fps(True)
-        self._runcomplete("confstep")
+        self._subprocess_complete("confstep")
 
     def confstop(self) -> None:
         self._trylink_fps(True)
-        self._runcomplete("confstop")
+        self._subprocess_complete("confstop")
 
     def runstart(
-        self, tmux: bool, loopd: float | None = None, loops: bool = False
+        self, tmux: bool = False, loopd: float | None = None, loops: bool = False
     ) -> None:
         self._trylink_fps(True)
         assert loopd is None or not loops
@@ -97,14 +121,17 @@ class ComputeSession:
             args = ("-loops",)
         elif loopd:
             args = ("-loopd", f"{loopd:.6f}")
-        if tmux:
-            self._runcomplete("runstart", "-tmux")
         else:
-            self._runstart("runstart")
+            args = ()
+
+        if tmux:
+            self._subprocess_complete("runstart", "-tmux", *args)
+        else:
+            self._subprocess_start("runstart", *args, wrap_in_shell=True)
 
     def runstop(self) -> None:
         self._trylink_fps(True)
-        self._runcomplete("runstop")
+        self._subprocess_complete("runstop")
 
     '''
     def set(self, *args: str) -> None:
