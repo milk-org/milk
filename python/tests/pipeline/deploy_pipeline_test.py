@@ -75,7 +75,7 @@ def test_deploy_fps_call_by_class(cloned_pipeline: Pipeline):
 
     from milk.infra.deploy_tasks import DeployFPS
 
-    pp(DeployFPS)
+    pp.task_do(DeployFPS)
 
     for sname in pp.sessions:
         sesh = pp.get_session(sname)
@@ -96,7 +96,7 @@ def test_deploy_fps_call_by_instance(cloned_pipeline: Pipeline):
         StartConfProcesses,
     )
 
-    pp(InitialFolderSetup)(DeployFPS)(StartConfProcesses)
+    pp.task_do(InitialFolderSetup).task_do(DeployFPS).task_do(StartConfProcesses)
 
     for sname in pp.sessions:  # TODO this is bad naming urgh
         sesh = pp.get_session(sname)

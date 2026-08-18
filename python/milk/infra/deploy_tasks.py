@@ -28,12 +28,13 @@ That's it.
 from __future__ import annotations
 import typing as typ
 
-import os
+import os, contextlib
 import glob
 import shutil
 from pathlib import Path
 
 from .task_models import SimpleTask
+from ..session import ComputeSession
 
 if typ.TYPE_CHECKING:
     from pyMilk.interfacing.fps import FPVal
@@ -46,14 +47,25 @@ class InitialFolderSetup(SimpleTask):
     def can(self) -> bool:
         # check logdir does NOT exist
         # check rootdir does NOT exist
-        ...
+        return True  # TODO
 
-    def success(self) -> bool: ...
+    def success(self) -> bool:
+        root_dir = self.pipeline.root_folder
+        if not os.path.isdir(root_dir):
+            return False
+        if not os.path.isfile(root_dir / "conf.toml"):
+            return False
+
+        # More ?
+
+        return True
 
     def forward(self):
-        loop_name = self.pipeline.short_name
-        conf_dir = self.pipeline.conf_folder
-        root_dir = self.pipeline.root_folder
+        pp = self.pipeline
+
+        loop_name = pp.short_name
+        conf_dir = pp.conf_folder
+        root_dir = pp.root_folder
 
         print(f"CACAO_LOOPNAME    : {loop_name}")
         print(f"CONFDIR           : {conf_dir}")
@@ -67,10 +79,11 @@ class InitialFolderSetup(SimpleTask):
             os.environ["MILK_SHM_DIR"] + f"/fpsCTRL-{loop_name}.log"
         )
 
-        logdir = Path.cwd() / f"logdir-{loop_name}"
-        logdir.mkdir(parents=True, exist_ok=True)
+        pp.log_folder.mkdir(parents=True, exist_ok=True)
         (root_dir / "logdir").unlink(missing_ok=True)
-        (root_dir / "logdir").symlink_to(logdir)
+        (root_dir / "logdir").symlink_to(pp.log_folder)
+
+        pp.run_folder.mkdir(parents=True, exist_ok=True)
 
         fpstmuxenv = conf_dir / "fpstmuxenv"
         if fpstmuxenv.exists():
@@ -90,9 +103,6 @@ class InitialFolderSetup(SimpleTask):
         for fname in glob.glob(str(conf_dir / "scripts" / "*")):
             shutil.copy(fname, scripts_dir)
 
-        # used by the matching cleanup task, to wait on tmux teardown
-        self.fpsctrl_tmux_name = f"{loop_name}_fpsCTRL"
-
 
 class TestConfig(SimpleTask):
     """
@@ -104,12 +114,24 @@ class TestConfig(SimpleTask):
 
 class DeployFPS(SimpleTask):
 
-    def can(self) -> bool: ...
+    def can(self) -> bool:
+        p = self.pipeline
+        if not os.path.isdir(p.root_folder):
+            return False
+        if not os.path.isdir(p.run_folder):
+            return False
+        return True
 
-    def success(self) -> bool: ...
+    def success(self) -> bool:
+        p = self.pipeline
+        for session_name, exec in p.sessions.items():
+            session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
+            if not session.fps or not session.fps.is_valid():
+                return False
+
+        return True
 
     def forward(self) -> None:
-        from ..session import ComputeSession
 
         p = self.pipeline
 
@@ -119,7 +141,9 @@ class DeployFPS(SimpleTask):
             session_fps_config = p.session_configs[session_name]
             session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
 
-            session.fpsinit()
+            with contextlib.chdir(p.run_folder):
+                session.fpsinit()
+
             assert session.fps
 
             # TODO probably should be a utility somewhere to flatten fps dicts
@@ -149,9 +173,19 @@ class StartConfProcesses(SimpleTask):
         # Find all sessions expected by this config
         # Check FPSs exist with the correct name
         # TODO remember at some point task.can must be called and raise.
-        ...
+        # TODO
+        return True
 
-    def success(self) -> bool: ...
+    def success(self) -> bool:
+        # TODO I deffo want a Pipeline.sessions property now
+        p = self.pipeline
+        sessions = [
+            ComputeSession(exec, s_name + f"_{p.loop_number:03d}")
+            for (s_name, exec) in p.sessions.items()
+        ]
+        if any([s.fps is None for s in sessions]):
+            return False
+        return all([s.fps is not None and s.fps.conf_isrunning() for s in sessions])
 
     def forward(self) -> None:
         from ..session import ComputeSession
@@ -167,7 +201,6 @@ class StartConfProcesses(SimpleTask):
             session.confstart(tmux=True)  # TODO dispatch env to tmuxes !!
             sessions += [session]
 
-        # TODO should this be the success function ?
         import time
 
         start = time.monotonic()
@@ -175,15 +208,16 @@ class StartConfProcesses(SimpleTask):
             if all([s.fps.conf_isrunning() for s in sessions]):  # type: ignore
                 break
             time.sleep(0.01)
-        else:
-            raise TimeoutError(
-                f"Timeout on StartConfProcesses for {self.pipeline.short_name} [loop {self.pipeline.loop_number}]"
-            )
+        else:  # Should it raise ? We're gonna call self.success for that
+            ...
+            # raise TimeoutError(
+            #    f"Timeout on StartConfProcesses for {self.pipeline.short_name} [loop {self.pipeline.loop_number}]"
+            # )
 
 
-class CompoundTask(SimpleTask): ...
+class CompoundTask(SimpleTask):
+    ...
 
-
-# TODO what about a compound task ?
-# TODO which tasks are reversible ?
-# TODO what's next? Naming of DM based tasks, and then getting into the aorun suite.
+    # TODO what about a compound task ?
+    # TODO which tasks are reversible ?
+    # TODO what's next? Naming of DM based tasks, and then getting into the aorun suite.

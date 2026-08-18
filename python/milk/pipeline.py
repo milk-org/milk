@@ -52,6 +52,9 @@ class Pipeline:
         self.loop_number = self.config.loop_number
 
         self.root_folder = self.parent_folder / f"{self.short_name}-rootdir"
+        self.log_folder = self.parent_folder / f"{self.short_name}-logdir"
+
+        self.run_folder = self.root_folder / "rundir"
 
     def clone_to(self, new_parent_folder: str | Path) -> Pipeline:
         new_parent_folder = Path(new_parent_folder)
@@ -66,19 +69,29 @@ class Pipeline:
 
         return Pipeline(new_parent_folder, self.long_name)
 
-    def __call__(self, task: SimpleTask | type[SimpleTask]) -> Pipeline:
+    def task_do(self, task: SimpleTask | type[SimpleTask]) -> Pipeline:
         if isinstance(task, SimpleTask):
             pass
         elif issubclass(task, SimpleTask):
             task = task(self)
         else:
             raise ValueError(
-                f"Bad argument: subclass type or instance of SimpleTask required."
+                f"Bad argument: subclass or instance of SimpleTask required."
             )
+        if task.success():
+            # log unneeded
+            return self
 
-        task.forward()
+        if task.can():
+            task.forward()
 
-        return self
+        if not task.success():
+            # TODO if partial success is tolerated ?
+            raise AssertionError(f"Task {task} did not complete to success")
+
+        return self  # So as to be able to chain
+
+    def task_undo(self): ...
 
     def get_session_abs_name(self, session_relative_name: str) -> str:
         # TODO UNLESS it's a DM session !!

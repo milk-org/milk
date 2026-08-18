@@ -23,7 +23,7 @@ include=["milk*"]
 testpaths = ["tests"]
 addopts = [
     "--import-mode=importlib",
-    "--ignore=mains/*",
+    "--ignore=tests/mains",
 ]
 
 [tool.coverage.run]
