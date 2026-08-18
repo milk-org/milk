@@ -63,3 +63,9 @@ class ReversibleTask(SimpleTask):
         The state may be mingled, dont raise.
         """
         ...
+
+
+class NoCanTaskError(Exception): ...
+
+
+class NoSuccessTaskError(Exception): ...

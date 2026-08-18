@@ -73,9 +73,13 @@ def test_make_cloned_pipeline(cloned_pipeline):
 def test_deploy_fps_call_by_class(cloned_pipeline: Pipeline):
     pp = cloned_pipeline
 
-    from milk.infra.deploy_tasks import DeployFPS
+    from milk.infra.deploy_tasks import DeployFPS, InitialFolderSetup
+    from milk.infra.task_models import NoCanTaskError
 
-    pp.task_do(DeployFPS)
+    # Now forbidden because it MUST have a rootdir to perform a DeployFPS
+    with pytest.raises(NoCanTaskError):
+        pp.task_do(DeployFPS)
+    pp.task_do(InitialFolderSetup).task_do(DeployFPS)
 
     for sname in pp.sessions:
         sesh = pp.get_session(sname)

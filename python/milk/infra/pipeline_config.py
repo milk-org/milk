@@ -12,7 +12,6 @@ from pathlib import Path
 
 from dataclasses import dataclass, fields
 
-import tomli, tomli_w
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -92,21 +91,3 @@ class PipelineConfig:
         self.session_configs: dict[str, dict] = {}
 
         # Really I want schemas and dynamic parsing...
-
-
-def load_pipeline_config(conf_folder: str | Path) -> PipelineConfig:
-    with open(Path(conf_folder) / "conf.toml", "rb") as f:
-        data = tomli.load(f)
-
-    parsed = PipelineConfigModel(**data)  # Will raise ValidationError
-
-    config = PipelineConfig()
-    config.name = parsed.name
-    config.loop_number = parsed.loop_number
-    config.sessions = parsed.sessions
-    # Each session name is also a top-level table holding its own config
-    config.session_configs = {
-        session_name: data[session_name] for session_name in config.sessions
-    }
-
-    return config

@@ -14,15 +14,15 @@ delaysec = 0.01
 in_name = 'input'
 out_name = 'middle'
 procinfo.enabled = true
-procinfo.triggersname = 'input'
+procinfo.triggersname = '{delay0.in_name}'
 procinfo.triggermode = 3
 
 
 [delay1]
 naive_mode = true
 delaysec = 0.01
-in_name = 'middle'
+in_name = '{delay0.out_name}'
 out_name = 'output'
 procinfo.enabled = true
-procinfo.triggersname = 'middle'
+procinfo.triggersname = '{delay0.out_name}'
 procinfo.triggermode = 3

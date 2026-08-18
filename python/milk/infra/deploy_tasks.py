@@ -36,10 +36,7 @@ from pathlib import Path
 from .task_models import SimpleTask
 from ..session import ComputeSession
 
-if typ.TYPE_CHECKING:
-    from pyMilk.interfacing.fps import FPVal
-
-    FPValNest: typ.TypeAlias = FPVal | dict[str, "FPValNest"]
+from .toml_manipulation import denest_toml_dicts
 
 
 class InitialFolderSetup(SimpleTask):
@@ -146,21 +143,8 @@ class DeployFPS(SimpleTask):
 
             assert session.fps
 
-            # TODO probably should be a utility somewhere to flatten fps dicts
-            def denest_fps(fp_param_dict: dict[str, FPValNest]) -> dict[str, FPVal]:
-                copied: dict[str, FPVal] = {}
-                for key, value in fp_param_dict.items():
-                    if isinstance(value, dict):
-                        new_value = denest_fps(value)
-                        for kk, vv in new_value.items():
-                            copied[f"{key}.{kk}"] = vv
-                    else:
-                        copied[key] = value
-
-                return copied
-
             # TODO probably a method on the Session should provide the denested iterator.
-            denested_fps_config = denest_fps(session_fps_config)
+            denested_fps_config = denest_toml_dicts(session_fps_config)
 
             for fp_name, fp_value in denested_fps_config.items():
                 session.fps[fp_name] = fp_value

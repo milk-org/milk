@@ -25,8 +25,8 @@ Deploy 3 pipelines:
 from __future__ import annotations
 
 from .session import ComputeSession
-from .infra.pipeline_config import load_pipeline_config
-from .infra.task_models import SimpleTask
+from .infra.toml_manipulation import load_pipeline_config
+from .infra.task_models import SimpleTask, NoCanTaskError, NoSuccessTaskError
 
 import subprocess
 from pathlib import Path
@@ -84,10 +84,12 @@ class Pipeline:
 
         if task.can():
             task.forward()
+        else:
+            raise NoCanTaskError(f"Task {task} cannot be executed")
 
         if not task.success():
             # TODO if partial success is tolerated ?
-            raise AssertionError(f"Task {task} did not complete to success")
+            raise NoSuccessTaskError(f"Task {task} did not complete to success")
 
         return self  # So as to be able to chain
 

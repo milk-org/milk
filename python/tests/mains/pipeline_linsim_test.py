@@ -26,11 +26,12 @@ def test_pipeline():
 
     dmv = SHM("dmvolt", np.zeros((10, 10), np.float32))
 
+    data: np.ndarray = fits.getdata(
+        pipeline.root_folder / "data" / "sim_matrix.fits"
+    )  # type: ignore
     simu_modes = SHM(
         "aol1_simu_modes",
-        fits.getdata(pipeline.root_folder / "data" / "sim_matrix.fits")
-        .reshape(20, 10, 100)
-        .astype(np.float32),
+        data.reshape(20, 10, 100).astype(np.float32),
         symcode=0,
     )
 
