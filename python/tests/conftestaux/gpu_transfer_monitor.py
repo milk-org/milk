@@ -86,10 +86,6 @@ def attempt_build_libcupti_spy():
 _LIB_PATH = Path(__file__).parent / "gpu_monitor" / "libcupti_spy.so"
 
 
-class CuptiSpyUnavailable(RuntimeError):
-    """Raised when libcupti_spy.so has not been built."""
-
-
 def _load_lib() -> ctypes.CDLL:
     attempt_build_libcupti_spy()
 
@@ -113,15 +109,31 @@ def _load_lib() -> ctypes.CDLL:
     lib.cupti_spy_get_htod.restype = ctypes.c_uint64
     lib.cupti_spy_get_htod.argtypes = []
 
-    CUPTI_SPY_LIB = lib
     return lib
 
 
-CUPTI_SPY_LIB: ctypes.CDLL | None = None
-try:
-    CUPTI_SPY_LIB = _load_lib()
-except CuptiSpyUnavailable as exc:
-    print(repr(exc))
+class CuptiSpyUnavailable(RuntimeError):
+    """Raised when libcupti_spy.so has not been built."""
+
+
+# Lazy-builder-loader for CUPTY_SPY_LIB
+class CUPTY_SPY_LIB_CLS:
+
+    def __init__(self) -> None:
+        self.loaded = False
+        self.CUPTI_SPY_LIB: ctypes.CDLL | None = None
+
+    def __call__(self) -> ctypes.CDLL | None:
+        if not self.loaded:
+            try:
+                self.CUPTI_SPY_LIB = _load_lib()
+            except CuptiSpyUnavailable as exc:
+                print(repr(exc))
+            self.loaded = True  # Which may be a failed build and load !
+        return self.CUPTI_SPY_LIB
+
+
+CUPTI_SPY_LIB_LAZYLOADER = CUPTY_SPY_LIB_CLS()  # Singleton, unloaded
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -136,15 +148,18 @@ def assert_no_gpu_host_transfers() -> Generator[None, None, None]:
 
     Raises CuptiSpyUnavailable if the native library has not been built.
     """
-    assert CUPTI_SPY_LIB is not None
-    CUPTI_SPY_LIB.cupti_spy_start()
+    CUPTI = CUPTI_SPY_LIB_LAZYLOADER()
+    if CUPTI is None:
+        raise CuptiSpyUnavailable
+
+    CUPTI.cupti_spy_start()
     try:
         yield
     finally:
-        CUPTI_SPY_LIB.cupti_spy_stop()
+        CUPTI.cupti_spy_stop()
 
-    dtoh: int = CUPTI_SPY_LIB.cupti_spy_get_dtoh()
-    htod: int = CUPTI_SPY_LIB.cupti_spy_get_htod()
+    dtoh: int = CUPTI.cupti_spy_get_dtoh()
+    htod: int = CUPTI.cupti_spy_get_htod()
 
     assert dtoh == 0 and htod == 0, (
         f"Unexpected GPU host transfers detected: "
@@ -173,15 +188,17 @@ def count_gpu_host_transfers() -> Generator[TransferCounter, None, None]:
             do_work()
         assert counts['dtoh'] == 0
     """
-    assert CUPTI_SPY_LIB is not None
+    CUPTI = CUPTI_SPY_LIB_LAZYLOADER()
+    if CUPTI is None:
+        raise CuptiSpyUnavailable
     counts = TransferCounter()
-    CUPTI_SPY_LIB.cupti_spy_start()
+    CUPTI.cupti_spy_start()
     try:
         yield counts
     finally:
-        CUPTI_SPY_LIB.cupti_spy_stop()
-        counts.dtoh = int(CUPTI_SPY_LIB.cupti_spy_get_dtoh())
-        counts.htod = int(CUPTI_SPY_LIB.cupti_spy_get_htod())
+        CUPTI.cupti_spy_stop()
+        counts.dtoh = int(CUPTI.cupti_spy_get_dtoh())
+        counts.htod = int(CUPTI.cupti_spy_get_htod())
 
 
 # ---------------------------------------------------------------------------
