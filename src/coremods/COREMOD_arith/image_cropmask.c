@@ -42,7 +42,7 @@ static uint32_t cropysize  = 64;
     X(".cropystart", &cropystart, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "crop y coord start") \
     X(".cropysize", &cropysize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "crop y coord size")
 
-static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
+static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 {
     if (dcfpsptr != NULL)
     {
@@ -52,11 +52,6 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
             dcfpsptr->parray[fpi].fpflag |= FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
         }
     }
-    return RETURN_SUCCESS;
-}
-
-static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
-{
     return RETURN_SUCCESS;
 }
 
@@ -124,7 +119,7 @@ errno_t CLIADDCMD_COREMODE_arith__cropmask()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    CLIcmddata.FPS_customCONFsetup = NULL;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }

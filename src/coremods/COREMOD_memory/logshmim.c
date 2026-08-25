@@ -116,7 +116,7 @@ static uint32_t writerRTprio                              = 0;
  * 4.  CUSTOM CONF SETUP / CHECK
  * ============================================================= */
 
-static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
+static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 {
     if (dcfpsptr != NULL)
     {
@@ -159,11 +159,6 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
         }
     }
 
-    return RETURN_SUCCESS;
-}
-
-static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
-{
     return RETURN_SUCCESS;
 }
 
@@ -737,7 +732,6 @@ errno_t CLIADDCMD_COREMOD_MEMORY__logshmim()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }
