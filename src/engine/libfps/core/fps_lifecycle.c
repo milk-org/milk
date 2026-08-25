@@ -337,18 +337,39 @@ int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(
                fps_name);
         return 0;
     }
-    FPS_CONF_STD_BODY(fps_name, loop, {}, {
-        if (confcheck_fn != NULL)
+
+    // #define FPS_CONF_STD_BODY(fps_name, loop, BLOCK_VAR_MAP, BLOCK_VALIDATE)
+    FPS fps;
+    loop ? printf("Starting configuration process loop for '%s'\n", fps_name)
+         : printf("Running single configuration step for '%s'\n", fps_name);
+
+    fps =
+        function_parameter_FPCONFsetup(fps_name, loop ? FPSCMDCODE_CONFSTART : FPSCMDCODE_FPSINIT);
+    // BLOCK_VAR_MAP // {}
+    while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)
+    {
+        if (function_parameter_FPCONFloopstep(&fps))
         {
+            if (confcheck_fn != NULL)
+            {
 #ifndef FPS_STANDALONE
-            dcfpsptr = &fps;
+                dcfpsptr = &fps;
 #else
-            milk_data.fpsptr = &fps;
+                milk_data.fpsptr = &fps;
 #endif
-            confcheck_fn();
+                confcheck_fn();
+            }
+            functionparameter_CheckParametersAll(&fps);
+            if (!loop)
+            {
+                break;
+            }
+            usleep(10000);
         }
-    });
-    return 0;
+    }
+
+    function_parameter_FPCONFexit(&fps);
+    return RETURN_SUCCESS;
 }
 
 
