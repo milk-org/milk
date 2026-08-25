@@ -1105,42 +1105,6 @@ static inline int main_impl(int              argc,
     (VARfps).cmdset.triggertimeout.tv_nsec = 0;
 
 /**
- * @brief Standard body for FPSCONF function
- *
- * @param VARfps_name Name of the FPS
- * @param VARloop Loop flag (1 for loop, 0 for single step)
- * @param BLOCK_VAR_MAP Code block to map parameters (e.g. { ptr = ...; })
- * @param BLOCK_VALIDATE Code block to validate parameters (e.g. { validate(); })
- */
-#define FPS_CONF_STD_BODY(VARfps_name, VARloop, BLOCK_VAR_MAP, BLOCK_VALIDATE)   \
-    FPS fps;                                                                     \
-    if (VARloop)                                                                 \
-    {                                                                            \
-        printf("Starting configuration process loop for '%s'\n", VARfps_name);   \
-        fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_CONFSTART); \
-        BLOCK_VAR_MAP                                                            \
-        while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)                       \
-        {                                                                        \
-            if (function_parameter_FPCONFloopstep(&fps))                         \
-            {                                                                    \
-                BLOCK_VALIDATE                                                   \
-                functionparameter_CheckParametersAll(&fps);                      \
-            }                                                                    \
-            usleep(10000);                                                       \
-        }                                                                        \
-    }                                                                            \
-    else                                                                         \
-    {                                                                            \
-        printf("Running single configuration step for '%s'\n", VARfps_name);     \
-        fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_FPSINIT);   \
-        BLOCK_VAR_MAP                                                            \
-        function_parameter_FPCONFloopstep(&fps);                                 \
-        BLOCK_VALIDATE                                                           \
-        functionparameter_CheckParametersAll(&fps);                              \
-    }                                                                            \
-    function_parameter_FPCONFexit(&fps);
-
-/**
  * @brief Standard connection and parameter mapping for FPSRUN
  */
 #define FPS_RUN_STD_PREAMBLE(VARfps_name, VARfps, BLOCK_VAR_MAP)                     \
