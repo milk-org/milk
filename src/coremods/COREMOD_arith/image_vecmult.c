@@ -38,8 +38,7 @@ static uint32_t multaxis = 0;
     X(".imoutname", imoutname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image name")  \
     X(".axis", &multaxis, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "multiplication axis")
 
-
-static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
+static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 {
     if (dcfpsptr != NULL)
     {
@@ -50,11 +49,6 @@ static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
         }
     }
 
-    return RETURN_SUCCESS;
-}
-
-static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
-{
     return RETURN_SUCCESS;
 }
 
@@ -213,7 +207,6 @@ errno_t CLIADDCMD_COREMODE_arith__image_vecmult()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
 }

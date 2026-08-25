@@ -41,19 +41,6 @@ static int64_t *ex1mode;
     X(".option.ex1mode", &ex1mode, FPTYPE_ONOFF, 1, FPFLAG_DEFAULT_INPUT,              \
       "toggle1 conditional on toggle0")
 
-// Optional custom configuration setup
-static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
-{
-    // increment counter at every configuration check
-    *cntindex = *cntindex + 1;
-
-    if (*cntindex >= *cntindexmax)
-    {
-        *cntindex = 0;
-    }
-
-    return RETURN_SUCCESS;
-}
 
 // Optional custom configuration checks
 static MILK_COLD errno_t customCONFcheck()
@@ -215,7 +202,6 @@ errno_t CLIADDCMD_milk_module_example__streamprocess()
 {
     safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
 
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
 
     INSERT_STD_CLIREGISTERFUNC
