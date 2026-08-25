@@ -31,7 +31,7 @@ def build_gpu_tuple() -> tuple[int, ...]:
     if len(gpu_cuda_vis) == 0:
         return tuple(range(all_gpus))
     else:
-        return tuple(set(range(all_gpus)) - gpu_cuda_vis)
+        return tuple(sorted(set(range(all_gpus)).intersection(gpu_cuda_vis)))
 
 
 NVIDIA_DRIVER_FOUND = find_nvidia_in_lsmod()

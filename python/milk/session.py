@@ -83,7 +83,10 @@ class ComputeSession:
 
     def fpsinit(self, procinfo: bool = True) -> None:
         """Create the FPS shared memory segment."""
-        self._subprocess_complete("fpsinit", "-procinfo")
+        if procinfo:
+            self._subprocess_complete("fpsinit", "-procinfo")
+        else:
+            self._subprocess_complete("fpsinit")
         self._trylink_fps(raise_on_miss=True)
         # Guarantees FPS exists
 
