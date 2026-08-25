@@ -136,7 +136,6 @@ int fps_generic_init(const char      *fps_name,
 
     /* Shared-memory mode */
     FPS fps;
-    // TODO What the fuck ???
     // So the FPS v2 init macro inject code that calls this function that injects more macro code ?
     // As I was saying, WTF?
     FPS_INIT_STD_PREAMBLE(fps, fps_name, "", app_info->description, app_info->description);
@@ -346,27 +345,29 @@ int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(
     fps =
         function_parameter_FPCONFsetup(fps_name, loop ? FPSCMDCODE_CONFSTART : FPSCMDCODE_FPSINIT);
     // BLOCK_VAR_MAP // {}
-    while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)
+
+    // FPS_LOCALSTATUS_CONFLOOP is == to loop, by means of function_parameter_FPCONFsetup
+    // let's do one iter in all cases
+    do
     {
-        if (function_parameter_FPCONFloopstep(&fps))
+        if (!function_parameter_FPCONFloopstep(&fps))
         {
-            if (confcheck_fn != NULL)
-            {
-#ifndef FPS_STANDALONE
-                dcfpsptr = &fps;
-#else
-                milk_data.fpsptr = &fps;
-#endif
-                confcheck_fn();
-            }
-            functionparameter_CheckParametersAll(&fps);
-            if (!loop)
-            {
-                break;
-            }
-            usleep(10000);
+            continue;
         }
-    }
+
+        if (confcheck_fn != NULL)
+        {
+#ifndef FPS_STANDALONE
+            dcfpsptr = &fps;
+#else
+            milk_data.fpsptr = &fps;
+#endif
+            confcheck_fn();
+        }
+        functionparameter_CheckParametersAll(&fps);
+        usleep(10000);
+
+    } while (loop && (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP));
 
     function_parameter_FPCONFexit(&fps);
     return RETURN_SUCCESS;
