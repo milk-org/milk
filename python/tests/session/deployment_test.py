@@ -28,11 +28,11 @@ def func_fpsinit(pinfo: bool = True) -> StreamDelayComputeSession:
     assert session.fps
 
     if pinfo:
-        assert session.has_procinfo is True
+        assert session.procinfo
         assert "procinfo.enabled" in session.fps
         assert session.fps["procinfo.enabled"]
     else:
-        assert session.has_procinfo is False
+        assert session.procinfo is None
         assert not "procinfo.enabled" in session.fps
 
     # Configure
@@ -167,7 +167,7 @@ def test_raises_on_missing_fps(fixt_fpsinit_pinfo):
     session.fps.destroy()
 
     with pytest.raises(FPSDoesntExistError):
-        str(session)  # TODO str(session.fps) segfaults ! No catching there.
+        session._trylink_fps(True)
 
 
 def test_str(fixt_fpsinit_pinfo):

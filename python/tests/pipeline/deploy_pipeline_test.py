@@ -54,6 +54,25 @@ def test_make_pipeline(pipeline):
     assert pp.parent_folder.is_relative_to(Path(__file__).parent.parent)
 
 
+def test_pipeline_var_substitution(pipeline):
+    pp: Pipeline = pipeline
+    assert pp.loop_number == 0
+    assert pp.long_name == "pipelinebasic"
+
+    assert (
+        pp.session_configs["delay0"]["procinfo"]["triggersname"]
+        == pp.session_configs["delay0"]["in_name"]
+    )
+    assert (
+        pp.session_configs["delay1"]["procinfo"]["triggersname"]
+        == pp.session_configs["delay0"]["out_name"]
+    )
+    assert (
+        pp.session_configs["delay1"]["in_name"]
+        == pp.session_configs["delay0"]["out_name"]
+    )
+
+
 def test_make_cloned_pipeline(cloned_pipeline):
     """
     Clone the pipeline to a working folder
