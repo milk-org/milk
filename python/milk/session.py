@@ -5,6 +5,14 @@ import subprocess
 from pyMilk.interfacing.fps import FPS, FPSDoesntExistError
 
 
+def fpslist(exec_name: str):
+    """
+    No capture of stdout, just print
+    """
+    proc = subprocess.Popen([exec_name, "fpslist"])
+    proc.wait()
+
+
 class ComputeSession:
     """Python-side handle for a milk-fpsexec-* compute unit lifecycle.
 
@@ -13,14 +21,14 @@ class ComputeSession:
     Commands:
       fpsinit          Create the FPS
       fps              Print FPS content
-      fpslist          List matching FPS instances # TODO should be a classmethod, no point.
+      fpslist          List matching FPS instances
       confstart        Configuration loop
       confstep         Single config step
       confstop         Stop config loop
       runstart         Main processing loop
       runstop          Stop processing loop
-      set [args]       Set positional args (. to skip) # TODO probably wont do this here
-      exec [args]      Auto-init + set args + run      # TODO meh
+      # set [args]       Set positional args (. to skip) # NotImplemented
+      # exec [args]      Auto-init + set args + run      # NotImplemented
     """
 
     def __init__(self, exec_name: str, fpsname: str) -> None:
@@ -48,10 +56,11 @@ class ComputeSession:
             if raise_on_miss:
                 raise
 
-        self.has_procinfo = (
-            self.fps is not None and "procinfo.enabled" in self.fps.key_types
+        self.procinfo = (
+            self.fps.procinfo
+            if (self.fps is not None and self.fps.procinfo is not None)
+            else None
         )
-        # self.procinfo = # TODO add a procinfo mapping.
 
     def _subprocess_start(
         self, command: str, *args: str, wrap_in_shell: bool = False
@@ -91,14 +100,25 @@ class ComputeSession:
         # Guarantees FPS exists
 
     def __str__(self) -> str:
-        self._trylink_fps(True)
+        self._trylink_fps(False)
+        if self.fps is None:
+            return f"Session {self.exec_name} {self.fpsname} [FPS unlinked]"
         return self._subprocess_complete("fps").stdout.read().decode()  # type: ignore
 
     def __repr__(self) -> str:
-        self._trylink_fps(True)
-        return self._subprocess_complete("fps").stdout.read().decode()  # type: ignore
+        self._trylink_fps(False)
+        fps_ok = "unlinked" if self.fps is None else "OK"
+        return f"Session {self.fpsname} ({self.exec_name}) [FPS {fps_ok}]"
+
+    def fpslist(self) -> None:
+        fpslist(self.exec_name)
 
     def confstart(self, tmux: bool = False) -> None:
+        """
+        This ends up calling:
+        int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(void))
+        with loop = 1
+        """
         self._trylink_fps(True)
         # timeout ? guaranteed completion ? return pid ?
         if tmux:
@@ -107,7 +127,11 @@ class ComputeSession:
             self._subprocess_start("confstart", wrap_in_shell=True)
 
     def confstep(self) -> None:
-        # TODO I have no idea how to test this? What's the spec?
+        """
+        This ends up calling:
+        int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(void))
+        with loop = 0
+        """
         self._trylink_fps(True)
         self._subprocess_complete("confstep")
 

@@ -17,6 +17,7 @@ wfscamsim = 'cacao-fpsexec-cacaoiot-wfscamsim'
 in_name = 'dmvolt'
 out_name = 'dmvolt_delayed'
 procinfo.loopcntMax = -1
+delaysec = 0.033
 
 [mvm]
 procinfo.enabled = true
@@ -28,6 +29,12 @@ insname = 'dmvolt_delayed'
 immodes = 'aol1_simu_modes' # todo reinterpret as f-string
 axmode = 1
 option.MODENORM = false
-outcoeff = 'wfssim'
+outcoeff = 'wfssim_clean'
 
 [wfscamsim]
+procinfo.triggersname = '{mvm.outcoeff}'
+wfssignal = '{mvm.outcoeff}'
+wfscamim = 'wfssim'
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 3

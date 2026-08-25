@@ -16,18 +16,19 @@ if typ.TYPE_CHECKING:
 
 def load_pipeline_config(conf_folder: str | Path) -> PipelineConfig:
     with open(Path(conf_folder) / "conf.toml", "rb") as f:
-        data = tomli.load(f)
+        pre_sub_data = tomli.load(f)
 
-    substitute_toml_variables_in_nested(data)
+    data = substitute_toml_variables_in_nested(pre_sub_data)
 
-    parsed = PipelineConfigModel(**data)  # Will raise ValidationError
+    # This will raise a ValidationError if the toml isn't good
+    parsed = PipelineConfigModel(**data)  # type: ignore
 
     config = PipelineConfig()
     config.name = parsed.name
     config.loop_number = parsed.loop_number
     config.sessions = parsed.sessions
     # Each session name is also a top-level table holding its own config
-    config.session_configs = {
+    config.session_configs = {  # type: ignore
         session_name: data[session_name] for session_name in config.sessions
     }
 

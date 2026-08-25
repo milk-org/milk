@@ -14,7 +14,9 @@ from milk.infra.deploy_tasks import (
 
 
 def test_pipeline():
-    pipeline = Pipeline(Path(__file__).parent.parent / "resources", "aolinearsimulator")
+    pipeline = Pipeline(
+        Path(__file__).parent.parent / "resources", "aolinearsimulator"
+    )  # TODO a conf primitive?
     os.makedirs("AOloop/", exist_ok=True)
     pipeline = pipeline.clone_to("./AOloop")
 
@@ -35,6 +37,7 @@ def test_pipeline():
         symcode=0,
     )
 
+    input("Can use the linsim test pipeline.")
     # TODO
     # Need a cleanup <--- actually
     # rm rootdir, kill tmuxes
