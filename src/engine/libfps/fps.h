@@ -142,75 +142,66 @@ uint16_t function_parameter_RUNexit(FPS *fps);
 /**
  * @brief Fill a human-readable type string for a binding's FPS type.
  */
-static inline void X_HELP_V2_FILL_TYPESTR_(const FPS_CLI_BINDING *b, char ts[20])
+
+
+static inline void fp_type_to_typestring(uint64_t fptype, char ts[20])
 {
-    if (b->type == FPTYPE_INT32)
+    switch (fptype)
     {
+    case FPTYPE_INT32:
         strncpy(ts, "INT32", 19);
-    }
-    else if (b->type == FPTYPE_UINT32)
-    {
+        break;
+    case FPTYPE_UINT32:
         strncpy(ts, "UINT32", 19);
-    }
-    else if (b->type == FPTYPE_INT64)
-    {
+        break;
+    case FPTYPE_INT64:
         strncpy(ts, "INT64", 19);
-    }
-    else if (b->type == FPTYPE_UINT64)
-    {
+        break;
+    case FPTYPE_UINT64:
         strncpy(ts, "UINT64", 19);
-    }
-    else if (b->type == FPTYPE_FLOAT32)
-    {
+        break;
+    case FPTYPE_FLOAT32:
         strncpy(ts, "FLOAT32", 19);
-    }
-    else if (b->type == FPTYPE_FLOAT64)
-    {
+        break;
+    case FPTYPE_FLOAT64:
         strncpy(ts, "FLOAT64", 19);
-    }
-    else if (b->type == FPTYPE_ONOFF)
-    {
+        break;
+    case FPTYPE_ONOFF:
         strncpy(ts, "ONOFF", 19);
-    }
-    else if (b->type == FPTYPE_STREAMNAME)
-    {
+        break;
+    case FPTYPE_STREAMNAME:
         strncpy(ts, "STREAMNAME", 19);
-    }
-    else if (b->type == FPTYPE_FILENAME)
-    {
+        break;
+    case FPTYPE_FILENAME:
         strncpy(ts, "FILENAME", 19);
-    }
-    else if (b->type == FPTYPE_FITSFILENAME)
-    {
+        break;
+    case FPTYPE_FITSFILENAME:
         strncpy(ts, "FITSFILE", 19);
-    }
-    else if (b->type == FPTYPE_EXECFILENAME)
-    {
+        break;
+    case FPTYPE_EXECFILENAME:
         strncpy(ts, "EXECFILE", 19);
-    }
-    else if (b->type == FPTYPE_DIRNAME)
-    {
+        break;
+    case FPTYPE_DIRNAME:
         strncpy(ts, "DIRNAME", 19);
-    }
-    else if (b->type == FPTYPE_FPSNAME)
-    {
+        break;
+    case FPTYPE_FPSNAME:
         strncpy(ts, "FPSNAME", 19);
-    }
-    else if (b->type == FPTYPE_PROCESS)
-    {
+        break;
+    case FPTYPE_PROCESS:
         strncpy(ts, "PROCESS", 19);
-    }
-    else if (FPTYPE_IS_STRING(b->type))
-    {
+        break;
+    case FPTYPE_STRING:
+    case FPTYPE_STRING_NOT_STREAM:
         strncpy(ts, "STRING", 19);
-    }
-    else if (b->type == FPTYPE_PID)
-    {
+        break;
+    case FPTYPE_PID:
         strncpy(ts, "PID", 19);
-    }
-    else if (b->type == FPTYPE_TIMESPEC)
-    {
+        break;
+    case FPTYPE_TIMESPEC:
         strncpy(ts, "TIMESPEC", 19);
+        break;
+    default:
+        break;
     }
     ts[19] = '\0';
 }
@@ -219,71 +210,72 @@ static inline void X_HELP_V2_FILL_TYPESTR_(const FPS_CLI_BINDING *b, char ts[20]
 /**
  * @brief Fill a human-readable default-value string for a binding.
  */
-static inline void X_HELP_V2_FILL_VALSTR_(const FPS_CLI_BINDING *b, char vs[64])
+static inline void fp_type_and_ptr_to_valuestring(uint64_t fptype, void *valueptr, char vs[64])
 {
-    if (b->type == FPTYPE_INT32)
+    switch (fptype)
     {
-        snprintf(vs, 64, "%d", *(int32_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_UINT32)
-    {
-        snprintf(vs, 64, "%u", *(uint32_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_INT64)
-    {
-        snprintf(vs, 64, "%ld", *(int64_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_UINT64)
-    {
-        snprintf(vs, 64, "%lu", *(uint64_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_FLOAT32)
-    {
-        snprintf(vs, 64, "%f", *(float *) b->ptr);
-    }
-    else if (b->type == FPTYPE_FLOAT64)
-    {
-        snprintf(vs, 64, "%f", *(double *) b->ptr);
-    }
-    else if (b->type == FPTYPE_ONOFF)
-    {
-        snprintf(vs, 64, "%s", (*(int32_t *) b->ptr) ? "ON" : "OFF");
-    }
-    else if (b->type == FPTYPE_PID)
-    {
-        snprintf(vs, 64, "%d", (int) *(pid_t *) b->ptr);
-    }
-    else if (b->type == FPTYPE_TIMESPEC)
-    {
-        snprintf(vs, 64, "%ld.%09ld", ((struct timespec *) b->ptr)->tv_sec,
-                 ((struct timespec *) b->ptr)->tv_nsec);
-    }
-    else if (FPTYPE_IS_STRING(b->type) || b->type == FPTYPE_STREAMNAME ||
-             b->type == FPTYPE_FILENAME || b->type == FPTYPE_FITSFILENAME ||
-             b->type == FPTYPE_EXECFILENAME || b->type == FPTYPE_DIRNAME ||
-             b->type == FPTYPE_FPSNAME || b->type == FPTYPE_PROCESS)
-    {
-        strncpy(vs, (char *) b->ptr, 63);
+    case FPTYPE_INT32:
+        snprintf(vs, 64, "%d", *(int32_t *) valueptr);
+        break;
+    case FPTYPE_UINT32:
+        snprintf(vs, 64, "%u", *(uint32_t *) valueptr);
+        break;
+    case FPTYPE_INT64:
+        snprintf(vs, 64, "%ld", *(int64_t *) valueptr);
+        break;
+    case FPTYPE_UINT64:
+        snprintf(vs, 64, "%lu", *(uint64_t *) valueptr);
+        break;
+    case FPTYPE_FLOAT32:
+        snprintf(vs, 64, "%f", *(float *) valueptr);
+        break;
+    case FPTYPE_FLOAT64:
+        snprintf(vs, 64, "%f", *(double *) valueptr);
+        break;
+    case FPTYPE_ONOFF:
+        snprintf(vs, 64, "%s", (*(int32_t *) valueptr) ? "ON" : "OFF");
+        break;
+    case FPTYPE_PID:
+        snprintf(vs, 64, "%d", (int) *(pid_t *) valueptr);
+        break;
+    case FPTYPE_TIMESPEC:
+        snprintf(vs, 64, "%ld.%09ld", ((struct timespec *) valueptr)->tv_sec,
+                 ((struct timespec *) valueptr)->tv_nsec);
+        break;
+    /* all string-like types (covers FPTYPE_IS_STRING members) */
+    case FPTYPE_STRING:
+    case FPTYPE_STRING_NOT_STREAM:
+    case FPTYPE_STREAMNAME:
+    case FPTYPE_FILENAME:
+    case FPTYPE_FITSFILENAME:
+    case FPTYPE_EXECFILENAME:
+    case FPTYPE_DIRNAME:
+    case FPTYPE_FPSNAME:
+    case FPTYPE_PROCESS:
+        strncpy(vs, (char *) valueptr, 63);
         vs[63] = '\0';
+        break;
+    default:
+        break;
     }
 }
 
 /**
  * @brief Column widths for the "-h" parameters table.
  */
-typedef struct HELPER_PRETTYPRINT_
+struct HELPER_PRETTYPRINT
 {
     int col_kw_w;
     int col_tp_w;
     int col_df_w;
     int show_help_color;
     int CLIargcnt;
-} HELPER_PRETTYPRINT;
+};
 
 /**
  * @brief Measure column widths for 6-arg binding.
  */
-static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, struct HELPER_PRETTYPRINT *pp)
 {
     const char *_kp =
         (binding->fpskeyword[0] == '.') ? &binding->fpskeyword[1] : binding->fpskeyword;
@@ -293,14 +285,14 @@ static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRIN
         pp->col_kw_w = _kl;
     }
     char _ts[20] = "???";
-    X_HELP_V2_FILL_TYPESTR_(binding, _ts);
+    fp_type_to_typestring(binding->type, _ts);
     int _tl = (int) strlen(_ts);
     if (_tl > pp->col_tp_w)
     {
         pp->col_tp_w = _tl;
     }
     char _vs[64] = "";
-    X_HELP_V2_FILL_VALSTR_(binding, _vs);
+    fp_type_and_ptr_to_valuestring(binding->type, binding->ptr, _vs);
     int _vl = (int) strlen(_vs);
     if (_vl > pp->col_df_w)
     {
@@ -308,9 +300,9 @@ static inline void X_HELP_MEASURE_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRIN
     }
 }
 
-static inline void X_HELP_MEASURE_V2_LOOP(FPS_CLI_BINDING    *bindings,
-                                          int                 nb_bindings,
-                                          HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_MEASURE_V2_LOOP(FPS_CLI_BINDING           *bindings,
+                                          int                        nb_bindings,
+                                          struct HELPER_PRETTYPRINT *pp)
 {
     for (int k = 0; k < nb_bindings; ++k)
     {
@@ -324,7 +316,7 @@ static inline void X_HELP_MEASURE_V2_LOOP(FPS_CLI_BINDING    *bindings,
  * Uses col_kw_w, col_tp_w, col_df_w (set by
  * X_HELP_MEASURE_V2) for dynamic column widths.
  */
-static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, struct HELPER_PRETTYPRINT *pp)
 {
     char        cli_idx_str[8];
     char        val_str[64]  = "";
@@ -339,8 +331,8 @@ static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT 
     {
         strncpy(cli_idx_str, " - ", sizeof(cli_idx_str) - 1);
     }
-    X_HELP_V2_FILL_TYPESTR_(binding, type_str);
-    X_HELP_V2_FILL_VALSTR_(binding, val_str);
+    fp_type_to_typestring(binding->type, type_str);
+    fp_type_and_ptr_to_valuestring(binding->type, binding->ptr, val_str);
     const char *_trig_tag = "";
     if ((binding->fpflag) & FPFLAG_TRIGGER_STREAM)
     {
@@ -368,9 +360,9 @@ static inline void X_HELP_PRINT_V2(FPS_CLI_BINDING *binding, HELPER_PRETTYPRINT 
     }
 }
 
-static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING     bindings[],
-                                        int                 nb_bindings,
-                                        HELPER_PRETTYPRINT *pp)
+static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING            bindings[],
+                                        int                        nb_bindings,
+                                        struct HELPER_PRETTYPRINT *pp)
 {
     for (int k = 0; k < nb_bindings; ++k)
     {
@@ -499,6 +491,114 @@ static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING     bindings[],
     }
 
 #ifdef MILK_NO_CLI // The guard is necessary due to USE_CLI=ON conflict on milkdata.h
+
+/* ----------------------------------------------------------------
+ * Helpers factoring out the "connect, sync CLI args, apply -loops/
+ * -loopd override, disconnect" pattern repeated across fpsinit,
+ * exec, runstart and their -tmux dispatch counterparts below.
+ * ---------------------------------------------------------------- */
+
+/** @brief Sync CLI args into an already-connected FPS, then apply -loops/-loopd. */
+static inline void fps_apply_cli_sync_and_loop_overrides(FPS             *fps,
+                                                         CLICMDARGDEF    *farg,
+                                                         FPS_CLI_BINDING *bindings,
+                                                         int              nb_b,
+                                                         int              use_loop,
+                                                         double           loop_delay)
+{
+    fps_process_cli_and_sync(fps, farg, bindings, nb_b);
+    if (use_loop == 1)
+    {
+        fps_loop_override_trigger(fps, bindings, nb_b);
+    }
+    else if (use_loop == 2)
+    {
+        fps_loop_override_delay(fps, loop_delay);
+    }
+}
+
+/** @brief Connect to fps_name, sync CLI args + apply loop overrides, disconnect. No-op if connect fails. */
+static inline void fps_sync_and_override_by_name(const char      *fps_name,
+                                                 CLICMDARGDEF    *farg,
+                                                 FPS_CLI_BINDING *bindings,
+                                                 int              nb_b,
+                                                 int              use_loop,
+                                                 double           loop_delay)
+{
+    FPS fps;
+    if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) != -1)
+    {
+        fps_apply_cli_sync_and_loop_overrides(&fps, farg, bindings, nb_b, use_loop, loop_delay);
+        fps_disconnect(&fps);
+    }
+}
+
+/** @brief Append " -procinfo"/" -loops"/" -loopd SEC" to buf, mirroring the parsed CLI flags. */
+static inline void fps_append_loop_flags(char  *buf,
+                                         size_t bufsize,
+                                         int    use_procinfo,
+                                         int    use_loop,
+                                         double loop_delay)
+{
+    if (use_procinfo)
+    {
+        strncat(buf, " -procinfo", bufsize - strlen(buf) - 1);
+    }
+    if (use_loop == 1)
+    {
+        strncat(buf, " -loops", bufsize - strlen(buf) - 1);
+    }
+    else if (use_loop == 2)
+    {
+        char ld[64];
+        snprintf(ld, sizeof(ld), " -loopd %.6f", loop_delay);
+        strncat(buf, ld, bufsize - strlen(buf) - 1);
+    }
+}
+
+/** @brief Append " fpsname:command" (custom name) or " command" (default name) to buf. */
+static inline void fps_append_dispatch_target(char       *buf,
+                                              size_t      bufsize,
+                                              const char *fps_name,
+                                              const char *default_name,
+                                              const char *command)
+{
+    size_t l = strlen(buf);
+    if (strcmp(fps_name, default_name) != 0)
+    {
+        snprintf(buf + l, bufsize - l, " %s:%s", fps_name, command);
+    }
+    else
+    {
+        snprintf(buf + l, bufsize - l, " %s", command);
+    }
+}
+
+/** @brief For 'exec': create the FPS if missing, reuse it otherwise (printing NEW/REUSE). */
+static inline void fps_exec_autoinit(const char      *fps_name,
+                                     FPS_APP_INFO    *app_info,
+                                     FPS_CLI_BINDING *bindings,
+                                     int              nb_b,
+                                     int              use_procinfo)
+{
+    if (fps_name[0] == '_')
+    {
+        return; // local (non-shared-memory) FPS names are never auto-initialized
+    }
+    FPS fc_;
+    if (fps_connect(fps_name, &fc_, FPSCONNECT_SIMPLE) == -1)
+    {
+        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> \033[33mNEW\033[0m\n", fps_name);
+        fps_generic_init(fps_name, app_info, bindings, nb_b, use_procinfo);
+    }
+    else
+    {
+        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND "REUSE" COLORRESET "\n",
+               fps_name);
+        fps_disconnect(&fc_);
+    }
+}
+
 static inline int main_impl(int              argc,
                             char            *argv[],
                             FPS_APP_INFO    *APP_INFO,
@@ -580,7 +680,7 @@ static inline int main_impl(int              argc,
             if (ii + 1 < argc)
             {
                 char c0 = argv[ii + 1][0];
-                if ((c0 >= '0' && c0 <= '9') || c0 == '.' || c0 == '-')
+                if ((c0 >= '0' && c0 <= '9') || c0 == '.')
                 {
                     loop_delay = atof(argv[++ii]);
                 }
@@ -614,14 +714,16 @@ static inline int main_impl(int              argc,
             if ((colon_pos = strchr(command, ':')) != NULL)
             {
                 *colon_pos = '\0';
-                strncpy(arg_fps_name, command, STRINGMAXLEN_FPS_NAME - 1);
+                strncpy(arg_fps_name, command, STRINGMAXLEN_FPS_NAME - 1); // copies to colon_pos
+                *colon_pos =
+                    ':'; // must restore the colon otherwise argc/argv mismatch are reparse in fps_process_cli_and_sync
                 command = colon_pos + 1;
             }
         }
     }
     if (command == NULL)
     {
-        command = (char *) "run"; /* cast for C++ compilation compatibily */
+        command = (char *) "run"; /* cast for C++ compilation compatibility */
     }
     else
     {
@@ -665,21 +767,14 @@ static inline int main_impl(int              argc,
         /* ---- FPS NOTE ---- */
         if (mh_color)
         {
-            printf("  " MH_NOTE "This is a fpsexec command."
-                   " Command parameters map"
+            printf("  " MH_NOTE "This is a fpsexec command. Command parameters map"
                    " to FPS parameters." MH_RST "\n  Run " MH_CMD "milk-fpsexec-help" MH_RST
-                   " for detailed FPS"
-                   " framework info.\n\n");
+                   " for detailed FPS framework info.\n\n");
         }
         else
         {
-            printf("  NOTE: This is a fpsexec"
-                   " command. Command"
-                   " parameters map to FPS"
-                   " parameters.\n"
-                   "  Run milk-fpsexec-help"
-                   " for detailed FPS"
-                   " framework info.\n\n");
+            printf("  NOTE: This is a fpsexec command. Command parameters map to FPS parameters.\n"
+                   "  Run milk-fpsexec-help for detailed FPS framework info.\n\n");
         }
         /* ---- OPTIONS ---- */
         milk_help_section("Options", mh_color);
@@ -711,7 +806,7 @@ static inline int main_impl(int              argc,
                " args + run\n\n",
                MH(MH_CMD, "exec"), MH(MH_OPT, "[args]"));
         /* ---- PARAMETERS ---- */
-        HELPER_PRETTYPRINT pp = {
+        struct HELPER_PRETTYPRINT pp = {
             .col_kw_w = 7, .col_tp_w = 4, .col_df_w = 7, .show_help_color = mh_color, .CLIargcnt = 0
         };
         //PARAMS_MACRO(X_HELP_MEASURE_V2)
@@ -808,10 +903,7 @@ static inline int main_impl(int              argc,
                     if (!found)
                     {
                         printf("%-30s %-10s %s\n", "FPS Name", "Status", "Description");
-                        printf("----------"
-                               "----------"
-                               "----------"
-                               "----------\n");
+                        printf("----------------------------------------\n");
                         found = 1;
                     }
                     char ss[32] = "UNKNOWN";
@@ -851,88 +943,44 @@ static inline int main_impl(int              argc,
                 strncpy(path, argv[0], 1023);
             }
         }
-        char name_arg[256] = "";
-        if (strcmp(fps_name, APP_INFO->fps_name) != 0)
+        functionparameter_FPS_tmux_standalone_setup(fps_name);
+
+        int is_exec = (strcmp(command, "exec") == 0);
+        if (is_exec || strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0)
         {
-            snprintf(name_arg, sizeof(name_arg), " %s:%s", fps_name, command);
+            /* exec always dispatches as "runstart" (auto-init, then run);
+             * "run" isn't a recognized tmux window, so it falls through below. */
+            const char *dispatch_cmd = is_exec ? "runstart" : command;
+            if (is_exec)
+            {
+                fps_exec_autoinit(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
+            }
+            /* Persist the loop config in FPS shared memory now (works even if the
+             * tmux child doesn't re-parse -loops/-loopd), and also forward the
+             * flags so the child re-applies them for consistency. */
+            fps_sync_and_override_by_name(fps_name, farg, bindings, nb_bindings, use_loop,
+                                          loop_delay);
+
+            char dispatch_arg[512] = "";
+            fps_append_loop_flags(dispatch_arg, sizeof(dispatch_arg), use_procinfo, use_loop,
+                                  loop_delay);
+            fps_append_dispatch_target(dispatch_arg, sizeof(dispatch_arg), fps_name,
+                                       APP_INFO->fps_name, dispatch_cmd);
+            if (functionparameter_FPS_tmux_send_dispatch(fps_name, dispatch_cmd, path,
+                                                         dispatch_arg) == 0)
+            {
+                return 0;
+            }
         }
         else
         {
-            snprintf(name_arg, sizeof(name_arg), " %s", command);
-        }
-        functionparameter_FPS_tmux_standalone_setup(fps_name);
-        if (strcmp(command, "exec") == 0)
-        {
+            char name_arg[256] = "";
+            fps_append_dispatch_target(name_arg, sizeof(name_arg), fps_name, APP_INFO->fps_name,
+                                       command);
+            if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
             {
-                FPS fc_;
-                if (fps_name[0] != '_')
-                {
-                    if (fps_connect(fps_name, &fc_, FPSCONNECT_SIMPLE) == -1)
-                    {
-                        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> "
-                               "\033[33m"
-                               "NEW" COLORRESET "\n",
-                               fps_name);
-                        fps_generic_init(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
-                    }
-                    else
-                    {
-                        printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND
-                               "REUSE" COLORRESET "\n",
-                               fps_name);
-                        fps_disconnect(&fc_);
-                    }
-                }
+                return 0;
             }
-            /* Set CLI args into FPS before dispatching runstart to tmux */
-            {
-                FPS fs_;
-                if (fps_connect(fps_name, &fs_, FPSCONNECT_SIMPLE) != -1)
-                {
-                    fps_process_cli_and_sync(&fs_, farg, bindings, nb_bindings);
-                    if (use_loop == 1)
-                    {
-                        fps_loop_override_trigger(&fs_, bindings, nb_bindings);
-                    }
-                    else if (use_loop == 2)
-                    {
-                        fps_loop_override_delay(&fs_, loop_delay);
-                    }
-                    fps_disconnect(&fs_);
-                }
-            }
-            char run_arg[512] = "";
-            if (use_procinfo)
-            {
-                strncat(run_arg, " -procinfo", sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            if (use_loop == 1)
-            {
-                strncat(run_arg, " -loops", sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            else if (use_loop == 2)
-            {
-                char _ld[64];
-                snprintf(_ld, sizeof(_ld), " -loopd %.6f", loop_delay);
-                strncat(run_arg, _ld, sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            if (strcmp(fps_name, APP_INFO->fps_name) != 0)
-            {
-                {
-                    size_t _l = strlen(run_arg);
-                    snprintf(run_arg + _l, sizeof(run_arg) - _l, " %s:runstart", fps_name);
-                }
-            }
-            else
-            {
-                strncat(run_arg, " runstart", sizeof(run_arg) - strlen(run_arg) - 1);
-            }
-            functionparameter_FPS_tmux_send_dispatch(fps_name, "runstart", path, run_arg);
-            return 0;
-        }
-        if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0)
-        {
-            return 0;
         }
     }
     if (strcmp(command, "fpsinit") == 0)
@@ -955,20 +1003,8 @@ static inline int main_impl(int              argc,
         /* Sync CLI args into FPS before applying loop overrides. */
         if (use_loop && rc_ == 0)
         {
-            FPS fp_;
-            if (fps_connect(fps_name, &fp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_process_cli_and_sync(&fp_, farg, bindings, nb_bindings);
-                if (use_loop == 1)
-                {
-                    fps_loop_override_trigger(&fp_, bindings, nb_bindings);
-                }
-                else if (use_loop == 2)
-                {
-                    fps_loop_override_delay(&fp_, loop_delay);
-                }
-                fps_disconnect(&fp_);
-            }
+            fps_sync_and_override_by_name(fps_name, farg, bindings, nb_bindings, use_loop,
+                                          loop_delay);
         }
         return rc_;
     }
@@ -1000,92 +1036,14 @@ static inline int main_impl(int              argc,
         printf("FPS " COLORCOMMAND "%s" COLORRESET " set done\n", fps_name);
         return 0;
     }
-    else if (strcmp(command, "exec") == 0)
+    else if (strcmp(command, "exec") == 0 || strcmp(command, "runstart") == 0 ||
+             strcmp(command, "run") == 0)
     {
-        /* Auto-init if FPS doesn't exist yet, then run. */
-        /* fps_name goes to shared mem when name lacks _ prefix. */
+        if (strcmp(command, "exec") == 0)
         {
-            FPS fps_chk_;
-            if (fps_name[0] != '_')
-            {
-                if (fps_connect(fps_name, &fps_chk_, FPSCONNECT_SIMPLE) == -1)
-                {
-                    printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> "
-                           "\033[33m"
-                           "NEW" COLORRESET "\n",
-                           fps_name);
-                    fps_generic_init(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
-                }
-                else
-                {
-                    printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND
-                           "REUSE" COLORRESET "\n",
-                           fps_name);
-                    fps_disconnect(&fps_chk_);
-                }
-            }
+            fps_exec_autoinit(fps_name, APP_INFO, bindings, nb_bindings, use_procinfo);
         }
-        /* Sync CLI args into FPS before applying loop overrides */
-        /* so that trigger stream names are available. */
-        {
-            FPS fps_sync_;
-            if (fps_connect(fps_name, &fps_sync_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_process_cli_and_sync(&fps_sync_, farg, bindings, nb_bindings);
-                fps_disconnect(&fps_sync_);
-            }
-        }
-        /* Apply -loops/-loopd overrides */
-        if (use_loop == 1)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_trigger(&fps_lp_, bindings, nb_bindings);
-                fps_disconnect(&fps_lp_);
-            }
-        }
-        else if (use_loop == 2)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_delay(&fps_lp_, loop_delay);
-                fps_disconnect(&fps_lp_);
-            }
-        }
-        return fps_generic_run(fps_name, APP_INFO, farg, bindings, nb_bindings, COMPUTE_FN);
-    }
-    else if (strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0)
-    {
-        /* Sync CLI args into FPS before applying loop overrides. */
-        {
-            FPS fps_sync_;
-            if (fps_connect(fps_name, &fps_sync_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_process_cli_and_sync(&fps_sync_, farg, bindings, nb_bindings);
-                fps_disconnect(&fps_sync_);
-            }
-        }
-        /* Apply -loops/-loopd overrides */
-        if (use_loop == 1)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_trigger(&fps_lp_, bindings, nb_bindings);
-                fps_disconnect(&fps_lp_);
-            }
-        }
-        else if (use_loop == 2)
-        {
-            FPS fps_lp_;
-            if (fps_connect(fps_name, &fps_lp_, FPSCONNECT_SIMPLE) != -1)
-            {
-                fps_loop_override_delay(&fps_lp_, loop_delay);
-                fps_disconnect(&fps_lp_);
-            }
-        }
+        fps_sync_and_override_by_name(fps_name, farg, bindings, nb_bindings, use_loop, loop_delay);
         return fps_generic_run(fps_name, APP_INFO, farg, bindings, nb_bindings, COMPUTE_FN);
     }
     else if (strcmp(command, "runstop") == 0)
@@ -1145,42 +1103,6 @@ static inline int main_impl(int              argc,
     (VARfps).cmdset.triggermode            = PROCESSINFO_TRIGGERMODE_SEMAPHORE;                  \
     (VARfps).cmdset.triggertimeout.tv_sec  = (VARtimeout_sec);                                   \
     (VARfps).cmdset.triggertimeout.tv_nsec = 0;
-
-/**
- * @brief Standard body for FPSCONF function
- *
- * @param VARfps_name Name of the FPS
- * @param VARloop Loop flag (1 for loop, 0 for single step)
- * @param BLOCK_VAR_MAP Code block to map parameters (e.g. { ptr = ...; })
- * @param BLOCK_VALIDATE Code block to validate parameters (e.g. { validate(); })
- */
-#define FPS_CONF_STD_BODY(VARfps_name, VARloop, BLOCK_VAR_MAP, BLOCK_VALIDATE)   \
-    FPS fps;                                                                     \
-    if (VARloop)                                                                 \
-    {                                                                            \
-        printf("Starting configuration process loop for '%s'\n", VARfps_name);   \
-        fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_CONFSTART); \
-        BLOCK_VAR_MAP                                                            \
-        while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)                       \
-        {                                                                        \
-            if (function_parameter_FPCONFloopstep(&fps))                         \
-            {                                                                    \
-                BLOCK_VALIDATE                                                   \
-                functionparameter_CheckParametersAll(&fps);                      \
-            }                                                                    \
-            usleep(10000);                                                       \
-        }                                                                        \
-    }                                                                            \
-    else                                                                         \
-    {                                                                            \
-        printf("Running single configuration step for '%s'\n", VARfps_name);     \
-        fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_FPSINIT);   \
-        BLOCK_VAR_MAP                                                            \
-        function_parameter_FPCONFloopstep(&fps);                                 \
-        BLOCK_VALIDATE                                                           \
-        functionparameter_CheckParametersAll(&fps);                              \
-    }                                                                            \
-    function_parameter_FPCONFexit(&fps);
 
 /**
  * @brief Standard connection and parameter mapping for FPSRUN

@@ -32,13 +32,19 @@ def tests_run_coverage(session: nox.Session):
     )  # Am I expecting this to be $MILK_ROOT/testing?
     PROJECT_ROOT = THIS_PATH.parent
 
+    session.install("setuptools", "coverage", "pytest")
+    session.run(*("pip install -e .").split())  # install milk
+
     tmp_dir = os.path.abspath(session.create_tmp())
     session.chdir(tmp_dir)
+
+    session.run(*("ln -s /home/vdeo/src/pyMilk ./pyMilk").split(), external=True)
+    session.run(*("pip install ./pyMilk").split())  # install pyMilk
+
     os.makedirs("./build", exist_ok=True)
     session.chdir("build")
 
-    session.install("setuptools", "coverage", "pytest")
-
+    # Of note, we could have a mismatch of the available engine extensions (USE_CUDA in particular) between pyMilk and milk builds.
     session.run(
         *(
             f"cmake {PROJECT_ROOT} -DCMAKE_BUILD_TYPE=Coverage -DCMAKE_INSTALL_PREFIX={tmp_dir} -DUSE_CUDA=ON"
@@ -50,23 +56,29 @@ def tests_run_coverage(session: nox.Session):
 
     session.chdir(tmp_dir)
 
-    session.env["PATH"] = tmp_dir + "/milk-1.03.00/bin:" + session.env.get("PATH", "")
+    # Add default path's that the nox session doesn't see, but subprocessing to system tools
+    # may require them (e.g. lsmod to detect nvidia driver)
+    DEFAULT_PATHS = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+    session.env["PATH"] = (
+        tmp_dir + "/milk-1.03.00/bin:" + DEFAULT_PATHS + session.env.get("PATH", "")
+    )
     session.env["LD_LIBRARY_PATH"] = (
         tmp_dir + "/milk-1.03.00/lib:" + session.env.get("LD_LIBRARY_PATH", "")
     )
 
-    session.run("pytest", str(PROJECT_ROOT) + "/testing")
+    session.run("pytest", str(PROJECT_ROOT) + "/python")
 
-    os.makedirs("./gcov_html", exist_ok=True)
+    os.makedirs(str(PROJECT_ROOT) + "/gcov_html", exist_ok=True)
     session.run(
         "gcovr",
-        "--verbose",
+        # "--verbose",
         "--gcov-executable",
         _GCOV,
         "-r",
         PROJECT_ROOT,
         "--html-details",
         "-o",
-        str(PROJECT_ROOT) + "/testing/gcov_html/c_coverage.html",
+        str(PROJECT_ROOT) + "/gcov_html/c_coverage.html",
         os.path.abspath("./build"),
     )

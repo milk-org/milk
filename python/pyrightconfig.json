@@ -1,0 +1,27 @@
+{
+    "typeCheckingMode": "basic",
+    "extraPaths": [
+        "/home/vdeo/src/swmain",
+        "/home/vdeo/src/pyMilk",
+        "/home/vdeo/src/computer_config",
+        "/home/vdeo/src/hardwaresecrets"
+    ],
+    "include": [
+        "milk/"
+    ],
+    "exclude": [
+        "build/",
+        "**/__pycache__",
+        "**/.mypy_cache",
+        "**/.pytest_cache",
+        "ImageStreamIO",
+        ".eggs",
+        "*ctypes*",
+        "**/node_modules",
+        "**/.*"
+    ],
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.10",
+    "pythonPlatform": "Linux"
+}
