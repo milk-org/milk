@@ -119,7 +119,9 @@ def test_deploy_fps_call_by_instance(cloned_pipeline: Pipeline):
         StartConfProcesses,
     )
 
-    pp.task_do(InitialFolderSetup).task_do(DeployFPS).task_do(StartConfProcesses)
+    pp.task_do(InitialFolderSetup)
+    pp.task_do(DeployFPS)
+    pp.task_do(StartConfProcesses)
 
     for sname in pp.sessions:  # TODO this is bad naming urgh
         sesh = pp.get_session(sname)
