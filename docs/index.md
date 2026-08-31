@@ -3,10 +3,8 @@
 # :telescope: milk
 
 <p class="md-hero__tagline">
-High-performance real-time image processing framework
-for Adaptive Optics and scientific computing.
-Microsecond-latency pipelines through zero-copy
-shared memory.
+High-performance real-time image processing framework for Adaptive Optics and scientific computing.
+Microsecond-latency pipelines through zero-copy shared memory.
 </p>
 
 <p class="md-hero__badges">
@@ -23,11 +21,9 @@ shared memory.
 
 </div>
 
-`milk` orchestrates many small compute units that
-communicate through zero-copy shared memory tensors,
-enabling microsecond-latency data pipelines. The three
-pillars — **ImageStreamIO**, **FPS**, and
-**processinfo** — live entirely in `/dev/shm/`.
+`milk` orchestrates many small compute units that communicate through zero-copy shared memory
+tensors, enabling microsecond-latency data pipelines. The three pillars — **ImageStreamIO**,
+**FPS**, and **processinfo** — live entirely in `/dev/shm/`.
 
 ---
 
@@ -55,8 +51,7 @@ pillars — **ImageStreamIO**, **FPS**, and
 
   ***
 
-  Interactive shell, standalone executables, and
-  scripting basics.
+  Interactive shell, standalone executables, and scripting basics.
 
   [:octicons-arrow-right-24: CLI overview](cli/CLI_Overview.md)
 
@@ -96,8 +91,7 @@ pillars — **ImageStreamIO**, **FPS**, and
 
   ***
 
-  Heartbeat telemetry, loop-rate profiling, health
-  monitoring.
+  Heartbeat telemetry, loop-rate profiling, health monitoring.
 
   [:octicons-arrow-right-24: Process Info](procinfo.md)
 
@@ -169,8 +163,7 @@ pillars — **ImageStreamIO**, **FPS**, and
 
   ***
 
-  Profile-guided optimization + static link-time
-  optimization for 15–40 % speedup.
+  Profile-guided optimization + static link-time optimization for 15–40 % speedup.
 
   [:octicons-arrow-right-24: PGO & LTO](pgo.md)
 
@@ -178,8 +171,7 @@ pillars — **ImageStreamIO**, **FPS**, and
 
   ***
 
-  GDB, tmux logs, procinfo diagnostics, common
-  failures.
+  GDB, tmux logs, procinfo diagnostics, common failures.
 
   [:octicons-arrow-right-24: Debugging](debugging.md)
 
@@ -189,17 +181,10 @@ pillars — **ImageStreamIO**, **FPS**, and
 
 ## :link: More Resources
 
-- **[What's New](whatsnew.md)** — recent features
-  and upgrades
-- [CLI Syntax Reference](cli/CLIcore.md) ·
-  [Readline Keys](cli/helpreadline.md)
-- [Scripts Reference](scripts.md) ·
-  [Python API](python.md) ·
-  [Valkey Integration](valkey.md)
-- [Programmer's Guide](programmers_guide.md) ·
-  [Dependency Graph](dependency_graph.md) ·
+- **[What's New](whatsnew.md)** — recent features and upgrades
+- [CLI Syntax Reference](cli/CLIcore.md) · [Readline Keys](cli/helpreadline.md)
+- [Scripts Reference](scripts.md) · [Python API](python.md) · [Valkey Integration](valkey.md)
+- [Programmer's Guide](programmers_guide.md) · [Dependency Graph](dependency_graph.md) ·
   [fpsCTRL Reference](fpsCTRL_reference.md)
-- [Working with Git](developer/WorkingWithGit.md) ·
-  [Code Assist Tools](code_assist.md)
-- [All Markdown Files](Markdown_Index.md) ·
-  [Tag Index](tags.md)
+- [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](code_assist.md)
+- [All Markdown Files](Markdown_Index.md) · [Tag Index](tags.md)

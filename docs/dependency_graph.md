@@ -1,8 +1,7 @@
 # Dependency Graph
 
 !!! note
-Generated from CMakeLists.txt — 2026-05-30.
-See [Build Tiers](install/build_tiers.md) for cmake
+Generated from CMakeLists.txt — 2026-05-30. See [Build Tiers](install/build_tiers.md) for cmake
 commands.
 
 ## Legend
@@ -220,8 +219,7 @@ graph TD
 
 ## 3. Standalone Build (USE_CLI=OFF)
 
-> Standalone executables use `_compute` library variants
-> (compiled with `MILK_NO_CLI`).
+> Standalone executables use `_compute` library variants (compiled with `MILK_NO_CLI`).
 
 ```mermaid
 graph TD
@@ -468,14 +466,12 @@ add_cacao_standalone_plugins(name src.c fft imagegen)   # selective
 
 Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
 
-**ℹ️ Note:** `_compute` variants contain pure computation
-code (`MILK_NO_CLI`). Standalone executables do **not** link
-`${LIBNAME}` by default. Currently **76 of 90** standalones
-are CLIcore-free.
+**ℹ️ Note:** `_compute` variants contain pure computation code (`MILK_NO_CLI`). Standalone
+executables do **not** link `${LIBNAME}` by default. Currently **76 of 90** standalones are
+CLIcore-free.
 
-When `USE_STATIC_LTO=ON`, static archive (`.a`) variants
-of these libraries are built and linked instead, enabling
-cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
+When `USE_STATIC_LTO=ON`, static archive (`.a`) variants of these libraries are built and linked
+instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
 
 </details>
 

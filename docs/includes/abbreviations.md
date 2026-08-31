@@ -9,4 +9,5 @@ _[PGO]: Profile-Guided Optimization
 _[RT]: Real-Time (scheduling)
 _[DM]: Deformable Mirror
 _[WFS]: Wavefront Sensor
-_[FITS]: Flexible Image Transport System \*[IPC]: Inter-Process Communication
+_[FITS]: Flexible Image Transport System
+_[IPC]: Inter-Process Communication

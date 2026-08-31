@@ -7,62 +7,47 @@ tags:
 
 # Process Info (`procinfo`)
 
-The `procinfo` (Process Information) system is a critical
-telemetry and heartbeat monitoring layer within `milk`. It
-works symbiotically with the Function Processing System
-(FPS) to ensure health checks, profiling, and state
-visibility across the entire execution environment.
+The `procinfo` (Process Information) system is a critical telemetry and heartbeat monitoring layer
+within `milk`. It works symbiotically with the Function Processing System (FPS) to ensure health
+checks, profiling, and state visibility across the entire execution environment.
 
-See also: [FPS](fps.md) ·
-[Streams](streams.md) ·
-[Programmer's Guide](programmers_guide.md)
+See also: [FPS](fps.md) · [Streams](streams.md) · [Programmer's Guide](programmers_guide.md)
 
 ## 1. Design and Purpose
 
-Instead of blindly assuming processes are running simply
-because their process IDs exist, `procinfo` maintains
-active heartbeats and state markers in shared memory.
-This is particularly crucial for real-time control
-applications (like Adaptive Optics) where a process might
-"hang" mathematically without crashing the executable.
+Instead of blindly assuming processes are running simply because their process IDs exist, `procinfo`
+maintains active heartbeats and state markers in shared memory. This is particularly crucial for
+real-time control applications (like Adaptive Optics) where a process might "hang" mathematically
+without crashing the executable.
 
 ## 2. The Output: `milk-procinfo-list`
 
-The primary user-facing tool for this system is the
-`milk-procinfo-list` command. This tool scans the system
-and provides a visual overview of all processes that have
-registered themselves with `procinfo`.
+The primary user-facing tool for this system is the `milk-procinfo-list` command. This tool scans
+the system and provides a visual overview of all processes that have registered themselves with
+`procinfo`.
 
 ### 2.1. State Tracking
 
-A correctly implemented compute unit will constantly
-update its state so tools like `milk-procinfo-list` can
-display:
+A correctly implemented compute unit will constantly update its state so tools like
+`milk-procinfo-list` can display:
 
-- **IDLE / WAITING:** The loop is paused or blocking on
-  a stream semaphore waiting for new data.
-- **ACTIVE / RUNNING:** The compute loop is actively
-  processing data. PIDs are highlighted green to indicate
-  healthy processing.
-- **FAILURE / ERROR:** If processing errors occur or the
-  heartbeat stops, monitoring tools can flag the process
-  for restart.
+- **IDLE / WAITING:** The loop is paused or blocking on a stream semaphore waiting for new data.
+- **ACTIVE / RUNNING:** The compute loop is actively processing data. PIDs are highlighted green to
+  indicate healthy processing.
+- **FAILURE / ERROR:** If processing errors occur or the heartbeat stops, monitoring tools can flag
+  the process for restart.
 
 ## 3. Loop Profiling
 
-Along with boolean states, `procinfo` actively measures
-loop execution frequencies. It can display the **Hz**
-(loops per second) for active pipelines. This means
-performance drops or bottlenecks in stream processing are
-immediately visible from the top-level dashboard.
+Along with boolean states, `procinfo` actively measures loop execution frequencies. It can display
+the **Hz** (loops per second) for active pipelines. This means performance drops or bottlenecks in
+stream processing are immediately visible from the top-level dashboard.
 
 ## 4. Standalone Executable Integration (`fpsexec`)
 
-When utilizing the standard V2 templates for standalone
-modules (`FPS_MAIN_STANDALONE_V2`), `procinfo` is
-automatically enabled and registered for you. Your
-executable simply needs to correctly execute its while
-loop, and the framework pulses the heartbeat for you.
+When utilizing the standard V2 templates for standalone modules (`FPS_MAIN_STANDALONE_V2`),
+`procinfo` is automatically enabled and registered for you. Your executable simply needs to
+correctly execute its while loop, and the framework pulses the heartbeat for you.
 
 ## 5. C Code Template
 
@@ -138,9 +123,8 @@ int functiontemplate_usingprocessinfo() {
 
 ## 6. Important PROCESSINFO Struct Fields
 
-Beyond the fields set automatically by the framework,
-these commonly-used fields can be configured by the
-developer:
+Beyond the fields set automatically by the framework, these commonly-used fields can be configured
+by the developer:
 
 | Field               | Type        | Description                              |
 | ------------------- | ----------- | ---------------------------------------- |
@@ -157,10 +141,8 @@ developer:
 
 ## 7. Compute Function Macros
 
-For V2 fpsexec compute units, the FPS framework
-provides macros (defined in `fps_procinfo_macros.h`)
-that wrap the `processinfo` API for a standard
-compute loop:
+For V2 fpsexec compute units, the FPS framework provides macros (defined in `fps_procinfo_macros.h`)
+that wrap the `processinfo` API for a standard compute loop:
 
 | Macro                                       | Purpose                                                  |
 | ------------------------------------------- | -------------------------------------------------------- |
@@ -169,8 +151,7 @@ compute loop:
 | `INSERT_STD_PROCINFO_COMPUTEFUNC_START`     | Per-iteration start (check signals, processinfo step)    |
 | `INSERT_STD_PROCINFO_COMPUTEFUNC_END`       | Per-iteration end (timing, counters, signal handling)    |
 
-These macros are used inside `compute_function()`
-(Section 6 of the V2 template):
+These macros are used inside `compute_function()` (Section 6 of the V2 template):
 
 ```c
 static errno_t compute_function()
@@ -196,10 +177,8 @@ After writing to an output stream, call:
 processinfo_update_output_stream(processinfo, img.im);
 ```
 
-This posts semaphores, increments `cnt0`/`cnt1`,
-clears the `write` flag, and updates timing metadata.
-Always set `img.im->md->write = 1` before modifying
-pixels.
+This posts semaphores, increments `cnt0`/`cnt1`, clears the `write` flag, and updates timing
+metadata. Always set `img.im->md->write = 1` before modifying pixels.
 
 ### Input Stream Triggers
 

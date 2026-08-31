@@ -1,19 +1,17 @@
 # Developer Tutorial: Writing Your First Milk Module
 
-Welcome to `milk`! This tutorial will guide you through
-creating your first module and standalone `fpsexec` compute
-block. By the end of this guide, you will have a working
-module linked to the `milk` core frameworks.
+Welcome to `milk`! This tutorial will guide you through creating your first module and standalone
+`fpsexec` compute block. By the end of this guide, you will have a working module linked to the
+`milk` core frameworks.
 
-See also: [Programmer's Guide](../programmers_guide.md) ·
-[Code Assist Tools](../code_assist.md) ·
-[Adding Plugins](plugins.md) ·
-[FPS](../fps.md) ·
+See also: [Programmer's Guide](../programmers_guide.md) · [Code Assist Tools](../code_assist.md) ·
+[Adding Plugins](plugins.md) · [FPS](../fps.md) ·
 [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md)
 
 ## 1. Setting Up the Directory Structure
 
-The easiest way to start is by copying the provided example module. We will create a new module named `my_first_module`.
+The easiest way to start is by copying the provided example module. We will create a new module
+named `my_first_module`.
 
 ```bash
 cd milk/plugins/milk-extra-src/
@@ -23,7 +21,8 @@ cd my_first_module
 
 ## 2. Configuring CMake
 
-Open `CMakeLists.txt` in your new directory. You need to identify your module and tell the build system which files to compile.
+Open `CMakeLists.txt` in your new directory. You need to identify your module and tell the build
+system which files to compile.
 
 Change the `LIBNAME` to your module's name:
 
@@ -49,9 +48,11 @@ add_milk_standalone(my-first-exec examplefunc2_FPS.c)
 
 ## 3. Writing an FPS Compute Block
 
-The Function Parameter Structure (FPS) is the standard way milk exposes configuration variables to the outside world (like the `milk-fpsCTRL` TUI).
+The Function Parameter Structure (FPS) is the standard way milk exposes configuration variables to
+the outside world (like the `milk-fpsCTRL` TUI).
 
-Let's look at a basic FPS setup in `my_first_module_fps.c`. You need an info struct, a parameter mapping, and an execution loop.
+Let's look at a basic FPS setup in `my_first_module_fps.c`. You need an info struct, a parameter
+mapping, and an execution loop.
 
 ### A. Define the Application Info
 
@@ -105,7 +106,8 @@ static errno_t fpsexec(void) {
 
 ### D. The Main Entry Point
 
-The V2 macro generates the standalone `main()` function that handles the FPS lifecycle (create, exec, confstart, runstart, etc.):
+The V2 macro generates the standalone `main()` function that handles the FPS lifecycle (create,
+exec, confstart, runstart, etc.):
 
 ```c title="my_first_module_fps.c"
 // Processinfo-wrapped entry point
@@ -124,7 +126,8 @@ FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
 
 ## 4. Compile and Run!
 
-Go back to the root `milk` directory and re-run standard compilation. `CMake` will automatically discover your newly linked plugin.
+Go back to the root `milk` directory and re-run standard compilation. `CMake` will automatically
+discover your newly linked plugin.
 
 ```bash
 cd ../../../
@@ -147,12 +150,14 @@ Congratulations! You've successfully written a milk module and an FPS compute bl
 
 ## 5. Next Steps
 
-Now that you've written your first module, you can automate this process and learn more advanced patterns using our built-in tools:
+Now that you've written your first module, you can automate this process and learn more advanced
+patterns using our built-in tools:
 
 - Run the `/create-plugin` workflow to scaffold new plugins automatically.
 - Run the `/create-fpsexec` workflow to scaffold new compute units.
 - Consult the `api-quick-reference` skill for a cheat sheet on streams and FPS parameters.
-- Review the `pseudocode-to-compute-unit` skill to learn how to translate abstract algorithms into V2 templates.
+- Review the `pseudocode-to-compute-unit` skill to learn how to translate abstract algorithms into
+  V2 templates.
 
 ---
 

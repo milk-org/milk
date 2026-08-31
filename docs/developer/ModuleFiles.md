@@ -2,10 +2,8 @@
 
 The code is organized in modules under two main directories:
 
-See also: [Programmer's Guide](../programmers_guide.md) ·
-[Coding Standards](coding_standards.md) ·
-[Adding Plugins](plugins.md) ·
-[Template Source Code](TemplateSourceCode.md)
+See also: [Programmer's Guide](../programmers_guide.md) · [Coding Standards](coding_standards.md) ·
+[Adding Plugins](plugins.md) · [Template Source Code](TemplateSourceCode.md)
 
 | Location   | Contains                             |
 | ---------- | ------------------------------------ |
@@ -23,9 +21,8 @@ Within each module directory:
 | `scripts/`       | Shell scripts and utilities (optional)           |
 | `*.c` / `*.h`    | Additional source files for individual functions |
 
-Modules are compiled into shared object libraries (`.so`) and loaded
-by `milk-cli` at runtime. Standalone executables (`milk-fpsexec-*`)
-are built separately and installed to `bin/`.
+Modules are compiled into shared object libraries (`.so`) and loaded by `milk-cli` at runtime.
+Standalone executables (`milk-fpsexec-*`) are built separately and installed to `bin/`.
 
 ## Examples
 

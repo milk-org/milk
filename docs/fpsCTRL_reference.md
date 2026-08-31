@@ -7,14 +7,11 @@ tags:
 
 # fpsCTRL Reference
 
-`milk-fpsCTRL` is the primary interactive TUI tool for
-managing Function Parameter Structure (FPS) instances.
-It provides real-time control of compute units:
-starting/stopping conf and run loops, editing
-parameters, and monitoring FPS state.
+`milk-fpsCTRL` is the primary interactive TUI tool for managing Function Parameter Structure (FPS)
+instances. It provides real-time control of compute units: starting/stopping conf and run loops,
+editing parameters, and monitoring FPS state.
 
-See also: [FPS](fps.md) ·
-[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) ·
+See also: [FPS](fps.md) · [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) ·
 [FPS Sequencer](sequencer.md)
 
 ## Command-Line Options
@@ -33,8 +30,7 @@ milk-fpsCTRL [OPTIONS] [fpsnamemask]
 | `-h`, `--help`  | Print usage and exit                         |
 | `-h1`           | Print one-line description and exit          |
 
-The positional argument `fpsnamemask` sets the name
-filter (default: `_ALL`).
+The positional argument `fpsnamemask` sets the name filter (default: `_ALL`).
 
 ## Environment Variables
 
@@ -55,8 +51,7 @@ filter (default: `_ALL`).
 | 3    | Control   | `F2`, Ctrl+Right | Main FPS control view |
 | 4    | Scheduler | `F3`, Ctrl+Left  | FPS sequencer display |
 
-The default display mode at startup is **Control**
-(mode 3).
+The default display mode at startup is **Control** (mode 3).
 
 ## Keyboard Shortcuts
 

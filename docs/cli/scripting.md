@@ -6,16 +6,20 @@ tags:
 
 # Scripting
 
-The `milk-cli` interpreter is designed to provide a seamless scripting experience by transparently integrating with your system's `bash` shell. Any command that is not a native `milk-cli` command is automatically evaluated by the underlying OS shell using `wordexp()`.
+The `milk-cli` interpreter is designed to provide a seamless scripting experience by transparently
+integrating with your system's `bash` shell. Any command that is not a native `milk-cli` command is
+automatically evaluated by the underlying OS shell using `wordexp()`.
 
-This means **all standard Bash scripting features are fully supported** inside `milk-cli`, including:
+This means **all standard Bash scripting features are fully supported** inside `milk-cli`,
+including:
 
 - Variables (`$var`), Arithmetic (`$(( ))`), array indexing, and bash-style parameter expansions
 - Flow Control (`if`, `for`, `while`, `case`), including C-style `for ((i=0; i<N; i++))` loops
 - Built-ins (`sleep`, `read`, `printf`, `trap`, `shift`)
 - I/O Redirection (`>`. `<`. `|`), Heredocs, and Background Jobs (`&`)
 
-This page documents the **native `milk-cli` extensions** and how to use them alongside standard bash in your scripts.
+This page documents the **native `milk-cli` extensions** and how to use them alongside standard bash
+in your scripts.
 
 See also: [CLI Syntax](CLIcore.md) · [FPS](../fps.md) · [Streams](../streams.md)
 
@@ -25,12 +29,10 @@ See also: [CLI Syntax](CLIcore.md) · [FPS](../fps.md) · [Streams](../streams.m
 
 You can execute a milk script file in several ways:
 
-- **Shebang**: Use `#!/usr/bin/env milk-script` as the first line.
-  The standalone `milk-script` binary runs the file
-  non-interactively with no readline dependency.
+- **Shebang**: Use `#!/usr/bin/env milk-script` as the first line. The standalone `milk-script`
+  binary runs the file non-interactively with no readline dependency.
 - **Command line**: Run `milk-cli -s script.milk` from a shell.
-- **Interactive**: Use the `source` (or `.`) command from within
-  an active `milk-cli` session.
+- **Interactive**: Use the `source` (or `.`) command from within an active `milk-cli` session.
 
 ```bash
 #!/usr/bin/env milk-script
@@ -47,8 +49,8 @@ source setup.milk
 
 ### Include Guard
 
-`include_once` sources a file only once per session, even if called multiple times.
-This is useful for loading helper function libraries without redundant evaluation:
+`include_once` sources a file only once per session, even if called multiple times. This is useful
+for loading helper function libraries without redundant evaluation:
 
 ```bash
 #!/usr/bin/env milk-script
@@ -58,12 +60,13 @@ include_once helpers.milk   # no-op
 
 ### Startup Profile
 
-If the `~/.milkrc` file exists, it is automatically sourced at interactive startup.
-Use this file to define persistent aliases, load standard variables, or register helper functions.
+If the `~/.milkrc` file exists, it is automatically sourced at interactive startup. Use this file to
+define persistent aliases, load standard variables, or register helper functions.
 
 ### Saving State
 
-Export all current variables, aliases, and function definitions to a file so they can be reloaded later:
+Export all current variables, aliases, and function definitions to a file so they can be reloaded
+later:
 
 ```bash
 #!/usr/bin/env milk-script
@@ -79,11 +82,13 @@ savehistory replay.milk
 
 ## `milk-cli` Native Features
 
-The following commands and syntactic expansions are implemented natively by the `milk-cli` engine logic and take precedence over standard bash built-ins.
+The following commands and syntactic expansions are implemented natively by the `milk-cli` engine
+logic and take precedence over standard bash built-ins.
 
 ### Stream Event Triggers (`on_update`)
 
-The `on_update` command blocks execution until a shared-memory stream posts its semaphore (i.e., a new frame arrives), then executes a provided command block.
+The `on_update` command blocks execution until a shared-memory stream posts its semaphore (i.e., a
+new frame arrives), then executes a provided command block.
 
 This is extremely useful for event-driven processing and synchronous scripts:
 
@@ -94,16 +99,19 @@ on_update wfs_cam { echo "New WFS frame received!" }
 
 ### Enhanced Conditional Tests (`[ ]`)
 
-The native interpreter supports a robust set of file and logic tests inside `[ ]` that run instantly without invoking `test` subprocesses:
+The native interpreter supports a robust set of file and logic tests inside `[ ]` that run instantly
+without invoking `test` subprocesses:
 
-- **Filesystem**: `-f` (file), `-d` (directory), `-e` (exists), `-s` (non-empty), `-r` (readable), `-w` (writable), `-x` (executable), `-L` (symlink).
+- **Filesystem**: `-f` (file), `-d` (directory), `-e` (exists), `-s` (non-empty), `-r` (readable),
+  `-w` (writable), `-x` (executable), `-L` (symlink).
 - **Strings**: `-n` (not empty), `-z` (empty), `==`, `!=`, `=~` (POSIX regex match).
 - **Numbers**: `-eq`, `-ne`, `-lt`, `-le`, `-gt`, `-ge`.
 - **Logic**: `-a` (AND), `-o` (OR), `!` (NOT).
 
 ### Wait for Resources (`waitfor_*`)
 
-You can tell your script to pause and wait for shared memory streams or FPS parameter blocks to be initialized by other compute units before proceeding:
+You can tell your script to pause and wait for shared memory streams or FPS parameter blocks to be
+initialized by other compute units before proceeding:
 
 ```bash
 #!/usr/bin/env milk-script
@@ -111,8 +119,8 @@ waitfor_stream wfs_cam 30    # wait up to 30s for the stream
 waitfor_fps dmcomb 10        # wait up to 10s for the FPS
 ```
 
-This returns `0` on success and `1` on timeout. The default timeout if omitted is 10 seconds.
-This allows for robust orchestration in startup scripts:
+This returns `0` on success and `1` on timeout. The default timeout if omitted is 10 seconds. This
+allows for robust orchestration in startup scripts:
 
 ```bash
 #!/usr/bin/env milk-script
@@ -124,7 +132,8 @@ fi
 
 ### Unified Event Multiplexing
 
-The `wait_any` command blocks until **any one** of multiple heterogeneous events fires, eliminating polling loops in orchestration scripts:
+The `wait_any` command blocks until **any one** of multiple heterogeneous events fires, eliminating
+polling loops in orchestration scripts:
 
 ```bash
 wait_any [-t timeout] event1 [event2] [event3] ...
@@ -140,7 +149,8 @@ Each event is a single token with a prefix:
 
 FPS comparison operators: `=`, `!=`, `>=`, `<=`.
 
-The return value `$?` is the 0-based index of the event that fired, `254` on timeout, or `255` on parse error.
+The return value `$?` is the 0-based index of the event that fired, `254` on timeout, or `255` on
+parse error.
 
 ```bash
 #!/usr/bin/env milk-script
@@ -155,7 +165,8 @@ fi
 
 ### Engine Event Traps
 
-The `trap` command supports non-blocking engine event handlers using the same prefix syntax as `wait_any`. Traps fire automatically between CLI commands, without blocking the main thread.
+The `trap` command supports non-blocking engine event handlers using the same prefix syntax as
+`wait_any`. Traps fire automatically between CLI commands, without blocking the main thread.
 
 ```bash
 # Register traps
@@ -174,15 +185,20 @@ trap '' STREAM:wfs_cam
 trap -l
 ```
 
-**Auto-re-arm**: Engine traps automatically re-arm after firing. The baseline state (e.g., stream `cnt0`, FPS parameter value) is updated after each fire, so the same event won't trigger twice.
+**Auto-re-arm**: Engine traps automatically re-arm after firing. The baseline state (e.g., stream
+`cnt0`, FPS parameter value) is updated after each fire, so the same event won't trigger twice.
 
-**Throttle**: A minimum interval (default 100ms) prevents high-frequency streams from flooding the handler. Override with `-i ms` (set to 0 for no throttle). Use `-n N` to limit the total number of fires.
+**Throttle**: A minimum interval (default 100ms) prevents high-frequency streams from flooding the
+handler. Override with `-i ms` (set to 0 for no throttle). Use `-n N` to limit the total number of
+fires.
 
-**Supported events**: Same event types as `wait_any`, using the engine-trap forms `STREAM:name`, `FPS:fps.param<op>val`, and `PROC:name:STATE`.
+**Supported events**: Same event types as `wait_any`, using the engine-trap forms `STREAM:name`,
+`FPS:fps.param<op>val`, and `PROC:name:STATE`.
 
 ### System Snapshot (`milkquery`)
 
-The `milkquery` command emits a unified JSON object containing FPS instances, shared-memory streams, and active processes in one call:
+The `milkquery` command emits a unified JSON object containing FPS instances, shared-memory streams,
+and active processes in one call:
 
 ```bash
 milkquery                     # Full snapshot
@@ -191,7 +207,8 @@ milkquery --streams [pattern] # Streams only
 milkquery --procs             # Active processes only
 ```
 
-Output is a JSON object with top-level keys `"fps"`, `"streams"`, and `"processes"`, each containing an array of entries. When a filter flag is used, only the requested section(s) appear.
+Output is a JSON object with top-level keys `"fps"`, `"streams"`, and `"processes"`, each containing
+an array of entries. When a filter flag is used, only the requested section(s) appear.
 
 Individual list commands also support `--json`:
 
@@ -203,7 +220,8 @@ proclist --json               # Same as milkquery --procs
 
 ### FPS Parameter Expansion
 
-You can effortlessly read FPS (Function Processing System) parameters directly into bash variables using the native `@fpsname.param` syntax:
+You can effortlessly read FPS (Function Processing System) parameters directly into bash variables
+using the native `@fpsname.param` syntax:
 
 ```bash
 #!/usr/bin/env milk-script
@@ -228,12 +246,14 @@ fpsset myloop loopgain 0.5
 - **Default values**: `${var:-default}` returns `default` if `var` is empty/unset.
 - **Assign default**: `${var:=default}` sets `var` to `default` if it was empty/unset.
 - **Error if empty**: `${var:?message}` prints an error if `var` is empty/unset.
-- **Substring**: `${var:offset:length}` returns a slice of the string. Negative offsets count from the end.
+- **Substring**: `${var:offset:length}` returns a slice of the string. Negative offsets count from
+  the end.
 - **String length**: `${#var}` returns the number of characters in the variable.
-- **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element of the respective array.
+- **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element
+  of the respective array.
 - **Array splat**: `${myarray[@]}` expands to all elements in the array joined by a space.
-- **Array size**: `${#myarray[@]}` returns the number of elements in the array.
-  For mathematical expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
+- **Array size**: `${#myarray[@]}` returns the number of elements in the array. For mathematical
+  expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
 
 - Basic operators: `+  -  *  /  %`
 - Bitwise operators: `&  |  ^  <<  >>  ~`
@@ -241,7 +261,8 @@ fpsset myloop loopgain 0.5
 
 ### Stream & FPS Metadata Expansion
 
-Similar to FPS parameters, you can access properties of shared memory streams via the `@s.` namespace expansion:
+Similar to FPS parameters, you can access properties of shared memory streams via the `@s.`
+namespace expansion:
 
 ```bash
 #!/usr/bin/env milk-script
@@ -260,11 +281,13 @@ echo "Status: ${myfps.status}"     # 1 if exists, 0 if unconnected
 
 ## Scripting Showcase
 
-Here are several examples demonstrating how `milk-cli` native features combine with standard bash utilities to form powerful automation scripts.
+Here are several examples demonstrating how `milk-cli` native features combine with standard bash
+utilities to form powerful automation scripts.
 
 ??? example "Example 1: Parameter Defaults and String Manipulation"
 
-    Because `milk-cli` correctly delegates back to `bash`, you can safely use standard recursive shell expansions (e.g. `##` suffix stripping) to quickly parse paths:
+    Because `milk-cli` correctly delegates back to `bash`, you can safely use standard recursive
+    shell expansions (e.g. `##` suffix stripping) to quickly parse paths:
 
     ```bash
     #!/usr/bin/env milk-script
@@ -288,7 +311,8 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 2: Transparent OS Fallback"
 
-    Combine Linux shell utilities directly with native `milk-cli` commands. In scripts, there is no need to prefix standard bash commands with `!` like inside interactive mode.
+    Combine Linux shell utilities directly with native `milk-cli` commands. In scripts, there is no
+    need to prefix standard bash commands with `!` like inside interactive mode.
 
     ```bash
     #!/usr/bin/env milk-script
@@ -308,7 +332,8 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 3: Waiting for Streams and reading Metadata"
 
-    Block until multiple shared-memory streams become available during startup, then dynamically read their geometry properties via native dot-expansion:
+    Block until multiple shared-memory streams become available during startup, then dynamically
+    read their geometry properties via native dot-expansion:
 
     ```bash
     #!/usr/bin/env milk-script
@@ -332,7 +357,9 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 4: Batch FPS Parameter Manipulation"
 
-    Read and write FPS parameters from a script to automate configuration changes across multiple compute units, leveraging standard bash `for` loop integer evaluation to calculate vector indices:
+    Read and write FPS parameters from a script to automate configuration changes across multiple
+    compute units, leveraging standard bash `for` loop integer evaluation to calculate vector
+    indices:
 
     ```bash
     #!/usr/bin/env milk-script
@@ -355,7 +382,8 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 5: Stream Diagnostic Report"
 
-    Collect live metadata from multiple streams and natively format a compact diagnostic table using string expansion and alignment flags.
+    Collect live metadata from multiple streams and natively format a compact diagnostic table using
+    string expansion and alignment flags.
 
     ```bash
     #!/usr/bin/env milk-script
@@ -387,7 +415,8 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 6: AO Loop Startup Orchestration"
 
-    A complete startup script that initialises an AO loop step by step, verifies each stage using `milk-cli` conditionals, and aborts cleanly on hardware failure:
+    A complete startup script that initialises an AO loop step by step, verifies each stage using
+    `milk-cli` conditionals, and aborts cleanly on hardware failure:
 
     ```bash
     #!/usr/bin/env milk-script
@@ -441,7 +470,8 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 7: Real-Time Process Triggering & Monitoring"
 
-    Use FPS parameters to configure `procinfo` settings, binding a compute unit to trigger automatically on a stream and monitoring its health from the script.
+    Use FPS parameters to configure `procinfo` settings, binding a compute unit to trigger
+    automatically on a stream and monitoring its health from the script.
 
     ```bash
     #!/usr/bin/env milk-script
@@ -470,7 +500,9 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 8: Advanced Native Math and Image Calculus"
 
-    You can run mathematical expressions natively, manipulate image values directly with constants, and calculate norms and conditions efficiently without needing external parsing like `bc` or `awk`.
+    You can run mathematical expressions natively, manipulate image values directly with constants,
+    and calculate norms and conditions efficiently without needing external parsing like `bc` or
+    `awk`.
 
     ```bash
     #!/usr/bin/env milk-script
@@ -502,7 +534,9 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 9: Bi-Directional Environment Variable Sync"
 
-    `milk-cli` natively exports all active workspace variables to the underlying POSIX environment when dispatching shell commands (like `!cmd` or pipes), and can concurrently read standard Linux environment variables without requiring manual exports.
+    `milk-cli` natively exports all active workspace variables to the underlying POSIX environment
+    when dispatching shell commands (like `!cmd` or pipes), and can concurrently read standard Linux
+    environment variables without requiring manual exports.
 
     ```bash
     #!/usr/bin/env milk-script
@@ -520,7 +554,10 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ??? example "Example 10: Advanced Hybrid Scripting (Bash + milk-cli Native)"
 
-    Combine the robust argument parsing capabilities of `bash` with the zero-overhead execution of the `milk-cli` interpreter. By parsing arguments in bash and then dropping into a `milk-cli` heredoc, the script gains native access to FPS, streams, and image calculus without sacrificing traditional command-line interfaces.
+    Combine the robust argument parsing capabilities of `bash` with the zero-overhead execution of
+    the `milk-cli` interpreter. By parsing arguments in bash and then dropping into a `milk-cli`
+    heredoc, the script gains native access to FPS, streams, and image calculus without sacrificing
+    traditional command-line interfaces.
 
     See `scripts/milk-script-advanced` for the full template.
 
@@ -553,10 +590,8 @@ Here are several examples demonstrating how `milk-cli` native features combine w
 
 ## Syntax Highlighting (Neovim)
 
-The `tree-sitter-milkcli` package provides a
-[tree-sitter](https://tree-sitter.github.io/) grammar
-for `.milk` script files, enabling rich syntax
-highlighting in **Neovim** (≥ 0.9) and other
+The `tree-sitter-milkcli` package provides a [tree-sitter](https://tree-sitter.github.io/) grammar
+for `.milk` script files, enabling rich syntax highlighting in **Neovim** (≥ 0.9) and other
 tree-sitter-capable editors.
 
 ### Quick Setup
@@ -576,10 +611,8 @@ cd tree-sitter-milkcli
 nvim examples/demo.milk
 ```
 
-The install script copies highlight queries to
-`~/.config/nvim/after/queries/milkcli/` and creates
-a Lua config snippet at
-`~/.config/nvim/plugin/milkcli-treesitter.lua`.
+The install script copies highlight queries to `~/.config/nvim/after/queries/milkcli/` and creates a
+Lua config snippet at `~/.config/nvim/plugin/milkcli-treesitter.lua`.
 
 ### What Gets Highlighted
 
@@ -597,10 +630,8 @@ a Lua config snippet at
 
 ### Dynamic Module Commands
 
-Module commands (`listim`, `saveFITS`, `imcrop`, etc.)
-are registered at runtime, not hardcoded in the grammar.
-To highlight them, run the generator script after
-installing new milk modules:
+Module commands (`listim`, `saveFITS`, `imcrop`, etc.) are registered at runtime, not hardcoded in
+the grammar. To highlight them, run the generator script after installing new milk modules:
 
 ```bash
 # Generate and install module highlight queries
@@ -625,8 +656,11 @@ installing new milk modules:
 ./scripts/build.sh --clean   # remove generated files
 ```
 
-!!! info "Requirements" - **Node.js** — for the `tree-sitter-cli` build tool - **Neovim ≥ 0.9** — with built-in tree-sitter support - **nvim-treesitter** plugin — installed automatically
-by `nvim-install.sh`
+<!-- prettier-ignore -->
+!!! info "Requirements"
+    - **Node.js** — for the `tree-sitter-cli` build tool
+    - **Neovim ≥ 0.9** — with built-in tree-sitter support
+    - **nvim-treesitter** plugin — installed automatically by `nvim-install.sh`
 
 ---
 

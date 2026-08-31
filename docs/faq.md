@@ -1,7 +1,6 @@
 # FAQ & Troubleshooting
 
-Common issues and solutions when building, installing, and
-running `milk`.
+Common issues and solutions when building, installing, and running `milk`.
 
 ---
 
@@ -31,8 +30,8 @@ running `milk`.
     cmake .. -DUSE_CFITSIO=OFF
     ```
 
-    See [Build Tiers](install/build_tiers.md) and
-    [Compile Instructions](install/compile.md) for details.
+    See [Build Tiers](install/build_tiers.md) and [Compile Instructions](install/compile.md) for
+    details.
 
 ??? faq "Build fails with missing readline"
 
@@ -124,8 +123,7 @@ See also: [Streams](streams.md)
 
 ## 3. FPS / Process Control
 
-See also: [FPS](fps.md) ·
-[Process Info](procinfo.md) ·
+See also: [FPS](fps.md) · [Process Info](procinfo.md) ·
 [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
 
 ??? faq "FPS process won't start — \"FPS already exists\""
@@ -142,8 +140,7 @@ See also: [FPS](fps.md) ·
 
 ??? faq "milk-fpsCTRL shows no processes"
 
-    Ensure the processinfo SHM directory exists and processes are
-    registered:
+    Ensure the processinfo SHM directory exists and processes are registered:
 
     ```bash
     ls $MILK_SHM_DIR/proc.*.shm   # (1)!
@@ -171,8 +168,7 @@ See also: [CLI Reference](cli/CLIcore.md)
 
     This can happen when the startup banner clears the screen.
 
-    **Solution:** This is a known cosmetic issue. The prompt will
-    stabilize after the first command.
+    **Solution:** This is a known cosmetic issue. The prompt will stabilize after the first command.
 
 ??? faq "Command not found — \"Unknown command\""
 
@@ -190,8 +186,7 @@ See also: [CLI Reference](cli/CLIcore.md)
     1. List all loaded modules
     2. Search for a command
 
-    If the module is a plugin, ensure it was compiled and the `.so`
-    file is in the library path.
+    If the module is a plugin, ensure it was compiled and the `.so` file is in the library path.
 
 ---
 
@@ -199,8 +194,7 @@ See also: [CLI Reference](cli/CLIcore.md)
 
 ??? faq "Real-time scheduling"
 
-    For latency-critical applications (AO loops), configure
-    real-time scheduling:
+    For latency-critical applications (AO loops), configure real-time scheduling:
 
     ```bash
     milk-makecsetandrt           # (1)!

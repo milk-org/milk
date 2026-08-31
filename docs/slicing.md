@@ -7,16 +7,13 @@ tags:
 
 # Stream Slicing
 
-Stream slicing provides **FITSIO-like extended file syntax**
-for extracting, flipping, striding, and binning sub-regions of
-streams directly from their name string. This eliminates
-the need for separate crop/flip commands in both interactive
-CLI expressions and FPS stream-processing loops.
+Stream slicing provides **FITSIO-like extended file syntax** for extracting, flipping, striding, and
+binning sub-regions of streams directly from their name string. This eliminates the need for
+separate crop/flip commands in both interactive CLI expressions and FPS stream-processing loops.
 
 ## Syntax
 
-Append `[axis0, axis1, axis2]` to any stream name.
-Each axis specification follows this grammar:
+Append `[axis0, axis1, axis2]` to any stream name. Each axis specification follows this grammar:
 
 | Form               | Meaning                      |
 | ------------------ | ---------------------------- |
@@ -45,10 +42,8 @@ im[-20:-1,0:9]       # Negative index: last 20 columns
 
 ### Parser (`imgid_slice.h` / `imgid_slice.c`)
 
-The parser lives in `src/engine/libfps/` (engine tier,
-no CLI dependency). Access functions are in
-`src/coremods/COREMOD_memory/stream_slice.h`.
-Key parser functions:
+The parser lives in `src/engine/libfps/` (engine tier, no CLI dependency). Access functions are in
+`src/coremods/COREMOD_memory/stream_slice.h`. Key parser functions:
 
 | Function                    | Purpose                                         |
 | --------------------------- | ----------------------------------------------- |
@@ -69,9 +64,8 @@ uint64_t    slice_last_cnt0; // source frame counter
 int         slice_shared;  // 1 if @S: requested
 ```
 
-**`imgid_make_from_name()`** automatically parses
-brackets. The bare name (without brackets) is stored
-in `img.name`, and the slice descriptor in `img.slice`.
+**`imgid_make_from_name()`** automatically parses brackets. The bare name (without brackets) is
+stored in `img.name`, and the slice descriptor in `img.slice`.
 
 ### Access Functions (`stream_slice.h`)
 
@@ -82,22 +76,19 @@ IMAGE *imgid_get_image(IMGID *img);
 void   imgid_put_image(IMGID *img);
 ```
 
-**`imgid_get_image()`** returns `img->im` for non-sliced
-streams (zero overhead — one predicted-away branch).
-For sliced streams, it materializes the slice on first
-call and re-materializes when the source `cnt0` changes.
+**`imgid_get_image()`** returns `img->im` for non-sliced streams (zero overhead — one predicted-away
+branch). For sliced streams, it materializes the slice on first call and re-materializes when the
+source `cnt0` changes.
 
-**`imgid_put_image()`** is a no-op for non-sliced
-streams. For sliced streams, it writes the local buffer
-back into the source at the correct offsets.
+**`imgid_put_image()`** is a no-op for non-sliced streams. For sliced streams, it writes the local
+buffer back into the source at the correct offsets.
 
 ## Usage
 
 ### CLI Expressions
 
-In CLI arithmetic expressions, sliced image names are
-preserved as single tokens. The bracket contents are
-kept together with the image name:
+In CLI arithmetic expressions, sliced image names are preserved as single tokens. The bracket
+contents are kept together with the image name:
 
 ```text
 milk> mk2Dim im 100 100   # create 100×100 image
@@ -123,22 +114,19 @@ imgid_put_image(&imgin);
 
 ### Shared Memory Exposure
 
-By default, materialized slices are **local-only**
-buffers (not visible to other processes). To expose
-a sliced view as shared memory, use the `@S:` prefix:
+By default, materialized slices are **local-only** buffers (not visible to other processes). To
+expose a sliced view as shared memory, use the `@S:` prefix:
 
 ```text
 @S:im[0:63,0:63]
 ```
 
-This creates a shared memory stream with a deterministic
-name derived from the source name and slice specification
-(e.g., `im__s_0_63_0_63`).
+This creates a shared memory stream with a deterministic name derived from the source name and slice
+specification (e.g., `im__s_0_63_0_63`).
 
 ### Output (LHS) Slicing
 
-Slicing can also be used on the left-hand side of
-assignments to write into a sub-region:
+Slicing can also be used on the left-hand side of assignments to write into a sub-region:
 
 ```text
 milk> im[10:19,10:19] = 0.0
@@ -148,18 +136,13 @@ This zeroes a 10×10 region inside the stream `im`.
 
 ## Performance
 
-- **Non-sliced streams**: Zero overhead. The
-  `imgid_get_image()` check compiles to a single
+- **Non-sliced streams**: Zero overhead. The `imgid_get_image()` check compiles to a single
   predicted-away branch.
-- **Simple 2D crops**: Fast path using `memcpy`
-  per row.
-- **Strided/flipped**: General element-by-element
-  copy with computed source/dest strides.
-- **Buffer reuse**: The materialized buffer is
-  allocated once and reused across frames.
+- **Simple 2D crops**: Fast path using `memcpy` per row.
+- **Strided/flipped**: General element-by-element copy with computed source/dest strides.
+- **Buffer reuse**: The materialized buffer is allocated once and reused across frames.
 
 ## See Also
 
-- [Streams](streams.md) — stream modifiers (`@S:`,
-  `@L:`, `@F:`)
+- [Streams](streams.md) — stream modifiers (`@S:`, `@L:`, `@F:`)
 - [FPS](fps.md) — Function Parameter System

@@ -3,34 +3,36 @@
 !!! note
 This file: `docs/developer/WorkingWithGit.md`
 
-See also: [Documenting Code](DocumentingCode.md) ·
-[Adding Plugins](plugins.md) ·
+See also: [Documenting Code](DocumentingCode.md) · [Adding Plugins](plugins.md) ·
 [Compile Instructions](../install/compile.md)
 
 ---
 
 ## 1. Source Code and Modules
 
-Most of milk's code is organized in directories under `src/` (core modules)
-and `plugins/` (optional modules). Modules are compiled as shared objects
-loaded by the main process at runtime.
+Most of milk's code is organized in directories under `src/` (core modules) and `plugins/` (optional
+modules). Modules are compiled as shared objects loaded by the main process at runtime.
 
-Some plugin directories (e.g., `plugins/cacao-src`) may be symbolic links
-to external source trees or git submodules.
+Some plugin directories (e.g., `plugins/cacao-src`) may be symbolic links to external source trees
+or git submodules.
 
 ## 2. Standard Development Workflow
 
-All code changes **must** go through a pull request. Never commit directly to `framework-dev` (or `main`).
+All code changes **must** go through a pull request. Never commit directly to `framework-dev` (or
+`main`).
 
 **CRITICAL BRANCHING RULE:**
 
-- You are **STRICTLY FORBIDDEN** from modifying or pushing to the `dev` branch for `milk`, `cacao`, and `ImageStreamIO`.
-- You must **ONLY** push to and merge into `framework-dev` or feature branches derived from `framework-dev`.
+- You are **STRICTLY FORBIDDEN** from modifying or pushing to the `dev` branch for `milk`, `cacao`,
+  and `ImageStreamIO`.
+- You must **ONLY** push to and merge into `framework-dev` or feature branches derived from
+  `framework-dev`.
 
 ### Required Steps
 
 1. **Create a feature branch** from `framework-dev`:
-   - Use a descriptive name, e.g., `feat/new-stream-processor`, `fix/imfunctions-else-if`, `perf/mvm-blas-upgrade`, `docs/update-guide`.
+   - Use a descriptive name, e.g., `feat/new-stream-processor`, `fix/imfunctions-else-if`,
+     `perf/mvm-blas-upgrade`, `docs/update-guide`.
 
 2. **Make commits** on the feature branch. Keep commits atomic and well-described.
 3. **Push** the feature branch to origin.
@@ -39,17 +41,20 @@ All code changes **must** go through a pull request. Never commit directly to `f
 
 ## 3. Parallel Development using Git Worktrees
 
-The `milk` project enforces strict branching rules where all work must occur on feature branches off of `framework-dev`. If you need to work on multiple tracks simultaneously (e.g., optimizing performance while also updating documentation or fixing a CLI bug), you should use **Git Worktrees**.
+The `milk` project enforces strict branching rules where all work must occur on feature branches off
+of `framework-dev`. If you need to work on multiple tracks simultaneously (e.g., optimizing
+performance while also updating documentation or fixing a CLI bug), you should use **Git
+Worktrees**.
 
-Git worktrees allow you to have multiple isolated working directories that share the exact same underlying local `.git` repository.
+Git worktrees allow you to have multiple isolated working directories that share the exact same
+underlying local `.git` repository.
 
 ### Best Practices
 
-1. **Keep the Main Clone Clean:**
-   Keep your primary repository (e.g., `~/src/milk`) checked out to `framework-dev`.
+1. **Keep the Main Clone Clean:** Keep your primary repository (e.g., `~/src/milk`) checked out to
+   `framework-dev`.
 
-2. **Create Track-Specific Worktrees:**
-   Create sibling directories for your parallel tracks.
+2. **Create Track-Specific Worktrees:** Create sibling directories for your parallel tracks.
 
    ```bash
    cd ~/src/milk
@@ -57,11 +62,11 @@ Git worktrees allow you to have multiple isolated working directories that share
    git worktree add ../milk-cli -b feat/my-cli-task framework-dev
    ```
 
-3. **Isolate Builds:**
-   Each worktree should have its own dedicated `_build` directory. This ensures CMake caches and compiled object files do not interfere with each other when you context-switch.
+3. **Isolate Builds:** Each worktree should have its own dedicated `_build` directory. This ensures
+   CMake caches and compiled object files do not interfere with each other when you context-switch.
 
-4. **Reusing Worktrees:**
-   When you finish a task (e.g., your CLI feature is merged), **do not** delete the worktree. Reuse it for your next CLI task to preserve your CMake build cache:
+4. **Reusing Worktrees:** When you finish a task (e.g., your CLI feature is merged), **do not**
+   delete the worktree. Reuse it for your next CLI task to preserve your CMake build cache:
 
    ```bash
    cd ~/src/milk-cli
@@ -71,7 +76,8 @@ Git worktrees allow you to have multiple isolated working directories that share
    ```
 
 !!! tip
-A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout and initialize the build directories for you.
+A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout
+and initialize the build directories for you.
 
 ## 4. Releasing a New Version
 
@@ -90,16 +96,16 @@ $ git push origin main --tags
 ```
 
 !!! note
-Modules that are shared between packages (e.g., `milk` and `cacao`) can have
-parallel version number histories. Any new version, regardless of which
-package it is associated with, includes all previous changes.
+Modules that are shared between packages (e.g., `milk` and `cacao`) can have parallel version number
+histories. Any new version, regardless of which package it is associated with, includes all previous
+changes.
 
 ---
 
 ## 5. Source Code Documentation (doxygen)
 
-For generating HTML source code documentation via Doxygen, refer to the
-up-to-date guide in [DocumentingCode.md](DocumentingCode.md).
+For generating HTML source code documentation via Doxygen, refer to the up-to-date guide in
+[DocumentingCode.md](DocumentingCode.md).
 
 ---
 

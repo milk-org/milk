@@ -7,32 +7,28 @@ tags:
 
 # Programmer's Guide to `milk`
 
-Welcome to `milk`. This document serves as an overview of its core architecture and programming model. If you are reading this while setting up a new module, debugging, or wanting to write a custom module, this guide will orient you on the core concepts.
+Welcome to `milk`. This document serves as an overview of its core architecture and programming
+model. If you are reading this while setting up a new module, debugging, or wanting to write a
+custom module, this guide will orient you on the core concepts.
 
 ## 1. Core Architecture
 
-`milk` is structured around decoupled, high-performance
-computing components. Instead of monolithic structures, it
-relies on small modular units ("compute units") talking to
-each other via standard inter-process communication
-mechanisms.
+`milk` is structured around decoupled, high-performance computing components. Instead of monolithic
+structures, it relies on small modular units ("compute units") talking to each other via standard
+inter-process communication mechanisms.
 
 The architecture orbits around two primary concepts:
 
 1. **ImageStreamIO (Streams):**
-   - The primary data layer. Shared memory images/data
-     cubes are passed around with near-zero copy overhead.
-     Stream metadata holds dimensions, data format,
-     keywords, and synchronization semaphores that trigger
-     downstream processes.
+   - The primary data layer. Shared memory images/data cubes are passed around with near-zero copy
+     overhead. Stream metadata holds dimensions, data format, keywords, and synchronization
+     semaphores that trigger downstream processes.
 
 2. **Function Processing System (FPS):**
-   - The control and parameter layer. FPS manages
-     configuration parameters, state, and commands for
-     compute units. FPS instances reside in shared memory
-     (`/dev/shm/fps.*`), allowing for real-time adjustments
-     via the CLI, GUI, or other automated processes without
-     restarting the compute module itself.
+   - The control and parameter layer. FPS manages configuration parameters, state, and commands for
+     compute units. FPS instances reside in shared memory (`/dev/shm/fps.*`), allowing for real-time
+     adjustments via the CLI, GUI, or other automated processes without restarting the compute
+     module itself.
 
 ```mermaid
 graph TD
@@ -83,12 +79,18 @@ graph TD
 
 `milk` isolates its execution environments utilizing `tmux` and its own framework:
 
-- **Isolated Execution:** When an FPS script is launched via a standalone program (e.g., `milk-fps-deploy` or via the `milk-fpsexec-<name>` executables), `milk` places these instances inside dedicated `tmux` sessions. This ensures that failures in one component do not drag down the whole system, while maintaining accessibility for debugging standard error/output.
-- **Processinfo (`procinfo`):** Every FPS instance tracks its heartbeat, state (idle, computing, waiting), loops per second, and error conditions in the system. The `milk-procinfo-list` command depends on these heartbeat counters properly updating.
+- **Isolated Execution:** When an FPS script is launched via a standalone program (e.g.,
+  `milk-fps-deploy` or via the `milk-fpsexec-<name>` executables), `milk` places these instances
+  inside dedicated `tmux` sessions. This ensures that failures in one component do not drag down the
+  whole system, while maintaining accessibility for debugging standard error/output.
+- **Processinfo (`procinfo`):** Every FPS instance tracks its heartbeat, state (idle, computing,
+  waiting), loops per second, and error conditions in the system. The `milk-procinfo-list` command
+  depends on these heartbeat counters properly updating.
 
 ## 3. Writing a Compute Unit
 
-When building a new compute task, `milk` enforces a standardized "V2" format. The canonical template is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
+When building a new compute task, `milk` enforces a standardized "V2" format. The canonical template
+is `src/milk_module_example/examplefunc_fps_cli_poc.c`.
 
 ### Step-by-Step
 
@@ -135,26 +137,36 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 4. **Compute Function (`fpsexec()`):** Pure calculation core.
 5. **`CLIcmddata`:** CLI registry scoping.
 6. **Compute wrapper:** Processinfo loop via `INSERT_STD_PROCINFO_COMPUTEFUNC_*` macros.
-7. **Module registration:** `CLIADDCMD_*` function for CLI mode (guarded by `#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)`).
-8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` (or `_V2_CONFCHECK` if a `customCONFcheck` is needed) handles FPS lifecycle, `-h1`, `-tmux`.
+7. **Module registration:** `CLIADDCMD_*` function for CLI mode (guarded by
+   `#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)`).
+8. **Standalone `main()`:** `FPS_MAIN_STANDALONE_V2` (or `_V2_CONFCHECK` if a `customCONFcheck` is
+   needed) handles FPS lifecycle, `-h1`, `-tmux`.
 
 ## 4. Directory Map
 
-- `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS core library), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools), `libprocessinfo`, and `libmilkdata`.
-- `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter), `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
+- `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS
+  core library), `libfpsseq` (FPS sequencer), `libmilkcommon` (common utilities, debug tools),
+  `libprocessinfo`, and `libmilkdata`.
+- `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),
+  `CLIcore` (interactive shell), `overview` (system overview TUI), and `streamCTRL`.
 - `src/milk_module_example`: Compute unit templates (start here!).
 - `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).
-- `plugins/cacao-src/`: Cacao AO loop modules (user-created symlink to `~/src/cacao`; not present on a fresh clone).
+- `plugins/cacao-src/`: Cacao AO loop modules (user-created symlink to `~/src/cacao`; not present on
+  a fresh clone).
 - `docs/`: Documentation.
 
 ### Standalone Executables vs Core Modules
 
-`milk` provides both an interactive prompt (`milk-cli`) and independent executable programs known as standalone executables (`milk-fpsexec-*` and `cacao-fpsexec-*`).
-Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment, linking securely to only the `_compute` variants of libraries. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
+`milk` provides both an interactive prompt (`milk-cli`) and independent executable programs known as
+standalone executables (`milk-fpsexec-*` and `cacao-fpsexec-*`). Standalones are specifically
+designed to execute one compute unit in isolation without relying on the broader CLI environment,
+linking securely to only the `_compute` variants of libraries. They act as native Linux processes
+managed via `tmux` and `fpsCTRL`.
 
 !!! tip
-**Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to integrate custom plugins into the build system.
+**Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to
+integrate custom plugins into the build system.
 
 ## 5. Dependency Architecture
 
@@ -186,29 +198,25 @@ Compute unit source files use conditional includes to support both CLI and stand
 <details markdown="1">
 <summary><b>Library Link Patterns — Dual Architecture</b></summary>
 
-The build system maintains two library variants
-for each module:
+The build system maintains two library variants for each module:
 
 | Variant      | Suffix        | Compiled with | Linked by                |
 | ------------ | ------------- | ------------- | ------------------------ |
 | Full         | `.so`         | _(default)_   | `milk-cli`, module `.so` |
 | Compute-only | `_compute.so` | `MILK_NO_CLI` | `fpsexec` standalones    |
 
-`_compute` variants contain pure computation code
-with no CLI registration. This keeps standalones
+`_compute` variants contain pure computation code with no CLI registration. This keeps standalones
 free of CLIcore dependencies.
 
-When `USE_STATIC_LTO=ON`, a third variant is
-built — static archives (`.a`) of the same
-compute-only code:
+When `USE_STATIC_LTO=ON`, a third variant is built — static archives (`.a`) of the same compute-only
+code:
 
 | Variant         | File          | Purpose                    |
 | --------------- | ------------- | -------------------------- |
 | Dynamic compute | `_compute.so` | Default fpsexec link       |
 | Static compute  | `_compute.a`  | LTO-optimized fpsexec link |
 
-With static archives, GCC's LTO can inline and
-optimize across all library boundaries. See
+With static archives, GCC's LTO can inline and optimize across all library boundaries. See
 [PGO & LTO](pgo.md) for details.
 
 **CMake standalone helpers:**
@@ -219,10 +227,8 @@ optimize across all library boundaries. See
 | `add_cacao_standalone()`         | Same as above                                            | cacao-fpsexec-\* (no plugin deps)          |
 | `add_cacao_standalone_plugins()` | Above + selected plugin \_compute libs                   | cacao-fpsexec-\* that use plugin functions |
 
-**💡 Tip:** Use `_compute` variants of libraries
-(e.g. `milkstatistic_compute`) when linking standalone
-executables. The `_compute` variants never pull in
-CLIcore.
+**💡 Tip:** Use `_compute` variants of libraries (e.g. `milkstatistic_compute`) when linking
+standalone executables. The `_compute` variants never pull in CLIcore.
 
 </details>
 
@@ -239,15 +245,14 @@ CLIcore.
 
 ### Verifying Dependencies
 
-Run `milk-check-standalone-deps` to verify no standalone accidentally links CLIcore.
-It is also integrated as a CTest (`standalone-dep-check`) and runs automatically with
-`ctest` in the build directory. 14 standalones are whitelisted as known exceptions
-(they require module-lib symbols for OpenBLAS, FFT, etc.).
+Run `milk-check-standalone-deps` to verify no standalone accidentally links CLIcore. It is also
+integrated as a CTest (`standalone-dep-check`) and runs automatically with `ctest` in the build
+directory. 14 standalones are whitelisted as known exceptions (they require module-lib symbols for
+OpenBLAS, FFT, etc.).
 
 ## 6. CMakeLists.txt Conventions
 
-Use `src/milk_module_example/CMakeLists.txt` as the template
-for new modules.
+Use `src/milk_module_example/CMakeLists.txt` as the template for new modules.
 
 <details markdown="1">
 <summary><b>Standard CMakeLists.txt layout</b></summary>
@@ -319,8 +324,8 @@ Every `.c` file should start with a kernel-doc header:
 <details markdown="1">
 <summary><b>Dual-mode files</b></summary>
 
-Files compiled both as part of a shared library (CLI mode)
-and as standalone executables use conditional includes:
+Files compiled both as part of a shared library (CLI mode) and as standalone executables use
+conditional includes:
 
 ```c
 #ifdef MILK_NO_CLI
@@ -336,8 +341,7 @@ and as standalone executables use conditional includes:
 <details markdown="1">
 <summary><b>Function documentation</b></summary>
 
-Document functions with kernel-doc style above the function
-body in `.c` files:
+Document functions with kernel-doc style above the function body in `.c` files:
 
 ```c
 /**
@@ -368,7 +372,9 @@ Each module directory should have a `README.md` with:
 
 ---
 
-_(This guide is automatically updated by your coding agent using the [/update-programmers-guide](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md) workflow)_
+_(This guide is automatically updated by your coding agent using the
+[/update-programmers-guide](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md)
+workflow)_
 
 ---
 

@@ -1,14 +1,11 @@
 # Code Assist Tools
 
 See also: [Programmer's Guide](programmers_guide.md) ·
-[Coding Standards](developer/coding_standards.md) ·
-[Adding Plugins](developer/plugins.md) ·
+[Coding Standards](developer/coding_standards.md) · [Adding Plugins](developer/plugins.md) ·
 [Template Source Code](developer/TemplateSourceCode.md)
 
-The `milk` project includes **agent rules** and
-**workflows** that guide AI coding assistants
-(Gemini, Copilot, etc.) to follow project
-conventions automatically. They live under:
+The `milk` project includes **agent rules** and **workflows** that guide AI coding assistants
+(Gemini, Copilot, etc.) to follow project conventions automatically. They live under:
 
 ```text
 .agents/
@@ -17,26 +14,21 @@ conventions automatically. They live under:
 └── workflows/    # On-demand task templates
 ```
 
-Collaborators benefit even without using an AI
-assistant — the rule and workflow files document
-the conventions, checklists, and cross-references
-that every contributor should know.
+Collaborators benefit even without using an AI assistant — the rule and workflow files document the
+conventions, checklists, and cross-references that every contributor should know.
 
 ## Getting Started
 
 New to adding capabilities? Start with these:
 
-1. [Developer Tutorial](developer/tutorial.md) —
-   write your first module end-to-end.
-2. [Adding Plugins](developer/plugins.md) — CMake
-   setup, dual-mode headers, `_compute` variants.
-3. [Template Source Code](developer/TemplateSourceCode.md)
-   — which template file to copy for each use case.
+1. [Developer Tutorial](developer/tutorial.md) — write your first module end-to-end.
+2. [Adding Plugins](developer/plugins.md) — CMake setup, dual-mode headers, `_compute` variants.
+3. [Template Source Code](developer/TemplateSourceCode.md) — which template file to copy for each
+   use case.
 
 ## Agent Rules
 
-Rules fire **automatically** when a task touches
-relevant code. They enforce conventions without
+Rules fire **automatically** when a task touches relevant code. They enforce conventions without
 requiring you to remember every checklist.
 
 | Rule                      | File                                                                                                                                                     | What it enforces                                                                     |
@@ -78,8 +70,7 @@ requiring you to remember every checklist.
 
 ## Skills
 
-Skills live in `.agents/skills/` and provide deep
-context for specialized tasks. Each skill folder
+Skills live in `.agents/skills/` and provide deep context for specialized tasks. Each skill folder
 contains a `SKILL.md` with detailed instructions.
 
 | Skill                      | Folder                                                                                                                                 | What it provides                                                                                |
@@ -106,9 +97,8 @@ contains a `SKILL.md` with detailed instructions.
 
 ## Workflows
 
-Workflows are invoked by typing the slash command
-as a chat message (e.g., `/compile-test`). They are
-step-by-step checklists for common tasks.
+Workflows are invoked by typing the slash command as a chat message (e.g., `/compile-test`). They
+are step-by-step checklists for common tasks.
 
 | Command                     | File                                                                                                                               | What it does                                                                                  |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -137,8 +127,7 @@ step-by-step checklists for common tasks.
 
 ### Rules
 
-Create a new `.md` file in `.agents/rules/` with
-YAML frontmatter:
+Create a new `.md` file in `.agents/rules/` with YAML frontmatter:
 
 ```yaml
 ---
@@ -146,13 +135,11 @@ description: Short description of what this rule does
 ---
 ```
 
-Then write the trigger conditions and required
-actions in markdown below the frontmatter.
+Then write the trigger conditions and required actions in markdown below the frontmatter.
 
 ### Workflows
 
-Create a new `.md` file in `.agents/workflows/`
-with YAML frontmatter:
+Create a new `.md` file in `.agents/workflows/` with YAML frontmatter:
 
 ```yaml
 ---
@@ -160,8 +147,7 @@ description: Short description of the workflow
 ---
 ```
 
-Then write numbered steps below the frontmatter.
-Use `// turbo-all` at the top of the steps section
+Then write numbered steps below the frontmatter. Use `// turbo-all` at the top of the steps section
 if every command should auto-run without confirmation.
 
 ---

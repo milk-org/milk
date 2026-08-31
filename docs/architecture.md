@@ -6,24 +6,19 @@ tags:
 
 # Software Architecture
 
-This document presents a hierarchical overview of the
-`milk` system architecture. It is the recommended
-starting point for programmers who want to understand how
-the pieces fit together before diving into code.
+This document presents a hierarchical overview of the `milk` system architecture. It is the
+recommended starting point for programmers who want to understand how the pieces fit together before
+diving into code.
 
-See also: [Programmer's Guide](programmers_guide.md) ·
-[Dependency Graph](dependency_graph.md)
+See also: [Programmer's Guide](programmers_guide.md) · [Dependency Graph](dependency_graph.md)
 
 ---
 
 ## 1. Purpose
 
-`milk` is a **real-time image-processing framework**
-built for Adaptive Optics (AO) and high-performance
-scientific computing. It orchestrates many small,
-independent compute units that communicate through
-zero-copy shared memory, enabling microsecond-latency
-data pipelines.
+`milk` is a **real-time image-processing framework** built for Adaptive Optics (AO) and
+high-performance scientific computing. It orchestrates many small, independent compute units that
+communicate through zero-copy shared memory, enabling microsecond-latency data pipelines.
 
 ---
 
@@ -40,8 +35,7 @@ data pipelines.
 
 ## 3. The Three Pillars
 
-All runtime communication in `milk` flows through three
-shared-memory subsystems:
+All runtime communication in `milk` flows through three shared-memory subsystems:
 
 ```mermaid
 graph TD
@@ -81,8 +75,8 @@ graph TD
 
 ## 4. Layered Architecture
 
-The codebase is organized in strict dependency layers.
-Lower layers have no knowledge of higher ones.
+The codebase is organized in strict dependency layers. Lower layers have no knowledge of higher
+ones.
 
 ```text
 ┌──────────────────────────────────────────┐
@@ -108,8 +102,7 @@ Lower layers have no knowledge of higher ones.
          ▼  External: cfitsio, FFTW, OpenBLAS, CUDA (optional)
 ```
 
-Each layer corresponds to a **build tier** that can be
-compiled independently:
+Each layer corresponds to a **build tier** that can be compiled independently:
 
 | Tier          | CMake Flags                        | What is built                                     |
 | ------------- | ---------------------------------- | ------------------------------------------------- |
@@ -118,8 +111,7 @@ compiled independently:
 | **Core+FITS** | `-DUSE_CLI=OFF`                    | Core + COREMOD_iofits                             |
 | **Full**      | _(defaults)_                       | Everything: CLI + all plugins                     |
 
-→ Details: [Build Tiers](install/build_tiers.md) ·
-[Dependency Graph](dependency_graph.md)
+→ Details: [Build Tiers](install/build_tiers.md) · [Dependency Graph](dependency_graph.md)
 
 ---
 
@@ -222,9 +214,8 @@ Each box in this pipeline is an independent process:
 
 ## 7. Compute Units (Standalone Executables)
 
-The fundamental building block is the **compute unit** —
-a self-contained executable that reads input streams,
-applies computation, and writes output streams.
+The fundamental building block is the **compute unit** — a self-contained executable that reads
+input streams, applies computation, and writes output streams.
 
 ```text
 ┌─────────────────────────────────────────┐
@@ -248,42 +239,34 @@ applies computation, and writes output streams.
     /dev/shm/*.im.shm   /dev/shm/*.im.shm
 ```
 
-Compute units follow the **V2 8-section layout**
-documented in the template
+Compute units follow the **V2 8-section layout** documented in the template
 `src/milk_module_example/examplefunc_fps_cli_poc.c`.
 
 They can run in two modes:
 
-- **CLI mode**: loaded as a shared library inside
-  `milk-cli`
-- **Standalone mode**: independent binary
-  (`milk-fpsexec-*`, `cacao-fpsexec-*`)
+- **CLI mode**: loaded as a shared library inside `milk-cli`
+- **Standalone mode**: independent binary (`milk-fpsexec-*`, `cacao-fpsexec-*`)
 
-→ Details:
-[Programmer's Guide](programmers_guide.md) ·
+→ Details: [Programmer's Guide](programmers_guide.md) ·
 [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
 
 ---
 
 ## 8. Plugin System
 
-`milk` uses a plugin architecture where additional
-functionality is compiled as shared libraries and loaded
-at runtime by `CLIcore`.
+`milk` uses a plugin architecture where additional functionality is compiled as shared libraries and
+loaded at runtime by `CLIcore`.
 
 ### milk-extra plugins
 
-General-purpose libraries for signal processing, linear
-algebra, image manipulation, and statistics. Each plugin
-registers its CLI commands on load.
+General-purpose libraries for signal processing, linear algebra, image manipulation, and statistics.
+Each plugin registers its CLI commands on load.
 
 ### cacao
 
-A domain-specific plugin suite for **Adaptive Optics
-loop control**. Source code lives at
-`plugins/cacao-src/` (a symlink to `~/src/cacao`).
-cacao modules depend on `milk-extra` plugins for FFT,
-image processing, and optimization.
+A domain-specific plugin suite for **Adaptive Optics loop control**. Source code lives at
+`plugins/cacao-src/` (a symlink to `~/src/cacao`). cacao modules depend on `milk-extra` plugins for
+FFT, image processing, and optimization.
 
 ```mermaid
 graph TD
@@ -346,17 +329,15 @@ graph TD
 | `milk-fpsexec-*`  | Standalone compute executables (one per function)                            | FPS, Streams, processinfo |
 | `milk-fps-*`      | CLI utilities for FPS operations (set, list, search, deploy)                 | FPS                       |
 
-→ Details: [CLI Overview](cli/CLI_Overview.md) ·
-[Scripts Reference](scripts.md)
+→ Details: [CLI Overview](cli/CLI_Overview.md) · [Scripts Reference](scripts.md)
 
 ---
 
 ## 10. Multi-Host Operation
 
-For distributed systems, `milk-fps-valkey` bridges local
-FPS shared memory to a central
-[Valkey](https://valkey.io/) key-value store, enabling
-cross-host parameter sync with PubSub notifications.
+For distributed systems, `milk-fps-valkey` bridges local FPS shared memory to a central
+[Valkey](https://valkey.io/) key-value store, enabling cross-host parameter sync with PubSub
+notifications.
 
 ```text
 Host A  ←──►  Valkey Server  ←──►  Host B

@@ -1,12 +1,9 @@
 # Debugging
 
-Strategies for diagnosing issues in `milk` processes,
-from inspecting running pipelines to post-mortem analysis
-of crashes.
+Strategies for diagnosing issues in `milk` processes, from inspecting running pipelines to
+post-mortem analysis of crashes.
 
-See also: [Process Info](procinfo.md) ·
-[FPS](fps.md) ·
-[FAQ & Troubleshooting](faq.md) ·
+See also: [Process Info](procinfo.md) · [FPS](fps.md) · [FAQ & Troubleshooting](faq.md) ·
 [Performance Tuning](performance.md)
 
 ---
@@ -15,8 +12,8 @@ See also: [Process Info](procinfo.md) ·
 
 ### 1.1. `milk-procinfo-list`
 
-The first tool to reach for. Displays all registered
-compute units with PID, state, and loop frequency:
+The first tool to reach for. Displays all registered compute units with PID, state, and loop
+frequency:
 
 ```bash
 $ milk-procinfo-list
@@ -25,23 +22,19 @@ $ milk-procinfo-list
 Look for:
 
 - **Green PIDs:** healthy, actively looping.
-- **Red / missing PIDs:** the process has died or its
-  heartbeat has stopped.
-- **Low Hz values:** the loop is running but may be
-  starved of CPU or blocked on a semaphore.
+- **Red / missing PIDs:** the process has died or its heartbeat has stopped.
+- **Low Hz values:** the loop is running but may be starved of CPU or blocked on a semaphore.
 
 ### 1.2. `milk-fpsCTRL`
 
-Open the FPS dashboard to inspect parameter values and
-process states interactively:
+Open the FPS dashboard to inspect parameter values and process states interactively:
 
 ```bash
 $ milk-fpsCTRL
 ```
 
-Use arrow keys to navigate, `Enter` to inspect/edit
-parameters. Check the `confpid` and `runpid` fields —
-if they show `0`, the corresponding loop is not running.
+Use arrow keys to navigate, `Enter` to inspect/edit parameters. Check the `confpid` and `runpid`
+fields — if they show `0`, the corresponding loop is not running.
 
 ### 1.3. `milk-streamCTRL`
 
@@ -51,17 +44,14 @@ Inspect shared memory streams in real time:
 $ milk-streamCTRL
 ```
 
-Verify that streams are receiving frames (check frame
-counter `cnt0` is incrementing) and that semaphore
-counts are not accumulating (which would indicate a
-stalled consumer).
+Verify that streams are receiving frames (check frame counter `cnt0` is incrementing) and that
+semaphore counts are not accumulating (which would indicate a stalled consumer).
 
 ---
 
 ## 2. Tmux Log Inspection
 
-When processes are launched with `-tmux`, each runs in
-its own tmux session. To inspect output:
+When processes are launched with `-tmux`, each runs in its own tmux session. To inspect output:
 
 ```bash
 # List all milk-related tmux sessions
@@ -74,10 +64,8 @@ $ tmux attach -t <session-name>
 ```
 
 !!! tip
-Each tmux session typically has three windows:
-`ctrl` (control commands), `run` (the main loop),
-and `conf` (the configuration loop). Switch windows
-with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
+Each tmux session typically has three windows: `ctrl` (control commands), `run` (the main loop), and
+`conf` (the configuration loop). Switch windows with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
 
 ---
 
@@ -130,8 +118,7 @@ $ gdb /usr/local/milk/bin/milk-fpsexec-mymodule \
 
 ### 4.1. Semaphore Deadlocks
 
-**Symptom:** Process hangs, Hz drops to 0, but PID is
-still alive.
+**Symptom:** Process hangs, Hz drops to 0, but PID is still alive.
 
 **Diagnosis:**
 
@@ -141,13 +128,12 @@ $ milk-streamCTRL
 # Look for sem values > 0 on the input stream
 ```
 
-**Fix:** The producer may have died without posting.
-Restart the producer or manually post the semaphore.
+**Fix:** The producer may have died without posting. Restart the producer or manually post the
+semaphore.
 
 ### 4.2. Shared Memory Leaks
 
-**Symptom:** `/dev/shm/` fills up with stale `.im.shm`
-and `fps.*.shm` files.
+**Symptom:** `/dev/shm/` fills up with stale `.im.shm` and `fps.*.shm` files.
 
 **Cleanup:**
 
@@ -163,10 +149,8 @@ $ rm /dev/shm/mystale_stream.im.shm
 
 **Symptom:** `SIGSEGV` when accessing `img.im->array.F`.
 
-**Likely cause:** The `IMGID` was not resolved or the
-stream was deleted. Always check the return value of
-`mkIMGID_from_name()` and verify `img.im != NULL`
-before accessing pixel data.
+**Likely cause:** The `IMGID` was not resolved or the stream was deleted. Always check the return
+value of `mkIMGID_from_name()` and verify `img.im != NULL` before accessing pixel data.
 
 ---
 
@@ -182,9 +166,8 @@ $ sudo make install
 ```
 
 !!! important
-Remember to switch back to `Release` or
-`RelWithDebInfo` for production use — `Debug` builds
-disable optimizations and are significantly slower.
+Remember to switch back to `Release` or `RelWithDebInfo` for production use — `Debug` builds disable
+optimizations and are significantly slower.
 
 ---
 

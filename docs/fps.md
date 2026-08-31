@@ -8,59 +8,40 @@ tags:
 
 # Function Processing System (FPS)
 
-The Function Processing System (FPS) is `milk`'s core
-framework for managing configuration parameters, states,
-and commands for compute units. FPS instances provide a
-high-performance standardized interface directly in
-shared memory.
+The Function Processing System (FPS) is `milk`'s core framework for managing configuration
+parameters, states, and commands for compute units. FPS instances provide a high-performance
+standardized interface directly in shared memory.
 
-See also: [Streams](streams.md) ·
-[Process Info](procinfo.md) ·
-[Programmer's Guide](programmers_guide.md) ·
-[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) ·
+See also: [Streams](streams.md) · [Process Info](procinfo.md) ·
+[Programmer's Guide](programmers_guide.md) · [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) ·
 [FPS Sequencer](sequencer.md)
 
 ## 1. Architecture and Location
 
-An FPS instance creates a shared memory directory
-structure typically residing under
-`/dev/shm/fps.<fps_name>.datadir/` and
-`/dev/shm/fps.<fps_name>.confdir/`. This allows multiple
-independent processes, CLIs, and GUIs to read and modify
-a running module's behavior simultaneously without
-overhead.
+An FPS instance creates a shared memory directory structure typically residing under
+`/dev/shm/fps.<fps_name>.datadir/` and `/dev/shm/fps.<fps_name>.confdir/`. This allows multiple
+independent processes, CLIs, and GUIs to read and modify a running module's behavior simultaneously
+without overhead.
 
 ## 2. Key Features
 
-1. **Parameter Management:**
-   FPS maps standard C variables (like strings, integers,
-   and floats) directly into shared memory. When a user
-   updates a parameter via the CLI (e.g., `milk-fpsCTRL`
-   or the module's script), the compute loop instantly
-   sees the change without needing a restart.
+1. **Parameter Management:** FPS maps standard C variables (like strings, integers, and floats)
+   directly into shared memory. When a user updates a parameter via the CLI (e.g., `milk-fpsCTRL` or
+   the module's script), the compute loop instantly sees the change without needing a restart.
 
-2. **Process State Control:**
-   FPS inherently tracks compute unit states such as
-   `run`, `stop`, `step`, and `conf`. This allows
-   standard utilities to instruct a running process to
-   pause, take a single execution step, or gracefully
-   shut down.
+2. **Process State Control:** FPS inherently tracks compute unit states such as `run`, `stop`,
+   `step`, and `conf`. This allows standard utilities to instruct a running process to pause, take a
+   single execution step, or gracefully shut down.
 
-3. **CLI & TUI Integration:**
-   Standard utilities like `milk-fpsCTRL` provide a Text
-   User Interface (TUI) to interact with FPS instances in
-   real-time. This provides an instant "dashboard" for
-   any correctly built compute module.
+3. **CLI & TUI Integration:** Standard utilities like `milk-fpsCTRL` provide a Text User Interface
+   (TUI) to interact with FPS instances in real-time. This provides an instant "dashboard" for any
+   correctly built compute module.
 
-4. **Tmux Dispatch and Isolation:**
-   When an FPS process is launched standalone (usually
-   using `milk-fpsexec-<name>`, `cacao-fps-deploy`, or
-   with the `-tmux` flag), the command is wrapped and
-   dispatched into its own `tmux` session. This provides
-   complete fault isolation. If one component
-   segmentation faults, it does not bring down the entire
-   pipeline, and its terminal output can be easily
-   examined for debugging.
+4. **Tmux Dispatch and Isolation:** When an FPS process is launched standalone (usually using
+   `milk-fpsexec-<name>`, `cacao-fps-deploy`, or with the `-tmux` flag), the command is wrapped and
+   dispatched into its own `tmux` session. This provides complete fault isolation. If one component
+   segmentation faults, it does not bring down the entire pipeline, and its terminal output can be
+   easily examined for debugging.
 
 ```mermaid
 sequenceDiagram
@@ -84,16 +65,14 @@ sequenceDiagram
 
 To use FPS-enabled functions from the command line efficiently, the typical workflow is:
 
-1. Define functions and their requested FPS names in
-   `fpslist.txt`.
+1. Define functions and their requested FPS names in `fpslist.txt`.
 2. Generate command scripts using `milk-fpsmkcmd`.
 3. Launch and manage them via `milk-fpsCTRL`.
 
 ### The `fpslist.txt` and `fpsmkcmd` workflow
 
-Create a space-delimited text file named `fpslist.txt`
-in your working directory. Lines starting with `#` are
-comments. Each non-comment line has the format:
+Create a space-delimited text file named `fpslist.txt` in your working directory. Lines starting
+with `#` are comments. Each non-comment line has the format:
 
 ```text
 fpsrootname  CLIcommand  [optarg0 ...]
@@ -107,31 +86,25 @@ fpsrootname0       CLIcommand0
 fpsrootname1       CLIcommand1   optarg00 optarg01
 ```
 
-Then run `milk-fpsmkcmd`, which reads `fpslist.txt`
-from the current directory and generates per-function
-scripts in the `fpscmd/` subdirectory:
-`<fpsrootname>-fpsinit`, `<fpsrootname>-confstart`,
-`<fpsrootname>-confstop`, `<fpsrootname>-runstart`,
-`<fpsrootname>-runstop`. It also writes the resolved
-FPS names to `fpscmd/fpslist.txt`, which is the file
-`milk-fpsCTRL` reads when scanning with `-m _ALL`.
+Then run `milk-fpsmkcmd`, which reads `fpslist.txt` from the current directory and generates
+per-function scripts in the `fpscmd/` subdirectory: `<fpsrootname>-fpsinit`,
+`<fpsrootname>-confstart`, `<fpsrootname>-confstop`, `<fpsrootname>-runstart`,
+`<fpsrootname>-runstop`. It also writes the resolved FPS names to `fpscmd/fpslist.txt`, which is the
+file `milk-fpsCTRL` reads when scanning with `-m _ALL`.
 
 ### `milk-fpsCTRL`
 
-The primary TUI control tool is `milk-fpsCTRL`. For
-example, `milk-fpsCTRL -m _ALL` scans and manages all
-FPS instances listed in `fpscmd/fpslist.txt`.
+The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _ALL` scans and
+manages all FPS instances listed in `fpscmd/fpslist.txt`.
 
-For complete keyboard shortcuts and display modes, see
-[fpsCTRL Reference](fpsCTRL_reference.md).
+For complete keyboard shortcuts and display modes, see [fpsCTRL Reference](fpsCTRL_reference.md).
 
 ## 4. Parameter Data Types and Flags
 
 === ":material-format-list-bulleted: Data Types"
 
-    FPS natively supports the following parameter types.
-    Use these `FPTYPE_*` constants in `FPS_PARAMS`
-    X-macro entries:
+    FPS natively supports the following parameter types. Use these `FPTYPE_*` constants in
+    `FPS_PARAMS` X-macro entries:
 
     | Constant                   | C Variable Type                      | Description                 |
     | -------------------------- | ------------------------------------ | --------------------------- |
@@ -154,14 +127,12 @@ For complete keyboard shortcuts and display modes, see
     | `FPTYPE_PROCESS`           | `char[FUNCTION_PARAMETER_STRMAXLEN]` | Process name                |
     | `FPTYPE_STRING_NOT_STREAM` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | String (not a stream)       |
 
-    For string-type parameters, pass the buffer name
-    directly (it decays to `char*`). For scalar types,
-    pass `&variable`.
+    For string-type parameters, pass the buffer name directly (it decays to `char*`). For scalar
+    types, pass `&variable`.
 
 === ":material-flag: Flags"
 
-    Flags control parameter behavior and TUI visibility.
-    Combine with bitwise OR (`|`):
+    Flags control parameter behavior and TUI visibility. Combine with bitwise OR (`|`):
 
     **Input/Output presets:**
 
@@ -187,12 +158,10 @@ For complete keyboard shortcuts and display modes, see
 
 === ":material-code-tags: Developer Integration"
 
-    Integrating with FPS uses the V2 X-macro pattern.
-    Parameters are defined **once** and automatically
-    generate FPS entries, CLI arguments, and help text.
+    Integrating with FPS uses the V2 X-macro pattern. Parameters are defined **once** and
+    automatically generate FPS entries, CLI arguments, and help text.
 
-    **X-macro field order:**
-    `X(keyword, ptr, type, is_primary, flag, descr)`
+    **X-macro field order:** `X(keyword, ptr, type, is_primary, flag, descr)`
 
     ```c
     // Local variables (section 2)
@@ -218,15 +187,17 @@ For complete keyboard shortcuts and display modes, see
           "Number of iterations")
     ```
 
-    See the [Developer Tutorial](developer/tutorial.md)
-    and `src/milk_module_example/examplefunc_fps_cli_poc.c`
-    for a complete walkthrough.
+    See the [Developer Tutorial](developer/tutorial.md) and
+    `src/milk_module_example/examplefunc_fps_cli_poc.c` for a complete walkthrough.
 
 ### 5. Sequencer Integration
 
-FPS instances can be highly coordinated via the `milk-seq` standalone sequencer, which provides cross-process synchronization (`wait_fps`), robust error handling, loops, and condition-based execution.
+FPS instances can be highly coordinated via the `milk-seq` standalone sequencer, which provides
+cross-process synchronization (`wait_fps`), robust error handling, loops, and condition-based
+execution.
 
-See the dedicated **[FPS Sequencer Documentation](sequencer.md)** for details on the `milk-seq` daemon, script syntax, and integrating `seq.*` commands from within `milk-cli`.
+See the dedicated **[FPS Sequencer Documentation](sequencer.md)** for details on the `milk-seq`
+daemon, script syntax, and integrating `seq.*` commands from within `milk-cli`.
 
 ---
 

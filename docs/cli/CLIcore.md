@@ -6,31 +6,25 @@ tags:
 
 # Command Line Interface Syntax
 
-The interactive CLI is provided by the `milk-cli` executable
-(typically aliased as `milk`). Source code is in
-`src/cli/CLIcore/`.
+The interactive CLI is provided by the `milk-cli` executable (typically aliased as `milk`). Source
+code is in `src/cli/CLIcore/`.
 
 !!! note
-Standalone executables (`milk-fpsexec-*`) have their own
-command-line interfaces. See
+Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See
 [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
 
-See also: [FPS](../fps.md) ·
-[Streams](../streams.md) ·
-[FAQ](../faq.md) ·
+See also: [FPS](../fps.md) · [Streams](../streams.md) · [FAQ](../faq.md) ·
 [Build Tiers](../install/build_tiers.md)
 
 ---
 
 ## Starting & Configuring
 
-This section covers launching `milk-cli`, configuring its
-behavior, and loading additional modules.
+This section covers launching `milk-cli`, configuring its behavior, and loading additional modules.
 
 ### Command-Line Options
 
-When launching `milk-cli`, the following arguments are
-available:
+When launching `milk-cli`, the following arguments are available:
 
 | Option                      | Description                                         |
 | --------------------------- | --------------------------------------------------- |
@@ -70,8 +64,8 @@ $ milk-cli -F /tmp/myfifo -s init.milk  # fifo + startup script
 
 ### Startup Script
 
-Commands in `~/.milkrc` are executed line-by-line on
-startup. Blank lines and `#` comments are skipped.
+Commands in `~/.milkrc` are executed line-by-line on startup. Blank lines and `#` comments are
+skipped.
 
 ```bash
 # Example ~/.milkrc
@@ -109,9 +103,8 @@ milk-cli > mload COREMOD_arith     # load module by name
 
 ## Input & Editing
 
-The CLI provides a rich interactive editing experience
-with tab completion, inline suggestions, and syntax
-highlighting — all built on GNU readline.
+The CLI provides a rich interactive editing experience with tab completion, inline suggestions, and
+syntax highlighting — all built on GNU readline.
 
 ### Syntax Rules
 
@@ -126,13 +119,11 @@ milk-cli > <command> <arg1> <arg2>   # comment
 ### Tab Completion
 
 - **First argument:** matches command → image → filename
-- **Additional arguments:** context-aware based on
-  command's parameter types:
+- **Additional arguments:** context-aware based on command's parameter types:
   - `FILENAME` / `FITSFILENAME` args → filesystem paths
   - `FPSNAME` args → scan `/dev/shm/fps.*.shm` entries
   - Other args → match image stream names
-- Fuzzy (substring) matching automatically kicks in when
-  prefix matching finds nothing
+- Fuzzy (substring) matching automatically kicks in when prefix matching finds nothing
 
 ```text
 milk-cli > mem.<TAB>           # list commands starting with mem.
@@ -141,31 +132,26 @@ milk-cli > iofits.loadfits my<TAB>    # complete filename
 
 ### Ghost Suggestions
 
-As you type, a dim "ghost" suggestion appears inline
-based on your command history. Press the **right arrow**
-key to accept it.
+As you type, a dim "ghost" suggestion appears inline based on your command history. Press the
+**right arrow** key to accept it.
 
 ### Argument Hints
 
-When a known command is typed, the bottom line shows the
-command's syntax with `<angle bracket>` parameter tokens.
-The active argument position is highlighted in bold cyan,
-advancing as you type each argument.
+When a known command is typed, the bottom line shows the command's syntax with `<angle bracket>`
+parameter tokens. The active argument position is highlighted in bold cyan, advancing as you type
+each argument.
 
 ### Readline Editing
 
-GNU readline is used for line editing. Type `helprl` at
-the prompt for a quick reference. See
+GNU readline is used for line editing. Type `helprl` at the prompt for a quick reference. See
 [GNU readline documentation](http://tiswww.case.edu/php/chet/readline/rltop.html).
 
-Key bindings include `Ctrl+A` (start of line), `Ctrl+E`
-(end of line), `Ctrl+R` (reverse history search), and
-arrow keys for navigation.
+Key bindings include `Ctrl+A` (start of line), `Ctrl+E` (end of line), `Ctrl+R` (reverse history
+search), and arrow keys for navigation.
 
 ### Backslash Line Continuation
 
-End a line with `\` to continue on the next line. The
-prompt changes to `>` for continuation lines:
+End a line with `\` to continue on the next line. The prompt changes to `>` for continuation lines:
 
 ```text
 milk-cli > arith.imfunc \
@@ -174,8 +160,7 @@ milk-cli > arith.imfunc \
 
 ### Syntax Highlighting
 
-The first word is colored **green** (valid command) or
-**red** (unknown). Toggle with:
+The first word is colored **green** (valid command) or **red** (unknown). Toggle with:
 
 ```text
 milk-cli > synhl off             # disable
@@ -183,13 +168,11 @@ milk-cli > synhl on              # enable (default)
 ```
 
 !!! tip
-If you encounter rendering issues with syntax
-highlighting, disable it with `synhl off`.
+If you encounter rendering issues with syntax highlighting, disable it with `synhl off`.
 
 ### Auto-Correction
 
-When a command is not found, the CLI suggests the closest
-match using Levenshtein distance:
+When a command is not found, the CLI suggests the closest match using Levenshtein distance:
 
 ```text
 milk-cli > mem.lisim
@@ -200,8 +183,7 @@ Command 'mem.lisim' not found. Did you mean 'mem.listim'?
 
 ## Help & Discovery
 
-Several commands help you explore the available commands
-and modules.
+Several commands help you explore the available commands and modules.
 
 ### Help Commands
 
@@ -219,9 +201,8 @@ milk-cli > cmd?                    # describe all commands
 milk-cli > cmdinfo? <pattern>      # search command info by regex
 ```
 
-Command names and descriptions are color-coded: cyan for
-command names, green for descriptions, yellow for examples,
-dim for source file paths.
+Command names and descriptions are color-coded: cyan for command names, green for descriptions,
+yellow for examples, dim for source file paths.
 
 ### Important Commands
 
@@ -245,15 +226,13 @@ milk-cli > pwd                     # print current working directory
 
 ## History
 
-The CLI maintains both readline history (for arrow-key
-recall) and a persistent log of every command with
-timestamps and session IDs.
+The CLI maintains both readline history (for arrow-key recall) and a persistent log of every command
+with timestamps and session IDs.
 
 ### Persistent History
 
-Command history is saved to `~/.milk_history` and loaded
-at startup. Up to 1000 entries are retained between
-sessions.
+Command history is saved to `~/.milk_history` and loaded at startup. Up to 1000 entries are retained
+between sessions.
 
 ```text
 milk-cli > ghistory              # show last 20 entries (all sessions)
@@ -261,8 +240,7 @@ milk-cli > ghistory 50           # show last 50 entries
 milk-cli > lhistory              # show entries from current session
 ```
 
-Use `Ctrl+R` for interactive reverse search through
-history.
+Use `Ctrl+R` for interactive reverse search through history.
 
 ### History Expansion
 
@@ -273,8 +251,7 @@ history.
 | `!$`      | Insert the last argument of the previous command |
 | `!prefix` | Re-run the last command starting with `prefix`   |
 
-The expanded command is printed with a `>>` prefix before
-execution.
+The expanded command is printed with a `>>` prefix before execution.
 
 ```text
 milk-cli > iofits.loadfits im1.fits im1
@@ -288,9 +265,8 @@ milk-cli > iofits.save_fl !$    # expands to: iofits.save_fl im1
 milk-cli > searchhist mem.listim
 ```
 
-Finds all history entries containing "mem.listim" (case-
-insensitive) and highlights the matching substring in
-yellow. Shows match count at the end.
+Finds all history entries containing "mem.listim" (case- insensitive) and highlights the matching
+substring in yellow. Shows match count at the end.
 
 ### Command Statistics
 
@@ -310,16 +286,14 @@ milk-cli > sessionlog mylog.txt   # log to custom file
 milk-cli > sessionlog off         # stop logging
 ```
 
-Each entry includes a timestamp and elapsed time since
-the session started.
+Each entry includes a timestamp and elapsed time since the session started.
 
 ---
 
 ## Shell Features
 
-The CLI supports many shell-like features: scripting,
-chaining, piping, redirection, environment variable
-expansion, and arithmetic.
+The CLI supports many shell-like features: scripting, chaining, piping, redirection, environment
+variable expansion, and arithmetic.
 
 ### Script Execution
 
@@ -328,13 +302,11 @@ milk-cli > source myscript.milk  # run commands from file
 milk-cli > . myscript.milk       # same thing (dot-source)
 ```
 
-Blank lines and `#` comments are skipped. On error, the
-filename and line number are printed in red.
+Blank lines and `#` comments are skipped. On error, the filename and line number are printed in red.
 
-The CLI supports bash-like scripting constructs including
-variables, arithmetic, flow control (`if`/`while`/`for`),
-and user-defined functions. See the
-[Scripting](scripting.md) page for full documentation.
+The CLI supports bash-like scripting constructs including variables, arithmetic, flow control
+(`if`/`while`/`for`), and user-defined functions. See the [Scripting](scripting.md) page for full
+documentation.
 
 | Command              | Description                          |
 | -------------------- | ------------------------------------ |
@@ -349,8 +321,7 @@ and user-defined functions. See the
 milk-cli > time mem.listim      # measure execution time
 ```
 
-Prints the elapsed wall-clock time after the command
-completes.
+Prints the elapsed wall-clock time after the command completes.
 
 ### Command Chaining
 
@@ -362,8 +333,7 @@ milk-cli > cmd1 && cmd2        # run cmd2 only if cmd1 succeeds
 milk-cli > cmd1 || cmd2        # run cmd2 only if cmd1 fails
 ```
 
-Operators inside double-quoted strings are not treated as
-chain separators.
+Operators inside double-quoted strings are not treated as chain separators.
 
 ### Pipe to Shell
 
@@ -393,8 +363,8 @@ milk-cli > iofits.saveFITS im1 $OUTDIR/result.fits
 
 ### Command Substitution
 
-Replace `$(cmd)` or `` `cmd` `` in the command line with
-the standard output of the command execution.
+Replace `$(cmd)` or `` `cmd` `` in the command line with the standard output of the command
+execution.
 
 ```text
 milk-cli > cd $(echo /tmp)
@@ -403,8 +373,7 @@ milk-cli > iofits.loadfits `findim.sh` result
 
 ### Wildcard Expansion (Globbing)
 
-File path wildcards like `*`, `?`, and `[]` are
-automatically expanded into matching files if placed
+File path wildcards like `*`, `?`, and `[]` are automatically expanded into matching files if placed
 unquoted in arguments.
 
 ```text
@@ -413,9 +382,8 @@ milk-cli > iofits.imgs2cube *.fits cube.fits
 
 ### Arithmetic & Logic Operations
 
-Expressions that do not match any known command are passed to
-the internal CLI calculator (`cli_calc_parser`). The calculator
-supports images, scalars, and logical operations.
+Expressions that do not match any known command are passed to the internal CLI calculator
+(`cli_calc_parser`). The calculator supports images, scalars, and logical operations.
 
 **Assignments & Math:**
 
@@ -425,28 +393,23 @@ milk-cli > b = a * 10              # scalar arithmetic
 milk-cli > im1 = sqrt(im + 2.0)    # image arithmetic
 ```
 
-**Functions:**
-Standard math functions are supported on both scalars and
-images (per-pixel): `abs`, `fabs`, `round`, `fmod`, `min`, `max`,
-`sqrt`, `exp`, `cos`, `sin`, `tan`, `acos`, `asin`, `atan`.
+**Functions:** Standard math functions are supported on both scalars and images (per-pixel): `abs`,
+`fabs`, `round`, `fmod`, `min`, `max`, `sqrt`, `exp`, `cos`, `sin`, `tan`, `acos`, `asin`, `atan`.
 
 ```text
 milk-cli > m = max(im1, 5)         # clip image below 5
 ```
 
-**Relational & Logical Operators:**
-Supported operators: `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`, `!`.
-When applied to images, these return a binary mask (1.0 or 0.0)
-for each pixel.
+**Relational & Logical Operators:** Supported operators: `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`,
+`||`, `!`. When applied to images, these return a binary mask (1.0 or 0.0) for each pixel.
 
 ```text
 milk-cli > mask = (im1 > 100) && (im2 != 0)
 ```
 
-**Ternary Conditionals:**
-The `where(cond, true_val, false_val)` function works like a
-ternary operator. If `cond` is an image mask, it blends
-the `true_val` and `false_val` images/scalars based on the mask.
+**Ternary Conditionals:** The `where(cond, true_val, false_val)` function works like a ternary
+operator. If `cond` is an image mask, it blends the `true_val` and `false_val` images/scalars based
+on the mask.
 
 ```text
 milk-cli > im_clean = where(im > 100, 100, im)  # cap at 100
@@ -471,8 +434,7 @@ Press any key to stop the repeating execution.
 
 ## Customization
 
-The CLI supports aliases and bookmarks for
-frequently-used commands.
+The CLI supports aliases and bookmarks for frequently-used commands.
 
 ### Command Aliases
 
@@ -501,16 +463,13 @@ Bookmarks persist in `~/.milk_bookmarks`.
 
 ## External Integration
 
-The CLI integrates with external processes and standard
-Linux tools via FIFO input, FITS file I/O, and pipe-based
-workflows.
+The CLI integrates with external processes and standard Linux tools via FIFO input, FITS file I/O,
+and pipe-based workflows.
 
 ### FIFO Input Mode
 
-The CLI can receive commands from a named pipe (FIFO) in
-addition to interactive keyboard input. This allows
-external processes to send commands to a running
-`milk-cli` session.
+The CLI can receive commands from a named pipe (FIFO) in addition to interactive keyboard input.
+This allows external processes to send commands to a running `milk-cli` session.
 
 **Enabling FIFO mode:**
 
@@ -531,8 +490,7 @@ For example, with default settings and PID 12345:
 /dev/shm/.1740801234p12345.fifo.0012345
 ```
 
-Use `-n NAME` together with `-f` to produce a friendlier
-path:
+Use `-n NAME` together with `-f` to produce a friendlier path:
 
 ```bash
 $ milk-cli -n myctl -f   # /dev/shm/.myctl.fifo.<PID>
@@ -540,21 +498,19 @@ $ milk-cli -n myctl -f   # /dev/shm/.myctl.fifo.<PID>
 
 **Sending commands to a running session:**
 
-From a separate shell, write newline-terminated commands
-to the fifo:
+From a separate shell, write newline-terminated commands to the fifo:
 
 ```bash
 $ echo "mem.listim" > /dev/shm/.myctl.fifo.0012345
 ```
 
-The CLI processes one line per select iteration and
-returns to interactive input once the pipe is drained.
+The CLI processes one line per select iteration and returns to interactive input once the pipe is
+drained.
 
 **Startup script via fifo:**
 
-Use `-s FILE` together with `-f` or `-F` to pre-load a
-startup script. The file content is piped into the fifo
-before accepting interactive input:
+Use `-s FILE` together with `-f` or `-F` to pre-load a startup script. The file content is piped
+into the fifo before accepting interactive input:
 
 ```bash
 $ milk-cli -n myctl -F /tmp/myfifo -s setup.milk
@@ -562,8 +518,7 @@ $ milk-cli -n myctl -F /tmp/myfifo -s setup.milk
 
 ### FITS File I/O
 
-FITSIO is used for FITS file I/O. Requires
-`USE_CFITSIO=ON`. See
+FITSIO is used for FITS file I/O. Requires `USE_CFITSIO=ON`. See
 [Build Tiers](../install/build_tiers.md).
 
 ```text
@@ -576,19 +531,16 @@ milk-cli > iofits.save_fl im1 "!im1.fits"      # overwrite existing file
 
 ### Driving milk-cli via FIFO
 
-Start `milk-cli` with the `-f` flag to enable FIFO input
-(see [FIFO Input Mode](#fifo-input-mode)). External
-processes can then send commands through the named pipe.
+Start `milk-cli` with the `-f` flag to enable FIFO input (see [FIFO Input Mode](#fifo-input-mode)).
+External processes can then send commands through the named pipe.
 
-**From inside `milk-cli`** (assuming FIFO is at
-`/dev/shm/.myctl.fifo.<PID>`):
+**From inside `milk-cli`** (assuming FIFO is at `/dev/shm/.myctl.fifo.<PID>`):
 
 ```text
 milk-cli > !ls im*.fits | xargs -I {} echo iofits.loadfits {} > /dev/shm/.myctl.fifo.0012345
 ```
 
-**From a separate shell** (while `milk-cli -n myctl -f`
-is running):
+**From a separate shell** (while `milk-cli -n myctl -f` is running):
 
 ```bash
 $ ls im*.fits | xargs -I {} echo iofits.loadfits {} > /dev/shm/.myctl.fifo.0012345
@@ -596,16 +548,13 @@ $ ls im*.fits | xargs -I {} echo iofits.loadfits {} > /dev/shm/.myctl.fifo.00123
 
 ### Using `imlist.txt`
 
-Start `milk-cli` with `-l` (or `--listimf`) to maintain
-`imlist.txt` — an ASCII table of all images currently in
-memory. Standard Unix tools can filter this list and
-generate commands.
+Start `milk-cli` with `-l` (or `--listimf`) to maintain `imlist.txt` — an ASCII table of all images
+currently in memory. Standard Unix tools can filter this list and generate commands.
 
-The `-l` flag works independently of FIFO mode. You can
-feed the generated commands back into the CLI via a FIFO:
+The `-l` flag works independently of FIFO mode. You can feed the generated commands back into the
+CLI via a FIFO:
 
-**Via FIFO** (requires `-f` or `-F`; start with
-`milk-cli -l -n myctl -f`):
+**Via FIFO** (requires `-f` or `-F`; start with `milk-cli -l -n myctl -f`):
 
 ```text
 milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \

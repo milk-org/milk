@@ -1,7 +1,6 @@
 # Profile-Guided Optimization (PGO) & Link-Time Optimization (LTO)
 
-The `milk` build system supports two complementary
-compiler optimization techniques for `fpsexec`
+The `milk` build system supports two complementary compiler optimization techniques for `fpsexec`
 standalone executables:
 
 | Technique     | CMake Flag               | Typical Speedup |
@@ -11,10 +10,8 @@ standalone executables:
 | **PGO + LTO** | Both                     | **15–40%**      |
 
 !!! tip
-For maximum performance on production AO systems,
-enable **both** PGO and static LTO. The techniques
-are complementary — LTO exposes cross-library code
-to GCC, and PGO then trains the optimizer with
+For maximum performance on production AO systems, enable **both** PGO and static LTO. The techniques
+are complementary — LTO exposes cross-library code to GCC, and PGO then trains the optimizer with
 real branch/call data across that larger scope.
 
 ---
@@ -23,15 +20,11 @@ real branch/call data across that larger scope.
 
 ### 1.1. What LTO Does
 
-LTO (`-flto=auto`) allows GCC to optimize across
-translation-unit boundaries. Instead of compiling
-each `.c` file in isolation, GCC serializes its
-intermediate representation (GIMPLE IR) into object
-files and performs whole-program optimization at
-link time.
+LTO (`-flto=auto`) allows GCC to optimize across translation-unit boundaries. Instead of compiling
+each `.c` file in isolation, GCC serializes its intermediate representation (GIMPLE IR) into object
+files and performs whole-program optimization at link time.
 
-Without static LTO, standalone executables link
-shared libraries (`.so`), which are opaque — the
+Without static LTO, standalone executables link shared libraries (`.so`), which are opaque — the
 linker cannot see inside them:
 
 ```text
@@ -41,9 +34,8 @@ fpsexec.c  →  fpsexec.o  →  fpsexec
               libImageStreamIO.so  ← opaque
 ```
 
-With static LTO (`USE_STATIC_LTO=ON`), the same
-libraries are linked as static archives (`.a`).
-GCC can now inline across all library boundaries:
+With static LTO (`USE_STATIC_LTO=ON`), the same libraries are linked as static archives (`.a`). GCC
+can now inline across all library boundaries:
 
 ```text
 fpsexec.c  →  fpsexec.o  ──┐
@@ -54,60 +46,39 @@ libCOREMODmemory_compute.a ─┘
 
 ### 1.2. Why Static Linking Is Faster
 
-Statically linked executables eliminate several
-layers of runtime overhead present in dynamically
+Statically linked executables eliminate several layers of runtime overhead present in dynamically
 linked binaries:
 
-**PLT/GOT elimination.** Every call to a shared
-library function goes through the Procedure Linkage
-Table (PLT) and Global Offset Table (GOT) — an
-indirect jump that the CPU branch predictor cannot
-fully resolve. In a tight real-time loop calling
-`ImageStreamIO_sempost()` or `fps_to_local()` at
-tens of kHz, these indirect jumps add measurable
-latency. Static linking replaces them with direct
+**PLT/GOT elimination.** Every call to a shared library function goes through the Procedure Linkage
+Table (PLT) and Global Offset Table (GOT) — an indirect jump that the CPU branch predictor cannot
+fully resolve. In a tight real-time loop calling `ImageStreamIO_sempost()` or `fps_to_local()` at
+tens of kHz, these indirect jumps add measurable latency. Static linking replaces them with direct
 calls or inlined code.
 
-**No dynamic loader overhead.** At startup, `ld.so`
-must resolve all symbol relocations, map `.so`
-pages, and apply RELRO protections. Standalone
-executables with 14 shared libraries pay this cost
-on every launch. A statically linked binary is
-ready to execute immediately — important for rapid
-fault recovery in production AO loops.
+**No dynamic loader overhead.** At startup, `ld.so` must resolve all symbol relocations, map `.so`
+pages, and apply RELRO protections. Standalone executables with 14 shared libraries pay this cost on
+every launch. A statically linked binary is ready to execute immediately — important for rapid fault
+recovery in production AO loops.
 
-**Improved branch prediction.** Direct calls from
-static linking have fixed target addresses known at
-link time. The CPU's branch target buffer (BTB) can
-predict these perfectly after the first execution,
-whereas PLT stubs pollute the BTB with indirect
-entries.
+**Improved branch prediction.** Direct calls from static linking have fixed target addresses known
+at link time. The CPU's branch target buffer (BTB) can predict these perfectly after the first
+execution, whereas PLT stubs pollute the BTB with indirect entries.
 
 ### 1.3. How LTO Keeps Static Binaries Small
 
-A naïve static link pulls in **every** object file
-from each `.a` archive — even functions the
-executable never calls. This would bloat binaries
-unacceptably. LTO solves this:
+A naïve static link pulls in **every** object file from each `.a` archive — even functions the
+executable never calls. This would bloat binaries unacceptably. LTO solves this:
 
-**Dead-code elimination.** With `-flto=auto`, GCC
-sees the entire program (executable + all static
-archives) as a single optimization unit. It traces
-all reachable call paths from `main()` and
-**discards every function, variable, and data
-structure that is not reachable**. Entire
-translation units that are unused vanish from the
-final binary.
+**Dead-code elimination.** With `-flto=auto`, GCC sees the entire program (executable + all static
+archives) as a single optimization unit. It traces all reachable call paths from `main()` and
+**discards every function, variable, and data structure that is not reachable**. Entire translation
+units that are unused vanish from the final binary.
 
-**Cross-module inlining + elimination.** LTO first
-inlines small hot functions across library
-boundaries (e.g., `ImageStreamIO_sempost()` into
-your compute loop). After inlining, the original
-library function may have zero remaining callers —
-LTO then eliminates it entirely. The net effect:
-the binary contains **only the machine code that
-actually executes**, inlined at the call sites where
-it's needed.
+**Cross-module inlining + elimination.** LTO first inlines small hot functions across library
+boundaries (e.g., `ImageStreamIO_sempost()` into your compute loop). After inlining, the original
+library function may have zero remaining callers — LTO then eliminates it entirely. The net effect:
+the binary contains **only the machine code that actually executes**, inlined at the call sites
+where it's needed.
 
 **Measured example:**
 
@@ -115,18 +86,15 @@ it's needed.
 | -------------- | ------------------------- | ----------------------- | ------------------- |
 | `arith-crop2D` | 52 KB (.so deps: ~2.4 MB) | 173 KB (self-contained) | 3.3× larger on disk |
 
-The static binary is 3.3× larger than the dynamic
-stub, but **far smaller than the total code footprint
-of 14 shared libraries** (2.4 MB mapped in
-aggregate). LTO stripped the vast majority of
+The static binary is 3.3× larger than the dynamic stub, but **far smaller than the total code
+footprint of 14 shared libraries** (2.4 MB mapped in aggregate). LTO stripped the vast majority of
 library code that `crop2D` never calls.
 
 ### 1.4. Why Small Binaries Run Faster
 
-Modern CPUs execute code from the **instruction
-cache** (L1i), typically 32–64 KB. When the
-executable's hot path fits in icache, the CPU never
-stalls waiting for instruction fetches from L2/L3:
+Modern CPUs execute code from the **instruction cache** (L1i), typically 32–64 KB. When the
+executable's hot path fits in icache, the CPU never stalls waiting for instruction fetches from
+L2/L3:
 
 ```text
 ┌──────────────────────────────────────┐
@@ -143,28 +111,19 @@ stalls waiting for instruction fetches from L2/L3:
 └──────────────────────────────────────┘
 ```
 
-**Dynamic linking scatters hot code.** The compute
-function lives in the executable, but
-`sem_post()` is in `libpthread.so`,
-`ImageStreamIO_sempost()` is in
-`libImageStreamIO.so`, and `fps_to_local()` is in
-`libmilkfps.so`. Each call jumps to a different
-memory region, evicting other hot code from icache.
+**Dynamic linking scatters hot code.** The compute function lives in the executable, but
+`sem_post()` is in `libpthread.so`, `ImageStreamIO_sempost()` is in `libImageStreamIO.so`, and
+`fps_to_local()` is in `libmilkfps.so`. Each call jumps to a different memory region, evicting other
+hot code from icache.
 
-**Static LTO consolidates hot code.** After
-inlining, the compute function, semaphore
-operations, and FPS parameter access are all
-compiled into a single contiguous code region. The
-CPU's instruction prefetcher can stream this code
-sequentially, and the entire hot loop fits in L1i.
+**Static LTO consolidates hot code.** After inlining, the compute function, semaphore operations,
+and FPS parameter access are all compiled into a single contiguous code region. The CPU's
+instruction prefetcher can stream this code sequentially, and the entire hot loop fits in L1i.
 
 !!! important
-For real-time AO loops running at 1–10 kHz,
-icache pressure is the dominant performance
-bottleneck after algorithmic optimization.
-Reducing the hot-path footprint from scattered
-`.so` pages to a compact inlined binary is one
-of the most impactful optimizations available.
+For real-time AO loops running at 1–10 kHz, icache pressure is the dominant performance bottleneck
+after algorithmic optimization. Reducing the hot-path footprint from scattered `.so` pages to a
+compact inlined binary is one of the most impactful optimizations available.
 
 ### 1.5. Summary: Static LTO Benefits
 
@@ -179,16 +138,13 @@ of the most impactful optimizations available.
 
 ### 1.6. Build Modes
 
-Two approaches are available, depending on whether
-you need full static linking or just LTO on the
+Two approaches are available, depending on whether you need full static linking or just LTO on the
 executable itself:
 
 #### Option A — Static LTO (recommended)
 
-Builds static archive variants (`.a`) of every
-milk library and links them into standalone
-executables. Gives GCC maximum cross-module
-visibility.
+Builds static archive variants (`.a`) of every milk library and links them into standalone
+executables. Gives GCC maximum cross-module visibility.
 
 ```bash
 cd /home/oguyon/src/milk-perf/_build
@@ -206,11 +162,9 @@ sudo make install
 
 #### Option B — Dynamic LTO (manual flags)
 
-Keeps the default dynamic `.so` linking but
-passes `-flto` explicitly. LTO operates only
-within the executable's own compilation units —
-cross-library inlining is **not** available, but
-the executable's hot path is still LTO-optimized.
+Keeps the default dynamic `.so` linking but passes `-flto` explicitly. LTO operates only within the
+executable's own compilation units — cross-library inlining is **not** available, but the
+executable's hot path is still LTO-optimized.
 
 ```bash
 cmake .. \
@@ -227,17 +181,13 @@ sudo make install
 `milk-perfbench` build tag: **`O3 LTO [x86_64]`**
 
 !!! important
-Always pass `-DUSE_STATIC_LTO=OFF` explicitly
-when switching to Option B. CMake caches values
-between runs — if `USE_STATIC_LTO=ON` was set
-previously, it remains active until explicitly
-cleared. Forgetting this causes a link error:
-`cannot find -lImageStreamIO_static`.
+Always pass `-DUSE_STATIC_LTO=OFF` explicitly when switching to Option B. CMake caches values
+between runs — if `USE_STATIC_LTO=ON` was set previously, it remains active until explicitly
+cleared. Forgetting this causes a link error: `cannot find -lImageStreamIO_static`.
 
 #### Restore Normal Build
 
-After any optimization build, clear flags so
-subsequent builds are unaffected:
+After any optimization build, clear flags so subsequent builds are unaffected:
 
 ```bash
 cmake .. \
@@ -250,8 +200,7 @@ cmake .. \
 
 ### 1.7. Verifying Static Linking
 
-Check that a standalone has minimal dynamic
-dependencies:
+Check that a standalone has minimal dynamic dependencies:
 
 ```bash
 $ ldd /usr/local/bin/milk-fpsexec-arith-crop2D
@@ -261,16 +210,14 @@ $ ldd /usr/local/bin/milk-fpsexec-arith-crop2D
 
 ### 1.8. Verifying the Build Mode
 
-Every fpsexec binary embeds a build-tag sentinel
-string that can be inspected with `strings(1)`:
+Every fpsexec binary embeds a build-tag sentinel string that can be inspected with `strings(1)`:
 
 ```bash
 $ strings milk-fpsexec-imggen-mkrandom | grep 'MILK_BUILD:'
 MILK_BUILD:VER=1,...,ARCH=x86_64,OPT=3,LTO=STATIC,END
 ```
 
-`milk-perfbench` reads and displays this
-automatically in its header line:
+`milk-perfbench` reads and displays this automatically in its header line:
 
 ```text
   Build     : O3 LTO-static [x86_64]
@@ -292,10 +239,8 @@ Possible `Build:` values:
 
 ## 2. Profile-Guided Optimization (PGO)
 
-PGO trains GCC with real runtime profiles to
-optimize branch prediction, function layout, and
-inlining. Typical speedups: **10–30%** on
-branch-heavy real-time loops.
+PGO trains GCC with real runtime profiles to optimize branch prediction, function layout, and
+inlining. Typical speedups: **10–30%** on branch-heavy real-time loops.
 
 ### 2.1. Quick Start
 
@@ -325,8 +270,7 @@ $ make -j$(nproc) && sudo make install
 
 ### 2.3. Per-Executable Profile Isolation
 
-Each standalone binary gets its own profile
-subdirectory under `_build/pgo/`:
+Each standalone binary gets its own profile subdirectory under `_build/pgo/`:
 
 ```text
 _build/pgo/
@@ -337,10 +281,8 @@ _build/pgo/
 └── ...
 ```
 
-This isolation is automatic — the
-`milk_pgo_target()` CMake helper (called by
-`add_milk_standalone()` / `add_cacao_standalone()`)
-sets per-target `-fprofile-dir`.
+This isolation is automatic — the `milk_pgo_target()` CMake helper (called by
+`add_milk_standalone()` / `add_cacao_standalone()`) sets per-target `-fprofile-dir`.
 
 ### 2.4. Optimizing Specific Executables
 
@@ -363,10 +305,8 @@ $ cmake .. -DUSE_PGO=USE
 $ make -j$(nproc) && sudo make install
 ```
 
-Only the executables exercised in Step 2 receive
-PGO optimization. Others compile normally — GCC
-silently ignores missing profiles when
-`-fprofile-correction` is set.
+Only the executables exercised in Step 2 receive PGO optimization. Others compile normally — GCC
+silently ignores missing profiles when `-fprofile-correction` is set.
 
 | Component        | Profile directory | Scope                      |
 | ---------------- | ----------------- | -------------------------- |
@@ -374,18 +314,15 @@ silently ignores missing profiles when
 | Shared libraries | `pgo/shared/`     | Aggregated across all runs |
 
 !!! tip
-For the best results, run each fpsexec with a
-workload that closely matches production use:
-same stream sizes, same number of modes, same
-loop rate. The more representative the
-training run, the better the optimization.
+For the best results, run each fpsexec with a workload that closely matches production use: same
+stream sizes, same number of modes, same loop rate. The more representative the training run, the
+better the optimization.
 
 ---
 
 ## 3. Combined PGO + Static LTO
 
-For maximum performance, combine both techniques.
-Static LTO makes library code visible to PGO's
+For maximum performance, combine both techniques. Static LTO makes library code visible to PGO's
 profile-guided optimizer, amplifying both effects:
 
 ```bash
@@ -430,20 +367,15 @@ graph LR
 | PGO alone    | Per-module                 | Optimizes branch layout from runtime data          |
 | PGO + LTO    | **Cross-module + runtime** | Inlines AND profile-optimizes across all libraries |
 
-PGO needs to **see** the function bodies to
-optimize them. Static LTO makes library function
-bodies visible. Together, PGO can profile-optimize
-code paths that span `fpsexec.c` →
-`ImageStreamIO` → `milkfps` — the entire hot path
-of a real-time loop becomes a single optimization
-unit.
+PGO needs to **see** the function bodies to optimize them. Static LTO makes library function bodies
+visible. Together, PGO can profile-optimize code paths that span `fpsexec.c` → `ImageStreamIO` →
+`milkfps` — the entire hot path of a real-time loop becomes a single optimization unit.
 
 ---
 
 ## 4. Dual Library Architecture
 
-The `milk` build system compiles two variants of
-every library to support both the interactive CLI
+The `milk` build system compiles two variants of every library to support both the interactive CLI
 and standalone fpsexec executables:
 
 ### 4.1. Shared Libraries (`.so`) — for CLI
@@ -456,10 +388,8 @@ libCOREMODarith.so
 ```
 
 - Linked by `milk-cli` and module shared libraries
-- Contain full CLI registration code
-  (`RegisterModule`, `RegisterCLIcommand`, etc.)
-- Loaded at runtime via `dlopen()` for module
-  hot-loading
+- Contain full CLI registration code (`RegisterModule`, `RegisterCLIcommand`, etc.)
+- Loaded at runtime via `dlopen()` for module hot-loading
 
 ### 4.2. Compute Libraries (`_compute.so`) — for
 
@@ -472,14 +402,12 @@ libCOREMODarith_compute.so
 ```
 
 - Compiled with `-DMILK_NO_CLI` — pure computation
-- **No dependency on CLIcore** — CLI registration
-  stubs are excluded
+- **No dependency on CLIcore** — CLI registration stubs are excluded
 - Linked by `milk-fpsexec-*` / `cacao-fpsexec-*`
 
 ### 4.3. Static Archives (`.a`) — for Static LTO
 
-When `USE_STATIC_LTO=ON`, a third variant is
-built for each library:
+When `USE_STATIC_LTO=ON`, a third variant is built for each library:
 
 ```text
 libImageStreamIO.a
@@ -493,12 +421,9 @@ libCOREMODtools_compute.a
 libCOREMODiofits_compute.a
 ```
 
-- Static archives contain the same `.o` files as
-  `_compute.so`, but archived for static linking
-- GCC can look inside `.a` files at link time,
-  enabling cross-module LTO optimization
-- Only linked into standalone executables — shared
-  libraries and CLI are unaffected
+- Static archives contain the same `.o` files as `_compute.so`, but archived for static linking
+- GCC can look inside `.a` files at link time, enabling cross-module LTO optimization
+- Only linked into standalone executables — shared libraries and CLI are unaffected
 
 ### 4.4. Architecture Diagram
 
@@ -576,71 +501,53 @@ cmake .. \
 ```
 
 !!! danger
-CMake **caches** all `-D` options between runs.
-Always pass `-DUSE_STATIC_LTO=OFF` explicitly
-when switching away from static LTO. Omitting it
-leaves `USE_STATIC_LTO=ON` in the cache and
-causes `cannot find -lImageStreamIO_static`.
+CMake **caches** all `-D` options between runs. Always pass `-DUSE_STATIC_LTO=OFF` explicitly when
+switching away from static LTO. Omitting it leaves `USE_STATIC_LTO=ON` in the cache and causes
+`cannot find -lImageStreamIO_static`.
 
 ### CMake Policy
 
-Add `cmake_policy(SET CMP0069 NEW)` to any
-`CMakeLists.txt` that calls `add_library()` to
-suppress the `INTERPROCEDURAL_OPTIMIZATION`
-policy warning when `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`
-is set. This is already applied to `CLIcore`.
+Add `cmake_policy(SET CMP0069 NEW)` to any `CMakeLists.txt` that calls `add_library()` to suppress
+the `INTERPROCEDURAL_OPTIMIZATION` policy warning when `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON` is
+set. This is already applied to `CLIcore`.
 
 ---
 
 ## 6. Manual CMake Flags (Dynamic Libs)
 
-This is **Option B** from section 1.6 — applying
-PGO on top of dynamic-lib LTO when
-`USE_STATIC_LTO` is not used.
+This is **Option B** from section 1.6 — applying PGO on top of dynamic-lib LTO when `USE_STATIC_LTO`
+is not used.
 
 ---
 
 ## 7. Notes
 
-- Profile data (`.gcda` files) is written to
-  `PGO_DIR` (default: `_build/pgo/`).
-  Override with `-DPGO_DIR=/path/to/profiles`.
-- `-fprofile-correction` handles minor mismatches
-  from multi-threaded execution and missing
+- Profile data (`.gcda` files) is written to `PGO_DIR` (default: `_build/pgo/`). Override with
+  `-DPGO_DIR=/path/to/profiles`.
+- `-fprofile-correction` handles minor mismatches from multi-threaded execution and missing
   profiles.
-- Re-run the full PGO cycle whenever you make
-  significant code changes.
-- To disable PGO, omit the `-DUSE_PGO` flag
-  (or set it to empty).
-- Static LTO increases binary sizes (2–3×) since
-  library code is embedded — this is expected.
-- Build time with static LTO is longer due to
-  whole-program optimization at link time.
-- **CMake cache:** always pass `-DUSE_STATIC_LTO=OFF`
-  when switching back to dynamic builds. Cached
+- Re-run the full PGO cycle whenever you make significant code changes.
+- To disable PGO, omit the `-DUSE_PGO` flag (or set it to empty).
+- Static LTO increases binary sizes (2–3×) since library code is embedded — this is expected.
+- Build time with static LTO is longer due to whole-program optimization at link time.
+- **CMake cache:** always pass `-DUSE_STATIC_LTO=OFF` when switching back to dynamic builds. Cached
   `ON` causes `cannot find -lXxx_static` errors.
-- **Build tag:** every fpsexec embeds a
-  `MILK_BUILD:` sentinel string in `.rodata`
-  readable via `strings | grep MILK_BUILD:`. The
-  `milk-perfbench` header reports this as the
-  `Build:` line, allowing unambiguous verification
-  that the right optimization level was applied.
+- **Build tag:** every fpsexec embeds a `MILK_BUILD:` sentinel string in `.rodata` readable via
+  `strings | grep MILK_BUILD:`. The `milk-perfbench` header reports this as the `Build:` line,
+  allowing unambiguous verification that the right optimization level was applied.
 
 ---
 
 ## 8. Fully Static Binaries with musl libc
 
-For maximum portability — deploying a single
-self-contained binary to a target machine without
-installing any runtime libraries — you can build
-`fpsexec` executables against
+For maximum portability — deploying a single self-contained binary to a target machine without
+installing any runtime libraries — you can build `fpsexec` executables against
 [musl libc](https://musl.libc.org/) instead of glibc.
 
 !!! note
-The standard static LTO build (section 1.6 Option A)
-still depends on the system glibc at runtime (3 libs:
-`libc.so`, `ld-linux.so`, `libm.so`). The musl build
-here produces a true **zero-dependency** binary.
+The standard static LTO build (section 1.6 Option A) still depends on the system glibc at runtime (3
+libs: `libc.so`, `ld-linux.so`, `libm.so`). The musl build here produces a true **zero-dependency**
+binary.
 
 ### 8.1. Prerequisites
 
@@ -681,11 +588,9 @@ cmake .. \
 make milk-fpsexec-imggen-mkrandom -j$(nproc)
 ```
 
-Replace `/path/to/milk-perf` with the absolute path
-to your source tree. The `-D_GNU_SOURCE` flag is
-required to expose `cpu_set_t` and thread affinity
-APIs; the extra include paths expose `COREMOD_memory`
-headers needed by plugins built with `-DUSE_CLI=OFF`.
+Replace `/path/to/milk-perf` with the absolute path to your source tree. The `-D_GNU_SOURCE` flag is
+required to expose `cpu_set_t` and thread affinity APIs; the extra include paths expose
+`COREMOD_memory` headers needed by plugins built with `-DUSE_CLI=OFF`.
 
 ### 8.3. Verify the Binary is Fully Static
 
@@ -701,8 +606,7 @@ $ ls -lh milk-fpsexec-imggen-mkrandom
 291K
 ```
 
-No shared library dependencies — deploy by copying
-the single binary file.
+No shared library dependencies — deploy by copying the single binary file.
 
 ### 8.4. Install
 
@@ -725,8 +629,7 @@ cp milk-fpsexec-imggen-mkrandom ~/bin/
 scp milk-fpsexec-imggen-mkrandom user@target-host:/usr/local/bin/
 ```
 
-Because the binary is fully self-contained, no
-library installation is needed on the target.
+Because the binary is fully self-contained, no library installation is needed on the target.
 
 ### 8.5. Required CMake Flags and Why
 
@@ -750,8 +653,7 @@ library installation is needed on the target.
 fps_standalone_data.c:6:9: warning: '_GNU_SOURCE' redefined
 ```
 
-`fps_standalone_data.c` defines `_GNU_SOURCE`
-internally; passing it as a CMake flag causes a
+`fps_standalone_data.c` defines `_GNU_SOURCE` internally; passing it as a CMake flag causes a
 harmless redefinition. No action required.
 
 **LTO type mismatch on `copy_image_ID`:**
@@ -761,13 +663,10 @@ warning: type of 'copy_image_ID' does not match original declaration [-Wlto-type
 image_copy.h: return value: imageID vs int
 ```
 
-`fps_loadmemstream_lite.c` declares `copy_image_ID`
-as `int` while `image_copy.h` uses `typedef imageID`.
-This is a pre-existing mismatch in the codebase (not
-introduced by the musl build). The binary is correct
-because `imageID` is `typedef long` which matches
-GCC's `int` ABI on the return path. No runtime
-impact.
+`fps_loadmemstream_lite.c` declares `copy_image_ID` as `int` while `image_copy.h` uses
+`typedef imageID`. This is a pre-existing mismatch in the codebase (not introduced by the musl
+build). The binary is correct because `imageID` is `typedef long` which matches GCC's `int` ABI on
+the return path. No runtime impact.
 
 ### 8.7. Limitations Compared to Standard Static LTO
 
@@ -782,12 +681,9 @@ impact.
 
 ### 8.8. musl vs glibc `strerror_r` ABI
 
-musl implements the POSIX (XSI) variant of
-`strerror_r` which returns `int`, whereas glibc
-defaults to the GNU variant returning `char *`.
-The milk source correctly detects this via
-`#ifndef __GLIBC__` in `ImageStreamIO.c` — no
-user action needed.
+musl implements the POSIX (XSI) variant of `strerror_r` which returns `int`, whereas glibc defaults
+to the GNU variant returning `char *`. The milk source correctly detects this via
+`#ifndef __GLIBC__` in `ImageStreamIO.c` — no user action needed.
 
 ---
 

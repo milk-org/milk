@@ -7,12 +7,10 @@ tags:
 
 # Scripts Reference
 
-`milk` includes shell scripts for common operations. Scripts
-are installed to `bin/` alongside the compiled executables.
+`milk` includes shell scripts for common operations. Scripts are installed to `bin/` alongside the
+compiled executables.
 
-See also: [Streams](streams.md) ·
-[FPS](fps.md) ·
-[FAQ](faq.md)
+See also: [Streams](streams.md) · [FPS](fps.md) · [FAQ](faq.md)
 
 ## 1. Core Scripts (`scripts/`)
 
@@ -74,10 +72,8 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 
 ## 6. milk-cli Script Payloads (`share/milk/scripts/`)
 
-These are `.milk` files evaluated by the milk-cli
-interpreter. They are installed as **data files**
-(no execute bit) under `share/milk/scripts/` and
-must be invoked via the CLI orchestrator:
+These are `.milk` files evaluated by the milk-cli interpreter. They are installed as **data files**
+(no execute bit) under `share/milk/scripts/` and must be invoked via the CLI orchestrator:
 
 ```bash
 milk-cli -s $(milk --install-prefix)/share/milk/scripts/makecircleofdisks.milk \
@@ -120,9 +116,8 @@ milk-cli -s $(milk --install-prefix)/share/milk/scripts/makecircleofdisks.milk \
 $ milk-FITS2shm myimage.fits mystream
 ```
 
-This creates the shared memory stream `mystream` from the
-FITS file `myimage.fits`. Other processes can then connect
-to `mystream` via `ImageStreamIO`.
+This creates the shared memory stream `mystream` from the FITS file `myimage.fits`. Other processes
+can then connect to `mystream` via `ImageStreamIO`.
 
 ### Benchmarking semaphore speed
 
@@ -130,8 +125,8 @@ to `mystream` via `ImageStreamIO`.
 $ milk-semloopspeed
 ```
 
-Measures the round-trip semaphore post/wait latency.
-Typical values on modern hardware exceed 100 kHz.
+Measures the round-trip semaphore post/wait latency. Typical values on modern hardware exceed 100
+kHz.
 
 ### Logging a stream to disk
 
@@ -152,8 +147,7 @@ $ milk-logshimkill wfs
 $ milk-cubeslice2shm mycube.fits 0 myslice
 ```
 
-Extracts slice 0 from the FITS cube and writes it to the
-shared memory stream `myslice`.
+Extracts slice 0 from the FITS cube and writes it to the shared memory stream `myslice`.
 
 ---
 

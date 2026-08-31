@@ -1,32 +1,28 @@
 # Installation
 
-See also: [Build Tiers](build_tiers.md) ·
-[FAQ & Troubleshooting](../faq.md) ·
-[CLI Overview](../cli/CLI_Overview.md) ·
-[Programmer's Guide](../programmers_guide.md)
+See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](../faq.md) ·
+[CLI Overview](../cli/CLI_Overview.md) · [Programmer's Guide](../programmers_guide.md)
 
 ---
 
 ## 1. Download and install milk
 
 !!! warning
-This page describes installation of the core package milk.
-If you install an application package (cacao or coffee),
-replace "milk" with "cacao" in these instructions.
+This page describes installation of the core package milk. If you install an application package
+(cacao or coffee), replace "milk" with "cacao" in these instructions.
 
 For download, build commands, and CMake options, see the
 [Quick Start section in README.md](../../README.md#download).
 
-For configuring minimal or partial builds (engine-only, core
-without cfitsio, etc.), see [Build Tiers](build_tiers.md).
+For configuring minimal or partial builds (engine-only, core without cfitsio, etc.), see
+[Build Tiers](build_tiers.md).
 
-The sections below cover post-installation setup, dependencies,
-and optional configuration not covered in the README.
+The sections below cover post-installation setup, dependencies, and optional configuration not
+covered in the README.
 
 ## 2. Post-installation
 
-You may need to add `/usr/local/lib` to the linker search
-path:
+You may need to add `/usr/local/lib` to the linker search path:
 
 ```bash
 $ echo "/usr/local/lib" > usrlocal.conf
@@ -80,15 +76,14 @@ $ sudo mount /milk/shm
     | **MAGMA**           | runtime | Linear algebra library over CUDA                            |
     | **tmux**            | runtime | Persistent shells for FPS compute units                     |
 
-    **tmux** is very often needed for all FPS operations in tmux screens.
-    **lapacke** is **required** but is provided by either MKL or OpenBLAS. If using neither,
-    standalone lapacke is needed: `apt install liblapacke-dev` or `yum install lapacke-devel`.
+    **tmux** is very often needed for all FPS operations in tmux screens. **lapacke** is
+    **required** but is provided by either MKL or OpenBLAS. If using neither, standalone lapacke is
+    needed: `apt install liblapacke-dev` or `yum install lapacke-devel`.
 
 
     !!! tip
-        For a minimal POSIX-only build, all optional
-        dependencies can be skipped.
-        See [Build Tiers](build_tiers.md) for details.
+        For a minimal POSIX-only build, all optional dependencies can be skipped. See
+        [Build Tiers](build_tiers.md) for details.
 
 ??? abstract "Package installation commands"
 
@@ -108,8 +103,7 @@ $ sudo mount /milk/shm
 
 ??? abstract "cfitsio from source (alternative)"
 
-    If your distribution does not package cfitsio, install it
-    from source:
+    If your distribution does not package cfitsio, install it from source:
 
     1. Download from [HEASARC](https://heasarc.gsfc.nasa.gov/fitsio/)
     2. Build and install:
@@ -129,8 +123,8 @@ $ sudo mount /milk/shm
     - Install **NVIDIA driver** and **CUDA toolkit**
     - Install **MAGMA**
 
-    If cmake reports "No package 'magma' found", add the MAGMA
-    pkg-config path to your shell profile:
+    If cmake reports "No package 'magma' found", add the MAGMA pkg-config path to your shell
+    profile:
 
     ```bash title="~/.bashrc"
     export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig

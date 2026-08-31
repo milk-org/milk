@@ -1,28 +1,21 @@
 # Valkey Integration
 
-Real-time synchronization of FPS parameters across
-multiple hosts via a [Valkey](https://valkey.io/)
+Real-time synchronization of FPS parameters across multiple hosts via a [Valkey](https://valkey.io/)
 key-value store.
 
-See also: [FPS](fps.md) ·
-[Performance Tuning](performance.md) ·
+See also: [FPS](fps.md) · [Performance Tuning](performance.md) ·
 [Programmer's Guide](programmers_guide.md)
 
 ---
 
 ## Overview
 
-`milk-fps-valkey` is a standalone bridge that
-bidirectionally syncs FPS parameters between local
-shared memory and a central Valkey (or Redis) server.
-This enables:
+`milk-fps-valkey` is a standalone bridge that bidirectionally syncs FPS parameters between local
+shared memory and a central Valkey (or Redis) server. This enables:
 
-- **Multi-host parameter sharing:** FPS changes on
-  one machine instantly appear on all others.
-- **Remote monitoring and control:** inspect or
-  modify parameters from any machine on the network.
-- **External tool integration:** any Valkey client
-  (Python, Node.js, CLI) can read/write FPS
+- **Multi-host parameter sharing:** FPS changes on one machine instantly appear on all others.
+- **Remote monitoring and control:** inspect or modify parameters from any machine on the network.
+- **External tool integration:** any Valkey client (Python, Node.js, CLI) can read/write FPS
   parameters.
 
 ```text
@@ -104,9 +97,8 @@ $ milk-fps-valkey [OPTIONS] [regex_pattern]
 
 ## Detailed Documentation
 
-For full architecture details, key schema, PubSub
-protocol, troubleshooting, and C API reference, see the
-comprehensive README:
+For full architecture details, key schema, PubSub protocol, troubleshooting, and C API reference,
+see the comprehensive README:
 
 → [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
 
@@ -114,8 +106,7 @@ comprehensive README:
 
 ## Building
 
-`milk-fps-valkey` is **not** built by default. It
-requires `libvalkey` as an additional dependency:
+`milk-fps-valkey` is **not** built by default. It requires `libvalkey` as an additional dependency:
 
 ```bash
 $ cd src/fpsvalkey
@@ -125,9 +116,8 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
-See
-[`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
-for detailed build instructions and prerequisites.
+See [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md) for detailed build instructions and
+prerequisites.
 
 ---
 
