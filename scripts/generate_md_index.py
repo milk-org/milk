@@ -29,7 +29,16 @@ def get_all_md_files(root_dir):
         dirnames[:] = [
             d
             for d in dirnames
-            if d not in (".git", "_build", "build", ".vscode", ".agents")
+            if d
+            not in (
+                ".git",
+                "_build",
+                "build",
+                ".vscode",
+                ".agents",
+                ".nox",
+                ".pytest_cache",
+            )
         ]
         for f in filenames:
             if f.endswith(".md"):
