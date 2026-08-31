@@ -74,24 +74,24 @@ docs_dir: docs
 nav:
   - Home: index.md
   - Getting Started:
-    - Installation: install/compile.md
-    - Build Tiers: install/build_tiers.md
-    - CLI Overview: cli/CLI_Overview.md
-    - FAQ & Troubleshooting: faq.md
+    - Installation: quickstart/compile.md
+    - Build Tiers: quickstart/build_tiers.md
+    - CLI Overview: quickstart/CLI_Overview.md
+    - FAQ & Troubleshooting: quickstart/faq.md
   - User Guide:
-    - Streams: streams.md
-    - Stream Slicing: slicing.md
-    - FPS: fps.md
-    - fpsCTRL TUI: fpsCTRL_reference.md
-    - FPS Sequencer: sequencer.md
-    - Process Info: procinfo.md
-    - CLI Syntax: cli/CLIcore.md
-    - Scripting: cli/scripting.md
-    - FIFO Command Input: cli/fifo.md
-    - Readline Keys: cli/helpreadline.md
-    - Scripts: scripts.md
-    - Python API: python.md
-    - Valkey Integration: valkey.md
+    - Streams: guide/streams.md
+    - Stream Slicing: guide/slicing.md
+    - FPS: guide/fps.md
+    - fpsCTRL TUI: guide/fpsCTRL_reference.md
+    - FPS Sequencer: guide/sequencer.md
+    - Process Info: guide/procinfo.md
+    - CLI Syntax: guide/CLIcore.md
+    - Scripting: guide/scripting.md
+    - FIFO Command Input: guide/fifo.md
+    - Readline Keys: guide/helpreadline.md
+    - Scripts: guide/scripts.md
+    - Python API: guide/python.md
+    - Valkey Integration: guide/valkey.md
   - Developer Guide:
     - Tutorial: developer/tutorial.md
     - Coding Standards: developer/coding_standards.md
@@ -103,16 +103,16 @@ nav:
     - Documenting Code: developer/DocumentingCode.md
     - Tooling: developer/tooling.md
     - Working with Git: developer/WorkingWithGit.md
-    - Code Assist: code_assist.md
+    - Code Assist: developer/code_assist.md
   - Architecture:
-    - Overview: architecture.md
-    - "Programmer's Guide": programmers_guide.md
-    - Dependency Graph: dependency_graph.md
-    - FPS Standalone Modes: FPS_Standalone_CMD_Modes.md
+    - Overview: arch/architecture.md
+    - "Programmer's Guide": arch/programmers_guide.md
+    - Dependency Graph: arch/dependency_graph.md
+    - FPS Standalone Modes: arch/FPS_Standalone_CMD_Modes.md
   - Operations:
-    - Performance Tuning: performance.md
-    - PGO & LTO: pgo.md
-    - Debugging: debugging.md
+    - Performance Tuning: operations/performance.md
+    - PGO & LTO: operations/pgo.md
+    - Debugging: operations/debugging.md
   - "What's New": whatsnew.md
   #- Tags Index: tags.md
 
