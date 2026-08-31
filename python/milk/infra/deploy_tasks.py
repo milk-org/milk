@@ -154,10 +154,22 @@ class StartConfProcesses(SimpleTask):
     TIMEOUT_ALL = 5.0
 
     def can(self) -> bool:
-        # Find all sessions expected by this config
-        # Check FPSs exist with the correct name
-        # TODO remember at some point task.can must be called and raise.
-        # TODO
+        p = self.pipeline
+
+        # Folder consistency: rootdir/rundir must have been laid out already
+        if not os.path.isdir(p.root_folder):
+            return False
+        if not os.path.isdir(p.run_folder):
+            return False
+
+        # Every session's FPS must exist and be a well-formed deployment
+        for session_name, exec in p.sessions.items():
+            session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
+            if session.fps is None or not session.fps.is_valid():
+                return False
+
+        # TODO get & check the rootdir for all FPSs
+
         return True
 
     def success(self) -> bool:
