@@ -4,7 +4,7 @@
 This file: `docs/developer/WorkingWithGit.md`
 
 See also: [Documenting Code](DocumentingCode.md) · [Adding Plugins](plugins.md) ·
-[Compile Instructions](../install/compile.md)
+[Compile Instructions](../quickstart/compile.md)
 
 ---
 

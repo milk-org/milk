@@ -1,7 +1,7 @@
 # Installation
 
-See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](../faq.md) ·
-[CLI Overview](../cli/CLI_Overview.md) · [Programmer's Guide](../programmers_guide.md)
+See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
+[CLI Overview](CLI_Overview.md) · [Programmer's Guide](../arch/programmers_guide.md)
 
 ---
 

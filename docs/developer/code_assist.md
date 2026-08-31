@@ -1,8 +1,8 @@
 # Code Assist Tools
 
-See also: [Programmer's Guide](programmers_guide.md) ·
-[Coding Standards](developer/coding_standards.md) · [Adding Plugins](developer/plugins.md) ·
-[Template Source Code](developer/TemplateSourceCode.md)
+See also: [Programmer's Guide](../arch/programmers_guide.md) ·
+[Coding Standards](coding_standards.md) · [Adding Plugins](plugins.md) ·
+[Template Source Code](TemplateSourceCode.md)
 
 The `milk` project includes **agent rules** and **workflows** that guide AI coding assistants
 (Gemini, Copilot, etc.) to follow project conventions automatically. They live under:
@@ -21,9 +21,9 @@ conventions, checklists, and cross-references that every contributor should know
 
 New to adding capabilities? Start with these:
 
-1. [Developer Tutorial](developer/tutorial.md) — write your first module end-to-end.
-2. [Adding Plugins](developer/plugins.md) — CMake setup, dual-mode headers, `_compute` variants.
-3. [Template Source Code](developer/TemplateSourceCode.md) — which template file to copy for each
+1. [Developer Tutorial](tutorial.md) — write your first module end-to-end.
+2. [Adding Plugins](plugins.md) — CMake setup, dual-mode headers, `_compute` variants.
+3. [Template Source Code](TemplateSourceCode.md) — which template file to copy for each
    use case.
 
 ## Agent Rules
@@ -152,4 +152,4 @@ if every command should auto-run without confirmation.
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

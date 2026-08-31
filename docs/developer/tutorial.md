@@ -4,9 +4,9 @@ Welcome to `milk`! This tutorial will guide you through creating your first modu
 `fpsexec` compute block. By the end of this guide, you will have a working module linked to the
 `milk` core frameworks.
 
-See also: [Programmer's Guide](../programmers_guide.md) · [Code Assist Tools](../code_assist.md) ·
-[Adding Plugins](plugins.md) · [FPS](../fps.md) ·
-[FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md)
+See also: [Programmer's Guide](../arch/programmers_guide.md) · [Code Assist Tools](code_assist.md) ·
+[Adding Plugins](plugins.md) · [FPS](../guide/fps.md) ·
+[FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md)
 
 ## 1. Setting Up the Directory Structure
 

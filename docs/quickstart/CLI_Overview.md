@@ -16,7 +16,7 @@ tags:
 The source code is organized in modules. A module includes C code and documentation. It may also
 include data files, scripts, and extended documentation.
 
-For more details see the [Programmer's Guide](../programmers_guide.md).
+For more details see the [Programmer's Guide](../arch/programmers_guide.md).
 
 ---
 

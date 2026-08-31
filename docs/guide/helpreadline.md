@@ -12,7 +12,7 @@ for line editing. This page lists the most useful keybindings.
 For the complete reference, see the official
 [Readline User Manual](https://tiswww.case.edu/php/chet/readline/readline.html).
 
-See also: [CLI Overview](CLI_Overview.md) · [CLI Syntax](CLIcore.md) · [Scripting](scripting.md)
+See also: [CLI Overview](../quickstart/CLI_Overview.md) · [CLI Syntax](CLIcore.md) · [Scripting](scripting.md)
 
 ## Notation
 
@@ -73,4 +73,4 @@ See also: [CLI Overview](CLI_Overview.md) · [CLI Syntax](CLIcore.md) · [Script
 
 ---
 
-← [CLI Overview](CLI_Overview.md) · [Documentation Index](../index.md)
+← [CLI Overview](../quickstart/CLI_Overview.md) · [Documentation Index](../index.md)

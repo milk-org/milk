@@ -13,7 +13,7 @@ parameters, states, and commands for compute units. FPS instances provide a high
 standardized interface directly in shared memory.
 
 See also: [Streams](streams.md) · [Process Info](procinfo.md) ·
-[Programmer's Guide](programmers_guide.md) · [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) ·
+[Programmer's Guide](../arch/programmers_guide.md) · [FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md) ·
 [FPS Sequencer](sequencer.md)
 
 ## 1. Architecture and Location
@@ -187,7 +187,7 @@ For complete keyboard shortcuts and display modes, see [fpsCTRL Reference](fpsCT
           "Number of iterations")
     ```
 
-    See the [Developer Tutorial](developer/tutorial.md) and
+    See the [Developer Tutorial](../developer/tutorial.md) and
     `src/milk_module_example/examplefunc_fps_cli_poc.c` for a complete walkthrough.
 
 ### 5. Sequencer Integration
@@ -201,4 +201,4 @@ daemon, script syntax, and integrating `seq.*` commands from within `milk-cli`.
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

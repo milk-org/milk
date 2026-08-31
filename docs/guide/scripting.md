@@ -21,7 +21,7 @@ including:
 This page documents the **native `milk-cli` extensions** and how to use them alongside standard bash
 in your scripts.
 
-See also: [CLI Syntax](CLIcore.md) · [FPS](../fps.md) · [Streams](../streams.md)
+See also: [CLI Syntax](CLIcore.md) · [FPS](fps.md) · [Streams](streams.md)
 
 ## Script Files
 

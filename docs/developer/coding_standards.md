@@ -4,7 +4,7 @@ This document outlines the standard C coding conventions expected for the `milk`
 conventions help ensure readability, maintainability, and seamless integration of new code or
 plugins.
 
-See also: [Programmer's Guide](../programmers_guide.md) · [Documenting Code](DocumentingCode.md) ·
+See also: [Programmer's Guide](../arch/programmers_guide.md) · [Documenting Code](DocumentingCode.md) ·
 [Template Source Code](TemplateSourceCode.md) · [Module Files](ModuleFiles.md)
 
 ## General C Code Style

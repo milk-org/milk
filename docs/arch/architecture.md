@@ -65,11 +65,11 @@ graph TD
     class CLI,TUI,SCTRL ui
 ```
 
-| Pillar                               | Shared Memory Path | Deep-Dive Doc              |
-| ------------------------------------ | ------------------ | -------------------------- |
-| **ImageStreamIO** (Streams)          | `*.im.shm`         | [streams.md](streams.md)   |
-| **FPS** (Function Processing System) | `fps.*.shm`        | [fps.md](fps.md)           |
-| **processinfo**                      | `proc.*.shm`       | [procinfo.md](procinfo.md) |
+| Pillar                               | Shared Memory Path | Deep-Dive Doc                       |
+| ------------------------------------ | ------------------ | ----------------------------------- |
+| **ImageStreamIO** (Streams)          | `*.im.shm`         | [streams.md](../guide/streams.md)   |
+| **FPS** (Function Processing System) | `fps.*.shm`        | [fps.md](../guide/fps.md)           |
+| **processinfo**                      | `proc.*.shm`       | [procinfo.md](../guide/procinfo.md) |
 
 ---
 
@@ -111,7 +111,7 @@ Each layer corresponds to a **build tier** that can be compiled independently:
 | **Core+FITS** | `-DUSE_CLI=OFF`                    | Core + COREMOD_iofits                             |
 | **Full**      | _(defaults)_                       | Everything: CLI + all plugins                     |
 
-→ Details: [Build Tiers](install/build_tiers.md) · [Dependency Graph](dependency_graph.md)
+→ Details: [Build Tiers](../quickstart/build_tiers.md) · [Dependency Graph](dependency_graph.md)
 
 ---
 
@@ -314,7 +314,7 @@ graph TD
     class AOLOOP,AODM,AOIO,AOACQ cacao
 ```
 
-→ Details: [Adding Plugins](developer/plugins.md)
+→ Details: [Adding Plugins](../developer/plugins.md)
 
 ---
 
@@ -329,7 +329,7 @@ graph TD
 | `milk-fpsexec-*`  | Standalone compute executables (one per function)                            | FPS, Streams, processinfo |
 | `milk-fps-*`      | CLI utilities for FPS operations (set, list, search, deploy)                 | FPS                       |
 
-→ Details: [CLI Overview](cli/CLI_Overview.md) · [Scripts Reference](scripts.md)
+→ Details: [CLI Overview](../quickstart/CLI_Overview.md) · [Scripts Reference](../guide/scripts.md)
 
 ---
 
@@ -345,7 +345,7 @@ Host A  ←──►  Valkey Server  ←──►  Host B
               (fps:hostB:*)
 ```
 
-→ Details: [Valkey Integration](valkey.md)
+→ Details: [Valkey Integration](../guide/valkey.md)
 
 ---
 
@@ -356,16 +356,16 @@ Host A  ←──►  Valkey Server  ←──►  Host B
 | **This document**                                   | System-level architecture overview                  |
 | [Programmer's Guide](programmers_guide.md)          | Writing compute units, C API, CMake conventions     |
 | [Dependency Graph](dependency_graph.md)             | Library-level build dependencies (mermaid diagrams) |
-| [Streams](streams.md)                               | ImageStreamIO API, IMGID, semaphore model           |
-| [FPS](fps.md)                                       | Parameter types, fpsCTRL, fpslist.txt workflow      |
+| [Streams](../guide/streams.md)                      | ImageStreamIO API, IMGID, semaphore model           |
+| [FPS](../guide/fps.md)                              | Parameter types, fpsCTRL, fpslist.txt workflow      |
 | [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) | CMD vs standalone execution contexts                |
-| [Process Info](procinfo.md)                         | Heartbeat API, loop profiling                       |
-| [Performance Tuning](performance.md)                | CPU pinning, RT scheduling, GPU, network            |
-| [Debugging](debugging.md)                           | GDB, tmux logs, common failures                     |
-| [Valkey Integration](valkey.md)                     | Multi-host parameter sync                           |
-| [Build Tiers](install/build_tiers.md)               | Compilation tier configuration                      |
-| [Adding Plugins](developer/plugins.md)              | Plugin module creation guide                        |
+| [Process Info](../guide/procinfo.md)                | Heartbeat API, loop profiling                       |
+| [Performance Tuning](../operations/performance.md)  | CPU pinning, RT scheduling, GPU, network            |
+| [Debugging](../operations/debugging.md)             | GDB, tmux logs, common failures                     |
+| [Valkey Integration](../guide/valkey.md)            | Multi-host parameter sync                           |
+| [Build Tiers](../quickstart/build_tiers.md)         | Compilation tier configuration                      |
+| [Adding Plugins](../developer/plugins.md)           | Plugin module creation guide                        |
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

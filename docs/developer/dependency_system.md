@@ -8,7 +8,7 @@
 
     Some care is needed with header packaging.
 
-As discussed in [Build Tiers](../install/build_tiers.md), some optional dependencies are expected by
+As discussed in [Build Tiers](../quickstart/build_tiers.md), some optional dependencies are expected by
 MILK and enable additional features
 
 | Option         | Default | Description                           |

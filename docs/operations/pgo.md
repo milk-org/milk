@@ -687,4 +687,4 @@ to the GNU variant returning `char *`. The milk source correctly detects this vi
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

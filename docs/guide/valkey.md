@@ -3,8 +3,8 @@
 Real-time synchronization of FPS parameters across multiple hosts via a [Valkey](https://valkey.io/)
 key-value store.
 
-See also: [FPS](fps.md) · [Performance Tuning](performance.md) ·
-[Programmer's Guide](programmers_guide.md)
+See also: [FPS](fps.md) · [Performance Tuning](../operations/performance.md) ·
+[Programmer's Guide](../arch/programmers_guide.md)
 
 ---
 
@@ -100,7 +100,7 @@ $ milk-fps-valkey [OPTIONS] [regex_pattern]
 For full architecture details, key schema, PubSub protocol, troubleshooting, and C API reference,
 see the comprehensive README:
 
-→ [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
+→ [`src/fpsvalkey/README.md`](../../src/fpsvalkey/README.md)
 
 ---
 
@@ -116,9 +116,9 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
-See [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md) for detailed build instructions and
+See [`src/fpsvalkey/README.md`](../../src/fpsvalkey/README.md) for detailed build instructions and
 prerequisites.
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

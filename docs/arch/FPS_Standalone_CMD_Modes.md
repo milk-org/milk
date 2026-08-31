@@ -13,8 +13,8 @@ primary modes:
 These modes unify function parameter management so developers write core logic once, bind arguments
 to FPS parameters, and expose them universally.
 
-See also: [FPS](fps.md) · [CLI Reference](cli/CLIcore.md) ·
-[Programmer's Guide](programmers_guide.md) · [Developer Tutorial](developer/tutorial.md)
+See also: [FPS](../guide/fps.md) · [CLI Reference](../guide/CLIcore.md) ·
+[Programmer's Guide](programmers_guide.md) · [Developer Tutorial](../developer/tutorial.md)
 
 ---
 
@@ -150,4 +150,4 @@ FPS_MAIN_STANDALONE_V2_CONFCHECK(
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

@@ -1,8 +1,9 @@
 # Dependency Graph
 
+<!-- prettier-ignore -->
 !!! note
-Generated from CMakeLists.txt — 2026-05-30. See [Build Tiers](install/build_tiers.md) for cmake
-commands.
+    Generated from CMakeLists.txt — 2026-05-30. See [Build Tiers](../quickstart/build_tiers.md) for cmake
+    commands.
 
 ## Legend
 
@@ -471,10 +472,10 @@ executables do **not** link `${LIBNAME}` by default. Currently **76 of 90** stan
 CLIcore-free.
 
 When `USE_STATIC_LTO=ON`, static archive (`.a`) variants of these libraries are built and linked
-instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
+instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](../operations/pgo.md).
 
 </details>
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

@@ -11,7 +11,7 @@ The `procinfo` (Process Information) system is a critical telemetry and heartbea
 within `milk`. It works symbiotically with the Function Processing System (FPS) to ensure health
 checks, profiling, and state visibility across the entire execution environment.
 
-See also: [FPS](fps.md) · [Streams](streams.md) · [Programmer's Guide](programmers_guide.md)
+See also: [FPS](fps.md) · [Streams](streams.md) · [Programmer's Guide](../arch/programmers_guide.md)
 
 ## 1. Design and Purpose
 
@@ -193,4 +193,4 @@ processinfo_waitoninputstream(processinfo);
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

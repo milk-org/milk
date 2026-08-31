@@ -38,7 +38,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Clone, build, and configure the milk framework.
 
-    [⮕ Installation](install/compile.md)
+    [⮕ Installation](quickstart/compile.md)
 
 - :material-layers-outline:{ .lg .middle } **Build Tiers**
 
@@ -46,7 +46,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Engine → Core → Full: compile only what you need.
 
-    [⮕ Build tiers](install/build_tiers.md)
+    [⮕ Build tiers](quickstart/build_tiers.md)
 
 - :material-console:{ .lg .middle } **CLI Overview**
 
@@ -54,7 +54,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Interactive shell, standalone executables, and scripting basics.
 
-    [⮕ CLI overview](cli/CLI_Overview.md)
+    [⮕ CLI overview](quickstart/CLI_Overview.md)
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 
@@ -62,7 +62,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Common issues with builds, SHM, FPS, and CLI.
 
-    [⮕ FAQ & Troubleshooting](faq.md)
+    [⮕ FAQ & Troubleshooting](quickstart/faq.md)
 
 </div>
 
@@ -82,7 +82,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Zero-copy shared memory tensors (`ImageStreamIO`).
 
-    [⮕ Streams](streams.md)
+    [⮕ Streams](guide/streams.md)
 
 - :material-tune-variant:{ .lg .middle } **FPS**
 
@@ -90,7 +90,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Live parameter sync, state control, TUI dashboards.
 
-    [⮕ FPS](fps.md)
+    [⮕ FPS](guide/fps.md)
 
 - :material-heart-pulse:{ .lg .middle } **Process Info**
 
@@ -98,7 +98,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Heartbeat telemetry, loop-rate profiling, health monitoring.
 
-    [⮕ Process Info](procinfo.md)
+    [⮕ Process Info](guide/procinfo.md)
 
 - :material-sitemap-outline:{ .lg .middle } **Architecture**
 
@@ -106,7 +106,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     System overview, layered design, data flow diagrams.
 
-    [⮕ Architecture](architecture.md)
+    [⮕ Architecture](arch/architecture.md)
 
 </div>
 
@@ -168,7 +168,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     CPU pinning, RT scheduling, SIMD, BLAS, GPU.
 
-    [⮕ Performance](performance.md)
+    [⮕ Performance](operations/performance.md)
 
 - :material-chart-line:{ .lg .middle } **PGO & LTO**
 
@@ -176,7 +176,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     Profile-guided optimization + static link-time optimization for 15–40 % speedup.
 
-    [⮕ PGO & LTO](pgo.md)
+    [⮕ PGO & LTO](operations/pgo.md)
 
 - :material-bug-outline:{ .lg .middle } **Debugging**
 
@@ -184,7 +184,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
     GDB, tmux logs, procinfo diagnostics, common failures.
 
-    [⮕ Debugging](debugging.md)
+    [⮕ Debugging](operations/debugging.md)
 
 </div>
 
@@ -195,9 +195,9 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 ## :link: More Resources
 
 - **[What's New](whatsnew.md)** — recent features and upgrades
-- [CLI Syntax Reference](cli/CLIcore.md) · [Readline Keys](cli/helpreadline.md)
-- [Scripts Reference](scripts.md) · [Python API](python.md) · [Valkey Integration](valkey.md)
-- [Programmer's Guide](programmers_guide.md) · [Dependency Graph](dependency_graph.md) ·
-  [fpsCTRL Reference](fpsCTRL_reference.md)
-- [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](code_assist.md)
+- [CLI Syntax Reference](guide/CLIcore.md) · [Readline Keys](guide/helpreadline.md)
+- [Scripts Reference](guide/scripts.md) · [Python API](guide/python.md) · [Valkey Integration](guide/valkey.md)
+- [Programmer's Guide](arch/programmers_guide.md) · [Dependency Graph](arch/dependency_graph.md) ·
+  [fpsCTRL Reference](guide/fpsCTRL_reference.md)
+- [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](developer/code_assist.md)
 - [All Markdown Files](Markdown_Index.md) · [Tag Index](tags.md)

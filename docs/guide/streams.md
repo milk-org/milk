@@ -12,7 +12,7 @@ tags:
 pipelines. This core feature is powered by `ImageStreamIO` which allocates streams (n-dimensional
 tensors, typically images or data cubes) directly in the Linux tmpfs (`/dev/shm/`).
 
-See also: [FPS](fps.md) · [Process Info](procinfo.md) · [CLI Reference](cli/CLIcore.md) ·
+See also: [FPS](fps.md) · [Process Info](procinfo.md) · [CLI Reference](CLIcore.md) ·
 [Scripts Reference](scripts.md)
 
 ## 1. Core Concepts
@@ -214,4 +214,4 @@ oldest ancestor in the chain.
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

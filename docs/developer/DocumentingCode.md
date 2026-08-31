@@ -7,7 +7,7 @@ split into two halves:
    on GitHub.
 2. **C API Reference:** Written directly in the `.c` and `.h` source code using Doxygen syntax.
 
-See also: [Programmer's Guide](../programmers_guide.md) · [Working with Git](WorkingWithGit.md) ·
+See also: [Programmer's Guide](../arch/programmers_guide.md) · [Working with Git](WorkingWithGit.md) ·
 [Coding Standards](coding_standards.md)
 
 ## 1. Writing Manuals and Guides (Markdown)

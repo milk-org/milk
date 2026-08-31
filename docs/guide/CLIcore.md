@@ -11,10 +11,10 @@ code is in `src/cli/CLIcore/`.
 
 !!! note
 Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See
-[FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
+[FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md).
 
-See also: [FPS](../fps.md) · [Streams](../streams.md) · [FAQ](../faq.md) ·
-[Build Tiers](../install/build_tiers.md)
+See also: [FPS](fps.md) · [Streams](streams.md) · [FAQ](../quickstart/faq.md) ·
+[Build Tiers](../quickstart/build_tiers.md)
 
 ---
 
@@ -519,7 +519,7 @@ $ milk-cli -n myctl -F /tmp/myfifo -s setup.milk
 ### FITS File I/O
 
 FITSIO is used for FITS file I/O. Requires `USE_CFITSIO=ON`. See
-[Build Tiers](../install/build_tiers.md).
+[Build Tiers](../quickstart/build_tiers.md).
 
 ```text
 milk-cli > iofits.loadfits im1.fits imf1       # load as "imf1"

@@ -10,7 +10,7 @@ tags:
 `milk` includes shell scripts for common operations. Scripts are installed to `bin/` alongside the
 compiled executables.
 
-See also: [Streams](streams.md) · [FPS](fps.md) · [FAQ](faq.md)
+See also: [Streams](streams.md) · [FPS](fps.md) · [FAQ](../quickstart/faq.md)
 
 ## 1. Core Scripts (`scripts/`)
 
@@ -151,4 +151,4 @@ Extracts slice 0 from the FITS cube and writes it to the shared memory stream `m
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

@@ -6,8 +6,8 @@ configuration.
 
 This guide outlines exactly how to create, structure, and link a custom plugin.
 
-See also: [Programmer's Guide](../programmers_guide.md) · [Code Assist Tools](../code_assist.md) ·
-[Developer Tutorial](tutorial.md) · [Build Tiers](../install/build_tiers.md) ·
+See also: [Programmer's Guide](../arch/programmers_guide.md) · [Code Assist Tools](code_assist.md) ·
+[Developer Tutorial](tutorial.md) · [Build Tiers](../quickstart/build_tiers.md) ·
 [Loading Modules](LoadingModules.md)
 
 ## 1. Where do plugins go?

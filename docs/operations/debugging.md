@@ -3,7 +3,7 @@
 Strategies for diagnosing issues in `milk` processes, from inspecting running pipelines to
 post-mortem analysis of crashes.
 
-See also: [Process Info](procinfo.md) · [FPS](fps.md) · [FAQ & Troubleshooting](faq.md) ·
+See also: [Process Info](../guide/procinfo.md) · [FPS](../guide/fps.md) · [FAQ & Troubleshooting](../quickstart/faq.md) ·
 [Performance Tuning](performance.md)
 
 ---
@@ -171,4 +171,4 @@ optimizations and are significantly slower.
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

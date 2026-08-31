@@ -165,7 +165,7 @@ linking securely to only the `_compute` variants of libraries. They act as nativ
 managed via `tmux` and `fpsCTRL`.
 
 !!! tip
-**Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to
+**Writing a custom plugin?** See [plugins.md](../developer/plugins.md) for a complete guide on how to
 integrate custom plugins into the build system.
 
 ## 5. Dependency Architecture
@@ -217,7 +217,7 @@ code:
 | Static compute  | `_compute.a`  | LTO-optimized fpsexec link |
 
 With static archives, GCC's LTO can inline and optimize across all library boundaries. See
-[PGO & LTO](pgo.md) for details.
+[PGO & LTO](../operations/pgo.md) for details.
 
 **CMake standalone helpers:**
 
@@ -378,4 +378,4 @@ workflow)_
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

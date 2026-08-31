@@ -10,10 +10,10 @@ tags:
 Guidelines for optimizing `milk` pipeline throughput and latency, covering OS-level configuration,
 process scheduling, memory layout, and GPU acceleration.
 
-See also: [Process Info](procinfo.md) · [Streams](streams.md) · [FPS](fps.md) ·
-[Debugging](debugging.md) · [FAQ](faq.md) ·
+See also: [Process Info](../guide/procinfo.md) · [Streams](../guide/streams.md) · [FPS](../guide/fps.md) ·
+[Debugging](debugging.md) · [FAQ](../quickstart/faq.md) ·
 [Code-Level Optimization Rules](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/performance-practices.md)
-· [Code Assist Tools](code_assist.md)
+· [Code Assist Tools](../developer/code_assist.md)
 
 ---
 
@@ -175,7 +175,7 @@ $ sysctl -w net.core.rmem_max=16777216
 $ sysctl -w net.core.wmem_max=16777216
 ```
 
-See also: [Valkey Integration](valkey.md)
+See also: [Valkey Integration](../guide/valkey.md)
 
 ---
 
@@ -198,4 +198,4 @@ See also: [Valkey Integration](valkey.md)
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

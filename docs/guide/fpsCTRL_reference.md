@@ -11,7 +11,7 @@ tags:
 instances. It provides real-time control of compute units: starting/stopping conf and run loops,
 editing parameters, and monitoring FPS state.
 
-See also: [FPS](fps.md) · [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) ·
+See also: [FPS](fps.md) · [FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md) ·
 [FPS Sequencer](sequencer.md)
 
 ## Command-Line Options
@@ -118,4 +118,4 @@ The default display mode at startup is **Control** (mode 3).
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

@@ -10,7 +10,7 @@ tags:
 Accessing `milk` shared memory streams from Python using the `ImageStreamIOWrap` bindings and
 `pyMilk`.
 
-See also: [Streams](streams.md) · [FPS](fps.md) · [Programmer's Guide](programmers_guide.md)
+See also: [Streams](streams.md) · [FPS](fps.md) · [Programmer's Guide](../arch/programmers_guide.md)
 
 ---
 
@@ -175,8 +175,8 @@ $ cd python_module
 $ pip install .
 ```
 
-See [`python_module/README.md`](../python_module/README.md) for usage details.
+See [`python_module/README.md`](../../python_module/README.md) for usage details.
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)

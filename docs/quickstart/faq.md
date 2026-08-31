@@ -30,7 +30,7 @@ Common issues and solutions when building, installing, and running `milk`.
     cmake .. -DUSE_CFITSIO=OFF
     ```
 
-    See [Build Tiers](install/build_tiers.md) and [Compile Instructions](install/compile.md) for
+    See [Build Tiers](build_tiers.md) and [Compile Instructions](compile.md) for
     details.
 
 ??? faq "Build fails with missing readline"
@@ -75,7 +75,7 @@ Common issues and solutions when building, installing, and running `milk`.
 
 ## 2. Shared Memory
 
-See also: [Streams](streams.md)
+See also: [Streams](../guide/streams.md)
 
 ??? faq "Permission denied when accessing /milk/shm"
 
@@ -123,8 +123,8 @@ See also: [Streams](streams.md)
 
 ## 3. FPS / Process Control
 
-See also: [FPS](fps.md) · [Process Info](procinfo.md) ·
-[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
+See also: [FPS](../guide/fps.md) · [Process Info](../guide/procinfo.md) ·
+[FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md)
 
 ??? faq "FPS process won't start — \"FPS already exists\""
 
@@ -162,7 +162,7 @@ See also: [FPS](fps.md) · [Process Info](procinfo.md) ·
 
 ## 4. CLI
 
-See also: [CLI Reference](cli/CLIcore.md)
+See also: [CLI Reference](../guide/CLIcore.md)
 
 ??? faq "milk-cli prompt jumps to bottom of terminal"
 
@@ -221,9 +221,9 @@ See also: [CLI Reference](cli/CLIcore.md)
 - **CLI help:** Type `?` or `help` at the `milk-cli >` prompt
 - **Command help:** `cmd? <command>` for detailed usage
 - **Module list:** `m?` to list all loaded modules
-- **Documentation:** See [docs/index.md](index.md)
+- **Documentation:** See [docs/index.md](../index.md)
 - **Issues:** Report on [GitHub Issues](https://github.com/milk-org/milk/issues)
 
 ---
 
-← [Documentation Index](index.md)
+← [Documentation Index](../index.md)
