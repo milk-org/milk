@@ -73,113 +73,122 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
 ## :classical_building: Core Concepts
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-memory:{ .lg .middle } **Streams**
 
-  ***
+    ***
 
-  Zero-copy shared memory tensors (`ImageStreamIO`).
+    Zero-copy shared memory tensors (`ImageStreamIO`).
 
-  [⮕ Streams](streams.md)
+    [⮕ Streams](streams.md)
 
 - :material-tune-variant:{ .lg .middle } **FPS**
 
-  ***
+    ***
 
-  Live parameter sync, state control, TUI dashboards.
+    Live parameter sync, state control, TUI dashboards.
 
-  [⮕ FPS](fps.md)
+    [⮕ FPS](fps.md)
 
 - :material-heart-pulse:{ .lg .middle } **Process Info**
 
-  ***
+    ***
 
-  Heartbeat telemetry, loop-rate profiling, health monitoring.
+    Heartbeat telemetry, loop-rate profiling, health monitoring.
 
-  [⮕ Process Info](procinfo.md)
+    [⮕ Process Info](procinfo.md)
 
 - :material-sitemap-outline:{ .lg .middle } **Architecture**
 
-  ***
+    ***
 
-  System overview, layered design, data flow diagrams.
+    System overview, layered design, data flow diagrams.
 
-  [⮕ Architecture](architecture.md)
+    [⮕ Architecture](architecture.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
 
 ---
 
 ## :hammer_and_wrench: Developer Guides
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-school-outline:{ .lg .middle } **Tutorial**
 
-  ***
+    ***
 
-  Write your first compute module step by step.
+    Write your first compute module step by step.
 
-  [⮕ Tutorial](developer/tutorial.md)
+    [⮕ Tutorial](developer/tutorial.md)
 
 - :material-code-braces:{ .lg .middle } **Coding Standards**
 
-  ***
+    ***
 
-  C style, line length, includes, Kernel-Doc.
+    C style, line length, includes, Kernel-Doc.
 
-  [⮕ Coding standards](developer/coding_standards.md)
+    [⮕ Coding standards](developer/coding_standards.md)
 
 - :material-puzzle-outline:{ .lg .middle } **Adding Plugins**
 
-  ***
+    ***
 
-  Build modules that compile alongside the core.
+    Build modules that compile alongside the core.
 
-  [⮕ Plugins](developer/plugins.md)
+    [⮕ Plugins](developer/plugins.md)
 
 - :material-file-tree-outline:{ .lg .middle } **Template Code**
 
-  ***
+    ***
 
-  Breakdown of `milk_module_example`.
+    Breakdown of `milk_module_example`.
 
-  [⮕ Template source](developer/TemplateSourceCode.md)
+    [⮕ Template source](developer/TemplateSourceCode.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
 
 ---
 
 ## :bar_chart: Operations & Reference
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-speedometer:{ .lg .middle } **Performance**
 
-  ***
+    ***
 
-  CPU pinning, RT scheduling, SIMD, BLAS, GPU.
+    CPU pinning, RT scheduling, SIMD, BLAS, GPU.
 
-  [⮕ Performance](performance.md)
+    [⮕ Performance](performance.md)
 
 - :material-chart-line:{ .lg .middle } **PGO & LTO**
 
-  ***
+    ***
 
-  Profile-guided optimization + static link-time optimization for 15–40 % speedup.
+    Profile-guided optimization + static link-time optimization for 15–40 % speedup.
 
-  [⮕ PGO & LTO](pgo.md)
+    [⮕ PGO & LTO](pgo.md)
 
 - :material-bug-outline:{ .lg .middle } **Debugging**
 
-  ***
+    ***
 
-  GDB, tmux logs, procinfo diagnostics, common failures.
+    GDB, tmux logs, procinfo diagnostics, common failures.
 
-  [⮕ Debugging](debugging.md)
+    [⮕ Debugging](debugging.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
 
 ---
 

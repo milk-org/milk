@@ -1,4 +1,4 @@
-site_name: milk
+site_name: MILK
 site_url: https://milk-org.github.io/milk/
 site_description: >-
   High-performance real-time image processing framework
@@ -30,9 +30,9 @@ theme:
         name: Switch to light mode
   features:
     # Navigation
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.sections
+    #- navigation.tabs
+    #- navigation.tabs.sticky
+    #- navigation.sections
     - navigation.expand
     - navigation.top
     - navigation.instant
@@ -53,6 +53,7 @@ theme:
     - content.action.view
     # TOC
     - toc.follow
+    #- toc.integrate
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
@@ -60,7 +61,7 @@ theme:
 
 plugins:
   - search
-  - tags
+  #- tags
   - glightbox
   - git-revision-date-localized:
       enable_creation_date: true
@@ -72,8 +73,6 @@ docs_dir: docs
 
 nav:
   - Home: index.md
-  - "What's New": whatsnew.md
-  - Tags Index: tags.md
   - Getting Started:
     - Installation: install/compile.md
     - Build Tiers: install/build_tiers.md
@@ -102,6 +101,7 @@ nav:
     - Loading Modules: developer/LoadingModules.md
     - Managing Dependencies: developer/dependency_system.md
     - Documenting Code: developer/DocumentingCode.md
+    - Tooling: developer/tooling.md
     - Working with Git: developer/WorkingWithGit.md
     - Code Assist: code_assist.md
   - Architecture:
@@ -113,6 +113,8 @@ nav:
     - Performance Tuning: performance.md
     - PGO & LTO: pgo.md
     - Debugging: debugging.md
+  - "What's New": whatsnew.md
+  #- Tags Index: tags.md
 
 markdown_extensions:
   - abbr
@@ -121,6 +123,7 @@ markdown_extensions:
   - def_list
   - md_in_html
   - tables
+  # - tags
   - pymdownx.details
   - pymdownx.superfences:
       custom_fences:
@@ -137,9 +140,9 @@ markdown_extensions:
       slugify: !!python/object/apply:pymdownx.slugs.slugify
         kwds:
           case: lower
-  - pymdownx.snippets:
-      auto_append:
-        - docs/includes/abbreviations.md
+  # - pymdownx.snippets:
+  #     auto_append:
+  #       - docs/includes/abbreviations.md
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
@@ -154,7 +157,7 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/milk-org/milk
-      name: milk on GitHub
+      name: MILK on GitHub
 
 extra_css:
   - stylesheets/extra.css
