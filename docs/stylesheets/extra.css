@@ -68,6 +68,7 @@ html {
 
 /* ---------- Card grid hover ---------- */
 .md-typeset .grid.cards > ul > li {
+  position: relative;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -85,6 +86,19 @@ html {
   box-shadow:
     0 0.3rem 0.8rem rgba(0, 0, 0, 0.35),
     0 0.1rem 0.3rem rgba(0, 0, 0, 0.2);
+}
+
+/* Stretch each card's trailing link over the full card so the whole
+   card — not just the "-> Link" line — is clickable. */
+.md-typeset .grid.cards > ul > li > :last-child a {
+  position: static;
+}
+
+.md-typeset .grid.cards > ul > li > :last-child a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 /* ---------- Section dividers ---------- */

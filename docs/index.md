@@ -29,41 +29,45 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
 ## :rocket: Getting Started
 
+<!-- prettier-ignore-start -->
 <div class="grid cards" markdown>
 
 - :material-download-circle:{ .lg .middle } **Install**
 
-  ***
+    ***
 
-  Clone, build, and configure the milk framework.
+    Clone, build, and configure the milk framework.
 
-  [:octicons-arrow-right-24: Installation](install/compile.md)
+    [⮕ Installation](install/compile.md)
 
 - :material-layers-outline:{ .lg .middle } **Build Tiers**
 
-  ***
+    ***
 
-  Engine → Core → Full: compile only what you need.
+    Engine → Core → Full: compile only what you need.
 
-  [:octicons-arrow-right-24: Build tiers](install/build_tiers.md)
+    [⮕ Build tiers](install/build_tiers.md)
 
 - :material-console:{ .lg .middle } **CLI Overview**
 
-  ***
+    ***
 
-  Interactive shell, standalone executables, and scripting basics.
+    Interactive shell, standalone executables, and scripting basics.
 
-  [:octicons-arrow-right-24: CLI overview](cli/CLI_Overview.md)
+    [⮕ CLI overview](cli/CLI_Overview.md)
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 
-  ***
+    ***
 
-  Common issues with builds, SHM, FPS, and CLI.
+    Common issues with builds, SHM, FPS, and CLI.
 
-  [:octicons-arrow-right-24: FAQ & Troubleshooting](faq.md)
+    [⮕ FAQ & Troubleshooting](faq.md)
 
 </div>
+
+<!-- prettier-ignore-end -->
+<!-- note: prettier comments NEED a blank line just before -->
 
 ---
 
@@ -77,7 +81,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   Zero-copy shared memory tensors (`ImageStreamIO`).
 
-  [:octicons-arrow-right-24: Streams](streams.md)
+  [⮕ Streams](streams.md)
 
 - :material-tune-variant:{ .lg .middle } **FPS**
 
@@ -85,7 +89,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   Live parameter sync, state control, TUI dashboards.
 
-  [:octicons-arrow-right-24: FPS](fps.md)
+  [⮕ FPS](fps.md)
 
 - :material-heart-pulse:{ .lg .middle } **Process Info**
 
@@ -93,7 +97,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   Heartbeat telemetry, loop-rate profiling, health monitoring.
 
-  [:octicons-arrow-right-24: Process Info](procinfo.md)
+  [⮕ Process Info](procinfo.md)
 
 - :material-sitemap-outline:{ .lg .middle } **Architecture**
 
@@ -101,7 +105,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   System overview, layered design, data flow diagrams.
 
-  [:octicons-arrow-right-24: Architecture](architecture.md)
+  [⮕ Architecture](architecture.md)
 
 </div>
 
@@ -117,7 +121,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   Write your first compute module step by step.
 
-  [:octicons-arrow-right-24: Tutorial](developer/tutorial.md)
+  [⮕ Tutorial](developer/tutorial.md)
 
 - :material-code-braces:{ .lg .middle } **Coding Standards**
 
@@ -125,7 +129,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   C style, line length, includes, Kernel-Doc.
 
-  [:octicons-arrow-right-24: Coding standards](developer/coding_standards.md)
+  [⮕ Coding standards](developer/coding_standards.md)
 
 - :material-puzzle-outline:{ .lg .middle } **Adding Plugins**
 
@@ -133,7 +137,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   Build modules that compile alongside the core.
 
-  [:octicons-arrow-right-24: Plugins](developer/plugins.md)
+  [⮕ Plugins](developer/plugins.md)
 
 - :material-file-tree-outline:{ .lg .middle } **Template Code**
 
@@ -141,7 +145,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   Breakdown of `milk_module_example`.
 
-  [:octicons-arrow-right-24: Template source](developer/TemplateSourceCode.md)
+  [⮕ Template source](developer/TemplateSourceCode.md)
 
 </div>
 
@@ -157,7 +161,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   CPU pinning, RT scheduling, SIMD, BLAS, GPU.
 
-  [:octicons-arrow-right-24: Performance](performance.md)
+  [⮕ Performance](performance.md)
 
 - :material-chart-line:{ .lg .middle } **PGO & LTO**
 
@@ -165,7 +169,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   Profile-guided optimization + static link-time optimization for 15–40 % speedup.
 
-  [:octicons-arrow-right-24: PGO & LTO](pgo.md)
+  [⮕ PGO & LTO](pgo.md)
 
 - :material-bug-outline:{ .lg .middle } **Debugging**
 
@@ -173,7 +177,7 @@ tensors, enabling microsecond-latency data pipelines. The three pillars — **Im
 
   GDB, tmux logs, procinfo diagnostics, common failures.
 
-  [:octicons-arrow-right-24: Debugging](debugging.md)
+  [⮕ Debugging](debugging.md)
 
 </div>
 
