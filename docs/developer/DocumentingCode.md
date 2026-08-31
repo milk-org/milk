@@ -16,7 +16,7 @@ General instructional documentation, architectural overviews, and tutorials shou
 `docs/` folder in standard GitHub Flavored Markdown (`.md`).
 
 - Use MkDocs admonitions (`!!! note`, `!!! warning`, `!!! tip`) to call out important information.
-  Indent the body by four spaces.
+  Indent the body by four spaces. Due to an unresolved interaction with the `prettier` hook for markdown linting, prefix the admonition with `<!-- prettier-ignore -->`.
 - Use Markdown tables for data and parameter lists.
 - When referencing other files, use standard relative markdown links (e.g.,
   `[Coding Standards](coding_standards.md)`).
@@ -102,9 +102,10 @@ doxygen Doxyfile
 xdg-open docs/doxygen/html/index.html
 ```
 
+<!-- prettier-ignore -->
 !!! tip
-The CI workflow automatically deploys to GitHub Pages. Check the repository's Pages settings for the
-live URL.
+    The CI workflow automatically deploys to GitHub Pages. Check the repository's Pages settings for the
+    live URL.
 
 ---
 

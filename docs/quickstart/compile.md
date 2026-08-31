@@ -7,9 +7,10 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
 
 ## 1. Download and install milk
 
+<!-- prettier-ignore -->
 !!! warning
-This page describes installation of the core package milk. If you install an application package
-(cacao or coffee), replace "milk" with "cacao" in these instructions.
+    This page describes installation of the core package milk. If you install an application package
+    (cacao or coffee), replace "milk" with "cacao" in these instructions.
 
 For download, build commands, and CMake options, see the
 [Quick Start section in README.md](../../README.md#download).

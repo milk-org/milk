@@ -1,7 +1,8 @@
 # Working with git
 
+<!-- prettier-ignore -->
 !!! note
-This file: `docs/developer/WorkingWithGit.md`
+    This file: `docs/developer/WorkingWithGit.md`
 
 See also: [Documenting Code](DocumentingCode.md) · [Adding Plugins](plugins.md) ·
 [Compile Instructions](../quickstart/compile.md)
@@ -75,9 +76,10 @@ underlying local `.git` repository.
    git checkout -b feat/my-next-cli-task
    ```
 
+<!-- prettier-ignore -->
 !!! tip
-A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout
-and initialize the build directories for you.
+   A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout
+   and initialize the build directories for you.
 
 ## 4. Releasing a New Version
 
@@ -95,9 +97,10 @@ $ git tag -a vX.YY.ZZ -m "milk version X.YY.ZZ"
 $ git push origin main --tags
 ```
 
+<!-- prettier-ignore -->
 !!! note
-Modules that are shared between packages (e.g., `milk` and `cacao`) can have parallel version number
-histories. Any new version, regardless of which package it is associated with, includes all previous
+    Modules that are shared between packages (e.g., `milk` and `cacao`) can have parallel version number
+    histories. Any new version, regardless of which package it is associated with, includes all previous
 changes.
 
 ---

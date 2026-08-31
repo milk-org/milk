@@ -9,9 +9,10 @@ tags:
 The interactive CLI is provided by the `milk-cli` executable (typically aliased as `milk`). Source
 code is in `src/cli/CLIcore/`.
 
+<!-- prettier-ignore -->
 !!! note
-Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See
-[FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md).
+    Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See
+    [FPS Standalone Modes](../arch/FPS_Standalone_CMD_Modes.md).
 
 See also: [FPS](fps.md) · [Streams](streams.md) · [FAQ](../quickstart/faq.md) ·
 [Build Tiers](../quickstart/build_tiers.md)
@@ -167,8 +168,9 @@ milk-cli > synhl off             # disable
 milk-cli > synhl on              # enable (default)
 ```
 
+<!-- prettier-ignore -->
 !!! tip
-If you encounter rendering issues with syntax highlighting, disable it with `synhl off`.
+    If you encounter rendering issues with syntax highlighting, disable it with `synhl off`.
 
 ### Auto-Correction
 

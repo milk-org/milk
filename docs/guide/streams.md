@@ -170,9 +170,10 @@ images and streams as function arguments.
     );
     ```
 
+<!-- prettier-ignore -->
 !!! tip
-Functions should prefer passing parameters using `IMGID` pointers and accessing pixels through
-`img.im->array.F` or similar data type unions based on `img.im->md->datatype`.
+    Functions should prefer passing parameters using `IMGID` pointers and accessing pixels through
+    `img.im->array.F` or similar data type unions based on `img.im->md->datatype`.
 
 ## 6. Stream Process Trace (Ancestry)
 
