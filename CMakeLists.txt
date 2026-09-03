@@ -218,16 +218,16 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # ADD SOURCE DIRECTORIES
 # recursively add libraries to be compiled
-execute_process(COMMAND bash -c "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 2 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
+execute_process(COMMAND bash -c "find -L plugins -mindepth 2 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
                 OUTPUT_VARIABLE libextradir)
 string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 
 foreach(lsrcdir IN LISTS libsrcdir libextradir)
   string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
-  if (NOT ${lsrcdir} EQUAL "")
-    message("ADDING SUBDIR = ${lsrcdir}")
-    add_subdirectory ( ${lsrcdir} )
-  endif()
+    if ((NOT ${lsrcdir} EQUAL "") AND EXISTS "${PROJECT_SOURCE_DIR}/${lsrcdir}/CMakeLists.txt")
+	      message("ADDING SUBDIR = ${lsrcdir}")
+        add_subdirectory ( ${lsrcdir} )
+    endif()
 endforeach()
 
 # add example module
