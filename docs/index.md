@@ -1,22 +1,20 @@
+---
+render_macros: true
+---
+
 <div class="md-hero" markdown>
 
-# :telescope: milk
+# MILK & CACAO
 
-<p class="md-hero__tagline">
-High-performance real-time image processing framework for Adaptive Optics and scientific computing.
-Microsecond-latency pipelines through zero-copy shared memory.
-</p>
+<p class="md-hero__tagline" markdown="span">
+<b>CACAO - The Compute And Control for Adaptive Optics
+[:fontawesome-brands-github: cacao-org/cacao](https://github.com/cacao-org/cacao/tree/{{ repo_branch }})</b><br>
 
-<p class="md-hero__badges">
-<a href="https://github.com/milk-org/milk">
-<img alt="GitHub stars" src="https://img.shields.io/github/stars/milk-org/milk?style=flat-square&color=00bfa5">
-</a>
-<a href="https://github.com/milk-org/milk/blob/framework-dev/LICENSE">
-<img alt="License" src="https://img.shields.io/github/license/milk-org/milk?style=flat-square&color=0097a7">
-</a>
-<a href="https://github.com/milk-org/milk/actions">
-<img alt="Build" src="https://img.shields.io/github/actions/workflow/status/milk-org/milk/docs.yml?style=flat-square&label=docs&color=26a69a">
-</a>
+A high-performance, free, open-source, community-centric and R&D-oriented RTC suite for adaptive optics systems.<br><br>
+
+<b>MILK - Modular Image Library Toolkit
+[:fontawesome-brands-github: milk-org/milk](https://github.com/milk-org/milk/tree/{{ repo_branch }})</b><br>
+A core infrastructure for orchestrating real-time pipelines, between zero-copy shared memory tensors and a rich library of data processing units.
 </p>
 
 </div>

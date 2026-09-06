@@ -1,3 +1,7 @@
+---
+render_macros: true
+---
+
 # Installation
 
 See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
@@ -13,13 +17,15 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     (cacao or coffee), replace "milk" with "cacao" in these instructions.
 
 For download, build commands, and CMake options, see the
-[Quick Start section in README.md](../../README.md#download).
+[Quick Start section in README.md]({{ github_blob_url }}/README.md#download).
 
 For configuring minimal or partial builds (engine-only, core without cfitsio, etc.), see
 [Build Tiers](build_tiers.md).
 
 The sections below cover post-installation setup, dependencies, and optional configuration not
 covered in the README.
+
+---
 
 ## 2. Post-installation
 
@@ -30,6 +36,8 @@ $ echo "/usr/local/lib" > usrlocal.conf
 $ sudo mv usrlocal.conf /etc/ld.so.conf.d/
 $ sudo ldconfig -v
 ```
+
+---
 
 ## 3. tmpfs (optional)
 
@@ -130,8 +138,6 @@ $ sudo mount /milk/shm
     ```bash title="~/.bashrc"
     export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
     ```
-
----
 
 ??? danger "Running multiple versions side by side"
 

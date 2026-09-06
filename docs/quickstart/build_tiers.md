@@ -9,52 +9,19 @@
 
 ## Overview
 
-```text
-┌─────────────────────────────────────────────────────┐
-│  Full Build (default)                               │
-│  CLI (milk-cli) + plugins + example module          │
-│  Optional: readline, GSL, CUDA                      │
-│                                                     │
-│  ┌───────────────────────────────────────────────┐  │
-│  │  Core + FITS                                  │  │
-│  │  COREMOD_iofits                               │  │
-│  │  Requires: cfitsio                            │  │
-│  │                                               │  │
-│  │  ┌─────────────────────────────────────────┐  │  │
-│  │  │  Core                                   │  │  │
-│  │  │  COREMOD_arith, COREMOD_memory,         │  │  │
-│  │  │  COREMOD_tools                          │  │  │
-│  │  │                                         │  │  │
-│  │  │  ┌───────────────────────────────────┐  │  │  │
-│  │  │  │  Engine                           │  │  │  │
-│  │  │  │  ImageStreamIO, libprocessinfo,   │  │  │  │
-│  │  │  │  libfps, libmilkdata              │  │  │  │
-│  │  │  │  POSIX only: pthread, rt, m, dl   │  │  │  │
-│  │  │  └───────────────────────────────────┘  │  │  │
-│  │  └─────────────────────────────────────────┘  │  │
-│  └───────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-```
+The default build is the **Full build**, but without extra dependencies.
 
----
-
-## CMake Options
-
-| Option         | Default | Description                        |
-| -------------- | ------- | ---------------------------------- |
-| `USE_COREMODS` | ON      | Build core modules (COREMOD\_\*)   |
-| `USE_CFITSIO`  | ON      | Build FITS I/O (requires cfitsio)  |
-| `USE_CLI`      | ON      | Build interactive CLI (`milk-cli`) |
-
-<!-- prettier-ignore -->
-!!! important
-    **Dependency chain:**
-    - `USE_CLI=ON` automatically enables `USE_COREMODS`
-    - Plugins are only built when `USE_COREMODS=ON`
-    - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles remaining modules without cfitsio
-      linkage.
-
----
+| Build layer     | Code pulled in         | Dependencies                                                                                       |
+| --------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
+| **Full build**  | CLI (`milk-cli`)       | ncurses, readline                                                                                  |
+|                 | plugins                | Per-need (see [CMake system](../developer/dependency_system.md)) - CUDA, MAGMA, OpenBLAS, MKL, ... |
+| **Core + FITS** | COREMOD_iofits         | cfitsio                                                                                            |
+| **Core**        | COREMOD_memory         |                                                                                                    |
+|                 | COREMOD_arith          |                                                                                                    |
+|                 | COREMOD_tools          |                                                                                                    |
+| **Engine**      | milk engine libs       | All POSIX-only                                                                                     |
+|                 | ImageStreamIO          |                                                                                                    |
+|                 | libprocessinfo, libfps |                                                                                                    |
 
 ## Optional dependencies
 
@@ -72,8 +39,7 @@ Some optional dependencies are expected by MILK and enable additional features
 
 If you have the dependency `<X>` installed, you may request MILK to fetch it with `-DUSE_<X>=ON`.
 
-CMake will issue warnings when some features are disabled due to a missing dependency -- either
-because `-DUSE_<X>=OFF` was set, or because the library wasn't found by CMake.
+CMake will issue warnings when some features are disabled due to a missing dependency -- either because `-DUSE_<X>=OFF` was set, or because the library wasn't found by CMake.
 
 <!-- prettier-ignore -->
 !!! note
@@ -105,25 +71,32 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
----
+<!-- prettier-ignore-start -->
+!!! info
+    __Quirks on the build variables:__
+    - `USE_CLI=ON` automatically enables `USE_COREMODS=ON`
+    - Plugins are only built when `USE_COREMODS=ON`
+    - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles remaining modules without cfitsio linkage.
 
-## Behavior When cfitsio Is Disabled
+    ## Behavior When `cfitsio` Is Disabled
 
-When built with `USE_CFITSIO=OFF`, FITS-dependent code paths are compiled out via
-`#ifdef USE_CFITSIO` guards:
+!!! info
+    __when FITS capability is removed from -DUSE_CFITSIO=OFF__
+    FITS-dependent code paths are compiled out via `#ifdef USE_CFITSIO` guards:
 
-| Module           | Effect                                                                               |
-| ---------------- | ------------------------------------------------------------------------------------ |
-| `COREMOD_iofits` | Not built — `iofits.loadfits` / `iofits.saveFITS` unavailable                        |
-| `COREMOD_memory` | `logshmim`, `saveall`, `stream_pixmapdecode` print a warning instead of writing FITS |
-| `COREMOD_arith`  | No impact (never used cfitsio)                                                       |
-| `COREMOD_tools`  | No impact                                                                            |
+    | Module           | Effect                                                                               |
+    | ---------------- | ------------------------------------------------------------------------------------ |
+    | `COREMOD_iofits` | Not built — `iofits.loadfits` / `iofits.saveFITS` unavailable                        |
+    | `COREMOD_memory` | `logshmim`, `saveall`, `stream_pixmapdecode` print a warning instead of writing FITS |
+    | `COREMOD_arith`  | No impact (never used cfitsio)                                                       |
+    | `COREMOD_tools`  | No impact                                                                            |
 
-<!-- prettier-ignore -->
 !!! tip
     The engine and core tiers are ideal for embedded or real-time deployments where only
     shared-memory stream processing is needed and disk I/O to FITS files is unnecessary.
+<!-- prettier-ignore-end -->
 
 ---
 
 ← [Documentation Index](../index.md)
+,

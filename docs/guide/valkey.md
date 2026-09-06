@@ -1,3 +1,7 @@
+---
+render_macros: true
+---
+
 # Valkey Integration
 
 Real-time synchronization of FPS parameters across multiple hosts via a [Valkey](https://valkey.io/)
@@ -100,7 +104,7 @@ $ milk-fps-valkey [OPTIONS] [regex_pattern]
 For full architecture details, key schema, PubSub protocol, troubleshooting, and C API reference,
 see the comprehensive README:
 
-→ [`src/fpsvalkey/README.md`](../../src/fpsvalkey/README.md)
+→ [`src/fpsvalkey/README.md`]({{ github_blob_url }}/src/fpsvalkey/README.md)
 
 ---
 
@@ -116,7 +120,7 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
-See [`src/fpsvalkey/README.md`](../../src/fpsvalkey/README.md) for detailed build instructions and
+See [`src/fpsvalkey/README.md`]({{ github_blob_url }}/src/fpsvalkey/README.md) for detailed build instructions and
 prerequisites.
 
 ---

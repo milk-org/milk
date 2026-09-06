@@ -3,6 +3,7 @@ tags:
   - python
   - pymilk
   - api
+render_macros: true
 ---
 
 # Python API
@@ -176,7 +177,7 @@ $ cd python_module
 $ pip install .
 ```
 
-See [`python_module/README.md`](../../python_module/README.md) for usage details.
+See [`python_module/README.md`]({{ github_blob_url }}/python_module/README.md) for usage details.
 
 ---
 

@@ -33,7 +33,7 @@ theme:
     #- navigation.tabs
     #- navigation.tabs.sticky
     #- navigation.sections
-    - navigation.expand
+    #- navigation.expand
     - navigation.top
     - navigation.instant
     - navigation.instant.progress
@@ -66,6 +66,9 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
       type: timeago
+  - macros:
+      module_name: scripts/mkdocs_macros
+      render_by_default: false
   - minify:
       minify_html: true
 
@@ -113,6 +116,7 @@ nav:
     - Performance Tuning: operations/performance.md
     - PGO & LTO: operations/pgo.md
     - Debugging: operations/debugging.md
+  - Maintenance: maintenance/pm_operations.md
   - "What's New": whatsnew.md
   #- Tags Index: tags.md
 
