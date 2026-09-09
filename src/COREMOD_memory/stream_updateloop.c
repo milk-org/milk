@@ -337,13 +337,13 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
         if (IDsync != -1)
         {
             SyncSlice         = 1;
-            sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDsync], semtrig);
+            sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDsync], -1);
         }
     }
     else
     {
         IDsync            = image_ID(IDsync_name);
-        sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDsync], semtrig);
+        sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDsync], -1);
 
         for (cubeindex = 0; cubeindex < NBcubes; cubeindex++)
         {
@@ -602,7 +602,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char                
     kk1 = 0;
 
     int sync_semwaitindex;
-    sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDin], semtrig);
+    sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDsync], -1);
 
     while (1)
     {
