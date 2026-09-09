@@ -157,6 +157,12 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
 
     ID = image_ID(IDname);
 
+    if ((ID == -1) || (data.image[ID].md[0].shared == 0))
+    {
+        PRINT_WARNING("image %s [ID %ld] is not in shared memory - no semaphore info", IDname, ID);
+        return ID;
+    }
+
     printf("  cnt0 = %ld \n", data.image[ID].md->cnt0);
     printf("  cnt1 = %ld \n", data.image[ID].md->cnt1);
     printf("  NB SEMAPHORES = %3d \n", data.image[ID].md[0].sem);
@@ -198,6 +204,13 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
         ID = read_sharedmem_image(IDname);
     }
 
+    if ((ID == -1) || (data.image[ID].md[0].shared == 0))
+    {
+        PRINT_WARNING("image %s [ID %ld] is not in shared memory - cannot post semaphore", IDname,
+                      ID);
+        return ID;
+    }
+
     ImageStreamIO_sempost(&data.image[ID], index);
 
     return ID;
@@ -208,6 +221,12 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
  */
 imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index)
 {
+    if ((ID == -1) || (data.image[ID].md[0].shared == 0))
+    {
+        PRINT_WARNING("image [ID %ld] is not in shared memory - cannot post semaphore", ID);
+        return ID;
+    }
+
     ImageStreamIO_sempost(&data.image[ID], index);
 
     return ID;
@@ -218,6 +237,12 @@ imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index)
  */
 imageID COREMOD_MEMORY_image_set_sempost_excl_byID(imageID ID, long index)
 {
+    if ((ID == -1) || (data.image[ID].md[0].shared == 0))
+    {
+        PRINT_WARNING("image [ID %ld] is not in shared memory - cannot post semaphore (excl)", ID);
+        return ID;
+    }
+
     ImageStreamIO_sempost_excl(&data.image[ID], index);
 
     return ID;
@@ -235,6 +260,13 @@ imageID COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, lo
     if (ID == -1)
     {
         ID = read_sharedmem_image(IDname);
+    }
+
+    if ((ID == -1) || (data.image[ID].md[0].shared == 0))
+    {
+        PRINT_WARNING("image %s [ID %ld] is not in shared memory - cannot post semaphore loop",
+                      IDname, ID);
+        return ID;
     }
 
     ImageStreamIO_sempost_loop(&data.image[ID], index, dtus);
@@ -255,6 +287,13 @@ imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index)
         ID = read_sharedmem_image(IDname);
     }
 
+    if ((ID == -1) || (data.image[ID].md[0].shared == 0))
+    {
+        PRINT_WARNING("image %s [ID %ld] is not in shared memory - cannot wait semaphore", IDname,
+                      ID);
+        return ID;
+    }
+
     ImageStreamIO_semwait(&data.image[ID], index);
 
     return ID;
@@ -269,6 +308,13 @@ void *waitforsemID(void *ID)
 
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     tid = pthread_self();
+
+    if ((imageID) ID == -1 || data.image[(imageID) ID].md[0].shared == 0)
+    {
+        PRINT_WARNING("image [ID %ld] is not in shared memory - cannot wait semaphore",
+                      (imageID) ID);
+        pthread_exit(NULL);
+    }
 
     //    semval = ImageStreamIO_semvalue(data.image+(long) ID, ?sem_index);
     //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned int) tid, (long) ID, semval, data.image[(long) ID].name);
@@ -334,6 +380,13 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID)
     list_image_ID();
     for (i = 0; i < NB_ID; i++)
     {
+        if ((IDarray[i] == -1) || (data.image[IDarray[i]].md[0].shared == 0))
+        {
+            PRINT_WARNING("image [ID %ld] is not in shared memory - skipping semaphore flush",
+                          IDarray[i]);
+            continue;
+        }
+
         for (s = 0; s < data.image[IDarray[i]].md[0].sem; s++)
         {
             semval = ImageStreamIO_semvalue(data.image + IDarray[i], s);
@@ -360,6 +413,13 @@ imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)
     if (ID == -1)
     {
         ID = read_sharedmem_image(IDname);
+    }
+
+    if ((ID == -1) || (data.image[ID].md[0].shared == 0))
+    {
+        PRINT_WARNING("image %s [ID %ld] is not in shared memory - cannot flush semaphore", IDname,
+                      ID);
+        return ID;
     }
 
     ImageStreamIO_semflush(&data.image[ID], index);
