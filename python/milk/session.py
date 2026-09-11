@@ -4,6 +4,8 @@ import subprocess
 
 from pyMilk.interfacing.fps import FPS, FPSDoesntExistError
 
+from .infra.exceptions import FPSExecException
+
 
 def fpslist(exec_name: str):
     """
@@ -87,7 +89,9 @@ class ComputeSession:
         self, command: str, *args: str, wrap_in_shell: bool = False
     ) -> subprocess.Popen:
         proc = self._subprocess_start(command, *args, wrap_in_shell=wrap_in_shell)
-        proc.wait()
+        retcode = proc.wait()
+        if retcode != 0:
+            raise FPSExecException(proc)
         return proc
 
     def fpsinit(self, procinfo: bool = True) -> None:

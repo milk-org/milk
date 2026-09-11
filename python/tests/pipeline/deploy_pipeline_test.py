@@ -40,90 +40,104 @@ def cloned_pipeline(pipeline: Pipeline):
     shutil.rmtree(cloned.conf_folder)
 
 
-def test_make_pipeline(pipeline):
-    """
-    Test that we can instantiate the pipeline directly in the source test folder
-    """
-    pp: Pipeline = pipeline
-    assert pp.loop_number == 0
-    assert pp.long_name == "pipelinebasic"
+class TestManualPipeline:
 
-    assert pp.parent_folder.is_absolute()
-    # Check the pipeline is the one directly from this repos' test sources
-    # In the python/tests/resources folder
-    assert pp.parent_folder.is_relative_to(Path(__file__).parent.parent)
+    def test_make_pipeline(self, pipeline):
+        """
+        Test that we can instantiate the pipeline directly in the source test folder
+        """
+        pp: Pipeline = pipeline
+        assert pp.loop_number == 0
+        assert pp.long_name == "pipelinebasic"
 
+        assert pp.parent_folder.is_absolute()
+        # Check the pipeline is the one directly from this repos' test sources
+        # In the python/tests/resources folder
+        assert pp.parent_folder.is_relative_to(Path(__file__).parent.parent)
 
-def test_pipeline_var_substitution(pipeline):
-    pp: Pipeline = pipeline
-    assert pp.loop_number == 0
-    assert pp.long_name == "pipelinebasic"
+    def test_pipeline_var_substitution(self, pipeline):
+        pp: Pipeline = pipeline
+        assert pp.loop_number == 0
+        assert pp.long_name == "pipelinebasic"
 
-    assert (
-        pp.session_configs["delay0"]["procinfo"]["triggersname"]
-        == pp.session_configs["delay0"]["in_name"]
-    )
-    assert (
-        pp.session_configs["delay1"]["procinfo"]["triggersname"]
-        == pp.session_configs["delay0"]["out_name"]
-    )
-    assert (
-        pp.session_configs["delay1"]["in_name"]
-        == pp.session_configs["delay0"]["out_name"]
-    )
+        assert (
+            pp.session_configs["delay0"]["procinfo"]["triggersname"]
+            == pp.session_configs["delay0"]["in_name"]
+        )
+        assert (
+            pp.session_configs["delay1"]["procinfo"]["triggersname"]
+            == pp.session_configs["delay0"]["out_name"]
+        )
+        assert (
+            pp.session_configs["delay1"]["in_name"]
+            == pp.session_configs["delay0"]["out_name"]
+        )
 
+    def test_make_cloned_pipeline(self, cloned_pipeline):
+        """
+        Clone the pipeline to a working folder
+        """
+        pp: Pipeline = cloned_pipeline
+        assert pp.loop_number == 0
+        assert pp.long_name == "pipelinebasic"
 
-def test_make_cloned_pipeline(cloned_pipeline):
-    """
-    Clone the pipeline to a working folder
-    """
-    pp: Pipeline = cloned_pipeline
-    assert pp.loop_number == 0
-    assert pp.long_name == "pipelinebasic"
+        assert pp.parent_folder.is_absolute()
+        assert pp.parent_folder.is_relative_to(os.getcwd())
+        if ".nox" in pp.parent_folder.parts:
+            assert "tmp" in pp.parent_folder.parts
+        else:
+            assert pp.parent_folder.is_relative_to("/tmp")
 
-    assert pp.parent_folder.is_absolute()
-    assert pp.parent_folder.is_relative_to(os.getcwd())
-    if ".nox" in pp.parent_folder.parts:
-        assert "tmp" in pp.parent_folder.parts
-    else:
-        assert pp.parent_folder.is_relative_to("/tmp")
+    def test_deploy_fps_call_by_class(self, cloned_pipeline: Pipeline):
+        pp = cloned_pipeline
 
+        from milk.infra.deploy_tasks import DeployFPS, InitialFolderSetup
+        from milk.infra.task_models import NoCanTaskError
 
-def test_deploy_fps_call_by_class(cloned_pipeline: Pipeline):
-    pp = cloned_pipeline
+        # Now forbidden because it MUST have a rootdir to perform a DeployFPS
+        with pytest.raises(NoCanTaskError):
+            pp.task_do(DeployFPS)
+        pp.task_do(InitialFolderSetup).task_do(DeployFPS)
 
-    from milk.infra.deploy_tasks import DeployFPS, InitialFolderSetup
-    from milk.infra.task_models import NoCanTaskError
+        for sname in pp.sessions:
+            sesh = pp.get_session(sname)
+            assert sesh.fps is not None
+            assert sesh.fps.is_valid()
 
-    # Now forbidden because it MUST have a rootdir to perform a DeployFPS
-    with pytest.raises(NoCanTaskError):
+            assert sesh.fps.name == pp.get_session_abs_name(sname)
+
+            sesh.fps.destroy()
+
+    def test_deploy_fps_call_by_instance(self, cloned_pipeline: Pipeline):
+        pp = cloned_pipeline
+
+        from milk.infra.deploy_tasks import (
+            DeployFPS,
+            InitialFolderSetup,
+            StartConfProcesses,
+        )
+
+        pp.task_do(InitialFolderSetup)
         pp.task_do(DeployFPS)
-    pp.task_do(InitialFolderSetup).task_do(DeployFPS)
+        pp.task_do(StartConfProcesses)
 
-    for sname in pp.sessions:
-        sesh = pp.get_session(sname)
-        assert sesh.fps is not None
-        assert sesh.fps.is_valid()
-
-        assert sesh.fps.name == pp.get_session_abs_name(sname)
-
-        sesh.fps.destroy()
+        for sname in pp.sessions:  # TODO this is bad naming urgh
+            sesh = pp.get_session(sname)
+            assert sesh.fps
+            assert sesh.fps.conf_isrunning()
 
 
-def test_deploy_fps_call_by_instance(cloned_pipeline: Pipeline):
-    pp = cloned_pipeline
+from milk.infra import mains_pipeline_mgmt as mgmt
+from milk.infra import exceptions as exc
 
-    from milk.infra.deploy_tasks import (
-        DeployFPS,
-        InitialFolderSetup,
-        StartConfProcesses,
-    )
 
-    pp.task_do(InitialFolderSetup)
-    pp.task_do(DeployFPS)
-    pp.task_do(StartConfProcesses)
+class TestMilkPipes:
 
-    for sname in pp.sessions:  # TODO this is bad naming urgh
-        sesh = pp.get_session(sname)
-        assert sesh.fps
-        assert sesh.fps.conf_isrunning()
+    def test_no_pipelines(self):
+        # No folder
+        with pytest.raises(exc.PipelineConfFolderNotFoundException):
+            mgmt.milk_pipes_function(_positional=("yolo",))
+        # No conf.toml
+        os.mkdir("yolo-conf")
+        with pytest.raises(exc.PipelineTomlNotFoundException):
+            mgmt.milk_pipes_function(_positional=("yolo",))

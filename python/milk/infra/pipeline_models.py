@@ -29,18 +29,40 @@ class ProcessInfoData(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    RTprio: int | None = None  # >= 0, < 90
-    cset: str | None = None
-    taskset: str | None = None
-    NBthread: int | None = None
-    enabled: bool | None = None
-    loopcntMax: int | None = None  # >= -1
-    triggermode: int | None = None
-    triggersname: str | None = None
-    MeasureTiming: bool | None = None
-    semindexrequested: int | None = None
-    triggerdelay: float | None = None
-    triggertimeout: float | None = None
+    # fmt: off
+    RTprio            : int | None   = None  # >= 0, < 90
+    cset              : str | None   = None
+    taskset           : str | None   = None
+    NBthread          : int | None   = None
+    enabled           : bool | None  = None
+    loopcntMax        : int | None   = None  # >= -1
+    triggermode       : int | None   = None
+    triggersname      : str | None   = None
+    MeasureTiming     : bool | None  = None
+    semindexrequested : int | None   = None
+    triggerdelay      : float | None = None
+    triggertimeout    : float | None = None
+    # fmt: on
+
+
+class DataLoadEntryModel(BaseModel):
+    """A single dataloads entry: file to load and target stream name."""
+
+    model_config = {"extra": "forbid"}
+
+    source: str
+    target: str
+
+    @classmethod
+    def from_str(cls, raw: str) -> DataLoadEntryModel:
+        """Parse a "source -- target" formatted dataloads entry."""
+        parts = raw.split("--")
+        if len(parts) != 2:
+            raise ValueError(
+                f"dataloads entry {raw!r} must be formatted as 'source -- target'"
+            )
+        source, target = (p.strip() for p in parts)
+        return cls(source=source, target=target)
 
 
 class PipelineConfigModel(BaseModel):
@@ -52,7 +74,18 @@ class PipelineConfigModel(BaseModel):
     name: str
     loop_number: int
     sessions: dict[str, str]
+    dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
     session_configs_: dict[str, dict] = Field(default_factory=dict)
+
+    @field_validator("dataloads", mode="before")
+    @classmethod
+    def _parse_dataloads(cls, v):
+        if not isinstance(v, list):
+            return v
+        return [
+            DataLoadEntryModel.from_str(item) if isinstance(item, str) else item
+            for item in v
+        ]
 
     @model_validator(mode="after")
     def _check_session_configs_exist(self) -> PipelineConfigModel:
@@ -89,5 +122,8 @@ class PipelineConfig:
         self.sessions: dict[str, str] = {}
         # per-session config table, e.g. [delay0]
         self.session_configs: dict[str, dict] = {}
+
+        # [dataloads] array: list of source/target entries
+        self.dataloads: list[DataLoadEntryModel] = []
 
         # Really I want schemas and dynamic parsing...

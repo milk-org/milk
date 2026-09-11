@@ -6,15 +6,19 @@ requires = ["setuptools>=58", "wheel", 'cmake']
 authors = [
   {name = "Vincent Deo", email = "vdeo@naoj.org"},
 ]
-description = "Milk test package"
+description = "MILK+CACAO python package"
 name = "milk"
 version = "1.0"
 requires-python = ">=3.11"
-dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12"]
+dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12", "click>=8.1"]
 
 #[project.urls]
 #"Homepage" = "http://www.github.com/milk-org/pyMilk"
 
+## ENTRYPOINTS
+
+[project.scripts]
+milk-pipes = "milk.infra.mains_pipeline_mgmt:milk_pipes"
 
 [tool.setuptools.packages.find]
 include=["milk*"]
