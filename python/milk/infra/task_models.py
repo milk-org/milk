@@ -17,6 +17,7 @@ if typ.TYPE_CHECKING:
 class SimpleTask(abc.ABC):  # This can be a great wrapper for AORUN
 
     pipeline: Pipeline
+    failure_reason: str = "no failure."
 
     def __init__(self, pipeline: Pipeline) -> None:
         self.pipeline = pipeline
@@ -65,7 +66,12 @@ class ReversibleTask(SimpleTask):
         ...
 
 
-class NoCanTaskError(Exception): ...
+class NoCanTaskError(Exception):
+    def __init__(self, task: SimpleTask) -> None:
+        message = (
+            f"Task {type(task).__name__} cannot be executed:\n    {task.failure_reason}"
+        )
+        super().__init__(message)
 
 
 class NoSuccessTaskError(Exception): ...

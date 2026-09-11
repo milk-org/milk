@@ -28,8 +28,11 @@ from .session import ComputeSession
 from .infra.toml_manipulation import load_pipeline_config
 from .infra.task_models import SimpleTask, NoCanTaskError, NoSuccessTaskError
 
+import os
 import subprocess
 from pathlib import Path
+
+from .infra import exceptions as exc
 
 
 class Pipeline:
@@ -43,10 +46,15 @@ class Pipeline:
         self.long_name = long_name
 
         self.conf_folder = self.parent_folder / f"{self.long_name}-conf"
-        self.config = load_pipeline_config(self.conf_folder)
+        if not os.path.isdir(self.conf_folder):
+            raise exc.PipelineConfFolderNotFoundException(
+                f"Pipeline from {self.conf_folder}: folder does not exist."
+            )
+        self.config = load_pipeline_config(self.conf_folder)  # Raises if not existing
 
         self.sessions = self.config.sessions
         self.session_configs = self.config.session_configs
+        self.dataloads = self.config.dataloads
 
         self.short_name = self.config.name
         self.loop_number = self.config.loop_number
@@ -85,7 +93,7 @@ class Pipeline:
         if task.can():
             task.forward()
         else:
-            raise NoCanTaskError(f"Task {task} cannot be executed")
+            raise NoCanTaskError(task)
 
         if not task.success():
             # TODO if partial success is tolerated ?

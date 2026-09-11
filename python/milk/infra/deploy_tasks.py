@@ -37,6 +37,9 @@ from .task_models import SimpleTask
 from ..session import ComputeSession
 
 from .toml_manipulation import denest_toml_dicts
+from .exceptions import FPSExecException
+
+import subprocess
 
 
 class InitialFolderSetup(SimpleTask):
@@ -109,13 +112,57 @@ class TestConfig(SimpleTask):
     ...
 
 
+class LoadDataFiles(SimpleTask):
+    """
+    Loads every [dataloads] entry source file (from the deployed rootdir/data)
+    into target SHM streams.
+    """
+
+    def can(self) -> bool:
+        p = self.pipeline
+        if not os.path.isdir(p.root_folder):
+            self.failure_reason = f"{p.root_folder} does not exist."
+            return False
+        for entry in p.dataloads:
+            source_path = p.root_folder / "data" / entry.source
+            if not os.path.isfile(source_path):
+                self.failure_reason = f"{source_path} does not exist."
+                return False
+        return True
+
+    def success(self) -> bool:
+        # TODO this is pretty poor checking.
+        shm_dir = os.environ["MILK_SHM_DIR"]
+        for entry in self.pipeline.dataloads:
+            if not os.path.isfile(f"{shm_dir}/{entry.target}.im.shm"):
+                return False
+        return True
+
+    def forward(self) -> None:
+        p = self.pipeline
+        if len(p.dataloads) > 0:
+            from astropy.io import fits
+            from pyMilk.interfacing.shm import SHM
+
+        for entry in p.dataloads:
+            source_path = p.root_folder / "data" / entry.source
+            # TODO milk-FITS2shm should absolutely not be a fpsexec lol
+            # TODO TODO write docs on the capabilities of milk-pipes and the default pipelines (aosim, dmcomb, aoloop)
+            import numpy as np
+
+            s = SHM(entry.target, fits.getdata(str(source_path)), symcode=0)
+            s.close()
+
+
 class DeployFPS(SimpleTask):
 
     def can(self) -> bool:
         p = self.pipeline
         if not os.path.isdir(p.root_folder):
+            self.failure_reason = f"{p.root_folder} does not exist."
             return False
         if not os.path.isdir(p.run_folder):
+            self.failure_reason = f"{p.run_folder} does not exist."
             return False
         return True
 
@@ -125,7 +172,6 @@ class DeployFPS(SimpleTask):
             session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
             if not session.fps or not session.fps.is_valid():
                 return False
-
         return True
 
     def forward(self) -> None:
@@ -147,26 +193,37 @@ class DeployFPS(SimpleTask):
             denested_fps_config = denest_toml_dicts(session_fps_config)
 
             for fp_name, fp_value in denested_fps_config.items():
-                session.fps[fp_name] = fp_value
+                session.fps[fp_name] = fp_value  # type: ignore[arg-type]
 
 
 class StartConfProcesses(SimpleTask):
     TIMEOUT_ALL = 5.0
+
+    # TODO if the conf processes exist and hog the tmux, we won't have a restart.
 
     def can(self) -> bool:
         p = self.pipeline
 
         # Folder consistency: rootdir/rundir must have been laid out already
         if not os.path.isdir(p.root_folder):
+            self.failure_reason = f"{p.root_folder} does not exist."
             return False
         if not os.path.isdir(p.run_folder):
+            self.failure_reason = f"{p.run_folder} does not exist."
             return False
 
         # Every session's FPS must exist and be a well-formed deployment
         for session_name, exec in p.sessions.items():
             session = ComputeSession(exec, session_name + f"_{p.loop_number:03d}")
-            if session.fps is None or not session.fps.is_valid():
+            if session.fps is None:
+                self.failure_reason = (
+                    f'FPS for {session_name + f"_{p.loop_number:03d}"} not found.'
+                )
                 return False
+            if not session.fps.is_valid():
+                self.failure_reason = (
+                    f'FPS for {session_name + f"_{p.loop_number:03d}"} is invalid.'
+                )
 
         # TODO get & check the rootdir for all FPSs
 
