@@ -126,9 +126,11 @@ double *functionparameter_GetParamPtr_FLOAT64(FPS *fps, const char *paramname);
 // TIMESPEC
 // =====================================================================
 
-float functionparameter_GetParamValue_TIMESPEC(FPS *fps, const char *paramname);
+struct timespec functionparameter_GetParamValue_TIMESPEC(FPS *fps, const char *paramname);
 
-int functionparameter_SetParamValue_TIMESPEC(FPS *fps, const char *paramname, float value);
+int functionparameter_SetParamValue_TIMESPEC(FPS            *fps,
+                                             const char     *paramname,
+                                             struct timespec value);
 
 struct timespec *functionparameter_GetParamPtr_TIMESPEC(FPS *fps, const char *paramname);
 
