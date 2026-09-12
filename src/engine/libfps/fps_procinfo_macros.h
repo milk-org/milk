@@ -181,6 +181,7 @@ typedef struct
     CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 0;                                            \
     if (dcfpsptr != NULL)                                                                          \
     {                                                                                              \
+        fps_to_modulevars_resync_bindings(dcfpsptr, dcfpsbindings, dcfpsnbindings);                \
         CLIcmddata.cmdsettings->flags |= (dcfpsptr->cmdset.flags & CLICMDFLAG_PROCINFO);           \
         CLIcmddata.cmdsettings->RT_priority         = dcfpsptr->cmdset.RT_priority;                \
         CLIcmddata.cmdsettings->procinfo_loopcntMax = dcfpsptr->cmdset.procinfo_loopcntMax;        \
@@ -250,31 +251,35 @@ typedef struct
     }
 
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                                   \
-    while (processloopOK == 1)                                                      \
-    {                                                                               \
-        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                    \
-        {                                                                           \
-            processloopOK = processinfo_loopstep(processinfo);                      \
-            processinfo_waitoninputstream(processinfo);                             \
-            if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT && \
-                processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)      \
-            {                                                                       \
-                continue;                                                           \
-            }                                                                       \
-            processinfo_exec_start(processinfo);                                    \
-        }                                                                           \
-        else                                                                        \
-        {                                                                           \
-            processloopOK = 0;                                                      \
-        }                                                                           \
-        int processcompstatus = 1;                                                  \
-        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                    \
-        {                                                                           \
-            processcompstatus = processinfo_compute_status(processinfo);            \
-        }                                                                           \
-        if (processcompstatus == 1)                                                 \
-        {
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                                           \
+    while (processloopOK == 1)                                                              \
+    {                                                                                       \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                            \
+        {                                                                                   \
+            processloopOK = processinfo_loopstep(processinfo);                              \
+            processinfo_waitoninputstream(processinfo);                                     \
+            if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT &&         \
+                processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)              \
+            {                                                                               \
+                continue;                                                                   \
+            }                                                                               \
+            processinfo_exec_start(processinfo);                                            \
+        }                                                                                   \
+        else                                                                                \
+        {                                                                                   \
+            processloopOK = 0;                                                              \
+        }                                                                                   \
+        int processcompstatus = 1;                                                          \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                            \
+        {                                                                                   \
+            processcompstatus = processinfo_compute_status(processinfo);                    \
+        }                                                                                   \
+        if (processcompstatus == 1)                                                         \
+        {                                                                                   \
+            if (dcfpsptr != NULL)                                                           \
+            {                                                                               \
+                fps_to_modulevars_resync_bindings(dcfpsptr, dcfpsbindings, dcfpsnbindings); \
+            }
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT      \
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART

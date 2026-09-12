@@ -91,53 +91,6 @@ static void set_fps_value_from_string(FPS *fps, long pindex, uint64_t type, cons
 
 
 /**
- * @brief Copy a single FPS parameter value back into
- *        the module-local C variable via the binding.
- */
-static void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b)
-{
-    if (b->type == FPTYPE_FLOAT64)
-    {
-        *((double *) b->ptr) = fps->parray[pindex].val.f64[0];
-    }
-    else if (b->type == FPTYPE_FLOAT32)
-    {
-        *((float *) b->ptr) = fps->parray[pindex].val.f32[0];
-    }
-    else if (b->type == FPTYPE_INT64)
-    {
-        *((int64_t *) b->ptr) = fps->parray[pindex].val.i64[0];
-    }
-    else if (b->type == FPTYPE_UINT64)
-    {
-        *((uint64_t *) b->ptr) = fps->parray[pindex].val.ui64[0];
-    }
-    else if (b->type == FPTYPE_INT32 || b->type == FPTYPE_ONOFF)
-    {
-        *((int32_t *) b->ptr) = fps->parray[pindex].val.i32[0];
-    }
-    else if (b->type == FPTYPE_UINT32)
-    {
-        *((uint32_t *) b->ptr) = fps->parray[pindex].val.ui32[0];
-    }
-    else if (b->type == FPTYPE_PID)
-    {
-        *((pid_t *) b->ptr) = fps->parray[pindex].val.pid[0];
-    }
-    else if (b->type == FPTYPE_TIMESPEC)
-    {
-        *((struct timespec *) b->ptr) = fps->parray[pindex].val.ts[0];
-    }
-    else if (FPTYPE_IS_STRING(b->type))
-    {
-        strncpy((char *) b->ptr, fps->parray[pindex].val.string[0],
-                FUNCTION_PARAMETER_STRMAXLEN - 1);
-        ((char *) b->ptr)[FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-    }
-}
-
-
-/**
  * @brief Sync CLI arguments into FPS and copy FPS values
  *        back into module-local C variables.
  *

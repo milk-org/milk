@@ -43,4 +43,24 @@ void fps_cli_set_standalone_args(int argc, char **argv);
 errno_t fps_process_cli_and_sync(FPS *fps, CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int nb_b);
 
 
+/**
+ * @brief Copy a single FPS parameter value back into
+ *        the module-local C variable via the binding.
+ *
+ * Defined in params/fps_modulevars_resync.c (base milkfps library, no CLI dependency).
+ */
+void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b);
+
+
+/**
+ * @brief Refresh module-local C variables from FPS
+ *
+ * @param fps       Connected FPS
+ * @param bindings  Parameter binding array
+ * @param nb_b      Number of bindings
+ * @return          RETURN_SUCCESS on success
+ */
+errno_t fps_to_modulevars_resync_bindings(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
+
+
 #endif /* FPS_CLI_SYNC_H */

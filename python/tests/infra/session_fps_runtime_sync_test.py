@@ -28,7 +28,7 @@ FPS_TEST_PARAMS = [
     ("p_uint64",      "FPTYPE_UINT64",            101112,                 55),
     ("p_float32",     "FPTYPE_FLOAT32",           3.14,                   1.5),
     ("p_float64",     "FPTYPE_FLOAT64",           2.718,                  9.81),
-    ("p_onoff",       "FPTYPE_ONOFF",             0,                      1),
+    ("p_onoff",       "FPTYPE_ONOFF",             False,                  True),
     ("p_pid",         "FPTYPE_PID",               1000,                   2000),
     ("p_timespec",    "FPTYPE_TIMESPEC",          1709424000.123456789,   123456789.987654321),
     ("p_streamname",  "FPTYPE_STREAMNAME",        "cam01",                "cam02"),
@@ -74,6 +74,30 @@ def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
 
     last_pinfo_cnt = pinfo.loopcnt
     for param_name, _, base_value, target_value in FPS_TEST_PARAMS:
+        value = fps[param_name]
+        if isinstance(value, int):
+            assert value == base_value
+        elif isinstance(value, float):
+            assert value == pytest.approx(base_value)
+        elif isinstance(value, str):
+            assert value == base_value
+        else:
+            assert False
+
+        fps[param_name] = target_value
+        busywait_until_incr(pinfo.loopcnt)
+        value = fps[param_name]
+        if isinstance(value, int):
+            assert value == target_value
+        elif isinstance(value, float):
+            assert value == pytest.approx(target_value)
+        elif isinstance(value, str):
+            assert value == target_value
+        else:
+            assert False
+
+        fps[param_name] = base_value
+        busywait_until_incr(pinfo.loopcnt)
         value = fps[param_name]
         if isinstance(value, int):
             assert value == base_value

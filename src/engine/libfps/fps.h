@@ -480,14 +480,11 @@ static inline void X_HELP_PRINT_V2_LOOP(FPS_CLI_BINDING            bindings[],
 #    define MILK_BUILD_BINNAME "unknown"
 #endif
 
-#define _FPS_MAIN_STANDALONE_V2_IMPL(APP_INFO, PARAMS_MACRO, COMPUTE_FN, CONFCHECK_FN)     \
-    int main(int argc, char *argv[])                                                       \
-    {                                                                                      \
-        FPS_CLI_BINDING bindings[]  = { PARAMS_MACRO(FPS_X_BINDING) };                     \
-        int             nb_bindings = sizeof(bindings) / sizeof(FPS_CLI_BINDING);          \
-        CLICMDARGDEF    farg[]      = { PARAMS_MACRO(FPS_X_FARG) };                        \
-        return main_impl(argc, argv, &APP_INFO, bindings, nb_bindings, farg, (COMPUTE_FN), \
-                         (CONFCHECK_FN));                                                  \
+#define _FPS_MAIN_STANDALONE_V2_IMPL(APP_INFO, PARAMS_MACRO, COMPUTE_FN, CONFCHECK_FN)        \
+    int main(int argc, char *argv[])                                                          \
+    {                                                                                         \
+        return main_impl(argc, argv, &APP_INFO, my_bindings, nb_bindings, farg, (COMPUTE_FN), \
+                         (CONFCHECK_FN));                                                     \
     }
 
 #ifdef MILK_NO_CLI // The guard is necessary due to USE_CLI=ON conflict on milkdata.h

@@ -545,11 +545,15 @@ int fps_generic_run(const char      *fps_name,
     strncpy(FPS_name, fps_name, STRINGMAXLEN_FPS_NAME - 1);
     FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
 
-    dcfpsptr = &fps;
+    dcfpsptr       = &fps;
+    dcfpsbindings  = bindings;
+    dcfpsnbindings = nb_b;
 
     compute_fn();
 
-    dcfpsptr = NULL;
+    dcfpsptr       = NULL;
+    dcfpsbindings  = NULL;
+    dcfpsnbindings = 0;
     if (fps_name[0] != '_')
     {
         fps_disconnect(&fps);
