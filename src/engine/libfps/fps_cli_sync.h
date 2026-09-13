@@ -53,14 +53,32 @@ void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b);
 
 
 /**
- * @brief Refresh module-local C variables from FPS
+ * @brief Copy the module-local C variable value back into
+ *        the FPS parameter slot via the binding, if it
+ *        actually differs from the current FPS value.
+ *
+ * @return 1 if the local value differed and was written
+ *         back, 0 if it already matched (nothing done).
+ *
+ * Defined in params/fps_modulevars_resync.c (base milkfps library, no CLI dependency).
+ */
+int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b);
+
+
+/**
+ * @brief Bidirectionally resync module-local C variables
+ *        and FPS shared memory, for every binding.
+ *
+ * Pushes each local value to FPS via sync_local_to_fps(); if that reports no local change, falls back to pulling
+ * the FPS value into local via sync_fps_to_local() when its generation counter has advanced. A local change
+ * always wins over a same-iteration external write.
  *
  * @param fps       Connected FPS
  * @param bindings  Parameter binding array
  * @param nb_b      Number of bindings
  * @return          RETURN_SUCCESS on success
  */
-errno_t fps_to_modulevars_resync_bindings(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
+errno_t fps_modulevars_bilateral_bindings_resync(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
 
 
 #endif /* FPS_CLI_SYNC_H */
