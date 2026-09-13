@@ -8,7 +8,7 @@
  *          variables via FPS_CLI_BINDING
  */
 
-#include "fps_cli_sync.h"
+#include "fps_modulevars_resync.h"
 #include "fps_GetParamIndex.h"
 
 

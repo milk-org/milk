@@ -47,9 +47,8 @@
 
 #include "milkDebugTools.h"
 
-#define PI 3.14159265358979323846264338328
-
-#define SZ_CLICOREVARRAY 1000
+#include "milk_types.h"
+#include "fps_procinfo_macros.h"
 
 /* =====================================
  * Stubs for CLI-only declarations
@@ -78,52 +77,6 @@ static uint8_t TYPESIZE[32] __attribute__((unused));
 
 /* TUI stubs moved to fps_standalone_data.c */
 
-
-/* =====================================
- * String length constants
- * ===================================== */
-
-#define STRINGMAXLEN_CLISTARTUPFILENAME 200
-#define STRINGMAXLEN_CLIPROMPT 200
-
-#define CFITSEXIT                    \
-    printf("Abnormal termination, "  \
-           "File \"%s\", line %d\n", \
-           __FILE__, __LINE__);      \
-    exit(0)
-
-#ifdef DEBUG
-#    define nmalloc(f, type, n)                         \
-        f = (type *) calloc(n, sizeof(type));           \
-        if (f == NULL)                                  \
-        {                                               \
-            printf("ERROR: \"" #f "\" alloc failed\n"); \
-            exit(0);                                    \
-        }                                               \
-        else                                            \
-        {                                               \
-            printf("\nMALLOC: \"" #f "\" allocated\n"); \
-        }
-#    define nfree(f) \
-        free(f);     \
-        printf("\nMALLOC: \"" #f "\" freed\n");
-#else
-#    define nmalloc(f, type, n)                         \
-        f = (type *) calloc(n, sizeof(type));           \
-        if (f == NULL)                                  \
-        {                                               \
-            printf("ERROR: \"" #f "\" alloc failed\n"); \
-            exit(0);                                    \
-        }
-#    define nfree(f) free(f);
-#endif
-
-#define TEST_ALLOC(f)                               \
-    if (f == NULL)                                  \
-    {                                               \
-        printf("ERROR: \"" #f "\" alloc failed\n"); \
-        exit(0);                                    \
-    }
 
 #define NB_ARG_MAX 100
 
@@ -269,8 +222,5 @@ static inline uint32_t RegisterCLIcommand(const char *k __attribute__((unused)),
 {
     return 0;
 }
-
-#include "milk_types.h"
-#include "fps_procinfo_macros.h"
 
 #endif /* CLICORE_STANDALONE_H */

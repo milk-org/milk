@@ -50,11 +50,7 @@
 #    include "CLIcore_modules.h"
 
 #    include "milkDebugTools.h"
-
-#    define PI 3.14159265358979323846264338328
-
-/// Size of array CLICOREVARRAY
-#    define SZ_CLICOREVARRAY 1000
+#    include "milk_types.h"
 
 // Initialize CLI
 errno_t CLI_startup();
@@ -137,51 +133,6 @@ static inline errno_t TUI_exit()
 }
 #    endif
 
-
-#    define STRINGMAXLEN_CLISTARTUPFILENAME 200
-
-#    define STRINGMAXLEN_CLIPROMPT 200
-
-
-/* #define DEBUG */
-#    define CFITSEXIT                                                                        \
-        printf("Program abnormally terminated, File \"%s\", line %d\n", __FILE__, __LINE__); \
-        exit(0)
-
-#    ifdef DEBUG
-#        define nmalloc(f, type, n)                                      \
-            f = (type *) calloc(n, sizeof(type));                        \
-            if (f == NULL)                                               \
-            {                                                            \
-                printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
-                exit(0);                                                 \
-            }                                                            \
-            else                                                         \
-            {                                                            \
-                printf("\nMALLOC: \"" #f "\" allocated\n");              \
-            }
-#        define nfree(f) \
-            free(f);     \
-            printf("\nMALLOC: \"" #f "\" freed\n");
-#    else
-#        define nmalloc(f, type, n)                                      \
-            f = (type *) calloc(n, sizeof(type));                        \
-            if (f == NULL)                                               \
-            {                                                            \
-                printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
-                exit(0);                                                 \
-            }
-#        define nfree(f) free(f);
-#    endif
-
-#    define TEST_ALLOC(f)                                            \
-        if (f == NULL)                                               \
-        {                                                            \
-            printf("ERROR: pointer \"" #f "\" allocation failed\n"); \
-            exit(0);                                                 \
-        }
-
-#    define NB_ARG_MAX 100
 
 //
 //  ************ lib module init **********************************

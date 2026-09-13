@@ -9,8 +9,11 @@
 
 #include <getopt.h>
 
-#include "fps_disconnect.h"
-#include "fps_GetParamIndex.h"
+#include "milk_help.h"
+
+#include "fps.h"
+#include "fps_types.h"
+#include "fps_internal.h"
 
 /* Helper to check if string starts with prefix */
 static int starts_with(const char *pre, const char *str)

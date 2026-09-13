@@ -10,9 +10,10 @@
 #ifndef FPS_CLI_SYNC_H
 #define FPS_CLI_SYNC_H
 
-#include "fps.h"
+#include "fps_types.h"
 #include "fps_cli_binding.h"
 #include "libmilkdata/milkdata_clicmd.h"
+#include "fps_modulevars_resync.h"
 
 /**
  * @brief Set standalone argc/argv for CLI sync.
