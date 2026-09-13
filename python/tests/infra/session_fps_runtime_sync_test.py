@@ -62,7 +62,7 @@ def test_fpssynctest(fixt_fpsinit_pinfo_fpstest):
 
     pinfo = ProcessInfo()
     pinfo.link(
-        f"{os.environ['MILK_PROC_DIR']}/proc.fpssynctest.{fps.fps.md().runpid}.shm"
+        f"{os.environ['MILK_PROC_DIR']}/proc.fpssynctest.{fps.fps.md().runpid:06d}.shm"
     )
 
     time.sleep(0.1)

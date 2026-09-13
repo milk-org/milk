@@ -34,9 +34,13 @@ void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     {
         *((uint64_t *) b->ptr) = fps->parray[pindex].val.ui64[0];
     }
-    else if (b->type == FPTYPE_INT32 || b->type == FPTYPE_ONOFF)
+    else if (b->type == FPTYPE_INT32)
     {
         *((int32_t *) b->ptr) = fps->parray[pindex].val.i32[0];
+    }
+    else if (b->type == FPTYPE_ONOFF)
+    {
+        *((int32_t *) b->ptr) = (fps->parray[pindex].fpflag & FPFLAG_ONOFF) ? 1 : 0;
     }
     else if (b->type == FPTYPE_UINT32)
     {
@@ -52,9 +56,9 @@ void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     }
     else if (FPTYPE_IS_STRING(b->type))
     {
-        strncpy((char *) b->ptr, fps->parray[pindex].val.string[0],
-                FUNCTION_PARAMETER_STRMAXLEN - 1);
-        ((char *) b->ptr)[FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
+        int _l = FUNCTION_PARAMETER_STRMAXLEN;
+        strncpy((char *) b->ptr, fps->parray[pindex].val.string[0], _l - 1);
+        ((char *) b->ptr)[_l - 1] = '\0';
     }
 }
 
@@ -111,12 +115,30 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
             changed                         = 1;
         }
     }
-    else if (b->type == FPTYPE_INT32 || b->type == FPTYPE_ONOFF)
+    else if (b->type == FPTYPE_INT32)
     {
         int32_t newval = *((int32_t *) b->ptr);
         if (fps->parray[pindex].val.i32[0] != newval)
         {
             fps->parray[pindex].val.i32[0] = newval;
+            changed                        = 1;
+        }
+    }
+    else if (b->type == FPTYPE_ONOFF)
+    {
+        int32_t newval = *((int32_t *) b->ptr) ? 1 : 0;
+        int32_t curval = (fps->parray[pindex].fpflag & FPFLAG_ONOFF) ? 1 : 0;
+        if (curval != newval)
+        {
+            if (newval)
+            {
+                fps->parray[pindex].fpflag |= FPFLAG_ONOFF;
+            }
+            else
+            {
+                fps->parray[pindex].fpflag &= ~FPFLAG_ONOFF;
+            }
+            fps->parray[pindex].val.i64[0] = newval;
             changed                        = 1;
         }
     }
@@ -150,13 +172,12 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     }
     else if (FPTYPE_IS_STRING(b->type))
     {
-        if (strncmp(fps->parray[pindex].val.string[0], (char *) b->ptr,
-                    FUNCTION_PARAMETER_STRMAXLEN - 1) != 0)
+        int _l = FUNCTION_PARAMETER_STRMAXLEN;
+        if (strncmp(fps->parray[pindex].val.string[0], (char *) b->ptr, _l - 1) != 0)
         {
-            strncpy(fps->parray[pindex].val.string[0], (char *) b->ptr,
-                    FUNCTION_PARAMETER_STRMAXLEN - 1);
-            fps->parray[pindex].val.string[0][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-            changed                                                             = 1;
+            strncpy(fps->parray[pindex].val.string[0], (char *) b->ptr, _l - 1);
+            fps->parray[pindex].val.string[0][_l - 1] = '\0';
+            changed                                   = 1;
         }
     }
 
@@ -169,43 +190,49 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     return changed;
 }
 
-
 /**
- * @brief Refresh module-local C variables from FPS shared
- *        memory, cheaply, for every binding.
- *
- * Resolves+caches each binding's
- * parameter index on first use, then copies the current
- * FPS value into the local variable via sync_fps_to_local()
- *
- * @param fps       Connected FPS
- * @param bindings  Parameter binding array
- * @param nb_b      Number of bindings
- * @return          RETURN_SUCCESS on success
+ * @brief Refresh module-local C variables from FPS, resolving
+ *        and caching each binding's parameter index on first use
  */
-errno_t fps_modulevars_bilateral_bindings_resync(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
+errno_t fpsresync_fps_to_modvar(FPS             *fps,
+                                FPS_CLI_BINDING *bindings,
+                                int              nb_b,
+                                int              force_cache_build)
 {
     for (int ii = 0; ii < nb_b; ii++)
     {
         FPS_CLI_BINDING *b = &bindings[ii];
 
-        if (b->_fps_pindex == -2)
+        if (b->_fps_pindex == UINT64_MAX - 2 || force_cache_build)
         {
-            b->_fps_pindex = functionparameter_GetParamIndex(fps, b->fpskeyword);
+            b->_fps_pindex   = functionparameter_GetParamIndex(fps, b->fpskeyword);
+            b->_fps_last_cnt = fps->parray[b->_fps_pindex].value_cnt;
         }
-        else if (b->_fps_pindex == -1)
+        else if (b->_fps_pindex == UINT64_MAX - 1)
         {
             continue; // Not resolved once, won't try to resolve again.
         }
 
-        int64_t cnt = (int64_t) fps->parray[b->_fps_pindex].value_cnt;
+        sync_fps_to_local(fps, b->_fps_pindex, b);
+        b->_fps_last_cnt = (int64_t) fps->parray[b->_fps_pindex].value_cnt;
+    }
 
-        int local_changed = sync_local_to_fps(fps, b->_fps_pindex, b);
+    return RETURN_SUCCESS;
+}
 
-        if (!local_changed && (cnt != b->_fps_last_cnt))
-        {
-            sync_fps_to_local(fps, b->_fps_pindex, b);
-        }
+
+/**
+ * @brief Push module-local C variable values into FPS
+ *        parameter slots, for every binding.
+ */
+errno_t fpsresync_modvar_to_fps(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
+{
+    for (int ii = 0; ii < nb_b; ii++)
+    {
+        FPS_CLI_BINDING *b = &bindings[ii];
+        sync_local_to_fps(fps, b->_fps_pindex, b);
+        // Must update the counter; if there was a concurrent upgrade it would otherwise supersede
+        // at the next iteration
         b->_fps_last_cnt = (int64_t) fps->parray[b->_fps_pindex].value_cnt;
     }
 

@@ -542,6 +542,8 @@ int functionparameter_SetParamValue_TIMESPEC(FPS *fps, const char *paramname, st
     {
         return EXIT_FAILURE;
     }
+    fps->parray[fpsi].cnt0++;
+    fps->parray[fpsi].value_cnt++;
     fps->parray[fpsi].val.ts[0] = value;
 
     return EXIT_SUCCESS;
@@ -829,7 +831,8 @@ int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char 
 
             if (functionparameter_SetParamValue_TIMESPEC(fps, kw, tspec) == EXIT_SUCCESS)
             {
-                functionparameter_outlog("SETVAL", "%s FLOAT64 %lf", kwf, tspec);
+                functionparameter_outlog("SETVAL", "%s FLOAT64 %lf", kwf,
+                                         (double) tspec.tv_sec + 1e-9 * tspec.tv_nsec);
                 return 0;
             }
         }

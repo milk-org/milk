@@ -66,19 +66,42 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b);
 
 
 /**
- * @brief Bidirectionally resync module-local C variables
- *        and FPS shared memory, for every binding.
+ * @brief Refresh module-local C variables from FPS.
  *
- * Pushes each local value to FPS via sync_local_to_fps(); if that reports no local change, falls back to pulling
- * the FPS value into local via sync_fps_to_local() when its generation counter has advanced. A local change
- * always wins over a same-iteration external write.
+ * Resolves and caches each binding's parameter index on
+ * first use, then copies the current FPS value into the
+ * local variable via sync_fps_to_local().
+ *
+ * @param fps       Connected FPS
+ * @param bindings  Parameter binding array
+ * @param nb_b      Number of bindings
+ * @param force_cache_build  Force pindex cache rebuild
+ * @return          RETURN_SUCCESS on success
+ *
+ * Defined in params/fps_modulevars_resync.c
+ */
+errno_t fpsresync_fps_to_modvar(FPS             *fps,
+                                FPS_CLI_BINDING *bindings,
+                                int              nb_b,
+                                int              force_cache_build);
+
+
+/**
+ * @brief Push module-local C variable values into FPS
+ *        parameter slots for every binding.
+ *
+ * Calls sync_local_to_fps() for each binding, then updates
+ * the binding's cached generation counter so a concurrent
+ * external update does not get superseded on the next call.
  *
  * @param fps       Connected FPS
  * @param bindings  Parameter binding array
  * @param nb_b      Number of bindings
  * @return          RETURN_SUCCESS on success
+ *
+ * Defined in params/fps_modulevars_resync.c
  */
-errno_t fps_modulevars_bilateral_bindings_resync(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
+errno_t fpsresync_modvar_to_fps(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
 
 
 #endif /* FPS_CLI_SYNC_H */
