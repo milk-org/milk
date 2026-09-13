@@ -78,15 +78,30 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-// Generate standard FPS integration functions
-INSERT_STD_CLIfunction
+// Standard FPS integration function
+static errno_t CLIfunction(void)
+{
+    errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
+    if (retval == RETURN_SUCCESS)
+    {
+        STD_FARG_LINKfunction return compute_function();
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_HELP)
+    {
+        return RETURN_SUCCESS;
+    }
+    if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    {
+        return RETURN_SUCCESS;
+    }
+    return retval;
+}
 
-    /**
+/**
  * @brief Registers the 'writer03' command with the Milk framework.
  * Called by the module initializer in example03fps_module.c.
  */
-    errno_t
-    CLIADDCMD_writer03()
+errno_t CLIADDCMD_writer03()
 {
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC

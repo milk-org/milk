@@ -151,23 +151,12 @@ typedef struct
     }
 
 
-/* INSERT_STD_* macros -- stub versions
+/* INSERT_STD_CLIREGISTERFUNC -- stub version
  * for standalone compilation. The real
- * versions are in CLIcore_utils.h and
- * reference CLI functions. */
+ * version is in CLIcore_utils.h and
+ * references CLI functions. */
 
-#define INSERT_STD_CLIfunction                               \
-    static errno_t __attribute__((unused)) CLIfunction(void) \
-    {                                                        \
-        (void) farg;                                         \
-        (void) CLIcmddata;                                   \
-        return RETURN_SUCCESS;                               \
-    }
-
-
-#define INSERT_STD_CLIREGISTERFUNC \
-    {                              \
-    }
+#define INSERT_STD_CLIREGISTERFUNC
 
 /* Process info macros -- these are used by
  * standalone code so we provide the real
