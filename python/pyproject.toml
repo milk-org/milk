@@ -9,7 +9,8 @@ authors = [
 description = "Milk test package"
 name = "milk"
 version = "1.0"
-#dependencies = []
+requires-python = ">=3.11"
+dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12"]
 
 #[project.urls]
 #"Homepage" = "http://www.github.com/milk-org/pyMilk"
@@ -23,7 +24,7 @@ include=["milk*"]
 testpaths = ["tests"]
 addopts = [
     "--import-mode=importlib",
-    "--ignore=mains/*",
+    "--ignore=tests/mains",
 ]
 
 [tool.coverage.run]

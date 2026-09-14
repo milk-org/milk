@@ -67,9 +67,14 @@ def tests_run_coverage(session: nox.Session):
         tmp_dir + "/milk-1.03.00/lib:" + session.env.get("LD_LIBRARY_PATH", "")
     )
 
-    session.run("pytest", str(PROJECT_ROOT) + "/python")
+    # TODO Struggling to get this to work.
+    # session.env["COVERAGE_RCFILE"] = str(PROJECT_ROOT / "python" / "pyproject.toml")
+    # session.run("coverage", "run", "-m", "pytest", str(PROJECT_ROOT / "python" / "tests"))
+    # session.run(*(f"coverage html -d {str(PROJECT_ROOT)}/cov_py --data-file=.coverage").split())
 
-    os.makedirs(str(PROJECT_ROOT) + "/gcov_html", exist_ok=True)
+    session.run("pytest", str(PROJECT_ROOT / "python"))
+
+    os.makedirs(str(PROJECT_ROOT) + "/cov_c", exist_ok=True)
     session.run(
         "gcovr",
         # "--verbose",
@@ -79,6 +84,6 @@ def tests_run_coverage(session: nox.Session):
         PROJECT_ROOT,
         "--html-details",
         "-o",
-        str(PROJECT_ROOT) + "/gcov_html/c_coverage.html",
+        str(PROJECT_ROOT) + "/cov_c/index.html",
         os.path.abspath("./build"),
     )

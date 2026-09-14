@@ -43,4 +43,65 @@ void fps_cli_set_standalone_args(int argc, char **argv);
 errno_t fps_process_cli_and_sync(FPS *fps, CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int nb_b);
 
 
+/**
+ * @brief Copy a single FPS parameter value back into
+ *        the module-local C variable via the binding.
+ *
+ * Defined in params/fps_modulevars_resync.c (base milkfps library, no CLI dependency).
+ */
+void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b);
+
+
+/**
+ * @brief Copy the module-local C variable value back into
+ *        the FPS parameter slot via the binding, if it
+ *        actually differs from the current FPS value.
+ *
+ * @return 1 if the local value differed and was written
+ *         back, 0 if it already matched (nothing done).
+ *
+ * Defined in params/fps_modulevars_resync.c (base milkfps library, no CLI dependency).
+ */
+int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b);
+
+
+/**
+ * @brief Refresh module-local C variables from FPS.
+ *
+ * Resolves and caches each binding's parameter index on
+ * first use, then copies the current FPS value into the
+ * local variable via sync_fps_to_local().
+ *
+ * @param fps       Connected FPS
+ * @param bindings  Parameter binding array
+ * @param nb_b      Number of bindings
+ * @param force_cache_build  Force pindex cache rebuild
+ * @return          RETURN_SUCCESS on success
+ *
+ * Defined in params/fps_modulevars_resync.c
+ */
+errno_t fpsresync_fps_to_modvar(FPS             *fps,
+                                FPS_CLI_BINDING *bindings,
+                                int              nb_b,
+                                int              force_cache_build);
+
+
+/**
+ * @brief Push module-local C variable values into FPS
+ *        parameter slots for every binding.
+ *
+ * Calls sync_local_to_fps() for each binding, then updates
+ * the binding's cached generation counter so a concurrent
+ * external update does not get superseded on the next call.
+ *
+ * @param fps       Connected FPS
+ * @param bindings  Parameter binding array
+ * @param nb_b      Number of bindings
+ * @return          RETURN_SUCCESS on success
+ *
+ * Defined in params/fps_modulevars_resync.c
+ */
+errno_t fpsresync_modvar_to_fps(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
+
+
 #endif /* FPS_CLI_SYNC_H */

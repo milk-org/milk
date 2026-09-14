@@ -47,6 +47,8 @@ typedef struct FPS_APP_INFO_
  * @param is_primary  1 if primary CLI argument, 0 otherwise
  * @param fpflag      Standard FPS flags
  * @param descr       Human-readable description
+ * @param _fps_pindex   Cache: parameter index in fps->parray. -2 unresolved, -1 not found, >=0 resolved.
+ * @param _fps_last_cnt Cache: last parray[].value_cnt seen by fps_resync_bindings(). -1 = never synced.
  */
 typedef struct FPS_CLI_BINDING_
 {
@@ -56,6 +58,8 @@ typedef struct FPS_CLI_BINDING_
     int         is_primary;
     uint64_t    fpflag;
     const char *descr;
+    long        _fps_pindex;
+    int64_t     _fps_last_cnt;
 } FPS_CLI_BINDING;
 
 
@@ -69,8 +73,12 @@ typedef struct FPS_CLI_BINDING_
  *       MY_PARAMS(FPS_X_BINDING)
  *   };
  */
+/*
+ * Trailing -2, -1 seed _fps_pindex/_fps_last_cnt explicitly.
+ * 0, 0 init would break the caching.
+ */
 #define FPS_X_BINDING(kw, ptr, type, is_primary, flag, desc) \
-    { kw, ptr, type, is_primary, flag, desc },
+    { kw, ptr, type, is_primary, flag, desc, -2, -1 },
 
 /**
  * @brief Expand a PARAMS(X) macro into a CLICMDARGDEF array.

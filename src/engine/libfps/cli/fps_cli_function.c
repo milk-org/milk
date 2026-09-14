@@ -132,6 +132,8 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
     fps_last_used_cmdkey[sizeof(fps_last_used_cmdkey) - 1] = '\0';
 
     dcfpsptr       = &fps;
+    dcfpsbindings  = bindings;
+    dcfpsnbindings = nb_b;
     errno_t retval = CLI_checkarg_array(farg, cmdata->nbarg);
 
     if (retval == RETURN_SUCCESS || retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
@@ -170,7 +172,9 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
         retval = RETURN_SUCCESS;
     }
 
-    dcfpsptr = NULL;
+    dcfpsptr       = NULL;
+    dcfpsbindings  = NULL;
+    dcfpsnbindings = 0;
     if (dcfpsname[0] != '_')
     {
         fps_disconnect(&fps);

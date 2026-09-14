@@ -249,7 +249,7 @@ typedef struct
         double          f64[4];
         float           f32[4];
         pid_t           pid[2];
-        struct timespec ts[2];
+        struct timespec ts[4];
         char            string[2][FUNCTION_PARAMETER_STRMAXLEN];
     } val;
 

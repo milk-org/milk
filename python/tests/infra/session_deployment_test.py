@@ -10,68 +10,20 @@ import numpy as np
 
 from milk.session import ComputeSession
 
+from .session_fixtures import fixt_fpsinit_factory
 
-class StreamDelayComputeSession(ComputeSession):
+
+class StreamDelayCU(ComputeSession):
+
     def __init__(self, fpsname: str = "streamdelay") -> None:
         super().__init__("milk-fpsexec-mem-streamdelay", fpsname)
 
 
-def func_fpsinit(pinfo: bool = True) -> StreamDelayComputeSession:
-    # As fixture
-    session = StreamDelayComputeSession()
-    assert session.fps is None
-
-    session.fpsinit(pinfo)
-    assert session.fps
-
-    if pinfo:
-        assert session.has_procinfo is True
-        assert "procinfo.enabled" in session.fps
-        assert session.fps["procinfo.enabled"]
-    else:
-        assert session.has_procinfo is False
-        assert not "procinfo.enabled" in session.fps
-
-    # Configure
-    # default imin, imout, delaysec = 0.1 ms, naive = OFF, timebuffsize = 1000
-
-    return session
+fixt_fpsinit_pinfo_streamdelay = fixt_fpsinit_factory(StreamDelayCU, pinfo=True)
 
 
-def tp(call):
-    try:
-        call()
-    except:
-        pass
-
-
-def func_session_cleanup(s: ComputeSession):
-    tp(s.runstop)
-    tp(s.confstop)
-    if s.fps:
-        tp(s.fps.tmux_stop)
-        tp(s.fps.destroy)
-
-
-@pytest.fixture
-def fixt_fpsinit_pinfo():
-    s = func_fpsinit(True)
-    yield s
-    func_session_cleanup(s)
-
-
-@pytest.fixture
-def fixt_fpsinit_nopinfo():
-    s = func_fpsinit(False)
-    yield s
-    func_session_cleanup(s)
-
-
-# ADD AFTER THIS LINE
-
-
-def test_fps_lifecycle(fixt_fpsinit_pinfo):
-    session: StreamDelayComputeSession = fixt_fpsinit_pinfo
+def test_fps_lifecycle(fixt_fpsinit_pinfo_streamdelay):
+    session: StreamDelayCU = fixt_fpsinit_pinfo_streamdelay
     fps = session.fps
     assert fps
 

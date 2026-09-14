@@ -309,7 +309,9 @@ void fps_loop_override_delay(FPS *fps, double delay_sec)
                                           PROCESSINFO_TRIGGERMODE_DELAY);
     printf("  .procinfo.triggermode = %d (DELAY)\n", PROCESSINFO_TRIGGERMODE_DELAY);
 
-    functionparameter_SetParamValue_TIMESPEC(fps, ".procinfo.triggerdelay", (float) delay_sec);
+    struct timespec tspec = { .tv_sec = delay_sec };
+    tspec.tv_nsec         = (long) ((delay_sec - tspec.tv_sec) * 1e9);
+    functionparameter_SetParamValue_TIMESPEC(fps, ".procinfo.triggerdelay", tspec);
     printf("  .procinfo.triggerdelay = %.6f sec\n", delay_sec);
 }
 
@@ -543,11 +545,15 @@ int fps_generic_run(const char      *fps_name,
     strncpy(FPS_name, fps_name, STRINGMAXLEN_FPS_NAME - 1);
     FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
 
-    dcfpsptr = &fps;
+    dcfpsptr       = &fps;
+    dcfpsbindings  = bindings;
+    dcfpsnbindings = nb_b;
 
     compute_fn();
 
-    dcfpsptr = NULL;
+    dcfpsptr       = NULL;
+    dcfpsbindings  = NULL;
+    dcfpsnbindings = 0;
     if (fps_name[0] != '_')
     {
         fps_disconnect(&fps);

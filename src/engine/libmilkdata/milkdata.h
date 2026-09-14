@@ -28,6 +28,7 @@
 
 #include "libfps/fps_types.h"
 struct PROCESSINFO;
+struct FPS_CLI_BINDING_;
 
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
@@ -167,6 +168,11 @@ typedef struct
     char     FPS_name[STRINGMAXLEN_FPS_NAME];
     long     FPS_TIMESTAMP;
     uint32_t FPS_CMDCODE;
+
+    /* Module-var bindings for the FPS instance currently running compute_fn(), set by
+    fps_generic_run()/fps_generic_CLIfunction() from their own bindings/nb_b parameters */
+    struct FPS_CLI_BINDING_ *fpsbindings;
+    int                      fpsnbindings;
 
     /* Images */
     long NB_MAX_IMAGE;

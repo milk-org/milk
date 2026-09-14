@@ -58,7 +58,8 @@ set(SOURCEFILES
     io/fps_local_store.c
     imgid_slice.c
     cli/fps_cli_init.c
-    cli/fps_cli_function_registry.c)
+    cli/fps_cli_function_registry.c
+    params/fps_modulevars_resync.c)
 
 # Core library (no TUI/ncurses dependency)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
