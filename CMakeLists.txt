@@ -74,7 +74,7 @@ find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 # Force colors with ninja
-option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
+option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU only)." FALSE)
 if (${FORCE_COLORED_OUTPUT})
   add_compile_options (-fdiagnostics-color=always) # This is for gcc/g++, alt option for clang.
 endif ()

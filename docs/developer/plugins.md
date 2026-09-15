@@ -26,7 +26,7 @@ Because plugins are decoupled, it's very common for them to be their own isolate
 
 ### Standalone Executables Relation to Core
 
-When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`), it is its own executable that interacts with the core engine (encompasses it and communicates via shared memory). The plugin's calculation logic should never depend on internal GUI/CLI tooloing or code headers (from `CLIcore`).
+When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`), it is its own executable that interacts with the core engine (encompasses it and communicates via shared memory). The plugin's calculation logic should never depend on internal GUI/CLI tooling or code headers (from `CLIcore`).
 
 ## 2. Setting up CMakeLists.txt
 

@@ -56,7 +56,7 @@ install(TARGETS myplugin
 install(FILES myplugin.h DESTINATION include)
 ```
 
-Note: Plugins are dynamically discovered by the root CMakeLists.txt (using `find -L plugins -mindepth 2 -maxdepth 2 -type d` for folders than contain a `CMakeLists.txt`).
+Note: Plugins are dynamically discovered by the root CMakeLists.txt (using `find -L plugins -mindepth 2 -maxdepth 2 -type d` for folders that contain a `CMakeLists.txt`).
 **There is NO need to edit any parent CMakeLists.txt to register the plugin.**
 
 ## 3. Module Registration (C Code)

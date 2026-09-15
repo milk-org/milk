@@ -158,8 +158,7 @@ Standalones are specifically designed to execute one compute unit in isolation w
 
 ## 5. Dependency Architecture
 
-<details markdown="1">
-<summary><b>Header Hierarchy</b></summary>
+### Header Hierarchy
 
 Compute unit source files use conditional includes to support both CLI and standalone builds:
 
@@ -183,16 +182,36 @@ Compute unit source files use conditional includes to support both CLI and stand
 
 </details>
 
-<details markdown="1">
-<summary><b>Library Link Patterns</b></summary>
+### Library Link Patterns
 
-Each module builds a single regular library, shared by `milk-cli` and standalone executables alike. `MILK_NO_CLI`, applied to the standalone executable's own target (not to the library), redirects `CLIcore.h` to the lightweight `CLIcore_standalone.h` stub for that executable's translation units — the libraries themselves are already written to avoid
-CLI-only symbols on the compute path, so no separate build variant is needed:
+Each module builds a single regular library, shared by `milk-cli` and standalone executables alike. `MILK_NO_CLI`, applied to the `fpsexec` target, redirects `CLIcore.h` to the lightweight `CLIcore_standalone.h` stub for that executable's translation units.
 
-| Consumer                 | Links      | CLI registration                                 |
-| ------------------------ | ---------- | ------------------------------------------------ |
-| `milk-cli`, module `.so` | `.so`      | Present                                          |
-| `fpsexec` standalones    | Same `.so` | Compiled out via `MILK_NO_CLI` on the executable |
+??? note "Details"
+    For CLI execution of a CU:
+    ```text
+    # CLI linkage
+    milk-cli / milk-script
+        └-> Custom loading of <module>.so\
+            └-> RegisterModule() [from CLIcore.c]
+                └-> init_module_CLI() [from <module>.so, via MILK_MODULE passing the function pointer]
+            └-> RegisterCLICommand() [from CLIcore.c]
+            └-> CLIfunction() [from <module>.so]\
+                └-> Prepares the calling context
+                └-> compute_function(), via a function pointer.
+    ```
+    And for `fpsexec` execution:
+    ```text
+    milk-fpsexec-<myfunc>
+        └-> Automatic loading of <module>.so as a dependency.
+        |   # init_module_CLI(), RegisterCLICommand() etc. may exist (-DUSE_CLI=ON) but are NOT invoked.
+        └-> Invokes `main()`
+            └-> Invokes `main_impl()`
+                └-> prepares a statically defined calling context.
+                └-> compute_function() of <myfunc>, via a function pointer.
+    ```
+
+
+
 
 When `USE_STATIC_LTO=ON`, standalone executables instead link `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of the same libraries, letting GCC's LTO inline and optimize across library boundaries. See [PGO & LTO](pgo.md) for details.
 
