@@ -3,24 +3,53 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file image_keyword_list.c
- * @brief Image keyword list module
+ * @file    image_keyword_list.c
+ * @brief   Image keyword list module
+ *
+ * Uses FPS V2 framework.
  */
 
 #ifdef MILK_NO_CLI
 #    include "CLIcore_standalone.h"
-#    include "COREMOD_memory/COREMOD_memory.h"
 #else
 #    include "CLIcore.h"
 #endif
+#include "fps.h"
 
-static char *inimname;
+#include "COREMOD_memory/COREMOD_memory.h"
 
-static CLICMDARGDEF farg[] = { { CLIARG_IMG, ".in_name", "input image", "im1",
-                                 (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), (void **) &inimname,
-                                 NULL } };
 
-static CLICMDDATA CLIcmddata = { "imkwlist", "list image keywords", CLICMD_FIELDS_NOFPS };
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name         = "imkwlist",
+    .cmdkey           = "imkwlist",
+    .description      = "list image keywords",
+    .description_long = "List all FITS-style keywords attached to an image stream, showing name, "
+                        "typed value, and comment for each entry."
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char inname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", inname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 errno_t image_keywords_list(IMGID img)
 {
@@ -66,16 +95,47 @@ errno_t image_keywords_list(IMGID img)
     return RETURN_SUCCESS;
 }
 
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
-    image_keywords_list(imgid_make_from_name(inimname));
+    DEBUG_TRACE_FSTART();
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START image_keywords_list(imgid_make_from_name(inname));
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_CLIfunction
 
-    errno_t
-    CLIADDCMD_COREMOD_memory__image_keyword_list()
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
 {
-    INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS;
+    return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
+                                        compute_function);
 }
+
+errno_t CLIADDCMD_COREMOD_memory__image_keyword_list()
+{
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+
+    int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+
+    return RETURN_SUCCESS;
+}
+#endif

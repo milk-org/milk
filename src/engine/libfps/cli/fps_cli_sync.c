@@ -17,7 +17,12 @@
 #    include "CLIcore.h"
 #else
 #endif
+#include "fps_types.h"
+#include "fps_internal.h"
 #include "fps_GetParamIndex.h"
+
+#include "fps_cli_binding.h"
+#include "fps_modulevars_resync.h"
 
 
 /* Standalone argc/argv captured by main() */

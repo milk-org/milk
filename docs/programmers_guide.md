@@ -151,15 +151,14 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 ### Standalone Executables vs Core Modules
 
 `milk` provides both an interactive prompt (`milk-cli`) and independent executable programs known as standalone executables (`milk-fpsexec-*` and `cacao-fpsexec-*`).
-Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment, linking securely to only the `_compute` variants of libraries. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
+Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
 
 !!! tip
 **Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to integrate custom plugins into the build system.
 
 ## 5. Dependency Architecture
 
-<details markdown="1">
-<summary><b>Header Hierarchy</b></summary>
+### Header Hierarchy
 
 Compute unit source files use conditional includes to support both CLI and standalone builds:
 
@@ -183,46 +182,48 @@ Compute unit source files use conditional includes to support both CLI and stand
 
 </details>
 
-<details markdown="1">
-<summary><b>Library Link Patterns — Dual Architecture</b></summary>
+### Library Link Patterns
 
-The build system maintains two library variants
-for each module:
+Each module builds a single regular library, shared by `milk-cli` and standalone executables alike. `MILK_NO_CLI`, applied to the `fpsexec` target, redirects `CLIcore.h` to the lightweight `CLIcore_standalone.h` stub for that executable's translation units.
 
-| Variant      | Suffix        | Compiled with | Linked by                |
-| ------------ | ------------- | ------------- | ------------------------ |
-| Full         | `.so`         | _(default)_   | `milk-cli`, module `.so` |
-| Compute-only | `_compute.so` | `MILK_NO_CLI` | `fpsexec` standalones    |
+??? note "Details"
+    For CLI execution of a CU:
+    ```text
+    # CLI linkage
+    milk-cli / milk-script
+        └-> Custom loading of <module>.so\
+            └-> RegisterModule() [from CLIcore.c]
+                └-> init_module_CLI() [from <module>.so, via MILK_MODULE passing the function pointer]
+            └-> RegisterCLICommand() [from CLIcore.c]
+            └-> CLIfunction() [from <module>.so]\
+                └-> Prepares the calling context
+                └-> compute_function(), via a function pointer.
+    ```
+    And for `fpsexec` execution:
+    ```text
+    milk-fpsexec-<myfunc>
+        └-> Automatic loading of <module>.so as a dependency.
+        |   # init_module_CLI(), RegisterCLICommand() etc. may exist (-DUSE_CLI=ON) but are NOT invoked.
+        └-> Invokes `main()`
+            └-> Invokes `main_impl()`
+                └-> prepares a statically defined calling context.
+                └-> compute_function() of <myfunc>, via a function pointer.
+    ```
 
-`_compute` variants contain pure computation code
-with no CLI registration. This keeps standalones
-free of CLIcore dependencies.
 
-When `USE_STATIC_LTO=ON`, a third variant is
-built — static archives (`.a`) of the same
-compute-only code:
 
-| Variant         | File          | Purpose                    |
-| --------------- | ------------- | -------------------------- |
-| Dynamic compute | `_compute.so` | Default fpsexec link       |
-| Static compute  | `_compute.a`  | LTO-optimized fpsexec link |
 
-With static archives, GCC's LTO can inline and
-optimize across all library boundaries. See
-[PGO & LTO](pgo.md) for details.
+When `USE_STATIC_LTO=ON`, standalone executables instead link `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of the same libraries, letting GCC's LTO inline and optimize across library boundaries. See [PGO & LTO](pgo.md) for details.
 
 **CMake standalone helpers:**
 
-| CMake function                   | Links                                                    | Use for                                    |
-| -------------------------------- | -------------------------------------------------------- | ------------------------------------------ |
-| `add_milk_standalone()`          | COREMOD \_compute libs, milkfps, milkdata, ImageStreamIO | milk-fpsexec-\* executables                |
-| `add_cacao_standalone()`         | Same as above                                            | cacao-fpsexec-\* (no plugin deps)          |
-| `add_cacao_standalone_plugins()` | Above + selected plugin \_compute libs                   | cacao-fpsexec-\* that use plugin functions |
+| CMake function                   | Links                                          | Use for                                    |
+| -------------------------------- | ---------------------------------------------- | ------------------------------------------ |
+| `add_milk_standalone()`          | COREMOD libs, milkfps, milkdata, ImageStreamIO | milk-fpsexec-\* executables                |
+| `add_cacao_standalone()`         | Same as above                                  | cacao-fpsexec-\* (no plugin deps)          |
+| `add_cacao_standalone_plugins()` | Above + selected plugin libs                   | cacao-fpsexec-\* that use plugin functions |
 
-**💡 Tip:** Use `_compute` variants of libraries
-(e.g. `milkstatistic_compute`) when linking standalone
-executables. The `_compute` variants never pull in
-CLIcore.
+`add_milk_standalone()` / `add_cacao_standalone()` apply `-DMILK_NO_CLI` and link the common library set automatically; add a per-module library explicitly only if the executable calls a module-specific function.
 
 </details>
 

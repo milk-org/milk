@@ -7,7 +7,8 @@
  * @brief   Get index of parameter
  */
 
-#include "fps.h"
+#include "fps_types.h"
+#include "fps_internal.h"
 
 /**
  * @brief Look up a parameter index by its dot-separated

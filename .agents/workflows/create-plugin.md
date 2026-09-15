@@ -11,7 +11,7 @@ Use this workflow to scaffold a new plugin module in the milk ecosystem.
 
 - `plugin-creator` — directory structure and
   module registration boilerplate
-- `cmake-patterns` — `_compute` variant setup
+- `cmake-patterns` — standalone executable setup
   and link conventions
 
 **Rules to review**: `common-agent-mistakes`,
@@ -28,7 +28,7 @@ Use the `plugin-creator` skill to determine how to structure the plugin. You wil
   (e.g., `plugins/<group>/<pluginname>/`).
   **IMPORTANT**: Do NOT place new plugins under the `milk-extra-src` folder (which is reserved
   for core extra plugins).
-- **Compute Variant:** Does it need a `_compute` variant for standalone linking?
+- **Standalone Executables:** Will any standalone executables link this plugin's library?
 
 ## 2. Scaffold the Plugin
 

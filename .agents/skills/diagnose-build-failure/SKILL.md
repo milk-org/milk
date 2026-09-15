@@ -62,11 +62,10 @@ Error message
   ```cmake
   target_link_libraries(mylib PUBLIC missinglib)
   ```
-- For standalone executables, use `_compute`
-  variants:
+- For standalone executables:
   ```cmake
   target_link_libraries(milk-fpsexec-foo
-    milkfoo_compute)  # NOT milkfoo
+    milkfoo)
   ```
 
 **Common missing libraries**:
@@ -184,14 +183,14 @@ tier:
 | Core       | Engine + COREMOD\_{arith,memory,tools}            |
 | Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
 | Full       | Everything: CLIcore, all plugins                  |
-| Standalone | Engine + `_compute` variants only                 |
+| Standalone | Engine + regular COREMOD libs, `-DMILK_NO_CLI`    |
 
 ## Standalone Executable Checklist
 
 When a standalone executable fails to build:
 
 - [ ] Uses `CLIcore_standalone.h` not `CLIcore.h`
-- [ ] Links `_compute` variants, not full libs
+- [ ] Links the regular module libraries (no separate variant needed)
 - [ ] Has `FPS_STANDALONE` compile definition
 - [ ] Has `MILK_NO_CLI` compile definition
 - [ ] Does NOT call `RegisterCLIcmd` or any CLI

@@ -16,7 +16,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "fps.h"
+
+#include "fps_types.h"
 #include "libmilkdata/milkdata_clicmd.h"
 
 

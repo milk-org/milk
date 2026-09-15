@@ -26,7 +26,7 @@ Because plugins are decoupled, it's very common for them to be their own isolate
 
 ### Standalone Executables Relation to Core
 
-When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`), it behaves as a native Linux process that interacts with the core engine (streams and FPS) solely via shared memory. The plugin's calculation logic should NOT depend directly on internal GUI/CLI headers from `CLIcore`. By explicitly creating plugins and linking to `_compute` libraries, you ensure strict modularity where crashing plugins do not disrupt the orchestrating daemon.
+When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`), it is its own executable that interacts with the core engine (encompasses it and communicates via shared memory). The plugin's calculation logic should never depend on internal GUI/CLI tooling or code headers (from `CLIcore`).
 
 ## 2. Setting up CMakeLists.txt
 
@@ -46,19 +46,15 @@ set(SOURCEFILES
     my_plugin_func.c
 )
 
-# 2. Shared Library (used by the interactive milk-cli)
+# 2. Shared Library (used by the interactive milk-cli, and
+#    linked as-is by standalone executables that need it)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(${LIBNAME}
     PRIVATE $<TARGET_PROPERTY:CLIcore,INTERFACE_INCLUDE_DIRECTORIES>)
 
-# 3. Compute-only variant (no CLI deps, for standalone executables linking it)
-set(LIBNAME_COMPUTE ${LIBNAME}_compute)
-add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
-target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-target_link_libraries(${LIBNAME_COMPUTE} PRIVATE milkdata ImageStreamIO)
-
-# 4. Standalone Executable Definition
-# This automatically handles the FPS lifecycle and links COREMOD_compute libs
+# 3. Standalone Executable Definition
+# This automatically handles the FPS lifecycle, applies -DMILK_NO_CLI
+# to the executable target, and links the common standalone lib set.
 add_milk_standalone(my_plugin_func my_plugin_func.c)
 ```
 
