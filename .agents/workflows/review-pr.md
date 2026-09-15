@@ -31,8 +31,6 @@ For each modified `.c` and `.h` file, verify:
 
 - [ ] No new cross-module dependencies violating
       `docs/dependency_graph.md`
-- [ ] Standalone executables link `_compute`
-      variants only (never `CLIcore`)
 - [ ] Dual-mode files use `#ifdef MILK_NO_CLI`
       pattern
 - [ ] New modules follow

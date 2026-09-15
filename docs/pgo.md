@@ -49,7 +49,7 @@ GCC can now inline across all library boundaries:
 fpsexec.c  →  fpsexec.o  ──┐
 libmilkfps.a  ──────────────┼→  LTO link  →  fpsexec
 libImageStreamIO.a  ────────┤   (full visibility)
-libCOREMODmemory_compute.a ─┘
+libCOREMODmemory.a ──┘
 ```
 
 ### 1.2. Why Static Linking Is Faster
@@ -440,13 +440,11 @@ unit.
 
 ---
 
-## 4. Dual Library Architecture
+## 4. Library Architecture
 
-The `milk` build system compiles two variants of
-every library to support both the interactive CLI
-and standalone fpsexec executables:
+Each `milk` module compiles a single regular library, shared by the interactive CLI and standalone fpsexec executables. `USE_STATIC_LTO=ON` additionally builds static archives of that same code for standalone use.
 
-### 4.1. Shared Libraries (`.so`) — for CLI
+### 4.1. Shared Libraries (`.so`) — for CLI and Standalones
 
 ```text
 libmilkfps.so
@@ -455,31 +453,15 @@ libCOREMODarith.so
 ...
 ```
 
-- Linked by `milk-cli` and module shared libraries
-- Contain full CLI registration code
-  (`RegisterModule`, `RegisterCLIcommand`, etc.)
-- Loaded at runtime via `dlopen()` for module
-  hot-loading
+- Linked by `milk-cli`, module shared libraries, and (by default) standalone executables
+- Contain full CLI registration code (`RegisterModule`, `RegisterCLIcommand`, etc.), but that code is written to stay off the compute path so it's safe for standalone consumers
+- `-DMILK_NO_CLI`, applied to the standalone executable target itself, redirects `CLIcore.h` to the `CLIcore_standalone.h` stub for that target.
+- Loaded at runtime in the CLI via `dlopen()`.
+-
 
-### 4.2. Compute Libraries (`_compute.so`) — for
+### 4.2. Static Archives (`.a`) — for Static LTO
 
-Standalones
-
-```text
-libCOREMODmemory_compute.so
-libCOREMODarith_compute.so
-...
-```
-
-- Compiled with `-DMILK_NO_CLI` — pure computation
-- **No dependency on CLIcore** — CLI registration
-  stubs are excluded
-- Linked by `milk-fpsexec-*` / `cacao-fpsexec-*`
-
-### 4.3. Static Archives (`.a`) — for Static LTO
-
-When `USE_STATIC_LTO=ON`, a third variant is
-built for each library:
+When `USE_STATIC_LTO=ON`, a `_static`-suffixed archive variant is built for each library and linked into standalone executables instead of the `.so`:
 
 ```text
 libImageStreamIO.a
@@ -487,49 +469,39 @@ libmilkfps.a
 libmilkfpsStandalone.a
 libmilkdata.a
 libmilkprocessinfo.a
-libCOREMODmemory_compute.a
-libCOREMODarith_compute.a
-libCOREMODtools_compute.a
-libCOREMODiofits_compute.a
+libCOREMODmemory_static.a
+libCOREMODarith_static.a
+libCOREMODtools_static.a
+libCOREMODiofits_static.a
 ```
 
-- Static archives contain the same `.o` files as
-  `_compute.so`, but archived for static linking
-- GCC can look inside `.a` files at link time,
-  enabling cross-module LTO optimization
-- Only linked into standalone executables — shared
-  libraries and CLI are unaffected
+- Static archives contain the same `.o` files as the regular shared libraries, archived for static linking
+- GCC can look inside `.a` files at link time, enabling cross-module LTO optimization
+- Only linked into standalone executables — shared libraries and CLI are unaffected
 
-### 4.4. Architecture Diagram
+### 4.3. Architecture Diagram
 
 ```text
 ┌─────────────────────────────────────┐
 │           milk-cli                  │
 │  (interactive shell, module loader) │
-│  Links: .so libraries (dynamic)    │
+│  Links: .so libraries (dynamic)     │
 └─────────────┬───────────────────────┘
               │
     ┌─────────┴─────────┐
-    │  Module .so libs   │
-    │  (CLIcore-linked)  │
-    └────────────────────┘
+    │  Module .so libs  │
+    │  (CLIcore-linked) │
+    └───────────────────┘
 
 ┌─────────────────────────────────────┐
-│  milk-fpsexec-* / cacao-fpsexec-*  │
+│  milk-fpsexec-* / cacao-fpsexec-*   │
 │  (standalone compute units)         │
 │                                     │
-│  Default: links _compute.so (dyn)  │
-│  Static LTO: links .a (static)     │
-│  + PGO: adds profiling/use flags   │
-└─────────────┬───────────────────────┘
-              │
-    ┌─────────┴──────────────────────┐
-    │  _compute variants             │
-    │  (MILK_NO_CLI, no CLIcore)     │
-    │                                │
-    │  .so → default dynamic link    │
-    │  .a  → static LTO link         │
-    └────────────────────────────────┘
+│  Default: links regular .so (dyn)   │
+│  Static LTO: links _static .a       │
+│  + PGO: adds profiling/use flags    │
+│  (-DMILK_NO_CLI on the executable)  │
+└─────────────────────────────────────┘
 ```
 
 ---

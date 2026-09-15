@@ -37,8 +37,7 @@ conditionally using this hierarchy.
 
 - **Zero CLIcore Linking**: Standalone TUI binaries (e.g., `milk-CTRL`, `milk-fpsCTRL`,
   `milk-streamCTRL`) must **never** link against the interactive CLI shell library (`CLIcore`).
-  They must link against only compute libraries (`_compute` variants) or core engine libraries
-  like `ImageStreamIO`, `libfps`, and `libprocessinfo`.
+  They must link against only core engine libraries like `ImageStreamIO`, `libfps`, and `libprocessinfo`.
 - **Standard ANSI Backends**: Rather than using full ncurses libraries which can carry heavy
   cross-platform dependency weights, implement a dedicated ANSI/VT100 serial sequence parser to
   manage terminal raw modes and input sequences.

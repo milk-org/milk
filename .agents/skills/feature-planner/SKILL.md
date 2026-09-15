@@ -148,14 +148,14 @@ testable:
 
 Flag any of these if they apply:
 
-| Risk                          | Mitigation                                                     |
-| ----------------------------- | -------------------------------------------------------------- |
-| Cross-module dependency added | Verify with `dependency_graph.md`; consider `_compute` variant |
-| Performance-sensitive path    | Consult `performance-practices.md`; plan benchmarking          |
-| Breaking API change           | Document migration path; consider deprecation period           |
-| Standalone linkage            | Verify with `add_milk_standalone()`; check `_compute` variants |
-| Large refactor                | Use `refactor-c-source` skill; split into multiple PRs         |
-| Concurrency / shared memory   | Consult `concurrency-practices.md`                             |
+| Risk                          | Mitigation                                             |
+| ----------------------------- | ------------------------------------------------------ |
+| Cross-module dependency added | Verify with `dependency_graph.md`                      |
+| Performance-sensitive path    | Consult `performance-practices.md`; plan benchmarking  |
+| Breaking API change           | Document migration path; consider deprecation period   |
+| Standalone linkage            | Verify with `add_milk_standalone()`                    |
+| Large refactor                | Use `refactor-c-source` skill; split into multiple PRs |
+| Concurrency / shared memory   | Consult `concurrency-practices.md`                     |
 
 ## Output Format
 

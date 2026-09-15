@@ -220,8 +220,7 @@ graph TD
 
 ## 3. Standalone Build (USE_CLI=OFF)
 
-> Standalone executables use `_compute` library variants
-> (compiled with `MILK_NO_CLI`).
+> `MILK_NO_CLI` is applied to the executable targets.
 
 ```mermaid
 graph TD
@@ -232,19 +231,19 @@ graph TD
     MILKDATA["milkdata"]:::core
     FPSSA["milkfpsStandalone"]:::core
 
-    subgraph corecomp ["COREMOD _compute"]
-        ARITH_C["COREMODarith_compute"]:::compute
-        IOFITS_C["COREMODiofits_compute"]:::compute_fits
-        MEMORY_C["COREMODmemory_compute"]:::compute
-        TOOLS_C["COREMODtools_compute"]:::compute
+    subgraph corecomp ["COREMOD libraries"]
+        ARITH_C["COREMODarith"]:::compute
+        IOFITS_C["COREMODiofits"]:::compute_fits
+        MEMORY_C["COREMODmemory"]:::compute
+        TOOLS_C["COREMODtools"]:::compute
     end
 
-    subgraph plugcomp ["plugin _compute"]
-        FFT_C["milkfft_compute"]:::plugcomp
-        IMGGEN_C["milkimagegen_compute"]:::plugcomp
-        IMGBASIC_C["milkimagebasic_compute"]:::plugcomp
-        IMGFILT_C["milkimagefilter_compute"]:::plugcomp
-        STAT_C["milkstatistic_compute"]:::plugcomp
+    subgraph plugcomp ["plugin libraries"]
+        FFT_C["milkfft"]:::plugcomp
+        IMGGEN_C["milkimagegen"]:::plugcomp
+        IMGBASIC_C["milkimagebasic"]:::plugcomp
+        IMGFILT_C["milkimagefilter"]:::plugcomp
+        STAT_C["milkstatistic"]:::plugcomp
     end
 
     MILKEXE["milk-fpsexec-*"]:::exe
@@ -372,15 +371,6 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 | milkCOREMODarith  | milkfps          | COREMODiofits, cfitsio (USE_CFITSIO) |
 | milkCOREMODiofits | milkfps, cfitsio | _only built with USE_CFITSIO_        |
 
-**\_compute variants** (compiled with `MILK_NO_CLI`):
-
-| Target                    | Links to         | Conditional                                  |
-| ------------------------- | ---------------- | -------------------------------------------- |
-| milkCOREMODtools_compute  | milkfps          |                                              |
-| milkCOREMODmemory_compute | milkfps          | cfitsio (USE_CFITSIO)                        |
-| milkCOREMODarith_compute  | milkfps          | COREMODiofits_compute, cfitsio (USE_CFITSIO) |
-| milkCOREMODiofits_compute | milkfps, cfitsio | _only built with USE_CFITSIO_                |
-
 </details>
 
 <details markdown="1">
@@ -403,20 +393,6 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 | milkimgreduce       | CLIcore                |                           |
 | milkpsf             | CLIcore                |                           |
 | milkclustering      | CLIcore                |                           |
-
-**\_compute variants:**
-
-| Target                      | Links to                                                            |
-| --------------------------- | ------------------------------------------------------------------- |
-| milkfft_compute             | fftw3, fftw3f, COREMODmemory_compute, COREMODiofits_compute         |
-| milkimagebasic_compute      | COREMODmemory_compute, COREMODiofits_compute                        |
-| milkimagefilter_compute     | COREMODmemory_compute, COREMODiofits_compute                        |
-| milkimagegen_compute        | milkstatistic_compute, COREMODmemory_compute, COREMODiofits_compute |
-| milkstatistic_compute       | COREMODmemory_compute, COREMODiofits_compute                        |
-| milklinalgebra_compute      | COREMODmemory_compute                                               |
-| milklinoptimtools_compute   | COREMODmemory_compute                                               |
-| milkZernikePolyn_compute    | COREMODmemory_compute                                               |
-| milklinARfilterPred_compute | COREMODmemory_compute, milklinalgebra_compute                       |
 
 </details>
 
@@ -455,11 +431,11 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 <details markdown="1">
 <summary><b>Standalone CMake Functions</b></summary>
 
-| Function                         | Base link set                                                                                                                                                              |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `add_milk_standalone()`          | milkfps, milkfpsStandalone, milkfpsseq, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory_compute, COREMODtools_compute, COREMODarith_compute, COREMODiofits_compute |
-| `add_cacao_standalone()`         | same as above                                                                                                                                                              |
-| `add_cacao_standalone_plugins()` | above + selected plugin \_compute libs                                                                                                                                     |
+| Function                         | Base link set                                                                                                                                            |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `add_milk_standalone()`          | milkfps, milkfpsStandalone, milkfpsseq, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory, COREMODtools, COREMODarith, COREMODiofits (USE_CFITSIO) |
+| `add_cacao_standalone()`         | same as above                                                                                                                                            |
+| `add_cacao_standalone_plugins()` | above + selected plugin libs                                                                                                                             |
 
 ```cmake
 add_cacao_standalone_plugins(name src.c)               # all 4 plugins
@@ -468,14 +444,11 @@ add_cacao_standalone_plugins(name src.c fft imagegen)   # selective
 
 Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
 
-**ℹ️ Note:** `_compute` variants contain pure computation
-code (`MILK_NO_CLI`). Standalone executables do **not** link
-`${LIBNAME}` by default. Currently **76 of 90** standalones
-are CLIcore-free.
+**ℹ️ Note:** `add_milk_standalone()` / `add_cacao_standalone()`
+apply `-DMILK_NO_CLI` to the standalone executable target,
+redirecting `CLIcore.h` to the `CLIcore_standalone.h` stub for that target, which does some placeholding.
 
-When `USE_STATIC_LTO=ON`, static archive (`.a`) variants
-of these libraries are built and linked instead, enabling
-cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
+When `USE_STATIC_LTO=ON`, `_static`-suffixed static archives (e.g. `milkCOREMODmemory_static`) of these libraries are linked instead, enabling cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
 
 </details>
 

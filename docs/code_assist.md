@@ -26,12 +26,9 @@ that every contributor should know.
 
 New to adding capabilities? Start with these:
 
-1. [Developer Tutorial](developer/tutorial.md) —
-   write your first module end-to-end.
-2. [Adding Plugins](developer/plugins.md) — CMake
-   setup, dual-mode headers, `_compute` variants.
-3. [Template Source Code](developer/TemplateSourceCode.md)
-   — which template file to copy for each use case.
+1. [Developer Tutorial](developer/tutorial.md) — write your first module end-to-end.
+2. [Adding Plugins](developer/plugins.md) — CMake setup, dual-mode headers.
+3. [Template Source Code](developer/TemplateSourceCode.md) — which template file to copy for each use case.
 
 ## Agent Rules
 
@@ -89,7 +86,7 @@ contains a `SKILL.md` with detailed instructions.
 | Feature planner            | [`feature-planner`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/feature-planner/SKILL.md)                       | Structured planning and architectural decomposition for new features.                           |
 | Batch Kernel-Doc           | [`batch-kernel-doc`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/batch-kernel-doc/SKILL.md)                     | Systematic function documentation with scanning, templates, and batch processing.               |
 | CLI test writer            | [`cli-test-writer`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/cli-test-writer/SKILL.md)                       | Writing test cases for the CLI robustness suite with coverage analysis.                         |
-| CMake patterns             | [`cmake-patterns`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/cmake-patterns/SKILL.md)                         | Module CMake setup, standalone builds, `_compute` variants.                                     |
+| CMake patterns             | [`cmake-patterns`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/cmake-patterns/SKILL.md)                         | Module CMake setup, standalone builds.                                                          |
 | Debug CLI behavior         | [`debug-cli-behavior`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/debug-cli-behavior/SKILL.md)                 | Crash investigation, command registration tracing, display debugging.                           |
 | Diagnose build failure     | [`diagnose-build-failure`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/diagnose-build-failure/SKILL.md)         | CMake/GCC error triage mapped to milk's build tiers.                                            |
 | FPS parameter guide        | [`fps-parameter-guide`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/fps-parameter-guide/SKILL.md)               | FPS parameter types, flags, X-macro patterns, common mistakes.                                  |
