@@ -10,6 +10,8 @@
 #ifndef FPS_GETPARAMINDEX_H
 #define FPS_GETPARAMINDEX_H
 
+#include "fps_types.h"
+
 int functionparameter_GetParamIndex(FPS *fps, const char *paramname);
 
 #endif

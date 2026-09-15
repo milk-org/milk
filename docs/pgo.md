@@ -46,10 +46,10 @@ libraries are linked as static archives (`.a`).
 GCC can now inline across all library boundaries:
 
 ```text
-fpsexec.c  →  fpsexec.o  ──┐
+fpsexec.c  →  fpsexec.o  ───┐
 libmilkfps.a  ──────────────┼→  LTO link  →  fpsexec
 libImageStreamIO.a  ────────┤   (full visibility)
-libCOREMODmemory.a ──┘
+libCOREMODmemory.a ─────────┘
 ```
 
 ### 1.2. Why Static Linking Is Faster
@@ -453,11 +453,10 @@ libCOREMODarith.so
 ...
 ```
 
-- Linked by `milk-cli`, module shared libraries, and (by default) standalone executables
-- Contain full CLI registration code (`RegisterModule`, `RegisterCLIcommand`, etc.), but that code is written to stay off the compute path so it's safe for standalone consumers
+- Linked by `milk-cli` upon `mload`, dependent module shared libraries, the module's standalone executables (by default).
+- Contain full CLI registration code (if `-DUSE_CLI=ON`; `RegisterModule`, `RegisterCLIcommand`, etc.), but that code is written to stay off the compute path so it's safe for standalone consumers
 - `-DMILK_NO_CLI`, applied to the standalone executable target itself, redirects `CLIcore.h` to the `CLIcore_standalone.h` stub for that target.
 - Loaded at runtime in the CLI via `dlopen()`.
--
 
 ### 4.2. Static Archives (`.a`) — for Static LTO
 
