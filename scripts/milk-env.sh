@@ -173,6 +173,18 @@ __milk_env_switch_fdev() {
     __milk_path_remove PKG_CONFIG_PATH "$_DEV_INSTALLDIR/lib/pkgconfig"
     __milk_path_remove PYTHONPATH "$_DEV_INSTALLDIR/python"
 
+    __milk_path_remove PATH "/usr/local/milk/bin"
+    __milk_path_remove LD_LIBRARY_PATH "/usr/local/milk/lib"
+    __milk_path_remove PKG_CONFIG_PATH "/usr/local/milk/lib/pkgconfig"
+    __milk_path_remove PYTHONPATH "/usr/local/milk/python"
+
+    for vdir in /usr/local/milk-*; do
+        [ -d "$vdir/bin" ] && __milk_path_remove PATH "$vdir/bin"
+        [ -d "$vdir/lib" ] && __milk_path_remove LD_LIBRARY_PATH "$vdir/lib"
+        [ -d "$vdir/lib/pkgconfig" ] && __milk_path_remove PKG_CONFIG_PATH "$vdir/lib/pkgconfig"
+        [ -d "$vdir/python" ] && __milk_path_remove PYTHONPATH "$vdir/python"
+    done
+
     # 2. Add framework-dev paths
     __milk_path_prepend PATH "$_FDEV_INSTALLDIR/bin"
     __milk_path_prepend LD_LIBRARY_PATH "$_FDEV_INSTALLDIR/lib"
@@ -244,11 +256,19 @@ __milk_env_switch_dev() {
     __milk_path_remove PKG_CONFIG_PATH "$_FDEV_INSTALLDIR/lib/pkgconfig"
     __milk_path_remove PYTHONPATH "$_FDEV_INSTALLDIR/python"
 
-    # Also clean out potential fallback paths
+    # Also clean out potential fallback paths under _install
     if [ -d "$_FDEV_ROOT/_install/bin" ]; then
         __milk_path_remove PATH "$_FDEV_ROOT/_install/bin"
         __milk_path_remove LD_LIBRARY_PATH "$_FDEV_ROOT/_install/lib"
+        __milk_path_remove PKG_CONFIG_PATH "$_FDEV_ROOT/_install/lib/pkgconfig"
+        __milk_path_remove PYTHONPATH "$_FDEV_ROOT/_install/python"
     fi
+    for vdir in "$_FDEV_ROOT"/_install/milk-*; do
+        [ -d "$vdir/bin" ] && __milk_path_remove PATH "$vdir/bin"
+        [ -d "$vdir/lib" ] && __milk_path_remove LD_LIBRARY_PATH "$vdir/lib"
+        [ -d "$vdir/lib/pkgconfig" ] && __milk_path_remove PKG_CONFIG_PATH "$vdir/lib/pkgconfig"
+        [ -d "$vdir/python" ] && __milk_path_remove PYTHONPATH "$vdir/python"
+    done
 
     # 2. Add dev paths
     __milk_path_prepend PATH "$_DEV_INSTALLDIR/bin"
