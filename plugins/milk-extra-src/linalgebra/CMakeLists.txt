@@ -96,7 +96,7 @@ if(USE_CUDA)
   message(STATUS "Found CUDA ${CUDAToolkit_VERSION} at ${CUDAToolkit_LIBRARY_DIR}")
   message("---- CUDA_INCLUDE_DIRS = ${CUDAToolkit_INCLUDE_DIRS}")
   target_include_directories(${LIBNAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
-  target_link_libraries(${LIBNAME} PRIVATE CUDA::cublas CUDA::cusolver)
+  target_link_libraries(${LIBNAME} PRIVATE CUDA::cudart CUDA::cublas CUDA::cusolver)
   target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA)
 
   if(USE_MAGMA)
