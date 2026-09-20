@@ -229,7 +229,8 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     char *pch1;
 
     char namestring[200];
-    strncpy(namestring, effective_name, 199);
+    strncpy(namestring, effective_name, sizeof(namestring) - 1);
+    namestring[sizeof(namestring) - 1] = '\0';
 
     pch1 = namestring;
     if (strlen(namestring) != 0)
