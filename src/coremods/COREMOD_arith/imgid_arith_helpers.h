@@ -57,4 +57,40 @@ static inline void imgid_ensure_output(IMGID *src, IMGID *dst)
     }
 }
 
+/**
+ * @brief Check if two IMGIDs have identical dimensions
+ *
+ * @param img1 First image
+ * @param img2 Second image
+ * @return 1 if dimensions match exactly, 0 otherwise
+ */
+static inline int imgid_same_dims(const IMGID *img1, const IMGID *img2)
+{
+    if (img1->md->naxis != img2->md->naxis)
+    {
+        return 0;
+    }
+    for (uint8_t a = 0; a < img1->md->naxis; a++)
+    {
+        if (img1->md->size[a] != img2->md->size[a])
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * @brief Check if first image is 3D cube and second is 2D matching slice
+ *
+ * @param cube  Potential 3D cube image
+ * @param slice Potential 2D slice image
+ * @return 1 if cube is 3D and slice is 2D with matching [x, y], 0 otherwise
+ */
+static inline int imgid_is_cube_slice(const IMGID *cube, const IMGID *slice)
+{
+    return (cube->md->naxis == 3 && slice->md->naxis == 2 &&
+            cube->md->size[0] == slice->md->size[0] && cube->md->size[1] == slice->md->size[1]);
+}
+
 #endif /* IMGID_ARITH_HELPERS_H */
