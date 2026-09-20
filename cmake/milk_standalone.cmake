@@ -50,6 +50,7 @@ set(_MILK_STANDALONE_LIBS
     milkCOREMODarith
     m
     rt
+    pthread
     -Wl,--allow-shlib-undefined)
 if(USE_CFITSIO AND CFITSIO_FOUND)
   list(APPEND _MILK_STANDALONE_LIBS milkCOREMODiofits ${CFITSIO_LIBRARIES})
