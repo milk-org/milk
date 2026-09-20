@@ -198,6 +198,7 @@ __milk_env_switch_fdev() {
     export MILK_SHM_DIR="$_FDEV_SHMDIR"
     export MILK_PROC_DIR="$_FDEV_SHMDIR"
     export TMUX_TMPDIR="$_FDEV_SHMDIR"
+    unset TMUX
     export PATH
     export LD_LIBRARY_PATH
     export PKG_CONFIG_PATH
@@ -245,6 +246,7 @@ __milk_env_switch_fdev() {
     echo -e "  MILK_SHM_DIR:    $MILK_SHM_DIR"
     echo -e "  MILK_INSTALLDIR: $MILK_INSTALLDIR"
     echo -e "  MILK_ROOT:       $MILK_ROOT"
+    echo -e "  TMUX_TMPDIR:     $TMUX_TMPDIR (fenced)"
 }
 
 __milk_env_switch_dev() {
@@ -282,7 +284,9 @@ __milk_env_switch_dev() {
     export MILK_INSTALLDIR="$_DEV_INSTALLDIR"
     export MILK_SHM_DIR="$_DEV_SHMDIR"
     export MILK_PROC_DIR="$_DEV_SHMDIR"
-    export TMUX_TMPDIR="$_DEV_SHMDIR"
+    # Keep legacy/dev tmux sessions on system default socket (visible to standard 'tmux ls')
+    unset TMUX_TMPDIR
+    unset TMUX
     export PATH
     export LD_LIBRARY_PATH
     export PKG_CONFIG_PATH
@@ -313,6 +317,7 @@ __milk_env_switch_dev() {
     echo -e "  MILK_SHM_DIR:    $MILK_SHM_DIR"
     echo -e "  MILK_INSTALLDIR: $MILK_INSTALLDIR"
     echo -e "  MILK_ROOT:       $MILK_ROOT"
+    echo -e "  TMUX_TMPDIR:     unset (system default, visible to tmux ls)"
 }
 
 # Main command dispatch
