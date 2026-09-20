@@ -84,6 +84,7 @@
         {                                                                                          \
             imgid_ensure_output(imgin1, imgout);                                                   \
             uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
             uint64_t nxy      = (uint64_t) imgin1->md->size[0] * imgin1->md->size[1];              \
             uint32_t zsize    = imgin1->md->size[2];                                               \
             if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
@@ -133,6 +134,7 @@
         {                                                                                          \
             imgid_ensure_output(imgin2, imgout);                                                   \
             uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
             uint64_t nxy      = (uint64_t) imgin2->md->size[0] * imgin2->md->size[1];              \
             uint32_t zsize    = imgin2->md->size[2];                                               \
             if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
@@ -410,6 +412,7 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
         {                                                                                          \
             imgid_ensure_output(imgin1, imgout);                                                   \
             uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
             uint64_t nxy      = (uint64_t) imgin1->md->size[0] * imgin1->md->size[1];              \
             uint32_t zsize    = imgin1->md->size[2];                                               \
             if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
@@ -459,6 +462,7 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
         {                                                                                          \
             imgid_ensure_output(imgin2, imgout);                                                   \
             uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
             uint64_t nxy      = (uint64_t) imgin2->md->size[0] * imgin2->md->size[1];              \
             uint32_t zsize    = imgin2->md->size[2];                                               \
             if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
