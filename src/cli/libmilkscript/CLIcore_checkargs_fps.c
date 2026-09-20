@@ -130,12 +130,14 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF fpscliarg[], int nbarg, FPS *fps)
             break;
 
         case FPTYPE_TIMESPEC:
+        {
             double          value = data.cmd[cmdi].argdata[arg].val.f64;
             struct timespec t     = { .tv_sec = value, .tv_nsec = 0 };
             t.tv_nsec             = 1e9 * (value - t.tv_sec);
             functionparameter_SetParamValue_TIMESPEC(fps, fpscliarg[arg].fpstag, t);
             NBarg_processed++;
             break;
+        }
 
         case CLIARG_STR_NOT_IMG:
         case CLIARG_IMG:

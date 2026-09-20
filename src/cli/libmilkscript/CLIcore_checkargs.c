@@ -435,10 +435,12 @@ static void set_fps_from_clitoken(FPS        *fps,
         functionparameter_SetParamValue_INT64(fps, fpstag, (int64_t) numl);
         break;
     case FPTYPE_TIMESPEC:
+    {
         struct timespec _t = { .tv_sec = numf, .tv_nsec = 0 };
         _t.tv_nsec         = 1e9 * (numf - _t.tv_sec);
         functionparameter_SetParamValue_TIMESPEC(fps, fpstag, _t);
         break;
+    }
     case FPTYPE_STRING:
     case FPTYPE_STREAMNAME:
     case FPTYPE_DIRNAME:
