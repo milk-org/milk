@@ -712,8 +712,8 @@ errno_t cli_cmd_printf(void)
                 int  nw = -1;
 
 #if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
                 if (fc == 's')
                 {
@@ -734,7 +734,7 @@ errno_t cli_cmd_printf(void)
                     nw        = snprintf(outbuf, sizeof(outbuf), spec, dv);
                 }
 #if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
+#    pragma GCC diagnostic pop
 #endif
 
                 if (nw >= 0)

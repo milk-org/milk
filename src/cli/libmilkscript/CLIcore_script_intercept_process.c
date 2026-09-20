@@ -519,11 +519,7 @@ static const char *cli_cmp_sym(char op_ch, int op_eq)
  * @src:  source string
  * @len:  number of chars to copy from src
  */
-static void cli_assert_trim(
-    char       *dst,
-    size_t      sz,
-    const char *src,
-    size_t      len)
+static void cli_assert_trim(char *dst, size_t sz, const char *src, size_t len)
 {
     if (dst == NULL || sz == 0)
     {
