@@ -641,6 +641,7 @@ if(USE_CLI)
     scripts/tmuxkillall
     scripts/tmuxsessionname
     scripts/waitforfile
+    scripts/milk-env.sh
     DESTINATION bin)
 
 endif(USE_CLI)
