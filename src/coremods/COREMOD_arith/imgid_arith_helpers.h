@@ -90,8 +90,7 @@ static inline int imgid_same_dims(const IMGID *img1, const IMGID *img2)
 static inline int imgid_is_cube_slice(const IMGID *cube, const IMGID *slice)
 {
     return (cube->md->naxis == 3 && slice->md->naxis == 2 &&
-            cube->md->size[0] == slice->md->size[0] &&
-            cube->md->size[1] == slice->md->size[1]);
+            cube->md->size[0] == slice->md->size[0] && cube->md->size[1] == slice->md->size[1]);
 }
 
 #endif /* IMGID_ARITH_HELPERS_H */

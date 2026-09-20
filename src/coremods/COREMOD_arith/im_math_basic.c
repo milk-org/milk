@@ -50,8 +50,11 @@
                 float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
                 float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
                 float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
-                _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")                \
-                for (uint64_t i = 0; i < nelement; i++)                                            \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
                 {                                                                                  \
                     po[i] = p1[i] op p2[i];                                                        \
                 }                                                                                  \
@@ -63,8 +66,11 @@
                 double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
                 double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
                 double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
-                _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")                \
-                for (uint64_t i = 0; i < nelement; i++)                                            \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
                 {                                                                                  \
                     po[i] = p1[i] op p2[i];                                                        \
                 }                                                                                  \
@@ -87,13 +93,13 @@
                 float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
                 float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
                 float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const float *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                 \
-                    float       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                 \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = p1_slice[i] op p2[i];                                        \
                     }                                                                              \
@@ -106,13 +112,13 @@
                 double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
                 double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
                 double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const double *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                \
-                    double       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = p1_slice[i] op p2[i];                                        \
                     }                                                                              \
@@ -136,13 +142,13 @@
                 float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
                 float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
                 float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const float *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                 \
-                    float       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                 \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = p1[i] op p2_slice[i];                                        \
                     }                                                                              \
@@ -155,13 +161,13 @@
                 double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
                 double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
                 double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const double *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                \
-                    double       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = p1[i] op p2_slice[i];                                        \
                     }                                                                              \
@@ -370,8 +376,11 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
                 float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
                 float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
                 float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
-                _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")                \
-                for (uint64_t i = 0; i < nelement; i++)                                            \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
                 {                                                                                  \
                     po[i] = funcname_f(p1[i], p2[i]);                                              \
                 }                                                                                  \
@@ -383,8 +392,11 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
                 double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
                 double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
                 double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
-                _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")                \
-                for (uint64_t i = 0; i < nelement; i++)                                            \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
                 {                                                                                  \
                     po[i] = funcname(p1[i], p2[i]);                                                \
                 }                                                                                  \
@@ -407,13 +419,13 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
                 float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
                 float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
                 float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const float *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                 \
-                    float       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                 \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = funcname_f(p1_slice[i], p2[i]);                              \
                     }                                                                              \
@@ -426,13 +438,13 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
                 double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
                 double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
                 double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const double *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                \
-                    double       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = funcname(p1_slice[i], p2[i]);                                \
                     }                                                                              \
@@ -456,13 +468,13 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
                 float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
                 float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
                 float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const float *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                 \
-                    float       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                 \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = funcname_f(p1[i], p2_slice[i]);                              \
                     }                                                                              \
@@ -475,13 +487,13 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
                 double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
                 double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
                 double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
-                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
-                for (uint32_t k = 0; k < zsize; k++)                                               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
                 {                                                                                  \
                     const double *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                \
-                    double       *MILK_RESTRICT po_slice = po + (uint64_t) k * nxy;                \
-                    _Pragma("omp simd")                                                            \
-                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
                     {                                                                              \
                         po_slice[i] = funcname(p1[i], p2_slice[i]);                                \
                     }                                                                              \

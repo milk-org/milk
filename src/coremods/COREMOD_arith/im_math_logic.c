@@ -50,8 +50,11 @@
                 const float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);          \
                 const float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);          \
                 float *MILK_RESTRICT       po = MILK_ASSUME_ALIGNED(imgout->im->array.F);          \
-                _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")                \
-                for (uint64_t i = 0; i < nelement; i++)                                            \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
                 {                                                                                  \
                     po[i] = (expr_f);                                                              \
                 }                                                                                  \
@@ -63,8 +66,11 @@
                 const double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);         \
                 const double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);         \
                 double *MILK_RESTRICT       po = MILK_ASSUME_ALIGNED(imgout->im->array.D);         \
-                _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")                \
-                for (uint64_t i = 0; i < nelement; i++)                                            \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
                 {                                                                                  \
                     po[i] = (expr_d);                                                              \
                 }                                                                                  \
