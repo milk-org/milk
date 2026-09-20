@@ -396,7 +396,8 @@ errno_t CLI_execute_line()
 
             if (rawstringmode == 0) // not in a raw string, process tokengroup
             {
-                cmdargstring = strtok(tokengroup, " ");
+                char *rest_word = NULL;
+                cmdargstring = strtok_r(tokengroup, " ", &rest_word);
                 while (cmdargstring != NULL) // iterate on words
                 {
                     // printf("\t processing -- %s\n", cmdargstring);
@@ -412,7 +413,7 @@ errno_t CLI_execute_line()
                     yyparse();
                     yylex_destroy();
 
-                    cmdargstring = strtok(NULL, " ");
+                    cmdargstring = strtok_r(NULL, " ", &rest_word);
                     data.cmdNBarg++;
                 }
                 rawstringmode = 1;

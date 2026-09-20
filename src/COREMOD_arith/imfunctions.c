@@ -1876,29 +1876,172 @@ ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tanh, tanh)
         resolveIMGID(imgin1, ERRMODE_ABORT);                                                       \
         resolveIMGID(imgin2, ERRMODE_ABORT);                                                       \
         resolveIMGID(imgout, ERRMODE_NULL);                                                        \
-        if (imgout->ID == -1)                                                                      \
-            copyIMGID(imgin1, imgout);                                                             \
-        imcreateIMGID(imgout);                                                                     \
-        uint64_t nelement = imgout->md->nelement;                                                  \
-        if (imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT &&  \
-            imgout->datatype == _DATATYPE_FLOAT)                                                   \
+        int same_dims = (imgin1->md->naxis == imgin2->md->naxis);                                  \
+        if (same_dims)                                                                             \
         {                                                                                          \
-            float *p1 = imgin1->im->array.F;                                                       \
-            float *p2 = imgin2->im->array.F;                                                       \
-            float *po = imgout->im->array.F;                                                       \
-            _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i = 0;    \
-                                                                                i < nelement; i++) \
-                po[i] = p1[i] op p2[i];                                                            \
+            for (uint8_t a = 0; a < imgin1->md->naxis; a++)                                        \
+            {                                                                                      \
+                if (imgin1->md->size[a] != imgin2->md->size[a])                                    \
+                {                                                                                  \
+                    same_dims = 0;                                                                 \
+                    break;                                                                         \
+                }                                                                                  \
+            }                                                                                      \
         }                                                                                          \
-        else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                       \
-                 imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+        int cube_slice = (imgin1->md->naxis == 3 && imgin2->md->naxis == 2 &&                      \
+                          imgin1->md->size[0] == imgin2->md->size[0] &&                            \
+                          imgin1->md->size[1] == imgin2->md->size[1]);                             \
+        int slice_cube = (imgin1->md->naxis == 2 && imgin2->md->naxis == 3 &&                      \
+                          imgin1->md->size[0] == imgin2->md->size[0] &&                            \
+                          imgin1->md->size[1] == imgin2->md->size[1]);                             \
+        if (same_dims)                                                                             \
         {                                                                                          \
-            double *p1 = imgin1->im->array.D;                                                      \
-            double *p2 = imgin2->im->array.D;                                                      \
-            double *po = imgout->im->array.D;                                                      \
-            _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i = 0;    \
-                                                                                i < nelement; i++) \
-                po[i] = p1[i] op p2[i];                                                            \
+            if (imgout->ID == -1)                                                                  \
+            {                                                                                      \
+                copyIMGID(imgin1, imgout);                                                         \
+            }                                                                                      \
+            imcreateIMGID(imgout);                                                                 \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->datatype == _DATATYPE_FLOAT)                                               \
+            {                                                                                      \
+                float *p1 = imgin1->im->array.F;                                                   \
+                float *p2 = imgin2->im->array.F;                                                   \
+                float *po = imgout->im->array.F;                                                   \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint64_t i = 0; i < nelement; i++)                                            \
+                {                                                                                  \
+                    po[i] = p1[i] op p2[i];                                                        \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->datatype == _DATATYPE_DOUBLE)                                         \
+            {                                                                                      \
+                double *p1 = imgin1->im->array.D;                                                  \
+                double *p2 = imgin2->im->array.D;                                                  \
+                double *po = imgout->im->array.D;                                                  \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint64_t i = 0; i < nelement; i++)                                            \
+                {                                                                                  \
+                    po[i] = p1[i] op p2[i];                                                        \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
+        }                                                                                          \
+        else if (cube_slice)                                                                       \
+        {                                                                                          \
+            if (imgout->ID == -1)                                                                  \
+            {                                                                                      \
+                copyIMGID(imgin1, imgout);                                                         \
+            }                                                                                      \
+            imcreateIMGID(imgout);                                                                 \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            uint64_t xsize = imgin1->md->size[0];                                                  \
+            uint64_t ysize = imgin1->md->size[1];                                                  \
+            uint64_t nxy = xsize * ysize;                                                          \
+            uint32_t zsize = imgin1->md->size[2];                                                  \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->datatype == _DATATYPE_FLOAT)                                               \
+            {                                                                                      \
+                float *p1 = imgin1->im->array.F;                                                   \
+                float *p2 = imgin2->im->array.F;                                                   \
+                float *po = imgout->im->array.F;                                                   \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const float *p1_slice = p1 + k * nxy;                                          \
+                    float       *po_slice = po + k * nxy;                                          \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = p1_slice[i] op p2[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->datatype == _DATATYPE_DOUBLE)                                         \
+            {                                                                                      \
+                double *p1 = imgin1->im->array.D;                                                  \
+                double *p2 = imgin2->im->array.D;                                                  \
+                double *po = imgout->im->array.D;                                                  \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const double *p1_slice = p1 + k * nxy;                                         \
+                    double       *po_slice = po + k * nxy;                                         \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = p1_slice[i] op p2[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
+        }                                                                                          \
+        else if (slice_cube)                                                                       \
+        {                                                                                          \
+            if (imgout->ID == -1)                                                                  \
+            {                                                                                      \
+                copyIMGID(imgin2, imgout);                                                         \
+            }                                                                                      \
+            imcreateIMGID(imgout);                                                                 \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            uint64_t xsize = imgin2->md->size[0];                                                  \
+            uint64_t ysize = imgin2->md->size[1];                                                  \
+            uint64_t nxy = xsize * ysize;                                                          \
+            uint32_t zsize = imgin2->md->size[2];                                                  \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->datatype == _DATATYPE_FLOAT)                                               \
+            {                                                                                      \
+                float *p1 = imgin1->im->array.F;                                                   \
+                float *p2 = imgin2->im->array.F;                                                   \
+                float *po = imgout->im->array.F;                                                   \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const float *p2_slice = p2 + k * nxy;                                          \
+                    float       *po_slice = po + k * nxy;                                          \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = p1[i] op p2_slice[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->datatype == _DATATYPE_DOUBLE)                                         \
+            {                                                                                      \
+                double *p1 = imgin1->im->array.D;                                                  \
+                double *p2 = imgin2->im->array.D;                                                  \
+                double *po = imgout->im->array.D;                                                  \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const double *p2_slice = p2 + k * nxy;                                         \
+                    double       *po_slice = po + k * nxy;                                         \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = p1[i] op p2_slice[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
         }                                                                                          \
         else                                                                                       \
         {                                                                                          \
@@ -1960,29 +2103,172 @@ ARITH_CST_OPTIMIZED_FUNCTION(div, /)
         resolveIMGID(imgin1, ERRMODE_ABORT);                                                       \
         resolveIMGID(imgin2, ERRMODE_ABORT);                                                       \
         resolveIMGID(imgout, ERRMODE_NULL);                                                        \
-        if (imgout->ID == -1)                                                                      \
-            copyIMGID(imgin1, imgout);                                                             \
-        imcreateIMGID(imgout);                                                                     \
-        uint64_t nelement = imgout->md->nelement;                                                  \
-        if (imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT &&  \
-            imgout->datatype == _DATATYPE_FLOAT)                                                   \
+        int same_dims = (imgin1->md->naxis == imgin2->md->naxis);                                  \
+        if (same_dims)                                                                             \
         {                                                                                          \
-            float *p1 = imgin1->im->array.F;                                                       \
-            float *p2 = imgin2->im->array.F;                                                       \
-            float *po = imgout->im->array.F;                                                       \
-            _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i = 0;    \
-                                                                                i < nelement; i++) \
-                po[i] = (float) funcname((double) p1[i], (double) p2[i]);                          \
+            for (uint8_t a = 0; a < imgin1->md->naxis; a++)                                        \
+            {                                                                                      \
+                if (imgin1->md->size[a] != imgin2->md->size[a])                                    \
+                {                                                                                  \
+                    same_dims = 0;                                                                 \
+                    break;                                                                         \
+                }                                                                                  \
+            }                                                                                      \
         }                                                                                          \
-        else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                       \
-                 imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+        int cube_slice = (imgin1->md->naxis == 3 && imgin2->md->naxis == 2 &&                      \
+                          imgin1->md->size[0] == imgin2->md->size[0] &&                            \
+                          imgin1->md->size[1] == imgin2->md->size[1]);                             \
+        int slice_cube = (imgin1->md->naxis == 2 && imgin2->md->naxis == 3 &&                      \
+                          imgin1->md->size[0] == imgin2->md->size[0] &&                            \
+                          imgin1->md->size[1] == imgin2->md->size[1]);                             \
+        if (same_dims)                                                                             \
         {                                                                                          \
-            double *p1 = imgin1->im->array.D;                                                      \
-            double *p2 = imgin2->im->array.D;                                                      \
-            double *po = imgout->im->array.D;                                                      \
-            _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i = 0;    \
-                                                                                i < nelement; i++) \
-                po[i] = funcname(p1[i], p2[i]);                                                    \
+            if (imgout->ID == -1)                                                                  \
+            {                                                                                      \
+                copyIMGID(imgin1, imgout);                                                         \
+            }                                                                                      \
+            imcreateIMGID(imgout);                                                                 \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->datatype == _DATATYPE_FLOAT)                                               \
+            {                                                                                      \
+                float *p1 = imgin1->im->array.F;                                                   \
+                float *p2 = imgin2->im->array.F;                                                   \
+                float *po = imgout->im->array.F;                                                   \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint64_t i = 0; i < nelement; i++)                                            \
+                {                                                                                  \
+                    po[i] = (float) funcname((double) p1[i], (double) p2[i]);                      \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->datatype == _DATATYPE_DOUBLE)                                         \
+            {                                                                                      \
+                double *p1 = imgin1->im->array.D;                                                  \
+                double *p2 = imgin2->im->array.D;                                                  \
+                double *po = imgout->im->array.D;                                                  \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint64_t i = 0; i < nelement; i++)                                            \
+                {                                                                                  \
+                    po[i] = funcname(p1[i], p2[i]);                                                \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
+        }                                                                                          \
+        else if (cube_slice)                                                                       \
+        {                                                                                          \
+            if (imgout->ID == -1)                                                                  \
+            {                                                                                      \
+                copyIMGID(imgin1, imgout);                                                         \
+            }                                                                                      \
+            imcreateIMGID(imgout);                                                                 \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            uint64_t xsize = imgin1->md->size[0];                                                  \
+            uint64_t ysize = imgin1->md->size[1];                                                  \
+            uint64_t nxy = xsize * ysize;                                                          \
+            uint32_t zsize = imgin1->md->size[2];                                                  \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->datatype == _DATATYPE_FLOAT)                                               \
+            {                                                                                      \
+                float *p1 = imgin1->im->array.F;                                                   \
+                float *p2 = imgin2->im->array.F;                                                   \
+                float *po = imgout->im->array.F;                                                   \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const float *p1_slice = p1 + k * nxy;                                          \
+                    float       *po_slice = po + k * nxy;                                          \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = (float) funcname((double) p1_slice[i], (double) p2[i]);      \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->datatype == _DATATYPE_DOUBLE)                                         \
+            {                                                                                      \
+                double *p1 = imgin1->im->array.D;                                                  \
+                double *p2 = imgin2->im->array.D;                                                  \
+                double *po = imgout->im->array.D;                                                  \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const double *p1_slice = p1 + k * nxy;                                         \
+                    double       *po_slice = po + k * nxy;                                         \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = funcname(p1_slice[i], p2[i]);                                \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
+        }                                                                                          \
+        else if (slice_cube)                                                                       \
+        {                                                                                          \
+            if (imgout->ID == -1)                                                                  \
+            {                                                                                      \
+                copyIMGID(imgin2, imgout);                                                         \
+            }                                                                                      \
+            imcreateIMGID(imgout);                                                                 \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            uint64_t xsize = imgin2->md->size[0];                                                  \
+            uint64_t ysize = imgin2->md->size[1];                                                  \
+            uint64_t nxy = xsize * ysize;                                                          \
+            uint32_t zsize = imgin2->md->size[2];                                                  \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->datatype == _DATATYPE_FLOAT)                                               \
+            {                                                                                      \
+                float *p1 = imgin1->im->array.F;                                                   \
+                float *p2 = imgin2->im->array.F;                                                   \
+                float *po = imgout->im->array.F;                                                   \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const float *p2_slice = p2 + k * nxy;                                          \
+                    float       *po_slice = po + k * nxy;                                          \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = (float) funcname((double) p1[i], (double) p2_slice[i]);      \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->datatype == _DATATYPE_DOUBLE)                                         \
+            {                                                                                      \
+                double *p1 = imgin1->im->array.D;                                                  \
+                double *p2 = imgin2->im->array.D;                                                  \
+                double *po = imgout->im->array.D;                                                  \
+                _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)")                     \
+                for (uint32_t k = 0; k < zsize; k++)                                               \
+                {                                                                                  \
+                    const double *p2_slice = p2 + k * nxy;                                         \
+                    double       *po_slice = po + k * nxy;                                         \
+                    _Pragma("omp simd")                                                            \
+                    for (uint64_t i = 0; i < nxy; i++)                                             \
+                    {                                                                              \
+                        po_slice[i] = funcname(p1[i], p2_slice[i]);                                \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
         }                                                                                          \
         else                                                                                       \
         {                                                                                          \
