@@ -13,7 +13,7 @@
 #include "fps_CONFstart.h"
 #include "fps_RUNstart.h"
 #include "fps_FPSremove.h"
-#include "fps_cmd_handlers.h"
+#include "cmd/fps_cmd_handlers.h"
 
 
 /** @brief process command line

@@ -196,31 +196,4 @@ static inline void sig_handler(int signo __attribute__((unused)))
 {
 }
 
-static inline errno_t RegisterModule(const char *f __attribute__((unused)),
-                                     const char *p __attribute__((unused)),
-                                     const char *i __attribute__((unused)),
-                                     int         ma __attribute__((unused)),
-                                     int         mi __attribute__((unused)),
-                                     int         pa __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline uint32_t RegisterCLIcmd(CLICMDDATA cd __attribute__((unused)),
-                                      errno_t (*fp)(void) __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline uint32_t RegisterCLIcommand(const char *k __attribute__((unused)),
-                                          const char *s __attribute__((unused)),
-                                          errno_t (*fp)() __attribute__((unused)),
-                                          const char *i __attribute__((unused)),
-                                          const char *sy __attribute__((unused)),
-                                          const char *e __attribute__((unused)),
-                                          const char *c __attribute__((unused)))
-{
-    return 0;
-}
-
 #endif /* CLICORE_STANDALONE_H */
