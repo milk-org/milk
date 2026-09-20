@@ -234,7 +234,8 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     pch1 = namestring;
     if (strlen(namestring) != 0)
     {
-        pch = strtok(namestring, ">");
+        char *saveptr = NULL;
+        pch           = strtok_r(namestring, ">", &saveptr);
         while (pch != NULL)
         {
             pch1 = pch;
@@ -312,7 +313,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
                             img.CBsize = cbsize;
                         }
             */
-            pch = strtok(NULL, ">");
+            pch = strtok_r(NULL, ">", &saveptr);
         }
     }
 
