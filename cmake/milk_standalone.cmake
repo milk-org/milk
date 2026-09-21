@@ -14,28 +14,6 @@
 # The module's shared library (${LIBNAME}) is NOT linked by default. If a
 # standalone needs module-lib symbols, add an explicit target_link_libraries()
 # after the call.
-#
-
-# Compile fps_standalone_data.c once as an OBJECT library so all standalone
-# executables share the same .o rather than recompiling it per target.
-add_library(fps_standalone_data_obj OBJECT
-            "${PROJECT_SOURCE_DIR}/src/engine/libfps/fps_standalone_data.c")
-target_compile_definitions(
-  fps_standalone_data_obj
-  PRIVATE FPS_STANDALONE $<$<BOOL:${USE_STATIC_LTO}>:FPS_STANDALONE_SKIP_STUBS>)
-target_include_directories(fps_standalone_data_obj
-                           PRIVATE ${PROJECT_SOURCE_DIR}/src)
-if(USE_CLI)
-  target_include_directories(
-    fps_standalone_data_obj
-    PRIVATE # ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/cli
-            ${PROJECT_SOURCE_DIR}/src/cli/CLIcore
-            ${PROJECT_SOURCE_DIR}/src/cli/libmilkscript
-            ${PROJECT_SOURCE_DIR}/src/coremods
-            ${PROJECT_SOURCE_DIR}/src/engine/libfps
-            ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
-            ${PROJECT_SOURCE_DIR}/src/engine/libmilkcommon)
-endif()
 
 # Common link set for all standalone executables
 set(_MILK_STANDALONE_LIBS
@@ -190,8 +168,7 @@ endfunction()
 #
 function(add_milk_standalone FUNC_NAME SRC_FILE)
   set(EXE_NAME "milk-fpsexec-${FUNC_NAME}")
-  add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
-                             $<TARGET_OBJECTS:fps_standalone_data_obj>)
+  add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}")
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
   # CMAKE_SOURCE_DIR (not PROJECT_SOURCE_DIR): each plugin subdirectory calls
   # its own project(), which would otherwise re-root this path locally.
@@ -220,8 +197,7 @@ endfunction()
 #
 function(add_cacao_standalone FUNC_NAME SRC_FILE)
   set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
-  add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
-                             $<TARGET_OBJECTS:fps_standalone_data_obj>)
+  add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}")
   target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE MILK_NO_CLI)
   # CMAKE_SOURCE_DIR (not PROJECT_SOURCE_DIR): each plugin subdirectory calls
   # its own project(), which would otherwise re-root this path locally.

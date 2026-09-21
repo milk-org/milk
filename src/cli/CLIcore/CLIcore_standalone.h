@@ -74,10 +74,6 @@ static uid_t   euid_called __attribute__((unused));
 static uid_t   suid __attribute__((unused));
 static uint8_t TYPESIZE[32] __attribute__((unused));
 
-
-/* TUI stubs moved to fps_standalone_data.c */
-
-
 #define NB_ARG_MAX 100
 
 typedef errno_t (*module_cli_reg_fn)(void);
