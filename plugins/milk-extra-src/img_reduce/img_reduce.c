@@ -26,10 +26,6 @@
 #define MODULE_DESCRIPTION "Image analysis/reduction routines"
 
 #include "img_reduce_internal.h"
-/** Image analysis/reduction routines for astronomy
- *
- *
- */
 
 int    badpixclean_init = 0;
 long   badpixclean_NBop;
@@ -39,17 +35,6 @@ float *badpixclean_array_coeff;
 
 long  badpixclean_NBbadpix;
 long *badpixclean_indexlist;
-
-/* ================================================================== */
-/* ================================================================== */
-/*            INITIALIZE LIBRARY                                      */
-/* ================================================================== */
-/* ================================================================== */
-
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-INIT_MODULE_LIB(img_reduce)
 
 /* ================================================================== */
 /* ================================================================== */
@@ -390,4 +375,8 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+
+// INITIALIZE MILK IMPORTABLE MODULE
+MILK_MODULE(img_reduce, init_module_CLI, NULL);
+
 #endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)

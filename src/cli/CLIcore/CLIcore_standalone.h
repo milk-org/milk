@@ -14,7 +14,7 @@
  * Modules compiled with this header can provide
  * computation functions that standalone fpsexec
  * programs call, but CLI registration code
- * (INIT_MODULE_LIB, RegisterCLIcommand, etc.)
+ * (MILK_MODULE, RegisterCLIcommand, etc.)
  * becomes no-op stubs.
  */
 
@@ -79,11 +79,6 @@ static uint8_t TYPESIZE[32] __attribute__((unused));
 typedef errno_t (*module_cli_reg_fn)(void);
 
 #define MILK_MODULE(modname, _cli_reg_call, _deps) /* standalone: no descriptor table */
-
-#define INIT_MODULE_LIB(modname)                              \
-    static errno_t                     init_module_CLI(void); \
-    static int __attribute__((unused)) INITSTATUS_##modname = 0;
-
 
 /* =====================================
  * Type definitions
