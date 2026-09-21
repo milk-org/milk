@@ -348,6 +348,7 @@ static errno_t cp_CLIfunction(void)
  * Module init
  * ============================================ */
 
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t init_module_CLI()
 {
     /* rmbadpixfast */
@@ -389,3 +390,4 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)

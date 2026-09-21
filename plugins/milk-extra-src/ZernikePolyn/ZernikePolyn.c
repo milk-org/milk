@@ -65,7 +65,7 @@
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
 //
-INIT_MODULE_LIB(ZernikePolyn)
+INIT_MODULE_LIB(ZernikePolyn) // TODO STRAYS
 
 /* ================================================================== */
 /* ================================================================== */
@@ -186,6 +186,7 @@ static errno_t rmp_CLIfunction(void)
                                         rmp_nb_bindings, rmp_compute);
 }
 
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t init_module_CLI()
 {
     /* mkzer */
@@ -208,7 +209,7 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
-
+#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
 {
