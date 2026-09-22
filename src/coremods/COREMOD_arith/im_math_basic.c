@@ -36,32 +36,149 @@
         {                                                                                          \
             return RETURN_FAILURE;                                                                 \
         }                                                                                          \
-        imgid_ensure_output(imgin1, imgout);                                                       \
-        uint64_t nelement = imgout->md->nelement;                                                  \
-        if (imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT &&  \
-            imgout->mdt->datatype == _DATATYPE_FLOAT)                                              \
+        int same_dims  = imgid_same_dims(imgin1, imgin2);                                          \
+        int cube_slice = imgid_is_cube_slice(imgin1, imgin2);                                      \
+        int slice_cube = imgid_is_cube_slice(imgin2, imgin1);                                      \
+        if (same_dims)                                                                             \
         {                                                                                          \
-            float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                    \
-            float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                    \
-            float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                    \
-            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+            imgid_ensure_output(imgin1, imgout);                                                   \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->mdt->datatype == _DATATYPE_FLOAT)                                          \
+            {                                                                                      \
+                float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
+                float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
+                float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
                                                                                          0;        \
                                                                                      i < nelement; \
-                                                                                     i++) po[i] =  \
-                p1[i] op p2[i];                                                                    \
+                                                                                     i++)          \
+                {                                                                                  \
+                    po[i] = p1[i] op p2[i];                                                        \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->mdt->datatype == _DATATYPE_DOUBLE)                                    \
+            {                                                                                      \
+                double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
+                double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
+                double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
+                {                                                                                  \
+                    po[i] = p1[i] op p2[i];                                                        \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
         }                                                                                          \
-        else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                       \
-                 imgin2->md->datatype == _DATATYPE_DOUBLE &&                                       \
-                 imgout->mdt->datatype == _DATATYPE_DOUBLE)                                        \
+        else if (cube_slice)                                                                       \
         {                                                                                          \
-            double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);                   \
-            double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);                   \
-            double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);                   \
-            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
-                                                                                         0;        \
-                                                                                     i < nelement; \
-                                                                                     i++) po[i] =  \
-                p1[i] op p2[i];                                                                    \
+            imgid_ensure_output(imgin1, imgout);                                                   \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
+            uint64_t nxy      = (uint64_t) imgin1->md->size[0] * imgin1->md->size[1];              \
+            uint32_t zsize    = imgin1->md->size[2];                                               \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->mdt->datatype == _DATATYPE_FLOAT)                                          \
+            {                                                                                      \
+                float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
+                float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
+                float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const float *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                 \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = p1_slice[i] op p2[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->mdt->datatype == _DATATYPE_DOUBLE)                                    \
+            {                                                                                      \
+                double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
+                double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
+                double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const double *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = p1_slice[i] op p2[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
+        }                                                                                          \
+        else if (slice_cube)                                                                       \
+        {                                                                                          \
+            imgid_ensure_output(imgin2, imgout);                                                   \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
+            uint64_t nxy      = (uint64_t) imgin2->md->size[0] * imgin2->md->size[1];              \
+            uint32_t zsize    = imgin2->md->size[2];                                               \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->mdt->datatype == _DATATYPE_FLOAT)                                          \
+            {                                                                                      \
+                float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
+                float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
+                float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const float *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                 \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = p1[i] op p2_slice[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->mdt->datatype == _DATATYPE_DOUBLE)                                    \
+            {                                                                                      \
+                double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
+                double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
+                double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const double *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = p1[i] op p2_slice[i];                                        \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
         }                                                                                          \
         else                                                                                       \
         {                                                                                          \
@@ -247,32 +364,149 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
         {                                                                                          \
             return RETURN_FAILURE;                                                                 \
         }                                                                                          \
-        imgid_ensure_output(imgin1, imgout);                                                       \
-        uint64_t nelement = imgout->md->nelement;                                                  \
-        if (imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT &&  \
-            imgout->mdt->datatype == _DATATYPE_FLOAT)                                              \
+        int same_dims  = imgid_same_dims(imgin1, imgin2);                                          \
+        int cube_slice = imgid_is_cube_slice(imgin1, imgin2);                                      \
+        int slice_cube = imgid_is_cube_slice(imgin2, imgin1);                                      \
+        if (same_dims)                                                                             \
         {                                                                                          \
-            float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                    \
-            float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                    \
-            float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                    \
-            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+            imgid_ensure_output(imgin1, imgout);                                                   \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->mdt->datatype == _DATATYPE_FLOAT)                                          \
+            {                                                                                      \
+                float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
+                float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
+                float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
                                                                                          0;        \
                                                                                      i < nelement; \
-                                                                                     i++) po[i] =  \
-                funcname_f(p1[i], p2[i]);                                                          \
+                                                                                     i++)          \
+                {                                                                                  \
+                    po[i] = funcname_f(p1[i], p2[i]);                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->mdt->datatype == _DATATYPE_DOUBLE)                                    \
+            {                                                                                      \
+                double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
+                double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
+                double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
+                _Pragma(                                                                           \
+                    "omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
+                                                                                         0;        \
+                                                                                     i < nelement; \
+                                                                                     i++)          \
+                {                                                                                  \
+                    po[i] = funcname(p1[i], p2[i]);                                                \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
         }                                                                                          \
-        else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                       \
-                 imgin2->md->datatype == _DATATYPE_DOUBLE &&                                       \
-                 imgout->mdt->datatype == _DATATYPE_DOUBLE)                                        \
+        else if (cube_slice)                                                                       \
         {                                                                                          \
-            double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);                   \
-            double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);                   \
-            double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);                   \
-            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") for (uint64_t i =  \
-                                                                                         0;        \
-                                                                                     i < nelement; \
-                                                                                     i++) po[i] =  \
-                funcname(p1[i], p2[i]);                                                            \
+            imgid_ensure_output(imgin1, imgout);                                                   \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
+            uint64_t nxy      = (uint64_t) imgin1->md->size[0] * imgin1->md->size[1];              \
+            uint32_t zsize    = imgin1->md->size[2];                                               \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->mdt->datatype == _DATATYPE_FLOAT)                                          \
+            {                                                                                      \
+                float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
+                float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
+                float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const float *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                 \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = funcname_f(p1_slice[i], p2[i]);                              \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->mdt->datatype == _DATATYPE_DOUBLE)                                    \
+            {                                                                                      \
+                double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
+                double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
+                double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const double *MILK_RESTRICT p1_slice = p1 + (uint64_t) k * nxy;                \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = funcname(p1_slice[i], p2[i]);                                \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
+        }                                                                                          \
+        else if (slice_cube)                                                                       \
+        {                                                                                          \
+            imgid_ensure_output(imgin2, imgout);                                                   \
+            uint64_t nelement = imgout->md->nelement;                                              \
+            (void) nelement;                                                                       \
+            uint64_t nxy      = (uint64_t) imgin2->md->size[0] * imgin2->md->size[1];              \
+            uint32_t zsize    = imgin2->md->size[2];                                               \
+            if (imgin1->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgin2->md->datatype == _DATATYPE_FLOAT &&                                         \
+                imgout->mdt->datatype == _DATATYPE_FLOAT)                                          \
+            {                                                                                      \
+                float *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);                \
+                float *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);                \
+                float *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);                \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const float *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                 \
+                    float *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                 \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = funcname_f(p1[i], p2_slice[i]);                              \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else if (imgin1->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgin2->md->datatype == _DATATYPE_DOUBLE &&                                   \
+                     imgout->mdt->datatype == _DATATYPE_DOUBLE)                                    \
+            {                                                                                      \
+                double *MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);               \
+                double *MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);               \
+                double *MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);               \
+                _Pragma(                                                                           \
+                    "omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") for (uint32_t k = 0;    \
+                                                                                k < zsize; k++)    \
+                {                                                                                  \
+                    const double *MILK_RESTRICT p2_slice = p2 + (uint64_t) k * nxy;                \
+                    double *MILK_RESTRICT       po_slice = po + (uint64_t) k * nxy;                \
+                    _Pragma("omp simd") for (uint64_t i = 0; i < nxy; i++)                         \
+                    {                                                                              \
+                        po_slice[i] = funcname(p1[i], p2_slice[i]);                                \
+                    }                                                                              \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+            {                                                                                      \
+                arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name);                  \
+            }                                                                                      \
         }                                                                                          \
         else                                                                                       \
         {                                                                                          \

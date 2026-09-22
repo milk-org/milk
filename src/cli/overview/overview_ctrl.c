@@ -817,7 +817,10 @@ void ov_ctrl_inspect_item(ov_focus_t panel, const void *item)
     /* Wait for ENTER (or any key) */
     {
         char buf[4];
-        (void) read(STDIN_FILENO, buf, sizeof(buf));
+        if (read(STDIN_FILENO, buf, sizeof(buf)) < 0)
+        {
+            /* Ignore read failure when waiting for user acknowledgment */
+        }
     }
 
     /* Resume TUI */

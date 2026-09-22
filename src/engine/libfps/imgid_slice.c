@@ -137,15 +137,20 @@ static int parse_one_axis(const char *spec, IMGID_SLICE *s, int axis)
         }
 
         /* Check for 'b' suffix (binning mode) */
-        int slen = (int) strlen(sstep);
+        size_t slen = strlen(sstep);
         if (slen > 0 && (sstep[slen - 1] == 'b' || sstep[slen - 1] == 'B'))
         {
             s->bin[axis] = 1;
             /* Parse number before 'b' */
-            char stepnum[32];
-            strncpy(stepnum, sstep, slen - 1);
-            stepnum[slen - 1] = '\0';
-            s->step[axis]     = (int32_t) strtol(stepnum, NULL, 10);
+            char   stepnum[32];
+            size_t ncopy = slen - 1;
+            if (ncopy >= sizeof(stepnum))
+            {
+                ncopy = sizeof(stepnum) - 1;
+            }
+            memcpy(stepnum, sstep, ncopy);
+            stepnum[ncopy] = '\0';
+            s->step[axis]  = (int32_t) strtol(stepnum, NULL, 10);
         }
         else
         {

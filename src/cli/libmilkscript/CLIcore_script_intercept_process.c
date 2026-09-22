@@ -519,11 +519,22 @@ static const char *cli_cmp_sym(char op_ch, int op_eq)
  * @src:  source string
  * @len:  number of chars to copy from src
  */
-static void cli_assert_trim(char *dst, size_t sz, const char *src, int len)
+static void cli_assert_trim(char *dst, size_t sz, const char *src, size_t len)
 {
-    if (len >= (int) sz)
+    if (dst == NULL || sz == 0)
     {
-        len = (int) sz - 1;
+        return;
+    }
+
+    if (src == NULL || len == 0)
+    {
+        dst[0] = '\0';
+        return;
+    }
+
+    if (len >= sz)
+    {
+        len = sz - 1;
     }
     /* skip leading ws */
     while (len > 0 && (*src == ' ' || *src == '\t'))
@@ -531,13 +542,15 @@ static void cli_assert_trim(char *dst, size_t sz, const char *src, int len)
         src++;
         len--;
     }
-    memcpy(dst, src, (size_t) len);
+    if (len > 0)
+    {
+        memcpy(dst, src, len);
+    }
     dst[len] = '\0';
     /* strip trailing ws */
-    int ri = len - 1;
-    while (ri >= 0 && (dst[ri] == ' ' || dst[ri] == '\t'))
+    while (len > 0 && (dst[len - 1] == ' ' || dst[len - 1] == '\t'))
     {
-        dst[ri--] = '\0';
+        dst[--len] = '\0';
     }
 }
 
@@ -576,7 +589,7 @@ static int cli_assert_cmp(const char *ap)
     int  o1len = 1 + o1eq;
 
     char part1[512];
-    cli_assert_trim(part1, sizeof(part1), ap, (int) (op1 - ap));
+    cli_assert_trim(part1, sizeof(part1), ap, (size_t) (op1 - ap));
 
     const char *after1 = op1 + o1len;
 
@@ -599,11 +612,11 @@ static int cli_assert_cmp(const char *ap)
         int  o2len = 1 + o2eq;
 
         char part2[512];
-        cli_assert_trim(part2, sizeof(part2), after1, (int) (op2 - after1));
+        cli_assert_trim(part2, sizeof(part2), after1, (size_t) (op2 - after1));
 
         char        part3[512];
         const char *after2 = op2 + o2len;
-        cli_assert_trim(part3, sizeof(part3), after2, (int) strlen(after2));
+        cli_assert_trim(part3, sizeof(part3), after2, strlen(after2));
 
         double v1, v2, v3;
         if (!cli_assert_eval(part1, &v1) || !cli_assert_eval(part2, &v2) ||
@@ -650,7 +663,7 @@ static int cli_assert_cmp(const char *ap)
     {
         /* Single: part1 op1 rhs */
         char rhs[512];
-        cli_assert_trim(rhs, sizeof(rhs), after1, (int) strlen(after1));
+        cli_assert_trim(rhs, sizeof(rhs), after1, strlen(after1));
 
         double v1, v2;
         if (!cli_assert_eval(part1, &v1) || !cli_assert_eval(rhs, &v2))
@@ -707,15 +720,15 @@ int cli_intercept_cmd_assert(const char *p)
              * assert [ condition ] "msg" */
             ap++;
             const char *end = strrchr(ap, ']');
-            if (end != NULL)
+            if (end != NULL && end >= ap)
             {
-                char cs[512];
-                int  clen = (int) (end - ap);
-                if (clen >= (int) sizeof(cs))
+                char   cs[512];
+                size_t clen = (size_t) (end - ap);
+                if (clen >= sizeof(cs))
                 {
-                    clen = (int) sizeof(cs) - 1;
+                    clen = sizeof(cs) - 1;
                 }
-                memcpy(cs, ap, (size_t) clen);
+                memcpy(cs, ap, clen);
                 cs[clen]   = '\0';
                 int result = cli_eval_test(cs);
                 if (result)
@@ -736,13 +749,13 @@ int cli_intercept_cmd_assert(const char *p)
                     {
                         msg++;
                     }
-                    int mlen = (int) strlen(msg);
+                    size_t mlen = strlen(msg);
                     if (mlen > 0 && (msg[mlen - 1] == '"' || msg[mlen - 1] == '\''))
                     {
                         char mb[512];
                         strncpy(mb, msg, sizeof(mb) - 1);
                         mb[sizeof(mb) - 1] = '\0';
-                        if (mlen - 1 < (int) sizeof(mb))
+                        if (mlen - 1 < sizeof(mb))
                         {
                             mb[mlen - 1] = '\0';
                         }
@@ -793,13 +806,13 @@ int cli_intercept_cmd_assert(const char *p)
             }
             else
             {
-                char lhs[512];
-                int  llen = (int) (eq - ap);
-                if (llen > 511)
+                char   lhs[512];
+                size_t llen = (size_t) (eq - ap);
+                if (llen >= sizeof(lhs))
                 {
-                    llen = 511;
+                    llen = sizeof(lhs) - 1;
                 }
-                memcpy(lhs, ap, (size_t) llen);
+                memcpy(lhs, ap, llen);
                 lhs[llen] = '\0';
 
                 const char *rp = eq + 1;
@@ -809,27 +822,27 @@ int cli_intercept_cmd_assert(const char *p)
                 const char *tilde = strchr(rp, '~');
                 if (tilde != NULL)
                 {
-                    int rlen = (int) (tilde - rp);
-                    if (rlen > 511)
+                    size_t rlen = (size_t) (tilde - rp);
+                    if (rlen >= sizeof(rhs))
                     {
-                        rlen = 511;
+                        rlen = sizeof(rhs) - 1;
                     }
-                    memcpy(rhs, rp, (size_t) rlen);
+                    memcpy(rhs, rp, rlen);
                     rhs[rlen] = '\0';
                     tol       = fabs(strtod(tilde + 1, NULL));
                 }
                 else
                 {
-                    strncpy(rhs, rp, 511);
-                    rhs[511] = '\0';
+                    strncpy(rhs, rp, sizeof(rhs) - 1);
+                    rhs[sizeof(rhs) - 1] = '\0';
                 }
 
                 /* Trim trailing ws */
                 {
-                    int ri = (int) strlen(rhs) - 1;
-                    while (ri >= 0 && (rhs[ri] == ' ' || rhs[ri] == '\t'))
+                    size_t ri = strlen(rhs);
+                    while (ri > 0 && (rhs[ri - 1] == ' ' || rhs[ri - 1] == '\t'))
                     {
-                        rhs[ri--] = '\0';
+                        rhs[--ri] = '\0';
                     }
                 }
 

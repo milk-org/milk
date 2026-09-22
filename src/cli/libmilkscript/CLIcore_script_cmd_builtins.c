@@ -905,18 +905,30 @@ int cli_handle_shell_builtins(void)
                     else if (fmt[k] == '.' && ai < nargs)
                     {
                         /* Handle %.Nf */
-                        char pfmt[16];
-                        int  pfi    = 0;
-                        pfmt[pfi++] = '%';
-                        pfmt[pfi++] = '.';
                         k++;
-                        while (fmt[k] >= '0' && fmt[k] <= '9' && pfi < 14)
+                        int prec = 0;
+                        while (fmt[k] >= '0' && fmt[k] <= '9')
                         {
-                            pfmt[pfi++] = fmt[k++];
+                            prec = prec * 10 + (fmt[k++] - '0');
                         }
-                        pfmt[pfi++] = fmt[k]; /* f */
-                        pfmt[pfi]   = '\0';
-                        printf(pfmt, strtod(args[ai++], NULL));
+                        if (fmt[k] == 'f')
+                        {
+                            printf("%.*f", prec, strtod(args[ai++], NULL));
+                        }
+                        else if (fmt[k] == 'g')
+                        {
+                            printf("%.*g", prec, strtod(args[ai++], NULL));
+                        }
+                        else if (fmt[k] == 'e')
+                        {
+                            printf("%.*e", prec, strtod(args[ai++], NULL));
+                        }
+                        else
+                        {
+                            putchar('%');
+                            putchar('.');
+                            putchar(fmt[k]);
+                        }
                     }
                     else
                     {
