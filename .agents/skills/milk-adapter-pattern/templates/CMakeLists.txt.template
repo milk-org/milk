@@ -62,8 +62,14 @@ install(TARGETS milk-fpsexec-@PKG_NAME@
     DESTINATION bin
 )
 
-# Shared Milk CLI module (only if CLIcore headers are available)
-if (MILK_FOUND)
+# Shared Milk CLI module (only if CLIcore headers and library are available)
+find_library(MILK_CLICORE_LIBRARY
+    NAMES CLIcore
+    PATHS ${MILK_LIBRARY_DIRS}
+)
+
+if (MILK_CLICORE_LIBRARY
+        AND EXISTS "${MILK_INCLUDE_DIRS}/CommandLineInterface/CLIcore/CLIcore.h")
     add_library(milk@PKG_NAME@ SHARED
         @PKG_NAME@_module.c
         @PKG_NAME@_fps_common.c
