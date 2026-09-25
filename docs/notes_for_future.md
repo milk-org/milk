@@ -38,6 +38,6 @@ In `USE_STATIC_LTO` mode, we're compiling `.a` static libraries; however, these 
 
 If we want to approach **out-of-tree plugin consumers linking against a previously-built, installed static `milk`** (compile once, extend later, no full rebuild), we will need to do some work: create a proper CMake interface (or, be disciplined in the CMake statements consumers need to use), and make a proper export set with just about everything.
 
-We would also have to freeze the ABI for good, moreso if we'd allow consumer LTO builds.
+We would also have to freeze the ABI for good, more so if we'd allow consumer LTO builds.
 
 And we'd have to review licensing implications of shipping static libs and what's in them.
