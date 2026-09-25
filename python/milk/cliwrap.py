@@ -35,7 +35,7 @@ class MilkBuildException(Exception): ...
 class CLI:
     open: bool = False
 
-    def __init__(self) -> None:
+    def __init__(self, strip_ansi: bool = False) -> None:
         if MILK_CLI_EXEC is None:
             raise MilkBuildException(
                 "MILK built without CLI support. Must build with -DUSE_CLI=ON."
@@ -50,6 +50,7 @@ class CLI:
             bufsize=1,
         )
         self.open = True
+        self.strip_ansi = strip_ansi
         self._read_until_prompt()  # discard startup banner + first prompt
 
     def _read_until_prompt(self) -> str:
@@ -57,10 +58,23 @@ class CLI:
         # rather than line-by-line (which would block forever).
         assert self._proc.stdout is not None
         buf = ""
+        escape = ""
         while not buf.endswith(_PROMPT_SUFFIX):
             char = self._proc.stdout.read(1)
             if char == "":
                 break  # REPL process exited
+            if self.strip_ansi:
+                if len(escape) > 0:  # enter
+                    escape += char
+                    # CSI sequences end on a final byte in '@'-'~'; other
+                    # (non-CSI) escape sequences are just ESC + one char.
+                    if char != "[" or "@" <= char <= "~":
+                        escape = ""
+                    continue
+                if char == "\x1b":
+                    escape = char
+                    continue
+
             buf += char
         # Look for last linebreak
         for k in range(1, len(buf)):

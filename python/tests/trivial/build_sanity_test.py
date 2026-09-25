@@ -38,7 +38,7 @@ from milk.cliwrap import CLI, HAVE_CLI
 def test_module_import_in_cli(module_name: str):
     if not HAVE_CLI:
         pytest.skip("MILK compiled without CLI support")
-    with CLI() as cli:
+    with CLI(strip_ansi=True) as cli:
         stdout = cli.send_line(f"mload {module_name}")
         last_line = stdout.split("\n")[-1]
         lib_file = f"lib{module_name}.so"

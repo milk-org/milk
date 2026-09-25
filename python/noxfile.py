@@ -73,9 +73,8 @@ def milk_build(
             f"-DUSE_STATIC_LTO={on_off(use_lto)}"
         ).split(),
         external=True,
-        silent=True,
+        silent=False,
     )
-    # session.run(*(f"make -j20 install").split(), external=True)
     if use_ninja:
         session.run(*(f"ninja install").split(), external=True, silent=True)
     else:
