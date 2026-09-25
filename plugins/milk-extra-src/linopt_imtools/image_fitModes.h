@@ -10,7 +10,10 @@
 #ifndef LINOPT_IMTOOLS__IMAGE_FITMODES_H
 #define LINOPT_IMTOOLS__IMAGE_FITMODES_H
 
-errno_t CLIADDCMD_linopt_imtools__image_fitModes();
+MILK_WEAK errno_t CLIADDCMD_linopt_imtools__image_fitModes()
+{
+    return 0;
+};
 
 #include "milkDebugTools.h"
 
