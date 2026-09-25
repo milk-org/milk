@@ -1,0 +1,126 @@
+/**
+ * @file @PKG_NAME@_fps_main.c.template
+ * @brief Standalone FPS daemon executable for @PKG_NAME@ stream processing.
+ */
+
+#include "@PKG_NAME@_fps_common.h"
+#include "@PKG_NAME@_fps_params.h"
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "@PKG_NAME@",
+    .cmdkey      = "@PKG_NAME@",
+    .description = "@PKG_NAME@ real-time stream processor"
+};
+
+static FPS_CLI_BINDING my_bindings[] = { @PKG_UPPER@_FPS_PARAMS(FPS_X_BINDING) };
+static const int __attribute__((unused)) nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = { @PKG_UPPER@_FPS_PARAMS(FPS_X_FARG) };
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
+
+/**
+ * compute_function() - Main real-time stream processing loop.
+ *
+ * Connects to input ImageStreamIO stream, sets up process monitoring,
+ * creates output streams, and processes frames via semaphore triggers.
+ *
+ * Return: RETURN_SUCCESS on clean exit, non-zero on failure.
+ */
+static errno_t compute_function(void)
+{
+    if (fps_in_name[0] == '\0')
+    {
+        fprintf(stderr, "Error: No input stream specified.\n");
+        return 1;
+    }
+
+    IMGID inimg = imgid_make_from_name(fps_in_name);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
+    if (inimg.ID == -1)
+    {
+        fprintf(stderr, "Error connecting to input stream: %s\n", fps_in_name);
+        return 1;
+    }
+
+    uint32_t xsize = inimg.md->size[0];
+    uint32_t ysize = inimg.md->size[1];
+    uint32_t ndim  = xsize * ysize;
+
+    if (@PKG_NAME@_fps_init_engine(ndim) != 0)
+    {
+        fprintf(stderr, "Error initializing @PKG_NAME@ engine.\n");
+        imgid_free(&inimg);
+        return 1;
+    }
+
+    IMAGE out_img;
+    memset(&out_img, 0, sizeof(IMAGE));
+    uint32_t dims[2] = { xsize, ysize };
+    if (ImageStreamIO_createIm_gpu(&out_img, fps_out_name, 2, dims, _DATATYPE_FLOAT,
+                                   -1, 1, 10, 0, 0, 0) != 0)
+    {
+        fprintf(stderr, "Error creating output stream: %s\n", fps_out_name);
+        @PKG_NAME@_fps_cleanup_engine();
+        imgid_free(&inimg);
+        return 1;
+    }
+
+    strncpy(CLIcmddata.cmdsettings->triggerstreamname, fps_in_name,
+            sizeof(CLIcmddata.cmdsettings->triggerstreamname) - 1);
+    CLIcmddata.cmdsettings->flags |= CLICMDFLAG_PROCINFO;
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    {
+        uint64_t cnt0 = inimg.im->md[0].cnt0;
+        uint32_t slice_idx = (inimg.im->md[0].naxis > 2) ? (uint32_t)inimg.im->md[0].cnt1 : 0;
+        int typesize = ImageStreamIO_typesize((uint8_t)inimg.im->md[0].datatype);
+        const void *raw_slice = (const char *)inimg.im->array.raw +
+                                ((size_t)slice_idx * ndim * (size_t)typesize);
+
+        if (@PKG_NAME@_fps_process_frame(raw_slice, inimg.im->md[0].datatype,
+                                         ndim, cnt0, inimg.im->md[0].atime,
+                                         &out_img) != 0)
+        {
+            continue;
+        }
+
+        processinfo_update_output_stream(processinfo, &out_img, inimg.im);
+
+        static uint64_t msg_cnt = 0;
+        if (++msg_cnt % 100 == 0)
+        {
+            processinfo_WriteMessage_fmt(processinfo, "Frames=%lu",
+                                         (unsigned long)msg_cnt);
+        }
+    }
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    ImageStreamIO_closeIm(&out_img);
+    imgid_free(&inimg);
+    @PKG_NAME@_fps_cleanup_engine();
+
+    return RETURN_SUCCESS;
+}
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2_CONFCHECK(
+    FPS_app_info,
+    @PKG_UPPER@_FPS_PARAMS,
+    compute_function,
+    @PKG_NAME@_fps_custom_conf_check)
+#endif

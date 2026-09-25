@@ -178,21 +178,10 @@ install(
   TARGETS ${LIBNAME}
   EXPORT milkTargets
   DESTINATION lib)
+
+file(GLOB LIBFPS_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 install(
-  FILES fps.h
-        fps_core.h
-        fps_types.h
-        fps_internal.h
-        fps_globals.h
-        fps_processcmdline.h
-        fps_cli_binding.h
-        fps_cli_function.h
-        fps_cli_function_registry.h
-        fps_procinfo_macros.h
-        fps_apply_process_settings.h
-        imgid_slice.h
-        IMGID.h
-        milk_help.h
+  FILES ${LIBFPS_HEADERS}
   DESTINATION include/libfps)
 
 # ==========================================

@@ -1,0 +1,51 @@
+/**
+ * @file @PKG_NAME@_fps_params.h.template
+ * @brief Canonical X-Macro parameter definition for Milk FPS integration.
+ */
+
+#ifndef @PKG_UPPER@_FPS_PARAMS_H
+#define @PKG_UPPER@_FPS_PARAMS_H
+
+#include "fps.h"
+
+/**
+ * @def @PKG_UPPER@_FPS_PARAMS(X)
+ * @brief Shared Parameter Definition Macro.
+ *
+ * Defines all parameters used by the processor. Expands to generate:
+ * - FPS shared memory entries
+ * - CLI argument binding structures
+ * - Default parameter initializers
+ *
+ * Columns:
+ * 1. KEY:     Hierarchical parameter key (e.g. ".in_name").
+ * 2. VAR:     Local variable / array holding the parameter value.
+ * 3. FPTYPE:  FPS type code (FPTYPE_STREAMNAME, FPTYPE_STRING, FPTYPE_FLOAT64, etc.).
+ * 4. FPFLAG:  Parameter status flag (1 = active).
+ * 5. CLIFLAG: CLI flags (FPFLAG_DEFAULT_INPUT, FPFLAG_DEFAULT_TRIGGER_STREAM).
+ * 6. DESCR:   Human-readable description displayed in milk-fpsCTRL.
+ */
+#define @PKG_UPPER@_FPS_PARAMS(X) \
+    /* Primary trigger stream */ \
+    X(".in_name",     fps_in_name,      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_DEFAULT_TRIGGER_STREAM, "Input stream name") \
+    /* Output stream name */ \
+    X(".out_name",    fps_out_name,     FPTYPE_STRING,     1, \
+      FPFLAG_DEFAULT_INPUT, "Output stream name") \
+    /* Publishing and drop toggles */ \
+    X(".stream_out",  &fps_stream_out,  FPTYPE_ONOFF,      1, \
+      FPFLAG_DEFAULT_INPUT, "Publish output stream live") \
+    X(".allow_drop",  &fps_allow_drop,  FPTYPE_ONOFF,      1, \
+      FPFLAG_DEFAULT_INPUT, "Drop frames if lagging (1=latest)") \
+    /* Algorithmic tuning parameters */ \
+    X(".threshold",   &fps_threshold,   FPTYPE_FLOAT64,    1, \
+      FPFLAG_DEFAULT_INPUT, "Operation threshold") \
+    X(".max_items",   &fps_max_items,   FPTYPE_UINT32,     1, \
+      FPFLAG_DEFAULT_INPUT, "Maximum items capacity") \
+    X(".ncpu",        &fps_ncpu,        FPTYPE_UINT32,     1, \
+      FPFLAG_DEFAULT_INPUT, "Worker thread count") \
+    /* Dynamic reset trigger */ \
+    X(".reset_state", &fps_reset_state, FPTYPE_ONOFF,      1, \
+      FPFLAG_DEFAULT_INPUT, "Dynamic trigger: reset state")
+
+#endif /* @PKG_UPPER@_FPS_PARAMS_H */
