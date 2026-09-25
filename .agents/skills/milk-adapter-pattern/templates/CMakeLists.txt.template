@@ -35,6 +35,9 @@ target_include_directories(milk-fpsexec-@PKG_NAME@ PRIVATE
     ${@PKG_UPPER@_INCLUDE_DIRS}
 )
 
+target_link_directories(milk-fpsexec-@PKG_NAME@ PRIVATE
+    ${MILK_LIBRARY_DIRS}
+)
 target_link_libraries(milk-fpsexec-@PKG_NAME@ PRIVATE
     @PKG_LIB@
     milkfps
