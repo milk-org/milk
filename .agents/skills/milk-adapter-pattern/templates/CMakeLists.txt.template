@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.16)
 # Locate Milk via pkg-config
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MILK REQUIRED milk)
-pkg_check_modules(IMAGESTREAMIO REQUIRED ImageStreamIO)
+# ImageStreamIO headers and library are provided by the Milk installation.
 
 # Standalone FPS executable (links libmilkfpsStandalone, no CLIcore)
 add_executable(milk-fpsexec-@PKG_NAME@
