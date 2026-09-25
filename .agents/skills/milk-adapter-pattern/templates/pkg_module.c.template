@@ -72,6 +72,7 @@ static errno_t compute_function(void)
     if (ImageStreamIO_createIm_gpu(&out_img, fps_out_name, 2, dims, _DATATYPE_FLOAT,
                                    -1, 1, 10, 0, 0, 0) != 0)
     {
+        imgid_free(&inimg);
         @PKG_NAME@_fps_cleanup_engine();
         return RETURN_FAILURE;
     }
