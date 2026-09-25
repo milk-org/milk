@@ -67,9 +67,13 @@ find_library(MILK_CLICORE_LIBRARY
     NAMES CLIcore
     PATHS ${MILK_LIBRARY_DIRS}
 )
+find_path(MILK_CLICORE_HEADER
+    NAMES CLIcore.h
+    PATH_SUFFIXES CommandLineInterface/CLIcore
+    PATHS ${MILK_INCLUDE_DIRS}
+)
 
-if (MILK_CLICORE_LIBRARY
-        AND EXISTS "${MILK_INCLUDE_DIRS}/CommandLineInterface/CLIcore/CLIcore.h")
+if (MILK_CLICORE_LIBRARY AND MILK_CLICORE_HEADER)
     add_library(milk@PKG_NAME@ SHARED
         @PKG_NAME@_module.c
         @PKG_NAME@_fps_common.c
@@ -94,7 +98,7 @@ if (MILK_CLICORE_LIBRARY
 
     target_link_libraries(milk@PKG_NAME@ PRIVATE
         @PKG_LIB@
-        CLIcore
+        ${MILK_CLICORE_LIBRARY}
         milkfps
         milkfpsCLI
         milkprocessinfo
