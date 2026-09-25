@@ -89,8 +89,11 @@ static errno_t compute_function(void)
         const void *raw_slice = (const char *)inimg.im->array.raw +
                                 ((size_t)slice_idx * ndim * (size_t)typesize);
 
-        @PKG_NAME@_fps_process_frame(raw_slice, inimg.im->md[0].datatype, ndim,
-                                     cnt0, inimg.im->md[0].atime, &out_img);
+        if (@PKG_NAME@_fps_process_frame(raw_slice, inimg.im->md[0].datatype, ndim,
+                                         cnt0, inimg.im->md[0].atime, &out_img) != 0)
+        {
+            continue;
+        }
 
         processinfo_update_output_stream(processinfo, &out_img, inimg.im);
 
