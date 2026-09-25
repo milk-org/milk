@@ -69,8 +69,8 @@ find_library(MILK_CLICORE_LIBRARY
 )
 find_path(MILK_CLICORE_HEADER
     NAMES CLIcore.h
-    PATH_SUFFIXES CommandLineInterface/CLIcore
     PATHS ${MILK_INCLUDE_DIRS}
+    PATH_SUFFIXES CLIcore CommandLineInterface CommandLineInterface/CLIcore
 )
 
 if (MILK_CLICORE_LIBRARY AND MILK_CLICORE_HEADER)
