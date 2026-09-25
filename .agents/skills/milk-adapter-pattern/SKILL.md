@@ -44,9 +44,7 @@ When integrating an external package (`mypkg`) with Milk, follow these architect
 
 ---
 
-## 2. Standard 4-File Adapter Blueprint
-
-In the external package's adapter directory, implement the following files:
+## 2. Standard 6-File Adapter Blueprint
 
 ```text
 src/mypkg-fps/
