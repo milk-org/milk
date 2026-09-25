@@ -49,21 +49,22 @@ static errno_t compute_function(void)
         return 1;
     }
 
-    IMAGE in_img;
-    if (ImageStreamIO_read_sharedmem_image_toIMAGE(fps_in_name, &in_img) != 0)
+    IMGID inimg = imgid_make_from_name(fps_in_name);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
+    if (inimg.ID == -1)
     {
         fprintf(stderr, "Error connecting to input stream: %s\n", fps_in_name);
         return 1;
     }
 
-    uint32_t xsize = in_img.md[0].size[0];
-    uint32_t ysize = in_img.md[0].size[1];
+    uint32_t xsize = inimg.md->size[0];
+    uint32_t ysize = inimg.md->size[1];
     uint32_t ndim  = xsize * ysize;
 
     if (@PKG_NAME@_fps_init_engine(ndim) != 0)
     {
         fprintf(stderr, "Error initializing @PKG_NAME@ engine.\n");
-        ImageStreamIO_closeIm(&in_img);
+        imgid_free(&inimg);
         return 1;
     }
 
@@ -75,7 +76,7 @@ static errno_t compute_function(void)
     {
         fprintf(stderr, "Error creating output stream: %s\n", fps_out_name);
         @PKG_NAME@_fps_cleanup_engine();
-        ImageStreamIO_closeIm(&in_img);
+        imgid_free(&inimg);
         return 1;
     }
 
@@ -85,16 +86,16 @@ static errno_t compute_function(void)
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
-        uint64_t cnt0 = in_img.md[0].cnt0;
-        uint32_t slice_idx = (in_img.md[0].naxis > 2) ? (uint32_t)in_img.md[0].cnt1 : 0;
-        int typesize = ImageStreamIO_typesize((uint8_t)in_img.md[0].datatype);
-        const void *raw_slice = (const char *)in_img.array.raw +
+        uint64_t cnt0 = inimg.im->md[0].cnt0;
+        uint32_t slice_idx = (inimg.im->md[0].naxis > 2) ? (uint32_t)inimg.im->md[0].cnt1 : 0;
+        int typesize = ImageStreamIO_typesize((uint8_t)inimg.im->md[0].datatype);
+        const void *raw_slice = (const char *)inimg.im->array.raw +
                                 ((size_t)slice_idx * ndim * (size_t)typesize);
 
-        @PKG_NAME@_fps_process_frame(raw_slice, in_img.md[0].datatype, ndim,
-                                     cnt0, in_img.md[0].atime, &out_img);
+        @PKG_NAME@_fps_process_frame(raw_slice, inimg.im->md[0].datatype, ndim,
+                                     cnt0, inimg.im->md[0].atime, &out_img);
 
-        processinfo_update_output_stream(processinfo, &out_img, &in_img);
+        processinfo_update_output_stream(processinfo, &out_img, inimg.im);
 
         static uint64_t msg_cnt = 0;
         if (++msg_cnt % 100 == 0)
@@ -106,7 +107,7 @@ static errno_t compute_function(void)
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     ImageStreamIO_closeIm(&out_img);
-    ImageStreamIO_closeIm(&in_img);
+    imgid_free(&inimg);
     @PKG_NAME@_fps_cleanup_engine();
 
     return RETURN_SUCCESS;
