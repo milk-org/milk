@@ -65,15 +65,21 @@ def milk_build(
     session.chdir("build")
 
     # Of note, we could have a mismatch of the available engine extensions (USE_CUDA in particular) between pyMilk and milk builds.
+    use_ninja = False
     session.run(
         *(
-            f"cmake {PROJECT_ROOT} -DCMAKE_INSTALL_PREFIX={tmp_dir} "
+            f"cmake{' -GNinja' if use_ninja else ''} {PROJECT_ROOT} -DCMAKE_INSTALL_PREFIX={tmp_dir} "
             f"-DUSE_CUDA={on_off(use_cuda)} -DUSE_CLI={on_off(use_cli)} "
             f"-DUSE_STATIC_LTO={on_off(use_lto)}"
         ).split(),
         external=True,
+        silent=True,
     )
-    session.run(*(f"make -j20 install").split(), external=True)
+    # session.run(*(f"make -j20 install").split(), external=True)
+    if use_ninja:
+        session.run(*(f"ninja install").split(), external=True, silent=True)
+    else:
+        session.run(*(f"make -j 30 install").split(), external=True, silent=True)
 
     session.chdir(tmp_dir)
 
@@ -87,6 +93,7 @@ def milk_build(
     session.env["LD_LIBRARY_PATH"] = (
         tmp_dir + "/milk-1.03.00/lib:" + session.env.get("LD_LIBRARY_PATH", "")
     )  # type: ignore
+    session.env["MILK_INSTALLDIR"] = tmp_dir + "/milk-1.03.00"
 
 
 @nox.session(default=False)
