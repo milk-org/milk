@@ -1,0 +1,146 @@
+/**
+ * @file @PKG_NAME@_module.c.template
+ * @brief Milk CLI shared module implementation for @PKG_NAME@.
+ */
+
+#define MODULE_SHORTNAME_DEFAULT "@PKG_NAME@"
+#define MODULE_DESCRIPTION       "@PKG_NAME@ streaming module"
+
+#include "milk_config.h"
+#include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "@PKG_NAME@_fps_common.h"
+#include "@PKG_NAME@_fps_params.h"
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "@PKG_NAME@",
+    .cmdkey      = "@PKG_NAME@",
+    .description = "@PKG_NAME@ Milk CLI stream processing module"
+};
+
+static FPS_CLI_BINDING my_bindings[] = { @PKG_UPPER@_FPS_PARAMS(FPS_X_BINDING) };
+static const int __attribute__((unused)) nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = { @PKG_UPPER@_FPS_PARAMS(FPS_X_FARG) };
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
+
+/**
+ * compute_function() - CLI compute wrapper for @PKG_NAME@.
+ *
+ * Resolves input image from Milk data directory, initializes output streams,
+ * and enters the standard ProcessInfo execution loop.
+ *
+ * Return: RETURN_SUCCESS on success, RETURN_FAILURE on error.
+ */
+static errno_t compute_function(void)
+{
+    if (fps_in_name[0] == '\0')
+    {
+        return RETURN_FAILURE;
+    }
+
+    IMGID inimg = imgid_make_from_name(fps_in_name);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
+    if (inimg.ID == -1)
+    {
+        return RETURN_FAILURE;
+    }
+
+    uint32_t xsize = inimg.md->size[0];
+    uint32_t ysize = inimg.md->size[1];
+    uint32_t ndim  = xsize * ysize;
+
+    if (@PKG_NAME@_fps_init_engine(ndim) != 0)
+    {
+        return RETURN_FAILURE;
+    }
+
+    IMAGE out_img;
+    memset(&out_img, 0, sizeof(IMAGE));
+    uint32_t dims[2] = { xsize, ysize };
+    if (ImageStreamIO_createIm_gpu(&out_img, fps_out_name, 2, dims, _DATATYPE_FLOAT,
+                                   -1, 1, 10, 0, 0, 0) != 0)
+    {
+        @PKG_NAME@_fps_cleanup_engine();
+        return RETURN_FAILURE;
+    }
+
+    strncpy(CLIcmddata.cmdsettings->triggerstreamname, fps_in_name,
+            sizeof(CLIcmddata.cmdsettings->triggerstreamname) - 1);
+    CLIcmddata.cmdsettings->flags |= CLICMDFLAG_PROCINFO;
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    {
+        uint64_t cnt0 = inimg.im->md[0].cnt0;
+        uint32_t slice_idx = (inimg.im->md[0].naxis > 2) ? (uint32_t)inimg.im->md[0].cnt1 : 0;
+        int typesize = ImageStreamIO_typesize((uint8_t)inimg.im->md[0].datatype);
+        const void *raw_slice = (const char *)inimg.im->array.raw +
+                                ((size_t)slice_idx * ndim * (size_t)typesize);
+
+        @PKG_NAME@_fps_process_frame(raw_slice, inimg.im->md[0].datatype, ndim,
+                                     cnt0, inimg.im->md[0].atime, &out_img);
+
+        processinfo_update_output_stream(processinfo, &out_img, inimg.im);
+
+        static uint64_t msg_cnt = 0;
+        if (++msg_cnt % 100 == 0)
+        {
+            processinfo_WriteMessage_fmt(processinfo, "Frames=%lu",
+                                         (unsigned long)msg_cnt);
+        }
+    }
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    ImageStreamIO_closeIm(&out_img);
+    @PKG_NAME@_fps_cleanup_engine();
+
+    return RETURN_SUCCESS;
+}
+
+/**
+ * CLIfunction() - Standard FPS CLI wrapper function.
+ *
+ * Return: RETURN_SUCCESS on success, RETURN_FAILURE on error.
+ */
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings, compute_function);
+}
+
+/**
+ * CLIADDCMD_@PKG_NAME@_stream() - Register the @PKG_NAME@ command in Milk CLI.
+ *
+ * Return: RETURN_SUCCESS on success.
+ */
+errno_t CLIADDCMD_@PKG_NAME@_stream(void)
+{
+    safe_fps_fill_farg_examples(farg, my_bindings, nb_bindings);
+    CLIcmddata.FPS_customCONFcheck = @PKG_NAME@_fps_custom_conf_check;
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+
+/**
+ * init_module_CLI() - Module initializer function called by MILK_MODULE.
+ *
+ * Return: RETURN_SUCCESS on success.
+ */
+static errno_t init_module_CLI(void)
+{
+    CLIADDCMD_@PKG_NAME@_stream();
+    return RETURN_SUCCESS;
+}
+
+MILK_MODULE(milk@PKG_NAME@, init_module_CLI, NULL);

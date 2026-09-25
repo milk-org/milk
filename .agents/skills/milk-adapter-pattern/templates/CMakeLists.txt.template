@@ -1,0 +1,101 @@
+# ==============================================================================
+# CMakeLists.txt.template - Milk Adapter Build Rules
+# ==============================================================================
+# This template demonstrates how an external package builds:
+# 1. Standalone FPS executable: milk-fpsexec-<pkg> (linking milkfpsStandalone)
+# 2. Milk CLI module: libmilk<pkg>.so (linking CLIcore and milkfpsCLI)
+# ==============================================================================
+
+cmake_minimum_required(VERSION 3.16)
+
+# Locate Milk via pkg-config
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MILK REQUIRED milk)
+pkg_check_modules(IMAGESTREAMIO REQUIRED ImageStreamIO)
+
+# Standalone FPS executable (links libmilkfpsStandalone, no CLIcore)
+add_executable(milk-fpsexec-@PKG_NAME@
+    @PKG_NAME@_fps_main.c
+    @PKG_NAME@_fps_common.c
+)
+
+target_compile_definitions(milk-fpsexec-@PKG_NAME@ PRIVATE
+    FPS_STANDALONE
+    MILK_NO_CLI
+)
+
+target_include_directories(milk-fpsexec-@PKG_NAME@ PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${MILK_INCLUDE_DIRS}
+    ${MILK_INCLUDE_DIRS}/libfps
+    ${MILK_INCLUDE_DIRS}/libmilkdata
+    ${MILK_INCLUDE_DIRS}/libmilkcommon
+    ${MILK_INCLUDE_DIRS}/CommandLineInterface
+    ${IMAGESTREAMIO_INCLUDE_DIRS}
+    ${@PKG_UPPER@_INCLUDE_DIRS}
+)
+
+target_link_libraries(milk-fpsexec-@PKG_NAME@ PRIVATE
+    @PKG_LIB@
+    milkfps
+    milkfpsStandalone
+    milkprocessinfo
+    ImageStreamIO
+    milkcommon
+    milkdata
+    m
+    pthread
+    rt
+)
+
+# Optional convenience symlink: @PKG_NAME@-fps -> milk-fpsexec-@PKG_NAME@
+add_custom_command(TARGET milk-fpsexec-@PKG_NAME@ POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+        $<TARGET_FILE_NAME:milk-fpsexec-@PKG_NAME@>
+        ${CMAKE_CURRENT_BINARY_DIR}/@PKG_NAME@-fps
+)
+
+install(TARGETS milk-fpsexec-@PKG_NAME@
+    DESTINATION bin
+)
+
+# Shared Milk CLI module (only if CLIcore headers are available)
+if (MILK_FOUND)
+    add_library(milk@PKG_NAME@ SHARED
+        @PKG_NAME@_module.c
+        @PKG_NAME@_fps_common.c
+    )
+
+    set_target_properties(milk@PKG_NAME@ PROPERTIES
+        PREFIX "lib"
+        OUTPUT_NAME "milk@PKG_NAME@"
+    )
+
+    target_include_directories(milk@PKG_NAME@ PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${MILK_INCLUDE_DIRS}
+        ${MILK_INCLUDE_DIRS}/libfps
+        ${MILK_INCLUDE_DIRS}/libmilkdata
+        ${MILK_INCLUDE_DIRS}/libmilkcommon
+        ${MILK_INCLUDE_DIRS}/CommandLineInterface
+        ${MILK_INCLUDE_DIRS}/CommandLineInterface/CLIcore
+        ${IMAGESTREAMIO_INCLUDE_DIRS}
+        ${@PKG_UPPER@_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(milk@PKG_NAME@ PRIVATE
+        @PKG_LIB@
+        CLIcore
+        milkfps
+        milkfpsCLI
+        milkprocessinfo
+        ImageStreamIO
+        milkcommon
+        m
+        pthread
+    )
+
+    install(TARGETS milk@PKG_NAME@
+        DESTINATION lib
+    )
+endif ()
