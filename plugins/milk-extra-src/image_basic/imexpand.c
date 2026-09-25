@@ -109,6 +109,7 @@ static errno_t CLIfunction_2(void)
                                         nb_bindings_2, compute_function_2);
 }
 
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 errno_t CLIADDCMD_image_basic__imexpand()
 {
     safe_fps_fill_farg_examples(farg_1, my_bindings_1, nb_bindings_1);
@@ -125,6 +126,7 @@ errno_t CLIADDCMD_image_basic__imexpand()
 
     return RETURN_SUCCESS;
 }
+#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 /**
  * Expand image by factor n1 along x and

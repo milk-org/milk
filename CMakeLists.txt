@@ -105,12 +105,14 @@ if(_suffix_pos EQUAL -1)
 endif()
 set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
-# Configure a header file to pass some of the CMake settings to the source code
+# Configure a header file to pass some of the CMake settings to the source code.
+# Generated into the build tree (not the source tree), which is shared across
+# out-of-source builds with differing options/install prefixes.
 configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/milk_config.h")
+  "${CMAKE_BINARY_DIR}/config/milk_config.h")
 
 configure_file("${PROJECT_SOURCE_DIR}/src/config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/config.h")
+  "${CMAKE_BINARY_DIR}/config/config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -173,7 +175,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
       RESULT_VARIABLE GIT_SUBMOD_RESULT)
     if(NOT GIT_SUBMOD_RESULT EQUAL "0")
       message(
-        FATAL_ERROR
+	      WARNING
         "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules"
       )
     endif()
@@ -410,6 +412,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # src/engine is needed globally so that all targets can resolve #include
 # "ImageStreamIO/ImageStreamIO.h"
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
+# Generated config.h/milk_config.h live in the build tree; see configure_file() above.
+include_directories(${CMAKE_BINARY_DIR}/config)
 
 # =======================================
 # SOURCE DIRECTORIES
@@ -602,8 +606,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
   DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h DESTINATION include)
+install(FILES ${CMAKE_BINARY_DIR}/config/milk_config.h
+  ${CMAKE_BINARY_DIR}/config/config.h DESTINATION include)
 
 if(build_python_module)
   add_subdirectory(python_module)

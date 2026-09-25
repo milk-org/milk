@@ -18,20 +18,7 @@
 // Module short description
 #define MODULE_DESCRIPTION "Point Spread Function analysis"
 
-//extern struct DATA data;
-
 double FWHM_MEASURED;
-
-/* ================================================================== */
-/* ================================================================== */
-/*            INITIALIZE LIBRARY                                      */
-/* ================================================================== */
-/* ================================================================== */
-
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-INIT_MODULE_LIB(psf)
 
 /* ================================================================== */
 /* ================================================================== */
@@ -98,3 +85,6 @@ static errno_t init_module_CLI()
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+
+// INITIALIZE MILK IMPORTABLE MODULE
+MILK_MODULE(psf, init_module_CLI, NULL);

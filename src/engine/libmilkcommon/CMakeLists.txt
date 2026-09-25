@@ -1,6 +1,6 @@
 set(LIBNAME "milkcommon")
 
-add_library(${LIBNAME} SHARED milk_rt.c)
+add_library(${LIBNAME} SHARED milk_compiler.c milk_rt.c)
 
 target_include_directories(
   ${LIBNAME}

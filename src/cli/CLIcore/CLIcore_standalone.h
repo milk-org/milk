@@ -14,7 +14,7 @@
  * Modules compiled with this header can provide
  * computation functions that standalone fpsexec
  * programs call, but CLI registration code
- * (INIT_MODULE_LIB, RegisterCLIcommand, etc.)
+ * (MILK_MODULE, RegisterCLIcommand, etc.)
  * becomes no-op stubs.
  */
 
@@ -74,20 +74,11 @@ static uid_t   euid_called __attribute__((unused));
 static uid_t   suid __attribute__((unused));
 static uint8_t TYPESIZE[32] __attribute__((unused));
 
-
-/* TUI stubs moved to fps_standalone_data.c */
-
-
 #define NB_ARG_MAX 100
 
 typedef errno_t (*module_cli_reg_fn)(void);
 
 #define MILK_MODULE(modname, _cli_reg_call, _deps) /* standalone: no descriptor table */
-
-#define INIT_MODULE_LIB(modname)                              \
-    static errno_t                     init_module_CLI(void); \
-    static int __attribute__((unused)) INITSTATUS_##modname = 0;
-
 
 /* =====================================
  * Type definitions
@@ -194,33 +185,6 @@ static inline errno_t set_signal_catch(void)
 
 static inline void sig_handler(int signo __attribute__((unused)))
 {
-}
-
-static inline errno_t RegisterModule(const char *f __attribute__((unused)),
-                                     const char *p __attribute__((unused)),
-                                     const char *i __attribute__((unused)),
-                                     int         ma __attribute__((unused)),
-                                     int         mi __attribute__((unused)),
-                                     int         pa __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline uint32_t RegisterCLIcmd(CLICMDDATA cd __attribute__((unused)),
-                                      errno_t (*fp)(void) __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline uint32_t RegisterCLIcommand(const char *k __attribute__((unused)),
-                                          const char *s __attribute__((unused)),
-                                          errno_t (*fp)() __attribute__((unused)),
-                                          const char *i __attribute__((unused)),
-                                          const char *sy __attribute__((unused)),
-                                          const char *e __attribute__((unused)),
-                                          const char *c __attribute__((unused)))
-{
-    return 0;
 }
 
 #endif /* CLICORE_STANDALONE_H */

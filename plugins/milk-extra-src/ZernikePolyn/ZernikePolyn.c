@@ -52,21 +52,6 @@
 
 #define PI 3.14159265358979323846264338328
 
-//extern DATA data;
-
-//ZERNIKE Zernike;
-
-/* ================================================================== */
-/* ================================================================== */
-/*            INITIALIZE LIBRARY                                      */
-/* ================================================================== */
-/* ================================================================== */
-
-// Module initialization macro in CLIcore.h
-// macro argument defines module name for bindings
-//
-INIT_MODULE_LIB(ZernikePolyn)
-
 /* ================================================================== */
 /* ================================================================== */
 /*            COMMAND LINE INTERFACE (CLI) FUNCTIONS                  */
@@ -186,6 +171,7 @@ static errno_t rmp_CLIfunction(void)
                                         rmp_nb_bindings, rmp_compute);
 }
 
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t init_module_CLI()
 {
     /* mkzer */
@@ -209,6 +195,10 @@ static errno_t init_module_CLI()
     return RETURN_SUCCESS;
 }
 
+// INITIALIZE MILK IMPORTABLE MODULE
+MILK_MODULE(ZernikePolyn, init_module_CLI, NULL);
+
+#endif // #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
 imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
 {

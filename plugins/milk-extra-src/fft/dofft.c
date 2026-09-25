@@ -143,7 +143,7 @@ static MILK_HOT errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t __attribute__((unused)) CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(&FPS_app_info, farg, &CLIcmddata, my_bindings, nb_bindings,
@@ -189,31 +189,6 @@ errno_t CLIADDCMD_milkfft__dofft()
     return RETURN_SUCCESS;
 }
 #endif
-
-
-/* ================================================================
- * 4b. Standalone-friendly FFT step
- * ============================================================= */
-
-static void MILK_HOT __attribute__((unused)) fpsexec(IMAGE *imgin, IMAGE *imgout, int dir)
-{
-    int naxes[2] = { (int) imgin->md[0].size[1], (int) imgin->md[0].size[0] };
-    if (imgin->md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
-    {
-        fftwf_plan plan = fftwf_plan_dft_2d(naxes[0], naxes[1], (fftwf_complex *) imgin->array.CF,
-                                            (fftwf_complex *) imgout->array.CF, dir, FFTW_ESTIMATE);
-        fftwf_execute(plan);
-        fftwf_destroy_plan(plan);
-    }
-    else if (imgin->md[0].datatype == _DATATYPE_COMPLEX_DOUBLE)
-    {
-        fftw_plan plan = fftw_plan_dft_2d(naxes[0], naxes[1], (fftw_complex *) imgin->array.CD,
-                                          (fftw_complex *) imgout->array.CD, dir, FFTW_ESTIMATE);
-        fftw_execute(plan);
-        fftw_destroy_plan(plan);
-    }
-}
-
 
 /* ================================================================
  * 8.  STANDALONE ENTRY POINT

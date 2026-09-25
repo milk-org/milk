@@ -17,22 +17,9 @@
 
 // MILK_CMAKE_MANDATE_BLAS
 // MILK_CMAKE_MANDATE_LAPACKE
-// ^----
-// if no MAGMA, we need linopt_compute_SVDpseudoInverse which mandates LAPACKE.
-// Two options:
-// - have a weak definition in the header file.
-// - carry the MANDATE here
-// -- have a smarter build system...
-
 
 // Get the correct BLAS include:
-#ifdef HAVE_MKL
-#    include "mkl.h"
-#else
-#    ifdef HAVE_OPENBLAS
-#        include <cblas.h>
-#    endif
-#endif
+#include "milk_blas_lapacke.h"
 
 static int fmInit = 0;
 

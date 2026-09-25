@@ -9,57 +9,60 @@ if(USE_NCURSES)
 endif()
 
 set(SOURCEFILES
+    cmd/fps_execFPScmd.c
+    cmd/fps_scan.c
+    cmd/fps_tmux.c
+    cmd/fps_processcmdline_interactive.c
+    cmd/fps_processcmdline_file.c
+    cmd/fps_process_fpsCMDarray.c
+    cmd/fps_getFPSargs.c
+    #cli/fps_cli_sync.c # Adding this HERE completely messes the linkage. Some declarations of this are in CLICore_standalone.h. TBC...
+    cli/fps_cli_init.c
+    cli/fps_cli_function_registry.c
+    core/fps_connect.c
+    core/fps_connectExternalFPS.c
+    core/fps_disconnect.c
+    core/fps_isvalid.c
+    core/fps_shmdirname.c
+    core/fps_globals.c
+    core/fps_struct_create.c
+    core/fps_ID.c
+    io/fps_save2disk.c
+    io/fps_WriteParameterToDisk.c
+    io/fps_loadstream.c
+    io/fps_outlog.c
+    io/fps_load.c
+    io/fps_read_fpsCMD_fifo.c
+    io/fps_loadmemstream_lite.c
+    io/fps_streamname_parse.c
+    io/fps_local_store.c
     params/fps_add_entry.c
     params/fps_SetParamCLIindex.c
     params/fps_print_info.c
     params/fps_checkparameter.c
-    core/fps_connect.c
-    core/fps_connectExternalFPS.c
-    procinfo/fps_processinfo_entries.c
-    core/fps_disconnect.c
-    cmd/fps_execFPScmd.c
-    state/fps_FPCONFsetup.c
-    state/fps_FPCONFexit.c
-    state/fps_FPCONFloopstep.c
-    state/fps_RUNexit.c
-    state/fps_RUNstart.c
-    core/fps_isvalid.c
-    state/fps_RUNstop.c
-    state/fps_CONFstart.c
-    state/fps_CONFstop.c
     params/fps_FPSremove.c
     params/fps_GetFileName.c
-    cmd/fps_getFPSargs.c
     params/fps_GetParamIndex.c
     params/fps_GetTypeString.c
     params/fps_paramvalue.c
     params/fps_printlist.c
     params/fps_PrintParameterInfo.c
     params/fps_printparameter_valuestring.c
-    io/fps_save2disk.c
-    core/fps_shmdirname.c
-    io/fps_WriteParameterToDisk.c
-    io/fps_loadstream.c
-    io/fps_outlog.c
-    core/fps_globals.c
-    core/fps_struct_create.c
-    core/fps_ID.c
-    io/fps_load.c
-    cmd/fps_scan.c
-    cmd/fps_tmux.c
-    procinfo/fps_processinfo.c
-    cmd/fps_processcmdline_interactive.c
-    cmd/fps_processcmdline_file.c
-    cmd/fps_process_fpsCMDarray.c
-    io/fps_read_fpsCMD_fifo.c
     params/fps_userinputsetparamvalue.c
-    io/fps_loadmemstream_lite.c
-    io/fps_streamname_parse.c
-    io/fps_local_store.c
+    params/fps_modulevars_resync.c
+    procinfo/fps_processinfo_entries.c
+    procinfo/fps_processinfo.c
+    procinfo/fps_apply_process_settings.c
+    state/fps_FPCONFsetup.c
+    state/fps_FPCONFexit.c
+    state/fps_FPCONFloopstep.c
+    state/fps_RUNexit.c
+    state/fps_RUNstart.c
+    state/fps_RUNstop.c
+    state/fps_CONFstart.c
+    state/fps_CONFstop.c
     imgid_slice.c
-    cli/fps_cli_init.c
-    cli/fps_cli_function_registry.c
-    params/fps_modulevars_resync.c)
+    )
 
 # Core library (no TUI/ncurses dependency)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
@@ -109,7 +112,10 @@ install(
   EXPORT milkTargets
   DESTINATION lib)
 
-# Static archives for standalone LTO builds
+# ==========================================
+# Static archives for -DUSE_STATIC_LTO
+# ==========================================
+
 if(USE_STATIC_LTO)
   add_library(${LIBNAME}_static STATIC ${SOURCEFILES})
   set_target_properties(${LIBNAME}_static PROPERTIES OUTPUT_NAME ${LIBNAME})
@@ -166,9 +172,7 @@ install(
   TARGETS milkfpsCLI
   EXPORT milkTargets
   DESTINATION lib)
-
-# milkfpsTUI removed — milk-fpsCTRL links the same fpsCTRL sources directly and
-# uses the ANSI TUIcompat path; no external consumers of milkfpsTUI exist.
+# ==========================================
 
 install(
   TARGETS ${LIBNAME}

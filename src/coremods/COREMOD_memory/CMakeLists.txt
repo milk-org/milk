@@ -214,6 +214,7 @@ if(USE_STATIC_LTO)
   set(LIBNAME_STATIC "${LIBNAME}_static")
   add_library(${LIBNAME_STATIC} STATIC ${SOURCEFILES})
   set_target_properties(${LIBNAME_STATIC} PROPERTIES OUTPUT_NAME ${LIBNAME})
+  target_compile_definitions(${LIBNAME_STATIC} PRIVATE MILK_NO_CLI)
   target_include_directories(
     ${LIBNAME_STATIC}
     PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
@@ -232,10 +233,7 @@ if(USE_STATIC_LTO)
   else()
     target_link_libraries(${LIBNAME_STATIC} PUBLIC m milkfps_static milkcommon)
   endif()
-  install(
-    TARGETS ${LIBNAME_STATIC}
-    EXPORT milkTargets
-    DESTINATION lib)
+  # Not installed nor added to the milkTargets export set — see notes_for_future.md
 endif()
 
 add_milk_standalone(mem-streamave stream_ave.c)

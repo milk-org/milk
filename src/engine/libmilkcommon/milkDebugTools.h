@@ -248,5 +248,9 @@ typedef long variableID;
                     "(dependency system) is not satisfied!");                                 \
         abort();                                                                              \
     }
+#define MILK_WEAK_CLIFUNCDEF \
+    {                        \
+        return 0;            \
+    }
 
 #endif
