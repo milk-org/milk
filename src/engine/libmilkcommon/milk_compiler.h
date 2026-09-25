@@ -211,5 +211,88 @@
 #    define MILK_ASSUME_ALIGNED(ptr) (ptr)
 #endif
 
+/*
+ * ================================================================
+ * MILK_EMBED_BUILD_TAG -- compile-time build metadata
+ *
+ * Embeds a sentinel string in every fpsexec binary
+ * so milk-perfbench can detect PGO/LTO status at
+ * runtime without needing debug symbols.
+ *
+ * Format (readable via `strings | grep MILK_BUILD`):
+ *   \x1fMILK_BUILD:<flags>END
+ *
+ * where <flags> is a comma-separated list of:
+ *   OPT=1        -- optimised (-O2/-O3)
+ *   PGO=GENERATE -- pass-1 instrumented binary
+ *   PGO=USE      -- pass-2 profile-optimised binary
+ *   LTO=1        -- link-time optimisation enabled
+ *   STATIC=1     -- static LTO archives used
+ *
+ * The \x1f (ASCII unit-separator) prefix ensures
+ * the sentinel is not confused with other strings.
+ * ================================================================
+ */
+
+#define MILK_EMBED_BUILD_TAG() static LIB_MILK_EMBED_BUILD_TAG();
+
+#define LIB_MILK_EMBED_BUILD_TAG()                                            \
+    const char __attribute__((used, section(".rodata"))) _milk_build_tag_[] = \
+        "\x1fMILK_BUILD:"                                                     \
+        "VER=2.0," /*  VERSION STRING !!*/                                    \
+        "DATE=" __DATE__ "T" __TIME__ ","                                     \
+        "CC=" __VERSION__ ","                                                 \
+        "SRC=" __FILE__ ","                                                   \
+        "BIN=" MILK_BUILD_BINNAME ","                                         \
+        "GCC="                                                                \
+        ","                                                                   \
+        "ARCH=" MILK_BUILD_ARCH ","                                           \
+        "CLI=" MILK_BUILD_CLI ","                                             \
+        "OPT=" MILK_BUILD_OPT_STR MILK_BUILD_PGO_STR MILK_BUILD_LTO_STR "END"
+
+/* Helper strings selected by cmake compile-time defines */
+#if defined(__x86_64__) || defined(_M_X64)
+#    define MILK_BUILD_ARCH "x86_64"
+#elif defined(__aarch64__)
+#    define MILK_BUILD_ARCH "aarch64"
+#else
+#    define MILK_BUILD_ARCH "unknown"
+#endif
+
+#ifdef MILK_BUILD_OPT
+#    define MILK_BUILD_OPT_STR "3,"
+#else
+#    define MILK_BUILD_OPT_STR "0,"
+#endif
+
+#ifdef MILK_BUILD_PGO_GENERATE
+#    define MILK_BUILD_PGO_STR "PGO=GENERATE,"
+#elif defined(MILK_BUILD_PGO_USE)
+#    define MILK_BUILD_PGO_STR "PGO=USE,"
+#else
+#    define MILK_BUILD_PGO_STR ""
+#endif
+
+#ifdef MILK_BUILD_LTO
+#    ifdef MILK_BUILD_STATIC
+#        define MILK_BUILD_LTO_STR "LTO=STATIC,"
+#    else
+#        define MILK_BUILD_LTO_STR "LTO=1,"
+#    endif
+#else
+#    define MILK_BUILD_LTO_STR ""
+#endif
+
+/* MILK_BUILD_BINNAME is injected per-target by cmake */
+#ifndef MILK_BUILD_BINNAME
+#    define MILK_BUILD_BINNAME "unknown"
+#endif
+
+#ifdef MILK_NO_CLI
+#    define MILK_BUILD_CLI "0"
+#else
+#    define MILK_BUILD_CLI "1"
+#endif
+
 
 #endif /* MILK_COMPILER_H */
