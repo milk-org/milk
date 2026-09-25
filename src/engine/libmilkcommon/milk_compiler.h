@@ -223,11 +223,11 @@
  *   \x1fMILK_BUILD:<flags>END
  *
  * where <flags> is a comma-separated list of:
- *   OPT=1        -- optimised (-O2/-O3)
+ *   OPT=3        -- optimised build (-O3 or Release)
+ *   OPT=0        -- non-optimised build
  *   PGO=GENERATE -- pass-1 instrumented binary
  *   PGO=USE      -- pass-2 profile-optimised binary
- *   LTO=1        -- link-time optimisation enabled
- *   STATIC=1     -- static LTO archives used
+ *   LTO=STATIC   -- link-time optimisation with static archives
  *
  * The \x1f (ASCII unit-separator) prefix ensures
  * the sentinel is not confused with other strings.
