@@ -362,27 +362,33 @@ int main(int argc, char *argv[])
         }
     }
 
-    int             last_rows   = -1;
-    int             last_cols   = -1;
-    const OV_MODEL *m           = NULL;
-    int             need_render = 1; /* force first frame */
+    int             last_rows        = -1;
+    int             last_cols        = -1;
+    int             last_cmdlog_rows = lay.cmdlog_rows;
+    const OV_MODEL *m                = NULL;
+    int             need_render      = 1; /* force first frame */
 
     while (!OV_SIG_ANY_SET())
     {
         /* Recompute layout (handles resize) */
         ov_layout_compute(&lay);
 
-        if (lay.term_rows != last_rows || lay.term_cols != last_cols)
+        if (lay.term_rows != last_rows || lay.term_cols != last_cols ||
+            lay.cmdlog_rows != last_cmdlog_rows)
         {
-            /* Size changed, force clear */
-            const char cls[] = "\033[2J\033[H";
-            if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+            if (lay.term_rows != last_rows || lay.term_cols != last_cols)
             {
+                /* Size changed, force clear */
+                const char cls[] = "\033[2J\033[H";
+                if (write(STDOUT_FILENO, cls, sizeof(cls) - 1) < 0)
+                {
+                }
             }
             ov_buf_force_clear();
-            last_rows   = lay.term_rows;
-            last_cols   = lay.term_cols;
-            need_render = 1;
+            last_rows        = lay.term_rows;
+            last_cols        = lay.term_cols;
+            last_cmdlog_rows = lay.cmdlog_rows;
+            need_render      = 1;
         }
 
         /* Pick up new model if available */

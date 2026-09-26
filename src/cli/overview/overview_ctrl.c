@@ -142,7 +142,7 @@ void ov_ctrl_fps_run_toggle(const OV_FPS *f, OV_CMDLOG *log)
         int rc = ov_ctrl_fps_action(f->name, functionparameter_RUNstop);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "⏹️ FPS \"%s\" — RUN stop",
+            ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — RUN stop",
                            f->name);
         }
         return;
@@ -158,7 +158,7 @@ void ov_ctrl_fps_run_toggle(const OV_FPS *f, OV_CMDLOG *log)
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "▶️ FPS \"%s\" — RUN start"
+                           "FPS \"%s\" — RUN start"
                            " failed (connect)",
                            f->name);
         }
@@ -219,7 +219,7 @@ void ov_ctrl_fps_run_toggle(const OV_FPS *f, OV_CMDLOG *log)
 
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "▶️ FPS \"%s\" — RUN start", f->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "FPS \"%s\" — RUN start", f->name);
     }
 }
 
@@ -242,8 +242,8 @@ void ov_ctrl_fps_conf_toggle(const OV_FPS *f, OV_CMDLOG *log)
     int rc = ov_ctrl_fps_action(f->name, action_fn);
     if (log != NULL)
     {
-        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "%s FPS \"%s\" — %s",
-                       f->conf_alive ? "⏹️" : "▶️", f->name, action);
+        ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL, "FPS \"%s\" — %s",
+                       f->name, action);
     }
 }
 
@@ -267,7 +267,7 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Stream \"%s\" — delete"
+                           "Stream \"%s\" — delete"
                            " failed (open)",
                            s->name);
         }
@@ -291,7 +291,7 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL,
-                           "🚫 Stream \"%s\" — delete"
+                           "Stream \"%s\" — delete"
                            " failed (unlink)",
                            s->name);
         }
@@ -300,7 +300,7 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
 
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑️ Stream \"%s\" — deleted", s->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "Stream \"%s\" — deleted", s->name);
     }
 }
 
@@ -320,7 +320,7 @@ void ov_ctrl_proc_kill(const OV_PROC *p, OV_CMDLOG *log)
     if (log != NULL)
     {
         ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "💀 Process \"%s\" (PID %d)"
+                       "Process \"%s\" (PID %d)"
                        " — SIGTERM",
                        p->name, p->PID);
     }
@@ -370,7 +370,7 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (open)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" — ctrl failed (open)", p->name);
         }
         return;
     }
@@ -381,7 +381,7 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" — ctrl failed (stat)", p->name);
         }
         return;
     }
@@ -393,7 +393,7 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" — ctrl failed (mmap)", p->name);
         }
         return;
     }
@@ -408,33 +408,28 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
     if (log != NULL)
     {
         const char *action;
-        const char *emoji = "⚡";
         if (new_val == 0)
         {
             action = "Resume";
-            emoji  = "⏯️";
         }
         else if (new_val == 1)
         {
             action = "Pause";
-            emoji  = "⏸️";
         }
         else if (new_val == 2)
         {
             action = "Step";
-            emoji  = "⏭️";
         }
         else if (new_val == 3)
         {
             action = "Exit request";
-            emoji  = "⏹️";
         }
         else
         {
             action = "CTRLval updated";
         }
 
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s Process \"%s\" — %s", emoji, p->name, action);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "Process \"%s\" — %s", p->name, action);
     }
 }
 
@@ -458,7 +453,7 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (open)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" — zero failed (open)", p->name);
         }
         return;
     }
@@ -469,7 +464,7 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (stat)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" — zero failed (stat)", p->name);
         }
         return;
     }
@@ -481,7 +476,7 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
         close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" — zero failed (mmap)", p->name);
         }
         return;
     }
@@ -493,7 +488,7 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
 
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "0️⃣ Process \"%s\" — Counters zeroed", p->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "Process \"%s\" — counters zeroed", p->name);
     }
 }
 
@@ -513,7 +508,7 @@ void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
     {
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" (PID %d) is still alive",
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" (PID %d) is still alive",
                            p->name, p->PID);
         }
         return;
@@ -549,7 +544,7 @@ void ov_ctrl_proc_remove(const OV_PROC *p, OV_CMDLOG *log)
     {
         if (deactivated || file_gone)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑 Process \"%s\" (PID %d) entry removed", p->name,
+            ov_cmdlog_push(log, OV_CMDLOG_OK, "Process \"%s\" (PID %d) entry removed", p->name,
                            p->PID);
         }
         else
@@ -609,7 +604,7 @@ void ov_ctrl_proc_pause_toggle(const OV_PROC *p, OV_CMDLOG *log)
     if (log != NULL)
     {
         ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "%s Process \"%s\" (PID %d) — %s", stopped ? "⏯️" : "⏸️", p->name, p->PID,
+                       "Process \"%s\" (PID %d) — %s", p->name, p->PID,
                        stopped ? "resumed" : "paused");
     }
 }
@@ -680,7 +675,7 @@ void ov_ctrl_fps_pause_toggle(const OV_FPS *f, OV_CMDLOG *log)
     }
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "%s FPS \"%s\" — %s", stopped ? "⏯️" : "⏸️", f->name,
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "FPS \"%s\" — %s", f->name,
                        stopped ? "resumed" : "paused");
     }
 }
@@ -746,7 +741,7 @@ void ov_ctrl_fps_remove(const OV_FPS *f, OV_CMDLOG *log)
 
     if (log != NULL)
     {
-        ov_cmdlog_push(log, OV_CMDLOG_OK, "🗑️ FPS \"%s\" — erased", f->name);
+        ov_cmdlog_push(log, OV_CMDLOG_OK, "FPS \"%s\" — erased", f->name);
     }
 }
 
@@ -761,7 +756,7 @@ void ov_ctrl_procs_cleanup(OV_CMDLOG *log)
     if (log != NULL)
     {
         ov_cmdlog_push(log, rc == 0 ? OV_CMDLOG_OK : OV_CMDLOG_FAIL,
-                       "🧹 Process cleanup requested");
+                       "Process cleanup requested");
     }
 }
 

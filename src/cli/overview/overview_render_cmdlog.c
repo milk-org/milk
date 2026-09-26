@@ -44,6 +44,9 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
      * (head - show). */
     int start = (log->head - show + OV_CMDLOG_MAX) % OV_CMDLOG_MAX;
 
+    /* Pad blank rows at the top so entries anchor to bottom above status bar */
+    int blank_rows = r.height - show;
+
     /* Dark background for the log strip */
     ov_rgb_t bg = { 20, 20, 30 };
 
@@ -53,7 +56,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         ov_buf_pos(r.row + row, r.col);
         ov_theme_bg(bg);
 
-        if (row >= show)
+        if (row < blank_rows)
         {
             /* Empty row — fill with background */
             ov_theme_fg(OV_FG_DIM);
@@ -61,7 +64,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
             continue;
         }
 
-        int                    idx = (start + row) % OV_CMDLOG_MAX;
+        int                    idx = (start + (row - blank_rows)) % OV_CMDLOG_MAX;
         const OV_CMDLOG_ENTRY *e   = &log->entries[idx];
 
         /* Format timestamp HH:MM:SS */
@@ -78,19 +81,19 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         {
         case OV_CMDLOG_OK:
             bullet_fg = (ov_rgb_t) { 80, 220, 80 };
-            bullet    = "✓";
+            bullet    = "*";
             break;
         case OV_CMDLOG_FAIL:
             bullet_fg = (ov_rgb_t) { 220, 60, 60 };
-            bullet    = "✗";
+            bullet    = "x";
             break;
         case OV_CMDLOG_WARN:
             bullet_fg = (ov_rgb_t) { 220, 180, 40 };
-            bullet    = "⚠";
+            bullet    = "!";
             break;
         default: /* INFO */
             bullet_fg = (ov_rgb_t) { 100, 140, 200 };
-            bullet    = "ℹ";
+            bullet    = "*";
             break;
         }
 
