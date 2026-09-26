@@ -105,6 +105,21 @@ if(_suffix_pos EQUAL -1)
 endif()
 set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
+# Determine git commit hash for version tracking
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_VARIABLE MILK_GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
+if(NOT MILK_GIT_COMMIT)
+  set(MILK_GIT_COMMIT "unknown")
+endif()
+
 # Configure a header file to pass some of the CMake settings to the source code.
 # Generated into the build tree (not the source tree), which is shared across
 # out-of-source builds with differing options/install prefixes.

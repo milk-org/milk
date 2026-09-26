@@ -15,6 +15,7 @@
 
 #include "overview_render_internal.h"
 #include "overview_render_fps_params.h"
+#include "milk_config.h"
 #include <math.h>
 
 
@@ -323,6 +324,10 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_theme_fg(OV_GRAD_HI);
     ov_buf_printf("%s ", OV_LCARS_RIGHT);
 
+    /* Version / commit tracking */
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("[%s] ", MILK_GIT_COMMIT);
+
     /* Blinking badge — visible when ctrl_mode is ON, READ ONLY when OFF */
     int ctrl_w = 0;
     if (lay->ctrl_mode)
@@ -381,7 +386,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
         hover_w = 17; /* visual width of "  [m] HOVER: OFF " */
     }
 
-    int chars_left = 17 + 1 + ctrl_w + hover_w; /* +1 for heartbeat */
+    int commit_w   = (int) strlen(MILK_GIT_COMMIT) + 3;
+    int chars_left = 17 + commit_w + 1 + ctrl_w + hover_w; /* +1 for heartbeat */
 
     ov_theme_fg(OV_FG_STREAM);
     chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);

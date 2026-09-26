@@ -28,6 +28,7 @@
 #include "overview_theme.h"
 #include "overview_data.h"
 #include "overview_layout.h"
+#include "milk_config.h"
 #include "processinfo_shm_list_create.h"
 
 /* =========================================================
@@ -133,7 +134,8 @@ static void print_help(const char *prog, int mh_color)
         prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
 
     milk_help_section("Usage", mh_color);
-    printf("  $ %s [%s %s]\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"));
+    printf("  $ %s [%s %s]  (commit %s)\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"),
+           MILK_GIT_COMMIT);
 
     milk_help_section("Description", mh_color);
     printf("  milk-CTRL is the unified real-time dashboard for the milk framework.\n"

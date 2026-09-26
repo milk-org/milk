@@ -23,6 +23,7 @@
 #include "fpsCTRL_TUIcompat.h"
 #include "fps_streamname_parse.h"
 #include "fpsCTRL_globals.h"
+#include "milk_config.h"
 
 #include "fpsCTRL_FPSdisplay.h"
 #include "print_nodeinfo.h"
@@ -472,8 +473,9 @@ static void fpsCTRL__render_summary_and_breadcrumbs(KEYWORD_TREE_NODE    *keywno
     if (fpsarray[fpsCTRLvar->fpsindexSelected].md != NULL)
     {
         screenprint_setbold();
-        TUI_printfw("  [%s] %s", fpsarray[fpsCTRLvar->fpsindexSelected].md->name,
-                    fpsarray[fpsCTRLvar->fpsindexSelected].md->description);
+        TUI_printfw("  [%s] %s  [%s]", fpsarray[fpsCTRLvar->fpsindexSelected].md->name,
+                    fpsarray[fpsCTRLvar->fpsindexSelected].md->description,
+                    MILK_GIT_COMMIT);
         screenprint_unsetbold();
         TUI_newline();
     }
@@ -1262,7 +1264,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
         TUI_newline();
         TUI_newline();
         TUI_printfw("  Waiting for FPS shared"
-                    " memory files ...");
+                    " memory files ...  [%s]", MILK_GIT_COMMIT);
         TUI_newline();
         TUI_printfw("  Press [s] to rescan,"
                     " [x] to exit");
