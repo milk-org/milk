@@ -5,8 +5,16 @@
 #ifndef OVERVIEW_ANSI_H
 #define OVERVIEW_ANSI_H
 
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+#ifndef _XOPEN_SOURCE
+#    define _XOPEN_SOURCE 700
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -16,6 +24,9 @@
 #include <signal.h>
 #include <errno.h>
 #include <poll.h>
+#include <wchar.h>
+
+extern int wcwidth(wchar_t c);
 
 /* =========================================================
  * Key code constants
@@ -179,11 +190,12 @@ static inline void ov_get_terminal_size(int *rows, int *cols)
 
 typedef struct
 {
-    char     ch[5]; // UTF-8 char up to 4 bytes + null terminator
-    uint32_t fg;    // Color code + flag
-    uint32_t bg;    // Color code + flag
-    uint32_t ul;    // Underline color
-    uint8_t  attr;  // bitmask for BOLD, DIM, REVERSE, etc.
+    char     ch[16]; // UTF-8 char/cluster up to 15 bytes + null terminator
+    uint8_t  width;  // visual display width: 1 or 2 (0 for continuation cell)
+    uint8_t  attr;   // bitmask for BOLD, DIM, REVERSE, etc.
+    uint32_t fg;     // Color code + flag
+    uint32_t bg;     // Color code + flag
+    uint32_t ul;     // Underline color
 } OV_CELL;
 
 extern char     ov__screenbuf[OV_SCREENBUF_SIZE];
@@ -221,6 +233,7 @@ static inline void ov_buf_reset(void)
         {
             ov__shadow[r][c].ch[0] = ' ';
             ov__shadow[r][c].ch[1] = '\0';
+            ov__shadow[r][c].width = 1;
             ov__shadow[r][c].fg    = OV_COLOR_NONE;
             ov__shadow[r][c].bg    = OV_COLOR_NONE;
             ov__shadow[r][c].ul    = OV_COLOR_NONE;
@@ -303,10 +316,18 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
             OV_CELL *sc = &ov__shadow[r][c];
             OV_CELL *fc = &ov__front[r][c];
 
+            /* Continuation cell of a wide character: already drawn by column c-1 */
+            if (sc->width == 0)
+            {
+                *fc = *sc;
+                continue;
+            }
+
             if (sc->ch[0] == '\0')
             {
                 sc->ch[0] = ' ';
                 sc->ch[1] = '\0'; // ensure valid char
+                sc->width = 1;
             }
 
             if (memcmp(sc, fc, sizeof(OV_CELL)) != 0)
@@ -424,10 +445,14 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
 
                 // Char
                 size_t chlen = strlen(sc->ch);
-                ov_buf_append(sc->ch, chlen);
-                emit_cursor_c++;
+                ov_buf_append(sc->ch, (int) chlen);
+                emit_cursor_c += sc->width;
 
                 *fc = *sc;
+                if (sc->width == 2 && c + 1 < term_cols)
+                {
+                    ov__front[r][c + 1] = ov__shadow[r][c + 1];
+                }
             }
         }
     }
@@ -443,22 +468,6 @@ static inline void ov_buf_flush_delta(int term_rows, int term_cols)
     ov_buf_append("\033[?2026l", 8);
 
     ov_buf_flush_internal();
-}
-
-static inline void ov_buf_append_char(const char *utf8_seq, int bytes)
-{
-    if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS && ov__cursor_col >= 1 &&
-        ov__cursor_col <= OV_MAX_COLS)
-    {
-        OV_CELL *cell = &ov__shadow[ov__cursor_row - 1][ov__cursor_col - 1];
-        memcpy(cell->ch, utf8_seq, bytes);
-        cell->ch[bytes] = '\0';
-        cell->fg        = ov__current_fg;
-        cell->bg        = ov__current_bg;
-        cell->ul        = ov__current_ul;
-        cell->attr      = ov__current_attr;
-    }
-    ov__cursor_col++;
 }
 
 static inline int utf8_char_length(unsigned char c)
@@ -482,7 +491,192 @@ static inline int utf8_char_length(unsigned char c)
     return 1;
 }
 
-static inline void ov_buf_printf(const char *fmt, ...)
+static inline int ov_utf8_decode(
+    const char *s,
+    int         len,
+    uint32_t   *cp)
+{
+    if (len <= 0)
+    {
+        *cp = 0;
+        return 0;
+    }
+    unsigned char c = (unsigned char) s[0];
+    if (c < 0x80)
+    {
+        *cp = c;
+        return 1;
+    }
+    if ((c & 0xE0) == 0xC0 && len >= 2)
+    {
+        *cp = (uint32_t) (((c & 0x1F) << 6) | (s[1] & 0x3F));
+        return 2;
+    }
+    if ((c & 0xF0) == 0xE0 && len >= 3)
+    {
+        *cp = (uint32_t) (((c & 0x0F) << 12) | ((s[1] & 0x3F) << 6) | (s[2] & 0x3F));
+        return 3;
+    }
+    if ((c & 0xF8) == 0xF0 && len >= 4)
+    {
+        *cp = (uint32_t) (((c & 0x07) << 18) | ((s[1] & 0x3F) << 12) |
+                          ((s[2] & 0x3F) << 6) | (s[3] & 0x3F));
+        return 4;
+    }
+    *cp = c;
+    return 1;
+}
+
+static inline int ov_utf8_next_cluster(
+    const char *s,
+    int         max_len,
+    int        *bytes_out,
+    int        *width_out)
+{
+    if (max_len <= 0 || s[0] == '\0')
+    {
+        *bytes_out = 0;
+        *width_out = 0;
+        return 0;
+    }
+
+    uint32_t cp0         = 0;
+    int      b0          = ov_utf8_decode(s, max_len, &cp0);
+    int      total_bytes = b0;
+    int      has_vs16    = 0;
+
+    /* Consume trailing modifiers: VS16 (U+FE0F), Keycap (U+20E3), etc. */
+    while (total_bytes < max_len && total_bytes < 15)
+    {
+        uint32_t next_cp = 0;
+        int      nb      = ov_utf8_decode(s + total_bytes, max_len - total_bytes, &next_cp);
+        if (next_cp == 0xFE0F)
+        {
+            has_vs16 = 1;
+            total_bytes += nb;
+        }
+        else if (next_cp == 0x20E3 || next_cp == 0xFE0E)
+        {
+            total_bytes += nb;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    int w = 1;
+    if (has_vs16)
+    {
+        w = 2;
+    }
+    else if (cp0 >= 0x1F000 && cp0 <= 0x1FAFF)
+    {
+        /* Standard emoji symbols / pictographs */
+        w = 2;
+    }
+    else if (cp0 >= 0x2600 && cp0 <= 0x27BF)
+    {
+        if (cp0 == 0x2705 || cp0 == 0x274C || cp0 == 0x274E ||
+            (cp0 >= 0x2753 && cp0 <= 0x2755) || cp0 == 0x2757 ||
+            cp0 == 0x2728 || cp0 == 0x26A0 || cp0 == 0x26A1 ||
+            cp0 == 0x26BD || cp0 == 0x26BE || cp0 == 0x26C4 ||
+            cp0 == 0x26C5 || cp0 == 0x26D4 || cp0 == 0x26EA ||
+            cp0 == 0x26F2 || cp0 == 0x26F3 || cp0 == 0x26F5 ||
+            cp0 == 0x26FA || cp0 == 0x26FD)
+        {
+            w = 2;
+        }
+        else
+        {
+            int sys_w = wcwidth((wchar_t) cp0);
+            w         = (sys_w == 2) ? 2 : 1;
+        }
+    }
+    else
+    {
+        int sys_w = wcwidth((wchar_t) cp0);
+        w         = (sys_w == 2) ? 2 : 1;
+    }
+
+    *bytes_out = total_bytes;
+    *width_out = w;
+    return 1;
+}
+
+static inline int ov_str_display_width(const char *s)
+{
+    if (s == NULL)
+    {
+        return 0;
+    }
+    int len     = (int) strlen(s);
+    int total_w = 0;
+    int pos     = 0;
+    while (pos < len)
+    {
+        int b = 0, w = 0;
+        if (!ov_utf8_next_cluster(s + pos, len - pos, &b, &w))
+        {
+            break;
+        }
+        total_w += w;
+        pos += b;
+    }
+    return total_w;
+}
+
+static inline void ov_buf_append_cluster(
+    const char *utf8_seq,
+    int         bytes,
+    int         width)
+{
+    if (width <= 0)
+    {
+        return;
+    }
+    if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS &&
+        ov__cursor_col >= 1 && ov__cursor_col <= OV_MAX_COLS)
+    {
+        OV_CELL *cell = &ov__shadow[ov__cursor_row - 1][ov__cursor_col - 1];
+        if (bytes >= (int) sizeof(cell->ch))
+        {
+            bytes = (int) sizeof(cell->ch) - 1;
+        }
+        memcpy(cell->ch, utf8_seq, (size_t) bytes);
+        cell->ch[bytes] = '\0';
+        cell->width     = (uint8_t) width;
+        cell->fg        = ov__current_fg;
+        cell->bg        = ov__current_bg;
+        cell->ul        = ov__current_ul;
+        cell->attr      = ov__current_attr;
+
+        if (width == 2 && ov__cursor_col < OV_MAX_COLS)
+        {
+            OV_CELL *cont = &ov__shadow[ov__cursor_row - 1][ov__cursor_col];
+            cont->ch[0]   = '\0';
+            cont->width   = 0;
+            cont->fg      = ov__current_fg;
+            cont->bg      = ov__current_bg;
+            cont->ul      = ov__current_ul;
+            cont->attr    = ov__current_attr;
+        }
+    }
+    ov__cursor_col += width;
+}
+
+static inline void ov_buf_append_char(
+    const char *utf8_seq,
+    int         bytes)
+{
+    int b = 0, w = 1;
+    ov_utf8_next_cluster(utf8_seq, bytes, &b, &w);
+    ov_buf_append_cluster(utf8_seq, bytes, w);
+}
+
+static inline void ov_buf_printf(
+    const char *fmt,
+    ...)
 {
     char    tmp[4096];
     va_list ap;
@@ -499,13 +693,14 @@ static inline void ov_buf_printf(const char *fmt, ...)
         int i = 0;
         while (i < n)
         {
-            int char_len = utf8_char_length((unsigned char) tmp[i]);
-            if (i + char_len > n)
+            int b = 0, w = 1;
+            ov_utf8_next_cluster(&tmp[i], n - i, &b, &w);
+            if (b <= 0)
             {
-                char_len = n - i;
+                break;
             }
-            ov_buf_append_char(&tmp[i], char_len);
-            i += char_len;
+            ov_buf_append_cluster(&tmp[i], b, w);
+            i += b;
         }
     }
 }

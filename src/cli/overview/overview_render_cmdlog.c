@@ -81,19 +81,19 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         {
         case OV_CMDLOG_OK:
             bullet_fg = (ov_rgb_t) { 80, 220, 80 };
-            bullet    = "*";
+            bullet    = "✓";
             break;
         case OV_CMDLOG_FAIL:
             bullet_fg = (ov_rgb_t) { 220, 60, 60 };
-            bullet    = "x";
+            bullet    = "✗";
             break;
         case OV_CMDLOG_WARN:
             bullet_fg = (ov_rgb_t) { 220, 180, 40 };
-            bullet    = "!";
+            bullet    = "⚠";
             break;
         default: /* INFO */
             bullet_fg = (ov_rgb_t) { 100, 140, 200 };
-            bullet    = "*";
+            bullet    = "ℹ";
             break;
         }
 
@@ -105,7 +105,7 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         /* Status bullet */
         ov_buf_fg(bullet_fg.r, bullet_fg.g, bullet_fg.b);
         ov_buf_printf("%s ", bullet);
-        nw += 2; /* 1 col bullet + space */
+        nw += ov_str_display_width(bullet) + 1;
 
         /* Message text */
         ov_buf_fg(180, 180, 200);
@@ -119,14 +119,19 @@ void ov_render_cmdlog(const OV_LAYOUT *lay)
         int max_bytes    = 0;
         for (int i = 0; e->msg[i] != '\0';)
         {
-            int cw = utf8_char_length((unsigned char) e->msg[i]);
-            if (msg_disp_len + 1 > msg_max)
+            int b = 0, w = 1;
+            ov_utf8_next_cluster(&e->msg[i], (int) strlen(&e->msg[i]), &b, &w);
+            if (b <= 0)
             {
                 break;
             }
-            msg_disp_len += 1;
-            max_bytes += cw;
-            i += cw;
+            if (msg_disp_len + w > msg_max)
+            {
+                break;
+            }
+            msg_disp_len += w;
+            max_bytes += b;
+            i += b;
         }
 
         ov_buf_printf("%.*s", max_bytes, e->msg);

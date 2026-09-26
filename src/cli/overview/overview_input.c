@@ -12,6 +12,7 @@
 
 #include "overview_defs.h"
 #include "overview_ansi.h"
+#include "milk_config.h"
 #include "overview_data.h"
 #include "overview_layout.h"
 #include "overview_ctrl.h"
@@ -1058,13 +1059,14 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         if (mr == lay->r_header.row && mc >= 1)
         {
             /* Check for CTRL mode toggle click */
-            int badge_start = lay->r_header.col + 16;
+            int commit_w    = (int) strlen(MILK_GIT_COMMIT) + 3;
+            int badge_start = lay->r_header.col + 18 + commit_w;
             int badge_w     = lay->ctrl_mode ? 13 : 15;
             if (mc >= badge_start && mc < badge_start + badge_w)
             {
                 lay->ctrl_mode = !lay->ctrl_mode;
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
-                               lay->ctrl_mode ? "ON" : "OFF");
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎛️ Control mode %s",
+                               lay->ctrl_mode ? "✅ ON" : "❌ OFF");
                 return 1;
             }
 
@@ -1075,13 +1077,13 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 lay->mouse_hover = !lay->mouse_hover;
                 ov_set_mouse_hover(lay->mouse_hover);
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Mouse hover %s",
-                               lay->mouse_hover ? "ON" : "OFF");
+                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🖱️ Mouse hover %s",
+                               lay->mouse_hover ? "✅ ON" : "❌ OFF");
                 if (lay->mouse_hover)
                 {
                     ov_cmdlog_push(
                         &lay->cmdlog, OV_CMDLOG_WARN,
-                        "Warning: Hover uses more CPU & character BW on slow connections");
+                        "⚠️ Warning: Hover uses more CPU & character BW on slow connections");
                 }
                 return 1;
             }
@@ -2261,14 +2263,14 @@ static int ov_input__handle_misc_toggles(int key, OV_LAYOUT *lay, const OV_MODEL
     if (key == 'F')
     {
         lay->paused = !lay->paused;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Display %s",
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s Display %s", lay->paused ? "⏸️" : "▶️",
                        lay->paused ? "paused" : "resumed");
         return 1;
     }
     if (key == 'W')
     {
         ov_model_export_snapshot(m);
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_OK, "Snapshot exported");
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_OK, "📸 Snapshot exported");
         return 1;
     }
 
@@ -2643,7 +2645,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         if (!lay->ctrl_mode)
         {
             ov_cmdlog_push(log, OV_CMDLOG_WARN,
-                           "CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
+                           "🚫 CTRL+e requires CONTROL mode (press c to toggle CTRL mode ON/OFF)");
             return 1;
         }
 
@@ -2894,7 +2896,7 @@ static int ov_input__handle_actions(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
 
             ov_cmdlog_push(log, OV_CMDLOG_WARN,
-                           "%s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)",
+                           "🚫 %s requires CONTROL mode (press c to toggle CTRL mode ON/OFF)",
                            keyname);
         }
         else
@@ -3705,8 +3707,8 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     if (key == 'c')
     {
         lay->ctrl_mode = !lay->ctrl_mode;
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
-                       lay->ctrl_mode ? "ON" : "OFF");
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎛️ Control mode %s",
+                       lay->ctrl_mode ? "✅ ON" : "❌ OFF");
         return 0;
     }
 
@@ -3714,12 +3716,12 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     {
         lay->mouse_hover = !lay->mouse_hover;
         ov_set_mouse_hover(lay->mouse_hover);
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Mouse hover %s",
-                       lay->mouse_hover ? "ON" : "OFF");
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🖱️ Mouse hover %s",
+                       lay->mouse_hover ? "✅ ON" : "❌ OFF");
         if (lay->mouse_hover)
         {
             ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                           "Warning: Hover uses more CPU & character BW on slow connections");
+                           "⚠️ Warning: Hover uses more CPU & character BW on slow connections");
         }
         return 0;
     }
@@ -3917,7 +3919,7 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
         }
 
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s%s", keys_str, ctrl_str);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "⌨️ %s%s", keys_str, ctrl_str);
         if (lay->cmdlog_rows == 0)
         {
             lay->cmdlog_rows = 4;
@@ -3935,11 +3937,11 @@ static int ov_handle_key_internal(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
     if (key >= 32 && key <= 126)
     {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key: '%c' (code %d)", key, key);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key: '%c' (code %d)", key, key);
     }
     else
     {
-        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "Unmapped key code: %d", key);
+        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN, "❔ Unmapped key code: %d", key);
     }
     return 0;
 }

@@ -278,30 +278,32 @@ static inline void ov_buf_printf_gradient(ov_rgb_t a, ov_rgb_t b, const char *fm
         int i           = 0;
         while (i < n)
         {
-            int char_len = utf8_char_length((unsigned char) tmp[i]);
-            if (i + char_len > n)
+            int nb = 0, w = 1;
+            ov_utf8_next_cluster(&tmp[i], n - i, &nb, &w);
+            if (nb <= 0)
             {
-                char_len = n - i;
+                break;
             }
             total_chars++;
-            i += char_len;
+            i += nb;
         }
 
         i            = 0;
         int char_idx = 0;
         while (i < n)
         {
-            int char_len = utf8_char_length((unsigned char) tmp[i]);
-            if (i + char_len > n)
+            int nb = 0, w = 1;
+            ov_utf8_next_cluster(&tmp[i], n - i, &nb, &w);
+            if (nb <= 0)
             {
-                char_len = n - i;
+                break;
             }
 
             float t = (total_chars > 1) ? (float) char_idx / (float) (total_chars - 1) : 0.0f;
             ov_theme_fg(ov_rgb_lerp(a, b, t));
 
-            ov_buf_append_char(&tmp[i], char_len);
-            i += char_len;
+            ov_buf_append_cluster(&tmp[i], nb, w);
+            i += nb;
             char_idx++;
         }
     }
