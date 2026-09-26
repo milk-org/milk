@@ -132,15 +132,6 @@ static void fpsCTRL__calculate_widths_and_layout(KEYWORD_TREE_NODE    *keywnode,
                                                  int                  *max_val_width)
 {
     (*GUIlineMax) = num_filtered;
-    for (int level_idx = 0; level_idx < fpsCTRLvar->currentlevel; level_idx++)
-    {
-        if (nodechain[level_idx] > -1)
-        {
-            int kn = nodechain[level_idx];
-            TUI_printfw("  ");
-            TUI_printfw("%s ", keywnode[kn].keyword[level_idx]);
-        }
-    }
 
     DEBUG_TRACEPOINT("(*GUIlineMax): %d", (*GUIlineMax));
 
@@ -268,8 +259,6 @@ static void fpsCTRL__calculate_widths_and_layout(KEYWORD_TREE_NODE    *keywnode,
     {
         max_kw_width[cl] = available_width / 2;
     }
-
-    TUI_newline();
 }
 
 /**
@@ -576,22 +565,21 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
                                            int                   max_val_width,
                                            int                   GUIlineMax)
 {
-    int level = fpsCTRLvar->currentlevel - 1;
-    int cl    = fpsCTRLvar->currentlevel;
+    int cl = fpsCTRLvar->currentlevel;
     for (int GUIline = doffsetindex; GUIline < lastindex;
          GUIline++) // GUIline is the line number on GUI display
     {
         for (int level_idx = 0; level_idx < fpsCTRLvar->currentlevel; level_idx++)
         {
-            int c_idx = child_index[cl];
+            int c_idx = child_index[level_idx];
 
             /* Determine if this row is the selected
              * node in the chain for this level. */
             int is_chain_node = 0;
-            if (c_idx >= 0 && c_idx < keywnode[nodechain[level]].NBchild)
+            if (c_idx >= 0 && c_idx < keywnode[nodechain[level_idx]].NBchild)
             {
-                int v1 = keywnode[nodechain[level]].child[c_idx];
-                int v2 = nodechain[level + 1];
+                int v1 = keywnode[nodechain[level_idx]].child[c_idx];
+                int v2 = nodechain[level_idx + 1];
                 if (v1 == v2)
                 {
                     is_chain_node = 1;
@@ -605,7 +593,7 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
                 screenprint_setdim();
             }
 
-            if (level == 0)
+            if (level_idx == 0)
             {
                 if (c_idx >= 0 && c_idx < keywnode[nodechain[0]].NBchild)
                 {
@@ -619,10 +607,10 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
                 }
             }
 
-            if (c_idx >= 0 && c_idx < keywnode[nodechain[level]].NBchild)
+            if (c_idx >= 0 && c_idx < keywnode[nodechain[level_idx]].NBchild)
             {
                 int snode      = 0; // selected node
-                int knodeindex = keywnode[nodechain[level]].child[c_idx];
+                int knodeindex = keywnode[nodechain[level_idx]].child[c_idx];
 
                 // toggle highlight if node is in the chain
                 if (is_chain_node)
@@ -639,8 +627,8 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
 
                 TUI_printfw("  ");
 
-                TUI_printfw("%-*.*s ", max_kw_width[level], max_kw_width[level],
-                            keywnode[knodeindex].keyword[level]);
+                TUI_printfw("%-*.*s ", max_kw_width[level_idx], max_kw_width[level_idx],
+                            keywnode[knodeindex].keyword[level_idx]);
 
                 if (keywnode[knodeindex].leaf == 0) // directory
                 {
@@ -660,7 +648,7 @@ static void fpsCTRL__render_parameter_rows(KEYWORD_TREE_NODE    *keywnode,
             }
             else // blank space
             {
-                TUI_printfw("  %*s ", max_kw_width[level], " ");
+                TUI_printfw("  %*s ", max_kw_width[level_idx], " ");
                 TUI_printfw("  ");
                 screenprint_setnormal();
             }
@@ -1227,18 +1215,15 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
                                          fpsCTRLvar->fpsindexSelected, fpsCTRLvar->pindexSelected);
         }
 
+        fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
+
         int nodechain[MAXNBLEVELS];
         nodechain[fpsCTRLvar->currentlevel] = fpsCTRLvar->directorynodeSelected;
 
-        int level = fpsCTRLvar->currentlevel - 1;
-        while (level > 0)
+        for (int level_idx = fpsCTRLvar->currentlevel - 1; level_idx >= 0; level_idx--)
         {
-            nodechain[level] = keywnode[nodechain[level + 1]].parent_index;
-            level--;
+            nodechain[level_idx] = keywnode[nodechain[level_idx + 1]].parent_index;
         }
-        nodechain[0] = 0; // root
-
-        fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
 
         int filtered_children[NB_KEYWNODE_MAX];
         int num_filtered = 0;
