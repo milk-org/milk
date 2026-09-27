@@ -237,6 +237,19 @@ void ov_scan_stop(void)
  *
  * Return: pointer to the current display model.
  */
+/**
+ * ov_scan_drain_event_fd - drain pending wakeups from scan eventfd.
+ */
+void ov_scan_drain_event_fd(void)
+{
+    if (ov_scan_event_fd >= 0)
+    {
+        uint64_t val = 0;
+        ssize_t  ret = read(ov_scan_event_fd, &val, sizeof(val));
+        (void) ret;
+    }
+}
+
 const OV_MODEL *ov_scan_get_model(void)
 {
     /* Pick up the latest ready buffer ONLY if new data
@@ -249,12 +262,7 @@ const OV_MODEL *ov_scan_get_model(void)
         ov_ready_idx   = tmp;
         atomic_store(&ov_new_data, 0);
 
-        if (ov_scan_event_fd >= 0)
-        {
-            uint64_t val = 0;
-            ssize_t  ret = read(ov_scan_event_fd, &val, sizeof(val));
-            (void) ret;
-        }
+        ov_scan_drain_event_fd();
     }
     pthread_mutex_unlock(&ov_model_mutex);
 

@@ -212,6 +212,9 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
         return;
     }
 
+    /* Evict from scanner cache before destroying semaphores so scan thread doesn't poll it */
+    scache_evict_by_name(s->name);
+
     IMAGE im;
     memset(&im, 0, sizeof(im));
 
@@ -245,6 +248,9 @@ void ov_ctrl_stream_delete(const OV_STREAM *s, OV_CMDLOG *log)
         }
         return;
     }
+
+    /* Trigger immediate scan to refresh model */
+    ov_scan_force_update();
 
     if (log != NULL)
     {

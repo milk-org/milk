@@ -101,6 +101,13 @@ void ov_scan_procs(OV_MODEL *model)
                                                            MAP_SHARED, pfd, 0);
                     if (pm != MAP_FAILED)
                     {
+                        if (s_pcache_nb >= OV_MAX_PROCS)
+                        {
+                            munmap(pm, sizeof(PROCESSINFO));
+                            close(pfd);
+                            continue;
+                        }
+
                         ci = s_pcache_nb;
                         memset(&s_pcache[ci], 0, sizeof(ov_proc_cache_t));
                         s_pcache[ci].pid    = pid;

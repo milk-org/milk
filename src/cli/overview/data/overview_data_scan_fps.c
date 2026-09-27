@@ -161,12 +161,14 @@ void ov_scan_fps(OV_MODEL *model)
     if (!dir_changed && s_fcache_nb > 0)
     {
         /* Fast path: no files added/removed */
+        pthread_mutex_lock(&s_fcache_mutex);
         int idx = 0;
         for (int ci = 0; ci < s_fcache_nb && idx < OV_MAX_FPS; ci++)
         {
             fill_fps_from_struct(&model->fps[idx], &s_fcache[ci]);
             idx++;
         }
+        pthread_mutex_unlock(&s_fcache_mutex);
         model->nb_fps = idx;
         return;
     }

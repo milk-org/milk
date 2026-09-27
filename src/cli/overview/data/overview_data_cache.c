@@ -30,7 +30,8 @@
 
 
 ov_stream_cache_t s_scache[OV_MAX_STREAMS];
-int               s_scache_nb = 0;
+int               s_scache_nb    = 0;
+pthread_mutex_t   s_scache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * scache_find - find stream in cache by name.
@@ -50,9 +51,9 @@ int scache_find(const char *name)
 }
 
 /**
- * scache_evict - close mapping and compact array.
+ * scache_evict_locked - close mapping and compact array (caller holds s_scache_mutex).
  */
-void scache_evict(int ci)
+void scache_evict_locked(int ci)
 {
     ImageStreamIO_closeIm(&s_scache[ci].img);
     s_scache_nb--;
@@ -60,6 +61,34 @@ void scache_evict(int ci)
     {
         s_scache[ci] = s_scache[s_scache_nb];
     }
+}
+
+/**
+ * scache_evict - close mapping and compact array.
+ */
+void scache_evict(int ci)
+{
+    pthread_mutex_lock(&s_scache_mutex);
+    scache_evict_locked(ci);
+    pthread_mutex_unlock(&s_scache_mutex);
+}
+
+/**
+ * scache_evict_by_name - find and evict stream by name under lock.
+ */
+void scache_evict_by_name(const char *name)
+{
+    if (name == NULL || name[0] == '\0')
+    {
+        return;
+    }
+    pthread_mutex_lock(&s_scache_mutex);
+    int ci = scache_find(name);
+    if (ci >= 0)
+    {
+        scache_evict_locked(ci);
+    }
+    pthread_mutex_unlock(&s_scache_mutex);
 }
 
 /* --- FPS cache --- */

@@ -18,7 +18,7 @@
  */
 const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    if (lay->sel_name_stream[0] == '\0')
+    if (lay == NULL || m == NULL || lay->sel_name_stream[0] == '\0')
     {
         return NULL;
     }
@@ -41,7 +41,7 @@ const OV_STREAM *ov_input_get_sel_stream(const OV_LAYOUT *lay, const OV_MODEL *m
  */
 const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    if (lay->sel_name_proc[0] == '\0')
+    if (lay == NULL || m == NULL || lay->sel_name_proc[0] == '\0')
     {
         return NULL;
     }
@@ -65,7 +65,7 @@ const OV_PROC *ov_input_get_sel_proc(const OV_LAYOUT *lay, const OV_MODEL *m)
  */
 const OV_FPS *ov_input_get_sel_fps(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    if (lay->sel_name_fps[0] == '\0')
+    if (lay == NULL || m == NULL || lay->sel_name_fps[0] == '\0')
     {
         return NULL;
     }

@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
+#include <pthread.h>
 #include "overview_defs.h"
 #include "overview_data.h"
 #include "ImageStreamIO/ImageStreamIO.h"
@@ -86,6 +87,7 @@ typedef struct
     int     has_start_time;
 } ov_proc_cache_t;
 
+extern pthread_mutex_t s_scache_mutex;
 extern pthread_mutex_t s_fcache_mutex;
 void                   fcache_build_params(ov_fps_cache_t *ce);
 
@@ -106,6 +108,8 @@ const char *ov_datatype_name(uint8_t dt);
 
 int  scache_find(const char *name);
 void scache_evict(int ci);
+void scache_evict_locked(int ci);
+void scache_evict_by_name(const char *name);
 int  fcache_find(const char *name);
 void fcache_evict(int ci);
 void fcache_evict_locked(int ci);
