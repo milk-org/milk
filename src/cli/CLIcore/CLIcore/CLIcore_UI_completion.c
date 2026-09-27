@@ -46,6 +46,7 @@
 #include "CLIcore.h"
 
 #include "CLIcore_script.h"
+#include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
 
 #include <fnmatch.h>
@@ -238,7 +239,23 @@ void rl_cb_linehandler(char *linein)
     {
         printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
     }
-    CLI_execute_line();
+
+    cli_fault_isolation_arm();
+    int jmp_res = sigsetjmp(*cli_get_repl_env(), 1);
+    if (jmp_res == 0)
+    {
+        CLI_execute_line();
+    }
+    else
+    {
+        /* Crash or SIGINT intercepted: reset signal flags and readline prompt */
+        dcsigINT  = 0;
+        dcsigSEGV = 0;
+        dcsigBUS  = 0;
+        dcsigABRT = 0;
+        rl_on_new_line();
+    }
+    cli_fault_isolation_disarm();
 
     free(linein);
 }

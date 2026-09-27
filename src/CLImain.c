@@ -47,15 +47,18 @@ int main(int argc, char *argv[])
     }
 
     char AppName[STRINGMAXLEN_APPNAME];
+    memset(AppName, 0, sizeof(AppName));
 
     char *CLI_APPNAME = getenv("MILKCLI_APPNAME");
     if (CLI_APPNAME != NULL)
     {
         strncpy(AppName, CLI_APPNAME, STRINGMAXLEN_APPNAME - 1);
+        AppName[STRINGMAXLEN_APPNAME - 1] = '\0';
     }
     else
     {
         strncpy(AppName, "milk-cli", STRINGMAXLEN_APPNAME - 1);
+        AppName[STRINGMAXLEN_APPNAME - 1] = '\0';
     }
 
     if (getenv("MILK_QUIET"))
@@ -80,13 +83,20 @@ int main(int argc, char *argv[])
 #ifndef NDEBUG
     printf("        [ENABLED]  Code test point tracing\n");
     // allocate circular buffer memory
-    dctestptarr  = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
-    dctestptinit = 1;
-    // initialize loop counter
-    // loop counter increments when reaching end of circular buffer
-    dctestptlcnt = 0;
-    // set current entry index to zero
-    dctestptcnt = 0;
+    dctestptarr = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
+    if (dctestptarr != NULL)
+    {
+        dctestptinit = 1;
+        // initialize loop counter
+        // loop counter increments when reaching end of circular buffer
+        dctestptlcnt = 0;
+        // set current entry index to zero
+        dctestptcnt = 0;
+    }
+    else
+    {
+        fprintf(stderr, "WARNING: failed to allocate memory for dctestptarr\n");
+    }
 #endif
 
     char versionstring[STRINGMAXLEN_VERSIONSTRING];
@@ -140,7 +150,11 @@ int main(int argc, char *argv[])
     // default exit code
     dcexitcode = RETURN_SUCCESS;
 
-    runCLI(argc, argv, AppName);
+    errno_t cli_status = runCLI(argc, argv, AppName);
+    if (dcexitcode == RETURN_SUCCESS && cli_status != RETURN_SUCCESS)
+    {
+        dcexitcode = cli_status;
+    }
 
     //errno_t CLIretval = RETURN_SUCCESS;
 

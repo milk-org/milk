@@ -12,6 +12,7 @@
  */
 
 #include <ctype.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -118,9 +119,19 @@ static int binop_img_scalar(cli_token_type op, const char *iname, double rv, con
         arith_image_cstmult(iname, rv, tmpn);
         break;
     case TOK_OP_SLASH:
+        if (rv == 0.0)
+        {
+            parse_errmsg("Division by zero");
+            return 0;
+        }
         arith_image_cstdiv(iname, rv, tmpn);
         break;
     case TOK_OP_MOD:
+        if (rv == 0.0)
+        {
+            parse_errmsg("Modulo by zero");
+            return 0;
+        }
         arith_image_cstfmod(iname, rv, tmpn);
         break;
     case TOK_OP_CARET:
@@ -300,6 +311,10 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
                 parse_errmsg("Modulo by zero");
                 return mk_long(0);
             }
+            if (left.lval == LONG_MIN && right.lval == -1)
+            {
+                return mk_long(0);
+            }
             return mk_long(left.lval % right.lval);
         case TOK_OP_CARET:
             return mk_long((long) pow(left.lval, right.lval));
@@ -326,8 +341,16 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
         case TOK_OP_BXOR:
             return mk_long(left.lval ^ right.lval);
         case TOK_OP_LSHIFT:
+            if (right.lval < 0 || right.lval >= 64)
+            {
+                return mk_long(0);
+            }
             return mk_long(left.lval << right.lval);
         case TOK_OP_RSHIFT:
+            if (right.lval < 0 || right.lval >= 64)
+            {
+                return mk_long(0);
+            }
             return mk_long(left.lval >> right.lval);
         default:
             break;
@@ -386,9 +409,23 @@ val_t eval_binop(cli_token_type op, val_t left, val_t right)
         case TOK_OP_BXOR:
             return mk_long((long) lv ^ (long) rv);
         case TOK_OP_LSHIFT:
-            return mk_long((long) lv << (long) rv);
+        {
+            long s = (long) rv;
+            if (s < 0 || s >= 64)
+            {
+                return mk_long(0);
+            }
+            return mk_long((long) lv << s);
+        }
         case TOK_OP_RSHIFT:
-            return mk_long((long) lv >> (long) rv);
+        {
+            long s = (long) rv;
+            if (s < 0 || s >= 64)
+            {
+                return mk_long(0);
+            }
+            return mk_long((long) lv >> s);
+        }
         default:
             break;
         }

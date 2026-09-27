@@ -48,6 +48,9 @@ CLI_FUNC *cli_func_find(const char *name)
 }
 
 
+#define CLI_MAX_FUNC_CALL_DEPTH 64
+static int cli_func_call_depth = 0;
+
 /**
  * @brief Try to call a user-defined function
  *
@@ -76,6 +79,15 @@ int cli_try_func_call(const char *line)
     {
         return 0;
     }
+
+    if (cli_func_call_depth >= CLI_MAX_FUNC_CALL_DEPTH)
+    {
+        fprintf(stderr,
+                "milk-cli: error: maximum function call recursion depth (%d) exceeded\n",
+                CLI_MAX_FUNC_CALL_DEPTH);
+        return 1;
+    }
+    cli_func_call_depth++;
 
     /* Parse arguments */
     p = strip_ws(p);
@@ -121,10 +133,12 @@ int cli_try_func_call(const char *line)
     }
 
     /* Push local variable scope */
+    int pushed_scope = 0;
     if (cli_local_depth < CLI_MAX_LOCAL_DEPTH - 1)
     {
         cli_local_depth++;
         cli_local_shadow_count[cli_local_depth] = 0;
+        pushed_scope = 1;
     }
 
     /* Execute body lines */
@@ -148,7 +162,7 @@ int cli_try_func_call(const char *line)
     }
 
     /* Restore variables shadowed by 'local' */
-    if (cli_local_depth > 0)
+    if (pushed_scope && cli_local_depth > 0)
     {
         int scount = cli_local_shadow_count[cli_local_depth];
         for (int i = 0; i < scount; i++)
@@ -166,5 +180,6 @@ int cli_try_func_call(const char *line)
         cli_local_depth--;
     }
 
+    cli_func_call_depth--;
     return 1;
 }

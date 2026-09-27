@@ -39,14 +39,28 @@ VERBOSE=0
 FILTER=""
 STOP_ON_FAIL=0
 
+MILK_CLI="${MILK_CLI:-}"
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --verbose)     VERBOSE=1 ;;
-        --filter)      FILTER="${2:-}"; shift ;;
+        --verbose)      VERBOSE=1 ;;
+        --filter)       FILTER="${2:-}"; shift ;;
         --stop-on-fail) STOP_ON_FAIL=1 ;;
+        --bin)          MILK_CLI="${2:-}"; shift ;;
+        *)              if [[ -x "$1" ]]; then MILK_CLI="$1"; fi ;;
     esac
     shift
 done
+
+if [[ -z "$MILK_CLI" ]]; then
+    if [[ -x "${SCRIPT_DIR}/../../_build/milk-cli" ]]; then
+        MILK_CLI="${SCRIPT_DIR}/../../_build/milk-cli"
+    elif [[ -x "_build/milk-cli" ]]; then
+        MILK_CLI="_build/milk-cli"
+    else
+        MILK_CLI="milk-cli"
+    fi
+fi
 
 # ---- Color codes ----
 RED='\033[0;31m'
@@ -186,7 +200,7 @@ run_one_test() {
     local exit_code=0
     local t_start t_end elapsed_ms
     t_start=$(date +%s%N)
-    timeout "${TIMEOUT_SEC}" milk-cli \
+    timeout "${TIMEOUT_SEC}" "$MILK_CLI" \
         --no-autocomplete \
         --no-history-suggest \
         --no-arg-hints \
@@ -312,7 +326,7 @@ done
 # ============================================================
 TOTAL=$((TOTAL + 1))
 exit_code=0
-c_output=$(timeout "${TIMEOUT_SEC}" milk-cli -c "echo c_flag_test" 2>/dev/null) || exit_code=$?
+c_output=$(timeout "${TIMEOUT_SEC}" "$MILK_CLI" -c "echo c_flag_test" 2>/dev/null) || exit_code=$?
 
 if [[ $exit_code -eq 0 && "$c_output" == *"c_flag_test"* ]]; then
     PASS=$((PASS + 1))
@@ -320,6 +334,16 @@ if [[ $exit_code -eq 0 && "$c_output" == *"c_flag_test"* ]]; then
 else
     FAIL=$((FAIL + 1))
     printf "  [%3d/%3d] ${RED}%-14s${RST} %s\n" "$TOTAL" "$((NUM_TESTS + 1))" "FAIL" "Test -c flag execution (got exit=$exit_code, output=$c_output)"
+fi
+
+# ============================================================
+# Run Hardening Suite
+# ============================================================
+if [[ -x "${SCRIPT_DIR}/test_cli_hardening.sh" ]]; then
+    echo ""
+    if ! bash "${SCRIPT_DIR}/test_cli_hardening.sh" "${MILK_CLI}"; then
+        FAIL=$((FAIL + 1))
+    fi
 fi
 
 # ============================================================

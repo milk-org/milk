@@ -279,15 +279,66 @@ int cli_run_external(const char *cmd)
  */
 int cli_handle_subshell(errno_t *retval)
 {
-    const char *sp  = data.CLIcmdline;
-    int         spl = (int) strlen(sp);
+    const char *sp = data.CLIcmdline;
+    while (*sp == ' ' || *sp == '\t')
+    {
+        sp++;
+    }
+    int spl = (int) strlen(sp);
+    while (spl > 0 && (sp[spl - 1] == ' ' || sp[spl - 1] == '\t'))
+    {
+        spl--;
+    }
     if (spl < 3 || sp[0] != '(' || sp[spl - 1] != ')')
     {
         return 0;
     }
+
+    /* Verify that the opening '(' matches the closing ')' at spl - 1 */
+    int depth = 0;
+    int in_sq = 0;
+    int in_dq = 0;
+    for (int i = 0; i < spl; i++)
+    {
+        char c = sp[i];
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')')
+            {
+                depth--;
+                if (depth == 0 && i < spl - 1)
+                {
+                    /* First '(' closed before the end, e.g. (cmd1) && (cmd2) */
+                    return 0;
+                }
+            }
+        }
+    }
+    if (depth != 0)
+    {
+        return 0;
+    }
+
     char sbuf[STRINGMAXLEN_CLICMDLINE];
-    memcpy(sbuf, sp + 1, (size_t) (spl - 2));
-    sbuf[spl - 2] = '\0';
+    int  copy_len = spl - 2;
+    if (copy_len >= STRINGMAXLEN_CLICMDLINE)
+    {
+        copy_len = STRINGMAXLEN_CLICMDLINE - 1;
+    }
+    memcpy(sbuf, sp + 1, (size_t) copy_len);
+    sbuf[copy_len] = '\0';
     pid_t spid    = fork();
     if (spid == 0)
     {
@@ -305,6 +356,8 @@ int cli_handle_subshell(errno_t *retval)
             }
             tok = strtok(NULL, ";");
         }
+        fflush(stdout);
+        fflush(stderr);
         _exit(0);
     }
     else if (spid > 0)
@@ -830,8 +883,13 @@ int cli_handle_herestring_early(errno_t *retval)
     if (hvlen >= 2 && ((hsval[0] == '"' && hsval[hvlen - 1] == '"') ||
                        (hsval[0] == '\'' && hsval[hvlen - 1] == '\'')))
     {
-        memcpy(hvbuf, hsval + 1, (size_t) (hvlen - 2));
-        hvbuf[hvlen - 2] = '\0';
+        int copy_len = hvlen - 2;
+        if (copy_len >= STRINGMAXLEN_CLICMDLINE)
+        {
+            copy_len = STRINGMAXLEN_CLICMDLINE - 1;
+        }
+        memcpy(hvbuf, hsval + 1, (size_t) copy_len);
+        hvbuf[copy_len] = '\0';
     }
     else
     {
