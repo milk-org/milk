@@ -3,65 +3,16 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk-stream-info.c
- * @brief Print detailed info for a single SHM stream
- *
- * Displays stream metadata (type, dimensions, counters,
- * semaphores) and cross-referenced connections (written
- * by, triggers, read by, FPS linkage) using the
- * OV_MODEL graph.
- *
- * No CLIcore dependency. Links: ImageStreamIO +
- * milkprocessinfo + milkfps + m + rt + pthread.
+ * @file milk-stream-info_print.c
+ * @brief Detailed report formatter and connection printer for streams.
  */
 
+#include "milk-stream-info.h"
+
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <signal.h>
-
-#include "overview_defs.h"
-#include "overview_data.h"
-#include "milk_help.h"
-#include <inttypes.h>
-
-/* Required by overview_defs.h (extern) */
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
-
-/* One-line description */
-#define SI_ONELINE                         \
-    "print detailed info and connections " \
-    "for a shared-memory stream"
-
-#define SI_DESC_LONG                                                \
-    "Scan the ImageStreamIO shared-memory area and the FPS\n"       \
-    "registry to build a connection graph, then print a rich\n"     \
-    "diagnostic view for the specified stream: type, dimensions,\n" \
-    "memory footprint, counters, semaphores, and connections\n"     \
-    "(written by, triggers, read by, FPS linkage)."
-
-/* Replace local ANSI macros with milk_help.h equivalents */
-#define C_RST MH_RST
-#define C_BOLD MH_BOLD
-#define C_DIM MH_DIM
-#define C_TITLE MH_TITLE
-#define C_HDR MH_HDR
-#define C_LABEL MH_DFLT
-#define C_NAME MH_CMD
-#define C_PROC MH_NOTE
-#define C_FPS MH_NOTE
-#define C_VAL MH_BOLD
-#define C_ALIVE "\033[1;32m"
-#define C_DEAD MH_ERR
-#define C_WARN MH_ERR
-#define C_SEP MH_DFLT
-
-/* =========================================================
- * Datatype name helper
- * ========================================================= */
 
 /**
  * dtype_name - Get human-readable datatype name
@@ -69,7 +20,8 @@ volatile sig_atomic_t ov_sigTERM = 0;
  *
  * Return: Constant string name of the datatype.
  */
-static const char *dtype_name(uint8_t dt)
+static const char *dtype_name(
+    uint8_t dt)
 {
     switch (dt)
     {
@@ -108,7 +60,8 @@ static const char *dtype_name(uint8_t dt)
  *
  * Return: Size in bytes of a single element.
  */
-static unsigned int dtype_bytes(uint8_t dt)
+static unsigned int dtype_bytes(
+    uint8_t dt)
 {
     switch (dt)
     {
@@ -134,17 +87,14 @@ static unsigned int dtype_bytes(uint8_t dt)
     }
 }
 
-/* =========================================================
- * PID status string
- * ========================================================= */
-
 /**
  * pid_status_str - Format process PID status with ANSI color tags
  * @pid: Process ID to query
  *
  * Return: Color-formatted string (ALIVE, ZOMBIE, DEAD, or N/A).
  */
-static const char *pid_status_str(pid_t pid)
+static const char *pid_status_str(
+    pid_t pid)
 {
     if (pid <= 0)
     {
@@ -161,10 +111,6 @@ static const char *pid_status_str(pid_t pid)
         return C_DEAD "DEAD" C_RST;
     }
 }
-
-/* =========================================================
- * Find process name from model by PID
- * ========================================================= */
 
 /**
  * proc_name_by_pid - Lookup process name from model by PID
@@ -185,16 +131,12 @@ static const char *proc_name_by_pid(
     return NULL;
 }
 
-/* =========================================================
- * Print the stream info
- * ========================================================= */
-
 /**
  * print_stream_info - Print formatted metadata report for a shared memory stream
  * @m:  Pointer to data model
  * @si: Stream index in @m->streams
  */
-static void print_stream_info(
+void print_stream_info(
     const OV_MODEL *m,
     int             si)
 {
@@ -309,8 +251,8 @@ static void print_stream_info(
                 continue;
             }
             int pi = m->nodes[ni].index;
-            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Written by", m->procs[pi].name,
-                   (int) m->procs[pi].PID);
+            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Written by",
+                   m->procs[pi].name, (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -332,8 +274,8 @@ static void print_stream_info(
                 continue;
             }
             int pi = m->nodes[ni].index;
-            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Triggers", m->procs[pi].name,
-                   (int) m->procs[pi].PID);
+            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Triggers",
+                   m->procs[pi].name, (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -354,8 +296,8 @@ static void print_stream_info(
                 continue;
             }
             int pi = m->nodes[ni].index;
-            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Read by (sem)", m->procs[pi].name,
-                   (int) m->procs[pi].PID);
+            printf("   %-18s: " C_PROC "%s" C_RST " (PID %d)\n", "Read by (sem)",
+                   m->procs[pi].name, (int) m->procs[pi].PID);
             found_any = 1;
         }
 
@@ -414,8 +356,7 @@ static void print_stream_info(
         for (int t = 0; t < s->nb_proctrace; t++)
         {
             const char *pn = proc_name_by_pid(m, s->proctrace_pid[t]);
-            printf("   [%d] PID=%-6d"
-                   "  trig_inode=%-8" PRIu64 "  mode=%d",
+            printf("   [%d] PID=%-6d  trig_inode=%-8" PRIu64 "  mode=%d",
                    t, (int) s->proctrace_pid[t], (uint64_t) s->proctrace_inode[t],
                    s->proctrace_trigmode[t]);
             if (pn)
@@ -427,114 +368,4 @@ static void print_stream_info(
     }
 
     printf("\n");
-}
-
-/* =========================================================
- * Help
- * ========================================================= */
-
-/**
- * print_help - Print command-line help message for milk-stream-info
- * @progname: Name of executable
- * @mh_color: Flag indicating whether color is enabled
- */
-static void print_help(
-    const char *progname,
-    int         mh_color)
-{
-    milk_help_banner(progname, SI_ONELINE, mh_color);
-    milk_help_section("Usage", mh_color);
-    printf("  %s%s%s [%soptions%s] %s<stream_name>%s\n\n", mh_color ? MH_CMD : "", progname,
-           mh_color ? MH_RST : "", mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
-           mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    milk_help_section("Description", mh_color);
-    printf("  %s\n\n", SI_DESC_LONG);
-    milk_help_section("Options", mh_color);
-    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h, --help", mh_color ? MH_RST : "",
-           "Show this help and exit");
-    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h1, --help-oneline",
-           mh_color ? MH_RST : "", "One-line description and exit");
-    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h2, --help-description",
-           mh_color ? MH_RST : "", "Verbose description and exit");
-    printf("  %s%-25s%s %s\n\n", mh_color ? MH_OPT : "", "-hm, --help-mono", mh_color ? MH_RST : "",
-           "Full help, no ANSI color");
-    milk_help_section("Examples", mh_color);
-    printf("  %s$ milk-stream-info%s %sdm00disp%s\n\n", mh_color ? MH_CMD : "",
-           mh_color ? MH_RST : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
-    const char *see_also[] = { "milk-stream-list:list active shared memory streams",
-                               "milk-stream-rm:remove shared memory streams",
-                               "milk-procinfo-info:inspect processinfo memory contents" };
-    milk_help_see_also(see_also, 3, mh_color);
-}
-
-/* =========================================================
- * main
- * ========================================================= */
-
-/**
- * main - Entry point for milk-stream-info utility
- * @argc: Argument count
- * @argv: Argument vector
- *
- * Return: 0 on success, non-zero on error.
- */
-int main(
-    int   argc,
-    char *argv[])
-{
-    int action = milk_help_init(argc, argv, SI_ONELINE, SI_DESC_LONG);
-    if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
-    {
-        return 0;
-    }
-    int mh_color = (action == MH_ACTION_HELP);
-    if (action == MH_ACTION_HELP || action == MH_ACTION_MONO)
-    {
-        print_help(argv[0], mh_color);
-        return 0;
-    }
-
-    static struct option long_opts[] = { { "help", no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
-
-    int opt;
-    while ((opt = getopt_long(argc, argv, "h", long_opts, NULL)) != -1)
-    {
-        switch (opt)
-        {
-        case 'h':
-            break; /* handled above */
-        default:
-            printf("\n\033[1;31mERROR\033[0m invalid option\n\n");
-            print_help(argv[0], 1);
-            return 1;
-        }
-    }
-
-    if (optind >= argc)
-    {
-        printf("\n\033[1;31mERROR\033[0m stream name required\n\n");
-        print_help(argv[0], 1);
-        return 1;
-    }
-
-    const char *stream_name = argv[optind];
-
-    /* Build the system model */
-    OV_MODEL model;
-    memset(&model, 0, sizeof(model));
-    ov_model_full_scan(&model);
-
-    /* Find the requested stream */
-    int si = ov_find_stream_by_name(&model, stream_name);
-    if (si < 0)
-    {
-        PRINT_ERROR("stream '%s' not found in shared memory", stream_name);
-        ov_scan_cache_cleanup();
-        return 1;
-    }
-
-    print_stream_info(&model, si);
-
-    ov_scan_cache_cleanup();
-    return 0;
 }
