@@ -218,6 +218,14 @@ static const help_entry_t HELP[] =
         HS_NAV,
     },
     {
+        "F8 / ^T",
+        "Cycle color theme",
+        "Cycles through available color themes (dark, night, accessible, light, nordic). "
+        "Can also be cycled by clicking the theme badge in the status bar.",
+        HF_ENTRY,
+        HS_NAV,
+    },
+    {
         "c",
         "Toggle Control Mode ON / OFF",
         "Toggles safety interlock for administrative commands. When ON, enables "
@@ -694,17 +702,27 @@ static const help_entry_t HELP[] =
     {
         NULL,
         "Theme & Color Legend",
-        "Color coding conventions used throughout milk-CTRL. Distinguishes data stream "
-        "types, process states, and system health status.",
+        "Color coding conventions and selectable theme styles in milk-CTRL. "
+        "Supports dark, observatory red, high-contrast, paper light, and nordic themes.",
         HF_SECTION,
+        HS_COLORS,
+    },
+    {
+        "F8 / ^T",
+        "Cycle color theme (dark, night, accessible, light, nordic)",
+        "Cycles through available color palettes: dark (default slate), night "
+        "(observatory dark-adapted red), accessible (colorblind-friendly high-contrast), "
+        "light (paper light for daylight/papers), and nordic (arctic slate). Selection "
+        "is automatically saved to ~/.milk/ctrl_theme.",
+        HF_ENTRY,
         HS_COLORS,
     },
     {
         "Legend",
         "System color semantics",
-        "Cyan = Stream (SHM)  |  Purple = Process (procinfo)  |  Blue = FPS module\n"
-        "Green = Active / Running  |  Gray = Idle / Paused\n"
-        "Amber = Stale / Warning  |  Red = Error / Crashed / Signal Kill",
+        "Stream (SHM)  |  Process (procinfo)  |  FPS module\n"
+        "Active / Running  |  Idle / Paused\n"
+        "Stale / Warning  |  Error / Crashed / Signal Kill",
         HF_ENTRY | HF_COLORS,
         HS_COLORS,
     },

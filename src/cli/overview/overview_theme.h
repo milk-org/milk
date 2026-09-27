@@ -34,67 +34,148 @@ typedef struct
 } ov_rgb_t;
 
 /* =========================================================
- * Semantic color palette
+ * Theme structure & palette
+ * ========================================================= */
+
+typedef struct
+{
+    const char *id;
+    const char *name;
+    const char *desc;
+
+    /* Panel backgrounds */
+    ov_rgb_t bg_terminal;
+    ov_rgb_t bg_panel;
+    ov_rgb_t bg_panel_alt;
+    ov_rgb_t bg_header;
+    ov_rgb_t bg_selected;
+    ov_rgb_t bg_related;
+    ov_rgb_t bg_frozen;
+    ov_rgb_t bg_hover;
+    ov_rgb_t bg_pid_match;
+    ov_rgb_t bg_stale;
+    ov_rgb_t bg_new_item;
+    ov_rgb_t bg_loop;
+    ov_rgb_t bg_loop_shared;
+
+    /* Foreground — text */
+    ov_rgb_t fg_title;
+    ov_rgb_t fg_dim;
+    ov_rgb_t fg_text;
+    ov_rgb_t fg_bright;
+    ov_rgb_t fg_muted;
+
+    /* Foreground — node types */
+    ov_rgb_t fg_stream;
+    ov_rgb_t fg_fps;
+    ov_rgb_t fg_proc;
+
+    /* Dimmed accent colors for column headers */
+    ov_rgb_t fg_stream_hdr;
+    ov_rgb_t fg_fps_hdr;
+    ov_rgb_t fg_proc_hdr;
+
+    /* Foreground — status */
+    ov_rgb_t fg_active;
+    ov_rgb_t fg_idle;
+
+    /* Animation pulse parameters & status fg */
+    ov_rgb_t anim_pulse_bg_min;
+    ov_rgb_t anim_pulse_bg_max;
+    ov_rgb_t anim_pulse_fg_min;
+    ov_rgb_t anim_pulse_fg_max;
+    ov_rgb_t fg_warn;
+    ov_rgb_t fg_error;
+    ov_rgb_t fg_zombie;
+
+    /* Foreground — graph & loops */
+    ov_rgb_t fg_conn;
+    ov_rgb_t fg_edge_active;
+    ov_rgb_t fg_loop;
+    ov_rgb_t fg_loop_shared;
+
+    /* Gradient endpoints for bars/sparklines */
+    ov_rgb_t grad_lo;
+    ov_rgb_t grad_hi;
+    ov_rgb_t grad_cpu_lo;
+    ov_rgb_t grad_cpu_hi;
+} ov_theme_t;
+
+extern const ov_theme_t *ov_active_theme;
+
+/* Theme API declarations */
+int               ov_theme_count(void);
+const ov_theme_t *ov_theme_get(int index);
+const ov_theme_t *ov_theme_get_active(void);
+int               ov_theme_get_active_index(void);
+int               ov_theme_find_by_id(const char *id);
+void              ov_theme_set(int index);
+void              ov_theme_cycle(void);
+void              ov_theme_init(const char *preferred_theme);
+void              ov_theme_save_preference(void);
+
+/* =========================================================
+ * Semantic color palette (maps to active theme)
  * ========================================================= */
 
 /* Panel backgrounds */
-#define OV_BG_TERMINAL (ov_rgb_t){ 20, 22, 28 }
-#define OV_BG_PANEL (ov_rgb_t){ 30, 32, 40 }
-#define OV_BG_PANEL_ALT (ov_rgb_t){ 25, 27, 35 }
-#define OV_BG_HEADER (ov_rgb_t){ 40, 44, 58 }
-#define OV_BG_SELECTED (ov_rgb_t){ 50, 60, 90 }
-#define OV_BG_RELATED (ov_rgb_t){ 38, 50, 42 } /* soft green tint for related items */
-#define OV_BG_FROZEN (ov_rgb_t){ 40, 90, 140 } /* bright blue tint for frozen selection */
-#define OV_BG_HOVER (ov_rgb_t){ 45, 52, 72 }
-#define OV_BG_PID_MATCH (ov_rgb_t){ 50, 180, 50 } /* green bg for PID match */
-#define OV_BG_STALE (ov_rgb_t){ 55, 45, 20 }      /* amber tint for stale procs */
-#define OV_BG_NEW_ITEM (ov_rgb_t){ 40, 60, 50 }   /* green flash for new items */
-#define OV_BG_LOOP (ov_rgb_t){ 45, 30, 55 }       /* soft purple tint for loop items */
-#define OV_BG_LOOP_SHARED (ov_rgb_t){ 55, 42, 25 }/* amber tint for shared loop items */
+#define OV_BG_TERMINAL (ov_active_theme->bg_terminal)
+#define OV_BG_PANEL (ov_active_theme->bg_panel)
+#define OV_BG_PANEL_ALT (ov_active_theme->bg_panel_alt)
+#define OV_BG_HEADER (ov_active_theme->bg_header)
+#define OV_BG_SELECTED (ov_active_theme->bg_selected)
+#define OV_BG_RELATED (ov_active_theme->bg_related)
+#define OV_BG_FROZEN (ov_active_theme->bg_frozen)
+#define OV_BG_HOVER (ov_active_theme->bg_hover)
+#define OV_BG_PID_MATCH (ov_active_theme->bg_pid_match)
+#define OV_BG_STALE (ov_active_theme->bg_stale)
+#define OV_BG_NEW_ITEM (ov_active_theme->bg_new_item)
+#define OV_BG_LOOP (ov_active_theme->bg_loop)
+#define OV_BG_LOOP_SHARED (ov_active_theme->bg_loop_shared)
 
 /* Foreground — text */
-#define OV_FG_TITLE (ov_rgb_t){ 130, 170, 255 }
-#define OV_FG_DIM (ov_rgb_t){ 100, 105, 120 }
-#define OV_FG_TEXT (ov_rgb_t){ 200, 205, 215 }
-#define OV_FG_BRIGHT (ov_rgb_t){ 240, 245, 255 }
-#define OV_FG_MUTED (ov_rgb_t){ 70, 75, 85 }
+#define OV_FG_TITLE (ov_active_theme->fg_title)
+#define OV_FG_DIM (ov_active_theme->fg_dim)
+#define OV_FG_TEXT (ov_active_theme->fg_text)
+#define OV_FG_BRIGHT (ov_active_theme->fg_bright)
+#define OV_FG_MUTED (ov_active_theme->fg_muted)
 
 /* Foreground — node types */
-#define OV_FG_STREAM (ov_rgb_t){ 80, 200, 220 }
-#define OV_FG_FPS (ov_rgb_t){ 130, 170, 255 }
-#define OV_FG_PROC (ov_rgb_t){ 180, 140, 255 }
+#define OV_FG_STREAM (ov_active_theme->fg_stream)
+#define OV_FG_FPS (ov_active_theme->fg_fps)
+#define OV_FG_PROC (ov_active_theme->fg_proc)
 
 /* Dimmed accent colors for column headers */
-#define OV_FG_STREAM_HDR (ov_rgb_t){ 55, 140, 155 }
-#define OV_FG_FPS_HDR (ov_rgb_t){ 90, 120, 180 }
-#define OV_FG_PROC_HDR (ov_rgb_t){ 125, 100, 180 }
+#define OV_FG_STREAM_HDR (ov_active_theme->fg_stream_hdr)
+#define OV_FG_FPS_HDR (ov_active_theme->fg_fps_hdr)
+#define OV_FG_PROC_HDR (ov_active_theme->fg_proc_hdr)
 
 /* Foreground — status */
-#define OV_FG_ACTIVE (ov_rgb_t){ 80, 220, 80 }
-#define OV_FG_IDLE (ov_rgb_t){ 130, 140, 160 }
+#define OV_FG_ACTIVE (ov_active_theme->fg_active)
+#define OV_FG_IDLE (ov_active_theme->fg_idle)
 
 /* Animation Parameters */
 #define OV_ANIM_PULSE_SPEED 0.15f
-#define OV_ANIM_PULSE_BG_MIN (ov_rgb_t){ 80, 10, 10 }
-#define OV_ANIM_PULSE_BG_MAX (ov_rgb_t){ 180, 20, 20 }
-#define OV_ANIM_PULSE_FG_MIN (ov_rgb_t){ 160, 80, 80 }
-#define OV_ANIM_PULSE_FG_MAX (ov_rgb_t){ 255, 220, 220 }
-#define OV_FG_WARN (ov_rgb_t){ 255, 180, 0 }
-#define OV_FG_ERROR (ov_rgb_t){ 240, 60, 60 }
-#define OV_FG_ZOMBIE (ov_rgb_t){ 180, 120, 40 }
+#define OV_ANIM_PULSE_BG_MIN (ov_active_theme->anim_pulse_bg_min)
+#define OV_ANIM_PULSE_BG_MAX (ov_active_theme->anim_pulse_bg_max)
+#define OV_ANIM_PULSE_FG_MIN (ov_active_theme->anim_pulse_fg_min)
+#define OV_ANIM_PULSE_FG_MAX (ov_active_theme->anim_pulse_fg_max)
+#define OV_FG_WARN (ov_active_theme->fg_warn)
+#define OV_FG_ERROR (ov_active_theme->fg_error)
+#define OV_FG_ZOMBIE (ov_active_theme->fg_zombie)
 
 /* Foreground — graph & loops */
-#define OV_FG_CONN (ov_rgb_t){ 100, 130, 180 }
-#define OV_FG_EDGE_ACTIVE (ov_rgb_t){ 140, 200, 255 }
-#define OV_FG_LOOP (ov_rgb_t){ 220, 120, 255 }
-#define OV_FG_LOOP_SHARED (ov_rgb_t){ 255, 175, 40 }
+#define OV_FG_CONN (ov_active_theme->fg_conn)
+#define OV_FG_EDGE_ACTIVE (ov_active_theme->fg_edge_active)
+#define OV_FG_LOOP (ov_active_theme->fg_loop)
+#define OV_FG_LOOP_SHARED (ov_active_theme->fg_loop_shared)
 
 /* Gradient endpoints for bars/sparklines */
-#define OV_GRAD_LO (ov_rgb_t){ 60, 90, 140 }
-#define OV_GRAD_HI (ov_rgb_t){ 100, 200, 255 }
+#define OV_GRAD_LO (ov_active_theme->grad_lo)
+#define OV_GRAD_HI (ov_active_theme->grad_hi)
 
-#define OV_GRAD_CPU_LO (ov_rgb_t){ 60, 180, 60 }
-#define OV_GRAD_CPU_HI (ov_rgb_t){ 240, 60, 60 }
+#define OV_GRAD_CPU_LO (ov_active_theme->grad_cpu_lo)
+#define OV_GRAD_CPU_HI (ov_active_theme->grad_cpu_hi)
 
 /* =========================================================
  * Borders & box-drawing
@@ -535,20 +616,20 @@ static inline void ov_draw_panel_tabs(int          row,
 static inline ov_rgb_t ov_theme_highlight_bg(ov_rgb_t base_bg)
 {
     ov_rgb_t highlight;
-    highlight.r = base_bg.r + 15;
-    highlight.g = base_bg.g + 15;
-    highlight.b = base_bg.b + 18;
-    if (highlight.r > 255)
+    int sum = base_bg.r + base_bg.g + base_bg.b;
+    if (sum > 384)
     {
-        highlight.r = 255;
+        /* Light palette: darken slightly */
+        highlight.r = (base_bg.r > 18) ? base_bg.r - 18 : 0;
+        highlight.g = (base_bg.g > 18) ? base_bg.g - 18 : 0;
+        highlight.b = (base_bg.b > 15) ? base_bg.b - 15 : 0;
     }
-    if (highlight.g > 255)
+    else
     {
-        highlight.g = 255;
-    }
-    if (highlight.b > 255)
-    {
-        highlight.b = 255;
+        /* Dark palette: lighten slightly */
+        highlight.r = (base_bg.r + 15 <= 255) ? base_bg.r + 15 : 255;
+        highlight.g = (base_bg.g + 15 <= 255) ? base_bg.g + 15 : 255;
+        highlight.b = (base_bg.b + 18 <= 255) ? base_bg.b + 18 : 255;
     }
     return highlight;
 }

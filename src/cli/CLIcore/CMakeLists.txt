@@ -251,7 +251,8 @@ add_executable(
   ../overview/overview_ctrl.c
   ../overview/overview_fps_edit.c
   ../overview/overview_render_fps_params.c
-  ../overview/stream_graph.c)
+  ../overview/stream_graph.c
+  ../overview/overview_theme.c)
 target_include_directories(
   milk-CTRL
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO

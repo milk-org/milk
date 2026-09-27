@@ -175,6 +175,8 @@ static void print_help(const char *prog, int mh_color)
     printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
     printf("  %-30s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
     printf("  %-30s Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
+    printf("  %-30s Set color theme (dark, night, accessible, light, nordic)\n",
+           MH(MH_OPT, "-T, --theme <NAME>"));
     printf("  %-30s Override SHM/process directory (current: %s)\n\n", MH(MH_OPT, "-d <DIR>"),
            ov_get_shmdir());
 
@@ -184,6 +186,8 @@ static void print_help(const char *prog, int mh_color)
     printf("  %-30s Scroll page up / down\n", MH(MH_OPT, "PgUp / PgDn"));
     printf("  %-30s Jump to top / bottom of the list\n", MH(MH_OPT, "Home / End"));
     printf("  %-30s Scroll list/table horizontally\n", MH(MH_OPT, "LEFT / RIGHT"));
+    printf("  %-30s Cycle color theme (dark, night, accessible, light, nordic)\n",
+           MH(MH_OPT, "F8 / CTRL+T"));
     printf("  %-30s Toggle detailed inspection pane / parameter edit mode\n", MH(MH_OPT, "ENTER"));
     printf("  %-30s Toggle details tab on selected item / Graph details\n", MH(MH_OPT, "D"));
     printf("  %-30s Filter items in the focused list (regex search)\n", MH(MH_OPT, "/"));
@@ -256,6 +260,7 @@ static void print_help(const char *prog, int mh_color)
 int main(int argc, char *argv[])
 {
     /* --- Early options parsing (e.g. -d so help reflects it) --- */
+    const char *cli_theme = NULL;
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
@@ -263,6 +268,11 @@ int main(int argc, char *argv[])
             i++;
             setenv("MILK_SHM_DIR", argv[i], 1);
             setenv("MILK_PROC_DIR", argv[i], 1);
+        }
+        else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--theme") == 0) && (i + 1 < argc))
+        {
+            i++;
+            cli_theme = argv[i];
         }
     }
 
@@ -292,6 +302,10 @@ int main(int argc, char *argv[])
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
+        {
+            i++;
+        }
+        else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--theme") == 0) && (i + 1 < argc))
         {
             i++;
         }
@@ -325,6 +339,9 @@ int main(int argc, char *argv[])
 
     /* --- Detect color level --- */
     ov_detect_color_level();
+
+    /* --- Initialize color theme --- */
+    ov_theme_init(cli_theme);
 
     /* --- Enter raw mode --- */
     ov_raw_mode_enter();

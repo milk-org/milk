@@ -369,12 +369,31 @@ void ov_render_status(const OV_LAYOUT *lay, const OV_MODEL *m)
     char       tstr[16];
     int        n2 = strftime(tstr, sizeof(tstr), "%H:%M:%S", tm_ptr);
 
+    char th_label[32];
+    snprintf(th_label, sizeof(th_label), " [%s] ", ov_active_theme->id);
+    int n_th = (int) strlen(th_label);
+
     /* Clock on the right edge */
-    int pad = r.width - n1 - n_exit - n2 - 1;
+    int pad = r.width - n1 - n_th - n_exit - n2 - 1;
     if (pad > 0)
     {
         ov_buf_hline(' ', pad);
     }
+
+    /* Render theme button with hover highlight */
+    int col_th_start = r.width - n_th - n_exit - n2;
+    if (lay->mouse_hover && (ov_mouse_row == r.row) && (ov_mouse_col >= col_th_start) &&
+        (ov_mouse_col < col_th_start + n_th))
+    {
+        ov_buf_bg(70, 90, 130);
+        ov_buf_fg(255, 255, 255);
+    }
+    else
+    {
+        ov_theme_fg(OV_FG_TITLE);
+        ov_theme_bg(OV_BG_HEADER);
+    }
+    ov_buf_printf("%s", th_label);
 
     /* Render [x] exit with distinct color or hover highlight */
     int col_start = r.width - n_exit - n2;
