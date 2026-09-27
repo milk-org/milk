@@ -245,6 +245,7 @@ add_executable(
   ../overview/overview_render_fps.c
   ../overview/overview_render_graph.c
   ../overview/overview_render_status.c
+  ../overview/overview_help_data.c
   ../overview/overview_render_help.c
   ../overview/overview_render_cmdlog.c
   ../overview/overview_input.c
