@@ -328,6 +328,11 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_theme_fg(OV_FG_DIM);
     ov_buf_printf("[%s] ", MILK_GIT_COMMIT);
 
+    /* Shared memory directory */
+    const char *shmdir = ov_get_shmdir();
+    ov_theme_fg(OV_FG_DIM);
+    ov_buf_printf("[shm: %s] ", shmdir);
+
     /* Blinking badge — visible when ctrl_mode is ON, READ ONLY when OFF */
     int ctrl_w = 0;
     if (lay->ctrl_mode)
@@ -387,7 +392,8 @@ void ov_render_header(OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     int commit_w   = (int) strlen(MILK_GIT_COMMIT) + 3;
-    int chars_left = 17 + commit_w + 1 + ctrl_w + hover_w; /* +1 for heartbeat */
+    int shmdir_w   = (int) strlen(shmdir) + 8;
+    int chars_left = 17 + commit_w + shmdir_w + 1 + ctrl_w + hover_w; /* +1 for heartbeat */
 
     ov_theme_fg(OV_FG_STREAM);
     chars_left += snprintf(NULL, 0, " %d stm", m->nb_streams);

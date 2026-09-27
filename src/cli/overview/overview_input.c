@@ -1060,7 +1060,8 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             /* Check for CTRL mode toggle click */
             int commit_w    = (int) strlen(MILK_GIT_COMMIT) + 3;
-            int badge_start = lay->r_header.col + 18 + commit_w;
+            int shmdir_w    = (int) strlen(ov_get_shmdir()) + 8;
+            int badge_start = lay->r_header.col + 18 + commit_w + shmdir_w;
             int badge_w     = lay->ctrl_mode ? 13 : 15;
             if (mc >= badge_start && mc < badge_start + badge_w)
             {
@@ -1072,7 +1073,7 @@ static int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 
             /* Check for HOVER mode toggle click */
             int hover_badge_start = badge_start + badge_w + 1;
-            int hover_badge_w     = lay->mouse_hover ? 14 : 15;
+            int hover_badge_w     = lay->mouse_hover ? 15 : 16;
             if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
             {
                 lay->mouse_hover = !lay->mouse_hover;

@@ -134,8 +134,8 @@ static void print_help(const char *prog, int mh_color)
         prog, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes", mh_color);
 
     milk_help_section("Usage", mh_color);
-    printf("  $ %s [%s %s]  (commit %s)\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"),
-           MILK_GIT_COMMIT);
+    printf("  $ %s [%s %s]  (commit %s, shm %s)\n\n", prog, MH(MH_OPT, "-d"), MH(MH_ARG, "DIR"),
+           MILK_GIT_COMMIT, ov_get_shmdir());
 
     milk_help_section("Description", mh_color);
     printf("  milk-CTRL is the unified real-time dashboard for the milk framework.\n"
@@ -164,7 +164,8 @@ static void print_help(const char *prog, int mh_color)
     printf("  %-30s Show this help and exit\n", MH(MH_OPT, "-h, --help"));
     printf("  %-30s One-line description and exit\n", MH(MH_OPT, "-h1, --help-oneline"));
     printf("  %-30s Full help, forced monochrome\n", MH(MH_OPT, "-hm, --help-mono"));
-    printf("  %-30s Override SHM/process directory\n\n", MH(MH_OPT, "-d <DIR>"));
+    printf("  %-30s Override SHM/process directory (current: %s)\n\n", MH(MH_OPT, "-d <DIR>"),
+           ov_get_shmdir());
 
     milk_help_section("Navigation & View Controls", mh_color);
     printf("  %-30s Switch active panel focus (Dashboard / FPS view)\n", MH(MH_OPT, "TAB"));
@@ -242,6 +243,17 @@ static void print_help(const char *prog, int mh_color)
 
 int main(int argc, char *argv[])
 {
+    /* --- Early options parsing (e.g. -d so help reflects it) --- */
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
+        {
+            i++;
+            setenv("MILK_SHM_DIR", argv[i], 1);
+            setenv("MILK_PROC_DIR", argv[i], 1);
+        }
+    }
+
     /* --- Help handling --- */
     int action = milk_help_init(
         argc, argv, "unified system dashboard TUI (milk-CTRL) for streams, FPS, and processes",
@@ -264,12 +276,12 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    /* --- Custom options parsing ---*/
+    /* --- Validate remaining options --- */
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-d") == 0 && (i + 1 < argc))
         {
-            setenv("MILK_SHM_DIR", argv[++i], 1);
+            i++;
         }
         else if (argv[i][0] == '-')
         {
@@ -354,6 +366,8 @@ int main(int argc, char *argv[])
     lay.dash_split_h_ratio    = 0.5f;
     lay.dash_split_v_dragging = 0;
     lay.dash_split_h_dragging = 0;
+
+    ov_cmdlog_push(&lay.cmdlog, OV_CMDLOG_INFO, "Shared memory directory: %s", ov_get_shmdir());
 
     /* --- Main TUI loop (~10 fps) --- */
     /* Clear screen once on startup */
