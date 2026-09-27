@@ -225,14 +225,29 @@ install(TARGETS milk-termview DESTINATION bin)
 add_executable(
   milk-CTRL
   ../overview/milkCTRL.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c
-  ../overview/overview_scan.c
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_scan.c
+  ../overview/data/stream_graph.c
+  ../overview/data/stream_graph_lineage.c
+  ../overview/data/stream_graph_tree.c
   ../overview/overview_layout.c
   ../overview/ansi/overview_ansi_term.c
   ../overview/ansi/overview_ansi_buf.c
@@ -265,7 +280,6 @@ add_executable(
   ../overview/overview_ctrl.c
   ../overview/overview_fps_edit.c
   ../overview/overview_render_fps_params.c
-  ../overview/stream_graph.c
   ../overview/overview_theme.c)
 target_include_directories(
   milk-CTRL
@@ -287,15 +301,29 @@ install(PROGRAMS ../overview/milk-setup-caps DESTINATION bin)
 add_executable(
   milk-stream-graph
   ../overview/milk-stream-graph.c
-  ../overview/stream_graph.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c
-  ../overview/overview_scan.c
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_scan.c
+  ../overview/data/stream_graph.c
+  ../overview/data/stream_graph_lineage.c
+  ../overview/data/stream_graph_tree.c
   ../overview/overview_layout.c)
 target_include_directories(
   milk-stream-graph
@@ -311,13 +339,25 @@ install(TARGETS milk-stream-graph DESTINATION bin)
 add_executable(
   milk-stream-info
   ../overview/milk-stream-info.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c)
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c)
 target_include_directories(
   milk-stream-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
@@ -332,13 +372,25 @@ install(TARGETS milk-stream-info DESTINATION bin)
 add_executable(
   milk-procinfo-info
   ../overview/milk-procinfo-info.c
-  ../overview/overview_data.c
-  ../overview/overview_data_loops.c
-  ../overview/overview_data_sys.c
-  ../overview/overview_data_cache.c
-  ../overview/overview_data_scan.c
-  ../overview/overview_data_graph.c
-  ../overview/overview_data_sort.c)
+  ../overview/data/overview_data.c
+  ../overview/data/overview_data_loops.c
+  ../overview/data/overview_data_loops_names.c
+  ../overview/data/overview_data_loops_reg.c
+  ../overview/data/overview_data_sys.c
+  ../overview/data/overview_data_sys_proc.c
+  ../overview/data/overview_data_sys_perf.c
+  ../overview/data/overview_data_cache.c
+  ../overview/data/overview_data_cache_fps.c
+  ../overview/data/overview_data_scan.c
+  ../overview/data/overview_data_scan_streams.c
+  ../overview/data/overview_data_scan_fps.c
+  ../overview/data/overview_data_scan_procs.c
+  ../overview/data/overview_data_scan_tmux.c
+  ../overview/data/overview_data_graph.c
+  ../overview/data/overview_data_sort.c
+  ../overview/data/overview_data_sort_streams.c
+  ../overview/data/overview_data_sort_procs.c
+  ../overview/data/overview_data_sort_fps.c)
 target_include_directories(
   milk-procinfo-info
   PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
