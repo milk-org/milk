@@ -20,16 +20,14 @@ a custom double-buffered ANSI/VT100 shadow grid engine supporting:
 
 ## Views
 
-| Key | View | Content |
-| --- | ---- | ------- |
-| F1 | `STRM` | All active shared memory image streams (ImageStreamIO) |
 | F2 | `DASH` | Split dashboard overview (streams + processes + FPS) |
-| F3 | `PROC` | Managed processes and CPU/timing performance (via processinfo) |
-| F4 | `LOOP` | Sequencer and execution loops |
+| F3 | `STRM` | All active shared memory image streams (ImageStreamIO) |
+| F4 | `PROC` | Managed processes and CPU/timing performance (via processinfo) |
 | F5 | `FPS` | Function Parameter Structures (FPS) and tunable parameters |
-| F6 | `GRAPH`| Dynamic dataflow lineage graph (producer -> stream -> consumer) |
-| F7 | `LOG` | Command execution history and system events log |
-| F8 | `HELP` | Comprehensive interactive help and keybinding reference |
+| F6 | `CONN` | Dynamic dataflow lineage graph (producer -> stream -> consumer) |
+| F7 | `LOOPS` | Detected feedback loops and overlap analysis |
+| F8 / Ctrl+T | Theme selector | Choose a color theme |
+| h | HELP | Comprehensive interactive help and keybinding reference |
 | ENTER | Detail | Toggle detailed inspection pane / parameter edit mode |
 
 ## Control Mode
