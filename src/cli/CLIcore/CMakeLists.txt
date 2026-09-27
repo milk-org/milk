@@ -234,6 +234,7 @@ add_executable(
   ../overview/overview_data_sort.c
   ../overview/overview_scan.c
   ../overview/overview_layout.c
+  ../overview/overview_ansi.c
   ../overview/overview_cmdlog.c
   ../overview/overview_render.c
   ../overview/overview_render_loops.c

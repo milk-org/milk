@@ -37,32 +37,7 @@
 
 volatile sig_atomic_t ov_sigINT  = 0;
 volatile sig_atomic_t ov_sigTERM = 0;
-
-struct termios ov__orig_termios;
-int            ov__orig_flags  = -1;
-int            ov__raw_active  = 0;
-int            ov__color_level = 0;
-
-/* mouse event coordinates (set by ov_get_key) */
-int ov_mouse_row = 0;
-int ov_mouse_col = 0;
-int ov_mouse_btn = 0;
-int ov_hover_row = 0;
-int ov_hover_col = 0;
-
-char     ov__screenbuf[OV_SCREENBUF_SIZE];
-int      ov__screenbuf_len        = 0;
-uint64_t ov__total_bytes_rendered = 0;
-
-OV_CELL  ov__shadow[OV_MAX_ROWS][OV_MAX_COLS];
-OV_CELL  ov__front[OV_MAX_ROWS][OV_MAX_COLS];
-int      ov__cursor_row   = 1;
-int      ov__cursor_col   = 1;
-uint32_t ov__current_fg   = OV_COLOR_NONE;
-uint32_t ov__current_bg   = OV_COLOR_NONE;
-uint32_t ov__default_bg   = OV_COLOR_NONE;
-uint32_t ov__current_ul   = OV_COLOR_NONE;
-uint8_t  ov__current_attr = 0;
+/* Global ANSI and terminal state is owned and defined in overview_ansi.c */
 
 /* =========================================================
  * Signal handlers
